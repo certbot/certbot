@@ -96,7 +96,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             help="Path to the Apache 'a2enmod' binary.")
         add("init-script", default=constants.CLI_DEFAULTS["init_script"],
             help="Path to the Apache init script (used for server "
-            "reload/restart).")
+            "reload).")
         add("le-vhost-ext", default=constants.CLI_DEFAULTS["le_vhost_ext"],
             help="SSL vhost configuration extension.")
         add("server-root", default=constants.CLI_DEFAULTS["server_root"],
@@ -974,7 +974,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return False
 
     def enable_site(self, vhost):
-        """Enables an available site, Apache restart required.
+        """Enables an available site, Apache reload required.
 
         .. note:: Does not make sure that the site correctly works or that all
                   modules are enabled appropriately.
@@ -1009,7 +1009,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def enable_mod(self, mod_name, temp=False):
         """Enables module in Apache.
 
-        Both enables and restarts Apache so module is active.
+        Both enables and reloads Apache so module is active.
 
         :param str mod_name: Name of the module to enable. (e.g. 'ssl')
         :param bool temp: Whether or not this is a temporary action.
@@ -1051,7 +1051,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Modules can enable additional config files. Variables may be defined
         # within these new configuration sections.
-        # Restart is not necessary as DUMP_RUN_CFG uses latest config.
+        # Reload is not necessary as DUMP_RUN_CFG uses latest config.
         self.parser.update_runtime_variables(self.conf("ctl"))
 
     def _add_parser_mod(self, mod_name):
@@ -1074,16 +1074,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         le_util.run_script([self.conf("enmod"), mod_name])
 
     def restart(self):
-        """Restarts apache server.
+        """Reloads apache server.
 
         .. todo:: This function will be converted to using reload
 
-        :raises .errors.MisconfigurationError: If unable to restart due
-            to a configuration problem, or if the restart subprocess
+        :raises .errors.MisconfigurationError: If unable to reload due
+            to a configuration problem, or if the reload subprocess
             cannot be run.
 
         """
-        return apache_restart(self.conf("init-script"))
+        return apache_reload(self.conf("init-script"))
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Apache for errors.
@@ -1158,7 +1158,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         sni_response = apache_dvsni.perform()
         if sni_response:
-            # Must restart in order to activate the challenges.
+            # Must reload in order to activate the challenges.
             # Handled here because we may be able to load up other challenge
             # types
             self.restart()
@@ -1201,42 +1201,42 @@ def _get_mod_deps(mod_name):
     return deps.get(mod_name, [])
 
 
-def apache_restart(apache_init_script):
-    """Restarts the Apache Server.
+def apache_reload(apache_init_script):
+    """Reloads the Apache Server.
 
     :param str apache_init_script: Path to the Apache init script.
 
     .. todo:: Try to use reload instead. (This caused timing problems before)
 
     .. todo:: On failure, this should be a recovery_routine call with another
-       restart.  This will confuse and inhibit developers from testing code
+       reload.  This will confuse and inhibit developers from testing code
        though.  This change should happen after
        the ApacheConfigurator has been thoroughly tested.  The function will
        need to be moved into the class again.  Perhaps
        this version can live on... for testing purposes.
 
-    :raises .errors.MisconfigurationError: If unable to restart due to a
-        configuration problem, or if the restart subprocess cannot be run.
+    :raises .errors.MisconfigurationError: If unable to reload due to a
+        configuration problem, or if the reload subprocess cannot be run.
 
     """
     try:
-        proc = subprocess.Popen([apache_init_script, "restart"],
+        proc = subprocess.Popen([apache_init_script, "reload"],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
 
     except (OSError, ValueError):
         logger.fatal(
-            "Unable to restart the Apache process with %s", apache_init_script)
+            "Unable to reload the Apache process with %s", apache_init_script)
         raise errors.MisconfigurationError(
-            "Unable to restart Apache process with %s" % apache_init_script)
+            "Unable to reload Apache process with %s" % apache_init_script)
 
     stdout, stderr = proc.communicate()
 
     if proc.returncode != 0:
         # Enter recovery routine...
-        logger.error("Apache Restart Failed!\n%s\n%s", stdout, stderr)
+        logger.error("Apache Reload Failed!\n%s\n%s", stdout, stderr)
         raise errors.MisconfigurationError(
-            "Error while restarting Apache:\n%s\n%s" % (stdout, stderr))
+            "Error while reloading Apache:\n%s\n%s" % (stdout, stderr))
 
 
 def get_file_path(vhost_path):
