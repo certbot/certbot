@@ -74,10 +74,11 @@ class AuthenticatorTest(unittest.TestCase):
 
         # Remove exec bit from permission check, so that it
         # matches the file
-        parent_permissions = (stat.S_IMODE(os.stat(self.path)) &
+        responses = self.auth.perform([self.achall])
+        parent_permissions = (stat.S_IMODE(os.stat(self.path).st_mode) &
                               ~stat.S_IEXEC)
 
-        actual_permissions = stat.S_IMODE(os.stat(self.validation_path))
+        actual_permissions = stat.S_IMODE(os.stat(self.validation_path).st_mode)
 
         self.assertEqual(parent_permissions, actual_permissions)
 
