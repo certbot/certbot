@@ -46,8 +46,6 @@ Make sure your web server displays the following content at
 
 {validation}
 
-Content-Type header MUST be set to {ct}.
-
 If you don't have HTTP server configured, you can run the following
 command on the target server (as root):
 
@@ -75,7 +73,6 @@ printf "%s" {validation} > {achall.URI_ROOT_PATH}/{encoded_token}
 # run only once per server:
 $(command -v python2 || command -v python2.7 || command -v python2.6) -c \\
 "import BaseHTTPServer, SimpleHTTPServer; \\
-SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {{'': '{ct}'}}; \\
 s = BaseHTTPServer.HTTPServer(('', {port}), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
 s.serve_forever()" """
     """Command template."""
@@ -142,7 +139,7 @@ s.serve_forever()" """
             # TODO(kuba): pipes still necessary?
             validation=pipes.quote(validation),
             encoded_token=achall.chall.encode("token"),
-            ct=achall.CONTENT_TYPE, port=port)
+            port=port)
         if self.conf("test-mode"):
             logger.debug("Test mode. Executing the manual command: %s", command)
             # sh shipped with OS X does't support echo -n, but supports printf
@@ -174,7 +171,7 @@ s.serve_forever()" """
             self._notify_and_wait(self.MESSAGE_TEMPLATE.format(
                 validation=validation, response=response,
                 uri=achall.chall.uri(achall.domain),
-                ct=achall.CONTENT_TYPE, command=command))
+                command=command))
 
         if not response.simple_verify(
                 achall.chall, achall.domain,
