@@ -103,7 +103,7 @@ class TwoVhost80Test(util.ApacheTest):
 
         """
         vhs = self.config.get_virtual_hosts()
-        self.assertEqual(len(vhs), 5)
+        self.assertEqual(len(vhs), 6)
         found = 0
 
         for vhost in vhs:
@@ -114,7 +114,7 @@ class TwoVhost80Test(util.ApacheTest):
             else:
                 raise Exception("Missed: %s" % vhost)  # pragma: no cover
 
-        self.assertEqual(found, 5)
+        self.assertEqual(found, 6)
 
     @mock.patch("letsencrypt_apache.display_ops.select_vhost")
     def test_choose_vhost_none_avail(self, mock_select):
@@ -409,7 +409,7 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(self.config.is_name_vhost(self.vh_truth[0]),
                          self.config.is_name_vhost(ssl_vhost))
 
-        self.assertEqual(len(self.config.vhosts), 6)
+        self.assertEqual(len(self.config.vhosts), 7)
 
     def test_clean_vhost_ssl(self):
         # pylint: disable=protected-access
@@ -597,14 +597,14 @@ class TwoVhost80Test(util.ApacheTest):
     def test_get_all_certs_keys(self):
         c_k = self.config.get_all_certs_keys()
 
-        self.assertEqual(len(c_k), 1)
+        self.assertEqual(len(c_k), 2)
         cert, key, path = next(iter(c_k))
         self.assertTrue("cert" in cert)
         self.assertTrue("key" in key)
-        self.assertTrue("default-ssl.conf" in path)
+        self.assertTrue("default-ssl" in path)
 
     def test_get_all_certs_keys_malformed_conf(self):
-        self.config.parser.find_dir = mock.Mock(side_effect=[["path"], []])
+        self.config.parser.find_dir = mock.Mock(side_effect=[["path"], [], ["path"], []])
         c_k = self.config.get_all_certs_keys()
 
         self.assertFalse(c_k)
@@ -710,7 +710,7 @@ class TwoVhost80Test(util.ApacheTest):
         self.vh_truth[1].aliases = set(["yes.default.com"])
 
         self.config._enable_redirect(self.vh_truth[1], "")  # pylint: disable=protected-access
-        self.assertEqual(len(self.config.vhosts), 6)
+        self.assertEqual(len(self.config.vhosts), 7)
 
     def get_achalls(self):
         """Return testing achallenges."""

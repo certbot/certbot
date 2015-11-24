@@ -445,6 +445,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if self.parser.find_dir("SSLEngine", "on", start=path, exclude=False):
             is_ssl = True
 
+        # "SSLEngine on" might be set outside of <VirtualHost>
+        # Treat vhosts with port 443 as ssl vhosts
+        for addr in addrs:
+            if addr.get_port() == "443":
+                is_ssl = True
+
         filename = get_file_path(path)
         is_enabled = self.is_site_enabled(filename)
 
