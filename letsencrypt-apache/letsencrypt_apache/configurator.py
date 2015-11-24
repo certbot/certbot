@@ -122,7 +122,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.version = version
         self.vhosts = None
         self._enhance_func = {"redirect": self._enable_redirect,
-                "http-header": self._set_http_header}
+                "ensure-http-header": self._set_http_header}
 
     @property
     def mod_ssl_conf(self):
@@ -701,7 +701,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     ############################################################################
     def supported_enhancements(self):  # pylint: disable=no-self-use
         """Returns currently supported enhancements."""
-        return ["redirect", "http-header"]
+        return ["redirect", "ensure-http-header"]
 
     def enhance(self, domain, enhancement, options=None):
         """Enhance configuration.

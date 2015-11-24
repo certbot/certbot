@@ -418,10 +418,10 @@ class Client(object):
             self.apply_enhancement(domains, "redirect")
 
         if hsts:
-            self.apply_enhancement(domains, "http-header",
+            self.apply_enhancement(domains, "ensure-http-header",
                     "Strict-Transport-Security")
         if uir:
-            self.apply_enhancement(domains, "http-header",
+            self.apply_enhancement(domains, "ensure-http-header",
                     "Upgrade-Insecure-Requests")
 
         msg = ("We were unable to restart web server")
@@ -435,7 +435,7 @@ class Client(object):
         :param domains: list of ssl_vhosts
         :type list of str
 
-        :param enhancement: name of enhancement, e.g. http-header
+        :param enhancement: name of enhancement, e.g. ensure-http-header
         :type str
 
         .. note:: when more options are need make options a list.

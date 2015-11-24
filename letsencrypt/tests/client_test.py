@@ -262,12 +262,12 @@ class ClientTest(unittest.TestCase):
 
         config = ConfigHelper(redirect=False, hsts=True, uir=False)
         self.client.enhance_config(["foo.bar"], config)
-        installer.enhance.assert_called_with("foo.bar", "http-header",
+        installer.enhance.assert_called_with("foo.bar", "ensure-http-header",
                 "Strict-Transport-Security")
 
         config = ConfigHelper(redirect=False, hsts=False, uir=True)
         self.client.enhance_config(["foo.bar"], config)
-        installer.enhance.assert_called_with("foo.bar", "http-header",
+        installer.enhance.assert_called_with("foo.bar", "ensure-http-header",
                 "Upgrade-Insecure-Requests")
 
         self.assertEqual(installer.save.call_count, 3)

@@ -521,7 +521,7 @@ class TwoVhost80Test(util.ApacheTest):
         mock_exe.return_value = True
 
         # This will create an ssl vhost for letsencrypt.demo
-        self.config.enhance("letsencrypt.demo", "http-header",
+        self.config.enhance("letsencrypt.demo", "ensure-http-header",
                 "Strict-Transport-Security")
 
         self.assertTrue("headers_module" in self.config.parser.modules)
@@ -543,12 +543,12 @@ class TwoVhost80Test(util.ApacheTest):
         self.config.parser.modules.add("headers_module")
 
         # This will create an ssl vhost for letsencrypt.demo
-        self.config.enhance("encryption-example.demo", "http-header",
+        self.config.enhance("encryption-example.demo", "ensure-http-header",
                 "Strict-Transport-Security")
 
         self.assertRaises(
             errors.PluginError,
-            self.config.enhance, "encryption-example.demo", "http-header",
+            self.config.enhance, "encryption-example.demo", "ensure-http-header",
             "Strict-Transport-Security")
 
     @mock.patch("letsencrypt.le_util.run_script")
@@ -559,7 +559,7 @@ class TwoVhost80Test(util.ApacheTest):
         mock_exe.return_value = True
 
         # This will create an ssl vhost for letsencrypt.demo
-        self.config.enhance("letsencrypt.demo", "http-header",
+        self.config.enhance("letsencrypt.demo", "ensure-http-header",
                 "Upgrade-Insecure-Requests")
 
         self.assertTrue("headers_module" in self.config.parser.modules)
@@ -581,12 +581,12 @@ class TwoVhost80Test(util.ApacheTest):
         self.config.parser.modules.add("headers_module")
 
         # This will create an ssl vhost for letsencrypt.demo
-        self.config.enhance("encryption-example.demo", "http-header",
+        self.config.enhance("encryption-example.demo", "ensure-http-header",
                 "Upgrade-Insecure-Requests")
 
         self.assertRaises(
             errors.PluginError,
-            self.config.enhance, "encryption-example.demo", "http-header",
+            self.config.enhance, "encryption-example.demo", "ensure-http-header",
             "Upgrade-Insecure-Requests")
 
 
