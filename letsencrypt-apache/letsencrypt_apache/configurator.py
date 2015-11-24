@@ -182,6 +182,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         vhost = self.choose_vhost(domain)
+        self._clean_vhost(vhost)
 
         # This is done first so that ssl module is enabled and cert_path,
         # cert_key... can all be parsed appropriately
@@ -205,16 +206,27 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "Unable to find cert and/or key directives")
 
         logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
+        logger.debug("Apache version is %s",
+                     ".".join(str(i) for i in self.version))
 
-        # Assign the final directives; order is maintained in find_dir
-        self.aug.set(path["cert_path"][-1], cert_path)
-        self.aug.set(path["cert_key"][-1], key_path)
-        if chain_path is not None:
-            if not path["chain_path"]:
-                self.parser.add_dir(
-                    vhost.path, "SSLCertificateChainFile", chain_path)
+        if self.version < (2, 4, 8) or (chain_path and not fullchain_path):
+            # install SSLCertificateFile, SSLCertificateKeyFile,
+            # and SSLCertificateChainFile directives
+            set_cert_path = cert_path
+            self.aug.set(path["cert_path"][-1], cert_path)
+            self.aug.set(path["cert_key"][-1], key_path)
+            if chain_path is not None:
+                self.parser.add_dir(vhost.path,
+                                    "SSLCertificateChainFile", chain_path)
             else:
-                self.aug.set(path["chain_path"][-1], chain_path)
+                raise errors.PluginError("--chain-path is required for your version of Apache")
+        else:
+            if not fullchain_path:
+                raise errors.PluginError("Please provide the --fullchain-path\
+ option pointing to your full chain file")
+            set_cert_path = fullchain_path
+            self.aug.set(path["cert_path"][-1], fullchain_path)
+            self.aug.set(path["cert_key"][-1], key_path)
 
         # Save notes about the transaction that took place
         self.save_notes += ("Changed vhost at %s with addresses of %s\n"
@@ -222,7 +234,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                             "\tSSLCertificateKeyFile %s\n" %
                             (vhost.filep,
                              ", ".join(str(addr) for addr in vhost.addrs),
-                             cert_path, key_path))
+                             set_cert_path, key_path))
         if chain_path is not None:
             self.save_notes += "\tSSLCertificateChainFile %s\n" % chain_path
 
@@ -662,6 +674,25 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             ssl_addrs.add(ssl_addr)
 
         return ssl_addrs
+
+    def _clean_vhost(self, vhost):
+        # remove duplicated or conflicting ssl directives
+        self._deduplicate_directives(vhost.path,
+            ["SSLCertificateFile", "SSLCertificateKeyFile"])
+        # remove all problematic directives
+        self._remove_directives(vhost.path, ["SSLCertificateChainFile"])
+
+    def _deduplicate_directives(self, vh_path, directives):
+        for directive in directives:
+            while len(self.parser.find_dir(directive, None, vh_path, False)) > 1:
+                directive_path = self.parser.find_dir(directive, None, vh_path, False)
+                self.aug.remove(re.sub(r"/\w*$", "", directive_path[0]))
+
+    def _remove_directives(self, vh_path, directives):
+        for directive in directives:
+            while len(self.parser.find_dir(directive, None, vh_path, False)) > 0:
+                directive_path = self.parser.find_dir(directive, None, vh_path, False)
+                self.aug.remove(re.sub(r"/\w*$", "", directive_path[0]))
 
     def _add_dummy_ssl_directives(self, vh_path):
         self.parser.add_dir(vh_path, "SSLCertificateFile",

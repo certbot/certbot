@@ -236,6 +236,64 @@ class TwoVhost80Test(util.ApacheTest):
             self.config.enable_site,
             obj.VirtualHost("asdf", "afsaf", set(), False, False))
 
+    def test_deploy_cert_newssl(self):
+        self.config = util.get_apache_configurator(
+            self.config_path, self.config_dir, self.work_dir, version=(2, 4, 16))
+
+        self.config.parser.modules.add("ssl_module")
+        self.config.parser.modules.add("mod_ssl.c")
+
+        # Get the default 443 vhost
+        self.config.assoc["random.demo"] = self.vh_truth[1]
+        self.config.deploy_cert(
+            "random.demo", "example/cert.pem", "example/key.pem",
+            "example/cert_chain.pem", "example/fullchain.pem")
+        self.config.save()
+
+        # Verify ssl_module was enabled.
+        self.assertTrue(self.vh_truth[1].enabled)
+        self.assertTrue("ssl_module" in self.config.parser.modules)
+
+        loc_cert = self.config.parser.find_dir(
+            "sslcertificatefile", "example/fullchain.pem", self.vh_truth[1].path)
+        loc_key = self.config.parser.find_dir(
+            "sslcertificateKeyfile", "example/key.pem", self.vh_truth[1].path)
+
+        # Verify one directive was found in the correct file
+        self.assertEqual(len(loc_cert), 1)
+        self.assertEqual(configurator.get_file_path(loc_cert[0]),
+                         self.vh_truth[1].filep)
+
+        self.assertEqual(len(loc_key), 1)
+        self.assertEqual(configurator.get_file_path(loc_key[0]),
+                         self.vh_truth[1].filep)
+
+    def test_deploy_cert_newssl_no_fullchain(self):
+        self.config = util.get_apache_configurator(
+            self.config_path, self.config_dir, self.work_dir, version=(2, 4, 16))
+
+        self.config.parser.modules.add("ssl_module")
+        self.config.parser.modules.add("mod_ssl.c")
+
+        # Get the default 443 vhost
+        self.config.assoc["random.demo"] = self.vh_truth[1]
+        self.assertRaises(errors.PluginError,
+                          lambda: self.config.deploy_cert(
+                              "random.demo", "example/cert.pem", "example/key.pem"))
+
+    def test_deploy_cert_old_apache_no_chain(self):
+        self.config = util.get_apache_configurator(
+            self.config_path, self.config_dir, self.work_dir, version=(2, 4, 7))
+
+        self.config.parser.modules.add("ssl_module")
+        self.config.parser.modules.add("mod_ssl.c")
+
+        # Get the default 443 vhost
+        self.config.assoc["random.demo"] = self.vh_truth[1]
+        self.assertRaises(errors.PluginError,
+                          lambda: self.config.deploy_cert(
+                              "random.demo", "example/cert.pem", "example/key.pem"))
+
     def test_deploy_cert(self):
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
@@ -352,6 +410,65 @@ class TwoVhost80Test(util.ApacheTest):
                          self.config.is_name_vhost(ssl_vhost))
 
         self.assertEqual(len(self.config.vhosts), 6)
+
+    def test_clean_vhost_ssl(self):
+        # pylint: disable=protected-access
+        for directive in ["SSLCertificateFile", "SSLCertificateKeyFile",
+                          "SSLCertificateChainFile", "SSLCACertificatePath"]:
+            for _ in range(10):
+                self.config.parser.add_dir(self.vh_truth[1].path, directive, ["bogus"])
+        self.config.save()
+
+        self.config._clean_vhost(self.vh_truth[1])
+        self.config.save()
+
+        loc_cert = self.config.parser.find_dir(
+            'SSLCertificateFile', None, self.vh_truth[1].path, False)
+        loc_key = self.config.parser.find_dir(
+            'SSLCertificateKeyFile', None, self.vh_truth[1].path, False)
+        loc_chain = self.config.parser.find_dir(
+            'SSLCertificateChainFile', None, self.vh_truth[1].path, False)
+        loc_cacert = self.config.parser.find_dir(
+            'SSLCACertificatePath', None, self.vh_truth[1].path, False)
+
+        self.assertEqual(len(loc_cert), 1)
+        self.assertEqual(len(loc_key), 1)
+
+        self.assertEqual(len(loc_chain), 0)
+
+        self.assertEqual(len(loc_cacert), 10)
+
+    def test_deduplicate_directives(self):
+        # pylint: disable=protected-access
+        DIRECTIVE = "Foo"
+        for _ in range(10):
+            self.config.parser.add_dir(self.vh_truth[1].path, DIRECTIVE, ["bar"])
+        self.config.save()
+
+        self.config._deduplicate_directives(self.vh_truth[1].path, [DIRECTIVE])
+        self.config.save()
+
+        self.assertEqual(
+                         len(self.config.parser.find_dir(
+                             DIRECTIVE, None, self.vh_truth[1].path, False)),
+                         1)
+
+    def test_remove_directives(self):
+        # pylint: disable=protected-access
+        DIRECTIVES = ["Foo", "Bar"]
+        for directive in DIRECTIVES:
+            for _ in range(10):
+                self.config.parser.add_dir(self.vh_truth[1].path, directive, ["baz"])
+        self.config.save()
+
+        self.config._remove_directives(self.vh_truth[1].path, DIRECTIVES)
+        self.config.save()
+
+        for directive in DIRECTIVES:
+            self.assertEqual(
+                             len(self.config.parser.find_dir(
+                                 directive, None, self.vh_truth[1].path, False)),
+                             0)
 
     def test_make_vhost_ssl_extra_vhs(self):
         self.config.aug.match = mock.Mock(return_value=["p1", "p2"])
