@@ -586,7 +586,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                               (ssl_fp, parser.case_i("VirtualHost")))
         if len(vh_p) != 1:
             logger.error("Error: should only be one vhost in %s", avail_fp)
-            raise errors.PluginError("Only one vhost per file is allowed")
+            raise errors.PluginError("Currently, we only support "
+                                     "configurations with one vhost per file")
         else:
             # This simplifies the process
             vh_p = vh_p[0]
