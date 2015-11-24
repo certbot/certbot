@@ -1037,8 +1037,9 @@ def _plugins_parsing(helpful, plugins):
     helpful.add("webroot", "-w", "--webroot-path", action=WebrootPathProcessor,
                 help="public_html / webroot path")
     parse_dict = lambda s: dict(json.loads(s))
+    # --webroot-map still has some awkward properties, so it is undocumented
     helpful.add("webroot", "--webroot-map", default={}, type=parse_dict,
-                help="Mapping from domains to webroot paths")
+                help=argparse.SUPPRESS)
 
 
 class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
