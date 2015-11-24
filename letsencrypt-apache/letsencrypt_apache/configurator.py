@@ -236,8 +236,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         If there is no clear virtual host to be selected, the user is prompted
         with all available choices.
 
+        The returned vhost is guaranteed to have TLS enabled unless temp is
+        True. If temp is True, there is no such guarantee and the result is
+        not cached.
+
         :param str target_name: domain name
-        :param bool temp: whether or not self.make_vhost_ssl shouldn't be called
+        :param bool temp: whether the vhost is only used temporarily
 
         :returns: ssl vhost associated with name
         :rtype: :class:`~letsencrypt_apache.obj.VirtualHost`
@@ -260,9 +264,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.assoc[target_name] = vhost
             return vhost
 
-        return self._choose_vhost_from_list(target_name)
+        return self._choose_vhost_from_list(target_name, temp)
 
-    def _choose_vhost_from_list(self, target_name):
+    def _choose_vhost_from_list(self, target_name, temp=False):
         # Select a vhost from a list
         vhost = display_ops.select_vhost(target_name, self.vhosts)
         if vhost is None:
@@ -275,7 +279,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         elif not vhost.ssl:
             addrs = self._get_proposed_addrs(vhost, "443")
             # TODO: Conflicts is too conservative
-            if not any(vhost.enabled and vhost.conflicts(addrs) for vhost in self.vhosts):
+            if not any(vhost.enabled and vhost.conflicts(addrs) for vhost in self.vhosts)\
+                    and not temp:
                 vhost = self.make_vhost_ssl(vhost)
             else:
                 logger.error(
