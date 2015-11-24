@@ -101,13 +101,7 @@ to serve all files under specified web root ({0})."""
                 os.makedirs(self.full_roots[name])
                 # Set permissions as parent directory (GH #1389)
                 filemode = stat.S_IMODE(os.stat(path).st_mode)
-                os.chmod(self.full_roots[name])
-
-                # Make permissions valid for files, too
-                for root, dirs, files in os.walk(self.full_roots[name]):
-                    for filename in files:
-                    # No need for exec permissions
-                        os.chmod(filename, filemode & ~stat.S_IEXEC)
+                os.chmod(self.full_roots[name], filemode)
 
             except OSError as exception:
                 if exception.errno != errno.EEXIST:
@@ -132,6 +126,13 @@ to serve all files under specified web root ({0})."""
         logger.debug("Attempting to save validation to %s", path)
         with open(path, "w") as validation_file:
             validation_file.write(validation.encode())
+
+        # Set permissions as parent directory (GH #1389)
+        parent_path = self.full_roots[achall.domain]
+        filemode = stat.S_IMODE(os.stat(parent_path).st_mode)
+        # Remove execution bit (not needed for this file)
+        os.chmod(path, filemode & ~stat.S_IEXEC)
+
         return response
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
