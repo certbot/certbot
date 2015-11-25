@@ -930,7 +930,7 @@ def prepare_and_parse_args(plugins, args):
              " Defends against SSL Stripping.", dest="hsts", default=False)
     helpful.add(
         "security", "--no-hsts", action="store_false",
-        help="Do not automaticcally add the Strict-Transport-Security header"
+        help="Do not automatically add the Strict-Transport-Security header"
              " to every HTTP response.", dest="hsts", default=False)
     helpful.add(
         "security", "--uir", action="store_true",

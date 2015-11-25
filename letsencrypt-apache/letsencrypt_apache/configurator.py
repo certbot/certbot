@@ -782,7 +782,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :returns: boolean
         :rtype: (bool)
 
-        :raises errors.PluginError: When header header_substring exists
+        :raises errors.PluginEnhancementAlreadyPresent When header
+                header_substring exists
 
         """
         header_path = self.parser.find_dir("Header", None, start=ssl_vhost.path)
@@ -791,8 +792,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             pat = '(?:[ "]|^)(%s)(?:[ "]|$)' % (header_substring.lower())
             for match in header_path:
                 if re.search(pat, self.aug.get(match).lower()):
-                    raise errors.PluginError("Existing %s header" %
-                            (header_substring))
+                    raise errors.PluginEnhancementAlreadyPresent(
+                            "Existing %s header" % (header_substring))
 
     def _enable_redirect(self, ssl_vhost, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
@@ -863,8 +864,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param vhost: vhost to check
         :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
 
-        :raises errors.PluginError: When another redirection exists
+        :raises errors.PluginEnhancementAlreadyPresent: When the exact
+                letsencrypt redirection WriteRule exists in virtual host.
 
+                errors.PluginError: When there exists directives that may hint
+                other redirection. (TODO: We should not throw a PluginError,
+                    but that's for an other PR.)
         """
         rewrite_path = self.parser.find_dir(
             "RewriteRule", None, start=vhost.path)
@@ -881,7 +886,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     rewrite_path, constants.REWRITE_HTTPS_ARGS):
                 if self.aug.get(match) != arg:
                     raise errors.PluginError("Unknown Existing RewriteRule")
-            raise errors.PluginError(
+
+            raise errors.PluginEnhancementAlreadyPresent(
                 "Let's Encrypt has already enabled redirection")
 
     def _create_redirect_vhost(self, ssl_vhost):

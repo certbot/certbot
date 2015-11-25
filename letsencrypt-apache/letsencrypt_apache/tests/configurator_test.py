@@ -547,7 +547,7 @@ class TwoVhost80Test(util.ApacheTest):
                 "Strict-Transport-Security")
 
         self.assertRaises(
-            errors.PluginError,
+            errors.PluginEnhancementAlreadyPresent,
             self.config.enhance, "encryption-example.demo", "ensure-http-header",
             "Strict-Transport-Security")
 
@@ -585,7 +585,7 @@ class TwoVhost80Test(util.ApacheTest):
                 "Upgrade-Insecure-Requests")
 
         self.assertRaises(
-            errors.PluginError,
+            errors.PluginEnhancementAlreadyPresent,
             self.config.enhance, "encryption-example.demo", "ensure-http-header",
             "Upgrade-Insecure-Requests")
 
@@ -631,7 +631,7 @@ class TwoVhost80Test(util.ApacheTest):
         self.config.parser.modules.add("rewrite_module")
         self.config.enhance("encryption-example.demo", "redirect")
         self.assertRaises(
-            errors.PluginError,
+            errors.PluginEnhancementAlreadyPresent,
             self.config.enhance, "encryption-example.demo", "redirect")
 
     def test_unknown_rewrite(self):

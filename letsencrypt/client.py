@@ -454,6 +454,9 @@ class Client(object):
             for dom in domains:
                 try:
                     self.installer.enhance(dom, enhancement, options)
+                except errors.PluginEnhancementAlreadyPresent:
+                    logger.warn("Enhancement %s was already set.",
+                            enhancement)
                 except errors.PluginError:
                     logger.warn("Unable to set enhancement %s for %s",
                             enhancement, dom)
