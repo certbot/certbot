@@ -70,6 +70,9 @@ below.
 Plugins
 =======
 
+The Let's Encrypt client supports a number of different "plugins" that can be
+used to obtain and/or install certificates.
+
 =========== = = ===============================================================
 Plugin      A I Notes
 =========== = = ===============================================================
@@ -87,7 +90,7 @@ Apache
 
 If you're running Apache 2.4 on a Debian-based OS with version 1.0+ of
 the ``libaugeas0`` package available, you can use the Apache plugin.
-This automates both obtaining and installing certs on an Apache
+This automates both obtaining *and* installing certs on an Apache
 webserver. To specify this plugin on the command line, simply include
 ``--apache``.
 
@@ -110,13 +113,22 @@ Webroot
 If you're running a webserver that you don't want to stop to use
 standalone, you can use the webroot plugin to obtain a cert by
 including ``certonly`` and ``--webroot`` on the command line. In
-addition, you'll need to specify ``--webroot-path`` with the root
+addition, you'll need to specify ``--webroot-path`` or ``-w`` with the root
 directory of the files served by your webserver. For example,
 ``--webroot-path /var/www/html`` or
 ``--webroot-path /usr/share/nginx/html`` are two common webroot paths.
-If multiple domains are specified, they must all use the same path.
-Additionally, your server must be configured to serve files from
-hidden directories.
+
+If you're getting a certificate for many domains at once, each domain will use
+the most recent ``--webroot-path``.  So for instance:
+
+``letsencrypt certonly --webroot -w /var/www/example/ -d www.example.com -d example.com -w /var/www/eg -d eg.is -d www.eg.is``
+
+Would obtain a single certificate for all of those names, using the
+``/var/www/example`` webroot directory for the first two, and
+``/var/www/eg`` for the second two.
+
+Note that to use the webroot plugin, your server must be configured to serve
+files from hidden directories.
 
 Manual
 ------
@@ -363,7 +375,7 @@ SSL certificates!
 Beyond the methods discussed here, other methods may be possible, such as
 installing Let's Encrypt directly with pip from PyPI or downloading a ZIP
 archive from GitHub may be technically possible but are not presently
-supported.
+recommended or supported.
 
 
 .. rubric:: Footnotes
