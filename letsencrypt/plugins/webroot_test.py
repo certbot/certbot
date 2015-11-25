@@ -81,6 +81,11 @@ class AuthenticatorTest(unittest.TestCase):
         actual_permissions = stat.S_IMODE(os.stat(self.validation_path).st_mode)
 
         self.assertEqual(parent_permissions, actual_permissions)
+        parent_gid = os.stat(self.path).st_gid
+        parent_uid = os.stat(self.path).st_uid
+
+        self.assertEqual(os.stat(self.validation_path).st_gid, parent_gid)
+        self.assertEqual(os.stat(self.validation_path).st_uid, parent_uid)
 
     def test_perform_cleanup(self):
         responses = self.auth.perform([self.achall])
