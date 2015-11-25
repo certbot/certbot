@@ -100,8 +100,15 @@ to serve all files under specified web root ({0})."""
             try:
                 os.makedirs(self.full_roots[name])
                 # Set permissions as parent directory (GH #1389)
-                filemode = stat.S_IMODE(os.stat(path).st_mode)
+                # We don't use the parameters in makedirs because it
+                # may not always work
+                # https://stackoverflow.com/questions/5231901/permission-problems-when-creating-a-dir-with-os-makedirs-python
+                stat_path = os.stat(path)
+                filemode = stat.S_IMODE(stat_path.st_mode)
                 os.chmod(self.full_roots[name], filemode)
+                # Set owner and group, too
+                os.chown(self.full_roots[name], stat_path.st_uid,
+                          stat_path.st_gid)
 
             except OSError as exception:
                 if exception.errno != errno.EEXIST:
@@ -129,9 +136,11 @@ to serve all files under specified web root ({0})."""
 
         # Set permissions as parent directory (GH #1389)
         parent_path = self.full_roots[achall.domain]
-        filemode = stat.S_IMODE(os.stat(parent_path).st_mode)
+        stat_parent_path = os.stat(parent_path)
+        filemode = stat.S_IMODE(stat_parent_path.st_mode)
         # Remove execution bit (not needed for this file)
         os.chmod(path, filemode & ~stat.S_IEXEC)
+        os.chown(path, stat_parent_path.st_uid, stat_parent_path.st_gid)
 
         return response
 
