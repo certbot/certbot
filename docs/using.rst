@@ -62,8 +62,8 @@ client beta releases on systems that don't have a packaged version.  Debian
 experimental, Arch linux and FreeBSD now have native packages, so on those
 systems you can just install ``letsencrypt`` (and perhaps
 ``letsencrypt-apache``).  If you'd like to run the latest copy from Git, or
-run your own locally modified copy of the client, read the developer docs on
-:doc:`contributing`.  Some `other methods of installation`_ are discussed
+run your own locally modified copy of the client, follow the instructions in
+the :doc:`contributing`.  Some `other methods of installation`_ are discussed
 below.
 
 
@@ -342,9 +342,23 @@ Operating System Packages
 
    sudo pacman -S letsencrypt letsencrypt-apache
 
+**Debian Experimental**
+
+If you run Debian unstable, you can install experimental letsencrypt packages.
+Add the line ``deb http://ftp.us.debian.org/debian/ experimental main`` (or
+the equivalent for your country) to ``/etc/apt/sources.list``, then run
+
+.. code-block:: shell
+
+   sudo apt-get update
+   sudo apt-get -t experimental install letsencrypt python-letsencrypt-apache
+
+If you don't want to use the Apache plugin, you can ommit the
+``python-letsencrypt-apache`` package.
+
 **Other Operating Systems**
 
-Unfortunately, this is an ongoing effort. If you'd like to package
+OS packaging is an ongoing effort. If you'd like to package
 Let's Encrypt client for your distribution of choice please have a
 look at the :doc:`packaging`.
 
