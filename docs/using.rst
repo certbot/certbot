@@ -71,19 +71,26 @@ Plugins
 =======
 
 The Let's Encrypt client supports a number of different "plugins" that can be
-used to obtain and/or install certificates.
+used to obtain and/or install certificates.  Plugins that can obtain a cert
+are called "authenticators" and can be used with the "certonly" command.
+Plugins that can install a cert are called "installers".  Plugins that do both
+can be used with the "letsencrypt run" command, which is the default.
 
-=========== = = ===============================================================
-Plugin      A I Notes
-=========== = = ===============================================================
-apache_     Y Y Automates obtaining and installing a cert with Apache 2.4 on
-                Debian-based distributions with ``libaugeas0`` 1.0+.
-standalone_ Y N Uses a "standalone" webserver to obtain a cert.
-webroot_    Y N Obtains a cert using an already running webserver.
-manual_     Y N Helps you obtain a cert by giving you instructions to perform
-                domain validation yourself.
-nginx_      Y Y Very experimental and not included in letsencrypt-auto_.
-=========== = = ===============================================================
+=========== ==== ==== ===============================================================
+Plugin      Auth Inst Notes
+=========== ==== ==== ===============================================================
+apache_     Y    Y    Automates obtaining and installing a cert with Apache 2.4 on
+                      Debian-based distributions with ``libaugeas0`` 1.0+.
+standalone_ Y    N    Uses a "standalone" webserver to obtain a cert.
+webroot_    Y    N    Obtains a cert by writing to the webroot directory of an
+                      already running webserver.
+manual_     Y    N    Helps you obtain a cert by giving you instructions to perform
+                      domain validation yourself.
+nginx_      Y    Y    Very experimental and not included in letsencrypt-auto_.
+=========== ==== ==== ===============================================================
+
+Future plugins for IMAP servers, SMTP servers, IRC servers, etc, are likely to
+be installers but not authenticators.
 
 Apache
 ------
