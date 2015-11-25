@@ -1,4 +1,5 @@
-"""NginxDVSNI"""
+"""A class that performs TLS-SNI-01 challenges for Nginx"""
+
 import itertools
 import logging
 import os
@@ -13,31 +14,32 @@ from letsencrypt_nginx import nginxparser
 logger = logging.getLogger(__name__)
 
 
-class NginxDvsni(common.TLSSNI01):
-    """Class performs DVSNI challenges within the Nginx configurator.
+class NginxTlsSni01(common.TLSSNI01):
+    """TLS-SNI-01 authenticator for Nginx
 
     :ivar configurator: NginxConfigurator object
     :type configurator: :class:`~nginx.configurator.NginxConfigurator`
 
-    :ivar list achalls: Annotated :class:`~letsencrypt.achallenges.DVSNI`
-        challenges.
+    :ivar list achalls: Annotated
+        class:`~letsencrypt.achallenges.KeyAuthorizationAnnotatedChallenge`
+        challenges
 
     :param list indices: Meant to hold indices of challenges in a
-        larger array. NginxDvsni is capable of solving many challenges
+        larger array. NginxTlsSni01 is capable of solving many challenges
         at once which causes an indexing issue within NginxConfigurator
         who must return all responses in order.  Imagine NginxConfigurator
         maintaining state about where all of the http-01 Challenges,
-        Dvsni Challenges belong in the response array.  This is an optional
-        utility.
+        TLS-SNI-01 Challenges belong in the response array.  This is an
+        optional utility.
 
     :param str challenge_conf: location of the challenge config file
 
     """
 
     def perform(self):
-        """Perform a DVSNI challenge on Nginx.
+        """Perform a challenge on Nginx.
 
-        :returns: list of :class:`letsencrypt.acme.challenges.DVSNIResponse`
+        :returns: list of :class:`letsencrypt.acme.challenges.TLSSNI01Response`
         :rtype: list
 
         """
@@ -84,7 +86,8 @@ class NginxDvsni(common.TLSSNI01):
             :class:`letsencrypt_nginx.obj.Addr` to apply
 
         :raises .MisconfigurationError:
-            Unable to find a suitable HTTP block to include DVSNI hosts.
+            Unable to find a suitable HTTP block in which to include
+            authenticator hosts.
 
         """
         # Add the 'include' statement for the challenges if it doesn't exist
@@ -110,8 +113,8 @@ class NginxDvsni(common.TLSSNI01):
                 break
         if not included:
             raise errors.MisconfigurationError(
-                'LetsEncrypt could not find an HTTP block to include DVSNI '
-                'challenges in %s.' % root)
+                'LetsEncrypt could not find an HTTP block to include '
+                'TLS-SNI-01 challenges in %s.' % root)
 
         config = [self._make_server_block(pair[0], pair[1])
                   for pair in itertools.izip(self.achalls, ll_addrs)]
@@ -123,10 +126,11 @@ class NginxDvsni(common.TLSSNI01):
             nginxparser.dump(config, new_conf)
 
     def _make_server_block(self, achall, addrs):
-        """Creates a server block for a DVSNI challenge.
+        """Creates a server block for a challenge.
 
-        :param achall: Annotated DVSNI challenge.
-        :type achall: :class:`letsencrypt.achallenges.DVSNI`
+        :param achall: Annotated TLS-SNI-01 challenge
+        :type achall:
+            :class:`letsencrypt.achallenges.KeyAuthorizationAnnotatedChallenge`
 
         :param list addrs: addresses of challenged domain
             :class:`list` of type :class:`~nginx.obj.Addr`
@@ -136,7 +140,7 @@ class NginxDvsni(common.TLSSNI01):
 
         """
         document_root = os.path.join(
-            self.configurator.config.work_dir, "dvsni_page")
+            self.configurator.config.work_dir, "tls_sni_01_page")
 
         block = [['listen', str(addr)] for addr in addrs]
 

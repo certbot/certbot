@@ -23,7 +23,7 @@ from letsencrypt.plugins import common
 from letsencrypt_apache import augeas_configurator
 from letsencrypt_apache import constants
 from letsencrypt_apache import display_ops
-from letsencrypt_apache import dvsni
+from letsencrypt_apache import tls_sni_01
 from letsencrypt_apache import obj
 from letsencrypt_apache import parser
 
@@ -1187,15 +1187,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         self._chall_out.update(achalls)
         responses = [None] * len(achalls)
-        apache_dvsni = dvsni.ApacheDvsni(self)
+        chall_doer = tls_sni_01.ApacheTlsSni01(self)
 
         for i, achall in enumerate(achalls):
-            # Currently also have dvsni hold associated index
-            # of the challenge. This helps to put all of the responses back
-            # together when they are all complete.
-            apache_dvsni.add_chall(achall, i)
+            # Currently also have chall_doer hold associated index of the
+            # challenge. This helps to put all of the responses back together
+            # when they are all complete.
+            chall_doer.add_chall(achall, i)
 
-        sni_response = apache_dvsni.perform()
+        sni_response = chall_doer.perform()
         if sni_response:
             # Must reload in order to activate the challenges.
             # Handled here because we may be able to load up other challenge
@@ -1210,7 +1210,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # place in the responses return value. All responses must be in the
             # same order as the original challenges.
             for i, resp in enumerate(sni_response):
-                responses[apache_dvsni.indices[i]] = resp
+                responses[chall_doer.indices[i]] = resp
 
         return responses
 

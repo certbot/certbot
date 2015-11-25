@@ -1,4 +1,4 @@
-"""Test for letsencrypt_apache.dvsni."""
+"""Test for letsencrypt_apache.tls_sni_01."""
 import unittest
 import shutil
 
@@ -10,21 +10,21 @@ from letsencrypt_apache import obj
 from letsencrypt_apache.tests import util
 
 
-class DvsniPerformTest(util.ApacheTest):
-    """Test the ApacheDVSNI challenge."""
+class TlsSniPerformTest(util.ApacheTest):
+    """Test the ApacheTlsSni01 challenge."""
 
     auth_key = common_test.TLSSNI01Test.auth_key
     achalls = common_test.TLSSNI01Test.achalls
 
     def setUp(self):  # pylint: disable=arguments-differ
-        super(DvsniPerformTest, self).setUp()
+        super(TlsSniPerformTest, self).setUp()
 
         config = util.get_apache_configurator(
             self.config_path, self.config_dir, self.work_dir)
         config.config.tls_sni_01_port = 443
 
-        from letsencrypt_apache import dvsni
-        self.sni = dvsni.ApacheDvsni(config)
+        from letsencrypt_apache import tls_sni_01
+        self.sni = tls_sni_01.ApacheTlsSni01(config)
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -121,7 +121,7 @@ class DvsniPerformTest(util.ApacheTest):
             names = vhost.get_names()
             self.assertTrue(names in z_domains)
 
-    def test_get_dvsni_addrs_default(self):
+    def test_get_addrs_default(self):
         self.sni.configurator.choose_vhost = mock.Mock(
             return_value=obj.VirtualHost(
                 "path", "aug_path", set([obj.Addr.fromstring("_default_:443")]),
@@ -130,7 +130,7 @@ class DvsniPerformTest(util.ApacheTest):
 
         self.assertEqual(
             set([obj.Addr.fromstring("*:443")]),
-            self.sni.get_dvsni_addrs(self.achalls[0]))
+            self.sni._get_addrs(self.achalls[0]))  # pylint: disable=protected-access
 
 
 if __name__ == "__main__":
