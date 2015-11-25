@@ -1,4 +1,4 @@
-"""A TLS-SNI-01 authenticator for Nginx"""
+"""A class that performs TLS-SNI-01 challenges for Nginx"""
 
 import itertools
 import logging

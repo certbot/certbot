@@ -1,4 +1,4 @@
-"""A TLS-SNI-01 authenticator for Apache"""
+"""A class that performs TLS-SNI-01 challenges for Apache"""
 
 import os
 

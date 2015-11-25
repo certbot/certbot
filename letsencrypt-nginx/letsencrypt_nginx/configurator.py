@@ -574,15 +574,15 @@ class NginxConfigurator(common.Plugin):
         """
         self._chall_out += len(achalls)
         responses = [None] * len(achalls)
-        authenticator = tls_sni_01.NginxTlsSni01(self)
+        chall_doer = tls_sni_01.NginxTlsSni01(self)
 
         for i, achall in enumerate(achalls):
-            # Currently also have authenticator hold associated index
-            # of the challenge. This helps to put all of the responses back
-            # together when they are all complete.
-            authenticator.add_chall(achall, i)
+            # Currently also have chall_doer hold associated index of the
+            # challenge. This helps to put all of the responses back together
+            # when they are all complete.
+            chall_doer.add_chall(achall, i)
 
-        sni_response = authenticator.perform()
+        sni_response = chall_doer.perform()
         # Must restart in order to activate the challenges.
         # Handled here because we may be able to load up other challenge types
         self.restart()
@@ -591,7 +591,7 @@ class NginxConfigurator(common.Plugin):
         # in the responses return value. All responses must be in the same order
         # as the original challenges.
         for i, resp in enumerate(sni_response):
-            responses[authenticator.indices[i]] = resp
+            responses[chall_doer.indices[i]] = resp
 
         return responses
 
