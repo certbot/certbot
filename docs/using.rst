@@ -28,13 +28,8 @@ Firstly, please `install Git`_ and run the following commands:
    git clone https://github.com/letsencrypt/letsencrypt
    cd letsencrypt
 
-.. warning:: Alternatively you could `download the ZIP archive`_ and
-   extract the snapshot of our repository, but it's strongly
-   recommended to use the above method instead.
 
 .. _`install Git`: https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
-.. _`download the ZIP archive`:
-   https://github.com/letsencrypt/letsencrypt/archive/master.zip
 
 To install and run the client you just need to type:
 
@@ -61,84 +56,15 @@ or for full help, type:
 
   ./letsencrypt-auto --help all
 
-Running with Docker
--------------------
 
-Docker_ is an amazingly simple and quick way to obtain a
-certificate. However, this mode of operation is unable to install
-certificates or configure your webserver, because our installer
-plugins cannot reach it from inside the Docker container.
-
-You should definitely read the :ref:`where-certs` section, in order to
-know how to manage the certs
-manually. https://github.com/letsencrypt/letsencrypt/wiki/Ciphersuite-guidance
-provides some information about recommended ciphersuites. If none of
-these make much sense to you, you should definitely use the
-letsencrypt-auto_ method, which enables you to use installer plugins
-that cover both of those hard topics.
-
-If you're still not convinced and have decided to use this method,
-from the server that the domain you're requesting a cert for resolves
-to, `install Docker`_, then issue the following command:
-
-.. code-block:: shell
-
-   sudo docker run -it --rm -p 443:443 -p 80:80 --name letsencrypt \
-               -v "/etc/letsencrypt:/etc/letsencrypt" \
-               -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
-               quay.io/letsencrypt/letsencrypt:latest auth
-
-and follow the instructions (note that ``auth`` command is explicitly
-used - no installer plugins involved). Your new cert will be available
-in ``/etc/letsencrypt/live`` on the host.
-
-.. _Docker: https://docker.com
-.. _`install Docker`: https://docs.docker.com/userguide/
-
-
-Operating System Packages
---------------------------
-
-**FreeBSD**
-
-  * Port: ``cd /usr/ports/security/py-letsencrypt && make install clean``
-  * Package: ``pkg install py27-letsencrypt``
-
-**Arch Linux**
-
-.. code-block:: shell
-
-   sudo pacman -S letsencrypt letsencrypt-apache
-
-**Other Operating Systems**
-
-Unfortunately, this is an ongoing effort. If you'd like to package
-Let's Encrypt client for your distribution of choice please have a
-look at the :doc:`packaging`.
-
-
-From source
------------
-
-Installation from source is only supported for developers and the
-whole process is described in the :doc:`contributing`.
-
-.. warning:: Please do **not** use ``python setup.py install`` or
-   ``python pip install .``. Please do **not** attempt the
-   installation commands as superuser/root and/or without virtual
-   environment, e.g. ``sudo python setup.py install``, ``sudo pip
-   install``, ``sudo ./venv/bin/...``. These modes of operation might
-   corrupt your operating system and are **not supported** by the
-   Let's Encrypt team!
-
-
-Comparison of different methods
--------------------------------
-
-Unless you have a very specific requirements, we kindly ask you to use
-the letsencrypt-auto_ method. It's the fastest, the most thoroughly
-tested and the most reliable way of getting our software and the free
-SSL certificates!
+``letsencrypt-auto`` is the recommended method of running the Let's Encrypt
+client beta releases on systems that don't have a packaged version.  Debian
+experimental, Arch linux and FreeBSD now have native packages, so on those
+systems you can just install ``letsencrypt`` (and perhaps
+``letsencrypt-apache``).  If you'd like to run the latest copy from Git, or
+run your own locally modified copy of the client, read the developer docs on
+:doc:`contributing`.  Some `other methods of installation`_ are discussed
+below.
 
 
 Plugins
@@ -351,6 +277,93 @@ give us us as much information as possible:
 - copy and paste ``letsencrypt --version`` output
 - your operating system, including specific version
 - specify which installation_ method you've chosen
+
+Other methods of installation
+=============================
+
+Running with Docker
+-------------------
+
+Docker_ is an amazingly simple and quick way to obtain a
+certificate. However, this mode of operation is unable to install
+certificates or configure your webserver, because our installer
+plugins cannot reach it from inside the Docker container.
+
+You should definitely read the :ref:`where-certs` section, in order to
+know how to manage the certs
+manually. https://github.com/letsencrypt/letsencrypt/wiki/Ciphersuite-guidance
+provides some information about recommended ciphersuites. If none of
+these make much sense to you, you should definitely use the
+letsencrypt-auto_ method, which enables you to use installer plugins
+that cover both of those hard topics.
+
+If you're still not convinced and have decided to use this method,
+from the server that the domain you're requesting a cert for resolves
+to, `install Docker`_, then issue the following command:
+
+.. code-block:: shell
+
+   sudo docker run -it --rm -p 443:443 -p 80:80 --name letsencrypt \
+               -v "/etc/letsencrypt:/etc/letsencrypt" \
+               -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+               quay.io/letsencrypt/letsencrypt:latest auth
+
+and follow the instructions (note that ``auth`` command is explicitly
+used - no installer plugins involved). Your new cert will be available
+in ``/etc/letsencrypt/live`` on the host.
+
+.. _Docker: https://docker.com
+.. _`install Docker`: https://docs.docker.com/userguide/
+
+
+Operating System Packages
+--------------------------
+
+**FreeBSD**
+
+  * Port: ``cd /usr/ports/security/py-letsencrypt && make install clean``
+  * Package: ``pkg install py27-letsencrypt``
+
+**Arch Linux**
+
+.. code-block:: shell
+
+   sudo pacman -S letsencrypt letsencrypt-apache
+
+**Other Operating Systems**
+
+Unfortunately, this is an ongoing effort. If you'd like to package
+Let's Encrypt client for your distribution of choice please have a
+look at the :doc:`packaging`.
+
+
+From source
+-----------
+
+Installation from source is only supported for developers and the
+whole process is described in the :doc:`contributing`.
+
+.. warning:: Please do **not** use ``python setup.py install`` or
+   ``python pip install .``. Please do **not** attempt the
+   installation commands as superuser/root and/or without virtual
+   environment, e.g. ``sudo python setup.py install``, ``sudo pip
+   install``, ``sudo ./venv/bin/...``. These modes of operation might
+   corrupt your operating system and are **not supported** by the
+   Let's Encrypt team!
+
+
+Comparison of different methods
+-------------------------------
+
+Unless you have a very specific requirements, we kindly ask you to use
+the letsencrypt-auto_ method. It's the fastest, the most thoroughly
+tested and the most reliable way of getting our software and the free
+SSL certificates!
+
+Beyond the methods discussed here, other methods may be possible, such as
+installing Let's Encrypt directly with pip from PyPI or downloading a ZIP
+archive from GitHub may be technically possible but are not presently
+supported.
 
 
 .. rubric:: Footnotes
