@@ -66,6 +66,10 @@ class PluginError(Error):
     """Let's Encrypt Plugin error."""
 
 
+class PluginEnhancementAlreadyPresent(Error):
+    """ Enhancement was already set """
+
+
 class PluginSelectionError(Error):
     """A problem with plugin/configurator selection or setup"""
 

@@ -20,6 +20,15 @@ KEY = test_util.load_vector("rsa512_key.pem")
 CSR_SAN = test_util.load_vector("csr-san.der")
 
 
+class ConfigHelper(object):
+    """Creates a dummy object to imitate a namespace object
+
+        Example: cfg = ConfigHelper(redirect=True, hsts=False, uir=False)
+        will result in: cfg.redirect=True, cfg.hsts=False, etc.
+    """
+    def __init__(self, **kwds):
+        self.__dict__.update(kwds)
+
 class RegisterTest(unittest.TestCase):
     """Tests for letsencrypt.client.register."""
 
@@ -224,21 +233,50 @@ class ClientTest(unittest.TestCase):
 
     @mock.patch("letsencrypt.client.enhancements")
     def test_enhance_config(self, mock_enhancements):
+        config = ConfigHelper(redirect=True, hsts=False, uir=False)
         self.assertRaises(errors.Error,
-                          self.client.enhance_config, ["foo.bar"])
+                          self.client.enhance_config, ["foo.bar"], config)
 
         mock_enhancements.ask.return_value = True
         installer = mock.MagicMock()
         self.client.installer = installer
 
-        self.client.enhance_config(["foo.bar"])
-        installer.enhance.assert_called_once_with("foo.bar", "redirect")
+        self.client.enhance_config(["foo.bar"], config)
+        installer.enhance.assert_called_once_with("foo.bar", "redirect", None)
         self.assertEqual(installer.save.call_count, 1)
         installer.restart.assert_called_once_with()
 
-    def test_enhance_config_no_installer(self):
+    @mock.patch("letsencrypt.client.enhancements")
+    def test_enhance_config_no_ask(self, mock_enhancements):
+        config = ConfigHelper(redirect=True, hsts=False, uir=False)
         self.assertRaises(errors.Error,
-                          self.client.enhance_config, ["foo.bar"])
+                          self.client.enhance_config, ["foo.bar"], config)
+
+        mock_enhancements.ask.return_value = True
+        installer = mock.MagicMock()
+        self.client.installer = installer
+
+        config = ConfigHelper(redirect=True, hsts=False, uir=False)
+        self.client.enhance_config(["foo.bar"], config)
+        installer.enhance.assert_called_with("foo.bar", "redirect", None)
+
+        config = ConfigHelper(redirect=False, hsts=True, uir=False)
+        self.client.enhance_config(["foo.bar"], config)
+        installer.enhance.assert_called_with("foo.bar", "ensure-http-header",
+                "Strict-Transport-Security")
+
+        config = ConfigHelper(redirect=False, hsts=False, uir=True)
+        self.client.enhance_config(["foo.bar"], config)
+        installer.enhance.assert_called_with("foo.bar", "ensure-http-header",
+                "Upgrade-Insecure-Requests")
+
+        self.assertEqual(installer.save.call_count, 3)
+        self.assertEqual(installer.restart.call_count, 3)
+
+    def test_enhance_config_no_installer(self):
+        config = ConfigHelper(redirect=True, hsts=False, uir=False)
+        self.assertRaises(errors.Error,
+                          self.client.enhance_config, ["foo.bar"], config)
 
     @mock.patch("letsencrypt.client.zope.component.getUtility")
     @mock.patch("letsencrypt.client.enhancements")
@@ -249,8 +287,10 @@ class ClientTest(unittest.TestCase):
         self.client.installer = installer
         installer.enhance.side_effect = errors.PluginError
 
+        config = ConfigHelper(redirect=True, hsts=False, uir=False)
+
         self.assertRaises(errors.PluginError,
-                          self.client.enhance_config, ["foo.bar"], True)
+                          self.client.enhance_config, ["foo.bar"], config)
         installer.recovery_routine.assert_called_once_with()
         self.assertEqual(mock_get_utility().add_message.call_count, 1)
 
@@ -263,8 +303,10 @@ class ClientTest(unittest.TestCase):
         self.client.installer = installer
         installer.save.side_effect = errors.PluginError
 
+        config = ConfigHelper(redirect=True, hsts=False, uir=False)
+
         self.assertRaises(errors.PluginError,
-                          self.client.enhance_config, ["foo.bar"], True)
+                          self.client.enhance_config, ["foo.bar"], config)
         installer.recovery_routine.assert_called_once_with()
         self.assertEqual(mock_get_utility().add_message.call_count, 1)
 
@@ -277,8 +319,11 @@ class ClientTest(unittest.TestCase):
         self.client.installer = installer
         installer.restart.side_effect = [errors.PluginError, None]
 
+        config = ConfigHelper(redirect=True, hsts=False, uir=False)
+
         self.assertRaises(errors.PluginError,
-                          self.client.enhance_config, ["foo.bar"], True)
+                          self.client.enhance_config, ["foo.bar"], config)
+
         self.assertEqual(mock_get_utility().add_message.call_count, 1)
         installer.rollback_checkpoints.assert_called_once_with()
         self.assertEqual(installer.restart.call_count, 2)
@@ -293,8 +338,10 @@ class ClientTest(unittest.TestCase):
         installer.restart.side_effect = errors.PluginError
         installer.rollback_checkpoints.side_effect = errors.ReverterError
 
+        config = ConfigHelper(redirect=True, hsts=False, uir=False)
+
         self.assertRaises(errors.PluginError,
-                          self.client.enhance_config, ["foo.bar"], True)
+                          self.client.enhance_config, ["foo.bar"], config)
         self.assertEqual(mock_get_utility().add_message.call_count, 1)
         installer.rollback_checkpoints.assert_called_once_with()
         self.assertEqual(installer.restart.call_count, 1)

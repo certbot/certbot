@@ -122,7 +122,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.parser = None
         self.version = version
         self.vhosts = None
-        self._enhance_func = {"redirect": self._enable_redirect}
+        self._enhance_func = {"redirect": self._enable_redirect,
+                "ensure-http-header": self._set_http_header}
 
     @property
     def mod_ssl_conf(self):
@@ -739,7 +740,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     ############################################################################
     def supported_enhancements(self):  # pylint: disable=no-self-use
         """Returns currently supported enhancements."""
-        return ["redirect"]
+        return ["redirect", "ensure-http-header"]
 
     def enhance(self, domain, enhancement, options=None):
         """Enhance configuration.
@@ -765,6 +766,73 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         except errors.PluginError:
             logger.warn("Failed %s for %s", enhancement, domain)
             raise
+
+    def _set_http_header(self, ssl_vhost, header_substring):
+        """Enables header that is identified by header_substring on ssl_vhost.
+
+        If the header identified by header_substring is not already set,
+        a new Header directive is placed in ssl_vhost's configuration with
+        arguments from: constants.HTTP_HEADER[header_substring]
+
+        .. note:: This function saves the configuration
+
+        :param ssl_vhost: Destination of traffic, an ssl enabled vhost
+        :type ssl_vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
+
+        :param header_substring: string that uniquely identifies a header.
+                e.g: Strict-Transport-Security, Upgrade-Insecure-Requests.
+        :type str
+
+        :returns: Success, general_vhost (HTTP vhost)
+        :rtype: (bool, :class:`~letsencrypt_apache.obj.VirtualHost`)
+
+        :raises .errors.PluginError: If no viable HTTP host can be created or
+            set with header header_substring.
+
+        """
+        if "headers_module" not in self.parser.modules:
+            self.enable_mod("headers")
+
+        # Check if selected header is already set
+        self._verify_no_matching_http_header(ssl_vhost, header_substring)
+
+        # Add directives to server
+        self.parser.add_dir(ssl_vhost.path, "Header",
+                constants.HEADER_ARGS[header_substring])
+
+        self.save_notes += ("Adding %s header to ssl vhost in %s\n" %
+                (header_substring, ssl_vhost.filep))
+
+        self.save()
+        logger.info("Adding %s header to ssl vhost in %s", header_substring,
+                ssl_vhost.filep)
+
+    def _verify_no_matching_http_header(self, ssl_vhost, header_substring):
+        """Checks to see if an there is an existing Header directive that
+        contains the string header_substring.
+
+        :param ssl_vhost: vhost to check
+        :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
+
+        :param header_substring: string that uniquely identifies a header.
+                e.g: Strict-Transport-Security, Upgrade-Insecure-Requests.
+        :type str
+
+        :returns: boolean
+        :rtype: (bool)
+
+        :raises errors.PluginEnhancementAlreadyPresent When header
+                header_substring exists
+
+        """
+        header_path = self.parser.find_dir("Header", None, start=ssl_vhost.path)
+        if header_path:
+            # "Existing Header directive for virtualhost"
+            pat = '(?:[ "]|^)(%s)(?:[ "]|$)' % (header_substring.lower())
+            for match in header_path:
+                if re.search(pat, self.aug.get(match).lower()):
+                    raise errors.PluginEnhancementAlreadyPresent(
+                            "Existing %s header" % (header_substring))
 
     def _enable_redirect(self, ssl_vhost, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
@@ -835,8 +903,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param vhost: vhost to check
         :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
 
-        :raises errors.PluginError: When another redirection exists
+        :raises errors.PluginEnhancementAlreadyPresent: When the exact
+                letsencrypt redirection WriteRule exists in virtual host.
 
+                errors.PluginError: When there exists directives that may hint
+                other redirection. (TODO: We should not throw a PluginError,
+                    but that's for an other PR.)
         """
         rewrite_path = self.parser.find_dir(
             "RewriteRule", None, start=vhost.path)
@@ -853,7 +925,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     rewrite_path, constants.REWRITE_HTTPS_ARGS):
                 if self.aug.get(match) != arg:
                     raise errors.PluginError("Unknown Existing RewriteRule")
-            raise errors.PluginError(
+
+            raise errors.PluginEnhancementAlreadyPresent(
                 "Let's Encrypt has already enabled redirection")
 
     def _create_redirect_vhost(self, ssl_vhost):

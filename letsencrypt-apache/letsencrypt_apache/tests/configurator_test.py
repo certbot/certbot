@@ -632,6 +632,84 @@ class TwoVhost80Test(util.ApacheTest):
 
     @mock.patch("letsencrypt.le_util.run_script")
     @mock.patch("letsencrypt.le_util.exe_exists")
+    def test_http_header_hsts(self, mock_exe, _):
+        self.config.parser.update_runtime_variables = mock.Mock()
+        self.config.parser.modules.add("mod_ssl.c")
+        mock_exe.return_value = True
+
+        # This will create an ssl vhost for letsencrypt.demo
+        self.config.enhance("letsencrypt.demo", "ensure-http-header",
+                "Strict-Transport-Security")
+
+        self.assertTrue("headers_module" in self.config.parser.modules)
+
+        # Get the ssl vhost for letsencrypt.demo
+        ssl_vhost = self.config.assoc["letsencrypt.demo"]
+
+        # These are not immediately available in find_dir even with save() and
+        # load(). They must be found in sites-available
+        hsts_header = self.config.parser.find_dir(
+                "Header", None, ssl_vhost.path)
+
+        # four args to HSTS header
+        self.assertEqual(len(hsts_header), 4)
+
+    def test_http_header_hsts_twice(self):
+        self.config.parser.modules.add("mod_ssl.c")
+        # skip the enable mod
+        self.config.parser.modules.add("headers_module")
+
+        # This will create an ssl vhost for letsencrypt.demo
+        self.config.enhance("encryption-example.demo", "ensure-http-header",
+                "Strict-Transport-Security")
+
+        self.assertRaises(
+            errors.PluginEnhancementAlreadyPresent,
+            self.config.enhance, "encryption-example.demo", "ensure-http-header",
+            "Strict-Transport-Security")
+
+    @mock.patch("letsencrypt.le_util.run_script")
+    @mock.patch("letsencrypt.le_util.exe_exists")
+    def test_http_header_uir(self, mock_exe, _):
+        self.config.parser.update_runtime_variables = mock.Mock()
+        self.config.parser.modules.add("mod_ssl.c")
+        mock_exe.return_value = True
+
+        # This will create an ssl vhost for letsencrypt.demo
+        self.config.enhance("letsencrypt.demo", "ensure-http-header",
+                "Upgrade-Insecure-Requests")
+
+        self.assertTrue("headers_module" in self.config.parser.modules)
+
+        # Get the ssl vhost for letsencrypt.demo
+        ssl_vhost = self.config.assoc["letsencrypt.demo"]
+
+        # These are not immediately available in find_dir even with save() and
+        # load(). They must be found in sites-available
+        uir_header = self.config.parser.find_dir(
+                "Header", None, ssl_vhost.path)
+
+        # four args to HSTS header
+        self.assertEqual(len(uir_header), 4)
+
+    def test_http_header_uir_twice(self):
+        self.config.parser.modules.add("mod_ssl.c")
+        # skip the enable mod
+        self.config.parser.modules.add("headers_module")
+
+        # This will create an ssl vhost for letsencrypt.demo
+        self.config.enhance("encryption-example.demo", "ensure-http-header",
+                "Upgrade-Insecure-Requests")
+
+        self.assertRaises(
+            errors.PluginEnhancementAlreadyPresent,
+            self.config.enhance, "encryption-example.demo", "ensure-http-header",
+            "Upgrade-Insecure-Requests")
+
+
+
+    @mock.patch("letsencrypt.le_util.run_script")
+    @mock.patch("letsencrypt.le_util.exe_exists")
     def test_redirect_well_formed_http(self, mock_exe, _):
         self.config.parser.update_runtime_variables = mock.Mock()
         mock_exe.return_value = True
@@ -670,7 +748,7 @@ class TwoVhost80Test(util.ApacheTest):
         self.config.parser.modules.add("rewrite_module")
         self.config.enhance("encryption-example.demo", "redirect")
         self.assertRaises(
-            errors.PluginError,
+            errors.PluginEnhancementAlreadyPresent,
             self.config.enhance, "encryption-example.demo", "redirect")
 
     def test_unknown_rewrite(self):
