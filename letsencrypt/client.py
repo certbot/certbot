@@ -383,57 +383,86 @@ class Client(object):
         with error_handler.ErrorHandler(self._rollback_and_restart, msg):
             # sites may have been enabled / final cleanup
             self.installer.restart()
-
-    def enhance_config(self, domains, redirect=None):
+    def enhance_config(self, domains, config):
         """Enhance the configuration.
-
-        .. todo:: This needs to handle the specific enhancements offered by the
-            installer. We will also have to find a method to pass in the chosen
-            values efficiently.
 
         :param list domains: list of domains to configure
 
-        :param redirect: If traffic should be forwarded from HTTP to HTTPS.
-        :type redirect: bool or None
+        :ivar config: Namespace typically produced by
+            :meth:`argparse.ArgumentParser.parse_args`.
+            it must have the redirect, hsts and uir attributes.
+        :type namespace: :class:`argparse.Namespace`
 
         :raises .errors.Error: if no installer is specified in the
             client.
 
         """
+
         if self.installer is None:
             logger.warning("No installer is specified, there isn't any "
                            "configuration to enhance.")
             raise errors.Error("No installer available")
 
+        if config is None:
+            logger.warning("No config is specified.")
+            raise errors.Error("No config available")
+
+        redirect = config.redirect
+        hsts = config.hsts
+        uir = config.uir # Upgrade Insecure Requests
+
         if redirect is None:
             redirect = enhancements.ask("redirect")
 
-        # When support for more enhancements are added, the call to the
-        # plugin's `enhance` function should be wrapped by an ErrorHandler
         if redirect:
-            self.redirect_to_ssl(domains)
+            self.apply_enhancement(domains, "redirect")
 
-    def redirect_to_ssl(self, domains):
-        """Redirect all traffic from HTTP to HTTPS
+        if hsts:
+            self.apply_enhancement(domains, "ensure-http-header",
+                    "Strict-Transport-Security")
+        if uir:
+            self.apply_enhancement(domains, "ensure-http-header",
+                    "Upgrade-Insecure-Requests")
 
-        :param vhost: list of ssl_vhosts
-        :type vhost: :class:`letsencrypt.interfaces.IInstaller`
+        msg = ("We were unable to restart web server")
+        if redirect or hsts or uir:
+            with error_handler.ErrorHandler(self._rollback_and_restart, msg):
+                self.installer.restart()
+
+    def apply_enhancement(self, domains, enhancement, options=None):
+        """Applies an enhacement on all domains.
+
+        :param domains: list of ssl_vhosts
+        :type list of str
+
+        :param enhancement: name of enhancement, e.g. ensure-http-header
+        :type str
+
+        .. note:: when more options are need make options a list.
+        :param options: options to enhancement, e.g. Strict-Transport-Security
+        :type str
+
+        :raises .errors.PluginError: If Enhancement is not supported, or if
+            there is any other problem with the enhancement.
+
 
         """
-        msg = ("We were unable to set up a redirect for your server, "
-               "however, we successfully installed your certificate.")
+        msg = ("We were unable to set up enhancement %s for your server, "
+               "however, we successfully installed your certificate."
+               % (enhancement))
         with error_handler.ErrorHandler(self._recovery_routine_with_msg, msg):
             for dom in domains:
                 try:
-                    self.installer.enhance(dom, "redirect")
+                    self.installer.enhance(dom, enhancement, options)
+                except errors.PluginEnhancementAlreadyPresent:
+                    logger.warn("Enhancement %s was already set.",
+                            enhancement)
                 except errors.PluginError:
-                    logger.warn("Unable to perform redirect for %s", dom)
+                    logger.warn("Unable to set enhancement %s for %s",
+                            enhancement, dom)
                     raise
 
-            self.installer.save("Add Redirects")
-
-        with error_handler.ErrorHandler(self._rollback_and_restart, msg):
-            self.installer.restart()
+            self.installer.save("Add enhancement %s" % (enhancement))
 
     def _recovery_routine_with_msg(self, success_msg):
         """Calls the installer's recovery routine and prints success_msg
