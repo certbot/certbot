@@ -47,6 +47,11 @@ server automatically!::
 
   user@www:~$ sudo letsencrypt -d www.example.org run
 
+Let's Encrypt supports Python 2.6 and 2.7 only. Check
+Python_'s website for instructions on how to install Python on your
+computer.
+
+.. _Python: https://wiki.python.org/moin/BeginnersGuide/Download
 
 **Encrypt ALL the things!**
 
