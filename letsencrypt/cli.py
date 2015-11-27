@@ -853,7 +853,7 @@ def prepare_and_parse_args(plugins, args):
              "lose access to your account. You will also be unable to receive "
              "notice about impending expiration of revocation of your "
              "certificates. Updates to the Subscriber Agreement will still "
-             "affect you, and will be effective N days after posting an "
+             "affect you, and will be effective 14 days after posting an "
              "update to the web site.")
     helpful.add(None, "-m", "--email", help=config_help("email"))
     # positional arg shadows --domains, instead of appending, and
