@@ -1151,8 +1151,14 @@ def _handle_exception(exc_type, exc_value, trace, args):
             # Tell the user a bit about what happened, without overwhelming
             # them with a full traceback
             err = traceback.format_exception_only(exc_type, exc_value)[0]
-            # prune ACME error code, we have a human description
-            _code, _sep, err = err.partition(":: ")
+            # Typical error from the ACME module:
+            # acme.messages.Error: urn:acme:error:malformed :: The request message was
+            # malformed :: Error creating new registration :: Validation of contact
+            # mailto:none@longrandomstring.biz failed: Server failure at resolver
+            if ("urn:acme" in err and ":: " in err
+                and args.verbose_count <= flag_default("verbose_count")):
+                # prune ACME error code, we have a human description
+                _code, _sep, err = err.partition(":: ")
             msg = "An unexpected error occurred:\n" + err + "Please see the "
             if args is None:
                 msg += "logfile '{0}' for more details.".format(logfile)
