@@ -18,41 +18,30 @@ class ErrorTest(unittest.TestCase):
 
     def setUp(self):
         from acme.messages import Error
-        self.error = Error(detail='foo', typ='malformed', title='title')
-        self.jobj = {'detail': 'foo', 'title': 'some title'}
-
-    def test_typ_prefix(self):
-        self.assertEqual('malformed', self.error.typ)
-        self.assertEqual(
-            'urn:acme:error:malformed', self.error.to_partial_json()['type'])
-        self.assertEqual(
-            'malformed', self.error.from_json(self.error.to_partial_json()).typ)
-
-    def test_typ_decoder_missing_prefix(self):
-        from acme.messages import Error
-        self.jobj['type'] = 'malformed'
-        self.assertRaises(jose.DeserializationError, Error.from_json, self.jobj)
-        self.jobj['type'] = 'not valid bare type'
-        self.assertRaises(jose.DeserializationError, Error.from_json, self.jobj)
-
-    def test_typ_decoder_not_recognized(self):
-        from acme.messages import Error
-        self.jobj['type'] = 'urn:acme:error:baz'
-        self.assertRaises(jose.DeserializationError, Error.from_json, self.jobj)
-
-    def test_description(self):
-        self.assertEqual(
-            'The request message was malformed', self.error.description)
+        self.error = Error(
+            detail='foo', typ='urn:acme:error:malformed', title='title')
+        self.jobj = {
+            'detail': 'foo',
+            'title': 'some title',
+            'type': 'urn:acme:error:malformed',
+        }
+        self.error_custom = Error(typ='custom', detail='bar')
+        self.jobj_cusom = {'type': 'custom', 'detail': 'bar'}
 
     def test_from_json_hashable(self):
         from acme.messages import Error
         hash(Error.from_json(self.error.to_json()))
 
+    def test_description(self):
+        self.assertEqual(
+            'The request message was malformed', self.error.description)
+        self.assertTrue(self.error_custom.description is None)
+
     def test_str(self):
         self.assertEqual(
-            'malformed :: The request message was malformed :: foo',
-            str(self.error))
-        self.assertEqual('foo', str(self.error.update(typ=None)))
+            'urn:acme:error:malformed :: The request message was '
+            'malformed :: foo :: title', str(self.error))
+        self.assertEqual('custom :: bar', str(self.error_custom))
 
 
 class ConstantTest(unittest.TestCase):
@@ -232,7 +221,7 @@ class ChallengeBodyTest(unittest.TestCase):
         from acme.messages import Error
         from acme.messages import STATUS_INVALID
         self.status = STATUS_INVALID
-        error = Error(typ='serverInternal',
+        error = Error(typ='urn:acme:error:serverInternal',
                       detail='Unable to communicate with DNS server')
         self.challb = ChallengeBody(
             uri='http://challb', chall=self.chall, status=self.status,
