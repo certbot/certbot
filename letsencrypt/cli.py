@@ -1151,6 +1151,7 @@ def _handle_exception(exc_type, exc_value, trace, args):
             # Tell the user a bit about what happened, without overwhelming
             # them with a full traceback
             err = traceback.format_exception_only(exc_type, exc_value)[0]
+            # prune ACME error code, we have a human description
             _code, _sep, err = err.partition(":: ")
             msg = "An unexpected error occurred:\n" + err + "Please see the "
             if args is None:
