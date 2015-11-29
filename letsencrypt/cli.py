@@ -1148,6 +1148,7 @@ def _handle_exception(exc_type, exc_value, trace, args):
         if issubclass(exc_type, errors.Error):
             sys.exit(exc_value)
         else:
+            # Here we're passing a client or ACME error out to the client at the shell
             # Tell the user a bit about what happened, without overwhelming
             # them with a full traceback
             err = traceback.format_exception_only(exc_type, exc_value)[0]

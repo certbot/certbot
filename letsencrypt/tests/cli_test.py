@@ -450,9 +450,14 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     @mock.patch('letsencrypt.cli.sys')
     def test_handle_exception(self, mock_sys):
         # pylint: disable=protected-access
+        from acme import messages
+
+        args = mock.MagicMock()
         mock_open = mock.mock_open()
+
         with mock.patch('letsencrypt.cli.open', mock_open, create=True):
             exception = Exception('detail')
+            args.verbose_count = 1
             cli._handle_exception(
                 Exception, exc_value=exception, trace=None, args=None)
             mock_open().write.assert_called_once_with(''.join(
@@ -469,11 +474,23 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mock_sys.exit.assert_any_call(''.join(
                 traceback.format_exception_only(errors.Error, error)))
 
-        args = mock.MagicMock(debug=False)
+        exception = messages.Error(detail='alpha', typ='urn:acme:error:triffid',
+                                   title='beta')
+        args = mock.MagicMock(debug=False, verbose_count=-3)
         cli._handle_exception(
-            Exception, exc_value=Exception('detail'), trace=None, args=args)
+            messages.Error, exc_value=exception, trace=None, args=args)
         error_msg = mock_sys.exit.call_args_list[-1][0][0]
         self.assertTrue('unexpected error' in error_msg)
+        self.assertTrue('acme:error' not in error_msg)
+        self.assertTrue('alpha' in error_msg)
+        self.assertTrue('beta' in error_msg)
+        args = mock.MagicMock(debug=False, verbose_count=1)
+        cli._handle_exception(
+            messages.Error, exc_value=exception, trace=None, args=args)
+        error_msg = mock_sys.exit.call_args_list[-1][0][0]
+        self.assertTrue('unexpected error' in error_msg)
+        self.assertTrue('acme:error' in error_msg)
+        self.assertTrue('alpha' in error_msg)
 
         interrupt = KeyboardInterrupt('detail')
         cli._handle_exception(
