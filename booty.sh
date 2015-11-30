@@ -47,7 +47,7 @@ I2OU8tPRzqKdQ6AwS9wvqscCAwEAAQ==
 """  # TODO: Replace with real one.
 
 
-class HumanException(Exception):
+class ExpectedError(Exception):
     """A novice-readable exception that also carries the original exception for
     debugging"""
 
@@ -66,13 +66,13 @@ class HttpsGetter(object):
     def get(self, url):
         """Return the document contents pointed to by an HTTPS URL.
 
-        If something goes wrong (404, timeout, etc.), raise HumanException.
+        If something goes wrong (404, timeout, etc.), raise ExpectedError.
 
         """
         try:
             return self._opener.open(url).read()
         except (HTTPError, IOError) as exc:
-            raise HumanException("Couldn't download %s." % url, exc)
+            raise ExpectedError("Couldn't download %s." % url, exc)
 
 
 class TempDir(object):
@@ -100,7 +100,7 @@ def verified_new_le_auto(get, tag, temp):
     """Return the path to a verified, up-to-date letsencrypt-auto script.
 
     If the download's signature does not verify or something else goes wrong,
-    raise HumanException.
+    raise ExpectedError.
 
     """
     root = ('https://raw.githubusercontent.com/letsencrypt/letsencrypt/%s/' %
@@ -119,8 +119,8 @@ def verified_new_le_auto(get, tag, temp):
                        stdout=dev_null,
                        stderr=dev_null)
     except CalledProcessError as exc:
-        raise HumanException("Couldn't verify signature of downloaded "
-                             "letsencrypt-auto.", exc)
+        raise ExpectedError("Couldn't verify signature of downloaded "
+                            "letsencrypt-auto.", exc)
     else:  # belt & suspenders
         return le_auto_path
 
@@ -131,7 +131,7 @@ def main():
     try:
         stable_tag = 'v' + latest_stable_version(get, 'letsencrypt')
         print verified_new_le_auto(get, stable_tag, temp)
-    except HumanException as exc:
+    except ExpectedError as exc:
         print exc.args[0], exc.args[1]
         return 1
     else:
