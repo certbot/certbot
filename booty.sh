@@ -19,9 +19,11 @@ if [ "$1" != "--_skip-to-install" ]; then
     set +e
     DOWNLOAD_OUT=`$PYTHON - <<-"UNLIKELY_EOF"
 
+from distutils.version import LooseVersion
 from json import loads
 from os import devnull
 from os.path import join
+import re
 from subprocess import check_call, CalledProcessError
 from sys import exit
 from tempfile import mkdtemp
@@ -83,21 +85,24 @@ class TempDir(object):
             file.write(contents)
 
 
-def latest_stable_tag(get):
-    """Return the git tag pointing to the latest stable release of LE.
+def latest_stable_version(get, package):
+    """Apply a fairly safe heuristic to determine the latest stable release of
+    a PyPI package.
 
     If anything goes wrong, raise HumanException.
 
     """
     try:
-        json = get('https://pypi.python.org/pypi/letsencrypt/json')
+        json = get('https://pypi.python.org/pypi/%s/json' % package)
     except (HTTPError, IOError) as exc:
         raise HumanException("Couldn't query PyPI for the latest version of "
                              "Let's Encrypt.", exc)
     metadata = loads(json)
-    # TODO: Make sure this really returns the latest stable version, not just the
-    # newest version. https://wiki.python.org/moin/PyPIJSON says it should.
-    return 'v' + metadata['info']['version']
+    # metadata['info']['version'] actually returns the latest of any kind of
+    # release release, contrary to https://wiki.python.org/moin/PyPIJSON.
+    return str(max(LooseVersion(r) for r
+                   in metadata['releases'].iterkeys()
+                   if re.match('^[0-9.]+$', r)))
 
 
 def verified_new_le_auto(get, tag, temp):
@@ -133,7 +138,7 @@ def main():
     get = HttpsGetter().get
     temp = TempDir()
     try:
-        stable_tag = latest_stable_tag(get)
+        stable_tag = 'v' + latest_stable_version(get, 'letsencrypt')
         print verified_new_le_auto(get, stable_tag, temp)
     except HumanException as exc:
         print exc.args[0], exc.args[1]
@@ -150,15 +155,17 @@ exit(main())
         # Install new copy of letsencrypt-auto. This preserves permissions and
         # ownership from the old copy.
         # TODO: Deal with quotes in pathnames.
-        echo "Upgrading letsencrypt-auto script at $0:" $SUDO cp "$DOWNLOAD_OUT" "$0"
+        echo "Upgrading letsencrypt-auto:"
+        echo "  " $SUDO cp "$DOWNLOAD_OUT" "$0"
         $SUDO cp "$DOWNLOAD_OUT" "$0"
         # TODO: Clean up temp dir safely, even if it has quotes in its path.
         "$0" --_skip-to-install "$@"
     else
-        echo $0
         # Report error:
         echo $DOWNLOAD_OUT
+        exit 1
     fi
 else  # --_skip-to-install was passed.
+    # Install Python dependencies with peep.
     echo skipping!
 fi
