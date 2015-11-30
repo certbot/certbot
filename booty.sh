@@ -87,17 +87,8 @@ class TempDir(object):
 
 def latest_stable_version(get, package):
     """Apply a fairly safe heuristic to determine the latest stable release of
-    a PyPI package.
-
-    If anything goes wrong, raise HumanException.
-
-    """
-    try:
-        json = get('https://pypi.python.org/pypi/%s/json' % package)
-    except (HTTPError, IOError) as exc:
-        raise HumanException("Couldn't query PyPI for the latest version of "
-                             "Let's Encrypt.", exc)
-    metadata = loads(json)
+    a PyPI package."""
+    metadata = loads(get('https://pypi.python.org/pypi/%s/json' % package))
     # metadata['info']['version'] actually returns the latest of any kind of
     # release release, contrary to https://wiki.python.org/moin/PyPIJSON.
     return str(max(LooseVersion(r) for r
