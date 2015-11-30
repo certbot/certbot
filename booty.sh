@@ -20,6 +20,7 @@ if [ "$1" != "--_skip-to-install" ]; then
     DOWNLOAD_OUT=`$PYTHON - <<-"UNLIKELY_EOF"
 
 from json import loads
+from os import devnull
 from os.path import join
 from subprocess import check_call, CalledProcessError
 from sys import exit
@@ -113,11 +114,14 @@ def verified_new_le_auto(get, tag, temp):
     temp.write(PUBLIC_KEY, 'public_key.pem')
     le_auto_path = join(temp.path, 'letsencrypt-auto')
     try:
-        check_call('openssl', 'dgst', '-sha256', '-verify',
-                   join(temp.path, 'public_key.pem'),
-                   '-signature',
-                   join(temp.path, 'letsencrypt-auto.sig'),
-                   le_auth_path)
+        with open(devnull, 'w') as dev_null:
+            check_call(['openssl', 'dgst', '-sha256', '-verify',
+                        join(temp.path, 'public_key.pem'),
+                        '-signature',
+                        join(temp.path, 'letsencrypt-auto.sig'),
+                        le_auto_path],
+                       stdout=dev_null,
+                       stderr=dev_null)
     except CalledProcessError as exc:
         raise HumanException("Couldn't verify signature of downloaded "
                              "letsencrypt-auto.", exc)
@@ -143,14 +147,18 @@ exit(main())
     DOWNLOAD_STATUS=$?
     set -e
     if [ "$DOWNLOAD_STATUS" = 0 ]; then
-        NEW_LE_AUTO="$DOWNLOAD_OUT"
-        $SUDO cp "$NEW_LE_AUTO" $0
+        # Install new copy of letsencrypt-auto. This preserves permissions and
+        # ownership from the old copy.
+        # TODO: Deal with quotes in pathnames.
+        echo "Upgrading letsencrypt-auto script at $0:" $SUDO cp "$DOWNLOAD_OUT" "$0"
+        $SUDO cp "$DOWNLOAD_OUT" "$0"
+        # TODO: Clean up temp dir safely, even if it has quotes in its path.
+        "$0" --_skip-to-install "$@"
     else
+        echo $0
         # Report error:
         echo $DOWNLOAD_OUT
     fi
 else  # --_skip-to-install was passed.
     echo skipping!
 fi
-
-echo $TMP_DIR
