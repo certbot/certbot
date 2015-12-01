@@ -18,7 +18,7 @@ if [ "$1" != "--_skip-to-install" ]; then
     # copy of letsencrypt-auto or returns non-zero. There is no $ interpolation
     # due to quotes on heredoc delimiters.
     set +e
-    TEMP_DIR=`$PYTHON - <<"UNLIKELY_EOF"
+    TEMP_DIR=`$PYTHON - << "UNLIKELY_EOF"
 
 from distutils.version import LooseVersion
 from json import loads
@@ -140,7 +140,7 @@ def main():
 
 
 exit(main())
-"UNLIKELY_EOF"`
+UNLIKELY_EOF`
     DOWNLOAD_STATUS=$?
     set -e
     if [ "$DOWNLOAD_STATUS" = 0 ]; then
