@@ -128,7 +128,11 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(prefix, "mod_macro-example.conf"),
                 os.path.join(aug_pre,
                              "mod_macro-example.conf/Macro/VirtualHost"),
-                set([obj.Addr.fromstring("*:80")]), False, True, modmacro=True)
+                set([obj.Addr.fromstring("*:80")]), False, True, modmacro=True),
+            obj.VirtualHost(
+                os.path.join(prefix, "default-ssl-port-only.conf"),
+                os.path.join(aug_pre, "default-ssl-port-only.conf/IfModule/VirtualHost"),
+                set([obj.Addr.fromstring("_default_:443")]), True, False),
         ]
         return vh_truth
 

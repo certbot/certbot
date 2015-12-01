@@ -14,6 +14,10 @@ XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN=${VENV_PATH}/bin
+# The path to the letsencrypt-auto script.  Everything that uses these might
+# at some point be inlined...
+LEA_PATH=`dirname "$0"`
+BOOTSTRAP=${LEA_PATH}/bootstrap
 
 # This script takes the same arguments as the main letsencrypt program, but it
 # additionally responds to --verbose (more output) and --debug (allow support
@@ -110,7 +114,6 @@ DeterminePythonVersion() {
 # later steps, causing "ImportError: cannot import name unpack_url"
 if [ ! -d $VENV_PATH ]
 then
-  BOOTSTRAP=`dirname $0`/bootstrap
   if [ ! -f $BOOTSTRAP/debian.sh ] ; then
     echo "Cannot find the letsencrypt bootstrap scripts in $BOOTSTRAP"
     exit 1
@@ -126,8 +129,17 @@ then
     echo "Bootstrapping dependencies for openSUSE-based OSes..."
     $SUDO $BOOTSTRAP/_suse_common.sh
   elif [ -f /etc/arch-release ] ; then
-    echo "Bootstrapping dependencies for Archlinux..."
-    $SUDO $BOOTSTRAP/archlinux.sh
+    if [ "$DEBUG" = 1 ] ; then
+      echo "Bootstrapping dependencies for Archlinux..."
+      $SUDO $BOOTSTRAP/archlinux.sh
+    else
+      echo "Please use pacman to install letsencrypt packages:"
+      echo "# pacman -S letsencrypt letsencrypt-apache"
+      echo
+      echo "If you would like to use the virtualenv way, please run the script again with the"
+      echo "--debug flag."
+      exit 1
+    fi
   elif [ -f /etc/manjaro-release ] ; then
     ExperimentalBootstrap "Manjaro Linux" manjaro.sh "$SUDO"
   elif [ -f /etc/gentoo-release ] ; then
@@ -163,7 +175,7 @@ if [ "$VERBOSE" = 1 ]  ; then
   echo
   $VENV_BIN/pip install -U setuptools
   $VENV_BIN/pip install -U pip
-  $VENV_BIN/pip install -r py26reqs.txt -U letsencrypt letsencrypt-apache
+  $VENV_BIN/pip install -r "$LEA_PATH"/py26reqs.txt -U letsencrypt letsencrypt-apache
   # nginx is buggy / disabled for now, but upgrade it if the user has
   # installed it manually
   if $VENV_BIN/pip freeze | grep -q letsencrypt-nginx ; then
@@ -175,7 +187,7 @@ else
   $VENV_BIN/pip install -U pip > /dev/null
   printf .
   # nginx is buggy / disabled for now...
-  $VENV_BIN/pip install -r py26reqs.txt > /dev/null
+  $VENV_BIN/pip install -r "$LEA_PATH"/py26reqs.txt > /dev/null
   printf .
   $VENV_BIN/pip install -U letsencrypt > /dev/null
   printf .
