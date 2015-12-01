@@ -95,13 +95,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             help="Path to the Apache 'a2enmod' binary.")
         add("dismod", default=constants.CLI_DEFAULTS["dismod"],
             help="Path to the Apache 'a2enmod' binary.")
-        add("init-script", default=constants.CLI_DEFAULTS["init_script"],
-            help="Path to the Apache init script (used for server "
-            "reload).")
         add("le-vhost-ext", default=constants.CLI_DEFAULTS["le_vhost_ext"],
             help="SSL vhost configuration extension.")
         add("server-root", default=constants.CLI_DEFAULTS["server_root"],
             help="Apache server root directory.")
+        le_util.add_deprecated_argument(add, "init-script", 1)
 
     def __init__(self, *args, **kwargs):
         """Initialize an Apache Configurator.

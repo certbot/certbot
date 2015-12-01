@@ -276,7 +276,7 @@ def add_deprecated_argument(add_argument, argument_name, nargs):
         """Action to log a warning when an argument is used."""
         def __call__(self, unused1, unused2, unused3, option_string=None):
             sys.stderr.write(
-                "Use of {0} is deprecated\n".format(option_string))
+                "Use of {0} is deprecated.\n".format(option_string))
 
     add_argument(argument_name, action=ShowWarning,
                  help=argparse.SUPPRESS, nargs=nargs)
