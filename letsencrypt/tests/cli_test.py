@@ -343,16 +343,19 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def test_parse_webroot(self):
         plugins = disco.PluginsRegistry.find_all()
-        webroot_args = ['--webroot', '-d', 'stray.example.com', '-w',
-            '/var/www/example', '-d', 'example.com,www.example.com', '-w',
-            '/var/www/superfluous', '-d', 'superfluo.us', '-d', 'www.superfluo.us']
+        webroot_args = ['--webroot',  '-w', '/var/www/example',
+            '-d', 'example.com,www.example.com', '-w', '/var/www/superfluous',
+            '-d', 'superfluo.us', '-d', 'www.superfluo.us']
         namespace = cli.prepare_and_parse_args(plugins, webroot_args)
         self.assertEqual(namespace.webroot_map, {
             'example.com': '/var/www/example',
-            'stray.example.com': '/var/www/example',
             'www.example.com': '/var/www/example',
             'www.superfluo.us': '/var/www/superfluous',
             'superfluo.us': '/var/www/superfluous'})
+
+        webroot_args = ['-d', 'stray.example.com'] + webroot_args
+        with self.assertRaises(errors.Error):
+            cli.prepare_and_parse_args(plugins, webroot_args)
 
         webroot_map_args = ['--webroot-map', '{"eg.com" : "/tmp"}']
         namespace = cli.prepare_and_parse_args(plugins, webroot_map_args)

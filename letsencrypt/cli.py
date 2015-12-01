@@ -1043,6 +1043,10 @@ def _plugins_parsing(helpful, plugins):
 
 
 class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
+    def __init__(self, *args, **kwargs):
+        self.domain_before_webroot = False
+        argparse.Action.__init__(self, *args, **kwargs)
+
     def __call__(self, parser, config, webroot, option_string=None):
         """
         Keep a record of --webroot-path / -w flags during processing, so that
@@ -1055,8 +1059,12 @@ class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
             # config.webroot_map are filled in by cli.DomainFlagProcessor
             if config.domains:
                 config.webroot_map = dict([(d, webroot) for d in config.domains])
+                self.domain_before_webroot = True
             else:
                 config.webroot_map = {}
+        elif self.domain_before_webroot:
+            raise errors.Error("If you specify multiple webroot paths, one of "
+                               "them must precede all domain flags")
         config.webroot_path.append(webroot)
 
 
