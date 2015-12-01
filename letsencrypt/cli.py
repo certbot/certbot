@@ -381,7 +381,7 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
     raise errors.PluginSelectionError(msg)
 
 
-def choose_configurator_plugins(args, config, plugins, verb): # pylint: disable=too-many-branches
+def choose_configurator_plugins(args, config, plugins, verb):  # pylint: disable=too-many-branches
     """
     Figure out which configurator we're going to use
 
@@ -465,7 +465,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
         domains, lineage.privkey, lineage.cert,
         lineage.chain, lineage.fullchain)
 
-    le_client.enhance_config(domains, args.redirect)
+    le_client.enhance_config(domains, config)
 
     if len(lineage.available_versions("cert")) == 1:
         display_ops.success_installation(domains)
@@ -519,7 +519,7 @@ def install(args, config, plugins):
     le_client.deploy_certificate(
         domains, args.key_path, args.cert_path, args.chain_path,
         args.fullchain_path)
-    le_client.enhance_config(domains, args.redirect)
+    le_client.enhance_config(domains, config)
 
 
 def revoke(args, config, unused_plugins):  # TODO: coop with renewal config
@@ -832,7 +832,7 @@ def prepare_and_parse_args(plugins, args):
              "lose access to your account. You will also be unable to receive "
              "notice about impending expiration of revocation of your "
              "certificates. Updates to the Subscriber Agreement will still "
-             "affect you, and will be effective N days after posting an "
+             "affect you, and will be effective 14 days after posting an "
              "update to the web site.")
     helpful.add(None, "-m", "--email", help=config_help("email"))
     # positional arg shadows --domains, instead of appending, and
@@ -902,6 +902,25 @@ def prepare_and_parse_args(plugins, args):
         "security", "--no-redirect", action="store_false",
         help="Do not automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost.", dest="redirect", default=None)
+    helpful.add(
+        "security", "--hsts", action="store_true",
+        help="Add the Strict-Transport-Security header to every HTTP response."
+             " Forcing browser to use always use SSL for the domain."
+             " Defends against SSL Stripping.", dest="hsts", default=False)
+    helpful.add(
+        "security", "--no-hsts", action="store_false",
+        help="Do not automatically add the Strict-Transport-Security header"
+             " to every HTTP response.", dest="hsts", default=False)
+    helpful.add(
+        "security", "--uir", action="store_true",
+        help="Add the \"Content-Security-Policy: upgrade-insecure-requests\""
+             " header to every HTTP response. Forcing the browser to use"
+             " https:// for every http:// resource.", dest="uir", default=None)
+    helpful.add(
+        "security", "--no-uir", action="store_false",
+        help=" Do not automatically set the \"Content-Security-Policy:"
+        " upgrade-insecure-requests\" header to every HTTP response.",
+        dest="uir", default=None)
     helpful.add(
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "

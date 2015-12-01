@@ -212,9 +212,9 @@ class NginxConfiguratorTest(util.NginxTest):
             ('/etc/nginx/fullchain.pem', '/etc/nginx/key.pem', nginx_conf),
         ]), self.config.get_all_certs_keys())
 
-    @mock.patch("letsencrypt_nginx.configurator.dvsni.NginxDvsni.perform")
+    @mock.patch("letsencrypt_nginx.configurator.tls_sni_01.NginxTlsSni01.perform")
     @mock.patch("letsencrypt_nginx.configurator.NginxConfigurator.restart")
-    def test_perform(self, mock_restart, mock_dvsni_perform):
+    def test_perform(self, mock_restart, mock_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
         achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
@@ -230,16 +230,16 @@ class NginxConfiguratorTest(util.NginxTest):
                 status=messages.Status("pending"),
             ), domain="example.com", account_key=self.rsa512jwk)
 
-        dvsni_ret_val = [
+        expected = [
             achall1.response(self.rsa512jwk),
             achall2.response(self.rsa512jwk),
         ]
 
-        mock_dvsni_perform.return_value = dvsni_ret_val
+        mock_perform.return_value = expected
         responses = self.config.perform([achall1, achall2])
 
-        self.assertEqual(mock_dvsni_perform.call_count, 1)
-        self.assertEqual(responses, dvsni_ret_val)
+        self.assertEqual(mock_perform.call_count, 1)
+        self.assertEqual(responses, expected)
         self.assertEqual(mock_restart.call_count, 1)
 
     @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")

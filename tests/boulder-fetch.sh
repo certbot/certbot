@@ -33,6 +33,7 @@ wget https://github.com/jsha/boulder-tools/raw/master/goose.gz && \
   zcat goose.gz > $GOPATH/bin/goose && \
   chmod +x $GOPATH/bin/goose
 ./test/create_db.sh
+go run cmd/rabbitmq-setup/main.go -server amqp://localhost
 # listenbuddy is needed for ./start.py
 go get github.com/jsha/listenbuddy
 cd -
