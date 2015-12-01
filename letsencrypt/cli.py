@@ -839,7 +839,7 @@ def prepare_and_parse_args(plugins, args):
     # --domains is useful, because it can be stored in config
     #for subparser in parser_run, parser_auth, parser_install:
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
-    helpful.add(None, "-d", "--domains", dest="domains",
+    helpful.add(None, "-d", "--domains", "--domain", dest="domains",
                 metavar="DOMAIN", action=DomainFlagProcessor,
                 help="Domain names to apply. For multiple domains you can use "
                 "multiple -d flags or enter a comma separated list of domains "
