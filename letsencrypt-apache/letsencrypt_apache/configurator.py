@@ -275,7 +275,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "No vhost was selected. Please specify servernames "
                 "in the Apache config", target_name)
             raise errors.PluginError("No vhost selected")
-
         elif temp:
             return vhost
         elif not vhost.ssl:
