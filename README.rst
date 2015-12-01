@@ -3,12 +3,9 @@
 Disclaimer
 ==========
 
-This is a **DEVELOPER PREVIEW** intended for developers and testers only.
-
-**DO NOT RUN THIS CODE ON A PRODUCTION SERVER. IT WILL INSTALL CERTIFICATES
-SIGNED BY A TEST CA, AND WILL CAUSE CERT WARNINGS FOR USERS.**
-
-Browser-trusted certificates will be available in the coming months.
+The Let's Encrypt client is **BETA SOFTWARE**. It contains plenty of bugs and
+rough edges, and should be tested thoroughly in staging evironments before use
+on production systems.
 
 For more information regarding the status of the project, please see
 https://letsencrypt.org. Be sure to checkout the
@@ -17,36 +14,38 @@ https://letsencrypt.org. Be sure to checkout the
 About the Let's Encrypt Client
 ==============================
 
+Installation
+------------
+
+If `letsencrypt` is packaged for your OS, you can install it from there, and
+run it by typing `letsencrypt`.  Because not all operating systems have
+packages yet, we provide a temporary solution via the `letsencrypt-auto`
+wrapper script, which obtains some dependencies from your OS and puts others
+in an python virtual environment::
+
+  user@www:~$ git clone https://github.com/letsencrypt/letsencrypt
+  user@www:~$ cd letsencrypt
+  user@www:~/letsencrypt$ ./letsencrypt-auto --help
+
+`letsencrypt-auto` updates to the latest client release automatically.  And
+since `letsencrypt-auto` is a wrapper to `letsencrypt`, it accepts exactly the
+same command line flags and arguments.  More details about this script and
+other installation methods can be found [in the User
+Guide](https://letsencrypt.readthedocs.org/en/latest/using.html#installation)
+
+Running the client and understanding client plugins
+---------------------------------------------------
+
+In many cases, you can just run `letsencrypt-auto` or `letsencrypt`, and the
+client will guide you through the process of obtaining and installing certs
+interactively.
+
+But to understand what the client is doing in detail, it's important to
+understand the way it uses plugins.  Please see the [explanation of
+plugins](https://letsencrypt.readthedocs.org/en/latest/using.html#plugins) in
+the User Guide.
+
 |build-status| |coverage| |docs| |container|
-
-In short: getting and installing SSL/TLS certificates made easy (`watch demo video`_).
-
-The Let's Encrypt Client is a tool to automatically receive and install
-X.509 certificates to enable TLS on servers. The client will
-interoperate with the Let's Encrypt CA which will be issuing browser-trusted
-certificates for free.
-
-It's all automated:
-
-* The tool will prove domain control to the CA and submit a CSR (Certificate
-  Signing Request).
-* If domain control has been proven, a certificate will get issued and the tool
-  will automatically install it.
-
-All you need to do to sign a single domain is::
-
-  user@www:~$ sudo letsencrypt -d www.example.org certonly
-
-For multiple domains (SAN) use::
-
-  user@www:~$ sudo letsencrypt -d www.example.org -d example.org certonly
-
-and if you have a compatible web server (Apache or Nginx), Let's Encrypt can
-not only get a new certificate, but also deploy it and configure your
-server automatically!::
-
-  user@www:~$ sudo letsencrypt -d www.example.org run
-
 
 **Encrypt ALL the things!**
 
@@ -78,9 +77,11 @@ Current Features
 
 * Supports multiple web servers:
 
-  - apache/2.x (tested and working on Ubuntu Linux)
-  - nginx/0.8.48+ (under development)
+  - apache/2.x (working on Debian 8+ and Ubuntu 12.04+)
   - standalone (runs its own simple webserver to prove you control a domain)
+  - webroot (adds files to webroot directories in order to prove control of
+    domains and obtain certs)
+  - nginx/0.8.48+ (under development)
 
 * The private key is generated locally on your system.
 * Can talk to the Let's Encrypt (demo) CA or optionally to other ACME
