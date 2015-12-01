@@ -1186,16 +1186,25 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         le_util.run_script([self.conf("enmod"), mod_name])
 
     def restart(self):
-        """Reloads apache server.
+        """Runs a config test and reloads the Apache server.
 
-        .. todo:: This function will be converted to using reload
-
-        :raises .errors.MisconfigurationError: If unable to reload due
-            to a configuration problem, or if the reload subprocess
-            cannot be run.
+        :raises .errors.MisconfigurationError: If either the config test
+            or reload fails.
 
         """
-        return apache_reload(self.conf("init-script"))
+        self.config_test()
+        self._reload()
+
+    def _reload(self):
+        """Reloads the Apache server.
+
+        :raises .errors.MisconfigurationError: If reload fails
+
+        """
+        try:
+            le_util.run_script([self.conf("ctl"), "-k", "graceful"])
+        except errors.SubprocessError as err:
+            raise errors.MisconfigurationError(str(err))
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Apache for errors.
@@ -1315,44 +1324,6 @@ def _get_mod_deps(mod_name):
         "ssl": ["setenvif", "mime", "socache_shmcb"]
     }
     return deps.get(mod_name, [])
-
-
-def apache_reload(apache_init_script):
-    """Reloads the Apache Server.
-
-    :param str apache_init_script: Path to the Apache init script.
-
-    .. todo:: Try to use reload instead. (This caused timing problems before)
-
-    .. todo:: On failure, this should be a recovery_routine call with another
-       reload.  This will confuse and inhibit developers from testing code
-       though.  This change should happen after
-       the ApacheConfigurator has been thoroughly tested.  The function will
-       need to be moved into the class again.  Perhaps
-       this version can live on... for testing purposes.
-
-    :raises .errors.MisconfigurationError: If unable to reload due to a
-        configuration problem, or if the reload subprocess cannot be run.
-
-    """
-    try:
-        proc = subprocess.Popen([apache_init_script, "reload"],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-
-    except (OSError, ValueError):
-        logger.fatal(
-            "Unable to reload the Apache process with %s", apache_init_script)
-        raise errors.MisconfigurationError(
-            "Unable to reload Apache process with %s" % apache_init_script)
-
-    stdout, stderr = proc.communicate()
-
-    if proc.returncode != 0:
-        # Enter recovery routine...
-        logger.error("Apache Reload Failed!\n%s\n%s", stdout, stderr)
-        raise errors.MisconfigurationError(
-            "Error while reloading Apache:\n%s\n%s" % (stdout, stderr))
 
 
 def get_file_path(vhost_path):
