@@ -7,7 +7,6 @@ import os
 import re
 import shutil
 import socket
-import subprocess
 import time
 
 import zope.interface

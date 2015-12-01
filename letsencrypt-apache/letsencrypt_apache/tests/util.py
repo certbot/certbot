@@ -75,11 +75,7 @@ def get_apache_configurator(
         in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
         work_dir=work_dir)
 
-    with mock.patch("letsencrypt_apache.configurator."
-                    "subprocess.Popen") as mock_popen:
-        # This indicates config_test passes
-        mock_popen().communicate.return_value = ("Fine output", "No problems")
-        mock_popen().returncode = 0
+    with mock.patch("letsencrypt_apache.configurator.le_util.run_script"):
         with mock.patch("letsencrypt_apache.configurator.le_util."
                         "exe_exists") as mock_exe_exists:
             mock_exe_exists.return_value = True
