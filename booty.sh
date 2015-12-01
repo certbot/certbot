@@ -9,15 +9,16 @@ PYTHON=python
 SUDO=sudo
 
 if [ "$1" != "--_skip-to-install" ]; then
+    echo "Upgrading letsencrypt-auto..."
     # Now we drop into python so we don't have to install even more
     # dependencies (curl, etc.), for better flow control, and for the option of
     # future Windows compatibility.
     #
-    # The following Python script prints a path to a new copy
-    # of letsencrypt-auto or returns non-zero.
-    # There is no $ interpolation due to quotes on heredoc delimiters.
+    # The following Python script prints a path to a temp dir containing a new
+    # copy of letsencrypt-auto or returns non-zero. There is no $ interpolation
+    # due to quotes on heredoc delimiters.
     set +e
-    DOWNLOAD_OUT=`$PYTHON - <<-"UNLIKELY_EOF"
+    TEMP_DIR=`$PYTHON - <<"UNLIKELY_EOF"
 
 from distutils.version import LooseVersion
 from json import loads
@@ -130,7 +131,7 @@ def main():
     temp = TempDir()
     try:
         stable_tag = 'v' + latest_stable_version(get, 'letsencrypt')
-        print verified_new_le_auto(get, stable_tag, temp)
+        print dirname(verified_new_le_auto(get, stable_tag, temp))
     except ExpectedError as exc:
         print exc.args[0], exc.args[1]
         return 1
@@ -146,14 +147,14 @@ exit(main())
         # Install new copy of letsencrypt-auto. This preserves permissions and
         # ownership from the old copy.
         # TODO: Deal with quotes in pathnames.
-        echo "Upgrading letsencrypt-auto:"
-        echo "  " $SUDO cp "$DOWNLOAD_OUT" "$0"
-        $SUDO cp "$DOWNLOAD_OUT" "$0"
+        # TODO: Don't bother upgrading if we're already up to date.
+        echo "  " $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$0"
+        $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$0"
         # TODO: Clean up temp dir safely, even if it has quotes in its path.
-        "$0" --_skip-to-install "$@"
+        "$0" --_skip-to-install "$TEMP_DIR" "$@"
     else
         # Report error:
-        echo $DOWNLOAD_OUT
+        echo $TEMP_DIR
         exit 1
     fi
 else  # --_skip-to-install was passed.
