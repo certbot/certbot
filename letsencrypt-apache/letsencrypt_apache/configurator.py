@@ -137,8 +137,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         # Verify Apache is installed
-        for exe in (self.conf("ctl"), self.conf("enmod"),
-                    self.conf("dismod"), self.conf("init-script")):
+        for exe in (self.conf("ctl"), self.conf("enmod"), self.conf("dismod")):
             if not le_util.exe_exists(exe):
                 raise errors.NoInstallationError
 
