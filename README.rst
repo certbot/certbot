@@ -3,7 +3,7 @@
 Disclaimer
 ==========
 
-The Let's Encrypt client is **BETA SOFTWARE**. It contains plenty of bugs and
+The Let's Encrypt Client is **BETA SOFTWARE**. It contains plenty of bugs and
 rough edges, and should be tested thoroughly in staging evironments before use
 on production systems.
 
@@ -14,40 +14,87 @@ https://letsencrypt.org. Be sure to checkout the
 About the Let's Encrypt Client
 ==============================
 
+The Let's Encrypt Client is a fully-featured, extensible client for the Let's
+Encrypt CA (or any other CA that speaks the `ACME
+<https://github.com/ietf-wg-acme/acme/blob/master/draft-ietf-acme-acme.md>`_
+protocol) that can automate the tasks of obtaining certificates and
+configuring webservers to use them.
+
 Installation
 ------------
 
-If `letsencrypt` is packaged for your OS, you can install it from there, and
-run it by typing `letsencrypt`.  Because not all operating systems have
-packages yet, we provide a temporary solution via the `letsencrypt-auto`
+If ``letsencrypt`` is packaged for your OS, you can install it from there, and
+run it by typing ``letsencrypt``.  Because not all operating systems have
+packages yet, we provide a temporary solution via the ``letsencrypt-auto``
 wrapper script, which obtains some dependencies from your OS and puts others
 in an python virtual environment::
 
-  user@www:~$ git clone https://github.com/letsencrypt/letsencrypt
-  user@www:~$ cd letsencrypt
-  user@www:~/letsencrypt$ ./letsencrypt-auto --help
+  user@webserver:~$ git clone https://github.com/letsencrypt/letsencrypt
+  user@webserver:~$ cd letsencrypt
+  user@webserver:~/letsencrypt$ ./letsencrypt-auto --help
 
-`letsencrypt-auto` updates to the latest client release automatically.  And
-since `letsencrypt-auto` is a wrapper to `letsencrypt`, it accepts exactly the
-same command line flags and arguments.  More details about this script and
-other installation methods can be found [in the User
-Guide](https://letsencrypt.readthedocs.org/en/latest/using.html#installation)
+Or for full command line help, type::
 
-Running the client and understanding client plugins
----------------------------------------------------
+  ./letsencrypt-auto --help all | less
 
-In many cases, you can just run `letsencrypt-auto` or `letsencrypt`, and the
+``letsencrypt-auto`` updates to the latest client release automatically.  And
+since ``letsencrypt-auto`` is a wrapper to ``letsencrypt``, it accepts exactly
+the same command line flags and arguments.  More details about this script and
+other installation methods can be found `in the User Guide
+<https://letsencrypt.readthedocs.org/en/latest/using.html#installation>`_.
+
+How to run the client
+---------------------
+
+In many cases, you can just run ``letsencrypt-auto`` or ``letsencrypt``, and the
 client will guide you through the process of obtaining and installing certs
 interactively.
 
-But to understand what the client is doing in detail, it's important to
-understand the way it uses plugins.  Please see the [explanation of
-plugins](https://letsencrypt.readthedocs.org/en/latest/using.html#plugins) in
+You can also tell it exactly what you want it to do.  For instance, if you
+want to obtain a cert for ``thing.com``, ``www.thing.com``, and
+``otherthing.net``, using the Apache plugin to both obtain and install the
+certs, you could do this::
+
+  ./letsencrypt-auto --apache -d thing.com -d www.thing.com -d otherthing.net
+
+(The first time you run the command, it will make an account, and ask for an
+email and agreement to the Let's Encrypt Subscriber Agreement; you can
+automate those with ``--email`` and ``--agree-tos``)
+
+If you want to use a webserver that doesn't have full plugin support yet, you
+can still use "standlone" or "webroot" plugins to obtain a certificate::
+
+  ./letsencrypt-auto certonly --standalone --email admin@thing.com -d thing.com -d www.thing.com -d otherthing.net
+
+
+Understanding the client in more depth
+--------------------------------------
+
+To understand what the client is doing in detail, it's important to
+understand the way it uses plugins.  Please see the `explanation of
+plugins <https://letsencrypt.readthedocs.org/en/latest/using.html#plugins>`_ in
 the User Guide.
+
+Links
+=====
+
+Documentation: https://letsencrypt.readthedocs.org
+
+Software project: https://github.com/letsencrypt/letsencrypt
+
+Notes for developers: https://letsencrypt.readthedocs.org/en/latest/contributing.html
+
+Main Website: https://letsencrypt.org/
+
+IRC Channel: #letsencrypt on `Freenode`_
+
+Community: https://community.letsencrypt.org
+
+Mailing list: `client-dev`_ (to subscribe without a Google account, send an
+email to client-dev+subscribe@letsencrypt.org)
 
 |build-status| |coverage| |docs| |container|
 
-**Encrypt ALL the things!**
 
 
 .. |build-status| image:: https://travis-ci.org/letsencrypt/letsencrypt.svg?branch=master
@@ -73,7 +120,7 @@ the User Guide.
 
 
 Current Features
-----------------
+================
 
 * Supports multiple web servers:
 
@@ -84,7 +131,7 @@ Current Features
   - nginx/0.8.48+ (under development)
 
 * The private key is generated locally on your system.
-* Can talk to the Let's Encrypt (demo) CA or optionally to other ACME
+* Can talk to the Let's Encrypt  CA or optionally to other ACME
   compliant services.
 * Can get domain-validated (DV) certificates.
 * Can revoke certificates.
@@ -93,34 +140,10 @@ Current Features
   runs https only (Apache only)
 * Fully automated.
 * Configuration changes are logged and can be reverted.
-* Text and ncurses UI.
+* Supports ncurses and text (-t) UI, or can be driven entirely from the
+  command line.
 * Free and Open Source Software, made with Python.
 
-
-Installation Instructions
--------------------------
-
-Official **documentation**, including `installation instructions`_, is
-available at https://letsencrypt.readthedocs.org.
-
-
-Links
------
-
-Documentation: https://letsencrypt.readthedocs.org
-
-Software project: https://github.com/letsencrypt/letsencrypt
-
-Notes for developers: https://letsencrypt.readthedocs.org/en/latest/contributing.html
-
-Main Website: https://letsencrypt.org/
-
-IRC Channel: #letsencrypt on `Freenode`_
-
-Community: https://community.letsencrypt.org
-
-Mailing list: `client-dev`_ (to subscribe without a Google account, send an
-email to client-dev+subscribe@letsencrypt.org)
 
 .. _Freenode: https://freenode.net
 .. _client-dev: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev
