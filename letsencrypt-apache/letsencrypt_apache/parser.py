@@ -19,7 +19,6 @@ class ApacheParser(object):
 
     :ivar str root: Normalized absolute path to the server root
         directory. Without trailing slash.
-    :ivar str root: Server root
     :ivar set modules: All module names that are currently enabled.
     :ivar dict loc: Location to place directives, root - configuration origin,
         default - user config file, name - NameVirtualHost,
