@@ -912,11 +912,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         rewrite_path = self.parser.find_dir(
             "RewriteRule", None, start=vhost.path)
-        redirect_path = self.parser.find_dir("Redirect", None, start=vhost.path)
 
-        if redirect_path:
-            # "Existing Redirect directive for virtualhost"
-            raise errors.PluginError("Existing Redirect present on HTTP vhost.")
         if rewrite_path:
             # "No existing redirection for virtualhost"
             if len(rewrite_path) != len(constants.REWRITE_HTTPS_ARGS):
