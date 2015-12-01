@@ -1035,7 +1035,10 @@ def _plugins_parsing(helpful, plugins):
     # legibiility. helpful.add_plugin_ags must be called first to add the
     # "webroot" topic
     helpful.add("webroot", "-w", "--webroot-path", action=WebrootPathProcessor,
-                help="public_html / webroot path")
+                help="public_html / webroot path. This can be specified multiple times to "
+                     "handle different domains; each domain will have the webroot path that"
+                     " precededed it.  For instance: `-w /var/www/example -d example.com -d "
+                     "www.example.com -w /var/www/thing -d thing.net -d m.thing.net`")
     parse_dict = lambda s: dict(json.loads(s))
     # --webroot-map still has some awkward properties, so it is undocumented
     helpful.add("webroot", "--webroot-map", default={}, type=parse_dict,

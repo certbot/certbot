@@ -73,6 +73,8 @@ to serve all files under specified web root ({0})."""
 
     @classmethod
     def add_parser_arguments(cls, add):
+        # --webroot-path and --webroot-map are added in cli.py because they
+        # are parsed in conjunction with --domains
         pass
 
     def get_chall_pref(self, domain):  # pragma: no cover
