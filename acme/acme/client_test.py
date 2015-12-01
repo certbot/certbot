@@ -271,9 +271,9 @@ class ClientTest(unittest.TestCase):
             # result, increment clock
             clock.dt += datetime.timedelta(seconds=2)
 
-            if not authzr.retries:  # no more retries
+            if len(authzr.retries) == 1:  # no more retries
                 done = mock.MagicMock(uri=authzr.uri, times=authzr.times)
-                done.body.status = messages.STATUS_VALID
+                done.body.status = authzr.retries[0]
                 return done, []
 
             # response (2nd result tuple element) is reduced to only
@@ -289,7 +289,8 @@ class ClientTest(unittest.TestCase):
 
         mintime = 7
 
-        def retry_after(response, default):  # pylint: disable=missing-docstring
+        def retry_after(response, default):
+            # pylint: disable=missing-docstring
             # check that poll_and_request_issuance correctly passes mintime
             self.assertEqual(default, mintime)
             return clock.dt + datetime.timedelta(seconds=response)
@@ -302,8 +303,10 @@ class ClientTest(unittest.TestCase):
 
         csr = mock.MagicMock()
         authzrs = (
-            mock.MagicMock(uri='a', times=[], retries=(8, 20, 30)),
-            mock.MagicMock(uri='b', times=[], retries=(5,)),
+            mock.MagicMock(uri='a', times=[], retries=(
+                8, 20, 30, messages.STATUS_VALID)),
+            mock.MagicMock(uri='b', times=[], retries=(
+                5, messages.STATUS_VALID)),
         )
 
         cert, updated_authzrs = self.client.poll_and_request_issuance(
@@ -326,6 +329,17 @@ class ClientTest(unittest.TestCase):
             datetime.datetime(2015, 3, 27, 0, 0, 9),
         ])
         self.assertEqual(clock.dt, datetime.datetime(2015, 3, 27, 0, 1, 7))
+
+        # CA sets invalid | TODO: move to a separate test
+        invalid_authzr = mock.MagicMock(times=[], retries=[messages.STATUS_INVALID])
+        self.assertRaises(
+            errors.PollError, self.client.poll_and_request_issuance,
+            csr, authzrs=(invalid_authzr,), mintime=mintime)
+
+        # exceeded max_attemps | TODO: move to a separate test
+        self.assertRaises(
+            errors.PollError, self.client.poll_and_request_issuance,
+            csr, authzrs, mintime=mintime, max_attempts=2)
 
     def test_check_cert(self):
         self.response.headers['Location'] = self.certr.uri
