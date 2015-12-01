@@ -354,8 +354,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             'superfluo.us': '/var/www/superfluous'})
 
         webroot_args = ['-d', 'stray.example.com'] + webroot_args
-        with self.assertRaises(errors.Error):
-            cli.prepare_and_parse_args(plugins, webroot_args)
+        self.assertRaises(errors.Error, cli.prepare_and_parse_args, plugins, webroot_args)
 
         webroot_map_args = ['--webroot-map', '{"eg.com" : "/tmp"}']
         namespace = cli.prepare_and_parse_args(plugins, webroot_map_args)
