@@ -156,6 +156,9 @@ manual_     Y N Helps you obtain a cert by giving you instructions to perform
 nginx_      Y Y Very experimental and not included in letsencrypt-auto_.
 =========== = = ===============================================================
 
+The "A" column indicates support for authorization (i.e. issuing a certificate), and
+the "I" column indicates support for certificate installation.
+
 Apache
 ------
 
