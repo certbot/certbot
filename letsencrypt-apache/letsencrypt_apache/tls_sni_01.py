@@ -110,7 +110,7 @@ class ApacheTlsSni01(common.TLSSNI01):
         return addrs
 
     def _get_addrs(self, achall):
-        """Return the Apache addresses needed for DVSNI."""
+        """Return the Apache addresses needed for TLS-SNI-01."""
         vhost = self.configurator.choose_vhost(achall.domain, temp=True)
         # TODO: Checkout _default_ rules.
         addrs = set()
