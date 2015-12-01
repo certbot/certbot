@@ -1,5 +1,7 @@
 """Let's Encrypt CLI."""
 # TODO: Sanity check all input.  Be sure to avoid shell code etc...
+# pylint: disable=too-many-lines
+# (TODO: split this file into main.py and cli.py)
 import argparse
 import atexit
 import functools
@@ -384,7 +386,6 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
 def choose_configurator_plugins(args, config, plugins, verb):  # pylint: disable=too-many-branches
     """
     Figure out which configurator we're going to use
-
     :raises error.PluginSelectionError if there was a problem
     """
 
@@ -802,7 +803,6 @@ class HelpfulArgumentParser(object):
             return dict([(t, t == chosen_topic) for t in self.help_topics])
 
 
-
 def prepare_and_parse_args(plugins, args):
     """Returns parsed command line arguments.
 
@@ -946,8 +946,7 @@ def _create_subparsers(helpful):
         help="Set a custom user agent string for the client. User agent strings allow "
              "the CA to collect high level statistics about success rates by OS and "
              "plugin. If you wish to hide your server OS version from the Let's "
-             'Encrypt server, set this to "".'
-    )
+             'Encrypt server, set this to "".')
     helpful.add("certonly",
                 "--csr", type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER"
