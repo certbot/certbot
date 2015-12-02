@@ -896,7 +896,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 logger.warn("Preexisting rewrite rules were detected. "
                             "Please verify that the newly installed "
                             "redirection rewrite rule doesn't break anything.")
- 
+
             self.save_notes += ("Redirecting host in %s to ssl vhost in %s\n" %
                                 (general_vh.filep, ssl_vhost.filep))
             self.save()
