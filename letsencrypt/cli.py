@@ -771,6 +771,20 @@ class HelpfulArgumentParser(object):
             kwargs["help"] = argparse.SUPPRESS
             self.parser.add_argument(*args, **kwargs)
 
+    def add_deprecated_argument(self, argument_name, num_args):
+        """Adds a deprecated argument with the name argument_name.
+
+        Deprecated arguments are not shown in the help. If they are used
+        on the command line, a warning is shown stating that the
+        argument is deprecated and no other action is taken.
+
+        :param str argument_name: Name of deprecated argument.
+        :param int nargs: Number of arguments the option takes.
+
+        """
+        le_util.add_deprecated_argument(
+            self.parser.add_argument, argument_name, num_args)
+
     def add_group(self, topic, **kwargs):
         """
 
