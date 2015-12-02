@@ -18,11 +18,10 @@ if [ "$1" = "--production" ] ; then
     if ! echo "$version" | grep -q -e '[0-9]\+.[0-9]\+.[0-9]\+' ; then
         echo "Version doesn't look like 1.2.3"
     fi
-    # XXX TODO rename to RELEASE_BRANCH once bmw isn't editing the same file
-    DEV_RELEASE_BRANCH="master"
+    RELEASE_BRANCH="master"
 else
     version="$version.dev$(date +%Y%m%d)1"
-    DEV_RELEASE_BRANCH="dev-release"
+    RELEASE_BRANCH="dev-release"
     echo Releasing developer version "$version"...
 fi
 
@@ -63,8 +62,8 @@ echo "Cloning into fresh copy at $root"  # clean repo = no artificats
 git clone . $root
 git rev-parse HEAD
 cd $root
-git branch -f "$DEV_RELEASE_BRANCH"
-git checkout "$DEV_RELEASE_BRANCH"
+git branch -f "$RELEASE_BRANCH"
+git checkout "$RELEASE_BRANCH"
 
 for pkg_dir in $SUBPKGS
 do
