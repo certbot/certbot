@@ -897,7 +897,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # an other RewriteRule it may induce a loop / config mismatch.
             if self._is_rewrite_exists(ssl_vhost):
                 logger.warn("Added an HTTP->HTTPS rewrite in addition to "
-                            "other RewriteRules; you may wish to check for " 
+                            "other RewriteRules; you may wish to check for "
                             "overall consistency.")
 
             self.save_notes += ("Redirecting host in %s to ssl vhost in %s\n" %
