@@ -2,6 +2,7 @@
 import errno
 import logging
 import os
+import stat
 
 import zope.interface
 
@@ -60,6 +61,17 @@ to serve all files under specified web root ({0})."""
                          self.full_roots[name])
             try:
                 os.makedirs(self.full_roots[name])
+                # Set permissions as parent directory (GH #1389)
+                # We don't use the parameters in makedirs because it
+                # may not always work
+                # https://stackoverflow.com/questions/5231901/permission-problems-when-creating-a-dir-with-os-makedirs-python
+                stat_path = os.stat(path)
+                filemode = stat.S_IMODE(stat_path.st_mode)
+                os.chmod(self.full_roots[name], filemode)
+                # Set owner and group, too
+                os.chown(self.full_roots[name], stat_path.st_uid,
+                          stat_path.st_gid)
+
             except OSError as exception:
                 if exception.errno != errno.EEXIST:
                     raise errors.PluginError(
@@ -87,6 +99,15 @@ to serve all files under specified web root ({0})."""
         logger.debug("Attempting to save validation to %s", path)
         with open(path, "w") as validation_file:
             validation_file.write(validation.encode())
+
+        # Set permissions as parent directory (GH #1389)
+        parent_path = self.full_roots[achall.domain]
+        stat_parent_path = os.stat(parent_path)
+        filemode = stat.S_IMODE(stat_parent_path.st_mode)
+        # Remove execution bit (not needed for this file)
+        os.chmod(path, filemode & ~stat.S_IEXEC)
+        os.chown(path, stat_parent_path.st_uid, stat_parent_path.st_gid)
+
         return response
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring

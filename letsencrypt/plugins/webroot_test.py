@@ -3,6 +3,7 @@ import os
 import shutil
 import tempfile
 import unittest
+import stat
 
 import mock
 
@@ -68,6 +69,23 @@ class AuthenticatorTest(unittest.TestCase):
         os.chmod(self.path, 0o000)
         self.assertRaises(errors.PluginError, self.auth.prepare)
         os.chmod(self.path, 0o700)
+
+    def test_prepare_permissions(self):
+
+        # Remove exec bit from permission check, so that it
+        # matches the file
+        responses = self.auth.perform([self.achall])
+        parent_permissions = (stat.S_IMODE(os.stat(self.path).st_mode) &
+                              ~stat.S_IEXEC)
+
+        actual_permissions = stat.S_IMODE(os.stat(self.validation_path).st_mode)
+
+        self.assertEqual(parent_permissions, actual_permissions)
+        parent_gid = os.stat(self.path).st_gid
+        parent_uid = os.stat(self.path).st_uid
+
+        self.assertEqual(os.stat(self.validation_path).st_gid, parent_gid)
+        self.assertEqual(os.stat(self.validation_path).st_uid, parent_uid)
 
     def test_perform_cleanup(self):
         responses = self.auth.perform([self.achall])
