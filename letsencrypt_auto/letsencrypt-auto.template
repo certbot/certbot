@@ -1,0 +1,210 @@
+#!/bin/sh
+#
+# Download and run the latest release version of the Let's Encrypt client.
+
+set -e  # Work even if somebody does "sh thisscript.sh".
+
+# Note: you can set XDG_DATA_HOME or VENV_PATH before running this script,
+# if you want to change where the virtual environment will be installed
+XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
+VENV_NAME="letsencrypt"
+VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
+VENV_BIN=${VENV_PATH}/bin
+
+ExperimentalBootstrap() {
+  # Arguments: Platform name, bootstrap function name
+  if [ "$DEBUG" = 1 ] ; then
+    if [ "$2" != "" ] ; then
+      echo "Bootstrapping dependencies via $1..."
+      $2
+    fi
+  else
+    echo "WARNING: $1 support is very experimental at present..."
+    echo "if you would like to work on improving it, please ensure you have backups"
+    echo "and then run this script again with the --debug flag!"
+    exit 1
+  fi
+}
+
+DeterminePythonVersion() {
+  if command -v python2.7 > /dev/null ; then
+    export LE_PYTHON=${LE_PYTHON:-python2.7}
+  elif command -v python27 > /dev/null ; then
+    export LE_PYTHON=${LE_PYTHON:-python27}
+  elif command -v python2 > /dev/null ; then
+    export LE_PYTHON=${LE_PYTHON:-python2}
+  elif command -v python > /dev/null ; then
+    export LE_PYTHON=${LE_PYTHON:-python}
+  else
+    echo "Cannot find any Pythons... please install one!"
+  fi
+
+  PYVER=`$LE_PYTHON --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
+  if [ $PYVER -eq 26 ] ; then
+    ExperimentalBootstrap "Python 2.6"
+  elif [ $PYVER -lt 26 ] ; then
+    echo "You have an ancient version of Python entombed in your operating system..."
+    echo "This isn't going to work."
+    exit 1
+  fi
+}
+
+# Install required OS packages:
+Bootstrap() {
+  if [ -f /etc/debian_version ] ; then
+    echo "Bootstrapping dependencies for Debian-based OSes..."
+    BootstrapDebCommon
+  elif [ -f /etc/redhat-release ] ; then
+    echo "Bootstrapping dependencies for RedHat-based OSes..."
+    BootstrapRpmCommon
+  elif `grep -q openSUSE /etc/os-release` ; then
+    echo "Bootstrapping dependencies for openSUSE-based OSes..."
+    BootstrapSuseCommon
+  elif [ -f /etc/arch-release ] ; then
+    echo "Bootstrapping dependencies for Archlinux..."
+    BootstrapArchLinux
+  elif [ -f /etc/manjaro-release ] ; then
+    ExperimentalBootstrap "Manjaro Linux" BootstrapManjaro
+  elif [ -f /etc/gentoo-release ] ; then
+    ExperimentalBootstrap "Gentoo" BootstrapGentooCommon
+  elif uname | grep -iq FreeBSD ; then
+    ExperimentalBootstrap "FreeBSD" BootstrapFreeBsd
+  elif uname | grep -iq Darwin ; then
+    ExperimentalBootstrap "Mac OS X" BootstrapMac
+  elif grep -iq "Amazon Linux" /etc/issue ; then
+    ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
+  else
+    echo "Sorry, I don't know how to bootstrap Let's Encrypt on your operating system!"
+    echo
+    echo "You will need to bootstrap, configure virtualenv, and run a peep install manually."
+    echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
+    echo "for more info."
+  fi
+}
+
+# This script takes the same arguments as the main letsencrypt program, but it
+# additionally responds to --verbose (more output) and --debug (allow support
+# for experimental platforms)
+for arg in "$@" ; do
+  # This first clause is redundant with the third, but hedging on portability
+  if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- "-v+$" ; then
+    VERBOSE=1
+  elif [ "$arg" = "--debug" ] ; then
+    DEBUG=1
+  fi
+done
+
+# letsencrypt-auto needs root access to bootstrap OS dependencies, and
+# letsencrypt itself needs root access for almost all modes of operation
+# The "normal" case is that sudo is used for the steps that need root, but
+# this script *can* be run as root (not recommended), or fall back to using
+# `su`
+if test "`id -u`" -ne "0" ; then
+  if command -v sudo 1>/dev/null 2>&1; then
+    SUDO=sudo
+  else
+    echo \"sudo\" is not available, will use \"su\" for installation steps...
+    # Because the parameters in `su -c` has to be a string,
+    # we need properly escape it
+    su_sudo() {
+      args=""
+      # This `while` loop iterates over all parameters given to this function.
+      # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
+      # will be wrap in a pair of `'`, then append to `$args` string
+      # For example, `echo "It's only 1\$\!"` will be escaped to:
+      #   'echo' 'It'"'"'s only 1$!'
+      #     │       │└┼┘│
+      #     │       │ │ └── `'s only 1$!'` the literal string
+      #     │       │ └── `\"'\"` is a single quote (as a string)
+      #     │       └── `'It'`, to be concatenated with the strings followed it
+      #     └── `echo` wrapped in a pair of `'`, it's totally fine for the shell command itself
+      while [ $# -ne 0 ]; do
+        args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
+        shift
+      done
+      su root -c "$args"
+    }
+    SUDO=su_sudo
+  fi
+else
+  SUDO=
+fi
+
+if [ "$1" = "--os-packages-only" ]; then
+  Bootstrap
+elif [ "$1" != "--_skip-to-install" ]; then
+  echo "Upgrading letsencrypt-auto..."
+
+  if [ ! -f $VENV_BIN/letsencrypt ]; then
+    OLD_VERSION="0.0.0"  # ($VENV_BIN/letsencrypt --version)
+  else
+    OLD_VERSION="0.0.0"
+  fi
+
+  # TODO: Don't bother upgrading if we're already up to date.
+  if [ "$OLD_VERSION" != "1.2.3" ]; then
+    Bootstrap
+    echo "Creating virtual environment..."
+    rm -rf "$VENV_PATH"
+    DeterminePythonVersion
+    if [ "$VERBOSE" = 1 ] ; then
+      virtualenv --no-site-packages --python $LE_PYTHON $VENV_PATH
+    else
+      virtualenv --no-site-packages --python $LE_PYTHON $VENV_PATH > /dev/null
+    fi
+    NEXT: Is all this stuff in the right if branch?
+
+    # Now we drop into Python so we don't have to install even more
+    # dependencies (curl, etc.), for better flow control, and for the
+    # option of future Windows compatibility.
+    #
+    # This Python script prints a path to a temp dir
+    # containing a new copy of letsencrypt-auto or returns non-zero.
+    # There is no $ interpolation due to quotes on heredoc delimiters.
+    set +e
+    TEMP_DIR=`$PYTHON - << "UNLIKELY_EOF"
+{download_upgrade}
+UNLIKELY_EOF`
+    DOWNLOAD_STATUS=$?
+    set -e
+    if [ "$DOWNLOAD_STATUS" = 0 ]; then
+      # Install new copy of letsencrypt-auto. This preserves permissions and
+      # ownership from the old copy.
+      # TODO: Deal with quotes in pathnames.
+      echo "Installing new version of letsencrypt-auto..."
+      echo "  " $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$0"
+      $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$0"
+      # TODO: Clean up temp dir safely, even if it has quotes in its path.
+      "$0" --_skip-to-install "$TEMP_DIR" "$@"
+    else
+      # Report error:
+      echo $TEMP_DIR
+      exit 1
+    fi
+  fi  # should upgrade
+else  # --_skip-to-install was passed.
+  # Install Python dependencies with peep, then run letsencrypt.
+  echo "Installing Python package dependencies..."
+  TEMP_DIR="$2"
+  shift 2
+  cat << "UNLIKELY_EOF" > $TEMP_DIR/letsencrypt-auto-requirements.txt
+{requirements}
+UNLIKELY_EOF
+
+  cat << "UNLIKELY_EOF" > $TEMP_DIR/peep.py
+{peep}
+UNLIKELY_EOF
+
+  set +e
+  PEEP_OUT=`$PYTHON $TEMP_DIR/peep.py install -r $TEMP_DIR/letsencrypt-auto-requirements.txt`
+  PEEP_STATUS=$?
+  set -e
+  if [ "$PEEP_STATUS" = 0 ]; then
+    echo "Running letsencrypt..."
+    $SUDO $VENV_BIN/letsencrypt "$@"
+  else
+    # Report error:
+    echo $PEEP_OUT
+    exit 1
+  fi
+fi

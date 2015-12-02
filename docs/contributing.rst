@@ -359,75 +359,37 @@ Now run tests inside the Docker image:
 Notes on OS dependencies
 ========================
 
-OS level dependencies are managed by scripts in ``bootstrap``.  Some notes
-are provided here mainly for the :ref:`developers <hacking>` reference.
+OS-level dependencies can be installed like so:
 
-In general:
+.. code-block:: shell
+
+    letsencrypt-auto/letsencrypt-auto --os-packages-only
+
+In general...
 
 * ``sudo`` is required as a suggested way of running privileged process
 * `Augeas`_ is required for the Python bindings
 * ``virtualenv`` and ``pip`` are used for managing other python library
   dependencies
 
+What follow are OS-specific notes for the :ref:`developers <hacking>` reference.
+
 .. _Augeas: http://augeas.net/
 .. _Virtualenv: https://virtualenv.pypa.io
-
-Ubuntu
-------
-
-.. code-block:: shell
-
-   sudo ./bootstrap/ubuntu.sh
 
 
 Debian
 ------
-
-.. code-block:: shell
-
-   sudo ./bootstrap/debian.sh
 
 For squeeze you will need to:
 
 - Use ``virtualenv --no-site-packages -p python`` instead of ``-p python2``.
 
 
-.. _`#280`: https://github.com/letsencrypt/letsencrypt/issues/280
-
-
-Mac OSX
--------
-
-.. code-block:: shell
-
-   ./bootstrap/mac.sh
-
-
-Fedora
-------
-
-.. code-block:: shell
-
-   sudo ./bootstrap/fedora.sh
-
-
-Centos 7
---------
-
-.. code-block:: shell
-
-   sudo ./bootstrap/centos.sh
-
-
 FreeBSD
 -------
 
-.. code-block:: shell
-
-   sudo ./bootstrap/freebsd.sh
-
-Bootstrap script for FreeBSD uses ``pkg`` for package installation,
-i.e. it does not use ports.
+Package installation for FreeBSD uses ``pkg``, not ports.
 
 FreeBSD by default uses ``tcsh``. In order to activate virtualenv (see
 below), you will need a compatible shell, e.g. ``pkg install bash &&

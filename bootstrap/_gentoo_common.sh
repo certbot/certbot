@@ -12,12 +12,12 @@ PACKAGES="dev-vcs/git
 
 case "$PACKAGE_MANAGER" in
   (paludis)
-    cave resolve --keep-targets if-possible $PACKAGES -x
+    "$SUDO" cave resolve --keep-targets if-possible $PACKAGES -x
     ;;
   (pkgcore)
-    pmerge --noreplace $PACKAGES
+    "$SUDO" pmerge --noreplace $PACKAGES
     ;;
   (portage|*)
-    emerge --noreplace $PACKAGES
+    "$SUDO" emerge --noreplace $PACKAGES
     ;;
 esac

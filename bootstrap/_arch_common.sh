@@ -20,8 +20,8 @@ deps="
   pkg-config
 "
 
-missing=$(pacman -T $deps)
+missing=$("$SUDO" pacman -T $deps)
 
 if [ "$missing" ]; then
-  pacman -S --needed $missing
+  "$SUDO" pacman -S --needed $missing
 fi

@@ -1,0 +1,6 @@
+# sha256: Jo-gDCfedW1xZj3WH3OkqNhydWm7G0dLLOYCBVOCaHI
+# sha256: mXhebPcVzc3lne4FpnbpnwSDWnHnztIByjF0AcMiupY
+certifi==2015.04.28
+
+# sha256: mrHTE_mbIJ-PcaYp82gzAwyNfHIoLPd1aDS69WfcpmI
+click==4.0
