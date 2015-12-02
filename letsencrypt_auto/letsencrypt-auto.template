@@ -49,13 +49,13 @@ DeterminePythonVersion() {
   fi
 }
 
-{{bootstrap_deb_common}}
-{{bootstrap_rpm_common}}
-{{bootstrap_suse_common}}
-{{bootstrap_arch_common}}
-{{bootstrap_gentoo_common}}
-{{bootstrap_free_bsd}}
-{{bootstrap_mac}}
+{{ bootstrappers/deb_common.sh }}
+{{ bootstrappers/rpm_common.sh }}
+{{ bootstrappers/suse_common.sh }}
+{{ bootstrappers/arch_common.sh }}
+{{ bootstrappers/gentoo_common.sh }}
+{{ bootstrappers/free_bsd.sh }}
+{{ bootstrappers/mac.sh }}
 
 # Install required OS packages:
 Bootstrap() {
@@ -180,7 +180,7 @@ elif [ "$1" != "--_skip-to-install" ]; then
     # There is no $ interpolation due to quotes on heredoc delimiters.
     set +e
     TEMP_DIR=`$PYTHON - << "UNLIKELY_EOF"
-{{download_upgrade}}
+{{ download_upgrade.py }}
 UNLIKELY_EOF`
     DOWNLOAD_STATUS=$?
     set -e
@@ -205,11 +205,11 @@ else  # --_skip-to-install was passed.
   TEMP_DIR="$2"
   shift 2
   cat << "UNLIKELY_EOF" > $TEMP_DIR/letsencrypt-auto-requirements.txt
-{{requirements}}
+{{ letsencrypt-auto-requirements.txt }}
 UNLIKELY_EOF
 
   cat << "UNLIKELY_EOF" > $TEMP_DIR/peep.py
-{{peep}}
+{{ peep.py }}
 UNLIKELY_EOF
 
   set +e
