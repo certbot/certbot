@@ -304,6 +304,14 @@ def _report_new_cert(cert_path, fullchain_path):
            .format(and_chain, path, expiry))
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
+def _suggest_donate():
+    "Suggest a donation to support Let's Encrypt"
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    msg = ("If like Let's Encrypt, please consider supporting our work by:\n\n"
+           "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
+           "Donating to EFF:                    https://eff.org/donate-le\n\n")
+    reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
+
 
 def _auth_from_domains(le_client, config, domains):
     """Authenticate and enroll certificate."""
@@ -473,6 +481,8 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     else:
         display_ops.success_renewal(domains)
 
+    _suggest_donate()
+
 
 def obtain_cert(args, config, plugins):
     """Authenticate & obtain cert, but do not install it."""
@@ -501,6 +511,8 @@ def obtain_cert(args, config, plugins):
     else:
         domains = _find_domains(args, installer)
         _auth_from_domains(le_client, config, domains)
+
+    _suggest_donate()
 
 
 def install(args, config, plugins):
