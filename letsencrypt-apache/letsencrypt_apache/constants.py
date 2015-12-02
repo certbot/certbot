@@ -30,7 +30,7 @@ REWRITE_HTTPS_ARGS = [
 
 REWRITE_HTTPS_ARGS_WITH_END = [
     "^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,QSA,R=permanent]"]
-"""Apache version >= 2.3.9 rewrite rule arguments used for redirections to 
+"""Apache version >= 2.3.9 rewrite rule arguments used for redirections to
     https vhost"""
 
 HSTS_ARGS = ["always", "set", "Strict-Transport-Security",

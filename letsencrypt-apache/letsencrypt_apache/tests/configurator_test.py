@@ -751,26 +751,6 @@ class TwoVhost80Test(util.ApacheTest):
             errors.PluginEnhancementAlreadyPresent,
             self.config.enhance, "encryption-example.demo", "redirect")
 
-    def test_unknown_rewrite(self):
-        # Skip the enable mod
-        self.config.parser.modules.add("rewrite_module")
-        self.config.parser.add_dir(
-            self.vh_truth[3].path, "RewriteRule", ["Unknown"])
-        self.config.save()
-        self.assertRaises(
-            errors.PluginError,
-            self.config.enhance, "letsencrypt.demo", "redirect")
-
-    def test_unknown_rewrite2(self):
-        # Skip the enable mod
-        self.config.parser.modules.add("rewrite_module")
-        self.config.parser.add_dir(
-            self.vh_truth[3].path, "RewriteRule", ["Unknown", "2", "3"])
-        self.config.save()
-        self.assertRaises(
-            errors.PluginError,
-            self.config.enhance, "letsencrypt.demo", "redirect")
-
     def test_create_own_redirect(self):
         self.config.parser.modules.add("rewrite_module")
         # For full testing... give names...

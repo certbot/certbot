@@ -1,7 +1,6 @@
 """Apache Configuration based off of Augeas Configurator."""
 # pylint: disable=too-many-lines
 import filecmp
-import itertools
 import logging
 import os
 import re
