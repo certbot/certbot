@@ -915,6 +915,18 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 raise errors.PluginEnhancementAlreadyPresent(
                     "Let's Encrypt has already enabled redirection")
 
+
+    def _is_rewrite_exists(self, host):
+        """Checks if there exists a rewriterule directive
+
+        :param vhost: vhost to check
+        :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
+
+        """
+        rewrite_path = self.parser.find_dir(
+                "RewriteRule", None, start=vhost.path)
+        return bool(rewrite_path)
+
     def _create_redirect_vhost(self, ssl_vhost):
         """Creates an http_vhost specifically to redirect for the ssl_vhost.
 
