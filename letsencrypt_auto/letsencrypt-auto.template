@@ -171,12 +171,12 @@ elif [ "$1" != "--_skip-to-install" ]; then
     fi
 
     # Now we drop into Python so we don't have to install even more
-    # dependencies (curl, etc.), for better flow control, and for the
-    # option of future Windows compatibility.
+    # dependencies (curl, etc.), for better flow control, and for the option of
+    # future Windows compatibility.
     #
-    # This Python script prints a path to a temp dir
-    # containing a new copy of letsencrypt-auto or returns non-zero.
-    # There is no $ interpolation due to quotes on heredoc delimiters.
+    # This Python script prints a path to a temp dir containing a new copy of
+    # letsencrypt-auto or returns non-zero. There is no $ interpolation due to
+    # quotes on heredoc delimiters.
     set +e
     # -------------------------------------------------------------------------
     TEMP_DIR=`$LE_PYTHON - << "UNLIKELY_EOF"
