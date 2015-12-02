@@ -128,7 +128,7 @@ Current Features
   - standalone (runs its own simple webserver to prove you control a domain)
   - webroot (adds files to webroot directories in order to prove control of
     domains and obtain certs)
-  - nginx/0.8.48+ (under development)
+  - nginx/0.8.48+ (highly experimental, not included in letsencrypt-auto)
 
 * The private key is generated locally on your system.
 * Can talk to the Let's Encrypt  CA or optionally to other ACME
