@@ -399,7 +399,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._treat_as_renewal')
     @mock.patch('letsencrypt.cli._init_le_client')
-    def test_certonly_renewal(self, mock_init, mock_renewal, mock_get_utility, suggest):
+    def test_certonly_renewal(self, mock_init, mock_renewal, mock_get_utility, _suggest):
         cert_path = '/etc/letsencrypt/live/foo.bar/cert.pem'
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
 
