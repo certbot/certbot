@@ -6,8 +6,7 @@ export GPG_TTY=$(tty)
 
 version="0.0.0.dev$(date +%Y%m%d)"
 DEV_RELEASE_BRANCH="dev-release"
-# TODO: create a real release key instead of using Kuba's personal one
-RELEASE_GPG_KEY="${RELEASE_GPG_KEY:-148C30F6F7E429337A72D992B00B9CC82D7ADF2C}"
+RELEASE_GPG_KEY=A2CFB51FA275A7286234E7B24D17C995CD9775F2
 
 # port for a local Python Package Index (used in testing)
 PORT=${PORT:-1234}
