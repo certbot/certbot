@@ -24,7 +24,7 @@ from letsencrypt import reverter
 from letsencrypt.plugins import common
 
 from letsencrypt_nginx import constants
-from letsencrypt_nginx import dvsni
+from letsencrypt_nginx import tls_sni_01
 from letsencrypt_nginx import obj
 from letsencrypt_nginx import parser
 
@@ -379,11 +379,12 @@ class NginxConfigurator(common.Plugin):
         :param unused_options: Not currently used
         :type unused_options: Not Available
         """
-        redirect_block = [[['if', '($scheme != "https")'],
+        redirect_block = [[
+            ['if', '($scheme != "https")'],
             [['return', '301 https://$host$request_uri']]
         ]]
-        self.parser.add_server_directives(vhost.filep, vhost.names,
-            redirect_block)
+        self.parser.add_server_directives(
+            vhost.filep, vhost.names, redirect_block)
         logger.info("Redirecting all traffic to ssl in %s", vhost.filep)
 
     ######################################
@@ -573,15 +574,15 @@ class NginxConfigurator(common.Plugin):
         """
         self._chall_out += len(achalls)
         responses = [None] * len(achalls)
-        nginx_dvsni = dvsni.NginxDvsni(self)
+        chall_doer = tls_sni_01.NginxTlsSni01(self)
 
         for i, achall in enumerate(achalls):
-            # Currently also have dvsni hold associated index
-            # of the challenge. This helps to put all of the responses back
-            # together when they are all complete.
-            nginx_dvsni.add_chall(achall, i)
+            # Currently also have chall_doer hold associated index of the
+            # challenge. This helps to put all of the responses back together
+            # when they are all complete.
+            chall_doer.add_chall(achall, i)
 
-        sni_response = nginx_dvsni.perform()
+        sni_response = chall_doer.perform()
         # Must restart in order to activate the challenges.
         # Handled here because we may be able to load up other challenge types
         self.restart()
@@ -590,7 +591,7 @@ class NginxConfigurator(common.Plugin):
         # in the responses return value. All responses must be in the same order
         # as the original challenges.
         for i, resp in enumerate(sni_response):
-            responses[nginx_dvsni.indices[i]] = resp
+            responses[chall_doer.indices[i]] = resp
 
         return responses
 

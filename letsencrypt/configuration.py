@@ -5,8 +5,6 @@ import re
 
 import zope.interface
 
-from acme import challenges
-
 from letsencrypt import constants
 from letsencrypt import errors
 from letsencrypt import interfaces
@@ -79,13 +77,6 @@ class NamespaceConfig(object):
     def temp_checkpoint_dir(self):  # pylint: disable=missing-docstring
         return os.path.join(
             self.namespace.work_dir, constants.TEMP_CHECKPOINT_DIR)
-
-    @property
-    def http01_port(self):  # pylint: disable=missing-docstring
-        if self.namespace.http01_port is not None:
-            return self.namespace.http01_port
-        else:
-            return challenges.HTTP01Response.PORT
 
 
 class RenewerConfiguration(object):

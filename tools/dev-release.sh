@@ -26,8 +26,9 @@ else
     echo Releasing developer version "$version"...
 fi
 
-# TODO: create a real release key instead of using Kuba's personal one
-RELEASE_GPG_KEY="${RELEASE_GPG_KEY:-148C30F6F7E429337A72D992B00B9CC82D7ADF2C}"
+RELEASE_GPG_KEY=A2CFB51FA275A7286234E7B24D17C995CD9775F2
+# Needed to fix problems with git signatures and pinentry
+export GPG_TTY=$(tty)
 
 # port for a local Python Package Index (used in testing)
 PORT=${PORT:-1234}

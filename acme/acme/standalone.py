@@ -133,7 +133,6 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 self.log_message("Serving HTTP01 with token %r",
                                  resource.chall.encode("token"))
                 self.send_response(http_client.OK)
-                self.send_header("Content-type", resource.chall.CONTENT_TYPE)
                 self.end_headers()
                 self.wfile.write(resource.validation.encode())
                 return

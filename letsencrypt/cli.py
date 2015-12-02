@@ -1,12 +1,14 @@
 """Let's Encrypt CLI."""
 # TODO: Sanity check all input.  Be sure to avoid shell code etc...
+# pylint: disable=too-many-lines
+# (TODO: split this file into main.py and cli.py)
 import argparse
 import atexit
 import functools
+import json
 import logging
 import logging.handlers
 import os
-import pkg_resources
 import sys
 import time
 import traceback
@@ -59,6 +61,7 @@ the cert. Major SUBCOMMANDS are:
   revoke               Revoke a previously obtained certificate
   rollback             Rollback server configuration changes made during install
   config_changes       Show changes made to server config during installation
+  plugins              Display information about installed plugins
 
 """
 
@@ -71,7 +74,7 @@ USAGE = SHORT_USAGE + """Choice of server plugins for obtaining and installing c
   %s
   --webroot         Place files in a server's webroot folder for authentication
 
-OR use different servers to obtain (authenticate) the cert and then install it:
+OR use different plugins to obtain (authenticate) the cert and then install it:
 
   --authenticator standalone --installer apache
 
@@ -99,7 +102,7 @@ def usage_strings(plugins):
 
 
 def _find_domains(args, installer):
-    if args.domains is None:
+    if not args.domains:
         domains = display_ops.choose_names(installer)
     else:
         domains = args.domains
@@ -140,10 +143,8 @@ def _determine_account(args, config):
         elif len(accounts) == 1:
             acc = accounts[0]
         else:  # no account registered yet
-            if args.email is None:
+            if args.email is None and not args.register_unsafely_without_email:
                 args.email = display_ops.get_email()
-            if not args.email:  # get_email might return ""
-                args.email = None
 
             def _tos_cb(regr):
                 if args.tos:
@@ -302,6 +303,14 @@ def _report_new_cert(cert_path, fullchain_path):
            .format(and_chain, path, expiry))
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
+def _suggest_donate():
+    "Suggest a donation to support Let's Encrypt"
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    msg = ("If like Let's Encrypt, please consider supporting our work by:\n\n"
+           "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
+           "Donating to EFF:                    https://eff.org/donate-le\n\n")
+    reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
+
 
 def _auth_from_domains(le_client, config, domains):
     """Authenticate and enroll certificate."""
@@ -381,10 +390,9 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
     raise errors.PluginSelectionError(msg)
 
 
-def choose_configurator_plugins(args, config, plugins, verb): # pylint: disable=too-many-branches
+def choose_configurator_plugins(args, config, plugins, verb):  # pylint: disable=too-many-branches
     """
     Figure out which configurator we're going to use
-
     :raises error.PluginSelectionError if there was a problem
     """
 
@@ -465,18 +473,20 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
         domains, lineage.privkey, lineage.cert,
         lineage.chain, lineage.fullchain)
 
-    le_client.enhance_config(domains, args.redirect)
+    le_client.enhance_config(domains, config)
 
     if len(lineage.available_versions("cert")) == 1:
         display_ops.success_installation(domains)
     else:
         display_ops.success_renewal(domains)
 
+    _suggest_donate()
+
 
 def obtain_cert(args, config, plugins):
     """Authenticate & obtain cert, but do not install it."""
 
-    if args.domains is not None and args.csr is not None:
+    if args.domains and args.csr is not None:
         # TODO: --csr could have a priority, when --domains is
         # supplied, check if CSR matches given domains?
         return "--domains and --csr are mutually exclusive"
@@ -501,6 +511,8 @@ def obtain_cert(args, config, plugins):
         domains = _find_domains(args, installer)
         _auth_from_domains(le_client, config, domains)
 
+    _suggest_donate()
+
 
 def install(args, config, plugins):
     """Install a previously obtained cert in a server."""
@@ -519,7 +531,7 @@ def install(args, config, plugins):
     le_client.deploy_certificate(
         domains, args.key_path, args.cert_path, args.chain_path,
         args.fullchain_path)
-    le_client.enhance_config(domains, args.redirect)
+    le_client.enhance_config(domains, config)
 
 
 def revoke(args, config, unused_plugins):  # TODO: coop with renewal config
@@ -672,7 +684,6 @@ class HelpfulArgumentParser(object):
             print usage
             sys.exit(0)
         self.visible_topics = self.determine_help_topics(self.help_arg)
-        #print self.visible_topics
         self.groups = {}  # elements are added by .add_group()
 
     def parse_args(self):
@@ -685,31 +696,8 @@ class HelpfulArgumentParser(object):
         parsed_args = self.parser.parse_args(self.args)
         parsed_args.func = self.VERBS[self.verb]
 
-        parsed_args.domains = self._parse_domains(parsed_args.domains)
         return parsed_args
 
-    def _parse_domains(self, domains):
-        """Helper function for parse_args() that parses domains from a
-        (possibly) comma separated list and returns list of unique domains.
-
-        :param domains: List of domain flags
-        :type domains: `list` of `string`
-
-        :returns: List of unique domains
-        :rtype: `list` of `string`
-
-        """
-
-        uniqd = None
-
-        if domains:
-            dlist = []
-            for domain in domains:
-                dlist.extend([d.strip() for d in domain.split(",")])
-            # Make sure we don't have duplicates
-            uniqd = [d for i, d in enumerate(dlist) if d not in dlist[:i]]
-
-        return uniqd
 
     def determine_verb(self):
         """Determines the verb/subcommand provided by the user.
@@ -772,6 +760,20 @@ class HelpfulArgumentParser(object):
         else:
             kwargs["help"] = argparse.SUPPRESS
             self.parser.add_argument(*args, **kwargs)
+
+    def add_deprecated_argument(self, argument_name, num_args):
+        """Adds a deprecated argument with the name argument_name.
+
+        Deprecated arguments are not shown in the help. If they are used
+        on the command line, a warning is shown stating that the
+        argument is deprecated and no other action is taken.
+
+        :param str argument_name: Name of deprecated argument.
+        :param int nargs: Number of arguments the option takes.
+
+        """
+        le_util.add_deprecated_argument(
+            self.parser.add_argument, argument_name, num_args)
 
     def add_group(self, topic, **kwargs):
         """
@@ -847,15 +849,25 @@ def prepare_and_parse_args(plugins, args):
     helpful.add(
         None, "-t", "--text", dest="text_mode", action="store_true",
         help="Use the text output instead of the curses UI.")
+    helpful.add(
+        None, "--register-unsafely-without-email", action="store_true",
+        help="Specifying this flag enables registering an account with no "
+             "email address. This is strongly discouraged, because in the "
+             "event of key loss or account compromise you will irrevocably "
+             "lose access to your account. You will also be unable to receive "
+             "notice about impending expiration of revocation of your "
+             "certificates. Updates to the Subscriber Agreement will still "
+             "affect you, and will be effective 14 days after posting an "
+             "update to the web site.")
     helpful.add(None, "-m", "--email", help=config_help("email"))
     # positional arg shadows --domains, instead of appending, and
     # --domains is useful, because it can be stored in config
     #for subparser in parser_run, parser_auth, parser_install:
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
-    helpful.add(None, "-d", "--domains", dest="domains",
-                metavar="DOMAIN", action="append",
+    helpful.add(None, "-d", "--domains", "--domain", dest="domains",
+                metavar="DOMAIN", action=DomainFlagProcessor, default=[],
                 help="Domain names to apply. For multiple domains you can use "
-                "multiple -d flags or enter a comma separated list of domains"
+                "multiple -d flags or enter a comma separated list of domains "
                 "as a parameter.")
     helpful.add(
         None, "--duplicate", dest="duplicate", action="store_true",
@@ -871,10 +883,7 @@ def prepare_and_parse_args(plugins, args):
     helpful.add(
         "automation", "--renew-by-default", action="store_true",
         help="Select renewal by default when domains are a superset of a "
-             "a previously attained cert")
-    helpful.add(
-        "automation", "--agree-dev-preview", action="store_true",
-        help="Agree to the Let's Encrypt Developer Preview Disclaimer")
+             "previously attained cert")
     helpful.add(
         "automation", "--agree-tos", dest="tos", action="store_true",
         help="Agree to the Let's Encrypt Subscriber Agreement")
@@ -898,8 +907,9 @@ def prepare_and_parse_args(plugins, args):
         "testing", "--tls-sni-01-port", type=int,
         default=flag_default("tls_sni_01_port"),
         help=config_help("tls_sni_01_port"))
-    helpful.add("testing", "--http-01-port", dest="http01_port", type=int,
-                help=config_help("http01_port"))
+    helpful.add(
+        "testing", "--http-01-port", type=int, dest="http01_port",
+        default=flag_default("http01_port"), help=config_help("http01_port"))
 
     helpful.add_group(
         "security", description="Security parameters & server settings")
@@ -915,9 +925,30 @@ def prepare_and_parse_args(plugins, args):
         help="Do not automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost.", dest="redirect", default=None)
     helpful.add(
+        "security", "--hsts", action="store_true",
+        help="Add the Strict-Transport-Security header to every HTTP response."
+             " Forcing browser to use always use SSL for the domain."
+             " Defends against SSL Stripping.", dest="hsts", default=False)
+    helpful.add(
+        "security", "--no-hsts", action="store_false",
+        help="Do not automatically add the Strict-Transport-Security header"
+             " to every HTTP response.", dest="hsts", default=False)
+    helpful.add(
+        "security", "--uir", action="store_true",
+        help="Add the \"Content-Security-Policy: upgrade-insecure-requests\""
+             " header to every HTTP response. Forcing the browser to use"
+             " https:// for every http:// resource.", dest="uir", default=None)
+    helpful.add(
+        "security", "--no-uir", action="store_false",
+        help=" Do not automatically set the \"Content-Security-Policy:"
+        " upgrade-insecure-requests\" header to every HTTP response.",
+        dest="uir", default=None)
+    helpful.add(
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
+
+    helpful.add_deprecated_argument("--agree-dev-preview", 0)
 
     _create_subparsers(helpful)
     _paths_parser(helpful)
@@ -939,8 +970,7 @@ def _create_subparsers(helpful):
         help="Set a custom user agent string for the client. User agent strings allow "
              "the CA to collect high level statistics about success rates by OS and "
              "plugin. If you wish to hide your server OS version from the Let's "
-             'Encrypt server, set this to "".'
-    )
+             'Encrypt server, set this to "".')
     helpful.add("certonly",
                 "--csr", type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER"
@@ -1013,7 +1043,7 @@ def _plugins_parsing(helpful, plugins):
     helpful.add_group(
         "plugins", description="Let's Encrypt client supports an "
         "extensible plugins architecture. See '%(prog)s plugins' for a "
-        "list of all available plugins and their names. You can force "
+        "list of all installed plugins and their names. You can force "
         "a particular plugin by setting options provided below. Further "
         "down this help message you will find plugin-specific options "
         "(prefixed by --{plugin_name}).")
@@ -1041,6 +1071,61 @@ def _plugins_parsing(helpful, plugins):
     # specific groups (so that plugins_group.description makes sense)
 
     helpful.add_plugin_args(plugins)
+
+    # These would normally be a flag within the webroot plugin, but because
+    # they are parsed in conjunction with --domains, they live here for
+    # legibiility. helpful.add_plugin_ags must be called first to add the
+    # "webroot" topic
+    helpful.add("webroot", "-w", "--webroot-path", action=WebrootPathProcessor,
+                help="public_html / webroot path. This can be specified multiple times to "
+                     "handle different domains; each domain will have the webroot path that"
+                     " preceded it.  For instance: `-w /var/www/example -d example.com -d "
+                     "www.example.com -w /var/www/thing -d thing.net -d m.thing.net`")
+    parse_dict = lambda s: dict(json.loads(s))
+    # --webroot-map still has some awkward properties, so it is undocumented
+    helpful.add("webroot", "--webroot-map", default={}, type=parse_dict,
+                help=argparse.SUPPRESS)
+
+
+class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
+    def __init__(self, *args, **kwargs):
+        self.domain_before_webroot = False
+        argparse.Action.__init__(self, *args, **kwargs)
+
+    def __call__(self, parser, config, webroot, option_string=None):
+        """
+        Keep a record of --webroot-path / -w flags during processing, so that
+        we know which apply to which -d flags
+        """
+        if config.webroot_path is None:      # first -w flag encountered
+            config.webroot_path = []
+            # if any --domain flags preceded the first --webroot-path flag,
+            # apply that webroot path to those; subsequent entries in
+            # config.webroot_map are filled in by cli.DomainFlagProcessor
+            if config.domains:
+                self.domain_before_webroot = True
+                for d in config.domains:
+                    config.webroot_map.setdefault(d, webroot)
+        elif self.domain_before_webroot:
+            # FIXME if you set domains in a config file, you should get a different error
+            # here, pointing you to --webroot-map
+            raise errors.Error("If you specify multiple webroot paths, one of "
+                               "them must precede all domain flags")
+        config.webroot_path.append(webroot)
+
+
+class DomainFlagProcessor(argparse.Action): # pylint: disable=missing-docstring
+    def __call__(self, parser, config, domain_arg, option_string=None):
+        """
+        Process a new -d flag, helping the webroot plugin construct a map of
+        {domain : webrootpath} if -w / --webroot-path is in use
+        """
+        for domain in (d.strip() for d in domain_arg.split(",")):
+            if domain not in config.domains:
+                config.domains.append(domain)
+                # Each domain has a webroot_path of the most recent -w flag
+                if config.webroot_path:
+                    config.webroot_map[domain] = config.webroot_path[-1]
 
 
 def setup_log_file_handler(args, logfile, fmt):
@@ -1120,11 +1205,19 @@ def _handle_exception(exc_type, exc_value, trace, args):
         if issubclass(exc_type, errors.Error):
             sys.exit(exc_value)
         else:
+            # Here we're passing a client or ACME error out to the client at the shell
             # Tell the user a bit about what happened, without overwhelming
             # them with a full traceback
-            msg = ("An unexpected error occurred.\n" +
-                   traceback.format_exception_only(exc_type, exc_value)[0] +
-                   "Please see the ")
+            err = traceback.format_exception_only(exc_type, exc_value)[0]
+            # Typical error from the ACME module:
+            # acme.messages.Error: urn:acme:error:malformed :: The request message was
+            # malformed :: Error creating new registration :: Validation of contact
+            # mailto:none@longrandomstring.biz failed: Server failure at resolver
+            if ("urn:acme" in err and ":: " in err
+                and args.verbose_count <= flag_default("verbose_count")):
+                # prune ACME error code, we have a human description
+                _code, _sep, err = err.partition(":: ")
+            msg = "An unexpected error occurred:\n" + err + "Please see the "
             if args is None:
                 msg += "logfile '{0}' for more details.".format(logfile)
             else:
@@ -1175,13 +1268,6 @@ def main(cli_args=sys.argv[1:]):
     report = reporter.Reporter()
     zope.component.provideUtility(report)
     atexit.register(report.atexit_print_messages)
-
-    # TODO: remove developer preview prompt for the launch
-    if not config.agree_dev_preview:
-        disclaimer = pkg_resources.resource_string("letsencrypt", "DISCLAIMER")
-        if not zope.component.getUtility(interfaces.IDisplay).yesno(
-                disclaimer, "Agree", "Cancel"):
-            raise errors.Error("Must agree to TOS")
 
     if not os.geteuid() == 0:
         logger.warning(

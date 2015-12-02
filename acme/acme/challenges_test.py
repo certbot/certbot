@@ -92,7 +92,6 @@ class HTTP01ResponseTest(unittest.TestCase):
         from acme.challenges import HTTP01
         self.chall = HTTP01(token=(b'x' * 16))
         self.response = self.chall.response(KEY)
-        self.good_headers = {'Content-Type': HTTP01.CONTENT_TYPE}
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
@@ -113,24 +112,26 @@ class HTTP01ResponseTest(unittest.TestCase):
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_good_validation(self, mock_get):
         validation = self.chall.validation(KEY)
-        mock_get.return_value = mock.MagicMock(
-            text=validation, headers=self.good_headers)
+        mock_get.return_value = mock.MagicMock(text=validation)
         self.assertTrue(self.response.simple_verify(
             self.chall, "local", KEY.public_key()))
         mock_get.assert_called_once_with(self.chall.uri("local"))
 
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_bad_validation(self, mock_get):
-        mock_get.return_value = mock.MagicMock(
-            text="!", headers=self.good_headers)
+        mock_get.return_value = mock.MagicMock(text="!")
         self.assertFalse(self.response.simple_verify(
             self.chall, "local", KEY.public_key()))
 
     @mock.patch("acme.challenges.requests.get")
-    def test_simple_verify_bad_content_type(self, mock_get):
-        mock_get().text = self.chall.token
-        self.assertFalse(self.response.simple_verify(
+    def test_simple_verify_whitespace_validation(self, mock_get):
+        from acme.challenges import HTTP01Response
+        mock_get.return_value = mock.MagicMock(
+            text=(self.chall.validation(KEY) +
+                  HTTP01Response.WHITESPACE_CUTSET))
+        self.assertTrue(self.response.simple_verify(
             self.chall, "local", KEY.public_key()))
+        mock_get.assert_called_once_with(self.chall.uri("local"))
 
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_connection_error(self, mock_get):

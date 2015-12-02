@@ -7,7 +7,6 @@ CLI_DEFAULTS = dict(
     ctl="apache2ctl",
     enmod="a2enmod",
     dismod="a2dismod",
-    init_script="/etc/init.d/apache2",
     le_vhost_ext="-le-ssl.conf",
 )
 """CLI defaults."""
@@ -27,3 +26,15 @@ AUGEAS_LENS_DIR = pkg_resources.resource_filename(
 REWRITE_HTTPS_ARGS = [
     "^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,QSA,R=permanent]"]
 """Apache rewrite rule arguments used for redirections to https vhost"""
+
+
+HSTS_ARGS = ["always", "set", "Strict-Transport-Security",
+    "\"max-age=31536000; includeSubDomains\""]
+"""Apache header arguments for HSTS"""
+
+UIR_ARGS = ["always", "set", "Content-Security-Policy",
+    "upgrade-insecure-requests"]
+
+HEADER_ARGS = {"Strict-Transport-Security": HSTS_ARGS,
+        "Upgrade-Insecure-Requests": UIR_ARGS}
+

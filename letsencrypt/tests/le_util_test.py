@@ -1,8 +1,10 @@
 """Tests for letsencrypt.le_util."""
+import argparse
 import errno
 import os
 import shutil
 import stat
+import StringIO
 import tempfile
 import unittest
 
@@ -282,6 +284,43 @@ class SafeEmailTest(unittest.TestCase):
         ]
         for addr in addrs:
             self.assertFalse(self._call(addr), "%s failed." % addr)
+
+
+class AddDeprecatedArgumentTest(unittest.TestCase):
+    """Test add_deprecated_argument."""
+    def setUp(self):
+        self.parser = argparse.ArgumentParser()
+
+    def _call(self, argument_name, nargs):
+        from letsencrypt.le_util import add_deprecated_argument
+
+        add_deprecated_argument(self.parser.add_argument, argument_name, nargs)
+
+    def test_warning_no_arg(self):
+        self._call("--old-option", 0)
+        stderr = self._get_argparse_warnings(["--old-option"])
+        self.assertTrue("--old-option is deprecated" in stderr)
+
+    def test_warning_with_arg(self):
+        self._call("--old-option", 1)
+        stderr = self._get_argparse_warnings(["--old-option", "42"])
+        self.assertTrue("--old-option is deprecated" in stderr)
+
+    def _get_argparse_warnings(self, args):
+        stderr = StringIO.StringIO()
+        with mock.patch("letsencrypt.le_util.sys.stderr", new=stderr):
+            self.parser.parse_args(args)
+        return stderr.getvalue()
+
+    def test_help(self):
+        self._call("--old-option", 2)
+        stdout = StringIO.StringIO()
+        with mock.patch("letsencrypt.le_util.sys.stdout", new=stdout):
+            try:
+                self.parser.parse_args(["-h"])
+            except SystemExit:
+                pass
+        self.assertTrue("--old-option" not in stdout.getvalue())
 
 
 if __name__ == "__main__":
