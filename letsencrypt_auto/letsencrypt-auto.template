@@ -49,6 +49,14 @@ DeterminePythonVersion() {
   fi
 }
 
+{{bootstrap_deb_common}}
+{{bootstrap_rpm_common}}
+{{bootstrap_suse_common}}
+{{bootstrap_arch_common}}
+{{bootstrap_gentoo_common}}
+{{bootstrap_free_bsd}}
+{{bootstrap_mac}}
+
 # Install required OS packages:
 Bootstrap() {
   if [ -f /etc/debian_version ] ; then
@@ -63,7 +71,7 @@ Bootstrap() {
   elif [ -f /etc/arch-release ] ; then
     if [ "$DEBUG" = 1 ] ; then
       echo "Bootstrapping dependencies for Archlinux..."
-      BootstrapArchLinux
+      BootstrapArchCommon
     else
       echo "Please use pacman to install letsencrypt packages:"
       echo "# pacman -S letsencrypt letsencrypt-apache"
@@ -73,7 +81,7 @@ Bootstrap() {
       exit 1
     fi
   elif [ -f /etc/manjaro-release ] ; then
-    ExperimentalBootstrap "Manjaro Linux" BootstrapManjaro
+    ExperimentalBootstrap "Manjaro Linux" BootstrapArchCommon
   elif [ -f /etc/gentoo-release ] ; then
     ExperimentalBootstrap "Gentoo" BootstrapGentooCommon
   elif uname | grep -iq FreeBSD ; then
@@ -172,7 +180,7 @@ elif [ "$1" != "--_skip-to-install" ]; then
     # There is no $ interpolation due to quotes on heredoc delimiters.
     set +e
     TEMP_DIR=`$PYTHON - << "UNLIKELY_EOF"
-{download_upgrade}
+{{download_upgrade}}
 UNLIKELY_EOF`
     DOWNLOAD_STATUS=$?
     set -e
@@ -197,11 +205,11 @@ else  # --_skip-to-install was passed.
   TEMP_DIR="$2"
   shift 2
   cat << "UNLIKELY_EOF" > $TEMP_DIR/letsencrypt-auto-requirements.txt
-{requirements}
+{{requirements}}
 UNLIKELY_EOF
 
   cat << "UNLIKELY_EOF" > $TEMP_DIR/peep.py
-{peep}
+{{peep}}
 UNLIKELY_EOF
 
   set +e

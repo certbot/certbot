@@ -22,7 +22,7 @@ once:
 
    git clone https://github.com/letsencrypt/letsencrypt
    cd letsencrypt
-   ./bootstrap/install-deps.sh
+   ./letsencrypt-auto/letsencrypt-auto --os-packages-only
    ./bootstrap/dev/venv.sh
 
 Then in each shell where you're working on the client, do:
