@@ -884,8 +884,19 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # Note: These are not immediately searchable in sites-enabled
             #     even with save() and load()
             self.parser.add_dir(general_vh.path, "RewriteEngine", "on")
-            self.parser.add_dir(general_vh.path, "RewriteRule",
+
+            if self.get_version >= (2.3.9):
+                self.parser.add_dir(general_vh.path, "RewriteRule",
+                                constants.REWRITE_HTTPS_ARGS_WITH_END)
+           else:
+                self.parser.add_dir(general_vh.path, "RewriteRule",
                                 constants.REWRITE_HTTPS_ARGS)
+
+            if _is_rewrite_exists(vhost):
+                logger.warn("Preexisting rewrite rules were detected. "
+                            "Please verify that the newly installed "
+                            "redirection rewrite rule doesn't break anything.")
+ 
             self.save_notes += ("Redirecting host in %s to ssl vhost in %s\n" %
                                 (general_vh.filep, ssl_vhost.filep))
             self.save()
@@ -915,9 +926,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 raise errors.PluginEnhancementAlreadyPresent(
                     "Let's Encrypt has already enabled redirection")
 
-
-    def _is_rewrite_exists(self, host):
-        """Checks if there exists a rewriterule directive
+    def _is_rewrite_exists(self, vhost):
+        """Checks if there exists a rewriterule directive in vhost
 
         :param vhost: vhost to check
         :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
