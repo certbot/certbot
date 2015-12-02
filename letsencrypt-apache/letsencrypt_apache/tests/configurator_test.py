@@ -756,6 +756,7 @@ class TwoVhost80Test(util.ApacheTest):
 
     def test_create_own_redirect(self):
         self.config.parser.modules.add("rewrite_module")
+        self.config.get_version = mock.Mock(return_value=(2, 3, 9))
         # For full testing... give names...
         self.vh_truth[1].name = "default.com"
         self.vh_truth[1].aliases = set(["yes.default.com"])

@@ -892,10 +892,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 self.parser.add_dir(general_vh.path, "RewriteRule",
                                 constants.REWRITE_HTTPS_ARGS)
 
+            # Note: if code flow gets here it means we didn't find the exact
+            # letsencrypt RewriteRule config for redirection. So if we find
+            # an other RewriteRule it may induce a loop / config mismatch.
             if self._is_rewrite_exists(ssl_vhost):
-                logger.warn("Preexisting rewrite rules were detected. "
-                            "Please verify that the newly installed "
-                            "redirection rewrite rule doesn't break anything.")
+                logger.warn("Added an HTTP->HTTPS rewrite in addition to "
+                            "other RewriteRules; you may wish to check for " 
+                            "overall consistency.")
 
             self.save_notes += ("Redirecting host in %s to ssl vhost in %s\n" %
                                 (general_vh.filep, ssl_vhost.filep))
@@ -972,6 +975,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if ssl_vhost.aliases:
             serveralias = "ServerAlias " + " ".join(ssl_vhost.aliases)
 
+        rewrite_rule_args = []
+        if self.get_version() >= (2, 3, 9):
+            rewrite_rule_args = constants.REWRITE_HTTPS_ARGS_WITH_END
+        else:
+            rewrite_rule_args = constants.REWRITE_HTTPS_ARGS
+
+
         return ("<VirtualHost %s>\n"
                 "%s \n"
                 "%s \n"
@@ -985,7 +995,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "</VirtualHost>\n"
                 % (" ".join(str(addr) for addr in self._get_proposed_addrs(ssl_vhost)),
                    servername, serveralias,
-                   " ".join(constants.REWRITE_HTTPS_ARGS)))
+                   " ".join(rewrite_rule_args)))
 
     def _write_out_redirect(self, ssl_vhost, text):
         # This is the default name
