@@ -15,7 +15,6 @@ from letsencrypt.plugins import common
 logger = logging.getLogger(__name__)
 
 
-
 class Authenticator(common.Plugin):
     """Webroot Authenticator."""
     zope.interface.implements(interfaces.IAuthenticator)
@@ -72,9 +71,10 @@ to serve all files under specified web root ({0})."""
         return [self._perform_single(achall) for achall in achalls]
 
     def _path_for_achall(self, achall):
-        path = self.full_roots[achall.domain]
-        if not path:
-            raise errors.PluginError("Cannot find path {0} for domain: {1}"
+        try:
+            path = self.full_roots[achall.domain]
+        except IndexError:
+            raise errors.PluginError("Cannot find webroot path for domain: {1}"
                         .format(path, achall.domain))
         return os.path.join(path, achall.chall.encode("token"))
 
