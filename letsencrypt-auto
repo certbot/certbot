@@ -175,7 +175,7 @@ if [ "$VERBOSE" = 1 ]  ; then
   echo
   $VENV_BIN/pip install -U setuptools
   $VENV_BIN/pip install -U pip
-  $VENV_BIN/pip install -r "$LEA_PATH"/py26reqs.txt -U letsencrypt letsencrypt-apache
+  $VENV_BIN/pip install -U letsencrypt letsencrypt-apache
   # nginx is buggy / disabled for now, but upgrade it if the user has
   # installed it manually
   if $VENV_BIN/pip freeze | grep -q letsencrypt-nginx ; then
@@ -187,8 +187,6 @@ else
   $VENV_BIN/pip install -U pip > /dev/null
   printf .
   # nginx is buggy / disabled for now...
-  $VENV_BIN/pip install -r "$LEA_PATH"/py26reqs.txt > /dev/null
-  printf .
   $VENV_BIN/pip install -U letsencrypt > /dev/null
   printf .
   $VENV_BIN/pip install -U letsencrypt-apache > /dev/null
