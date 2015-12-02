@@ -858,7 +858,7 @@ def prepare_and_parse_args(plugins, args):
     helpful.add(
         "automation", "--renew-by-default", action="store_true",
         help="Select renewal by default when domains are a superset of a "
-             "a previously attained cert")
+             "previously attained cert")
     helpful.add(
         "automation", "--agree-dev-preview", action="store_true",
         help="Agree to the Let's Encrypt Developer Preview Disclaimer")
@@ -1055,7 +1055,7 @@ def _plugins_parsing(helpful, plugins):
     helpful.add("webroot", "-w", "--webroot-path", action=WebrootPathProcessor,
                 help="public_html / webroot path. This can be specified multiple times to "
                      "handle different domains; each domain will have the webroot path that"
-                     " precededed it.  For instance: `-w /var/www/example -d example.com -d "
+                     " preceded it.  For instance: `-w /var/www/example -d example.com -d "
                      "www.example.com -w /var/www/thing -d thing.net -d m.thing.net`")
     parse_dict = lambda s: dict(json.loads(s))
     # --webroot-map still has some awkward properties, so it is undocumented
