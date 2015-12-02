@@ -13,8 +13,8 @@ VENV_BIN=${VENV_PATH}/bin
 
 ExperimentalBootstrap() {
   # Arguments: Platform name, bootstrap function name
-  if [ "$DEBUG" = 1 ] ; then
-    if [ "$2" != "" ] ; then
+  if [ "$DEBUG" = 1 ]; then
+    if [ "$2" != "" ]; then
       echo "Bootstrapping dependencies via $1..."
       $2
     fi
@@ -40,9 +40,9 @@ DeterminePythonVersion() {
   fi
 
   PYVER=`$LE_PYTHON --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
-  if [ $PYVER -eq 26 ] ; then
+  if [ $PYVER -eq 26 ]; then
     ExperimentalBootstrap "Python 2.6"
-  elif [ $PYVER -lt 26 ] ; then
+  elif [ $PYVER -lt 26 ]; then
     echo "You have an ancient version of Python entombed in your operating system..."
     echo "This isn't going to work; you'll need at least version 2.6."
     exit 1
@@ -59,17 +59,17 @@ DeterminePythonVersion() {
 
 # Install required OS packages:
 Bootstrap() {
-  if [ -f /etc/debian_version ] ; then
+  if [ -f /etc/debian_version ]; then
     echo "Bootstrapping dependencies for Debian-based OSes..."
     BootstrapDebCommon
-  elif [ -f /etc/redhat-release ] ; then
+  elif [ -f /etc/redhat-release ]; then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
     BootstrapRpmCommon
   elif `grep -q openSUSE /etc/os-release` ; then
     echo "Bootstrapping dependencies for openSUSE-based OSes..."
     BootstrapSuseCommon
-  elif [ -f /etc/arch-release ] ; then
-    if [ "$DEBUG" = 1 ] ; then
+  elif [ -f /etc/arch-release ]; then
+    if [ "$DEBUG" = 1 ]; then
       echo "Bootstrapping dependencies for Archlinux..."
       BootstrapArchCommon
     else
@@ -80,9 +80,9 @@ Bootstrap() {
       echo "--debug flag."
       exit 1
     fi
-  elif [ -f /etc/manjaro-release ] ; then
+  elif [ -f /etc/manjaro-release ]; then
     ExperimentalBootstrap "Manjaro Linux" BootstrapArchCommon
-  elif [ -f /etc/gentoo-release ] ; then
+  elif [ -f /etc/gentoo-release ]; then
     ExperimentalBootstrap "Gentoo" BootstrapGentooCommon
   elif uname | grep -iq FreeBSD ; then
     ExperimentalBootstrap "FreeBSD" BootstrapFreeBsd
@@ -106,7 +106,7 @@ for arg in "$@" ; do
   # This first clause is redundant with the third, but hedging on portability
   if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- "-v+$" ; then
     VERBOSE=1
-  elif [ "$arg" = "--debug" ] ; then
+  elif [ "$arg" = "--debug" ]; then
     DEBUG=1
   fi
 done
@@ -164,7 +164,7 @@ elif [ "$1" != "--_skip-to-install" ]; then
     echo "Creating virtual environment..."
     rm -rf "$VENV_PATH"
     DeterminePythonVersion
-    if [ "$VERBOSE" = 1 ] ; then
+    if [ "$VERBOSE" = 1 ]; then
       virtualenv --no-site-packages --python $LE_PYTHON $VENV_PATH
     else
       virtualenv --no-site-packages --python $LE_PYTHON $VENV_PATH > /dev/null
