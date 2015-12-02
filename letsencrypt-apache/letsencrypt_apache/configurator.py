@@ -878,7 +878,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                         "redirection")
             self._create_redirect_vhost(ssl_vhost)
         else:
-            # Check if redirection already exists
+            # Check if LetsEncrypt redirection already exists
             self._verify_no_redirects(general_vh)
 
             # Add directives to server
@@ -911,19 +911,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     but that's for an other PR.)
         """
         rewrite_path = self.parser.find_dir(
-            "RewriteRule", None, start=vhost.path)
+                "RewriteRule", None, start=vhost.path)
 
         if rewrite_path:
-            # "No existing redirection for virtualhost"
-            if len(rewrite_path) != len(constants.REWRITE_HTTPS_ARGS):
-                raise errors.PluginError("Unknown Existing RewriteRule")
-            for match, arg in itertools.izip(
-                    rewrite_path, constants.REWRITE_HTTPS_ARGS):
-                if self.aug.get(match) != arg:
-                    raise errors.PluginError("Unknown Existing RewriteRule")
-
-            raise errors.PluginEnhancementAlreadyPresent(
-                "Let's Encrypt has already enabled redirection")
+            if map(self.aug.get, rewrite_path) in [
+                    constants.REWRITE_HTTPS_ARGS,
+                    constants.REWRITE_HTTPS_ARGS_WITH_END]:
+                raise errors.PluginEnhancementAlreadyPresent(
+                    "Let's Encrypt has already enabled redirection")
 
     def _create_redirect_vhost(self, ssl_vhost):
         """Creates an http_vhost specifically to redirect for the ssl_vhost.
