@@ -878,7 +878,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self._create_redirect_vhost(ssl_vhost)
         else:
             # Check if LetsEncrypt redirection already exists
-            self._verify_no_redirects(general_vh)
+            self._verify_no_letsencrypt_redirect(general_vh)
 
             # Add directives to server
             # Note: These are not immediately searchable in sites-enabled
@@ -893,21 +893,17 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             logger.info("Redirecting vhost in %s to ssl vhost in %s",
                         general_vh.filep, ssl_vhost.filep)
 
-    def _verify_no_redirects(self, vhost):
-        """Checks to see if existing redirect is in place.
+    def _verify_no_letsencrypt_redirect(self, vhost):
+        """Checks to see if a redirect was already installed by letsencrypt.
 
-        Checks to see if virtualhost already contains a rewrite or redirect
-        returns boolean, integer
+        Checks to see if virtualhost already contains a rewrite rule that is
+        identical to Letsencrypt's redirection rewrite rule.
 
         :param vhost: vhost to check
         :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
 
         :raises errors.PluginEnhancementAlreadyPresent: When the exact
                 letsencrypt redirection WriteRule exists in virtual host.
-
-                errors.PluginError: When there exists directives that may hint
-                other redirection. (TODO: We should not throw a PluginError,
-                    but that's for an other PR.)
         """
         rewrite_path = self.parser.find_dir(
                 "RewriteRule", None, start=vhost.path)
