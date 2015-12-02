@@ -104,7 +104,7 @@ DeterminePythonVersion() {
     ExperimentalBootstrap "Python 2.6"
   elif [ $PYVER -lt 26 ] ; then
     echo "You have an ancient version of Python entombed in your operating system..."
-    echo "This isn't going to work."
+    echo "This isn't going to work; you'll need at least version 2.6."
     exit 1
   fi
 }
