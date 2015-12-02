@@ -377,9 +377,9 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
                    'you can install manually.')
         else:
             # XXX update this logic as we make progress on #788 and nginx support
-            msg = ('No certificate installer plugins are available on your OS yet; '
-                   'try running "letsencrypt certonly" to get a certificate you '
-                   'can install manually')
+            msg = ('No certificate installer plugins are available for your OS/'
+                   'webserver yet; try running "letsencrypt certonly" to get a '
+                   'certificate you can install manually')
     else:
         msg = "{0} could not be determined or is not installed".format(cfg_type)
     raise errors.PluginSelectionError(msg)
