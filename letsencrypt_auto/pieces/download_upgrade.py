@@ -1,7 +1,7 @@
 from distutils.version import LooseVersion
 from json import loads
 from os import devnull
-from os.path import join
+from os.path import dirname, join
 import re
 from subprocess import check_call, CalledProcessError
 from sys import exit

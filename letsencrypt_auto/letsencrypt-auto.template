@@ -169,7 +169,6 @@ elif [ "$1" != "--_skip-to-install" ]; then
     else
       virtualenv --no-site-packages --python $LE_PYTHON $VENV_PATH > /dev/null
     fi
-    NEXT: Is all this stuff in the right if branch?
 
     # Now we drop into Python so we don't have to install even more
     # dependencies (curl, etc.), for better flow control, and for the
@@ -179,7 +178,7 @@ elif [ "$1" != "--_skip-to-install" ]; then
     # containing a new copy of letsencrypt-auto or returns non-zero.
     # There is no $ interpolation due to quotes on heredoc delimiters.
     set +e
-    TEMP_DIR=`$PYTHON - << "UNLIKELY_EOF"
+    TEMP_DIR=`$LE_PYTHON - << "UNLIKELY_EOF"
 {{ download_upgrade.py }}
 UNLIKELY_EOF`
     DOWNLOAD_STATUS=$?
@@ -213,7 +212,7 @@ UNLIKELY_EOF
 UNLIKELY_EOF
 
   set +e
-  PEEP_OUT=`$PYTHON $TEMP_DIR/peep.py install -r $TEMP_DIR/letsencrypt-auto-requirements.txt`
+  PEEP_OUT=`$LE_PYTHON $TEMP_DIR/peep.py install -r $TEMP_DIR/letsencrypt-auto-requirements.txt`
   PEEP_STATUS=$?
   set -e
   if [ "$PEEP_STATUS" = 0 ]; then
