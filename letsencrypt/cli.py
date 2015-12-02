@@ -59,6 +59,7 @@ the cert. Major SUBCOMMANDS are:
   revoke               Revoke a previously obtained certificate
   rollback             Rollback server configuration changes made during install
   config_changes       Show changes made to server config during installation
+  plugins              Display information about installed plugins
 
 """
 
@@ -71,7 +72,7 @@ USAGE = SHORT_USAGE + """Choice of server plugins for obtaining and installing c
   %s
   --webroot         Place files in a server's webroot folder for authentication
 
-OR use different servers to obtain (authenticate) the cert and then install it:
+OR use different plugins to obtain (authenticate) the cert and then install it:
 
   --authenticator standalone --installer apache
 
@@ -1041,7 +1042,7 @@ def _plugins_parsing(helpful, plugins):
     helpful.add_group(
         "plugins", description="Let's Encrypt client supports an "
         "extensible plugins architecture. See '%(prog)s plugins' for a "
-        "list of all available plugins and their names. You can force "
+        "list of all installed plugins and their names. You can force "
         "a particular plugin by setting options provided below. Further "
         "down this help message you will find plugin-specific options "
         "(prefixed by --{plugin_name}).")
