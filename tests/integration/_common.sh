@@ -23,7 +23,7 @@ letsencrypt_test () {
         --no-redirect \
         --agree-dev-preview \
         --agree-tos \
-        --email "" \
+        --register-unsafely-without-email \
         --renew-by-default \
         --debug \
         -vvvvvvv \

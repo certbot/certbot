@@ -44,7 +44,7 @@ DeterminePythonVersion() {
     ExperimentalBootstrap "Python 2.6"
   elif [ $PYVER -lt 26 ] ; then
     echo "You have an ancient version of Python entombed in your operating system..."
-    echo "This isn't going to work."
+    echo "This isn't going to work; you'll need at least version 2.6."
     exit 1
   fi
 }
@@ -61,8 +61,17 @@ Bootstrap() {
     echo "Bootstrapping dependencies for openSUSE-based OSes..."
     BootstrapSuseCommon
   elif [ -f /etc/arch-release ] ; then
-    echo "Bootstrapping dependencies for Archlinux..."
-    BootstrapArchLinux
+    if [ "$DEBUG" = 1 ] ; then
+      echo "Bootstrapping dependencies for Archlinux..."
+      BootstrapArchLinux
+    else
+      echo "Please use pacman to install letsencrypt packages:"
+      echo "# pacman -S letsencrypt letsencrypt-apache"
+      echo
+      echo "If you would like to use the virtualenv way, please run the script again with the"
+      echo "--debug flag."
+      exit 1
+    fi
   elif [ -f /etc/manjaro-release ] ; then
     ExperimentalBootstrap "Manjaro Linux" BootstrapManjaro
   elif [ -f /etc/gentoo-release ] ; then

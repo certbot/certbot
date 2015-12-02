@@ -75,11 +75,7 @@ def get_apache_configurator(
         in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
         work_dir=work_dir)
 
-    with mock.patch("letsencrypt_apache.configurator."
-                    "subprocess.Popen") as mock_popen:
-        # This indicates config_test passes
-        mock_popen().communicate.return_value = ("Fine output", "No problems")
-        mock_popen().returncode = 0
+    with mock.patch("letsencrypt_apache.configurator.le_util.run_script"):
         with mock.patch("letsencrypt_apache.configurator.le_util."
                         "exe_exists") as mock_exe_exists:
             mock_exe_exists.return_value = True
@@ -128,7 +124,11 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(prefix, "mod_macro-example.conf"),
                 os.path.join(aug_pre,
                              "mod_macro-example.conf/Macro/VirtualHost"),
-                set([obj.Addr.fromstring("*:80")]), False, True, modmacro=True)
+                set([obj.Addr.fromstring("*:80")]), False, True, modmacro=True),
+            obj.VirtualHost(
+                os.path.join(prefix, "default-ssl-port-only.conf"),
+                os.path.join(aug_pre, "default-ssl-port-only.conf/IfModule/VirtualHost"),
+                set([obj.Addr.fromstring("_default_:443")]), True, False),
         ]
         return vh_truth
 

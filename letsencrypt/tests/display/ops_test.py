@@ -41,9 +41,11 @@ class ChoosePluginTest(unittest.TestCase):
         return choose_plugin(self.plugins, "Question?")
 
     @mock.patch("letsencrypt.display.ops.util")
-    def test_successful_choice(self, mock_util):
-        mock_util().menu.return_value = (display_util.OK, 0)
-        self.assertEqual(self.mock_apache, self._call())
+    def test_selection(self, mock_util):
+        mock_util().menu.side_effect = [(display_util.OK, 0),
+                                        (display_util.OK, 1)]
+        self.assertEqual(self.mock_stand, self._call())
+        self.assertEqual(mock_util().notification.call_count, 1)
 
     @mock.patch("letsencrypt.display.ops.util")
     def test_more_info(self, mock_util):
@@ -168,9 +170,9 @@ class GetEmailTest(unittest.TestCase):
         zope.component.provideUtility(mock_display, interfaces.IDisplay)
 
     @classmethod
-    def _call(cls):
+    def _call(cls, **kwargs):
         from letsencrypt.display.ops import get_email
-        return get_email()
+        return get_email(**kwargs)
 
     def test_cancel_none(self):
         self.input.return_value = (display_util.CANCEL, "foo@bar.baz")
@@ -178,17 +180,37 @@ class GetEmailTest(unittest.TestCase):
 
     def test_ok_safe(self):
         self.input.return_value = (display_util.OK, "foo@bar.baz")
-        with mock.patch("letsencrypt.display.ops.le_util"
-                        ".safe_email") as mock_safe_email:
+        with mock.patch("letsencrypt.display.ops.le_util.safe_email") as mock_safe_email:
             mock_safe_email.return_value = True
             self.assertTrue(self._call() is "foo@bar.baz")
 
     def test_ok_not_safe(self):
         self.input.return_value = (display_util.OK, "foo@bar.baz")
-        with mock.patch("letsencrypt.display.ops.le_util"
-                        ".safe_email") as mock_safe_email:
+        with mock.patch("letsencrypt.display.ops.le_util.safe_email") as mock_safe_email:
             mock_safe_email.side_effect = [False, True]
             self.assertTrue(self._call() is "foo@bar.baz")
+
+    def test_more_and_invalid_flags(self):
+        more_txt = "--register-unsafely-without-email"
+        invalid_txt = "There seem to be problems"
+        base_txt = "Enter email"
+        self.input.return_value = (display_util.OK, "foo@bar.baz")
+        with mock.patch("letsencrypt.display.ops.le_util.safe_email") as mock_safe_email:
+            mock_safe_email.return_value = True
+            self._call()
+            msg = self.input.call_args[0][0]
+            self.assertTrue(more_txt not in msg)
+            self.assertTrue(invalid_txt not in msg)
+            self.assertTrue(base_txt in msg)
+            self._call(more=True)
+            msg = self.input.call_args[0][0]
+            self.assertTrue(more_txt in msg)
+            self.assertTrue(invalid_txt not in msg)
+            self._call(more=True, invalid=True)
+            msg = self.input.call_args[0][0]
+            self.assertTrue(more_txt in msg)
+            self.assertTrue(invalid_txt in msg)
+            self.assertTrue(base_txt in msg)
 
 
 class ChooseAccountTest(unittest.TestCase):

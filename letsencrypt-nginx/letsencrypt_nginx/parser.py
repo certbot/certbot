@@ -413,7 +413,7 @@ def _regex_match(target_name, name):
             return True
         else:
             return False
-    except re.error: # pragma: no cover
+    except re.error:  # pragma: no cover
         # perl-compatible regexes are sometimes not recognized by python
         return False
 
@@ -450,10 +450,9 @@ def _parse_server(server):
     :rtype: dict
 
     """
-    parsed_server = {}
-    parsed_server['addrs'] = set()
-    parsed_server['ssl'] = False
-    parsed_server['names'] = set()
+    parsed_server = {'addrs': set(),
+                     'ssl': False,
+                     'names': set()}
 
     for directive in server:
         if directive[0] == 'listen':

@@ -105,7 +105,7 @@ https://wiki.mozilla.org/Security/Server_Side_TLS
 
 and the version implemented by the Let's Encrypt client will be the
 version that was most current as of the release date of each client
-version. Mozilla offers three seperate sets of cryptographic options,
+version. Mozilla offers three separate sets of cryptographic options,
 which trade off security and compatibility differently. These are
 referred to as as the "Modern", "Intermediate", and "Old" configurations
 (in order from most secure to least secure, and least-backwards compatible

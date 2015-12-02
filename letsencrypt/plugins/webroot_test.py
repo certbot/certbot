@@ -3,6 +3,7 @@ import os
 import shutil
 import tempfile
 import unittest
+import stat
 
 import mock
 
@@ -23,7 +24,7 @@ class AuthenticatorTest(unittest.TestCase):
     """Tests for letsencrypt.plugins.webroot.Authenticator."""
 
     achall = achallenges.KeyAuthorizationAnnotatedChallenge(
-        challb=acme_util.HTTP01_P, domain=None, account_key=KEY)
+        challb=acme_util.HTTP01_P, domain="thing.com", account_key=KEY)
 
     def setUp(self):
         from letsencrypt.plugins.webroot import Authenticator
@@ -31,7 +32,8 @@ class AuthenticatorTest(unittest.TestCase):
         self.validation_path = os.path.join(
             self.path, ".well-known", "acme-challenge",
             "ZXZhR3hmQURzNnBTUmIyTEF2OUlaZjE3RHQzanV4R0orUEN0OTJ3citvQQ")
-        self.config = mock.MagicMock(webroot_path=self.path)
+        self.config = mock.MagicMock(webroot_path=self.path,
+                                     webroot_map={"thing.com": self.path})
         self.auth = Authenticator(self.config, "webroot")
         self.auth.prepare()
 
@@ -46,14 +48,16 @@ class AuthenticatorTest(unittest.TestCase):
     def test_add_parser_arguments(self):
         add = mock.MagicMock()
         self.auth.add_parser_arguments(add)
-        self.assertEqual(1, add.call_count)
+        self.assertEqual(0, add.call_count) # became 0 when we moved the args to cli.py!
 
     def test_prepare_bad_root(self):
         self.config.webroot_path = os.path.join(self.path, "null")
+        self.config.webroot_map["thing.com"] = self.config.webroot_path
         self.assertRaises(errors.PluginError, self.auth.prepare)
 
     def test_prepare_missing_root(self):
         self.config.webroot_path = None
+        self.config.webroot_map = {}
         self.assertRaises(errors.PluginError, self.auth.prepare)
 
     def test_prepare_full_root_exists(self):
@@ -65,6 +69,23 @@ class AuthenticatorTest(unittest.TestCase):
         os.chmod(self.path, 0o000)
         self.assertRaises(errors.PluginError, self.auth.prepare)
         os.chmod(self.path, 0o700)
+
+    def test_prepare_permissions(self):
+
+        # Remove exec bit from permission check, so that it
+        # matches the file
+        self.auth.perform([self.achall])
+        parent_permissions = (stat.S_IMODE(os.stat(self.path).st_mode) &
+                              ~stat.S_IEXEC)
+
+        actual_permissions = stat.S_IMODE(os.stat(self.validation_path).st_mode)
+
+        self.assertEqual(parent_permissions, actual_permissions)
+        parent_gid = os.stat(self.path).st_gid
+        parent_uid = os.stat(self.path).st_uid
+
+        self.assertEqual(os.stat(self.validation_path).st_gid, parent_gid)
+        self.assertEqual(os.stat(self.validation_path).st_uid, parent_uid)
 
     def test_perform_cleanup(self):
         responses = self.auth.perform([self.achall])

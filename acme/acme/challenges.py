@@ -228,6 +228,9 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
 
     """
 
+    WHITESPACE_CUTSET = "\n\r\t "
+    """Whitespace characters which should be ignored at the end of the body."""
+
     def simple_verify(self, chall, domain, account_public_key, port=None):
         """Simple verify.
 
@@ -266,17 +269,11 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
         logger.debug("Received %s: %s. Headers: %s", http_response,
                      http_response.text, http_response.headers)
 
-        found_ct = http_response.headers.get(
-            "Content-Type", chall.CONTENT_TYPE)
-        if found_ct != chall.CONTENT_TYPE:
-            logger.debug("Wrong Content-Type: found %r, expected %r",
-                         found_ct, chall.CONTENT_TYPE)
-            return False
-
-        if self.key_authorization != http_response.text:
+        challenge_response = http_response.text.rstrip(self.WHITESPACE_CUTSET)
+        if self.key_authorization != challenge_response:
             logger.debug("Key authorization from response (%r) doesn't match "
                          "HTTP response (%r)", self.key_authorization,
-                         http_response.text)
+                         challenge_response)
             return False
 
         return True
@@ -287,9 +284,6 @@ class HTTP01(KeyAuthorizationChallenge):
     """ACME http-01 challenge."""
     response_cls = HTTP01Response
     typ = response_cls.typ
-
-    CONTENT_TYPE = "text/plain"
-    """Only valid value for Content-Type if the header is included."""
 
     URI_ROOT_PATH = ".well-known/acme-challenge"
     """URI root path for the server provisioned resource."""

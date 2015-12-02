@@ -40,8 +40,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.work_dir = os.path.join(self.tmp_dir, 'work')
         self.logs_dir = os.path.join(self.tmp_dir, 'logs')
         self.standard_args = ['--text', '--config-dir', self.config_dir,
-            '--work-dir', self.work_dir, '--logs-dir', self.logs_dir,
-            '--agree-dev-preview']
+                              '--work-dir', self.work_dir, '--logs-dir',
+                              self.logs_dir, '--agree-dev-preview']
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
@@ -57,7 +57,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         args = self.standard_args + args
         with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
             with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
-                ret = cli.main(args[:]) # NOTE: parser can alter its args!
+                ret = cli.main(args[:])  # NOTE: parser can alter its args!
         return ret, stdout, stderr
 
     def _call_stdout(self, args):
@@ -236,7 +236,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self._call(['plugins'] + list(args))
 
     @mock.patch('letsencrypt.cli.plugins_disco')
-    def test_plugins_no_args(self, mock_disco):
+    @mock.patch('letsencrypt.cli.HelpfulArgumentParser.determine_help_topics')
+    def test_plugins_no_args(self, _det, mock_disco):
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
@@ -247,7 +248,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         stdout.write.called_once_with(str(filtered))
 
     @mock.patch('letsencrypt.cli.plugins_disco')
-    def test_plugins_init(self, mock_disco):
+    @mock.patch('letsencrypt.cli.HelpfulArgumentParser.determine_help_topics')
+    def test_plugins_init(self, _det, mock_disco):
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
@@ -261,10 +263,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         stdout.write.called_once_with(str(verified))
 
     @mock.patch('letsencrypt.cli.plugins_disco')
-    def test_plugins_prepare(self, mock_disco):
+    @mock.patch('letsencrypt.cli.HelpfulArgumentParser.determine_help_topics')
+    def test_plugins_prepare(self, _det, mock_disco):
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
-
         _, stdout, _, _ = self._call(['plugins', '--init', '--prepare'])
         plugins.visible.assert_called_once_with()
         plugins.visible().ifaces.assert_called_once_with(ifaces)
@@ -338,6 +340,25 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         long_args = ['--domains', 'example.com,another.net,example.com']
         namespace = cli.prepare_and_parse_args(plugins, long_args)
         self.assertEqual(namespace.domains, ['example.com', 'another.net'])
+
+    def test_parse_webroot(self):
+        plugins = disco.PluginsRegistry.find_all()
+        webroot_args = ['--webroot', '-w', '/var/www/example',
+            '-d', 'example.com,www.example.com', '-w', '/var/www/superfluous',
+            '-d', 'superfluo.us', '-d', 'www.superfluo.us']
+        namespace = cli.prepare_and_parse_args(plugins, webroot_args)
+        self.assertEqual(namespace.webroot_map, {
+            'example.com': '/var/www/example',
+            'www.example.com': '/var/www/example',
+            'www.superfluo.us': '/var/www/superfluous',
+            'superfluo.us': '/var/www/superfluous'})
+
+        webroot_args = ['-d', 'stray.example.com'] + webroot_args
+        self.assertRaises(errors.Error, cli.prepare_and_parse_args, plugins, webroot_args)
+
+        webroot_map_args = ['--webroot-map', '{"eg.com" : "/tmp"}']
+        namespace = cli.prepare_and_parse_args(plugins, webroot_map_args)
+        self.assertEqual(namespace.webroot_map, {u"eg.com": u"/tmp"})
 
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
@@ -450,9 +471,14 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     @mock.patch('letsencrypt.cli.sys')
     def test_handle_exception(self, mock_sys):
         # pylint: disable=protected-access
+        from acme import messages
+
+        args = mock.MagicMock()
         mock_open = mock.mock_open()
+
         with mock.patch('letsencrypt.cli.open', mock_open, create=True):
             exception = Exception('detail')
+            args.verbose_count = 1
             cli._handle_exception(
                 Exception, exc_value=exception, trace=None, args=None)
             mock_open().write.assert_called_once_with(''.join(
@@ -469,11 +495,23 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mock_sys.exit.assert_any_call(''.join(
                 traceback.format_exception_only(errors.Error, error)))
 
-        args = mock.MagicMock(debug=False)
+        exception = messages.Error(detail='alpha', typ='urn:acme:error:triffid',
+                                   title='beta')
+        args = mock.MagicMock(debug=False, verbose_count=-3)
         cli._handle_exception(
-            Exception, exc_value=Exception('detail'), trace=None, args=args)
+            messages.Error, exc_value=exception, trace=None, args=args)
         error_msg = mock_sys.exit.call_args_list[-1][0][0]
         self.assertTrue('unexpected error' in error_msg)
+        self.assertTrue('acme:error' not in error_msg)
+        self.assertTrue('alpha' in error_msg)
+        self.assertTrue('beta' in error_msg)
+        args = mock.MagicMock(debug=False, verbose_count=1)
+        cli._handle_exception(
+            messages.Error, exc_value=exception, trace=None, args=args)
+        error_msg = mock_sys.exit.call_args_list[-1][0][0]
+        self.assertTrue('unexpected error' in error_msg)
+        self.assertTrue('acme:error' in error_msg)
+        self.assertTrue('alpha' in error_msg)
 
         interrupt = KeyboardInterrupt('detail')
         cli._handle_exception(
@@ -499,7 +537,8 @@ class DetermineAccountTest(unittest.TestCase):
     """Tests for letsencrypt.cli._determine_account."""
 
     def setUp(self):
-        self.args = mock.MagicMock(account=None, email=None)
+        self.args = mock.MagicMock(account=None, email=None,
+            register_unsafely_without_email=False)
         self.config = configuration.NamespaceConfig(self.args)
         self.accs = [mock.MagicMock(id='x'), mock.MagicMock(id='y')]
         self.account_storage = account.AccountMemoryStorage()
