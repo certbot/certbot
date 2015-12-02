@@ -1,8 +1,11 @@
 """Let's Encrypt CLI."""
 # TODO: Sanity check all input.  Be sure to avoid shell code etc...
+# pylint: disable=too-many-lines
+# (TODO: split this file into main.py and cli.py)
 import argparse
 import atexit
 import functools
+import json
 import logging
 import logging.handlers
 import os
@@ -100,7 +103,7 @@ def usage_strings(plugins):
 
 
 def _find_domains(args, installer):
-    if args.domains is None:
+    if not args.domains:
         domains = display_ops.choose_names(installer)
     else:
         domains = args.domains
@@ -383,7 +386,6 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
 def choose_configurator_plugins(args, config, plugins, verb):  # pylint: disable=too-many-branches
     """
     Figure out which configurator we're going to use
-
     :raises error.PluginSelectionError if there was a problem
     """
 
@@ -475,7 +477,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
 def obtain_cert(args, config, plugins):
     """Authenticate & obtain cert, but do not install it."""
 
-    if args.domains is not None and args.csr is not None:
+    if args.domains and args.csr is not None:
         # TODO: --csr could have a priority, when --domains is
         # supplied, check if CSR matches given domains?
         return "--domains and --csr are mutually exclusive"
@@ -671,7 +673,6 @@ class HelpfulArgumentParser(object):
             print usage
             sys.exit(0)
         self.visible_topics = self.determine_help_topics(self.help_arg)
-        #print self.visible_topics
         self.groups = {}  # elements are added by .add_group()
 
     def parse_args(self):
@@ -684,31 +685,8 @@ class HelpfulArgumentParser(object):
         parsed_args = self.parser.parse_args(self.args)
         parsed_args.func = self.VERBS[self.verb]
 
-        parsed_args.domains = self._parse_domains(parsed_args.domains)
         return parsed_args
 
-    def _parse_domains(self, domains):
-        """Helper function for parse_args() that parses domains from a
-        (possibly) comma separated list and returns list of unique domains.
-
-        :param domains: List of domain flags
-        :type domains: `list` of `string`
-
-        :returns: List of unique domains
-        :rtype: `list` of `string`
-
-        """
-
-        uniqd = None
-
-        if domains:
-            dlist = []
-            for domain in domains:
-                dlist.extend([d.strip() for d in domain.split(",")])
-            # Make sure we don't have duplicates
-            uniqd = [d for i, d in enumerate(dlist) if d not in dlist[:i]]
-
-        return uniqd
 
     def determine_verb(self):
         """Determines the verb/subcommand provided by the user.
@@ -861,8 +839,8 @@ def prepare_and_parse_args(plugins, args):
     # --domains is useful, because it can be stored in config
     #for subparser in parser_run, parser_auth, parser_install:
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
-    helpful.add(None, "-d", "--domains", dest="domains",
-                metavar="DOMAIN", action="append",
+    helpful.add(None, "-d", "--domains", "--domain", dest="domains",
+                metavar="DOMAIN", action=DomainFlagProcessor, default=[],
                 help="Domain names to apply. For multiple domains you can use "
                 "multiple -d flags or enter a comma separated list of domains "
                 "as a parameter.")
@@ -968,8 +946,7 @@ def _create_subparsers(helpful):
         help="Set a custom user agent string for the client. User agent strings allow "
              "the CA to collect high level statistics about success rates by OS and "
              "plugin. If you wish to hide your server OS version from the Let's "
-             'Encrypt server, set this to "".'
-    )
+             'Encrypt server, set this to "".')
     helpful.add("certonly",
                 "--csr", type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER"
@@ -1070,6 +1047,61 @@ def _plugins_parsing(helpful, plugins):
     # specific groups (so that plugins_group.description makes sense)
 
     helpful.add_plugin_args(plugins)
+
+    # These would normally be a flag within the webroot plugin, but because
+    # they are parsed in conjunction with --domains, they live here for
+    # legibiility. helpful.add_plugin_ags must be called first to add the
+    # "webroot" topic
+    helpful.add("webroot", "-w", "--webroot-path", action=WebrootPathProcessor,
+                help="public_html / webroot path. This can be specified multiple times to "
+                     "handle different domains; each domain will have the webroot path that"
+                     " precededed it.  For instance: `-w /var/www/example -d example.com -d "
+                     "www.example.com -w /var/www/thing -d thing.net -d m.thing.net`")
+    parse_dict = lambda s: dict(json.loads(s))
+    # --webroot-map still has some awkward properties, so it is undocumented
+    helpful.add("webroot", "--webroot-map", default={}, type=parse_dict,
+                help=argparse.SUPPRESS)
+
+
+class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
+    def __init__(self, *args, **kwargs):
+        self.domain_before_webroot = False
+        argparse.Action.__init__(self, *args, **kwargs)
+
+    def __call__(self, parser, config, webroot, option_string=None):
+        """
+        Keep a record of --webroot-path / -w flags during processing, so that
+        we know which apply to which -d flags
+        """
+        if config.webroot_path is None:      # first -w flag encountered
+            config.webroot_path = []
+            # if any --domain flags preceded the first --webroot-path flag,
+            # apply that webroot path to those; subsequent entries in
+            # config.webroot_map are filled in by cli.DomainFlagProcessor
+            if config.domains:
+                self.domain_before_webroot = True
+                for d in config.domains:
+                    config.webroot_map.setdefault(d, webroot)
+        elif self.domain_before_webroot:
+            # FIXME if you set domains in a config file, you should get a different error
+            # here, pointing you to --webroot-map
+            raise errors.Error("If you specify multiple webroot paths, one of "
+                               "them must precede all domain flags")
+        config.webroot_path.append(webroot)
+
+
+class DomainFlagProcessor(argparse.Action): # pylint: disable=missing-docstring
+    def __call__(self, parser, config, domain_arg, option_string=None):
+        """
+        Process a new -d flag, helping the webroot plugin construct a map of
+        {domain : webrootpath} if -w / --webroot-path is in use
+        """
+        for domain in (d.strip() for d in domain_arg.split(",")):
+            if domain not in config.domains:
+                config.domains.append(domain)
+                # Each domain has a webroot_path of the most recent -w flag
+                if config.webroot_path:
+                    config.webroot_map[domain] = config.webroot_path[-1]
 
 
 def setup_log_file_handler(args, logfile, fmt):
