@@ -713,6 +713,7 @@ class TwoVhost80Test(util.ApacheTest):
     def test_redirect_well_formed_http(self, mock_exe, _):
         self.config.parser.update_runtime_variables = mock.Mock()
         mock_exe.return_value = True
+        self.config.get_version = mock.Mock(return_value=(2, 3, 9)) 
         # This will create an ssl vhost for letsencrypt.demo
         self.config.enhance("letsencrypt.demo", "redirect")
 
@@ -746,6 +747,8 @@ class TwoVhost80Test(util.ApacheTest):
     def test_redirect_twice(self):
         # Skip the enable mod
         self.config.parser.modules.add("rewrite_module")
+        self.config.get_version = mock.Mock(return_value=(2, 3, 9))
+
         self.config.enhance("encryption-example.demo", "redirect")
         self.assertRaises(
             errors.PluginEnhancementAlreadyPresent,

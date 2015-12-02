@@ -885,14 +885,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             #     even with save() and load()
             self.parser.add_dir(general_vh.path, "RewriteEngine", "on")
 
-            if self.get_version >= (2.3.9):
+            if self.get_version() >= (2, 3, 9):
                 self.parser.add_dir(general_vh.path, "RewriteRule",
                                 constants.REWRITE_HTTPS_ARGS_WITH_END)
-           else:
+            else:
                 self.parser.add_dir(general_vh.path, "RewriteRule",
                                 constants.REWRITE_HTTPS_ARGS)
 
-            if _is_rewrite_exists(vhost):
+            if self._is_rewrite_exists(ssl_vhost):
                 logger.warn("Preexisting rewrite rules were detected. "
                             "Please verify that the newly installed "
                             "redirection rewrite rule doesn't break anything.")
