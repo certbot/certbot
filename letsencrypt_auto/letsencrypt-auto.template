@@ -217,6 +217,7 @@ UNLIKELY_EOF
   set -e
   if [ "$PEEP_STATUS" = 0 ]; then
     echo "Running letsencrypt..."
+    echo "  " $SUDO $VENV_BIN/letsencrypt "$@"
     $SUDO $VENV_BIN/letsencrypt "$@"
   else
     # Report error:
