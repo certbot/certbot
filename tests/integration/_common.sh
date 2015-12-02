@@ -21,7 +21,6 @@ letsencrypt_test () {
         $store_flags \
         --text \
         --no-redirect \
-        --agree-dev-preview \
         --agree-tos \
         --register-unsafely-without-email \
         --renew-by-default \

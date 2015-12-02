@@ -39,9 +39,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.config_dir = os.path.join(self.tmp_dir, 'config')
         self.work_dir = os.path.join(self.tmp_dir, 'work')
         self.logs_dir = os.path.join(self.tmp_dir, 'logs')
-        self.standard_args = ['--text', '--config-dir', self.config_dir,
-                              '--work-dir', self.work_dir, '--logs-dir',
-                              self.logs_dir, '--agree-dev-preview']
+        self.standard_args = ['--config-dir', self.config_dir,
+                              '--work-dir', self.work_dir,
+                              '--logs-dir', self.logs_dir, '--text']
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
@@ -183,8 +183,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_configurator_selection(self, mock_exe_exists):
         mock_exe_exists.return_value = True
         real_plugins = disco.PluginsRegistry.find_all()
-        args = ['--agree-dev-preview', '--apache',
-                '--authenticator', 'standalone']
+        args = ['--apache', '--authenticator', 'standalone']
 
         # This needed two calls to find_all(), which we're avoiding for now
         # because of possible side effects:

@@ -16,7 +16,7 @@ CLI_DEFAULTS = dict(
                      "letsencrypt", "cli.ini"),
     ],
     verbose_count=-(logging.WARNING / 10),
-    server="https://acme-staging.api.letsencrypt.org/directory",
+    server="https://acme-v01.api.letsencrypt.org/directory",
     rsa_key_size=2048,
     rollback_checkpoints=1,
     config_dir="/etc/letsencrypt",

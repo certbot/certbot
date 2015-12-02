@@ -9,7 +9,6 @@ import json
 import logging
 import logging.handlers
 import os
-import pkg_resources
 import sys
 import time
 import traceback
@@ -762,6 +761,20 @@ class HelpfulArgumentParser(object):
             kwargs["help"] = argparse.SUPPRESS
             self.parser.add_argument(*args, **kwargs)
 
+    def add_deprecated_argument(self, argument_name, num_args):
+        """Adds a deprecated argument with the name argument_name.
+
+        Deprecated arguments are not shown in the help. If they are used
+        on the command line, a warning is shown stating that the
+        argument is deprecated and no other action is taken.
+
+        :param str argument_name: Name of deprecated argument.
+        :param int nargs: Number of arguments the option takes.
+
+        """
+        le_util.add_deprecated_argument(
+            self.parser.add_argument, argument_name, num_args)
+
     def add_group(self, topic, **kwargs):
         """
 
@@ -872,9 +885,6 @@ def prepare_and_parse_args(plugins, args):
         help="Select renewal by default when domains are a superset of a "
              "previously attained cert")
     helpful.add(
-        "automation", "--agree-dev-preview", action="store_true",
-        help="Agree to the Let's Encrypt Developer Preview Disclaimer")
-    helpful.add(
         "automation", "--agree-tos", dest="tos", action="store_true",
         help="Agree to the Let's Encrypt Subscriber Agreement")
     helpful.add(
@@ -937,6 +947,8 @@ def prepare_and_parse_args(plugins, args):
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
+
+    helpful.add_deprecated_argument("--agree-dev-preview", 0)
 
     _create_subparsers(helpful)
     _paths_parser(helpful)
@@ -1256,13 +1268,6 @@ def main(cli_args=sys.argv[1:]):
     report = reporter.Reporter()
     zope.component.provideUtility(report)
     atexit.register(report.atexit_print_messages)
-
-    # TODO: remove developer preview prompt for the launch
-    if not config.agree_dev_preview:
-        disclaimer = pkg_resources.resource_string("letsencrypt", "DISCLAIMER")
-        if not zope.component.getUtility(interfaces.IDisplay).yesno(
-                disclaimer, "Agree", "Cancel"):
-            raise errors.Error("Must agree to TOS")
 
     if not os.geteuid() == 0:
         logger.warning(
