@@ -240,13 +240,18 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if not vhost.enabled:
             self.enable_site(vhost)
 
-    def choose_vhost(self, target_name):
+    def choose_vhost(self, target_name, temp=False):
         """Chooses a virtual host based on the given domain name.
 
         If there is no clear virtual host to be selected, the user is prompted
         with all available choices.
 
+        The returned vhost is guaranteed to have TLS enabled unless temp is
+        True. If temp is True, there is no such guarantee and the result is
+        not cached.
+
         :param str target_name: domain name
+        :param bool temp: whether the vhost is only used temporarily
 
         :returns: ssl vhost associated with name
         :rtype: :class:`~letsencrypt_apache.obj.VirtualHost`
@@ -261,15 +266,17 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Try to find a reasonable vhost
         vhost = self._find_best_vhost(target_name)
         if vhost is not None:
+            if temp:
+                return vhost
             if not vhost.ssl:
                 vhost = self.make_vhost_ssl(vhost)
 
             self.assoc[target_name] = vhost
             return vhost
 
-        return self._choose_vhost_from_list(target_name)
+        return self._choose_vhost_from_list(target_name, temp)
 
-    def _choose_vhost_from_list(self, target_name):
+    def _choose_vhost_from_list(self, target_name, temp=False):
         # Select a vhost from a list
         vhost = display_ops.select_vhost(target_name, self.vhosts)
         if vhost is None:
@@ -278,7 +285,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "No vhost was selected. Please specify servernames "
                 "in the Apache config", target_name)
             raise errors.PluginError("No vhost selected")
-
+        elif temp:
+            return vhost
         elif not vhost.ssl:
             addrs = self._get_proposed_addrs(vhost, "443")
             # TODO: Conflicts is too conservative

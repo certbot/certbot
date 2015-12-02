@@ -140,6 +140,12 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertTrue(chosen_vhost.ssl)
 
     @mock.patch("letsencrypt_apache.display_ops.select_vhost")
+    def test_choose_vhost_select_vhost_with_temp(self, mock_select):
+        mock_select.return_value = self.vh_truth[0]
+        chosen_vhost = self.config.choose_vhost("none.com", temp=True)
+        self.assertEqual(self.vh_truth[0], chosen_vhost)
+
+    @mock.patch("letsencrypt_apache.display_ops.select_vhost")
     def test_choose_vhost_select_vhost_conflicting_non_ssl(self, mock_select):
         mock_select.return_value = self.vh_truth[3]
         conflicting_vhost = obj.VirtualHost(
