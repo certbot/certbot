@@ -10,5 +10,5 @@ BootstrapSuseCommon() {
     augeas-lenses \
     libopenssl-devel \
     libffi-devel \
-    ca-certificates \
+    ca-certificates
 }

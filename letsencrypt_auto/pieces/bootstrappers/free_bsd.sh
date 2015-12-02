@@ -4,5 +4,5 @@ BootstrapFreeBsd() {
     python \
     py27-virtualenv \
     augeas \
-    libffi \
+    libffi
 }
