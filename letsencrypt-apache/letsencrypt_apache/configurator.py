@@ -913,7 +913,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "RewriteRule", None, start=vhost.path)
 
         if rewrite_path:
-            if map(self.aug.get, rewrite_path) in [
+            if [self.aug.get(x) for x in rewrite_path] in [
                     constants.REWRITE_HTTPS_ARGS,
                     constants.REWRITE_HTTPS_ARGS_WITH_END]:
                 raise errors.PluginEnhancementAlreadyPresent(
