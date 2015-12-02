@@ -118,6 +118,16 @@ email to client-dev+subscribe@letsencrypt.org)
 
 .. _watch demo video: https://www.youtube.com/watch?v=Gas_sSB-5SU
 
+System Requirements
+===================
+
+The Let's Encrypt client presently only runs on Unix-ish OSes that include
+Python 2.6 or 2.7; Python 3.x support will be added after the Public Beta
+launch.
+
+The Apache plugin requires a debian-based OS with augeas version 1.0 or
+higher.
+
 
 Current Features
 ================
