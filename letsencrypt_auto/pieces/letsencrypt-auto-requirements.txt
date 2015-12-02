@@ -1,6 +1,6 @@
-# This is the flattened list of requirements for the packages letsencrypt-auto
-# installs. To generate this, do `pip install -r py26reqs.txt -e acme -e . -e
-# letsencrypt-apache`, `pip freeze`, and then gather the hashes.
+# This is the flattened list of packages letsencrypt-auto installs. To generate
+# this, do `pip install -r py26reqs.txt -e acme -e . -e letsencrypt-apache`,
+# `pip freeze`, and then gather the hashes.
 
 # sha256: x40PeQZP0GQZT-XH5aO2svbbtIWDdrtSAqRIjGkfYS4
 # sha256: jLFOL0T7ke2Q8qcfFRdXalLSQdOB7RWXIyAMi4Fy6Bo
@@ -185,3 +185,15 @@ zope.event==4.1.0
 # sha256: DYQbobuEDuoOZIncXsr6YSVVSXH1O1rLh3ZEQeYbzro
 # sha256: sJyMHUezUxxADgGVaX8UFKYyId5u9HhZik8UYPfZo5I
 zope.interface==4.1.3
+
+# sha256: QQXOBA1ikgir11szeDu2mzswOs0XB_P8j0Q8rtLb6ws
+# sha256: rGNwiYAwPNxSEIw0lj6fZPHvlCJHzJLtzEBv7e5a4FM
+acme==0.0.0.dev20151201
+
+# sha256: ySOpZpw5OfxYrTcEDWavQPAB0L10NDaAzFcjuAvPn0Q
+# sha256: nEFgN9dyy36JKgl7UX26E0xoH36VmpW-JVg6Vt-ZVzE
+letsencrypt==0.0.0.dev20151201
+
+# sha256: 3mej6BrXy_CIQ4UO0QlQXTa1oM6NtdG8vPFxLHuRhdY
+# sha256: hwwDNpfTZCsJcogSAo0kpW8wmO4l_7S101OiPOKnmZw
+letsencrypt-apache==0.0.0.dev20151201
