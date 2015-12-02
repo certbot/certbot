@@ -1,6 +1,9 @@
 #!/bin/sh -xe
 # Release dev packages to PyPI
 
+# Needed to fix problems with git signatures and pinentry
+export GPG_TTY=$(tty)
+
 version="0.0.0.dev$(date +%Y%m%d)"
 DEV_RELEASE_BRANCH="dev-release"
 # TODO: create a real release key instead of using Kuba's personal one
