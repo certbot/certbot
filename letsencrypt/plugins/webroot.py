@@ -74,7 +74,10 @@ to serve all files under specified web root ({0})."""
         try:
             path = self.full_roots[achall.domain]
         except IndexError:
-            raise errors.PluginError("Cannot find webroot path for domain: {1}"
+            raise errors.PluginError("Missing --webroot-path for domain: {1}"
+                        .format(achall.domain))
+        if not os.path.exists(path):
+            raise errors.PluginError("Mysteriously missing path {0} for domain: {1}"
                         .format(path, achall.domain))
         return os.path.join(path, achall.chall.encode("token"))
 
