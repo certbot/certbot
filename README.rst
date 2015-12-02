@@ -4,7 +4,7 @@ Disclaimer
 ==========
 
 The Let's Encrypt Client is **BETA SOFTWARE**. It contains plenty of bugs and
-rough edges, and should be tested thoroughly in staging evironments before use
+rough edges, and should be tested thoroughly in staging environments before use
 on production systems.
 
 For more information regarding the status of the project, please see
@@ -35,7 +35,7 @@ in an python virtual environment::
 
 Or for full command line help, type::
 
-  ./letsencrypt-auto --help all | less
+  ./letsencrypt-auto --help all
 
 ``letsencrypt-auto`` updates to the latest client release automatically.  And
 since ``letsencrypt-auto`` is a wrapper to ``letsencrypt``, it accepts exactly
