@@ -178,9 +178,11 @@ elif [ "$1" != "--_skip-to-install" ]; then
     # containing a new copy of letsencrypt-auto or returns non-zero.
     # There is no $ interpolation due to quotes on heredoc delimiters.
     set +e
+    # -------------------------------------------------------------------------
     TEMP_DIR=`$LE_PYTHON - << "UNLIKELY_EOF"
 {{ download_upgrade.py }}
 UNLIKELY_EOF`
+    # -------------------------------------------------------------------------
     DOWNLOAD_STATUS=$?
     set -e
     if [ "$DOWNLOAD_STATUS" = 0 ]; then
@@ -203,14 +205,15 @@ else  # --_skip-to-install was passed.
   echo "Installing Python package dependencies..."
   TEMP_DIR="$2"
   shift 2
+  # ---------------------------------------------------------------------------
   cat << "UNLIKELY_EOF" > $TEMP_DIR/letsencrypt-auto-requirements.txt
 {{ letsencrypt-auto-requirements.txt }}
 UNLIKELY_EOF
-
+  # ---------------------------------------------------------------------------
   cat << "UNLIKELY_EOF" > $TEMP_DIR/peep.py
 {{ peep.py }}
 UNLIKELY_EOF
-
+  # ---------------------------------------------------------------------------
   set +e
   PEEP_OUT=`$LE_PYTHON $TEMP_DIR/peep.py install -r $TEMP_DIR/letsencrypt-auto-requirements.txt`
   PEEP_STATUS=$?
