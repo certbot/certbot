@@ -86,17 +86,17 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add("ctl", default=constants.CLI_DEFAULTS["ctl"],
+        add("ctl", default=constants.os_constant("ctl"),
             help="Path to the 'apache2ctl' binary, used for 'configtest', "
                  "retrieving the Apache2 version number, and initialization "
                  "parameters.")
-        add("enmod", default=constants.CLI_DEFAULTS["enmod"],
+        add("enmod", default=constants.os_constant("enmod"),
             help="Path to the Apache 'a2enmod' binary.")
-        add("dismod", default=constants.CLI_DEFAULTS["dismod"],
+        add("dismod", default=constants.os_constant("dismod"),
             help="Path to the Apache 'a2enmod' binary.")
-        add("le-vhost-ext", default=constants.CLI_DEFAULTS["le_vhost_ext"],
+        add("le-vhost-ext", default=constants.os_constant("le_vhost_ext"),
             help="SSL vhost configuration extension.")
-        add("server-root", default=constants.CLI_DEFAULTS["server_root"],
+        add("server-root", default=constants.os_constant("server_root"),
             help="Apache server root directory.")
         le_util.add_deprecated_argument(add, "init-script", 1)
 
@@ -583,7 +583,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         Duplicates vhost and adds default ssl options
         New vhost will reside as (nonssl_vhost.path) +
-        ``letsencrypt_apache.constants.CLI_DEFAULTS["le_vhost_ext"]``
+        ``letsencrypt_apache.constants.os_constant("le_vhost_ext")``
 
         .. note:: This function saves the configuration
 

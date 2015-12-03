@@ -1,14 +1,27 @@
 """Apache plugin constants."""
 import pkg_resources
+from letsencrypt import le_util
 
 
-CLI_DEFAULTS = dict(
+CLI_DEFAULTS_DEBIAN = dict(
     server_root="/etc/apache2",
     ctl="apache2ctl",
     enmod="a2enmod",
     dismod="a2dismod",
     le_vhost_ext="-le-ssl.conf",
 )
+CLI_DEFAULTS_CENTOS = dict(
+    server_root="/etc/httpd",
+    ctl="apachectl",
+    enmod=None,
+    dismod=None,
+    le_vhost_ext="-le-ssl.conf",
+)
+CLI_DEFAULTS = {
+    "debian": CLI_DEFAULTS_DEBIAN,
+    "ubuntu": CLI_DEFAULTS_DEBIAN,
+    "centos": CLI_DEFAULTS_CENTOS
+}
 """CLI defaults."""
 
 MOD_SSL_CONF_DEST = "options-ssl-apache.conf"
@@ -38,3 +51,10 @@ UIR_ARGS = ["always", "set", "Content-Security-Policy",
 HEADER_ARGS = {"Strict-Transport-Security": HSTS_ARGS,
         "Upgrade-Insecure-Requests": UIR_ARGS}
 
+def os_constant(key):
+    os_info = le_util.get_os_info()
+    try:
+        constants = CLI_DEFAULTS[os_info[0].lower()]
+    except KeyError:
+        constants = CLI_DEFAULTS["debian"]
+    return constants[key]
