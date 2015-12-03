@@ -128,7 +128,7 @@ launch. The client requires root access in order to write to
 bind to ports 80 and 443 (if you use the ``standalone`` plugin) and to read and
 modify webserver configurations (if you use the ``apache`` or ``nginx``
 plugins).  If none of these apply to you, it is theoretically possible to run
-without root privilegess, but for most users who want to avoid running an ACME
+without root privileges, but for most users who want to avoid running an ACME
 client as root, either `letsencrypt-nosudo
 <https://github.com/diafygi/letsencrypt-nosudo>`_ or `simp_le
 <https://github.com/kuba/simp_le>`_ are more appropriate choices.
