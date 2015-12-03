@@ -1,3 +1,8 @@
+"""Print a path to a temp dir containing a new copy of letsencrypt-auto.
+
+On failure, return non-zero.
+
+"""
 from distutils.version import LooseVersion
 from json import loads
 from os import devnull
@@ -67,7 +72,7 @@ class TempDir(object):
 def latest_stable_version(get, package):
     """Apply a fairly safe heuristic to determine the latest stable release of
     a PyPI package."""
-    metadata = loads(get('https://pypi.python.org/pypi/%s/json' % package))
+    metadata = loads(get('https://pypi.python.org/pypi/letsencrypt/json'))
     # metadata['info']['version'] actually returns the latest of any kind of
     # release release, contrary to https://wiki.python.org/moin/PyPIJSON.
     return str(max(LooseVersion(r) for r
@@ -108,7 +113,7 @@ def main():
     get = HttpsGetter().get
     temp = TempDir()
     try:
-        stable_tag = 'v' + latest_stable_version(get, 'letsencrypt')
+        stable_tag = 'v' + latest_stable_version(get)
         print dirname(verified_new_le_auto(get, stable_tag, temp))
     except ExpectedError as exc:
         print exc.args[0], exc.args[1]

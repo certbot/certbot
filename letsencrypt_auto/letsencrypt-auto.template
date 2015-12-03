@@ -160,43 +160,49 @@ elif [ "$1" = "--no-self-upgrade" ]; then
   # Phase 2: Create venv, install LE, and run.
 
   shift 1  # the --no-self-upgrade arg
-  echo "Creating virtual environment..."
-  # TODO: Embed LE version here, and compare it against letsencrypt --version.
-  # If it matches, there's no need to recreate the venv.
-  rm -rf "$VENV_PATH"
-  DeterminePythonVersion
-  if [ "$VERBOSE" = 1 ]; then
-    virtualenv --no-site-packages --python $LE_PYTHON $VENV_PATH
+  if [ -f $VENV_BIN/letsencrypt ]; then
+    INSTALLED_VERSION=$($VENV_BIN/letsencrypt --version 2>&1 | cut -d " " -f 2)
   else
-    virtualenv --no-site-packages --python $LE_PYTHON $VENV_PATH > /dev/null
+    INSTALLED_VERSION="0.0.0"
   fi
+  if [ "{{ LE_AUTO_VERSION }}" = $INSTALLED_VERSION ]; then
+    echo "Reusing old virtual environment."
+  else
+    echo "Creating virtual environment..."
+    rm -rf "$VENV_PATH"
+    DeterminePythonVersion
+    if [ "$VERBOSE" = 1 ]; then
+      virtualenv --no-site-packages --python $LE_PYTHON $VENV_PATH
+    else
+      virtualenv --no-site-packages --python $LE_PYTHON $VENV_PATH > /dev/null
+    fi
 
-  # Install Python dependencies with peep, then run letsencrypt.
-  echo "Installing Python package dependencies..."
-  TEMP_DIR=`mktemp -d 2>/dev/null || mktemp -d -t 'le'`  # Linux || OS X
-  # ---------------------------------------------------------------------------
-  cat << "UNLIKELY_EOF" > $TEMP_DIR/letsencrypt-auto-requirements.txt
+    # Install Python dependencies with peep, then run letsencrypt.
+    echo "Installing Python package dependencies..."
+    TEMP_DIR=`mktemp -d 2>/dev/null || mktemp -d -t 'le'`  # Linux || OS X
+    # ---------------------------------------------------------------------------
+    cat << "UNLIKELY_EOF" > $TEMP_DIR/letsencrypt-auto-requirements.txt
 {{ letsencrypt-auto-requirements.txt }}
 UNLIKELY_EOF
-  # ---------------------------------------------------------------------------
-  cat << "UNLIKELY_EOF" > $TEMP_DIR/peep.py
+    # ---------------------------------------------------------------------------
+    cat << "UNLIKELY_EOF" > $TEMP_DIR/peep.py
 {{ peep.py }}
 UNLIKELY_EOF
-  # ---------------------------------------------------------------------------
-  set +e
-  PEEP_OUT=`$VENV_BIN/python $TEMP_DIR/peep.py install -r $TEMP_DIR/letsencrypt-auto-requirements.txt`
-  PEEP_STATUS=$?
-  set -e
-  rm -rf $TEMP_DIR
-  if [ "$PEEP_STATUS" = 0 ]; then
-    echo "Running letsencrypt..."
-    echo "  " $SUDO $VENV_BIN/letsencrypt "$@"
-    $SUDO $VENV_BIN/letsencrypt "$@"
-  else
-    # Report error:
-    echo $PEEP_OUT
-    exit 1
+    # ---------------------------------------------------------------------------
+    set +e
+    PEEP_OUT=`$VENV_BIN/python $TEMP_DIR/peep.py install -r $TEMP_DIR/letsencrypt-auto-requirements.txt`
+    PEEP_STATUS=$?
+    set -e
+    rm -rf $TEMP_DIR
+    if [ "$PEEP_STATUS" != 0 ]; then
+      # Report error:
+      echo $PEEP_OUT
+      exit 1
+    fi
   fi
+  echo "Running letsencrypt..."
+  echo "  " $SUDO $VENV_BIN/letsencrypt "$@"
+  $SUDO $VENV_BIN/letsencrypt "$@"
 else
   # Phase 1: Upgrade letsencrypt-auto if neceesary, then self-invoke.
 
@@ -215,9 +221,7 @@ else
     # dependencies (curl, etc.), for better flow control, and for the option of
     # future Windows compatibility.
     #
-    # This Python script prints a path to a temp dir containing a new copy of
-    # letsencrypt-auto or returns non-zero. There is no $ interpolation due to
-    # quotes on heredoc delimiters.
+    # There is no $ interpolation due to quotes on heredoc delimiters.
     set +e
     # -------------------------------------------------------------------------
     TEMP_DIR=`$LE_PYTHON - << "UNLIKELY_EOF"
