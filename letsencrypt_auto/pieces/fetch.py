@@ -1,4 +1,11 @@
-"""Print a path to a temp dir containing a new copy of letsencrypt-auto.
+"""Do downloading and JSON parsing without additional dependencies. ::
+
+    # Print latest released version of LE to stdout:
+    python fetch.py --latest-version
+    
+    # Download letsencrypt-auto script from git tag v1.2.3 into the folder I'm
+    # in, and make sure its signature verifies:
+    python fetch.py --le-auto-script v1.2.3
 
 On failure, return non-zero.
 
@@ -9,8 +16,7 @@ from os import devnull
 from os.path import dirname, join
 import re
 from subprocess import check_call, CalledProcessError
-from sys import exit
-from tempfile import mkdtemp
+from sys import argv, exit
 from urllib2 import build_opener, HTTPHandler, HTTPSHandler, HTTPError
 
 
@@ -59,62 +65,59 @@ class HttpsGetter(object):
             raise ExpectedError("Couldn't download %s." % url, exc)
 
 
-class TempDir(object):
-    def __init__(self):
-        self.path = mkdtemp()
-
-    def write(self, contents, filename):
-        """Write something to a named file in me."""
-        with open(join(self.path, filename), 'w') as file:
-            file.write(contents)
+def write(contents, dir, filename):
+    """Write something to a file in a certain directory."""
+    with open(join(dir, filename), 'w') as file:
+        file.write(contents)
 
 
-def latest_stable_version(get, package):
-    """Apply a fairly safe heuristic to determine the latest stable release of
-    a PyPI package."""
+def latest_stable_version(get):
+    """Return the latest stable release of letsencrypt."""
     metadata = loads(get('https://pypi.python.org/pypi/letsencrypt/json'))
     # metadata['info']['version'] actually returns the latest of any kind of
     # release release, contrary to https://wiki.python.org/moin/PyPIJSON.
+    # The regex is a sufficient regex for picking out prereleases for most
+    # packages, LE included.
     return str(max(LooseVersion(r) for r
                    in metadata['releases'].iterkeys()
                    if re.match('^[0-9.]+$', r)))
 
 
-def verified_new_le_auto(get, tag, temp):
+def verified_new_le_auto(get, tag, temp_dir):
     """Return the path to a verified, up-to-date letsencrypt-auto script.
 
-    If the download's signature does not verify or something else goes wrong,
-    raise ExpectedError.
+    If the download's signature does not verify or something else goes wrong
+    with the verification process, raise ExpectedError.
 
     """
     le_auto_dir = ('https://raw.githubusercontent.com/letsencrypt/letsencrypt/'
                    '%s/letsencrypt-auto/' % tag)
-    temp.write(get(le_auto_dir + 'letsencrypt-auto'), 'letsencrypt-auto')
-    temp.write(get(le_auto_dir + 'letsencrypt-auto.sig'), 'letsencrypt-auto.sig')
-    temp.write(PUBLIC_KEY, 'public_key.pem')
-    le_auto_path = join(temp.path, 'letsencrypt-auto')
+    write(get(le_auto_dir + 'letsencrypt-auto'), temp_dir, 'letsencrypt-auto')
+    write(get(le_auto_dir + 'letsencrypt-auto.sig'), temp_dir, 'letsencrypt-auto.sig')
+    write(PUBLIC_KEY, temp_dir, 'public_key.pem')
     try:
         with open(devnull, 'w') as dev_null:
             check_call(['openssl', 'dgst', '-sha256', '-verify',
-                        join(temp.path, 'public_key.pem'),
+                        join(temp_dir, 'public_key.pem'),
                         '-signature',
-                        join(temp.path, 'letsencrypt-auto.sig'),
-                        le_auto_path],
+                        join(temp_dir, 'letsencrypt-auto.sig'),
+                        join(temp_dir, 'letsencrypt-auto')],
                        stdout=dev_null,
                        stderr=dev_null)
     except CalledProcessError as exc:
         raise ExpectedError("Couldn't verify signature of downloaded "
                             "letsencrypt-auto.", exc)
-    else:  # belt & suspenders
-        return le_auto_path
 
 
 def main():
     get = HttpsGetter().get
-    temp = TempDir()
+    flag = argv[1]
     try:
-        stable_tag = 'v' + latest_stable_version(get)
-        print dirname(verified_new_le_auto(get, stable_tag, temp))
+        if flag == '--latest-version':
+            print latest_stable_version(get)
+        elif flag == '--le-auto-script':
+            tag = argv[2]
+            verified_new_le_auto(get, tag, dirname(argv[0]))
     except ExpectedError as exc:
         print exc.args[0], exc.args[1]
         return 1

@@ -13,6 +13,7 @@ XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN=${VENV_PATH}/bin
+LE_AUTO_VERSION="{{ LE_AUTO_VERSION }}"
 
 ExperimentalBootstrap() {
   # Arguments: Platform name, bootstrap function name
@@ -102,6 +103,10 @@ Bootstrap() {
   fi
 }
 
+TempDir() {
+  mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || OS X
+}
+
 # This script takes the same arguments as the main letsencrypt program, but it
 # additionally responds to --verbose (more output) and --debug (allow support
 # for experimental platforms)
@@ -165,7 +170,7 @@ elif [ "$1" = "--no-self-upgrade" ]; then
   else
     INSTALLED_VERSION="0.0.0"
   fi
-  if [ "{{ LE_AUTO_VERSION }}" = $INSTALLED_VERSION ]; then
+  if [ "$LE_AUTO_VERSION" = "$INSTALLED_VERSION" ]; then
     echo "Reusing old virtual environment."
   else
     echo "Creating virtual environment..."
@@ -177,9 +182,9 @@ elif [ "$1" = "--no-self-upgrade" ]; then
       virtualenv --no-site-packages --python $LE_PYTHON $VENV_PATH > /dev/null
     fi
 
-    # Install Python dependencies with peep, then run letsencrypt.
-    echo "Installing Python package dependencies..."
-    TEMP_DIR=`mktemp -d 2>/dev/null || mktemp -d -t 'le'`  # Linux || OS X
+    echo "Installing Python packages..."
+    TEMP_DIR=$(TempDir)
+    # There is no $ interpolation due to quotes on heredoc delimiters.
     # ---------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > $TEMP_DIR/letsencrypt-auto-requirements.txt
 {{ letsencrypt-auto-requirements.txt }}
@@ -195,7 +200,7 @@ UNLIKELY_EOF
     set -e
     rm -rf $TEMP_DIR
     if [ "$PEEP_STATUS" != 0 ]; then
-      # Report error:
+      # Report error. (Otherwise, be quiet.)
       echo $PEEP_OUT
       exit 1
     fi
@@ -205,45 +210,37 @@ UNLIKELY_EOF
   $SUDO $VENV_BIN/letsencrypt "$@"
 else
   # Phase 1: Upgrade letsencrypt-auto if neceesary, then self-invoke.
-
-  if [ ! -f $VENV_BIN/letsencrypt ]; then
-    OLD_VERSION="0.0.0"  # ($VENV_BIN/letsencrypt --version)
-  else
-    OLD_VERSION="0.0.0"
-  fi
-
-  # TODO: Don't bother upgrading if we're already up to date.
-  if [ "$OLD_VERSION" != "1.2.3" ]; then
-    echo "Upgrading letsencrypt-auto..."
-    DeterminePythonVersion
+  #
+  # Each phase checks the version of only the thing it is responsible for
+  # upgrading. Phase 1 checks the version of the latest release of
+  # letsencrypt-auto (which is always the same as that of the letsencrypt
+  # package). Phase 2 checks the version of the locally installed letsencrypt.
+  
+  echo "Checking for new version..."
+  TEMP_DIR=$(TempDir)
+  # -------------------------------------------------------------------------
+  cat << "UNLIKELY_EOF" > $TEMP_DIR/fetch.py
+{{ fetch.py }}
+UNLIKELY_EOF
+  # -------------------------------------------------------------------------
+  DeterminePythonVersion
+  REMOTE_VERSION=`$LE_PYTHON $TEMP_DIR/fetch.py --latest-version`
+  if [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
+    echo "Upgrading letsencrypt-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
 
     # Now we drop into Python so we don't have to install even more
     # dependencies (curl, etc.), for better flow control, and for the option of
     # future Windows compatibility.
-    #
-    # There is no $ interpolation due to quotes on heredoc delimiters.
-    set +e
-    # -------------------------------------------------------------------------
-    TEMP_DIR=`$LE_PYTHON - << "UNLIKELY_EOF"
-{{ download_upgrade.py }}
-UNLIKELY_EOF`
-    # -------------------------------------------------------------------------
-    DOWNLOAD_STATUS=$?
-    set -e
-    if [ "$DOWNLOAD_STATUS" = 0 ]; then
-      # Install new copy of letsencrypt-auto. This preserves permissions and
-      # ownership from the old copy.
-      # TODO: Deal with quotes in pathnames.
-      echo "Installing new version of letsencrypt-auto..."
-      echo "  " $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$0"
-      $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$0"
-      # TODO: Clean up temp dir safely, even if it has quotes in its path.
-      rm -rf $TEMP_DIR
-      "$0" --no-self-upgrade "$@"
-    else
-      # Report error:
-      echo $TEMP_DIR
-      exit 1
-    fi
+    $LE_PYTHON "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
+
+    # Install new copy of letsencrypt-auto. This preserves permissions and
+    # ownership from the old copy.
+    # TODO: Deal with quotes in pathnames.
+    echo "Installing new version of letsencrypt-auto..."
+    echo "  " $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$0"
+    $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$0"
+    # TODO: Clean up temp dir safely, even if it has quotes in its path.
+    rm -rf $TEMP_DIR
   fi  # should upgrade
+  "$0" --no-self-upgrade "$@"
 fi
