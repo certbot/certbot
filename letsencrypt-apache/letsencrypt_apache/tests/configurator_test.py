@@ -140,6 +140,12 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertTrue(chosen_vhost.ssl)
 
     @mock.patch("letsencrypt_apache.display_ops.select_vhost")
+    def test_choose_vhost_select_vhost_with_temp(self, mock_select):
+        mock_select.return_value = self.vh_truth[0]
+        chosen_vhost = self.config.choose_vhost("none.com", temp=True)
+        self.assertEqual(self.vh_truth[0], chosen_vhost)
+
+    @mock.patch("letsencrypt_apache.display_ops.select_vhost")
     def test_choose_vhost_select_vhost_conflicting_non_ssl(self, mock_select):
         mock_select.return_value = self.vh_truth[3]
         conflicting_vhost = obj.VirtualHost(
@@ -563,24 +569,13 @@ class TwoVhost80Test(util.ApacheTest):
         mock_script.side_effect = errors.SubprocessError("Can't find program")
         self.assertRaises(errors.PluginError, self.config.get_version)
 
-    @mock.patch("letsencrypt_apache.configurator.subprocess.Popen")
-    def test_restart(self, mock_popen):
-        """These will be changed soon enough with reload."""
-        mock_popen().returncode = 0
-        mock_popen().communicate.return_value = ("", "")
-
+    @mock.patch("letsencrypt_apache.configurator.le_util.run_script")
+    def test_restart(self, _):
         self.config.restart()
 
-    @mock.patch("letsencrypt_apache.configurator.subprocess.Popen")
-    def test_restart_bad_process(self, mock_popen):
-        mock_popen.side_effect = OSError
-
-        self.assertRaises(errors.MisconfigurationError, self.config.restart)
-
-    @mock.patch("letsencrypt_apache.configurator.subprocess.Popen")
-    def test_restart_failure(self, mock_popen):
-        mock_popen().communicate.return_value = ("", "")
-        mock_popen().returncode = 1
+    @mock.patch("letsencrypt_apache.configurator.le_util.run_script")
+    def test_restart_bad_process(self, mock_run_script):
+        mock_run_script.side_effect = [None, errors.SubprocessError]
 
         self.assertRaises(errors.MisconfigurationError, self.config.restart)
 
