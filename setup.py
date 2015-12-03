@@ -52,13 +52,13 @@ if sys.version_info < (2, 7):
     install_requires.extend([
         # only some distros recognize stdlib argparse as already satisfying
         'argparse',
-        'mock<1.1.0',
         'ConfigArgParse>=0.10.0',  # python2.6 support, upstream #17
+        'mock<1.1.0',
     ])
 else:
     install_requires.extend([
-        'mock',
         'ConfigArgParse',
+        'mock',
     ])
 
 dev_extras = [
