@@ -72,6 +72,11 @@ to serve all files under specified web root ({0})."""
                 os.chown(self.full_roots[name], stat_path.st_uid,
                           stat_path.st_gid)
 
+                # Also fix the parent directory (.well-known) permissions
+                os.chmod(os.path.dirname(self.full_roots[name]), filemode)
+                os.chown(os.path.dirname(self.full_roots[name]), stat_path.st_uid,
+                          stat_path.st_gid)
+
             except OSError as exception:
                 if exception.errno != errno.EEXIST:
                     raise errors.PluginError(
@@ -105,7 +110,9 @@ to serve all files under specified web root ({0})."""
         stat_parent_path = os.stat(parent_path)
         filemode = stat.S_IMODE(stat_parent_path.st_mode)
         # Remove execution bit (not needed for this file)
-        os.chmod(path, filemode & ~stat.S_IEXEC)
+        # Grant group and other read access to the file
+        os.chmod(path, (filemode & ~(stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)) |
+                       stat.S_IRGRP | stat.S_IROTH)
         os.chown(path, stat_parent_path.st_uid, stat_parent_path.st_gid)
 
         return response

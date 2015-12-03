@@ -74,9 +74,16 @@ class AuthenticatorTest(unittest.TestCase):
 
         # Remove exec bit from permission check, so that it
         # matches the file
+        # Also add group and other read permissions the same
+        # way they're added in the actual webroot code
+
+        # TODO: Should perhaps test ownership and permissions of
+        # .well-known and .well-known/acme-challenge directories?
+
         self.auth.perform([self.achall])
-        parent_permissions = (stat.S_IMODE(os.stat(self.path).st_mode) &
-                              ~stat.S_IEXEC)
+        parent_permissions = ((stat.S_IMODE(os.stat(self.path).st_mode) &
+                              ~(stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)) |
+                               stat.S_IRGRP | stat.S_IROTH)
 
         actual_permissions = stat.S_IMODE(os.stat(self.validation_path).st_mode)
 
