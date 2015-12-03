@@ -32,7 +32,7 @@ version = meta['version']
 
 install_requires = [
     'acme=={0}'.format(version),
-    'ConfigArgParse',
+    'ConfigArgParse>=0.10.0',  # python2.6 support, upstream #17
     'configobj',
     'cryptography>=0.7',  # load_pem_x509_certificate
     'parsedatetime',
