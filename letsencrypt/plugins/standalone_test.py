@@ -104,8 +104,8 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertTrue(isinstance(self.auth.more_info(), six.string_types))
 
     def test_get_chall_pref(self):
-        self.assertEqual(set(self.auth.get_chall_pref(domain=None)),
-                         set([challenges.TLSSNI01, challenges.HTTP01]))
+        self.assertEqual(self.auth.get_chall_pref(domain=None),
+                         [challenges.TLSSNI01, challenges.HTTP01])
 
     @mock.patch("letsencrypt.plugins.standalone.util")
     def test_perform_alredy_listening(self, mock_util):
