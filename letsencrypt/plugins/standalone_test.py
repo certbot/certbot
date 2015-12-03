@@ -108,7 +108,7 @@ class AuthenticatorTest(unittest.TestCase):
                          [challenges.TLSSNI01, challenges.HTTP01])
 
     @mock.patch("letsencrypt.plugins.standalone.util")
-    def test_perform_alredy_listening(self, mock_util):
+    def test_perform_already_listening(self, mock_util):
         for chall, port in ((challenges.TLSSNI01.typ, 1234),
                             (challenges.HTTP01.typ, 4321)):
             mock_util.already_listening.return_value = True
