@@ -108,7 +108,7 @@ class ServerManager(object):
                     in six.iteritems(self._instances))
 
 
-SUPPORTED_CHALLENGES = set([challenges.TLSSNI01, challenges.HTTP01])
+SUPPORTED_CHALLENGES = [challenges.TLSSNI01, challenges.HTTP01]
 
 
 def supported_challenges_validator(data):
