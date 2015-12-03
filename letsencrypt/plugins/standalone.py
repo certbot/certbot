@@ -198,9 +198,7 @@ class Authenticator(common.Plugin):
 
     def get_chall_pref(self, domain):
         # pylint: disable=unused-argument,missing-docstring
-        chall_pref = list(self.supported_challenges)
-        random.shuffle(chall_pref)  # 50% for each challenge
-        return chall_pref
+        return SUPPORTED_CHALLENGES
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
         if any(util.already_listening(port) for port in self._necessary_ports):
