@@ -881,7 +881,7 @@ def prepare_and_parse_args(plugins, args):
         version="%(prog)s {0}".format(letsencrypt.__version__),
         help="show program's version number and exit")
     helpful.add(
-        "automation", "--renew-by-default", action="store_true",
+        "automation", "--renew-by-default", "--replace", action="store_true",
         help="Select renewal by default when domains are a superset of a "
              "previously attained cert")
     helpful.add(

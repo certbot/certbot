@@ -62,7 +62,9 @@ echo "Cloning into fresh copy at $root"  # clean repo = no artificats
 git clone . $root
 git rev-parse HEAD
 cd $root
-git branch -f "$RELEASE_BRANCH"
+if [ "$RELEASE_BRANCH" != master ] ; then
+    git branch -f "$RELEASE_BRANCH"
+fi
 git checkout "$RELEASE_BRANCH"
 
 for pkg_dir in $SUBPKGS
@@ -71,7 +73,7 @@ do
 done
 sed -i "s/^__version.*/__version__ = '$version'/" letsencrypt/__init__.py
 
-git add -p  # interactive user input
+git add -p $SUBPKGS # interactive user input
 git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"
 git tag --local-user "$RELEASE_GPG_KEY" \
     --sign --message "Release $version" "$tag"
@@ -89,7 +91,7 @@ do
   echo "Signing ($pkg_dir)"
   for x in dist/*.tar.gz dist/*.whl
   do
-      gpg2 --detach-sign --armor --sign $x
+      gpg -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign $x
   done
 
   cd -

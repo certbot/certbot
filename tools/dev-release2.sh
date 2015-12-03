@@ -39,7 +39,10 @@
 # Create a GitHub issue with the release information, ask someone to
 # pull in the tag.
 
-script --return --command ./tools/dev-release.sh log
+RELEASE_GPG_KEY=A2CFB51FA275A7286234E7B24D17C995CD9775F2
+export GPG_TTY=$(tty)
+
+#script --return --command ./tools/dev-release.sh log
 
 root="$(basename `grep -E '^/tmp/le' log | head -n1 | tr -d "\r"`)"
 root_without_le="${root##le.}"
@@ -48,4 +51,4 @@ ext="${root_without_le##*.}"
 rev="$(git rev-parse --short HEAD)"
 cp -r /tmp/le.$name.$ext/ $name.$rev
 tar cJvf $name.$rev.tar.xz log $name.$rev
-gpg --detach-sign --armor $name.$rev.tar.xz
+gpg -U $RELEASE_GPG_KEY --detach-sign --armor $name.$rev.tar.xz
