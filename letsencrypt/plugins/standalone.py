@@ -165,10 +165,10 @@ class Authenticator(common.Plugin):
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add("supported-challenges", help="Supported challenges, "
-            "order preferences are randomly chosen.",
-            type=supported_challenges_validator, default=",".join(
-                sorted(chall.typ for chall in SUPPORTED_CHALLENGES)))
+        add("supported-challenges",
+            help="Supported challenges. Prefers tls-sni-01.",
+            type=supported_challenges_validator,
+            default=",".join(chall.typ for chall in SUPPORTED_CHALLENGES))
 
     @property
     def supported_challenges(self):
