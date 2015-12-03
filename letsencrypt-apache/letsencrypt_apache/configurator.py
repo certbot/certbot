@@ -880,6 +880,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # Check if LetsEncrypt redirection already exists
             self._verify_no_letsencrypt_redirect(general_vh)
 
+            # Note: if code flow gets here it means we didn't find the exact
+            # letsencrypt RewriteRule config for redirection. So if we find
+            # an other RewriteRule it may induce a loop / config mismatch.
+            if self.is_rewrite_exists(general_vh):
+                logger.warn("Added an HTTP->HTTPS rewrite in addition to "
+                            "other RewriteRules; you may wish to check for "
+                            "overall consistency.")
+
             # Add directives to server
             # Note: These are not immediately searchable in sites-enabled
             #     even with save() and load()
@@ -891,14 +899,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             else:
                 self.parser.add_dir(general_vh.path, "RewriteRule",
                                 constants.REWRITE_HTTPS_ARGS)
-
-            # Note: if code flow gets here it means we didn't find the exact
-            # letsencrypt RewriteRule config for redirection. So if we find
-            # an other RewriteRule it may induce a loop / config mismatch.
-            if self._is_rewrite_exists(ssl_vhost):
-                logger.warn("Added an HTTP->HTTPS rewrite in addition to "
-                            "other RewriteRules; you may wish to check for "
-                            "overall consistency.")
 
             self.save_notes += ("Redirecting host in %s to ssl vhost in %s\n" %
                                 (general_vh.filep, ssl_vhost.filep))
@@ -929,7 +929,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 raise errors.PluginEnhancementAlreadyPresent(
                     "Let's Encrypt has already enabled redirection")
 
-    def _is_rewrite_exists(self, vhost):
+    def is_rewrite_exists(self, vhost):
         """Checks if there exists a rewriterule directive in vhost
 
         :param vhost: vhost to check
