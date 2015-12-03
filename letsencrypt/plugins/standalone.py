@@ -2,7 +2,6 @@
 import argparse
 import collections
 import logging
-import random
 import socket
 import threading
 
