@@ -245,7 +245,7 @@ def success_installation(domains):
 
     """
     util(interfaces.IDisplay).notification(
-        "Congratulations! You have successfully enabled {0}!{1}{1}"
+        "Congratulations! You have successfully enabled {0}{1}{1}"
         "You should test your configuration at:{1}{2}".format(
             _gen_https_names(domains),
             os.linesep,
