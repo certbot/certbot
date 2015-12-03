@@ -891,7 +891,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # Add directives to server
             # Note: These are not immediately searchable in sites-enabled
             #     even with save() and load()
-            self.parser.add_dir(general_vh.path, "RewriteEngine", "on")
+            if not self.is_rewrite_engine_on(general_vh):
+                self.parser.add_dir(general_vh.path, "RewriteEngine", "on")
 
             if self.get_version() >= (2, 3, 9):
                 self.parser.add_dir(general_vh.path, "RewriteRule",
@@ -921,24 +922,52 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         rewrite_path = self.parser.find_dir(
                 "RewriteRule", None, start=vhost.path)
-
-        if rewrite_path:
-            if [self.aug.get(x) for x in rewrite_path] in [
-                    constants.REWRITE_HTTPS_ARGS,
-                    constants.REWRITE_HTTPS_ARGS_WITH_END]:
-                raise errors.PluginEnhancementAlreadyPresent(
+          
+        dir_dict = {}
+        pat = '.*(directive\[\d\]).*'
+        for match in rewrite_path:
+                m = re.match(pat, match) 
+                if m:
+                    dir_id = m.group(1)
+                    if dir_id in dir_dict:
+                        dir_dict[dir_id].append(match)
+                    else:
+                        dir_dict[dir_id] = [match]
+                    
+        if dir_dict:
+            for dir_id in dir_dict:
+                if [self.aug.get(x) for x in dir_dict[dir_id]]in [
+                        constants.REWRITE_HTTPS_ARGS,
+                        constants.REWRITE_HTTPS_ARGS_WITH_END]:
+                    raise errors.PluginEnhancementAlreadyPresent(
                     "Let's Encrypt has already enabled redirection")
 
     def is_rewrite_exists(self, vhost):
-        """Checks if there exists a rewriterule directive in vhost
+        """Checks if there exists a RewriteRule directive in vhost
 
         :param vhost: vhost to check
         :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
+ 
+        :returns: True if a RewriteRule directive exists.
+        :rtype: bool
 
         """
         rewrite_path = self.parser.find_dir(
                 "RewriteRule", None, start=vhost.path)
         return bool(rewrite_path)
+
+    def is_rewrite_engine_on(self, vhost):
+        """Checks if a RewriteEngine directive is on
+
+        :param vhost: vhost to check
+        :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
+
+        """
+        rewrite_engine_path = self.parser.find_dir("RewriteEngine", None,
+                start=vhost.path)
+        if rewrite_engine_path:
+            return self.aug.get(rewrite_engine_path[0]).lower() == "on"
+        return False
 
     def _create_redirect_vhost(self, ssl_vhost):
         """Creates an http_vhost specifically to redirect for the ssl_vhost.
