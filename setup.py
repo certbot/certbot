@@ -32,7 +32,6 @@ version = meta['version']
 
 install_requires = [
     'acme=={0}'.format(version),
-    'ConfigArgParse>=0.10.0',  # python2.6 support, upstream #17
     'configobj',
     'cryptography>=0.7',  # load_pem_x509_certificate
     'parsedatetime',
@@ -54,9 +53,13 @@ if sys.version_info < (2, 7):
         # only some distros recognize stdlib argparse as already satisfying
         'argparse',
         'mock<1.1.0',
+        'ConfigArgParse>=0.10.0',  # python2.6 support, upstream #17
     ])
 else:
-    install_requires.append('mock')
+    install_requires.extend([
+        'mock',
+        'ConfigArgParse',
+    ])
 
 dev_extras = [
     # Pin astroid==1.3.5, pylint==1.4.2 as a workaround for #289
