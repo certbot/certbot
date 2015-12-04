@@ -23,12 +23,13 @@ BOOTSTRAP=${LEA_PATH}/bootstrap
 # additionally responds to --verbose (more output) and --debug (allow support
 # for experimental platforms)
 for arg in "$@" ; do
-  # This first clause is redundant with the third, but hedging on portability
-  if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- "-v+$" ; then
-    VERBOSE=1
-  elif [ "$arg" = "--debug" ] ; then
-    DEBUG=1
-  fi
+  case "$arg" in  # (
+    -v*|--verbose)
+      VERBOSE=1;; # (
+    --debug)
+      DEBUG=1;;
+  esac
+done
 done
 
 # letsencrypt-auto needs root access to bootstrap OS dependencies, and
