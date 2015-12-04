@@ -742,14 +742,21 @@ class TwoVhost80Test(util.ApacheTest):
 
         self.assertTrue("rewrite_module" in self.config.parser.modules)
 
-    def test_rewrite_exists(self):
+    def test_rewrite_rule_exists(self):
         # Skip the enable mod
         self.config.parser.modules.add("rewrite_module")
         self.config.get_version = mock.Mock(return_value=(2, 3, 9))
         self.config.parser.add_dir(
             self.vh_truth[3].path, "RewriteRule", ["Unknown"])
-        self.config.save()
-        self.assertTrue(self.config.is_rewrite_exists(self.vh_truth[3]))
+        self.assertTrue(self.config._is_rewrite_exists(self.vh_truth[3])) # pylint: disable=protected-access
+
+    def test_rewrite_engine_exists(self):
+        # Skip the enable mod
+        self.config.parser.modules.add("rewrite_module")
+        self.config.get_version = mock.Mock(return_value=(2, 3, 9))
+        self.config.parser.add_dir(
+            self.vh_truth[3].path, "RewriteEngine", "on")
+        self.assertTrue(self.config._is_rewrite_engine_on(self.vh_truth[3])) # pylint: disable=protected-access
 
 
     @mock.patch("letsencrypt.le_util.run_script")

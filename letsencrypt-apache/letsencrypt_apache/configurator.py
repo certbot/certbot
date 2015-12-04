@@ -884,10 +884,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # Check if LetsEncrypt redirection already exists
             self._verify_no_letsencrypt_redirect(general_vh)
 
+
             # Note: if code flow gets here it means we didn't find the exact
             # letsencrypt RewriteRule config for redirection. So if we find
             # an other RewriteRule it may induce a loop / config mismatch.
-            if self.is_rewrite_exists(general_vh):
+            if self._is_rewrite_exists(general_vh):
                 logger.warn("Added an HTTP->HTTPS rewrite in addition to "
                             "other RewriteRules; you may wish to check for "
                             "overall consistency.")
@@ -895,7 +896,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # Add directives to server
             # Note: These are not immediately searchable in sites-enabled
             #     even with save() and load()
-            if not self.is_rewrite_engine_on(general_vh):
+            if not self._is_rewrite_engine_on(general_vh):
                 self.parser.add_dir(general_vh.path, "RewriteEngine", "on")
 
             if self.get_version() >= (2, 3, 9):
@@ -926,32 +927,32 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         rewrite_path = self.parser.find_dir(
                 "RewriteRule", None, start=vhost.path)
-          
+
         dir_dict = {}
-        pat = '.*(directive\[\d\]).*'
+        pat = r'.*(directive\[\d+\]).*'
         for match in rewrite_path:
-                m = re.match(pat, match) 
-                if m:
-                    dir_id = m.group(1)
-                    if dir_id in dir_dict:
-                        dir_dict[dir_id].append(match)
-                    else:
-                        dir_dict[dir_id] = [match]
-                    
+            m = re.match(pat, match)
+            if m:
+                dir_id = m.group(1)
+                if dir_id in dir_dict:
+                    dir_dict[dir_id].append(match)
+                else:
+                    dir_dict[dir_id] = [match]
+
         if dir_dict:
             for dir_id in dir_dict:
-                if [self.aug.get(x) for x in dir_dict[dir_id]]in [
+                if [self.aug.get(x) for x in dir_dict[dir_id]] in [
                         constants.REWRITE_HTTPS_ARGS,
                         constants.REWRITE_HTTPS_ARGS_WITH_END]:
                     raise errors.PluginEnhancementAlreadyPresent(
                     "Let's Encrypt has already enabled redirection")
 
-    def is_rewrite_exists(self, vhost):
+    def _is_rewrite_exists(self, vhost):
         """Checks if there exists a RewriteRule directive in vhost
 
         :param vhost: vhost to check
         :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
- 
+
         :returns: True if a RewriteRule directive exists.
         :rtype: bool
 
@@ -960,7 +961,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "RewriteRule", None, start=vhost.path)
         return bool(rewrite_path)
 
-    def is_rewrite_engine_on(self, vhost):
+    def _is_rewrite_engine_on(self, vhost):
         """Checks if a RewriteEngine directive is on
 
         :param vhost: vhost to check
