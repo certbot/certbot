@@ -23,7 +23,7 @@ Usage:
 >aws ec2 create-key-pair --profile HappyHacker --key-name MyKeyPair \
  --query 'KeyMaterial' --output text > MyKeyPair.pem
 then:
->python multitester.py targets.yaml MyKeyPair.pem HappyHacker test_letsencrypt_auto_venv_only.sh
+>python multitester.py targets.yaml MyKeyPair.pem HappyHacker scripts/test_letsencrypt_auto_venv_only.sh
 see:
   https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html
   https://docs.aws.amazon.com/cli/latest/userguide/cli-ec2-keypairs.html
@@ -54,7 +54,7 @@ parser.add_argument('aws_profile',
                     help='profile for AWS (i.e. as in ~/.aws/certificates)')
 parser.add_argument('test_script',
                     default='test_letsencrypt_auto_certonly_standalone.sh',
-                    help='name of bash script in /scripts to deploy and run')
+                    help='path of bash script in to deploy and run')
 #parser.add_argument('--script_args',
 #                    nargs='+',
 #                    help='space-delimited list of arguments to pass to the bash test script',
@@ -254,12 +254,13 @@ def local_repo_clean():
     with lcd(LOGDIR):
         local('rm le.tar.gz')
 
-def deploy_script(scriptname, *args):
+def deploy_script(scriptpath, *args):
     "copies to remote and executes local script"
-    with lcd('scripts'):
-        put(local_path=scriptname, remote_path='', mirror_local_mode=True)
+    #with lcd('scripts'):
+    put(local_path=scriptpath, remote_path='', mirror_local_mode=True)
+    scriptfile = os.path.split(scriptpath)[1]
     args_str = ' '.join(args)
-    run('./'+scriptname+' '+args_str)
+    run('./'+scriptfile+' '+args_str)
 
 def run_boulder():
     with cd('$GOPATH/src/github.com/letsencrypt/boulder'):
@@ -267,7 +268,7 @@ def run_boulder():
         run('nohup ./start.py >& /dev/null < /dev/null &')
 
 def config_and_launch_boulder(instance):
-    execute(deploy_script, 'boulder_config.sh')
+    execute(deploy_script, 'scripts/boulder_config.sh')
     execute(run_boulder)
 
 def install_and_launch_letsencrypt(instance, boulder_url):
@@ -289,6 +290,16 @@ def grab_letsencrypt_log():
 #-------------------------------------------------------------------------------
 # SCRIPT BEGINS
 #-------------------------------------------------------------------------------
+
+# Fabric library controlled through global env parameters
+env.key_filename = KEYFILE
+env.shell = '/bin/bash -l -i -c'
+env.connection_attempts = 5
+env.timeout = 10
+# replace default SystemExit thrown by fabric during trouble
+class FabricException(Exception):
+    pass
+env['abort_exception'] = FabricException
 
 # Set up local copy of git repo
 #-------------------------------------------------------------------------------
@@ -368,16 +379,6 @@ boulder_server = block_until_instance_ready(boulder_server)
 print(" server %s"%boulder_server)
 
 print("Configuring and Launching Boulder")
-
-# Fabric library controlled through global env parameters
-env.key_filename = KEYFILE
-env.shell = '/bin/bash -l -i -c'
-env.connection_attempts = 5
-env.timeout = 10
-# replace default SystemExit thrown by fabric during trouble
-class FabricException(Exception):
-    pass
-env['abort_exception'] = FabricException
 
 # env.host_string defines the ssh user and host for connection
 env.host_string = "ubuntu@%s"%boulder_server.public_ip_address
