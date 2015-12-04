@@ -87,17 +87,13 @@ ExperimentalBootstrap() {
 }
 
 DeterminePythonVersion() {
-  if command -v python2.7 > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python2.7}
-  elif command -v python27 > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python27}
-  elif command -v python2 > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python2}
-  elif command -v python > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python}
-  else
+  for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
+    # break (while keeping the LE_PYTHON value) if found
+    command -v "$LE_PYTHON" > /dev/null && break
+  done ||
+    # otherwise the retval from the failed final try falls here.
     echo "Cannot find any Pythons... please install one!"
-  fi
+  export LE_PYTHON
 
   PYVER=`$LE_PYTHON --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
   if [ $PYVER -eq 26 ] ; then
