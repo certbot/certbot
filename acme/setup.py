@@ -22,25 +22,26 @@ install_requires = [
     'werkzeug',
 ]
 
+testing_extras = [
+    'nose',
+    'tox',
+]
+
 # env markers in extras_require cause problems with older pip: #517
 if sys.version_info < (2, 7):
+
     install_requires.extend([
         # only some distros recognize stdlib argparse as already satisfying
         'argparse',
-        'mock<1.1.0',
     ])
+    testing_extras.append('mock<1.1.0')
 else:
-    install_requires.append('mock')
+    testing_extras.append('mock')
 
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
     'sphinx_rtd_theme',
     'sphinxcontrib-programoutput',
-]
-
-testing_extras = [
-    'nose',
-    'tox',
 ]
 
 
