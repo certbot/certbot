@@ -395,7 +395,8 @@ print("Boulder Server at (EC2 private ip): %s"%boulder_url)
 
 # Install and launch client scripts in parallel
 #-------------------------------------------------------------------------------
-print("Running letsencrypt clients in parallel - output routed to log files.")
+print("Uploading and running test script in parallel: %s"%cl_args.test_script)
+print("Output routed to log files in %s"%LOGDIR)
 # (Advice: always use Manager.Queue, never regular multiprocessing.Queue
 # the latter has implementation flaws that deadlock it in some circumstances)
 manager = Manager()
