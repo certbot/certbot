@@ -354,11 +354,11 @@ for target in targetlist:
         userdata = target['userdata']
     else:
         userdata = ''
-    instances.append( make_instance('le-%s'%target['name'],
+    instances.append(make_instance('le-%s'%target['name'],
                                    target['ami'],
                                    KEYNAME,
                                    machine_type=machine_type,
-                                   userdata=userdata) )
+                                   userdata=userdata))
 
 
 # Configure and launch boulder server
@@ -479,7 +479,7 @@ else:
     for ii, target in enumerate(targetlist):
         print(target['name'],
               target['ami'],
-              "%s@%s"%(target['user'],instances[ii].public_ip_address))
+              "%s@%s"%(target['user'], instances[ii].public_ip_address))
 
 # kill any connections
 fabric.network.disconnect_all()
