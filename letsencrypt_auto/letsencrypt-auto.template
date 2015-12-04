@@ -201,6 +201,7 @@ UNLIKELY_EOF
     rm -rf $TEMP_DIR
     if [ "$PEEP_STATUS" != 0 ]; then
       # Report error. (Otherwise, be quiet.)
+      echo "Had a problem while downloading and verifying Python packages:"
       echo $PEEP_OUT
       exit 1
     fi
