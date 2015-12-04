@@ -647,10 +647,10 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         with open(target["cert"], "w") as f:
             logger.debug("Writing certificate to %s.", target["cert"])
             f.write(cert)
-        with open(target["privkey"], "w") as f:
+        with os.fdopen(os.open(target["privkey"],
+                       os.O_WRONLY|os.O_CREAT|os.O_TRUNC, 0600), "w") as f:
             logger.debug("Writing private key to %s.", target["privkey"])
             f.write(privkey)
-            # XXX: Let's make sure to get the file permissions right here
         with open(target["chain"], "w") as f:
             logger.debug("Writing chain to %s.", target["chain"])
             f.write(chain)
