@@ -855,7 +855,7 @@ def prepare_and_parse_args(plugins, args):
              "email address. This is strongly discouraged, because in the "
              "event of key loss or account compromise you will irrevocably "
              "lose access to your account. You will also be unable to receive "
-             "notice about impending expiration of revocation of your "
+             "notice about impending expiration or revocation of your "
              "certificates. Updates to the Subscriber Agreement will still "
              "affect you, and will be effective 14 days after posting an "
              "update to the web site.")
