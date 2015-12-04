@@ -174,8 +174,8 @@ elif [ "$1" = "--no-self-upgrade" ]; then
     echo "Reusing old virtual environment."
   else
     echo "Creating virtual environment..."
-    rm -rf "$VENV_PATH"
     DeterminePythonVersion
+    rm -rf "$VENV_PATH"
     if [ "$VERBOSE" = 1 ]; then
       virtualenv --no-site-packages --python $LE_PYTHON $VENV_PATH
     else
