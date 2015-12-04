@@ -272,7 +272,10 @@ def config_and_launch_boulder(instance):
 
 def install_and_launch_letsencrypt(instance, boulder_url):
     execute(local_repo_to_remote)
-    with shell_env(BOULDER_URL=boulder_url):
+    with shell_env(BOULDER_URL=boulder_url,
+                   PUBLIC_IP=instance.public_ip_address,
+                   PRIVATE_IP=instance.private_ip_address,
+                   PUBLIC_HOSTNAME=instance.public_dns_name):
         execute(deploy_script, cl_args.test_script)
 
 def grab_letsencrypt_log():
