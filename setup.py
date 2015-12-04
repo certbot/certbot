@@ -48,15 +48,25 @@ install_requires = [
     'zope.interface',
 ]
 
+testing_extras = [
+    'coverage',
+    'nose',
+    'nosexcover',
+    'pep8',
+    'tox',
+]
+
 # env markers in extras_require cause problems with older pip: #517
 if sys.version_info < (2, 7):
     install_requires.extend([
         # only some distros recognize stdlib argparse as already satisfying
         'argparse',
+    ])
+    testing_extras.extend([
         'mock<1.1.0',
     ])
 else:
-    install_requires.append('mock')
+    testing_extras.append('mock')
 
 dev_extras = [
     # Pin astroid==1.3.5, pylint==1.4.2 as a workaround for #289
@@ -73,13 +83,6 @@ docs_extras = [
     'sphinxcontrib-programoutput',
 ]
 
-testing_extras = [
-    'coverage',
-    'nose',
-    'nosexcover',
-    'pep8',
-    'tox',
-]
 
 setup(
     name='letsencrypt',
