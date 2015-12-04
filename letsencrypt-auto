@@ -122,6 +122,9 @@ then
   if [ -f /etc/debian_version ] ; then
     echo "Bootstrapping dependencies for Debian-based OSes..."
     $SUDO $BOOTSTRAP/_deb_common.sh
+  elif [ -f /etc/mageia-release ] ; then
+    echo "Bootstrapping dependencies for mageia..."
+    $SUDO $BOOTSTRAP/_mageia_common.sh
   elif [ -f /etc/redhat-release ] ; then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
     $SUDO $BOOTSTRAP/_rpm_common.sh
