@@ -144,6 +144,15 @@ def _check_config_domain_sanity(domains):
     if any("xn--" in d for d in domains):
         raise errors.ConfigurationError(
             "Punycode domains are not supported")
+
+    # Unicode
+    try:
+        for domain in domains:
+            domain.encode('ascii')
+    except UnicodeDecodeError:
+        raise errors.ConfigurationError(
+            "Internationalized domain names are not supported")
+
     # FQDN checks from
     # http://www.mkyong.com/regular-expressions/domain-name-regular-expression-example/
     #  Characters used, domain parts < 63 chars, tld > 1 < 64 chars
