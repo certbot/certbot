@@ -7,7 +7,8 @@ within lineages of successor certificates, according to configuration.
 .. todo:: Call new installer API to restart servers after deployment
 
 """
-import letsencrypt._demandimport as de; de.enable() # load modules on demand
+import letsencrypt.ondemandimport
+letsencrypt.ondemandimport.enable()# load modules on demand
 
 import argparse
 import logging

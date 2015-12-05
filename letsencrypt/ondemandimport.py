@@ -6,6 +6,7 @@
 import demandimport
 
 def enable():
+    """ Configures and enables on-demand module importing. """
     demandimport.enable()
 
     demandimport.ignore('PyICU')      # parsedatetime
