@@ -16,7 +16,7 @@ VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN=${VENV_PATH}/bin
 # The path to the letsencrypt-auto script.  Everything that uses these might
 # at some point be inlined...
-LEA_PATH=`dirname "$0"`
+LEA_PATH="$(LEA="$0"; while test -L "$LEA"; do LEA=$(readlink "$LEA"); done; echo $(dirname "$LEA"))"
 BOOTSTRAP=${LEA_PATH}/bootstrap
 
 # This script takes the same arguments as the main letsencrypt program, but it
