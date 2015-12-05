@@ -3,7 +3,7 @@
 # pylint: disable=too-many-lines
 # (TODO: split this file into main.py and cli.py)
 
-import letsencrypt._demandimport # load modules on demand
+import letsencrypt._demandimport as de; de.enable() # load modules on demand
 
 import argparse
 import atexit

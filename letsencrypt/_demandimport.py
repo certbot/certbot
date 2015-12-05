@@ -4,7 +4,9 @@
     might cause problems as some `ImportError's aren't raised immediately. """
 
 import demandimport
-demandimport.enable()
 
-demandimport.ignore('PyICU')      # parsedatetime
-demandimport.ignore('simplejson') # requests.compat
+def enable():
+    demandimport.enable()
+
+    demandimport.ignore('PyICU')      # parsedatetime
+    demandimport.ignore('simplejson') # requests.compat
