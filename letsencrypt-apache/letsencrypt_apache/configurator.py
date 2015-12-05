@@ -540,8 +540,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str port: Port to listen on
 
         """
-        if "ssl_module" not in self.parser.modules:
-            self.enable_mod("ssl", temp=temp)
+        if constants.os_constant("handle_mods"):
+            if "ssl_module" not in self.parser.modules:
+                self.enable_mod("ssl", temp=temp)
 
         # Check for Listen <port>
         # Note: This could be made to also look for ip:443 combo

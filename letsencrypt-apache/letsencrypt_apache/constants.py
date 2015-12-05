@@ -9,6 +9,7 @@ CLI_DEFAULTS_DEBIAN = dict(
     enmod="a2enmod",
     dismod="a2dismod",
     le_vhost_ext="-le-ssl.conf",
+    handle_mods=True
 )
 CLI_DEFAULTS_CENTOS = dict(
     server_root="/etc/httpd",
@@ -16,6 +17,7 @@ CLI_DEFAULTS_CENTOS = dict(
     enmod=None,
     dismod=None,
     le_vhost_ext="-le-ssl.conf",
+    handle_mods=False
 )
 CLI_DEFAULTS = {
     "debian": CLI_DEFAULTS_DEBIAN,
