@@ -2,6 +2,10 @@
 # TODO: Sanity check all input.  Be sure to avoid shell code etc...
 # pylint: disable=too-many-lines
 # (TODO: split this file into main.py and cli.py)
+
+import demandimport # load module on demand
+demandimport.enable()
+
 import argparse
 import atexit
 import functools

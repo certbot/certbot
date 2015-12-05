@@ -46,6 +46,7 @@ install_requires = [
     'six',
     'zope.component',
     'zope.interface',
+    'demandimport',
 ]
 
 # env markers in extras_require cause problems with older pip: #517
