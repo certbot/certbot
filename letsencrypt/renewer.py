@@ -9,7 +9,7 @@ within lineages of successor certificates, according to configuration.
 """
 import demandimport # load modules on demand
 demandimport.enable()
-demandimport.ignore('pyICU')
+demandimport.ignore('PyICU')
 
 import argparse
 import logging

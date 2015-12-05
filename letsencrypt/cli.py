@@ -5,7 +5,7 @@
 
 import demandimport # load module on demand
 demandimport.enable()
-demandimport.ignore('pyICU')
+demandimport.ignore('PyICU')
 
 import argparse
 import atexit
