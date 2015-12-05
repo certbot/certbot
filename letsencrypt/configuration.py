@@ -148,7 +148,7 @@ def _check_config_domain_sanity(domains):
     # Unicode
     try:
         for domain in domains:
-            domain.encode('ascii',errors='strict')
+            domain.encode('ascii')
     except UnicodeDecodeError:
         raise errors.ConfigurationError(
             "Internationalized domain names are not supported")
