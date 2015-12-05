@@ -7,9 +7,7 @@ within lineages of successor certificates, according to configuration.
 .. todo:: Call new installer API to restart servers after deployment
 
 """
-import demandimport # load modules on demand
-demandimport.enable()
-demandimport.ignore('PyICU')
+import letsencrypt._demandimport # load modules on demand
 
 import argparse
 import logging

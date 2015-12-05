@@ -3,9 +3,7 @@
 # pylint: disable=too-many-lines
 # (TODO: split this file into main.py and cli.py)
 
-import demandimport # load module on demand
-demandimport.enable()
-demandimport.ignore('PyICU')
+import letsencrypt._demandimport # load modules on demand
 
 import argparse
 import atexit
