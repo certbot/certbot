@@ -6,4 +6,5 @@
 import demandimport
 demandimport.enable()
 
-demandimport.ignore('PyICU')
+demandimport.ignore('PyICU')      # parsedatetime
+demandimport.ignore('simplejson') # requests.compat
