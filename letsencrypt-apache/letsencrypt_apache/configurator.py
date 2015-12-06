@@ -140,7 +140,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         # Verify Apache is installed
         for exe in (self.conf("ctl"), self.conf("enmod"), self.conf("dismod")):
-            if exe != None:
+            if exe is not None:
                 if not le_util.exe_exists(exe):
                     raise errors.NoInstallationError
 
@@ -472,7 +472,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._add_servernames(vhost)
         return vhost
 
-    # TODO: make "sites-available" a configurable directory
     def get_virtual_hosts(self):
         """Returns list of virtual hosts found in the Apache configuration.
 
