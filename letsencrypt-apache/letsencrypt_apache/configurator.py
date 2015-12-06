@@ -98,8 +98,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             help="SSL vhost configuration extension.")
         add("server-root", default=constants.os_constant("server_root"),
             help="Apache server root directory.")
-        add("config-root", default=constants.os_constant("config_root"),
-            help="Apache server configuration root")
+        add("vhost-root", default=constants.os_constant("vhost_root"),
+            help="Apache server VirtualHost configuration root")
         le_util.add_deprecated_argument(add, "init-script", 1)
 
     def __init__(self, *args, **kwargs):
@@ -148,7 +148,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.config_test()
 
         self.parser = parser.ApacheParser(
-            self.aug, self.conf("config-root"), self.conf("ctl"))
+            self.aug, self.conf("server-root"), self.conf("ctl"))
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
 
@@ -481,10 +481,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: list
 
         """
-        # Search sites-available, httpd.conf for possible virtual hosts
+        # Search vhost-root, httpd.conf for possible virtual hosts
         paths = self.aug.match(
-            ("/files%s/sites-available//*[label()=~regexp('%s')]" %
-             (self.parser.root, parser.case_i("VirtualHost"))))
+            ("/files%s//*[label()=~regexp('%s')]" %
+             (self.conf("vhost-root"), parser.case_i("VirtualHost"))))
 
         vhs = []
 
@@ -997,8 +997,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if len(ssl_vhost.name) < (255 - (len(redirect_filename) + 1)):
                 redirect_filename = "le-redirect-%s.conf" % ssl_vhost.name
 
-        redirect_filepath = os.path.join(
-            self.parser.root, "sites-available", redirect_filename)
+        redirect_filepath = os.path.join(self.conf("vhost-root"), redirect_filename)
 
         # Register the new file that will be created
         # Note: always register the creation before writing to ensure file will

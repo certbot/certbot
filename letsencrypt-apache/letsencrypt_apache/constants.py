@@ -5,7 +5,7 @@ from letsencrypt import le_util
 
 CLI_DEFAULTS_DEBIAN = dict(
     server_root="/etc/apache2",
-    config_root="/etc/apache2",
+    vhost_root="/etc/apache2/sites-available",
     ctl="apache2ctl",
     enmod="a2enmod",
     dismod="a2dismod",
@@ -14,7 +14,7 @@ CLI_DEFAULTS_DEBIAN = dict(
 )
 CLI_DEFAULTS_CENTOS = dict(
     server_root="/etc/httpd",
-    config_root="/etc/httpd/conf.d",
+    vhost_root="/etc/httpd/conf.d",
     ctl="apachectl",
     enmod=None,
     dismod=None,
