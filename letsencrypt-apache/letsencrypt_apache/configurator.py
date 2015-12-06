@@ -98,6 +98,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             help="SSL vhost configuration extension.")
         add("server-root", default=constants.os_constant("server_root"),
             help="Apache server root directory.")
+        add("config-root", default=constants.os_constant("config_root"),
+            help="Apache server configuration root")
         le_util.add_deprecated_argument(add, "init-script", 1)
 
     def __init__(self, *args, **kwargs):
@@ -146,7 +148,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.config_test()
 
         self.parser = parser.ApacheParser(
-            self.aug, self.conf("server-root"), self.conf("ctl"))
+            self.aug, self.conf("config-root"), self.conf("ctl"))
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
 
