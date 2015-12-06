@@ -173,10 +173,11 @@ Renewal
 In order to renew certificates simply call the ``letsencrypt`` (or
 letsencrypt-auto_) again, and use the same values when prompted. You
 can automate it slightly by passing necessary flags on the CLI (see
-`--help all`), or even further using the :ref:`config-file`. If you're
-sure that UI doesn't prompt for any details you can add the command to
-``crontab`` (make it less than every 90 days to avoid problems, say
-every month).
+`--help all`), or even further using the :ref:`config-file`. The 
+``--renew-by-default`` flag may be helpful for automating renewal. If 
+you're sure that UI doesn't prompt for any details you can add the 
+command to ``crontab`` (make it less than every 90 days to avoid 
+problems, say every month).
 
 Please note that the CA will send notification emails to the address
 you provide if you do not renew certificates that are about to expire.
