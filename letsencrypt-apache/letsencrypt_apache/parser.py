@@ -28,7 +28,7 @@ class ApacheParser(object):
     arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
     fnmatch_chars = set(["*", "?", "\\", "[", "]"])
 
-    def __init__(self, aug, root, ctl):
+    def __init__(self, aug, root, vhostroot, ctl):
         # Note: Order is important here.
 
         # This uses the binary, so it can be done first.
@@ -44,6 +44,8 @@ class ApacheParser(object):
         self.loc = {"root": self._find_config_root()}
         self._parse_file(self.loc["root"])
 
+        self.vhostroot = os.path.abspath(vhostroot)
+
         # This problem has been fixed in Augeas 1.0
         self.standardize_excl()
 
@@ -56,9 +58,12 @@ class ApacheParser(object):
         # Set up rest of locations
         self.loc.update(self._set_locations())
 
-        # Must also attempt to parse sites-available or equivalent
-        # Sites-available is not included naturally in configuration
-        self._parse_file(os.path.join(self.root, "sites-available") + "/*")
+        # Take the CentOS layout into account, httpd.conf not in httpd root
+        self._parse_file(os.path.join(self.root, "conf") + "/httpd.conf")
+
+        # Must also attempt to parse virtual host root
+        self._parse_file(self.vhostroot + "/*")
+
 
     def init_modules(self):
         """Iterates on the configuration until no new modules are loaded.

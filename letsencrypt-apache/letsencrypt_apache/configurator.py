@@ -148,7 +148,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.config_test()
 
         self.parser = parser.ApacheParser(
-            self.aug, self.conf("server-root"), self.conf("ctl"))
+            self.aug, self.conf("server-root"), self.conf("vhost-root"), self.conf("ctl"))
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
 
