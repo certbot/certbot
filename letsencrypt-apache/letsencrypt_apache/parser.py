@@ -546,8 +546,7 @@ class ApacheParser(object):
 
     def _find_config_root(self):
         """Find the Apache Configuration Root file."""
-        location = ["apache2.conf", "httpd.conf"]
-
+        location = ["apache2.conf", "httpd.conf", "conf/httpd.conf"]
         for name in location:
             if os.path.isfile(os.path.join(self.root, name)):
                 return os.path.join(self.root, name)
