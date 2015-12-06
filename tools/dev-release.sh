@@ -1,4 +1,8 @@
-#!/usr/bin/env sh -xe
+#!/usr/bin/env sh
+
+set -o errexit
+set -o xtrace
+
 # Release dev packages to PyPI
 
 # Needed to fix problems with git signatures and pinentry

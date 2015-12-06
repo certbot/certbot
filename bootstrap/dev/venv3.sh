@@ -1,4 +1,8 @@
-#!/usr/bin/env sh -xe
+#!/usr/bin/env sh
+
+set -o errexit
+set -o xtrace
+
 # Developer Python3 virtualenv setup for Let's Encrypt
 
 export VENV_NAME="${VENV_NAME:-venv3}"

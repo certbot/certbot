@@ -1,4 +1,8 @@
-#!/usr/bin/env sh -xe
+#!/usr/bin/env sh
+
+set -o errexit
+set -o xtrace
+
 # prerequisite: apt-get install --no-install-recommends nginx-light openssl
 
 . ./tests/integration/_common.sh

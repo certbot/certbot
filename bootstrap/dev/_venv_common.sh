@@ -1,4 +1,7 @@
-#!/usr/bin/env sh -xe
+#!/usr/bin/env sh
+
+set -o errexit
+set -o xtrace
 
 VENV_NAME=${VENV_NAME:-venv}
 

@@ -1,4 +1,7 @@
-#!/usr/bin/env sh -e
+#!/usr/bin/env sh
+
+set -o errexit
+
 #
 # Install OS dependencies.  In the glorious future, letsencrypt-auto will
 # source this...

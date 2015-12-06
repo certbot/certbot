@@ -1,4 +1,8 @@
-#!/usr/bin/env sh -xe
+#!/usr/bin/env sh
+
+set -o errexit
+set -o xtrace
+
 # Developer virtualenv setup for Let's Encrypt client
 
 export VENV_ARGS="--python python2"

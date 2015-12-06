@@ -1,4 +1,7 @@
-#!/usr/bin/env sh -e
+#!/usr/bin/env sh
+
+set -o errexit
+
 #
 # A script to run the latest release version of the Let's Encrypt in a
 # virtual environment
