@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Download and run Boulder instance for integration testing
 
 # ugh, go version output is like:

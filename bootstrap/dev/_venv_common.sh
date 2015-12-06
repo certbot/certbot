@@ -1,4 +1,4 @@
-#!/bin/sh -xe
+#!/usr/bin/env sh -xe
 
 VENV_NAME=${VENV_NAME:-venv}
 

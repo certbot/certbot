@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 pep8 \
   setup.py \
   acme \

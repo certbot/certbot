@@ -1,4 +1,4 @@
-#!/bin/sh -xe
+#!/usr/bin/env sh -xe
 # Release dev packages to PyPI
 
 # Needed to fix problems with git signatures and pinentry

@@ -1,4 +1,4 @@
-#!/bin/sh -xe
+#!/usr/bin/env sh -xe
 # Developer Python3 virtualenv setup for Let's Encrypt
 
 export VENV_NAME="${VENV_NAME:-venv3}"

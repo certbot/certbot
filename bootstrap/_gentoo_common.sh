@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 PACKAGES="dev-vcs/git
   dev-lang/python:2.7

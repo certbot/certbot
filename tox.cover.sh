@@ -1,4 +1,4 @@
-#!/bin/sh -xe
+#!/usr/bin/env sh -xe
 
 # USAGE: ./tox.cover.sh [package]
 #

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 # This script generates a simple SAN CSR to be used with Let's Encrypt
 # CA. Mostly intended for "auth --csr" testing, but, since it's easily
 # auditable, feel free to adjust it and use it on your production web

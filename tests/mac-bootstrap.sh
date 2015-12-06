@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 #Check Homebrew
 if ! hash brew 2>/dev/null; then

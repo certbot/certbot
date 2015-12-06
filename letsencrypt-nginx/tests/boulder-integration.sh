@@ -1,4 +1,4 @@
-#!/bin/sh -xe
+#!/usr/bin/env sh -xe
 # prerequisite: apt-get install --no-install-recommends nginx-light openssl
 
 . ./tests/integration/_common.sh

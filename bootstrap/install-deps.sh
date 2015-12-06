@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/usr/bin/env sh -e
 #
 # Install OS dependencies.  In the glorious future, letsencrypt-auto will
 # source this...

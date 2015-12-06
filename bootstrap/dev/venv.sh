@@ -1,4 +1,4 @@
-#!/bin/sh -xe
+#!/usr/bin/env sh -xe
 # Developer virtualenv setup for Let's Encrypt client
 
 export VENV_ARGS="--python python2"

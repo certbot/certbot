@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 export GOPATH="${GOPATH:-/tmp/go}"
 export PATH="$GOPATH/bin:$PATH"
