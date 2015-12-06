@@ -1083,6 +1083,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: bool
 
         """
+        # Always return true for distros without enabled / available
+        if self.conf("enmod") == None:
+	        return True
         enabled_dir = os.path.join(self.parser.root, "sites-enabled")
         for entry in os.listdir(enabled_dir):
             try:
@@ -1209,7 +1212,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            le_util.run_script([self.conf("ctl"), "-k", "graceful"])
+            le_util.run_script([self.conf("ctl"), "graceful"])
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
