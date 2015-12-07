@@ -100,6 +100,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             help="Apache server root directory.")
         add("vhost-root", default=constants.os_constant("vhost_root"),
             help="Apache server VirtualHost configuration root")
+        add("challenge-location",
+            default=constants.os_constant("challenge_location"),
+            help="Directory path for challenge configuration.")
         le_util.add_deprecated_argument(add, "init-script", 1)
 
     def __init__(self, *args, **kwargs):
