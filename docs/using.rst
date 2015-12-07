@@ -287,7 +287,7 @@ get support on our `forums <https://community.letsencrypt.org>`_.
 If you find a bug in the software, please do report it in our `issue
 tracker
 <https://github.com/letsencrypt/letsencrypt/issues>`_. Remember to
-give us us as much information as possible:
+give us as much information as possible:
 
 - copy and paste exact command line used and the output (though mind
   that the latter might include some personally identifiable
