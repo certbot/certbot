@@ -59,16 +59,19 @@ to serve all files under specified web root ({0})."""
 
             logger.debug("Creating root challenges validation dir at %s",
                          self.full_roots[name])
+
+            # Change the permissiosn to be writable (GH #1389)
+            # Umask is used instead of  chmod to ensure the client can also
+            # run as non-root (GH #1795)
+            old_umask = os.umask(0o022)
+
             try:
-                # Change the permissiosn to be writable (GH #1389)
-                # We also set umask because os.makedirs's mode parameter does
-                # not always work:
-                # https://stackoverflow.com/questions/5231901/permission-problems-when-creating-a-dir-with-os-makedirs-python
-                # We set the umask instead of going the chmod route to ensure the client
-                # can also run as non-root (GH #1795)
 
                 stat_path = os.stat(path)
-                old_umask = os.umask(0o022)
+                # This is coupled with the "umask" call above because
+                # os.makedirs's "mode" parameter may not always work:
+                # https://stackoverflow.com/questions/5231901/permission-problems-when-creating-a-dir-with-os-makedirs-python
+
                 os.makedirs(self.full_roots[name], 0o0755)
 
                 # Set owner as parent directory if possible
@@ -114,11 +117,11 @@ to serve all files under specified web root ({0})."""
         path = self._path_for_achall(achall)
         logger.debug("Attempting to save validation to %s", path)
 
+        # Change permissions to be world-readable, owner-writable (GH #1795)
         old_umask = os.umask(0o022)
 
         try:
             with open(path, "w") as validation_file:
-                # Change permissions to be world-readable, owner-writable (GH #1795)
                 validation_file.write(validation.encode())
         finally:
             os.umask(old_umask)
