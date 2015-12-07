@@ -193,7 +193,9 @@ class ParserInitTest(util.ApacheTest):
             path = os.path.join(
                 self.temp_dir,
                 "debian_apache_2_4/////two_vhost_80/../two_vhost_80/apache2")
-            parser = ApacheParser(self.aug, path, "dummy_ctl")
+
+            parser = ApacheParser(self.aug, path,
+                                  "/dummy/vhostpath", "dummy_ctl")
 
         self.assertEqual(parser.root, self.config_path)
 
@@ -202,7 +204,8 @@ class ParserInitTest(util.ApacheTest):
         with mock.patch("letsencrypt_apache.parser.ApacheParser."
                         "update_runtime_variables"):
             parser = ApacheParser(
-                self.aug, os.path.relpath(self.config_path), "dummy_ctl")
+                self.aug, os.path.relpath(self.config_path),
+                "/dummy/vhostpath", "dummy_ctl")
 
         self.assertEqual(parser.root, self.config_path)
 
@@ -211,7 +214,8 @@ class ParserInitTest(util.ApacheTest):
         with mock.patch("letsencrypt_apache.parser.ApacheParser."
                         "update_runtime_variables"):
             parser = ApacheParser(
-                self.aug, self.config_path + os.path.sep, "dummy_ctl")
+                self.aug, self.config_path + os.path.sep,
+                "/dummy/vhostpath", "dummy_ctl")
         self.assertEqual(parser.root, self.config_path)
 
 
