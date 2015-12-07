@@ -11,6 +11,7 @@ CLI_DEFAULTS_DEBIAN = dict(
     dismod="a2dismod",
     le_vhost_ext="-le-ssl.conf",
     handle_mods=True,
+    handle_sites=True,
     challenge_location="/etc/apache2"
 )
 CLI_DEFAULTS_CENTOS = dict(
@@ -21,6 +22,7 @@ CLI_DEFAULTS_CENTOS = dict(
     dismod=None,
     le_vhost_ext="-le-ssl.conf",
     handle_mods=False,
+    handle_sites=False,
     challenge_location="/etc/httpd/conf.d"
 )
 CLI_DEFAULTS = {
