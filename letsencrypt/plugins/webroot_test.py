@@ -75,12 +75,17 @@ class AuthenticatorTest(unittest.TestCase):
         # Remove exec bit from permission check, so that it
         # matches the file
         self.auth.perform([self.achall])
-        parent_permissions = (stat.S_IMODE(os.stat(self.path).st_mode) &
-                              ~stat.S_IEXEC)
+        path_permissions = stat.S_IMODE(os.stat(self.validation_path).st_mode)
+        self.assertEqual(path_permissions, 0o644)
 
-        actual_permissions = stat.S_IMODE(os.stat(self.validation_path).st_mode)
+        # Check permissions of the directories
 
-        self.assertEqual(parent_permissions, actual_permissions)
+        for dirpath, dirnames, filenames in os.walk(self.path):
+            for directory in dirnames:
+                full_path = os.path.join(dirpath, directory)
+                dir_permissions = stat.S_IMODE(os.stat(full_path).st_mode)
+                self.assertEqual(dir_permissions, 0o755)
+
         parent_gid = os.stat(self.path).st_gid
         parent_uid = os.stat(self.path).st_uid
 
