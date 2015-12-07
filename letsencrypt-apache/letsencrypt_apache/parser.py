@@ -62,7 +62,7 @@ class ApacheParser(object):
         self._parse_file(os.path.join(self.root, "conf") + "/httpd.conf")
 
         # Must also attempt to parse virtual host root
-        self._parse_file(self.vhostroot + "/*")
+        self._parse_file(self.vhostroot + "/*.conf")
 
 
     def init_modules(self):
