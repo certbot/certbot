@@ -60,6 +60,7 @@ UIR_ARGS = ["always", "set", "Content-Security-Policy",
 HEADER_ARGS = {"Strict-Transport-Security": HSTS_ARGS,
         "Upgrade-Insecure-Requests": UIR_ARGS}
 
+
 def os_constant(key):
     """Get a constant value for operating system
     :param key: name of cli constant

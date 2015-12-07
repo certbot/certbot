@@ -104,7 +104,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             default=constants.os_constant("challenge_location"),
             help="Directory path for challenge configuration.")
         add("handle-modules", default=constants.os_constant("handle_mods"),
-            help="Let installer handle enabling required modules for you."+
+            help="Let installer handle enabling required modules for you." +
                  "(Only Ubuntu/Debian currently)")
         le_util.add_deprecated_argument(add, "init-script", 1)
 

@@ -64,7 +64,6 @@ class ApacheParser(object):
         # Must also attempt to parse virtual host root
         self._parse_file(self.vhostroot + "/*.conf")
 
-
     def init_modules(self):
         """Iterates on the configuration until no new modules are loaded.
 
