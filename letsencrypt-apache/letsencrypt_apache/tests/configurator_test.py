@@ -64,7 +64,7 @@ class TwoVhost80Test(util.ApacheTest):
         mock_getutility.notification = mock.MagicMock(return_value=True)
         names = self.config.get_all_names()
         self.assertEqual(names, set(
-            ["letsencrypt.demo", "encryption-example.demo", "ip-172-30-0-17"]))
+            ["letsencrypt.demo", "encryption-example.demo"]))
 
     @mock.patch("zope.component.getUtility")
     @mock.patch("letsencrypt_apache.configurator.socket.gethostbyaddr")
@@ -82,7 +82,7 @@ class TwoVhost80Test(util.ApacheTest):
         self.config.vhosts.append(vhost)
 
         names = self.config.get_all_names()
-        self.assertEqual(len(names), 5)
+        self.assertEqual(len(names), 4)
         self.assertTrue("zombo.com" in names)
         self.assertTrue("google.com" in names)
         self.assertTrue("letsencrypt.demo" in names)
@@ -90,10 +90,17 @@ class TwoVhost80Test(util.ApacheTest):
     def test_add_servernames_alias(self):
         self.config.parser.add_dir(
             self.vh_truth[2].path, "ServerAlias", ["*.le.co"])
+        self.config.parser.add_dir(
+            self.vh_truth[0].path, "ServerAlias", ["working.example.com"])
+
         self.config._add_servernames(self.vh_truth[2])  # pylint: disable=protected-access
+        self.config._add_servernames(self.vh_truth[0])  # pylint: disable=protected-access
 
         self.assertEqual(
             self.vh_truth[2].get_names(), set(["*.le.co", "ip-172-30-0-17"]))
+        self.assertEqual(
+            self.vh_truth[0].get_names(), set(["working.example.com",
+                                               "encryption-example.demo"]))
 
     def test_get_virtual_hosts(self):
         """Make sure all vhosts are being properly found.
