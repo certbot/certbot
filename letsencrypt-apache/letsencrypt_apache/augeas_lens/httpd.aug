@@ -91,7 +91,7 @@ let section (body:lens) =
              indent . dels "</" in
     let kword = key word in
     let dword = del word "a" in
-        [ indent . dels "<" . square kword inner dword . del ">" ">" . eol ]
+        [ indent . dels "<" . square kword inner dword . del />[ \t\n\r]*/ ">\n" ]
 
 let rec content = section (content|directive)
 
