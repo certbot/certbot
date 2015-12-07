@@ -103,6 +103,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         add("challenge-location",
             default=constants.os_constant("challenge_location"),
             help="Directory path for challenge configuration.")
+        add("handle-modules", default=constants.os_constant("handle_mods"),
+            help="Let installer handle enabling required modules for you."+
+                 "(Only Ubuntu/Debian currently)")
         le_util.add_deprecated_argument(add, "init-script", 1)
 
     def __init__(self, *args, **kwargs):
@@ -545,7 +548,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str port: Port to listen on
 
         """
-        if constants.os_constant("handle_mods"):
+        if self.conf("handle_mods"):
             if "ssl_module" not in self.parser.modules:
                 self.enable_mod("ssl", temp=temp)
 
