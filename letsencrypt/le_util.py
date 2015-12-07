@@ -280,3 +280,37 @@ def add_deprecated_argument(add_argument, argument_name, nargs):
 
     add_argument(argument_name, action=ShowWarning,
                  help=argparse.SUPPRESS, nargs=nargs)
+
+def check_domain_sanity(domain):
+    """Method which validates domain value and errors out if
+    the requirements are not met.
+
+    :param domain: Domain to check
+    :type domains: `string`
+    :raises ConfigurationError: for invalid domains and cases where Let's
+                                Encrypt currently will not issue certificates
+
+    """
+    # Check if there's a wildcard domain
+    if domain.startswith("*."):
+        raise errors.ConfigurationError(
+            "Wildcard domains are not supported")
+    # Punycode
+    if "xn--" in domain:
+        raise errors.ConfigurationError(
+            "Punycode domains are not supported")
+
+    # Unicode
+    try:
+        domain.encode('ascii')
+    except UnicodeDecodeError:
+        raise errors.ConfigurationError(
+            "Internationalized domain names are not supported")
+
+    # FQDN checks from
+    # http://www.mkyong.com/regular-expressions/domain-name-regular-expression-example/
+    #  Characters used, domain parts < 63 chars, tld > 1 < 64 chars
+    #  first and last char is not "-"
+    fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,63}$")
+    if not fqdn.match(domain):
+        raise errors.ConfigurationError("Requested domain is not a FQDN")
