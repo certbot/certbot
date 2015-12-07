@@ -1,7 +1,6 @@
 """Let's Encrypt user-supplied configuration."""
 import os
 import urlparse
-import re
 
 import zope.interface
 
