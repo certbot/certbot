@@ -549,7 +549,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str port: Port to listen on
 
         """
-        if self.conf("handle_mods"):
+        if self.conf("handle-modules"):
             if "ssl_module" not in self.parser.modules:
                 self.enable_mod("ssl", temp=temp)
 
