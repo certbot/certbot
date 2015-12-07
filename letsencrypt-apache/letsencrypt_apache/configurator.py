@@ -106,6 +106,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         add("handle-modules", default=constants.os_constant("handle_mods"),
             help="Let installer handle enabling required modules for you." +
                  "(Only Ubuntu/Debian currently)")
+        add("handle-sites", default=constants.os_constant("handle_sites"),
+            help="Let installer handle enabling sites for you." +
+                 "(Only Ubuntu/Debian currently)")
         le_util.add_deprecated_argument(add, "init-script", 1)
 
     def __init__(self, *args, **kwargs):
@@ -246,7 +249,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.save_notes += "\tSSLCertificateChainFile %s\n" % chain_path
 
         # Make sure vhost is enabled if distro with enabled / available
-        if constants.os_constant("handle_sites"):
+        if self.conf("handle-sites"):
             if not vhost.enabled:
                 self.enable_site(vhost)
 
