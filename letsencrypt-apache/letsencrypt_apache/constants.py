@@ -29,7 +29,8 @@ CLI_DEFAULTS = {
     "debian": CLI_DEFAULTS_DEBIAN,
     "ubuntu": CLI_DEFAULTS_DEBIAN,
     "centos": CLI_DEFAULTS_CENTOS,
-    "centos linux": CLI_DEFAULTS_CENTOS
+    "centos linux": CLI_DEFAULTS_CENTOS,
+    "fedora": CLI_DEFAULTS_CENTOS
 }
 """CLI defaults."""
 
