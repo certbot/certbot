@@ -46,6 +46,13 @@ other installation methods can be found `in the User Guide
 How to run the client
 ---------------------
 
+First thing to know about client is that you can specify a test server to use.
+Create a cli.ini or add this option to all your command:
+
+   --server https://acme-staging.api.letsencrypt.org/directory
+
+This is very useful in test scenario because production server is rate limited.
+
 In many cases, you can just run ``letsencrypt-auto`` or ``letsencrypt``, and the
 client will guide you through the process of obtaining and installing certs
 interactively.
