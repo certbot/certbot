@@ -245,9 +245,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if chain_path is not None:
             self.save_notes += "\tSSLCertificateChainFile %s\n" % chain_path
 
-        # Make sure vhost is enabled
-        if not vhost.enabled:
-            self.enable_site(vhost)
+        # Make sure vhost is enabled if distro with enabled / available
+        if constants.os_constant("handle_sites"):
+            if not vhost.enabled:
+                self.enable_site(vhost)
 
     def choose_vhost(self, target_name, temp=False):
         """Chooses a virtual host based on the given domain name.
@@ -1088,9 +1089,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: bool
 
         """
-        # Always return true for distros without enabled / available
-        if not constants.os_constant("handle_sites"):
-            return True
+
         enabled_dir = os.path.join(self.parser.root, "sites-enabled")
         for entry in os.listdir(enabled_dir):
             try:
