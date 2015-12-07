@@ -59,6 +59,10 @@ HEADER_ARGS = {"Strict-Transport-Security": HSTS_ARGS,
         "Upgrade-Insecure-Requests": UIR_ARGS}
 
 def os_constant(key):
+    """Get a constant value for operating system
+    :param key: name of cli constant
+    :return: value of constant for active os
+    """
     os_info = le_util.get_os_info()
     try:
         constants = CLI_DEFAULTS[os_info[0].lower()]

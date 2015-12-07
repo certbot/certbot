@@ -1087,7 +1087,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         # Always return true for distros without enabled / available
         if self.conf("enmod") == None:
-	        return True
+            return True
         enabled_dir = os.path.join(self.parser.root, "sites-enabled")
         for entry in os.listdir(enabled_dir):
             try:
