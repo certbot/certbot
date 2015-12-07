@@ -369,7 +369,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         vhost_macro = []
 
         for vhost in self.vhosts:
-            all_names.update(vhost.get_names())
+            # Check domains for validity
+            for name in vhost.get_names():
+                try:
+                    le_util.check_domain_sanity(name)
+                    all_names.add(name)
+                except errors.ConfigurationError:
+                    pass
             if vhost.modmacro:
                 vhost_macro.append(vhost.filep)
 
