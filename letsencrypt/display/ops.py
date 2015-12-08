@@ -4,6 +4,7 @@ import os
 
 import zope.component
 
+from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt.display import util as display_util
@@ -208,7 +209,7 @@ def choose_names(installer):
     else:
         return []
 
-def get_valid_domains(self, domains):
+def get_valid_domains(domains):
     """Helper method for choose_names that implements basic checks
      on domain names
 
