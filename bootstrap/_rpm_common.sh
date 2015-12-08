@@ -21,12 +21,16 @@ fi
 if ! $tool install -y \
        python \
        python-devel \
-       python-virtualenv
+       python-virtualenv \
+       python-tools \
+       python-pip
 then
   if ! $tool install -y \
          python27 \
          python27-devel \
-         python27-virtualenv
+         python27-virtualenv \
+         python27-tools \
+         python27-pip
   then
     echo "Could not install Python dependencies. Aborting bootstrap!"
     exit 1
