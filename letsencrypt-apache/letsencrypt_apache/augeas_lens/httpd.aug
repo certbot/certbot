@@ -59,7 +59,7 @@ let empty               = Util.empty_dos
 let indent              = Util.indent
 
 (* borrowed from shellvars.aug *)
-let char_arg_dir  = /([^\\ '"\t\r\n]|[^\\ '"\t\r\n][^ '"\t\r\n]*[^\\ '"\t\r\n])|\\\\"|\\\\'/
+let char_arg_dir  = /([^\\ '"\t\r\n]|[^ '"\t\r\n]+[^\\ '"\t\r\n])|\\\\"|\\\\'/
 let char_arg_sec  = /[^ '"\t\r\n>]|\\\\"|\\\\'/
 let cdot = /\\\\./
 let cl = /\\\\\n/
