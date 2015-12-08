@@ -294,7 +294,7 @@ def check_domain_sanity(domain):
     # Check if there's a wildcard domain
     if domain.startswith("*."):
         raise errors.ConfigurationError(
-            "Wildcard domains are not presently supported")
+            "Wildcard domains are not supported")
     # Punycode
     if "xn--" in domain:
         raise errors.ConfigurationError(
