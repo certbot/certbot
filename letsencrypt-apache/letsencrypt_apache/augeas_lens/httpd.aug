@@ -59,8 +59,10 @@ let empty               = Util.empty_dos
 let indent              = Util.indent
 
 (* borrowed from shellvars.aug *)
-let char_arg_dir  = /([^\\ '"\t\r\n]|[^ '"\t\r\n]+[^\\ '"\t\r\n])|\\\\"|\\\\'/
+let char_arg_dir  = /([^\\ '"{\t\r\n]|[^ '"{\t\r\n]+[^\\ '"\t\r\n])|\\\\"|\\\\'/
 let char_arg_sec  = /[^ '"\t\r\n>]|\\\\"|\\\\'/
+let char_arg_wl   = /([^\\ '"},\t\r\n]|[^ '"},\t\r\n]+[^\\ '"},\t\r\n])/
+
 let cdot = /\\\\./
 let cl = /\\\\\n/
 let dquot =
@@ -77,11 +79,19 @@ let comp = /[<>=]?=/
 
 let arg_dir = [ label "arg" . store (char_arg_dir+|dquot|squot) ]
 let arg_sec = [ label "arg" . store (char_arg_sec+|comp|dquot|squot) ]
+let arg_wl  = [ label "arg" . store (char_arg_wl+|dquot|squot) ]
+
+(* comma-separated wordlist as permitted in the SSLRequire directive *)
+let arg_wordlist =
+     let wl_start = Util.del_str "{" in
+     let wl_end   = Util.del_str "}" in
+     let wl_sep   = del /[ \t]*,[ \t]*/ ", "
+  in [ label "wordlist" . wl_start . arg_wl . (wl_sep . arg_wl)* . wl_end ]
 
 let argv (l:lens) = l . (sep_spc . l)*
 
 let directive = [ indent . label "directive" . store word .
-                  (sep_spc . argv arg_dir)? . eol ]
+                  (sep_spc . argv (arg_dir|arg_wordlist))? . eol ]
 
 let section (body:lens) =
     (* opt_eol includes empty lines *)
