@@ -545,21 +545,43 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Check for Listen <port>
         # Note: This could be made to also look for ip:443 combo
-        if not self.parser.find_dir("Listen", port):
-            logger.debug("No Listen %s directive found. Setting the "
-                         "Apache Server to Listen on port %s", port, port)
-
-            if port == "443":
-                args = [port]
+        listens = [self.parser.get_arg(x).split()[0] for x in self.parser.find_dir("Listen")]
+        # In case no Listens are set (which really is a broken apache config)
+        if not listens:
+            listens = ["80"]
+        for listen in listens:
+            # For any listen statement, check if the machine also listens on Port 443.
+            # If not, add such a listen statement.
+            if len(listen.split(":")) == 1:
+                # Its listening to all interfaces
+                if port not in listens:
+                    if port == "443":
+                        args = [port]
+                    else:
+                        # Non-standard ports should specify https protocol
+                        args = [port, "https"]
+                    self.parser.add_dir_to_ifmodssl(
+                        parser.get_aug_path(
+                            self.parser.loc["listen"]), "Listen", args)
+                    self.save_notes += "Added Listen %s directive to %s\n" % (
+                        port, self.parser.loc["listen"])
+                    listens.append(port)
             else:
-                # Non-standard ports should specify https protocol
-                args = [port, "https"]
-
-            self.parser.add_dir_to_ifmodssl(
-                parser.get_aug_path(
-                    self.parser.loc["listen"]), "Listen", args)
-            self.save_notes += "Added Listen %s directive to %s\n" % (
-                port, self.parser.loc["listen"])
+                # The Listen statement specifies an ip
+                _, ip = listen[::-1].split(":", 1)
+                ip = ip[::-1]
+                if "%s:%s" %(ip, port) not in listens:
+                    if port == "443":
+                        args = ["%s:%s" %(ip, port)]
+                    else:
+                        # Non-standard ports should specify https protocol
+                        args = ["%s:%s" %(ip, port), "https"]
+                    self.parser.add_dir_to_ifmodssl(
+                        parser.get_aug_path(
+                            self.parser.loc["listen"]), "Listen", args)
+                    self.save_notes += "Added Listen %s:%s directive to %s\n" % (
+                                          ip, port, self.parser.loc["listen"])
+                    listens.append("%s:%s" %(ip, port))
 
     def make_addrs_sni_ready(self, addrs):
         """Checks to see if the server is ready for SNI challenges.
