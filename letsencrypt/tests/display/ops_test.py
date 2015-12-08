@@ -386,7 +386,7 @@ class ChooseNamesTest(unittest.TestCase):
         self.assertEqual(self._call(self.mock_install), [])
 
     def test_get_valid_domains(self):
-        from letsencrypt.display_ops import get_valid_domains
+        from letsencrypt.display.ops import get_valid_domains
         all_valid = ["example.com", "second.example.com",
                      "also.example.com"]
         all_invalid = ["xn--ls8h.tld", "*.wildcard.com", "notFQDN"]
@@ -395,7 +395,7 @@ class ChooseNamesTest(unittest.TestCase):
         self.assertEqual(get_valid_domains(all_invalid), [])
         self.assertEqual(len(get_valid_domains(two_valid)), 2)
 
-        
+
 class SuccessInstallationTest(unittest.TestCase):
     # pylint: disable=too-few-public-methods
     """Test the success installation message."""
