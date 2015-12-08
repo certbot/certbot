@@ -120,7 +120,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.version = version
         self.vhosts = None
         self._enhance_func = {"redirect": self._enable_redirect,
-                "ensure-http-header": self._set_http_header}
+                              "ensure-http-header": self._set_http_header}
 
     @property
     def mod_ssl_conf(self):
@@ -570,18 +570,18 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 # The Listen statement specifies an ip
                 _, ip = listen[::-1].split(":", 1)
                 ip = ip[::-1]
-                if "%s:%s" %(ip, port) not in listens:
+                if "%s:%s" % (ip, port) not in listens:
                     if port == "443":
-                        args = ["%s:%s" %(ip, port)]
+                        args = ["%s:%s" % (ip, port)]
                     else:
                         # Non-standard ports should specify https protocol
-                        args = ["%s:%s" %(ip, port), "https"]
+                        args = ["%s:%s" % (ip, port), "https"]
                     self.parser.add_dir_to_ifmodssl(
                         parser.get_aug_path(
                             self.parser.loc["listen"]), "Listen", args)
                     self.save_notes += "Added Listen %s:%s directive to %s\n" % (
-                                          ip, port, self.parser.loc["listen"])
-                    listens.append("%s:%s" %(ip, port))
+                                       ip, port, self.parser.loc["listen"])
+                    listens.append("%s:%s" % (ip, port))
 
     def make_addrs_sni_ready(self, addrs):
         """Checks to see if the server is ready for SNI challenges.
