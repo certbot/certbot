@@ -294,18 +294,18 @@ def check_domain_sanity(domain):
     # Check if there's a wildcard domain
     if domain.startswith("*."):
         raise errors.ConfigurationError(
-            "Wildcard domains are not supported")
+            "Wildcard domains are not presently supported")
     # Punycode
     if "xn--" in domain:
         raise errors.ConfigurationError(
-            "Punycode domains are not supported")
+            "Punycode domains are not presently supported")
 
     # Unicode
     try:
         domain.encode('ascii')
     except UnicodeDecodeError:
         raise errors.ConfigurationError(
-            "Internationalized domain names are not supported")
+            "Internationalized domain names are not presently supported")
 
     # FQDN checks from
     # http://www.mkyong.com/regular-expressions/domain-name-regular-expression-example/
