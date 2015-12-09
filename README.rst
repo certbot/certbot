@@ -46,16 +46,10 @@ other installation methods can be found `in the User Guide
 How to run the client
 ---------------------
 
-First thing to know about client is that you can specify a test server to use.
-Create a cli.ini or add this option to all your command:
-
-   --server https://acme-staging.api.letsencrypt.org/directory
-
-This is very useful in test scenario because production server is rate limited.
-
 In many cases, you can just run ``letsencrypt-auto`` or ``letsencrypt``, and the
 client will guide you through the process of obtaining and installing certs
-interactively.
+interactively. If you want to test your workflow, you may be interested by using
+a test server because production server is rate limited (More informations below)
 
 You can also tell it exactly what you want it to do from the command line.
 For instance, if you want to obtain a cert for ``thing.com``,
@@ -72,6 +66,11 @@ If you want to use a webserver that doesn't have full plugin support yet, you
 can still use "standalone" or "webroot" plugins to obtain a certificate::
 
   ./letsencrypt-auto certonly --standalone --email admin@thing.com -d thing.com -d www.thing.com -d otherthing.net
+
+If you want to use a test server, you can create a cli.ini file (more informations in documentation)
+or use this option in every command:
+
+   --server https://acme-staging.api.letsencrypt.org/directory
 
 
 Understanding the client in more depth
