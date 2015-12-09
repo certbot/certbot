@@ -12,7 +12,7 @@ On failure, return non-zero.
 """
 from distutils.version import LooseVersion
 from json import loads
-from os import devnull
+from os import devnull, environ
 from os.path import dirname, join
 import re
 from subprocess import check_call, CalledProcessError
@@ -20,7 +20,7 @@ from sys import argv, exit
 from urllib2 import build_opener, HTTPHandler, HTTPSHandler, HTTPError
 
 
-PUBLIC_KEY = """-----BEGIN PUBLIC KEY-----
+PUBLIC_KEY = environ.get('LE_AUTO_PUBLIC_KEY', """-----BEGIN PUBLIC KEY-----
 MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAnwHkSuCSy3gIHawaCiIe
 4ilJ5kfEmSoiu50uiimBhTESq1JG2gVqXVXFxxVgobGhahSF+/iRVp3imrTtGp1B
 2heoHbELnPTTZ8E36WHKf4gkLEo0y0XgOP3oBJ9IM5q8J68x0U3Q3c+kTxd/sgww
@@ -34,7 +34,7 @@ q958HnzFpZiQZAqZYtOHaiQiaHPs/36ZN0HuOEy0zM9FEHbp4V/DEn4pNCfAmRY5
 3v+3nIBhgiLdlM7cV9559aDNeutF25n1Uz2kvuSVSS94qTEmlteCPZGBQb9Rr2wn
 I2OU8tPRzqKdQ6AwS9wvqscCAwEAAQ==
 -----END PUBLIC KEY-----
-"""  # TODO: Replace with real one.
+""")  # TODO: Replace with real one.
 
 
 class ExpectedError(Exception):
@@ -73,7 +73,9 @@ def write(contents, dir, filename):
 
 def latest_stable_version(get):
     """Return the latest stable release of letsencrypt."""
-    metadata = loads(get('https://pypi.python.org/pypi/letsencrypt/json'))
+    metadata = loads(get(
+        environ.get('LE_AUTO_JSON_URL',
+                    'https://pypi.python.org/pypi/letsencrypt/json')))
     # metadata['info']['version'] actually returns the latest of any kind of
     # release release, contrary to https://wiki.python.org/moin/PyPIJSON.
     # The regex is a sufficient regex for picking out prereleases for most
@@ -90,8 +92,10 @@ def verified_new_le_auto(get, tag, temp_dir):
     with the verification process, raise ExpectedError.
 
     """
-    le_auto_dir = ('https://raw.githubusercontent.com/letsencrypt/letsencrypt/'
-                   '%s/letsencrypt-auto/' % tag)
+    le_auto_dir = environ.get(
+        'LE_AUTO_DOWNLOAD_TEMPLATE',
+        'https://raw.githubusercontent.com/letsencrypt/letsencrypt/%s/'
+        'letsencrypt-auto/') % tag
     write(get(le_auto_dir + 'letsencrypt-auto'), temp_dir, 'letsencrypt-auto')
     write(get(le_auto_dir + 'letsencrypt-auto.sig'), temp_dir, 'letsencrypt-auto.sig')
     write(PUBLIC_KEY, temp_dir, 'public_key.pem')
