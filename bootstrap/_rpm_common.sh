@@ -3,6 +3,7 @@
 # Tested with:
 #   - Fedora 22, 23 (x64)
 #   - Centos 7 (x64: on DigitalOcean droplet)
+#   - CentOS 7 Minimal install in a Hyper-V VM
 
 if type dnf 2>/dev/null
 then
