@@ -2,7 +2,7 @@
 
 # Tested with:
 #   - Fedora 22, 23 (x64)
-#   - Centos 7 (x64: onD igitalOcean droplet)
+#   - Centos 7 (x64: on DigitalOcean droplet)
 
 if type dnf 2>/dev/null
 then

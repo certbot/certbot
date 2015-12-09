@@ -9,7 +9,6 @@ import json
 import logging
 import logging.handlers
 import os
-import pkg_resources
 import sys
 import time
 import traceback
@@ -304,6 +303,14 @@ def _report_new_cert(cert_path, fullchain_path):
            .format(and_chain, path, expiry))
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
+def _suggest_donate():
+    "Suggest a donation to support Let's Encrypt"
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    msg = ("If you like Let's Encrypt, please consider supporting our work by:\n\n"
+           "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
+           "Donating to EFF:                    https://eff.org/donate-le\n\n")
+    reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
+
 
 def _auth_from_domains(le_client, config, domains):
     """Authenticate and enroll certificate."""
@@ -473,6 +480,8 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     else:
         display_ops.success_renewal(domains)
 
+    _suggest_donate()
+
 
 def obtain_cert(args, config, plugins):
     """Authenticate & obtain cert, but do not install it."""
@@ -501,6 +510,8 @@ def obtain_cert(args, config, plugins):
     else:
         domains = _find_domains(args, installer)
         _auth_from_domains(le_client, config, domains)
+
+    _suggest_donate()
 
 
 def install(args, config, plugins):
@@ -750,6 +761,20 @@ class HelpfulArgumentParser(object):
             kwargs["help"] = argparse.SUPPRESS
             self.parser.add_argument(*args, **kwargs)
 
+    def add_deprecated_argument(self, argument_name, num_args):
+        """Adds a deprecated argument with the name argument_name.
+
+        Deprecated arguments are not shown in the help. If they are used
+        on the command line, a warning is shown stating that the
+        argument is deprecated and no other action is taken.
+
+        :param str argument_name: Name of deprecated argument.
+        :param int nargs: Number of arguments the option takes.
+
+        """
+        le_util.add_deprecated_argument(
+            self.parser.add_argument, argument_name, num_args)
+
     def add_group(self, topic, **kwargs):
         """
 
@@ -830,7 +855,7 @@ def prepare_and_parse_args(plugins, args):
              "email address. This is strongly discouraged, because in the "
              "event of key loss or account compromise you will irrevocably "
              "lose access to your account. You will also be unable to receive "
-             "notice about impending expiration of revocation of your "
+             "notice about impending expiration or revocation of your "
              "certificates. Updates to the Subscriber Agreement will still "
              "affect you, and will be effective 14 days after posting an "
              "update to the web site.")
@@ -858,10 +883,7 @@ def prepare_and_parse_args(plugins, args):
     helpful.add(
         "automation", "--renew-by-default", action="store_true",
         help="Select renewal by default when domains are a superset of a "
-             "a previously attained cert")
-    helpful.add(
-        "automation", "--agree-dev-preview", action="store_true",
-        help="Agree to the Let's Encrypt Developer Preview Disclaimer")
+             "previously attained cert")
     helpful.add(
         "automation", "--agree-tos", dest="tos", action="store_true",
         help="Agree to the Let's Encrypt Subscriber Agreement")
@@ -925,6 +947,8 @@ def prepare_and_parse_args(plugins, args):
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
+
+    helpful.add_deprecated_argument("--agree-dev-preview", 0)
 
     _create_subparsers(helpful)
     _paths_parser(helpful)
@@ -1055,7 +1079,7 @@ def _plugins_parsing(helpful, plugins):
     helpful.add("webroot", "-w", "--webroot-path", action=WebrootPathProcessor,
                 help="public_html / webroot path. This can be specified multiple times to "
                      "handle different domains; each domain will have the webroot path that"
-                     " precededed it.  For instance: `-w /var/www/example -d example.com -d "
+                     " preceded it.  For instance: `-w /var/www/example -d example.com -d "
                      "www.example.com -w /var/www/thing -d thing.net -d m.thing.net`")
     parse_dict = lambda s: dict(json.loads(s))
     # --webroot-map still has some awkward properties, so it is undocumented
@@ -1244,13 +1268,6 @@ def main(cli_args=sys.argv[1:]):
     report = reporter.Reporter()
     zope.component.provideUtility(report)
     atexit.register(report.atexit_print_messages)
-
-    # TODO: remove developer preview prompt for the launch
-    if not config.agree_dev_preview:
-        disclaimer = pkg_resources.resource_string("letsencrypt", "DISCLAIMER")
-        if not zope.component.getUtility(interfaces.IDisplay).yesno(
-                disclaimer, "Agree", "Cancel"):
-            raise errors.Error("Must agree to TOS")
 
     if not os.geteuid() == 0:
         logger.warning(

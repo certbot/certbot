@@ -39,25 +39,27 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.config_dir = os.path.join(self.tmp_dir, 'config')
         self.work_dir = os.path.join(self.tmp_dir, 'work')
         self.logs_dir = os.path.join(self.tmp_dir, 'logs')
-        self.standard_args = ['--text', '--config-dir', self.config_dir,
-                              '--work-dir', self.work_dir, '--logs-dir',
-                              self.logs_dir, '--agree-dev-preview']
+        self.standard_args = ['--config-dir', self.config_dir,
+                              '--work-dir', self.work_dir,
+                              '--logs-dir', self.logs_dir, '--text']
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
     def _call(self, args):
         "Run the cli with output streams and actual client mocked out"
-        with mock.patch('letsencrypt.cli.client') as client:
-            ret, stdout, stderr = self._call_no_clientmock(args)
-            return ret, stdout, stderr, client
+        with mock.patch('letsencrypt.cli._suggest_donate'):
+            with mock.patch('letsencrypt.cli.client') as client:
+                ret, stdout, stderr = self._call_no_clientmock(args)
+                return ret, stdout, stderr, client
 
     def _call_no_clientmock(self, args):
         "Run the client with output streams mocked out"
         args = self.standard_args + args
-        with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
-            with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
-                ret = cli.main(args[:])  # NOTE: parser can alter its args!
+        with mock.patch('letsencrypt.cli._suggest_donate'):
+            with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
+                with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
+                    ret = cli.main(args[:])  # NOTE: parser can alter its args!
         return ret, stdout, stderr
 
     def _call_stdout(self, args):
@@ -66,9 +68,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         caller.
         """
         args = self.standard_args + args
-        with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
-            with mock.patch('letsencrypt.cli.client') as client:
-                ret = cli.main(args[:])  # NOTE: parser can alter its args!
+        with mock.patch('letsencrypt.cli._suggest_donate'):
+            with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
+                with mock.patch('letsencrypt.cli.client') as client:
+                    ret = cli.main(args[:])  # NOTE: parser can alter its args!
         return ret, None, stderr, client
 
     def test_no_flags(self):
@@ -180,8 +183,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_configurator_selection(self, mock_exe_exists):
         mock_exe_exists.return_value = True
         real_plugins = disco.PluginsRegistry.find_all()
-        args = ['--agree-dev-preview', '--apache',
-                '--authenticator', 'standalone']
+        args = ['--apache', '--authenticator', 'standalone']
 
         # This needed two calls to find_all(), which we're avoiding for now
         # because of possible side effects:
@@ -360,9 +362,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         namespace = cli.prepare_and_parse_args(plugins, webroot_map_args)
         self.assertEqual(namespace.webroot_map, {u"eg.com": u"/tmp"})
 
+    @mock.patch('letsencrypt.cli._suggest_donate')
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
-    def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter):
+    def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter, _suggest):
         cert_path = '/etc/letsencrypt/live/foo.bar'
         date = '1970-01-01'
         mock_notAfter().date.return_value = date
@@ -391,10 +394,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 mock_init.return_value = mock_client
                 self._call(['-d', 'foo.bar', '-a', 'standalone', 'certonly'])
 
+    @mock.patch('letsencrypt.cli._suggest_donate')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._treat_as_renewal')
     @mock.patch('letsencrypt.cli._init_le_client')
-    def test_certonly_renewal(self, mock_init, mock_renewal, mock_get_utility):
+    def test_certonly_renewal(self, mock_init, mock_renewal, mock_get_utility, _suggest):
         cert_path = '/etc/letsencrypt/live/foo.bar/cert.pem'
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
 
@@ -416,13 +420,14 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue(
             chain_path in mock_get_utility().add_message.call_args[0][0])
 
+    @mock.patch('letsencrypt.cli._suggest_donate')
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.display_ops.pick_installer')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._init_le_client')
     @mock.patch('letsencrypt.cli.record_chosen_plugins')
     def test_certonly_csr(self, _rec, mock_init, mock_get_utility,
-                          mock_pick_installer, mock_notAfter):
+                          mock_pick_installer, mock_notAfter, _suggest):
         cert_path = '/etc/letsencrypt/live/blahcert.pem'
         date = '1970-01-01'
         mock_notAfter().date.return_value = date
