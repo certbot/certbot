@@ -123,6 +123,7 @@ def pick_configurator(
         config, default, plugins, question,
         (interfaces.IAuthenticator, interfaces.IInstaller))
 
+
 def get_email(more=False, invalid=False):
     """Prompt for valid email address.
 
@@ -209,6 +210,7 @@ def choose_names(installer):
     else:
         return []
 
+
 def get_valid_domains(domains):
     """Helper method for choose_names that implements basic checks
      on domain names
@@ -225,6 +227,7 @@ def get_valid_domains(domains):
         except errors.ConfigurationError:
             continue
     return valid_domains
+
 
 def _filter_names(names):
     """Determine which names the user would like to select from a list.
