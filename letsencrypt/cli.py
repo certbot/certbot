@@ -219,6 +219,17 @@ def _treat_as_renewal(config, domains):
     :raises .Error: If the user would like to rerun the client again.
 
     """
+    # TODO: This now needs to return 3 different cases plus the .Error
+    #       case: reinstall, renew, fresh cert
+    #       Probably the return value should be a tuple of (result, cert)
+    #       like ("reinstall", RenewableCert_instance)
+    #       ("renew", RenewableCert_instance)
+    #       ("newcert", None)
+    #       We could also return ("cancel", None) instead of raising the
+    #       error, but the error-handling mechanism seems to work
+    # TODO: Find out whether a RenewableCert instance is enough information
+    #       for the installer to try to reinstall it when we return "reinstall"
+    # TODO: Also address superset case
     renewal = False
 
     # Considering the possibility that the requested certificate is
@@ -234,9 +245,21 @@ def _treat_as_renewal(config, domains):
         if ident_names_cert is not None:
             question = (
                 "You have an existing certificate that contains exactly the "
-                "same domains you requested (ref: {0}){br}{br}Do you want to "
-                "renew and replace this certificate with a newly-issued one?"
+                "same domains you requested (ref: {0}){br}{br}Note that the "
+                "Let's Encrypt certificate authority limits the number of "
+                "certificates that can be issued for the same domain name per "
+                "week!{br}{br}Do you want to reinstall this existing "
+                "certificate, or renew and replace this certificate with a "
+                "newly-issued one?"
             ).format(ident_names_cert.configfile.filename, br=os.linesep)
+            print(zope.component.getUtility(interfaces.IDisplay).menu(
+                question, ["Attempt to reinstall this existing certificate",
+                           "Obtain a new certificate for these domains",
+                           "Cancel this operation and do nothing"],
+                "OK", "Cancel"))
+            # TODO: Analyze the result and make a code path that does the
+            #       right thing with it
+            sys.exit(1)
         elif subset_names_cert is not None:
             question = (
                 "You have an existing certificate that contains a portion of "
