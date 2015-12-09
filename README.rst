@@ -163,5 +163,5 @@ Current Features
 * Free and Open Source Software, made with Python.
 
 
-.. _Freenode: https://freenode.net
+.. _Freenode: https://webchat.freenode.net?channels=%23letsencrypt
 .. _client-dev: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev
