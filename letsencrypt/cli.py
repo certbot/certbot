@@ -211,10 +211,11 @@ def _find_duplicative_certs(config, domains):
 
 
 def _treat_as_renewal(config, domains):
-    """Determine whether or not the call should be treated as a renewal.
+    """Determine whether there are duplicated names and how to handle them.
 
-    :returns: RenewableCert or None if renewal shouldn't occur.
-    :rtype: :class:`.storage.RenewableCert`
+    :returns: Two-element tuple containing desired new-certificate
+              behavior as a string token, plus either a RenewableCert
+              instance or None if renewal shouldn't occur.
 
     :raises .Error: If the user would like to rerun the client again.
 
