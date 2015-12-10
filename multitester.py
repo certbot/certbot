@@ -123,8 +123,8 @@ def make_instance(instance_name,
         UserData=userdata,
         InstanceType=machine_type)[0]
 
-    # brief pause to prevent rare EC2 error
-    time.sleep(0.5)
+    # brief pause to prevent rare error on EC2 delay, should block until ready instead
+    time.sleep(1.0)
 
     # give instance a name
     new_instance.create_tags(Tags=[{'Key': 'Name', 'Value': instance_name}])

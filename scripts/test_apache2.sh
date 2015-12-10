@@ -1,15 +1,7 @@
 #!/bin/bash -x
 
-#install apache2 on apt systems
-# debian doesn't come with curl
-#sudo apt-get update
-#sudo apt-get -y --no-upgrade install apache2 #curl
-
-# $PUBLIC_IP $PRIVATE_IP $PUBLIC_HOSTNAME $BOULDER_URL are dynamically set at execution
-# fetch instance data from EC2 metadata service
-#public_host=$(curl -s http://169.254.169.254/2014-11-05/meta-data/public-hostname)
-#public_ip=$(curl -s http://169.254.169.254/2014-11-05/meta-data/public-ipv4)
-#private_ip=$(curl -s http://169.254.169.254/2014-11-05/meta-data/local-ipv4)
+# $OS_TYPE $PUBLIC_IP $PRIVATE_IP $PUBLIC_HOSTNAME $BOULDER_URL
+# are dynamically set at execution
 
 if [ $OS_TYPE = "ubuntu" ]
 then
@@ -22,22 +14,24 @@ then
 elif [ $OS_TYPE = "centos" ]
 then
     CONFFILE=/etc/httpd/conf/httpd.conf
+    sudo setenforce 0 || true #disable selinux
     sudo yum -y install httpd
     sudo service httpd start
     sudo mkdir -p /var/www/$PUBLIC_HOSTNAME/public_html
-    sudo chmod -R 777 /var/www
-    sudo echo '<html><head><title>foo</title></head>\n<body>bar</body></html>' > /var/www/$PUBLIC_HOSTNAME/public_html/index.html
-    sudo mkdir /etc/httpd/sites-available
-    sudo mkdir /etc/httpd/sites-enabled
-    sudo echo "IncludeOptional sites-enabled/*.conf" >> /etc/httpd/conf/httpd.conf
+    sudo chmod -R oug+rwx /var/www
+    sudo chmod -R oug+rw /etc/httpd
+    sudo echo '<html><head><title>foo</title></head><body>bar</body></html>' > /var/www/$PUBLIC_HOSTNAME/public_html/index.html
+    sudo mkdir /etc/httpd/sites-available #letsencrypt requires this...
+    sudo mkdir /etc/httpd/sites-enabled #letsencrypt requires this...
+    #sudo echo "IncludeOptional sites-enabled/*.conf" >> /etc/httpd/conf/httpd.conf
     sudo echo """
 <VirtualHost *:80>
     ServerName $PUBLIC_HOSTNAME
     DocumentRoot /var/www/$PUBLIC_HOSTNAME/public_html
     ErrorLog /var/www/$PUBLIC_HOSTNAME/error.log
     CustomLog /var/www/$PUBLIC_HOSTNAME/requests.log combined
-</VirtualHost>""" >> /etc/httpd/sites-available/$PUBLIC_HOSTNAME.conf
-    sudo cp /etc/httpd/sites-available/$PUBLIC_HOSTNAME.conf /etc/httpd/sites-enabled/
+</VirtualHost>""" >> /etc/httpd/conf.d/$PUBLIC_HOSTNAME.conf
+    #sudo cp /etc/httpd/sites-available/$PUBLIC_HOSTNAME.conf /etc/httpd/sites-enabled/
 fi
 
 # run letsencrypt-apache2 via letsencrypt-auto
