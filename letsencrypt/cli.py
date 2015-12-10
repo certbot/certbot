@@ -1047,7 +1047,7 @@ def _paths_parser(helpful):
     add("paths", "--server", default=flag_default("server"),
         help=config_help("server"))
     # overwrites server, handled in HelpfulArgumentParser.parse_args()
-    add("testing", "--staging", action='store_true',
+    add("testing", "--test-cert", "--staging", action='store_true', dest='staging',
         help='Use the staging server to obtain test (invalid) certs; equivalent'
              ' to --server https://acme-staging.api.letsencrypt.org/directory ')
 
