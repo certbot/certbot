@@ -271,12 +271,13 @@ def config_and_launch_boulder(instance):
     execute(deploy_script, 'scripts/boulder_config.sh')
     execute(run_boulder)
 
-def install_and_launch_letsencrypt(instance, boulder_url):
+def install_and_launch_letsencrypt(instance, boulder_url, target):
     execute(local_repo_to_remote)
     with shell_env(BOULDER_URL=boulder_url,
                    PUBLIC_IP=instance.public_ip_address,
                    PRIVATE_IP=instance.private_ip_address,
-                   PUBLIC_HOSTNAME=instance.public_dns_name):
+                   PUBLIC_HOSTNAME=instance.public_dns_name,
+                   OS_TYPE=target['type']):
         execute(deploy_script, cl_args.test_script)
 
 def grab_letsencrypt_log():
@@ -423,7 +424,7 @@ def test_client_process(inqueue, outqueue):
         print(env.host_string)
 
         try:
-            install_and_launch_letsencrypt(instances[ii], boulder_url)
+            install_and_launch_letsencrypt(instances[ii], boulder_url, target)
             outqueue.put((ii, target, 'pass'))
             print("%s - %s SUCCESS"%(target['ami'], target['name']))
         except:

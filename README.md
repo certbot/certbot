@@ -29,8 +29,9 @@ then:
 ```
 
 see:
-  https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html
-  https://docs.aws.amazon.com/cli/latest/userguide/cli-ec2-keypairs.html
+- https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html
+- https://docs.aws.amazon.com/cli/latest/userguide/cli-ec2-keypairs.html
 
-https://github.com/letsencrypt/boulder
-https://github.com/letsencrypt/letsencrypt
+main repos:
+- https://github.com/letsencrypt/boulder
+- https://github.com/letsencrypt/letsencrypt
