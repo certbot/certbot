@@ -116,6 +116,24 @@ class TwoVhost80Test(util.ApacheTest):
 
         self.assertEqual(found, 6)
 
+        # Handle case of non-debian layout get_virtual_hosts
+        orig_conf = self.config.conf
+        with mock.patch(
+                "letsencrypt_apache.configurator.ApacheConfigurator.conf"
+        )  as mock_conf:
+            def conf_sideeffect(key):
+                """Handle calls to configurator.conf()
+                :param key: configuration key
+                :return: configuration value
+                """
+                if key == "handle-sites":
+                    return False
+                else:
+                    return orig_conf(key)
+            mock_conf.side_effect = conf_sideeffect
+            vhs = self.config.get_virtual_hosts()
+            self.assertEqual(len(vhs), 6)
+
     @mock.patch("letsencrypt_apache.display_ops.select_vhost")
     def test_choose_vhost_none_avail(self, mock_select):
         mock_select.return_value = None
