@@ -219,16 +219,14 @@ def _treat_as_renewal(config, domains):
     :raises .Error: If the user would like to rerun the client again.
 
     """
-    # TODO: This now needs to return 3 different cases plus the .Error
-    #       case: reinstall, renew, fresh cert
-    #       Probably the return value should be a tuple of (result, cert)
-    #       like ("reinstall", RenewableCert_instance)
-    #       ("renew", RenewableCert_instance)
-    #       ("newcert", None)
+    #       This will now instead return 3 different cases plus the .Error
+    #       case (which raises an exception): reinstall, renew, newcert
+    #       The return value will be a tuple of (result, cert), viz.
+    #       either ("reinstall", RenewableCert_instance)
+    #       or     ("renew", RenewableCert_instance)
+    #       or     ("newcert", None)
     #       We could also return ("cancel", None) instead of raising the
-    #       error, but the error-handling mechanism seems to work
-    # TODO: Find out whether a RenewableCert instance is enough information
-    #       for the installer to try to reinstall it when we return "reinstall"
+    #       error, but the error-handling mechanism seems to work OK.
     # TODO: Also address superset case
     renewal = False
 
@@ -243,23 +241,48 @@ def _treat_as_renewal(config, domains):
         # configuration file.
         question = None
         if ident_names_cert is not None:
+            # TODO: I bet this question is confusing to people who don't know
+            #       how the backend repreentation of certificates work. The
+            #       distinction is renewal updates existing lineage with new
+            #       cert (eventually maybe preserving the privkey), while
+            #       newcert creates a new lineage. And reinstall doesn't cause
+            #       a new issuance at all.
             question = (
                 "You have an existing certificate that contains exactly the "
                 "same domains you requested (ref: {0}){br}{br}Note that the "
                 "Let's Encrypt certificate authority limits the number of "
                 "certificates that can be issued for the same domain name per "
-                "week!{br}{br}Do you want to reinstall this existing "
-                "certificate, or renew and replace this certificate with a "
-                "newly-issued one?"
+                "week, including renewal certificates!{br}{br}Do you want to "
+                "reinstall this existing certificate, renew and replace this "
+                "certificate with a newly-issued one, or get a completely new "
+                "certificate?"
             ).format(ident_names_cert.configfile.filename, br=os.linesep)
-            print(zope.component.getUtility(interfaces.IDisplay).menu(
+            response = zope.component.getUtility(interfaces.IDisplay).menu(
                 question, ["Attempt to reinstall this existing certificate",
-                           "Obtain a new certificate for these domains",
+                           "Renew this certificate, replacing it with the updated one",
+                           "Obtain a completely new certificate for these domains",
                            "Cancel this operation and do nothing"],
-                "OK", "Cancel"))
-            # TODO: Analyze the result and make a code path that does the
-            #       right thing with it
-            sys.exit(1)
+                "OK", "Cancel")
+            if response[0] == "cancel" or response[1] == 3:
+                # TODO: Add notification related to command-line options for
+                #       skipping the menu for this case.
+                raise errors.Error(
+                    "User did not use proper CLI and would like "
+                    "to reinvoke the client.")
+            elif response[1] == 0:
+                # Reinstall
+                return "reinstall", ident_names_cert
+            elif response[1] == 1:
+                # Renew
+                return "renew", ident_names_cert
+            elif response[1] == 2:
+                # New cert
+                return "newcert", None
+            else:
+                assert 0
+                # NOTREACHED
+        # TODO: Since the rest of the function deals only with the subset
+        #       case, we could now simplify it considerably!
         elif subset_names_cert is not None:
             question = (
                 "You have an existing certificate that contains a portion of "
@@ -295,9 +318,9 @@ def _treat_as_renewal(config, domains):
                 "to reinvoke the client.")
 
         if renewal:
-            return ident_names_cert if ident_names_cert is not None else subset_names_cert
+            return "renew", ident_names_cert if ident_names_cert is not None else subset_names_cert
 
-    return None
+    return "newcert", None
 
 
 def _report_new_cert(cert_path, fullchain_path):
@@ -337,10 +360,20 @@ def _suggest_donate():
 
 def _auth_from_domains(le_client, config, domains):
     """Authenticate and enroll certificate."""
-    # Note: This can raise errors... caught above us though.
-    lineage = _treat_as_renewal(config, domains)
+    # Note: This can raise errors... caught above us though. This is now
+    # a three-way case: reinstall (which results in a no-op here because
+    # although there is a relevant lineage, we don't do anything to it
+    # inside this function -- we don't obtain a new certificate), renew
+    # (which results in treating the request as a renewal), or newcert
+    # (which results in treating the request as a new certificate request).
 
-    if lineage is not None:
+    action, lineage = _treat_as_renewal(config, domains)
+    print action, lineage
+    if action == "reinstall":
+        # The lineage already exists; allow the caller to try installing
+        # it without getting a new certificate at all.
+        return lineage
+    elif action == "renew":
         # TODO: schoen wishes to reuse key - discussion
         # https://github.com/letsencrypt/letsencrypt/pull/777/files#r40498574
         new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
@@ -354,7 +387,7 @@ def _auth_from_domains(le_client, config, domains):
         # TODO: Check return value of save_successor
         # TODO: Also update lineage renewal config with any relevant
         #       configuration values from this attempt? <- Absolutely (jdkasten)
-    else:
+    elif action == "newcert":
         # TREAT AS NEW REQUEST
         lineage = le_client.obtain_and_enroll_certificate(domains)
         if not lineage:
@@ -508,6 +541,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
 
 def obtain_cert(args, config, plugins):
     """Authenticate & obtain cert, but do not install it."""
+    # TODO: Is this now dead code? What calls it?
 
     if args.domains and args.csr is not None:
         # TODO: --csr could have a priority, when --domains is
