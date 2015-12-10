@@ -7,7 +7,6 @@ CLI_DEFAULTS = dict(
     ctl="apache2ctl",
     enmod="a2enmod",
     dismod="a2dismod",
-    init_script="/etc/init.d/apache2",
     le_vhost_ext="-le-ssl.conf",
 )
 """CLI defaults."""

@@ -7,7 +7,6 @@ import os
 import re
 import shutil
 import socket
-import subprocess
 import time
 
 import zope.interface
@@ -95,13 +94,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             help="Path to the Apache 'a2enmod' binary.")
         add("dismod", default=constants.CLI_DEFAULTS["dismod"],
             help="Path to the Apache 'a2enmod' binary.")
-        add("init-script", default=constants.CLI_DEFAULTS["init_script"],
-            help="Path to the Apache init script (used for server "
-            "reload).")
         add("le-vhost-ext", default=constants.CLI_DEFAULTS["le_vhost_ext"],
             help="SSL vhost configuration extension.")
         add("server-root", default=constants.CLI_DEFAULTS["server_root"],
             help="Apache server root directory.")
+        le_util.add_deprecated_argument(add, "init-script", 1)
 
     def __init__(self, *args, **kwargs):
         """Initialize an Apache Configurator.
@@ -123,7 +120,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.version = version
         self.vhosts = None
         self._enhance_func = {"redirect": self._enable_redirect,
-                "ensure-http-header": self._set_http_header}
+                              "ensure-http-header": self._set_http_header}
 
     @property
     def mod_ssl_conf(self):
@@ -140,8 +137,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         # Verify Apache is installed
-        for exe in (self.conf("ctl"), self.conf("enmod"),
-                    self.conf("dismod"), self.conf("init-script")):
+        for exe in (self.conf("ctl"), self.conf("enmod"), self.conf("dismod")):
             if not le_util.exe_exists(exe):
                 raise errors.NoInstallationError
 
@@ -244,13 +240,18 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if not vhost.enabled:
             self.enable_site(vhost)
 
-    def choose_vhost(self, target_name):
+    def choose_vhost(self, target_name, temp=False):
         """Chooses a virtual host based on the given domain name.
 
         If there is no clear virtual host to be selected, the user is prompted
         with all available choices.
 
+        The returned vhost is guaranteed to have TLS enabled unless temp is
+        True. If temp is True, there is no such guarantee and the result is
+        not cached.
+
         :param str target_name: domain name
+        :param bool temp: whether the vhost is only used temporarily
 
         :returns: ssl vhost associated with name
         :rtype: :class:`~letsencrypt_apache.obj.VirtualHost`
@@ -265,15 +266,17 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Try to find a reasonable vhost
         vhost = self._find_best_vhost(target_name)
         if vhost is not None:
+            if temp:
+                return vhost
             if not vhost.ssl:
                 vhost = self.make_vhost_ssl(vhost)
 
             self.assoc[target_name] = vhost
             return vhost
 
-        return self._choose_vhost_from_list(target_name)
+        return self._choose_vhost_from_list(target_name, temp)
 
-    def _choose_vhost_from_list(self, target_name):
+    def _choose_vhost_from_list(self, target_name, temp=False):
         # Select a vhost from a list
         vhost = display_ops.select_vhost(target_name, self.vhosts)
         if vhost is None:
@@ -282,7 +285,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "No vhost was selected. Please specify servernames "
                 "in the Apache config", target_name)
             raise errors.PluginError("No vhost selected")
-
+        elif temp:
+            return vhost
         elif not vhost.ssl:
             addrs = self._get_proposed_addrs(vhost, "443")
             # TODO: Conflicts is too conservative
@@ -541,21 +545,43 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Check for Listen <port>
         # Note: This could be made to also look for ip:443 combo
-        if not self.parser.find_dir("Listen", port):
-            logger.debug("No Listen %s directive found. Setting the "
-                         "Apache Server to Listen on port %s", port, port)
-
-            if port == "443":
-                args = [port]
+        listens = [self.parser.get_arg(x).split()[0] for x in self.parser.find_dir("Listen")]
+        # In case no Listens are set (which really is a broken apache config)
+        if not listens:
+            listens = ["80"]
+        for listen in listens:
+            # For any listen statement, check if the machine also listens on Port 443.
+            # If not, add such a listen statement.
+            if len(listen.split(":")) == 1:
+                # Its listening to all interfaces
+                if port not in listens:
+                    if port == "443":
+                        args = [port]
+                    else:
+                        # Non-standard ports should specify https protocol
+                        args = [port, "https"]
+                    self.parser.add_dir_to_ifmodssl(
+                        parser.get_aug_path(
+                            self.parser.loc["listen"]), "Listen", args)
+                    self.save_notes += "Added Listen %s directive to %s\n" % (
+                        port, self.parser.loc["listen"])
+                    listens.append(port)
             else:
-                # Non-standard ports should specify https protocol
-                args = [port, "https"]
-
-            self.parser.add_dir_to_ifmodssl(
-                parser.get_aug_path(
-                    self.parser.loc["listen"]), "Listen", args)
-            self.save_notes += "Added Listen %s directive to %s\n" % (
-                port, self.parser.loc["listen"])
+                # The Listen statement specifies an ip
+                _, ip = listen[::-1].split(":", 1)
+                ip = ip[::-1]
+                if "%s:%s" % (ip, port) not in listens:
+                    if port == "443":
+                        args = ["%s:%s" % (ip, port)]
+                    else:
+                        # Non-standard ports should specify https protocol
+                        args = ["%s:%s" % (ip, port), "https"]
+                    self.parser.add_dir_to_ifmodssl(
+                        parser.get_aug_path(
+                            self.parser.loc["listen"]), "Listen", args)
+                    self.save_notes += "Added Listen %s:%s directive to %s\n" % (
+                                       ip, port, self.parser.loc["listen"])
+                    listens.append("%s:%s" % (ip, port))
 
     def make_addrs_sni_ready(self, addrs):
         """Checks to see if the server is ready for SNI challenges.
@@ -1186,16 +1212,25 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         le_util.run_script([self.conf("enmod"), mod_name])
 
     def restart(self):
-        """Reloads apache server.
+        """Runs a config test and reloads the Apache server.
 
-        .. todo:: This function will be converted to using reload
-
-        :raises .errors.MisconfigurationError: If unable to reload due
-            to a configuration problem, or if the reload subprocess
-            cannot be run.
+        :raises .errors.MisconfigurationError: If either the config test
+            or reload fails.
 
         """
-        return apache_reload(self.conf("init-script"))
+        self.config_test()
+        self._reload()
+
+    def _reload(self):
+        """Reloads the Apache server.
+
+        :raises .errors.MisconfigurationError: If reload fails
+
+        """
+        try:
+            le_util.run_script([self.conf("ctl"), "-k", "graceful"])
+        except errors.SubprocessError as err:
+            raise errors.MisconfigurationError(str(err))
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Apache for errors.
@@ -1315,44 +1350,6 @@ def _get_mod_deps(mod_name):
         "ssl": ["setenvif", "mime", "socache_shmcb"]
     }
     return deps.get(mod_name, [])
-
-
-def apache_reload(apache_init_script):
-    """Reloads the Apache Server.
-
-    :param str apache_init_script: Path to the Apache init script.
-
-    .. todo:: Try to use reload instead. (This caused timing problems before)
-
-    .. todo:: On failure, this should be a recovery_routine call with another
-       reload.  This will confuse and inhibit developers from testing code
-       though.  This change should happen after
-       the ApacheConfigurator has been thoroughly tested.  The function will
-       need to be moved into the class again.  Perhaps
-       this version can live on... for testing purposes.
-
-    :raises .errors.MisconfigurationError: If unable to reload due to a
-        configuration problem, or if the reload subprocess cannot be run.
-
-    """
-    try:
-        proc = subprocess.Popen([apache_init_script, "reload"],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-
-    except (OSError, ValueError):
-        logger.fatal(
-            "Unable to reload the Apache process with %s", apache_init_script)
-        raise errors.MisconfigurationError(
-            "Unable to reload Apache process with %s" % apache_init_script)
-
-    stdout, stderr = proc.communicate()
-
-    if proc.returncode != 0:
-        # Enter recovery routine...
-        logger.error("Apache Reload Failed!\n%s\n%s", stdout, stderr)
-        raise errors.MisconfigurationError(
-            "Error while reloading Apache:\n%s\n%s" % (stdout, stderr))
 
 
 def get_file_path(vhost_path):

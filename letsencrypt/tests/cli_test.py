@@ -39,25 +39,27 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.config_dir = os.path.join(self.tmp_dir, 'config')
         self.work_dir = os.path.join(self.tmp_dir, 'work')
         self.logs_dir = os.path.join(self.tmp_dir, 'logs')
-        self.standard_args = ['--text', '--config-dir', self.config_dir,
-                              '--work-dir', self.work_dir, '--logs-dir',
-                              self.logs_dir, '--agree-dev-preview']
+        self.standard_args = ['--config-dir', self.config_dir,
+                              '--work-dir', self.work_dir,
+                              '--logs-dir', self.logs_dir, '--text']
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
     def _call(self, args):
         "Run the cli with output streams and actual client mocked out"
-        with mock.patch('letsencrypt.cli.client') as client:
-            ret, stdout, stderr = self._call_no_clientmock(args)
-            return ret, stdout, stderr, client
+        with mock.patch('letsencrypt.cli._suggest_donate'):
+            with mock.patch('letsencrypt.cli.client') as client:
+                ret, stdout, stderr = self._call_no_clientmock(args)
+                return ret, stdout, stderr, client
 
     def _call_no_clientmock(self, args):
         "Run the client with output streams mocked out"
         args = self.standard_args + args
-        with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
-            with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
-                ret = cli.main(args[:])  # NOTE: parser can alter its args!
+        with mock.patch('letsencrypt.cli._suggest_donate'):
+            with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
+                with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
+                    ret = cli.main(args[:])  # NOTE: parser can alter its args!
         return ret, stdout, stderr
 
     def _call_stdout(self, args):
@@ -66,9 +68,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         caller.
         """
         args = self.standard_args + args
-        with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
-            with mock.patch('letsencrypt.cli.client') as client:
-                ret = cli.main(args[:])  # NOTE: parser can alter its args!
+        with mock.patch('letsencrypt.cli._suggest_donate'):
+            with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
+                with mock.patch('letsencrypt.cli.client') as client:
+                    ret = cli.main(args[:])  # NOTE: parser can alter its args!
         return ret, None, stderr, client
 
     def test_no_flags(self):
@@ -180,8 +183,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_configurator_selection(self, mock_exe_exists):
         mock_exe_exists.return_value = True
         real_plugins = disco.PluginsRegistry.find_all()
-        args = ['--agree-dev-preview', '--apache',
-                '--authenticator', 'standalone']
+        args = ['--apache', '--authenticator', 'standalone']
 
         # This needed two calls to find_all(), which we're avoiding for now
         # because of possible side effects:
@@ -236,7 +238,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self._call(['plugins'] + list(args))
 
     @mock.patch('letsencrypt.cli.plugins_disco')
-    def test_plugins_no_args(self, mock_disco):
+    @mock.patch('letsencrypt.cli.HelpfulArgumentParser.determine_help_topics')
+    def test_plugins_no_args(self, _det, mock_disco):
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
@@ -247,7 +250,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         stdout.write.called_once_with(str(filtered))
 
     @mock.patch('letsencrypt.cli.plugins_disco')
-    def test_plugins_init(self, mock_disco):
+    @mock.patch('letsencrypt.cli.HelpfulArgumentParser.determine_help_topics')
+    def test_plugins_init(self, _det, mock_disco):
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
@@ -261,10 +265,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         stdout.write.called_once_with(str(verified))
 
     @mock.patch('letsencrypt.cli.plugins_disco')
-    def test_plugins_prepare(self, mock_disco):
+    @mock.patch('letsencrypt.cli.HelpfulArgumentParser.determine_help_topics')
+    def test_plugins_prepare(self, _det, mock_disco):
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
-
         _, stdout, _, _ = self._call(['plugins', '--init', '--prepare'])
         plugins.visible.assert_called_once_with()
         plugins.visible().ifaces.assert_called_once_with(ifaces)
@@ -339,9 +343,29 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         namespace = cli.prepare_and_parse_args(plugins, long_args)
         self.assertEqual(namespace.domains, ['example.com', 'another.net'])
 
+    def test_parse_webroot(self):
+        plugins = disco.PluginsRegistry.find_all()
+        webroot_args = ['--webroot', '-w', '/var/www/example',
+            '-d', 'example.com,www.example.com', '-w', '/var/www/superfluous',
+            '-d', 'superfluo.us', '-d', 'www.superfluo.us']
+        namespace = cli.prepare_and_parse_args(plugins, webroot_args)
+        self.assertEqual(namespace.webroot_map, {
+            'example.com': '/var/www/example',
+            'www.example.com': '/var/www/example',
+            'www.superfluo.us': '/var/www/superfluous',
+            'superfluo.us': '/var/www/superfluous'})
+
+        webroot_args = ['-d', 'stray.example.com'] + webroot_args
+        self.assertRaises(errors.Error, cli.prepare_and_parse_args, plugins, webroot_args)
+
+        webroot_map_args = ['--webroot-map', '{"eg.com" : "/tmp"}']
+        namespace = cli.prepare_and_parse_args(plugins, webroot_map_args)
+        self.assertEqual(namespace.webroot_map, {u"eg.com": u"/tmp"})
+
+    @mock.patch('letsencrypt.cli._suggest_donate')
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
-    def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter):
+    def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter, _suggest):
         cert_path = '/etc/letsencrypt/live/foo.bar'
         date = '1970-01-01'
         mock_notAfter().date.return_value = date
@@ -370,10 +394,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 mock_init.return_value = mock_client
                 self._call(['-d', 'foo.bar', '-a', 'standalone', 'certonly'])
 
+    @mock.patch('letsencrypt.cli._suggest_donate')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._treat_as_renewal')
     @mock.patch('letsencrypt.cli._init_le_client')
-    def test_certonly_renewal(self, mock_init, mock_renewal, mock_get_utility):
+    def test_certonly_renewal(self, mock_init, mock_renewal, mock_get_utility, _suggest):
         cert_path = '/etc/letsencrypt/live/foo.bar/cert.pem'
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
 
@@ -395,13 +420,14 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue(
             chain_path in mock_get_utility().add_message.call_args[0][0])
 
+    @mock.patch('letsencrypt.cli._suggest_donate')
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.display_ops.pick_installer')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._init_le_client')
     @mock.patch('letsencrypt.cli.record_chosen_plugins')
     def test_certonly_csr(self, _rec, mock_init, mock_get_utility,
-                          mock_pick_installer, mock_notAfter):
+                          mock_pick_installer, mock_notAfter, _suggest):
         cert_path = '/etc/letsencrypt/live/blahcert.pem'
         date = '1970-01-01'
         mock_notAfter().date.return_value = date
@@ -450,9 +476,14 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     @mock.patch('letsencrypt.cli.sys')
     def test_handle_exception(self, mock_sys):
         # pylint: disable=protected-access
+        from acme import messages
+
+        args = mock.MagicMock()
         mock_open = mock.mock_open()
+
         with mock.patch('letsencrypt.cli.open', mock_open, create=True):
             exception = Exception('detail')
+            args.verbose_count = 1
             cli._handle_exception(
                 Exception, exc_value=exception, trace=None, args=None)
             mock_open().write.assert_called_once_with(''.join(
@@ -469,11 +500,23 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mock_sys.exit.assert_any_call(''.join(
                 traceback.format_exception_only(errors.Error, error)))
 
-        args = mock.MagicMock(debug=False)
+        exception = messages.Error(detail='alpha', typ='urn:acme:error:triffid',
+                                   title='beta')
+        args = mock.MagicMock(debug=False, verbose_count=-3)
         cli._handle_exception(
-            Exception, exc_value=Exception('detail'), trace=None, args=args)
+            messages.Error, exc_value=exception, trace=None, args=args)
         error_msg = mock_sys.exit.call_args_list[-1][0][0]
         self.assertTrue('unexpected error' in error_msg)
+        self.assertTrue('acme:error' not in error_msg)
+        self.assertTrue('alpha' in error_msg)
+        self.assertTrue('beta' in error_msg)
+        args = mock.MagicMock(debug=False, verbose_count=1)
+        cli._handle_exception(
+            messages.Error, exc_value=exception, trace=None, args=args)
+        error_msg = mock_sys.exit.call_args_list[-1][0][0]
+        self.assertTrue('unexpected error' in error_msg)
+        self.assertTrue('acme:error' in error_msg)
+        self.assertTrue('alpha' in error_msg)
 
         interrupt = KeyboardInterrupt('detail')
         cli._handle_exception(

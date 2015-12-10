@@ -1,3 +1,4 @@
+# coding=utf-8
 """Test letsencrypt.display.ops."""
 import os
 import sys
@@ -384,6 +385,17 @@ class ChooseNamesTest(unittest.TestCase):
             display_util.CANCEL, ["example.com"])
 
         self.assertEqual(self._call(self.mock_install), [])
+
+    def test_get_valid_domains(self):
+        from letsencrypt.display.ops import get_valid_domains
+        all_valid = ["example.com", "second.example.com",
+                     "also.example.com"]
+        all_invalid = ["xn--ls8h.tld", "*.wildcard.com", "notFQDN",
+                       "uniçodé.com"]
+        two_valid = ["example.com", "xn--ls8h.tld", "also.example.com"]
+        self.assertEqual(get_valid_domains(all_valid), all_valid)
+        self.assertEqual(get_valid_domains(all_invalid), [])
+        self.assertEqual(len(get_valid_domains(two_valid)), 2)
 
 
 class SuccessInstallationTest(unittest.TestCase):
