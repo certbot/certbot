@@ -28,6 +28,9 @@ then:
 >python multitester.py targets.yaml MyKeyPair.pem HappyHacker scripts/test_letsencrypt_auto_venv_only.sh
 ```
 
+example scripts are in the 'scripts' directory, these are just bash scripts that have a few parameters passed
+to them at runtime via environment variables.  test_apache2.sh is a useful reference.
+
 see:
 - https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html
 - https://docs.aws.amazon.com/cli/latest/userguide/cli-ec2-keypairs.html
