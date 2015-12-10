@@ -59,7 +59,8 @@ class ApacheParser(object):
         # Must also attempt to parse sites-available or equivalent
         # Sites-available is not included naturally in configuration
         self._parse_file(os.path.join(self.root, "sites-available") + "/*")
-        #TODO check to see if there were unparsed define statements
+
+        #check to see if there were unparsed define statements
         if self.unparsable:
             if self.find_dir("Define", exclude=False):
                 raise errors.PluginError("Error parsing runtime variables")
