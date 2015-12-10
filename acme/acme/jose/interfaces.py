@@ -194,7 +194,7 @@ class JSONDeSerializable(object):
         :rtype: str
 
         """
-        return self.json_dumps(sort_keys=True, indent=4)
+        return self.json_dumps(sort_keys=True, indent=4, separators=(',', ': '))
 
     @classmethod
     def json_dump_default(cls, python_object):
