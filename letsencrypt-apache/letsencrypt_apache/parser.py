@@ -107,7 +107,6 @@ class ApacheParser(object):
         except ValueError:
             self.unparsable = True
             return
-            #raise errors.PluginError("Unable to parse runtime variables")
 
         for match in matches:
             if match.count("=") > 1:

@@ -150,9 +150,9 @@ class BasicParserTest(util.ParserTest):
 
     @mock.patch("letsencrypt_apache.parser.ApacheParser._get_runtime_cfg")
     def test_update_runtime_vars_bad_output(self, mock_cfg):
-        mock_cfg.return_value = "Define: TLS=443=24"
-        self.assertRaises(
-            errors.PluginError, self.parser.update_runtime_variables, "ctl")
+        #mock_cfg.return_value = "Define: TLS=443=24"
+        #self.assertRaises(
+        #    errors.PluginError, self.parser.update_runtime_variables, "ctl")
 
         mock_cfg.return_value = "Define: DUMP_RUN_CFG\nDefine: TLS=443=24"
         self.assertRaises(
