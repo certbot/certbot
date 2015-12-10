@@ -471,7 +471,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 is_ssl = True
 
         filename = get_file_path(path)
-        is_enabled = self.is_site_enabled(filename)
+        if self.conf("handle-sites"):
+            is_enabled = self.is_site_enabled(filename)
+        else:
+            is_enabled = True
 
         macro = False
         if "/macro/" in path.lower():
