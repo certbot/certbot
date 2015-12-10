@@ -227,6 +227,12 @@ def _treat_as_renewal(config, domains):
     #       or     ("newcert", None)
     #       We could also return ("cancel", None) instead of raising the
     #       error, but the error-handling mechanism seems to work OK.
+    #       Note that the "newcert" option is not suggested in the UI menu
+    #       when the requested cert has precisely the same names as an
+    #       existing cert (it's considered an "advanced" option in this
+    #       situation, so it would have to be selected with a command-line
+    #       flag).
+    #
     # TODO: Also address superset case
     renewal = False
 
@@ -250,20 +256,17 @@ def _treat_as_renewal(config, domains):
             question = (
                 "You have an existing certificate that contains exactly the "
                 "same domains you requested (ref: {0}){br}{br}Note that the "
-                "Let's Encrypt certificate authority limits the number of "
-                "certificates that can be issued for the same domain name per "
-                "week, including renewal certificates!{br}{br}Do you want to "
-                "reinstall this existing certificate, renew and replace this "
-                "certificate with a newly-issued one, or get a completely new "
-                "certificate?"
+                "Let's Encrypt CA limits how many certificates can be issued "
+                "for the same domain name per week, including renewal "
+                "certificates!{br}{br}What would you like to do?"
             ).format(ident_names_cert.configfile.filename, br=os.linesep)
             response = zope.component.getUtility(interfaces.IDisplay).menu(
                 question, ["Attempt to reinstall this existing certificate",
                            "Renew this certificate, replacing it with the updated one",
-                           "Obtain a completely new certificate for these domains",
+#                           "Obtain a completely new certificate for these domains",
                            "Cancel this operation and do nothing"],
                 "OK", "Cancel")
-            if response[0] == "cancel" or response[1] == 3:
+            if response[0] == "cancel" or response[1] == 2:
                 # TODO: Add notification related to command-line options for
                 #       skipping the menu for this case.
                 raise errors.Error(
@@ -275,9 +278,9 @@ def _treat_as_renewal(config, domains):
             elif response[1] == 1:
                 # Renew
                 return "renew", ident_names_cert
-            elif response[1] == 2:
-                # New cert
-                return "newcert", None
+#            elif response[1] == 2:
+#                # New cert
+#                return "newcert", None
             else:
                 assert 0
                 # NOTREACHED
