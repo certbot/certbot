@@ -93,7 +93,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         add("enmod", default=constants.CLI_DEFAULTS["enmod"],
             help="Path to the Apache 'a2enmod' binary.")
         add("dismod", default=constants.CLI_DEFAULTS["dismod"],
-            help="Path to the Apache 'a2enmod' binary.")
+            help="Path to the Apache 'a2dismod' binary.")
         add("le-vhost-ext", default=constants.CLI_DEFAULTS["le_vhost_ext"],
             help="SSL vhost configuration extension.")
         add("server-root", default=constants.CLI_DEFAULTS["server_root"],
