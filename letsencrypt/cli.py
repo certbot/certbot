@@ -254,6 +254,8 @@ def _treat_as_renewal(config, domains):
             #       cert (eventually maybe preserving the privkey), while
             #       newcert creates a new lineage. And reinstall doesn't cause
             #       a new issuance at all.
+            if config.renew_by_default:
+                return "renew", ident_names_cert
             question = (
                 "You have an existing certificate that contains exactly the "
                 "same domains you requested (ref: {0}){br}{br}Note that the "
