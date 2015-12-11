@@ -258,14 +258,11 @@ def _treat_as_renewal(config, domains):
                 return "renew", ident_names_cert
             question = (
                 "You have an existing certificate that contains exactly the "
-                "same domains you requested (ref: {0}){br}{br}Note that the "
-                "Let's Encrypt CA limits how many certificates can be issued "
-                "for the same domain name per week, including renewal "
-                "certificates!{br}{br}What would you like to do?"
+                "same domains you requested.{br}(ref: {0}){br}{br}What would you like to do?"
             ).format(ident_names_cert.configfile.filename, br=os.linesep)
             response = zope.component.getUtility(interfaces.IDisplay).menu(
                 question, ["Attempt to reinstall this existing certificate",
-                           "Renew this certificate, replacing it with the updated one",
+                           "Renew & replace the cert (limit 5 per 7 days)",
 #                           "Obtain a completely new certificate for these domains",
                            "Cancel this operation and do nothing"],
                 "OK", "Cancel")
