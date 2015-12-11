@@ -699,11 +699,10 @@ class HelpfulArgumentParser(object):
         # Do any post-parsing homework here
 
         # argparse seemingly isn't flexible enough to give us this behaviour easily...
-        staging_uri = 'https://acme-staging.api.letsencrypt.org/directory'
         if parsed_args.staging:
-            if parsed_args.server not in (flag_default("server"), staging_uri):
+            if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
                 raise errors.Error("--server value conflicts with --staging")
-            parsed_args.server = staging_uri
+            parsed_args.server = constants.STAGING_URI
 
         return parsed_args
 
@@ -1049,7 +1048,7 @@ def _paths_parser(helpful):
     # overwrites server, handled in HelpfulArgumentParser.parse_args()
     add("testing", "--test-cert", "--staging", action='store_true', dest='staging',
         help='Use the staging server to obtain test (invalid) certs; equivalent'
-             ' to --server https://acme-staging.api.letsencrypt.org/directory ')
+             ' to --server ' + constants.STAGING_URI)
 
 
 def _plugins_parsing(helpful, plugins):

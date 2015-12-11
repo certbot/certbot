@@ -15,6 +15,7 @@ from acme import jose
 from letsencrypt import account
 from letsencrypt import cli
 from letsencrypt import configuration
+from letsencrypt import constants
 from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import le_util
@@ -351,8 +352,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
         short_args = ['--staging']
         namespace = cli.prepare_and_parse_args(plugins, short_args)
-        self.assertEqual(namespace.server,
-            'https://acme-staging.api.letsencrypt.org/directory')
+        self.assertEqual(namespace.server, constants.STAGING_URI)
 
         short_args = ['--staging', '--server', 'example.com']
         self.assertRaises(errors.Error, cli.prepare_and_parse_args, plugins, short_args)
