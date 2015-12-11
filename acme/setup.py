@@ -16,7 +16,7 @@ install_requires = [
     # Connection.set_tlsext_host_name (>=0.13)
     # X509Req (>=0.14)
     # X509Req.get_extensions (>=0.15) but protected by fallback
-    'PyOpenSSL>=0.14',
+    'PyOpenSSL==0.14',
     'pyrfc3339',
     'pytz',
     'requests',
