@@ -932,21 +932,21 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "RewriteRule", None, start=vhost.path)
         
         # There can be other RewriteRule directive lines in vhost config.
-        # dir_dict keys are directive ids and the corresponding value for each
-        # is a list of arguments to that directive.
-        dir_dict = defaultdict(list)
+        # rewrite_args_dict keys are directive ids and the corresponding value
+        # for each is a list of arguments to that directive.
+        rewrite_args_dict = defaultdict(list)
         pat = r'.*(directive\[\d+\]).*'
         for match in rewrite_path:
             m = re.match(pat, match)
             if m:
                 dir_id = m.group(1)
-                dir_dict[dir_id].append(match)
+                rewrite_args_dict[dir_id].append(match)
 
-        if dir_dict:
+        if rewrite_args_dict:
             redirect_args = [constants.REWRITE_HTTPS_ARGS,
                 constants.REWRITE_HTTPS_ARGS_WITH_END]
 
-            for matches in dir_dict.values():
+            for matches in rewrite_args_dict.values():
                 if [self.aug.get(x) for x in matches] in redirect_args:
                     raise errors.PluginEnhancementAlreadyPresent(
                     "Let's Encrypt has already enabled redirection")
