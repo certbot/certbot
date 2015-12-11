@@ -262,7 +262,7 @@ def _treat_as_renewal(config, domains):
             ).format(ident_names_cert.configfile.filename, br=os.linesep)
             response = zope.component.getUtility(interfaces.IDisplay).menu(
                 question, ["Attempt to reinstall this existing certificate",
-                           "Renew & replace the cert (limit 5 per 7 days)",
+                           "Renew & replace the cert (limit ~5 per 7 days)",
 #                           "Obtain a completely new certificate for these domains",
                            "Cancel this operation and do nothing"],
                 "OK", "Cancel")
