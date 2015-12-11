@@ -1119,6 +1119,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
 
         enabled_dir = os.path.join(self.parser.root, "sites-enabled")
+        if not os.path.isdir(enabled_dir):
+            error_msg = ("Directory '{0}' does not exist. Please ensure "
+                         "that the values for --apache-handle-sites and "
+                         "--apache-server-root are correct for your "
+                         "environment.".format(enabled_dir))
+            raise errors.ConfigurationError(error_msg)
         for entry in os.listdir(enabled_dir):
             try:
                 if filecmp.cmp(avail_fp, os.path.join(enabled_dir, entry)):
