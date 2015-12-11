@@ -887,7 +887,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
 
             # Note: if code flow gets here it means we didn't find the exact
-            # letsencrypt RewriteRule config for redirection. Finding 
+            # letsencrypt RewriteRule config for redirection. Finding
             # another RewriteRule is likely to be fine in most or all cases,
             # but redirect loops are possible in very obscure cases; see #1620
             # for reasoning.
@@ -930,7 +930,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         rewrite_path = self.parser.find_dir(
                 "RewriteRule", None, start=vhost.path)
-        
+
         # There can be other RewriteRule directive lines in vhost config.
         # rewrite_args_dict keys are directive ids and the corresponding value
         # for each is a list of arguments to that directive.
