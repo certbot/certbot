@@ -25,6 +25,7 @@ from letsencrypt_apache import tls_sni_01
 from letsencrypt_apache import obj
 from letsencrypt_apache import parser
 
+from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -930,16 +931,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         rewrite_path = self.parser.find_dir(
                 "RewriteRule", None, start=vhost.path)
 
-        dir_dict = {}
+        dir_dict = defaultdict(list)
         pat = r'.*(directive\[\d+\]).*'
         for match in rewrite_path:
             m = re.match(pat, match)
             if m:
                 dir_id = m.group(1)
-                if dir_id in dir_dict:
-                    dir_dict[dir_id].append(match)
-                else:
-                    dir_dict[dir_id] = [match]
+                dir_dict[dir_id].append(match)
 
         if dir_dict:
             for dir_id in dir_dict:
