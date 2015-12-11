@@ -15,6 +15,7 @@ from acme import jose
 from letsencrypt import account
 from letsencrypt import cli
 from letsencrypt import configuration
+from letsencrypt import constants
 from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import le_util
@@ -342,6 +343,19 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         long_args = ['--domains', 'example.com,another.net,example.com']
         namespace = cli.prepare_and_parse_args(plugins, long_args)
         self.assertEqual(namespace.domains, ['example.com', 'another.net'])
+
+    def test_parse_server(self):
+        plugins = disco.PluginsRegistry.find_all()
+        short_args = ['--server', 'example.com']
+        namespace = cli.prepare_and_parse_args(plugins, short_args)
+        self.assertEqual(namespace.server, 'example.com')
+
+        short_args = ['--staging']
+        namespace = cli.prepare_and_parse_args(plugins, short_args)
+        self.assertEqual(namespace.server, constants.STAGING_URI)
+
+        short_args = ['--staging', '--server', 'example.com']
+        self.assertRaises(errors.Error, cli.prepare_and_parse_args, plugins, short_args)
 
     def test_parse_webroot(self):
         plugins = disco.PluginsRegistry.find_all()
