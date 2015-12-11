@@ -58,9 +58,6 @@ class ApacheParser(object):
         # Set up rest of locations
         self.loc.update(self._set_locations())
 
-        # Take the CentOS layout into account, httpd.conf not in httpd root
-        self._parse_file(os.path.join(self.root, "conf") + "/httpd.conf")
-
         # Must also attempt to parse virtual host root
         self._parse_file(self.vhostroot + "/*.conf")
 
