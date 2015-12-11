@@ -887,7 +887,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
             # Note: if code flow gets here it means we didn't find the exact
             # letsencrypt RewriteRule config for redirection. So if we find
-            # an other RewriteRule it may induce a loop / config mismatch.
+            # another RewriteRule it may induce a loop / config mismatch.
             if self._is_rewrite_exists(general_vh):
                 logger.warn("Added an HTTP->HTTPS rewrite in addition to "
                             "other RewriteRules; you may wish to check for "
