@@ -930,7 +930,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         rewrite_path = self.parser.find_dir(
                 "RewriteRule", None, start=vhost.path)
-
+        
+        # There can be other RewriteRule directive lines in vhost config.
+        # dir_dict keys are directive ids and the corresponding value for each
+        # is a list of arguments to that directive.
         dir_dict = defaultdict(list)
         pat = r'.*(directive\[\d+\]).*'
         for match in rewrite_path:
@@ -942,6 +945,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if dir_dict:
             redirect_args = [constants.REWRITE_HTTPS_ARGS,
                 constants.REWRITE_HTTPS_ARGS_WITH_END]
+
             for dir_id in dir_dict:
                 if [self.aug.get(x) for x in dir_dict[dir_id]] in redirect_args:
                     raise errors.PluginEnhancementAlreadyPresent(
