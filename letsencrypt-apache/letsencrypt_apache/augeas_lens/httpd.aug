@@ -51,7 +51,7 @@ let sep_osp             = Sep.opt_space
 let sep_eq              = del /[ \t]*=[ \t]*/ "="
 
 let nmtoken             = /[a-zA-Z:_][a-zA-Z0-9:_.-]*/
-let word                = /[a-zA-Z][a-zA-Z0-9._-]*/
+let word                = /[a-z][a-z0-9._-]*/i
 
 let comment             = Util.comment
 let eol                 = Util.doseol
