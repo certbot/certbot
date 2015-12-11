@@ -20,7 +20,7 @@ CheckVersion() {
     fi
 }
 
-version=`grep "__version__" letsencrypt/__init__.py | cut -d\' -f2`
+version=`grep "__version__" letsencrypt/__init__.py | cut -d\' -f2 | sed s/\.dev0//`
 if [ "$1" = "--production" ] ; then
     echo Releasing production version "$version"...
     CheckVersion Version "$version"
