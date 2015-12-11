@@ -12,12 +12,20 @@ if [ "`dirname $0`" != "tools" ] ; then
     exit 1
 fi
 
+CheckVersion() {
+    # Args: <description of version type> <version number>
+    if ! echo "$2" | grep -q -e '[0-9]\+.[0-9]\+.[0-9]\+' ; then
+        echo "$1 doesn't look like 1.2.3"
+        exit 1
+    fi
+}
+
 version=`grep "__version__" letsencrypt/__init__.py | cut -d\' -f2`
 if [ "$1" = "--production" ] ; then
     echo Releasing production version "$version"...
-    if ! echo "$version" | grep -q -e '[0-9]\+.[0-9]\+.[0-9]\+' ; then
-        echo "Version doesn't look like 1.2.3"
-    fi
+    CheckVersion Version "$version"
+    nextversion="$2"
+    CheckVersion "Next version" "$nextversion"
     RELEASE_BRANCH="master"
 else
     version="$version.dev$(date +%Y%m%d)1"
@@ -25,7 +33,7 @@ else
     echo Releasing developer version "$version"...
 fi
 
-RELEASE_GPG_KEY=A2CFB51FA275A7286234E7B24D17C995CD9775F2
+RELEASE_GPG_KEY=${RELEASE_GPG_KEY:-A2CFB51FA275A7286234E7B24D17C995CD9775F2}
 # Needed to fix problems with git signatures and pinentry
 export GPG_TTY=$(tty)
 
@@ -57,7 +65,7 @@ pip install -U wheel  # setup.py bdist_wheel
 # from current env when creating a child env
 pip install -U virtualenv
 
-root="$(mktemp -d -t le.$version.XXX)"
+root="./releases/le.$version.$$"
 echo "Cloning into fresh copy at $root"  # clean repo = no artificats
 git clone . $root
 git rev-parse HEAD
@@ -67,13 +75,16 @@ if [ "$RELEASE_BRANCH" != master ] ; then
 fi
 git checkout "$RELEASE_BRANCH"
 
-for pkg_dir in $SUBPKGS
-do
-  sed -i $x "s/^version.*/version = '$version'/" $pkg_dir/setup.py
-done
-sed -i "s/^__version.*/__version__ = '$version'/" letsencrypt/__init__.py
+SetVersion() {
+    for pkg_dir in $SUBPKGS
+    do
+      sed -i $x "s/^version.*/version = '$version'/" $pkg_dir/setup.py
+    done
+    sed -i "s/^__version.*/__version__ = '$version'/" letsencrypt/__init__.py
 
-git add -p $SUBPKGS # interactive user input
+    git add -p $SUBPKGS # interactive user input
+}
+SetVersion
 git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"
 git tag --local-user "$RELEASE_GPG_KEY" \
     --sign --message "Release $version" "$tag"
@@ -134,5 +145,7 @@ echo "KGS is at $root/kgs"
 echo "In order to upload packages run the following command:"
 echo twine upload "$root/dist.$version/*/*"
 
-echo "Edit and commit letsencrypt/__init__.py to contain the next anticipated"
-echo "release version"
+export version="$nextversion"
+SetVersion
+git diff
+git commit -m "Bump version to $version"
