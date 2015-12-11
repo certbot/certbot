@@ -20,14 +20,15 @@ CheckVersion() {
     fi
 }
 
-version=`grep "__version__" letsencrypt/__init__.py | cut -d\' -f2 | sed s/\.dev0//`
 if [ "$1" = "--production" ] ; then
-    echo Releasing production version "$version"...
+    version="$2"
     CheckVersion Version "$version"
-    nextversion="$2"
+    echo Releasing production version "$version"...
+    nextversion="$3"
     CheckVersion "Next version" "$nextversion"
     RELEASE_BRANCH="master"
 else
+    version=`grep "__version__" letsencrypt/__init__.py | cut -d\' -f2 | sed s/\.dev0//`
     version="$version.dev$(date +%Y%m%d)1"
     RELEASE_BRANCH="dev-release"
     echo Releasing developer version "$version"...
