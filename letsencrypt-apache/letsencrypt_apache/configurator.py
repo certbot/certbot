@@ -946,8 +946,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             redirect_args = [constants.REWRITE_HTTPS_ARGS,
                 constants.REWRITE_HTTPS_ARGS_WITH_END]
 
-            for dir_id in dir_dict:
-                if [self.aug.get(x) for x in dir_dict[dir_id]] in redirect_args:
+            for matches in dir_dict.values():
+                if [self.aug.get(x) for x in matches] in redirect_args:
                     raise errors.PluginEnhancementAlreadyPresent(
                     "Let's Encrypt has already enabled redirection")
 
