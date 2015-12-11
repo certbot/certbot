@@ -22,12 +22,14 @@ class Error(jose.JSONObjectWithFields, errors.Error):
         ('urn:acme:error:' + name, description) for name, description in (
             ('badCSR', 'The CSR is unacceptable (e.g., due to a short key)'),
             ('badNonce', 'The client sent an unacceptable anti-replay nonce'),
-            ('connection', 'The server could not connect to the client for DV'),
+            ('connection', 'The server could not connect to the client to '
+                'verify the domain'),
             ('dnssec', 'The server could not validate a DNSSEC signed domain'),
             ('malformed', 'The request message was malformed'),
             ('rateLimited', 'There were too many requests of a given type'),
             ('serverInternal', 'The server experienced an internal error'),
-            ('tls', 'The server experienced a TLS error during DV'),
+            ('tls', 'The server experienced a TLS error during domain '
+                'verification'),
             ('unauthorized', 'The client lacks sufficient authorization'),
             ('unknownHost', 'The server could not resolve a domain name'),
         )

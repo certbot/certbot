@@ -306,7 +306,7 @@ def _report_new_cert(cert_path, fullchain_path):
 def _suggest_donate():
     "Suggest a donation to support Let's Encrypt"
     reporter_util = zope.component.getUtility(interfaces.IReporter)
-    msg = ("If like Let's Encrypt, please consider supporting our work by:\n\n"
+    msg = ("If you like Let's Encrypt, please consider supporting our work by:\n\n"
            "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
            "Donating to EFF:                    https://eff.org/donate-le\n\n")
     reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
@@ -855,7 +855,7 @@ def prepare_and_parse_args(plugins, args):
              "email address. This is strongly discouraged, because in the "
              "event of key loss or account compromise you will irrevocably "
              "lose access to your account. You will also be unable to receive "
-             "notice about impending expiration of revocation of your "
+             "notice about impending expiration or revocation of your "
              "certificates. Updates to the Subscriber Agreement will still "
              "affect you, and will be effective 14 days after posting an "
              "update to the web site.")

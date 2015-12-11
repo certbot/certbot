@@ -1,13 +1,13 @@
 """Let's Encrypt user-supplied configuration."""
 import os
 import urlparse
-import re
 
 import zope.interface
 
 from letsencrypt import constants
 from letsencrypt import errors
 from letsencrypt import interfaces
+from letsencrypt import le_util
 
 
 class NamespaceConfig(object):
@@ -123,31 +123,5 @@ def check_config_sanity(config):
 
     # Domain checks
     if config.namespace.domains is not None:
-        _check_config_domain_sanity(config.namespace.domains)
-
-
-def _check_config_domain_sanity(domains):
-    """Helper method for check_config_sanity which validates
-    domain flag values and errors out if the requirements are not met.
-
-    :param domains: List of domains
-    :type domains: `list` of `string`
-    :raises ConfigurationError: for invalid domains and cases where Let's
-                                Encrypt currently will not issue certificates
-
-    """
-    # Check if there's a wildcard domain
-    if any(d.startswith("*.") for d in domains):
-        raise errors.ConfigurationError(
-            "Wildcard domains are not supported")
-    # Punycode
-    if any("xn--" in d for d in domains):
-        raise errors.ConfigurationError(
-            "Punycode domains are not supported")
-    # FQDN checks from
-    # http://www.mkyong.com/regular-expressions/domain-name-regular-expression-example/
-    #  Characters used, domain parts < 63 chars, tld > 1 < 64 chars
-    #  first and last char is not "-"
-    fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,63}$")
-    if any(True for d in domains if not fqdn.match(d)):
-        raise errors.ConfigurationError("Requested domain is not a FQDN")
+        for domain in config.namespace.domains:
+            le_util.check_domain_sanity(domain)
