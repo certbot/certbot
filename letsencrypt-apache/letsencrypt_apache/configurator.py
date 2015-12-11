@@ -972,10 +972,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
 
         """
-        rewrite_engine_path = self.parser.find_dir("RewriteEngine", None,
+        rewrite_engine_path = self.parser.find_dir("RewriteEngine", "on",
                 start=vhost.path)
         if rewrite_engine_path:
-            return self.aug.get(rewrite_engine_path[0]).lower() == "on"
+            return self.parser.get_arg(rewrite_engine_path[0])
         return False
 
     def _create_redirect_vhost(self, ssl_vhost):
