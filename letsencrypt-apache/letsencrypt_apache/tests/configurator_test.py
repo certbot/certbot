@@ -221,8 +221,9 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[3].filep))
         with mock.patch("os.path.isdir") as mock_isdir:
             mock_isdir.return_value = False
-            with (self.assertRaises(errors.ConfigurationError)):
-                self.config.is_site_enabled("irrelevant")
+            self.assertRaises(errors.ConfigurationError,
+                              self.config.is_site_enabled,
+                              "irrelevant")
 
     @mock.patch("letsencrypt.le_util.run_script")
     @mock.patch("letsencrypt.le_util.exe_exists")
