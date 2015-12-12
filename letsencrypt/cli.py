@@ -251,24 +251,33 @@ def _handle_identical_cert_request(config, cert):
     :returns: Tuple of (string, cert_or_None) as per _treat_as_renewal
 
     """
-    if config.renew_by_default or cert.should_autorenew(interactive=True):
-        # Set with --renew-by-default, force an identical certificate to
-        # be renewed without further prompting.
+    if config.renew_by_default:
+        logger.info("Auto-renewal forced with --renew-by-default...")
+        return "renew", cert
+    if cert.should_autorenew(interactive=True):
+        logger.info("Cert is due for renewal, auto-renewing...")
         return "renew", cert
     if config.reinstall:
         # Set with --reinstall, force an identical certificate to be
         # reinstalled without further prompting.
         return "reinstall", cert
-    display = zope.component.getUtility(interfaces.IDisplay)
+
     question = (
         "You have an existing certificate that contains exactly the same "
-        "domains you requested.{br}(ref: {0}){br}{br}What would you like to do?"
+        "domains you requested and isn't close to expiry."
+        "{br}(ref: {0}){br}{br}What would you like to do?"
     ).format(cert.configfile.filename, br=os.linesep)
-    response = display.menu(
-        question, ["Attempt to reinstall this existing certificate",
-                   "Renew & replace the cert (limit ~5 per 7 days)",
-                   "Cancel this operation and do nothing"],
-        "OK", "Cancel")
+
+    if config.verb == "run":
+        keep_opt = "Attempt to reinstall this existing certificate"
+    elif config.verb == "certonly":
+        keep_opt = "Keep the existing certificate for now"
+    choices = [keep_opt,
+               "Renew & replace the cert (limit ~5 per 7 days)",
+               "Cancel this operation and do nothing"]
+
+    display = zope.component.getUtility(interfaces.IDisplay)
+    response = display.menu(question, choices, "OK", "Cancel")
     if response[0] == "cancel" or response[1] == 2:
         # TODO: Add notification related to command-line options for
         #       skipping the menu for this case.
@@ -301,7 +310,7 @@ def _handle_subset_cert_request(config, domains, cert):
              existing,
              ", ".join(domains),
              br=os.linesep)
-    if config.renew_by_default or zope.component.getUtility(
+    if config.expand or config.renew_by_default or zope.component.getUtility(
             interfaces.IDisplay).yesno(question, "Replace", "Cancel"):
         return "renew", cert
     else:
@@ -772,6 +781,7 @@ class HelpfulArgumentParser(object):
         """
         parsed_args = self.parser.parse_args(self.args)
         parsed_args.func = self.VERBS[self.verb]
+        parsed_args.verb = self.verb
 
         # Do any post-parsing homework here
 
@@ -955,12 +965,11 @@ def prepare_and_parse_args(plugins, args):
                 "multiple -d flags or enter a comma separated list of domains "
                 "as a parameter.")
     helpful.add(
-        None, "--duplicate", dest="duplicate", action="store_true",
-        help="Allow getting a certificate that duplicates an existing one")
-    helpful.add(
-        None, "--reinstall", dest="reinstall", action="store_true",
-        help="Try to reinstall an existing certificate without prompting")
-
+        None, "--keep-until-expiring", "--keep", "--reinstall",
+        dest="reinstall", action="store_true",
+        help="If the requested cert matches an existing cert, keep the "
+             "existing one by default until it is due for renewal (for the "
+             "'run' subcommand this means reinstall the existing cert)")
     helpful.add_group(
         "automation",
         description="Arguments for automating execution & other tweaks")
@@ -969,15 +978,24 @@ def prepare_and_parse_args(plugins, args):
         version="%(prog)s {0}".format(letsencrypt.__version__),
         help="show program's version number and exit")
     helpful.add(
+        "automation", "--expand", "--expand-existing-certs", "--replace", action="store_true",
+        help="If an existing cert covers some subset of the requested names, "
+             "expand and replace it with the additional names.")
+    helpful.add(
         "automation", "--renew-by-default", action="store_true",
         help="Select renewal by default when domains are a superset of a "
-             "previously attained cert")
+             "previously attained cert (often --keep-until-expiring is "
+             "more appropriate). Implies --expand.")
     helpful.add(
         "automation", "--agree-tos", dest="tos", action="store_true",
         help="Agree to the Let's Encrypt Subscriber Agreement")
     helpful.add(
         "automation", "--account", metavar="ACCOUNT_ID",
         help="Account ID to use")
+    helpful.add(
+        "automation", "--duplicate", dest="duplicate", action="store_true",
+        help="Allow making a certificate lineage that duplicates an existing one "
+             "(mostly useful for multiple webservers with distinct keys)")
 
     helpful.add_group(
         "testing", description="The following flags are meant for "
