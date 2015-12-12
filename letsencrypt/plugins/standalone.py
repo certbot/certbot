@@ -166,7 +166,7 @@ class Authenticator(common.Plugin):
     @classmethod
     def add_parser_arguments(cls, add):
         add("supported-challenges",
-            help="Supported challenges. Prefers tls-sni-01.",
+            help="Supported challenges. Preferred in the order they are listed.",
             type=supported_challenges_validator,
             default=",".join(chall.typ for chall in SUPPORTED_CHALLENGES))
 
