@@ -98,12 +98,12 @@ class AuthenticatorTest(unittest.TestCase):
 
     def test_supported_challenges(self):
         self.assertEqual(self.auth.supported_challenges,
-                         set([challenges.TLSSNI01, challenges.HTTP01]))
+                         [challenges.TLSSNI01, challenges.HTTP01])
 
     def test_supported_challenges_configured(self):
         self.config.standalone_supported_challenges = "tls-sni-01"
         self.assertEqual(self.auth.supported_challenges,
-                         set([challenges.TLSSNI01]))
+                         [challenges.TLSSNI01])
 
     def test_more_info(self):
         self.assertTrue(isinstance(self.auth.more_info(), six.string_types))
