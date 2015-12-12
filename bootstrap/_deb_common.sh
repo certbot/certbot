@@ -44,6 +44,11 @@ apt-get install -y --no-install-recommends \
   libffi-dev \
   ca-certificates \
 
+if [[ $? > 0 ]] ; then
+  echo apt-get failed, exiting
+  exit 1
+fi
+
 if ! command -v virtualenv > /dev/null ; then
   echo Failed to install a working \"virtualenv\" command, exiting
   exit 1
