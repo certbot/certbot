@@ -366,7 +366,6 @@ def _auth_from_domains(le_client, config, domains):
     # (which results in treating the request as a new certificate request).
 
     action, lineage = _treat_as_renewal(config, domains)
-    print action, lineage
     if action == "reinstall":
         # The lineage already exists; allow the caller to try installing
         # it without getting a new certificate at all.
