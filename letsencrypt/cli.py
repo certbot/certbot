@@ -759,6 +759,14 @@ class HelpfulArgumentParser(object):
         parsed_args = self.parser.parse_args(self.args)
         parsed_args.func = self.VERBS[self.verb]
 
+        # Do any post-parsing homework here
+
+        # argparse seemingly isn't flexible enough to give us this behaviour easily...
+        if parsed_args.staging:
+            if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
+                raise errors.Error("--server value conflicts with --staging")
+            parsed_args.server = constants.STAGING_URI
+
         return parsed_args
 
 
@@ -1103,6 +1111,10 @@ def _paths_parser(helpful):
         help="Logs directory.")
     add("paths", "--server", default=flag_default("server"),
         help=config_help("server"))
+    # overwrites server, handled in HelpfulArgumentParser.parse_args()
+    add("testing", "--test-cert", "--staging", action='store_true', dest='staging',
+        help='Use the staging server to obtain test (invalid) certs; equivalent'
+             ' to --server ' + constants.STAGING_URI)
 
 
 def _plugins_parsing(helpful, plugins):

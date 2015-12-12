@@ -98,17 +98,27 @@ class AuthenticatorTest(unittest.TestCase):
 
     def test_supported_challenges(self):
         self.assertEqual(self.auth.supported_challenges,
-                         set([challenges.TLSSNI01, challenges.HTTP01]))
+                         [challenges.TLSSNI01, challenges.HTTP01])
+
+    def test_supported_challenges_configured(self):
+        self.config.standalone_supported_challenges = "tls-sni-01"
+        self.assertEqual(self.auth.supported_challenges,
+                         [challenges.TLSSNI01])
 
     def test_more_info(self):
         self.assertTrue(isinstance(self.auth.more_info(), six.string_types))
 
     def test_get_chall_pref(self):
-        self.assertEqual(set(self.auth.get_chall_pref(domain=None)),
-                         set([challenges.TLSSNI01, challenges.HTTP01]))
+        self.assertEqual(self.auth.get_chall_pref(domain=None),
+                         [challenges.TLSSNI01, challenges.HTTP01])
+
+    def test_get_chall_pref_configured(self):
+        self.config.standalone_supported_challenges = "tls-sni-01"
+        self.assertEqual(self.auth.get_chall_pref(domain=None),
+                         [challenges.TLSSNI01])
 
     @mock.patch("letsencrypt.plugins.standalone.util")
-    def test_perform_alredy_listening(self, mock_util):
+    def test_perform_already_listening(self, mock_util):
         for chall, port in ((challenges.TLSSNI01.typ, 1234),
                             (challenges.HTTP01.typ, 4321)):
             mock_util.already_listening.return_value = True

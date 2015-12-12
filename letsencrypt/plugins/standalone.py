@@ -2,7 +2,6 @@
 import argparse
 import collections
 import logging
-import random
 import socket
 import threading
 
@@ -108,7 +107,7 @@ class ServerManager(object):
                     in six.iteritems(self._instances))
 
 
-SUPPORTED_CHALLENGES = set([challenges.TLSSNI01, challenges.HTTP01])
+SUPPORTED_CHALLENGES = [challenges.TLSSNI01, challenges.HTTP01]
 
 
 def supported_challenges_validator(data):
@@ -166,16 +165,16 @@ class Authenticator(common.Plugin):
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add("supported-challenges", help="Supported challenges, "
-            "order preferences are randomly chosen.",
-            type=supported_challenges_validator, default=",".join(
-                sorted(chall.typ for chall in SUPPORTED_CHALLENGES)))
+        add("supported-challenges",
+            help="Supported challenges. Preferred in the order they are listed.",
+            type=supported_challenges_validator,
+            default=",".join(chall.typ for chall in SUPPORTED_CHALLENGES))
 
     @property
     def supported_challenges(self):
         """Challenges supported by this plugin."""
-        return set(challenges.Challenge.TYPES[name] for name in
-                   self.conf("supported-challenges").split(","))
+        return [challenges.Challenge.TYPES[name] for name in
+                self.conf("supported-challenges").split(",")]
 
     @property
     def _necessary_ports(self):
@@ -198,9 +197,7 @@ class Authenticator(common.Plugin):
 
     def get_chall_pref(self, domain):
         # pylint: disable=unused-argument,missing-docstring
-        chall_pref = list(self.supported_challenges)
-        random.shuffle(chall_pref)  # 50% for each challenge
-        return chall_pref
+        return self.supported_challenges
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
         if any(util.already_listening(port) for port in self._necessary_ports):
