@@ -570,8 +570,6 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
 
 def obtain_cert(args, config, plugins):
     """Authenticate & obtain cert, but do not install it."""
-    # TODO: Is this now dead code? What calls it?
-
     if args.domains and args.csr is not None:
         # TODO: --csr could have a priority, when --domains is
         # supplied, check if CSR matches given domains?
