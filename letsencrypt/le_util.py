@@ -1,6 +1,7 @@
 """Utilities for all Let's Encrypt."""
 import argparse
 import collections
+import configargparse
 import errno
 import logging
 import os
@@ -278,8 +279,10 @@ def add_deprecated_argument(add_argument, argument_name, nargs):
             sys.stderr.write(
                 "Use of {0} is deprecated.\n".format(option_string))
 
+    configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE.add(ShowWarning)
     add_argument(argument_name, action=ShowWarning,
                  help=argparse.SUPPRESS, nargs=nargs)
+
 
 def check_domain_sanity(domain):
     """Method which validates domain value and errors out if
