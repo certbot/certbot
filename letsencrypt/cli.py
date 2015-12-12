@@ -995,7 +995,7 @@ def prepare_and_parse_args(plugins, args):
     helpful.add(
         "automation", "--duplicate", dest="duplicate", action="store_true",
         help="Allow making a certificate lineage that duplicates an existing one "
-             "(mostly useful for multiple webservers with distinct keys)")
+             "(both can be renewed in parallel)")
 
     helpful.add_group(
         "testing", description="The following flags are meant for "
