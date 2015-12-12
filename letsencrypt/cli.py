@@ -273,8 +273,8 @@ def _handle_identical_cert_request(config, cert):
         # TODO: Add notification related to command-line options for
         #       skipping the menu for this case.
         raise errors.Error(
-            "User did not use proper CLI and would like "
-            "to reinvoke the client.")
+            "User chose to cancel the operation and may "
+            "reinvoke the client.")
     elif response[1] == 0:
         return "reinstall", cert
     elif response[1] == 1:
@@ -317,8 +317,8 @@ def _handle_subset_cert_request(config, domains, cert):
             ),
             reporter_util.HIGH_PRIORITY)
         raise errors.Error(
-            "User did not use proper CLI and would like "
-            "to reinvoke the client.")
+            "User chose to cancel the operation and may "
+            "reinvoke the client.")
 
 
 def _report_new_cert(cert_path, fullchain_path):
