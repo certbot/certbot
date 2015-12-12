@@ -240,30 +240,28 @@ def _treat_as_renewal(config, domains):
     # related to an existing certificate.  (config.duplicate, which
     # is set with --duplicate, skips all of this logic and forces any
     # kind of certificate to be obtained with renewal = False.)
-    if not config.duplicate:
-        ident_names_cert, subset_names_cert = _find_duplicative_certs(
-            config, domains)
-        # I am not sure whether that correctly reads the systemwide
-        # configuration file.
-        question = None
-        if ident_names_cert is not None:
-            return _handle_identical_cert_request(ident_names_cert)
-        elif subset_names_cert is not None:
-            question = (
-                "You have an existing certificate that contains a portion of "
-                "the domains you requested (ref: {0}){br}{br}It contains these "
-                "names: {1}{br}{br}You requested these names for the new "
-                "certificate: {2}.{br}{br}Do you want to replace this existing "
-                "certificate with the new certificate?"
-            ).format(subset_names_cert.configfile.filename,
-                     ", ".join(subset_names_cert.names()),
-                     ", ".join(domains),
-                     br=os.linesep)
-        if question is None:
-            # We aren't in a duplicative-names situation at all, so we don't
-            # have to tell or ask the user anything about this.
-            pass
-        elif config.renew_by_default or zope.component.getUtility(
+    if config.duplicate:
+        return "newcert", None
+    ident_names_cert, subset_names_cert = _find_duplicative_certs(config, domains)
+    # I am not sure whether that correctly reads the systemwide
+    # configuration file.
+    if not (ident_names_cert or subset_names_cert):
+        return "newcert", None
+
+    if ident_names_cert is not None:
+        return _handle_identical_cert_request(ident_names_cert)
+    elif subset_names_cert is not None:
+        question = (
+            "You have an existing certificate that contains a portion of "
+            "the domains you requested (ref: {0}){br}{br}It contains these "
+            "names: {1}{br}{br}You requested these names for the new "
+            "certificate: {2}.{br}{br}Do you want to replace this existing "
+            "certificate with the new certificate?"
+        ).format(subset_names_cert.configfile.filename,
+                 ", ".join(subset_names_cert.names()),
+                 ", ".join(domains),
+                 br=os.linesep)
+        if config.renew_by_default or zope.component.getUtility(
                 interfaces.IDisplay).yesno(question, "Replace", "Cancel"):
             return "renew", subset_names_cert
         else:
@@ -281,8 +279,6 @@ def _treat_as_renewal(config, domains):
             raise errors.Error(
                 "User did not use proper CLI and would like "
                 "to reinvoke the client.")
-
-    return "newcert", None
 
 def _handle_identical_cert_request(cert):
     """Figure out what to do if a cert has the same names as a perviously obtained one
