@@ -197,8 +197,7 @@ class Authenticator(common.Plugin):
 
     def get_chall_pref(self, domain):
         # pylint: disable=unused-argument,missing-docstring
-        return [chall for chall in SUPPORTED_CHALLENGES
-                if chall in self.supported_challenges]
+        return self.supported_challenges
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
         if any(util.already_listening(port) for port in self._necessary_ports):
