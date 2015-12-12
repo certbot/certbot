@@ -248,42 +248,7 @@ def _treat_as_renewal(config, domains):
         # configuration file.
         question = None
         if ident_names_cert is not None:
-            # TODO: I bet this question is confusing to people who don't know
-            #       how the backend repreentation of certificates work. The
-            #       distinction is renewal updates existing lineage with new
-            #       cert (eventually maybe preserving the privkey), while
-            #       newcert creates a new lineage. And reinstall doesn't cause
-            #       a new issuance at all.
-            if config.renew_by_default:
-                return "renew", ident_names_cert
-            question = (
-                "You have an existing certificate that contains exactly the "
-                "same domains you requested.{br}(ref: {0}){br}{br}What would you like to do?"
-            ).format(ident_names_cert.configfile.filename, br=os.linesep)
-            response = zope.component.getUtility(interfaces.IDisplay).menu(
-                question, ["Attempt to reinstall this existing certificate",
-                           "Renew & replace the cert (limit ~5 per 7 days)",
-#                           "Obtain a completely new certificate for these domains",
-                           "Cancel this operation and do nothing"],
-                "OK", "Cancel")
-            if response[0] == "cancel" or response[1] == 2:
-                # TODO: Add notification related to command-line options for
-                #       skipping the menu for this case.
-                raise errors.Error(
-                    "User did not use proper CLI and would like "
-                    "to reinvoke the client.")
-            elif response[1] == 0:
-                # Reinstall
-                return "reinstall", ident_names_cert
-            elif response[1] == 1:
-                # Renew
-                return "renew", ident_names_cert
-#            elif response[1] == 2:
-#                # New cert
-#                return "newcert", None
-            else:
-                assert 0
-                # NOTREACHED
+            return _handle_identical_cert_request(ident_names_cert)
         # TODO: Since the rest of the function deals only with the subset
         #       case, we could now simplify it considerably!
         elif subset_names_cert is not None:
@@ -324,6 +289,38 @@ def _treat_as_renewal(config, domains):
             return "renew", ident_names_cert if ident_names_cert is not None else subset_names_cert
 
     return "newcert", None
+
+def _handle_identical_cert_request(cert):
+    """Figure out what to do if a cert has the same names as a perviously obtained one
+
+    :param storage.RenewableCert cert:
+
+    :returns: Tuple of (string, cert_or_None) as per _treat_as_renewal
+    """
+    if config.renew_by_default or cert.should_autorenew(interactive=True):
+        return "renew", cert
+    display = zope.component.getUtility(interfaces.IDisplay)
+    question = (
+        "You have an existing certificate that contains exactly the same "
+        "domains you requested.{br}(ref: {0}){br}{br}What would you like to do?"
+    ).format(cert.configfile.filename, br=os.linesep)
+    response = display.menu(
+        question, ["Attempt to reinstall this existing certificate",
+                   "Renew & replace the cert (limit ~5 per 7 days)",
+                   "Cancel this operation and do nothing"],
+        "OK", "Cancel")
+    if response[0] == "cancel" or response[1] == 2:
+        # TODO: Add notification related to command-line options for
+        #       skipping the menu for this case.
+        raise errors.Error(
+            "User did not use proper CLI and would like "
+            "to reinvoke the client.")
+    elif response[1] == 0:
+        return "reinstall", cert
+    elif response[1] == 1:
+        return "renew", cert
+    else:
+        assert False, "This is impossible"
 
 
 def _report_new_cert(cert_path, fullchain_path):
