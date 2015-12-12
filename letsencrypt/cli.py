@@ -400,7 +400,7 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
         if not config.break_my_certs:
             names = ", ".join(lineage.names())
             raise errors.Error(
-                "You've asked to renew/replace a valid certificiate with "
+                "You've asked to renew/replace a valid certificate with "
                 "a test certificate (domains: {0}). We will not do that "
                 "unless you use the --break-my-certs flag!".format(names))
 
