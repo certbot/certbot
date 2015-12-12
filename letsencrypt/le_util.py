@@ -1,7 +1,6 @@
 """Utilities for all Let's Encrypt."""
 import argparse
 import collections
-import configargparse
 import errno
 import logging
 import os
@@ -10,6 +9,8 @@ import re
 import stat
 import subprocess
 import sys
+
+import configargparse
 
 from letsencrypt import errors
 
