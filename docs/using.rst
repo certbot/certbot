@@ -224,21 +224,23 @@ The following files are available:
 ``cert.pem``
   Server certificate only.
 
-  This is what Apache needs for `SSLCertificateFile
+  This is what Apache < 2.4.8 needs for `SSLCertificateFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_.
 
 ``chain.pem``
   All certificates that need to be served by the browser **excluding**
   server certificate, i.e. root and intermediate certificates only.
 
-  This is what Apache needs for `SSLCertificateChainFile
+  This is what Apache < 2.4.8 needs for `SSLCertificateChainFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatechainfile>`_.
 
 ``fullchain.pem``
   All certificates, **including** server certificate. This is
   concatenation of ``chain.pem`` and ``cert.pem``.
 
-  This is what nginx needs for `ssl_certificate
+  This is what Apache >= 2.4.8 needs for `SSLCertificateFile
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_,
+  and what nginx needs for `ssl_certificate
   <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate>`_.
 
 
