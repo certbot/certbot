@@ -20,7 +20,9 @@ from acme import messages
 
 logger = logging.getLogger(__name__)
 
-# Python does not validate certificates by default before version 2.7.9
+# Prior to Python 2.7.9 the stdlib SSL module did not allow a user to configure
+# many important security related options. On these platforms we use PyOpenSSL
+# for SSL, which does allow these options to be configured.
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
 if sys.version_info < (2, 7, 9):  # pragma: no cover
     requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
