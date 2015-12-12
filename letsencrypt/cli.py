@@ -213,79 +213,38 @@ def _find_duplicative_certs(config, domains):
 def _treat_as_renewal(config, domains):
     """Determine whether there are duplicated names and how to handle them.
 
-    :returns: Two-element tuple containing desired new-certificate
-              behavior as a string token, plus either a RenewableCert
-              instance or None if renewal shouldn't occur.
+    :returns: Two-element tuple containing desired new-certificate behavior as
+              a string token ("reinstall", "renew", or "newcert), plus either a
+              RenewableCert instance or None if renewal shouldn't occur.
 
     :raises .Error: If the user would like to rerun the client again.
 
     """
-    #       This will now instead return 3 different cases plus the .Error
-    #       case (which raises an exception): reinstall, renew, newcert
-    #       The return value will be a tuple of (result, cert), viz.
-    #       either ("reinstall", RenewableCert_instance)
-    #       or     ("renew", RenewableCert_instance)
-    #       or     ("newcert", None)
-    #       We could also return ("cancel", None) instead of raising the
-    #       error, but the error-handling mechanism seems to work OK.
-    #       Note that the "newcert" option is not suggested in the UI menu
-    #       when the requested cert has precisely the same names as an
-    #       existing cert (it's considered an "advanced" option in this
-    #       situation, so it would have to be selected with a command-line
-    #       flag).
-    #
-    # TODO: Also address superset case
-
     # Considering the possibility that the requested certificate is
     # related to an existing certificate.  (config.duplicate, which
     # is set with --duplicate, skips all of this logic and forces any
     # kind of certificate to be obtained with renewal = False.)
     if config.duplicate:
         return "newcert", None
+    # TODO: Also address superset case
     ident_names_cert, subset_names_cert = _find_duplicative_certs(config, domains)
-    # I am not sure whether that correctly reads the systemwide
+    # XXX ^ schoen is not sure whether that correctly reads the systemwide
     # configuration file.
     if not (ident_names_cert or subset_names_cert):
         return "newcert", None
 
     if ident_names_cert is not None:
-        return _handle_identical_cert_request(ident_names_cert)
+        return _handle_identical_cert_request(config, ident_names_cert)
     elif subset_names_cert is not None:
-        question = (
-            "You have an existing certificate that contains a portion of "
-            "the domains you requested (ref: {0}){br}{br}It contains these "
-            "names: {1}{br}{br}You requested these names for the new "
-            "certificate: {2}.{br}{br}Do you want to replace this existing "
-            "certificate with the new certificate?"
-        ).format(subset_names_cert.configfile.filename,
-                 ", ".join(subset_names_cert.names()),
-                 ", ".join(domains),
-                 br=os.linesep)
-        if config.renew_by_default or zope.component.getUtility(
-                interfaces.IDisplay).yesno(question, "Replace", "Cancel"):
-            return "renew", subset_names_cert
-        else:
-            reporter_util = zope.component.getUtility(interfaces.IReporter)
-            reporter_util.add_message(
-                "To obtain a new certificate that {0} an existing certificate "
-                "in its domain-name coverage, you must use the --duplicate "
-                "option.{br}{br}For example:{br}{br}{1} --duplicate {2}".format(
-                    "duplicates" if ident_names_cert is not None else
-                    "overlaps with",
-                    sys.argv[0], " ".join(sys.argv[1:]),
-                    br=os.linesep
-                ),
-                reporter_util.HIGH_PRIORITY)
-            raise errors.Error(
-                "User did not use proper CLI and would like "
-                "to reinvoke the client.")
+        return _handle_subset_cert_request(config, domains, subset_names_cert)
 
-def _handle_identical_cert_request(cert):
+def _handle_identical_cert_request(config, cert):
     """Figure out what to do if a cert has the same names as a perviously obtained one
 
     :param storage.RenewableCert cert:
 
     :returns: Tuple of (string, cert_or_None) as per _treat_as_renewal
+
     """
     if config.renew_by_default or cert.should_autorenew(interactive=True):
         return "renew", cert
@@ -311,6 +270,44 @@ def _handle_identical_cert_request(cert):
         return "renew", cert
     else:
         assert False, "This is impossible"
+
+def _handle_subset_cert_request(config, domains, cert):
+    """Figure out what to do if a previous cert had a subset of the names now requested
+
+    :param storage.RenewableCert cert:
+
+    :returns: Tuple of (string, cert_or_None) as per _treat_as_renewal
+
+    """
+    existing = ", ".join(cert.names())
+    question = (
+        "You have an existing certificate that contains a portion of "
+        "the domains you requested (ref: {0}){br}{br}It contains these "
+        "names: {1}{br}{br}You requested these names for the new "
+        "certificate: {2}.{br}{br}Do you want to replace this existing "
+        "certificate with the new certificate?"
+    ).format(cert.configfile.filename,
+             existing,
+             ", ".join(domains),
+             br=os.linesep)
+    if config.renew_by_default or zope.component.getUtility(
+            interfaces.IDisplay).yesno(question, "Replace", "Cancel"):
+        return "renew", cert
+    else:
+        reporter_util = zope.component.getUtility(interfaces.IReporter)
+        reporter_util.add_message(
+            "To obtain a new certificate that contains these names without "
+            "replacing your existing certificate for {0}, you must use the "
+            "--duplicate option.{br}{br}"
+            "For example:{br}{br}{1} --duplicate {2}".format(
+                existing,
+                sys.argv[0], " ".join(sys.argv[1:]),
+                br=os.linesep
+            ),
+            reporter_util.HIGH_PRIORITY)
+        raise errors.Error(
+            "User did not use proper CLI and would like "
+            "to reinvoke the client.")
 
 
 def _report_new_cert(cert_path, fullchain_path):
