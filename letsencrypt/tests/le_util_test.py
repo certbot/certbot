@@ -291,18 +291,18 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
     def setUp(self):
         self.parser = argparse.ArgumentParser()
 
-    def _call(self, argument_name, nargs):
+    def _call(self, argument_name):
         from letsencrypt.le_util import add_deprecated_argument
 
-        add_deprecated_argument(self.parser.add_argument, argument_name, nargs)
+        add_deprecated_argument(self.parser.add_argument, argument_name)
 
     def test_warning_no_arg(self):
-        self._call("--old-option", 0)
+        self._call("--old-option")
         stderr = self._get_argparse_warnings(["--old-option"])
         self.assertTrue("--old-option is deprecated" in stderr)
 
     def test_warning_with_arg(self):
-        self._call("--old-option", 1)
+        self._call("--old-option")
         stderr = self._get_argparse_warnings(["--old-option", "42"])
         self.assertTrue("--old-option is deprecated" in stderr)
 
@@ -313,7 +313,7 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
         return stderr.getvalue()
 
     def test_help(self):
-        self._call("--old-option", 2)
+        self._call("--old-option")
         stdout = StringIO.StringIO()
         with mock.patch("letsencrypt.le_util.sys.stdout", new=stdout):
             try:

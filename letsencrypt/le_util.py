@@ -259,17 +259,18 @@ def safe_email(email):
         return False
 
 
-def add_deprecated_argument(add_argument, argument_name, nargs):
+def add_deprecated_argument(add_argument, argument_name):
     """Adds a deprecated argument with the name argument_name.
 
     Deprecated arguments are not shown in the help. If they are used on
     the command line, a warning is shown stating that the argument is
     deprecated and no other action is taken.
 
+    The deprecated argument must be optional.
+
     :param callable add_argument: Function that adds arguments to an
         argument parser/group.
     :param str argument_name: Name of deprecated argument.
-    :param nargs: Value for nargs when adding the argument to argparse.
 
     """
     class ShowWarning(argparse.Action):
@@ -279,7 +280,8 @@ def add_deprecated_argument(add_argument, argument_name, nargs):
                 "Use of {0} is deprecated.\n".format(option_string))
 
     add_argument(argument_name, action=ShowWarning,
-                 help=argparse.SUPPRESS, nargs=nargs)
+                 help=argparse.SUPPRESS, nargs="*")
+
 
 def check_domain_sanity(domain):
     """Method which validates domain value and errors out if
