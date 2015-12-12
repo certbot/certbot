@@ -407,7 +407,7 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
                                                   open(lineage.cert).read())
     # all our test certs are from happy hacker fake CA, though maybe one day
     # we should test more methodically
-    now_valid = not ("fake" in repr(latest_cert.get_issuer()).lower())
+    now_valid = not "fake" in repr(latest_cert.get_issuer()).lower()
 
     if _is_staging(config.server):
         if not _is_staging(original_server) or now_valid:
