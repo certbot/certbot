@@ -1,9 +1,10 @@
 """Tests for letsencrypt.plugins.webroot."""
+import errno
 import os
 import shutil
+import stat
 import tempfile
 import unittest
-import stat
 
 import mock
 
@@ -35,7 +36,6 @@ class AuthenticatorTest(unittest.TestCase):
         self.config = mock.MagicMock(webroot_path=self.path,
                                      webroot_map={"thing.com": self.path})
         self.auth = Authenticator(self.config, "webroot")
-        self.auth.prepare()
 
     def tearDown(self):
         shutil.rmtree(self.path)
@@ -70,7 +70,18 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertRaises(errors.PluginError, self.auth.prepare)
         os.chmod(self.path, 0o700)
 
+    @mock.patch("letsencrypt.plugins.webroot.os.chown")
+    def test_failed_chown_eacces(self, mock_chown):
+        mock_chown.side_effect = OSError(errno.EACCES, "msg")
+        self.auth.prepare()  # exception caught and logged
+
+    @mock.patch("letsencrypt.plugins.webroot.os.chown")
+    def test_failed_chown_not_eacces(self, mock_chown):
+        mock_chown.side_effect = OSError()
+        self.assertRaises(errors.PluginError, self.auth.prepare)
+
     def test_prepare_permissions(self):
+        self.auth.prepare()
 
         # Remove exec bit from permission check, so that it
         # matches the file
@@ -93,6 +104,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(os.stat(self.validation_path).st_uid, parent_uid)
 
     def test_perform_cleanup(self):
+        self.auth.prepare()
         responses = self.auth.perform([self.achall])
         self.assertEqual(1, len(responses))
         self.assertTrue(os.path.exists(self.validation_path))
