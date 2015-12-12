@@ -219,8 +219,8 @@ def _treat_as_renewal(config, domains):
     """Determine whether there are duplicated names and how to handle them.
 
     :returns: Two-element tuple containing desired new-certificate behavior as
-              a string token ("reinstall", "renew", or "newcert), plus either a
-              RenewableCert instance or None if renewal shouldn't occur.
+              a string token ("reinstall", "renew", or "newcert"), plus either
+              a RenewableCert instance or None if renewal shouldn't occur.
 
     :raises .Error: If the user would like to rerun the client again.
 
