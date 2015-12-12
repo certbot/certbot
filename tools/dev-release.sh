@@ -162,6 +162,8 @@ echo "KGS is at $root/kgs"
 echo "In order to upload packages run the following command:"
 echo twine upload "$root/dist.$version/*/*"
 
-SetVersion "$nextversion"
-git diff
-git commit -m "Bump version to $nextversion"
+if [ "$RELEASE_BRANCH" = master ] ; then
+    SetVersion "$nextversion"
+    git diff
+    git commit -m "Bump version to $nextversion"
+fi
