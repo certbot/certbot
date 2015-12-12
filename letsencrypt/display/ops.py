@@ -4,6 +4,7 @@ import os
 
 import zope.component
 
+from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt.display import util as display_util
@@ -186,7 +187,8 @@ def choose_names(installer):
         logger.debug("No installer, picking names manually")
         return _choose_names_manually()
 
-    names = list(installer.get_all_names())
+    domains = list(installer.get_all_names())
+    names = get_valid_domains(domains)
 
     if not names:
         manual = util(interfaces.IDisplay).yesno(
@@ -207,6 +209,22 @@ def choose_names(installer):
     else:
         return []
 
+def get_valid_domains(domains):
+    """Helper method for choose_names that implements basic checks
+     on domain names
+
+    :param list domains: Domain names to validate
+    :return: List of valid domains
+    :rtype: list
+    """
+    valid_domains = []
+    for domain in domains:
+        try:
+            le_util.check_domain_sanity(domain)
+            valid_domains.append(domain)
+        except errors.ConfigurationError:
+            continue
+    return valid_domains
 
 def _filter_names(names):
     """Determine which names the user would like to select from a list.
@@ -245,7 +263,7 @@ def success_installation(domains):
 
     """
     util(interfaces.IDisplay).notification(
-        "Congratulations! You have successfully enabled {0}!{1}{1}"
+        "Congratulations! You have successfully enabled {0}{1}{1}"
         "You should test your configuration at:{1}{2}".format(
             _gen_https_names(domains),
             os.linesep,

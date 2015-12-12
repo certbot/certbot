@@ -173,10 +173,11 @@ Renewal
 In order to renew certificates simply call the ``letsencrypt`` (or
 letsencrypt-auto_) again, and use the same values when prompted. You
 can automate it slightly by passing necessary flags on the CLI (see
-`--help all`), or even further using the :ref:`config-file`. If you're
-sure that UI doesn't prompt for any details you can add the command to
-``crontab`` (make it less than every 90 days to avoid problems, say
-every month).
+`--help all`), or even further using the :ref:`config-file`. The 
+``--renew-by-default`` flag may be helpful for automating renewal. If 
+you're sure that UI doesn't prompt for any details you can add the 
+command to ``crontab`` (make it less than every 90 days to avoid 
+problems, say every month).
 
 Please note that the CA will send notification emails to the address
 you provide if you do not renew certificates that are about to expire.
@@ -223,21 +224,23 @@ The following files are available:
 ``cert.pem``
   Server certificate only.
 
-  This is what Apache needs for `SSLCertificateFile
+  This is what Apache < 2.4.8 needs for `SSLCertificateFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_.
 
 ``chain.pem``
   All certificates that need to be served by the browser **excluding**
   server certificate, i.e. root and intermediate certificates only.
 
-  This is what Apache needs for `SSLCertificateChainFile
+  This is what Apache < 2.4.8 needs for `SSLCertificateChainFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatechainfile>`_.
 
 ``fullchain.pem``
   All certificates, **including** server certificate. This is
   concatenation of ``chain.pem`` and ``cert.pem``.
 
-  This is what nginx needs for `ssl_certificate
+  This is what Apache >= 2.4.8 needs for `SSLCertificateFile
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_,
+  and what nginx needs for `ssl_certificate
   <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate>`_.
 
 
@@ -286,7 +289,7 @@ get support on our `forums <https://community.letsencrypt.org>`_.
 If you find a bug in the software, please do report it in our `issue
 tracker
 <https://github.com/letsencrypt/letsencrypt/issues>`_. Remember to
-give us us as much information as possible:
+give us as much information as possible:
 
 - copy and paste exact command line used and the output (though mind
   that the latter might include some personally identifiable

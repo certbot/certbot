@@ -306,7 +306,7 @@ def _report_new_cert(cert_path, fullchain_path):
 def _suggest_donate():
     "Suggest a donation to support Let's Encrypt"
     reporter_util = zope.component.getUtility(interfaces.IReporter)
-    msg = ("If like Let's Encrypt, please consider supporting our work by:\n\n"
+    msg = ("If you like Let's Encrypt, please consider supporting our work by:\n\n"
            "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
            "Donating to EFF:                    https://eff.org/donate-le\n\n")
     reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
@@ -696,6 +696,14 @@ class HelpfulArgumentParser(object):
         parsed_args = self.parser.parse_args(self.args)
         parsed_args.func = self.VERBS[self.verb]
 
+        # Do any post-parsing homework here
+
+        # argparse seemingly isn't flexible enough to give us this behaviour easily...
+        if parsed_args.staging:
+            if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
+                raise errors.Error("--server value conflicts with --staging")
+            parsed_args.server = constants.STAGING_URI
+
         return parsed_args
 
 
@@ -855,7 +863,7 @@ def prepare_and_parse_args(plugins, args):
              "email address. This is strongly discouraged, because in the "
              "event of key loss or account compromise you will irrevocably "
              "lose access to your account. You will also be unable to receive "
-             "notice about impending expiration of revocation of your "
+             "notice about impending expiration or revocation of your "
              "certificates. Updates to the Subscriber Agreement will still "
              "affect you, and will be effective 14 days after posting an "
              "update to the web site.")
@@ -1037,6 +1045,10 @@ def _paths_parser(helpful):
         help="Logs directory.")
     add("paths", "--server", default=flag_default("server"),
         help=config_help("server"))
+    # overwrites server, handled in HelpfulArgumentParser.parse_args()
+    add("testing", "--test-cert", "--staging", action='store_true', dest='staging',
+        help='Use the staging server to obtain test (invalid) certs; equivalent'
+             ' to --server ' + constants.STAGING_URI)
 
 
 def _plugins_parsing(helpful, plugins):
