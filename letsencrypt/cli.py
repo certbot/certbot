@@ -396,13 +396,22 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
     def _is_staging(srv):
         return srv == constants.STAGING_URI or "staging" in srv
 
-    if _is_staging(config.server) and not _is_staging(original_server):
-        if not config.break_my_certs:
-            names = ", ".join(lineage.names())
-            raise errors.Error(
-                "You've asked to renew/replace a valid certificiate with "
-                "a test certificate (domains: {0}). We will not do that "
-                "unless you use the --break-my-certs flag!".format(names))
+    # Some lineages may have begun with --staging, but then had production certs
+    # added to them
+    latest_cert = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
+                                                  open(lineage.cert).read())
+    # all our test certs are from happy hacker fake CA, though maybe one day
+    # we should test more methodically
+    now_valid = not ("fake" in repr(latest_cert.get_issuer()).lower())
+
+    if _is_staging(config.server):
+        if not _is_staging(original_server) or now_valid:
+            if not config.break_my_certs:
+                names = ", ".join(lineage.names())
+                raise errors.Error(
+                    "You've asked to renew/replace a seemingly valid certificiate with "
+                    "a test certificate (domains: {0}). We will not do that "
+                    "unless you use the --break-my-certs flag!".format(names))
 
 def set_configurator(previously, now):
     """
