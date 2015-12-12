@@ -48,7 +48,7 @@ class AuthenticatorTest(unittest.TestCase):
     def test_add_parser_arguments(self):
         add = mock.MagicMock()
         self.auth.add_parser_arguments(add)
-        self.assertEqual(0, add.call_count) # became 0 when we moved the args to cli.py!
+        self.assertEqual(0, add.call_count)  # args moved to cli.py!
 
     def test_prepare_bad_root(self):
         self.config.webroot_path = os.path.join(self.path, "null")
@@ -80,7 +80,7 @@ class AuthenticatorTest(unittest.TestCase):
 
         # Check permissions of the directories
 
-        for dirpath, dirnames, filenames in os.walk(self.path):
+        for dirpath, dirnames, _ in os.walk(self.path):
             for directory in dirnames:
                 full_path = os.path.join(dirpath, directory)
                 dir_permissions = stat.S_IMODE(os.stat(full_path).st_mode)
