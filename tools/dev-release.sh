@@ -1,4 +1,4 @@
-#!/bin/sh -xe
+#!/bin/bash -xe
 # Release dev packages to PyPI
 
 Usage() {
@@ -66,7 +66,9 @@ pip install -U wheel  # setup.py bdist_wheel
 # from current env when creating a child env
 pip install -U virtualenv
 
-root="./releases/le.$version.$$"
+root_without_le="$version.$$"
+root="./releases/le.$root_without_le"
+
 echo "Cloning into fresh copy at $root"  # clean repo = no artificats
 git clone . $root
 git rev-parse HEAD
@@ -77,15 +79,16 @@ fi
 git checkout "$RELEASE_BRANCH"
 
 SetVersion() {
+    ver="$1"
     for pkg_dir in $SUBPKGS
     do
-      sed -i $x "s/^version.*/version = '$version'/" $pkg_dir/setup.py
+      sed -i $x "s/^version.*/version = '$ver'/" $pkg_dir/setup.py
     done
-    sed -i "s/^__version.*/__version__ = '$version'/" letsencrypt/__init__.py
+    sed -i "s/^__version.*/__version__ = '$ver'/" letsencrypt/__init__.py
 
     git add -p $SUBPKGS # interactive user input
 }
-SetVersion
+SetVersion "$version"
 git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"
 git tag --local-user "$RELEASE_GPG_KEY" \
     --sign --message "Release $version" "$tag"
@@ -132,21 +135,33 @@ pip install \
   letsencrypt $SUBPKGS
 # stop local PyPI
 kill $!
+cd ~-
 
 # freeze before installing anything else, so that we know end-user KGS
 # make sure "twine upload" doesn't catch "kgs"
+if [ -d ../kgs ] ; then
+    echo Deleting old kgs...
+    rm -rf ../kgs
+fi
 mkdir ../kgs
 kgs="../kgs/$version"
 pip freeze | tee $kgs
 pip install nose
 nosetests letsencrypt $subpkgs_modules
 
+cd releases
+name=${root_without_le%.*}
+ext="${root_without_le##*.}"
+rev="$(git rev-parse --short HEAD)"
+echo tar cJvf $name.$rev.tar.xz $name.$rev
+echo gpg -U $RELEASE_GPG_KEY --detach-sign --armor $name.$rev.tar.xz
+cd ~-
+
 echo "New root: $root"
 echo "KGS is at $root/kgs"
 echo "In order to upload packages run the following command:"
 echo twine upload "$root/dist.$version/*/*"
 
-export version="$nextversion"
-SetVersion
+SetVersion "$nextversion"
 git diff
-git commit -m "Bump version to $version"
+git commit -m "Bump version to $nextversion"
