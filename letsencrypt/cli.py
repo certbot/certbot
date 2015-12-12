@@ -366,6 +366,8 @@ def _auth_from_domains(le_client, config, domains):
         # it without getting a new certificate at all.
         return lineage
     elif action == "renew":
+        orginal_server = lineage.configuration["renewalparams"]["server"]
+        _avoid_invalidating_lineage(config, lineage, original_server)
         # TODO: schoen wishes to reuse key - discussion
         # https://github.com/letsencrypt/letsencrypt/pull/777/files#r40498574
         new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
@@ -389,6 +391,17 @@ def _auth_from_domains(le_client, config, domains):
 
     return lineage
 
+def _avoid_invalidating_lineage(config, lineage, original_server):
+    "Do not renew a valid cert with one from a staging server!"
+    def is_staging(srv):
+        return (srv == constants.STAGING_URI or "staging" in srv)
+
+    if is_staging(config.server) and not is_staging(original_server):
+        if not config.break_my_certs:
+            raise errors.Error(
+                "You're trying to renew/replace a valid certificiate with "
+                "a test certificate. We will not do that unless you use the "
+                "--break-my-certs flag!")
 
 def set_configurator(previously, now):
     """
@@ -959,7 +972,10 @@ def prepare_and_parse_args(plugins, args):
     helpful.add(
         "testing", "--http-01-port", type=int, dest="http01_port",
         default=flag_default("http01_port"), help=config_help("http01_port"))
-
+    helpful.add(
+        "testing", "--break-my-certs", action="store_true",
+        help="Be willing to replace or renew valid certs with invalid "
+             "(testing/staging) certs")
     helpful.add_group(
         "security", description="Security parameters & server settings")
     helpful.add(
