@@ -65,16 +65,12 @@ to serve all files under specified web root ({0})."""
             old_umask = os.umask(0o022)
 
             try:
-
-                stat_path = os.stat(path)
                 # This is coupled with the "umask" call above because
                 # os.makedirs's "mode" parameter may not always work:
                 # https://stackoverflow.com/questions/5231901/permission-problems-when-creating-a-dir-with-os-makedirs-python
-
                 os.makedirs(self.full_roots[name], 0o0755)
 
                 # Set owner as parent directory if possible
-
                 try:
                     stat_path = os.stat(path)
                     os.chown(self.full_roots[name], stat_path.st_uid,
