@@ -551,6 +551,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(path, os.path.abspath(path))
         self.assertEqual(contents, test_contents)
 
+    def test_agree_dev_preview_config(self):
+        with MockedVerb('run') as mocked_run:
+            self._call(['-c', test_util.vector_path('cli.ini')])
+        self.assertTrue(mocked_run.called)
+
 
 class DetermineAccountTest(unittest.TestCase):
     """Tests for letsencrypt.cli._determine_account."""
