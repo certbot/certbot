@@ -252,7 +252,13 @@ def _handle_identical_cert_request(config, cert):
 
     """
     if config.renew_by_default or cert.should_autorenew(interactive=True):
+        # Set with --renew-by-default, force an identical certificate to
+        # be renewed without further prompting.
         return "renew", cert
+    if config.reinstall:
+        # Set with --reinstall, force an identical certificate to be
+        # reinstalled without further prompting.
+        return "reinstall", cert
     display = zope.component.getUtility(interfaces.IDisplay)
     question = (
         "You have an existing certificate that contains exactly the same "
@@ -267,8 +273,8 @@ def _handle_identical_cert_request(config, cert):
         # TODO: Add notification related to command-line options for
         #       skipping the menu for this case.
         raise errors.Error(
-            "User did not use proper CLI and would like "
-            "to reinvoke the client.")
+            "User chose to cancel the operation and may "
+            "reinvoke the client.")
     elif response[1] == 0:
         return "reinstall", cert
     elif response[1] == 1:
@@ -311,8 +317,8 @@ def _handle_subset_cert_request(config, domains, cert):
             ),
             reporter_util.HIGH_PRIORITY)
         raise errors.Error(
-            "User did not use proper CLI and would like "
-            "to reinvoke the client.")
+            "User chose to cancel the operation and may "
+            "reinvoke the client.")
 
 
 def _report_new_cert(cert_path, fullchain_path):
@@ -409,7 +415,7 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
             if not config.break_my_certs:
                 names = ", ".join(lineage.names())
                 raise errors.Error(
-                    "You've asked to renew/replace a seemingly valid certificiate with "
+                    "You've asked to renew/replace a seemingly valid certificate with "
                     "a test certificate (domains: {0}). We will not do that "
                     "unless you use the --break-my-certs flag!".format(names))
 
@@ -952,6 +958,9 @@ def prepare_and_parse_args(plugins, args):
     helpful.add(
         None, "--duplicate", dest="duplicate", action="store_true",
         help="Allow getting a certificate that duplicates an existing one")
+    helpful.add(
+        None, "--reinstall", dest="reinstall", action="store_true",
+        help="Try to reinstall an existing certificate without prompting")
 
     helpful.add_group(
         "automation",
