@@ -252,7 +252,13 @@ def _handle_identical_cert_request(config, cert):
 
     """
     if config.renew_by_default or cert.should_autorenew(interactive=True):
+        # Set with --renew-by-default, force an identical certificate to
+        # be renewed without further prompting.
         return "renew", cert
+    if config.reinstall:
+        # Set with --reinstall, force an identical certificate to be
+        # reinstalled without further prompting.
+        return "reinstall", cert
     display = zope.component.getUtility(interfaces.IDisplay)
     question = (
         "You have an existing certificate that contains exactly the same "
@@ -943,6 +949,9 @@ def prepare_and_parse_args(plugins, args):
     helpful.add(
         None, "--duplicate", dest="duplicate", action="store_true",
         help="Allow getting a certificate that duplicates an existing one")
+    helpful.add(
+        None, "--reinstall", dest="reinstall", action="store_true",
+        help="Try to reinstall an existing certificate without prompting")
 
     helpful.add_group(
         "automation",
