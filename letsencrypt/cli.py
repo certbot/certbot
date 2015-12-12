@@ -205,7 +205,12 @@ def _find_duplicative_certs(config, domains):
         if candidate_names == set(domains):
             identical_names_cert = candidate_lineage
         elif candidate_names.issubset(set(domains)):
-            subset_names_cert = candidate_lineage
+            # This logic finds and returns the largest subset-names cert
+            # in the case where there are several available.
+            if subset_names_cert is None:
+                subset_names_cert = candidate_lineage
+            elif len(candidate_names) > len(subset_names_cert.names()):
+                subset_names_cert = candidate_lineage
 
     return identical_names_cert, subset_names_cert
 
