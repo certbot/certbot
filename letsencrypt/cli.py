@@ -366,7 +366,7 @@ def _auth_from_domains(le_client, config, domains):
         # it without getting a new certificate at all.
         return lineage
     elif action == "renew":
-        orginal_server = lineage.configuration["renewalparams"]["server"]
+        original_server = lineage.configuration["renewalparams"]["server"]
         _avoid_invalidating_lineage(config, lineage, original_server)
         # TODO: schoen wishes to reuse key - discussion
         # https://github.com/letsencrypt/letsencrypt/pull/777/files#r40498574
@@ -393,15 +393,16 @@ def _auth_from_domains(le_client, config, domains):
 
 def _avoid_invalidating_lineage(config, lineage, original_server):
     "Do not renew a valid cert with one from a staging server!"
-    def is_staging(srv):
-        return (srv == constants.STAGING_URI or "staging" in srv)
+    def _is_staging(srv):
+        return srv == constants.STAGING_URI or "staging" in srv
 
-    if is_staging(config.server) and not is_staging(original_server):
+    if _is_staging(config.server) and not _is_staging(original_server):
         if not config.break_my_certs:
+            names = ", ".join(lineage.names())
             raise errors.Error(
-                "You're trying to renew/replace a valid certificiate with "
-                "a test certificate. We will not do that unless you use the "
-                "--break-my-certs flag!")
+                "You've asked to renew/replace a valid certificiate with "
+                "a test certificate (domains: {0}). We will not do that "
+                "unless you use the --break-my-certs flag!".format(names))
 
 def set_configurator(previously, now):
     """
