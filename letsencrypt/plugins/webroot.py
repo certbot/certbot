@@ -59,8 +59,8 @@ to serve all files under specified web root ({0})."""
             logger.debug("Creating root challenges validation dir at %s",
                          self.full_roots[name])
 
-            # Change the permissiosn to be writable (GH #1389)
-            # Umask is used instead of  chmod to ensure the client can also
+            # Change the permissions to be writable (GH #1389)
+            # Umask is used instead of chmod to ensure the client can also
             # run as non-root (GH #1795)
             old_umask = os.umask(0o022)
 
