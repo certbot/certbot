@@ -235,7 +235,6 @@ def _treat_as_renewal(config, domains):
     #       flag).
     #
     # TODO: Also address superset case
-    renewal = False
 
     # Considering the possibility that the requested certificate is
     # related to an existing certificate.  (config.duplicate, which
@@ -249,8 +248,6 @@ def _treat_as_renewal(config, domains):
         question = None
         if ident_names_cert is not None:
             return _handle_identical_cert_request(ident_names_cert)
-        # TODO: Since the rest of the function deals only with the subset
-        #       case, we could now simplify it considerably!
         elif subset_names_cert is not None:
             question = (
                 "You have an existing certificate that contains a portion of "
@@ -268,7 +265,7 @@ def _treat_as_renewal(config, domains):
             pass
         elif config.renew_by_default or zope.component.getUtility(
                 interfaces.IDisplay).yesno(question, "Replace", "Cancel"):
-            renewal = True
+            return "renew", subset_names_cert
         else:
             reporter_util = zope.component.getUtility(interfaces.IReporter)
             reporter_util.add_message(
@@ -284,9 +281,6 @@ def _treat_as_renewal(config, domains):
             raise errors.Error(
                 "User did not use proper CLI and would like "
                 "to reinvoke the client.")
-
-        if renewal:
-            return "renew", ident_names_cert if ident_names_cert is not None else subset_names_cert
 
     return "newcert", None
 
