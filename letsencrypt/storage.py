@@ -567,7 +567,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                 "cert", self.latest_common_version()))
             now = pytz.UTC.fromutc(datetime.datetime.utcnow())
             if expiry < add_time_interval(now, interval):
-                logger.debug("Should renew, less than %r days before certificate "
+                logger.debug("Should renew, less than %s before certificate "
                              "expiry %s.", interval,
                              expiry.strftime("%Y-%m-%d %H:%M:%S %Z"))
                 return True
