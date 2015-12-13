@@ -1,8 +1,11 @@
-#!/bin/sh -e
+#! /bin/bash
+#
 OSX_PM_="no_package_manager" # OS X Package Manager
 if hash port 2>/dev/null; then
+    echo "Found Mac Ports package manager."
     OSX_PM_="sudo port"
 elif hash brew 2>/dev/null; then
+    echo "Found HomeBrew package manager."
     OSX_PM_="brew"
 elif ! hash brew 2>/dev/null; then
     echo "Homebrew Not Installed\nDownloading..."
