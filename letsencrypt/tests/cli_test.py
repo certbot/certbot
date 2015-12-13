@@ -403,7 +403,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def _certonly_new_request_common(self, mock_client):
         with mock.patch('letsencrypt.cli._treat_as_renewal') as mock_renewal:
-            mock_renewal.return_value = None
+            mock_renewal.return_value = ("newcert", None)
             with mock.patch('letsencrypt.cli._init_le_client') as mock_init:
                 mock_init.return_value = mock_client
                 self._call(['-d', 'foo.bar', '-a', 'standalone', 'certonly'])
@@ -413,13 +413,13 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     @mock.patch('letsencrypt.cli._treat_as_renewal')
     @mock.patch('letsencrypt.cli._init_le_client')
     def test_certonly_renewal(self, mock_init, mock_renewal, mock_get_utility, _suggest):
-        cert_path = '/etc/letsencrypt/live/foo.bar/cert.pem'
+        cert_path = 'letsencrypt/tests/testdata/cert.pem'
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
 
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path)
         mock_cert = mock.MagicMock(body='body')
         mock_key = mock.MagicMock(pem='pem_key')
-        mock_renewal.return_value = mock_lineage
+        mock_renewal.return_value = ("renew", mock_lineage)
         mock_client = mock.MagicMock()
         mock_client.obtain_certificate.return_value = (mock_cert, 'chain',
                                                        mock_key, 'csr')
