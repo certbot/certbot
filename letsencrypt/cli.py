@@ -306,14 +306,14 @@ def _handle_subset_cert_request(config, domains, cert):
         "You have an existing certificate that contains a portion of "
         "the domains you requested (ref: {0}){br}{br}It contains these "
         "names: {1}{br}{br}You requested these names for the new "
-        "certificate: {2}.{br}{br}Do you want to replace this existing "
+        "certificate: {2}.{br}{br}Do you want to expand and replace this existing "
         "certificate with the new certificate?"
     ).format(cert.configfile.filename,
              existing,
              ", ".join(domains),
              br=os.linesep)
     if config.expand or config.renew_by_default or zope.component.getUtility(
-            interfaces.IDisplay).yesno(question, "Replace", "Cancel"):
+            interfaces.IDisplay).yesno(question, "Expand", "Cancel"):
         return "renew", cert
     else:
         reporter_util = zope.component.getUtility(interfaces.IReporter)
@@ -968,7 +968,7 @@ def prepare_and_parse_args(plugins, args):
         "automation",
         description="Arguments for automating execution & other tweaks")
     helpful.add(
-        "automation", "--keep-until-expiring", "-k", "--reinstall",
+        "automation", "--keep-until-expiring", "--keep", "--reinstall",
         dest="reinstall", action="store_true",
         help="If the requested cert matches an existing cert, always keep the "
              "existing one until it is due for renewal (for the "
