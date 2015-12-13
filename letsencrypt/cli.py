@@ -235,7 +235,7 @@ def _treat_as_renewal(config, domains):
     ident_names_cert, subset_names_cert = _find_duplicative_certs(config, domains)
     # XXX ^ schoen is not sure whether that correctly reads the systemwide
     # configuration file.
-    if not (ident_names_cert or subset_names_cert):
+    if ident_names_cert is None and subset_names_cert is None:
         return "newcert", None
 
     if ident_names_cert is not None:
@@ -249,6 +249,7 @@ def _handle_identical_cert_request(config, cert):
     :param storage.RenewableCert cert:
 
     :returns: Tuple of (string, cert_or_None) as per _treat_as_renewal
+    :rtype: tuple
 
     """
     if config.renew_by_default:
@@ -297,6 +298,7 @@ def _handle_subset_cert_request(config, domains, cert):
     :param storage.RenewableCert cert:
 
     :returns: Tuple of (string, cert_or_None) as per _treat_as_renewal
+    :rtype: tuple
 
     """
     existing = ", ".join(cert.names())
@@ -962,23 +964,23 @@ def prepare_and_parse_args(plugins, args):
                 help="Domain names to apply. For multiple domains you can use "
                 "multiple -d flags or enter a comma separated list of domains "
                 "as a parameter.")
-    helpful.add(
-        None, "--keep-until-expiring", "--keep", "--reinstall",
-        dest="reinstall", action="store_true",
-        help="If the requested cert matches an existing cert, keep the "
-             "existing one by default until it is due for renewal (for the "
-             "'run' subcommand this means reinstall the existing cert)")
     helpful.add_group(
         "automation",
         description="Arguments for automating execution & other tweaks")
     helpful.add(
+        "automation", "--keep-until-expiring", "-k", "--reinstall",
+        dest="reinstall", action="store_true",
+        help="If the requested cert matches an existing cert, always keep the "
+             "existing one until it is due for renewal (for the "
+             "'run' subcommand this means reinstall the existing cert)")
+    helpful.add(
+        "automation", "--expand", action="store_true",
+        help="If an existing cert covers some subset of the requested names, "
+             "always expand and replace it with the additional names.")
+    helpful.add(
         "automation", "--version", action="version",
         version="%(prog)s {0}".format(letsencrypt.__version__),
         help="show program's version number and exit")
-    helpful.add(
-        "automation", "--expand", "--expand-existing-certs", "--replace", action="store_true",
-        help="If an existing cert covers some subset of the requested names, "
-             "expand and replace it with the additional names.")
     helpful.add(
         "automation", "--renew-by-default", action="store_true",
         help="Select renewal by default when domains are a superset of a "
