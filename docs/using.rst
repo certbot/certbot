@@ -58,8 +58,8 @@ or for full help, type:
 
 
 ``letsencrypt-auto`` is the recommended method of running the Let's Encrypt
-client beta releases on systems that don't have a packaged version.  Debian
-experimental, Arch linux and FreeBSD now have native packages, so on those
+client beta releases on systems that don't have a packaged version.  Debian,
+Arch linux and FreeBSD now have native packages, so on those
 systems you can just install ``letsencrypt`` (and perhaps
 ``letsencrypt-apache``).  If you'd like to run the latest copy from Git, or
 run your own locally modified copy of the client, follow the instructions in
@@ -173,10 +173,10 @@ Renewal
 In order to renew certificates simply call the ``letsencrypt`` (or
 letsencrypt-auto_) again, and use the same values when prompted. You
 can automate it slightly by passing necessary flags on the CLI (see
-`--help all`), or even further using the :ref:`config-file`. The 
-``--renew-by-default`` flag may be helpful for automating renewal. If 
-you're sure that UI doesn't prompt for any details you can add the 
-command to ``crontab`` (make it less than every 90 days to avoid 
+`--help all`), or even further using the :ref:`config-file`. The
+``--renew-by-default`` flag may be helpful for automating renewal. If
+you're sure that UI doesn't prompt for any details you can add the
+command to ``crontab`` (make it less than every 90 days to avoid
 problems, say every month).
 
 Please note that the CA will send notification emails to the address
@@ -352,19 +352,19 @@ Operating System Packages
 
    sudo pacman -S letsencrypt letsencrypt-apache
 
-**Debian Experimental**
+**Debian**
 
-If you run Debian unstable, you can install experimental letsencrypt packages.
-Add the line ``deb http://ftp.us.debian.org/debian/ experimental main`` (or
-the equivalent for your country) to ``/etc/apt/sources.list``, then run
+If you run Debian Stretch or Debian Sid, you can install letsencrypt packages.
 
 .. code-block:: shell
 
    sudo apt-get update
-   sudo apt-get -t experimental install letsencrypt python-letsencrypt-apache
+   sudo apt-get install letsencrypt python-letsencrypt-apache
 
 If you don't want to use the Apache plugin, you can ommit the
 ``python-letsencrypt-apache`` package.
+
+Packages for Debian Jessie are coming in the next few weeks.
 
 **Other Operating Systems**
 
