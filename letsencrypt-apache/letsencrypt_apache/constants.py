@@ -25,6 +25,17 @@ CLI_DEFAULTS_CENTOS = dict(
     handle_sites=False,
     challenge_location="/etc/httpd/conf.d"
 )
+CLI_DEFAULTS_GENTOO = dict(
+    server_root="/etc/apache2",
+    vhost_root="/etc/apache2/vhosts.d",
+    ctl="apache2ctl",
+    enmod=None,
+    dismod=None,
+    le_vhost_ext="-le-ssl.conf",
+    handle_mods=False,
+    handle_sites=False,
+    challenge_location="/etc/apache2/vhosts.d"
+)
 CLI_DEFAULTS = {
     "debian": CLI_DEFAULTS_DEBIAN,
     "ubuntu": CLI_DEFAULTS_DEBIAN,
