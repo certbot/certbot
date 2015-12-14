@@ -82,7 +82,7 @@ SetVersion() {
     ver="$1"
     for pkg_dir in $SUBPKGS
     do
-      sed -i $x "s/^version.*/version = '$ver'/" $pkg_dir/setup.py
+      sed -i "s/^version.*/version = '$ver'/" $pkg_dir/setup.py
     done
     sed -i "s/^__version.*/__version__ = '$ver'/" letsencrypt/__init__.py
 
@@ -147,13 +147,14 @@ mkdir ../kgs
 kgs="../kgs/$version"
 pip freeze | tee $kgs
 pip install nose
-for thing in letsencrypt $subpkgs_modules ; do
-    echo testing $thing
-    nosetests $thing
+for module in letsencrypt $subpkgs_modules ; do
+    echo testing $module
+    nosetests $module
 done
 deactivate
 
 cd ..
+echo Now in $PWD
 name=${root_without_le%.*}
 ext="${root_without_le##*.}"
 rev="$(git rev-parse --short HEAD)"
