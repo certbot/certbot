@@ -147,9 +147,13 @@ mkdir ../kgs
 kgs="../kgs/$version"
 pip freeze | tee $kgs
 pip install nose
-nosetests letsencrypt $subpkgs_modules
+for thing in letsencrypt $subpkgs_modules ; do
+    echo testing $thing
+    nosetests $thing
+done
+deactivate
 
-cd releases
+cd ..
 name=${root_without_le%.*}
 ext="${root_without_le##*.}"
 rev="$(git rev-parse --short HEAD)"
