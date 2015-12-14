@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# A hackish script to see if the client is behaving as expected 
+# with each of the "passing" conf files.
+
+# TODO presently this requires interaction and human judgement to 
+# assess, but it should be automated
+export EA=/etc/apache2/ 
+TESTDIR="`dirname $0`"
+LEROOT="`realpath \"$TESTDIR/../../\"`"
+cd $TESTDIR/passing
+
+function CleanupExit() {
+    echo control c, exiting tests...
+    if [ "$f" != "" ] ; then
+        sudo rm /etc/apache2/sites-{enabled,available}/"$f"
+    fi
+    exit 1
+}
+
+trap CleanupExit INT
+for f in *.conf ; do 
+    echo testing "$f"
+    sudo cp "$f" "$EA"/sites-available/
+    sudo ln -s "$EA/sites-available/$f" "$EA/sites-enabled/$f"
+    sudo "$LEROOT"/venv/bin/letsencrypt --apache  certonly -t
+    sudo rm /etc/apache2/sites-{enabled,available}/"$f"
+done

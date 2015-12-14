@@ -20,7 +20,9 @@ from acme import messages
 
 logger = logging.getLogger(__name__)
 
-# Python does not validate certificates by default before version 2.7.9
+# Prior to Python 2.7.9 the stdlib SSL module did not allow a user to configure
+# many important security related options. On these platforms we use PyOpenSSL
+# for SSL, which does allow these options to be configured.
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
 if sys.version_info < (2, 7, 9):  # pragma: no cover
     requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
@@ -338,7 +340,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             `PollError` with non-empty ``waiting`` is raised.
 
         :returns: ``(cert, updated_authzrs)`` `tuple` where ``cert`` is
-            the issued certificate (`.messages.CertificateResource.),
+            the issued certificate (`.messages.CertificateResource`),
             and ``updated_authzrs`` is a `tuple` consisting of updated
             Authorization Resources (`.AuthorizationResource`) as
             present in the responses from server, and in the same order

@@ -28,8 +28,7 @@ acme = client.Client(DIRECTORY_URL, key)
 
 regr = acme.register()
 logging.info('Auto-accepting TOS: %s', regr.terms_of_service)
-acme.update_registration(regr.update(
-    body=regr.body.update(agreement=regr.terms_of_service)))
+acme.agree_to_tos(regr)
 logging.debug(regr)
 
 authzr = acme.request_challenges(

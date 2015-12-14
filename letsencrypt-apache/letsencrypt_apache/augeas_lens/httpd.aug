@@ -51,7 +51,7 @@ let sep_osp             = Sep.opt_space
 let sep_eq              = del /[ \t]*=[ \t]*/ "="
 
 let nmtoken             = /[a-zA-Z:_][a-zA-Z0-9:_.-]*/
-let word                = /[a-zA-Z][a-zA-Z0-9._-]*/
+let word                = /[a-z][a-z0-9._-]*/i
 
 let comment             = Util.comment
 let eol                 = Util.doseol
@@ -68,6 +68,9 @@ let cl = /\\\\\n/
 let dquot =
      let no_dquot = /[^"\\\r\n]/
   in /"/ . (no_dquot|cdot|cl)* . /"/
+let dquot_msg =
+     let no_dquot = /([^ \t"\\\r\n]|[^"\\\r\n]+[^ \t"\\\r\n])/
+  in /"/ . (no_dquot|cdot|cl)*
 let squot =
      let no_squot = /[^'\\\r\n]/
   in /'/ . (no_squot|cdot|cl)* . /'/
@@ -78,6 +81,8 @@ let comp = /[<>=]?=/
  *****************************************************************)
 
 let arg_dir = [ label "arg" . store (char_arg_dir+|dquot|squot) ]
+(* message argument starts with " but ends at EOL *)
+let arg_dir_msg = [ label "arg" . store dquot_msg ]
 let arg_sec = [ label "arg" . store (char_arg_sec+|comp|dquot|squot) ]
 let arg_wl  = [ label "arg" . store (char_arg_wl+|dquot|squot) ]
 
@@ -90,8 +95,10 @@ let arg_wordlist =
 
 let argv (l:lens) = l . (sep_spc . l)*
 
-let directive = [ indent . label "directive" . store word .
-                  (sep_spc . argv (arg_dir|arg_wordlist))? . eol ]
+let directive =
+    (* arg_dir_msg may be the last or only argument *)
+     let dir_args = (argv (arg_dir|arg_wordlist) . (sep_spc . arg_dir_msg)?) | arg_dir_msg
+  in [ indent . label "directive" . store word .  (sep_spc . dir_args)? . eol ]
 
 let section (body:lens) =
     (* opt_eol includes empty lines *)
