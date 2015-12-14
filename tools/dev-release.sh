@@ -26,7 +26,7 @@ if [ "$1" = "--production" ] ; then
     echo Releasing production version "$version"...
     nextversion="$3"
     CheckVersion "Next version" "$nextversion"
-    RELEASE_BRANCH="master"
+    RELEASE_BRANCH="candidate-$version"
 else
     version=`grep "__version__" letsencrypt/__init__.py | cut -d\' -f2 | sed s/\.dev0//`
     version="$version.dev$(date +%Y%m%d)1"
@@ -73,7 +73,7 @@ echo "Cloning into fresh copy at $root"  # clean repo = no artificats
 git clone . $root
 git rev-parse HEAD
 cd $root
-if [ "$RELEASE_BRANCH" != master ] ; then
+if [ "$RELEASE_BRANCH" != "candidate-$version" ] ; then
     git branch -f "$RELEASE_BRANCH"
 fi
 git checkout "$RELEASE_BRANCH"
@@ -167,7 +167,7 @@ echo "KGS is at $root/kgs"
 echo "In order to upload packages run the following command:"
 echo twine upload "$root/dist.$version/*/*"
 
-if [ "$RELEASE_BRANCH" = master ] ; then
+if [ "$RELEASE_BRANCH" = candidate-"$version" ] ; then
     SetVersion "$nextversion"
     git diff
     git commit -m "Bump version to $nextversion"
