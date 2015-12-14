@@ -15,6 +15,7 @@ from acme import jose
 from letsencrypt import account
 from letsencrypt import cli
 from letsencrypt import configuration
+from letsencrypt import constants
 from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import le_util
@@ -343,6 +344,19 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         namespace = cli.prepare_and_parse_args(plugins, long_args)
         self.assertEqual(namespace.domains, ['example.com', 'another.net'])
 
+    def test_parse_server(self):
+        plugins = disco.PluginsRegistry.find_all()
+        short_args = ['--server', 'example.com']
+        namespace = cli.prepare_and_parse_args(plugins, short_args)
+        self.assertEqual(namespace.server, 'example.com')
+
+        short_args = ['--staging']
+        namespace = cli.prepare_and_parse_args(plugins, short_args)
+        self.assertEqual(namespace.server, constants.STAGING_URI)
+
+        short_args = ['--staging', '--server', 'example.com']
+        self.assertRaises(errors.Error, cli.prepare_and_parse_args, plugins, short_args)
+
     def test_parse_webroot(self):
         plugins = disco.PluginsRegistry.find_all()
         webroot_args = ['--webroot', '-w', '/var/www/example',
@@ -389,7 +403,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def _certonly_new_request_common(self, mock_client):
         with mock.patch('letsencrypt.cli._treat_as_renewal') as mock_renewal:
-            mock_renewal.return_value = None
+            mock_renewal.return_value = ("newcert", None)
             with mock.patch('letsencrypt.cli._init_le_client') as mock_init:
                 mock_init.return_value = mock_client
                 self._call(['-d', 'foo.bar', '-a', 'standalone', 'certonly'])
@@ -399,13 +413,13 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     @mock.patch('letsencrypt.cli._treat_as_renewal')
     @mock.patch('letsencrypt.cli._init_le_client')
     def test_certonly_renewal(self, mock_init, mock_renewal, mock_get_utility, _suggest):
-        cert_path = '/etc/letsencrypt/live/foo.bar/cert.pem'
+        cert_path = 'letsencrypt/tests/testdata/cert.pem'
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
 
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path)
         mock_cert = mock.MagicMock(body='body')
         mock_key = mock.MagicMock(pem='pem_key')
-        mock_renewal.return_value = mock_lineage
+        mock_renewal.return_value = ("renew", mock_lineage)
         mock_client = mock.MagicMock()
         mock_client.obtain_certificate.return_value = (mock_cert, 'chain',
                                                        mock_key, 'csr')
@@ -536,6 +550,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         path, contents = cli.read_file(rel_test_path)
         self.assertEqual(path, os.path.abspath(path))
         self.assertEqual(contents, test_contents)
+
+    def test_agree_dev_preview_config(self):
+        with MockedVerb('run') as mocked_run:
+            self._call(['-c', test_util.vector_path('cli.ini')])
+        self.assertTrue(mocked_run.called)
 
 
 class DetermineAccountTest(unittest.TestCase):
