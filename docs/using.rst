@@ -59,8 +59,8 @@ or for full help, type:
 
 ``letsencrypt-auto`` is the recommended method of running the Let's Encrypt
 client beta releases on systems that don't have a packaged version.  Debian
-experimental, Arch linux and FreeBSD now have native packages, so on those
-systems you can just install ``letsencrypt`` (and perhaps
+experimental, Arch linux, FreeBSD and OpenBSD now have native packages, so on
+those systems you can just install ``letsencrypt`` (and perhaps
 ``letsencrypt-apache``).  If you'd like to run the latest copy from Git, or
 run your own locally modified copy of the client, follow the instructions in
 the :doc:`contributing`.  Some `other methods of installation`_ are discussed
@@ -345,6 +345,11 @@ Operating System Packages
 
   * Port: ``cd /usr/ports/security/py-letsencrypt && make install clean``
   * Package: ``pkg install py27-letsencrypt``
+
+**OpenBSD**
+
+  * Port: ``cd /usr/ports/security/letsencrypt/client && make install clean``
+  * Package: ``pkg_add letsencrypt``
 
 **Arch Linux**
 
