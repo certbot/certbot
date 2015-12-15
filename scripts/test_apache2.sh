@@ -36,6 +36,6 @@ fi
 
 # run letsencrypt-apache2 via letsencrypt-auto
 cd letsencrypt
-letsencrypt-auto -v --debug --text --agree-dev-preview --agree-tos \
+./letsencrypt-auto -v --debug --text --agree-dev-preview --agree-tos \
                    --renew-by-default --redirect --register-unsafely-without-email \
                    --domain $PUBLIC_HOSTNAME --server $BOULDER_URL
