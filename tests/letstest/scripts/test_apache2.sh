@@ -36,9 +36,6 @@ fi
 
 # run letsencrypt-apache2 via letsencrypt-auto
 cd letsencrypt
-./bootstrap/install-deps.sh
-./bootstrap/dev/venv.sh
-source ./venv/bin/activate
-sudo ./venv/bin/letsencrypt -v --debug --text --agree-dev-preview --agree-tos \
+letsencrypt-auto -v --debug --text --agree-dev-preview --agree-tos \
                    --renew-by-default --redirect --register-unsafely-without-email \
                    --domain $PUBLIC_HOSTNAME --server $BOULDER_URL

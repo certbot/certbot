@@ -74,6 +74,9 @@ parser.add_argument('--merge_master',
 parser.add_argument('--saveinstances',
                     action='store_true',
                     help="don't kill EC2 instances after run, useful for debugging")
+parser.add_argument('--alt_pip',
+                    default='https://certainly.isnot.org',
+                    help="server from which to pull candidate release packages")
 cl_args = parser.parse_args()
 
 # Credential Variables
@@ -277,6 +280,7 @@ def install_and_launch_letsencrypt(instance, boulder_url, target):
                    PUBLIC_IP=instance.public_ip_address,
                    PRIVATE_IP=instance.private_ip_address,
                    PUBLIC_HOSTNAME=instance.public_dns_name,
+                   PIP_EXTRA_INDEX_URL=cl_args.alt_pip,
                    OS_TYPE=target['type']):
         execute(deploy_script, cl_args.test_script)
 
