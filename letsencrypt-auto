@@ -31,13 +31,24 @@ for arg in "$@" ; do
   fi
 done
 
+# Support for busybox and others where there is no "command",
+# but "which" instead
+if command -v command > /dev/null 2>&1 ; then
+  export WHERE_IS="command -v"
+if which which > /dev/null 2>&1 ; then
+  export WHERE_IS="which"
+else
+  echo "Cannot find command or which... please install one!"
+  exit 1
+fi
+
 # letsencrypt-auto needs root access to bootstrap OS dependencies, and
 # letsencrypt itself needs root access for almost all modes of operation
 # The "normal" case is that sudo is used for the steps that need root, but
 # this script *can* be run as root (not recommended), or fall back to using
 # `su`
 if test "`id -u`" -ne "0" ; then
-  if command -v sudo 1>/dev/null 2>&1; then
+  if ${WHERE_IS} sudo 1>/dev/null 2>&1; then
     SUDO=sudo
   else
     echo \"sudo\" is not available, will use \"su\" for installation steps...
@@ -87,13 +98,13 @@ ExperimentalBootstrap() {
 }
 
 DeterminePythonVersion() {
-  if command -v python2.7 > /dev/null ; then
+  if ${WHERE_IS} python2.7 > /dev/null ; then
     export LE_PYTHON=${LE_PYTHON:-python2.7}
-  elif command -v python27 > /dev/null ; then
+  elif ${WHERE_IS} python27 > /dev/null ; then
     export LE_PYTHON=${LE_PYTHON:-python27}
-  elif command -v python2 > /dev/null ; then
+  elif ${WHERE_IS} python2 > /dev/null ; then
     export LE_PYTHON=${LE_PYTHON:-python2}
-  elif command -v python > /dev/null ; then
+  elif ${WHERE_IS} python > /dev/null ; then
     export LE_PYTHON=${LE_PYTHON:-python}
   else
     echo "Cannot find any Pythons... please install one!"
