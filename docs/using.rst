@@ -31,21 +31,16 @@ Firstly, please `install Git`_ and run the following commands:
 
 .. _`install Git`: https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
 
-.. note:: On RedHat/CentOS 6 you will need to enable the EPEL_
-   repository before install.
-
-.. _EPEL: http://fedoraproject.org/wiki/EPEL
-
 To install and run the client you just need to type:
 
 .. code-block:: shell
 
    ./letsencrypt-auto
 
-.. hint:: During the beta phase, Let's Encrypt enforces strict rate limits on
-   the number of certificates issued for one domain. It is recommended to
-   initially use the test server via `--test-cert` until you get the desired
-   certificates.
+.. note:: On RedHat/CentOS 6 you will need to enable the EPEL_
+   repository before install.
+
+.. _EPEL: http://fedoraproject.org/wiki/EPEL
 
 Throughout the documentation, whenever you see references to
 ``letsencrypt`` script/binary, you can substitute in
