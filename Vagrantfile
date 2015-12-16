@@ -21,6 +21,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       # Cannot allocate memory" when running
       # letsencrypt.client.tests.display.util_test.NcursesDisplayTest
       v.memory = 1024
+
+      # Handle cases when the host is behind a private network by making the 
+      # NAT engine use the host's resolver mechanisms to handle DNS requests.
+      v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
     end
   end
 
