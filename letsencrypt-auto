@@ -147,9 +147,9 @@ then
   elif uname | grep -iq FreeBSD ; then
     ExperimentalBootstrap "FreeBSD" freebsd.sh "$SUDO"
   elif uname | grep -iq Darwin ; then
-    ExperimentalBootstrap "Mac OS X" mac.sh
+    ExperimentalBootstrap "Mac OS X" mac.sh # homebrew doesn't normally run as root
   elif grep -iq "Amazon Linux" /etc/issue ; then
-    ExperimentalBootstrap "Amazon Linux" _rpm_common.sh
+    ExperimentalBootstrap "Amazon Linux" _rpm_common.sh "$SUDO"
   else
     echo "Sorry, I don't know how to bootstrap Let's Encrypt on your operating system!"
     echo

@@ -1,3 +1,4 @@
+# coding=utf-8
 """Test letsencrypt.display.ops."""
 import os
 import sys
@@ -384,6 +385,55 @@ class ChooseNamesTest(unittest.TestCase):
             display_util.CANCEL, ["example.com"])
 
         self.assertEqual(self._call(self.mock_install), [])
+
+    def test_get_valid_domains(self):
+        from letsencrypt.display.ops import get_valid_domains
+        all_valid = ["example.com", "second.example.com",
+                     "also.example.com"]
+        all_invalid = ["xn--ls8h.tld", "*.wildcard.com", "notFQDN",
+                       "uniçodé.com"]
+        two_valid = ["example.com", "xn--ls8h.tld", "also.example.com"]
+        self.assertEqual(get_valid_domains(all_valid), all_valid)
+        self.assertEqual(get_valid_domains(all_invalid), [])
+        self.assertEqual(len(get_valid_domains(two_valid)), 2)
+
+    @mock.patch("letsencrypt.display.ops.util")
+    def test_choose_manually(self, mock_util):
+        from letsencrypt.display.ops import _choose_names_manually
+        # No retry
+        mock_util().yesno.return_value = False
+        # IDN and no retry
+        mock_util().input.return_value = (display_util.OK,
+                                          "uniçodé.com")
+        self.assertEqual(_choose_names_manually(), [])
+        # IDN exception with previous mocks
+        with mock.patch("letsencrypt.display.util") as mock_sl:
+            uerror = UnicodeEncodeError('mock', u'',
+                                        0, 1, 'mock')
+            mock_sl.separate_list_input.side_effect = uerror
+            self.assertEqual(_choose_names_manually(), [])
+        # Punycode and no retry
+        mock_util().input.return_value = (display_util.OK,
+                                          "xn--ls8h.tld")
+        self.assertEqual(_choose_names_manually(), [])
+        # non-FQDN and no retry
+        mock_util().input.return_value = (display_util.OK,
+                                          "notFQDN")
+        self.assertEqual(_choose_names_manually(), [])
+        # Two valid domains
+        mock_util().input.return_value = (display_util.OK,
+                                          ("example.com,"
+                                           "valid.example.com"))
+        self.assertEqual(_choose_names_manually(),
+                         ["example.com", "valid.example.com"])
+        # Three iterations
+        mock_util().input.return_value = (display_util.OK,
+                                          "notFQDN")
+        yn = mock.MagicMock()
+        yn.side_effect = [True, True, False]
+        mock_util().yesno = yn
+        _choose_names_manually()
+        self.assertEqual(mock_util().yesno.call_count, 3)
 
 
 class SuccessInstallationTest(unittest.TestCase):
