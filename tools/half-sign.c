@@ -6,6 +6,9 @@
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
 
+// This program can be used to perform RSA public key signatures given only
+// the hash of the file to be signed as input.
+
 // Sign with SHA1
 #define HASH_SIZE 20
 
