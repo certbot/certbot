@@ -397,6 +397,44 @@ class ChooseNamesTest(unittest.TestCase):
         self.assertEqual(get_valid_domains(all_invalid), [])
         self.assertEqual(len(get_valid_domains(two_valid)), 2)
 
+    @mock.patch("letsencrypt.display.ops.util")
+    def test_choose_manually(self, mock_util):
+        from letsencrypt.display.ops import _choose_names_manually
+        # No retry
+        mock_util().yesno.return_value = False
+        # IDN and no retry
+        mock_util().input.return_value = (display_util.OK,
+                                          "uniçodé.com")
+        self.assertEqual(_choose_names_manually(), [])
+        # IDN exception with previous mocks
+        with mock.patch("letsencrypt.display.util") as mock_sl:
+            uerror = UnicodeEncodeError('mock', u'',
+                                        0, 1, 'mock')
+            mock_sl.separate_list_input.side_effect = uerror
+            self.assertEqual(_choose_names_manually(), [])
+        # Punycode and no retry
+        mock_util().input.return_value = (display_util.OK,
+                                          "xn--ls8h.tld")
+        self.assertEqual(_choose_names_manually(), [])
+        # non-FQDN and no retry
+        mock_util().input.return_value = (display_util.OK,
+                                          "notFQDN")
+        self.assertEqual(_choose_names_manually(), [])
+        # Two valid domains
+        mock_util().input.return_value = (display_util.OK,
+                                          ("example.com,"
+                                           "valid.example.com"))
+        self.assertEqual(_choose_names_manually(),
+                         ["example.com", "valid.example.com"])
+        # Three iterations
+        mock_util().input.return_value = (display_util.OK,
+                                          "notFQDN")
+        yn = mock.MagicMock()
+        yn.side_effect = [True, True, False]
+        mock_util().yesno = yn
+        _choose_names_manually()
+        self.assertEqual(mock_util().yesno.call_count, 3)
+
 
 class SuccessInstallationTest(unittest.TestCase):
     # pylint: disable=too-few-public-methods
