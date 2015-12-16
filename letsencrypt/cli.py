@@ -276,12 +276,11 @@ def _handle_identical_cert_request(config, cert):
     elif config.verb == "certonly":
         keep_opt = "Keep the existing certificate for now"
     choices = [keep_opt,
-               "Renew & replace the cert (limit ~5 per 7 days)",
-               "Cancel this operation and do nothing"]
+               "Renew & replace the cert (limit ~5 per 7 days)"]
 
     display = zope.component.getUtility(interfaces.IDisplay)
     response = display.menu(question, choices, "OK", "Cancel")
-    if response[0] == "cancel" or response[1] == 2:
+    if response[0] == display_util.CANCEL:
         # TODO: Add notification related to command-line options for
         #       skipping the menu for this case.
         raise errors.Error(
