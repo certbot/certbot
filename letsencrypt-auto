@@ -122,9 +122,9 @@ DeterminePythonVersion() {
   fi
 
   PYVER=`$LE_PYTHON --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
-  if [ $PYVER -eq 26 ] ; then
+  if [ "$PYVER" -eq 26 ] ; then
     ExperimentalBootstrap "Python 2.6"
-  elif [ $PYVER -lt 26 ] ; then
+  elif [ "$PYVER" -lt 26 ] ; then
     echo "You have an ancient version of Python entombed in your operating system..."
     echo "This isn't going to work; you'll need at least version 2.6."
     exit 1
@@ -134,26 +134,26 @@ DeterminePythonVersion() {
 
 # virtualenv call is not idempotent: it overwrites pip upgraded in
 # later steps, causing "ImportError: cannot import name unpack_url"
-if [ ! -d $VENV_PATH ]
+if [ ! -d "$VENV_PATH" ]
 then
-  if [ ! -f $BOOTSTRAP/debian.sh ] ; then
+  if [ ! -f "$BOOTSTRAP/debian.sh" ] ; then
     echo "Cannot find the letsencrypt bootstrap scripts in $BOOTSTRAP"
     exit 1
   fi
 
   if [ -f /etc/debian_version ] ; then
     echo "Bootstrapping dependencies for Debian-based OSes..."
-    $SUDO $BOOTSTRAP/_deb_common.sh
+    "$SUDO" "$BOOTSTRAP/_deb_common.sh"
   elif [ -f /etc/redhat-release ] ; then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
-    $SUDO $BOOTSTRAP/_rpm_common.sh
+    "$SUDO" "$BOOTSTRAP/_rpm_common.sh"
   elif `grep -q openSUSE /etc/os-release` ; then
     echo "Bootstrapping dependencies for openSUSE-based OSes..."
-    $SUDO $BOOTSTRAP/_suse_common.sh
+    "$SUDO" "$BOOTSTRAP/_suse_common.sh"
   elif [ -f /etc/arch-release ] ; then
     if [ "$DEBUG" = 1 ] ; then
       echo "Bootstrapping dependencies for Archlinux..."
-      $SUDO $BOOTSTRAP/archlinux.sh
+      "$SUDO" "$BOOTSTRAP/archlinux.sh"
     else
       echo "Please use pacman to install letsencrypt packages:"
       echo "# pacman -S letsencrypt letsencrypt-apache"
@@ -183,40 +183,39 @@ then
   DeterminePythonVersion
   echo "Creating virtual environment..."
   if [ "$VERBOSE" = 1 ] ; then
-    virtualenv --no-site-packages --python $LE_PYTHON $VENV_PATH
+    virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH"
   else
-    virtualenv --no-site-packages --python $LE_PYTHON $VENV_PATH > /dev/null
+    virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" > /dev/null
   fi
 else
   DeterminePythonVersion
 fi
 
-
 printf "Updating letsencrypt and virtual environment dependencies..."
 if [ "$VERBOSE" = 1 ]  ; then
   echo
-  $VENV_BIN/pip install -U setuptools
-  $VENV_BIN/pip install -U pip
-  $VENV_BIN/pip install -r "$LEA_PATH"/py26reqs.txt -U letsencrypt letsencrypt-apache
+  "$VENV_BIN/pip" install -U setuptools
+  "$VENV_BIN/pip" install -U pip
+  "$VENV_BIN/pip" install -r "${LEA_PATH}/py26reqs.txt" -U letsencrypt letsencrypt-apache
   # nginx is buggy / disabled for now, but upgrade it if the user has
   # installed it manually
-  if $VENV_BIN/pip freeze | grep -q letsencrypt-nginx ; then
-    $VENV_BIN/pip install -U letsencrypt letsencrypt-nginx
+  if "$VENV_BIN/pip" freeze | grep -q letsencrypt-nginx ; then
+    "$VENV_BIN/pip" install -U letsencrypt letsencrypt-nginx
   fi
 else
-  $VENV_BIN/pip install -U setuptools > /dev/null
+  "$VENV_BIN/pip" install -U setuptools > /dev/null
   printf .
-  $VENV_BIN/pip install -U pip > /dev/null
+  "$VENV_BIN/pip" install -U pip > /dev/null
   printf .
   # nginx is buggy / disabled for now...
-  $VENV_BIN/pip install -r "$LEA_PATH"/py26reqs.txt > /dev/null
+  "$VENV_BIN/pip" install -r "${LEA_PATH}/py26reqs.txt" > /dev/null
   printf .
-  $VENV_BIN/pip install -U letsencrypt > /dev/null
+  "$VENV_BIN/pip" install -U letsencrypt > /dev/null
   printf .
-  $VENV_BIN/pip install -U letsencrypt-apache > /dev/null
-  if $VENV_BIN/pip freeze | grep -q letsencrypt-nginx ; then
+  "$VENV_BIN/pip" install -U letsencrypt-apache > /dev/null
+  if "$VENV_BIN/pip" freeze | grep -q letsencrypt-nginx ; then
     printf .
-    $VENV_BIN/pip install -U letsencrypt-nginx > /dev/null
+    "$VENV_BIN/pip" install -U letsencrypt-nginx > /dev/null
   fi
   echo
 fi
@@ -224,4 +223,4 @@ fi
 # Explain what's about to happen, for the benefit of those getting sudo
 # password prompts...
 echo "Running with virtualenv:" $SUDO $VENV_BIN/letsencrypt "$@"
-$SUDO $VENV_BIN/letsencrypt "$@"
+"$SUDO" "$VENV_BIN/letsencrypt" "$@"
