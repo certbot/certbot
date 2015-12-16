@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # Tested with:
 #   - ArchLinux (x86_64)

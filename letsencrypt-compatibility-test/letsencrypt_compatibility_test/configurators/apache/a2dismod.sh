@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # An extremely simplified version of `a2enmod` for disabling modules in the
 # httpd docker image. First argument is the server_root and the second is the
 # module to be disabled.

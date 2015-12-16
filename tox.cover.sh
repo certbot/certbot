@@ -1,4 +1,7 @@
-#!/bin/sh -xe
+#!/usr/bin/env sh
+
+set -o errexit
+set -o xtrace
 
 # USAGE: ./tox.cover.sh [package]
 #

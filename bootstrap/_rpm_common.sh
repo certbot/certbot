@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # Tested with:
 #   - Fedora 22, 23 (x64)

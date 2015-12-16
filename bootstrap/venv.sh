@@ -1,4 +1,7 @@
-#!/bin/sh -e
+#!/usr/bin/env sh
+
+set -o errexit
+
 #
 # Installs and updates letencrypt virtualenv
 #
