@@ -240,6 +240,7 @@ class ClientTest(unittest.TestCase):
         mock_enhancements.ask.return_value = True
         installer = mock.MagicMock()
         self.client.installer = installer
+        installer.supported_enhancements.return_value = ["redirect"]
 
         self.client.enhance_config(["foo.bar"], config)
         installer.enhance.assert_called_once_with("foo.bar", "redirect", None)
@@ -255,6 +256,7 @@ class ClientTest(unittest.TestCase):
         mock_enhancements.ask.return_value = True
         installer = mock.MagicMock()
         self.client.installer = installer
+        installer.supported_enhancements.return_value = ["redirect", "ensure-http-header"]
 
         config = ConfigHelper(redirect=True, hsts=False, uir=False)
         self.client.enhance_config(["foo.bar"], config)
@@ -273,6 +275,17 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(installer.save.call_count, 3)
         self.assertEqual(installer.restart.call_count, 3)
 
+    @mock.patch("letsencrypt.client.enhancements")
+    def test_enhance_config_unsupported(self, mock_enhancements):
+        installer = mock.MagicMock()
+        self.client.installer = installer
+        installer.supported_enhancements.return_value = []
+
+        config = ConfigHelper(redirect=None, hsts=True, uir=True)
+        self.client.enhance_config(["foo.bar"], config)
+        installer.enhance.assert_not_called()
+        mock_enhancements.ask.assert_not_called()
+
     def test_enhance_config_no_installer(self):
         config = ConfigHelper(redirect=True, hsts=False, uir=False)
         self.assertRaises(errors.Error,
@@ -285,6 +298,7 @@ class ClientTest(unittest.TestCase):
         mock_enhancements.ask.return_value = True
         installer = mock.MagicMock()
         self.client.installer = installer
+        installer.supported_enhancements.return_value = ["redirect"]
         installer.enhance.side_effect = errors.PluginError
 
         config = ConfigHelper(redirect=True, hsts=False, uir=False)
@@ -301,6 +315,7 @@ class ClientTest(unittest.TestCase):
         mock_enhancements.ask.return_value = True
         installer = mock.MagicMock()
         self.client.installer = installer
+        installer.supported_enhancements.return_value = ["redirect"]
         installer.save.side_effect = errors.PluginError
 
         config = ConfigHelper(redirect=True, hsts=False, uir=False)
@@ -317,6 +332,7 @@ class ClientTest(unittest.TestCase):
         mock_enhancements.ask.return_value = True
         installer = mock.MagicMock()
         self.client.installer = installer
+        installer.supported_enhancements.return_value = ["redirect"]
         installer.restart.side_effect = [errors.PluginError, None]
 
         config = ConfigHelper(redirect=True, hsts=False, uir=False)
@@ -335,6 +351,7 @@ class ClientTest(unittest.TestCase):
         mock_enhancements.ask.return_value = True
         installer = mock.MagicMock()
         self.client.installer = installer
+        installer.supported_enhancements.return_value = ["redirect"]
         installer.restart.side_effect = errors.PluginError
         installer.rollback_checkpoints.side_effect = errors.ReverterError
 
