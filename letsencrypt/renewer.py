@@ -7,6 +7,8 @@ within lineages of successor certificates, according to configuration.
 .. todo:: Call new installer API to restart servers after deployment
 
 """
+from __future__ import print_function
+
 import argparse
 import logging
 import os
@@ -169,7 +171,7 @@ def main(cli_args=sys.argv[1:]):
                                constants.CONFIG_DIRS_MODE, uid)
 
     for renewal_file in os.listdir(cli_config.renewal_configs_dir):
-        print "Processing", renewal_file
+        print("Processing " + renewal_file)
         try:
             # TODO: Before trying to initialize the RenewableCert object,
             #       we could check here whether the combination of the config
