@@ -190,6 +190,16 @@ you provide if you do not renew certificates that are about to expire.
 Let's Encrypt is working hard on automating the renewal process. Until
 the tool is ready, we are sorry for the inconvenience!
 
+Using staging environment
+=========================
+
+Use the staging server to test your setup, it will issue invalid
+certificates but has much higher rate limits. 
+Use https://acme-staging.api.letsencrypt.org/directory as your
+endpoint, for the official client pass it via the ``--server`` option.
+
+Example : ``letsencrypt-auto -d example.com --server https://acme-staging.api.letsencrypt.org/directory``
+
 
 .. _where-certs:
 
