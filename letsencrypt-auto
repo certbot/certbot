@@ -35,7 +35,7 @@ done
 # but "which" instead
 if command -v command > /dev/null 2>&1 ; then
   export WHERE_IS="command -v"
-if which which > /dev/null 2>&1 ; then
+elif which which > /dev/null 2>&1 ; then
   export WHERE_IS="which"
 else
   echo "Cannot find command or which... please install one!"
