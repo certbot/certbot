@@ -8,11 +8,21 @@
 # without requiring specific versions of its dependencies from the operating
 # system.
 
+# Support for non-posix variable updates that sets a default if the
+# argument is empty, replaces ${VAR:default}
+VarOrDefault() {
+  if [ "x$1" = "x" ]; then
+    echo $2;
+  else
+    echo $1;
+  fi;
+}
+
 # Note: you can set XDG_DATA_HOME or VENV_PATH before running this script,
 # if you want to change where the virtual environment will be installed
-XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
+XDG_DATA_HOME=$(VarOrDefault "${XDG_DATA_HOME}" "~/.local/share")
 VENV_NAME="letsencrypt"
-VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
+VENV_PATH=$(VarOrDefault "${VENV_PATH}" "$XDG_DATA_HOME/$VENV_NAME")
 VENV_BIN=${VENV_PATH}/bin
 # The path to the letsencrypt-auto script.  Everything that uses these might
 # at some point be inlined...
@@ -99,13 +109,13 @@ ExperimentalBootstrap() {
 
 DeterminePythonVersion() {
   if ${WHERE_IS} python2.7 > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python2.7}
+    export LE_PYTHON=$(VarOrDefault "${LE_PYTHON}" "python2.7")
   elif ${WHERE_IS} python27 > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python27}
+    export LE_PYTHON=$(VarOrDefault "${LE_PYTHON}" "python27")
   elif ${WHERE_IS} python2 > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python2}
+    export LE_PYTHON=$(VarOrDefault "${LE_PYTHON}" "python2")
   elif ${WHERE_IS} python > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python}
+    export LE_PYTHON=$(VarOrDefault "${LE_PYTHON}" "python")
   else
     echo "Cannot find any Pythons... please install one!"
   fi
