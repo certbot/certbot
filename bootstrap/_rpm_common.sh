@@ -33,9 +33,7 @@ then
   fi
 fi
 
-# "git-core" seems to be an alias for "git" in CentOS 7 (yum search fails)
 if ! $tool install -y \
-       git-core \
        gcc \
        dialog \
        augeas-libs \
