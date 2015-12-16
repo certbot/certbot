@@ -164,6 +164,10 @@ cd ~-
 
 echo "New root: $root"
 echo "KGS is at $root/kgs"
+echo "Test commands (in the letstest repo):"
+echo 'python multitester.py targets.yaml $AWS_KEY $USERNAME scripts/test_leauto_upgrades.sh --alt_pip $YOUR_PIP_REPO --branch public-beta'
+echo 'python multitester.py  targets.yaml $AWK_KEY $USERNAME scripts/test_letsencrypt_auto_certonly_standalone.sh --branch candidate-0.1.1'
+echo 'python multitester.py --saveinstances targets.yaml $AWS_KEY $USERNAME scripts/test_apache2.sh'
 echo "In order to upload packages run the following command:"
 echo twine upload "$root/dist.$version/*/*"
 
