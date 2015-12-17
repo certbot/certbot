@@ -117,7 +117,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         #       file at this stage?
         self.configuration = config_with_defaults(self.configfile)
         logger_level = self.configuration['renewalparams']['verbose_count']
-        set_logger_level(logger_level)
+        self.set_logger_level(logger_level)
 
         if not all(x in self.configuration for x in ALL_FOUR):
             raise errors.CertStorageError(
@@ -131,7 +131,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         self._fix_symlinks()
 
-    def set_logger_level(logger_level):
+    def set_logger_level(self, logger_level):
         levels_dict = {"0" : 0,
                        "-1" : 10,
                        "-2" : 20,
