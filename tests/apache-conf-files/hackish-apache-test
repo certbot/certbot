@@ -14,9 +14,17 @@ LETSENCRYPT="${LETSENCRYPT:-$LEROOT/venv/bin/letsencrypt}"
 function CleanupExit() {
     echo control c, exiting tests...
     if [ "$f" != "" ] ; then
-        sudo rm /etc/apache2/sites-{enabled,available}/"$f"
+        Cleanup
     fi
     exit 1
+}
+
+function Cleanup() {
+    if [ "$APPEND_APACHECONF" = "" ] ; then
+        sudo rm /etc/apache2/sites-{enabled,available}/"$f"
+    else
+        sudo mv "$TMP" "$APPEND_APACHECONF"
+    fi
 }
 
 FAILS=0
@@ -41,11 +49,7 @@ for f in *.conf ; do
         echo
         FAILS=`expr $FAILS + 1`
     fi
-    if [ "$APPEND_APACHECONF" = "" ] ; then
-        sudo rm /etc/apache2/sites-{enabled,available}/"$f"
-    else
-        sudo mv "$TMP" "$APPEND_APACHECONF"
-    fi
+    Cleanup
 done
 if [ "$FAILS" -ne 0 ] ; then
     exit 1
