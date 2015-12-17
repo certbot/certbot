@@ -23,8 +23,14 @@ FAILS=0
 trap CleanupExit INT
 for f in *.conf ; do 
     echo -n  testing "$f"...
-    sudo cp "$f" "$EA"/sites-available/
-    sudo ln -s "$EA/sites-available/$f" "$EA/sites-enabled/$f"
+    if [ "$APPEND_APACHECONF" = "" ] ; then
+        sudo cp "$f" "$EA"/sites-available/
+        sudo ln -sf "$EA/sites-available/$f" "$EA/sites-enabled/$f"
+    else
+        TMP="/tmp/`basename \"$APPEND_APACHECONF\"`.$$"
+        sudo cp -a "$APPEND_APACHECONF" "$TMP"
+        sudo bash -c "cat \"$f\" >> \"$APPEND_APACHECONF\""
+    fi
     RESULT=`echo c | sudo "$LETSENCRYPT" --staging --apache --register-unsafely-without-email --agree-tos certonly -t 2>&1`
     if echo $RESULT | grep -Eq \("Please specify --domains"\|"mod_macro is not yet"\) ; then
         echo passed
@@ -35,7 +41,11 @@ for f in *.conf ; do
         echo
         FAILS=`expr $FAILS + 1`
     fi
-    sudo rm /etc/apache2/sites-{enabled,available}/"$f"
+    if [ "$APPEND_APACHECONF" = "" ] ; then
+        sudo rm /etc/apache2/sites-{enabled,available}/"$f"
+    else
+        sudo mv "$TMP" "$APPEND_APACHECONF"
+    fi
 done
 if [ "$FAILS" -ne 0 ] ; then
     exit 1
