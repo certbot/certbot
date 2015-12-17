@@ -7,7 +7,7 @@
 # assess, but it should be automated
 export EA=/etc/apache2/ 
 TESTDIR="`dirname $0`"
-LEROOT="`realpath \"$TESTDIR/../../\"`"
+LEROOT="`realpath \"$TESTDIR/../../../../\"`"
 cd $TESTDIR/passing
 LETSENCRYPT="${LETSENCRYPT:-$LEROOT/venv/bin/letsencrypt}"
 
