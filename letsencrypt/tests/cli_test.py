@@ -7,6 +7,7 @@ import StringIO
 import traceback
 import tempfile
 import unittest
+import logging
 
 import mock
 
@@ -555,6 +556,23 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with MockedVerb('run') as mocked_run:
             self._call(['-c', test_util.vector_path('cli.ini')])
         self.assertTrue(mocked_run.called)
+
+    @mock.patch('os.geteuid')
+    def test_check_root_privileges(self, mock_uid):
+        logger = logging.getLogger(cli.__name__)
+        mock_handler = mock.MagicMock(level=logging.WARNING)
+        logger.addHandler(mock_handler)
+        mock_uid.return_value = 1
+
+        plugin = mock.MagicMock(is_root_required=False)
+        cli.check_root_privileges(plugin)
+        mock_handler.handle.assert_not_called()
+
+        plugin = mock.MagicMock(is_root_required=True)
+        cli.check_root_privileges(plugin)
+        mock_handler.handle.assert_called_once_with(mock.ANY)
+
+        logger.removeHandler(mock_handler)
 
 
 class DetermineAccountTest(unittest.TestCase):

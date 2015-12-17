@@ -118,6 +118,9 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.cleanup([self.achall])
         self.assertFalse(os.path.exists(self.validation_path))
 
+    def test_is_root_required(self):
+        self.assertFalse(self.auth.is_root_required)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
