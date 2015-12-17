@@ -3,6 +3,7 @@ language: python
 services:
   - rabbitmq
   - mariadb
+  - apache2
 
 # http://docs.travis-ci.com/user/ci-environment/#CI-environment-OS
 # gimme has to be kept in sync with Boulder's Go version setting in .travis.yml
