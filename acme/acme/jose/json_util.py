@@ -372,8 +372,7 @@ def encode_cert(cert):
     :rtype: unicode
 
     """
-    return encode_b64jose(OpenSSL.crypto.dump_certificate(
-        OpenSSL.crypto.FILETYPE_ASN1, cert))
+    return encode_b64jose(cert.dump())
 
 
 def decode_cert(b64der):
@@ -397,8 +396,7 @@ def encode_csr(csr):
     :rtype: unicode
 
     """
-    return encode_b64jose(OpenSSL.crypto.dump_certificate_request(
-        OpenSSL.crypto.FILETYPE_ASN1, csr))
+    return encode_b64jose(csr.dump())
 
 
 def decode_csr(b64der):

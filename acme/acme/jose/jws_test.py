@@ -3,7 +3,6 @@ import base64
 import unittest
 
 import mock
-import OpenSSL
 
 from acme import test_util
 
@@ -68,13 +67,10 @@ class HeaderTest(unittest.TestCase):
         from acme.jose.jws import Header
         header = Header(x5c=(CERT, CERT))
         jobj = header.to_partial_json()
-        cert_b64 = base64.b64encode(OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_ASN1, CERT))
+        cert_b64 = base64.b64encode(CERT.dump())
         self.assertEqual(jobj, {'x5c': [cert_b64, cert_b64]})
         self.assertEqual(header, Header.from_json(jobj))
-        jobj['x5c'][0] = base64.b64encode(
-            b'xxx' + OpenSSL.crypto.dump_certificate(
-                OpenSSL.crypto.FILETYPE_ASN1, CERT))
+        jobj['x5c'][0] = base64.b64encode(b'xxx' + CERT.dump())
         self.assertRaises(errors.DeserializationError, Header.from_json, jobj)
 
     def test_find_key(self):
