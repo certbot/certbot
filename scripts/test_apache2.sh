@@ -3,7 +3,7 @@
 # $OS_TYPE $PUBLIC_IP $PRIVATE_IP $PUBLIC_HOSTNAME $BOULDER_URL
 # are dynamically set at execution
 
-if [ $OS_TYPE = "ubuntu" ]
+if [ "$OS_TYPE" = "ubuntu" ]
 then
     CONFFILE=/etc/apache2/sites-available/000-default.conf
     sudo apt-get update
@@ -11,7 +11,7 @@ then
     # For apache 2.4, set up ServerName
     sudo sed -i '/ServerName/ s/#ServerName/ServerName/' $CONFFILE
     sudo sed -i '/ServerName/ s/www.example.com/'$PUBLIC_HOSTNAME'/' $CONFFILE
-elif [ $OS_TYPE = "centos" ]
+elif [ "$OS_TYPE" = "centos" ]
 then
     CONFFILE=/etc/httpd/conf/httpd.conf
     sudo setenforce 0 || true #disable selinux
@@ -39,3 +39,25 @@ cd letsencrypt
 ./letsencrypt-auto -v --debug --text --agree-dev-preview --agree-tos \
                    --renew-by-default --redirect --register-unsafely-without-email \
                    --domain $PUBLIC_HOSTNAME --server $BOULDER_URL
+if [ $? -ne 0 ] ; then
+    FAIL=1
+fi
+
+if [ "$OS_TYPE" = "ubuntu" ] ; then
+    export LETSENCRYPT="$HOME/.local/share/letsencrypt/bin/letsencrypt"
+    for mod in `grep -v '^#' tests/apache-conf-files/passing/README.modules` ; do
+        sudo a2enmod $mod
+    done
+    tests/apache-conf-files/hackish-apache-test
+else
+    echo Not running hackish apache tests on $OS_TYPE
+fi
+
+if [ $? -ne 0 ] ; then
+    FAIL=1
+fi
+
+# return error if any of the subtests failed
+if [ "$FAIL" = 1 ] ; then
+    return 1
+fi
