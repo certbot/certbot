@@ -18,11 +18,25 @@ function CleanupExit() {
     exit 1
 }
 
+FAILS=0
 trap CleanupExit INT
 for f in *.conf ; do 
-    echo testing "$f"
+    echo -n  testing "$f"...
     sudo cp "$f" "$EA"/sites-available/
     sudo ln -s "$EA/sites-available/$f" "$EA/sites-enabled/$f"
-    sudo "$LEROOT"/venv/bin/letsencrypt --apache  certonly -t
+    RESULT=`echo c | sudo "$LEROOT"/venv/bin/letsencrypt --apache --register-unsafely-without-email --agree-tos certonly -t 2>&1`
+    if echo $RESULT | grep -Eq \("Please specify --domains"\|"mod_macro is not yet"\) ; then
+        echo passed
+    else
+        echo failed
+        echo $RESULT
+        echo
+        echo
+        FAILS=`expr $FAILS + 1`
+    fi
     sudo rm /etc/apache2/sites-{enabled,available}/"$f"
 done
+if [ "$FAILS" -ne 0 ] ; then
+    return 1
+fi
+return 0
