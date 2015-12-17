@@ -98,7 +98,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             help="SSL vhost configuration extension.")
         add("server-root", default=constants.CLI_DEFAULTS["server_root"],
             help="Apache server root directory.")
-        le_util.add_deprecated_argument(add, "init-script", 1)
+        le_util.add_deprecated_argument(add, "init-script")
 
     def __init__(self, *args, **kwargs):
         """Initialize an Apache Configurator.

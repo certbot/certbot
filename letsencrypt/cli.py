@@ -858,7 +858,7 @@ class HelpfulArgumentParser(object):
             kwargs["help"] = argparse.SUPPRESS
             self.parser.add_argument(*args, **kwargs)
 
-    def add_deprecated_argument(self, argument_name, num_args):
+    def add_deprecated_argument(self, argument_name):
         """Adds a deprecated argument with the name argument_name.
 
         Deprecated arguments are not shown in the help. If they are used
@@ -866,11 +866,10 @@ class HelpfulArgumentParser(object):
         argument is deprecated and no other action is taken.
 
         :param str argument_name: Name of deprecated argument.
-        :param int nargs: Number of arguments the option takes.
 
         """
-        le_util.add_deprecated_argument(
-            self.parser.add_argument, argument_name, num_args)
+        le_util.add_deprecated_argument(self.parser.add_argument,
+                                        argument_name)
 
     def add_group(self, topic, **kwargs):
         """
@@ -1059,7 +1058,7 @@ def prepare_and_parse_args(plugins, args):
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
 
-    helpful.add_deprecated_argument("--agree-dev-preview", 0)
+    helpful.add_deprecated_argument("--agree-dev-preview")
 
     _create_subparsers(helpful)
     _paths_parser(helpful)
