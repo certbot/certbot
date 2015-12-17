@@ -25,7 +25,7 @@ for f in *.conf ; do
     echo -n  testing "$f"...
     sudo cp "$f" "$EA"/sites-available/
     sudo ln -s "$EA/sites-available/$f" "$EA/sites-enabled/$f"
-    RESULT=`echo c | sudo "$LETSENCRYPT" --apache --register-unsafely-without-email --agree-tos certonly -t 2>&1`
+    RESULT=`echo c | sudo "$LETSENCRYPT" --staging --apache --register-unsafely-without-email --agree-tos certonly -t 2>&1`
     if echo $RESULT | grep -Eq \("Please specify --domains"\|"mod_macro is not yet"\) ; then
         echo passed
     else
@@ -38,6 +38,6 @@ for f in *.conf ; do
     sudo rm /etc/apache2/sites-{enabled,available}/"$f"
 done
 if [ "$FAILS" -ne 0 ] ; then
-    return 1
+    exit 1
 fi
-return 0
+exit 0
