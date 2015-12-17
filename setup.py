@@ -55,7 +55,7 @@ if sys.version_info < (2, 7):
         'argparse',
         'mock<1.1.0',
     ])
-elif sys.version_info < (2, 8):
+elif sys.version_info < (2, 7, 9):
     # For secure SSL connexion with Python 2.7 (InsecurePlatformWarning)
     install_requires.append('ndg-httpsclient')
     install_requires.append('pyasn1')
