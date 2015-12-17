@@ -43,8 +43,17 @@ class ComparableX509(object):  # pylint: disable=too-few-public-methods
     def __getattr__(self, name):
         return getattr(self._wrapped, name)
 
-    def _dump(self, filetype=OpenSSL.crypto.FILETYPE_ASN1):
-        # pylint: disable=missing-docstring,protected-access
+    def dump(self, filetype=OpenSSL.crypto.FILETYPE_ASN1):
+        """Dumps the object into a buffer with the specified encoding.
+
+        :param int filetype: The desired encoding. Should be one of
+            OpenSSL.crypto.FILETYPE_ASN1, OpenSSL.crypto.FILETYPE_PEM,
+            or OpenSSL.crypto.FILETYPE_TEXT.
+
+        :returns: Encoded X509 object.
+        :rtype: str
+
+        """
         if isinstance(self._wrapped, OpenSSL.crypto.X509):
             func = OpenSSL.crypto.dump_certificate
         else:  # assert in __init__ makes sure this is X509Req
@@ -54,10 +63,10 @@ class ComparableX509(object):  # pylint: disable=too-few-public-methods
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return NotImplemented
-        return self._dump() == other._dump()  # pylint: disable=protected-access
+        return self.dump() == other.dump()
 
     def __hash__(self):
-        return hash((self.__class__, self._dump()))
+        return hash((self.__class__, self.dump()))
 
     def __ne__(self, other):
         return not self == other
