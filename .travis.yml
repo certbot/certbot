@@ -60,6 +60,8 @@ addons:
     - openssl
     # For Boulder integration testing
     - rsyslog
+    # for hackishapachetest
+    - coreutils
 
 install: "travis_retry pip install tox coveralls"
 script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/travis-integration.sh)'
