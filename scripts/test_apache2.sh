@@ -45,11 +45,7 @@ fi
 
 if [ "$OS_TYPE" = "ubuntu" ] ; then
     export LETSENCRYPT="$HOME/.local/share/letsencrypt/bin/letsencrypt"
-    sudo apt-get install -y libapache2-mod-wsgi
-    for mod in `grep -v '^#' tests/apache-conf-files/passing/README.modules` ; do
-        sudo a2enmod $mod
-    done
-    tests/apache-conf-files/hackish-apache-test
+    tests/apache-conf-files/hackish-apache-test --debian-modules
 else
     echo Not running hackish apache tests on $OS_TYPE
 fi
