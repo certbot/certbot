@@ -46,13 +46,22 @@ function Cleanup() {
     fi
 }
 
+# if our environment asks us to enable modules, do our best!
+if [ "$1" = --debian-modules ] ; then
+    sudo apt-get install -y libapache2-mod-wsgi
+
+    for mod in  ssl rewrite macro wsgi deflate ; do
+        sudo a2enmod $mod
+    done
+fi
+
+
 FAILS=0
 trap CleanupExit INT
 for f in *.conf ; do 
     echo -n  testing "$f"...
     Setup
-    echo running from $PWD
-    RESULT=`echo c | sudo "$LETSENCRYPT" --staging --apache --register-unsafely-without-email --agree-tos certonly -t 2>&1`
+    RESULT=`echo c | sudo "$LETSENCRYPT" -vvvv --debug --staging --apache --register-unsafely-without-email --agree-tos certonly -t 2>&1`
     if echo $RESULT | grep -Eq \("Please specify --domains"\|"mod_macro is not yet"\) ; then
         echo passed
     else

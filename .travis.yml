@@ -63,6 +63,8 @@ addons:
     # for hackishapachetest
     - realpath
     - apache2
+    - libapache2-mod-wsgi
+    - sudo
 
 install: "travis_retry pip install tox coveralls"
 script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/travis-integration.sh)'
