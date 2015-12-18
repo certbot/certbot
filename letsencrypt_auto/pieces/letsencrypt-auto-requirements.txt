@@ -20,8 +20,8 @@
 # sha256: 1F3TmncLSvtZHIJVX2qLvBrH6wGe2ptiHu4aCnIgEiA
 cffi==1.3.1
 
-# sha256: 0ayQAF3qd2CBys5QjLnHMi4EONHA82AN8auXEZEBJME
-https://github.com/kuba/ConfigArgParse/archive/a58b35d75a10e8b8fbee7f3c69163b63bb506325.zip#egg=ConfigArgParse
+# sha256: O1CoPdWBSd_O6Yy2VlJl0QtT6cCivKfu73-19VJIkKc
+ConfigArgParse == 0.10.0
 
 # sha256: ovVlB3DhyH-zNa8Zqbfrc_wFzPIhROto230AzSvLCQI
 configobj==5.0.6

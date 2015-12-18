@@ -155,13 +155,7 @@ else
   SUDO=
 fi
 
-if [ ! -f "$VENV_BIN/letsencrypt" ]; then
-  # If it looks like we've never bootstrapped before, bootstrap:
-  Bootstrap
-fi
-if [ "$1" = "--os-packages-only" ]; then
-  echo "OS packages installed."
-elif [ "$1" = "--no-self-upgrade" ]; then
+if [ "$1" = "--no-self-upgrade" ]; then
   # Phase 2: Create venv, install LE, and run.
 
   shift 1  # the --no-self-upgrade arg
@@ -184,7 +178,7 @@ elif [ "$1" = "--no-self-upgrade" ]; then
 
     echo "Installing Python packages..."
     TEMP_DIR=$(TempDir)
-    # There is no $ interpolation due to quotes on heredoc delimiters.
+    # There is no $ interpolation due to quotes on starting heredoc delimiter.
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/letsencrypt-auto-requirements.txt"
 {{ letsencrypt-auto-requirements.txt }}
@@ -216,7 +210,16 @@ else
   # upgrading. Phase 1 checks the version of the latest release of
   # letsencrypt-auto (which is always the same as that of the letsencrypt
   # package). Phase 2 checks the version of the locally installed letsencrypt.
-  
+
+  if [ ! -f "$VENV_BIN/letsencrypt" ]; then
+    # If it looks like we've never bootstrapped before, bootstrap:
+    Bootstrap
+  fi
+  if [ "$1" = "--os-packages-only" ]; then
+    echo "OS packages installed."
+    exit 0
+  fi
+
   echo "Checking for new version..."
   TEMP_DIR=$(TempDir)
   # ---------------------------------------------------------------------------

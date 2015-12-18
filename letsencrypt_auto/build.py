@@ -6,9 +6,12 @@ contents of the file at ./pieces/some/file except for certain tokens which have
 other, special definitions.
 
 """
-from os.path import dirname, join
+from os.path import abspath, dirname, join
 import re
 from sys import argv
+
+
+DIR = dirname(abspath(__file__))
 
 
 def le_version(build_script_dir):
@@ -25,25 +28,36 @@ def file_contents(path):
         return file.read()
 
 
-def main():
-    dir = dirname(argv[0])
+def build(version=None, requirements=None):
+    """Return the built contents of the letsencrypt-auto script.
 
+    :arg version: The version to attach to the script. Default: the version of
+        the letsencrypt package
+    :arg requirements: The contents of the requirements file to embed. Default:
+        contents of letsencrypt-auto-requirements.txt
+
+    """
     special_replacements = {
-        'LE_AUTO_VERSION': le_version(dir)
+        'LE_AUTO_VERSION': version or le_version(DIR)
     }
+    if requirements:
+        special_replacements['letsencrypt-auto-requirements.txt'] = requirements
 
     def replacer(match):
         token = match.group(1)
         if token in special_replacements:
             return special_replacements[token]
         else:
-            return file_contents(join(dir, 'pieces', token))
+            return file_contents(join(DIR, 'pieces', token))
 
-    result = re.sub(r'{{\s*([A-Za-z0-9_./-]+)\s*}}',
-                    replacer,
-                    file_contents(join(dir, 'letsencrypt-auto.template')))
-    with open(join(dir, 'letsencrypt-auto'), 'w') as out:
-        out.write(result)
+    return re.sub(r'{{\s*([A-Za-z0-9_./-]+)\s*}}',
+                  replacer,
+                  file_contents(join(DIR, 'letsencrypt-auto.template')))
+
+
+def main():
+    with open(join(DIR, 'letsencrypt-auto'), 'w') as out:
+        out.write(build())
 
 
 if __name__ == '__main__':
