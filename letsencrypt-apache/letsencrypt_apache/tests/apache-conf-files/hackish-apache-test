@@ -46,6 +46,15 @@ function Cleanup() {
     fi
 }
 
+# if our environment asks us to enable modules, do our best!
+if [ "$1" = --debian-modules ] ; then
+    sudo apt-get install -y libapache2-mod-wsgi
+    for mod in `grep -v '^#' tests/apache-conf-files/passing/README.modules` ; do
+        sudo a2enmod $mod
+    done
+fi
+
+
 FAILS=0
 trap CleanupExit INT
 for f in *.conf ; do 

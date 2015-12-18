@@ -51,6 +51,7 @@ addons:
     - python-virtualenv
     - gcc
     - dialog
+    - libapache2-mod-wsgi
     - libaugeas0
     - libssl-dev
     - libffi-dev
