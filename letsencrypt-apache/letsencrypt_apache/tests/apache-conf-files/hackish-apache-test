@@ -49,7 +49,8 @@ function Cleanup() {
 # if our environment asks us to enable modules, do our best!
 if [ "$1" = --debian-modules ] ; then
     sudo apt-get install -y libapache2-mod-wsgi
-    for mod in `grep -v '^#' $TESTDIR/passing/README.modules` ; do
+
+    for mod in  ssl rewrite macro wsgi deflate ; do
         sudo a2enmod $mod
     done
 fi
