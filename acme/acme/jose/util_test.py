@@ -20,6 +20,9 @@ class ComparableX509Test(unittest.TestCase):
         self.cert2 = test_util.load_cert('cert.pem')
         self.cert_other = test_util.load_cert('cert-san.pem')
 
+    def test_getattr_proxy(self):
+        self.assertTrue(self.cert1.has_expired())
+
     def test_eq(self):
         self.assertEqual(self.req1, self.req2)
         self.assertEqual(self.cert1, self.cert2)

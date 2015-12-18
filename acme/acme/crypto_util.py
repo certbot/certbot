@@ -4,11 +4,10 @@ import logging
 import socket
 import sys
 
-from six.moves import range  # pylint: disable=import-error,redefined-builtin
-
 import OpenSSL
 
 from acme import errors
+from acme import jose
 
 
 logger = logging.getLogger(__name__)
@@ -161,31 +160,22 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
     :rtype: `list` of `unicode`
 
     """
-    # constants based on implementation of
-    # OpenSSL.crypto.X509Error._subjectAltNameString
+    # constants based on PyOpenSSL certificate/CSR text dump
+    label = "DNS"
     parts_separator = ", "
     part_separator = ":"
-    extension_short_name = b"subjectAltName"
-
-    if hasattr(cert_or_req, 'get_extensions'):  # X509Req
-        extensions = cert_or_req.get_extensions()
-    else:  # X509
-        extensions = [cert_or_req.get_extension(i)
-                      for i in range(cert_or_req.get_extension_count())]
-
-    # pylint: disable=protected-access,no-member
-    label = OpenSSL.crypto.X509Extension._prefixes[OpenSSL.crypto._lib.GEN_DNS]
-    assert parts_separator not in label
     prefix = label + part_separator
+    title = "X509v3 Subject Alternative Name:"
 
-    san_extensions = [
-        ext._subjectAltNameString().split(parts_separator)
-        for ext in extensions if ext.get_short_name() == extension_short_name]
+    text = jose.ComparableX509(cert_or_req).dump(OpenSSL.crypto.FILETYPE_TEXT)
+    lines = iter(text.decode("utf-8").splitlines())
+    sans = [next(lines).split(parts_separator)
+            for line in lines if title in line]
     # WARNING: this function assumes that no SAN can include
     # parts_separator, hence the split!
 
-    return [part.split(part_separator)[1] for parts in san_extensions
-            for part in parts if part.startswith(prefix)]
+    return [part.split(part_separator)[1] for parts in sans
+            for part in parts if part.lstrip().startswith(prefix)]
 
 
 def gen_ss_cert(key, domains, not_before=None,

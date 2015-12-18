@@ -264,7 +264,9 @@ class TLSSNI01ResponseTest(unittest.TestCase):
 
     def test_verify_bad_cert(self):
         self.assertFalse(self.response.verify_cert(
-            test_util.load_cert('cert.pem')))
+            OpenSSL.crypto.load_certificate(
+                OpenSSL.crypto.FILETYPE_PEM,
+                test_util.load_vector('cert.pem'))))
 
     def test_simple_verify_bad_key_authorization(self):
         key2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
