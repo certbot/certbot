@@ -62,6 +62,7 @@ addons:
     - rsyslog
     # for hackishapachetest
     - realpath
+    - apache2
 
 install: "travis_retry pip install tox coveralls"
 script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/travis-integration.sh)'
