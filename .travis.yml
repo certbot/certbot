@@ -35,7 +35,7 @@ branches:
     - /^test-.*$/
 
 # container-based infrastructure
-sudo: false
+sudo: true
 
 addons:
   # make sure simplehttp simple verification works (custom /etc/hosts)
