@@ -28,9 +28,17 @@ class TwoVhost80Test(util.ApacheTest):
 
         self.config = util.get_apache_configurator(
             self.config_path, self.config_dir, self.work_dir)
-
+        self.config = self.mock_deploy_cert(self.config)
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/two_vhost_80")
+
+    def mock_deploy_cert(self, config):
+        self.config.real_deploy_cert = self.config.deploy_cert
+        def mocked_deploy_cert(*args, **kwargs):
+            with mock.patch("letsencrypt_apache.configurator.ApacheConfigurator.enable_mod") as mock_enable:
+                config.real_deploy_cert(*args, **kwargs)
+        self.config.deploy_cert = mocked_deploy_cert
+        return self.config
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -251,6 +259,7 @@ class TwoVhost80Test(util.ApacheTest):
 
         # Get the default 443 vhost
         self.config.assoc["random.demo"] = self.vh_truth[1]
+        self.config = self.mock_deploy_cert(self.config)
         self.config.deploy_cert(
             "random.demo", "example/cert.pem", "example/key.pem",
             "example/cert_chain.pem", "example/fullchain.pem")
@@ -277,6 +286,7 @@ class TwoVhost80Test(util.ApacheTest):
     def test_deploy_cert_newssl_no_fullchain(self):
         self.config = util.get_apache_configurator(
             self.config_path, self.config_dir, self.work_dir, version=(2, 4, 16))
+        self.config = self.mock_deploy_cert(self.config)
 
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
@@ -290,6 +300,7 @@ class TwoVhost80Test(util.ApacheTest):
     def test_deploy_cert_old_apache_no_chain(self):
         self.config = util.get_apache_configurator(
             self.config_path, self.config_dir, self.work_dir, version=(2, 4, 7))
+        self.config = self.mock_deploy_cert(self.config)
 
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")

@@ -19,7 +19,6 @@ class ApacheParser(object):
 
     :ivar str root: Normalized absolute path to the server root
         directory. Without trailing slash.
-    :ivar str root: Server root
     :ivar set modules: All module names that are currently enabled.
     :ivar dict loc: Location to place directives, root - configuration origin,
         default - user config file, name - NameVirtualHost,
@@ -36,6 +35,7 @@ class ApacheParser(object):
         # https://httpd.apache.org/docs/2.4/mod/core.html#ifdefine
         # This only handles invocation parameters and Define directives!
         self.variables = {}
+        self.unparsable = False
         self.update_runtime_variables(ctl)
 
         self.aug = aug
@@ -59,6 +59,11 @@ class ApacheParser(object):
         # Must also attempt to parse sites-available or equivalent
         # Sites-available is not included naturally in configuration
         self._parse_file(os.path.join(self.root, "sites-available") + "/*")
+
+        #check to see if there were unparsed define statements
+        if self.unparsable:
+            if self.find_dir("Define", exclude=False):
+                raise errors.PluginError("Error parsing runtime variables")
 
     def init_modules(self):
         """Iterates on the configuration until no new modules are loaded.
@@ -101,7 +106,8 @@ class ApacheParser(object):
         try:
             matches.remove("DUMP_RUN_CFG")
         except ValueError:
-            raise errors.PluginError("Unable to parse runtime variables")
+            self.unparsable = True
+            return
 
         for match in matches:
             if match.count("=") > 1:
