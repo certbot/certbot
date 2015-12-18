@@ -116,8 +116,6 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         #       read further defaults from the systemwide renewal configuration
         #       file at this stage?
         self.configuration = config_with_defaults(self.configfile)
-        logger_level = self.configuration['renewalparams']['verbose_count']
-        self.set_logger_level(logger_level)
 
         if not all(x in self.configuration for x in ALL_FOUR):
             raise errors.CertStorageError(
@@ -130,21 +128,6 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         self.fullchain = self.configuration["fullchain"]
 
         self._fix_symlinks()
-
-    def set_logger_level(self, logger_level):
-        levels_dict = {"0" : 0,
-                       "-1" : 10,
-                       "-2" : 20,
-                       "-3" : 30,
-                       "-4" : 40,
-                       "-5" : 50}
-        if logger_level in levels_dict:
-            new_level = levels_dict[logger_level]
-        else:
-            new_level = 30
-        root_logger = logger.parent
-        root_logger.setLevel(new_level)
-        return
 
     def _consistent(self):
         """Are the files associated with this lineage self-consistent?
