@@ -19,11 +19,11 @@ env:
     - GOPATH=/tmp/go
     - PATH=$GOPATH/bin:$PATH
   matrix:
-    - TOXENV=py26 BOULDER_INTEGRATION=1
-    - TOXENV=py27 BOULDER_INTEGRATION=1
-    - TOXENV=lint
-    - TOXENV=cover
     - TOXENV=hackishapachetest
+#    - TOXENV=py26 BOULDER_INTEGRATION=1
+#    - TOXENV=py27 BOULDER_INTEGRATION=1
+#    - TOXENV=lint
+#    - TOXENV=cover
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
@@ -61,7 +61,7 @@ addons:
     # For Boulder integration testing
     - rsyslog
     # for hackishapachetest
-    - coreutils
+    - realpath
 
 install: "travis_retry pip install tox coveralls"
 script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/travis-integration.sh)'
