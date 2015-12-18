@@ -260,7 +260,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         :returns: The path to the current version of the specified
             member.
-        :rtype: str
+        :rtype: str or None
 
         """
         if kind not in ALL_FOUR:
