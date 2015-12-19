@@ -24,11 +24,11 @@ apt-get update
 # distro version (#346)
 
 virtualenv=
-if apt-cache show virtualenv > /dev/null ; then
+if apt-cache show virtualenv > /dev/null 2>&1; then
   virtualenv="virtualenv"
 fi
 
-if apt-cache show python-virtualenv > /dev/null ; then
+if apt-cache show python-virtualenv > /dev/null 2>&1; then
   virtualenv="$virtualenv python-virtualenv"
 fi
 
