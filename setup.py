@@ -55,12 +55,13 @@ if sys.version_info < (2, 7):
         'argparse',
         'mock<1.1.0',
     ])
-elif sys.version_info < (2, 7, 9):
+else:
+    install_requires.append('mock')
+
+if sys.version_info < (2, 7, 9):
     # For secure SSL connexion with Python 2.7 (InsecurePlatformWarning)
     install_requires.append('ndg-httpsclient')
     install_requires.append('pyasn1')
-else:
-    install_requires.append('mock')
 
 dev_extras = [
     # Pin astroid==1.3.5, pylint==1.4.2 as a workaround for #289
