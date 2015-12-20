@@ -549,7 +549,11 @@ def record_chosen_plugins(config, plugins, auth, inst):
 
 def check_root_privileges(plugin):
     """Warns user about insufficient privileges."""
-    if plugin.is_root_required and not os.geteuid() == 0:
+    if not hasattr(plugin, 'is_root_required'):
+        return
+    if not plugin.is_root_required:
+        return
+    if not os.geteuid() == 0:
         logger.warning(
             "The plugin %s requires root privileges. "
             "Since you are not root (not using sudo) it may encounter errors.",

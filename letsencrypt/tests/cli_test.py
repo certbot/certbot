@@ -564,6 +564,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         logger.addHandler(mock_handler)
         mock_uid.return_value = 1
 
+        plugin = mock.MagicMock()  # plugin may have no attribute
+        del plugin.is_root_required
+        cli.check_root_privileges(plugin)
+        mock_handler.handle.assert_not_called()
+
         plugin = mock.MagicMock(is_root_required=False)
         cli.check_root_privileges(plugin)
         mock_handler.handle.assert_not_called()
