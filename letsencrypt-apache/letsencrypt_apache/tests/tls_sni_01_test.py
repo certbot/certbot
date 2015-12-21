@@ -20,7 +20,7 @@ class TlsSniPerformTest(util.ApacheTest):
         super(TlsSniPerformTest, self).setUp()
 
         config = util.get_apache_configurator(
-            self.config_path, self.config_dir, self.work_dir)
+            self.config_path, self.vhost_path, self.config_dir, self.work_dir)
         config.config.tls_sni_01_port = 443
 
         from letsencrypt_apache import tls_sni_01
