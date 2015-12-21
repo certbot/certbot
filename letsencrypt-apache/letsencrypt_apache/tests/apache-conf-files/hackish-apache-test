@@ -62,7 +62,7 @@ for f in *.conf ; do
     echo -n  testing "$f"...
     Setup
     RESULT=`echo c | sudo "$LETSENCRYPT" -vvvv --debug --staging --apache --register-unsafely-without-email --agree-tos certonly -t 2>&1`
-    if echo $RESULT | grep -Eq \("Please specify --domains"\|"mod_macro is not yet"\) ; then
+    if echo $RESULT | grep -Eq \("What names would you like"\|"mod_macro is not yet"\) ; then
         echo passed
     else
         echo failed
