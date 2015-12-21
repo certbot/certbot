@@ -42,7 +42,8 @@ CLI_DEFAULTS = {
     "centos": CLI_DEFAULTS_CENTOS,
     "centos linux": CLI_DEFAULTS_CENTOS,
     "fedora": CLI_DEFAULTS_CENTOS,
-    "red hat enterprise linux server": CLI_DEFAULTS_CENTOS
+    "red hat enterprise linux server": CLI_DEFAULTS_CENTOS,
+    "gentoo base system": CLI_DEFAULTS_GENTOO
 }
 """CLI defaults."""
 
