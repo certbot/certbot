@@ -32,6 +32,26 @@ if apt-cache show python-virtualenv > /dev/null ; then
   virtualenv="$virtualenv python-virtualenv"
 fi
 
+augeas_pkg=libaugeas0
+AUGVERSION=`apt-cache show --no-all-versions libaugeas0 | grep ^Version: | cut -d" " -f2`
+
+if dpkg --compare-version 1.0 gt "$AUGVERSION" ; then
+    if lsb_release -a | grep -q wheezy ; then
+        if ! grep -v -e ' *#' /etc/apt/sources.list | grep -q wheezy-backports ; then
+            # XXX ask for permission before doing this?
+            echo Installing augeas from wheezy-backports...
+            echo deb http://http.debian.net/debian wheezy-backports main >> /etc/apt/sources.list
+            apt-get update
+            apt-get install -y --no-install-recommends -t wheezy-backports libaugeas0
+        fi
+        augeas_pkg=
+    else
+        echo "No libaugeas0 version is available that's new enough to run the"
+        echo "Let's Encrypt apache plugin..."
+    fi
+    # XXX add a case for ubuntu PPAs
+fi
+
 apt-get install -y --no-install-recommends \
   git \
   python \
@@ -39,10 +59,12 @@ apt-get install -y --no-install-recommends \
   $virtualenv \
   gcc \
   dialog \
-  libaugeas0 \
+  $augeas_pkg \
   libssl-dev \
   libffi-dev \
   ca-certificates \
+
+
 
 if ! command -v virtualenv > /dev/null ; then
   echo Failed to install a working \"virtualenv\" command, exiting
