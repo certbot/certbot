@@ -28,7 +28,7 @@ class ApacheParser(object):
     arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
     fnmatch_chars = set(["*", "?", "\\", "[", "]"])
 
-    def __init__(self, aug, root, vhostroot, ctl):
+    def __init__(self, aug, root, vhostroot, ctl, version=(2, 4)):
         # Note: Order is important here.
 
         # This uses the binary, so it can be done first.
@@ -36,7 +36,8 @@ class ApacheParser(object):
         # https://httpd.apache.org/docs/2.4/mod/core.html#ifdefine
         # This only handles invocation parameters and Define directives!
         self.variables = {}
-        self.update_runtime_variables(ctl)
+        if version >= (2, 4):
+            self.update_runtime_variables(ctl)
 
         self.aug = aug
         # Find configuration root and make sure augeas can parse it.

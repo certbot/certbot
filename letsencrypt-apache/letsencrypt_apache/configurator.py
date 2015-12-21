@@ -156,17 +156,18 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Make sure configuration is valid
         self.config_test()
 
-        self.parser = parser.ApacheParser(
-            self.aug, self.conf("server-root"), self.conf("vhost-root"), self.conf("ctl"))
-        # Check for errors in parsing files with Augeas
-        self.check_parsing_errors("httpd.aug")
-
         # Set Version
         if self.version is None:
             self.version = self.get_version()
         if self.version < (2, 2):
             raise errors.NotSupportedError(
                 "Apache Version %s not supported.", str(self.version))
+
+        self.parser = parser.ApacheParser(
+            self.aug, self.conf("server-root"), self.conf("vhost-root"),
+            self.conf("ctl"), self.version)
+        # Check for errors in parsing files with Augeas
+        self.check_parsing_errors("httpd.aug")
 
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
@@ -1277,7 +1278,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            stdout, _ = le_util.run_script([self.conf("ctl"), "-v"])
+            stdout, _ = le_util.run_script(
+                constants.os_constant("version_cmd").split(" "))
         except errors.SubprocessError:
             raise errors.PluginError(
                 "Unable to run %s -v" % self.conf("ctl"))
