@@ -311,12 +311,8 @@ class TwoVhost80Test(util.ApacheTest):
 
     def test_deploy_cert_newssl_no_fullchain(self):
         self.config = util.get_apache_configurator(
-<<<<<<< HEAD
-            self.config_path, self.config_dir, self.work_dir, version=(2, 4, 16))
-        self.config = self.mock_deploy_cert(self.config)
-=======
             self.config_path, self.vhost_path, self.config_dir, self.work_dir, version=(2, 4, 16))
->>>>>>> joohoi/multios_apache
+        self.config = self.mock_deploy_cert(self.config)
 
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
@@ -329,12 +325,8 @@ class TwoVhost80Test(util.ApacheTest):
 
     def test_deploy_cert_old_apache_no_chain(self):
         self.config = util.get_apache_configurator(
-<<<<<<< HEAD
-            self.config_path, self.config_dir, self.work_dir, version=(2, 4, 7))
-        self.config = self.mock_deploy_cert(self.config)
-=======
             self.config_path, self.vhost_path, self.config_dir, self.work_dir, version=(2, 4, 7))
->>>>>>> joohoi/multios_apache
+        self.config = self.mock_deploy_cert(self.config)
 
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
