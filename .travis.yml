@@ -20,10 +20,10 @@ env:
     - PATH=$GOPATH/bin:$PATH
   matrix:
     - TOXENV=hackishapachetest
-#    - TOXENV=py26 BOULDER_INTEGRATION=1
-#    - TOXENV=py27 BOULDER_INTEGRATION=1
-#    - TOXENV=lint
-#    - TOXENV=cover
+    - TOXENV=py26 BOULDER_INTEGRATION=1
+    - TOXENV=py27 BOULDER_INTEGRATION=1
+    - TOXENV=lint
+    - TOXENV=cover
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
