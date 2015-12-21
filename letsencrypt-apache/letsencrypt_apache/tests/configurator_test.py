@@ -33,9 +33,12 @@ class TwoVhost80Test(util.ApacheTest):
             self.temp_dir, "debian_apache_2_4/two_vhost_80")
 
     def mock_deploy_cert(self, config):
+        """A test for a mock deploy cert"""
         self.config.real_deploy_cert = self.config.deploy_cert
         def mocked_deploy_cert(*args, **kwargs):
-            with mock.patch("letsencrypt_apache.configurator.ApacheConfigurator.enable_mod") as mock_enable:
+            """a helper to mock a deployed cert"""
+            with mock.patch(
+                 "letsencrypt_apache.configurator.ApacheConfigurator.enable_mod"):
                 config.real_deploy_cert(*args, **kwargs)
         self.config.deploy_cert = mocked_deploy_cert
         return self.config
