@@ -78,7 +78,8 @@ class TlsSniPerformTest(util.ApacheTest):
         # pylint: disable=protected-access
         self.sni._setup_challenge_cert = mock_setup_cert
 
-        with mock.patch("letsencrypt_apache.configurator.ApacheConfigurator.enable_mod") as mock_enable:
+        with mock.patch(
+             "letsencrypt_apache.configurator.ApacheConfigurator.enable_mod"):
             sni_responses = self.sni.perform()
 
         self.assertEqual(mock_setup_cert.call_count, 2)
