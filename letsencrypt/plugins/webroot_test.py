@@ -67,9 +67,8 @@ class AuthenticatorTest(unittest.TestCase):
     def test_prepare_reraises_other_errors(self):
         self.auth.full_path = os.path.join(self.path, "null")
         permission_canary = os.path.join(self.path, "rnd")
-        f = open(permission_canary, "w")
-        f.write("thingimy")
-        f.close()
+        with open(permission_canary, "w") as f:
+            f.write("thingimy")
         os.chmod(self.path, 0o000)
         try:
             open(permission_canary, "r")
