@@ -6,7 +6,7 @@
     "letsencrypt": "./bin/npm-cli"
   },
   "scripts": {
-    "postinstall": "letsencrypt-auto --help"
+    "postinstall": "letsencrypt-auto --help",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -16,9 +16,9 @@
   "bugs": {
     "url": "https://github.com/letsencrypt/letsencrypt/issues"
   },
-  "keywords": {
+  "keywords": [
     "ssl", "certificate", "encrypt", "letsencrypt"
-  },
+  ],
   "author": "Jason Robert O'Kennedy",
   "contributors": [{
     "name": "celticparser",
