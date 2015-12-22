@@ -8,6 +8,7 @@ import subprocess
 
 from letsencrypt import errors
 
+from letsencrypt_apache import constants
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +109,7 @@ class ApacheParser(object):
         for match in matches:
             if match.count("=") > 1:
                 logger.error("Unexpected number of equal signs in "
-                             "apache2ctl -D DUMP_RUN_CFG")
+                             "runtime config dump.")
                 raise errors.PluginError(
                     "Error parsing Apache runtime variables")
             parts = match.partition("=")
@@ -124,7 +125,7 @@ class ApacheParser(object):
         """
         try:
             proc = subprocess.Popen(
-                [ctl, "-t", "-D", "DUMP_RUN_CFG"],
+                constants.os_constant("define_cmd").split(" "),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
