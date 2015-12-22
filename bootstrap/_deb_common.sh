@@ -50,9 +50,9 @@ if dpkg --compare-version 1.0 gt "$AUGVERSION" ; then
 
                 echo deb http://http.debian.net/debian wheezy-backports main >> /etc/apt/sources.list.d/wheezy-backports.list
                 apt-get update
-                apt-get install -y --no-install-recommends -t wheezy-backports libaugeas0
             fi
         fi
+        apt-get install -y --no-install-recommends -t wheezy-backports libaugeas0
         augeas_pkg=
     else
         echo "No libaugeas0 version is available that's new enough to run the"
