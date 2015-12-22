@@ -40,13 +40,13 @@ if dpkg --compare-versions 1.0 gt "$AUGVERSION" ; then
         if ! grep -v -e ' *#' /etc/apt/sources.list | grep -q wheezy-backports ; then
             # This can theoretically error if sources.list.d is empty, but in that case we don't care.
             if ! grep -v -e ' *#' /etc/apt/sources.list.d/* | grep -q wheezy-backports 2>/dev/null ; then
-                echo -n "Installing libaugeas0 from wheezy-backports in 3 seconds..."
+                /bin/echo -n "Installing augeas from wheezy-backports in 3 seconds..."
                 sleep 1s
-                echo -e "\e[0K\rInstalling libaugeas0 from wheezy-backports in 2 seconds..."
+                /bin/echo -ne "\e[0K\rInstalling augeas from wheezy-backports in 2 seconds..."
                 sleep 1s
-                echo -e "\e[0K\rInstalling libaugeas0 from wheezy-backports in 1 second ..."
+                /bin/echo -ne "\e[0K\rInstalling augeas from wheezy-backports in 1 second ..."
                 sleep 1s
-                echo '(Backports are only installed if explicitly requested via "apt-get install -t wheezy-backports")'
+                /bin/echo '(Backports are only installed if explicitly requested via "apt-get install -t wheezy-backports")'
 
                 echo deb http://http.debian.net/debian wheezy-backports main >> /etc/apt/sources.list.d/wheezy-backports.list
                 apt-get update
