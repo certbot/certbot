@@ -97,6 +97,7 @@ DeterminePythonVersion() {
     export LE_PYTHON=${LE_PYTHON:-python}
   else
     echo "Cannot find any Pythons... please install one!"
+    exit 1
   fi
 
   PYVER=`$LE_PYTHON --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
