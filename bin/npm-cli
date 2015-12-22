@@ -1,0 +1,11 @@
+#!/bin/bash
+
+bin_dir="`dirname $(readlink -f ${0})`/"
+parent_dir="`dirname ${bin_dir}`"
+
+for args in "$*"
+do
+    ${parent_dir}/letsencrypt-auto ${args}
+done
+
+exit 0
