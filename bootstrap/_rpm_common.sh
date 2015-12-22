@@ -47,3 +47,11 @@ then
     echo "Could not install additional dependencies. Aborting bootstrap!"
     exit 1
 fi
+
+
+if $tool list installed "httpd" >/dev/null 2>&1; then
+  if ! $tool install -y mod_ssl
+  then
+    echo "Apache found, but mod_ssl could not be installed."
+  fi
+fi
