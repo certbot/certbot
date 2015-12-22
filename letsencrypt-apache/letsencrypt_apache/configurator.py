@@ -546,7 +546,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         logger.debug(msg)
         self.save_notes += msg
 
-    def prepare_server_https(self, port, temp=False):
+    def prepare_server_https(self, port, temp=False): # pylint: disable=too-many-branches
         """Prepare the server for HTTPS.
 
         Make sure that the ssl_module is loaded and that the server
