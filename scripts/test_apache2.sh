@@ -36,7 +36,20 @@ fi
 
 # run letsencrypt-apache2 via letsencrypt-auto
 cd letsencrypt
-./letsencrypt-auto -v --debug --text --agree-dev-preview --agree-tos \
+
+export SUDO=sudo
+if [ -f /etc/debian_version ] ; then
+  echo "Bootstrapping dependencies for Debian-based OSes..."
+  $SUDO bootstrap/_deb_common.sh
+elif [ -f /etc/redhat-release ] ; then
+  echo "Bootstrapping dependencies for RedHat-based OSes..."
+  $SUDO bootstrap/_rpm_common.sh
+else
+  echo "Dont have bootstrapping for this OS!"
+  exit 1
+fi
+
+venv/bin/letsencrypt -v --debug --text --agree-dev-preview --agree-tos \
                    --renew-by-default --redirect --register-unsafely-without-email \
                    --domain $PUBLIC_HOSTNAME --server $BOULDER_URL
 if [ $? -ne 0 ] ; then
