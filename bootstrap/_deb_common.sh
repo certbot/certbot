@@ -62,7 +62,6 @@ if dpkg --compare-versions 1.0 gt "$AUGVERSION" ; then
 fi
 
 apt-get install -y --no-install-recommends \
-  git \
   python \
   python-dev \
   $virtualenv \
