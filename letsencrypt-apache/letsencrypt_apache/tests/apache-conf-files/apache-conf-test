@@ -48,7 +48,8 @@ function Cleanup() {
 
 # if our environment asks us to enable modules, do our best!
 if [ "$1" = --debian-modules ] ; then
-    sudo apt-get install -y libapache2-mod-{wsgi,macro}
+    sudo apt-get install -y libapache2-mod-wsgi
+    sudo apt-get install -y libapache2-mod-macro
 
     for mod in  ssl rewrite macro wsgi deflate userdir version ; do
         sudo a2enmod $mod
