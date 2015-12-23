@@ -8,6 +8,7 @@ then
     CONFFILE=/etc/apache2/sites-available/000-default.conf
     sudo apt-get update
     sudo apt-get -y --no-upgrade install apache2 #curl
+    sudo apt-get -y install realpath # needed for test-apache-conf
     # For apache 2.4, set up ServerName
     sudo sed -i '/ServerName/ s/#ServerName/ServerName/' $CONFFILE
     sudo sed -i '/ServerName/ s/www.example.com/'$PUBLIC_HOSTNAME'/' $CONFFILE
