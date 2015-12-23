@@ -11,14 +11,14 @@ class ComparableX509Test(unittest.TestCase):
     """Tests for acme.jose.util.ComparableX509."""
 
     def setUp(self):
-        # test_util.load_{csr,cert} return ComparableX509
-        self.req1 = test_util.load_csr('csr.pem')
-        self.req2 = test_util.load_csr('csr.pem')
-        self.req_other = test_util.load_csr('csr-san.pem')
+        # test_util.load_comparable_{csr,cert} return ComparableX509
+        self.req1 = test_util.load_comparable_csr('csr.pem')
+        self.req2 = test_util.load_comparable_csr('csr.pem')
+        self.req_other = test_util.load_comparable_csr('csr-san.pem')
 
-        self.cert1 = test_util.load_cert('cert.pem')
-        self.cert2 = test_util.load_cert('cert.pem')
-        self.cert_other = test_util.load_cert('cert-san.pem')
+        self.cert1 = test_util.load_comparable_cert('cert.pem')
+        self.cert2 = test_util.load_comparable_cert('cert.pem')
+        self.cert_other = test_util.load_comparable_cert('cert-san.pem')
 
     def test_getattr_proxy(self):
         self.assertTrue(self.cert1.has_expired())

@@ -9,6 +9,8 @@ import unittest
 import configobj
 import mock
 
+from acme import jose
+
 from letsencrypt import configuration
 from letsencrypt import errors
 from letsencrypt.storage import ALL_FOUR
@@ -702,9 +704,10 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc.configfile["renewalparams"]["authenticator"] = "apache"
         mock_client = mock.MagicMock()
         # pylint: disable=star-args
+        comparable_cert = jose.ComparableX509(CERT)
         mock_client.obtain_certificate.return_value = (
-            mock.MagicMock(body=CERT), [CERT], mock.Mock(pem="key"),
-            mock.sentinel.csr)
+            mock.MagicMock(body=comparable_cert), [comparable_cert],
+            mock.Mock(pem="key"), mock.sentinel.csr)
         mock_c.return_value = mock_client
         self.assertEqual(2, renewer.renew(self.test_rc, 1))
         # TODO: We could also make several assertions about calls that should

@@ -12,7 +12,7 @@ from acme.jose import jwa
 from acme.jose import jwk
 
 
-CERT = test_util.load_cert('cert.pem')
+CERT = test_util.load_comparable_cert('cert.pem')
 KEY = jwk.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
 
 
