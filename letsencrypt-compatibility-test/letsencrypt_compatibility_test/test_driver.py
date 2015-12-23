@@ -15,11 +15,12 @@ from acme import crypto_util
 from acme import messages
 from letsencrypt import achallenges
 from letsencrypt import errors as le_errors
-from letsencrypt import validator
 from letsencrypt.tests import acme_util
 
 from letsencrypt_compatibility_test import errors
 from letsencrypt_compatibility_test import util
+from letsencrypt_compatibility_test import validator
+
 from letsencrypt_compatibility_test.configurators.apache import apache24
 
 
