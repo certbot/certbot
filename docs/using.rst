@@ -371,7 +371,7 @@ If you run Debian Stretch or Debian Sid, you can install letsencrypt packages.
    sudo apt-get update
    sudo apt-get install letsencrypt python-letsencrypt-apache
 
-If you don't want to use the Apache plugin, you can ommit the
+If you don't want to use the Apache plugin, you can omit the
 ``python-letsencrypt-apache`` package.
 
 Packages for Debian Jessie are coming in the next few weeks.
