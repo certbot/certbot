@@ -6,8 +6,6 @@ import unittest
 
 from six.moves import socketserver  # pylint: disable=import-error
 
-import OpenSSL
-
 from acme import errors
 from acme import jose
 from acme import test_util
@@ -66,18 +64,16 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
     """Test for acme.crypto_util._pyopenssl_cert_or_req_san."""
 
     @classmethod
-    def _call(cls, cert_or_req):
+    def _call(cls, loader, name):
         # pylint: disable=protected-access
         from acme.crypto_util import _pyopenssl_cert_or_req_san
-        return _pyopenssl_cert_or_req_san(cert_or_req)
+        return _pyopenssl_cert_or_req_san(loader(name))
 
-    def _call_cert(self, name, filetype=OpenSSL.crypto.FILETYPE_PEM):
-        return self._call(OpenSSL.crypto.load_certificate(
-            filetype, test_util.load_vector(name)))
+    def _call_cert(self, name):
+        return self._call(test_util.load_cert, name)
 
-    def _call_csr(self, name, filetype=OpenSSL.crypto.FILETYPE_PEM):
-        return self._call(OpenSSL.crypto.load_certificate_request(
-            filetype, test_util.load_vector(name)))
+    def _call_csr(self, name):
+        return self._call(test_util.load_csr, name)
 
     def test_cert_no_sans(self):
         self.assertEqual(self._call_cert('cert.pem'), [])
