@@ -478,6 +478,7 @@ for outq in outputs:
 results_file.close()
 
 if not cl_args.saveinstances:
+    print('Logs in ', LOGDIR)
     print('Terminating EC2 Instances and Cleaning Dangling EBS Volumes')
     boulder_server.terminate()
     terminate_and_clean(instances)
