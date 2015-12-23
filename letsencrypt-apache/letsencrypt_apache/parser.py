@@ -36,8 +36,8 @@ class ApacheParser(object):
         # https://httpd.apache.org/docs/2.4/mod/core.html#ifdefine
         # This only handles invocation parameters and Define directives!
         self.variables = {}
-        self.unparsable = False
-        self.update_runtime_variables(ctl)
+        if version >= (2, 4):
+            self.update_runtime_variables(ctl)
 
         self.aug = aug
         # Find configuration root and make sure augeas can parse it.
@@ -63,7 +63,7 @@ class ApacheParser(object):
         self._parse_file(self.vhostroot + "/*.conf")
 
         #check to see if there were unparsed define statements
-        if self.unparsable:
+        if version < (2, 4):
             if self.find_dir("Define", exclude=False):
                 raise errors.PluginError("Error parsing runtime variables")
 
@@ -108,7 +108,6 @@ class ApacheParser(object):
         try:
             matches.remove("DUMP_RUN_CFG")
         except ValueError:
-            self.unparsable = True
             return
 
         for match in matches:

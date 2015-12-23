@@ -556,10 +556,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str port: Port to listen on
 
         """
-        if "ssl_module" not in self.parser.modules:
-            self.enable_mod("ssl", temp=temp)
-        if self.version >= (2, 4) and "socache_shmcb_module" not in self.parser.modules:
-            self.enable_mod("socache_shmcb", temp=temp)
+
+        self.prepare_https_modules(temp)
         # Check for Listen <port>
         # Note: This could be made to also look for ip:443 combo
         listens = [self.parser.get_arg(x).split()[0] for x in self.parser.find_dir("Listen")]
@@ -599,6 +597,20 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     self.save_notes += "Added Listen %s:%s directive to %s\n" % (
                                        ip, port, self.parser.loc["listen"])
                     listens.append("%s:%s" % (ip, port))
+
+    def prepare_https_modules(self, temp):
+        """Helper method for prepare_server_https, taking care of enabling
+        needed modules
+
+        :param boolean temp: If the change is temporary
+        """
+
+        if self.conf("handle-modules"):
+            if "ssl_module" not in self.parser.modules:
+                self.enable_mod("ssl", temp=temp)
+            if self.version >= (2, 4) and ("socache_shmcb_module" not in
+                                           self.parser.modules):
+                self.enable_mod("socache_shmcb", temp=temp)
 
     def make_addrs_sni_ready(self, addrs):
         """Checks to see if the server is ready for SNI challenges.
