@@ -32,7 +32,6 @@ version = meta['version']
 
 install_requires = [
     'acme=={0}'.format(version),
-    'ConfigArgParse',
     'configobj',
     'cryptography>=0.7',  # load_pem_x509_certificate
     'parsedatetime',
@@ -53,10 +52,19 @@ if sys.version_info < (2, 7):
     install_requires.extend([
         # only some distros recognize stdlib argparse as already satisfying
         'argparse',
+        'ConfigArgParse>=0.10.0',  # python2.6 support, upstream #17
         'mock<1.1.0',
     ])
 else:
-    install_requires.append('mock')
+    install_requires.extend([
+        'ConfigArgParse',
+        'mock',
+    ])
+
+if sys.version_info < (2, 7, 9):
+    # For secure SSL connexion with Python 2.7 (InsecurePlatformWarning)
+    install_requires.append('ndg-httpsclient')
+    install_requires.append('pyasn1')
 
 dev_extras = [
     # Pin astroid==1.3.5, pylint==1.4.2 as a workaround for #289

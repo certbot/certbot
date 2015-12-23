@@ -86,7 +86,7 @@ SetVersion() {
     done
     sed -i "s/^__version.*/__version__ = '$ver'/" letsencrypt/__init__.py
 
-    git add -p $SUBPKGS # interactive user input
+    git add -p letsencrypt $SUBPKGS # interactive user input
 }
 SetVersion "$version"
 git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"
