@@ -230,7 +230,9 @@ The following files are available:
   Server certificate only.
 
   This is what Apache < 2.4.8 needs for `SSLCertificateFile
-  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_.
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_,
+  and nginx for `ssl_trusted_certificate
+  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_trusted_certificate>`_.
 
 ``chain.pem``
   All certificates that need to be served by the browser **excluding**
