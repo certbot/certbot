@@ -3,8 +3,6 @@
 # A hackish script to see if the client is behaving as expected 
 # with each of the "passing" conf files.
 
-# TODO presently this requires interaction and human judgement to 
-# assess, but it should be automated
 export EA=/etc/apache2/ 
 TESTDIR="`dirname $0`"
 LEROOT="`realpath \"$TESTDIR/../../../../\"`"
