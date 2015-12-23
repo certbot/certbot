@@ -33,7 +33,7 @@ REWRITE_HTTPS_ARGS_WITH_END = [
     https vhost"""
 
 HSTS_ARGS = ["always", "set", "Strict-Transport-Security",
-    "\"max-age=31536000; includeSubDomains\""]
+    "\"max-age=31536000\""]
 """Apache header arguments for HSTS"""
 
 UIR_ARGS = ["always", "set", "Content-Security-Policy",
