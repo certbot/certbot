@@ -60,7 +60,7 @@ addons:
     - openssl
     # For Boulder integration testing
     - rsyslog
-    # for hackishapachetest
+    # for apacheconftest
     - realpath
     - apache2
     - libapache2-mod-wsgi
