@@ -104,8 +104,9 @@ class ApacheTlsSni01(common.TLSSNI01):
         self.configurator.reverter.register_file_creation(
             True, self.challenge_conf)
 
-        with open(self.challenge_conf, "w") as new_conf:
+        with open(self.challenge_conf, "rw") as new_conf:
             new_conf.write(config_text)
+            logger.debug(new_conf.read())
 
         return addrs
 
