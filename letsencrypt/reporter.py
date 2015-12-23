@@ -1,4 +1,6 @@
 """Collects and displays information to the user."""
+from __future__ import print_function
+
 import collections
 import logging
 import os
@@ -75,8 +77,8 @@ class Reporter(object):
             no_exception = sys.exc_info()[0] is None
             bold_on = sys.stdout.isatty()
             if bold_on:
-                print le_util.ANSI_SGR_BOLD
-            print 'IMPORTANT NOTES:'
+                print(le_util.ANSI_SGR_BOLD)
+            print('IMPORTANT NOTES:')
             first_wrapper = textwrap.TextWrapper(
                 initial_indent=' - ', subsequent_indent=(' ' * 3))
             next_wrapper = textwrap.TextWrapper(
@@ -89,9 +91,9 @@ class Reporter(object):
                     sys.stdout.write(le_util.ANSI_SGR_RESET)
                     bold_on = False
                 lines = msg.text.splitlines()
-                print first_wrapper.fill(lines[0])
+                print(first_wrapper.fill(lines[0]))
                 if len(lines) > 1:
-                    print "\n".join(
-                        next_wrapper.fill(line) for line in lines[1:])
+                    print("\n".join(
+                        next_wrapper.fill(line) for line in lines[1:]))
         if bold_on:
             sys.stdout.write(le_util.ANSI_SGR_RESET)

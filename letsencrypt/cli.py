@@ -1,4 +1,6 @@
 """Let's Encrypt CLI."""
+from __future__ import print_function
+
 # TODO: Sanity check all input.  Be sure to avoid shell code etc...
 # pylint: disable=too-many-lines
 # (TODO: split this file into main.py and cli.py)
@@ -660,7 +662,7 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDisplay rather than print
     logger.debug("Filtered plugins: %r", filtered)
 
     if not args.init and not args.prepare:
-        print str(filtered)
+        print(str(filtered))
         return
 
     filtered.init(config)
@@ -668,13 +670,13 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDisplay rather than print
     logger.debug("Verified plugins: %r", verified)
 
     if not args.prepare:
-        print str(verified)
+        print(str(verified))
         return
 
     verified.prepare()
     available = verified.available()
     logger.debug("Prepared plugins: %s", available)
-    print str(available)
+    print(str(available))
 
 
 def read_file(filename, mode="rb"):
@@ -767,7 +769,7 @@ class HelpfulArgumentParser(object):
         self.help_arg = max(help1, help2)
         if self.help_arg is True:
             # just --help with no topic; avoid argparse altogether
-            print usage
+            print(usage)
             sys.exit(0)
         self.visible_topics = self.determine_help_topics(self.help_arg)
         self.groups = {}  # elements are added by .add_group()
@@ -880,12 +882,12 @@ class HelpfulArgumentParser(object):
 
         """
         if self.visible_topics[topic]:
-            #print "Adding visible group " + topic
+            #print("Adding visible group " + topic)
             group = self.parser.add_argument_group(topic, **kwargs)
             self.groups[topic] = group
             return group
         else:
-            #print "Invisible group " + topic
+            #print("Invisible group " + topic)
             return self.silent_parser
 
     def add_plugin_args(self, plugins):
@@ -897,7 +899,7 @@ class HelpfulArgumentParser(object):
         """
         for name, plugin_ep in plugins.iteritems():
             parser_or_group = self.add_group(name, description=plugin_ep.description)
-            #print parser_or_group
+            #print(parser_or_group)
             plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)
 
     def determine_help_topics(self, chosen_topic):
@@ -1187,7 +1189,7 @@ def _plugins_parsing(helpful, plugins):
 
     # These would normally be a flag within the webroot plugin, but because
     # they are parsed in conjunction with --domains, they live here for
-    # legibiility. helpful.add_plugin_ags must be called first to add the
+    # legibility. helpful.add_plugin_ags must be called first to add the
     # "webroot" topic
     helpful.add("webroot", "-w", "--webroot-path", action=WebrootPathProcessor,
                 help="public_html / webroot path. This can be specified multiple times to "

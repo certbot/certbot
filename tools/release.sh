@@ -1,12 +1,42 @@
-#!/bin/sh -xe
+#!/bin/bash -xe
 # Release dev packages to PyPI
 
+Usage() {
+    echo Usage:
+    echo "$0 [ --production ]"
+    exit 1
+}
+
+if [ "`dirname $0`" != "tools" ] ; then
+    echo Please run this script from the repo root
+    exit 1
+fi
+
+CheckVersion() {
+    # Args: <description of version type> <version number>
+    if ! echo "$2" | grep -q -e '[0-9]\+.[0-9]\+.[0-9]\+' ; then
+        echo "$1 doesn't look like 1.2.3"
+        exit 1
+    fi
+}
+
+if [ "$1" = "--production" ] ; then
+    version="$2"
+    CheckVersion Version "$version"
+    echo Releasing production version "$version"...
+    nextversion="$3"
+    CheckVersion "Next version" "$nextversion"
+    RELEASE_BRANCH="candidate-$version"
+else
+    version=`grep "__version__" letsencrypt/__init__.py | cut -d\' -f2 | sed s/\.dev0//`
+    version="$version.dev$(date +%Y%m%d)1"
+    RELEASE_BRANCH="dev-release"
+    echo Releasing developer version "$version"...
+fi
+
+RELEASE_GPG_KEY=${RELEASE_GPG_KEY:-A2CFB51FA275A7286234E7B24D17C995CD9775F2}
 # Needed to fix problems with git signatures and pinentry
 export GPG_TTY=$(tty)
-
-version="0.0.0.dev$(date +%Y%m%d)"
-DEV_RELEASE_BRANCH="dev-release"
-RELEASE_GPG_KEY=A2CFB51FA275A7286234E7B24D17C995CD9775F2
 
 # port for a local Python Package Index (used in testing)
 PORT=${PORT:-1234}
@@ -36,21 +66,29 @@ pip install -U wheel  # setup.py bdist_wheel
 # from current env when creating a child env
 pip install -U virtualenv
 
-root="$(mktemp -d -t le.$version.XXX)"
+root_without_le="$version.$$"
+root="./releases/le.$root_without_le"
+
 echo "Cloning into fresh copy at $root"  # clean repo = no artificats
 git clone . $root
 git rev-parse HEAD
 cd $root
-git branch -f "$DEV_RELEASE_BRANCH"
-git checkout "$DEV_RELEASE_BRANCH"
+if [ "$RELEASE_BRANCH" != "candidate-$version" ] ; then
+    git branch -f "$RELEASE_BRANCH"
+fi
+git checkout "$RELEASE_BRANCH"
 
-for pkg_dir in $SUBPKGS
-do
-  sed -i $x "s/^version.*/version = '$version'/" $pkg_dir/setup.py
-done
-sed -i "s/^__version.*/__version__ = '$version'/" letsencrypt/__init__.py
+SetVersion() {
+    ver="$1"
+    for pkg_dir in $SUBPKGS
+    do
+      sed -i "s/^version.*/version = '$ver'/" $pkg_dir/setup.py
+    done
+    sed -i "s/^__version.*/__version__ = '$ver'/" letsencrypt/__init__.py
 
-git add -p  # interactive user input
+    git add -p letsencrypt $SUBPKGS # interactive user input
+}
+SetVersion "$version"
 git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"
 git tag --local-user "$RELEASE_GPG_KEY" \
     --sign --message "Release $version" "$tag"
@@ -68,7 +106,7 @@ do
   echo "Signing ($pkg_dir)"
   for x in dist/*.tar.gz dist/*.whl
   do
-      gpg2 --detach-sign --armor --sign $x
+      gpg -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign $x
   done
 
   cd -
@@ -97,16 +135,44 @@ pip install \
   letsencrypt $SUBPKGS
 # stop local PyPI
 kill $!
+cd ~-
 
 # freeze before installing anything else, so that we know end-user KGS
 # make sure "twine upload" doesn't catch "kgs"
+if [ -d ../kgs ] ; then
+    echo Deleting old kgs...
+    rm -rf ../kgs
+fi
 mkdir ../kgs
 kgs="../kgs/$version"
 pip freeze | tee $kgs
 pip install nose
-nosetests letsencrypt $subpkgs_modules
+for module in letsencrypt $subpkgs_modules ; do
+    echo testing $module
+    nosetests $module
+done
+deactivate
+
+cd ..
+echo Now in $PWD
+name=${root_without_le%.*}
+ext="${root_without_le##*.}"
+rev="$(git rev-parse --short HEAD)"
+echo tar cJvf $name.$rev.tar.xz $name.$rev
+echo gpg -U $RELEASE_GPG_KEY --detach-sign --armor $name.$rev.tar.xz
+cd ~-
 
 echo "New root: $root"
 echo "KGS is at $root/kgs"
+echo "Test commands (in the letstest repo):"
+echo 'python multitester.py targets.yaml $AWS_KEY $USERNAME scripts/test_leauto_upgrades.sh --alt_pip $YOUR_PIP_REPO --branch public-beta'
+echo 'python multitester.py  targets.yaml $AWK_KEY $USERNAME scripts/test_letsencrypt_auto_certonly_standalone.sh --branch candidate-0.1.1'
+echo 'python multitester.py --saveinstances targets.yaml $AWS_KEY $USERNAME scripts/test_apache2.sh'
 echo "In order to upload packages run the following command:"
 echo twine upload "$root/dist.$version/*/*"
+
+if [ "$RELEASE_BRANCH" = candidate-"$version" ] ; then
+    SetVersion "$nextversion".dev0
+    git diff
+    git commit -m "Bump version to $nextversion"
+fi
