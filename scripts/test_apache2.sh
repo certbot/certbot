@@ -49,7 +49,8 @@ else
   exit 1
 fi
 
-venv/bin/letsencrypt -v --debug --text --agree-dev-preview --agree-tos \
+bootstrap/dev/venv.sh
+sudo venv/bin/letsencrypt -v --debug --text --agree-dev-preview --agree-tos \
                    --renew-by-default --redirect --register-unsafely-without-email \
                    --domain $PUBLIC_HOSTNAME --server $BOULDER_URL
 if [ $? -ne 0 ] ; then
@@ -58,7 +59,7 @@ fi
 
 if [ "$OS_TYPE" = "ubuntu" ] ; then
     export LETSENCRYPT="$HOME/.local/share/letsencrypt/bin/letsencrypt"
-    venv/bin/tox apacheconftest
+    venv/bin/tox -e apacheconftest
 else
     echo Not running hackish apache tests on $OS_TYPE
 fi

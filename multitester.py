@@ -75,7 +75,7 @@ parser.add_argument('--saveinstances',
                     action='store_true',
                     help="don't kill EC2 instances after run, useful for debugging")
 parser.add_argument('--alt_pip',
-                    default='https://certainly.isnot.org/pip/',
+                    default='',
                     help="server from which to pull candidate release packages")
 cl_args = parser.parse_args()
 
