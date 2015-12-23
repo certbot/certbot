@@ -1271,6 +1271,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         self.config_test()
+        logger.debug(self.aug.view_config_changes(self))
         self._reload()
 
     def _reload(self):
