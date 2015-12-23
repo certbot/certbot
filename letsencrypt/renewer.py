@@ -116,6 +116,7 @@ def renew(cert, old_version):
 def _cli_log_handler(args, level, fmt):  # pylint: disable=unused-argument
     handler = colored_logging.StreamHandler()
     handler.setFormatter(logging.Formatter(fmt))
+    handler.setLevel(level)
     return handler
 
 
