@@ -27,7 +27,7 @@ class TwoVhost80Test(util.ApacheTest):
         super(TwoVhost80Test, self).setUp()
 
         self.config = util.get_apache_configurator(
-            self.config_path, self.config_dir, self.work_dir)
+            self.config_path, self.vhost_path, self.config_dir, self.work_dir)
         self.config = self.mock_deploy_cert(self.config)
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/two_vhost_80")
@@ -311,7 +311,7 @@ class TwoVhost80Test(util.ApacheTest):
 
     def test_deploy_cert_newssl_no_fullchain(self):
         self.config = util.get_apache_configurator(
-            self.config_path, self.config_dir, self.work_dir, version=(2, 4, 16))
+            self.config_path, self.vhost_path, self.config_dir, self.work_dir, version=(2, 4, 16))
         self.config = self.mock_deploy_cert(self.config)
 
         self.config.parser.modules.add("ssl_module")
@@ -325,7 +325,7 @@ class TwoVhost80Test(util.ApacheTest):
 
     def test_deploy_cert_old_apache_no_chain(self):
         self.config = util.get_apache_configurator(
-            self.config_path, self.config_dir, self.work_dir, version=(2, 4, 7))
+            self.config_path, self.vhost_path, self.config_dir, self.work_dir, version=(2, 4, 7))
         self.config = self.mock_deploy_cert(self.config)
 
         self.config.parser.modules.add("ssl_module")
