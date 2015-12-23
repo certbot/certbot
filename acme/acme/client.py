@@ -2,6 +2,7 @@
 import datetime
 import heapq
 import logging
+import platform
 import time
 
 import six
@@ -483,6 +484,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                 'Successful revocation must return HTTP OK status')
 
 
+DEFAULT_USER_AGENT = 'acme-python Python/%s' % platform.python_version()
+
 class ClientNetwork(object):
     """Client network."""
     JSON_CONTENT_TYPE = 'application/json'
@@ -490,7 +493,7 @@ class ClientNetwork(object):
     REPLAY_NONCE_HEADER = 'Replay-Nonce'
 
     def __init__(self, key, alg=jose.RS256, verify_ssl=True,
-                 user_agent='acme-python'):
+                 user_agent=DEFAULT_USER_AGENT):
         self.key = key
         self.alg = alg
         self.verify_ssl = verify_ssl
