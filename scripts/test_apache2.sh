@@ -58,7 +58,7 @@ fi
 
 if [ "$OS_TYPE" = "ubuntu" ] ; then
     export LETSENCRYPT="$HOME/.local/share/letsencrypt/bin/letsencrypt"
-    tests/apache-conf-files/hackish-apache-test --debian-modules
+    venv/bin/tox apacheconftest
 else
     echo Not running hackish apache tests on $OS_TYPE
 fi
@@ -69,5 +69,5 @@ fi
 
 # return error if any of the subtests failed
 if [ "$FAIL" = 1 ] ; then
-    return 1
+    exit 1
 fi
