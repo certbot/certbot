@@ -114,24 +114,24 @@ DeterminePythonVersion() {
 # later steps, causing "ImportError: cannot import name unpack_url"
 if [ ! -d $VENV_PATH ]
 then
-  if [ ! -f "${BOOTSTRAP}"//debian.sh ] ; then
+  if [ ! -f "${BOOTSTRAP}"/debian.sh ] ; then
     echo "Cannot find the letsencrypt bootstrap scripts in $BOOTSTRAP"
     exit 1
   fi
 
   if [ -f /etc/debian_version ] ; then
     echo "Bootstrapping dependencies for Debian-based OSes..."
-    "${SUDO}" "${BOOTSTRAP}"//_deb_common.sh
+    "${SUDO}" "${BOOTSTRAP}"/_deb_common.sh
   elif [ -f /etc/redhat-release ] ; then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
-    "${SUDO}" "${BOOTSTRAP}"//_rpm_common.sh
+    "${SUDO}" "${BOOTSTRAP}"/_rpm_common.sh
   elif `grep -q openSUSE /etc/os-release` ; then
     echo "Bootstrapping dependencies for openSUSE-based OSes..."
-    "${SUDO}" "${BOOTSTRAP}"//_suse_common.sh
+    "${SUDO}" "${BOOTSTRAP}"/_suse_common.sh
   elif [ -f /etc/arch-release ] ; then
     if [ "$DEBUG" = 1 ] ; then
       echo "Bootstrapping dependencies for Archlinux..."
-      "${SUDO}" "${BOOTSTRAP}"//archlinux.sh
+      "${SUDO}" "${BOOTSTRAP}"/archlinux.sh
     else
       echo "Please use pacman to install letsencrypt packages:"
       echo "# pacman -S letsencrypt letsencrypt-apache"
