@@ -391,9 +391,9 @@ def _auth_from_domains(le_client, config, domains):
         new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
         # TODO: Check whether it worked! <- or make sure errors are thrown (jdk)
         lineage.save_successor(
-            lineage.latest_common_version(),
-            new_certr.body.dump(OpenSSL.crypto.FILETYPE_PEM), new_key.pem,
-            crypto_util.dump_pyopenssl_chain(new_chain))
+            lineage.latest_common_version(), OpenSSL.crypto.dump_certificate(
+                OpenSSL.crypto.FILETYPE_PEM, new_certr.body.wrapped),
+            new_key.pem, crypto_util.dump_pyopenssl_chain(new_chain))
 
         lineage.update_all_links_to(lineage.latest_common_version())
         # TODO: Check return value of save_successor

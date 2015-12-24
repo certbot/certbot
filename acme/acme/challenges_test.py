@@ -422,7 +422,8 @@ class ProofOfPossessionHintsTest(unittest.TestCase):
         self.jmsg_to = {
             'jwk': jwk,
             'certFingerprints': cert_fingerprints,
-            'certs': (jose.encode_b64jose(CERT.dump()),),
+            'certs': (jose.encode_b64jose(OpenSSL.crypto.dump_certificate(
+                OpenSSL.crypto.FILETYPE_ASN1, CERT.wrapped)),),
             'subjectKeyIdentifiers': subject_key_identifiers,
             'serialNumbers': serial_numbers,
             'issuers': issuers,

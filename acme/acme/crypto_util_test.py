@@ -18,7 +18,7 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
         self.cert = test_util.load_comparable_cert('cert.pem')
         key = test_util.load_pyopenssl_private_key('rsa512_key.pem')
         # pylint: disable=protected-access
-        certs = {b'foo': (key, self.cert._wrapped)}
+        certs = {b'foo': (key, self.cert.wrapped)}
 
         from acme.crypto_util import SSLSocket
 

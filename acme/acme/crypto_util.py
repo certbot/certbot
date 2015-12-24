@@ -7,7 +7,6 @@ import sys
 import OpenSSL
 
 from acme import errors
-from acme import jose
 
 
 logger = logging.getLogger(__name__)
@@ -167,7 +166,12 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
     prefix = label + part_separator
     title = "X509v3 Subject Alternative Name:"
 
-    text = jose.ComparableX509(cert_or_req).dump(OpenSSL.crypto.FILETYPE_TEXT)
+    if isinstance(cert_or_req, OpenSSL.crypto.X509):
+        func = OpenSSL.crypto.dump_certificate
+    else:
+        func = OpenSSL.crypto.dump_certificate_request
+    text = func(OpenSSL.crypto.FILETYPE_TEXT, cert_or_req)
+
     lines = iter(text.decode("utf-8").splitlines())
     sans = [next(lines).split(parts_separator)
             for line in lines if title in line]

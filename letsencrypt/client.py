@@ -299,7 +299,8 @@ class Client(object):
                 "by your operating system package manager")
 
         lineage = storage.RenewableCert.new_lineage(
-            domains[0], certr.body.dump(OpenSSL.crypto.FILETYPE_PEM),
+            domains[0], OpenSSL.crypto.dump_certificate(
+                OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped),
             key.pem, crypto_util.dump_pyopenssl_chain(chain),
             params, config, cli_config)
         return lineage
@@ -328,7 +329,8 @@ class Client(object):
                 os.path.dirname(path), 0o755, os.geteuid(),
                 self.config.strict_permissions)
 
-        cert_pem = certr.body.dump(OpenSSL.crypto.FILETYPE_PEM)
+        cert_pem = OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped)
         cert_file, act_cert_path = le_util.unique_file(cert_path, 0o644)
         try:
             cert_file.write(cert_pem)
