@@ -543,13 +543,8 @@ def _generate_failed_chall_msg(failed_achalls):
     msg = [
         "The following '{0}' errors were reported by the server:".format(typ)]
 
-    problems = dict()
     for achall in failed_achalls:
-        problems.setdefault(achall.error.description, set()).add(achall.domain)
-    for problem in problems:
-        msg.append("\n\nDomains: ")
-        msg.append(", ".join(sorted(problems[problem])))
-        msg.append("\nError: {0}".format(problem))
+        msg.append("\n\nDomain: %s\nDetail: %s\n" % (achall.domain, achall.error.detail))
 
     if typ in _ERROR_HELP:
         msg.append("\n\n")
