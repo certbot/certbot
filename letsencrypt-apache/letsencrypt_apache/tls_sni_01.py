@@ -1,12 +1,14 @@
 """A class that performs TLS-SNI-01 challenges for Apache"""
 
 import os
+import logging
 
 from letsencrypt.plugins import common
 
 from letsencrypt_apache import obj
 from letsencrypt_apache import parser
 
+logger = logging.getLogger(__name__)
 
 class ApacheTlsSni01(common.TLSSNI01):
     """Class that performs TLS-SNI-01 challenges within the Apache configurator
@@ -104,9 +106,9 @@ class ApacheTlsSni01(common.TLSSNI01):
         self.configurator.reverter.register_file_creation(
             True, self.challenge_conf)
 
-        with open(self.challenge_conf, "rw") as new_conf:
+        logger.debug("writing a config file with text: %s", config_text)
+        with open(self.challenge_conf, "w") as new_conf:
             new_conf.write(config_text)
-            logger.debug(new_conf.read())
 
         return addrs
 
