@@ -73,7 +73,7 @@ class ClientTest(unittest.TestCase):
 
         # Request issuance
         self.certr = messages.CertificateResource(
-            body=messages_test.CERT, authzrs=(self.authzr,),
+            body=messages_test.CERT,
             uri='https://www.letsencrypt-demo.org/acme/cert/1',
             cert_chain_uri='https://www.letsencrypt-demo.org/ca')
 
@@ -231,7 +231,7 @@ class ClientTest(unittest.TestCase):
         self.response.headers['Location'] = self.certr.uri
         self.response.links['up'] = {'url': self.certr.cert_chain_uri}
         self.assertEqual(self.certr, self.client.request_issuance(
-            messages_test.CSR, (self.authzr,)))
+            messages_test.CSR, self.certr.uri))
         # TODO: check POST args
 
     def test_request_issuance_missing_up(self):
