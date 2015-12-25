@@ -8,6 +8,7 @@ import subprocess
 
 from letsencrypt import errors
 
+from letsencrypt_apache import constants
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ class ApacheParser(object):
     arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
     fnmatch_chars = set(["*", "?", "\\", "[", "]"])
 
-    def __init__(self, aug, root, ctl):
+    def __init__(self, aug, root, vhostroot, ctl, version=(2, 4)):
         # Note: Order is important here.
 
         # This uses the binary, so it can be done first.
@@ -35,14 +36,16 @@ class ApacheParser(object):
         # https://httpd.apache.org/docs/2.4/mod/core.html#ifdefine
         # This only handles invocation parameters and Define directives!
         self.variables = {}
-        self.unparsable = False
-        self.update_runtime_variables(ctl)
+        if version >= (2, 4):
+            self.update_runtime_variables(ctl)
 
         self.aug = aug
         # Find configuration root and make sure augeas can parse it.
         self.root = os.path.abspath(root)
         self.loc = {"root": self._find_config_root()}
         self._parse_file(self.loc["root"])
+
+        self.vhostroot = os.path.abspath(vhostroot)
 
         # This problem has been fixed in Augeas 1.0
         self.standardize_excl()
@@ -56,12 +59,11 @@ class ApacheParser(object):
         # Set up rest of locations
         self.loc.update(self._set_locations())
 
-        # Must also attempt to parse sites-available or equivalent
-        # Sites-available is not included naturally in configuration
-        self._parse_file(os.path.join(self.root, "sites-available") + "/*")
+        # Must also attempt to parse virtual host root
+        self._parse_file(self.vhostroot + "/*.conf")
 
         #check to see if there were unparsed define statements
-        if self.unparsable:
+        if version < (2, 4):
             if self.find_dir("Define", exclude=False):
                 raise errors.PluginError("Error parsing runtime variables")
 
@@ -106,13 +108,12 @@ class ApacheParser(object):
         try:
             matches.remove("DUMP_RUN_CFG")
         except ValueError:
-            self.unparsable = True
             return
 
         for match in matches:
             if match.count("=") > 1:
                 logger.error("Unexpected number of equal signs in "
-                             "apache2ctl -D DUMP_RUN_CFG")
+                             "runtime config dump.")
                 raise errors.PluginError(
                     "Error parsing Apache runtime variables")
             parts = match.partition("=")
@@ -128,7 +129,7 @@ class ApacheParser(object):
         """
         try:
             proc = subprocess.Popen(
-                [ctl, "-t", "-D", "DUMP_RUN_CFG"],
+                constants.os_constant("define_cmd"),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
@@ -552,8 +553,7 @@ class ApacheParser(object):
 
     def _find_config_root(self):
         """Find the Apache Configuration Root file."""
-        location = ["apache2.conf", "httpd.conf"]
-
+        location = ["apache2.conf", "httpd.conf", "conf/httpd.conf"]
         for name in location:
             if os.path.isfile(os.path.join(self.root, name)):
                 return os.path.join(self.root, name)

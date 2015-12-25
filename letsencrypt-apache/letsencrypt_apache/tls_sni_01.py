@@ -50,7 +50,7 @@ class ApacheTlsSni01(common.TLSSNI01):
         super(ApacheTlsSni01, self).__init__(*args, **kwargs)
 
         self.challenge_conf = os.path.join(
-            self.configurator.conf("server-root"),
+            self.configurator.conf("challenge-location"),
             "le_tls_sni_01_cert_challenge.conf")
 
     def perform(self):
