@@ -129,7 +129,7 @@ class ApacheParser(object):
         """
         try:
             proc = subprocess.Popen(
-                constants.os_constant("define_cmd").split(" "),
+                constants.os_constant("define_cmd"),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
