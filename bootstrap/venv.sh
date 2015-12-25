@@ -20,7 +20,7 @@ fi
 pip install -U setuptools
 pip install -U pip
 
-pip install -U -r py26reqs.txt letsencrypt letsencrypt-apache # letsencrypt-nginx
+pip install -U letsencrypt letsencrypt-apache # letsencrypt-nginx
 
 echo
 echo "Congratulations, Let's Encrypt has been successfully installed/updated!"

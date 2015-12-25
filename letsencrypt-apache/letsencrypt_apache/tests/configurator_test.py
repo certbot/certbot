@@ -28,9 +28,20 @@ class TwoVhost80Test(util.ApacheTest):
 
         self.config = util.get_apache_configurator(
             self.config_path, self.config_dir, self.work_dir)
-
+        self.config = self.mock_deploy_cert(self.config)
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/two_vhost_80")
+
+    def mock_deploy_cert(self, config):
+        """A test for a mock deploy cert"""
+        self.config.real_deploy_cert = self.config.deploy_cert
+        def mocked_deploy_cert(*args, **kwargs):
+            """a helper to mock a deployed cert"""
+            with mock.patch(
+                 "letsencrypt_apache.configurator.ApacheConfigurator.enable_mod"):
+                config.real_deploy_cert(*args, **kwargs)
+        self.config.deploy_cert = mocked_deploy_cert
+        return self.config
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -251,6 +262,7 @@ class TwoVhost80Test(util.ApacheTest):
 
         # Get the default 443 vhost
         self.config.assoc["random.demo"] = self.vh_truth[1]
+        self.config = self.mock_deploy_cert(self.config)
         self.config.deploy_cert(
             "random.demo", "example/cert.pem", "example/key.pem",
             "example/cert_chain.pem", "example/fullchain.pem")
@@ -277,6 +289,7 @@ class TwoVhost80Test(util.ApacheTest):
     def test_deploy_cert_newssl_no_fullchain(self):
         self.config = util.get_apache_configurator(
             self.config_path, self.config_dir, self.work_dir, version=(2, 4, 16))
+        self.config = self.mock_deploy_cert(self.config)
 
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
@@ -290,6 +303,7 @@ class TwoVhost80Test(util.ApacheTest):
     def test_deploy_cert_old_apache_no_chain(self):
         self.config = util.get_apache_configurator(
             self.config_path, self.config_dir, self.work_dir, version=(2, 4, 7))
+        self.config = self.mock_deploy_cert(self.config)
 
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
@@ -653,6 +667,19 @@ class TwoVhost80Test(util.ApacheTest):
     def test_supported_enhancements(self):
         self.assertTrue(isinstance(self.config.supported_enhancements(), list))
 
+
+    @mock.patch("letsencrypt.le_util.exe_exists")
+    def test_enhance_unknown_vhost(self, mock_exe):
+        self.config.parser.modules.add("rewrite_module")
+        mock_exe.return_value = True
+        ssl_vh = obj.VirtualHost(
+            "fp", "ap", set([obj.Addr(("*", "443")), obj.Addr(("satoshi.com",))]),
+            True, False)
+        self.config.vhosts.append(ssl_vh)
+        self.assertRaises(
+            errors.PluginError,
+            self.config.enhance, "satoshi.com", "redirect")
+
     def test_enhance_unknown_enhancement(self):
         self.assertRaises(
             errors.PluginError,
@@ -741,6 +768,8 @@ class TwoVhost80Test(util.ApacheTest):
     def test_redirect_well_formed_http(self, mock_exe, _):
         self.config.parser.update_runtime_variables = mock.Mock()
         mock_exe.return_value = True
+        self.config.get_version = mock.Mock(return_value=(2, 2))
+
         # This will create an ssl vhost for letsencrypt.demo
         self.config.enhance("letsencrypt.demo", "redirect")
 
@@ -760,6 +789,55 @@ class TwoVhost80Test(util.ApacheTest):
 
         self.assertTrue("rewrite_module" in self.config.parser.modules)
 
+    def test_rewrite_rule_exists(self):
+        # Skip the enable mod
+        self.config.parser.modules.add("rewrite_module")
+        self.config.get_version = mock.Mock(return_value=(2, 3, 9))
+        self.config.parser.add_dir(
+            self.vh_truth[3].path, "RewriteRule", ["Unknown"])
+        self.assertTrue(self.config._is_rewrite_exists(self.vh_truth[3])) # pylint: disable=protected-access
+
+    def test_rewrite_engine_exists(self):
+        # Skip the enable mod
+        self.config.parser.modules.add("rewrite_module")
+        self.config.get_version = mock.Mock(return_value=(2, 3, 9))
+        self.config.parser.add_dir(
+            self.vh_truth[3].path, "RewriteEngine", "on")
+        self.assertTrue(self.config._is_rewrite_engine_on(self.vh_truth[3])) # pylint: disable=protected-access
+
+
+    @mock.patch("letsencrypt.le_util.run_script")
+    @mock.patch("letsencrypt.le_util.exe_exists")
+    def test_redirect_with_existing_rewrite(self, mock_exe, _):
+        self.config.parser.update_runtime_variables = mock.Mock()
+        mock_exe.return_value = True
+        self.config.get_version = mock.Mock(return_value=(2, 2))
+
+        # Create a preexisting rewrite rule
+        self.config.parser.add_dir(
+            self.vh_truth[3].path, "RewriteRule", ["Unknown"])
+        self.config.save()
+
+        # This will create an ssl vhost for letsencrypt.demo
+        self.config.enhance("letsencrypt.demo", "redirect")
+
+        # These are not immediately available in find_dir even with save() and
+        # load(). They must be found in sites-available
+        rw_engine = self.config.parser.find_dir(
+            "RewriteEngine", "on", self.vh_truth[3].path)
+        rw_rule = self.config.parser.find_dir(
+            "RewriteRule", None, self.vh_truth[3].path)
+
+        self.assertEqual(len(rw_engine), 1)
+        # three args to rw_rule + 1 arg for the pre existing rewrite
+        self.assertEqual(len(rw_rule), 4)
+
+        self.assertTrue(rw_engine[0].startswith(self.vh_truth[3].path))
+        self.assertTrue(rw_rule[0].startswith(self.vh_truth[3].path))
+
+        self.assertTrue("rewrite_module" in self.config.parser.modules)
+
+
     def test_redirect_with_conflict(self):
         self.config.parser.modules.add("rewrite_module")
         ssl_vh = obj.VirtualHost(
@@ -774,49 +852,33 @@ class TwoVhost80Test(util.ApacheTest):
     def test_redirect_twice(self):
         # Skip the enable mod
         self.config.parser.modules.add("rewrite_module")
+        self.config.get_version = mock.Mock(return_value=(2, 3, 9))
+
         self.config.enhance("encryption-example.demo", "redirect")
         self.assertRaises(
             errors.PluginEnhancementAlreadyPresent,
             self.config.enhance, "encryption-example.demo", "redirect")
 
-    def test_unknown_rewrite(self):
-        # Skip the enable mod
-        self.config.parser.modules.add("rewrite_module")
-        self.config.parser.add_dir(
-            self.vh_truth[3].path, "RewriteRule", ["Unknown"])
-        self.config.save()
-        self.assertRaises(
-            errors.PluginError,
-            self.config.enhance, "letsencrypt.demo", "redirect")
-
-    def test_unknown_rewrite2(self):
-        # Skip the enable mod
-        self.config.parser.modules.add("rewrite_module")
-        self.config.parser.add_dir(
-            self.vh_truth[3].path, "RewriteRule", ["Unknown", "2", "3"])
-        self.config.save()
-        self.assertRaises(
-            errors.PluginError,
-            self.config.enhance, "letsencrypt.demo", "redirect")
-
-    def test_unknown_redirect(self):
-        # Skip the enable mod
-        self.config.parser.modules.add("rewrite_module")
-        self.config.parser.add_dir(
-            self.vh_truth[3].path, "Redirect", ["Unknown"])
-        self.config.save()
-        self.assertRaises(
-            errors.PluginError,
-            self.config.enhance, "letsencrypt.demo", "redirect")
-
     def test_create_own_redirect(self):
         self.config.parser.modules.add("rewrite_module")
+        self.config.get_version = mock.Mock(return_value=(2, 3, 9))
         # For full testing... give names...
         self.vh_truth[1].name = "default.com"
         self.vh_truth[1].aliases = set(["yes.default.com"])
 
         self.config._enable_redirect(self.vh_truth[1], "")  # pylint: disable=protected-access
         self.assertEqual(len(self.config.vhosts), 7)
+
+    def test_create_own_redirect_for_old_apache_version(self):
+        self.config.parser.modules.add("rewrite_module")
+        self.config.get_version = mock.Mock(return_value=(2, 2))
+        # For full testing... give names...
+        self.vh_truth[1].name = "default.com"
+        self.vh_truth[1].aliases = set(["yes.default.com"])
+
+        self.config._enable_redirect(self.vh_truth[1], "")  # pylint: disable=protected-access
+        self.assertEqual(len(self.config.vhosts), 7)
+
 
     def get_achalls(self):
         """Return testing achallenges."""

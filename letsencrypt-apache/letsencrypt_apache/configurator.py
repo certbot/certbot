@@ -1,7 +1,6 @@
 """Apache Configuration based off of Augeas Configurator."""
 # pylint: disable=too-many-lines
 import filecmp
-import itertools
 import logging
 import os
 import re
@@ -26,6 +25,7 @@ from letsencrypt_apache import tls_sni_01
 from letsencrypt_apache import obj
 from letsencrypt_apache import parser
 
+from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -542,7 +542,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         if "ssl_module" not in self.parser.modules:
             self.enable_mod("ssl", temp=temp)
-
+        if self.version >= (2, 4) and "socache_shmcb_module" not in self.parser.modules:
+            self.enable_mod("socache_shmcb", temp=temp)
         # Check for Listen <port>
         # Note: This could be made to also look for ip:443 combo
         listens = [self.parser.get_arg(x).split()[0] for x in self.parser.find_dir("Listen")]
@@ -904,15 +905,33 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                         "redirection")
             self._create_redirect_vhost(ssl_vhost)
         else:
-            # Check if redirection already exists
-            self._verify_no_redirects(general_vh)
+            # Check if LetsEncrypt redirection already exists
+            self._verify_no_letsencrypt_redirect(general_vh)
+
+
+            # Note: if code flow gets here it means we didn't find the exact
+            # letsencrypt RewriteRule config for redirection. Finding
+            # another RewriteRule is likely to be fine in most or all cases,
+            # but redirect loops are possible in very obscure cases; see #1620
+            # for reasoning.
+            if self._is_rewrite_exists(general_vh):
+                logger.warn("Added an HTTP->HTTPS rewrite in addition to "
+                            "other RewriteRules; you may wish to check for "
+                            "overall consistency.")
 
             # Add directives to server
             # Note: These are not immediately searchable in sites-enabled
             #     even with save() and load()
-            self.parser.add_dir(general_vh.path, "RewriteEngine", "on")
-            self.parser.add_dir(general_vh.path, "RewriteRule",
+            if not self._is_rewrite_engine_on(general_vh):
+                self.parser.add_dir(general_vh.path, "RewriteEngine", "on")
+
+            if self.get_version() >= (2, 3, 9):
+                self.parser.add_dir(general_vh.path, "RewriteRule",
+                                constants.REWRITE_HTTPS_ARGS_WITH_END)
+            else:
+                self.parser.add_dir(general_vh.path, "RewriteRule",
                                 constants.REWRITE_HTTPS_ARGS)
+
             self.save_notes += ("Redirecting host in %s to ssl vhost in %s\n" %
                                 (general_vh.filep, ssl_vhost.filep))
             self.save()
@@ -920,40 +939,67 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             logger.info("Redirecting vhost in %s to ssl vhost in %s",
                         general_vh.filep, ssl_vhost.filep)
 
-    def _verify_no_redirects(self, vhost):
-        """Checks to see if existing redirect is in place.
+    def _verify_no_letsencrypt_redirect(self, vhost):
+        """Checks to see if a redirect was already installed by letsencrypt.
 
-        Checks to see if virtualhost already contains a rewrite or redirect
-        returns boolean, integer
+        Checks to see if virtualhost already contains a rewrite rule that is
+        identical to Letsencrypt's redirection rewrite rule.
 
         :param vhost: vhost to check
         :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
 
         :raises errors.PluginEnhancementAlreadyPresent: When the exact
                 letsencrypt redirection WriteRule exists in virtual host.
-
-                errors.PluginError: When there exists directives that may hint
-                other redirection. (TODO: We should not throw a PluginError,
-                    but that's for an other PR.)
         """
         rewrite_path = self.parser.find_dir(
-            "RewriteRule", None, start=vhost.path)
-        redirect_path = self.parser.find_dir("Redirect", None, start=vhost.path)
+                "RewriteRule", None, start=vhost.path)
 
-        if redirect_path:
-            # "Existing Redirect directive for virtualhost"
-            raise errors.PluginError("Existing Redirect present on HTTP vhost.")
-        if rewrite_path:
-            # "No existing redirection for virtualhost"
-            if len(rewrite_path) != len(constants.REWRITE_HTTPS_ARGS):
-                raise errors.PluginError("Unknown Existing RewriteRule")
-            for match, arg in itertools.izip(
-                    rewrite_path, constants.REWRITE_HTTPS_ARGS):
-                if self.aug.get(match) != arg:
-                    raise errors.PluginError("Unknown Existing RewriteRule")
+        # There can be other RewriteRule directive lines in vhost config.
+        # rewrite_args_dict keys are directive ids and the corresponding value
+        # for each is a list of arguments to that directive.
+        rewrite_args_dict = defaultdict(list)
+        pat = r'.*(directive\[\d+\]).*'
+        for match in rewrite_path:
+            m = re.match(pat, match)
+            if m:
+                dir_id = m.group(1)
+                rewrite_args_dict[dir_id].append(match)
 
-            raise errors.PluginEnhancementAlreadyPresent(
-                "Let's Encrypt has already enabled redirection")
+        if rewrite_args_dict:
+            redirect_args = [constants.REWRITE_HTTPS_ARGS,
+                constants.REWRITE_HTTPS_ARGS_WITH_END]
+
+            for matches in rewrite_args_dict.values():
+                if [self.aug.get(x) for x in matches] in redirect_args:
+                    raise errors.PluginEnhancementAlreadyPresent(
+                    "Let's Encrypt has already enabled redirection")
+
+    def _is_rewrite_exists(self, vhost):
+        """Checks if there exists a RewriteRule directive in vhost
+
+        :param vhost: vhost to check
+        :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
+
+        :returns: True if a RewriteRule directive exists.
+        :rtype: bool
+
+        """
+        rewrite_path = self.parser.find_dir(
+                "RewriteRule", None, start=vhost.path)
+        return bool(rewrite_path)
+
+    def _is_rewrite_engine_on(self, vhost):
+        """Checks if a RewriteEngine directive is on
+
+        :param vhost: vhost to check
+        :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
+
+        """
+        rewrite_engine_path = self.parser.find_dir("RewriteEngine", "on",
+                start=vhost.path)
+        if rewrite_engine_path:
+            return self.parser.get_arg(rewrite_engine_path[0])
+        return False
 
     def _create_redirect_vhost(self, ssl_vhost):
         """Creates an http_vhost specifically to redirect for the ssl_vhost.
@@ -990,6 +1036,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if ssl_vhost.aliases:
             serveralias = "ServerAlias " + " ".join(ssl_vhost.aliases)
 
+        rewrite_rule_args = []
+        if self.get_version() >= (2, 3, 9):
+            rewrite_rule_args = constants.REWRITE_HTTPS_ARGS_WITH_END
+        else:
+            rewrite_rule_args = constants.REWRITE_HTTPS_ARGS
+
+
         return ("<VirtualHost %s>\n"
                 "%s \n"
                 "%s \n"
@@ -1003,7 +1056,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "</VirtualHost>\n"
                 % (" ".join(str(addr) for addr in self._get_proposed_addrs(ssl_vhost)),
                    servername, serveralias,
-                   " ".join(constants.REWRITE_HTTPS_ARGS)))
+                   " ".join(rewrite_rule_args)))
 
     def _write_out_redirect(self, ssl_vhost, text):
         # This is the default name
@@ -1219,6 +1272,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         self.config_test()
+        logger.debug(self.reverter.view_config_changes())
         self._reload()
 
     def _reload(self):
@@ -1347,7 +1401,7 @@ def _get_mod_deps(mod_name):
 
     """
     deps = {
-        "ssl": ["setenvif", "mime", "socache_shmcb"]
+        "ssl": ["setenvif", "mime"]
     }
     return deps.get(mod_name, [])
 

@@ -1,0 +1,57 @@
+targets:
+  #-----------------------------------------------------------------------------
+  # Apache 2.4
+  - ami: ami-26d5af4c
+    name: ubuntu15.10
+    type: ubuntu
+    virt: hvm
+    user: ubuntu
+  - ami: ami-d92e6bb3
+    name: ubuntu15.04LTS
+    type: ubuntu
+    virt: hvm
+    user: ubuntu
+  - ami: ami-7b89cc11
+    name: ubuntu14.04LTS
+    type: ubuntu
+    virt: hvm
+    user: ubuntu
+  - ami: ami-9295d0f8
+    name: ubuntu14.04LTS_32bit
+    type: ubuntu
+    virt: pv
+    user: ubuntu
+  - ami: ami-116d857a
+    name: debian8.1
+    type: debian
+    virt: hvm
+    user: admin
+    userdata: |
+      #cloud-init
+      runcmd:
+        - [ apt-get, install, -y, curl ]
+  #-----------------------------------------------------------------------------
+  # Apache 2.2
+  # - ami: ami-0611546c
+  #   name: ubuntu12.04LTS
+  #   type: ubuntu
+  #   virt: hvm
+  #   user: ubuntu
+  # - ami: ami-e0efab88
+  #   name: debian7.8.aws.1
+  #   type: debian
+  #   virt: hvm
+  #   user: admin
+  #   userdata: |
+  #     #cloud-init
+  #     runcmd:
+  #       - [ apt-get, install, -y, curl ]
+  # - ami: ami-e6eeaa8e
+  #   name: debian7.8.aws.1_32bit
+  #   type: debian
+  #   virt: pv
+  #   user: admin
+  #   userdata: |
+  #     #cloud-init
+  #     runcmd:
+  #       - [ apt-get, install, -y, curl ]
