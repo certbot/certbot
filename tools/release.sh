@@ -172,7 +172,7 @@ echo "In order to upload packages run the following command:"
 echo twine upload "$root/dist.$version/*/*"
 
 if [ "$RELEASE_BRANCH" = candidate-"$version" ] ; then
-    SetVersion "$nextversion"
+    SetVersion "$nextversion".dev0
     git diff
     git commit -m "Bump version to $nextversion"
 fi
