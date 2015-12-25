@@ -40,7 +40,6 @@ install_requires = [
     'pyrfc3339',
     'python2-pythondialog>=3.2.2rc1',  # Debian squeeze support, cf. #280
     'pytz',
-    'requests',
     'setuptools',  # pkg_resources
     'six',
     'zope.component',
@@ -60,11 +59,6 @@ else:
         'ConfigArgParse',
         'mock',
     ])
-
-if sys.version_info < (2, 7, 9):
-    # For secure SSL connexion with Python 2.7 (InsecurePlatformWarning)
-    install_requires.append('ndg-httpsclient')
-    install_requires.append('pyasn1')
 
 dev_extras = [
     # Pin astroid==1.3.5, pylint==1.4.2 as a workaround for #289
