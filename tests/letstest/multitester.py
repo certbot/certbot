@@ -83,6 +83,9 @@ parser.add_argument('--killboulder',
 parser.add_argument('--boulderonly',
                     action='store_true',
                     help="only make a boulder server")
+parser.add_argument('--fast',
+                    action='store_true',
+                    help="use larger instance types to run faster (saves about a minute, probably not worth it)")
 cl_args = parser.parse_args()
 
 # Credential Variables
@@ -304,9 +307,10 @@ def create_client_instances(targetlist):
     print("Creating instances: ", end="")
     for target in targetlist:
         if target['virt'] == 'hvm':
-            machine_type = 't2.micro'
+            machine_type = 't2.medium' if cl_args.fast else 't2.micro'
         else:
-            machine_type = 't1.micro'
+            # 32 bit systems
+            machine_type = 'c1.medium' if cl_args.fast else 't1.micro'
         if 'userdata' in target.keys():
             userdata = target['userdata']
         else:
