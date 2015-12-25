@@ -542,7 +542,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         if "ssl_module" not in self.parser.modules:
             self.enable_mod("ssl", temp=temp)
-
+        if self.version >= (2, 4) and "socache_shmcb_module" not in self.parser.modules:
+            self.enable_mod("socache_shmcb", temp=temp)
         # Check for Listen <port>
         # Note: This could be made to also look for ip:443 combo
         listens = [self.parser.get_arg(x).split()[0] for x in self.parser.find_dir("Listen")]
@@ -1271,6 +1272,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         self.config_test()
+        logger.debug(self.reverter.view_config_changes())
         self._reload()
 
     def _reload(self):
@@ -1399,7 +1401,7 @@ def _get_mod_deps(mod_name):
 
     """
     deps = {
-        "ssl": ["setenvif", "mime", "socache_shmcb"]
+        "ssl": ["setenvif", "mime"]
     }
     return deps.get(mod_name, [])
 

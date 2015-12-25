@@ -450,12 +450,15 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :param int version: the desired version number
         :returns: the subject names
         :rtype: `list` of `str`
+        :raises .CertStorageError: if could not find cert file.
 
         """
         if version is None:
             target = self.current_target("cert")
         else:
             target = self.version("cert", version)
+        if target is None:
+            raise errors.CertStorageError("could not find cert file")
         with open(target) as f:
             return crypto_util.get_sans_from_cert(f.read())
 

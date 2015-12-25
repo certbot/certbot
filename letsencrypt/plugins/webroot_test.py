@@ -66,8 +66,16 @@ class AuthenticatorTest(unittest.TestCase):
 
     def test_prepare_reraises_other_errors(self):
         self.auth.full_path = os.path.join(self.path, "null")
+        permission_canary = os.path.join(self.path, "rnd")
+        with open(permission_canary, "w") as f:
+            f.write("thingimy")
         os.chmod(self.path, 0o000)
-        self.assertRaises(errors.PluginError, self.auth.prepare)
+        try:
+            open(permission_canary, "r")
+            print "Warning, running tests as root skips permissions tests..."
+        except IOError:
+            # ok, permissions work, test away...
+            self.assertRaises(errors.PluginError, self.auth.prepare)
         os.chmod(self.path, 0o700)
 
     @mock.patch("letsencrypt.plugins.webroot.os.chown")

@@ -8,7 +8,6 @@
 # ./bootstrap/dev/_common_venv.sh
 
 deps="
-  git
   python2
   python-virtualenv
   gcc
