@@ -35,6 +35,9 @@ branches:
 # container-based infrastructure
 sudo: false
 
+# enable apt packages caching in order to speed up builds
+cache: apt
+
 addons:
   # make sure simplehttp simple verification works (custom /etc/hosts)
   hosts:
