@@ -250,7 +250,7 @@ class FileOutputDisplayTest(unittest.TestCase):
                "This function is only meant to be for easy viewing{0}"
                "Test a really really really really really really really really "
                "really really really really long line...".format(os.linesep))
-        text = self.displayer._wrap_lines(msg)
+        text = display_util._wrap_lines(msg)
 
         self.assertEqual(text.count(os.linesep), 3)
 
