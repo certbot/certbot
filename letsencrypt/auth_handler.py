@@ -113,6 +113,13 @@ class AuthHandler(object):
                     cont_resp = self.cont_auth.perform(self.cont_c)
                 if self.dv_c:
                     dv_resp = self.dv_auth.perform(self.dv_c)
+                    for response in dv_resp:
+                        for achall in self.dv_c:
+                            if not response.simple_verify(
+                                    achall.chall, achall.domain,
+                                    achall.account_key.public_key(), response.PORT):
+                                logger.warning("Self-verify of challenge failed.")
+
             except errors.AuthorizationError:
                 logger.critical("Failure in setting up challenges.")
                 logger.info("Attempting to clean up outstanding challenges...")
