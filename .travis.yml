@@ -17,11 +17,16 @@ env:
   global:
     - GOPATH=/tmp/go
     - PATH=$GOPATH/bin:$PATH
-  matrix:
-    - TOXENV=py26 BOULDER_INTEGRATION=1
-    - TOXENV=py27 BOULDER_INTEGRATION=1
-    - TOXENV=lint
-    - TOXENV=cover
+matrix:
+  include:
+    - python: "2.6"
+      env: TOXENV=py26 BOULDER_INTEGRATION=1
+    - python: "2.7"
+      env: TOXENV=py27 BOULDER_INTEGRATION=1
+    - python: "2.7"
+      env: TOXENV=lint
+    - python: "2.7"
+      env: TOXENV=cover
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
@@ -44,7 +49,6 @@ addons:
     sources:
     - augeas
     packages:  # keep in sync with bootstrap/ubuntu.sh and Boulder
-    - python
     - python-dev
     - python-virtualenv
     - gcc
