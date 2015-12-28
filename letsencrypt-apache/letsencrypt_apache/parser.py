@@ -60,9 +60,10 @@ class ApacheParser(object):
         self.loc.update(self._set_locations())
 
         # Must also attempt to parse virtual host root
-        self._parse_file(self.vhostroot + "/*.conf")
+        self._parse_file(self.vhostroot + "/" +
+                         constants.os_constant("vhost_files"))
 
-        #check to see if there were unparsed define statements
+        # check to see if there were unparsed define statements
         if version < (2, 4):
             if self.find_dir("Define", exclude=False):
                 raise errors.PluginError("Error parsing runtime variables")
