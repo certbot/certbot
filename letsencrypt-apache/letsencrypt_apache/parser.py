@@ -28,7 +28,7 @@ class ApacheParser(object):
     arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
     fnmatch_chars = set(["*", "?", "\\", "[", "]"])
 
-    def __init__(self, aug, root, vhostroot, ctl, version=(2, 4)):
+    def __init__(self, aug, root, vhostroot, version=(2, 4)):
         # Note: Order is important here.
 
         # This uses the binary, so it can be done first.
@@ -37,7 +37,7 @@ class ApacheParser(object):
         # This only handles invocation parameters and Define directives!
         self.variables = {}
         if version >= (2, 4):
-            self.update_runtime_variables(ctl)
+            self.update_runtime_variables()
 
         self.aug = aug
         # Find configuration root and make sure augeas can parse it.
@@ -92,7 +92,7 @@ class ApacheParser(object):
                 self.modules.add(
                     os.path.basename(self.get_arg(match_filename))[:-2] + "c")
 
-    def update_runtime_variables(self, ctl):
+    def update_runtime_variables(self):
         """"
 
         .. note:: Compile time variables (apache2ctl -V) are not used within the
@@ -102,7 +102,7 @@ class ApacheParser(object):
         .. todo:: Create separate compile time variables... simply for arg_get()
 
         """
-        stdout = self._get_runtime_cfg(ctl)
+        stdout = self._get_runtime_cfg()
 
         variables = dict()
         matches = re.compile(r"Define: ([^ \n]*)").findall(stdout)
@@ -122,7 +122,7 @@ class ApacheParser(object):
 
         self.variables = variables
 
-    def _get_runtime_cfg(self, ctl):  # pylint: disable=no-self-use
+    def _get_runtime_cfg(self):  # pylint: disable=no-self-use
         """Get runtime configuration info.
 
         :returns: stdout from DUMP_RUN_CFG
@@ -137,9 +137,11 @@ class ApacheParser(object):
 
         except (OSError, ValueError):
             logger.error(
-                "Error accessing %s for runtime parameters!%s", ctl, os.linesep)
+                "Error running command %s for runtime parameters!%s",
+                constants.os_constant("define_cmd"), os.linesep)
             raise errors.MisconfigurationError(
-                "Error accessing loaded Apache parameters: %s", ctl)
+                "Error accessing loaded Apache parameters: %s",
+                constants.os_constant("define_cmd"))
         # Small errors that do not impede
         if proc.returncode != 0:
             logger.warn("Error in checking parameter list: %s", stderr)
