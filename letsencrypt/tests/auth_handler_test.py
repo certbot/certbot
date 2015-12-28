@@ -148,6 +148,30 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.assertRaises(
             errors.AuthorizationError, self.handler.get_authorizations, ["0"])
 
+    @mock.patch("acme.challenges.HTTP01Response.simple_verify")
+    def test_simple_verify(self, mock_verify):
+        from acme import jose
+
+        from letsencrypt.tests import test_util
+
+        domain = b'localhost'
+        key = jose.JWK.load(test_util.load_vector('rsa512_key.pem'))
+        http_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.HTTP01_P, domain=domain, account_key=key)
+        tls_sni_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.TLSSNI01_P, domain=domain, account_key=key)
+
+        dv_c = [http_01, tls_sni_01]
+
+        self.handler.dv_c = dv_c
+
+        self.mock_dv_auth.perform.side_effect = gen_http01_resp
+
+        mock_verify.return_value = False
+        # with mock.patch("letsencrypt.plugins.manual.logger") as mock_logger:
+            # self.handler._solve_challenges()
+            # mock_logger.warning.assert_called_once_with(mock.ANY)
+
     def _validate_all(self, unused_1, unused_2):
         for dom in self.handler.authzr.keys():
             azr = self.handler.authzr[dom]
@@ -476,6 +500,11 @@ class ReportFailedChallsTest(unittest.TestCase):
         auth_handler._report_failed_challs([self.http01, self.tls_sni_diff])
         self.assertTrue(mock_zope().add_message.call_count == 2)
 
+
+def gen_http01_resp(chall_list):
+    """Returns a dummy HTTP01 response"""
+    from acme.challenges import HTTP01Response
+    return [HTTP01Response(key_authorization=u'foo')] * len(chall_list)
 
 def gen_auth_resp(chall_list):
     """Generate a dummy authorization response."""
