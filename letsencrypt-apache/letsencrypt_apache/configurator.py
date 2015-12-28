@@ -144,9 +144,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         # Verify Apache is installed
-        for exe in constants.os_constant("restart_cmd")[0]:
-            if not le_util.exe_exists(exe):
-                raise errors.NoInstallationError
+        if not le_util.exe_exists(constants.os_constant("restart_cmd")[0]):
+            raise errors.NoInstallationError
 
         # Make sure configuration is valid
         self.config_test()
