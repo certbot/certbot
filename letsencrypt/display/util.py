@@ -63,8 +63,8 @@ class NcursesDisplay(object):
         """
         self.dialog.msgbox(message, height, width=self.width)
 
-    def menu(self, message, choices,
-             ok_label="OK", cancel_label="Cancel", help_label=""):
+    def menu(self, message, choices, ok_label="OK", cancel_label="Cancel",
+             help_label="", **_kwargs):
         """Display a menu.
 
         :param str message: title of menu
@@ -75,6 +75,7 @@ class NcursesDisplay(object):
 
         :param str ok_label: label of the OK button
         :param str help_label: label of the help button
+        :param dict _kwargs: absorbs default / cli_args
 
         :returns: tuple of the form (`code`, `tag`) where
             `code` - `str` display_util exit code
@@ -119,10 +120,11 @@ class NcursesDisplay(object):
             return code, int(tag) - 1
 
 
-    def input(self, message):
+    def input(self, message, **_kwargs):
         """Display an input box to the user.
 
         :param str message: Message to display that asks for input.
+        :param dict _kwargs: absorbs default / cli_args
 
         :returns: tuple of the form (code, string) where
             `code` - int display exit code
@@ -136,7 +138,7 @@ class NcursesDisplay(object):
         return self.dialog.inputbox(message, width=self.width, height=height)
 
 
-    def yesno(self, message, yes_label="Yes", no_label="No"):
+    def yesno(self, message, yes_label="Yes", no_label="No", **_kwargs):
         """Display a Yes/No dialog box.
 
         Yes and No label must begin with different letters.
@@ -144,6 +146,7 @@ class NcursesDisplay(object):
         :param str message: message to display to user
         :param str yes_label: label on the "yes" button
         :param str no_label: label on the "no" button
+        :param dict _kwargs: absorbs default / cli_args
 
         :returns: if yes_label was selected
         :rtype: bool
@@ -153,13 +156,14 @@ class NcursesDisplay(object):
             message, self.height, self.width,
             yes_label=yes_label, no_label=no_label)
 
-    def checklist(self, message, tags, default_status=True):
+    def checklist(self, message, tags, default_status=True, **_kwargs):
         """Displays a checklist.
 
         :param message: Message to display before choices
         :param list tags: where each is of type :class:`str` len(tags) > 0
         :param bool default_status: If True, items are in a selected state by
             default.
+        :param dict _kwargs: absorbs default / cli_args
 
 
         :returns: tuple of the form (code, list_tags) where
@@ -199,8 +203,8 @@ class FileDisplay(object):
         if pause:
             raw_input("Press Enter to Continue")
 
-    def menu(self, message, choices,
-             ok_label="", cancel_label="", help_label=""):
+    def menu(self, message, choices, ok_label="", cancel_label="",
+             help_label="", **_kwargs):
         # pylint: disable=unused-argument
         """Display a menu.
 
@@ -211,6 +215,7 @@ class FileDisplay(object):
         :param choices: Menu lines, len must be > 0
         :type choices: list of tuples (tag, item) or
             list of descriptions (tags will be enumerated)
+        :param dict _kwargs: absorbs default / cli_args
 
         :returns: tuple of the form (code, tag) where
             code - int display exit code
@@ -224,11 +229,12 @@ class FileDisplay(object):
 
         return code, selection - 1
 
-    def input(self, message):
+    def input(self, message, **_kwargs):
         # pylint: disable=no-self-use
         """Accept input from the user.
 
         :param str message: message to display to the user
+        :param dict _kwargs: absorbs default / cli_args
 
         :returns: tuple of (`code`, `input`) where
             `code` - str display exit code
@@ -244,7 +250,7 @@ class FileDisplay(object):
         else:
             return OK, ans
 
-    def yesno(self, message, yes_label="Yes", no_label="No"):
+    def yesno(self, message, yes_label="Yes", no_label="No", **_kwargs):
         """Query the user with a yes/no question.
 
         Yes and No label must begin with different letters, and must contain at
@@ -253,6 +259,7 @@ class FileDisplay(object):
         :param str message: question for the user
         :param str yes_label: Label of the "Yes" parameter
         :param str no_label: Label of the "No" parameter
+        :param dict _kwargs: absorbs default / cli_args
 
         :returns: True for "Yes", False for "No"
         :rtype: bool
@@ -279,13 +286,14 @@ class FileDisplay(object):
                     ans.startswith(no_label[0].upper())):
                 return False
 
-    def checklist(self, message, tags, default_status=True):
+    def checklist(self, message, tags, default_status=True, **_kwargs):
         # pylint: disable=unused-argument
         """Display a checklist.
 
         :param str message: Message to display to user
         :param list tags: `str` tags to select, len(tags) > 0
         :param bool default_status: Not used for FileDisplay
+        :param dict _kwargs: absorbs default / cli_args
 
         :returns: tuple of (`code`, `tags`) where
             `code` - str display exit code
