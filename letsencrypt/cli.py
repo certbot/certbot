@@ -156,7 +156,7 @@ def _determine_account(args, config):
                        "server at {1}".format(
                            regr.terms_of_service, config.server))
                 return zope.component.getUtility(interfaces.IDisplay).yesno(
-                    msg, "Agree", "Cancel")
+                    msg, "Agree", "Cancel", cli_flag="--agree-tos")
 
             try:
                 acc, acme = client.register(
@@ -315,7 +315,8 @@ def _handle_subset_cert_request(config, domains, cert):
              ", ".join(domains),
              br=os.linesep)
     if config.expand or config.renew_by_default or zope.component.getUtility(
-            interfaces.IDisplay).yesno(question, "Expand", "Cancel"):
+            interfaces.IDisplay).yesno(question, "Expand", "Cancel",
+                                       default=True):
         return "renew", cert
     else:
         reporter_util = zope.component.getUtility(interfaces.IReporter)

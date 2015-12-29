@@ -197,7 +197,8 @@ def choose_names(installer):
             "specify ServerNames in your config files in order to allow for "
             "accurate installation of your certificate.{0}"
             "If you do use the default vhost, you may specify the name "
-            "manually. Would you like to continue?{0}".format(os.linesep))
+            "manually. Would you like to continue?{0}".format(os.linesep),
+            default=False, cli_flag="--domains")
 
         if manual:
             return _choose_names_manually()
