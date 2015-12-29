@@ -948,6 +948,12 @@ def prepare_and_parse_args(plugins, args):
         None, "-t", "--text", dest="text_mode", action="store_true",
         help="Use the text output instead of the curses UI.")
     helpful.add(
+        None, "-n", "--non-interactive", "--noninteractive",
+        dest="noninteractive_mode", action="store_true",
+        help="Run without ever asking for user input. This may require "
+              "additional command line flags; the client will try to explain "
+              "which ones are required if it finds one missing")
+    helpful.add(
         None, "--register-unsafely-without-email", action="store_true",
         help="Specifying this flag enables registering an account with no "
              "email address. This is strongly discouraged, because in the "
@@ -1374,7 +1380,9 @@ def main(cli_args=sys.argv[1:]):
     sys.excepthook = functools.partial(_handle_exception, args=args)
 
     # Displayer
-    if args.text_mode:
+    if args.noninteractive_mode:
+        displayer = display_util.NoninteractiveDisplay(sys.stdout)
+    elif args.text_mode:
         displayer = display_util.FileDisplay(sys.stdout)
     else:
         displayer = display_util.NcursesDisplay()
