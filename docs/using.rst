@@ -190,6 +190,11 @@ you provide if you do not renew certificates that are about to expire.
 Let's Encrypt is working hard on automating the renewal process. Until
 the tool is ready, we are sorry for the inconvenience!
 
+Here is an example command line (GREAT for ``crontab``) for renewal using apache plugin, you will need to change the email and domain obviously:
+
+.. code-block:: shell
+  letsencrypt-auto --apache --rsa-key-size 4096 --keep --hsts --redirect --agree-tos -m me@example.com -d example.com --text
+
 
 .. _where-certs:
 
