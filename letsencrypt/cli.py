@@ -1166,9 +1166,8 @@ def _plugins_parsing(helpful, plugins):
         "plugins", description="Let's Encrypt client supports an "
         "extensible plugins architecture. See '%(prog)s plugins' for a "
         "list of all installed plugins and their names. You can force "
-        "a particular plugin by setting options provided below. Further "
-        "down this help message you will find plugin-specific options "
-        "(prefixed by --{plugin_name}).")
+        "a particular plugin by setting options provided below. Running "
+        "--help <plugin_name> will list flags specific to that plugin.")
     helpful.add(
         "plugins", "-a", "--authenticator", help="Authenticator plugin name.")
     helpful.add(
