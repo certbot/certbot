@@ -100,7 +100,7 @@ DeterminePythonVersion() {
     exit 1
   fi
 
-  PYVER=`$LE_PYTHON --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
+  PYVER=`$LE_PYTHON -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
   if [ $PYVER -eq 26 ] ; then
     ExperimentalBootstrap "Python 2.6"
   elif [ $PYVER -lt 26 ] ; then
