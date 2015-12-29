@@ -31,8 +31,16 @@ def choose_plugin(prepared, question):
             for plugin_ep in prepared]
 
     while True:
-        code, index = util(interfaces.IDisplay).menu(
-            question, opts, help_label="More Info")
+        disp = util(interfaces.IDisplay)
+        try:
+            code, index = disp.menu(question, opts, help_label="More Info")
+        except errors.MissingCommandlineFlag:
+            # use a custom message for this case
+            raise errors.MissingCommandlineFlag, ("Missing command line flags. For non-interactive "
+                "execution, you will need to specify a plugin on the command line.  Run with "
+                "'--help plugins' to see a list of options, and see "
+                " https://eff.org/letsencrypt-plugins for more detail on what the plugins "
+                "do and how to use them.")
 
         if code == display_util.OK:
             plugin_ep = prepared[index]
