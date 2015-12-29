@@ -377,12 +377,15 @@ class IDisplay(zope.interface.Interface):
         :param str ok_label: label for OK button
         :param str cancel_label: label for Cancel button
         :param str help_label: label for Help button
-        :param str default: default (non-interactive) choice from the menu
+        :param int default: default (non-interactive) choice from the menu
         :param str cli_flag: to automate choice from the menu, eg "--keep"
 
         :returns: tuple of (`code`, `index`) where
             `code` - str display exit code
             `index` - int index of the user's selection
+
+        :raises errors.MissingCommandlineFlag: if called in non-interactive
+            mode without a default set
 
         """
 
@@ -411,6 +414,9 @@ class IDisplay(zope.interface.Interface):
         :returns: True for "Yes", False for "No"
         :rtype: bool
 
+        :raises errors.MissingCommandlineFlag: if called in non-interactive
+            mode without a default set
+
         """
 
     def checklist(message, tags, default_state, default=None, cli_args=None):
@@ -421,6 +427,14 @@ class IDisplay(zope.interface.Interface):
         :param bool default_status: If True, items are in a selected state by default.
         :param str default: default (non-interactive) state of the checklist
         :param str cli_flag: to automate choice from the menu, eg "--domains"
+
+        :returns: tuple of the form (code, list_tags) where
+            `code` - int display exit code
+            `list_tags` - list of str tags selected by the user
+        :rtype: tuple
+
+        :raises errors.MissingCommandlineFlag: if called in non-interactive
+            mode without a default set
 
         """
 
