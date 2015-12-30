@@ -211,7 +211,7 @@ def choose_names(installer):
             "accurate installation of your certificate.{0}"
             "If you do use the default vhost, you may specify the name "
             "manually. Would you like to continue?{0}".format(os.linesep),
-            default=False, cli_flag="--domains")
+            default=True)
 
         if manual:
             return _choose_names_manually()
@@ -256,7 +256,7 @@ def _filter_names(names):
     """
     code, names = util(interfaces.IDisplay).checklist(
         "Which names would you like to activate HTTPS for?",
-        tags=names)
+        tags=names, cli_flag="--domains")
     return code, [str(s) for s in names]
 
 
