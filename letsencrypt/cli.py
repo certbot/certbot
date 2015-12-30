@@ -529,7 +529,7 @@ def choose_configurator_plugins(args, config, plugins, verb):
                    '{1}    {2} certonly --{0}{1}{1}'
                    '(Alternatively, add a --installer flag. See https://eff.org/letsencrypt-plugins'
                    '{1} and "--help plugins" for more information.)'.format(
-                   req_auth, os.linesep, cmd))
+                   req_auth, os.linesep, cli_command))
 
             raise errors.MissingCommandlineFlag, msg
     else:
