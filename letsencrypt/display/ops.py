@@ -153,7 +153,7 @@ def get_email(more=False, invalid=False):
                 'account key from /etc/letsencrypt/accounts\n\n')
     try:
         code, email = zope.component.getUtility(interfaces.IDisplay).input(msg)
-    except errors.MissingCommandlineFlag, e:
+    except errors.MissingCommandlineFlag:
         msg = ("You should register before running non-interactively, or provide --agree-tos"
                " and --email <email_address> flags")
         raise errors.MissingCommandlineFlag, msg

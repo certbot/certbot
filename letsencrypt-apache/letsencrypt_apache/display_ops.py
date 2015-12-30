@@ -4,6 +4,7 @@ import os
 
 import zope.component
 
+from letsencrypt import errors
 from letsencrypt import interfaces
 
 import letsencrypt.display.util as display_util
