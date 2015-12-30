@@ -77,9 +77,9 @@ class NcursesDisplay(object):
         :param str help_label: label of the help button
         :param dict _kwargs: absorbs default / cli_args
 
-        :returns: tuple of the form (`code`, `tag`) where
-            `code` - `str` display_util exit code
-            `tag` - `int` index corresponding to the item chosen
+        :returns: tuple of the form (code, tag) where
+            code - int display exit code
+            tag - str corresponding to the item chosen
         :rtype: tuple
 
         """
@@ -217,9 +217,10 @@ class FileDisplay(object):
             list of descriptions (tags will be enumerated)
         :param dict _kwargs: absorbs default / cli_args
 
-        :returns: tuple of the form (code, tag) where
-            code - int display exit code
-            tag - str corresponding to the item chosen
+        :returns: tuple of (`code`, `index`) where
+            `code` - str display exit code
+            `index` - int index of the user's selection
+
         :rtype: tuple
 
         """
@@ -452,11 +453,12 @@ class NoninteractiveDisplay(object):
         :param choices: Menu lines, len must be > 0
         :type choices: list of tuples (tag, item) or
             list of descriptions (tags will be enumerated)
+        :param int default: the default choice
         :param dict kwargs: absorbs various irrelevant labelling arguments
 
-        :returns: tuple of the form (code, tag) where
-            code - int display exit code
-            tag - str corresponding to the item chosen
+        :returns: tuple of (`code`, `index`) where
+            `code` - str display exit code
+            `index` - int index of the user's selection
         :rtype: tuple
         :raises errors.MissingCommandlineFlag: if there was no default
 
@@ -464,7 +466,7 @@ class NoninteractiveDisplay(object):
         if default is None:
             self._interaction_fail(message, cli_flag, "Choices: " + repr(choices))
 
-        return OK, choices.index(default)
+        return OK, default
 
     def input(self, message, default=None, cli_flag=None):
         """Accept input from the user.
