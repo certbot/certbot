@@ -151,7 +151,12 @@ def get_email(more=False, invalid=False):
         msg += ('\n\nIf you really want to skip this, you can run the client with '
                 '--register-unsafely-without-email but make sure you backup your '
                 'account key from /etc/letsencrypt/accounts\n\n')
-    code, email = zope.component.getUtility(interfaces.IDisplay).input(msg)
+    try:
+        code, email = zope.component.getUtility(interfaces.IDisplay).input(msg)
+    except errors.MissingCommandlineFlag, e:
+        msg = ("You should register before running non-interactively, or provide --agree-tos"
+               " and --email <email_address> flags")
+        raise errors.MissingCommandlineFlag, msg
 
     if code == display_util.OK:
         if le_util.safe_email(email):
@@ -259,7 +264,8 @@ def _choose_names_manually():
     """Manually input names for those without an installer."""
 
     code, input_ = util(interfaces.IDisplay).input(
-        "Please enter in your domain name(s) (comma and/or space separated) ")
+        "Please enter in your domain name(s) (comma and/or space separated) ",
+        cli_flag="--domains")
 
     if code == display_util.OK:
         invalid_domains = dict()
