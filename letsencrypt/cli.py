@@ -432,21 +432,6 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
                     "a test certificate (domains: {0}). We will not do that "
                     "unless you use the --break-my-certs flag!".format(names))
 
-def set_configurator(previously, now):
-    """
-    Setting configurators multiple ways is okay, as long as they all agree
-    :param str previously: previously identified request for the installer/authenticator
-    :param str requested: the request currently being processed
-    """
-    if now is None:
-        # we're not actually setting anything
-        return previously
-    if previously:
-        if previously != now:
-            msg = "Too many flags setting configurators/installers/authenticators {0} -> {1}"
-            raise errors.PluginSelectionError(msg.format(repr(previously), repr(now)))
-    return now
-
 
 def diagnose_configurator_problem(cfg_type, requested, plugins):
     """
@@ -480,22 +465,28 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
     raise errors.PluginSelectionError(msg)
 
 
-def choose_configurator_plugins(args, config, plugins, verb):  # pylint: disable=too-many-branches
+def set_configurator(previously, now):
     """
-    Figure out which configurator we're going to use
-    :raises error.PluginSelectionError if there was a problem
+    Setting configurators multiple ways is okay, as long as they all agree
+    :param str previously: previously identified request for the installer/authenticator
+    :param str requested: the request currently being processed
     """
+    if now is None:
+        # we're not actually setting anything
+        return previously
+    if previously:
+        if previously != now:
+            msg = "Too many flags setting configurators/installers/authenticators {0} -> {1}"
+            raise errors.PluginSelectionError(msg.format(repr(previously), repr(now)))
+    return now
 
-    # Which plugins do we need?
-    need_inst = need_auth = (verb == "run")
-    if verb == "certonly":
-        need_auth = True
-    if verb == "install":
-        need_inst = True
-        if args.authenticator:
-            logger.warn("Specifying an authenticator doesn't make sense in install mode")
+def cli_plugin_requests(args):
+    """
+    Figure out which plugins the user requested with CLI and config options
 
-    # Which plugins did the user request?
+    :returns: (requested authenticator string or None, requested installer string or None)
+    :rtype: tuple
+    """
     req_inst = req_auth = args.configurator
     req_inst = set_configurator(req_inst, args.installer)
     req_auth = set_configurator(req_auth, args.authenticator)
@@ -512,6 +503,40 @@ def choose_configurator_plugins(args, config, plugins, verb):  # pylint: disable
     if args.manual:
         req_auth = set_configurator(req_auth, "manual")
     logger.debug("Requested authenticator %s and installer %s", req_auth, req_inst)
+    return req_auth, req_inst
+
+
+noninstaller_plugins = ["webroot", "manual", "standalone"]
+
+def choose_configurator_plugins(args, config, plugins, verb):
+    """
+    Figure out which configurator we're going to use
+    :raises errors.PluginSelectionError if there was a problem
+    """
+
+    req_auth, req_inst = cli_plugin_requests(args)
+
+    # Which plugins do we need?
+    if verb == "run":
+        need_inst = need_auth = True
+        if req_auth in noninstaller_plugins and not req_inst:
+            msg = ('With the {0} plugin, you probably want to use the "certonly" command, eg:{1}'
+                   '{1}    {2} certonly --{0}{1}{1}'
+                   '(Alternatively, add a --installer flag. See https://eff.org/letsencrypt-plugins'
+                   '{1} and "--help plugins" for more information.)'.format(
+                   req_auth, os.linesep, cmd))
+
+            raise errors.MissingCommandlineFlag, msg
+    else:
+        need_inst = need_auth = False
+    if verb == "certonly":
+        need_auth = True
+    if verb == "install":
+        need_inst = True
+        if args.authenticator:
+            logger.warn("Specifying an authenticator doesn't make sense in install mode")
+
+
 
     # Try to meet the user's request and/or ask them to pick plugins
     authenticator = installer = None
