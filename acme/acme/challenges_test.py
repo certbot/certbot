@@ -321,6 +321,39 @@ class TLSSNI01Test(unittest.TestCase):
         mock_gen_cert.assert_called_once_with(key=mock.sentinel.cert_key)
 
 
+class DNS01Test(unittest.TestCase):
+
+    def setUp(self):
+        from acme.challenges import DNS01
+        self.msg = DNS01(
+            token=jose.decode_b64jose(
+                'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA'))
+        self.jmsg = {
+            'type': 'dns-01',
+            'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA',
+        }
+
+    def test_validation_domain_name(self):
+        self.assertEqual(
+            '_acme-challenge.le.computer', self.msg.validation_domain_name('le.computer'))
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+
+    def test_from_json(self):
+        from acme.challenges import DNS01
+        self.assertEqual(self.msg, DNS01.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from acme.challenges import DNS01
+        hash(DNS01.from_json(self.jmsg))
+
+    def test_good_token(self):
+        self.assertTrue(self.msg.good_token)
+        self.assertFalse(
+            self.msg.update(token=b'..').good_token)
+
+
 class RecoveryContactTest(unittest.TestCase):
 
     def setUp(self):
