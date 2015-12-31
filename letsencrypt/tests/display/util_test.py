@@ -4,6 +4,8 @@ import unittest
 
 import mock
 
+import letsencrypt.errors as errors
+
 from letsencrypt.display import util as display_util
 
 
@@ -277,6 +279,40 @@ class FileOutputDisplayTest(unittest.TestCase):
                 self.assertEqual(
                     self.displayer._get_valid_int_ans(3),
                     (display_util.CANCEL, -1))
+
+class NoninteractiveDisplayTest(unittest.TestCase):
+    """Test non-interactive display.
+
+    These tests are pretty easy!
+
+    """
+    def setUp(self):
+        super(NoninteractiveDisplayTest, self).setUp()
+        self.mock_stdout = mock.MagicMock()
+        self.displayer = display_util.NoninteractiveDisplay(self.mock_stdout)
+
+    def test_input(self):
+        d = "an incomputable value"
+        ret = self.displayer.input("message", default=d)
+        self.assertEqual(ret, (display_util.OK, d))
+        self.assertRaises(errors.MissingCommandlineFlag, self.displayer.input, "message")
+
+    def test_menu(self):
+        ret = self.displayer.menu("message", CHOICES, default=1)
+        self.assertEqual(ret, (display_util.OK, 1))
+        self.assertRaises(errors.MissingCommandlineFlag, self.displayer.menu, "message", CHOICES)
+
+    def test_yesno(self):
+        d = False
+        ret = self.displayer.yesno("message", default=d)
+        self.assertEqual(ret, d)
+        self.assertRaises(errors.MissingCommandlineFlag, self.displayer.yesno, "message")
+
+    def test_checklist(self):
+        d = [1, 3]
+        ret = self.displayer.menu("message", TAGS, default=d)
+        self.assertEqual(ret, (display_util.OK, d))
+        self.assertRaises(errors.MissingCommandlineFlag, self.displayer.checklist, "message", TAGS)
 
 
 class SeparateListInputTest(unittest.TestCase):

@@ -501,7 +501,7 @@ class NoninteractiveDisplay(object):
         if default is None:
             self._interaction_fail(message, cli_flag)
         else:
-            return OK, default
+            return default
 
     def checklist(self, message, tags, default=None, cli_flag=None, **kwargs):
         # pylint: disable=unused-argument
