@@ -412,7 +412,7 @@ class IsPreferredTest(unittest.TestCase):
         from letsencrypt.auth_handler import is_preferred
         return is_preferred(chall, satisfied, exclusive_groups=frozenset([
             frozenset([challenges.TLSSNI01, challenges.HTTP01]),
-            frozenset([challenges.DNS, challenges.HTTP01]),
+            frozenset([challenges.DNS01, challenges.HTTP01]),
         ]))
 
     def test_empty_satisfied(self):

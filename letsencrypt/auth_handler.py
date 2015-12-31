@@ -347,7 +347,7 @@ def challb_to_achall(challb, account_key, domain):
     if isinstance(chall, challenges.KeyAuthorizationChallenge):
         return achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=challb, domain=domain, account_key=account_key)
-    elif isinstance(chall, challenges.DNS):
+    elif isinstance(chall, challenges.DNS01):
         return achallenges.DNS(challb=challb, domain=domain)
     elif isinstance(chall, challenges.RecoveryContact):
         return achallenges.RecoveryContact(
