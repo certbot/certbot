@@ -4,6 +4,7 @@ pkg_add -aI \
   py-pip \
   augeas \
   libffi \
+  dialog \
 
 if [ ! -e /usr/local/bin/pip ] &&
 [ ! -e /usr/local/bin/python ] &&
