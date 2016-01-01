@@ -136,13 +136,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         "Ensure that a particular error raises a missing cli flag error containing message"
         exc = None
         try:
-            #self._call_no_clientmock(args)
-            with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
+            with mock.patch('letsencrypt.cli.sys.stderr'):
                 out = cli.main(self.standard_args + args[:])  # NOTE: parser can alter its args!
-            #out = self._help_output(args)
             print out
         except errors.MissingCommandlineFlag, exc:
-            #print "checking for " + message + " in\n"+ str(exc)
             self.assertTrue(message in str(exc))
         self.assertTrue(exc is not None)
 
