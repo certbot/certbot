@@ -555,10 +555,24 @@ class ProofOfPossessionResponse(ChallengeResponse):
         return self.signature.verify(self.nonce)
 
 
+@ChallengeResponse.register
+class DNS01Response(KeyAuthorizationChallengeResponse):
+    """ACME "dns" challenge response.
+
+    :param JWS validation:
+
+    """
+    typ = "dns-01"
+
+    def simple_verify(self, chall, domain, account_public_key):
+        return self.verify(chall, account_public_key)
+
+
 @Challenge.register  # pylint: disable=too-many-ancestors
 class DNS01(KeyAuthorizationChallenge):
     """ACME "dns" challenge."""
-    typ = "dns-01"
+    response_cls = DNS01Response
+    typ = response_cls.typ
 
     LABEL = "_acme-challenge"
     """Label clients prepend to the domain name being validated."""
@@ -575,15 +589,3 @@ class DNS01(KeyAuthorizationChallenge):
 
         """
         return "{0}.{1}".format(self.LABEL, name)
-
-
-@ChallengeResponse.register
-class DNS01Response(KeyAuthorizationChallengeResponse):
-    """ACME "dns" challenge response.
-
-    :param JWS validation:
-
-    """
-    typ = "dns-01"
-
-    validation = jose.Field("validation", decoder=jose.JWS.from_json)

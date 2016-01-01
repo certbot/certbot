@@ -321,6 +321,39 @@ class TLSSNI01Test(unittest.TestCase):
         mock_gen_cert.assert_called_once_with(key=mock.sentinel.cert_key)
 
 
+class DNS01ResponseTest(unittest.TestCase):
+    # pylint: disable=too-many-instance-attributes
+
+    def setUp(self):
+        from acme.challenges import DNS01Response
+        self.msg = DNS01Response(key_authorization=u'foo')
+        self.jmsg = {
+            'resource': 'challenge',
+            'type': 'dns-01',
+            'keyAuthorization': u'foo',
+        }
+
+        from acme.challenges import DNS01
+        self.chall = DNS01(token=(b'x' * 16))
+        self.response = self.chall.response(KEY)
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+
+    def test_from_json(self):
+        from acme.challenges import DNS01Response
+        self.assertEqual(
+            self.msg, DNS01Response.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from acme.challenges import DNS01Response
+        hash(DNS01Response.from_json(self.jmsg))
+
+    def test_simple_verify_bad_key_authorization(self):
+        key2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
+        self.response.simple_verify(self.chall, "local", key2.public_key())
+
+
 class DNS01Test(unittest.TestCase):
 
     def setUp(self):
