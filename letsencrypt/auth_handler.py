@@ -42,13 +42,15 @@ class AuthHandler(object):
         form of :class:`letsencrypt.achallenges.AnnotatedChallenge`
 
     """
-    def __init__(self, dv_auth, cont_auth, acme, account):
+    def __init__(self, dv_auth, cont_auth, acme, account, config=None):
         self.dv_auth = dv_auth
         self.cont_auth = cont_auth
         self.acme = acme
 
         self.account = account
         self.authzr = dict()
+
+        self.config = config
 
         # List must be used to keep responses straight.
         self.dv_c = []
@@ -114,16 +116,19 @@ class AuthHandler(object):
                 if self.dv_c:
                     dv_resp = self.dv_auth.perform(self.dv_c)
                     for achall, response in zip(self.dv_c, dv_resp):
+                        port = None
                         if isinstance(response, challenges.HTTP01Response):
-                            if not response.simple_verify(
-                                achall.chall, achall.domain,
-                                achall.account_key.public_key(), response.PORT):
-                                logger.warning("Self-verify of challenge failed.")
+                            port = self.config.http01_port
                         elif isinstance(response, challenges.TLSSNI01Response):
+                            port = self.config.tls_sni_01_port
+                        if port:
                             if not response.simple_verify(
-                                achall.chall, achall.domain,
-                                achall.account_key.public_key()):
-                                logger.warning("Self-verify of challenge failed.")
+                                    achall.chall, achall.domain,
+                                    achall.account_key.public_key(),
+                                    port):
+                                logger.warning("Self-verify of %s "
+                                    "challenge for domain %s failed.",
+                                    type(achall.chall).__name__, achall.domain)
 
             except errors.AuthorizationError:
                 logger.critical("Failure in setting up challenges.")

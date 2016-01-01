@@ -7,6 +7,7 @@ import mock
 
 from acme import challenges
 from acme import client as acme_client
+from acme import jose
 from acme import messages
 
 from letsencrypt import achallenges
@@ -14,7 +15,7 @@ from letsencrypt import errors
 from letsencrypt import le_util
 
 from letsencrypt.tests import acme_util
-
+from letsencrypt.tests import test_util
 
 class ChallengeFactoryTest(unittest.TestCase):
     # pylint: disable=protected-access
@@ -80,9 +81,11 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.mock_account = mock.Mock(key=le_util.Key("file_path", "PEM"))
         self.mock_net = mock.MagicMock(spec=acme_client.Client)
 
+        self.config = mock.MagicMock(http01_port=8000, tls_sni_01_port=9000)
+
         self.handler = AuthHandler(
             self.mock_dv_auth, self.mock_cont_auth,
-            self.mock_net, self.mock_account)
+            self.mock_net, self.mock_account, self.config)
 
         logging.disable(logging.CRITICAL)
 
@@ -151,38 +154,33 @@ class GetAuthorizationsTest(unittest.TestCase):
     @mock.patch("acme.challenges.HTTP01Response.simple_verify")
     @mock.patch("acme.challenges.TLSSNI01Response.simple_verify")
     def test_simple_verify(self, mock_http01_verify, mock_tlssni01_verify):
-        from acme import jose
-        from letsencrypt.tests import test_util
-
         key = jose.JWK.load(test_util.load_vector('rsa512_key.pem'))
-        http_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
+        challenge_http_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.HTTP01_P, domain=b'localhost', account_key=key)
-        tls_sni_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
+        challenge_tls_sni_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.TLSSNI01_P, domain=b'localhost', account_key=key)
 
-        dv_c_http = [http_01]
-        responses_http = gen_http01_resp(dv_c_http)
-        dv_c_tls = [tls_sni_01]
-        responses_tls = gen_tls_resp(dv_c_tls)
+        mock_http01_verify.return_value = False
+        mock_tlssni01_verify.return_value = False
 
-        responses = responses_http + responses_tls
+        response_http_01 = challenges.HTTP01Response(key_authorization=u'foo')
+        response_tls_sni_01 = challenges.TLSSNI01Response(key_authorization=u'foo')
 
-        self.handler.dv_c = dv_c_http + dv_c_tls
-        self.mock_dv_auth.perform.side_effect = [responses]
+        self.handler.dv_c = [challenge_http_01, challenge_tls_sni_01]
+        self.mock_dv_auth.perform.side_effect = [[response_http_01, response_tls_sni_01]]
         self.handler._solve_challenges()
 
-        mock_http01_verify.return_value = False
-        for achall, response in zip(dv_c_http, responses_http):
-            response.simple_verify.assert_called_with(achall.chall,
-                                                           achall.domain,
-                                                           achall.account_key.public_key(),
-                                                           response.PORT)
+        response_http_01.simple_verify.assert_called_with(
+            challenge_http_01.chall,
+            challenge_http_01.domain,
+            challenge_http_01.account_key.public_key(),
+            self.config.http01_port)
 
-        mock_tlssni01_verify.return_value = False
-        for achall, response in zip(dv_c_tls, responses_tls):
-            response.simple_verify.assert_called_with(achall.chall,
-                                                           achall.domain,
-                                                           achall.account_key.public_key())
+        response_tls_sni_01.simple_verify.assert_called_with(
+            challenge_tls_sni_01.chall,
+            challenge_tls_sni_01.domain,
+            challenge_tls_sni_01.account_key.public_key(),
+            self.config.tls_sni_01_port)
 
     def _validate_all(self, unused_1, unused_2):
         for dom in self.handler.authzr.keys():
@@ -512,16 +510,6 @@ class ReportFailedChallsTest(unittest.TestCase):
         auth_handler._report_failed_challs([self.http01, self.tls_sni_diff])
         self.assertTrue(mock_zope().add_message.call_count == 2)
 
-
-def gen_http01_resp(chall_list):
-    """Returns a dummy HTTP01 response"""
-    from acme.challenges import HTTP01Response
-    return [HTTP01Response(key_authorization=u'foo')] * len(chall_list)
-
-def gen_tls_resp(chall_list):
-    """Returns a dummy TLSSNI01 response"""
-    from acme.challenges import TLSSNI01Response
-    return [TLSSNI01Response(key_authorization=u'foo')] * len(chall_list)
 
 def gen_auth_resp(chall_list):
     """Generate a dummy authorization response."""
