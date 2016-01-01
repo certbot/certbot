@@ -160,12 +160,14 @@ def _determine_account(args, config):
                        "must agree in order to register with the ACME "
                        "server at {1}".format(
                            regr.terms_of_service, config.server))
-                return zope.component.getUtility(interfaces.IDisplay).yesno(
-                    msg, "Agree", "Cancel", cli_flag="--agree-tos")
+                obj = zope.component.getUtility(interfaces.IDisplay)
+                return obj.yesno(msg, "Agree", "Cancel", cli_flag="--agree-tos")
 
             try:
                 acc, acme = client.register(
                     config, account_storage, tos_cb=_tos_cb)
+            except errors.MissingCommandlineFlag:
+                raise
             except errors.Error as error:
                 logger.debug(error, exc_info=True)
                 raise errors.Error(
@@ -636,6 +638,8 @@ def obtain_cert(args, config, plugins):
 def install(args, config, plugins):
     """Install a previously obtained cert in a server."""
     # XXX: Update for renewer/RenewableCert
+    # FIXME: be consistent about whether errors are raised or returned from
+    # this function ...
 
     try:
         installer, _ = choose_configurator_plugins(args, config,
@@ -643,14 +647,17 @@ def install(args, config, plugins):
     except errors.PluginSelectionError, e:
         return e.message
 
-    domains = _find_domains(args, installer)
-    le_client = _init_le_client(
-        args, config, authenticator=None, installer=installer)
-    assert args.cert_path is not None  # required=True in the subparser
-    le_client.deploy_certificate(
-        domains, args.key_path, args.cert_path, args.chain_path,
-        args.fullchain_path)
-    le_client.enhance_config(domains, config)
+    try:
+        domains = _find_domains(args, installer)
+        le_client = _init_le_client(
+            args, config, authenticator=None, installer=installer)
+        assert args.cert_path is not None  # required=True in the subparser
+        le_client.deploy_certificate(
+            domains, args.key_path, args.cert_path, args.chain_path,
+            args.fullchain_path)
+        le_client.enhance_config(domains, config)
+    except errors.MissingCommandlineFlag, e:
+        return e.message
 
 
 def revoke(args, config, unused_plugins):  # TODO: coop with renewal config

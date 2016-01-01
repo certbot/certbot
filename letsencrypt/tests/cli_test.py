@@ -81,7 +81,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self.assertEqual(1, mock_run.call_count)
 
     def _help_output(self, args):
-        "Run a help command, and return the help string for scrutiny"
+        "Run a command, and return the ouput string for scrutiny"
         output = StringIO.StringIO()
         with mock.patch('letsencrypt.cli.sys.stdout', new=output):
             self.assertRaises(SystemExit, self._call_stdout, args)
@@ -105,6 +105,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue("--checkpoints" not in out)
 
         out = self._help_output(['-h'])
+        self.assertTrue("letsencrypt-auto" not in out) # test cli.cli_command
         if "nginx" in plugins:
             self.assertTrue("Use the Nginx plugin" in out)
         else:
@@ -129,6 +130,31 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
         out = self._help_output(['-h'])
         self.assertTrue(cli.usage_strings(plugins)[0] in out)
+
+
+    def _cli_missing_flag(self, args, message):
+        "Ensure that a particular error raises a missing cli flag error containing message"
+        exc = None
+        try:
+            #self._call_no_clientmock(args)
+            with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
+                out = cli.main(self.standard_args + args[:])  # NOTE: parser can alter its args!
+            #out = self._help_output(args)
+            print out
+        except errors.MissingCommandlineFlag, exc:
+            #print "checking for " + message + " in\n"+ str(exc)
+            self.assertTrue(message in str(exc))
+        self.assertTrue(exc is not None)
+
+    def test_noninteractive(self):
+        args = ['-n', 'certonly']
+        self._cli_missing_flag(args, "specify a plugin")
+        args.extend(['--apache', '-d', 'eg.is'])
+        self._cli_missing_flag(args, "register before running")
+        with mock.patch('letsencrypt.cli._auth_from_domains'):
+            with mock.patch('letsencrypt.cli.client.acme_from_config_key'):
+                args.extend(['--email', 'io@io.is'])
+                self._cli_missing_flag(args, "--agree-tos")
 
     @mock.patch('letsencrypt.cli.client.acme_client.Client')
     @mock.patch('letsencrypt.cli._determine_account')
@@ -208,6 +234,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         args = ["certonly", "--webroot"]
         ret, _, _, _ = self._call(args)
         self.assertTrue("--webroot-path must be set" in ret)
+
+        self._cli_missing_flag(["--standalone"], "With the standalone plugin, you probably")
 
         with mock.patch("letsencrypt.cli._init_le_client") as mock_init:
             with mock.patch("letsencrypt.cli._auth_from_domains"):

@@ -486,7 +486,7 @@ class NoninteractiveDisplay(object):
             return OK, default
 
 
-    def yesno(self, message, default=None, cli_flag=None, **kwargs):
+    def yesno(self, message, yes_label=None, no_label=None, default=None, cli_flag=None):
         # pylint: disable=unused-argument
         """Decide Yes or No, without asking anybody
 
