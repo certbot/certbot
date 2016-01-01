@@ -21,7 +21,7 @@ class FaiiledChallengesTest(unittest.TestCase):
 
     def test_str(self):
         self.assertTrue(str(self.error).startswith(
-            "Failed authorization procedure. example.com (dns): tls"))
+            "Failed authorization procedure. example.com (dns-01): tls"))
 
 
 class StandaloneBindErrorTest(unittest.TestCase):

@@ -321,6 +321,72 @@ class TLSSNI01Test(unittest.TestCase):
         mock_gen_cert.assert_called_once_with(key=mock.sentinel.cert_key)
 
 
+class DNS01ResponseTest(unittest.TestCase):
+    # pylint: disable=too-many-instance-attributes
+
+    def setUp(self):
+        from acme.challenges import DNS01Response
+        self.msg = DNS01Response(key_authorization=u'foo')
+        self.jmsg = {
+            'resource': 'challenge',
+            'type': 'dns-01',
+            'keyAuthorization': u'foo',
+        }
+
+        from acme.challenges import DNS01
+        self.chall = DNS01(token=(b'x' * 16))
+        self.response = self.chall.response(KEY)
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+
+    def test_from_json(self):
+        from acme.challenges import DNS01Response
+        self.assertEqual(
+            self.msg, DNS01Response.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from acme.challenges import DNS01Response
+        hash(DNS01Response.from_json(self.jmsg))
+
+    def test_simple_verify_bad_key_authorization(self):
+        key2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
+        self.response.simple_verify(self.chall, "local", key2.public_key())
+
+
+class DNS01Test(unittest.TestCase):
+
+    def setUp(self):
+        from acme.challenges import DNS01
+        self.msg = DNS01(
+            token=jose.decode_b64jose(
+                'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA'))
+        self.jmsg = {
+            'type': 'dns-01',
+            'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA',
+        }
+
+    def test_validation_domain_name(self):
+        self.assertEqual(
+            '_acme-challenge.le.computer', self.msg.validation_domain_name('le.computer'))
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+
+    def test_from_json(self):
+        from acme.challenges import DNS01
+        self.assertEqual(self.msg, DNS01.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from acme.challenges import DNS01
+        hash(DNS01.from_json(self.jmsg))
+
+    def test_good_token(self):
+        self.assertTrue(self.msg.good_token)
+        self.assertFalse(
+            self.msg.update(token=b'..').good_token)
+
+
 class RecoveryContactTest(unittest.TestCase):
 
     def setUp(self):
@@ -546,105 +612,6 @@ class ProofOfPossessionResponseTest(unittest.TestCase):
     def test_from_json_hashable(self):
         from acme.challenges import ProofOfPossessionResponse
         hash(ProofOfPossessionResponse.from_json(self.jmsg_from))
-
-
-class DNSTest(unittest.TestCase):
-
-    def setUp(self):
-        from acme.challenges import DNS
-        self.msg = DNS(token=jose.b64decode(
-            b'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA'))
-        self.jmsg = {
-            'type': 'dns',
-            'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA',
-        }
-
-    def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_partial_json())
-
-    def test_from_json(self):
-        from acme.challenges import DNS
-        self.assertEqual(self.msg, DNS.from_json(self.jmsg))
-
-    def test_from_json_hashable(self):
-        from acme.challenges import DNS
-        hash(DNS.from_json(self.jmsg))
-
-    def test_gen_check_validation(self):
-        self.assertTrue(self.msg.check_validation(
-            self.msg.gen_validation(KEY), KEY.public_key()))
-
-    def test_gen_check_validation_wrong_key(self):
-        key2 = jose.JWKRSA.load(test_util.load_vector('rsa1024_key.pem'))
-        self.assertFalse(self.msg.check_validation(
-            self.msg.gen_validation(KEY), key2.public_key()))
-
-    def test_check_validation_wrong_payload(self):
-        validations = tuple(
-            jose.JWS.sign(payload=payload, alg=jose.RS256, key=KEY)
-            for payload in (b'', b'{}')
-        )
-        for validation in validations:
-            self.assertFalse(self.msg.check_validation(
-                validation, KEY.public_key()))
-
-    def test_check_validation_wrong_fields(self):
-        bad_validation = jose.JWS.sign(
-            payload=self.msg.update(token=b'x' * 20).json_dumps().encode('utf-8'),
-            alg=jose.RS256, key=KEY)
-        self.assertFalse(self.msg.check_validation(
-            bad_validation, KEY.public_key()))
-
-    def test_gen_response(self):
-        with mock.patch('acme.challenges.DNS.gen_validation') as mock_gen:
-            mock_gen.return_value = mock.sentinel.validation
-            response = self.msg.gen_response(KEY)
-        from acme.challenges import DNSResponse
-        self.assertTrue(isinstance(response, DNSResponse))
-        self.assertEqual(response.validation, mock.sentinel.validation)
-
-    def test_validation_domain_name(self):
-        self.assertEqual(
-            '_acme-challenge.le.wtf', self.msg.validation_domain_name('le.wtf'))
-
-
-class DNSResponseTest(unittest.TestCase):
-
-    def setUp(self):
-        from acme.challenges import DNS
-        self.chall = DNS(token=jose.b64decode(
-            b"evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA"))
-        self.validation = jose.JWS.sign(
-            payload=self.chall.json_dumps(sort_keys=True).encode(),
-            key=KEY, alg=jose.RS256)
-
-        from acme.challenges import DNSResponse
-        self.msg = DNSResponse(validation=self.validation)
-        self.jmsg_to = {
-            'resource': 'challenge',
-            'type': 'dns',
-            'validation': self.validation,
-        }
-        self.jmsg_from = {
-            'resource': 'challenge',
-            'type': 'dns',
-            'validation': self.validation.to_json(),
-        }
-
-    def test_to_partial_json(self):
-        self.assertEqual(self.jmsg_to, self.msg.to_partial_json())
-
-    def test_from_json(self):
-        from acme.challenges import DNSResponse
-        self.assertEqual(self.msg, DNSResponse.from_json(self.jmsg_from))
-
-    def test_from_json_hashable(self):
-        from acme.challenges import DNSResponse
-        hash(DNSResponse.from_json(self.jmsg_from))
-
-    def test_check_validation(self):
-        self.assertTrue(
-            self.msg.check_validation(self.chall, KEY.public_key()))
 
 
 if __name__ == '__main__':

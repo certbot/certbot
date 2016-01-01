@@ -555,56 +555,32 @@ class ProofOfPossessionResponse(ChallengeResponse):
         return self.signature.verify(self.nonce)
 
 
+@ChallengeResponse.register
+class DNS01Response(KeyAuthorizationChallengeResponse):
+    """ACME "dns" challenge response.
+
+    :param JWS validation:
+
+    """
+    typ = "dns-01"
+
+    def simple_verify(self, chall, domain, account_public_key):
+        return self.verify(chall, account_public_key)
+
+
 @Challenge.register  # pylint: disable=too-many-ancestors
-class DNS(_TokenDVChallenge):
+class DNS01(KeyAuthorizationChallenge):
     """ACME "dns" challenge."""
-    typ = "dns"
+    response_cls = DNS01Response
+    typ = response_cls.typ
 
     LABEL = "_acme-challenge"
     """Label clients prepend to the domain name being validated."""
 
-    def gen_validation(self, account_key, alg=jose.RS256, **kwargs):
-        """Generate validation.
-
-        :param .JWK account_key: Private account key.
-        :param .JWA alg:
-
-        :returns: This challenge wrapped in `.JWS`
-        :rtype: .JWS
-
-        """
-        return jose.JWS.sign(
-            payload=self.json_dumps(sort_keys=True).encode('utf-8'),
-            key=account_key, alg=alg, **kwargs)
-
-    def check_validation(self, validation, account_public_key):
-        """Check validation.
-
-        :param JWS validation:
-        :param JWK account_public_key:
-        :rtype: bool
-
-        """
-        if not validation.verify(key=account_public_key):
-            return False
-        try:
-            return self == self.json_loads(
-                validation.payload.decode('utf-8'))
-        except jose.DeserializationError as error:
-            logger.debug("Checking validation for DNS failed: %s", error)
-            return False
-
-    def gen_response(self, account_key, **kwargs):
-        """Generate response.
-
-        :param .JWK account_key: Private account key.
-        :param .JWA alg:
-
-        :rtype: DNSResponse
-
-        """
-        return DNSResponse(validation=self.gen_validation(
-            self, account_key, **kwargs))
+    def validation(self, account_key):
+        key_auth = self.key_authorization(account_key)
+        digest = hashlib.sha256(key_auth).digest()
+        return jose.b64encode(digest)
 
     def validation_domain_name(self, name):
         """Domain name for TXT validation record.
@@ -613,26 +589,3 @@ class DNS(_TokenDVChallenge):
 
         """
         return "{0}.{1}".format(self.LABEL, name)
-
-
-@ChallengeResponse.register
-class DNSResponse(ChallengeResponse):
-    """ACME "dns" challenge response.
-
-    :param JWS validation:
-
-    """
-    typ = "dns"
-
-    validation = jose.Field("validation", decoder=jose.JWS.from_json)
-
-    def check_validation(self, chall, account_public_key):
-        """Check validation.
-
-        :param challenges.DNS chall:
-        :param JWK account_public_key:
-
-        :rtype: bool
-
-        """
-        return chall.check_validation(self.validation, account_public_key)

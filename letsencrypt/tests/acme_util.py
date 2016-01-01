@@ -16,7 +16,7 @@ HTTP01 = challenges.HTTP01(
     token="evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA")
 TLSSNI01 = challenges.TLSSNI01(
     token=jose.b64decode(b"evaGxfADs6pSRb2LAv9IZf17Dt3juxGJyPCt92wrDoA"))
-DNS = challenges.DNS(token="17817c66b60ce2e4012dfad92657527a")
+DNS = challenges.DNS01(token="17817c66b60ce2e4012dfad92657527a")
 RECOVERY_CONTACT = challenges.RecoveryContact(
     activation_url="https://example.ca/sendrecovery/a5bd99383fb0",
     success_url="https://example.ca/confirmrecovery/bb1b9928932",

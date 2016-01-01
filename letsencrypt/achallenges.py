@@ -58,7 +58,7 @@ class KeyAuthorizationAnnotatedChallenge(AnnotatedChallenge):
 class DNS(AnnotatedChallenge):
     """Client annotated "dns" ACME challenge."""
     __slots__ = ('challb', 'domain')
-    acme_type = challenges.DNS
+    acme_type = challenges.DNS01
 
 
 class RecoveryContact(AnnotatedChallenge):

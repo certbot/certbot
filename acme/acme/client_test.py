@@ -59,7 +59,7 @@ class ClientTest(unittest.TestCase):
         authzr_uri = 'https://www.letsencrypt-demo.org/acme/authz/1'
         challb = messages.ChallengeBody(
             uri=(authzr_uri + '/1'), status=messages.STATUS_VALID,
-            chall=challenges.DNS(token=jose.b64decode(
+            chall=challenges.DNS01(token=jose.b64decode(
                 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA')))
         self.challr = messages.ChallengeResource(
             body=challb, authzr_uri=authzr_uri)
@@ -167,7 +167,7 @@ class ClientTest(unittest.TestCase):
         self.response.links['up'] = {'url': self.challr.authzr_uri}
         self.response.json.return_value = self.challr.body.to_json()
 
-        chall_response = challenges.DNSResponse(validation=None)
+        chall_response = challenges.DNS01Response()
 
         self.client.answer_challenge(self.challr.body, chall_response)
 
@@ -178,7 +178,7 @@ class ClientTest(unittest.TestCase):
     def test_answer_challenge_missing_next(self):
         self.assertRaises(
             errors.ClientError, self.client.answer_challenge,
-            self.challr.body, challenges.DNSResponse(validation=None))
+            self.challr.body, challenges.DNS01Response())
 
     def test_retry_after_date(self):
         self.response.headers['Retry-After'] = 'Fri, 31 Dec 1999 23:59:59 GMT'

@@ -214,7 +214,7 @@ class ChallengeBodyTest(unittest.TestCase):
     """Tests for acme.messages.ChallengeBody."""
 
     def setUp(self):
-        self.chall = challenges.DNS(token=jose.b64decode(
+        self.chall = challenges.DNS01(token=jose.b64decode(
             'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA'))
 
         from acme.messages import ChallengeBody
@@ -230,7 +230,7 @@ class ChallengeBodyTest(unittest.TestCase):
         self.jobj_to = {
             'uri': 'http://challb',
             'status': self.status,
-            'type': 'dns',
+            'type': 'dns-01',
             'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA',
             'error': error,
         }
@@ -269,7 +269,7 @@ class AuthorizationTest(unittest.TestCase):
                 uri='http://challb1', status=STATUS_VALID,
                 chall=challenges.HTTP01(token=b'IlirfxKKXAsHtmzK29Pj8A')),
             ChallengeBody(uri='http://challb2', status=STATUS_VALID,
-                          chall=challenges.DNS(
+                          chall=challenges.DNS01(
                               token=b'DGyRejmCefe7v4NfDGDKfA')),
             ChallengeBody(uri='http://challb3', status=STATUS_VALID,
                           chall=challenges.RecoveryContact()),
