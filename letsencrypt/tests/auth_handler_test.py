@@ -154,6 +154,7 @@ class GetAuthorizationsTest(unittest.TestCase):
     @mock.patch("acme.challenges.HTTP01Response.simple_verify")
     @mock.patch("acme.challenges.TLSSNI01Response.simple_verify")
     def test_simple_verify(self, mock_http01_verify, mock_tlssni01_verify):
+        # pylint: disable=protected-access
         key = jose.JWK.load(test_util.load_vector('rsa512_key.pem'))
         challenge_http_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.HTTP01_P, domain=b'localhost', account_key=key)
