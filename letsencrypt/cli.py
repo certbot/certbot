@@ -1189,7 +1189,7 @@ def _plugins_parsing(helpful, plugins):
 
     # These would normally be a flag within the webroot plugin, but because
     # they are parsed in conjunction with --domains, they live here for
-    # legibiility. helpful.add_plugin_ags must be called first to add the
+    # legibility. helpful.add_plugin_ags must be called first to add the
     # "webroot" topic
     helpful.add("webroot", "-w", "--webroot-path", action=WebrootPathProcessor,
                 help="public_html / webroot path. This can be specified multiple times to "

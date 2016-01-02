@@ -116,6 +116,7 @@ def renew(cert, old_version):
 def _cli_log_handler(args, level, fmt):  # pylint: disable=unused-argument
     handler = colored_logging.StreamHandler()
     handler.setFormatter(logging.Formatter(fmt))
+    handler.setLevel(level)
     return handler
 
 
@@ -181,7 +182,9 @@ def main(cli_args=sys.argv[1:]):
             #       RenewableCert object for this cert at all, which could
             #       dramatically improve performance for large deployments
             #       where autorenewal is widely turned off.
-            cert = storage.RenewableCert(renewal_file, cli_config)
+            cert = storage.RenewableCert(
+                            os.path.join(cli_config.renewal_configs_dir, renewal_file),
+                            cli_config)
         except errors.CertStorageError:
             # This indicates an invalid renewal configuration file, such
             # as one missing a required parameter (in the future, perhaps

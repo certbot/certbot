@@ -2,7 +2,7 @@
 
 # SLE12 don't have python-virtualenv
 
-zypper -nq in -l git-core \
+zypper -nq in -l \
   python \
   python-devel \
   python-virtualenv \
