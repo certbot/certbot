@@ -1,6 +1,7 @@
 """Tests for acme.challenges."""
 import unittest
 
+import dns.rrset
 import mock
 import OpenSSL
 import requests
@@ -75,6 +76,100 @@ class KeyAuthorizationChallengeResponseTest(unittest.TestCase):
         response = KeyAuthorizationChallengeResponse(
             key_authorization='.foo.oKGqedy-b-acd5eoybm2f-NVFxvyOoET5CNy3xnv8WY')
         self.assertFalse(response.verify(self.chall, KEY.public_key()))
+
+
+class DNS01ResponseTest(unittest.TestCase):
+    # pylint: disable=too-many-instance-attributes
+
+    def setUp(self):
+        from acme.challenges import DNS01Response
+        self.msg = DNS01Response(key_authorization=u'foo')
+        self.jmsg = {
+            'resource': 'challenge',
+            'type': 'dns-01',
+            'keyAuthorization': u'foo',
+        }
+
+        from acme.challenges import DNS01
+        self.chall = DNS01(token=(b'x' * 16))
+        self.response = self.chall.response(KEY)
+
+    # This takes advantage of the fact that an answer object mostly behaves like
+    # an RRset
+    def create_txt_response(self, name, txt_record):
+        return dns.rrset.from_text(name, 60, "IN", "TXT", txt_record)
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+
+    def test_from_json(self):
+        from acme.challenges import DNS01Response
+        self.assertEqual(
+            self.msg, DNS01Response.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from acme.challenges import DNS01Response
+        hash(DNS01Response.from_json(self.jmsg))
+
+    def test_simple_verify_bad_key_authorization(self):
+        key2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
+        self.response.simple_verify(self.chall, "local", key2.public_key())
+
+    @mock.patch("acme.challenges.dns.resolver.query")
+    def test_simple_verify_good_validation(self, mock_dns):
+        mock_dns.return_value = self.create_txt_response(
+            self.chall.validation_domain_name("local"),
+            self.chall.validation(KEY.public_key()))
+        self.assertTrue(self.response.simple_verify(
+            self.chall, "local", KEY.public_key()))
+        mock_dns.assert_called_once_with(
+            self.chall.validation_domain_name("local"), "TXT")
+
+    @mock.patch("acme.challenges.dns.resolver.query")
+    def test_simple_verify_bad_validation(self, mock_dns):
+        mock_dns.return_value = self.create_txt_response(
+            self.chall.validation_domain_name("local"), "!")
+        self.assertFalse(self.response.simple_verify(
+            self.chall, "local", KEY.public_key()))
+
+    @mock.patch("acme.challenges.dns.resolver.query")
+    def test_simple_verify_connection_error(self, mock_dns):
+        mock_dns.side_effect = dns.exception.DNSException
+        self.assertFalse(self.response.simple_verify(
+            self.chall, "local", KEY.public_key()))
+
+
+class DNS01Test(unittest.TestCase):
+
+    def setUp(self):
+        from acme.challenges import DNS01
+        self.msg = DNS01(
+            token=jose.decode_b64jose(
+                'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA'))
+        self.jmsg = {
+            'type': 'dns-01',
+            'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA',
+        }
+
+    def test_validation_domain_name(self):
+        self.assertEqual('_acme-challenge.www.example.com',
+                         self.msg.validation_domain_name('www.example.com'))
+
+    def test_validation(self):
+        self.assertEqual(
+            "ac06bb8888382b6cbaddfbd48427f2f1d3f55e5ef0121990ab4a02853704dd99",
+            self.msg.validation(KEY))
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+
+    def test_from_json(self):
+        from acme.challenges import DNS01
+        self.assertEqual(self.msg, DNS01.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from acme.challenges import DNS01
+        hash(DNS01.from_json(self.jmsg))
 
 
 class HTTP01ResponseTest(unittest.TestCase):
