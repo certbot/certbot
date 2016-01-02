@@ -1,5 +1,8 @@
 """ACME Identifier Validation Challenges."""
 import abc
+import base64
+import dns.resolver
+import dns.exception
 import functools
 import hashlib
 import logging
@@ -213,6 +216,83 @@ class KeyAuthorizationChallenge(_TokenDVChallenge):
         """
         return (self.response(account_key),
                 self.validation(account_key, *args, **kwargs))
+
+
+@ChallengeResponse.register
+class DNS01Response(KeyAuthorizationChallengeResponse):
+    """ACME "dns-01" challenge response."""
+    typ = "dns-01"
+
+    def simple_verify(self, chall, domain, account_public_key):
+        """Simple verify.
+
+        :param challenges.DNS01 chall: Corresponding challenge.
+        :param unicode domain: Domain name being verified.
+        :param account_public_key: Public key for the key pair
+            being authorized. If ``None`` key verification is not
+            performed!
+        :param JWK account_public_key:
+
+        :returns: ``True`` iff validation is successful, ``False``
+            otherwise.
+        :rtype: bool
+
+        """
+        if not self.verify(chall, account_public_key):
+            logger.debug("Verification of key authorization in response failed")
+            return False
+
+        validation_name = chall.validation_domain_name(domain)
+        validation = chall.validation(account_public_key)
+        logger.debug("Verifying %s at %s...", chall.typ, validation_name)
+        txt_records = []
+        try:
+            dns_response = dns.resolver.query(validation_name, 'TXT')
+            for rdata in dns_response:
+                for txt_record in rdata.strings:
+                    txt_records.append(txt_record)
+        except dns.exception.DNSException as error:
+            logger.error("Unable to resolve %s: %s", validation_name, error)
+            return False
+
+        for txt_record in txt_records:
+            if txt_record == validation:
+                return True
+
+        logger.debug("Key authorization from response (%r) doesn't match any "
+                     "DNS response in %r", self.key_authorization, txt_records)
+        return False
+
+
+@Challenge.register  # pylint: disable=too-many-ancestors
+class DNS01(KeyAuthorizationChallenge):
+    """ACME "dns-01" challenge."""
+
+    response_cls = DNS01Response
+    typ = response_cls.typ
+
+    LABEL = "_acme-challenge"
+    """Label clients prepend to the domain name being validated."""
+
+    def validation(self, account_key, **unused_kwargs):
+        """Generate validation.
+
+        :param JWK account_key:
+        :rtype: unicode
+
+        """
+        key_authorization = self.key_authorization(account_key)
+        # FIXME Once boulder response according to the spec this needs to be fixed
+        # return base64.b64encode(hashlib.sha256(key_authorization).digest())
+        return hashlib.sha256(key_authorization).hexdigest()
+
+    def validation_domain_name(self, name):
+        """Domain name for TXT validation record.
+
+        :param unicode name: Domain name being validated.
+
+        """
+        return "{0}.{1}".format(self.LABEL, name)
 
 
 @ChallengeResponse.register
