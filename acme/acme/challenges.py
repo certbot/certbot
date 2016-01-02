@@ -242,17 +242,15 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
             logger.debug("Verification of key authorization in response failed")
             return False
 
-        validation_name = chall.validation_domain_name(domain)
+        validation_domain_name = chall.validation_domain_name(domain)
         validation = chall.validation(account_public_key)
-        logger.debug("Verifying %s at %s...", chall.typ, validation_name)
-        txt_records = []
+        logger.debug("Verifying %s at %s...", chall.typ, validation_domain_name)
         try:
-            dns_response = dns.resolver.query(validation_name, 'TXT')
-            for rdata in dns_response:
-                for txt_record in rdata.strings:
-                    txt_records.append(txt_record)
+            dns_response = dns.resolver.query(validation_domain_name, 'TXT')
+            txt_records = sum([rdata.strings for rdata in dns_response], [])
         except dns.exception.DNSException as error:
-            logger.error("Unable to resolve %s: %s", validation_name, error)
+            logger.error("Unable to resolve %s: %s", validation_domain_name,
+                         error)
             return False
 
         for txt_record in txt_records:
@@ -273,7 +271,8 @@ class DNS01(KeyAuthorizationChallenge):
     LABEL = "_acme-challenge"
     """Label clients prepend to the domain name being validated."""
 
-    def validation(self, account_key, **unused_kwargs):
+    # FIXME: Remove extra parameter once #2052 is integrated
+    def validation(self, account_key, dns01_hexdigit_response=True, **unused_kwargs):
         """Generate validation.
 
         :param JWK account_key:
@@ -281,9 +280,9 @@ class DNS01(KeyAuthorizationChallenge):
 
         """
         key_authorization = self.key_authorization(account_key)
-        # FIXME Once boulder response according to the spec this needs to be fixed
-        # return base64.b64encode(hashlib.sha256(key_authorization).digest())
-        return hashlib.sha256(key_authorization).hexdigest()
+        if dns01_hexdigit_response:
+            return hashlib.sha256(key_authorization).hexdigest()
+        return base64.urlsafe_b64encode(hashlib.sha256(key_authorization).digest())
 
     def validation_domain_name(self, name):
         """Domain name for TXT validation record.
