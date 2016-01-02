@@ -14,6 +14,8 @@ from letsencrypt import achallenges
 from letsencrypt import errors
 from letsencrypt import le_util
 
+from letsencrypt.configuration import NamespaceConfig
+
 from letsencrypt.tests import acme_util
 from letsencrypt.tests import test_util
 
@@ -81,7 +83,9 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.mock_account = mock.Mock(key=le_util.Key("file_path", "PEM"))
         self.mock_net = mock.MagicMock(spec=acme_client.Client)
 
-        self.config = mock.MagicMock(http01_port=8000, tls_sni_01_port=9000)
+        namespace = mock.MagicMock(
+            tls_sni_01_port=1234, http01_port=4321)
+        self.config = NamespaceConfig(namespace)
 
         self.handler = AuthHandler(
             self.mock_dv_auth, self.mock_cont_auth,
@@ -180,8 +184,7 @@ class GetAuthorizationsTest(unittest.TestCase):
         response_tls_sni_01.simple_verify.assert_called_with(
             challenge_tls_sni_01.chall,
             challenge_tls_sni_01.domain,
-            challenge_tls_sni_01.account_key.public_key(),
-            self.config.tls_sni_01_port)
+            challenge_tls_sni_01.account_key.public_key()) #None accounts for cert
 
     def _validate_all(self, unused_1, unused_2):
         for dom in self.handler.authzr.keys():

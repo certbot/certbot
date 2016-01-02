@@ -39,6 +39,12 @@ addons:
   # make sure simplehttp simple verification works (custom /etc/hosts)
   hosts:
     - le.wtf
+    # For boulder-integration.sh
+    - le1.wtf
+    - le2.wtf
+    - le3.wtf
+    # For letsencrypt_test_nginx
+    - nginx.wtf
   mariadb: "10.0"
   apt:
     sources:
