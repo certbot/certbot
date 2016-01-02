@@ -223,6 +223,22 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
     """ACME "dns-01" challenge response."""
     typ = "dns-01"
 
+    def txt_records_for_name(self, name):
+        """Resolve the name and return the TXT records.
+
+        :param unicode name: Domain name being verified.
+
+        :returns: A list of txt records, or None if the name could not be resolved
+        :rtype: list of unicode
+
+        """
+        try:
+            dns_response = dns.resolver.query(name, 'TXT')
+        except dns.exception.DNSException as error:
+            logger.error("Unable to resolve %s: %s", name, error)
+            return None
+        return sum([rdata.strings for rdata in dns_response], [])
+
     def simple_verify(self, chall, domain, account_public_key):
         """Simple verify.
 
@@ -245,15 +261,7 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
         validation_domain_name = chall.validation_domain_name(domain)
         validation = chall.validation(account_public_key)
         logger.debug("Verifying %s at %s...", chall.typ, validation_domain_name)
-        try:
-            dns_response = dns.resolver.query(validation_domain_name, 'TXT')
-            txt_records = sum([rdata.strings for rdata in dns_response], [])
-        except dns.exception.DNSException as error:
-            logger.error("Unable to resolve %s: %s", validation_domain_name,
-                         error)
-            return False
-
-        for txt_record in txt_records:
+        for txt_record in self.txt_records_for_domain(validation_domain_name):
             if txt_record == validation:
                 return True
 
