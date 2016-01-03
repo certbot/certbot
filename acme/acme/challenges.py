@@ -249,8 +249,8 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
             performed!
         :param JWK account_public_key:
 
-        :returns: ``True`` iff validation is successful, ``False``
-            otherwise.
+        :returns: ``True`` iff validation with the TXT records resolved from a
+            DNS server is successful.
         :rtype: bool
 
         """
@@ -332,8 +332,8 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
         :param JWK account_public_key:
         :param int port: Port used in the validation.
 
-        :returns: ``True`` iff validation is successful, ``False``
-            otherwise.
+        :returns: ``True`` iff validation of the files currently server by the
+            HTTP server is successful.
         :rtype: bool
 
         """
@@ -504,7 +504,7 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
 
 
         :returns: ``True`` iff client's control of the domain has been
-            verified, ``False`` otherwise.
+            verified.
         :rtype: bool
 
         """
