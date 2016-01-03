@@ -712,8 +712,19 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             with open(avail_fp, "r") as orig_file:
                 with open(ssl_fp, "w") as new_file:
                     new_file.write("<IfModule mod_ssl.c>\n")
+
+                    # In some cases we wouldn't want to copy the exact
+                    # directives used in an http vhost to a ssl vhost.
+                    # An example:
+                    # If there's a redirect rewrite rule directive installed in
+                    # the http vhost - copying it to the ssl vhost would cause
+                    # a redirection loop.
+                    blacklist_set = set(['RewriteRule', 'RewriteEngine'])
+
                     for line in orig_file:
-                        new_file.write(line)
+                        line_set = set(line.split())
+                        if not line_set & blacklist_set: # & -> Intersection
+                            new_file.write(line)
                     new_file.write("</IfModule>\n")
         except IOError:
             logger.fatal("Error writing/reading to file in make_vhost_ssl")
