@@ -181,7 +181,7 @@ class NginxConfigurator(common.Plugin):
         self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
                             (vhost.filep,
                              ", ".join(str(addr) for addr in vhost.addrs)))
-        self.save_notes += "\tssl_certificate %s\n" % cert_path
+        self.save_notes += "\tssl_certificate %s\n" % fullchain_path
         self.save_notes += "\tssl_certificate_key %s\n" % key_path
 
     #######################
