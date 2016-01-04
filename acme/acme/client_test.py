@@ -108,9 +108,12 @@ class ClientTest(unittest.TestCase):
         self.response.status_code = http_client.CONFLICT
         self.response.headers['Location'] = 'EXISTING'
 
-        with self.assertRaises(errors.KeyAlreadyRegistered) as cm:
+        self.assertRaises(
+            errors.KeyAlreadyRegistered, self.client.register, self.new_reg)
+        try:
             self.client.register(self.new_reg)
-        self.assertEquals(cm.exception.existing_registration_uri, 'EXISTING')
+        except errors.KeyAlreadyRegistered as error:
+            self.assertEquals(error.existing_registration_uri, 'EXISTING')
 
     def test_register_missing_next(self):
         self.response.status_code = http_client.CREATED
