@@ -122,7 +122,7 @@ class NginxConfigurator(common.Plugin):
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path,
-                    chain_path, fullchain_path):
+                    chain_path=None, fullchain_path=None):
         # pylint: disable=unused-argument
         """Deploys certificate to specified virtual host.
 
@@ -135,6 +135,9 @@ class NginxConfigurator(common.Plugin):
             ssl_trusted_certificate directive, used for verify OCSP responses.
 
         .. note:: This doesn't save the config files!
+
+        :raises errors.PluginError: When unable to deploy certificate due to
+            a lack of directives or configuration
 
         """
         vhost = self.choose_vhost(domain)
@@ -149,6 +152,12 @@ class NginxConfigurator(common.Plugin):
                 ['ssl_trusted_certificate', chain_path],
                 ['ssl_stapling', 'on'],
                 ['ssl_stapling_verify', 'on']]
+
+        if len(stapling_directives) != 0 and not chain_path:
+            raise errors.PluginError(
+                "--chain-path is required to enable "
+                "Online Certificate Status Protocol (OCSP) stapling "
+                "on nginx >= 1.3.7.")
 
         try:
             self.parser.add_server_directives(vhost.filep, vhost.names,
