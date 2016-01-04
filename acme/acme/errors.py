@@ -20,13 +20,13 @@ class UnexpectedUpdate(ClientError):
 
 class KeyAlreadyRegistered(Exception):
     """Key used in registration is already registered"""
-    def __init__(self, existing_registration_url, *args, **kwargs):
+    def __init__(self, existing_registration_uri, *args, **kwargs):
         super(KeyAlreadyRegistered, self).__init__(*args, **kwargs)
-        self.existing_registration_url = existing_registration_url
+        self.existing_registration_uri = existing_registration_uri
 
     def __str__(self):
         return 'Key already registered at server: {0}'.format(
-            self.existing_registration_url)
+            self.existing_registration_uri)
 
 
 class NonceError(ClientError):

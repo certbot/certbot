@@ -1,8 +1,21 @@
+
 """Tests for acme.errors."""
 import datetime
 import unittest
 
 import mock
+
+
+class KeyAlreadyRegisteredTest(unittest.TestCase):
+    """Tests for acme.errors.KeyAlreadyRegistered."""
+
+    def setUp(self):
+        from acme.errors import KeyAlreadyRegistered
+        self.error = KeyAlreadyRegistered("EXISTING")
+
+    def test_str(self):
+        self.assertEqual("Key already registered at server: EXISTING",
+                         str(self.error))
 
 
 class BadNonceTest(unittest.TestCase):
