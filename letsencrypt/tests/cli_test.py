@@ -520,7 +520,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                            title='beta'))
         args = mock.MagicMock(debug=False, verbose_count=-3)
         cli._handle_exception(
-            errors.ClientError exc_value=exception, trace=None, args=args)
+            errors.ClientError, exc_value=exception, trace=None, args=args)
         error_msg = mock_sys.exit.call_args_list[-1][0][0]
         self.assertTrue('unexpected error' in error_msg)
         self.assertTrue('acme:error' not in error_msg)
