@@ -262,7 +262,7 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
         validation = chall.validation(account_public_key)
         logger.debug("Verifying %s at %s...", chall.typ, validation_domain_name)
         txt_records = self.txt_records_for_name(validation_domain_name)
-        if txt_records == None:
+        if txt_records is None:
             return False
 
         for txt_record in txt_records:
