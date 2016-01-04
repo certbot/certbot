@@ -74,7 +74,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             try:
                 new_authzr_uri = response.links['next']['url']
             except KeyError:
-                raise errors.ClientError('"next" link missing')
+                raise errors.ClientError(response, '"next" link missing')
 
         return messages.RegistrationResource(
             body=messages.Registration.from_json(response.json()),
@@ -96,12 +96,15 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         new_reg = messages.NewRegistration() if new_reg is None else new_reg
         assert isinstance(new_reg, messages.NewRegistration)
 
-        response = self.net.post(self.directory[new_reg], new_reg,
-                                 no_check=True)
-        # TODO: More complete error handling
-        if response.status_code == http_client.CONFLICT:
-            existing_registration_url = response.headers.get('Location')
-            raise errors.KeyAlreadyRegistered(existing_registration_url)
+        try:
+            response = self.net.post(self.directory[new_reg], new_reg)
+        except errors.ClientError as error:
+            # TODO: More complete error handling
+            if (error.response is not None and
+                error.response.status_code == http_client.CONFLICT):
+                existing_registration_url = error.response.headers.get('Location')
+                raise errors.KeyAlreadyRegistered(existing_registration_url)
+            raise error
         assert response.status_code == http_client.CREATED
 
         # "Instance of 'Field' has no key/contact member" bug:
@@ -175,7 +178,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             try:
                 new_cert_uri = response.links['next']['url']
             except KeyError:
-                raise errors.ClientError('"next" link missing')
+                raise errors.ClientError(response, '"next" link missing')
 
         authzr = messages.AuthorizationResource(
             body=messages.Authorization.from_json(response.json()),
@@ -239,7 +242,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         try:
             authzr_uri = response.links['up']['url']
         except KeyError:
-            raise errors.ClientError('"up" Link header missing')
+            raise errors.ClientError(response, '"up" Link header missing')
         challr = messages.ChallengeResource(
             authzr_uri=authzr_uri,
             body=messages.ChallengeBody.from_json(response.json()))
@@ -320,7 +323,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         try:
             uri = response.headers['Location']
         except KeyError:
-            raise errors.ClientError('"Location" Header missing')
+            raise errors.ClientError(response, '"Location" Header missing')
 
         return messages.CertificateResource(
             uri=uri, authzrs=authzrs, cert_chain_uri=cert_chain_uri,
@@ -386,7 +389,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         if not max_attempts or any(authzr.body.status == messages.STATUS_INVALID
                                    for authzr in six.itervalues(updated)):
-            raise errors.PollError(waiting, updated)
+            raise errors.PollError(response, waiting, updated)
 
         updated_authzrs = tuple(updated[authzr] for authzr in authzrs)
         return self.request_issuance(csr, updated_authzrs), updated_authzrs
@@ -421,7 +424,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         # "refresh cert", and this method integrated with self.refresh
         response, cert = self._get_cert(certr.uri)
         if 'Location' not in response.headers:
-            raise errors.ClientError('Location header missing')
+            raise errors.ClientError(response, 'Location header missing')
         if response.headers['Location'] != certr.uri:
             raise errors.UnexpectedUpdate(response.text)
         return certr.update(body=cert)
@@ -483,7 +486,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                                  messages.Revocation(certificate=cert),
                                  content_type=None)
         if response.status_code != http_client.OK:
-            raise errors.ClientError(
+            raise errors.ClientError(response,
                 'Successful revocation must return HTTP OK status')
 
 
@@ -530,9 +533,9 @@ class ClientNetwork(object):
             function will raise an error. Otherwise, wrong Content-Type
             is ignored, but logged.
 
-        :raises .messages.Error: If server response body
-            carries HTTP Problem (draft-ietf-appsawg-http-problem-00).
-        :raises .ClientError: In case of other networking errors.
+        :raises errors.ClientError: In case of networking errors.
+            If server response body carries HTTP Problem it will be set as the
+            'error' property (draft-ietf-appsawg-http-problem-00).
 
         """
         logger.debug('Received response %s (headers: %s): %r',
@@ -553,10 +556,11 @@ class ClientNetwork(object):
                         'Ignoring wrong Content-Type (%r) for JSON Error',
                         response_ct)
                 try:
-                    raise messages.Error.from_json(jobj)
+                    raise errors.ClientError(
+                        response, error=messages.Error.from_json(jobj))
                 except jose.DeserializationError as error:
                     # Couldn't deserialize JSON object
-                    raise errors.ClientError((response, error))
+                    raise errors.ClientError(response, error)
             else:
                 # response is not JSON object
                 raise errors.ClientError(response)
@@ -567,7 +571,7 @@ class ClientNetwork(object):
                     'response', response_ct)
 
             if content_type == cls.JSON_CONTENT_TYPE and jobj is None:
-                raise errors.ClientError(
+                raise errors.ClientError(response,
                     'Unexpected response Content-Type: {0}'.format(response_ct))
 
         return response
@@ -620,7 +624,7 @@ class ClientNetwork(object):
             try:
                 decoded_nonce = jws.Header._fields['nonce'].decode(nonce)
             except jose.DeserializationError as error:
-                raise errors.BadNonce(nonce, error)
+                raise errors.BadNonce(response, nonce, error)
             logger.debug('Storing nonce: %r', decoded_nonce)
             self._nonces.add(decoded_nonce)
         else:
@@ -632,12 +636,9 @@ class ClientNetwork(object):
             self._add_nonce(self.head(url))
         return self._nonces.pop()
 
-    def post(self, url, obj, content_type=JSON_CONTENT_TYPE, no_check=False,
-             **kwargs):
+    def post(self, url, obj, content_type=JSON_CONTENT_TYPE, **kwargs):
         """POST object wrapped in `.JWS` and check response."""
         data = self._wrap_in_jws(obj, self._get_nonce(url))
         response = self._send_request('POST', url, data=data, **kwargs)
         self._add_nonce(response)
-        if no_check:
-            return response
         return self._check_response(response, content_type=content_type)

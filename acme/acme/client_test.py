@@ -107,7 +107,7 @@ class ClientTest(unittest.TestCase):
     def test_register_existing(self):
         self.response.status_code = http_client.CONFLICT
         self.response.headers['Location'] = 'EXISTING'
-
+        self.net.post.side_effect = errors.ClientError(response=self.response)
         self.assertRaises(
             errors.KeyAlreadyRegistered, self.client.register, self.new_reg)
         try:
@@ -460,11 +460,18 @@ class ClientNetworkTest(unittest.TestCase):
 
     def test_check_response_not_ok_jobj_error(self):
         self.response.ok = False
-        self.response.json.return_value = messages.Error(
-            detail='foo', typ='serverInternal', title='some title').to_json()
+        net_error = messages.Error(detail='foo', typ='serverInternal',
+                                   title='some title')
+        self.response.json.return_value = net_error.to_json()
         # pylint: disable=protected-access
         self.assertRaises(
-            messages.Error, self.net._check_response, self.response)
+            errors.ClientError, self.net._check_response, self.response)
+        try:
+            # pylint: disable=no-value-for-parameter
+            self.net._check_response(self.response)
+        except errors.ClientError as error:
+            self.assertEqual(self.response, error.response)
+            self.assertEqual(net_error, error.error)
 
     def test_check_response_not_ok_no_jobj(self):
         self.response.ok = False
@@ -472,6 +479,11 @@ class ClientNetworkTest(unittest.TestCase):
         # pylint: disable=protected-access
         self.assertRaises(
             errors.ClientError, self.net._check_response, self.response)
+        try:
+            # pylint: disable=no-value-for-parameter
+            self.net._check_response(self.response)
+        except errors.ClientError as error:
+            self.assertEqual(self.response, error.response)
 
     def test_check_response_ok_no_jobj_ct_required(self):
         self.response.json.side_effect = ValueError
@@ -481,6 +493,11 @@ class ClientNetworkTest(unittest.TestCase):
             self.assertRaises(
                 errors.ClientError, self.net._check_response, self.response,
                 content_type=self.net.JSON_CONTENT_TYPE)
+            try:
+                # pylint: disable=no-value-for-parameter
+                self.net._check_response(self.response)
+            except errors.ClientError as error:
+                self.assertEqual(self.response, error.response)
 
     def test_check_response_ok_no_jobj_no_ct(self):
         self.response.json.side_effect = ValueError
@@ -489,6 +506,10 @@ class ClientNetworkTest(unittest.TestCase):
             # pylint: disable=protected-access,no-value-for-parameter
             self.assertEqual(
                 self.response, self.net._check_response(self.response))
+            try:
+                self.net._check_response(self.response)
+            except errors.ClientError as error:
+                self.assertEqual(self.response, error.response)
 
     def test_check_response_jobj(self):
         self.response.json.return_value = {}
@@ -497,6 +518,10 @@ class ClientNetworkTest(unittest.TestCase):
             # pylint: disable=protected-access,no-value-for-parameter
             self.assertEqual(
                 self.response, self.net._check_response(self.response))
+            try:
+                self.net._check_response(self.response)
+            except errors.ClientError as error:
+                self.assertEqual(self.response, error.response)
 
     @mock.patch('acme.client.requests')
     def test_send_request(self, mock_requests):

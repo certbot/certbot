@@ -13,6 +13,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
 
     https://tools.ietf.org/html/draft-ietf-appsawg-http-problem-00
 
+    :ivar int status:
     :ivar unicode typ:
     :ivar unicode title:
     :ivar unicode detail:
@@ -35,6 +36,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
         )
     )
 
+    status = jose.Field('status', omitempty=True)
     typ = jose.Field('type')
     title = jose.Field('title', omitempty=True)
     detail = jose.Field('detail')

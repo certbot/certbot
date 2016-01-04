@@ -11,7 +11,16 @@ class SchemaValidationError(jose_errors.DeserializationError):
 
 
 class ClientError(Error):
-    """Network error."""
+    """Network error or unexpected client response."""
+    def __init__(self, response, error=None, *args, **kwargs):
+        super(ClientError, self).__init__(*args, **kwargs)
+        self.error = error
+        self.response = response
+
+    def __str__(self):
+        if self.error is None:
+            return super(ClientError, self).__str__()
+        return 'Client error: {0}'.format(self.error)
 
 
 class UnexpectedUpdate(ClientError):
@@ -31,17 +40,19 @@ class KeyAlreadyRegistered(Exception):
 
 class NonceError(ClientError):
     """Server response nonce error."""
+    def __init__(self, response, *args, **kwargs):
+        super(NonceError, self).__init__(response, *args, **kwargs)
 
 
 class BadNonce(NonceError):
     """Bad nonce error."""
-    def __init__(self, nonce, error, *args, **kwargs):
-        super(BadNonce, self).__init__(*args, **kwargs)
+    def __init__(self, response, nonce, nonce_error, *args, **kwargs):
+        super(BadNonce, self).__init__(response, *args, **kwargs)
         self.nonce = nonce
-        self.error = error
+        self.nonce_error = nonce_error
 
     def __str__(self):
-        return 'Invalid nonce ({0!r}): {1}'.format(self.nonce, self.error)
+        return 'Invalid nonce ({0!r}): {1}'.format(self.nonce, self.nonce_error)
 
 
 class MissingNonce(NonceError):
@@ -55,8 +66,7 @@ class MissingNonce(NonceError):
 
     """
     def __init__(self, response, *args, **kwargs):
-        super(MissingNonce, self).__init__(*args, **kwargs)
-        self.response = response
+        super(MissingNonce, self).__init__(response, *args, **kwargs)
 
     def __str__(self):
         return ('Server {0} response did not include a replay '
@@ -77,10 +87,10 @@ class PollError(ClientError):
         to the most recently updated one
 
     """
-    def __init__(self, waiting, updated):
+    def __init__(self, response, waiting, updated, *args, **kwargs):
         self.waiting = waiting
         self.updated = updated
-        super(PollError, self).__init__()
+        super(PollError, self).__init__(response, *args, **kwargs)
 
     @property
     def timeout(self):
