@@ -518,8 +518,12 @@ def _add_directive(block, directive, replace):
         # Append directive. Fail if the name is not a repeatable directive name,
         # and there is already a copy of that directive with a different value
         # in the config file.
-        if location != -1 and directive[0].__str__() not in repeatable_directives:
-            if block[location][1] == directive[1]:
+        directive_name = directive[0]
+        directive_value = directive[1]
+        if location != -1 and directive_name.__str__() not in repeatable_directives:
+            if block[location][1] == directive_value:
+                # There's a conflict, but the existing value matches the one we
+                # want to insert, so it's fine.
                 pass
             else:
                 raise errors.MisconfigurationError(
