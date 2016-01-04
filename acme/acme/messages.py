@@ -8,7 +8,7 @@ from acme import jose
 from acme import util
 
 
-class Error(jose.JSONObjectWithFields, errors.Error):
+class Error(jose.JSONObjectWithFields):
     """ACME error.
 
     https://tools.ietf.org/html/draft-ietf-appsawg-http-problem-00
