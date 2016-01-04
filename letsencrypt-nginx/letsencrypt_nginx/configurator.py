@@ -197,8 +197,9 @@ class NginxConfigurator(common.Plugin):
 
         matches = self._get_ranked_matches(target_name)
         if not matches:
-            # No matches. Create a new vhost with this name in nginx.conf.
-            filep = self.parser.loc["root"]
+            filep = (self._create_vhost_conf_at_default_dir(target_name) or
+                    self.parser.loc["root"])
+
             new_block = [['server'], [['server_name', target_name]]]
             self.parser.add_http_directives(filep, new_block)
             vhost = obj.VirtualHost(filep, set([]), False, True,
@@ -216,6 +217,38 @@ class NginxConfigurator(common.Plugin):
                 self._make_server_ssl(vhost)
 
         return vhost
+
+    def _create_vhost_conf_at_default_dir(self, target_name):
+        # Creates a new config file based on the location of the vhost conf files
+
+        # finds the most frequent path for vhost configurations
+        root_config = self.parser.loc["root"]
+        paths_freq = dict()
+        for vhost in self.parser.get_vhosts():
+            # ignore vhosts defined in the root config file to avoid generating
+            # files at the root config dir that are never included.
+            if vhost.filep == root_config:
+                continue
+
+            path = os.path.dirname(vhost.filep)
+            paths_freq.setdefault(path, 0)
+            paths_freq[path] += 1
+
+        if len(paths_freq) == 0:
+            return None
+
+        conf_dir = max(paths_freq, key=(lambda k: paths_freq[k]))
+        conf_file = os.path.join(conf_dir, target_name + ".conf")
+
+        # must create the file, otherwise the reverter fails
+        open(conf_file, 'a').close()
+
+        # create a vhost config for target
+        self.parser.parsed[conf_file] = [[
+            ['server'], [['server_name', target_name]]
+        ]]
+
+        return conf_file
 
     def _get_ranked_matches(self, target_name):
         """Returns a ranked list of vhosts that match target_name.
