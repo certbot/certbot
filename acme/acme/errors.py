@@ -18,6 +18,17 @@ class UnexpectedUpdate(ClientError):
     """Unexpected update error."""
 
 
+class KeyAlreadyRegistered(Exception):
+    """Key used in registration is already registered"""
+    def __init__(self, existing_registration_url, *args, **kwargs):
+        super(KeyAlreadyRegistered, self).__init__(*args, **kwargs)
+        self.existing_registration_url = existing_registration_url
+
+    def __str__(self):
+        return 'Key already registered at server: {0}'.format(
+            self.existing_registration_url)
+
+
 class NonceError(ClientError):
     """Server response nonce error."""
 

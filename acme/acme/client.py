@@ -96,8 +96,12 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         new_reg = messages.NewRegistration() if new_reg is None else new_reg
         assert isinstance(new_reg, messages.NewRegistration)
 
-        response = self.net.post(self.directory[new_reg], new_reg)
-        # TODO: handle errors
+        response = self.net.post(self.directory[new_reg], new_reg,
+                                 no_check=True)
+        # TODO: More complete error handling
+        if response.status_code == http_client.CONFLICT:
+            existing_registration_url = response.headers.get('Location')
+            raise errors.KeyAlreadyRegistered(existing_registration_url)
         assert response.status_code == http_client.CREATED
 
         # "Instance of 'Field' has no key/contact member" bug:
@@ -628,9 +632,12 @@ class ClientNetwork(object):
             self._add_nonce(self.head(url))
         return self._nonces.pop()
 
-    def post(self, url, obj, content_type=JSON_CONTENT_TYPE, **kwargs):
+    def post(self, url, obj, content_type=JSON_CONTENT_TYPE, no_check=False,
+             **kwargs):
         """POST object wrapped in `.JWS` and check response."""
         data = self._wrap_in_jws(obj, self._get_nonce(url))
         response = self._send_request('POST', url, data=data, **kwargs)
         self._add_nonce(response)
+        if no_check:
+            return response
         return self._check_response(response, content_type=content_type)
