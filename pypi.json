@@ -1,0 +1,504 @@
+{
+    "info": {
+        "maintainer": "", 
+        "docs_url": null, 
+        "requires_python": "", 
+        "maintainer_email": "", 
+        "cheesecake_code_kwalitee_id": null, 
+        "keywords": "", 
+        "package_url": "http://pypi.python.org/pypi/letsencrypt", 
+        "author": "Let's Encrypt Project", 
+        "author_email": "client-dev@letsencrypt.org", 
+        "download_url": "", 
+        "platform": "UNKNOWN", 
+        "version": "0.1.1", 
+        "cheesecake_documentation_id": null, 
+        "_pypi_hidden": false, 
+        "description": ".. notice for github users\n\nDisclaimer\n==========\n\nThe Let's Encrypt Client is **BETA SOFTWARE**. It contains plenty of bugs and\nrough edges, and should be tested thoroughly in staging environments before use\non production systems.\n\nFor more information regarding the status of the project, please see\nhttps://letsencrypt.org. Be sure to checkout the\n`Frequently Asked Questions (FAQ) <https://community.letsencrypt.org/t/frequently-asked-questions-faq/26#topic-title>`_.\n\nAbout the Let's Encrypt Client\n==============================\n\nThe Let's Encrypt Client is a fully-featured, extensible client for the Let's\nEncrypt CA (or any other CA that speaks the `ACME\n<https://github.com/ietf-wg-acme/acme/blob/master/draft-ietf-acme-acme.md>`_\nprotocol) that can automate the tasks of obtaining certificates and\nconfiguring webservers to use them.\n\nInstallation\n------------\n\nIf ``letsencrypt`` is packaged for your OS, you can install it from there, and\nrun it by typing ``letsencrypt``.  Because not all operating systems have\npackages yet, we provide a temporary solution via the ``letsencrypt-auto``\nwrapper script, which obtains some dependencies from your OS and puts others\nin a python virtual environment::\n\n  user@webserver:~$ git clone https://github.com/letsencrypt/letsencrypt\n  user@webserver:~$ cd letsencrypt\n  user@webserver:~/letsencrypt$ ./letsencrypt-auto --help\n\nOr for full command line help, type::\n\n  ./letsencrypt-auto --help all\n\n``letsencrypt-auto`` updates to the latest client release automatically.  And\nsince ``letsencrypt-auto`` is a wrapper to ``letsencrypt``, it accepts exactly\nthe same command line flags and arguments.  More details about this script and\nother installation methods can be found `in the User Guide\n<https://letsencrypt.readthedocs.org/en/latest/using.html#installation>`_.\n\nHow to run the client\n---------------------\n\nIn many cases, you can just run ``letsencrypt-auto`` or ``letsencrypt``, and the\nclient will guide you through the process of obtaining and installing certs\ninteractively.\n\nYou can also tell it exactly what you want it to do from the command line.\nFor instance, if you want to obtain a cert for ``thing.com``,\n``www.thing.com``, and ``otherthing.net``, using the Apache plugin to both\nobtain and install the certs, you could do this::\n\n  ./letsencrypt-auto --apache -d thing.com -d www.thing.com -d otherthing.net\n\n(The first time you run the command, it will make an account, and ask for an\nemail and agreement to the Let's Encrypt Subscriber Agreement; you can\nautomate those with ``--email`` and ``--agree-tos``)\n\nIf you want to use a webserver that doesn't have full plugin support yet, you\ncan still use \"standalone\" or \"webroot\" plugins to obtain a certificate::\n\n  ./letsencrypt-auto certonly --standalone --email admin@thing.com -d thing.com -d www.thing.com -d otherthing.net\n\n\nUnderstanding the client in more depth\n--------------------------------------\n\nTo understand what the client is doing in detail, it's important to\nunderstand the way it uses plugins.  Please see the `explanation of\nplugins <https://letsencrypt.readthedocs.org/en/latest/using.html#plugins>`_ in\nthe User Guide.\n\nLinks\n=====\n\nDocumentation: https://letsencrypt.readthedocs.org\n\nSoftware project: https://github.com/letsencrypt/letsencrypt\n\nNotes for developers: https://letsencrypt.readthedocs.org/en/latest/contributing.html\n\nMain Website: https://letsencrypt.org/\n\nIRC Channel: #letsencrypt on `Freenode`_\n\nCommunity: https://community.letsencrypt.org\n\nMailing list: `client-dev`_ (to subscribe without a Google account, send an\nemail to client-dev+subscribe@letsencrypt.org)\n\n|build-status| |coverage| |docs| |container|\n\n\n\n.. |build-status| image:: https://travis-ci.org/letsencrypt/letsencrypt.svg?branch=master\n   :target: https://travis-ci.org/letsencrypt/letsencrypt\n   :alt: Travis CI status\n\n.. |coverage| image:: https://coveralls.io/repos/letsencrypt/letsencrypt/badge.svg?branch=master\n   :target: https://coveralls.io/r/letsencrypt/letsencrypt\n   :alt: Coverage status\n\n.. |docs| image:: https://readthedocs.org/projects/letsencrypt/badge/\n   :target: https://readthedocs.org/projects/letsencrypt/\n   :alt: Documentation status\n\n.. |container| image:: https://quay.io/repository/letsencrypt/letsencrypt/status\n   :target: https://quay.io/repository/letsencrypt/letsencrypt\n   :alt: Docker Repository on Quay.io\n\n.. _`installation instructions`:\n   https://letsencrypt.readthedocs.org/en/latest/using.html\n\n.. _watch demo video: https://www.youtube.com/watch?v=Gas_sSB-5SU\n\nSystem Requirements\n===================\n\nThe Let's Encrypt Client presently only runs on Unix-ish OSes that include\nPython 2.6 or 2.7; Python 3.x support will be added after the Public Beta\nlaunch. The client requires root access in order to write to\n``/etc/letsencrypt``, ``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to\nbind to ports 80 and 443 (if you use the ``standalone`` plugin) and to read and\nmodify webserver configurations (if you use the ``apache`` or ``nginx``\nplugins).  If none of these apply to you, it is theoretically possible to run\nwithout root privileges, but for most users who want to avoid running an ACME\nclient as root, either `letsencrypt-nosudo\n<https://github.com/diafygi/letsencrypt-nosudo>`_ or `simp_le\n<https://github.com/kuba/simp_le>`_ are more appropriate choices.\n\nThe Apache plugin currently requires a Debian-based OS with augeas version\n1.0; this includes Ubuntu 12.04+ and Debian 7+.\n\n\nCurrent Features\n================\n\n* Supports multiple web servers:\n\n  - apache/2.x (working on Debian 8+ and Ubuntu 12.04+)\n  - standalone (runs its own simple webserver to prove you control a domain)\n  - webroot (adds files to webroot directories in order to prove control of\n    domains and obtain certs)\n  - nginx/0.8.48+ (highly experimental, not included in letsencrypt-auto)\n\n* The private key is generated locally on your system.\n* Can talk to the Let's Encrypt  CA or optionally to other ACME\n  compliant services.\n* Can get domain-validated (DV) certificates.\n* Can revoke certificates.\n* Adjustable RSA key bit-length (2048 (default), 4096, ...).\n* Can optionally install a http -> https redirect, so your site effectively\n  runs https only (Apache only)\n* Fully automated.\n* Configuration changes are logged and can be reverted.\n* Supports ncurses and text (-t) UI, or can be driven entirely from the\n  command line.\n* Free and Open Source Software, made with Python.\n\n\n.. _Freenode: https://webchat.freenode.net?channels=%23letsencrypt\n.. _client-dev: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev", 
+        "release_url": "http://pypi.python.org/pypi/letsencrypt/0.1.1", 
+        "downloads": {
+            "last_month": 95687, 
+            "last_week": 19418, 
+            "last_day": 2007
+        }, 
+        "_pypi_ordering": 14, 
+        "requires_dist": [
+            "ConfigArgParse", 
+            "PyOpenSSL", 
+            "acme (==0.1.1)", 
+            "configobj", 
+            "cryptography (>=0.7)", 
+            "mock", 
+            "parsedatetime", 
+            "psutil (>=2.1.0)", 
+            "pyrfc3339", 
+            "python2-pythondialog (>=3.2.2rc1)", 
+            "pytz", 
+            "requests", 
+            "setuptools", 
+            "six", 
+            "zope.component", 
+            "zope.interface", 
+            "astroid (==1.3.5); extra == 'dev'", 
+            "pylint (==1.4.2); extra == 'dev'", 
+            "twine; extra == 'dev'", 
+            "wheel; extra == 'dev'", 
+            "Sphinx (>=1.0); extra == 'docs'", 
+            "repoze.sphinx.autointerface; extra == 'docs'", 
+            "sphinx-rtd-theme; extra == 'docs'", 
+            "sphinxcontrib-programoutput; extra == 'docs'", 
+            "coverage; extra == 'testing'", 
+            "nose; extra == 'testing'", 
+            "nosexcover; extra == 'testing'", 
+            "pep8; extra == 'testing'", 
+            "tox; extra == 'testing'"
+        ], 
+        "classifiers": [
+            "Development Status :: 3 - Alpha", 
+            "Environment :: Console", 
+            "Environment :: Console :: Curses", 
+            "Intended Audience :: System Administrators", 
+            "License :: OSI Approved :: Apache Software License", 
+            "Operating System :: POSIX :: Linux", 
+            "Programming Language :: Python", 
+            "Programming Language :: Python :: 2", 
+            "Programming Language :: Python :: 2.6", 
+            "Programming Language :: Python :: 2.7", 
+            "Topic :: Internet :: WWW/HTTP", 
+            "Topic :: Security", 
+            "Topic :: System :: Installation/Setup", 
+            "Topic :: System :: Networking", 
+            "Topic :: System :: Systems Administration", 
+            "Topic :: Utilities"
+        ], 
+        "name": "letsencrypt", 
+        "bugtrack_url": "", 
+        "license": "Apache License 2.0", 
+        "summary": "Let's Encrypt client", 
+        "home_page": "https://github.com/letsencrypt/letsencrypt", 
+        "cheesecake_installability_id": null
+    }, 
+    "releases": {
+        "0.1.22": [
+            {
+                "comment_text" : "fake release for 0.2.0 leauto testing"
+            }
+        ],
+        "0.0.0.dev20151108": [
+            {
+                "has_sig": true, 
+                "upload_time": "2015-11-08T07:54:45", 
+                "comment_text": "", 
+                "python_version": "py2", 
+                "url": "https://pypi.python.org/packages/py2/l/letsencrypt/letsencrypt-0.0.0.dev20151108-py2-none-any.whl", 
+                "md5_digest": "fb4eeb29ed528fca81037854c8c98e3c", 
+                "downloads": 8896, 
+                "filename": "letsencrypt-0.0.0.dev20151108-py2-none-any.whl", 
+                "packagetype": "bdist_wheel", 
+                "size": 163047
+            }, 
+            {
+                "has_sig": true, 
+                "upload_time": "2015-11-08T07:55:32", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/source/l/letsencrypt/letsencrypt-0.0.0.dev20151108.tar.gz", 
+                "md5_digest": "0f7ab3da27f96c637a94092a431c571f", 
+                "downloads": 801, 
+                "filename": "letsencrypt-0.0.0.dev20151108.tar.gz", 
+                "packagetype": "sdist", 
+                "size": 154879
+            }
+        ], 
+        "0.0.0.dev20151123": [
+            {
+                "has_sig": true, 
+                "upload_time": "2015-11-23T21:48:35", 
+                "comment_text": "", 
+                "python_version": "py2", 
+                "url": "https://pypi.python.org/packages/py2/l/letsencrypt/letsencrypt-0.0.0.dev20151123-py2-none-any.whl", 
+                "md5_digest": "57dfc30fa49516789411346199f11d7a", 
+                "downloads": 6708, 
+                "filename": "letsencrypt-0.0.0.dev20151123-py2-none-any.whl", 
+                "packagetype": "bdist_wheel", 
+                "size": 169232
+            }, 
+            {
+                "has_sig": true, 
+                "upload_time": "2015-11-23T21:49:24", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/source/l/letsencrypt/letsencrypt-0.0.0.dev20151123.tar.gz", 
+                "md5_digest": "d78867dcf88e0e6a4201d3d733e09d50", 
+                "downloads": 715, 
+                "filename": "letsencrypt-0.0.0.dev20151123.tar.gz", 
+                "packagetype": "sdist", 
+                "size": 159702
+            }
+        ], 
+        "0.0.0.dev20151114": [
+            {
+                "has_sig": true, 
+                "upload_time": "2015-11-14T12:24:20", 
+                "comment_text": "", 
+                "python_version": "py2", 
+                "url": "https://pypi.python.org/packages/py2/l/letsencrypt/letsencrypt-0.0.0.dev20151114-py2-none-any.whl", 
+                "md5_digest": "b570611a6e0e04c8082744a1509dcdde", 
+                "downloads": 7945, 
+                "filename": "letsencrypt-0.0.0.dev20151114-py2-none-any.whl", 
+                "packagetype": "bdist_wheel", 
+                "size": 167306
+            }, 
+            {
+                "has_sig": true, 
+                "upload_time": "2015-11-14T12:24:49", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/source/l/letsencrypt/letsencrypt-0.0.0.dev20151114.tar.gz", 
+                "md5_digest": "c1c49f145bd32151b2ba991693d01467", 
+                "downloads": 616, 
+                "filename": "letsencrypt-0.0.0.dev20151114.tar.gz", 
+                "packagetype": "sdist", 
+                "size": 158894
+            }
+        ], 
+        "0.0.0.dev20151017": [
+            {
+                "has_sig": true, 
+                "upload_time": "2015-10-17T10:49:30", 
+                "comment_text": "", 
+                "python_version": "py2", 
+                "url": "https://pypi.python.org/packages/py2/l/letsencrypt/letsencrypt-0.0.0.dev20151017-py2-none-any.whl", 
+                "md5_digest": "bc43ffc9c8e5a4a73f15ca9587134538", 
+                "downloads": 1414, 
+                "filename": "letsencrypt-0.0.0.dev20151017-py2-none-any.whl", 
+                "packagetype": "bdist_wheel", 
+                "size": 159823
+            }, 
+            {
+                "has_sig": true, 
+                "upload_time": "2015-10-17T10:49:54", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/source/l/letsencrypt/letsencrypt-0.0.0.dev20151017.tar.gz", 
+                "md5_digest": "0836e416e6acfd795af07f2c45f57153", 
+                "downloads": 460, 
+                "filename": "letsencrypt-0.0.0.dev20151017.tar.gz", 
+                "packagetype": "sdist", 
+                "size": 144361
+            }
+        ], 
+        "0.0.0.dev20151021": [
+            {
+                "has_sig": true, 
+                "upload_time": "2015-10-21T20:05:47", 
+                "comment_text": "", 
+                "python_version": "py2", 
+                "url": "https://pypi.python.org/packages/py2/l/letsencrypt/letsencrypt-0.0.0.dev20151021-py2-none-any.whl", 
+                "md5_digest": "c692b30e57862345383c3b0b415c4e0e", 
+                "downloads": 1034, 
+                "filename": "letsencrypt-0.0.0.dev20151021-py2-none-any.whl", 
+                "packagetype": "bdist_wheel", 
+                "size": 161328
+            }, 
+            {
+                "has_sig": true, 
+                "upload_time": "2015-10-21T20:06:24", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/source/l/letsencrypt/letsencrypt-0.0.0.dev20151021.tar.gz", 
+                "md5_digest": "14cc485de72856a2413639674406d7f8", 
+                "downloads": 361, 
+                "filename": "letsencrypt-0.0.0.dev20151021.tar.gz", 
+                "packagetype": "sdist", 
+                "size": 145857
+            }
+        ], 
+        "0.0.0.dev20151020": [
+            {
+                "has_sig": true, 
+                "upload_time": "2015-10-20T21:51:35", 
+                "comment_text": "", 
+                "python_version": "py2", 
+                "url": "https://pypi.python.org/packages/py2/l/letsencrypt/letsencrypt-0.0.0.dev20151020-py2-none-any.whl", 
+                "md5_digest": "6f54a898ed2fb5a8cd36fb3278fc7827", 
+                "downloads": 1027, 
+                "filename": "letsencrypt-0.0.0.dev20151020-py2-none-any.whl", 
+                "packagetype": "bdist_wheel", 
+                "size": 161290
+            }, 
+            {
+                "has_sig": true, 
+                "upload_time": "2015-10-20T21:52:05", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/source/l/letsencrypt/letsencrypt-0.0.0.dev20151020.tar.gz", 
+                "md5_digest": "f17fb4cb37175b80cfb52bb18d741b70", 
+                "downloads": 377, 
+                "filename": "letsencrypt-0.0.0.dev20151020.tar.gz", 
+                "packagetype": "sdist", 
+                "size": 145810
+            }
+        ], 
+        "0.0.0.dev20151030": [
+            {
+                "has_sig": true, 
+                "upload_time": "2015-10-30T07:59:24", 
+                "comment_text": "", 
+                "python_version": "py2", 
+                "url": "https://pypi.python.org/packages/py2/l/letsencrypt/letsencrypt-0.0.0.dev20151030-py2-none-any.whl", 
+                "md5_digest": "3e5f929e5bdab9f205fbdd55fa815369", 
+                "downloads": 3815, 
+                "filename": "letsencrypt-0.0.0.dev20151030-py2-none-any.whl", 
+                "packagetype": "bdist_wheel", 
+                "size": 163194
+            }, 
+            {
+                "has_sig": true, 
+                "upload_time": "2015-10-30T08:00:00", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/source/l/letsencrypt/letsencrypt-0.0.0.dev20151030.tar.gz", 
+                "md5_digest": "eb4bd8c6eed5f80f22c9cfb8cf67bbd1", 
+                "downloads": 603, 
+                "filename": "letsencrypt-0.0.0.dev20151030.tar.gz", 
+                "packagetype": "sdist", 
+                "size": 151205
+            }
+        ], 
+        "0.0.0.dev20151008": [
+            {
+                "has_sig": true, 
+                "upload_time": "2015-10-08T19:40:21", 
+                "comment_text": "", 
+                "python_version": "py2", 
+                "url": "https://pypi.python.org/packages/py2/l/letsencrypt/letsencrypt-0.0.0.dev20151008-py2-none-any.whl", 
+                "md5_digest": "8e4fde8cbbb64b39bf5daec22eb30a19", 
+                "downloads": 952, 
+                "filename": "letsencrypt-0.0.0.dev20151008-py2-none-any.whl", 
+                "packagetype": "bdist_wheel", 
+                "size": 159536
+            }, 
+            {
+                "has_sig": true, 
+                "upload_time": "2015-10-08T19:40:46", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/source/l/letsencrypt/letsencrypt-0.0.0.dev20151008.tar.gz", 
+                "md5_digest": "c3191f8add4dc1b7f51ff6477b719f5c", 
+                "downloads": 413, 
+                "filename": "letsencrypt-0.0.0.dev20151008.tar.gz", 
+                "packagetype": "sdist", 
+                "size": 145734
+            }
+        ], 
+        "0.0.0.dev20151006": [
+            {
+                "has_sig": true, 
+                "upload_time": "2015-10-06T06:48:16", 
+                "comment_text": "", 
+                "python_version": "py2", 
+                "url": "https://pypi.python.org/packages/py2/l/letsencrypt/letsencrypt-0.0.0.dev20151006-py2-none-any.whl", 
+                "md5_digest": "b0b4f25f23a68a561379ea407d3b332d", 
+                "downloads": 403, 
+                "filename": "letsencrypt-0.0.0.dev20151006-py2-none-any.whl", 
+                "packagetype": "bdist_wheel", 
+                "size": 159892
+            }, 
+            {
+                "has_sig": true, 
+                "upload_time": "2015-10-06T06:57:21", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/source/l/letsencrypt/letsencrypt-0.0.0.dev20151006.tar.gz", 
+                "md5_digest": "b830f757206d668d7892f23a7c934108", 
+                "downloads": 404, 
+                "filename": "letsencrypt-0.0.0.dev20151006.tar.gz", 
+                "packagetype": "sdist", 
+                "size": 131184
+            }
+        ], 
+        "0.0.0.dev20151104": [
+            {
+                "has_sig": true, 
+                "upload_time": "2015-11-04T07:44:29", 
+                "comment_text": "", 
+                "python_version": "py2", 
+                "url": "https://pypi.python.org/packages/py2/l/letsencrypt/letsencrypt-0.0.0.dev20151104-py2-none-any.whl", 
+                "md5_digest": "897b3fbadd5c5966921e690fae0bfd83", 
+                "downloads": 6601, 
+                "filename": "letsencrypt-0.0.0.dev20151104-py2-none-any.whl", 
+                "packagetype": "bdist_wheel", 
+                "size": 163690
+            }, 
+            {
+                "has_sig": true, 
+                "upload_time": "2015-11-04T07:45:00", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/source/l/letsencrypt/letsencrypt-0.0.0.dev20151104.tar.gz", 
+                "md5_digest": "41f2b5d8a99f19a46a98f1cd2f574e84", 
+                "downloads": 793, 
+                "filename": "letsencrypt-0.0.0.dev20151104.tar.gz", 
+                "packagetype": "sdist", 
+                "size": 154943
+            }
+        ], 
+        "0.0.0.dev20151107": [
+            {
+                "has_sig": true, 
+                "upload_time": "2015-11-07T11:49:26", 
+                "comment_text": "", 
+                "python_version": "py2", 
+                "url": "https://pypi.python.org/packages/py2/l/letsencrypt/letsencrypt-0.0.0.dev20151107-py2-none-any.whl", 
+                "md5_digest": "b33f11f9601c5d2e90b4feec37e3d406", 
+                "downloads": 915, 
+                "filename": "letsencrypt-0.0.0.dev20151107-py2-none-any.whl", 
+                "packagetype": "bdist_wheel", 
+                "size": 164010
+            }, 
+            {
+                "has_sig": true, 
+                "upload_time": "2015-11-07T11:50:17", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/source/l/letsencrypt/letsencrypt-0.0.0.dev20151107.tar.gz", 
+                "md5_digest": "bbc8d651da6e12b2fa8fa74b42d8ce7c", 
+                "downloads": 409, 
+                "filename": "letsencrypt-0.0.0.dev20151107.tar.gz", 
+                "packagetype": "sdist", 
+                "size": 155434
+            }
+        ], 
+        "0.0.0.dev20151201": [
+            {
+                "has_sig": true, 
+                "upload_time": "2015-12-02T04:22:14", 
+                "comment_text": "", 
+                "python_version": "py2", 
+                "url": "https://pypi.python.org/packages/py2/l/letsencrypt/letsencrypt-0.0.0.dev20151201-py2-none-any.whl", 
+                "md5_digest": "850a340e5099cd6d0f1a50320f66c7dd", 
+                "downloads": 1693, 
+                "filename": "letsencrypt-0.0.0.dev20151201-py2-none-any.whl", 
+                "packagetype": "bdist_wheel", 
+                "size": 173130
+            }, 
+            {
+                "has_sig": true, 
+                "upload_time": "2015-12-02T04:22:41", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/source/l/letsencrypt/letsencrypt-0.0.0.dev20151201.tar.gz", 
+                "md5_digest": "7faee02c89c9d7a732d8e6a7911a7f67", 
+                "downloads": 252, 
+                "filename": "letsencrypt-0.0.0.dev20151201.tar.gz", 
+                "packagetype": "sdist", 
+                "size": 164577
+            }
+        ], 
+        "0.0.0.dev20151024": [
+            {
+                "has_sig": true, 
+                "upload_time": "2015-10-24T17:57:09", 
+                "comment_text": "", 
+                "python_version": "py2", 
+                "url": "https://pypi.python.org/packages/py2/l/letsencrypt/letsencrypt-0.0.0.dev20151024-py2-none-any.whl", 
+                "md5_digest": "f36722b0181c2024d1a7c2d5714a8c7d", 
+                "downloads": 3422, 
+                "filename": "letsencrypt-0.0.0.dev20151024-py2-none-any.whl", 
+                "packagetype": "bdist_wheel", 
+                "size": 161792
+            }, 
+            {
+                "has_sig": true, 
+                "upload_time": "2015-10-24T17:57:35", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/source/l/letsencrypt/letsencrypt-0.0.0.dev20151024.tar.gz", 
+                "md5_digest": "86b8ffc407af81b66a69d1dad29c0705", 
+                "downloads": 473, 
+                "filename": "letsencrypt-0.0.0.dev20151024.tar.gz", 
+                "packagetype": "sdist", 
+                "size": 147776
+            }
+        ], 
+        "0.1.0": [
+            {
+                "has_sig": true, 
+                "upload_time": "2015-12-03T07:49:17", 
+                "comment_text": "", 
+                "python_version": "py2", 
+                "url": "https://pypi.python.org/packages/py2/l/letsencrypt/letsencrypt-0.1.0-py2-none-any.whl", 
+                "md5_digest": "0c84b4c0f426714256ddb5349e670f6d", 
+                "downloads": 51458, 
+                "filename": "letsencrypt-0.1.0-py2-none-any.whl", 
+                "packagetype": "bdist_wheel", 
+                "size": 173233
+            }, 
+            {
+                "has_sig": true, 
+                "upload_time": "2015-12-03T07:49:22", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/source/l/letsencrypt/letsencrypt-0.1.0.tar.gz", 
+                "md5_digest": "b3bc1f8a49e4953771d2fa77bf0fe9d2", 
+                "downloads": 1426, 
+                "filename": "letsencrypt-0.1.0.tar.gz", 
+                "packagetype": "sdist", 
+                "size": 167375
+            }
+        ], 
+        "0.1.1": [
+            {
+                "has_sig": true, 
+                "upload_time": "2015-12-16T00:54:48", 
+                "comment_text": "", 
+                "python_version": "py2", 
+                "url": "https://pypi.python.org/packages/py2/l/letsencrypt/letsencrypt-0.1.1-py2-none-any.whl", 
+                "md5_digest": "07218b6e5792a3de089891f1227c6ac2", 
+                "downloads": 48253, 
+                "filename": "letsencrypt-0.1.1-py2-none-any.whl", 
+                "packagetype": "bdist_wheel", 
+                "size": 175923
+            }, 
+            {
+                "has_sig": true, 
+                "upload_time": "2015-12-16T00:55:37", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/source/l/letsencrypt/letsencrypt-0.1.1.tar.gz", 
+                "md5_digest": "ddd393563f3d5835d678b7478148e3d9", 
+                "downloads": 801, 
+                "filename": "letsencrypt-0.1.1.tar.gz", 
+                "packagetype": "sdist", 
+                "size": 166683
+            }
+        ]
+    }, 
+    "urls": [
+        {
+            "has_sig": true, 
+            "upload_time": "2015-12-16T00:54:48", 
+            "comment_text": "", 
+            "python_version": "py2", 
+            "url": "https://pypi.python.org/packages/py2/l/letsencrypt/letsencrypt-0.1.1-py2-none-any.whl", 
+            "md5_digest": "07218b6e5792a3de089891f1227c6ac2", 
+            "downloads": 48253, 
+            "filename": "letsencrypt-0.1.1-py2-none-any.whl", 
+            "packagetype": "bdist_wheel", 
+            "size": 175923
+        }, 
+        {
+            "has_sig": true, 
+            "upload_time": "2015-12-16T00:55:37", 
+            "comment_text": "", 
+            "python_version": "source", 
+            "url": "https://pypi.python.org/packages/source/l/letsencrypt/letsencrypt-0.1.1.tar.gz", 
+            "md5_digest": "ddd393563f3d5835d678b7478148e3d9", 
+            "downloads": 801, 
+            "filename": "letsencrypt-0.1.1.tar.gz", 
+            "packagetype": "sdist", 
+            "size": 166683
+        }
+    ]
+}
