@@ -270,7 +270,10 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             logger.debug("Expected symlink %s for %s does not exist.",
                          link, kind)
             return None
-        target = os.readlink(link)
+        if os.path.islink(link):
+            target = os.readlink(link)
+        else:
+            target = link
         if not os.path.isabs(target):
             target = os.path.join(os.path.dirname(link), target)
         return os.path.abspath(target)
