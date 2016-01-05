@@ -1,7 +1,7 @@
 BootstrapRpmCommon() {
   # Tested with:
   #   - Fedora 22, 23 (x64)
-  #   - Centos 7 (x64: onD igitalOcean droplet)
+  #   - Centos 7 (x64: on DigitalOcean droplet)
 
   if type dnf 2>/dev/null
   then
@@ -32,9 +32,7 @@ BootstrapRpmCommon() {
     fi
   fi
 
-  # "git-core" seems to be an alias for "git" in CentOS 7 (yum search fails)
   if ! $SUDO $tool install -y \
-         git-core \
          gcc \
          dialog \
          augeas-libs \
@@ -45,5 +43,13 @@ BootstrapRpmCommon() {
   then
       echo "Could not install additional dependencies. Aborting bootstrap!"
       exit 1
+  fi
+
+
+  if $SUDO $tool list installed "httpd" >/dev/null 2>&1; then
+    if ! $SUDO $tool install -y mod_ssl
+    then
+      echo "Apache found, but mod_ssl could not be installed."
+    fi
   fi
 }

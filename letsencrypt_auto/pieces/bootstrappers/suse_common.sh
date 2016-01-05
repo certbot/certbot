@@ -1,7 +1,7 @@
 BootstrapSuseCommon() {
   # SLE12 don't have python-virtualenv
 
-  $SUDO zypper -nq in -l git-core \
+  $SUDO zypper -nq in -l \
     python \
     python-devel \
     python-virtualenv \

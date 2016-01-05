@@ -1,5 +1,0 @@
-This is a PREVIEW RELEASE of a client application for the Let's Encrypt certificate authority and other services using the ACME protocol. The Let's Encrypt certificate authority is NOT YET ISSUING CERTIFICATES TO THE PUBLIC.
-
-Until publicly-trusted certificates can be issued by Let's Encrypt, this software CANNOT OBTAIN A PUBLICLY-TRUSTED CERTIFICATE FOR YOUR WEB SERVER.  You should only use this program if you are a developer interested in experimenting with the ACME protocol or in helping to improve this software.  If you want to configure your web site with HTTPS in the meantime, please obtain a certificate from a different authority.
-
-For updates on the status of Let's Encrypt, please visit the Let's Encrypt home page at https://letsencrypt.org/.

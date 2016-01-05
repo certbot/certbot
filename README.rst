@@ -27,7 +27,7 @@ If ``letsencrypt`` is packaged for your OS, you can install it from there, and
 run it by typing ``letsencrypt``.  Because not all operating systems have
 packages yet, we provide a temporary solution via the ``letsencrypt-auto``
 wrapper script, which obtains some dependencies from your OS and puts others
-in an python virtual environment::
+in a python virtual environment::
 
   user@webserver:~$ git clone https://github.com/letsencrypt/letsencrypt
   user@webserver:~$ cd letsencrypt
@@ -118,6 +118,24 @@ email to client-dev+subscribe@letsencrypt.org)
 
 .. _watch demo video: https://www.youtube.com/watch?v=Gas_sSB-5SU
 
+System Requirements
+===================
+
+The Let's Encrypt Client presently only runs on Unix-ish OSes that include
+Python 2.6 or 2.7; Python 3.x support will be added after the Public Beta
+launch. The client requires root access in order to write to
+``/etc/letsencrypt``, ``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to
+bind to ports 80 and 443 (if you use the ``standalone`` plugin) and to read and
+modify webserver configurations (if you use the ``apache`` or ``nginx``
+plugins).  If none of these apply to you, it is theoretically possible to run
+without root privileges, but for most users who want to avoid running an ACME
+client as root, either `letsencrypt-nosudo
+<https://github.com/diafygi/letsencrypt-nosudo>`_ or `simp_le
+<https://github.com/kuba/simp_le>`_ are more appropriate choices.
+
+The Apache plugin currently requires a Debian-based OS with augeas version
+1.0; this includes Ubuntu 12.04+ and Debian 7+.
+
 
 Current Features
 ================
@@ -145,5 +163,5 @@ Current Features
 * Free and Open Source Software, made with Python.
 
 
-.. _Freenode: https://freenode.net
+.. _Freenode: https://webchat.freenode.net?channels=%23letsencrypt
 .. _client-dev: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev

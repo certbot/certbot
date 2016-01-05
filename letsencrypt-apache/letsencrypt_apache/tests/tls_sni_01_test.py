@@ -20,7 +20,7 @@ class TlsSniPerformTest(util.ApacheTest):
         super(TlsSniPerformTest, self).setUp()
 
         config = util.get_apache_configurator(
-            self.config_path, self.config_dir, self.work_dir)
+            self.config_path, self.vhost_path, self.config_dir, self.work_dir)
         config.config.tls_sni_01_port = 443
 
         from letsencrypt_apache import tls_sni_01
@@ -78,7 +78,9 @@ class TlsSniPerformTest(util.ApacheTest):
         # pylint: disable=protected-access
         self.sni._setup_challenge_cert = mock_setup_cert
 
-        sni_responses = self.sni.perform()
+        with mock.patch(
+             "letsencrypt_apache.configurator.ApacheConfigurator.enable_mod"):
+            sni_responses = self.sni.perform()
 
         self.assertEqual(mock_setup_cert.call_count, 2)
 

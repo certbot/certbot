@@ -764,6 +764,8 @@ class RenewableCertTests(BaseRenewableCertTest):
 
     def test_bad_config_file(self):
         from letsencrypt import renewer
+        os.unlink(os.path.join(self.cli_config.renewal_configs_dir,
+                               "example.org.conf"))
         with open(os.path.join(self.cli_config.renewal_configs_dir,
                                "bad.conf"), "w") as f:
             f.write("incomplete = configfile\n")

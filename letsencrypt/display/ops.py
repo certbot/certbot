@@ -4,6 +4,7 @@ import os
 
 import zope.component
 
+from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt.display import util as display_util
@@ -122,6 +123,7 @@ def pick_configurator(
         config, default, plugins, question,
         (interfaces.IAuthenticator, interfaces.IInstaller))
 
+
 def get_email(more=False, invalid=False):
     """Prompt for valid email address.
 
@@ -186,7 +188,8 @@ def choose_names(installer):
         logger.debug("No installer, picking names manually")
         return _choose_names_manually()
 
-    names = list(installer.get_all_names())
+    domains = list(installer.get_all_names())
+    names = get_valid_domains(domains)
 
     if not names:
         manual = util(interfaces.IDisplay).yesno(
@@ -206,6 +209,24 @@ def choose_names(installer):
         return names
     else:
         return []
+
+
+def get_valid_domains(domains):
+    """Helper method for choose_names that implements basic checks
+     on domain names
+
+    :param list domains: Domain names to validate
+    :return: List of valid domains
+    :rtype: list
+    """
+    valid_domains = []
+    for domain in domains:
+        try:
+            le_util.check_domain_sanity(domain)
+            valid_domains.append(domain)
+        except errors.ConfigurationError:
+            continue
+    return valid_domains
 
 
 def _filter_names(names):
@@ -232,7 +253,41 @@ def _choose_names_manually():
         "Please enter in your domain name(s) (comma and/or space separated) ")
 
     if code == display_util.OK:
-        return display_util.separate_list_input(input_)
+        invalid_domains = dict()
+        retry_message = ""
+        try:
+            domain_list = display_util.separate_list_input(input_)
+        except UnicodeEncodeError:
+            domain_list = []
+            retry_message = (
+                "Internationalized domain names are not presently "
+                "supported.{0}{0}Would you like to re-enter the "
+                "names?{0}").format(os.linesep)
+
+        for domain in domain_list:
+            try:
+                le_util.check_domain_sanity(domain)
+            except errors.ConfigurationError as e:
+                invalid_domains[domain] = e.message
+
+        if len(invalid_domains):
+            retry_message = (
+                "One or more of the entered domain names was not valid:"
+                "{0}{0}").format(os.linesep)
+            for domain in invalid_domains:
+                retry_message = retry_message + "{1}: {2}{0}".format(
+                    os.linesep, domain, invalid_domains[domain])
+            retry_message = retry_message + (
+                "{0}Would you like to re-enter the names?{0}").format(
+                    os.linesep)
+
+        if retry_message:
+            # We had error in input
+            retry = util(interfaces.IDisplay).yesno(retry_message)
+            if retry:
+                return _choose_names_manually()
+        else:
+            return domain_list
     return []
 
 
@@ -245,7 +300,7 @@ def success_installation(domains):
 
     """
     util(interfaces.IDisplay).notification(
-        "Congratulations! You have successfully enabled {0}!{1}{1}"
+        "Congratulations! You have successfully enabled {0}{1}{1}"
         "You should test your configuration at:{1}{2}".format(
             _gen_https_names(domains),
             os.linesep,

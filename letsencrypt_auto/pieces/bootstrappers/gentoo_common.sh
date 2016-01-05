@@ -1,5 +1,5 @@
 BootstrapGentooCommon() {
-  PACKAGES="dev-vcs/git
+  PACKAGES="
     dev-lang/python:2.7
     dev-python/virtualenv
     dev-util/dialog

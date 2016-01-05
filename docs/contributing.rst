@@ -65,8 +65,14 @@ Testing
 
 The following tools are there to help you:
 
-- ``tox`` starts a full set of tests. Please make sure you run it
-  before submitting a new pull request.
+- ``tox`` starts a full set of tests. Please note that it includes
+  apacheconftest, which uses the system's Apache install to test config file
+  parsing, so it should only be run on systems that have an
+  experimental, non-production Apache2 install on them.  ``tox -e
+  apacheconftest`` can be used to run those specific Apache conf tests.
+
+- ``tox -e py27``, ``tox -e py26`` etc, run unit tests for specific Python
+  versions.
 
 - ``tox -e cover`` checks the test coverage only. Calling the
   ``./tox.cover.sh`` script directly (or even ``./tox.cover.sh $pkg1

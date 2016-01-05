@@ -260,7 +260,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         :returns: The path to the current version of the specified
             member.
-        :rtype: str
+        :rtype: str or None
 
         """
         if kind not in ALL_FOUR:
@@ -450,12 +450,15 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :param int version: the desired version number
         :returns: the subject names
         :rtype: `list` of `str`
+        :raises .CertStorageError: if could not find cert file.
 
         """
         if version is None:
             target = self.current_target("cert")
         else:
             target = self.version("cert", version)
+        if target is None:
+            raise errors.CertStorageError("could not find cert file")
         with open(target) as f:
             return crypto_util.get_sans_from_cert(f.read())
 
@@ -471,7 +474,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         return ("autodeploy" not in self.configuration or
                 self.configuration.as_bool("autodeploy"))
 
-    def should_autodeploy(self):
+    def should_autodeploy(self, interactive=False):
         """Should this lineage now automatically deploy a newer version?
 
         This is a policy question and does not only depend on whether
@@ -480,12 +483,16 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         exists, and whether the time interval for autodeployment has
         been reached.)
 
+        :param bool interactive: set to True to examine the question
+            regardless of whether the renewal configuration allows
+            automated deployment (for interactive use). Default False.
+
         :returns: whether the lineage now ought to autodeploy an
             existing newer cert version
         :rtype: bool
 
         """
-        if self.autodeployment_is_enabled():
+        if interactive or self.autodeployment_is_enabled():
             if self.has_pending_deployment():
                 interval = self.configuration.get("deploy_before_expiry",
                                                   "5 days")
@@ -529,7 +536,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         return ("autorenew" not in self.configuration or
                 self.configuration.as_bool("autorenew"))
 
-    def should_autorenew(self):
+    def should_autorenew(self, interactive=False):
         """Should we now try to autorenew the most recent cert version?
 
         This is a policy question and does not only depend on whether
@@ -540,12 +547,16 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         Note that this examines the numerically most recent cert version,
         not the currently deployed version.
 
+        :param bool interactive: set to True to examine the question
+            regardless of whether the renewal configuration allows
+            automated renewal (for interactive use). Default False.
+
         :returns: whether an attempt should now be made to autorenew the
             most current cert version in this lineage
         :rtype: bool
 
         """
-        if self.autorenewal_is_enabled():
+        if interactive or self.autorenewal_is_enabled():
             # Consider whether to attempt to autorenew this cert now
 
             # Renewals on the basis of revocation
@@ -559,8 +570,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                 "cert", self.latest_common_version()))
             now = pytz.UTC.fromutc(datetime.datetime.utcnow())
             if expiry < add_time_interval(now, interval):
-                logger.debug("Should renew, certificate "
-                             "has been expired since %s.",
+                logger.debug("Should renew, less than %s before certificate "
+                             "expiry %s.", interval,
                              expiry.strftime("%Y-%m-%d %H:%M:%S %Z"))
                 return True
         return False
