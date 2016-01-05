@@ -558,6 +558,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # In case no Listens are set (which really is a broken apache config)
         if not listens:
             listens = ["80"]
+        if port in listens:
+            return
         for listen in listens:
             # For any listen statement, check if the machine also listens on Port 443.
             # If not, add such a listen statement.
