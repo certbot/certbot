@@ -168,17 +168,10 @@ class DNS01Test(unittest.TestCase):
         self.assertEqual('_acme-challenge.www.example.com',
                          self.msg.validation_domain_name('www.example.com'))
 
-    # FIXME: Remove extra parameter once #2052 is integrated
     def test_validation(self):
         self.assertEqual(
-            "rAa7iIg4K2y63fvUhCfy8dP1Xl7wEhmQq0oChTcE3Zk=",
-            self.msg.validation(KEY, dns01_hexdigit_response=False))
-
-    # FIXME: Remove this once #2052 is integrated
-    def test_validation_for_server_with_hexdigit_response(self):
-        self.assertEqual(
-            "ac06bb8888382b6cbaddfbd48427f2f1d3f55e5ef0121990ab4a02853704dd99",
-            self.msg.validation(KEY, dns01_hexdigit_response=True))
+            "rAa7iIg4K2y63fvUhCfy8dP1Xl7wEhmQq0oChTcE3Zk",
+            self.msg.validation(KEY))
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
