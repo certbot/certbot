@@ -18,8 +18,9 @@ class ErrorTest(unittest.TestCase):
 
     def setUp(self):
         from acme.messages import Error
-        self.error = Error(status=409, detail='foo',
-            typ='urn:acme:error:malformed', title='title')
+        self.error = Error(
+            status=409, detail='foo', typ='urn:acme:error:malformed',
+            title='title')
         self.jobj = {
             'status': 409,
             'detail': 'foo',

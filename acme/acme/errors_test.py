@@ -63,8 +63,8 @@ class PollErrorTest(unittest.TestCase):
 
     def setUp(self):
         from acme.errors import PollError
-        self.timeout = PollError(None,
-            waiting=[(datetime.datetime(2015, 11, 29), mock.sentinel.AR)],
+        self.timeout = PollError(
+            None, waiting=[(datetime.datetime(2015, 11, 29), mock.sentinel.AR)],
             updated={})
         self.invalid = PollError(None, waiting=[], updated={
             mock.sentinel.AR: mock.sentinel.AR2})

@@ -100,7 +100,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             response = self.net.post(self.directory[new_reg], new_reg)
         except errors.ClientError as error:
             # TODO: More complete error handling
-            if (error.response is not None and
+            if error.response is not None and
                 error.response.status_code == http_client.CONFLICT):
                 existing_registration_url = error.response.headers.get('Location')
                 raise errors.KeyAlreadyRegistered(existing_registration_url)
@@ -486,8 +486,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                                  messages.Revocation(certificate=cert),
                                  content_type=None)
         if response.status_code != http_client.OK:
-            raise errors.ClientError(response,
-                'Successful revocation must return HTTP OK status')
+            raise errors.ClientError(
+                response, 'Successful revocation must return HTTP OK status')
 
 
 class ClientNetwork(object):
@@ -571,8 +571,9 @@ class ClientNetwork(object):
                     'response', response_ct)
 
             if content_type == cls.JSON_CONTENT_TYPE and jobj is None:
-                raise errors.ClientError(response,
-                    'Unexpected response Content-Type: {0}'.format(response_ct))
+                raise errors.ClientError(
+                    response, 'Unexpected response Content-Type: {0}'.format(
+                        response_ct))
 
         return response
 
