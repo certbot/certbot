@@ -9,7 +9,7 @@ set -e  # Work even if somebody does "sh thisscript.sh".
 
 # Note: you can set XDG_DATA_HOME or VENV_PATH before running this script,
 # if you want to change where the virtual environment will be installed
-XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
+XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share-test}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN=${VENV_PATH}/bin
@@ -1630,20 +1630,15 @@ from urllib2 import build_opener, HTTPHandler, HTTPSHandler, HTTPError
 
 
 PUBLIC_KEY = environ.get('LE_AUTO_PUBLIC_KEY', """-----BEGIN PUBLIC KEY-----
-MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAnwHkSuCSy3gIHawaCiIe
-4ilJ5kfEmSoiu50uiimBhTESq1JG2gVqXVXFxxVgobGhahSF+/iRVp3imrTtGp1B
-2heoHbELnPTTZ8E36WHKf4gkLEo0y0XgOP3oBJ9IM5q8J68x0U3Q3c+kTxd/sgww
-s5NVwpjw4aAZhgDPe5u+rvthUYOD1whYUANgYvooCpV4httNv5wuDjo7SG2V797T
-QTE8aG3AOhWzdsLm6E6Tl2o/dR6XKJi/RMiXIk53SzArimtAJXe/1GyADe1AgIGE
-33Ja3hU3uu9lvnnkowy1VI0qvAav/mu/APahcWVYkBAvSVAhH3zGNAGZUnP2zfcP
-rH7OPw/WrxLVGlX4trLnvQr1wzX7aiM2jdikcMiaExrP0JfQXPu00y3c+hjOC5S0
-+E5P+e+8pqz5iC5mmvEqy2aQJ6pV7dSpYX3mcDs8pCYaVXXtCPXS1noWirCcqCMK
-EHGGdJCTXXLHaWUaGQ9Gx1An1gU7Ljkkji2Al65ZwYhkFowsLfuniYKuAywRrCNu
-q958HnzFpZiQZAqZYtOHaiQiaHPs/36ZN0HuOEy0zM9FEHbp4V/DEn4pNCfAmRY5
-3v+3nIBhgiLdlM7cV9559aDNeutF25n1Uz2kvuSVSS94qTEmlteCPZGBQb9Rr2wn
-I2OU8tPRzqKdQ6AwS9wvqscCAwEAAQ==
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvWrG8oyI2FlCWEEEo1+Q
++VmDgUdMKGWlThHm5oM6XODDpllY8gUGWoYn//jCUMQuQmDTtvPz1V6s5uoESnG3
+PUjEj539Dt3bQmfm5eRN17DXb3FR4l4eKkYE/bDHvGvWsI3B1b2ek0mK88XEoUxg
+hx7tre19X8Q5N4ssii1+HW51e6NHO6S2fa7mko85RcF0ZHSvOVwMELbVYg+GVlmz
+5K39QNqcBr2RcWmTR9XpRkV6F7DPm4XsSKd51McHiatG4vCzMpMw5R96aY4Y/wg+
+lLMOJYYAQEv7ii8exClMCTUiTzVevI0mSXyHxRcILFNRYrgc5OBNtf1w2ZjcHKAr
+9QIDAQAB
 -----END PUBLIC KEY-----
-""")  # TODO: Replace with real one.
+""")
 
 
 class ExpectedError(Exception):
@@ -1684,7 +1679,7 @@ def latest_stable_version(get):
     """Return the latest stable release of letsencrypt."""
     metadata = loads(get(
         environ.get('LE_AUTO_JSON_URL',
-                    'https://pypi.python.org/pypi/letsencrypt/json')))
+                    'https://raw.githubusercontent.com/letsencrypt/letsencrypt/letsencrypt-auto-release-testing/pypi.json')))
     # metadata['info']['version'] actually returns the latest of any kind of
     # release release, contrary to https://wiki.python.org/moin/PyPIJSON.
     # The regex is a sufficient regex for picking out prereleases for most
@@ -1751,7 +1746,7 @@ UNLIKELY_EOF
     # Now we drop into Python so we don't have to install even more
     # dependencies (curl, etc.), for better flow control, and for the option of
     # future Windows compatibility.
-    "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
+    "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "letsencrypt-auto-release-testing-v$REMOTE_VERSION"
 
     # Install new copy of letsencrypt-auto. This preserves permissions and
     # ownership from the old copy.
