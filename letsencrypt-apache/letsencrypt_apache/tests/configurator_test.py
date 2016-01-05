@@ -461,6 +461,25 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(mock_add_dir.call_args_list[1][0][2], ["[::1]:8080", "https"])
         self.assertEqual(mock_add_dir.call_args_list[2][0][2], ["1.1.1.1:8080", "https"])
 
+    def test_prepare_server_https_mixed_listen(self):
+
+        mock_find = mock.Mock()
+        mock_find.return_value = ["test1", "test2"]
+        mock_get = mock.Mock()
+        mock_get.side_effect = ["1.2.3.4:8080", "443"]
+        mock_add_dir = mock.Mock()
+        mock_enable = mock.Mock()
+
+        self.config.parser.find_dir = mock_find
+        self.config.parser.get_arg = mock_get
+        self.config.parser.add_dir_to_ifmodssl = mock_add_dir
+        self.config.enable_mod = mock_enable
+
+        # Test Listen statements with specific ip listeed
+        self.config.prepare_server_https("443")
+        # Should only be 2 here, as the third interface already listens to the correct port
+        self.assertEqual(mock_add_dir.call_count, 0)
+
     def test_make_vhost_ssl(self):
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
 
