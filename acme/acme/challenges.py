@@ -1,6 +1,5 @@
 """ACME Identifier Validation Challenges."""
 import abc
-import base64
 import dns.resolver
 import dns.exception
 import functools
@@ -283,8 +282,7 @@ class DNS01(KeyAuthorizationChallenge):
     LABEL = "_acme-challenge"
     """Label clients prepend to the domain name being validated."""
 
-    # FIXME: Remove extra parameter once #2052 is integrated
-    def validation(self, account_key, dns01_hexdigit_response=True, **unused_kwargs):
+    def validation(self, account_key, **unused_kwargs):
         """Generate validation.
 
         :param JWK account_key:
@@ -292,9 +290,7 @@ class DNS01(KeyAuthorizationChallenge):
 
         """
         key_authorization = self.key_authorization(account_key)
-        if dns01_hexdigit_response:
-            return hashlib.sha256(key_authorization).hexdigest()
-        return base64.urlsafe_b64encode(hashlib.sha256(key_authorization).digest())
+        return jose.b64encode(hashlib.sha256(key_authorization).digest())
 
     def validation_domain_name(self, name):
         """Domain name for TXT validation record.
