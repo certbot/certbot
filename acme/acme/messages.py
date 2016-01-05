@@ -2,7 +2,6 @@
 import collections
 
 from acme import challenges
-from acme import errors
 from acme import fields
 from acme import jose
 from acme import util
