@@ -40,6 +40,23 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEquals((1, 6, 2), self.config.version)
         self.assertEquals(5, len(self.config.parser.parsed))
 
+    @mock.patch("letsencrypt_nginx.configurator.le_util.exe_exists")
+    @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")
+    def test_prepare_initializes_version(self, mock_popen, mock_exe_exists):
+        mock_popen().communicate.return_value = (
+            "", "\n".join(["nginx version: nginx/1.6.2",
+                           "built by clang 6.0 (clang-600.0.56)"
+                           " (based on LLVM 3.5svn)",
+                           "TLS SNI support enabled",
+                           "configure arguments: --prefix=/usr/local/Cellar/"
+                           "nginx/1.6.2 --with-http_ssl_module"]))
+
+        mock_exe_exists.return_value = True
+
+        self.config.version = None
+        self.config.prepare()
+        self.assertEquals((1, 6, 2), self.config.version)
+
     @mock.patch("letsencrypt_nginx.configurator.socket.gethostbyaddr")
     def test_get_all_names(self, mock_gethostbyaddr):
         mock_gethostbyaddr.return_value = ('155.225.50.69.nephoscale.net', [], [])
