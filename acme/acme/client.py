@@ -66,15 +66,13 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def _regr_from_response(cls, response, uri=None, new_authzr_uri=None,
                             terms_of_service=None):
-        terms_of_service = (
-            response.links['terms-of-service']['url']
-            if 'terms-of-service' in response.links else terms_of_service)
+        if 'terms-of-service' in response.links:
+            terms_of_service = response.links['terms-of-service']['url']
+        if 'next' in response.links:
+            new_authzr_uri = response.links['next']['url']
 
         if new_authzr_uri is None:
-            try:
-                new_authzr_uri = response.links['next']['url']
-            except KeyError:
-                raise errors.ClientError('"next" link missing')
+            raise errors.ClientError(response, 'missing "new_authrz_uri"')
 
         return messages.RegistrationResource(
             body=messages.Registration.from_json(response.json()),

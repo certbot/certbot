@@ -127,6 +127,13 @@ class ClientTest(unittest.TestCase):
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr, self.client.query_registration(self.regr))
 
+    def test_query_registration_updates_new_authzr_uri(self):
+        self.response.json.return_value = self.regr.body.to_json()
+        self.response.links = {'next': {'url': 'UPDATED'}}
+        self.assertEqual(
+            'UPDATED',
+            self.client.query_registration(self.regr).new_authzr_uri)
+
     def test_agree_to_tos(self):
         self.client.update_registration = mock.Mock()
         self.client.agree_to_tos(self.regr)
