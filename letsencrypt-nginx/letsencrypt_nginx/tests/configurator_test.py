@@ -330,6 +330,17 @@ class NginxConfiguratorTest(util.NginxTest):
             OpenSSL.crypto.load_privatekey(
                 OpenSSL.crypto.FILETYPE_PEM, key_file.read())
 
+    def test_redirect_enhance(self):
+        expected = [
+            ['if', '($scheme != "https")'],
+            [['return', '301 https://$host$request_uri']]
+        ]
+
+        example_conf = self.config.parser.abs_path('sites-enabled/example.com')
+        self.config.enhance("www.example.com", "redirect")
+
+        generated_conf = self.config.parser.parsed[example_conf]
+        self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
