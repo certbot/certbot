@@ -9,7 +9,7 @@ set -e  # Work even if somebody does "sh thisscript.sh".
 
 # Note: you can set XDG_DATA_HOME or VENV_PATH before running this script,
 # if you want to change where the virtual environment will be installed
-XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
+XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share-test}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN=${VENV_PATH}/bin
@@ -236,7 +236,7 @@ UNLIKELY_EOF
     # Now we drop into Python so we don't have to install even more
     # dependencies (curl, etc.), for better flow control, and for the option of
     # future Windows compatibility.
-    "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
+    "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "letsencrypt-auto-release-testing-v$REMOTE_VERSION"
 
     # Install new copy of letsencrypt-auto. This preserves permissions and
     # ownership from the old copy.
