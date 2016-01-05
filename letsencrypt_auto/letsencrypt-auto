@@ -13,7 +13,7 @@ XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN=${VENV_PATH}/bin
-LE_AUTO_VERSION="0.1.0.dev0"
+LE_AUTO_VERSION="0.2.0.dev0"
 
 ExperimentalBootstrap() {
   # Arguments: Platform name, bootstrap function name
@@ -41,6 +41,7 @@ DeterminePythonVersion() {
     export LE_PYTHON=${LE_PYTHON:-python}
   else
     echo "Cannot find any Pythons... please install one!"
+    exit 1
   fi
 
   PYVER=`"$LE_PYTHON" --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
@@ -78,25 +79,55 @@ BootstrapDebCommon() {
   # distro version (#346)
 
   virtualenv=
-  if apt-cache show virtualenv > /dev/null ; then
+  if apt-cache show virtualenv > /dev/null 2>&1; then
     virtualenv="virtualenv"
   fi
 
-  if apt-cache show python-virtualenv > /dev/null ; then
+  if apt-cache show python-virtualenv > /dev/null 2>&1; then
     virtualenv="$virtualenv python-virtualenv"
   fi
 
+  augeas_pkg=libaugeas0
+  AUGVERSION=`apt-cache show --no-all-versions libaugeas0 | grep ^Version: | cut -d" " -f2`
+
+  if dpkg --compare-versions 1.0 gt "$AUGVERSION" ; then
+      if lsb_release -a | grep -q wheezy ; then
+          if ! grep -v -e ' *#' /etc/apt/sources.list | grep -q wheezy-backports ; then
+              # This can theoretically error if sources.list.d is empty, but in that case we don't care.
+              if ! grep -v -e ' *#' /etc/apt/sources.list.d/* 2>/dev/null | grep -q wheezy-backports ; then
+                  /bin/echo -n "Installing augeas from wheezy-backports in 3 seconds..."
+                  sleep 1s
+                  /bin/echo -ne "\e[0K\rInstalling augeas from wheezy-backports in 2 seconds..."
+                  sleep 1s
+                  /bin/echo -e "\e[0K\rInstalling augeas from wheezy-backports in 1 second ..."
+                  sleep 1s
+                  /bin/echo '(Backports are only installed if explicitly requested via "apt-get install -t wheezy-backports")'
+
+                  sudo sh -c 'echo deb http://http.debian.net/debian wheezy-backports main >> /etc/apt/sources.list.d/wheezy-backports.list'
+                  $SUDO apt-get update
+              fi
+          fi
+          $SUDO apt-get install -y --no-install-recommends -t wheezy-backports libaugeas0
+          augeas_pkg=
+      else
+          echo "No libaugeas0 version is available that's new enough to run the"
+          echo "Let's Encrypt apache plugin..."
+      fi
+      # XXX add a case for ubuntu PPAs
+  fi
+
   $SUDO apt-get install -y --no-install-recommends \
-    git \
     python \
     python-dev \
     $virtualenv \
     gcc \
     dialog \
-    libaugeas0 \
+    $augeas_pkg \
     libssl-dev \
     libffi-dev \
     ca-certificates \
+
+
 
   if ! command -v virtualenv > /dev/null ; then
     echo Failed to install a working \"virtualenv\" command, exiting
@@ -107,7 +138,7 @@ BootstrapDebCommon() {
 BootstrapRpmCommon() {
   # Tested with:
   #   - Fedora 22, 23 (x64)
-  #   - Centos 7 (x64: onD igitalOcean droplet)
+  #   - Centos 7 (x64: on DigitalOcean droplet)
 
   if type dnf 2>/dev/null
   then
@@ -138,9 +169,7 @@ BootstrapRpmCommon() {
     fi
   fi
 
-  # "git-core" seems to be an alias for "git" in CentOS 7 (yum search fails)
   if ! $SUDO $tool install -y \
-         git-core \
          gcc \
          dialog \
          augeas-libs \
@@ -152,12 +181,20 @@ BootstrapRpmCommon() {
       echo "Could not install additional dependencies. Aborting bootstrap!"
       exit 1
   fi
+
+
+  if $SUDO $tool list installed "httpd" >/dev/null 2>&1; then
+    if ! $SUDO $tool install -y mod_ssl
+    then
+      echo "Apache found, but mod_ssl could not be installed."
+    fi
+  fi
 }
 
 BootstrapSuseCommon() {
   # SLE12 don't have python-virtualenv
 
-  $SUDO zypper -nq in -l git-core \
+  $SUDO zypper -nq in -l \
     python \
     python-devel \
     python-virtualenv \
@@ -178,7 +215,6 @@ BootstrapArchCommon() {
   # ./bootstrap/dev/_common_venv.sh
 
   deps="
-    git
     python2
     python-virtualenv
     gcc
@@ -198,7 +234,7 @@ BootstrapArchCommon() {
 }
 
 BootstrapGentooCommon() {
-  PACKAGES="dev-vcs/git
+  PACKAGES="
     dev-lang/python:2.7
     dev-python/virtualenv
     dev-util/dialog
@@ -223,7 +259,6 @@ BootstrapGentooCommon() {
 
 BootstrapFreeBsd() {
   "$SUDO" pkg install -Ay \
-    git \
     python \
     py27-virtualenv \
     augeas \
@@ -325,13 +360,13 @@ if test "`id -u`" -ne "0" ; then
       args=""
       # This `while` loop iterates over all parameters given to this function.
       # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
-      # will be wrap in a pair of `'`, then append to `$args` string
+      # will be wrapped in a pair of `'`, then appended to `$args` string
       # For example, `echo "It's only 1\$\!"` will be escaped to:
       #   'echo' 'It'"'"'s only 1$!'
       #     │       │└┼┘│
       #     │       │ │ └── `'s only 1$!'` the literal string
       #     │       │ └── `\"'\"` is a single quote (as a string)
-      #     │       └── `'It'`, to be concatenated with the strings followed it
+      #     │       └── `'It'`, to be concatenated with the strings following it
       #     └── `echo` wrapped in a pair of `'`, it's totally fine for the shell command itself
       while [ $# -ne 0 ]; do
         args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
@@ -1548,7 +1583,7 @@ UNLIKELY_EOF
       exit 1
     fi
   fi
-  echo "Running letsencrypt..."
+  echo "Requesting root privileges to run letsencrypt..."
   echo "  " $SUDO "$VENV_BIN/letsencrypt" "$@"
   $SUDO "$VENV_BIN/letsencrypt" "$@"
 else
