@@ -35,6 +35,7 @@ class ApacheParser(object):
         # https://httpd.apache.org/docs/2.4/mod/core.html#define
         # https://httpd.apache.org/docs/2.4/mod/core.html#ifdefine
         # This only handles invocation parameters and Define directives!
+        self.parser_paths = {}
         self.variables = {}
         if version >= (2, 4):
             self.update_runtime_variables()
@@ -471,16 +472,61 @@ class ApacheParser(object):
         :param str filepath: Apache config file path
 
         """
+        use_new, remove_old = self._check_path_actions(filepath)
         # Test if augeas included file for Httpd.lens
         # Note: This works for augeas globs, ie. *.conf
-        inc_test = self.aug.match(
-            "/augeas/load/Httpd/incl [. ='%s']" % filepath)
-        if not inc_test:
-            # Load up files
-            # This doesn't seem to work on TravisCI
-            # self.aug.add_transform("Httpd.lns", [filepath])
-            self._add_httpd_transform(filepath)
-            self.aug.load()
+        if use_new:
+            inc_test = self.aug.match(
+                "/augeas/load/Httpd/incl [. ='%s']" % filepath)
+            if not inc_test:
+                # Load up files
+                # This doesn't seem to work on TravisCI
+                # self.aug.add_transform("Httpd.lns", [filepath])
+                if remove_old:
+                    self._remove_httpd_transform(filepath)
+                self._add_httpd_transform(filepath)
+                self.aug.load()
+
+    def _check_path_actions(self, filepath):
+        """Determine actions to take with a new augeas path
+
+        This helper function will return a tuple that defines
+        if we should try to append the new filepath to augeas
+        parser paths, and / or remove the old one with more
+        narrow matching.
+
+        :param str filepath: filepath to check the actions for
+
+        """
+
+        try:
+            use_new = False
+            remove_old = False
+            new_file_match = os.path.basename(filepath)
+            existing_match = self.parser_paths[os.path.dirname(filepath)]
+            if existing_match == new_file_match:
+                # True here to let augeas verify that the path is parsed
+                use_new = True
+            elif new_file_match == "*":
+                use_new = True
+                remove_old = True
+        except KeyError:
+            use_new = True
+        return use_new, remove_old
+
+    def _remove_httpd_transform(self, filepath):
+        """Remove path from Augeas transform
+
+        :param str filepath: filepath to remove
+        """
+
+        remove_basename = self.parser_paths[os.path.dirname(filepath)]
+        remove_dirname = os.path.dirname(filepath)
+        remove_path = remove_dirname + "/" + remove_basename
+        remove_inc = self.aug.match(
+            "/augeas/load/Httpd/incl [. ='%s']" % remove_path)
+        self.aug.remove(remove_inc[0])
+        self.parser_paths.pop(remove_dirname)
 
     def _add_httpd_transform(self, incl):
         """Add a transform to Augeas.
@@ -502,6 +548,8 @@ class ApacheParser(object):
             # Augeas uses base 1 indexing... insert at beginning...
             self.aug.set("/augeas/load/Httpd/lens", "Httpd.lns")
             self.aug.set("/augeas/load/Httpd/incl", incl)
+        # Add included path to paths dictionary
+        self.parser_paths[os.path.dirname(incl)] = os.path.basename(incl)
 
     def standardize_excl(self):
         """Standardize the excl arguments for the Httpd lens in Augeas.
