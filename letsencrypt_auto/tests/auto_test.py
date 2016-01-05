@@ -160,9 +160,12 @@ def run_le_auto(venv_dir, base_url):
     """
     env = environ.copy()
     d = dict(XDG_DATA_HOME=venv_dir,
+             # URL to PyPI-style JSON that tell us the latest released version
+             # of LE:
              LE_AUTO_JSON_URL=base_url + 'letsencrypt/json',
+             # URL to dir containing letsencrypt-auto and letsencrypt-auto.sig:
              LE_AUTO_DIR_TEMPLATE=base_url + '%s/',
-             # The public key corresponding to signing_keys/test.key:
+             # The public key corresponding to signing.key:
              LE_AUTO_PUBLIC_KEY="""-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsMoSzLYQ7E1sdSOkwelg
 tzKIh2qi3bpXuYtcfFC0XrvWig071NwIj+dZiT0OLZ2hPispEH0B7ISuuWg1ll7G
