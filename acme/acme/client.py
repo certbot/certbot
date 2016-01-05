@@ -100,7 +100,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             response = self.net.post(self.directory[new_reg], new_reg)
         except errors.ClientError as error:
             # TODO: More complete error handling
-            if error.response is not None and
+            if (error.response is not None and
                 error.response.status_code == http_client.CONFLICT):
                 existing_registration_url = error.response.headers.get('Location')
                 raise errors.KeyAlreadyRegistered(existing_registration_url)
