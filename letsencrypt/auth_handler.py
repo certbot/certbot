@@ -541,10 +541,10 @@ def _generate_failed_chall_msg(failed_achalls):
     """
     typ = failed_achalls[0].error.typ
     msg = [
-        "The following '{0}' errors were reported by the server:".format(typ)]
+        "The following errors were reported by the server:".format(typ)]
 
     for achall in failed_achalls:
-        msg.append("\n\nDomain: %s\nDetail: %s\n" % (achall.domain, achall.error.detail))
+        msg.append("\n\nDomain: %s\nType:   %s\nDetail: %s" % (achall.domain, achall.error.typ, achall.error.detail))
 
     if typ in _ERROR_HELP:
         msg.append("\n\n")
