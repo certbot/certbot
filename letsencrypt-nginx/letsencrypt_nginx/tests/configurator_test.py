@@ -91,12 +91,26 @@ class NginxConfiguratorTest(util.NginxTest):
                    'test.www.example.com': foo_conf,
                    'abc.www.foo.com': foo_conf,
                    'www.bar.co.uk': localhost_conf}
+
+        conf_path = {'localhost': "etc_nginx/nginx.conf",
+                   'alias': "etc_nginx/nginx.conf",
+                   'example.com': "etc_nginx/sites-enabled/example.com",
+                   'example.com.uk.test': "etc_nginx/sites-enabled/example.com",
+                   'www.example.com': "etc_nginx/sites-enabled/example.com",
+                   'test.www.example.com': "etc_nginx/foo.conf",
+                   'abc.www.foo.com': "etc_nginx/foo.conf",
+                   'www.bar.co.uk': "etc_nginx/nginx.conf"}
+
         bad_results = ['www.foo.com', 'example', 't.www.bar.co',
                        '69.255.225.155']
 
         for name in results:
-            self.assertEqual(results[name],
-                             self.config.choose_vhost(name).names)
+            vhost = self.config.choose_vhost(name)
+            path = os.path.relpath(vhost.filep, self.temp_dir)
+
+            self.assertEqual(results[name], vhost.names)
+            self.assertEqual(conf_path[name], path)
+
         for name in bad_results:
             self.assertEqual(set([name]), self.config.choose_vhost(name).names)
 
