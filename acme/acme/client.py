@@ -100,8 +100,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             response = self.net.post(self.directory[new_reg], new_reg)
         except errors.ClientError as error:
             # TODO: More complete error handling
-            if (error.response is not None and
-                error.response.status_code == http_client.CONFLICT):
+            if error.response.status_code == http_client.CONFLICT:
                 existing_registration_url = error.response.headers.get('Location')
                 raise errors.KeyAlreadyRegistered(existing_registration_url)
             raise error
@@ -556,8 +555,8 @@ class ClientNetwork(object):
                         'Ignoring wrong Content-Type (%r) for JSON Error',
                         response_ct)
                 try:
-                    raise errors.ClientError(
-                        response, error=messages.Error.from_json(jobj))
+                    raise errors.ClientErrorWithDetails(
+                        response, messages.Error.from_json(jobj))
                 except jose.DeserializationError as error:
                     # Couldn't deserialize JSON object
                     raise errors.ClientError(response, error)

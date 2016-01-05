@@ -147,8 +147,8 @@ def perform_registration(acme, config):
     """
     try:
         return acme.register(messages.NewRegistration.from_data(email=config.email))
-    except acme_errors.ClientError, e:
-        err = str(e)
+    except acme_errors.ClientErrorWithDetails, e:
+        err = repr(e.details)
         if "MX record" in err or "Validation of contact mailto" in err:
             config.namespace.email = display_ops.get_email(more=True, invalid=True)
             return perform_registration(acme, config)

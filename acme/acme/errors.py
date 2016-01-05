@@ -12,15 +12,29 @@ class SchemaValidationError(jose_errors.DeserializationError):
 
 class ClientError(Error):
     """Network error or unexpected client response."""
-    def __init__(self, response, error=None, *args, **kwargs):
+    def __init__(self, response, *args, **kwargs):
+        """
+        :param requests.Response details: The response object that caused the
+            exception to be thrown.
+        """
         super(ClientError, self).__init__(*args, **kwargs)
-        self.error = error
         self.response = response
 
+
+class ClientErrorWithDetails(ClientError):
+    """Network error."""
+    def __init__(self, response, details, *args, **kwargs):
+        """
+        :param requests.Response details: The response object that caused the
+            exception to be thrown.
+        :param acme.messages.Error details: The details of the error as transmitted
+            by the server.
+        """
+        super(ClientErrorWithDetails, self).__init__(response, *args, **kwargs)
+        self.details = details
+
     def __str__(self):
-        if self.error is None:
-            return super(ClientError, self).__str__()
-        return 'Client error: {0}'.format(self.error)
+        return 'Client error: {0}'.format(self.details)
 
 
 class UnexpectedUpdate(ClientError):

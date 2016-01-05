@@ -515,7 +515,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mock_sys.exit.assert_any_call(''.join(
                 traceback.format_exception_only(errors.Error, error)))
 
-        exception = acme_errors.ClientError(
+        exception = acme_errors.ClientErrorWithDetails(
             None,
             messages.Error(detail='alpha', typ='urn:acme:error:triffid',
                            title='beta'))

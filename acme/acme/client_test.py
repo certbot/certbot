@@ -471,13 +471,14 @@ class ClientNetworkTest(unittest.TestCase):
         self.response.json.return_value = net_error.to_json()
         # pylint: disable=protected-access
         self.assertRaises(
-            errors.ClientError, self.net._check_response, self.response)
+            errors.ClientErrorWithDetails, self.net._check_response,
+            self.response)
         try:
             # pylint: disable=no-value-for-parameter
             self.net._check_response(self.response)
-        except errors.ClientError as error:
+        except errors.ClientErrorWithDetails as error:
             self.assertEqual(self.response, error.response)
-            self.assertEqual(net_error, error.error)
+            self.assertEqual(net_error, error.details)
 
     def test_check_response_not_ok_no_jobj(self):
         self.response.ok = False

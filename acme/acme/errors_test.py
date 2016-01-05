@@ -23,14 +23,23 @@ class ClientErrorTest(unittest.TestCase):
 
     def setUp(self):
         from acme.errors import ClientError
-        from acme.messages import Error
-        self.unspecified_error = ClientError(None)
-        self.network_error = ClientError(None,
-                                         Error(typ='TYP', detail='DETAIL'))
+        self.error = ClientError(None)
 
     def test_str(self):
-        self.assertEqual("", str(self.unspecified_error))
-        self.assertEqual("Client error: TYP :: DETAIL", str(self.network_error))
+        self.assertEqual("", str(self.error))
+
+
+class ClientErrorWithDetailsTest(unittest.TestCase):
+    """Tests for acme.errors.ClientErrorWithDetails."""
+
+    def setUp(self):
+        from acme.errors import ClientErrorWithDetails
+        from acme.messages import Error
+        self.error = ClientErrorWithDetails(
+            None, Error(typ='TYP', detail='DETAIL'))
+
+    def test_str(self):
+        self.assertEqual("Client error: TYP :: DETAIL", str(self.error))
 
 
 class BadNonceTest(unittest.TestCase):
