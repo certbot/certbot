@@ -501,8 +501,8 @@ class ApacheParser(object):
 
         try:
             new_file_match = os.path.basename(filepath)
-            existing_match = self.parser_paths[os.path.dirname(filepath)]
-            if existing_match == "*":
+            existing_matches = self.parser_paths[os.path.dirname(filepath)]
+            if "*" in existing_matches:
                 use_new = False
             else:
                 use_new = True
@@ -521,12 +521,13 @@ class ApacheParser(object):
         :param str filepath: filepath to remove
         """
 
-        remove_basename = self.parser_paths[os.path.dirname(filepath)]
+        remove_basenames = self.parser_paths[os.path.dirname(filepath)]
         remove_dirname = os.path.dirname(filepath)
-        remove_path = remove_dirname + "/" + remove_basename
-        remove_inc = self.aug.match(
-            "/augeas/load/Httpd/incl [. ='%s']" % remove_path)
-        self.aug.remove(remove_inc[0])
+        for name in remove_basenames:
+            remove_path = remove_dirname + "/" + name
+            remove_inc = self.aug.match(
+                "/augeas/load/Httpd/incl [. ='%s']" % remove_path)
+            self.aug.remove(remove_inc[0])
         self.parser_paths.pop(remove_dirname)
 
     def _add_httpd_transform(self, incl):
@@ -550,7 +551,12 @@ class ApacheParser(object):
             self.aug.set("/augeas/load/Httpd/lens", "Httpd.lns")
             self.aug.set("/augeas/load/Httpd/incl", incl)
         # Add included path to paths dictionary
-        self.parser_paths[os.path.dirname(incl)] = os.path.basename(incl)
+        try:
+            self.parser_paths[os.path.dirname(incl)].append(
+                os.path.basename(incl))
+        except KeyError:
+            self.parser_paths[os.path.dirname(incl)] = [
+                os.path.basename(incl)]
 
     def standardize_excl(self):
         """Standardize the excl arguments for the Httpd lens in Augeas.
