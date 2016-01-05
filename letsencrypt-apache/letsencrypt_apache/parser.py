@@ -500,18 +500,19 @@ class ApacheParser(object):
         """
 
         try:
-            use_new = False
-            remove_old = False
             new_file_match = os.path.basename(filepath)
             existing_match = self.parser_paths[os.path.dirname(filepath)]
-            if existing_match == new_file_match:
-                # True here to let augeas verify that the path is parsed
+            if existing_match == "*":
+                use_new = False
+            else:
                 use_new = True
-            elif new_file_match == "*":
-                use_new = True
+            if new_file_match == "*":
                 remove_old = True
+            else:
+                remove_old = False
         except KeyError:
             use_new = True
+            remove_old = False
         return use_new, remove_old
 
     def _remove_httpd_transform(self, filepath):
