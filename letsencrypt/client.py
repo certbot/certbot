@@ -8,6 +8,7 @@ import OpenSSL
 import zope.component
 
 from acme import client as acme_client
+from acme import errors as acme_errors
 from acme import jose
 from acme import messages
 
@@ -146,8 +147,8 @@ def perform_registration(acme, config):
     """
     try:
         return acme.register(messages.NewRegistration.from_data(email=config.email))
-    except errors.ClientError, e:
-        err = repr(e)
+    except acme_errors.ClientError, e:
+        err = str(e)
         if "MX record" in err or "Validation of contact mailto" in err:
             config.namespace.email = display_ops.get_email(more=True, invalid=True)
             return perform_registration(acme, config)
