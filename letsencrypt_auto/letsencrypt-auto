@@ -15,6 +15,42 @@ VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN=${VENV_PATH}/bin
 LE_AUTO_VERSION="0.2.0.dev0"
 
+# letsencrypt-auto needs root access to bootstrap OS dependencies, and
+# letsencrypt itself needs root access for almost all modes of operation
+# The "normal" case is that sudo is used for the steps that need root, but
+# this script *can* be run as root (not recommended), or fall back to using
+# `su`
+if test "`id -u`" -ne "0" ; then
+  if command -v sudo 1>/dev/null 2>&1; then
+    SUDO=sudo
+  else
+    echo \"sudo\" is not available, will use \"su\" for installation steps...
+    # Because the parameters in `su -c` has to be a string,
+    # we need properly escape it
+    su_sudo() {
+      args=""
+      # This `while` loop iterates over all parameters given to this function.
+      # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
+      # will be wrapped in a pair of `'`, then appended to `$args` string
+      # For example, `echo "It's only 1\$\!"` will be escaped to:
+      #   'echo' 'It'"'"'s only 1$!'
+      #     │       │└┼┘│
+      #     │       │ │ └── `'s only 1$!'` the literal string
+      #     │       │ └── `\"'\"` is a single quote (as a string)
+      #     │       └── `'It'`, to be concatenated with the strings following it
+      #     └── `echo` wrapped in a pair of `'`, it's totally fine for the shell command itself
+      while [ $# -ne 0 ]; do
+        args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
+        shift
+      done
+      su root -c "$args"
+    }
+    SUDO=su_sudo
+  fi
+else
+  SUDO=
+fi
+
 ExperimentalBootstrap() {
   # Arguments: Platform name, bootstrap function name
   if [ "$DEBUG" = 1 ]; then
@@ -73,7 +109,7 @@ BootstrapDebCommon() {
   #
   # - Debian 6.0.10 "squeeze" (x64)
 
-  $SUDO apt-get update
+  $SUDO apt-get update || echo apt-get update hit problems but continuing anyway...
 
   # virtualenv binary can be found in different packages depending on
   # distro version (#346)
@@ -344,42 +380,6 @@ for arg in "$@" ; do
   fi
 done
 
-# letsencrypt-auto needs root access to bootstrap OS dependencies, and
-# letsencrypt itself needs root access for almost all modes of operation
-# The "normal" case is that sudo is used for the steps that need root, but
-# this script *can* be run as root (not recommended), or fall back to using
-# `su`
-if test "`id -u`" -ne "0" ; then
-  if command -v sudo 1>/dev/null 2>&1; then
-    SUDO=sudo
-  else
-    echo \"sudo\" is not available, will use \"su\" for installation steps...
-    # Because the parameters in `su -c` has to be a string,
-    # we need properly escape it
-    su_sudo() {
-      args=""
-      # This `while` loop iterates over all parameters given to this function.
-      # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
-      # will be wrapped in a pair of `'`, then appended to `$args` string
-      # For example, `echo "It's only 1\$\!"` will be escaped to:
-      #   'echo' 'It'"'"'s only 1$!'
-      #     │       │└┼┘│
-      #     │       │ │ └── `'s only 1$!'` the literal string
-      #     │       │ └── `\"'\"` is a single quote (as a string)
-      #     │       └── `'It'`, to be concatenated with the strings following it
-      #     └── `echo` wrapped in a pair of `'`, it's totally fine for the shell command itself
-      while [ $# -ne 0 ]; do
-        args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
-        shift
-      done
-      su root -c "$args"
-    }
-    SUDO=su_sudo
-  fi
-else
-  SUDO=
-fi
-
 if [ "$1" = "--no-self-upgrade" ]; then
   # Phase 2: Create venv, install LE, and run.
 
@@ -389,9 +389,7 @@ if [ "$1" = "--no-self-upgrade" ]; then
   else
     INSTALLED_VERSION="none"
   fi
-  if [ "$LE_AUTO_VERSION" = "$INSTALLED_VERSION" ]; then
-    echo "Reusing old virtual environment."
-  else
+  if [ "$LE_AUTO_VERSION" != "$INSTALLED_VERSION" ]; then
     echo "Creating virtual environment..."
     DeterminePythonVersion
     rm -rf "$VENV_PATH"
@@ -414,15 +412,19 @@ if [ "$1" = "--no-self-upgrade" ]; then
 # sha256: jLFOL0T7ke2Q8qcfFRdXalLSQdOB7RWXIyAMi4Fy6Bo
 # sha256: D9Uqk2RK-TMBJjLTLYxn1oDWosvR_TBbnG3OL3tDw48
 # sha256: 9RMU8_KwLhPmO34BO_wynw4YaVYrDGrc6IIIF4pOCIc
+# sha256: jktALLnaWPJ1ItB4F8Tksb7nY1evq4X8NfNeHn8JUe4
 # sha256: yybABKlI6OhwZTFmC1UBSROe25wy3kSR1tqAuJdTCBY
 # sha256: a0wfaa1zEfNpDeK2EUUa2jpnTqDJYQFgP6v0ZKJBdQc
 # sha256: PSbhDGMPaT71HHWqgD6Si282CSMBaNhcxzq98ovPSWg
+# sha256: mHEajOPtqhXj2lmKvbK0ef5068ITOyd8UrtDIlbjyNM
 # sha256: 0HgsaYx0ACAtteAygp5_qkFrHm7GBdmqLH1BSPEyp3U
 # sha256: q19L-hSCKK6I7SNB1VsFkzAk3tr_jueszKPO80fvFis
 # sha256: sP3W0k-DpDKq58mbqZnLnaJiSZbfYFb4vnwgYe8kt44
+# sha256: XLKdOXHKwRrzNIBMfAVwbAiSiklH-CB-jE69gH5ET2U
 # sha256: n-ixA0rx6WBEEUSNoYmYqzzHQRbQThlajkuqlr0UsFU
 # sha256: rSxLkZrDYgPZStjNCpk-BGtypxZUXfSxxKpmYAeWv2M
 # sha256: COvlZqBLYsYxc4Qxt4_a6_sCSRzDYUWOIL3CjiRsUw4
+# sha256: VH9kAYaHxBEIVrBlhanWiQLrmV8Zj4sTepXY8CU8N3Y
 # sha256: 2KyY9M2WQ-vDSTG9vchm0CZn6NjCWBJy-HwTtoVYwmA
 # sha256: 0PsSOUbFAt9mg454QbOffkNsSZGwHR2vSu1m4kEcKMs
 # sha256: 1F3TmncLSvtZHIJVX2qLvBrH6wGe2ptiHu4aCnIgEiA
@@ -594,17 +596,17 @@ zope.event==4.1.0
 # sha256: sJyMHUezUxxADgGVaX8UFKYyId5u9HhZik8UYPfZo5I
 zope.interface==4.1.3
 
-# sha256: 9yQWjdAK9JWFHcodsdFotAiYqXVC1coj3rChq7kDlg8
-# sha256: w-u_7NH3h-9uMJ3cxBLGXQ7qMY0A0K_2EL23_wmoQDo
-acme==0.1.0
+# sha256: xlKw86fsP3VtbdljTTTboXgIw1QFHdCR1p8ff_zKnQ0
+# sha256: HCCDzax5ts-yAZDWhpMiQDUQS0bSXcnFLRerqZB_YPs
+acme==0.1.1
 
-# sha256: etdo3FQXbmpBSn60YkfKItjU2isypbo-N854YkyIhG8
-# sha256: gfYnYXbSVLfPX5W1ZHALxx8SsRA01AIDicpMMX43af0
-letsencrypt==0.1.0
+# sha256: F6dWBwnljkI2IASGO4VwCV05Nc3t0w8U0kWZsllpC8s
+# sha256: jmeEAx7qchLhKOF75RqPuOSH2Wk6XficiL5TYyYfKs4
+letsencrypt==0.1.1
 
-# sha256: k8qUreGlW03BJz1FP-51brlSEef7QC8rGrljroQTZkU
-# sha256: QvYP9hJhs-I_BG9SSma7vX115a_TET4qOWommmJC0lI
-letsencrypt-apache==0.1.0
+# sha256: 06zn8Fstsyfw58RmLaaODObDzR2jfZVCor0Hc65LYus
+# sha256: 8ZO1CwBNE8eunQXAoXKVoGiaeAmj2BkRTMy5tXrBuYY
+letsencrypt-apache==0.1.1
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------

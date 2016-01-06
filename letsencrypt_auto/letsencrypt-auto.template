@@ -165,9 +165,7 @@ if [ "$1" = "--no-self-upgrade" ]; then
   else
     INSTALLED_VERSION="none"
   fi
-  if [ "$LE_AUTO_VERSION" = "$INSTALLED_VERSION" ]; then
-    echo "Reusing old virtual environment."
-  else
+  if [ "$LE_AUTO_VERSION" != "$INSTALLED_VERSION" ]; then
     echo "Creating virtual environment..."
     DeterminePythonVersion
     rm -rf "$VENV_PATH"
