@@ -44,8 +44,8 @@ class ComparableX509Test(unittest.TestCase):
 
     def test_repr(self):
         for x509 in self.req1, self.cert1:
-            self.assertTrue(repr(x509).startswith(
-                '<ComparableX509(<OpenSSL.crypto.X509'))
+            self.assertEqual(repr(x509),
+                             '<ComparableX509({0!r})>'.format(x509.wrapped))
 
 
 class ComparableRSAKeyTest(unittest.TestCase):
