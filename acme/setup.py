@@ -74,7 +74,9 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     extras_require={
+        'coverage': ['dnspython'],
         'docs': docs_extras,
+        'lint': ['dnspython'],
         'testing': testing_extras + ['dnspython'],
     },
     entry_points={

@@ -23,7 +23,7 @@ class TxtRecordsForNameTest(unittest.TestCase):
         mock_dns.return_value = self.create_txt_response('name', ['response'])
         self.assertEqual(['response'],
                          dns_resolver.txt_records_for_name('name'))
-                         
+
     @mock.patch("acme.dns_resolver.dns.resolver.query")
     def test_txt_records_for_name_with_multiple_responses(self, mock_dns):
         mock_dns.return_value = self.create_txt_response(
