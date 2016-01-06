@@ -245,7 +245,7 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
             from acme import dns_resolver
             txt_records = dns_resolver.txt_records_for_name(
                 validation_domain_name)
-        except ImportError:
+        except ImportError:  # pragma: no cover
             raise ImportError("Local validation for 'dns-01' challenges "
                               "requires 'dnspython'")
         exists = validation in txt_records
