@@ -139,8 +139,19 @@ Would obtain a single certificate for all of those names, using the
 ``/var/www/example`` webroot directory for the first two, and
 ``/var/www/eg`` for the second two.
 
+The webroot plugin works by creating a temporary file for each of your requested
+domains in ``${webroot-path}/.well-known/acme-challenge``. Then the Let's
+Encrypt validation server makes HTTP requests to validate that the DNS for each
+requested domain resolves to the server running letsencrypt. An example request
+made to your web server would look like:
+
+::
+
+    66.133.109.36 - - [05/Jan/2016:20:11:24 -0500] "GET /.well-known/acme-challenge/HGr8U1IeTW4kY_Z6UIyaakzOkyQgPr_7ArlLgtZE8SX HTTP/1.1" 200 87 "-" "Mozilla/5.0 (compatible; Let's Encrypt validation server; +https://www.letsencrypt.org)"
+
 Note that to use the webroot plugin, your server must be configured to serve
 files from hidden directories.
+
 
 Manual
 ------
