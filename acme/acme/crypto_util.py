@@ -1,6 +1,7 @@
 """Crypto utilities."""
 import contextlib
 import logging
+import re
 import socket
 import sys
 
@@ -160,26 +161,22 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
 
     """
     # constants based on PyOpenSSL certificate/CSR text dump
-    label = "DNS"
-    parts_separator = ", "
     part_separator = ":"
-    prefix = label + part_separator
-    title = "X509v3 Subject Alternative Name:"
+    parts_separator = ", "
+    prefix = "DNS" + part_separator
 
     if isinstance(cert_or_req, OpenSSL.crypto.X509):
         func = OpenSSL.crypto.dump_certificate
     else:
         func = OpenSSL.crypto.dump_certificate_request
-    text = func(OpenSSL.crypto.FILETYPE_TEXT, cert_or_req)
-
-    lines = iter(text.decode("utf-8").splitlines())
-    sans = [next(lines).split(parts_separator)
-            for line in lines if title in line]
+    text = func(OpenSSL.crypto.FILETYPE_TEXT, cert_or_req).decode("utf-8")
+    match = re.search(r"X509v3 Subject Alternative Name:\s*(.*)", text)
+    sans_parts = [] if match is None else match.group(1).split(parts_separator)
     # WARNING: this function assumes that no SAN can include
     # parts_separator, hence the split!
 
-    return [part.split(part_separator)[1] for parts in sans
-            for part in parts if part.lstrip().startswith(prefix)]
+    return [part.split(part_separator)[1]
+            for part in sans_parts if part.startswith(prefix)]
 
 
 def gen_ss_cert(key, domains, not_before=None,
