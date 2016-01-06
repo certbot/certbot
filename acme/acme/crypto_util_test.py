@@ -112,9 +112,9 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
 
     def test_csr_six_sans(self):
         self.assertEqual(self._call_csr('csr-6sans.pem'),
-                         ["example.com", "example.org", "example.net",
-                          "example.info", "subdomain.example.com",
-                          "other.subdomain.example.com"])
+                         ['example.com', 'example.org', 'example.net',
+                          'example.info', 'subdomain.example.com',
+                          'other.subdomain.example.com'])
 
     def test_csr_hundred_sans(self):
         self.assertEqual(self._call_csr('csr-100sans.pem'),
@@ -125,5 +125,5 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
                          self._get_idn_names())
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()  # pragma: no cover
