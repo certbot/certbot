@@ -8,6 +8,7 @@ then
     CONFFILE=/etc/apache2/sites-available/000-default.conf
     sudo apt-get update
     sudo apt-get -y --no-upgrade install apache2 #curl
+    sudo apt-get -y install realpath # needed for test-apache-conf
     # For apache 2.4, set up ServerName
     sudo sed -i '/ServerName/ s/#ServerName/ServerName/' $CONFFILE
     sudo sed -i '/ServerName/ s/www.example.com/'$PUBLIC_HOSTNAME'/' $CONFFILE
@@ -36,7 +37,21 @@ fi
 
 # run letsencrypt-apache2 via letsencrypt-auto
 cd letsencrypt
-./letsencrypt-auto -v --debug --text --agree-dev-preview --agree-tos \
+
+export SUDO=sudo
+if [ -f /etc/debian_version ] ; then
+  echo "Bootstrapping dependencies for Debian-based OSes..."
+  $SUDO bootstrap/_deb_common.sh
+elif [ -f /etc/redhat-release ] ; then
+  echo "Bootstrapping dependencies for RedHat-based OSes..."
+  $SUDO bootstrap/_rpm_common.sh
+else
+  echo "Dont have bootstrapping for this OS!"
+  exit 1
+fi
+
+bootstrap/dev/venv.sh
+sudo venv/bin/letsencrypt -v --debug --text --agree-dev-preview --agree-tos \
                    --renew-by-default --redirect --register-unsafely-without-email \
                    --domain $PUBLIC_HOSTNAME --server $BOULDER_URL
 if [ $? -ne 0 ] ; then
@@ -44,8 +59,7 @@ if [ $? -ne 0 ] ; then
 fi
 
 if [ "$OS_TYPE" = "ubuntu" ] ; then
-    export LETSENCRYPT="$HOME/.local/share/letsencrypt/bin/letsencrypt"
-    tests/apache-conf-files/hackish-apache-test --debian-modules
+    venv/bin/tox -e apacheconftest
 else
     echo Not running hackish apache tests on $OS_TYPE
 fi
@@ -56,5 +70,5 @@ fi
 
 # return error if any of the subtests failed
 if [ "$FAIL" = 1 ] ; then
-    return 1
+    exit 1
 fi

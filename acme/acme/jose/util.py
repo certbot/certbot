@@ -139,7 +139,7 @@ class ImmutableMap(collections.Mapping, collections.Hashable):
     """Immutable key to value mapping with attribute access."""
 
     __slots__ = ()
-    """Must be overriden in subclasses."""
+    """Must be overridden in subclasses."""
 
     def __init__(self, **kwargs):
         if set(kwargs) != set(self.__slots__):

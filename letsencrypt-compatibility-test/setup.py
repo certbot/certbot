@@ -10,6 +10,7 @@ install_requires = [
     'letsencrypt=={0}'.format(version),
     'letsencrypt-apache=={0}'.format(version),
     'docker-py',
+    'requests',
     'zope.interface',
 ]
 
@@ -17,6 +18,11 @@ if sys.version_info < (2, 7):
     install_requires.append('mock<1.1.0')
 else:
     install_requires.append('mock')
+
+if sys.version_info < (2, 7, 9):
+    # For secure SSL connexion with Python 2.7 (InsecurePlatformWarning)
+    install_requires.append('ndg-httpsclient')
+    install_requires.append('pyasn1')
 
 docs_extras = [
     'repoze.sphinx.autointerface',

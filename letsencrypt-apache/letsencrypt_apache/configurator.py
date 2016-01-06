@@ -86,18 +86,25 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add("ctl", default=constants.CLI_DEFAULTS["ctl"],
-            help="Path to the 'apache2ctl' binary, used for 'configtest', "
-                 "retrieving the Apache2 version number, and initialization "
-                 "parameters.")
-        add("enmod", default=constants.CLI_DEFAULTS["enmod"],
+        add("enmod", default=constants.os_constant("enmod"),
             help="Path to the Apache 'a2enmod' binary.")
-        add("dismod", default=constants.CLI_DEFAULTS["dismod"],
+        add("dismod", default=constants.os_constant("dismod"),
             help="Path to the Apache 'a2dismod' binary.")
-        add("le-vhost-ext", default=constants.CLI_DEFAULTS["le_vhost_ext"],
+        add("le-vhost-ext", default=constants.os_constant("le_vhost_ext"),
             help="SSL vhost configuration extension.")
-        add("server-root", default=constants.CLI_DEFAULTS["server_root"],
+        add("server-root", default=constants.os_constant("server_root"),
             help="Apache server root directory.")
+        add("vhost-root", default=constants.os_constant("vhost_root"),
+            help="Apache server VirtualHost configuration root")
+        add("challenge-location",
+            default=constants.os_constant("challenge_location"),
+            help="Directory path for challenge configuration.")
+        add("handle-modules", default=constants.os_constant("handle_mods"),
+            help="Let installer handle enabling required modules for you." +
+                 "(Only Ubuntu/Debian currently)")
+        add("handle-sites", default=constants.os_constant("handle_sites"),
+            help="Let installer handle enabling sites for you." +
+                 "(Only Ubuntu/Debian currently)")
         le_util.add_deprecated_argument(add, "init-script", 1)
 
     def __init__(self, *args, **kwargs):
@@ -137,17 +144,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         # Verify Apache is installed
-        for exe in (self.conf("ctl"), self.conf("enmod"), self.conf("dismod")):
-            if not le_util.exe_exists(exe):
-                raise errors.NoInstallationError
+        if not le_util.exe_exists(constants.os_constant("restart_cmd")[0]):
+            raise errors.NoInstallationError
 
         # Make sure configuration is valid
         self.config_test()
-
-        self.parser = parser.ApacheParser(
-            self.aug, self.conf("server-root"), self.conf("ctl"))
-        # Check for errors in parsing files with Augeas
-        self.check_parsing_errors("httpd.aug")
 
         # Set Version
         if self.version is None:
@@ -155,6 +156,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if self.version < (2, 2):
             raise errors.NotSupportedError(
                 "Apache Version %s not supported.", str(self.version))
+
+        self.parser = parser.ApacheParser(
+            self.aug, self.conf("server-root"), self.conf("vhost-root"),
+            self.version)
+        # Check for errors in parsing files with Augeas
+        self.check_parsing_errors("httpd.aug")
 
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
@@ -236,9 +243,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if chain_path is not None:
             self.save_notes += "\tSSLCertificateChainFile %s\n" % chain_path
 
-        # Make sure vhost is enabled
-        if not vhost.enabled:
-            self.enable_site(vhost)
+        # Make sure vhost is enabled if distro with enabled / available
+        if self.conf("handle-sites"):
+            if not vhost.enabled:
+                self.enable_site(vhost)
 
     def choose_vhost(self, target_name, temp=False):
         """Chooses a virtual host based on the given domain name.
@@ -458,7 +466,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 is_ssl = True
 
         filename = get_file_path(path)
-        is_enabled = self.is_site_enabled(filename)
+        if self.conf("handle-sites"):
+            is_enabled = self.is_site_enabled(filename)
+        else:
+            is_enabled = True
 
         macro = False
         if "/macro/" in path.lower():
@@ -469,7 +480,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._add_servernames(vhost)
         return vhost
 
-    # TODO: make "sites-available" a configurable directory
     def get_virtual_hosts(self):
         """Returns list of virtual hosts found in the Apache configuration.
 
@@ -478,10 +488,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: list
 
         """
-        # Search sites-available, httpd.conf for possible virtual hosts
+        # Search vhost-root, httpd.conf for possible virtual hosts
         paths = self.aug.match(
-            ("/files%s/sites-available//*[label()=~regexp('%s')]" %
-             (self.parser.root, parser.case_i("VirtualHost"))))
+            ("/files%s//*[label()=~regexp('%s')]" %
+             (self.conf("vhost-root"), parser.case_i("VirtualHost"))))
 
         vhs = []
 
@@ -540,16 +550,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str port: Port to listen on
 
         """
-        if "ssl_module" not in self.parser.modules:
-            self.enable_mod("ssl", temp=temp)
-        if self.version >= (2, 4) and "socache_shmcb_module" not in self.parser.modules:
-            self.enable_mod("socache_shmcb", temp=temp)
+
+        self.prepare_https_modules(temp)
         # Check for Listen <port>
         # Note: This could be made to also look for ip:443 combo
         listens = [self.parser.get_arg(x).split()[0] for x in self.parser.find_dir("Listen")]
         # In case no Listens are set (which really is a broken apache config)
         if not listens:
             listens = ["80"]
+        if port in listens:
+            return
         for listen in listens:
             # For any listen statement, check if the machine also listens on Port 443.
             # If not, add such a listen statement.
@@ -584,6 +594,20 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                                        ip, port, self.parser.loc["listen"])
                     listens.append("%s:%s" % (ip, port))
 
+    def prepare_https_modules(self, temp):
+        """Helper method for prepare_server_https, taking care of enabling
+        needed modules
+
+        :param boolean temp: If the change is temporary
+        """
+
+        if self.conf("handle-modules"):
+            if "ssl_module" not in self.parser.modules:
+                self.enable_mod("ssl", temp=temp)
+            if self.version >= (2, 4) and ("socache_shmcb_module" not in
+                                           self.parser.modules):
+                self.enable_mod("socache_shmcb", temp=temp)
+
     def make_addrs_sni_ready(self, addrs):
         """Checks to see if the server is ready for SNI challenges.
 
@@ -606,7 +630,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         Duplicates vhost and adds default ssl options
         New vhost will reside as (nonssl_vhost.path) +
-        ``letsencrypt_apache.constants.CLI_DEFAULTS["le_vhost_ext"]``
+        ``letsencrypt_apache.constants.os_constant("le_vhost_ext")``
 
         .. note:: This function saves the configuration
 
@@ -1068,8 +1092,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if len(ssl_vhost.name) < (255 - (len(redirect_filename) + 1)):
                 redirect_filename = "le-redirect-%s.conf" % ssl_vhost.name
 
-        redirect_filepath = os.path.join(
-            self.parser.root, "sites-available", redirect_filename)
+        redirect_filepath = os.path.join(self.conf("vhost-root"), redirect_filename)
 
         # Register the new file that will be created
         # Note: always register the creation before writing to ensure file will
@@ -1155,7 +1178,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: bool
 
         """
+
         enabled_dir = os.path.join(self.parser.root, "sites-enabled")
+        if not os.path.isdir(enabled_dir):
+            error_msg = ("Directory '{0}' does not exist. Please ensure "
+                         "that the values for --apache-handle-sites and "
+                         "--apache-server-root are correct for your "
+                         "environment.".format(enabled_dir))
+            raise errors.ConfigurationError(error_msg)
         for entry in os.listdir(enabled_dir):
             try:
                 if filecmp.cmp(avail_fp, os.path.join(enabled_dir, entry)):
@@ -1243,7 +1273,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Modules can enable additional config files. Variables may be defined
         # within these new configuration sections.
         # Reload is not necessary as DUMP_RUN_CFG uses latest config.
-        self.parser.update_runtime_variables(self.conf("ctl"))
+        self.parser.update_runtime_variables()
 
     def _add_parser_mod(self, mod_name):
         """Shortcut for updating parser modules."""
@@ -1281,7 +1311,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            le_util.run_script([self.conf("ctl"), "-k", "graceful"])
+            le_util.run_script(constants.os_constant("restart_cmd"))
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
@@ -1292,7 +1322,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            le_util.run_script([self.conf("ctl"), "configtest"])
+            le_util.run_script(constants.os_constant("conftest_cmd"))
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
@@ -1308,10 +1338,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            stdout, _ = le_util.run_script([self.conf("ctl"), "-v"])
+            stdout, _ = le_util.run_script(
+                constants.os_constant("version_cmd"))
         except errors.SubprocessError:
             raise errors.PluginError(
-                "Unable to run %s -v" % self.conf("ctl"))
+                "Unable to run %s -v" %
+                constants.os_constant("version_cmd"))
 
         regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
         matches = regex.findall(stdout)

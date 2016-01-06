@@ -31,7 +31,7 @@ else:
     install_requires.append('mock')
 
 if sys.version_info < (2, 7, 9):
-    # For secure SSL connexion with Python 2.7 (InsecurePlatformWarning)
+    # For secure SSL connection with Python 2.7 (InsecurePlatformWarning)
     install_requires.append('ndg-httpsclient')
     install_requires.append('pyasn1')
 
