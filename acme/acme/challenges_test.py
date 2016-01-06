@@ -135,9 +135,8 @@ class DNS01Test(unittest.TestCase):
 
     def setUp(self):
         from acme.challenges import DNS01
-        self.msg = DNS01(
-            token=jose.decode_b64jose(
-                'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA'))
+        self.msg = DNS01(token=jose.decode_b64jose(
+            'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA'))
         self.jmsg = {
             'type': 'dns-01',
             'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA',
