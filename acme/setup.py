@@ -75,7 +75,7 @@ setup(
     install_requires=install_requires,
     extras_require={
         'docs': docs_extras,
-        'testing': testing_extras + 'dnspython',
+        'testing': testing_extras + ['dnspython'],
     },
     entry_points={
         'console_scripts': [
