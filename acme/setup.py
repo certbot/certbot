@@ -12,7 +12,6 @@ install_requires = [
     'cryptography>=0.8',
     # Connection.set_tlsext_host_name (>=0.13), X509Req.get_extensions (>=0.15)
     'PyOpenSSL>=0.15',
-    'dnspython',
     'pyrfc3339',
     'pytz',
     'requests',
@@ -35,6 +34,10 @@ if sys.version_info < (2, 7, 9):
     # For secure SSL connexion with Python 2.7 (InsecurePlatformWarning)
     install_requires.append('ndg-httpsclient')
     install_requires.append('pyasn1')
+
+dns_extras = [
+    'dnspython',
+]
 
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
@@ -75,6 +78,7 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     extras_require={
+        'dns': dns_extras,
         'docs': docs_extras,
         'testing': testing_extras,
     },

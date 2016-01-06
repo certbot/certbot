@@ -6,8 +6,6 @@ import logging
 import socket
 
 from cryptography.hazmat.primitives import hashes
-import dns.resolver
-import dns.exception
 import OpenSSL
 import requests
 
@@ -16,7 +14,6 @@ from acme import crypto_util
 from acme import fields
 from acme import jose
 from acme import other
-
 
 logger = logging.getLogger(__name__)
 
@@ -244,7 +241,13 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
         validation = chall.validation(account_public_key)
         logger.debug("Verifying %s at %s...", chall.typ, validation_domain_name)
 
-        txt_records = txt_records_for_name(validation_domain_name)
+        try:
+            from acme import dns_resolver
+            txt_records = dns_resolver.txt_records_for_name(
+                validation_domain_name)
+        except ImportError:
+            raise ImportError("Local validation for 'dns-01' challenges "
+                              "requires 'dnspython'")
         exists = validation in txt_records
         if not exists:
             logger.debug("Key authorization from response (%r) doesn't match "
@@ -703,19 +706,3 @@ class DNSResponse(ChallengeResponse):
         """
         return chall.check_validation(self.validation, account_public_key)
 
-
-def txt_records_for_name(name):
-    """Resolve the name and return the TXT records.
-
-    :param unicode name: Domain name being verified.
-
-    :returns: A list of txt records, if empty the name could not be resolved
-    :rtype: list of unicode
-
-    """
-    try:
-        dns_response = dns.resolver.query(name, 'TXT')
-    except dns.exception.DNSException as error:
-        logger.error("Unable to resolve %s: %s", name, error)
-        return []
-    return [txt_rec for rdata in dns_response for txt_rec in rdata.strings]

@@ -1,7 +1,6 @@
 """Tests for acme.challenges."""
 import unittest
 
-import dns.rrset
 import mock
 import OpenSSL
 import requests
@@ -94,16 +93,6 @@ class DNS01ResponseTest(unittest.TestCase):
         self.chall = DNS01(token=(b'x' * 16))
         self.response = self.chall.response(KEY)
 
-    def create_txt_response(self, name, txt_records):
-        """
-        Returns an RRSet containing the 'txt_records' as the result of a DNS
-        query for 'name'.
-
-        This takes advantage of the fact that an Answer object mostly behaves
-        like an RRset.
-        """
-        return dns.rrset.from_text_list(name, 60, "IN", "TXT", txt_records)
-
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
@@ -119,36 +108,25 @@ class DNS01ResponseTest(unittest.TestCase):
         key2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
         self.response.simple_verify(self.chall, "local", key2.public_key())
 
-    @mock.patch("acme.challenges.dns.resolver.query")
-    def test_simple_verify_good_validation(self, mock_dns):
-        mock_dns.return_value = self.create_txt_response(
-            self.chall.validation_domain_name("local"),
-            [self.chall.validation(KEY.public_key())])
+    @mock.patch("acme.dns_resolver.txt_records_for_name")
+    def test_simple_verify_good_validation(self, mock_resolver):
+        mock_resolver.return_value = [self.chall.validation(KEY.public_key())]
         self.assertTrue(self.response.simple_verify(
             self.chall, "local", KEY.public_key()))
-        mock_dns.assert_called_once_with(
-            self.chall.validation_domain_name("local"), "TXT")
+        mock_resolver.assert_called_once_with(
+                self.chall.validation_domain_name("local"))
 
-    @mock.patch("acme.challenges.dns.resolver.query")
-    def test_simple_verify_good_validation_multiple_txts(self, mock_dns):
-        mock_dns.return_value = self.create_txt_response(
-            self.chall.validation_domain_name("local"),
-            ["!", self.chall.validation(KEY.public_key())])
+    @mock.patch("acme.dns_resolver.txt_records_for_name")
+    def test_simple_verify_good_validation_multiple_txts(self, mock_resolver):
+        mock_resolver.return_value = ["!", self.chall.validation(KEY.public_key())]
         self.assertTrue(self.response.simple_verify(
             self.chall, "local", KEY.public_key()))
-        mock_dns.assert_called_once_with(
-            self.chall.validation_domain_name("local"), "TXT")
+        mock_resolver.assert_called_once_with(
+            self.chall.validation_domain_name("local"))
 
-    @mock.patch("acme.challenges.dns.resolver.query")
+    @mock.patch("acme.dns_resolver.txt_records_for_name")
     def test_simple_verify_bad_validation(self, mock_dns):
-        mock_dns.return_value = self.create_txt_response(
-            self.chall.validation_domain_name("local"), ["!"])
-        self.assertFalse(self.response.simple_verify(
-            self.chall, "local", KEY.public_key()))
-
-    @mock.patch("acme.challenges.dns.resolver.query")
-    def test_simple_verify_connection_error(self, mock_dns):
-        mock_dns.side_effect = dns.exception.DNSException
+        mock_dns.return_value = ["!"]
         self.assertFalse(self.response.simple_verify(
             self.chall, "local", KEY.public_key()))
 
@@ -157,9 +135,8 @@ class DNS01Test(unittest.TestCase):
 
     def setUp(self):
         from acme.challenges import DNS01
-        self.msg = DNS01(
-            token=jose.decode_b64jose(
-                'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA'))
+        self.msg = DNS01(token=jose.decode_b64jose(
+            'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA'))
         self.jmsg = {
             'type': 'dns-01',
             'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA',
