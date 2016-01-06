@@ -77,6 +77,7 @@ class KeyAuthorizationChallengeResponseTest(unittest.TestCase):
             key_authorization='.foo.oKGqedy-b-acd5eoybm2f-NVFxvyOoET5CNy3xnv8WY')
         self.assertFalse(response.verify(self.chall, KEY.public_key()))
 
+
 class DNS01ResponseTest(unittest.TestCase):
     # pylint: disable=too-many-instance-attributes
 
@@ -108,8 +109,7 @@ class DNS01ResponseTest(unittest.TestCase):
 
     def test_from_json(self):
         from acme.challenges import DNS01Response
-        self.assertEqual(
-            self.msg, DNS01Response.from_json(self.jmsg))
+        self.assertEqual(self.msg, DNS01Response.from_json(self.jmsg))
 
     def test_from_json_hashable(self):
         from acme.challenges import DNS01Response
@@ -151,6 +151,7 @@ class DNS01ResponseTest(unittest.TestCase):
         mock_dns.side_effect = dns.exception.DNSException
         self.assertFalse(self.response.simple_verify(
             self.chall, "local", KEY.public_key()))
+
 
 class DNS01Test(unittest.TestCase):
 
