@@ -72,7 +72,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             new_authzr_uri = response.links['next']['url']
 
         if new_authzr_uri is None:
-            raise errors.ClientError(response, 'missing "new_authrz_uri"')
+            raise errors.ClientError('"next" link missing')
 
         return messages.RegistrationResource(
             body=messages.Registration.from_json(response.json()),
