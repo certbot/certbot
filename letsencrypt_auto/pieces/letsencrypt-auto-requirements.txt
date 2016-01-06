@@ -2,6 +2,8 @@
 # this, do `pip install -r py26reqs.txt -e acme -e . -e letsencrypt-apache`,
 # `pip freeze`, and then gather the hashes.
 
+-i https://isnot.org/pip/0.1.22/
+
 # sha256: x40PeQZP0GQZT-XH5aO2svbbtIWDdrtSAqRIjGkfYS4
 # sha256: jLFOL0T7ke2Q8qcfFRdXalLSQdOB7RWXIyAMi4Fy6Bo
 # sha256: D9Uqk2RK-TMBJjLTLYxn1oDWosvR_TBbnG3OL3tDw48
