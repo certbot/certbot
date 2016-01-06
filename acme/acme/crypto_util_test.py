@@ -82,6 +82,10 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
         self.assertEqual(self._call_cert('cert-san.pem'),
                          ['example.com', 'www.example.com'])
 
+    def test_cert_hundred_sans(self):
+        self.assertEqual(self._call_cert('cert-100sans.pem'),
+                         ['example{0}.com'.format(i) for i in range(1, 101)])
+
     def test_csr_no_sans(self):
         self.assertEqual(self._call_csr('csr-nosans.pem'), [])
 
@@ -97,6 +101,10 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
                          ["example.com", "example.org", "example.net",
                           "example.info", "subdomain.example.com",
                           "other.subdomain.example.com"])
+
+    def test_csr_hundred_sans(self):
+        self.assertEqual(self._call_csr('csr-100sans.pem'),
+                         ['example{0}.com'.format(i) for i in range(1, 101)])
 
 
 if __name__ == "__main__":
