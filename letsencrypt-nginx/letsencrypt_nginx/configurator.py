@@ -142,7 +142,8 @@ class NginxConfigurator(common.Plugin):
         """
         if not fullchain_path:
             raise errors.PluginError(
-                "--fullchain-path is required for nginx plugin.")
+                "The nginx plugin currently requires --fullchain-path to "
+                "install a cert.")
 
         vhost = self.choose_vhost(domain)
         cert_directives = [['ssl_certificate', fullchain_path],
