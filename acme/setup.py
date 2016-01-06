@@ -12,7 +12,6 @@ install_requires = [
     'cryptography>=0.8',
     # Connection.set_tlsext_host_name (>=0.13), X509Req.get_extensions (>=0.15)
     'PyOpenSSL>=0.15',
-    'dnspython',
     'pyrfc3339',
     'pytz',
     'requests',
@@ -76,7 +75,7 @@ setup(
     install_requires=install_requires,
     extras_require={
         'docs': docs_extras,
-        'testing': testing_extras,
+        'testing': testing_extras + 'dnspython',
     },
     entry_points={
         'console_scripts': [

@@ -6,8 +6,6 @@ import logging
 import socket
 
 from cryptography.hazmat.primitives import hashes
-import dns.resolver
-import dns.exception
 import OpenSSL
 import requests
 
@@ -714,8 +712,12 @@ def txt_records_for_name(name):
 
     """
     try:
+        import dns.resolver
         dns_response = dns.resolver.query(name, 'TXT')
-    except dns.exception.DNSException as error:
-        logger.error("Unable to resolve %s: %s", name, error)
+    except ImportError as error:
+        raise ImportError("Local validation for 'dns-01' challenges requires "
+                          "'dnspython'");
+    except Exception as error:
+        logger.error("Unable to resolve %s: %s", name, str(error))
         return []
     return [txt_rec for rdata in dns_response for txt_rec in rdata.strings]
