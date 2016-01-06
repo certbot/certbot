@@ -19,7 +19,7 @@ def txt_records_for_name(name):
     """
     try:
         dns_response = dns.resolver.query(name, 'TXT')
-    except ImportError as error:
+    except ImportError as error:  # pragma: no cover
         raise ImportError("Local validation for 'dns-01' challenges requires "
                           "'dnspython'")
     except dns.exception.DNSException as error:
