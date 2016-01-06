@@ -217,27 +217,11 @@ class KeyAuthorizationChallenge(_TokenDVChallenge):
                 self.validation(account_key, *args, **kwargs))
 
 
+@ChallengeResponse.register
 class DNS01Response(KeyAuthorizationChallengeResponse):
     """ACME "dns-01" challenge response."""
     typ = "dns-01"
 
-    def txt_records_for_name(name):
-        """Resolve the name and return the TXT records.
-
-        :param unicode name: Domain name being verified.
-
-        :returns: A list of txt records, if empty the name could not be resolved
-        :rtype: list of unicode
-
-        """
-        try:
-            dns_response = dns.resolver.query(name, 'TXT')
-        except dns.exception.DNSException as error:
-            logger.error("Unable to resolve %s: %s", name, error)
-            return []
-        return [txt_rec in dns_response for txt_rec in rdata.strings]
-
-@ChallengeResponse.register
     def simple_verify(self, chall, domain, account_public_key):
         """Simple verify.
 
@@ -260,16 +244,18 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
         validation = chall.validation(account_public_key)
         logger.debug("Verifying %s at %s...", chall.typ, validation_domain_name)
 
-        if validation in txt_records_for_name(validation_domain_name):
-            return True
-        logger.debug("Key authorization from response (%r) doesn't match any "
-                     "DNS response in %r", self.key_authorization, txt_records)
-        return False
+        txt_records = txt_records_for_name(validation_domain_name)
+        exists = validation in txt_records
+        if not exists:
+            logger.debug("Key authorization from response (%r) doesn't match "
+                         "any DNS response in %r", self.key_authorization,
+                         txt_records)
+        return exists
+
 
 @Challenge.register  # pylint: disable=too-many-ancestors
 class DNS01(KeyAuthorizationChallenge):
     """ACME "dns-01" challenge."""
-
     response_cls = DNS01Response
     typ = response_cls.typ
 
@@ -716,3 +702,20 @@ class DNSResponse(ChallengeResponse):
 
         """
         return chall.check_validation(self.validation, account_public_key)
+
+
+def txt_records_for_name(name):
+    """Resolve the name and return the TXT records.
+
+    :param unicode name: Domain name being verified.
+
+    :returns: A list of txt records, if empty the name could not be resolved
+    :rtype: list of unicode
+
+    """
+    try:
+        dns_response = dns.resolver.query(name, 'TXT')
+    except dns.exception.DNSException as error:
+        logger.error("Unable to resolve %s: %s", name, error)
+        return []
+    return [txt_rec for rdata in dns_response for txt_rec in rdata.strings]

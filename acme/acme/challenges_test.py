@@ -152,6 +152,7 @@ class DNS01ResponseTest(unittest.TestCase):
         self.assertFalse(self.response.simple_verify(
             self.chall, "local", KEY.public_key()))
 
+
 class DNS01Test(unittest.TestCase):
 
     def setUp(self):
