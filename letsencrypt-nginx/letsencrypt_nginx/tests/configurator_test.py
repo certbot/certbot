@@ -65,16 +65,19 @@ class NginxConfiguratorTest(util.NginxTest):
         filep = self.config.parser.abs_path('sites-enabled/example.com')
         self.config.parser.add_server_directives(
             filep, set(['.example.com', 'example.*']),
-            [['listen', '5001 ssl']])
+            [['listen', '5001 ssl']],
+            replace=False)
         self.config.save()
 
         # pylint: disable=protected-access
         parsed = self.config.parser._parse_files(filep, override=True)
-        self.assertEqual([[['server'], [['listen', '5001 ssl'],
+        self.assertEqual([[['server'], [
                                         ['listen', '69.50.225.155:9000'],
                                         ['listen', '127.0.0.1'],
                                         ['server_name', '.example.com'],
-                                        ['server_name', 'example.*']]]],
+                                        ['server_name', 'example.*'],
+                                        ['listen', '5001 ssl']
+                                        ]]],
                          parsed[0])
 
     def test_choose_vhost(self):
@@ -154,38 +157,36 @@ class NginxConfiguratorTest(util.NginxTest):
         parsed_server_conf = util.filter_comments(self.config.parser.parsed[server_conf])
         parsed_nginx_conf = util.filter_comments(self.config.parser.parsed[nginx_conf])
 
-        access_log = os.path.join(self.work_dir, "access.log")
-        error_log = os.path.join(self.work_dir, "error.log")
         self.assertEqual([[['server'],
-                           [['include', self.config.parser.loc["ssl_options"]],
-                            ['ssl_certificate_key', 'example/key.pem'],
-                            ['ssl_certificate', 'example/fullchain.pem'],
-                            ['error_log', error_log],
-                            ['access_log', access_log],
-
-                            ['listen', '5001 ssl'],
+                           [
                             ['listen', '69.50.225.155:9000'],
                             ['listen', '127.0.0.1'],
                             ['server_name', '.example.com'],
-                            ['server_name', 'example.*']]]],
+                            ['server_name', 'example.*'],
+
+                            ['listen', '5001 ssl'],
+                            ['ssl_certificate', 'example/fullchain.pem'],
+                            ['ssl_certificate_key', 'example/key.pem'],
+                            ['include', self.config.parser.loc["ssl_options"]]
+                            ]]],
                          parsed_example_conf)
         self.assertEqual([['server_name', 'somename  alias  another.alias']],
                          parsed_server_conf)
-        self.assertTrue(util.contains_at_depth(parsed_nginx_conf,
-                                               [['server'],
-                                                [['include', self.config.parser.loc["ssl_options"]],
-                                                 ['ssl_certificate_key', '/etc/nginx/key.pem'],
-                                                 ['ssl_certificate', '/etc/nginx/fullchain.pem'],
-                                                 ['error_log', error_log],
-                                                 ['access_log', access_log],
-                                                 ['listen', '5001 ssl'],
-                                                 ['listen', '8000'],
-                                                 ['listen', 'somename:8080'],
-                                                 ['include', 'server.conf'],
-                                                 [['location', '/'],
-                                                  [['root', 'html'],
-                                                   ['index', 'index.html index.htm']]]]],
-                                               2))
+        self.assertTrue(util.contains_at_depth(
+            parsed_nginx_conf,
+            [['server'],
+             [
+              ['listen', '8000'],
+              ['listen', 'somename:8080'],
+              ['include', 'server.conf'],
+              [['location', '/'],
+               [['root', 'html'],
+                ['index', 'index.html index.htm']]],
+              ['listen', '5001 ssl'],
+              ['ssl_certificate', '/etc/nginx/fullchain.pem'],
+              ['ssl_certificate_key', '/etc/nginx/key.pem'],
+              ['include', self.config.parser.loc["ssl_options"]]]],
+            2))
 
     def test_get_all_certs_keys(self):
         nginx_conf = self.config.parser.abs_path('nginx.conf')
@@ -297,19 +298,19 @@ class NginxConfiguratorTest(util.NginxTest):
         mocked = mock_popen()
         mocked.communicate.return_value = ('', '')
         mocked.returncode = 0
-        self.assertTrue(self.config.restart())
+        self.config.restart()
 
     @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")
     def test_nginx_restart_fail(self, mock_popen):
         mocked = mock_popen()
         mocked.communicate.return_value = ('', '')
         mocked.returncode = 1
-        self.assertFalse(self.config.restart())
+        self.assertRaises(errors.MisconfigurationError, self.config.restart)
 
     @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")
     def test_no_nginx_start(self, mock_popen):
         mock_popen.side_effect = OSError("Can't find program")
-        self.assertRaises(SystemExit, self.config.restart)
+        self.assertRaises(errors.MisconfigurationError, self.config.restart)
 
     @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")
     def test_config_test(self, mock_popen):
