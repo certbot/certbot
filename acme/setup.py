@@ -35,6 +35,10 @@ if sys.version_info < (2, 7, 9):
     install_requires.append('ndg-httpsclient')
     install_requires.append('pyasn1')
 
+dev_extras = [
+    'dnspython',
+]
+
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
     'sphinx_rtd_theme',
@@ -42,6 +46,7 @@ docs_extras = [
 ]
 
 testing_extras = [
+    'dnspython',
     'nose',
     'tox',
 ]
@@ -74,10 +79,9 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     extras_require={
-        'coverage': ['dnspython'],
+        'dev': dev_extras,
         'docs': docs_extras,
-        'lint': ['dnspython'],
-        'testing': testing_extras + ['dnspython'],
+        'testing': testing_extras,
     },
     entry_points={
         'console_scripts': [
