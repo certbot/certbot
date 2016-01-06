@@ -15,6 +15,42 @@ VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN=${VENV_PATH}/bin
 LE_AUTO_VERSION="0.1.22"
 
+# letsencrypt-auto needs root access to bootstrap OS dependencies, and
+# letsencrypt itself needs root access for almost all modes of operation
+# The "normal" case is that sudo is used for the steps that need root, but
+# this script *can* be run as root (not recommended), or fall back to using
+# `su`
+if test "`id -u`" -ne "0" ; then
+  if command -v sudo 1>/dev/null 2>&1; then
+    SUDO=sudo
+  else
+    echo \"sudo\" is not available, will use \"su\" for installation steps...
+    # Because the parameters in `su -c` has to be a string,
+    # we need properly escape it
+    su_sudo() {
+      args=""
+      # This `while` loop iterates over all parameters given to this function.
+      # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
+      # will be wrapped in a pair of `'`, then appended to `$args` string
+      # For example, `echo "It's only 1\$\!"` will be escaped to:
+      #   'echo' 'It'"'"'s only 1$!'
+      #     │       │└┼┘│
+      #     │       │ │ └── `'s only 1$!'` the literal string
+      #     │       │ └── `\"'\"` is a single quote (as a string)
+      #     │       └── `'It'`, to be concatenated with the strings following it
+      #     └── `echo` wrapped in a pair of `'`, it's totally fine for the shell command itself
+      while [ $# -ne 0 ]; do
+        args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
+        shift
+      done
+      su root -c "$args"
+    }
+    SUDO=su_sudo
+  fi
+else
+  SUDO=
+fi
+
 ExperimentalBootstrap() {
   # Arguments: Platform name, bootstrap function name
   if [ "$DEBUG" = 1 ]; then
@@ -73,7 +109,7 @@ BootstrapDebCommon() {
   #
   # - Debian 6.0.10 "squeeze" (x64)
 
-  $SUDO apt-get update
+  $SUDO apt-get update || echo apt-get update hit problems but continuing anyway...
 
   # virtualenv binary can be found in different packages depending on
   # distro version (#346)
@@ -343,42 +379,6 @@ for arg in "$@" ; do
     DEBUG=1
   fi
 done
-
-# letsencrypt-auto needs root access to bootstrap OS dependencies, and
-# letsencrypt itself needs root access for almost all modes of operation
-# The "normal" case is that sudo is used for the steps that need root, but
-# this script *can* be run as root (not recommended), or fall back to using
-# `su`
-if test "`id -u`" -ne "0" ; then
-  if command -v sudo 1>/dev/null 2>&1; then
-    SUDO=sudo
-  else
-    echo \"sudo\" is not available, will use \"su\" for installation steps...
-    # Because the parameters in `su -c` has to be a string,
-    # we need properly escape it
-    su_sudo() {
-      args=""
-      # This `while` loop iterates over all parameters given to this function.
-      # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
-      # will be wrapped in a pair of `'`, then appended to `$args` string
-      # For example, `echo "It's only 1\$\!"` will be escaped to:
-      #   'echo' 'It'"'"'s only 1$!'
-      #     │       │└┼┘│
-      #     │       │ │ └── `'s only 1$!'` the literal string
-      #     │       │ └── `\"'\"` is a single quote (as a string)
-      #     │       └── `'It'`, to be concatenated with the strings following it
-      #     └── `echo` wrapped in a pair of `'`, it's totally fine for the shell command itself
-      while [ $# -ne 0 ]; do
-        args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
-        shift
-      done
-      su root -c "$args"
-    }
-    SUDO=su_sudo
-  fi
-else
-  SUDO=
-fi
 
 if [ "$1" = "--no-self-upgrade" ]; then
   # Phase 2: Create venv, install LE, and run.
