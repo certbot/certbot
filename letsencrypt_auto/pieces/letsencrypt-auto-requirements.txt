@@ -190,14 +190,14 @@ zope.event==4.1.0
 # sha256: sJyMHUezUxxADgGVaX8UFKYyId5u9HhZik8UYPfZo5I
 zope.interface==4.1.3
 
-# sha256: 9yQWjdAK9JWFHcodsdFotAiYqXVC1coj3rChq7kDlg8
-# sha256: w-u_7NH3h-9uMJ3cxBLGXQ7qMY0A0K_2EL23_wmoQDo
-acme==0.1.0
+# sha256: xlKw86fsP3VtbdljTTTboXgIw1QFHdCR1p8ff_zKnQ0
+# sha256: HCCDzax5ts-yAZDWhpMiQDUQS0bSXcnFLRerqZB_YPs
+acme==0.1.1
 
-# sha256: etdo3FQXbmpBSn60YkfKItjU2isypbo-N854YkyIhG8
-# sha256: gfYnYXbSVLfPX5W1ZHALxx8SsRA01AIDicpMMX43af0
-letsencrypt==0.1.0
+# sha256: F6dWBwnljkI2IASGO4VwCV05Nc3t0w8U0kWZsllpC8s
+# sha256: jmeEAx7qchLhKOF75RqPuOSH2Wk6XficiL5TYyYfKs4
+letsencrypt==0.1.1
 
-# sha256: k8qUreGlW03BJz1FP-51brlSEef7QC8rGrljroQTZkU
-# sha256: QvYP9hJhs-I_BG9SSma7vX115a_TET4qOWommmJC0lI
-letsencrypt-apache==0.1.0
+# sha256: 06zn8Fstsyfw58RmLaaODObDzR2jfZVCor0Hc65LYus
+# sha256: 8ZO1CwBNE8eunQXAoXKVoGiaeAmj2BkRTMy5tXrBuYY
+letsencrypt-apache==0.1.1
