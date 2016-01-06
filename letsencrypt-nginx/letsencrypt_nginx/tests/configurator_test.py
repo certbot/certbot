@@ -40,6 +40,23 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEquals((1, 6, 2), self.config.version)
         self.assertEquals(5, len(self.config.parser.parsed))
 
+    @mock.patch("letsencrypt_nginx.configurator.le_util.exe_exists")
+    @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")
+    def test_prepare_initializes_version(self, mock_popen, mock_exe_exists):
+        mock_popen().communicate.return_value = (
+            "", "\n".join(["nginx version: nginx/1.6.2",
+                           "built by clang 6.0 (clang-600.0.56)"
+                           " (based on LLVM 3.5svn)",
+                           "TLS SNI support enabled",
+                           "configure arguments: --prefix=/usr/local/Cellar/"
+                           "nginx/1.6.2 --with-http_ssl_module"]))
+
+        mock_exe_exists.return_value = True
+
+        self.config.version = None
+        self.config.prepare()
+        self.assertEquals((1, 6, 2), self.config.version)
+
     @mock.patch("letsencrypt_nginx.configurator.socket.gethostbyaddr")
     def test_get_all_names(self, mock_gethostbyaddr):
         mock_gethostbyaddr.return_value = ('155.225.50.69.nephoscale.net', [], [])
@@ -94,12 +111,26 @@ class NginxConfiguratorTest(util.NginxTest):
                    'test.www.example.com': foo_conf,
                    'abc.www.foo.com': foo_conf,
                    'www.bar.co.uk': localhost_conf}
+
+        conf_path = {'localhost': "etc_nginx/nginx.conf",
+                   'alias': "etc_nginx/nginx.conf",
+                   'example.com': "etc_nginx/sites-enabled/example.com",
+                   'example.com.uk.test': "etc_nginx/sites-enabled/example.com",
+                   'www.example.com': "etc_nginx/sites-enabled/example.com",
+                   'test.www.example.com': "etc_nginx/foo.conf",
+                   'abc.www.foo.com': "etc_nginx/foo.conf",
+                   'www.bar.co.uk': "etc_nginx/nginx.conf"}
+
         bad_results = ['www.foo.com', 'example', 't.www.bar.co',
                        '69.255.225.155']
 
         for name in results:
-            self.assertEqual(results[name],
-                             self.config.choose_vhost(name).names)
+            vhost = self.config.choose_vhost(name)
+            path = os.path.relpath(vhost.filep, self.temp_dir)
+
+            self.assertEqual(results[name], vhost.names)
+            self.assertEqual(conf_path[name], path)
+
         for name in bad_results:
             self.assertEqual(set([name]), self.config.choose_vhost(name).names)
 
@@ -331,6 +362,17 @@ class NginxConfiguratorTest(util.NginxTest):
             OpenSSL.crypto.load_privatekey(
                 OpenSSL.crypto.FILETYPE_PEM, key_file.read())
 
+    def test_redirect_enhance(self):
+        expected = [
+            ['if', '($scheme != "https")'],
+            [['return', '301 https://$host$request_uri']]
+        ]
+
+        example_conf = self.config.parser.abs_path('sites-enabled/example.com')
+        self.config.enhance("www.example.com", "redirect")
+
+        generated_conf = self.config.parser.parsed[example_conf]
+        self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
