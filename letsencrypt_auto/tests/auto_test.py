@@ -110,6 +110,8 @@ def tests_dir():
     return dirname(abspath(__file__))
 
 
+LE_AUTO_PATH = join(dirname(tests_dir()), 'letsencrypt-auto')
+
 @contextmanager
 def ephemeral_dir():
     dir = mkdtemp(prefix='le-test-')
@@ -211,8 +213,10 @@ class AutoTests(TestCase):
                                                         safe_repr(container))
             self.fail(self._formatMessage(msg, standardMsg))
 
-    def test_all(self):
+    def test_successes(self):
         """Exercise most branches of letsencrypt-auto.
+
+        They just happen to be the branches in which everything goes well.
 
         The branches:
 
@@ -234,12 +238,9 @@ class AutoTests(TestCase):
         2. One combination of branches happens to set us up nicely for testing
            the next, saving code.
 
-        At the moment, we let bootstrapping run. We probably wanted those
-        packages installed anyway for local development.
-
-        For tests which get this far, we run merely ``letsencrypt --version``.
-        The functioning of the rest of the letsencrypt script is covered by
-        other test suites.
+        For tests which get to the end, we run merely ``letsencrypt
+        --version``. The functioning of the rest of the letsencrypt script is
+        covered by other test suites.
 
         """
         NEW_LE_AUTO = build_le_auto(version='99.9.9')
@@ -255,7 +256,7 @@ class AutoTests(TestCase):
             with serving(resources) as base_url:
                 # Test when a phase-1 upgrade is needed, there's no LE binary
                 # installed, and peep verifies:
-                copy(join(dirname(tests_dir()), 'letsencrypt-auto'), venv_dir)
+                copy(LE_AUTO_PATH, venv_dir)
                 out, err = run_le_auto(venv_dir, base_url)
                 ok_(re.match(r'letsencrypt \d+\.\d+\.\d+',
                              err.strip().splitlines()[-1]))
@@ -279,5 +280,25 @@ class AutoTests(TestCase):
                 self.assertNotIn('Upgrading letsencrypt-auto ', out)
                 self.assertIn('Creating virtual environment...', out)
 
+    def test_openssl_failure(self):
+        """Make sure we stop if the openssl signature check fails."""
+        with ephemeral_dir() as venv_dir:
+            # Serve an unrelated hash signed with the good key (easier than
+            # making a bad key, and a mismatch is a mismatch):
+            resources = {'': '<a href="letsencrypt/">letsencrypt/</a>',
+                         'letsencrypt/json': dumps({'releases': {'99.9.9': None}}),
+                         'v99.9.9/letsencrypt-auto': build_le_auto(version='99.9.9'),
+                         'v99.9.9/letsencrypt-auto.sig': signed('something else')}
+            with serving(resources) as base_url:
+                copy(LE_AUTO_PATH, venv_dir)
+                try:
+                    out, err = run_le_auto(venv_dir, base_url)
+                except CalledProcessError as exc:
+                    eq_(exc.returncode, 1)
+                    self.assertIn("Couldn't verify signature of downloaded "
+                                  "letsencrypt-auto.",
+                                  exc.output)
+                else:
+                    self.fail('Signature check on letsencrypt-auto erroneously passed!')
+
     # Test when peep has a hash mismatch.
-    # Test when the OpenSSL sig mismatches.
