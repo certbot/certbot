@@ -54,6 +54,8 @@ AddBackportRepo() {
 
             echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/"$BACKPORT_NAME".list
             apt-get update
+            apt-get install -y --no-install-recommends -t "$BACKPORT_NAME" libaugeas0
+            augeas_pkg=
         fi
     fi
 
@@ -63,8 +65,6 @@ AddBackportRepo() {
 if dpkg --compare-versions 1.0 gt "$AUGVERSION" ; then
     if lsb_release -a | grep -q wheezy ; then
         AddBackportRepo wheezy-backports "deb http://http.debian.net/debian wheezy-backports main"
-        apt-get install -y --no-install-recommends -t wheezy-backports libaugeas0
-        augeas_pkg=
     elif lsb_release -a | grep -q precise ; then
         # XXX add ARM case
         AddBackportRepo precise-backports "deb http://archive.ubuntu.com/ubuntu precise-backports main restricted universe multiverse"
