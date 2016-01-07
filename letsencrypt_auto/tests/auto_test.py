@@ -7,7 +7,7 @@ from json import dumps
 from os import environ
 from os.path import abspath, dirname, join
 import re
-from shutil import rmtree
+from shutil import copy, rmtree
 import socket
 import ssl
 from subprocess import CalledProcessError, check_output, Popen, PIPE
@@ -177,7 +177,7 @@ iQIDAQAB
 -----END PUBLIC KEY-----""")
     env.update(d)
     return out_and_err(
-        join(dirname(tests_dir()), 'letsencrypt-auto') + ' --version',
+        join(venv_dir, 'letsencrypt-auto') + ' --version',
         shell=True,
         env=env)
 
@@ -255,6 +255,7 @@ class AutoTests(TestCase):
             with serving(resources) as base_url:
                 # Test when a phase-1 upgrade is needed, there's no LE binary
                 # installed, and peep verifies:
+                copy(join(dirname(tests_dir()), 'letsencrypt-auto'), venv_dir)
                 out, err = run_le_auto(venv_dir, base_url)
                 ok_(re.match(r'letsencrypt \d+\.\d+\.\d+',
                              err.strip().splitlines()[-1]))
