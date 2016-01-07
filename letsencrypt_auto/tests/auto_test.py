@@ -220,17 +220,7 @@ class AutoTests(TestCase):
         with ephemeral_dir() as venv_dir:
             # This serves a PyPI page with a higher version, a GitHub-alike
             # with a corresponding le-auto script, and a matching signature.
-            resources = {'': """<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN"><html>
-                             <title>Directory listing for /</title>
-                             <body>
-                             <h2>Directory listing for /</h2>
-                             <hr>
-                             <ul>
-                             <li><a href="letsencrypt/">letsencrypt/</a>
-                             </ul>
-                             <hr>
-                             </body>
-                             </html>""",  # TODO: Cut this down.
+            resources = {'': '<a href="letsencrypt/">letsencrypt/</a>',
                          'letsencrypt/json': dumps({'releases': {'99.9.9': None}}),
                          'v99.9.9/letsencrypt-auto': NEW_LE_AUTO,
                          'v99.9.9/letsencrypt-auto.sig': NEW_LE_AUTO_SIG}
