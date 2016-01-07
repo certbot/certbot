@@ -121,7 +121,7 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
         self.assertEqual(self._call_csr('csr-100sans.pem'),
                          ['example{0}.com'.format(i) for i in range(1, 101)])
 
-    def test_csr(self):
+    def test_csr_idn_sans(self):
         self.assertEqual(self._call_csr('csr-idnsans.pem'),
                          self._get_idn_names())
 
