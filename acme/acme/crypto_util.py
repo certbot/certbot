@@ -169,11 +169,11 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
         func = OpenSSL.crypto.dump_certificate
     else:
         func = OpenSSL.crypto.dump_certificate_request
-
     # This method of finding SANs is used to support PyOpenSSL version 0.13.
     text = func(OpenSSL.crypto.FILETYPE_TEXT, cert_or_req).decode("utf-8")
+    # WARNING: this function does not support multiple SANs extensions.
+    # Multiple X509v3 extensions of the same type is disallowed by RFC 5280.
     match = re.search(r"X509v3 Subject Alternative Name:\s*(.*)", text)
-
     # WARNING: this function assumes that no SAN can include
     # parts_separator, hence the split!
     sans_parts = [] if match is None else match.group(1).split(parts_separator)
