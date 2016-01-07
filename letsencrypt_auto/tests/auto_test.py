@@ -182,7 +182,35 @@ iQIDAQAB
         env=env)
 
 
+def set_le_script_version(venv_dir, version):
+    """Tell the letsencrypt script to report a certain version.
+
+    We actually replace the script with a dummy version that knows only how to
+    print its version.
+
+    """
+    with open(join(venv_dir, 'letsencrypt', 'bin', 'letsencrypt'), 'w') as script:
+        script.write("#!/usr/bin/env python\n"
+                     "from sys import stderr\n"
+                     "stderr.write('letsencrypt %s\\n')" % version)
+
+
 class AutoTests(TestCase):
+    # Remove these helpers when we no longer need to support Python 2.6:
+    def assertIn(self, member, container, msg=None):
+        """Just like self.assertTrue(a in b), but with a nicer default message."""
+        if member not in container:
+            standardMsg = '%s not found in %s' % (safe_repr(member),
+                                                  safe_repr(container))
+            self.fail(self._formatMessage(msg, standardMsg))
+
+    def assertNotIn(self, member, container, msg=None):
+        """Just like self.assertTrue(a not in b), but with a nicer default message."""
+        if member in container:
+            standardMsg = '%s unexpectedly found in %s' % (safe_repr(member),
+                                                        safe_repr(container))
+            self.fail(self._formatMessage(msg, standardMsg))
+
     def test_all(self):
         """Exercise most branches of letsencrypt-auto.
 
@@ -228,13 +256,27 @@ class AutoTests(TestCase):
                 # Test when a phase-1 upgrade is needed, there's no LE binary
                 # installed, and peep verifies:
                 out, err = run_le_auto(venv_dir, base_url)
-            ok_(re.match(r'letsencrypt \d+\.\d+\.\d+',
-                         err.strip().splitlines()[-1]))
+                ok_(re.match(r'letsencrypt \d+\.\d+\.\d+',
+                             err.strip().splitlines()[-1]))
+                # Make a few assertions to test the validity of the next tests:
+                self.assertIn('Upgrading letsencrypt-auto ', out)
+                self.assertIn('Creating virtual environment...', out)
 
+                # This conveniently sets us up to test the next 2 cases.
 
-    # This conveniently sets us up to test the next 2 cases:
-    # Test when no phase-1 upgrade is needed and no LE upgrade is needed (probably a common case).
+                # Test when neither phase-1 upgrade nor phase-2 upgrade is
+                # needed (probably a common case):
+                set_le_script_version(venv_dir, '99.9.9')
+                out, err = run_le_auto(venv_dir, base_url)
+                self.assertNotIn('Upgrading letsencrypt-auto ', out)
+                self.assertNotIn('Creating virtual environment...', out)
 
-    # Test (when no phase-1 upgrade is needed), there's an out-of-date LE script installed, (and peep works).
+                # Test when a phase-1 upgrade is not needed but a phase-2
+                # upgrade is:
+                set_le_script_version(venv_dir, '0.0.1')
+                out, err = run_le_auto(venv_dir, base_url)
+                self.assertNotIn('Upgrading letsencrypt-auto ', out)
+                self.assertIn('Creating virtual environment...', out)
+
     # Test when peep has a hash mismatch.
     # Test when the OpenSSL sig mismatches.
