@@ -4,4 +4,4 @@
 
 cd letsencrypt
 # help installs virtualenv and does nothing else
-./letsencrypt-auto -v --help all
+./letsencrypt-auto -v --debug --help all
