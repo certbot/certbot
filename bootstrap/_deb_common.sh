@@ -37,16 +37,16 @@ AUGVERSION=`apt-cache show --no-all-versions libaugeas0 | grep ^Version: | cut -
 
 AddBackportRepo() {
     # ARGS:
-    BACKPORT_NAME="$0"
-    BACKPORT_SOURCELINE="$1"
+    BACKPORT_NAME="$1"
+    BACKPORT_SOURCELINE="$2"
     if ! grep -v -e ' *#' /etc/apt/sources.list | grep -q "$BACKPORT_NAME" ; then
         # This can theoretically error if sources.list.d is empty, but in that case we don't care.
         if ! grep -v -e ' *#' /etc/apt/sources.list.d/* 2>/dev/null | grep -q "$BACKPORT_NAME"; then
-            /bin/echo -n "Installing augeas from wheezy-backports in 3 seconds..."
+            /bin/echo -n "Installing augeas from $BACKPORT_NAME in 3 seconds..."
             sleep 1s
-            /bin/echo -ne "\e[0K\rInstalling augeas from wheezy-backports in 2 seconds..."
+            /bin/echo -ne "\e[0K\rInstalling augeas from $BACKPORT_NAME in 2 seconds..."
             sleep 1s
-            /bin/echo -e "\e[0K\rInstalling augeas from wheezy-backports in 1 second ..."
+            /bin/echo -e "\e[0K\rInstalling augeas from $BACKPORT_NAME in 1 second ..."
             sleep 1s
             if echo $BACKPORT_NAME | grep -q wheezy ; then
                 /bin/echo '(Backports are only installed if explicitly requested via "apt-get install -t wheezy-backports")'
