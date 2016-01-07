@@ -70,7 +70,7 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
     class FakeConnection(object):
         """Fake OpenSSL.SSL.Connection."""
 
-        # pylint: disable=missing-docstring
+        # pylint: disable=too-few-public-methods,missing-docstring
 
         def __init__(self, connection):
             self._wrapped = connection

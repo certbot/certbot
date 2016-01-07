@@ -336,7 +336,7 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
     """
 
     @property
-    def z(self):
+    def z(self):  # pylint: disable=invalid-name
         """``z`` value used for verification.
 
         :rtype bytes:
