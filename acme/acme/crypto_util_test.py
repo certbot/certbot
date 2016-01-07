@@ -73,6 +73,7 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
 
     @classmethod
     def _get_idn_names(cls):
+        """Returns expected names from '{cert,csr}-idnsans.pem'."""
         chars = [six.unichr(i) for i in itertools.chain(range(0x3c3, 0x400),
                                                         range(0x641, 0x6fc),
                                                         range(0x1820, 0x1877))]
