@@ -22,8 +22,8 @@ env:
   matrix:
     - TOXENV=py26 BOULDER_INTEGRATION=1
     - TOXENV=py27 BOULDER_INTEGRATION=1
-    - TOXENV=py26-oldest
-    - TOXENV=py27-oldest
+    - TOXENV=py26-oldest BOULDER_INTEGRATION=1
+    - TOXENV=py27-oldest BOULDER_INTEGRATION=1
     - TOXENV=lint
     - TOXENV=cover
 # Disabled for now due to requiring sudo -> causing more boulder integration
