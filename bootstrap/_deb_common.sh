@@ -67,7 +67,7 @@ if dpkg --compare-versions 1.0 gt "$AUGVERSION" ; then
         augeas_pkg=
     elif lsb_release -a | grep -q precise ; then
         # XXX add ARM case
-        AddBackportRepo precise-backports "deb http://archive.ubuntu.com/ubuntu trusty-backports main restricted universe multiverse"
+        AddBackportRepo precise-backports "deb http://archive.ubuntu.com/ubuntu precise-backports main restricted universe multiverse"
     else
         echo "No libaugeas0 version is available that's new enough to run the"
         echo "Let's Encrypt apache plugin..."
