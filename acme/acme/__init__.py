@@ -1,12 +1,12 @@
 """ACME protocol implementation.
 
 This module is an implementation of the `ACME protocol`_. Latest
-supported version: `v02`_.
+supported version: `draft-ietf-acme-01`_.
 
-.. _`ACME protocol`: https://github.com/letsencrypt/acme-spec
 
-.. _`v02`:
-  https://github.com/letsencrypt/acme-spec/commit/d328fea2d507deb9822793c512830d827a4150c4
+.. _`ACME protocol`: https://ietf-wg-acme.github.io/acme
 
+.. _`draft-ietf-acme-01`:
+  https://github.com/ietf-wg-acme/acme/tree/draft-ietf-acme-acme-01
 
 """
