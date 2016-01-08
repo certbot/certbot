@@ -160,6 +160,12 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
     :rtype: `list` of `unicode`
 
     """
+    # This function finds SANs by dumping the certificate/CSR to text and
+    # searching for "X509v3 Subject Alternative Name" in the text. This method
+    # is used to support PyOpenSSL version 0.13 where the
+    # `_subjectAltNameString` and `get_extensions` methods are not available
+    # for CSRs.
+
     # constants based on PyOpenSSL certificate/CSR text dump
     part_separator = ":"
     parts_separator = ", "
@@ -169,7 +175,6 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
         func = OpenSSL.crypto.dump_certificate
     else:
         func = OpenSSL.crypto.dump_certificate_request
-    # This method of finding SANs is used to support PyOpenSSL version 0.13.
     text = func(OpenSSL.crypto.FILETYPE_TEXT, cert_or_req).decode("utf-8")
     # WARNING: this function does not support multiple SANs extensions.
     # Multiple X509v3 extensions of the same type is disallowed by RFC 5280.
