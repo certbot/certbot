@@ -183,6 +183,12 @@ if [ "$1" = "--no-self-upgrade" ]; then
 {{ letsencrypt-auto-requirements.txt }}
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
+    cat << "UNLIKELY_EOF" > "$TEMP_DIR/conditional_requirements.py"
+{{ conditional_requirements.py }}
+UNLIKELY_EOF
+    # -------------------------------------------------------------------------
+    "$VENV_BIN/python" "$TEMP_DIR/conditional_requirements.py" >> "$TEMP_DIR/letsencrypt-auto-requirements.txt"
+    # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/peep.py"
 {{ peep.py }}
 UNLIKELY_EOF

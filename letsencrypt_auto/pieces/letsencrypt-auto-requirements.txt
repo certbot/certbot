@@ -69,13 +69,6 @@ idna==2.0
 # sha256: r2yFz8nNsSuGFlXmufL1lhi_MIjL3oWHJ7LAqY6fZjY
 ipaddress==1.0.15
 
-# sha256: P1c6GL6U3ohtEZHyfBaEJ-9pPo3Pzs-VsXBXey62nLs
-# sha256: HiR9vsxs4FcpnrfuAZrWgxS7kxUugdmmEQ019NXsoPY
-mock==1.3.0
-
-# sha256: 6MFV_evZxLywgQtO0BrhmHVUse4DTddTLXuP2uOKYnQ
-ndg-httpsclient==0.4.0
-
 # sha256: OnTxAPkNZZGDFf5kkHca0gi8PxOv0y01_P5OjQs7gSs
 # sha256: Paa-K-UG9ZzOMuGeMOIBBT4btNB-JWaJGOAPikmtQKs
 parsedatetime==1.5
@@ -106,19 +99,6 @@ pbr==1.8.1
 # sha256: qnf53nKvnBbMKIzUokz1iCQ4j1fXqB5ADEYWRXYphw4
 # sha256: 9QAJM1fQTagUDYeTLKwuVO9ZKlTKinQ6uyhQ9gwsIus
 psutil==3.3.0
-
-# sha256: YfnZnjzvZf6xv-Oi7vepPrk4GdNFv1S81C9OY9UgTa4
-# sha256: GAKm3TIEXkcqQZ2xRBrsq0adM-DSdJ4ZKr3sUhAXJK8
-# sha256: NQJc2UIsllBJEvBOLxX-eTkKhZe0MMLKXQU0z5MJ_6A
-# sha256: L5btWgwynKFiMLMmyhK3Rh7I9l4L4-T5l1FvNr-Co0U
-# sha256: KP7kQheZHPrZ5qC59-PyYEHiHryWYp6U5YXM0F1J-mU
-# sha256: Mm56hUoX-rB2kSBHR2lfj2ktZ0WIo1XEQfsU9mC_Tmg
-# sha256: zaWpBIVwnKZ5XIYFbD5f5yZgKLBeU_HVJ_35OmNlprg
-# sha256: DLKhR0K1Q_3Wj5MaFM44KRhu0rGyJnoGeHOIyWst2b4
-# sha256: UZH_a5Em0sA53Yf4_wJb7SdLrwf6eK-kb1VrGtcmXW4
-# sha256: gyPgNjey0HLMcEEwC6xuxEjDwolQq0A3YDZ4jpoa9ik
-# sha256: hTys2W0fcB3dZ6oD7MBfUYkBNbcmLpInEBEvEqLtKn8
-pyasn1==0.1.9
 
 # sha256: eVm0p0q9wnsxL-0cIebK-TCc4LKeqGtZH9Lpns3yf3M
 pycparser==2.14
