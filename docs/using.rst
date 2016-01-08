@@ -64,7 +64,7 @@ or for full help, type:
 
 ``letsencrypt-auto`` is the recommended method of running the Let's Encrypt
 client beta releases on systems that don't have a packaged version.  Debian,
-Arch linux, FreeBSD, and OpenBSD now have native packages, so on those
+Arch linux, Gentoo, FreeBSD, and OpenBSD now have native packages, so on those
 systems you can just install ``letsencrypt`` (and perhaps
 ``letsencrypt-apache``).  If you'd like to run the latest copy from Git, or
 run your own locally modified copy of the client, follow the instructions in
@@ -375,6 +375,23 @@ If you don't want to use the Apache plugin, you can omit the
 ``python-letsencrypt-apache`` package.
 
 Packages for Debian Jessie are coming in the next few weeks.
+
+**Gentoo**
+
+.. code-block:: shell
+
+   emerge -av app-crypt/letsencrypt
+
+Currently, the Apache and nginx plugins are not included in Portage. You can
+however use Layman to add the mrueg overlay which does include the plugin
+packages:
+
+.. code-block:: shell
+
+   emerge -av app-portage/layman
+   layman -S
+   layman -a mrueg
+   emerge -av app-crypt/letsencrypt-apache app-crypt/letsencrypt-nginx
 
 **Other Operating Systems**
 
