@@ -12,12 +12,12 @@ PACKAGES="
 
 case "$PACKAGE_MANAGER" in
   (paludis)
-    cave resolve --keep-targets if-possible $PACKAGES -x
+    cave resolve --preserve-world --keep-targets if-possible $PACKAGES -x
     ;;
   (pkgcore)
-    pmerge --noreplace $PACKAGES
+    pmerge --noreplace --oneshot $PACKAGES
     ;;
   (portage|*)
-    emerge --noreplace $PACKAGES
+    emerge --noreplace --oneshot $PACKAGES
     ;;
 esac
