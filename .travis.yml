@@ -1,6 +1,7 @@
 language: python
 
 services:
+  - docker
   - rabbitmq
   - mariadb
   # apacheconftest
@@ -22,6 +23,7 @@ env:
   matrix:
     - TOXENV=py26 BOULDER_INTEGRATION=1
     - TOXENV=py27 BOULDER_INTEGRATION=1
+    - TOXENV=le_auto
     - TOXENV=lint
     - TOXENV=cover
 # Disabled for now due to requiring sudo -> causing more boulder integration
@@ -37,8 +39,7 @@ branches:
     - master
     - /^test-.*$/
 
-# container-based infrastructure
-sudo: false
+sudo: required
 
 addons:
   # make sure simplehttp simple verification works (custom /etc/hosts)

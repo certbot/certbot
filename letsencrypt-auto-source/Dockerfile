@@ -30,4 +30,4 @@ COPY . /home/lea/letsencrypt/letsencrypt-auto-source
 USER lea
 WORKDIR /home/lea
 
-CMD ["nosetests", "-s", "letsencrypt/letsencrypt-auto-source/tests"]
+CMD ["nosetests", "-v", "-s", "letsencrypt/letsencrypt-auto-source/tests"]
