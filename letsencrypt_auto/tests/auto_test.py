@@ -4,12 +4,13 @@ from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from contextlib import contextmanager
 from functools import partial
 from json import dumps
-from os import environ
+from os import chmod, environ
 from os.path import abspath, dirname, join
 import re
 from shutil import copy, rmtree
 import socket
 import ssl
+from stat import S_IRUSR, S_IXUSR
 from subprocess import CalledProcessError, check_output, Popen, PIPE
 from tempfile import mkdtemp
 from threading import Thread
@@ -198,6 +199,23 @@ def set_le_script_version(venv_dir, version):
 
 
 class AutoTests(TestCase):
+    """Test the major branch points of letsencrypt-auto:
+
+    * An le-auto upgrade is needed.
+    * An le-auto upgrade is not needed.
+    * There was an out-of-date LE script installed.
+    * There was a current LE script installed.
+    * There was no LE script installed (less important).
+    * Peep verification passes.
+    * Peep has a hash mismatch.
+    * The OpenSSL sig matches.
+    * The OpenSSL sig mismatches.
+
+    For tests which get to the end, we run merely ``letsencrypt --version``.
+    The functioning of the rest of the letsencrypt script is covered by other
+    test suites.
+
+    """
     # Remove these helpers when we no longer need to support Python 2.6:
     def assertIn(self, member, container, msg=None):
         """Just like self.assertTrue(a in b), but with a nicer default message."""
@@ -218,17 +236,6 @@ class AutoTests(TestCase):
 
         They just happen to be the branches in which everything goes well.
 
-        The branches:
-
-        * An le-auto upgrade is needed.
-        * An le-auto upgrade is not needed.
-        * There was an out-of-date LE script installed.
-        * There was a current LE script installed.
-        * There was no LE script installed. (not that important)
-        * Peep verification passes.
-        * Peep has a hash mismatch.
-        * The OpenSSL sig mismatches.
-
         I violate my usual rule of having small, decoupled tests, because...
 
         1. We shouldn't need to run a Cartesian product of the branches: the
@@ -237,10 +244,6 @@ class AutoTests(TestCase):
            limited to a temp dir, assuming (if we dare) all functions properly.
         2. One combination of branches happens to set us up nicely for testing
            the next, saving code.
-
-        For tests which get to the end, we run merely ``letsencrypt
-        --version``. The functioning of the rest of the letsencrypt script is
-        covered by other test suites.
 
         """
         NEW_LE_AUTO = build_le_auto(version='99.9.9')
@@ -299,6 +302,29 @@ class AutoTests(TestCase):
                                   "letsencrypt-auto.",
                                   exc.output)
                 else:
-                    self.fail('Signature check on letsencrypt-auto erroneously passed!')
+                    self.fail('Signature check on letsencrypt-auto erroneously passed.')
 
-    # Test when peep has a hash mismatch.
+    def test_peep_failure(self):
+        """Make sure peep stops us if there is a hash mismatch."""
+        with ephemeral_dir() as venv_dir:
+            resources = {'': '<a href="letsencrypt/">letsencrypt/</a>',
+                         'letsencrypt/json': dumps({'releases': {'99.9.9': None}})}
+            with serving(resources) as base_url:
+                # Build a le-auto script embedding a bad requirements file:
+                venv_le_auto_path = join(venv_dir, 'letsencrypt-auto')
+                with open(venv_le_auto_path, 'w') as le_auto:
+                    le_auto.write(build_le_auto(
+                        version='99.9.9',
+                        requirements='# sha256: badbadbadbadbadbadbadbadbadbadbadbadbadbadb\n'
+                                     'configobj==5.0.6'))
+                chmod(venv_le_auto_path, S_IRUSR | S_IXUSR)
+                try:
+                    out, err = run_le_auto(venv_dir, base_url)
+                except CalledProcessError as exc:
+                    eq_(exc.returncode, 1)
+                    self.assertIn("THE FOLLOWING PACKAGES DIDN'T MATCH THE "
+                                  "HASHES SPECIFIED IN THE REQUIREMENTS",
+                                  exc.output)
+                else:
+                    self.fail("Peep didn't detect a bad hash and stop the "
+                              "installation.")
