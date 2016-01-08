@@ -7,7 +7,9 @@ cd letsencrypt
 #git checkout v0.1.0     use --branch instead
 SAVE="$PIP_EXTRA_INDEX_URL"
 unset PIP_EXTRA_INDEX_URL
+export PIP_INDEX_URL="https://isnot.org/pip/0.1.0/"
 ./letsencrypt-auto -v --debug --version 
+unset PIP_INDEX_URL
 
 export PIP_EXTRA_INDEX_URL="$SAVE"
 

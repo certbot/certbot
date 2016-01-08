@@ -374,12 +374,12 @@ OS-level dependencies can be installed like so:
 In general...
 
 * ``sudo`` is required as a suggested way of running privileged process
+* `Python`_ 2.6/2.7 is required
 * `Augeas`_ is required for the Python bindings
 * ``virtualenv`` and ``pip`` are used for managing other python library
   dependencies
 
-What follow are OS-specific notes for the :ref:`developers <hacking>` reference.
-
+.. _Python: https://wiki.python.org/moin/BeginnersGuide/Download
 .. _Augeas: http://augeas.net/
 .. _Virtualenv: https://virtualenv.pypa.io
 
