@@ -1302,7 +1302,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         self.config_test()
-        logger.debug(self.reverter.view_config_changes(logging=True))
+        logger.debug(self.reverter.view_config_changes(for_logging=True))
         self._reload()
 
     def _reload(self):
