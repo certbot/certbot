@@ -22,7 +22,7 @@ WORKDIR /opt/letsencrypt
 # directories in its path.
 
 
-COPY letsencrypt_auto/letsencrypt-auto /opt/letsencrypt/src/letsencrypt-auto
+COPY letsencrypt-auto-source/letsencrypt-auto /opt/letsencrypt/src/letsencrypt-auto
 RUN /opt/letsencrypt/src/letsencrypt-auto --os-packages-only && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* \

@@ -12,13 +12,22 @@ import socket
 import ssl
 from stat import S_IRUSR, S_IXUSR
 from subprocess import CalledProcessError, check_output, Popen, PIPE
+import sys
 from tempfile import mkdtemp
 from threading import Thread
 from unittest import TestCase
 
 from nose.tools import eq_, nottest, ok_
 
-from ..build import build as build_le_auto
+
+@nottest
+def tests_dir():
+    """Return a path to the "tests" directory."""
+    return dirname(abspath(__file__))
+
+
+sys.path.insert(0, dirname(tests_dir()))
+from build import build as build_le_auto
 
 
 class RequestHandler(BaseHTTPRequestHandler):
@@ -105,13 +114,8 @@ def serving(resources):
         thread.join()
 
 
-@nottest
-def tests_dir():
-    """Return a path to the "tests" directory."""
-    return dirname(abspath(__file__))
-
-
 LE_AUTO_PATH = join(dirname(tests_dir()), 'letsencrypt-auto')
+
 
 @contextmanager
 def ephemeral_dir():

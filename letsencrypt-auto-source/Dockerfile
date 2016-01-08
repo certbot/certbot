@@ -25,9 +25,9 @@ COPY ./tests/certs/ca/my-root-ca.crt.pem /usr/local/share/ca-certificates/
 RUN update-ca-certificates
 
 # Copy code:
-COPY . /home/lea/letsencrypt/letsencrypt_auto
+COPY . /home/lea/letsencrypt/letsencrypt-auto-source
 
 USER lea
 WORKDIR /home/lea
 
-CMD ["nosetests", "-s", "letsencrypt/letsencrypt_auto/tests"]
+CMD ["nosetests", "-s", "letsencrypt/letsencrypt-auto-source/tests"]
