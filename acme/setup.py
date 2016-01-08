@@ -10,7 +10,8 @@ version = '0.2.0.dev0'
 install_requires = [
     # load_pem_private/public_key (>=0.6)
     # rsa_recover_prime_factors (>=0.8)
-    'cryptography>=0.8',
+<<<<<<< HEAD
+    'cryptography>=0.8,<1.2',
     # Connection.set_tlsext_host_name (>=0.13)
     'PyOpenSSL>=0.13',
     'pyrfc3339',
