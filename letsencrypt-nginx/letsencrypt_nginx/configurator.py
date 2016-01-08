@@ -311,17 +311,11 @@ class NginxConfigurator(common.Plugin):
         """
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
         ssl_block = [['listen', '{0} ssl'.format(self.config.tls_sni_01_port)],
-                     # access and error logs necessary for integration
-                     # testing (non-root)
-                     ['access_log', os.path.join(
-                         self.config.work_dir, 'access.log')],
-                     ['error_log', os.path.join(
-                         self.config.work_dir, 'error.log')],
                      ['ssl_certificate', snakeoil_cert],
                      ['ssl_certificate_key', snakeoil_key],
                      ['include', self.parser.loc["ssl_options"]]]
         self.parser.add_server_directives(
-            vhost.filep, vhost.names, ssl_block)
+            vhost.filep, vhost.names, ssl_block, replace=False)
         vhost.ssl = True
         vhost.raw.extend(ssl_block)
         vhost.addrs.add(obj.Addr(
@@ -384,7 +378,7 @@ class NginxConfigurator(common.Plugin):
             [['return', '301 https://$host$request_uri']]
         ]]
         self.parser.add_server_directives(
-            vhost.filep, vhost.names, redirect_block)
+            vhost.filep, vhost.names, redirect_block, replace=False)
         logger.info("Redirecting all traffic to ssl in %s", vhost.filep)
 
     ######################################
@@ -393,11 +387,10 @@ class NginxConfigurator(common.Plugin):
     def restart(self):
         """Restarts nginx server.
 
-        :returns: Success
-        :rtype: bool
+        :raises .errors.MisconfigurationError: If either the reload fails.
 
         """
-        return nginx_restart(self.conf('ctl'), self.nginx_conf)
+        nginx_restart(self.conf('ctl'), self.nginx_conf)
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Nginx for errors.
@@ -631,18 +624,15 @@ def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx.conf"):
 
             if nginx_proc.returncode != 0:
                 # Enter recovery routine...
-                logger.error("Nginx Restart Failed!\n%s\n%s", stdout, stderr)
-                return False
+                raise errors.MisconfigurationError(
+                    "nginx restart failed:\n%s\n%s" % (stdout, stderr))
 
     except (OSError, ValueError):
-        logger.fatal("Nginx Restart Failed - Please Check the Configuration")
-        sys.exit(1)
+        raise errors.MisconfigurationError("nginx restart failed")
     # Nginx can take a moment to recognize a newly added TLS SNI servername, so sleep
     # for a second. TODO: Check for expected servername and loop until it
     # appears or return an error if looping too long.
     time.sleep(1)
-
-    return True
 
 
 def temp_install(options_ssl):

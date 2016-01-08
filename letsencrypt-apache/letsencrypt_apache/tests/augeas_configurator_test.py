@@ -17,7 +17,7 @@ class AugeasConfiguratorTest(util.ApacheTest):
         super(AugeasConfiguratorTest, self).setUp()
 
         self.config = util.get_apache_configurator(
-            self.config_path, self.config_dir, self.work_dir)
+            self.config_path, self.vhost_path, self.config_dir, self.work_dir)
 
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/two_vhost_80")
