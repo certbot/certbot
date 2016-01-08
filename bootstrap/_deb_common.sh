@@ -54,7 +54,7 @@ AddBackportRepo() {
 
             echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/"$BACKPORT_NAME".list
             apt-get update
-            apt-get install -y --no-install-recommends -t "$BACKPORT_NAME" libaugeas0
+            apt-get install -y --no-install-recommends -t "$BACKPORT_NAME" libaugeas0 augeas-lenses
             augeas_pkg=
         fi
     fi
