@@ -24,12 +24,15 @@ env:
     - TOXENV=py27 BOULDER_INTEGRATION=1
     - TOXENV=py33
     - TOXENV=py34
-    - TOXENV=py35
     - TOXENV=lint
     - TOXENV=cover
 # Disabled for now due to requiring sudo -> causing more boulder integration
 # DNS timeouts :(
 #    - TOXENV=apacheconftest
+matrix:
+  include:
+    - env: TOXENV=py35
+      python: 3.5
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
