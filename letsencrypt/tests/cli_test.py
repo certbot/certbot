@@ -146,7 +146,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_noninteractive(self):
         args = ['-n', 'certonly']
         self._cli_missing_flag(args, "specify a plugin")
-        args.extend(['--apache', '-d', 'eg.is'])
+        args.extend(['--standalone', '-d', 'eg.is'])
         self._cli_missing_flag(args, "register before running")
         with mock.patch('letsencrypt.cli._auth_from_domains'):
             with mock.patch('letsencrypt.cli.client.acme_from_config_key'):
