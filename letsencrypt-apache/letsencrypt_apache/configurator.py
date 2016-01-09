@@ -86,10 +86,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add("ctl", default=constants.os_constant("ctl"),
-            help="Path to the 'apache2ctl' binary, used for 'configtest', "
-                 "retrieving the Apache2 version number, and initialization "
-                 "parameters.")
         add("enmod", default=constants.os_constant("enmod"),
             help="Path to the Apache 'a2enmod' binary.")
         add("dismod", default=constants.os_constant("dismod"),
@@ -148,10 +144,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         # Verify Apache is installed
-        for exe in (self.conf("ctl"), self.conf("enmod"), self.conf("dismod")):
-            if exe is not None:
-                if not le_util.exe_exists(exe):
-                    raise errors.NoInstallationError
+        if not le_util.exe_exists(constants.os_constant("restart_cmd")[0]):
+            raise errors.NoInstallationError
 
         # Make sure configuration is valid
         self.config_test()
@@ -165,7 +159,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         self.parser = parser.ApacheParser(
             self.aug, self.conf("server-root"), self.conf("vhost-root"),
-            self.conf("ctl"), self.version)
+            self.version)
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
 
@@ -564,6 +558,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # In case no Listens are set (which really is a broken apache config)
         if not listens:
             listens = ["80"]
+        if port in listens:
+            return
         for listen in listens:
             # For any listen statement, check if the machine also listens on Port 443.
             # If not, add such a listen statement.
@@ -1277,7 +1273,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Modules can enable additional config files. Variables may be defined
         # within these new configuration sections.
         # Reload is not necessary as DUMP_RUN_CFG uses latest config.
-        self.parser.update_runtime_variables(self.conf("ctl"))
+        self.parser.update_runtime_variables()
 
     def _add_parser_mod(self, mod_name):
         """Shortcut for updating parser modules."""
@@ -1306,6 +1302,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         self.config_test()
+        logger.debug(self.reverter.view_config_changes(for_logging=True))
         self._reload()
 
     def _reload(self):
@@ -1315,7 +1312,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            le_util.run_script([self.conf("ctl"), "graceful"])
+            le_util.run_script(constants.os_constant("restart_cmd"))
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
@@ -1326,7 +1323,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            le_util.run_script([self.conf("ctl"), "configtest"])
+            le_util.run_script(constants.os_constant("conftest_cmd"))
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
@@ -1346,7 +1343,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 constants.os_constant("version_cmd"))
         except errors.SubprocessError:
             raise errors.PluginError(
-                "Unable to run %s -v" % self.conf("ctl"))
+                "Unable to run %s -v" %
+                constants.os_constant("version_cmd"))
 
         regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
         matches = regex.findall(stdout)

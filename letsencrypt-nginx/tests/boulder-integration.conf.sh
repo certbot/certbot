@@ -20,13 +20,14 @@ events {
 }
 
 http {
-  # Set an array of temp and cache file options that will otherwise default to
+  # Set an array of temp, cache and log file options that will otherwise default to
   # restricted locations accessible only to root.
   client_body_temp_path $root/client_body;
   fastcgi_temp_path $root/fastcgi_temp;
   proxy_temp_path $root/proxy_temp;
   #scgi_temp_path $root/scgi_temp;
   #uwsgi_temp_path $root/uwsgi_temp;
+  access_log $root/error.log;
 
   # This should be turned off in a Virtualbox VM, as it can cause some
   # interesting issues with data corruption in delivered files.
@@ -53,9 +54,6 @@ http {
     listen [::]:8081 default ipv6only=on;
 
     root $root/webroot;
-
-    access_log $root/access.log;
-    error_log $root/error.log;
 
     location / {
       # First attempt to serve request as file, then as directory, then fall
