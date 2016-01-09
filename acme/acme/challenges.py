@@ -271,8 +271,8 @@ class DNS01(KeyAuthorizationChallenge):
         :rtype: unicode
 
         """
-        return jose.b64encode(hashlib.sha256(
-            self.key_authorization(account_key)).digest())
+        return jose.b64encode(hashlib.sha256(self.key_authorization(
+            account_key).encode("utf-8")).digest()).decode()
 
     def validation_domain_name(self, name):
         """Domain name for TXT validation record.

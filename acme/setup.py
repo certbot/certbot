@@ -35,9 +35,14 @@ if sys.version_info < (2, 7, 9):
     install_requires.append('ndg-httpsclient')
     install_requires.append('pyasn1')
 
-dns_extras = [
-    'dnspython',
-]
+if sys.version_info < (3, 0):
+    dns_extras = [
+        'dnspython',
+    ]
+else:
+    dns_extras = [
+        'dnspython3',
+    ]
 
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
