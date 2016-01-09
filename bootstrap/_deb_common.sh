@@ -32,7 +32,7 @@ if apt-cache show python-virtualenv > /dev/null 2>&1; then
   virtualenv="$virtualenv python-virtualenv"
 fi
 
-augeas_pkg=libaugeas0
+augeas_pkg="libaugeas0 augeas-lenses"
 AUGVERSION=`apt-cache show --no-all-versions libaugeas0 | grep ^Version: | cut -d" " -f2`
 
 AddBackportRepo() {
@@ -54,7 +54,7 @@ AddBackportRepo() {
 
             echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/"$BACKPORT_NAME".list
             apt-get update
-            apt-get install -y --no-install-recommends -t "$BACKPORT_NAME" libaugeas0 augeas-lenses
+            apt-get install -y --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
             augeas_pkg=
         fi
     fi
