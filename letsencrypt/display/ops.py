@@ -32,15 +32,7 @@ def choose_plugin(prepared, question):
 
     while True:
         disp = util(interfaces.IDisplay)
-        try:
-            code, index = disp.menu(question, opts, help_label="More Info")
-        except errors.MissingCommandlineFlag:
-            # use a custom message for this case
-            raise errors.MissingCommandlineFlag, ("Missing command line flags. For non-interactive "
-                "execution, you will need to specify a plugin on the command line.  Run with "
-                "'--help plugins' to see a list of options, and see "
-                " https://eff.org/letsencrypt-plugins for more detail on what the plugins "
-                "do and how to use them.")
+        code, index = disp.menu(question, opts, help_label="More Info")
 
         if code == display_util.OK:
             plugin_ep = prepared[index]
@@ -82,6 +74,16 @@ def pick_plugin(config, default, plugins, question, ifaces):
         # throw more UX-friendly error if default not in plugins
         filtered = plugins.filter(lambda p_ep: p_ep.name == default)
     else:
+        if config.noninteractive_mode:
+            # it's really bad to auto-select the single available plugin in
+            # non-interactive mode, because an update could later add a second
+            # available plugin
+            raise errors.MissingCommandlineFlag, ("Missing command line flags. For non-interactive "
+                "execution, you will need to specify a plugin on the command line.  Run with "
+                "'--help plugins' to see a list of options, and see "
+                " https://eff.org/letsencrypt-plugins for more detail on what the plugins "
+                "do and how to use them.")
+
         filtered = plugins.visible().ifaces(ifaces)
 
     filtered.init(config)
