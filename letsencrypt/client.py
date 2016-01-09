@@ -1,6 +1,7 @@
 """Let's Encrypt client API."""
 import logging
 import os
+import platform
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -51,9 +52,13 @@ def _determine_user_agent(config):
     """
 
     if config.user_agent is None:
-        ua = "LetsEncryptPythonClient/{0} ({1}) Authenticator/{2} Installer/{3}"
+        ua = (
+            "LetsEncryptPythonClient/{0} ({1}) Authenticator/{2} Installer/{3}"
+            " Python/{4}"
+        )
         ua = ua.format(letsencrypt.__version__, " ".join(le_util.get_os_info()),
-                       config.authenticator, config.installer)
+                       config.authenticator, config.installer,
+                       platform.python_version())
     else:
         ua = config.user_agent
     return ua
