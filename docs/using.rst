@@ -248,7 +248,9 @@ The following files are available:
   server certificate, i.e. root and intermediate certificates only.
 
   This is what Apache < 2.4.8 needs for `SSLCertificateChainFile
-  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatechainfile>`_.
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatechainfile>`_,
+  and what nginx >= 1.3.7 needs for `ssl_trusted_certificate
+  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_trusted_certificate>`_.
 
 ``fullchain.pem``
   All certificates, **including** server certificate. This is

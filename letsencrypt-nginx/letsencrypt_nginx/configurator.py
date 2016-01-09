@@ -122,7 +122,7 @@ class NginxConfigurator(common.Plugin):
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path,
-                    chain_path, fullchain_path):
+                    chain_path=None, fullchain_path=None):
         # pylint: disable=unused-argument
         """Deploys certificate to specified virtual host.
 
@@ -136,7 +136,15 @@ class NginxConfigurator(common.Plugin):
 
         .. note:: This doesn't save the config files!
 
+        :raises errors.PluginError: When unable to deploy certificate due to
+            a lack of directives or configuration
+
         """
+        if not fullchain_path:
+            raise errors.PluginError(
+                "The nginx plugin currently requires --fullchain-path to "
+                "install a cert.")
+
         vhost = self.choose_vhost(domain)
         cert_directives = [['ssl_certificate', fullchain_path],
                            ['ssl_certificate_key', key_path]]
@@ -149,6 +157,12 @@ class NginxConfigurator(common.Plugin):
                 ['ssl_trusted_certificate', chain_path],
                 ['ssl_stapling', 'on'],
                 ['ssl_stapling_verify', 'on']]
+
+        if len(stapling_directives) != 0 and not chain_path:
+            raise errors.PluginError(
+                "--chain-path is required to enable "
+                "Online Certificate Status Protocol (OCSP) stapling "
+                "on nginx >= 1.3.7.")
 
         try:
             self.parser.add_server_directives(vhost.filep, vhost.names,
@@ -168,7 +182,7 @@ class NginxConfigurator(common.Plugin):
         self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
                             (vhost.filep,
                              ", ".join(str(addr) for addr in vhost.addrs)))
-        self.save_notes += "\tssl_certificate %s\n" % cert_path
+        self.save_notes += "\tssl_certificate %s\n" % fullchain_path
         self.save_notes += "\tssl_certificate_key %s\n" % key_path
 
     #######################
