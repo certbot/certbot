@@ -113,7 +113,7 @@ class NginxParser(object):
         for filename in servers:
             for server in servers[filename]:
                 # Parse the server block into a VirtualHost object
-                parsed_server = _parse_server(server)
+                parsed_server = parse_server(server)
                 vhost = obj.VirtualHost(filename,
                                         parsed_server['addrs'],
                                         parsed_server['ssl'],
@@ -451,7 +451,7 @@ def _get_servernames(names):
     return names.split(' ')
 
 
-def _parse_server(server):
+def parse_server(server):
     """Parses a list of server directives.
 
     :param list server: list of directives in a server block
@@ -471,6 +471,8 @@ def _parse_server(server):
         elif directive[0] == 'server_name':
             parsed_server['names'].update(
                 _get_servernames(directive[1]))
+        elif directive[0] == 'ssl' and directive[1] == 'on':
+            parsed_server['ssl'] = True
 
     return parsed_server
 

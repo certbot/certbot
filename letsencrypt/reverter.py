@@ -94,7 +94,7 @@ class Reverter(object):
                     "Unable to load checkpoint during rollback")
             rollback -= 1
 
-    def view_config_changes(self):
+    def view_config_changes(self, for_logging=False):
         """Displays all saved checkpoints.
 
         All checkpoints are printed by
@@ -144,6 +144,8 @@ class Reverter(object):
 
             output.append(os.linesep)
 
+        if for_logging:
+            return os.linesep.join(output)
         zope.component.getUtility(interfaces.IDisplay).notification(
             os.linesep.join(output), display_util.HEIGHT)
 
