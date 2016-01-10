@@ -7,6 +7,8 @@ within lineages of successor certificates, according to configuration.
 .. todo:: Call new installer API to restart servers after deployment
 
 """
+from __future__ import print_function
+
 import argparse
 import logging
 import os
@@ -101,7 +103,7 @@ def renew(cert, old_version):
         #      already understands this distinction!)
         return cert.save_successor(
             old_version, OpenSSL.crypto.dump_certificate(
-                OpenSSL.crypto.FILETYPE_PEM, new_certr.body),
+                OpenSSL.crypto.FILETYPE_PEM, new_certr.body.wrapped),
             new_key.pem, crypto_util.dump_pyopenssl_chain(new_chain))
         # TODO: Notify results
     else:
@@ -114,6 +116,7 @@ def renew(cert, old_version):
 def _cli_log_handler(args, level, fmt):  # pylint: disable=unused-argument
     handler = colored_logging.StreamHandler()
     handler.setFormatter(logging.Formatter(fmt))
+    handler.setLevel(level)
     return handler
 
 
@@ -169,7 +172,7 @@ def main(cli_args=sys.argv[1:]):
                                constants.CONFIG_DIRS_MODE, uid)
 
     for renewal_file in os.listdir(cli_config.renewal_configs_dir):
-        print "Processing", renewal_file
+        print("Processing " + renewal_file)
         try:
             # TODO: Before trying to initialize the RenewableCert object,
             #       we could check here whether the combination of the config
@@ -179,7 +182,9 @@ def main(cli_args=sys.argv[1:]):
             #       RenewableCert object for this cert at all, which could
             #       dramatically improve performance for large deployments
             #       where autorenewal is widely turned off.
-            cert = storage.RenewableCert(renewal_file, cli_config)
+            cert = storage.RenewableCert(
+                            os.path.join(cli_config.renewal_configs_dir, renewal_file),
+                            cli_config)
         except errors.CertStorageError:
             # This indicates an invalid renewal configuration file, such
             # as one missing a required parameter (in the future, perhaps

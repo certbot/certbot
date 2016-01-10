@@ -30,6 +30,8 @@ class Error(jose.JSONObjectWithFields, errors.Error):
             ('badNonce', 'The client sent an unacceptable anti-replay nonce'),
             ('connection', 'The server could not connect to the client for DV'),
             ('dnssec', 'The server could not validate a DNSSEC signed domain'),
+            ('invalidEmail',
+             'The provided email for a registration was invalid'),
             ('malformed', 'The request message was malformed'),
             ('rateLimited', 'There were too many requests of a given type'),
             ('serverInternal', 'The server experienced an internal error'),

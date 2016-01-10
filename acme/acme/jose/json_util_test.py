@@ -12,8 +12,8 @@ from acme.jose import interfaces
 from acme.jose import util
 
 
-CERT = test_util.load_cert('cert.pem')
-CSR = test_util.load_csr('csr.pem')
+CERT = test_util.load_comparable_cert('cert.pem')
+CSR = test_util.load_comparable_csr('csr.pem')
 
 
 class FieldTest(unittest.TestCase):

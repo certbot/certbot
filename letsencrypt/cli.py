@@ -1,4 +1,6 @@
 """Let's Encrypt CLI."""
+from __future__ import print_function
+
 # TODO: Sanity check all input.  Be sure to avoid shell code etc...
 # pylint: disable=too-many-lines
 # (TODO: split this file into main.py and cli.py)
@@ -205,76 +207,131 @@ def _find_duplicative_certs(config, domains):
         if candidate_names == set(domains):
             identical_names_cert = candidate_lineage
         elif candidate_names.issubset(set(domains)):
-            subset_names_cert = candidate_lineage
+            # This logic finds and returns the largest subset-names cert
+            # in the case where there are several available.
+            if subset_names_cert is None:
+                subset_names_cert = candidate_lineage
+            elif len(candidate_names) > len(subset_names_cert.names()):
+                subset_names_cert = candidate_lineage
 
     return identical_names_cert, subset_names_cert
 
 
 def _treat_as_renewal(config, domains):
-    """Determine whether or not the call should be treated as a renewal.
+    """Determine whether there are duplicated names and how to handle them.
 
-    :returns: RenewableCert or None if renewal shouldn't occur.
-    :rtype: :class:`.storage.RenewableCert`
+    :returns: Two-element tuple containing desired new-certificate behavior as
+              a string token ("reinstall", "renew", or "newcert"), plus either
+              a RenewableCert instance or None if renewal shouldn't occur.
 
     :raises .Error: If the user would like to rerun the client again.
 
     """
-    renewal = False
-
     # Considering the possibility that the requested certificate is
     # related to an existing certificate.  (config.duplicate, which
     # is set with --duplicate, skips all of this logic and forces any
     # kind of certificate to be obtained with renewal = False.)
-    if not config.duplicate:
-        ident_names_cert, subset_names_cert = _find_duplicative_certs(
-            config, domains)
-        # I am not sure whether that correctly reads the systemwide
-        # configuration file.
-        question = None
-        if ident_names_cert is not None:
-            question = (
-                "You have an existing certificate that contains exactly the "
-                "same domains you requested (ref: {0}){br}{br}Do you want to "
-                "renew and replace this certificate with a newly-issued one?"
-            ).format(ident_names_cert.configfile.filename, br=os.linesep)
-        elif subset_names_cert is not None:
-            question = (
-                "You have an existing certificate that contains a portion of "
-                "the domains you requested (ref: {0}){br}{br}It contains these "
-                "names: {1}{br}{br}You requested these names for the new "
-                "certificate: {2}.{br}{br}Do you want to replace this existing "
-                "certificate with the new certificate?"
-            ).format(subset_names_cert.configfile.filename,
-                     ", ".join(subset_names_cert.names()),
-                     ", ".join(domains),
-                     br=os.linesep)
-        if question is None:
-            # We aren't in a duplicative-names situation at all, so we don't
-            # have to tell or ask the user anything about this.
-            pass
-        elif config.renew_by_default or zope.component.getUtility(
-                interfaces.IDisplay).yesno(question, "Replace", "Cancel"):
-            renewal = True
-        else:
-            reporter_util = zope.component.getUtility(interfaces.IReporter)
-            reporter_util.add_message(
-                "To obtain a new certificate that {0} an existing certificate "
-                "in its domain-name coverage, you must use the --duplicate "
-                "option.{br}{br}For example:{br}{br}{1} --duplicate {2}".format(
-                    "duplicates" if ident_names_cert is not None else
-                    "overlaps with",
-                    sys.argv[0], " ".join(sys.argv[1:]),
-                    br=os.linesep
-                ),
-                reporter_util.HIGH_PRIORITY)
-            raise errors.Error(
-                "User did not use proper CLI and would like "
-                "to reinvoke the client.")
+    if config.duplicate:
+        return "newcert", None
+    # TODO: Also address superset case
+    ident_names_cert, subset_names_cert = _find_duplicative_certs(config, domains)
+    # XXX ^ schoen is not sure whether that correctly reads the systemwide
+    # configuration file.
+    if ident_names_cert is None and subset_names_cert is None:
+        return "newcert", None
 
-        if renewal:
-            return ident_names_cert if ident_names_cert is not None else subset_names_cert
+    if ident_names_cert is not None:
+        return _handle_identical_cert_request(config, ident_names_cert)
+    elif subset_names_cert is not None:
+        return _handle_subset_cert_request(config, domains, subset_names_cert)
 
-    return None
+def _handle_identical_cert_request(config, cert):
+    """Figure out what to do if a cert has the same names as a perviously obtained one
+
+    :param storage.RenewableCert cert:
+
+    :returns: Tuple of (string, cert_or_None) as per _treat_as_renewal
+    :rtype: tuple
+
+    """
+    if config.renew_by_default:
+        logger.info("Auto-renewal forced with --renew-by-default...")
+        return "renew", cert
+    if cert.should_autorenew(interactive=True):
+        logger.info("Cert is due for renewal, auto-renewing...")
+        return "renew", cert
+    if config.reinstall:
+        # Set with --reinstall, force an identical certificate to be
+        # reinstalled without further prompting.
+        return "reinstall", cert
+
+    question = (
+        "You have an existing certificate that contains exactly the same "
+        "domains you requested and isn't close to expiry."
+        "{br}(ref: {0}){br}{br}What would you like to do?"
+    ).format(cert.configfile.filename, br=os.linesep)
+
+    if config.verb == "run":
+        keep_opt = "Attempt to reinstall this existing certificate"
+    elif config.verb == "certonly":
+        keep_opt = "Keep the existing certificate for now"
+    choices = [keep_opt,
+               "Renew & replace the cert (limit ~5 per 7 days)",
+               "Cancel this operation and do nothing"]
+
+    display = zope.component.getUtility(interfaces.IDisplay)
+    response = display.menu(question, choices, "OK", "Cancel")
+    if response[0] == "cancel" or response[1] == 2:
+        # TODO: Add notification related to command-line options for
+        #       skipping the menu for this case.
+        raise errors.Error(
+            "User chose to cancel the operation and may "
+            "reinvoke the client.")
+    elif response[1] == 0:
+        return "reinstall", cert
+    elif response[1] == 1:
+        return "renew", cert
+    else:
+        assert False, "This is impossible"
+
+def _handle_subset_cert_request(config, domains, cert):
+    """Figure out what to do if a previous cert had a subset of the names now requested
+
+    :param storage.RenewableCert cert:
+
+    :returns: Tuple of (string, cert_or_None) as per _treat_as_renewal
+    :rtype: tuple
+
+    """
+    existing = ", ".join(cert.names())
+    question = (
+        "You have an existing certificate that contains a portion of "
+        "the domains you requested (ref: {0}){br}{br}It contains these "
+        "names: {1}{br}{br}You requested these names for the new "
+        "certificate: {2}.{br}{br}Do you want to expand and replace this existing "
+        "certificate with the new certificate?"
+    ).format(cert.configfile.filename,
+             existing,
+             ", ".join(domains),
+             br=os.linesep)
+    if config.expand or config.renew_by_default or zope.component.getUtility(
+            interfaces.IDisplay).yesno(question, "Expand", "Cancel"):
+        return "renew", cert
+    else:
+        reporter_util = zope.component.getUtility(interfaces.IReporter)
+        reporter_util.add_message(
+            "To obtain a new certificate that contains these names without "
+            "replacing your existing certificate for {0}, you must use the "
+            "--duplicate option.{br}{br}"
+            "For example:{br}{br}{1} --duplicate {2}".format(
+                existing,
+                sys.argv[0], " ".join(sys.argv[1:]),
+                br=os.linesep
+            ),
+            reporter_util.HIGH_PRIORITY)
+        raise errors.Error(
+            "User chose to cancel the operation and may "
+            "reinvoke the client.")
 
 
 def _report_new_cert(cert_path, fullchain_path):
@@ -314,24 +371,35 @@ def _suggest_donate():
 
 def _auth_from_domains(le_client, config, domains):
     """Authenticate and enroll certificate."""
-    # Note: This can raise errors... caught above us though.
-    lineage = _treat_as_renewal(config, domains)
+    # Note: This can raise errors... caught above us though. This is now
+    # a three-way case: reinstall (which results in a no-op here because
+    # although there is a relevant lineage, we don't do anything to it
+    # inside this function -- we don't obtain a new certificate), renew
+    # (which results in treating the request as a renewal), or newcert
+    # (which results in treating the request as a new certificate request).
 
-    if lineage is not None:
+    action, lineage = _treat_as_renewal(config, domains)
+    if action == "reinstall":
+        # The lineage already exists; allow the caller to try installing
+        # it without getting a new certificate at all.
+        return lineage
+    elif action == "renew":
+        original_server = lineage.configuration["renewalparams"]["server"]
+        _avoid_invalidating_lineage(config, lineage, original_server)
         # TODO: schoen wishes to reuse key - discussion
         # https://github.com/letsencrypt/letsencrypt/pull/777/files#r40498574
         new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
         # TODO: Check whether it worked! <- or make sure errors are thrown (jdk)
         lineage.save_successor(
             lineage.latest_common_version(), OpenSSL.crypto.dump_certificate(
-                OpenSSL.crypto.FILETYPE_PEM, new_certr.body),
+                OpenSSL.crypto.FILETYPE_PEM, new_certr.body.wrapped),
             new_key.pem, crypto_util.dump_pyopenssl_chain(new_chain))
 
         lineage.update_all_links_to(lineage.latest_common_version())
         # TODO: Check return value of save_successor
         # TODO: Also update lineage renewal config with any relevant
         #       configuration values from this attempt? <- Absolutely (jdkasten)
-    else:
+    elif action == "newcert":
         # TREAT AS NEW REQUEST
         lineage = le_client.obtain_and_enroll_certificate(domains)
         if not lineage:
@@ -341,6 +409,27 @@ def _auth_from_domains(le_client, config, domains):
 
     return lineage
 
+def _avoid_invalidating_lineage(config, lineage, original_server):
+    "Do not renew a valid cert with one from a staging server!"
+    def _is_staging(srv):
+        return srv == constants.STAGING_URI or "staging" in srv
+
+    # Some lineages may have begun with --staging, but then had production certs
+    # added to them
+    latest_cert = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
+                                                  open(lineage.cert).read())
+    # all our test certs are from happy hacker fake CA, though maybe one day
+    # we should test more methodically
+    now_valid = not "fake" in repr(latest_cert.get_issuer()).lower()
+
+    if _is_staging(config.server):
+        if not _is_staging(original_server) or now_valid:
+            if not config.break_my_certs:
+                names = ", ".join(lineage.names())
+                raise errors.Error(
+                    "You've asked to renew/replace a seemingly valid certificate with "
+                    "a test certificate (domains: {0}). We will not do that "
+                    "unless you use the --break-my-certs flag!".format(names))
 
 def set_configurator(previously, now):
     """
@@ -485,7 +574,6 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
 
 def obtain_cert(args, config, plugins):
     """Authenticate & obtain cert, but do not install it."""
-
     if args.domains and args.csr is not None:
         # TODO: --csr could have a priority, when --domains is
         # supplied, check if CSR matches given domains?
@@ -574,7 +662,7 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDisplay rather than print
     logger.debug("Filtered plugins: %r", filtered)
 
     if not args.init and not args.prepare:
-        print str(filtered)
+        print(str(filtered))
         return
 
     filtered.init(config)
@@ -582,13 +670,13 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDisplay rather than print
     logger.debug("Verified plugins: %r", verified)
 
     if not args.prepare:
-        print str(verified)
+        print(str(verified))
         return
 
     verified.prepare()
     available = verified.available()
     logger.debug("Prepared plugins: %s", available)
-    print str(available)
+    print(str(available))
 
 
 def read_file(filename, mode="rb"):
@@ -681,7 +769,7 @@ class HelpfulArgumentParser(object):
         self.help_arg = max(help1, help2)
         if self.help_arg is True:
             # just --help with no topic; avoid argparse altogether
-            print usage
+            print(usage)
             sys.exit(0)
         self.visible_topics = self.determine_help_topics(self.help_arg)
         self.groups = {}  # elements are added by .add_group()
@@ -695,6 +783,15 @@ class HelpfulArgumentParser(object):
         """
         parsed_args = self.parser.parse_args(self.args)
         parsed_args.func = self.VERBS[self.verb]
+        parsed_args.verb = self.verb
+
+        # Do any post-parsing homework here
+
+        # argparse seemingly isn't flexible enough to give us this behaviour easily...
+        if parsed_args.staging:
+            if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
+                raise errors.Error("--server value conflicts with --staging")
+            parsed_args.server = constants.STAGING_URI
 
         return parsed_args
 
@@ -785,12 +882,12 @@ class HelpfulArgumentParser(object):
 
         """
         if self.visible_topics[topic]:
-            #print "Adding visible group " + topic
+            #print("Adding visible group " + topic)
             group = self.parser.add_argument_group(topic, **kwargs)
             self.groups[topic] = group
             return group
         else:
-            #print "Invisible group " + topic
+            #print("Invisible group " + topic)
             return self.silent_parser
 
     def add_plugin_args(self, plugins):
@@ -802,7 +899,7 @@ class HelpfulArgumentParser(object):
         """
         for name, plugin_ep in plugins.iteritems():
             parser_or_group = self.add_group(name, description=plugin_ep.description)
-            #print parser_or_group
+            #print(parser_or_group)
             plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)
 
     def determine_help_topics(self, chosen_topic):
@@ -869,13 +966,19 @@ def prepare_and_parse_args(plugins, args):
                 help="Domain names to apply. For multiple domains you can use "
                 "multiple -d flags or enter a comma separated list of domains "
                 "as a parameter.")
-    helpful.add(
-        None, "--duplicate", dest="duplicate", action="store_true",
-        help="Allow getting a certificate that duplicates an existing one")
-
     helpful.add_group(
         "automation",
         description="Arguments for automating execution & other tweaks")
+    helpful.add(
+        "automation", "--keep-until-expiring", "--keep", "--reinstall",
+        dest="reinstall", action="store_true",
+        help="If the requested cert matches an existing cert, always keep the "
+             "existing one until it is due for renewal (for the "
+             "'run' subcommand this means reinstall the existing cert)")
+    helpful.add(
+        "automation", "--expand", action="store_true",
+        help="If an existing cert covers some subset of the requested names, "
+             "always expand and replace it with the additional names.")
     helpful.add(
         "automation", "--version", action="version",
         version="%(prog)s {0}".format(letsencrypt.__version__),
@@ -883,13 +986,18 @@ def prepare_and_parse_args(plugins, args):
     helpful.add(
         "automation", "--renew-by-default", action="store_true",
         help="Select renewal by default when domains are a superset of a "
-             "previously attained cert")
+             "previously attained cert (often --keep-until-expiring is "
+             "more appropriate). Implies --expand.")
     helpful.add(
         "automation", "--agree-tos", dest="tos", action="store_true",
         help="Agree to the Let's Encrypt Subscriber Agreement")
     helpful.add(
         "automation", "--account", metavar="ACCOUNT_ID",
         help="Account ID to use")
+    helpful.add(
+        "automation", "--duplicate", dest="duplicate", action="store_true",
+        help="Allow making a certificate lineage that duplicates an existing one "
+             "(both can be renewed in parallel)")
 
     helpful.add_group(
         "testing", description="The following flags are meant for "
@@ -910,7 +1018,10 @@ def prepare_and_parse_args(plugins, args):
     helpful.add(
         "testing", "--http-01-port", type=int, dest="http01_port",
         default=flag_default("http01_port"), help=config_help("http01_port"))
-
+    helpful.add(
+        "testing", "--break-my-certs", action="store_true",
+        help="Be willing to replace or renew valid certs with invalid "
+             "(testing/staging) certs")
     helpful.add_group(
         "security", description="Security parameters & server settings")
     helpful.add(
@@ -1037,6 +1148,10 @@ def _paths_parser(helpful):
         help="Logs directory.")
     add("paths", "--server", default=flag_default("server"),
         help=config_help("server"))
+    # overwrites server, handled in HelpfulArgumentParser.parse_args()
+    add("testing", "--test-cert", "--staging", action='store_true', dest='staging',
+        help='Use the staging server to obtain test (invalid) certs; equivalent'
+             ' to --server ' + constants.STAGING_URI)
 
 
 def _plugins_parsing(helpful, plugins):
@@ -1074,7 +1189,7 @@ def _plugins_parsing(helpful, plugins):
 
     # These would normally be a flag within the webroot plugin, but because
     # they are parsed in conjunction with --domains, they live here for
-    # legibiility. helpful.add_plugin_ags must be called first to add the
+    # legibility. helpful.add_plugin_ags must be called first to add the
     # "webroot" topic
     helpful.add("webroot", "-w", "--webroot-path", action=WebrootPathProcessor,
                 help="public_html / webroot path. This can be specified multiple times to "

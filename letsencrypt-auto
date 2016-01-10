@@ -47,13 +47,13 @@ if test "`id -u`" -ne "0" ; then
       args=""
       # This `while` loop iterates over all parameters given to this function.
       # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
-      # will be wrap in a pair of `'`, then append to `$args` string
+      # will be wrapped in a pair of `'`, then appended to `$args` string
       # For example, `echo "It's only 1\$\!"` will be escaped to:
       #   'echo' 'It'"'"'s only 1$!'
       #     │       │└┼┘│
       #     │       │ │ └── `'s only 1$!'` the literal string
       #     │       │ └── `\"'\"` is a single quote (as a string)
-      #     │       └── `'It'`, to be concatenated with the strings followed it
+      #     │       └── `'It'`, to be concatenated with the strings following it
       #     └── `echo` wrapped in a pair of `'`, it's totally fine for the shell command itself
       while [ $# -ne 0 ]; do
         args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
@@ -97,6 +97,7 @@ DeterminePythonVersion() {
     export LE_PYTHON=${LE_PYTHON:-python}
   else
     echo "Cannot find any Pythons... please install one!"
+    exit 1
   fi
 
   PYVER=`$LE_PYTHON --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
@@ -175,7 +176,7 @@ if [ "$VERBOSE" = 1 ]  ; then
   echo
   $VENV_BIN/pip install -U setuptools
   $VENV_BIN/pip install -U pip
-  $VENV_BIN/pip install -r "$LEA_PATH"/py26reqs.txt -U letsencrypt letsencrypt-apache
+  $VENV_BIN/pip install -U letsencrypt letsencrypt-apache
   # nginx is buggy / disabled for now, but upgrade it if the user has
   # installed it manually
   if $VENV_BIN/pip freeze | grep -q letsencrypt-nginx ; then
@@ -187,8 +188,6 @@ else
   $VENV_BIN/pip install -U pip > /dev/null
   printf .
   # nginx is buggy / disabled for now...
-  $VENV_BIN/pip install -r "$LEA_PATH"/py26reqs.txt > /dev/null
-  printf .
   $VENV_BIN/pip install -U letsencrypt > /dev/null
   printf .
   $VENV_BIN/pip install -U letsencrypt-apache > /dev/null
@@ -201,5 +200,5 @@ fi
 
 # Explain what's about to happen, for the benefit of those getting sudo
 # password prompts...
-echo "Running with virtualenv:" $SUDO $VENV_BIN/letsencrypt "$@"
+echo "Requesting root privileges to run with virtualenv:" $SUDO $VENV_BIN/letsencrypt "$@"
 $SUDO $VENV_BIN/letsencrypt "$@"

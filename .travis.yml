@@ -3,6 +3,8 @@ language: python
 services:
   - rabbitmq
   - mariadb
+  # apacheconftest
+  #- apache2
 
 # http://docs.travis-ci.com/user/ci-environment/#CI-environment-OS
 # gimme has to be kept in sync with Boulder's Go version setting in .travis.yml
@@ -20,8 +22,19 @@ env:
   matrix:
     - TOXENV=py26 BOULDER_INTEGRATION=1
     - TOXENV=py27 BOULDER_INTEGRATION=1
+    - TOXENV=py26-oldest BOULDER_INTEGRATION=1
+    - TOXENV=py27-oldest BOULDER_INTEGRATION=1
+    - TOXENV=py33
+    - TOXENV=py34
     - TOXENV=lint
     - TOXENV=cover
+# Disabled for now due to requiring sudo -> causing more boulder integration
+# DNS timeouts :(
+#    - TOXENV=apacheconftest
+matrix:
+  include:
+    - env: TOXENV=py35
+      python: 3.5
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
@@ -58,6 +71,12 @@ addons:
     - openssl
     # For Boulder integration testing
     - rsyslog
+    # for apacheconftest
+    #- realpath
+    #- apache2
+    #- libapache2-mod-wsgi
+    #- libapache2-mod-macro
+    #- sudo
 
 install: "travis_retry pip install tox coveralls"
 script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/travis-integration.sh)'

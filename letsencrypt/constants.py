@@ -30,8 +30,9 @@ CLI_DEFAULTS = dict(
     auth_chain_path="./chain.pem",
     strict_permissions=False,
 )
-"""Defaults for CLI flags and `.IConfig` attributes."""
+STAGING_URI = "https://acme-staging.api.letsencrypt.org/directory"
 
+"""Defaults for CLI flags and `.IConfig` attributes."""
 
 RENEWER_DEFAULTS = dict(
     renewer_enabled="yes",

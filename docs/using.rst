@@ -31,16 +31,21 @@ Firstly, please `install Git`_ and run the following commands:
 
 .. _`install Git`: https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
 
+.. note:: On RedHat/CentOS 6 you will need to enable the EPEL_
+   repository before install.
+
+.. _EPEL: http://fedoraproject.org/wiki/EPEL
+
 To install and run the client you just need to type:
 
 .. code-block:: shell
 
    ./letsencrypt-auto
 
-.. note:: On RedHat/CentOS 6 you will need to enable the EPEL_
-   repository before install.
-
-.. _EPEL: http://fedoraproject.org/wiki/EPEL
+.. hint:: During the beta phase, Let's Encrypt enforces strict rate limits on
+   the number of certificates issued for one domain. It is recommended to
+   initially use the test server via `--test-cert` until you get the desired
+   certificates.
 
 Throughout the documentation, whenever you see references to
 ``letsencrypt`` script/binary, you can substitute in
@@ -58,8 +63,8 @@ or for full help, type:
 
 
 ``letsencrypt-auto`` is the recommended method of running the Let's Encrypt
-client beta releases on systems that don't have a packaged version.  Debian
-experimental, Arch linux and FreeBSD now have native packages, so on those
+client beta releases on systems that don't have a packaged version.  Debian,
+Arch linux, FreeBSD, and OpenBSD now have native packages, so on those
 systems you can just install ``letsencrypt`` (and perhaps
 ``letsencrypt-apache``).  If you'd like to run the latest copy from Git, or
 run your own locally modified copy of the client, follow the instructions in
@@ -134,8 +139,19 @@ Would obtain a single certificate for all of those names, using the
 ``/var/www/example`` webroot directory for the first two, and
 ``/var/www/eg`` for the second two.
 
+The webroot plugin works by creating a temporary file for each of your requested
+domains in ``${webroot-path}/.well-known/acme-challenge``. Then the Let's
+Encrypt validation server makes HTTP requests to validate that the DNS for each
+requested domain resolves to the server running letsencrypt. An example request
+made to your web server would look like:
+
+::
+
+    66.133.109.36 - - [05/Jan/2016:20:11:24 -0500] "GET /.well-known/acme-challenge/HGr8U1IeTW4kY_Z6UIyaakzOkyQgPr_7ArlLgtZE8SX HTTP/1.1" 200 87 "-" "Mozilla/5.0 (compatible; Let's Encrypt validation server; +https://www.letsencrypt.org)"
+
 Note that to use the webroot plugin, your server must be configured to serve
 files from hidden directories.
+
 
 Manual
 ------
@@ -173,10 +189,11 @@ Renewal
 In order to renew certificates simply call the ``letsencrypt`` (or
 letsencrypt-auto_) again, and use the same values when prompted. You
 can automate it slightly by passing necessary flags on the CLI (see
-`--help all`), or even further using the :ref:`config-file`. If you're
-sure that UI doesn't prompt for any details you can add the command to
-``crontab`` (make it less than every 90 days to avoid problems, say
-every month).
+`--help all`), or even further using the :ref:`config-file`. The
+``--renew-by-default`` flag may be helpful for automating renewal. If
+you're sure that UI doesn't prompt for any details you can add the
+command to ``crontab`` (make it less than every 90 days to avoid
+problems, say every month).
 
 Please note that the CA will send notification emails to the address
 you provide if you do not renew certificates that are about to expire.
@@ -223,21 +240,25 @@ The following files are available:
 ``cert.pem``
   Server certificate only.
 
-  This is what Apache needs for `SSLCertificateFile
+  This is what Apache < 2.4.8 needs for `SSLCertificateFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_.
 
 ``chain.pem``
   All certificates that need to be served by the browser **excluding**
   server certificate, i.e. root and intermediate certificates only.
 
-  This is what Apache needs for `SSLCertificateChainFile
-  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatechainfile>`_.
+  This is what Apache < 2.4.8 needs for `SSLCertificateChainFile
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatechainfile>`_,
+  and what nginx >= 1.3.7 needs for `ssl_trusted_certificate
+  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_trusted_certificate>`_.
 
 ``fullchain.pem``
   All certificates, **including** server certificate. This is
   concatenation of ``chain.pem`` and ``cert.pem``.
 
-  This is what nginx needs for `ssl_certificate
+  This is what Apache >= 2.4.8 needs for `SSLCertificateFile
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_,
+  and what nginx needs for `ssl_certificate
   <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate>`_.
 
 
@@ -286,7 +307,7 @@ get support on our `forums <https://community.letsencrypt.org>`_.
 If you find a bug in the software, please do report it in our `issue
 tracker
 <https://github.com/letsencrypt/letsencrypt/issues>`_. Remember to
-give us us as much information as possible:
+give us as much information as possible:
 
 - copy and paste exact command line used and the output (though mind
   that the latter might include some personally identifiable
@@ -343,25 +364,30 @@ Operating System Packages
   * Port: ``cd /usr/ports/security/py-letsencrypt && make install clean``
   * Package: ``pkg install py27-letsencrypt``
 
+**OpenBSD**
+
+  * Port: ``cd /usr/ports/security/letsencrypt/client && make install clean``
+  * Package: ``pkg_add letsencrypt``
+
 **Arch Linux**
 
 .. code-block:: shell
 
    sudo pacman -S letsencrypt letsencrypt-apache
 
-**Debian Experimental**
+**Debian**
 
-If you run Debian unstable, you can install experimental letsencrypt packages.
-Add the line ``deb http://ftp.us.debian.org/debian/ experimental main`` (or
-the equivalent for your country) to ``/etc/apt/sources.list``, then run
+If you run Debian Stretch or Debian Sid, you can install letsencrypt packages.
 
 .. code-block:: shell
 
    sudo apt-get update
-   sudo apt-get -t experimental install letsencrypt python-letsencrypt-apache
+   sudo apt-get install letsencrypt python-letsencrypt-apache
 
-If you don't want to use the Apache plugin, you can ommit the
+If you don't want to use the Apache plugin, you can omit the
 ``python-letsencrypt-apache`` package.
+
+Packages for Debian Jessie are coming in the next few weeks.
 
 **Other Operating Systems**
 

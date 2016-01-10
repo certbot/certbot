@@ -8,6 +8,7 @@ import subprocess
 
 from letsencrypt import errors
 
+from letsencrypt_apache import constants
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,6 @@ class ApacheParser(object):
 
     :ivar str root: Normalized absolute path to the server root
         directory. Without trailing slash.
-    :ivar str root: Server root
     :ivar set modules: All module names that are currently enabled.
     :ivar dict loc: Location to place directives, root - configuration origin,
         default - user config file, name - NameVirtualHost,
@@ -28,21 +28,25 @@ class ApacheParser(object):
     arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
     fnmatch_chars = set(["*", "?", "\\", "[", "]"])
 
-    def __init__(self, aug, root, ctl):
+    def __init__(self, aug, root, vhostroot, version=(2, 4)):
         # Note: Order is important here.
 
         # This uses the binary, so it can be done first.
         # https://httpd.apache.org/docs/2.4/mod/core.html#define
         # https://httpd.apache.org/docs/2.4/mod/core.html#ifdefine
         # This only handles invocation parameters and Define directives!
+        self.parser_paths = {}
         self.variables = {}
-        self.update_runtime_variables(ctl)
+        if version >= (2, 4):
+            self.update_runtime_variables()
 
         self.aug = aug
         # Find configuration root and make sure augeas can parse it.
         self.root = os.path.abspath(root)
         self.loc = {"root": self._find_config_root()}
         self._parse_file(self.loc["root"])
+
+        self.vhostroot = os.path.abspath(vhostroot)
 
         # This problem has been fixed in Augeas 1.0
         self.standardize_excl()
@@ -56,9 +60,14 @@ class ApacheParser(object):
         # Set up rest of locations
         self.loc.update(self._set_locations())
 
-        # Must also attempt to parse sites-available or equivalent
-        # Sites-available is not included naturally in configuration
-        self._parse_file(os.path.join(self.root, "sites-available") + "/*")
+        # Must also attempt to parse virtual host root
+        self._parse_file(self.vhostroot + "/" +
+                         constants.os_constant("vhost_files"))
+
+        # check to see if there were unparsed define statements
+        if version < (2, 4):
+            if self.find_dir("Define", exclude=False):
+                raise errors.PluginError("Error parsing runtime variables")
 
     def init_modules(self):
         """Iterates on the configuration until no new modules are loaded.
@@ -84,7 +93,7 @@ class ApacheParser(object):
                 self.modules.add(
                     os.path.basename(self.get_arg(match_filename))[:-2] + "c")
 
-    def update_runtime_variables(self, ctl):
+    def update_runtime_variables(self):
         """"
 
         .. note:: Compile time variables (apache2ctl -V) are not used within the
@@ -94,19 +103,19 @@ class ApacheParser(object):
         .. todo:: Create separate compile time variables... simply for arg_get()
 
         """
-        stdout = self._get_runtime_cfg(ctl)
+        stdout = self._get_runtime_cfg()
 
         variables = dict()
         matches = re.compile(r"Define: ([^ \n]*)").findall(stdout)
         try:
             matches.remove("DUMP_RUN_CFG")
         except ValueError:
-            raise errors.PluginError("Unable to parse runtime variables")
+            return
 
         for match in matches:
             if match.count("=") > 1:
                 logger.error("Unexpected number of equal signs in "
-                             "apache2ctl -D DUMP_RUN_CFG")
+                             "runtime config dump.")
                 raise errors.PluginError(
                     "Error parsing Apache runtime variables")
             parts = match.partition("=")
@@ -114,7 +123,7 @@ class ApacheParser(object):
 
         self.variables = variables
 
-    def _get_runtime_cfg(self, ctl):  # pylint: disable=no-self-use
+    def _get_runtime_cfg(self):  # pylint: disable=no-self-use
         """Get runtime configuration info.
 
         :returns: stdout from DUMP_RUN_CFG
@@ -122,16 +131,18 @@ class ApacheParser(object):
         """
         try:
             proc = subprocess.Popen(
-                [ctl, "-t", "-D", "DUMP_RUN_CFG"],
+                constants.os_constant("define_cmd"),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
 
         except (OSError, ValueError):
             logger.error(
-                "Error accessing %s for runtime parameters!%s", ctl, os.linesep)
+                "Error running command %s for runtime parameters!%s",
+                constants.os_constant("define_cmd"), os.linesep)
             raise errors.MisconfigurationError(
-                "Error accessing loaded Apache parameters: %s", ctl)
+                "Error accessing loaded Apache parameters: %s",
+                constants.os_constant("define_cmd"))
         # Small errors that do not impede
         if proc.returncode != 0:
             logger.warn("Error in checking parameter list: %s", stderr)
@@ -461,16 +472,63 @@ class ApacheParser(object):
         :param str filepath: Apache config file path
 
         """
+        use_new, remove_old = self._check_path_actions(filepath)
         # Test if augeas included file for Httpd.lens
         # Note: This works for augeas globs, ie. *.conf
-        inc_test = self.aug.match(
-            "/augeas/load/Httpd/incl [. ='%s']" % filepath)
-        if not inc_test:
-            # Load up files
-            # This doesn't seem to work on TravisCI
-            # self.aug.add_transform("Httpd.lns", [filepath])
-            self._add_httpd_transform(filepath)
-            self.aug.load()
+        if use_new:
+            inc_test = self.aug.match(
+                "/augeas/load/Httpd/incl [. ='%s']" % filepath)
+            if not inc_test:
+                # Load up files
+                # This doesn't seem to work on TravisCI
+                # self.aug.add_transform("Httpd.lns", [filepath])
+                if remove_old:
+                    self._remove_httpd_transform(filepath)
+                self._add_httpd_transform(filepath)
+                self.aug.load()
+
+    def _check_path_actions(self, filepath):
+        """Determine actions to take with a new augeas path
+
+        This helper function will return a tuple that defines
+        if we should try to append the new filepath to augeas
+        parser paths, and / or remove the old one with more
+        narrow matching.
+
+        :param str filepath: filepath to check the actions for
+
+        """
+
+        try:
+            new_file_match = os.path.basename(filepath)
+            existing_matches = self.parser_paths[os.path.dirname(filepath)]
+            if "*" in existing_matches:
+                use_new = False
+            else:
+                use_new = True
+            if new_file_match == "*":
+                remove_old = True
+            else:
+                remove_old = False
+        except KeyError:
+            use_new = True
+            remove_old = False
+        return use_new, remove_old
+
+    def _remove_httpd_transform(self, filepath):
+        """Remove path from Augeas transform
+
+        :param str filepath: filepath to remove
+        """
+
+        remove_basenames = self.parser_paths[os.path.dirname(filepath)]
+        remove_dirname = os.path.dirname(filepath)
+        for name in remove_basenames:
+            remove_path = remove_dirname + "/" + name
+            remove_inc = self.aug.match(
+                "/augeas/load/Httpd/incl [. ='%s']" % remove_path)
+            self.aug.remove(remove_inc[0])
+        self.parser_paths.pop(remove_dirname)
 
     def _add_httpd_transform(self, incl):
         """Add a transform to Augeas.
@@ -492,6 +550,13 @@ class ApacheParser(object):
             # Augeas uses base 1 indexing... insert at beginning...
             self.aug.set("/augeas/load/Httpd/lens", "Httpd.lns")
             self.aug.set("/augeas/load/Httpd/incl", incl)
+        # Add included path to paths dictionary
+        try:
+            self.parser_paths[os.path.dirname(incl)].append(
+                os.path.basename(incl))
+        except KeyError:
+            self.parser_paths[os.path.dirname(incl)] = [
+                os.path.basename(incl)]
 
     def standardize_excl(self):
         """Standardize the excl arguments for the Httpd lens in Augeas.
@@ -546,8 +611,7 @@ class ApacheParser(object):
 
     def _find_config_root(self):
         """Find the Apache Configuration Root file."""
-        location = ["apache2.conf", "httpd.conf"]
-
+        location = ["apache2.conf", "httpd.conf", "conf/httpd.conf"]
         for name in location:
             if os.path.isfile(os.path.join(self.root, name)):
                 return os.path.join(self.root, name)

@@ -6,14 +6,13 @@ from setuptools import find_packages
 
 version = '0.2.0.dev0'
 
+# Please update tox.ini when modifying dependency version requirements
 install_requires = [
     # load_pem_private/public_key (>=0.6)
     # rsa_recover_prime_factors (>=0.8)
     'cryptography>=0.8',
-    'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
-    'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
-    # Connection.set_tlsext_host_name (>=0.13), X509Req.get_extensions (>=0.15)
-    'PyOpenSSL>=0.15',
+    # Connection.set_tlsext_host_name (>=0.13)
+    'PyOpenSSL>=0.13',
     'pyrfc3339',
     'pytz',
     'requests',
@@ -31,6 +30,11 @@ if sys.version_info < (2, 7):
     ])
 else:
     install_requires.append('mock')
+
+if sys.version_info < (2, 7, 9):
+    # For secure SSL connection with Python 2.7 (InsecurePlatformWarning)
+    install_requires.append('ndg-httpsclient')
+    install_requires.append('pyasn1')
 
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
@@ -63,6 +67,7 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
     ],

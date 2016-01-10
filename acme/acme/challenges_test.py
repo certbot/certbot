@@ -13,7 +13,7 @@ from acme import other
 from acme import test_util
 
 
-CERT = test_util.load_cert('cert.pem')
+CERT = test_util.load_comparable_cert('cert.pem')
 KEY = jose.JWKRSA(key=test_util.load_rsa_private_key('rsa512_key.pem'))
 
 
@@ -421,7 +421,7 @@ class ProofOfPossessionHintsTest(unittest.TestCase):
             'jwk': jwk,
             'certFingerprints': cert_fingerprints,
             'certs': (jose.encode_b64jose(OpenSSL.crypto.dump_certificate(
-                OpenSSL.crypto.FILETYPE_ASN1, CERT)),),
+                OpenSSL.crypto.FILETYPE_ASN1, CERT.wrapped)),),
             'subjectKeyIdentifiers': subject_key_identifiers,
             'serialNumbers': serial_numbers,
             'issuers': issuers,

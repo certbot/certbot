@@ -300,7 +300,7 @@ class Client(object):
 
         lineage = storage.RenewableCert.new_lineage(
             domains[0], OpenSSL.crypto.dump_certificate(
-                OpenSSL.crypto.FILETYPE_PEM, certr.body),
+                OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped),
             key.pem, crypto_util.dump_pyopenssl_chain(chain),
             params, config, cli_config)
         return lineage
@@ -330,7 +330,7 @@ class Client(object):
                 self.config.strict_permissions)
 
         cert_pem = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, certr.body)
+            OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped)
         cert_file, act_cert_path = le_util.unique_file(cert_path, 0o644)
         try:
             cert_file.write(cert_pem)
@@ -407,9 +407,10 @@ class Client(object):
             logger.warning("No config is specified.")
             raise errors.Error("No config available")
 
-        redirect = config.redirect
-        hsts = config.hsts
-        uir = config.uir # Upgrade Insecure Requests
+        supported = self.installer.supported_enhancements()
+        redirect = config.redirect if "redirect" in supported else False
+        hsts = config.hsts if "ensure-http-header" in supported else False
+        uir = config.uir if "ensure-http-header" in supported else False
 
         if redirect is None:
             redirect = enhancements.ask("redirect")

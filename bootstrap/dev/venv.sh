@@ -4,7 +4,6 @@
 export VENV_ARGS="--python python2"
 
 ./bootstrap/dev/_venv_common.sh \
-  -r py26reqs.txt \
   -e acme[testing] \
   -e .[dev,docs,testing] \
   -e letsencrypt-apache \
