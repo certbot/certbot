@@ -5,4 +5,4 @@ export VENV_NAME="${VENV_NAME:-venv3}"
 export VENV_ARGS="--python python3"
 
 ./bootstrap/dev/_venv_common.sh \
-  -e acme[testing] \
+  -e acme[dev] \

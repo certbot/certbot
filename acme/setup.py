@@ -36,15 +36,16 @@ if sys.version_info < (2, 7, 9):
     install_requires.append('ndg-httpsclient')
     install_requires.append('pyasn1')
 
+dev_extras = [
+    'nose',
+    'pep8',
+    'tox',
+]
+
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
     'sphinx_rtd_theme',
     'sphinxcontrib-programoutput',
-]
-
-testing_extras = [
-    'nose',
-    'tox',
 ]
 
 
@@ -76,8 +77,8 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     extras_require={
+        'dev': dev_extras,
         'docs': docs_extras,
-        'testing': testing_extras,
     },
     entry_points={
         'console_scripts': [

@@ -58,7 +58,7 @@ RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv && \
     -e /opt/letsencrypt/src/letsencrypt-nginx \
     -e /opt/letsencrypt/src/letshelp-letsencrypt \
     -e /opt/letsencrypt/src/letsencrypt-compatibility-test \
-    -e /opt/letsencrypt/src[dev,docs,testing]
+    -e /opt/letsencrypt/src[dev,docs]
 
 # install in editable mode (-e) to save space: it's not possible to
 # "rm -rf /opt/letsencrypt/src" (it's stays in the underlaying image);
