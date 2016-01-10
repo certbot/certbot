@@ -104,6 +104,30 @@ class AuthHandler(object):
             self.dv_c.extend(dom_dv_c)
             self.cont_c.extend(dom_cont_c)
 
+    def _simple_verify(self, achall, response):
+        """Self-verifies a response with the corresponding challenge"""
+        return_value = True
+
+        if isinstance(response, challenges.HTTP01Response):
+            return_value = response.simple_verify(
+                    achall.chall, achall.domain,
+                    achall.account_key.public_key(),
+                    self.config.http01_port)
+        elif isinstance(response, challenges.TLSSNI01Response):
+            return_value = response.simple_verify(
+                    achall.chall, achall.domain,
+                    achall.account_key.public_key(),
+                    port=self.config.tls_sni_01_port)
+        if not return_value:
+            logger.warning("Self-verify of %s "
+                           "challenge for domain %s failed. "
+                           "Challenge URI: %s",
+                           achall.chall.__class__.__name__,
+                           achall.domain,
+                           achall.uri)
+
+        return return_value
+
     def _solve_challenges(self):
         """Get Responses for challenges from authenticators."""
         cont_resp = []
@@ -115,24 +139,7 @@ class AuthHandler(object):
                 if self.dv_c:
                     dv_resp = self.dv_auth.perform(self.dv_c)
                     for achall, response in zip(self.dv_c, dv_resp):
-                        simple_verify_return = True
-                        if isinstance(response, challenges.HTTP01Response):
-                            simple_verify_return = response.simple_verify(
-                                    achall.chall, achall.domain,
-                                    achall.account_key.public_key(),
-                                    self.config.http01_port)
-                        elif isinstance(response, challenges.TLSSNI01Response):
-                            simple_verify_return = response.simple_verify(
-                                    achall.chall, achall.domain,
-                                    achall.account_key.public_key(),
-                                    port=self.config.tls_sni_01_port)
-                        if not simple_verify_return:
-                            logger.warning("Self-verify of %s "
-                                           "challenge for domain %s failed. "
-                                           "Challenge URI: %s",
-                                           achall.chall.__class__.__name__,
-                                           achall.domain,
-                                           achall.uri)
+                        self._simple_verify(achall, response)
 
             except errors.AuthorizationError:
                 logger.critical("Failure in setting up challenges.")

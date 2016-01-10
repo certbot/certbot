@@ -15,6 +15,7 @@ from letsencrypt import le_util
 
 from letsencrypt.tests import acme_util
 
+
 class ChallengeFactoryTest(unittest.TestCase):
     # pylint: disable=protected-access
 
