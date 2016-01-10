@@ -1,17 +1,15 @@
 """Tests for acme.dns_resolver."""
 import unittest
-
 import mock
-
-try:
-    import dns
-except ImportError:
-    dns = None
 
 from acme import dns_resolver
 
-@unittest.skipIf(dns is None,
-                 "dnspython is not available, skipping dns_resolver tests")
+try:
+    import dns
+except ImportError:  # pragma: no cover
+    dns = None
+
+
 class TxtRecordsForNameTest(unittest.TestCase):
 
     def create_txt_response(self, name, txt_records):
@@ -41,3 +39,9 @@ class TxtRecordsForNameTest(unittest.TestCase):
     def test_txt_records_for_name_domain_not_found(self, mock_dns):
         mock_dns.side_effect = dns.exception.DNSException
         self.assertEquals([], dns_resolver.txt_records_for_name('name'))
+
+    def run(self, result=None):
+        if dns is None:
+            print self, "... SKIPPING, no dnspython available"
+            return
+        super(TxtRecordsForNameTest, self).run(result)
