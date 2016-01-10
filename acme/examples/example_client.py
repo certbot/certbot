@@ -43,6 +43,6 @@ csr = OpenSSL.crypto.load_certificate_request(
         'acme', os.path.join('testdata', 'csr.der')))
 try:
     acme.request_issuance(csr, (authzr,))
-except messages.Error as error:
+except errors.ClientError as error:
     print ("This script is doomed to fail as no authorization "
            "challenges are ever solved. Error from server: {0}".format(error))

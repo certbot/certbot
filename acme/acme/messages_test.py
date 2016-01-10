@@ -19,14 +19,15 @@ class ErrorTest(unittest.TestCase):
     def setUp(self):
         from acme.messages import Error
         self.error = Error(
-            detail='foo', typ='urn:acme:error:malformed', title='title')
+            status=409, detail='foo', typ='urn:acme:error:malformed',
+            title='title')
         self.jobj = {
+            'status': 409,
             'detail': 'foo',
             'title': 'some title',
             'type': 'urn:acme:error:malformed',
         }
         self.error_custom = Error(typ='custom', detail='bar')
-        self.jobj_cusom = {'type': 'custom', 'detail': 'bar'}
 
     def test_from_json_hashable(self):
         from acme.messages import Error
@@ -36,6 +37,10 @@ class ErrorTest(unittest.TestCase):
         self.assertEqual(
             'The request message was malformed', self.error.description)
         self.assertTrue(self.error_custom.description is None)
+
+    def test_status(self):
+        self.assertEqual(409, self.error.status)
+        self.assertEqual(None, self.error_custom.status)
 
     def test_str(self):
         self.assertEqual(

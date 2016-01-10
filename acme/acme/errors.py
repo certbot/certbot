@@ -11,26 +11,62 @@ class SchemaValidationError(jose_errors.DeserializationError):
 
 
 class ClientError(Error):
+    """Network error or unexpected client response."""
+    def __init__(self, response, *args, **kwargs):
+        """
+        :param requests.Response details: The response object that caused the
+            exception to be thrown.
+        """
+        super(ClientError, self).__init__(*args, **kwargs)
+        self.response = response
+
+
+class ClientErrorWithDetails(ClientError):
     """Network error."""
+    def __init__(self, response, details, *args, **kwargs):
+        """
+        :param requests.Response details: The response object that caused the
+            exception to be thrown.
+        :param acme.messages.Error details: The details of the error as transmitted
+            by the server.
+        """
+        super(ClientErrorWithDetails, self).__init__(response, *args, **kwargs)
+        self.details = details
+
+    def __str__(self):
+        return 'Client error: {0}'.format(self.details)
 
 
 class UnexpectedUpdate(ClientError):
     """Unexpected update error."""
 
 
+class KeyAlreadyRegistered(Exception):
+    """Key used in registration is already registered"""
+    def __init__(self, existing_registration_uri, *args, **kwargs):
+        super(KeyAlreadyRegistered, self).__init__(*args, **kwargs)
+        self.existing_registration_uri = existing_registration_uri
+
+    def __str__(self):
+        return 'Key already registered at server: {0}'.format(
+            self.existing_registration_uri)
+
+
 class NonceError(ClientError):
     """Server response nonce error."""
+    def __init__(self, response, *args, **kwargs):
+        super(NonceError, self).__init__(response, *args, **kwargs)
 
 
 class BadNonce(NonceError):
     """Bad nonce error."""
-    def __init__(self, nonce, error, *args, **kwargs):
-        super(BadNonce, self).__init__(*args, **kwargs)
+    def __init__(self, response, nonce, nonce_error, *args, **kwargs):
+        super(BadNonce, self).__init__(response, *args, **kwargs)
         self.nonce = nonce
-        self.error = error
+        self.nonce_error = nonce_error
 
     def __str__(self):
-        return 'Invalid nonce ({0!r}): {1}'.format(self.nonce, self.error)
+        return 'Invalid nonce ({0!r}): {1}'.format(self.nonce, self.nonce_error)
 
 
 class MissingNonce(NonceError):
@@ -44,8 +80,7 @@ class MissingNonce(NonceError):
 
     """
     def __init__(self, response, *args, **kwargs):
-        super(MissingNonce, self).__init__(*args, **kwargs)
-        self.response = response
+        super(MissingNonce, self).__init__(response, *args, **kwargs)
 
     def __str__(self):
         return ('Server {0} response did not include a replay '
@@ -66,10 +101,10 @@ class PollError(ClientError):
         to the most recently updated one
 
     """
-    def __init__(self, waiting, updated):
+    def __init__(self, response, waiting, updated, *args, **kwargs):
         self.waiting = waiting
         self.updated = updated
-        super(PollError, self).__init__()
+        super(PollError, self).__init__(response, *args, **kwargs)
 
     @property
     def timeout(self):
