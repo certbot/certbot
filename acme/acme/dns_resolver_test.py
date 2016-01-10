@@ -7,7 +7,7 @@ from acme import dns_resolver
 try:
     import dns
 except ImportError:  # pragma: no cover
-    dns = Nones
+    dns = None
 
 
 class TxtRecordsForNameTest(unittest.TestCase):
