@@ -34,7 +34,7 @@ version = meta['version']
 install_requires = [
     'acme=={0}'.format(version),
     'configobj',
-    'cryptography>=0.7,<1.2',  # load_pem_x509_certificate
+    'cryptography>=0.7',  # load_pem_x509_certificate
     'parsedatetime',
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
     'PyOpenSSL',
