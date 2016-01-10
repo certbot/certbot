@@ -42,7 +42,7 @@ class AuthHandler(object):
         form of :class:`letsencrypt.achallenges.AnnotatedChallenge`
 
     """
-    def __init__(self, dv_auth, cont_auth, acme, account, config=None):
+    def __init__(self, config, dv_auth, cont_auth, acme, account):
         self.dv_auth = dv_auth
         self.cont_auth = cont_auth
         self.acme = acme

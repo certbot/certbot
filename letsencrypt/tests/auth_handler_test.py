@@ -21,9 +21,11 @@ class ChallengeFactoryTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.auth_handler import AuthHandler
 
-        # Account is mocked...
+        # Account and config are mocked
+        self.config = mock.MagicMock(
+            tls_sni_01_port=1234, http01_port=4321)
         self.handler = AuthHandler(
-            None, None, None, mock.Mock(key="mock_key"))
+            self.config, None, None, None, mock.Mock(key="mock_key"))
 
         self.dom = "test"
         self.handler.authzr[self.dom] = acme_util.gen_authzr(
@@ -83,8 +85,8 @@ class GetAuthorizationsTest(unittest.TestCase):
             tls_sni_01_port=1234, http01_port=4321)
 
         self.handler = AuthHandler(
-            self.mock_dv_auth, self.mock_cont_auth,
-            self.mock_net, self.mock_account, self.config)
+            self.config, self.mock_dv_auth, self.mock_cont_auth,
+            self.mock_net, self.mock_account)
 
         logging.disable(logging.CRITICAL)
 
@@ -199,10 +201,12 @@ class PollChallengesTest(unittest.TestCase):
         from letsencrypt.auth_handler import challb_to_achall
         from letsencrypt.auth_handler import AuthHandler
 
-        # Account and network are mocked...
+        # Account, config and network are mocked
         self.mock_net = mock.MagicMock()
+        self.config = mock.MagicMock(
+            tls_sni_01_port=1234, http01_port=4321)
         self.handler = AuthHandler(
-            None, None, self.mock_net, mock.Mock(key="mock_key"))
+            self.config, None, None, self.mock_net, mock.Mock(key="mock_key"))
 
         self.doms = ["0", "1", "2"]
         self.handler.authzr[self.doms[0]] = acme_util.gen_authzr(
