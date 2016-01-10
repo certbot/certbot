@@ -483,7 +483,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                 'Successful revocation must return HTTP OK status')
 
 
-class ClientNetwork(object):
+class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     """Client network."""
     JSON_CONTENT_TYPE = 'application/json'
     JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
