@@ -154,20 +154,22 @@ class GetAuthorizationsTest(unittest.TestCase):
 
     @mock.patch("acme.challenges.HTTP01Response.simple_verify")
     @mock.patch("acme.challenges.TLSSNI01Response.simple_verify")
-    def test_simple_verify(self, mock_http01_verify, mock_tlssni01_verify):
+    @mock.patch("letsencrypt.auth_handler.logger")
+    def test_simple_verify(self, mock_logger, mock_tlssni01_verify, mock_http01_verify):
         challenge_http_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.HTTP01_P, domain=b'localhost', account_key=mock.Mock(key="mock_key"))
         challenge_tls_sni_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.TLSSNI01_P, domain=b'localhost', account_key=mock.Mock(key="mock_key"))
-
-        mock_http01_verify.return_value = False
-        mock_tlssni01_verify.return_value = False
 
         response_http_01 = challenges.HTTP01Response(key_authorization=u'foo')
         response_tls_sni_01 = challenges.TLSSNI01Response(key_authorization=u'foo')
 
         self.handler.dv_c = [challenge_http_01, challenge_tls_sni_01]
         self.mock_dv_auth.perform.side_effect = [[response_http_01, response_tls_sni_01]]
+
+        mock_http01_verify.return_value = False
+        mock_tlssni01_verify.return_value = False
+
         self.handler._solve_challenges() # pylint: disable=protected-access
 
         response_http_01.simple_verify.assert_called_with(
@@ -181,6 +183,17 @@ class GetAuthorizationsTest(unittest.TestCase):
             challenge_tls_sni_01.domain,
             challenge_tls_sni_01.account_key.public_key(),
             port=self.config.tls_sni_01_port)
+
+        logger_calls = [mock.call(mock.ANY,
+                                  challenge_http_01.chall.__class__.__name__,
+                                  challenge_http_01.domain,
+                                  challenge_http_01.uri),
+                        mock.call(mock.ANY,
+                                  challenge_tls_sni_01.chall.__class__.__name__,
+                                  challenge_tls_sni_01.domain,
+                                  challenge_tls_sni_01.uri)]
+
+        mock_logger.warning.assert_has_calls(logger_calls)
 
     def _validate_all(self, unused_1, unused_2):
         for dom in self.handler.authzr.keys():
