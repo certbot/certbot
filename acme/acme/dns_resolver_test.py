@@ -1,11 +1,17 @@
 """Tests for acme.dns_resolver."""
 import unittest
 
-import dns
 import mock
+
+try:
+    import dns
+except ImportError:
+    dns = None
 
 from acme import dns_resolver
 
+@unittest.skipIf(dns is None,
+                 "dnspython is not available, skipping dns_resolver tests")
 class TxtRecordsForNameTest(unittest.TestCase):
 
     def create_txt_response(self, name, txt_records):

@@ -226,7 +226,6 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
         :param unicode domain: Domain name being verified.
         :param account_public_key: Public key for the key pair
             being authorized.
-        :param JWK account_public_key:
 
         :returns: ``True`` iff validation with the TXT records resolved from a
             DNS server is successful.
