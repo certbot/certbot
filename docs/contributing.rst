@@ -100,9 +100,9 @@ rabbitmq-server and then start Boulder_, an ACME CA server::
 
 The script will download, compile and run the executable; please be
 patient - it will take some time... Once its ready, you will see
-``Server running, listening on 127.0.0.1:4000...``. Add an
-``/etc/hosts`` entry pointing ``le.wtf`` to 127.0.0.1.  You may now
-run (in a separate terminal)::
+``Server running, listening on 127.0.0.1:4000...``. Add ``/etc/hosts``
+entries pointing ``le.wtf``, ``le1.wtf``, ``le2.wtf``, ``le3.wtf``
+and ``nginx.wtf`` to 127.0.0.1.  You may now run (in a separate terminal)::
 
   ./tests/boulder-integration.sh && echo OK || echo FAIL
 
