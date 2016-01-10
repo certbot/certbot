@@ -539,7 +539,7 @@ class ClientNetwork(object):
             # TODO: response.json() is called twice, once here, and
             # once in _get and _post clients
             jobj = response.json()
-        except ValueError as error:
+        except ValueError:
             jobj = None
 
         if not response.ok:
