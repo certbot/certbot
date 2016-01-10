@@ -46,11 +46,10 @@ class AuthHandler(object):
         self.dv_auth = dv_auth
         self.cont_auth = cont_auth
         self.acme = acme
+        self.config = config
 
         self.account = account
         self.authzr = dict()
-
-        self.config = config
 
         # List must be used to keep responses straight.
         self.dv_c = []
@@ -123,13 +122,17 @@ class AuthHandler(object):
                                     achall.account_key.public_key(),
                                     self.config.http01_port)
                         elif isinstance(response, challenges.TLSSNI01Response):
-                            response.simple_verify(
+                            simple_verify_return = response.simple_verify(
                                     achall.chall, achall.domain,
-                                    achall.account_key.public_key())
+                                    achall.account_key.public_key(),
+                                    port=self.config.tls_sni_01_port)
                         if not simple_verify_return:
                             logger.warning("Self-verify of %s "
-                                    "challenge for domain %s failed.",
-                                    achall.chall.__class__.__name__, achall.domain)
+                                           "challenge for domain %s failed. "
+                                           "Challenge URI: %s",
+                                           achall.chall.__class__.__name__,
+                                           achall.domain,
+                                           achall.uri)
 
             except errors.AuthorizationError:
                 logger.critical("Failure in setting up challenges.")

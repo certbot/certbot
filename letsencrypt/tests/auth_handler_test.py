@@ -7,17 +7,13 @@ import mock
 
 from acme import challenges
 from acme import client as acme_client
-from acme import jose
 from acme import messages
 
 from letsencrypt import achallenges
 from letsencrypt import errors
 from letsencrypt import le_util
 
-from letsencrypt.configuration import NamespaceConfig
-
 from letsencrypt.tests import acme_util
-from letsencrypt.tests import test_util
 
 class ChallengeFactoryTest(unittest.TestCase):
     # pylint: disable=protected-access
@@ -83,9 +79,8 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.mock_account = mock.Mock(key=le_util.Key("file_path", "PEM"))
         self.mock_net = mock.MagicMock(spec=acme_client.Client)
 
-        namespace = mock.MagicMock(
+        self.config = mock.MagicMock(
             tls_sni_01_port=1234, http01_port=4321)
-        self.config = NamespaceConfig(namespace)
 
         self.handler = AuthHandler(
             self.mock_dv_auth, self.mock_cont_auth,
@@ -158,12 +153,10 @@ class GetAuthorizationsTest(unittest.TestCase):
     @mock.patch("acme.challenges.HTTP01Response.simple_verify")
     @mock.patch("acme.challenges.TLSSNI01Response.simple_verify")
     def test_simple_verify(self, mock_http01_verify, mock_tlssni01_verify):
-        # pylint: disable=protected-access
-        key = jose.JWK.load(test_util.load_vector('rsa512_key.pem'))
         challenge_http_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=acme_util.HTTP01_P, domain=b'localhost', account_key=key)
+            challb=acme_util.HTTP01_P, domain=b'localhost', account_key=mock.Mock(key="mock_key"))
         challenge_tls_sni_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=acme_util.TLSSNI01_P, domain=b'localhost', account_key=key)
+            challb=acme_util.TLSSNI01_P, domain=b'localhost', account_key=mock.Mock(key="mock_key"))
 
         mock_http01_verify.return_value = False
         mock_tlssni01_verify.return_value = False
@@ -173,7 +166,7 @@ class GetAuthorizationsTest(unittest.TestCase):
 
         self.handler.dv_c = [challenge_http_01, challenge_tls_sni_01]
         self.mock_dv_auth.perform.side_effect = [[response_http_01, response_tls_sni_01]]
-        self.handler._solve_challenges()
+        self.handler._solve_challenges() # pylint: disable=protected-access
 
         response_http_01.simple_verify.assert_called_with(
             challenge_http_01.chall,
@@ -184,7 +177,8 @@ class GetAuthorizationsTest(unittest.TestCase):
         response_tls_sni_01.simple_verify.assert_called_with(
             challenge_tls_sni_01.chall,
             challenge_tls_sni_01.domain,
-            challenge_tls_sni_01.account_key.public_key()) #None accounts for cert
+            challenge_tls_sni_01.account_key.public_key(),
+            port=self.config.tls_sni_01_port)
 
     def _validate_all(self, unused_1, unused_2):
         for dom in self.handler.authzr.keys():

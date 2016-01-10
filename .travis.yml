@@ -36,14 +36,13 @@ branches:
 sudo: false
 
 addons:
-  # make sure simplehttp simple verification works (custom /etc/hosts)
+  # Custom /etc/hosts required for SimpleHTTP simple verification,
+  # simple_verify for http01 and tls-sni-01, and letsencrypt_test_nginx
   hosts:
     - le.wtf
-    # For boulder-integration.sh
     - le1.wtf
     - le2.wtf
     - le3.wtf
-    # For letsencrypt_test_nginx
     - nginx.wtf
   mariadb: "10.0"
   apt:
