@@ -42,6 +42,6 @@ class TxtRecordsForNameTest(unittest.TestCase):
 
     def run(self, result=None):
         if dns is None:
-            print self, "... SKIPPING, no dnspython available"
+            print(self, "... SKIPPING, no dnspython available")
             return
         super(TxtRecordsForNameTest, self).run(result)
