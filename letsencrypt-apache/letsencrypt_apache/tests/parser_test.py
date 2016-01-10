@@ -36,7 +36,7 @@ class BasicParserTest(util.ParserTest):
 
         """
         file_path = os.path.join(
-            self.config_path, "sites-available", "letsencrypt.conf")
+            self.config_path, "not-parsed-by-default", "letsencrypt.conf")
 
         self.parser._parse_file(file_path)  # pylint: disable=protected-access
 
