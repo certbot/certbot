@@ -696,6 +696,42 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return non_ssl_vh_fp[:-(len(".conf"))] + self.conf("le_vhost_ext")
         else:
             return non_ssl_vh_fp + self.conf("le_vhost_ext")
+ 
+    def _sift_line(self, line):
+        """ Decides whether a line shouldn't be copied from a http vhost to a 
+            SSL vhost.
+        
+        A canonical example of when sifting a line is required:
+        When the http vhost contains a RewriteRule that unconditionally redirects
+        any request to the https version of the same site.
+        e.g: RewriteRule ^ https://%{SERVER_NAME}%{REQUEST_URI} [L,QSA,R=permanent]
+        Copying the above line to the ssl vhost would cause a redirection loop.
+
+        :param str line: a line extracted from the http vhost config file.
+
+        :returns: True - don't copy line from http vhost to SSL vhost. 
+        :rtype: (bool)
+        """
+
+        rewrite_rule = "RewriteRule"
+        if line.lstrip()[:len(rewrite_rule)] != rewrite_rule:
+            return False
+        # line starts with RewriteRule.
+
+        # According to: http://httpd.apache.org/docs/2.4/rewrite/flags.html 
+        # The syntax of a RewriteRule is:
+        # RewriteRule pattern target [Flag1,Flag2,Flag3]
+        # i.e. target is required, so it must exist. 
+        target = line.split()[2].strip()
+
+        https_prefix = "https://"
+        if len(target)<len(https_prefix):
+            return False
+
+        if target[:len(https_prefix)] == https_prefix:
+            return True
+
+        return False
 
     def _copy_create_ssl_vhost_skeleton(self, avail_fp, ssl_fp):
         """Copies over existing Vhost with IfModule mod_ssl.c> skeleton.
@@ -714,20 +750,27 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             with open(avail_fp, "r") as orig_file:
                 with open(ssl_fp, "w") as new_file:
                     new_file.write("<IfModule mod_ssl.c>\n")
-
-                    # In some cases we wouldn't want to copy the exact
-                    # directives used in an http vhost to a ssl vhost.
-                    # An example:
-                    # If there's a redirect rewrite rule directive installed in
-                    # the http vhost - copying it to the ssl vhost would cause
-                    # a redirection loop.
-                    blacklist_set = set(['RewriteRule', 'RewriteEngine'])
+                    sift = False
 
                     for line in orig_file:
-                        line_set = set(line.split())
-                        if not line_set & blacklist_set: # & -> Intersection
+                        if self._sift_line(line):
+                            if not sift:
+                                new_file.write("# The following rewrite rules"
+                                "were *not* enabled on your HTTPS site, "
+                                "because they have the potential to create "
+                                "redirection loops:")
+                            sift = True
+                            new_file.write("# " + line)
+                        else:
                             new_file.write(line)
+
                     new_file.write("</IfModule>\n")
+
+                    if sift:
+                        logger.warn("Some rewrite rules were *not* enabled on "
+                                "your HTTPS site, because they have the "
+                                "potential to create redirection loops.")
+                        
         except IOError:
             logger.fatal("Error writing/reading to file in make_vhost_ssl")
             raise errors.PluginError("Unable to write/read in make_vhost_ssl")
