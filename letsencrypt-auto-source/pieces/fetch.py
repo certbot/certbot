@@ -19,24 +19,6 @@ from subprocess import check_call, CalledProcessError
 from sys import argv, exit
 from urllib2 import build_opener, HTTPHandler, HTTPSHandler, HTTPError
 
-
-#test
-PUBLIC_KEY = environ.get('LE_AUTO_PUBLIC_KEY', """-----BEGIN PUBLIC KEY-----
-MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAnwHkSuCSy3gIHawaCiIe
-4ilJ5kfEmSoiu50uiimBhTESq1JG2gVqXVXFxxVgobGhahSF+/iRVp3imrTtGp1B
-2heoHbELnPTTZ8E36WHKf4gkLEo0y0XgOP3oBJ9IM5q8J68x0U3Q3c+kTxd/sgww
-s5NVwpjw4aAZhgDPe5u+rvthUYOD1whYUANgYvooCpV4httNv5wuDjo7SG2V797T
-QTE8aG3AOhWzdsLm6E6Tl2o/dR6XKJi/RMiXIk53SzArimtAJXe/1GyADe1AgIGE
-33Ja3hU3uu9lvnnkowy1VI0qvAav/mu/APahcWVYkBAvSVAhH3zGNAGZUnP2zfcP
-rH7OPw/WrxLVGlX4trLnvQr1wzX7aiM2jdikcMiaExrP0JfQXPu00y3c+hjOC5S0
-+E5P+e+8pqz5iC5mmvEqy2aQJ6pV7dSpYX3mcDs8pCYaVXXtCPXS1noWirCcqCMK
-EHGGdJCTXXLHaWUaGQ9Gx1An1gU7Ljkkji2Al65ZwYhkFowsLfuniYKuAywRrCNu
-q958HnzFpZiQZAqZYtOHaiQiaHPs/36ZN0HuOEy0zM9FEHbp4V/DEn4pNCfAmRY5
-3v+3nIBhgiLdlM7cV9559aDNeutF25n1Uz2kvuSVSS94qTEmlteCPZGBQb9Rr2wn
-I2OU8tPRzqKdQ6AwS9wvqscCAwEAAQ==
------END PUBLIC KEY-----
-""")
-# real
 PUBLIC_KEY = environ.get('LE_AUTO_PUBLIC_KEY', """-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6MR8W/galdxnpGqBsYbq
 OzQb2eyW15YFjDDEMI0ZOzt8f504obNs920lDnpPD2/KqgsfjOgw2K7xWDJIj/18
