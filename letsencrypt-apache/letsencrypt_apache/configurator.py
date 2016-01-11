@@ -696,11 +696,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return non_ssl_vh_fp[:-(len(".conf"))] + self.conf("le_vhost_ext")
         else:
             return non_ssl_vh_fp + self.conf("le_vhost_ext")
- 
+
     def _sift_line(self, line):
-        """ Decides whether a line shouldn't be copied from a http vhost to a 
+        """ Decides whether a line shouldn't be copied from a http vhost to a
             SSL vhost.
-        
+
         A canonical example of when sifting a line is required:
         When the http vhost contains a RewriteRule that unconditionally redirects
         any request to the https version of the same site.
@@ -709,7 +709,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         :param str line: a line extracted from the http vhost config file.
 
-        :returns: True - don't copy line from http vhost to SSL vhost. 
+        :returns: True - don't copy line from http vhost to SSL vhost.
         :rtype: (bool)
         """
 
@@ -718,14 +718,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return False
         # line starts with RewriteRule.
 
-        # According to: http://httpd.apache.org/docs/2.4/rewrite/flags.html 
+        # According to: http://httpd.apache.org/docs/2.4/rewrite/flags.html
         # The syntax of a RewriteRule is:
         # RewriteRule pattern target [Flag1,Flag2,Flag3]
-        # i.e. target is required, so it must exist. 
+        # i.e. target is required, so it must exist.
         target = line.split()[2].strip()
 
         https_prefix = "https://"
-        if len(target)<len(https_prefix):
+        if len(target) < len(https_prefix):
             return False
 
         if target[:len(https_prefix)] == https_prefix:
@@ -770,7 +770,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                         logger.warn("Some rewrite rules were *not* enabled on "
                                 "your HTTPS site, because they have the "
                                 "potential to create redirection loops.")
-                        
+
         except IOError:
             logger.fatal("Error writing/reading to file in make_vhost_ssl")
             raise errors.PluginError("Unable to write/read in make_vhost_ssl")
