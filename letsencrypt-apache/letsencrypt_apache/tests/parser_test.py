@@ -36,7 +36,7 @@ class BasicParserTest(util.ParserTest):
 
         """
         file_path = os.path.join(
-            self.config_path, "sites-available", "letsencrypt.conf")
+            self.config_path, "not-parsed-by-default", "letsencrypt.conf")
 
         self.parser._parse_file(file_path)  # pylint: disable=protected-access
 
@@ -145,25 +145,26 @@ class BasicParserTest(util.ParserTest):
         expected_vars = {"TEST": "", "U_MICH": "", "TLS": "443",
                          "example_path": "Documents/path"}
 
-        self.parser.update_runtime_variables("ctl")
+        self.parser.update_runtime_variables()
         self.assertEqual(self.parser.variables, expected_vars)
 
     @mock.patch("letsencrypt_apache.parser.ApacheParser._get_runtime_cfg")
     def test_update_runtime_vars_bad_output(self, mock_cfg):
         mock_cfg.return_value = "Define: TLS=443=24"
-        self.parser.update_runtime_variables("ctl")
-        self.assertTrue(self.parser.unparsable)
+        self.parser.update_runtime_variables()
 
         mock_cfg.return_value = "Define: DUMP_RUN_CFG\nDefine: TLS=443=24"
         self.assertRaises(
-            errors.PluginError, self.parser.update_runtime_variables, "ctl")
+            errors.PluginError, self.parser.update_runtime_variables)
 
+    @mock.patch("letsencrypt_apache.constants.os_constant")
     @mock.patch("letsencrypt_apache.parser.subprocess.Popen")
-    def test_update_runtime_vars_bad_ctl(self, mock_popen):
+    def test_update_runtime_vars_bad_ctl(self, mock_popen, mock_const):
         mock_popen.side_effect = OSError
+        mock_const.return_value = "nonexistent"
         self.assertRaises(
             errors.MisconfigurationError,
-            self.parser.update_runtime_variables, "ctl")
+            self.parser.update_runtime_variables)
 
     @mock.patch("letsencrypt_apache.parser.subprocess.Popen")
     def test_update_runtime_vars_bad_exit(self, mock_popen):
@@ -171,7 +172,7 @@ class BasicParserTest(util.ParserTest):
         mock_popen.returncode = -1
         self.assertRaises(
             errors.MisconfigurationError,
-            self.parser.update_runtime_variables, "ctl")
+            self.parser.update_runtime_variables)
 
 
 class ParserInitTest(util.ApacheTest):
@@ -188,17 +189,11 @@ class ParserInitTest(util.ApacheTest):
     @mock.patch("letsencrypt_apache.parser.ApacheParser._get_runtime_cfg")
     def test_unparsable(self, mock_cfg):
         from letsencrypt_apache.parser import ApacheParser
-        def unparsable_true(self, arg):
-            """a helper to set the self unparsabale to true"""
-            print "side effect has passed in arg: %s", arg
-            self.unparsable = True
-        with mock.patch.object(ApacheParser, 'update_runtime_variables', autospec=True) as urv:
-            urv.side_effect = unparsable_true
-            mock_cfg.return_value = ('Define: TEST')
-            self.assertRaises(
-                errors.PluginError,
-                ApacheParser, self.aug, os.path.relpath(self.config_path), "ctl")
-        self.assertEquals(1, 1)
+        mock_cfg.return_value = ('Define: TEST')
+        self.assertRaises(
+            errors.PluginError,
+            ApacheParser, self.aug, os.path.relpath(self.config_path),
+            "/dummy/vhostpath", version=(2, 2, 22))
 
     def test_root_normalized(self):
         from letsencrypt_apache.parser import ApacheParser
@@ -208,7 +203,9 @@ class ParserInitTest(util.ApacheTest):
             path = os.path.join(
                 self.temp_dir,
                 "debian_apache_2_4/////two_vhost_80/../two_vhost_80/apache2")
-            parser = ApacheParser(self.aug, path, "dummy_ctl")
+
+            parser = ApacheParser(self.aug, path,
+                                  "/dummy/vhostpath")
 
         self.assertEqual(parser.root, self.config_path)
 
@@ -217,7 +214,8 @@ class ParserInitTest(util.ApacheTest):
         with mock.patch("letsencrypt_apache.parser.ApacheParser."
                         "update_runtime_variables"):
             parser = ApacheParser(
-                self.aug, os.path.relpath(self.config_path), "dummy_ctl")
+                self.aug, os.path.relpath(self.config_path),
+                "/dummy/vhostpath")
 
         self.assertEqual(parser.root, self.config_path)
 
@@ -226,7 +224,8 @@ class ParserInitTest(util.ApacheTest):
         with mock.patch("letsencrypt_apache.parser.ApacheParser."
                         "update_runtime_variables"):
             parser = ApacheParser(
-                self.aug, self.config_path + os.path.sep, "dummy_ctl")
+                self.aug, self.config_path + os.path.sep,
+                "/dummy/vhostpath")
         self.assertEqual(parser.root, self.config_path)
 
 

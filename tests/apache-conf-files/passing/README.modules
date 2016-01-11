@@ -1,7 +1,0 @@
-Modules required to parse these conf files:
-
-ssl
-rewrite
-macro
-wsgi
-deflate
