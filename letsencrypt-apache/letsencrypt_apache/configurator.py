@@ -724,9 +724,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # RewriteRule pattern target [Flag1,Flag2,Flag3]
         # i.e. target is required, so it must exist.
         target = line.split()[2].strip()
-        
+
         # target may be surrounded with double quotes
-        if len(target) > 0 and target[0]==target[-1]=="\"":
+        if len(target) > 0 and target[0] == target[-1] == "\"":
             target = target[1:-1]
 
         https_prefix = "https://"
@@ -760,10 +760,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     for line in orig_file:
                         if self._sift_line(line):
                             if not sift:
-                                new_file.write("# The following rewrite rules"
-                                "were *not* enabled on your HTTPS site, "
-                                "because they have the potential to create "
-                                "redirection loops:")
+                                new_file.write("# The following rewrite rules "
+                                "were *not* enabled on your HTTPS site,\n"
+                                "# because they have the potential to create "
+                                "redirection loops:\n")
                             sift = True
                             new_file.write("# " + line)
                         else:
