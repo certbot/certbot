@@ -726,7 +726,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         target = line.split()[2].strip()
         
         # target may be surrounded with double quotes
-        if len(target) > 0 and target[0]==target[-1]=="\""
+        if len(target) > 0 and target[0]==target[-1]=="\"":
             target = target[1:-1]
 
         https_prefix = "https://"
