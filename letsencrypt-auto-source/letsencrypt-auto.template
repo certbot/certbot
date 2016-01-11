@@ -2,8 +2,14 @@
 #
 # Download and run the latest release version of the Let's Encrypt client.
 #
-# WARNING: "letsencrypt-auto" IS A GENERATED FILE. EDIT
-# letsencrypt-auto.template INSTEAD.
+# NOTE: THIS SCRIPT IS AUTO-GENERATED AND SELF-UPDATING
+#
+# IF YOU WANT TO EDIT IT LOCALLY, *ALWAYS* RUN YOUR COPY WITH THE
+# "--no-self-upgrade" FLAG
+#
+# IF YOU WANT TO SEND PULL REQUESTS, THE REAL SOURCE FOR THIS FILE IS
+# letsencrypt-auto-source/letsencrypt-auto.template AND
+# letsencrypt-auto-source/pieces/bootstrappers/*
 
 set -e  # Work even if somebody does "sh thisscript.sh".
 
