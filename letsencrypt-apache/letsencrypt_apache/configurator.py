@@ -716,6 +716,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         rewrite_rule = "RewriteRule"
         if line.lstrip()[:len(rewrite_rule)] != rewrite_rule:
             return False
+
         # line starts with RewriteRule.
 
         # According to: http://httpd.apache.org/docs/2.4/rewrite/flags.html
@@ -723,6 +724,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # RewriteRule pattern target [Flag1,Flag2,Flag3]
         # i.e. target is required, so it must exist.
         target = line.split()[2].strip()
+        
+        # target may be surrounded with double quotes
+        if len(target) > 0 and target[0]==target[-1]=="\""
+            target = target[1:-1]
 
         https_prefix = "https://"
         if len(target) < len(https_prefix):
