@@ -62,4 +62,5 @@ setup(
             'nginx = letsencrypt_nginx.configurator:NginxConfigurator',
         ],
     },
+    test_suite='letsencrypt_nginx',
 )

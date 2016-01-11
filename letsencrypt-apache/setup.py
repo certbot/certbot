@@ -62,4 +62,5 @@ setup(
             'apache = letsencrypt_apache.configurator:ApacheConfigurator',
         ],
     },
+    test_suite='letsencrypt_apache',
 )
