@@ -81,11 +81,18 @@ if [ "$RELEASE_BRANCH" != "candidate-$version" ] ; then
 fi
 git checkout "$RELEASE_BRANCH"
 
-if ! openssl dgst -sha1 -verify $RELEASE_OPENSSL_KEY -signature \
+# ensure we have the latest built version of leauto
+letsencrypt-auto-source/build.py
+
+# and that it's signed correctly
+if ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_KEY -signature \
         letsencrypt-auto-source/letsencrypt-auto.sig \
         letsencrypt-auto-source/letsencrypt-auto            ; then
    echo Failed letsencrypt-auto signature check on "$RELEASE_BRANCH"
    echo please fix that and re-run
+   exit 1
+else
+    echo Signature check on letsencrypt-auto successful
 fi
 
 
