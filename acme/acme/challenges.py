@@ -336,7 +336,7 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
     """
 
     @property
-    def z(self):
+    def z(self):  # pylint: disable=invalid-name
         """``z`` value used for verification.
 
         :rtype bytes:
@@ -391,7 +391,14 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
         return crypto_util.probe_sni(**kwargs)
 
     def verify_cert(self, cert):
-        """Verify tls-sni-01 challenge certificate."""
+        """Verify tls-sni-01 challenge certificate.
+
+        :param OpensSSL.crypto.X509 cert: Challenge certificate.
+
+        :returns: Whether the certificate was successfully verified.
+        :rtype: bool
+
+        """
         # pylint: disable=protected-access
         sans = crypto_util._pyopenssl_cert_or_req_san(cert)
         logging.debug('Certificate %s. SANs: %s', cert.digest('sha1'), sans)
