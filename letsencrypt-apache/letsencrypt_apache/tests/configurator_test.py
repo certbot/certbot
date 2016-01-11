@@ -857,7 +857,8 @@ class TwoVhost80Test(util.ApacheTest):
 
         # Create a preexisting rewrite rule
         self.config.parser.add_dir(
-            self.vh_truth[3].path, "RewriteRule", ["Unknown"])
+            self.vh_truth[3].path, "RewriteRule", ["UnknownPattern",
+                "UnknownTarget"])
         self.config.save()
 
         # This will create an ssl vhost for letsencrypt.demo
@@ -872,7 +873,7 @@ class TwoVhost80Test(util.ApacheTest):
 
         self.assertEqual(len(rw_engine), 1)
         # three args to rw_rule + 1 arg for the pre existing rewrite
-        self.assertEqual(len(rw_rule), 4)
+        self.assertEqual(len(rw_rule), 5)
 
         self.assertTrue(rw_engine[0].startswith(self.vh_truth[3].path))
         self.assertTrue(rw_rule[0].startswith(self.vh_truth[3].path))
