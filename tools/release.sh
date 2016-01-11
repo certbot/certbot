@@ -34,8 +34,8 @@ else
     echo Releasing developer version "$version"...
 fi
 
-if [ "$RELEASE_OPENSSL_KEY" = "" ] ; then
-    RELEASE_OPENSSL_KEY="`realpath \`dirname $0\``/eff-pubkey.pem"
+if [ "$RELEASE_OPENSSL_PUBKEY" = "" ] ; then
+    RELEASE_OPENSSL_PUBKEY="`realpath \`dirname $0\``/eff-pubkey.pem"
 fi
 RELEASE_GPG_KEY=${RELEASE_GPG_KEY:-A2CFB51FA275A7286234E7B24D17C995CD9775F2}
 # Needed to fix problems with git signatures and pinentry
@@ -85,7 +85,7 @@ git checkout "$RELEASE_BRANCH"
 letsencrypt-auto-source/build.py
 
 # and that it's signed correctly
-if ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_KEY -signature \
+if ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
         letsencrypt-auto-source/letsencrypt-auto.sig \
         letsencrypt-auto-source/letsencrypt-auto            ; then
    echo Failed letsencrypt-auto signature check on "$RELEASE_BRANCH"
