@@ -930,8 +930,34 @@ class TwoVhost80Test(util.ApacheTest):
         https_target = "RewriteRule ^ https://satoshi"
         self.assertTrue(self.config._sift_line(https_target))
 
-        normal_target  = "RewriteRule ^/(.*) http://www.a.com:1234/$1 [L,R]"
+        normal_target = "RewriteRule ^/(.*) http://www.a.com:1234/$1 [L,R]"
         self.assertFalse(self.config._sift_line(normal_target))
+
+    def test_make_vhost_ssl_with_http_vhost_redirect_rewrite_rule(self):
+        self.config.parser.modules.add("rewrite_module")
+
+        http_vhost = self.vh_truth[0]
+
+        self.config.parser.add_dir(
+            http_vhost.path, "RewriteEngine", "on")
+
+        self.config.parser.add_dir(
+                http_vhost.path, "RewriteRule",
+                ["^",
+                "https://%{SERVER_NAME}%{REQUEST_URI}",
+                "[L,QSA,R=permanent]"])
+        self.config.save()
+
+        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
+
+        #import ipdb; ipdb.set_trace()
+        self.assertTrue(self.config.parser.find_dir(
+            "RewriteEngine", "on", ssl_vhost.path, False))
+
+        conf_text = open(ssl_vhost.filep).read()
+        commented_rewrite_rule = \
+        "# RewriteRule ^ https://%{SERVER_NAME}%{REQUEST_URI} [L,QSA,R=permanent]"
+        self.assertTrue(commented_rewrite_rule in conf_text)
 
     def get_achalls(self):
         """Return testing achallenges."""
