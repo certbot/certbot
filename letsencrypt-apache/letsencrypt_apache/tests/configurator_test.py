@@ -922,6 +922,16 @@ class TwoVhost80Test(util.ApacheTest):
         self.config._enable_redirect(self.vh_truth[1], "")  # pylint: disable=protected-access
         self.assertEqual(len(self.config.vhosts), 7)
 
+    def test_sift_line(self):
+        # pylint: disable=protected-access
+        small_quoted_target = "RewriteRule ^ \"http://\""
+        self.assertFalse(self.config._sift_line(small_quoted_target))
+
+        https_target = "RewriteRule ^ https://satoshi"
+        self.assertTrue(self.config._sift_line(https_target))
+
+        normal_target  = "RewriteRule ^/(.*) http://www.a.com:1234/$1 [L,R]"
+        self.assertFalse(self.config._sift_line(normal_target))
 
     def get_achalls(self):
         """Return testing achallenges."""
