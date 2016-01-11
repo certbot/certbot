@@ -150,7 +150,7 @@ class Authenticator(common.Plugin):
 
         # one self-signed key for all tls-sni-01 certificates
         self.key = OpenSSL.crypto.PKey()
-        self.key.generate_key(OpenSSL.crypto.TYPE_RSA, bits=2048)
+        self.key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
 
         self.served = collections.defaultdict(set)
 

@@ -1,9 +1,11 @@
 """Tests for acme.crypto_util."""
+import itertools
 import socket
 import threading
 import time
 import unittest
 
+import six
 from six.moves import socketserver  # pylint: disable=import-error
 
 from acme import errors
@@ -15,10 +17,10 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
     """Tests for acme.crypto_util.SSLSocket/probe_sni."""
 
     def setUp(self):
-        self.cert = test_util.load_cert('cert.pem')
+        self.cert = test_util.load_comparable_cert('cert.pem')
         key = test_util.load_pyopenssl_private_key('rsa512_key.pem')
         # pylint: disable=protected-access
-        certs = {b'foo': (key, self.cert._wrapped)}
+        certs = {b'foo': (key, self.cert.wrapped)}
 
         from acme.crypto_util import SSLSocket
 
@@ -69,6 +71,15 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
         from acme.crypto_util import _pyopenssl_cert_or_req_san
         return _pyopenssl_cert_or_req_san(loader(name))
 
+    @classmethod
+    def _get_idn_names(cls):
+        """Returns expected names from '{cert,csr}-idnsans.pem'."""
+        chars = [six.unichr(i) for i in itertools.chain(range(0x3c3, 0x400),
+                                                        range(0x641, 0x6fc),
+                                                        range(0x1820, 0x1877))]
+        return [''.join(chars[i: i + 45]) + '.invalid'
+                for i in range(0, len(chars), 45)]
+
     def _call_cert(self, name):
         return self._call(test_util.load_cert, name)
 
@@ -82,6 +93,14 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
         self.assertEqual(self._call_cert('cert-san.pem'),
                          ['example.com', 'www.example.com'])
 
+    def test_cert_hundred_sans(self):
+        self.assertEqual(self._call_cert('cert-100sans.pem'),
+                         ['example{0}.com'.format(i) for i in range(1, 101)])
+
+    def test_cert_idn_sans(self):
+        self.assertEqual(self._call_cert('cert-idnsans.pem'),
+                         self._get_idn_names())
+
     def test_csr_no_sans(self):
         self.assertEqual(self._call_csr('csr-nosans.pem'), [])
 
@@ -94,10 +113,18 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
 
     def test_csr_six_sans(self):
         self.assertEqual(self._call_csr('csr-6sans.pem'),
-                         ["example.com", "example.org", "example.net",
-                          "example.info", "subdomain.example.com",
-                          "other.subdomain.example.com"])
+                         ['example.com', 'example.org', 'example.net',
+                          'example.info', 'subdomain.example.com',
+                          'other.subdomain.example.com'])
+
+    def test_csr_hundred_sans(self):
+        self.assertEqual(self._call_csr('csr-100sans.pem'),
+                         ['example{0}.com'.format(i) for i in range(1, 101)])
+
+    def test_csr_idn_sans(self):
+        self.assertEqual(self._call_csr('csr-idnsans.pem'),
+                         self._get_idn_names())
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()  # pragma: no cover
