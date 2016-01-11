@@ -9,6 +9,9 @@
 // This program can be used to perform RSA public key signatures given only
 // the hash of the file to be signed as input.
 
+// To compile:
+// gcc half-sign.c -lssl -lcrypto -o half-sign
+
 // Sign with SHA1
 #define HASH_SIZE 20
 

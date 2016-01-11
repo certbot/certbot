@@ -34,6 +34,9 @@ else
     echo Releasing developer version "$version"...
 fi
 
+if [ "$RELEASE_OPENSSL_KEY" = "" ] ; then
+    RELEASE_OPENSSL_KEY="`realpath \`dirname $0\``/eff-pubkey.pem"
+fi
 RELEASE_GPG_KEY=${RELEASE_GPG_KEY:-A2CFB51FA275A7286234E7B24D17C995CD9775F2}
 # Needed to fix problems with git signatures and pinentry
 export GPG_TTY=$(tty)
@@ -78,6 +81,21 @@ if [ "$RELEASE_BRANCH" != "candidate-$version" ] ; then
 fi
 git checkout "$RELEASE_BRANCH"
 
+# ensure we have the latest built version of leauto
+letsencrypt-auto-source/build.py
+
+# and that it's signed correctly
+if ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_KEY -signature \
+        letsencrypt-auto-source/letsencrypt-auto.sig \
+        letsencrypt-auto-source/letsencrypt-auto            ; then
+   echo Failed letsencrypt-auto signature check on "$RELEASE_BRANCH"
+   echo please fix that and re-run
+   exit 1
+else
+    echo Signature check on letsencrypt-auto successful
+fi
+
+
 SetVersion() {
     ver="$1"
     for pkg_dir in $SUBPKGS
@@ -111,6 +129,7 @@ do
 
   cd -
 done
+
 
 mkdir "dist.$version"
 mv dist "dist.$version/letsencrypt"
