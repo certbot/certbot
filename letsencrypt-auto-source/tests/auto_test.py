@@ -158,7 +158,21 @@ def signed(content, private_key_name='signing.key'):
     return out
 
 
-def run_le_auto(venv_dir, base_url):
+def install_le_auto(contents, venv_dir):
+    """Install some given source code as the letsencrypt-auto script at the
+    root level of a virtualenv.
+
+    :arg contents: The contents of the built letsencrypt-auto script
+    :arg venv_dir: The path under which to install the script
+
+    """
+    venv_le_auto_path = join(venv_dir, 'letsencrypt-auto')
+    with open(venv_le_auto_path, 'w') as le_auto:
+        le_auto.write(contents)
+    chmod(venv_le_auto_path, S_IRUSR | S_IXUSR)
+
+
+def run_le_auto(venv_dir, base_url, **kwargs):
     """Run the prebuilt version of letsencrypt-auto, returning stdout and
     stderr strings.
 
@@ -181,7 +195,8 @@ uUtJmmGcuk3a9Aq/sCT6DdfmTSdP5asdQYwIcaQreDrOosaS84DTWI3IU+UYJVgl
 LsIVPBuy9IcgHidUQ96hJnoPsDCWsHwX62495QKEarauyKQrJzFes0EY95orDM47
 Z5o/NDiQB11m91yNB0MmPYY9QSbnOA9j7IaaC97AwRLuwXY+/R2ablTcxurWou68
 iQIDAQAB
------END PUBLIC KEY-----""")
+-----END PUBLIC KEY-----""",
+             **kwargs)
     env.update(d)
     return out_and_err(
         join(venv_dir, 'letsencrypt-auto') + ' --version',
@@ -250,40 +265,50 @@ class AutoTests(TestCase):
            the next, saving code.
 
         """
-        NEW_LE_AUTO = build_le_auto(version='99.9.9')
+        NEW_LE_AUTO = build_le_auto(
+                version='99.9.9',
+                requirements='# sha256: 7NpInQZj4v2dvdCBUYtcBHqVlBfnUmlsKF_oSOzU9zY\n'
+                             'letsencrypt==99.9.9')
         NEW_LE_AUTO_SIG = signed(NEW_LE_AUTO)
 
         with ephemeral_dir() as venv_dir:
             # This serves a PyPI page with a higher version, a GitHub-alike
             # with a corresponding le-auto script, and a matching signature.
-            resources = {'': '<a href="letsencrypt/">letsencrypt/</a>',
-                         'letsencrypt/json': dumps({'releases': {'99.9.9': None}}),
+            resources = {'letsencrypt/json': dumps({'releases': {'99.9.9': None}}),
                          'v99.9.9/letsencrypt-auto': NEW_LE_AUTO,
                          'v99.9.9/letsencrypt-auto.sig': NEW_LE_AUTO_SIG}
             with serving(resources) as base_url:
+                run_letsencrypt_auto = partial(
+                        run_le_auto,
+                        venv_dir,
+                        base_url,
+                        PIP_FIND_LINKS=join(tests_dir(),
+                                            'fake-letsencrypt',
+                                            'dist'))
+
                 # Test when a phase-1 upgrade is needed, there's no LE binary
                 # installed, and peep verifies:
-                copy(LE_AUTO_PATH, venv_dir)
-                out, err = run_le_auto(venv_dir, base_url)
+                install_le_auto(build_le_auto(version='50.0.0'), venv_dir)
+                out, err = run_letsencrypt_auto()
                 ok_(re.match(r'letsencrypt \d+\.\d+\.\d+',
                              err.strip().splitlines()[-1]))
                 # Make a few assertions to test the validity of the next tests:
                 self.assertIn('Upgrading letsencrypt-auto ', out)
                 self.assertIn('Creating virtual environment...', out)
 
-                # This conveniently sets us up to test the next 2 cases.
+                # Now we have le-auto 99.9.9  and LE 99.9.9 installed. This
+                # conveniently sets us up to test the next 2 cases.
 
                 # Test when neither phase-1 upgrade nor phase-2 upgrade is
                 # needed (probably a common case):
-                set_le_script_version(venv_dir, '99.9.9')
-                out, err = run_le_auto(venv_dir, base_url)
+                out, err = run_letsencrypt_auto()
                 self.assertNotIn('Upgrading letsencrypt-auto ', out)
                 self.assertNotIn('Creating virtual environment...', out)
 
                 # Test when a phase-1 upgrade is not needed but a phase-2
                 # upgrade is:
                 set_le_script_version(venv_dir, '0.0.1')
-                out, err = run_le_auto(venv_dir, base_url)
+                out, err = run_letsencrypt_auto()
                 self.assertNotIn('Upgrading letsencrypt-auto ', out)
                 self.assertIn('Creating virtual environment...', out)
 
@@ -315,13 +340,12 @@ class AutoTests(TestCase):
                          'letsencrypt/json': dumps({'releases': {'99.9.9': None}})}
             with serving(resources) as base_url:
                 # Build a le-auto script embedding a bad requirements file:
-                venv_le_auto_path = join(venv_dir, 'letsencrypt-auto')
-                with open(venv_le_auto_path, 'w') as le_auto:
-                    le_auto.write(build_le_auto(
+                install_le_auto(
+                    build_le_auto(
                         version='99.9.9',
                         requirements='# sha256: badbadbadbadbadbadbadbadbadbadbadbadbadbadb\n'
-                                     'configobj==5.0.6'))
-                chmod(venv_le_auto_path, S_IRUSR | S_IXUSR)
+                                     'configobj==5.0.6'),
+                    venv_dir)
                 try:
                     out, err = run_le_auto(venv_dir, base_url)
                 except CalledProcessError as exc:

@@ -30,10 +30,11 @@ readme = read_file(os.path.join(here, 'README.rst'))
 changes = read_file(os.path.join(here, 'CHANGES.rst'))
 version = meta['version']
 
+# Please update tox.ini when modifying dependency version requirements
 install_requires = [
     'acme=={0}'.format(version),
     'configobj',
-    'cryptography>=0.7,<1.2',  # load_pem_x509_certificate
+    'cryptography>=0.7',  # load_pem_x509_certificate
     'parsedatetime',
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
     'PyOpenSSL',
@@ -53,12 +54,10 @@ if sys.version_info < (2, 7):
         # only some distros recognize stdlib argparse as already satisfying
         'argparse',
         'ConfigArgParse>=0.10.0',  # python2.6 support, upstream #17
-        'mock<1.1.0',
     ])
 else:
     install_requires.extend([
         'ConfigArgParse',
-        'mock',
     ])
 
 dev_extras = [
@@ -116,13 +115,13 @@ setup(
     include_package_data=True,
 
     install_requires=install_requires,
+    tests_require='mock<1.1.0' if sys.version_info < (2, 7) else 'mock',
     extras_require={
         'dev': dev_extras,
         'docs': docs_extras,
         'testing': testing_extras,
     },
 
-    tests_require=install_requires,
     # to test all packages run "python setup.py test -s
     # {acme,letsencrypt_apache,letsencrypt_nginx}"
     test_suite='letsencrypt',

@@ -6,6 +6,7 @@ from setuptools import find_packages
 
 version = '0.2.0.dev0'
 
+# Please update tox.ini when modifying dependency version requirements
 install_requires = [
     'acme=={0}'.format(version),
     'letsencrypt=={0}'.format(version),
@@ -62,4 +63,5 @@ setup(
             'nginx = letsencrypt_nginx.configurator:NginxConfigurator',
         ],
     },
+    test_suite='letsencrypt_nginx',
 )

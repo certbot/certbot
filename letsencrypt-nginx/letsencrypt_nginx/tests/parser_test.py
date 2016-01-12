@@ -228,6 +228,26 @@ class NginxParserTest(util.NginxTest):
         c_k = nparser.get_all_certs_keys()
         self.assertEqual(set([('foo.pem', 'bar.key', filep)]), c_k)
 
+    def test_parse_server_ssl(self):
+        server = parser.parse_server([
+	    ['listen', '443']
+	])
+        self.assertFalse(server['ssl'])
+
+        server = parser.parse_server([
+	    ['listen', '443 ssl']
+	])
+        self.assertTrue(server['ssl'])
+
+        server = parser.parse_server([
+	    ['listen', '443'], ['ssl', 'off']
+	])
+        self.assertFalse(server['ssl'])
+
+        server = parser.parse_server([
+	    ['listen', '443'], ['ssl', 'on']
+	])
+        self.assertTrue(server['ssl'])
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

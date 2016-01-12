@@ -26,14 +26,4 @@ pyasn1==0.1.9
 # sha256: wxZH7baf09RlqEfqMVfTe-0flfGXYLEaR6qRwEtmYxQ
 # sha256: YrCJpVvh2JSc0rx-DfC9254Cj678jDIDjMhIYq791uQ
 argparse==1.4.0
-
-# sha256: j4MIDaoknQNsvM-4rlzG_wB7iNbZN1ITca-r57Gbrbw
-# sha256: uDndLZwRfHAUMMFJlWkYpCOphjtIsJyQ4wpgE-fS9E8
-mock==1.0.1
-"""
-    else:
-        print """
-# sha256: P1c6GL6U3ohtEZHyfBaEJ-9pPo3Pzs-VsXBXey62nLs
-# sha256: HiR9vsxs4FcpnrfuAZrWgxS7kxUugdmmEQ019NXsoPY
-mock==1.3.0
 """

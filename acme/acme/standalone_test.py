@@ -35,7 +35,7 @@ class TLSSNI01ServerTest(unittest.TestCase):
         self.certs = {
             b'localhost': (test_util.load_pyopenssl_private_key('rsa512_key.pem'),
                            # pylint: disable=protected-access
-                           test_util.load_cert('cert.pem')._wrapped),
+                           test_util.load_cert('cert.pem')),
         }
         from acme.standalone import TLSSNI01Server
         self.server = TLSSNI01Server(("", 0), certs=self.certs)
@@ -146,7 +146,7 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
                 time.sleep(1)  # wait until thread starts
             else:
                 self.assertEqual(jose.ComparableX509(cert),
-                                 test_util.load_cert('cert.pem'))
+                                 test_util.load_comparable_cert('cert.pem'))
                 break
 
 

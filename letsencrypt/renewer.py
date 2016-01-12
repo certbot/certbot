@@ -103,7 +103,7 @@ def renew(cert, old_version):
         #      already understands this distinction!)
         return cert.save_successor(
             old_version, OpenSSL.crypto.dump_certificate(
-                OpenSSL.crypto.FILETYPE_PEM, new_certr.body),
+                OpenSSL.crypto.FILETYPE_PEM, new_certr.body.wrapped),
             new_key.pem, crypto_util.dump_pyopenssl_chain(new_chain))
         # TODO: Notify results
     else:

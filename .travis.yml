@@ -1,15 +1,15 @@
 language: python
 
 services:
-  - docker
   - rabbitmq
-  - mariadb
   # apacheconftest
   #- apache2
 
 # http://docs.travis-ci.com/user/ci-environment/#CI-environment-OS
 # gimme has to be kept in sync with Boulder's Go version setting in .travis.yml
 before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq mysql-server-5.6 mysql-client-5.6 mysql-client-core-5.6
   - 'dpkg -s libaugeas0'
   - '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || eval "$(gimme 1.5.1)"'
 
@@ -23,12 +23,20 @@ env:
   matrix:
     - TOXENV=py26 BOULDER_INTEGRATION=1
     - TOXENV=py27 BOULDER_INTEGRATION=1
+    - TOXENV=py26-oldest BOULDER_INTEGRATION=1
+    - TOXENV=py27-oldest BOULDER_INTEGRATION=1
     - TOXENV=le_auto
+    - TOXENV=py33
+    - TOXENV=py34
     - TOXENV=lint
     - TOXENV=cover
 # Disabled for now due to requiring sudo -> causing more boulder integration
 # DNS timeouts :(
 #    - TOXENV=apacheconftest
+matrix:
+  include:
+    - env: TOXENV=py35
+      python: 3.5
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
@@ -40,12 +48,12 @@ branches:
     - /^test-.*$/
 
 sudo: required
+dist: trusty
 
 addons:
   # make sure simplehttp simple verification works (custom /etc/hosts)
   hosts:
     - le.wtf
-  mariadb: "10.0"
   apt:
     sources:
     - augeas
