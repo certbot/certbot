@@ -35,10 +35,12 @@ install_requires = [
     'acme=={0}'.format(version),
     'configobj',
     'cryptography>=0.7',  # load_pem_x509_certificate
+    'ftputil',
     'parsedatetime',
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
     'PyOpenSSL',
     'pyrfc3339',
+    'pysftp',
     'python2-pythondialog>=3.2.2rc1',  # Debian squeeze support, cf. #280
     'pytz',
     'setuptools',  # pkg_resources
@@ -135,6 +137,7 @@ setup(
         'letsencrypt.plugins': [
             'manual = letsencrypt.plugins.manual:Authenticator',
             'null = letsencrypt.plugins.null:Installer',
+            'ftp = letsencrypt.plugins.ftp:Authenticator',
             'standalone = letsencrypt.plugins.standalone:Authenticator',
             'webroot = letsencrypt.plugins.webroot:Authenticator',
         ],
