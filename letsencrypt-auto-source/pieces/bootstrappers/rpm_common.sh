@@ -36,6 +36,7 @@ BootstrapRpmCommon() {
          gcc \
          dialog \
          augeas-libs \
+         openssl \
          openssl-devel \
          libffi-devel \
          redhat-rpm-config \
