@@ -8,6 +8,7 @@ import shutil
 import socket
 import time
 
+import zope.component
 import zope.interface
 
 from acme import challenges
@@ -698,26 +699,24 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return non_ssl_vh_fp + self.conf("le_vhost_ext")
 
     def _sift_line(self, line):
-        """ Decides whether a line shouldn't be copied from a http vhost to a
-            SSL vhost.
+        """Decides whether a line should be copied to a SSL vhost.
 
         A canonical example of when sifting a line is required:
-        When the http vhost contains a RewriteRule that unconditionally redirects
-        any request to the https version of the same site.
-        e.g: RewriteRule ^ https://%{SERVER_NAME}%{REQUEST_URI} [L,QSA,R=permanent]
-        Copying the above line to the ssl vhost would cause a redirection loop.
+        When the http vhost contains a RewriteRule that unconditionally
+        redirects any request to the https version of the same site.
+        e.g:
+        RewriteRule ^ https://%{SERVER_NAME}%{REQUEST_URI} [L,QSA,R=permanent]
+        Copying the above line to the ssl vhost would cause a
+        redirection loop.
 
-        :param str line: a line extracted from the http vhost config file.
+        :param str line: a line extracted from the http vhost.
 
         :returns: True - don't copy line from http vhost to SSL vhost.
-        :rtype: (bool)
+        :rtype: bool
+
         """
-
-        rewrite_rule = "RewriteRule"
-        if line.lstrip()[:len(rewrite_rule)] != rewrite_rule:
+        if not line.lstrip().startswith("RewriteRule"):
             return False
-
-        # line starts with RewriteRule.
 
         # According to: http://httpd.apache.org/docs/2.4/rewrite/flags.html
         # The syntax of a RewriteRule is:
@@ -725,15 +724,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # i.e. target is required, so it must exist.
         target = line.split()[2].strip()
 
-        # target may be surrounded with double quotes
-        if len(target) > 0 and target[0] == target[-1] == "\"":
+        # target may be surrounded with quotes
+        if target[0] in ("'", '"') and target[0] == target[-1]:
             target = target[1:-1]
 
-        https_prefix = "https://"
-        if len(target) < len(https_prefix):
-            return False
-
-        if target[:len(https_prefix)] == https_prefix:
+        if target.startswith("https://"):
             return True
 
         return False
@@ -750,35 +745,37 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # First register the creation so that it is properly removed if
         # configuration is rolled back
         self.reverter.register_file_creation(False, ssl_fp)
+        sift = False
 
         try:
             with open(avail_fp, "r") as orig_file:
                 with open(ssl_fp, "w") as new_file:
                     new_file.write("<IfModule mod_ssl.c>\n")
-                    sift = False
-
                     for line in orig_file:
                         if self._sift_line(line):
                             if not sift:
-                                new_file.write("# The following rewrite rules "
-                                "were *not* enabled on your HTTPS site,\n"
-                                "# because they have the potential to create "
-                                "redirection loops:\n")
+                                new_file.write(
+                                    "# Some rewrite rules in this file were "
+                                    "were disabled on your HTTPS site,\n"
+                                    "# because they have the potential to "
+                                    "create redirection loops.\n")
                             sift = True
                             new_file.write("# " + line)
                         else:
                             new_file.write(line)
-
                     new_file.write("</IfModule>\n")
-
-                    if sift:
-                        logger.warn("Some rewrite rules were *not* enabled on "
-                                "your HTTPS site, because they have the "
-                                "potential to create redirection loops.")
-
         except IOError:
             logger.fatal("Error writing/reading to file in make_vhost_ssl")
             raise errors.PluginError("Unable to write/read in make_vhost_ssl")
+
+        if sift:
+            reporter = zope.component.getUtility(interfaces.IReporter)
+            reporter.add_message(
+                "Some rewrite rules copied from {0} were disabled in the "
+                "vhost for your HTTPS site located at {1} because they have "
+                "the potential to create redirection loops.".format(avail_fp,
+                                                                    ssl_fp),
+                reporter.MEDIUM_PRIORITY)
 
     def _update_ssl_vhosts_addrs(self, vh_path):
         ssl_addrs = set()

@@ -933,7 +933,8 @@ class TwoVhost80Test(util.ApacheTest):
         normal_target = "RewriteRule ^/(.*) http://www.a.com:1234/$1 [L,R]"
         self.assertFalse(self.config._sift_line(normal_target))
 
-    def test_make_vhost_ssl_with_http_vhost_redirect_rewrite_rule(self):
+    @mock.patch("letsencrypt_apache.configurator.zope.component.getUtility")
+    def test_make_vhost_ssl_with_existing_rewrite_rule(self, mock_get_utility):
         self.config.parser.modules.add("rewrite_module")
 
         http_vhost = self.vh_truth[0]
@@ -950,7 +951,6 @@ class TwoVhost80Test(util.ApacheTest):
 
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
 
-        #import ipdb; ipdb.set_trace()
         self.assertTrue(self.config.parser.find_dir(
             "RewriteEngine", "on", ssl_vhost.path, False))
 
@@ -958,6 +958,8 @@ class TwoVhost80Test(util.ApacheTest):
         commented_rewrite_rule = \
         "# RewriteRule ^ https://%{SERVER_NAME}%{REQUEST_URI} [L,QSA,R=permanent]"
         self.assertTrue(commented_rewrite_rule in conf_text)
+        mock_get_utility().add_message.assert_called_once_with(mock.ANY,
+                                                               mock.ANY)
 
     def get_achalls(self):
         """Return testing achallenges."""
