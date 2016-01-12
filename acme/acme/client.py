@@ -481,7 +481,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                 'Successful revocation must return HTTP OK status')
 
 
-class ClientNetwork(object):
+class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     """Client network."""
     JSON_CONTENT_TYPE = 'application/json'
     JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
@@ -537,7 +537,7 @@ class ClientNetwork(object):
             # TODO: response.json() is called twice, once here, and
             # once in _get and _post clients
             jobj = response.json()
-        except ValueError as error:
+        except ValueError:
             jobj = None
 
         if not response.ok:
