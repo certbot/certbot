@@ -489,15 +489,27 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: list
 
         """
-        # Search vhost-root, httpd.conf for possible virtual hosts
-        paths = self.aug.match(
-            ("/files%s//*[label()=~regexp('%s')]" %
-             (self.conf("vhost-root"), parser.case_i("VirtualHost"))))
-
+        # Search base config, and all included paths for VirtualHosts
         vhs = []
+        vhost_paths = {}
+        for vhost_path in self.parser.parser_paths.keys():
+            paths = self.aug.match(
+                ("/files%s//*[label()=~regexp('%s')]" %
+                    (vhost_path, parser.case_i("VirtualHost"))))
+            for path in paths:
+                new_vhost = self._create_vhost(path)
+                realpath = os.path.realpath(new_vhost.filep)
+                if realpath not in vhost_paths.keys():
+                    vhs.append(new_vhost)
+                    vhost_paths[realpath] = new_vhost.filep
+                elif realpath == new_vhost.filep:
+                    # Prefer "real" vhost paths instead of symlinked ones
+                    # ex: sites-enabled/vh.conf -> sites-available/vh.conf
 
-        for path in paths:
-            vhs.append(self._create_vhost(path))
+                    # remove old (most likely) symlinked one
+                    vhs = [v for v in vhs if v.filep != vhost_paths[realpath]]
+                    vhs.append(new_vhost)
+                    vhost_paths[realpath] = realpath
 
         return vhs
 
