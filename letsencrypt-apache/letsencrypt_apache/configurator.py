@@ -740,10 +740,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if target[0] in ("'", '"') and target[0] == target[-1]:
             target = target[1:-1]
 
-        if target.startswith("https://"):
-            return True
-
-        return False
+        # Sift line if it redirects the request to a HTTPS site
+        return target.startswith("https://")
 
     def _copy_create_ssl_vhost_skeleton(self, avail_fp, ssl_fp):
         """Copies over existing Vhost with IfModule mod_ssl.c> skeleton.
@@ -771,7 +769,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                                     "were disabled on your HTTPS site,\n"
                                     "# because they have the potential to "
                                     "create redirection loops.\n")
-                            sift = True
+                                sift = True
                             new_file.write("# " + line)
                         else:
                             new_file.write(line)
