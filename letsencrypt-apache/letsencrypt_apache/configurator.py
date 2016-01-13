@@ -160,8 +160,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         if not self._check_aug_version():
             raise errors.NotSupportedError(
-                "Your libaugeas0 is outdated, upgrade it from backports "
-                " or re-bootstrap letsencrypt")
+                "Apache plugin support requires libaugeas0 and augeas-lenses "
+                "version 1.2.0 or higher, please make sure you have you have "
+                "those installed.")
 
         self.parser = parser.ApacheParser(
             self.aug, self.conf("server-root"), self.conf("vhost-root"),
