@@ -22,7 +22,7 @@ once:
 
    git clone https://github.com/letsencrypt/letsencrypt
    cd letsencrypt
-   ./letsencrypt-auto/letsencrypt-auto --os-packages-only
+   ./letsencrypt-auto-source/letsencrypt-auto --os-packages-only
    ./bootstrap/dev/venv.sh
 
 Then in each shell where you're working on the client, do:
@@ -369,7 +369,7 @@ OS-level dependencies can be installed like so:
 
 .. code-block:: shell
 
-    letsencrypt-auto/letsencrypt-auto --os-packages-only
+    letsencrypt-auto-source/letsencrypt-auto --os-packages-only
 
 In general...
 
