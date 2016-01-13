@@ -1,0 +1,1 @@
+_suse_common.sh

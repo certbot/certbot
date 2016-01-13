@@ -2,8 +2,14 @@
 #
 # Download and run the latest release version of the Let's Encrypt client.
 #
-# WARNING: "letsencrypt-auto" IS A GENERATED FILE. EDIT
-# letsencrypt-auto.template INSTEAD.
+# NOTE: THIS SCRIPT IS AUTO-GENERATED AND SELF-UPDATING
+#
+# IF YOU WANT TO EDIT IT LOCALLY, *ALWAYS* RUN YOUR COPY WITH THE
+# "--no-self-upgrade" FLAG
+#
+# IF YOU WANT TO SEND PULL REQUESTS, THE REAL SOURCE FOR THIS FILE IS
+# letsencrypt-auto-source/letsencrypt-auto.template AND
+# letsencrypt-auto-source/pieces/bootstrappers/*
 
 set -e  # Work even if somebody does "sh thisscript.sh".
 
@@ -14,6 +20,24 @@ VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN=${VENV_PATH}/bin
 LE_AUTO_VERSION="{{ LE_AUTO_VERSION }}"
+
+# This script takes the same arguments as the main letsencrypt program, but it
+# additionally responds to --verbose (more output) and --debug (allow support
+# for experimental platforms)
+for arg in "$@" ; do
+  # This first clause is redundant with the third, but hedging on portability
+  if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- "-v+$" ; then
+    VERBOSE=1
+  elif [ "$arg" = "--no-self-upgrade" ] ; then
+    # Do not upgrade this script (also prevents client upgrades, because each
+    # copy of the script pins a hash of the python client)
+    NO_SELF_UPGRADE=1
+  elif [ "$arg" = "--os-packages-only" ] ; then
+    OS_PACKAGES_ONLY=1
+  elif [ "$arg" = "--debug" ]; then
+    DEBUG=1
+  fi
+done
 
 # letsencrypt-auto needs root access to bootstrap OS dependencies, and
 # letsencrypt itself needs root access for almost all modes of operation
@@ -144,22 +168,11 @@ TempDir() {
   mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || OS X
 }
 
-# This script takes the same arguments as the main letsencrypt program, but it
-# additionally responds to --verbose (more output) and --debug (allow support
-# for experimental platforms)
-for arg in "$@" ; do
-  # This first clause is redundant with the third, but hedging on portability
-  if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- "-v+$" ; then
-    VERBOSE=1
-  elif [ "$arg" = "--debug" ]; then
-    DEBUG=1
-  fi
-done
 
-if [ "$1" = "--no-self-upgrade" ]; then
+
+if [ "$NO_SELF_UPGRADE" = 1 ]; then
   # Phase 2: Create venv, install LE, and run.
 
-  shift 1  # the --no-self-upgrade arg
   if [ -f "$VENV_BIN/letsencrypt" ]; then
     INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | cut -d " " -f 2)
   else
@@ -220,7 +233,7 @@ else
     # If it looks like we've never bootstrapped before, bootstrap:
     Bootstrap
   fi
-  if [ "$1" = "--os-packages-only" ]; then
+  if [ "$OS_PACKAGES_ONLY" = 1 ]; then
     echo "OS packages installed."
     exit 0
   fi

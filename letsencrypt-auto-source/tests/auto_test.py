@@ -252,7 +252,7 @@ class AutoTests(TestCase):
         """
         NEW_LE_AUTO = build_le_auto(
                 version='99.9.9',
-                requirements='# sha256: 7NpInQZj4v2dvdCBUYtcBHqVlBfnUmlsKF_oSOzU9zY\n'
+                requirements='# sha256: HMFNYatCTN7kRvUeUPESP4SC7HQFh_54YmyTO7ooc6A\n'
                              'letsencrypt==99.9.9')
         NEW_LE_AUTO_SIG = signed(NEW_LE_AUTO)
 
