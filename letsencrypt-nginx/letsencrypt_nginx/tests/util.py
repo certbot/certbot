@@ -49,25 +49,26 @@ def get_nginx_configurator(
 
     backups = os.path.join(work_dir, "backups")
 
-    with mock.patch("letsencrypt_nginx.configurator.le_util."
-                    "exe_exists") as mock_exe_exists:
-        mock_exe_exists.return_value = True
-
-        config = configurator.NginxConfigurator(
-            config=mock.MagicMock(
-                nginx_server_root=config_path,
-                le_vhost_ext="-le-ssl.conf",
-                config_dir=config_dir,
-                work_dir=work_dir,
-                backup_dir=backups,
-                temp_checkpoint_dir=os.path.join(work_dir, "temp_checkpoints"),
-                in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
-                server="https://acme-server.org:443/new",
-                tls_sni_01_port=5001,
-            ),
-            name="nginx",
-            version=version)
-        config.prepare()
+    with mock.patch("letsencrypt_nginx.configurator.NginxConfigurator."
+                    "config_test"):
+        with mock.patch("letsencrypt_nginx.configurator.le_util."
+                        "exe_exists") as mock_exe_exists:
+            mock_exe_exists.return_value = True
+            config = configurator.NginxConfigurator(
+                config=mock.MagicMock(
+                    nginx_server_root=config_path,
+                    le_vhost_ext="-le-ssl.conf",
+                    config_dir=config_dir,
+                    work_dir=work_dir,
+                    backup_dir=backups,
+                    temp_checkpoint_dir=os.path.join(work_dir, "temp_checkpoints"),
+                    in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
+                    server="https://acme-server.org:443/new",
+                    tls_sni_01_port=5001,
+                ),
+                name="nginx",
+                version=version)
+            config.prepare()
 
     # Provide general config utility.
     nsconfig = configuration.NamespaceConfig(config.config)
