@@ -236,10 +236,8 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
 
         :param challenges.SimpleHTTP chall: Corresponding challenge.
         :param unicode domain: Domain name being verified.
-        :param account_public_key: Public key for the key pair
-            being authorized. If ``None`` key verification is not
-            performed!
-        :param JWK account_public_key:
+        :param JWK account_public_key: Public key for the key pair
+            being authorized.
         :param int port: Port used in the validation.
 
         :returns: ``True`` iff validation is successful, ``False``
