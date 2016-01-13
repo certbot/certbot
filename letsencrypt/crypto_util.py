@@ -271,7 +271,7 @@ def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
     def _dump_cert(cert):
         if isinstance(cert, jose.ComparableX509):
             # pylint: disable=protected-access
-            cert = cert._wrapped
+            cert = cert.wrapped
         return OpenSSL.crypto.dump_certificate(filetype, cert)
 
     # assumes that OpenSSL.crypto.dump_certificate includes ending

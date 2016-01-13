@@ -128,20 +128,10 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(found, 6)
 
         # Handle case of non-debian layout get_virtual_hosts
-        orig_conf = self.config.conf
         with mock.patch(
                 "letsencrypt_apache.configurator.ApacheConfigurator.conf"
-        )  as mock_conf:
-            def conf_sideeffect(key):
-                """Handle calls to configurator.conf()
-                :param key: configuration key
-                :return: configuration value
-                """
-                if key == "handle-sites":
-                    return False
-                else:
-                    return orig_conf(key)
-            mock_conf.side_effect = conf_sideeffect
+        ) as mock_conf:
+            mock_conf.return_value = False
             vhs = self.config.get_virtual_hosts()
             self.assertEqual(len(vhs), 6)
 
@@ -460,6 +450,25 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(mock_add_dir.call_args_list[0][0][2], ["1.2.3.4:8080", "https"])
         self.assertEqual(mock_add_dir.call_args_list[1][0][2], ["[::1]:8080", "https"])
         self.assertEqual(mock_add_dir.call_args_list[2][0][2], ["1.1.1.1:8080", "https"])
+
+    def test_prepare_server_https_mixed_listen(self):
+
+        mock_find = mock.Mock()
+        mock_find.return_value = ["test1", "test2"]
+        mock_get = mock.Mock()
+        mock_get.side_effect = ["1.2.3.4:8080", "443"]
+        mock_add_dir = mock.Mock()
+        mock_enable = mock.Mock()
+
+        self.config.parser.find_dir = mock_find
+        self.config.parser.get_arg = mock_get
+        self.config.parser.add_dir_to_ifmodssl = mock_add_dir
+        self.config.enable_mod = mock_enable
+
+        # Test Listen statements with specific ip listeed
+        self.config.prepare_server_https("443")
+        # Should only be 2 here, as the third interface already listens to the correct port
+        self.assertEqual(mock_add_dir.call_count, 0)
 
     def test_make_vhost_ssl(self):
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
@@ -838,7 +847,8 @@ class TwoVhost80Test(util.ApacheTest):
 
         # Create a preexisting rewrite rule
         self.config.parser.add_dir(
-            self.vh_truth[3].path, "RewriteRule", ["Unknown"])
+            self.vh_truth[3].path, "RewriteRule", ["UnknownPattern",
+                "UnknownTarget"])
         self.config.save()
 
         # This will create an ssl vhost for letsencrypt.demo
@@ -853,7 +863,7 @@ class TwoVhost80Test(util.ApacheTest):
 
         self.assertEqual(len(rw_engine), 1)
         # three args to rw_rule + 1 arg for the pre existing rewrite
-        self.assertEqual(len(rw_rule), 4)
+        self.assertEqual(len(rw_rule), 5)
 
         self.assertTrue(rw_engine[0].startswith(self.vh_truth[3].path))
         self.assertTrue(rw_rule[0].startswith(self.vh_truth[3].path))
@@ -902,6 +912,44 @@ class TwoVhost80Test(util.ApacheTest):
         self.config._enable_redirect(self.vh_truth[1], "")  # pylint: disable=protected-access
         self.assertEqual(len(self.config.vhosts), 7)
 
+    def test_sift_line(self):
+        # pylint: disable=protected-access
+        small_quoted_target = "RewriteRule ^ \"http://\""
+        self.assertFalse(self.config._sift_line(small_quoted_target))
+
+        https_target = "RewriteRule ^ https://satoshi"
+        self.assertTrue(self.config._sift_line(https_target))
+
+        normal_target = "RewriteRule ^/(.*) http://www.a.com:1234/$1 [L,R]"
+        self.assertFalse(self.config._sift_line(normal_target))
+
+    @mock.patch("letsencrypt_apache.configurator.zope.component.getUtility")
+    def test_make_vhost_ssl_with_existing_rewrite_rule(self, mock_get_utility):
+        self.config.parser.modules.add("rewrite_module")
+
+        http_vhost = self.vh_truth[0]
+
+        self.config.parser.add_dir(
+            http_vhost.path, "RewriteEngine", "on")
+
+        self.config.parser.add_dir(
+                http_vhost.path, "RewriteRule",
+                ["^",
+                "https://%{SERVER_NAME}%{REQUEST_URI}",
+                "[L,QSA,R=permanent]"])
+        self.config.save()
+
+        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
+
+        self.assertTrue(self.config.parser.find_dir(
+            "RewriteEngine", "on", ssl_vhost.path, False))
+
+        conf_text = open(ssl_vhost.filep).read()
+        commented_rewrite_rule = \
+        "# RewriteRule ^ https://%{SERVER_NAME}%{REQUEST_URI} [L,QSA,R=permanent]"
+        self.assertTrue(commented_rewrite_rule in conf_text)
+        mock_get_utility().add_message.assert_called_once_with(mock.ANY,
+                                                               mock.ANY)
 
     def get_achalls(self):
         """Return testing achallenges."""

@@ -58,7 +58,7 @@ class ParserTest(ApacheTest):  # pytlint: disable=too-few-public-methods
         with mock.patch("letsencrypt_apache.parser.ApacheParser."
                         "update_runtime_variables"):
             self.parser = ApacheParser(
-                self.aug, self.config_path, self.vhost_path, "dummy_ctl_path")
+                self.aug, self.config_path, self.vhost_path)
 
 
 def get_apache_configurator(

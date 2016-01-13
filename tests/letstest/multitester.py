@@ -77,6 +77,15 @@ parser.add_argument('--saveinstances',
 parser.add_argument('--alt_pip',
                     default='',
                     help="server from which to pull candidate release packages")
+parser.add_argument('--killboulder',
+                    action='store_true',
+                    help="do not leave a persistent boulder server running")
+parser.add_argument('--boulderonly',
+                    action='store_true',
+                    help="only make a boulder server")
+parser.add_argument('--fast',
+                    action='store_true',
+                    help="use larger instance types to run faster (saves about a minute, probably not worth it)")
 cl_args = parser.parse_args()
 
 # Credential Variables
@@ -292,6 +301,30 @@ def grab_letsencrypt_log():
     sudo('if [ -f ./letsencrypt.log ]; then \
     cat ./letsencrypt.log; else echo "[nolocallog]"; fi')
 
+def create_client_instances(targetlist):
+    "Create a fleet of client instances"
+    instances = []
+    print("Creating instances: ", end="")
+    for target in targetlist:
+        if target['virt'] == 'hvm':
+            machine_type = 't2.medium' if cl_args.fast else 't2.micro'
+        else:
+            # 32 bit systems
+            machine_type = 'c1.medium' if cl_args.fast else 't1.micro'
+        if 'userdata' in target.keys():
+            userdata = target['userdata']
+        else:
+            userdata = ''
+        name = 'le-%s'%target['name']
+        print(name, end=" ")
+        instances.append(make_instance(name,
+                                       target['ami'],
+                                       KEYNAME,
+                                       machine_type=machine_type,
+                                       userdata=userdata))
+    print()
+    return instances
+
 #-------------------------------------------------------------------------------
 # SCRIPT BEGINS
 #-------------------------------------------------------------------------------
@@ -352,30 +385,28 @@ if not sg_exists:
     make_security_group()
     time.sleep(30)
 
+boulder_preexists = False
+boulder_servers = EC2.instances.filter(Filters=[
+    {'Name': 'tag:Name',            'Values': ['le-boulderserver']},
+    {'Name': 'instance-state-name', 'Values': ['running']}])
+
+boulder_server = next(iter(boulder_servers), None)
+
 print("Requesting Instances...")
-boulder_server = make_instance('le-boulderserver',
-                               BOULDER_AMI,
-                               KEYNAME,
-                               #machine_type='t2.micro',
-                               machine_type='t2.medium',
-                               security_groups=['letsencrypt_test'])
-
-instances = []
-for target in targetlist:
-    if target['virt'] == 'hvm':
-        machine_type = 't2.micro'
-    else:
-        machine_type = 't1.micro'
-    if 'userdata' in target.keys():
-        userdata = target['userdata']
-    else:
-        userdata = ''
-    instances.append(make_instance('le-%s'%target['name'],
-                                   target['ami'],
+if boulder_server:
+    print("Found existing boulder server:", boulder_server)
+    boulder_preexists = True
+else:
+    print("Can't find a boulder server, starting one...")
+    boulder_server = make_instance('le-boulderserver',
+                                   BOULDER_AMI,
                                    KEYNAME,
-                                   machine_type=machine_type,
-                                   userdata=userdata))
+                                   machine_type='t2.micro',
+                                   #machine_type='t2.medium',
+                                   security_groups=['letsencrypt_test'])
 
+if not cl_args.boulderonly:
+    instances = create_client_instances(targetlist)
 
 # Configure and launch boulder server
 #-------------------------------------------------------------------------------
@@ -383,20 +414,23 @@ print("Waiting on Boulder Server")
 boulder_server = block_until_instance_ready(boulder_server)
 print(" server %s"%boulder_server)
 
-print("Configuring and Launching Boulder")
 
 # env.host_string defines the ssh user and host for connection
 env.host_string = "ubuntu@%s"%boulder_server.public_ip_address
 print("Boulder Server at (SSH):", env.host_string)
-config_and_launch_boulder(boulder_server)
-# blocking often unnecessary, but cheap EC2 VMs can get very slow
-block_until_http_ready('http://%s:4000'%boulder_server.public_ip_address,
-                       wait_time=10,
-                       timeout=500)
+if not boulder_preexists:
+    print("Configuring and Launching Boulder")
+    config_and_launch_boulder(boulder_server)
+    # blocking often unnecessary, but cheap EC2 VMs can get very slow
+    block_until_http_ready('http://%s:4000'%boulder_server.public_ip_address,
+                           wait_time=10, timeout=500)
 
 boulder_url = "http://%s:4000/directory"%boulder_server.private_ip_address
 print("Boulder Server at (public ip): http://%s:4000/directory"%boulder_server.public_ip_address)
 print("Boulder Server at (EC2 private ip): %s"%boulder_url)
+
+if cl_args.boulderonly:
+    sys.exit(0)
 
 # Install and launch client scripts in parallel
 #-------------------------------------------------------------------------------
@@ -480,7 +514,8 @@ results_file.close()
 if not cl_args.saveinstances:
     print('Logs in ', LOGDIR)
     print('Terminating EC2 Instances and Cleaning Dangling EBS Volumes')
-    boulder_server.terminate()
+    if cl_args.killboulder:
+        boulder_server.terminate()
     terminate_and_clean(instances)
 else:
     # print login information for the boxes for debugging
