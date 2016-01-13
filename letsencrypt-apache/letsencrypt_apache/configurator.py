@@ -158,6 +158,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise errors.NotSupportedError(
                 "Apache Version %s not supported.", str(self.version))
 
+        if not self._check_aug_version():
+            raise errors.NotSupportedError(
+                "Your libaugeas0 is outdated, upgrade it from backports "
+                " or re-bootstrap letsencrypt")
+
         self.parser = parser.ApacheParser(
             self.aug, self.conf("server-root"), self.conf("vhost-root"),
             self.version)
@@ -168,6 +173,17 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.vhosts = self.get_virtual_hosts()
 
         install_ssl_options_conf(self.mod_ssl_conf)
+
+    def _check_aug_version(self):
+        """ Checks that we have recent enough version of libaugeas.
+        If augeas version is recent enough, it will support case insensitive
+        regexp matching"""
+
+        self.aug.set("/test/path/testing/arg", "aRgUMeNT")
+        matches = self.aug.match(
+            "/test//*[self::arg=~regexp('argument', 'i')]")
+        self.aug.remove("/test/path")
+        return matches
 
     def deploy_cert(self, domain, cert_path, key_path,
                     chain_path=None, fullchain_path=None):  # pylint: disable=unused-argument
