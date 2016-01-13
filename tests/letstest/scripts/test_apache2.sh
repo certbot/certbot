@@ -45,6 +45,9 @@ if [ -f /etc/debian_version ] ; then
 elif [ -f /etc/redhat-release ] ; then
   echo "Bootstrapping dependencies for RedHat-based OSes..."
   $SUDO bootstrap/_rpm_common.sh
+elif grep -iq "Amazon Linux" /etc/issue ; then
+  echo "Bootstrapping dependencies for RedHat-based OSes..."
+  $SUDO bootstrap/_rpm_common.sh
 else
   echo "Dont have bootstrapping for this OS!"
   exit 1
