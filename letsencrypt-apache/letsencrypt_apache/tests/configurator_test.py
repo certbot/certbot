@@ -65,6 +65,15 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertRaises(
             errors.NotSupportedError, self.config.prepare)
 
+    @mock.patch("letsencrypt_apache.parser.ApacheParser")
+    @mock.patch("letsencrypt_apache.configurator.le_util.exe_exists")
+    def test_prepare_old_aug(self, mock_exe_exists, _):
+        mock_exe_exists.return_value = True
+        self.config._check_aug_version = mock.Mock(return_value=False)
+        self.assertRaises(
+            errors.NotSupportedError, self.config.prepare)
+
+
     def test_add_parser_arguments(self):  # pylint: disable=no-self-use
         from letsencrypt_apache.configurator import ApacheConfigurator
         # Weak test..
