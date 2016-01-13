@@ -235,21 +235,6 @@ class AutoTests(TestCase):
     test suites.
 
     """
-    # Remove these helpers when we no longer need to support Python 2.6:
-    def assertIn(self, member, container, msg=None):
-        """Just like self.assertTrue(a in b), but with a nicer default message."""
-        if member not in container:
-            standardMsg = '%s not found in %s' % (safe_repr(member),
-                                                  safe_repr(container))
-            self.fail(self._formatMessage(msg, standardMsg))
-
-    def assertNotIn(self, member, container, msg=None):
-        """Just like self.assertTrue(a not in b), but with a nicer default message."""
-        if member in container:
-            standardMsg = '%s unexpectedly found in %s' % (safe_repr(member),
-                                                        safe_repr(container))
-            self.fail(self._formatMessage(msg, standardMsg))
-
     def test_successes(self):
         """Exercise most branches of letsencrypt-auto.
 
