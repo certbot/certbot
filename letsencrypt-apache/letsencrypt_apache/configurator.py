@@ -180,8 +180,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         regexp matching"""
 
         self.aug.set("/test/path/testing/arg", "aRgUMeNT")
-        matches = self.aug.match(
-            "/test//*[self::arg=~regexp('argument', 'i')]")
+        try:
+            matches = self.aug.match(
+                "/test//*[self::arg=~regexp('argument', 'i')]")
+        except RuntimeError:
+            return None
         self.aug.remove("/test/path")
         return matches
 
