@@ -70,7 +70,7 @@ class TwoVhost80Test(util.ApacheTest):
     def test_prepare_old_aug(self, mock_exe_exists, _):
         mock_exe_exists.return_value = True
         self.config.config_test = mock.Mock()
-        self.config._check_aug_version = mock.Mock(return_value=False)
+        self.config._check_aug_version = mock.Mock(return_value=False) # pylint: disable=protected-access
         self.assertRaises(
             errors.NotSupportedError, self.config.prepare)
 
@@ -990,9 +990,9 @@ class TwoVhost80Test(util.ApacheTest):
     def test_aug_version(self):
         mock_match = mock.Mock(return_value=["something"])
         self.config.aug.match = mock_match
-        self.assertEquals(self.config._check_aug_version(), ["something"])
+        self.assertEquals(self.config._check_aug_version(), ["something"]) # pylint: disable=protected-access
         self.config.aug.match.side_effect = RuntimeError
-        self.assertFalse(self.config._check_aug_version())
+        self.assertFalse(self.config._check_aug_version()) # pylint: disable=protected-access
 
 
 if __name__ == "__main__":
