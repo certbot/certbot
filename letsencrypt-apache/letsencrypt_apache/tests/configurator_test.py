@@ -978,6 +978,13 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertTrue(self.config.parser.find_dir(
             "NameVirtualHost", "*:443", exclude=False))
 
+    def test_aug_version(self):
+        mock_match = mock.Mock(return_value=["something"])
+        self.config.aug.match = mock_match
+        self.assertEquals(self.config._check_aug_version(), ["something"])
+        self.config.aug.match.side_effect = RuntimeError
+        self.assertFalse(self.config._check_aug_version())
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

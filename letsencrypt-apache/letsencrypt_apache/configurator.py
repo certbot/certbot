@@ -185,7 +185,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "/test//*[self::arg=~regexp('argument', 'i')]")
         except RuntimeError:
             self.aug.remove("/test/path")
-            return None
+            return False
         self.aug.remove("/test/path")
         return matches
 
