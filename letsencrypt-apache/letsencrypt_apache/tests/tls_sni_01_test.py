@@ -9,7 +9,7 @@ from letsencrypt.plugins import common_test
 from letsencrypt_apache import obj
 from letsencrypt_apache.tests import util
 
-from six.moves import xrange  # pylint: disable=redefined-builtin
+from six.moves import xrange  # pylint: disable=redefined-builtin, import-error
 
 
 class TlsSniPerformTest(util.ApacheTest):
