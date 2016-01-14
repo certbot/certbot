@@ -97,3 +97,17 @@ targets:
       runcmd:
         - yum install -y epel-release
         - iptables -F
+  #-----------------------------------------------------------------------------
+  # Gentoo
+  - ami: ami-80fe8cea
+    name: gentoo2.2
+    type: gentoo
+    virt: hvm
+    user: ec2-user
+  #-----------------------------------------------------------------------------
+  # Freebsd
+  - ami: ami-05732d6f
+    name: freebsd10
+    type: freebsd
+    virt: hvm
+    user: ec2-user
