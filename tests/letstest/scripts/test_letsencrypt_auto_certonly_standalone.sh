@@ -1,4 +1,6 @@
-#!/bin/bash -x
+#!/bin/sh -x
+
+# can't use bash on freebsd yet...
 
 # $PUBLIC_IP $PRIVATE_IP $PUBLIC_HOSTNAME $BOULDER_URL are dynamically set at execution
 
