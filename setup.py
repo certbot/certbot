@@ -48,17 +48,16 @@ install_requires = [
 ]
 
 # env markers in extras_require cause problems with older pip: #517
+# Keep in sync with conditional_requirements.py.
 if sys.version_info < (2, 7):
     install_requires.extend([
         # only some distros recognize stdlib argparse as already satisfying
         'argparse',
         'ConfigArgParse>=0.10.0',  # python2.6 support, upstream #17
-        'mock<1.1.0',
     ])
 else:
     install_requires.extend([
         'ConfigArgParse',
-        'mock',
     ])
 
 dev_extras = [
@@ -116,13 +115,13 @@ setup(
     include_package_data=True,
 
     install_requires=install_requires,
+    tests_require='mock<1.1.0' if sys.version_info < (2, 7) else 'mock',
     extras_require={
         'dev': dev_extras,
         'docs': docs_extras,
         'testing': testing_extras,
     },
 
-    tests_require=install_requires,
     # to test all packages run "python setup.py test -s
     # {acme,letsencrypt_apache,letsencrypt_nginx}"
     test_suite='letsencrypt',

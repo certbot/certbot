@@ -998,6 +998,13 @@ def prepare_and_parse_args(plugins, args):
         "automation", "--duplicate", dest="duplicate", action="store_true",
         help="Allow making a certificate lineage that duplicates an existing one "
              "(both can be renewed in parallel)")
+    helpful.add(
+        "automation", "--os-packages-only", action="store_true",
+        help="(letsencrypt-auto only) install OS package dependencies and then stop")
+    helpful.add(
+        "automation", "--no-self-upgrade", action="store_true",
+        help="(letsencrypt-auto only) prevent the letsencrypt-auto script from"
+             " upgrading itself to newer released versions")
 
     helpful.add_group(
         "testing", description="The following flags are meant for "
