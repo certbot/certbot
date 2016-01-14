@@ -85,9 +85,12 @@ SetVersion() {
       sed -i "s/^version.*/version = '$ver'/" $pkg_dir/setup.py
     done
     sed -i "s/^__version.*/__version__ = '$ver'/" letsencrypt/__init__.py
+    
+    # interactive user input
+    git add -p letsencrypt $SUBPKGS letsencrypt-compatibility-test 
 
-    git add -p letsencrypt $SUBPKGS # interactive user input
 }
+
 SetVersion "$version"
 git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"
 git tag --local-user "$RELEASE_GPG_KEY" \
