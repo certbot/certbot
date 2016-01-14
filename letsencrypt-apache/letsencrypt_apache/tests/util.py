@@ -62,7 +62,8 @@ class ParserTest(ApacheTest):  # pytlint: disable=too-few-public-methods
 
 
 def get_apache_configurator(
-        config_path, vhost_path, config_dir, work_dir, version=(2, 4, 7), conf=None):
+        config_path, vhost_path,
+        config_dir, work_dir, version=(2, 4, 7), conf=None):
     """Create an Apache Configurator with the specified options.
 
     :param conf: Function that returns binary paths. self.conf in Configurator
@@ -129,10 +130,12 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(prefix, "mod_macro-example.conf"),
                 os.path.join(aug_pre,
                              "mod_macro-example.conf/Macro/VirtualHost"),
-                set([obj.Addr.fromstring("*:80")]), False, True, modmacro=True),
+                set([obj.Addr.fromstring("*:80")]), False, True,
+                modmacro=True),
             obj.VirtualHost(
                 os.path.join(prefix, "default-ssl-port-only.conf"),
-                os.path.join(aug_pre, "default-ssl-port-only.conf/IfModule/VirtualHost"),
+                os.path.join(aug_pre, ("default-ssl-port-only.conf/"
+                                       "IfModule/VirtualHost")),
                 set([obj.Addr.fromstring("_default_:443")]), True, False),
         ]
         return vh_truth

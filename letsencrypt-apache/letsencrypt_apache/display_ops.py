@@ -79,8 +79,9 @@ def _vhost_menu(domain, vhosts):
         )
 
     code, tag = zope.component.getUtility(interfaces.IDisplay).menu(
-        "We were unable to find a vhost with a ServerName or Address of {0}.{1}"
-        "Which virtual host would you like to choose?".format(
+        "We were unable to find a vhost with a ServerName "
+        "or Address of {0}.{1}Which virtual host would you "
+        "like to choose?".format(
             domain, os.linesep),
         choices, help_label="More Info", ok_label="Select")
 
