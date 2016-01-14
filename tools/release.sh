@@ -80,7 +80,7 @@ git checkout "$RELEASE_BRANCH"
 
 SetVersion() {
     ver="$1"
-    for pkg_dir in $SUBPKGS
+    for pkg_dir in $SUBPKGS letsencrypt-compatibility-test
     do
       sed -i "s/^version.*/version = '$ver'/" $pkg_dir/setup.py
     done
