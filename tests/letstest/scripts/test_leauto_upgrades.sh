@@ -1,4 +1,4 @@
-#!/bin/bash -xe
+#!/bin/sh -xe
 
 # $OS_TYPE $PUBLIC_IP $PRIVATE_IP $PUBLIC_HOSTNAME $BOULDER_URL
 # are dynamically set at execution
@@ -13,7 +13,7 @@ unset PIP_INDEX_URL
 
 export PIP_EXTRA_INDEX_URL="$SAVE"
 
-if ! ./letsencrypt-auto -v --debug --version | grep 0.1.1 ; then
+if ! ./letsencrypt-auto -v --debug --version | grep 0.2.0 ; then
     echo upgrade appeared to fail
     exit 1
 fi
