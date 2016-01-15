@@ -40,16 +40,24 @@ def load_cert(*names):
     """Load certificate."""
     loader = _guess_loader(
         names[-1], OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1)
-    return jose.ComparableX509(OpenSSL.crypto.load_certificate(
-        loader, load_vector(*names)))
+    return OpenSSL.crypto.load_certificate(loader, load_vector(*names))
+
+
+def load_comparable_cert(*names):
+    """Load ComparableX509 cert."""
+    return jose.ComparableX509(load_cert(*names))
 
 
 def load_csr(*names):
     """Load certificate request."""
     loader = _guess_loader(
         names[-1], OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1)
-    return jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
-        loader, load_vector(*names)))
+    return OpenSSL.crypto.load_certificate_request(loader, load_vector(*names))
+
+
+def load_comparable_csr(*names):
+    """Load ComparableX509 certificate request."""
+    return jose.ComparableX509(load_csr(*names))
 
 
 def load_rsa_private_key(*names):
