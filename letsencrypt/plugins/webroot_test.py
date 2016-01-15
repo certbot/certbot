@@ -111,6 +111,18 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(os.stat(self.validation_path).st_gid, parent_gid)
         self.assertEqual(os.stat(self.validation_path).st_uid, parent_uid)
 
+    def test_perform_missing_path(self):
+        self.auth.prepare()
+
+        missing_achall = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.HTTP01_P, domain="thing2.com", account_key=KEY)
+        self.assertRaises(
+            errors.PluginError, self.auth.perform, [missing_achall])
+
+        self.auth.full_roots[self.achall.domain] = 'null'
+        self.assertRaises(
+            errors.PluginError, self.auth.perform, [self.achall])
+
     def test_perform_cleanup(self):
         self.auth.prepare()
         responses = self.auth.perform([self.achall])

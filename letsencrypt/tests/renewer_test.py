@@ -381,6 +381,10 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertEqual(self.test_rc.names(12),
                          ["example.com", "www.example.com"])
 
+        # Trying missing cert
+        os.unlink(self.test_rc.cert)
+        self.assertRaises(errors.CertStorageError, self.test_rc.names)
+
     @mock.patch("letsencrypt.storage.datetime")
     def test_time_interval_judgments(self, mock_datetime):
         """Test should_autodeploy() and should_autorenew() on the basis
