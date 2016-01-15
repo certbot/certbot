@@ -50,7 +50,7 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 
         for vhost_basename in os.listdir(sites_enabled):
             vhost = os.path.join(sites_enabled, vhost_basename)
-            if not os.path.islink(vhost):
+            if not os.path.islink(vhost):  # pragma: no cover
                 os.remove(vhost)
                 target = os.path.join(
                     os.path.pardir, "sites-available", vhost_basename)
