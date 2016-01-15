@@ -120,7 +120,8 @@ class AugeasConfigurator(common.Plugin):
                     self.reverter.add_to_temp_checkpoint(
                         save_files, self.save_notes)
                 else:
-                    self.reverter.add_to_checkpoint(save_files, self.save_notes)
+                    self.reverter.add_to_checkpoint(save_files,
+                                                    self.save_notes)
             except errors.ReverterError as err:
                 raise errors.PluginError(str(err))
 
