@@ -198,6 +198,8 @@ else
   echo
 fi
 
+echo "Install appears to have been succesful."
+
 # Explain what's about to happen, for the benefit of those getting sudo
 # password prompts...
 echo "Requesting root privileges to run with virtualenv:" $SUDO $VENV_BIN/letsencrypt "$@"
