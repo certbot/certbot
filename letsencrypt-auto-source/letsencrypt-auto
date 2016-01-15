@@ -632,6 +632,10 @@ letsencrypt==0.2.0
 # sha256: Cak7i4RaDsZixQMXWWpW-blTHaak09l94aLi9v7lljs
 letsencrypt-apache==0.2.0
 
+# sha256: uDndLZwRfHAUMMFJlWkYpCOphjtIsJyQ4wpgE-fS9E8
+# sha256: j4MIDaoknQNsvM-4rlzG_wB7iNbZN1ITca-r57Gbrbw
+mock==1.0.1
+
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/peep.py"
