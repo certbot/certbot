@@ -564,8 +564,9 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                 logger.debug("Should renew, certificate is revoked.")
                 return True
 
-            # Renewals on the basis of expiry time
-            interval = self.configuration.get("renew_before_expiry", "10 days")
+            # Renews some period before expiry time
+            default_interval = constants.RENEWER_DEFAULTS["renew_before_expiry"]
+            interval = self.configuration.get("renew_before_expiry", default_interval)
             expiry = crypto_util.notAfter(self.version(
                 "cert", self.latest_common_version()))
             now = pytz.UTC.fromutc(datetime.datetime.utcnow())

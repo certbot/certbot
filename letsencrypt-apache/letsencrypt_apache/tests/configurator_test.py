@@ -65,6 +65,15 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertRaises(
             errors.NotSupportedError, self.config.prepare)
 
+    @mock.patch("letsencrypt_apache.parser.ApacheParser")
+    @mock.patch("letsencrypt_apache.configurator.le_util.exe_exists")
+    def test_prepare_old_aug(self, mock_exe_exists, _):
+        mock_exe_exists.return_value = True
+        self.config.config_test = mock.Mock()
+        self.config._check_aug_version = mock.Mock(return_value=False) # pylint: disable=protected-access
+        self.assertRaises(
+            errors.NotSupportedError, self.config.prepare)
+
     def test_add_parser_arguments(self):  # pylint: disable=no-self-use
         from letsencrypt_apache.configurator import ApacheConfigurator
         # Weak test..
@@ -128,20 +137,10 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(found, 6)
 
         # Handle case of non-debian layout get_virtual_hosts
-        orig_conf = self.config.conf
         with mock.patch(
                 "letsencrypt_apache.configurator.ApacheConfigurator.conf"
-        )  as mock_conf:
-            def conf_sideeffect(key):
-                """Handle calls to configurator.conf()
-                :param key: configuration key
-                :return: configuration value
-                """
-                if key == "handle-sites":
-                    return False
-                else:
-                    return orig_conf(key)
-            mock_conf.side_effect = conf_sideeffect
+        ) as mock_conf:
+            mock_conf.return_value = False
             vhs = self.config.get_virtual_hosts()
             self.assertEqual(len(vhs), 6)
 
@@ -857,7 +856,8 @@ class TwoVhost80Test(util.ApacheTest):
 
         # Create a preexisting rewrite rule
         self.config.parser.add_dir(
-            self.vh_truth[3].path, "RewriteRule", ["Unknown"])
+            self.vh_truth[3].path, "RewriteRule", ["UnknownPattern",
+                "UnknownTarget"])
         self.config.save()
 
         # This will create an ssl vhost for letsencrypt.demo
@@ -872,7 +872,7 @@ class TwoVhost80Test(util.ApacheTest):
 
         self.assertEqual(len(rw_engine), 1)
         # three args to rw_rule + 1 arg for the pre existing rewrite
-        self.assertEqual(len(rw_rule), 4)
+        self.assertEqual(len(rw_rule), 5)
 
         self.assertTrue(rw_engine[0].startswith(self.vh_truth[3].path))
         self.assertTrue(rw_rule[0].startswith(self.vh_truth[3].path))
@@ -921,6 +921,44 @@ class TwoVhost80Test(util.ApacheTest):
         self.config._enable_redirect(self.vh_truth[1], "")  # pylint: disable=protected-access
         self.assertEqual(len(self.config.vhosts), 7)
 
+    def test_sift_line(self):
+        # pylint: disable=protected-access
+        small_quoted_target = "RewriteRule ^ \"http://\""
+        self.assertFalse(self.config._sift_line(small_quoted_target))
+
+        https_target = "RewriteRule ^ https://satoshi"
+        self.assertTrue(self.config._sift_line(https_target))
+
+        normal_target = "RewriteRule ^/(.*) http://www.a.com:1234/$1 [L,R]"
+        self.assertFalse(self.config._sift_line(normal_target))
+
+    @mock.patch("letsencrypt_apache.configurator.zope.component.getUtility")
+    def test_make_vhost_ssl_with_existing_rewrite_rule(self, mock_get_utility):
+        self.config.parser.modules.add("rewrite_module")
+
+        http_vhost = self.vh_truth[0]
+
+        self.config.parser.add_dir(
+            http_vhost.path, "RewriteEngine", "on")
+
+        self.config.parser.add_dir(
+                http_vhost.path, "RewriteRule",
+                ["^",
+                "https://%{SERVER_NAME}%{REQUEST_URI}",
+                "[L,QSA,R=permanent]"])
+        self.config.save()
+
+        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
+
+        self.assertTrue(self.config.parser.find_dir(
+            "RewriteEngine", "on", ssl_vhost.path, False))
+
+        conf_text = open(ssl_vhost.filep).read()
+        commented_rewrite_rule = \
+        "# RewriteRule ^ https://%{SERVER_NAME}%{REQUEST_URI} [L,QSA,R=permanent]"
+        self.assertTrue(commented_rewrite_rule in conf_text)
+        mock_get_utility().add_message.assert_called_once_with(mock.ANY,
+                                                               mock.ANY)
 
     def get_achalls(self):
         """Return testing achallenges."""
@@ -948,6 +986,13 @@ class TwoVhost80Test(util.ApacheTest):
             "NameVirtualHost", "*:80", exclude=False))
         self.assertTrue(self.config.parser.find_dir(
             "NameVirtualHost", "*:443", exclude=False))
+
+    def test_aug_version(self):
+        mock_match = mock.Mock(return_value=["something"])
+        self.config.aug.match = mock_match
+        self.assertEquals(self.config._check_aug_version(), ["something"]) # pylint: disable=protected-access
+        self.config.aug.match.side_effect = RuntimeError
+        self.assertFalse(self.config._check_aug_version()) # pylint: disable=protected-access
 
 
 if __name__ == "__main__":

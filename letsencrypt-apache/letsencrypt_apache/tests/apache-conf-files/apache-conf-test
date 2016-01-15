@@ -49,7 +49,8 @@ if [ "$1" = --debian-modules ] ; then
     sudo apt-get install -y libapache2-mod-wsgi
     sudo apt-get install -y libapache2-mod-macro
 
-    for mod in  ssl rewrite macro wsgi deflate userdir version mime ; do
+    for mod in  ssl rewrite macro wsgi deflate userdir version mime setenvif ; do
+        echo -n enabling $mod
         sudo a2enmod $mod
     done
 fi
