@@ -119,7 +119,8 @@ class DNS01ResponseTest(unittest.TestCase):
 
     @mock.patch("acme.dns_resolver.txt_records_for_name")
     def test_simple_verify_good_validation_multiple_txts(self, mock_resolver):
-        mock_resolver.return_value = ["!", self.chall.validation(KEY.public_key())]
+        mock_resolver.return_value = [
+            "!", self.chall.validation(KEY.public_key())]
         self.assertTrue(self.response.simple_verify(
             self.chall, "local", KEY.public_key()))
         mock_resolver.assert_called_once_with(
