@@ -43,7 +43,7 @@ def already_listening(port):
     except (socket.error):
         names = []
         for pids in listeners:
-            names.append(psutil.Process(pids).name()+" (with PID "+str(pids)+")"+" on port "+str(port))
+            names.append(psutil.Process(pids).name() + " (with PID " + str(pids) + ")" + " on port " + str(port))
 
         name = ""
         if len(names) > 1:
@@ -59,10 +59,4 @@ def already_listening(port):
             "and then try again.".format(name))
         return True
 
-    except (psutil.NoSuchProcess, psutil.AccessDenied):
-        # Perhaps the result of a race where the process could have
-        # exited or relinquished the port (NoSuchProcess), or the result
-        # of an OS policy where we're not allowed to look up the process
-        # name (AccessDenied).
-        pass
     return False
