@@ -65,6 +65,15 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertRaises(
             errors.NotSupportedError, self.config.prepare)
 
+    @mock.patch("letsencrypt_apache.parser.ApacheParser")
+    @mock.patch("letsencrypt_apache.configurator.le_util.exe_exists")
+    def test_prepare_old_aug(self, mock_exe_exists, _):
+        mock_exe_exists.return_value = True
+        self.config.config_test = mock.Mock()
+        self.config._check_aug_version = mock.Mock(return_value=False) # pylint: disable=protected-access
+        self.assertRaises(
+            errors.NotSupportedError, self.config.prepare)
+
     def test_add_parser_arguments(self):  # pylint: disable=no-self-use
         from letsencrypt_apache.configurator import ApacheConfigurator
         # Weak test..
@@ -977,6 +986,13 @@ class TwoVhost80Test(util.ApacheTest):
             "NameVirtualHost", "*:80", exclude=False))
         self.assertTrue(self.config.parser.find_dir(
             "NameVirtualHost", "*:443", exclude=False))
+
+    def test_aug_version(self):
+        mock_match = mock.Mock(return_value=["something"])
+        self.config.aug.match = mock_match
+        self.assertEquals(self.config._check_aug_version(), ["something"]) # pylint: disable=protected-access
+        self.config.aug.match.side_effect = RuntimeError
+        self.assertFalse(self.config._check_aug_version()) # pylint: disable=protected-access
 
 
 if __name__ == "__main__":

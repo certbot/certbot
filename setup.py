@@ -33,6 +33,7 @@ version = meta['version']
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
     'acme=={0}'.format(version),
+    'ConfigArgParse>=0.10.0',  # python2.6 support, upstream #17
     'configobj',
     'cryptography>=0.7',  # load_pem_x509_certificate
     'parsedatetime',
@@ -53,11 +54,6 @@ if sys.version_info < (2, 7):
     install_requires.extend([
         # only some distros recognize stdlib argparse as already satisfying
         'argparse',
-        'ConfigArgParse>=0.10.0',  # python2.6 support, upstream #17
-    ])
-else:
-    install_requires.extend([
-        'ConfigArgParse',
     ])
 
 dev_extras = [

@@ -154,9 +154,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Set Version
         if self.version is None:
             self.version = self.get_version()
-        if self.version < (2, 2):
+        if self.version < (2, 4):
             raise errors.NotSupportedError(
                 "Apache Version %s not supported.", str(self.version))
+
+        if not self._check_aug_version():
+            raise errors.NotSupportedError(
+                "Apache plugin support requires libaugeas0 and augeas-lenses "
+                "version 1.2.0 or higher, please make sure you have you have "
+                "those installed.")
 
         self.parser = parser.ApacheParser(
             self.aug, self.conf("server-root"), self.conf("vhost-root"),
@@ -168,6 +174,21 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.vhosts = self.get_virtual_hosts()
 
         install_ssl_options_conf(self.mod_ssl_conf)
+
+    def _check_aug_version(self):
+        """ Checks that we have recent enough version of libaugeas.
+        If augeas version is recent enough, it will support case insensitive
+        regexp matching"""
+
+        self.aug.set("/test/path/testing/arg", "aRgUMeNT")
+        try:
+            matches = self.aug.match(
+                "/test//*[self::arg=~regexp('argument', 'i')]")
+        except RuntimeError:
+            self.aug.remove("/test/path")
+            return False
+        self.aug.remove("/test/path")
+        return matches
 
     def deploy_cert(self, domain, cert_path, key_path,
                     chain_path=None, fullchain_path=None):  # pylint: disable=unused-argument
