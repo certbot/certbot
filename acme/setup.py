@@ -28,7 +28,7 @@ if sys.version_info < (2, 7):
     install_requires.extend([
         # only some distros recognize stdlib argparse as already satisfying
         'argparse',
-        'mock<1.1.0',
+        'mock',
     ])
 else:
     install_requires.append('mock')
