@@ -29,7 +29,10 @@ if sys.version_info < (2, 7):
     install_requires.extend([
         # only some distros recognize stdlib argparse as already satisfying
         'argparse',
+        'mock<1.1.0',
     ])
+else:
+    install_requires.append('mock')
 
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
@@ -70,7 +73,6 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=install_requires,
-    tests_require='mock<1.1.0' if sys.version_info < (2, 7) else 'mock',
     extras_require={
         'docs': docs_extras,
         'testing': testing_extras,

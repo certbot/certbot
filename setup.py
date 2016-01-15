@@ -54,7 +54,10 @@ if sys.version_info < (2, 7):
     install_requires.extend([
         # only some distros recognize stdlib argparse as already satisfying
         'argparse',
+        'mock<1.1.0',
     ])
+else:
+    install_requires.append('mock')
 
 dev_extras = [
     # Pin astroid==1.3.5, pylint==1.4.2 as a workaround for #289
@@ -111,7 +114,6 @@ setup(
     include_package_data=True,
 
     install_requires=install_requires,
-    tests_require='mock<1.1.0' if sys.version_info < (2, 7) else 'mock',
     extras_require={
         'dev': dev_extras,
         'docs': docs_extras,
