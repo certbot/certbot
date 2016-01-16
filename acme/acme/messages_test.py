@@ -8,8 +8,8 @@ from acme import jose
 from acme import test_util
 
 
-CERT = test_util.load_cert('cert.der')
-CSR = test_util.load_csr('csr.der')
+CERT = test_util.load_comparable_cert('cert.der')
+CSR = test_util.load_comparable_csr('csr.der')
 KEY = test_util.load_rsa_private_key('rsa512_key.pem')
 
 

@@ -73,7 +73,8 @@ AUGEAS_LENS_DIR = pkg_resources.resource_filename(
 
 REWRITE_HTTPS_ARGS = [
     "^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,QSA,R=permanent]"]
-"""Apache version<2.3.9 rewrite rule arguments used for redirections to https vhost"""
+"""Apache version<2.3.9 rewrite rule arguments used for redirections to
+https vhost"""
 
 REWRITE_HTTPS_ARGS_WITH_END = [
     "^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[END,QSA,R=permanent]"]
@@ -81,14 +82,14 @@ REWRITE_HTTPS_ARGS_WITH_END = [
     https vhost"""
 
 HSTS_ARGS = ["always", "set", "Strict-Transport-Security",
-    "\"max-age=31536000\""]
+             "\"max-age=31536000\""]
 """Apache header arguments for HSTS"""
 
 UIR_ARGS = ["always", "set", "Content-Security-Policy",
-    "upgrade-insecure-requests"]
+            "upgrade-insecure-requests"]
 
 HEADER_ARGS = {"Strict-Transport-Security": HSTS_ARGS,
-        "Upgrade-Insecure-Requests": UIR_ARGS}
+               "Upgrade-Insecure-Requests": UIR_ARGS}
 
 
 def os_constant(key):

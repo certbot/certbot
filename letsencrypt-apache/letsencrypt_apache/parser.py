@@ -35,6 +35,7 @@ class ApacheParser(object):
         # https://httpd.apache.org/docs/2.4/mod/core.html#define
         # https://httpd.apache.org/docs/2.4/mod/core.html#ifdefine
         # This only handles invocation parameters and Define directives!
+        self.parser_paths = {}
         self.variables = {}
         if version >= (2, 4):
             self.update_runtime_variables()
@@ -95,11 +96,12 @@ class ApacheParser(object):
     def update_runtime_variables(self):
         """"
 
-        .. note:: Compile time variables (apache2ctl -V) are not used within the
-            dynamic configuration files.  These should not be parsed or
+        .. note:: Compile time variables (apache2ctl -V) are not used within
+            the dynamic configuration files.  These should not be parsed or
             interpreted.
 
-        .. todo:: Create separate compile time variables... simply for arg_get()
+        .. todo:: Create separate compile time variables...
+            simply for arg_get()
 
         """
         stdout = self._get_runtime_cfg()
@@ -176,7 +178,8 @@ class ApacheParser(object):
                     # Make sure we don't cause an IndexError (end of list)
                     # Check to make sure arg + 1 doesn't exist
                     if (i == (len(matches) - 1) or
-                            not matches[i + 1].endswith("/arg[%d]" % (args + 1))):
+                            not matches[i + 1].endswith("/arg[%d]" %
+                                                        (args + 1))):
                         filtered.append(matches[i][:-len("/arg[%d]" % args)])
 
         return filtered
@@ -310,8 +313,6 @@ class ApacheParser(object):
         for match in matches:
             dir_ = self.aug.get(match).lower()
             if dir_ == "include" or dir_ == "includeoptional":
-                # start[6:] to strip off /files
-                #print self._get_include_path(self.get_arg(match +"/arg")), directive, arg
                 ordered_matches.extend(self.find_dir(
                     directive, arg,
                     self._get_include_path(self.get_arg(match + "/arg")),
@@ -330,8 +331,8 @@ class ApacheParser(object):
         """
         value = self.aug.get(match)
 
-        # No need to strip quotes for variables, as apache2ctl already does this
-        # but we do need to strip quotes for all normal arguments.
+        # No need to strip quotes for variables, as apache2ctl already does
+        # this, but we do need to strip quotes for all normal arguments.
 
         # Note: normal argument may be a quoted variable
         # e.g. strip now, not later
@@ -453,7 +454,7 @@ class ApacheParser(object):
         https://apr.apache.org/docs/apr/2.0/apr__fnmatch_8h_source.html
         http://apache2.sourcearchive.com/documentation/2.2.16-6/apr__fnmatch_8h_source.html
 
-        :param str clean_fn_match: Apache style filename match, similar to globs
+        :param str clean_fn_match: Apache style filename match, like globs
 
         :returns: regex suitable for augeas
         :rtype: str
@@ -471,16 +472,63 @@ class ApacheParser(object):
         :param str filepath: Apache config file path
 
         """
+        use_new, remove_old = self._check_path_actions(filepath)
         # Test if augeas included file for Httpd.lens
         # Note: This works for augeas globs, ie. *.conf
-        inc_test = self.aug.match(
-            "/augeas/load/Httpd/incl [. ='%s']" % filepath)
-        if not inc_test:
-            # Load up files
-            # This doesn't seem to work on TravisCI
-            # self.aug.add_transform("Httpd.lns", [filepath])
-            self._add_httpd_transform(filepath)
-            self.aug.load()
+        if use_new:
+            inc_test = self.aug.match(
+                "/augeas/load/Httpd/incl [. ='%s']" % filepath)
+            if not inc_test:
+                # Load up files
+                # This doesn't seem to work on TravisCI
+                # self.aug.add_transform("Httpd.lns", [filepath])
+                if remove_old:
+                    self._remove_httpd_transform(filepath)
+                self._add_httpd_transform(filepath)
+                self.aug.load()
+
+    def _check_path_actions(self, filepath):
+        """Determine actions to take with a new augeas path
+
+        This helper function will return a tuple that defines
+        if we should try to append the new filepath to augeas
+        parser paths, and / or remove the old one with more
+        narrow matching.
+
+        :param str filepath: filepath to check the actions for
+
+        """
+
+        try:
+            new_file_match = os.path.basename(filepath)
+            existing_matches = self.parser_paths[os.path.dirname(filepath)]
+            if "*" in existing_matches:
+                use_new = False
+            else:
+                use_new = True
+            if new_file_match == "*":
+                remove_old = True
+            else:
+                remove_old = False
+        except KeyError:
+            use_new = True
+            remove_old = False
+        return use_new, remove_old
+
+    def _remove_httpd_transform(self, filepath):
+        """Remove path from Augeas transform
+
+        :param str filepath: filepath to remove
+        """
+
+        remove_basenames = self.parser_paths[os.path.dirname(filepath)]
+        remove_dirname = os.path.dirname(filepath)
+        for name in remove_basenames:
+            remove_path = remove_dirname + "/" + name
+            remove_inc = self.aug.match(
+                "/augeas/load/Httpd/incl [. ='%s']" % remove_path)
+            self.aug.remove(remove_inc[0])
+        self.parser_paths.pop(remove_dirname)
 
     def _add_httpd_transform(self, incl):
         """Add a transform to Augeas.
@@ -502,6 +550,13 @@ class ApacheParser(object):
             # Augeas uses base 1 indexing... insert at beginning...
             self.aug.set("/augeas/load/Httpd/lens", "Httpd.lns")
             self.aug.set("/augeas/load/Httpd/incl", incl)
+        # Add included path to paths dictionary
+        try:
+            self.parser_paths[os.path.dirname(incl)].append(
+                os.path.basename(incl))
+        except KeyError:
+            self.parser_paths[os.path.dirname(incl)] = [
+                os.path.basename(incl)]
 
     def standardize_excl(self):
         """Standardize the excl arguments for the Httpd lens in Augeas.

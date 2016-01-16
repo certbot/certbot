@@ -98,8 +98,8 @@ to serve all files under specified web root ({0})."""
     def _path_for_achall(self, achall):
         try:
             path = self.full_roots[achall.domain]
-        except IndexError:
-            raise errors.PluginError("Missing --webroot-path for domain: {1}"
+        except KeyError:
+            raise errors.PluginError("Missing --webroot-path for domain: {0}"
                                      .format(achall.domain))
         if not os.path.exists(path):
             raise errors.PluginError("Mysteriously missing path {0} for domain: {1}"

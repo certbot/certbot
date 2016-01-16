@@ -10,6 +10,7 @@ from letsencrypt_apache import parser
 
 logger = logging.getLogger(__name__)
 
+
 class ApacheTlsSni01(common.TLSSNI01):
     """Class that performs TLS-SNI-01 challenges within the Apache configurator
 
@@ -125,7 +126,8 @@ class ApacheTlsSni01(common.TLSSNI01):
                 addrs.add(default_addr)
             else:
                 addrs.add(
-                    addr.get_sni_addr(self.configurator.config.tls_sni_01_port))
+                    addr.get_sni_addr(
+                        self.configurator.config.tls_sni_01_port))
 
         return addrs
 

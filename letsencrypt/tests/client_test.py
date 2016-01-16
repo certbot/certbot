@@ -141,9 +141,9 @@ class ClientTest(unittest.TestCase):
         tmp_path = tempfile.mkdtemp()
         os.chmod(tmp_path, 0o755)  # TODO: really??
 
-        certr = mock.MagicMock(body=test_util.load_cert(certs[0]))
-        chain_cert = [test_util.load_cert(certs[1]),
-                      test_util.load_cert(certs[2])]
+        certr = mock.MagicMock(body=test_util.load_comparable_cert(certs[0]))
+        chain_cert = [test_util.load_comparable_cert(certs[1]),
+                      test_util.load_comparable_cert(certs[2])]
         candidate_cert_path = os.path.join(tmp_path, "certs", "cert.pem")
         candidate_chain_path = os.path.join(tmp_path, "chains", "chain.pem")
         candidate_fullchain_path = os.path.join(tmp_path, "chains", "fullchain.pem")
