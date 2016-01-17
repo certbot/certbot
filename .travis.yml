@@ -36,8 +36,8 @@ branches:
 sudo: false
 
 addons:
-  # Custom /etc/hosts required for SimpleHTTP simple verification,
-  # simple_verify for http01 and tls-sni-01, and letsencrypt_test_nginx
+  # Custom /etc/hosts required for simple verification of http-01
+  # and tls-sni-01, and for letsencrypt_test_nginx
   hosts:
     - le.wtf
     - le1.wtf

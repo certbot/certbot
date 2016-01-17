@@ -43,12 +43,12 @@ class AuthHandler(object):
 
     """
     def __init__(self, config, dv_auth, cont_auth, acme, account):
+        self.config = config
         self.dv_auth = dv_auth
         self.cont_auth = cont_auth
         self.acme = acme
-        self.config = config
-
         self.account = account
+
         self.authzr = dict()
 
         # List must be used to keep responses straight.
@@ -118,10 +118,15 @@ class AuthHandler(object):
                     achall.chall, achall.domain,
                     achall.account_key.public_key(),
                     port=self.config.tls_sni_01_port)
+        else:
+            logger.debug("Self-verify of challenge %s is not "
+                         "implemented, ignoring %s",
+                         achall.chall.__class__.__name__,
+                         achall.uri)
+
         if not return_value:
-            logger.warning("Self-verify of %s "
-                           "challenge for domain %s failed. "
-                           "Challenge URI: %s",
+            logger.warning("Self-verify of %s challenge (%s) "
+                           "for domain %s failed.",
                            achall.chall.__class__.__name__,
                            achall.domain,
                            achall.uri)

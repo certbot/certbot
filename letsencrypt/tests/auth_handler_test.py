@@ -23,8 +23,7 @@ class ChallengeFactoryTest(unittest.TestCase):
         from letsencrypt.auth_handler import AuthHandler
 
         # Account and config are mocked
-        self.config = mock.MagicMock(
-            tls_sni_01_port=1234, http01_port=4321)
+        self.config = mock.Mock()
         self.handler = AuthHandler(
             self.config, None, None, None, mock.Mock(key="mock_key"))
 
@@ -157,10 +156,11 @@ class GetAuthorizationsTest(unittest.TestCase):
     @mock.patch("acme.challenges.TLSSNI01Response.simple_verify")
     @mock.patch("letsencrypt.auth_handler.logger")
     def test_simple_verify(self, mock_logger, mock_tlssni01_verify, mock_http01_verify):
+        account_key = mock.Mock()
         challenge_http_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=acme_util.HTTP01_P, domain=b'localhost', account_key=mock.Mock(key="mock_key"))
+            challb=acme_util.HTTP01_P, domain=b'localhost', account_key=account_key)
         challenge_tls_sni_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=acme_util.TLSSNI01_P, domain=b'localhost', account_key=mock.Mock(key="mock_key"))
+            challb=acme_util.TLSSNI01_P, domain=b'localhost', account_key=account_key)
 
         response_http_01 = challenges.HTTP01Response(key_authorization=u'foo')
         response_tls_sni_01 = challenges.TLSSNI01Response(key_authorization=u'foo')
@@ -171,15 +171,15 @@ class GetAuthorizationsTest(unittest.TestCase):
         mock_http01_verify.return_value = False
         mock_tlssni01_verify.return_value = False
 
-        self.handler._solve_challenges() # pylint: disable=protected-access
+        self.handler._solve_challenges()  # pylint: disable=protected-access
 
-        response_http_01.simple_verify.assert_called_with(
+        response_http_01.simple_verify.assert_called_once_with(
             challenge_http_01.chall,
             challenge_http_01.domain,
             challenge_http_01.account_key.public_key(),
             self.config.http01_port)
 
-        response_tls_sni_01.simple_verify.assert_called_with(
+        response_tls_sni_01.simple_verify.assert_called_once_with(
             challenge_tls_sni_01.chall,
             challenge_tls_sni_01.domain,
             challenge_tls_sni_01.account_key.public_key(),
@@ -217,8 +217,7 @@ class PollChallengesTest(unittest.TestCase):
 
         # Account, config and network are mocked
         self.mock_net = mock.MagicMock()
-        self.config = mock.MagicMock(
-            tls_sni_01_port=1234, http01_port=4321)
+        self.config = mock.Mock()
         self.handler = AuthHandler(
             self.config, None, None, self.mock_net, mock.Mock(key="mock_key"))
 
