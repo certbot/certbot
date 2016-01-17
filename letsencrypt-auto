@@ -147,6 +147,8 @@ then
     ExperimentalBootstrap "Gentoo" _gentoo_common.sh "$SUDO"
   elif uname | grep -iq FreeBSD ; then
     ExperimentalBootstrap "FreeBSD" freebsd.sh "$SUDO"
+  elif uname | grep -iq OpenBSD ; then
+    ExperimentalBootstrap "OpenBSD" openbsd.sh "$SUDO"
   elif uname | grep -iq Darwin ; then
     ExperimentalBootstrap "Mac OS X" mac.sh # homebrew doesn't normally run as root
   elif grep -iq "Amazon Linux" /etc/issue ; then
