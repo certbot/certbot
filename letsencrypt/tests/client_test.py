@@ -79,7 +79,8 @@ class ClientTest(unittest.TestCase):
 
     def setUp(self):
         self.config = mock.MagicMock(
-            no_verify_ssl=False, config_dir="/etc/letsencrypt")
+            no_verify_ssl=False, config_dir="/etc/letsencrypt",
+            skip_authz=False)
         # pylint: disable=star-args
         self.account = mock.MagicMock(**{"key.pem": KEY})
 
@@ -100,22 +101,35 @@ class ClientTest(unittest.TestCase):
         self.acme.request_issuance.return_value = mock.sentinel.certr
         self.acme.fetch_chain.return_value = mock.sentinel.chain
 
-    def _check_obtain_certificate(self):
-        self.client.auth_handler.get_authorizations.assert_called_once_with(
-            ["example.com", "www.example.com"])
+    def _check_obtain_certificate(self, skip_authz=False):
+        if skip_authz:
+            self.client.auth_handler.get_authorizations.assert_not_called()
+            uri = self.acme.directory['cert-uri']
+        else:
+            self.client.auth_handler.get_authorizations.assert_called_once_with(
+                ["example.com", "www.example.com"])
+            uri = self.client.auth_handler.get_authorizations()[0].new_cert_uri
+
         self.acme.request_issuance.assert_called_once_with(
             jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
                 OpenSSL.crypto.FILETYPE_ASN1, CSR_SAN)),
-            self.client.auth_handler.get_authorizations())
+            uri)
         self.acme.fetch_chain.assert_called_once_with(mock.sentinel.certr)
 
-    def test_obtain_certificate_from_csr(self):
+    def _test_obtain_certificate_from_csr(self, skip_authz):
+        self.config.skip_authz = skip_authz
         self._mock_obtain_certificate()
         self.assertEqual(
             (mock.sentinel.certr, mock.sentinel.chain),
             self.client.obtain_certificate_from_csr(le_util.CSR(
                 form="der", file=None, data=CSR_SAN)))
-        self._check_obtain_certificate()
+        self._check_obtain_certificate(skip_authz)
+
+    def test_obtain_certificate_from_csr_with_authz(self):
+        self._test_obtain_certificate_from_csr(False)
+
+    def test_obtain_certificate_from_csr_without_authz(self):
+        self._test_obtain_certificate_from_csr(True)
 
     @mock.patch("letsencrypt.client.crypto_util")
     def test_obtain_certificate(self, mock_crypto_util):

@@ -284,19 +284,18 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         # TODO: check and raise UnexpectedUpdate
         return updated_authzr, response
 
-    def request_issuance(self, csr, authzrs):
+    def request_issuance(self, csr, new_cert_uri):
         """Request issuance.
 
         :param csr: CSR
         :type csr: `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
 
-        :param authzrs: `list` of `.AuthorizationResource`
+        :param new_cert_uri: new-cert URI
 
         :returns: Issued certificate
         :rtype: `.messages.CertificateResource`
 
         """
-        assert authzrs, "Authorizations list is empty"
         logger.debug("Requesting issuance...")
 
         # TODO: assert len(authzrs) == number of SANs
@@ -304,7 +303,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         content_type = self.DER_CONTENT_TYPE  # TODO: add 'cert_type 'argument
         response = self.net.post(
-            authzrs[0].new_cert_uri,  # TODO: acme-spec #90
+            new_cert_uri,
             req,
             content_type=content_type,
             headers={'Accept': content_type})
@@ -317,7 +316,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             raise errors.ClientError('"Location" Header missing')
 
         return messages.CertificateResource(
-            uri=uri, authzrs=authzrs, cert_chain_uri=cert_chain_uri,
+            uri=uri, cert_chain_uri=cert_chain_uri,
             body=jose.ComparableX509(OpenSSL.crypto.load_certificate(
                 OpenSSL.crypto.FILETYPE_ASN1, response.content)))
 

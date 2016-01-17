@@ -221,11 +221,16 @@ class Client(object):
 
         logger.debug("CSR: %s, domains: %s", csr, domains)
 
-        authzr = self.auth_handler.get_authorizations(domains)
+        if not self.config.skip_authz:
+            authzrs = self.auth_handler.get_authorizations(domains)
+            certr_url = authzrs[0].new_cert_uri
+        else:
+            certr_url = self.acme.directory['new-cert']
+
         certr = self.acme.request_issuance(
             jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
                 OpenSSL.crypto.FILETYPE_ASN1, csr.data)),
-            authzr)
+            certr_url)
         return certr, self.acme.fetch_chain(certr)
 
     def obtain_certificate_from_csr(self, csr):

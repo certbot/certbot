@@ -411,11 +411,9 @@ class CertificateResource(ResourceWithURI):
     :ivar acme.jose.util.ComparableX509 body:
         `OpenSSL.crypto.X509` wrapped in `.ComparableX509`
     :ivar unicode cert_chain_uri: URI found in the 'up' ``Link`` header
-    :ivar tuple authzrs: `tuple` of `AuthorizationResource`.
 
     """
     cert_chain_uri = jose.Field('cert_chain_uri')
-    authzrs = jose.Field('authzrs')
 
 
 @Directory.register

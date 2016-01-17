@@ -338,7 +338,7 @@ class CertificateResourceTest(unittest.TestCase):
     def setUp(self):
         from acme.messages import CertificateResource
         self.certr = CertificateResource(
-            body=CERT, uri=mock.sentinel.uri, authzrs=(),
+            body=CERT, uri=mock.sentinel.uri,
             cert_chain_uri=mock.sentinel.cert_chain_uri)
 
     def test_json_de_serializable(self):

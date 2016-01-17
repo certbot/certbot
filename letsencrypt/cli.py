@@ -998,6 +998,10 @@ def prepare_and_parse_args(plugins, args):
         "automation", "--duplicate", dest="duplicate", action="store_true",
         help="Allow making a certificate lineage that duplicates an existing one "
              "(both can be renewed in parallel)")
+    helpful.add(
+        "automation", "--skip-authz", dest="skip_authz", action="store_true",
+        help="Skip domain authentication. This requires the domains to have been "
+             "authenticated in a previous run.")
 
     helpful.add_group(
         "testing", description="The following flags are meant for "
