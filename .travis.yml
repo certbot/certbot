@@ -1,5 +1,9 @@
 language: python
 
+cache:
+    directories:
+        - $HOME/.cache/pip
+
 services:
   - rabbitmq
   - mariadb
