@@ -319,10 +319,7 @@ class ClientTest(unittest.TestCase):
         )
 
         cert, updated_authzrs = self.client.poll_and_request_issuance(
-            csr, authzrs, mintime=mintime,
-            # make sure that max_attempts is per-authorization, rather
-            # than global
-            max_attempts=max(len(authzrs[0].retries), len(authzrs[1].retries)))
+            csr, authzrs, mintime=mintime)
         self.assertTrue(cert[0] is csr)
         self.assertTrue(cert[1] is updated_authzrs)
         self.assertEqual(updated_authzrs[0].uri, 'a...')

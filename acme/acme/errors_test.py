@@ -1,4 +1,5 @@
 """Tests for acme.errors."""
+import datetime
 import unittest
 
 import mock
@@ -35,9 +36,9 @@ class PollErrorTest(unittest.TestCase):
     def setUp(self):
         from acme.errors import PollError
         self.timeout = PollError(
-            exhausted=set([mock.sentinel.AR]),
+            waiting=[(datetime.datetime(2015, 11, 29), mock.sentinel.AR)],
             updated={})
-        self.invalid = PollError(exhausted=set(), updated={
+        self.invalid = PollError(waiting=[], updated={
             mock.sentinel.AR: mock.sentinel.AR2})
 
     def test_timeout(self):
@@ -45,7 +46,7 @@ class PollErrorTest(unittest.TestCase):
         self.assertFalse(self.invalid.timeout)
 
     def test_repr(self):
-        self.assertEqual('PollError(exhausted=set([]), updated={sentinel.AR: '
+        self.assertEqual('PollError(waiting=[], updated={sentinel.AR: '
                          'sentinel.AR2})', repr(self.invalid))
 
 
