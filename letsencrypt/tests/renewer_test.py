@@ -198,14 +198,6 @@ class RenewableCertTests(BaseRenewableCertTest):
                                                       "example.org",
                                                       "cert17.pem")))
 
-        # Non-symlink logic
-        os.unlink(self.test_rc.cert)
-        with open(self.test_rc.cert, "w") as f:
-            f.write("cert")
-        self.test_rc.current_target("cert")
-        self.assertTrue(os.path.samefile(self.test_rc.current_target("cert"),
-                                         self.test_rc.cert))
-
     def test_current_version(self):
         for ver in (1, 5, 10, 20):
             os.symlink(os.path.join("..", "..", "archive", "example.org",
