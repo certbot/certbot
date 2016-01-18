@@ -165,8 +165,17 @@ class GetAuthorizationsTest(unittest.TestCase):
         response_http_01 = challenges.HTTP01Response(key_authorization=u'foo')
         response_tls_sni_01 = challenges.TLSSNI01Response(key_authorization=u'foo')
 
-        self.handler.dv_c = [challenge_http_01, challenge_tls_sni_01]
-        self.mock_dv_auth.perform.side_effect = [[response_http_01, response_tls_sni_01]]
+        # Test _simple_verify's behaviour when implementation of challenge is not implemented
+        response_dummy = mock.Mock()
+        challenge_dummy = mock.Mock(chall=mock.Mock(), uri="foo")
+
+        self.handler.dv_c = [challenge_http_01,
+                             challenge_tls_sni_01,
+                             challenge_dummy]
+
+        self.mock_dv_auth.perform.side_effect = [[response_http_01,
+                                                  response_tls_sni_01,
+                                                  response_dummy]]
 
         mock_http01_verify.return_value = False
         mock_tlssni01_verify.return_value = False
@@ -195,6 +204,10 @@ class GetAuthorizationsTest(unittest.TestCase):
                                   challenge_tls_sni_01.uri)]
 
         mock_logger.warning.assert_has_calls(logger_calls)
+
+        mock_logger.debug.assert_called_with(mock.ANY,
+                                            challenge_dummy.chall.__class__.__name__,
+                                            challenge_dummy.uri)
 
     def _validate_all(self, unused_1, unused_2):
         for dom in self.handler.authzr.keys():

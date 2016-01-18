@@ -124,13 +124,6 @@ class AuthHandler(object):
                          achall.chall.__class__.__name__,
                          achall.uri)
 
-        if not return_value:
-            logger.warning("Self-verify of %s challenge (%s) "
-                           "for domain %s failed.",
-                           achall.chall.__class__.__name__,
-                           achall.domain,
-                           achall.uri)
-
         return return_value
 
     def _solve_challenges(self):
@@ -144,7 +137,12 @@ class AuthHandler(object):
                 if self.dv_c:
                     dv_resp = self.dv_auth.perform(self.dv_c)
                     for achall, response in zip(self.dv_c, dv_resp):
-                        self._simple_verify(achall, response)
+                        if not self._simple_verify(achall, response):
+                            logger.warning("Self-verify of %s challenge (%s) "
+                                           "for domain %s failed.",
+                                           achall.chall.__class__.__name__,
+                                           achall.domain,
+                                           achall.uri)
 
             except errors.AuthorizationError:
                 logger.critical("Failure in setting up challenges.")
