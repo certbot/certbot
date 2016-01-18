@@ -45,8 +45,8 @@ class PollErrorTest(unittest.TestCase):
         self.assertFalse(self.invalid.timeout)
 
     def test_repr(self):
-        self.assertEqual('PollError(exhausted=set([]), updated={sentinel.AR: '
-                         'sentinel.AR2})', repr(self.invalid))
+        self.assertEqual('PollError(exhausted=%s, updated={sentinel.AR: '
+                         'sentinel.AR2})' % repr(set()), repr(self.invalid))
 
 
 if __name__ == "__main__":
