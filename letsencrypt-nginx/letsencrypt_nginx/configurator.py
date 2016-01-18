@@ -5,6 +5,7 @@ import re
 import shutil
 import socket
 import subprocess
+import sys
 import time
 
 import OpenSSL
@@ -105,17 +106,10 @@ class NginxConfigurator(common.Plugin):
 
     # This is called in determine_authenticator and determine_installer
     def prepare(self):
-        """Prepare the authenticator/installer.
-
-        :raises .errors.NoInstallationError: If Nginx ctl cannot be found
-        :raises .errors.MisconfigurationError: If Nginx is misconfigured
-        """
+        """Prepare the authenticator/installer."""
         # Verify Nginx is installed
         if not le_util.exe_exists(self.conf('ctl')):
             raise errors.NoInstallationError
-
-        # Make sure configuration is valid
-        self.config_test()
 
         self.parser = parser.NginxParser(
             self.conf('server-root'), self.mod_ssl_conf)
@@ -415,13 +409,26 @@ class NginxConfigurator(common.Plugin):
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Nginx for errors.
 
-        :raises .errors.MisconfigurationError: If config_test fails
+        :returns: Success
+        :rtype: bool
 
         """
         try:
-            le_util.run_script([self.conf('ctl'), "-c", self.nginx_conf, "-t"])
-        except errors.SubprocessError as err:
-            raise errors.MisconfigurationError(str(err))
+            proc = subprocess.Popen(
+                [self.conf('ctl'), "-c", self.nginx_conf, "-t"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
+            stdout, stderr = proc.communicate()
+        except (OSError, ValueError):
+            logger.fatal("Unable to run nginx config test")
+            sys.exit(1)
+
+        if proc.returncode != 0:
+            # Enter recovery routine...
+            logger.error("Config test failed\n%s\n%s", stdout, stderr)
+            return False
+
+        return True
 
     def _verify_setup(self):
         """Verify the setup to ensure safe operating environment.

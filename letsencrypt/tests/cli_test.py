@@ -202,7 +202,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             # (we can only do that if letsencrypt-nginx is actually present)
             ret, _, _, _ = self._call(args)
             self.assertTrue("The nginx plugin is not working" in ret)
-            self.assertTrue("MisconfigurationError" in ret)
+            self.assertTrue("Could not find configuration root" in ret)
+            self.assertTrue("NoInstallationError" in ret)
 
         args = ["certonly", "--webroot"]
         ret, _, _, _ = self._call(args)
