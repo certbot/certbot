@@ -55,4 +55,5 @@ setup(
             'letshelp-letsencrypt-apache = letshelp_letsencrypt.apache:main',
         ],
     },
+    test_suite='letshelp_letsencrypt',
 )
