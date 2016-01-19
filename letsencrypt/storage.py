@@ -1,5 +1,6 @@
 """Renewable certificates storage."""
 import datetime
+import errno
 import logging
 import os
 import re
@@ -273,10 +274,12 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         try:
             target = os.readlink(link)
         except OSError as e:
-            logger.debug('Expected %s to be a symlink to a file in %s, was a'
-                         'hard file. Did you modify the letsencrypt directory?',
-                         link, self.cli_config.archive_dir)
-            raise
+            if not e.errno is errno.EINVAL:
+                raise
+            raise errors.CertStorageError(
+                'Expected %s to be a symlink to a file in %s, was a '
+                'hard file. Did you modify the letsencrypt directory?' %
+                (link, self.cli_config.archive_dir))
 
         if not os.path.isabs(target):
             target = os.path.join(os.path.dirname(link), target)
