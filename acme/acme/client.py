@@ -1,4 +1,5 @@
 """ACME client API."""
+import collections
 import datetime
 import heapq
 import logging
@@ -334,8 +335,9 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :param authzrs: `list` of `.AuthorizationResource`
         :param int mintime: Minimum time before next attempt, used if
             ``Retry-After`` is not present in the response.
-        :param int max_attempts: Maximum number of attempts before
-            `PollError` with non-empty ``waiting`` is raised.
+        :param int max_attempts: Maximum number of attempts (per
+            authorization) before `PollError` with non-empty ``waiting``
+            is raised.
 
         :returns: ``(cert, updated_authzrs)`` `tuple` where ``cert`` is
             the issued certificate (`.messages.CertificateResource`),
@@ -349,6 +351,11 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             was marked by the CA as invalid
 
         """
+        # pylint: disable=too-many-locals
+        assert max_attempts > 0
+        attempts = collections.defaultdict(int)
+        exhausted = set()
+
         # priority queue with datetime (based on Retry-After) as key,
         # and original Authorization Resource as value
         waiting = [(datetime.datetime.now(), authzr) for authzr in authzrs]
@@ -356,8 +363,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         # recently updated one
         updated = dict((authzr, authzr) for authzr in authzrs)
 
-        while waiting and max_attempts:
-            max_attempts -= 1
+        while waiting:
             # find the smallest Retry-After, and sleep if necessary
             when, authzr = heapq.heappop(waiting)
             now = datetime.datetime.now()
@@ -371,16 +377,20 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             updated_authzr, response = self.poll(updated[authzr])
             updated[authzr] = updated_authzr
 
+            attempts[authzr] += 1
             # pylint: disable=no-member
             if updated_authzr.body.status not in (
                     messages.STATUS_VALID, messages.STATUS_INVALID):
-                # push back to the priority queue, with updated retry_after
-                heapq.heappush(waiting, (self.retry_after(
-                    response, default=mintime), authzr))
+                if attempts[authzr] < max_attempts:
+                    # push back to the priority queue, with updated retry_after
+                    heapq.heappush(waiting, (self.retry_after(
+                        response, default=mintime), authzr))
+                else:
+                    exhausted.add(authzr)
 
-        if not max_attempts or any(authzr.body.status == messages.STATUS_INVALID
-                                   for authzr in six.itervalues(updated)):
-            raise errors.PollError(waiting, updated)
+        if exhausted or any(authzr.body.status == messages.STATUS_INVALID
+                            for authzr in six.itervalues(updated)):
+            raise errors.PollError(exhausted, updated)
 
         updated_authzrs = tuple(updated[authzr] for authzr in authzrs)
         return self.request_issuance(csr, updated_authzrs), updated_authzrs
