@@ -24,10 +24,10 @@ env:
     - TOXENV=py27 BOULDER_INTEGRATION=1
     - TOXENV=py26-oldest BOULDER_INTEGRATION=1
     - TOXENV=py27-oldest BOULDER_INTEGRATION=1
-    - TOXENV=py33
-    - TOXENV=py34
     - TOXENV=lint
     - TOXENV=cover
+    - TOXENV=py33
+    - TOXENV=py34
 # Disabled for now due to requiring sudo -> causing more boulder integration
 # DNS timeouts :(
 #    - TOXENV=apacheconftest
