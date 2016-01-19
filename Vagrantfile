@@ -5,18 +5,16 @@
 VAGRANTFILE_API_VERSION = "2"
 
 # Setup instructions from docs/contributing.rst
-# Script for installing dependencies for tox and boulder integration
-# TODO: Check if the GO PATH lines already exist. If they do, don't add them.
-# If they don't, add them before the exit line
+# Script installs dependencies for tox and boulder integration
 $ubuntu_setup_script = <<SETUP_SCRIPT
 cd /vagrant
 ./letsencrypt-auto-source/letsencrypt-auto --os-packages-only
 ./tools/venv.sh
 wget https://storage.googleapis.com/golang/go1.5.3.linux-amd64.tar.gz -P /tmp/
 sudo tar -C /usr/local -xzf /tmp/go1.5.3.linux-amd64.tar.gz
-echo "export GOROOT=/usr/local/go" >> ~/.profile
-echo "export PATH=\\$GOROOT/bin:\\$PATH" >> ~/.profile
-echo "export GOPATH=\\$HOME/go" >> ~/.profile
+if ! grep -Fxq "export GOROOT=/usr/local/go" ~/.profile ; then echo "export GOROOT=/usr/local/go" >> ~/.profile; fi
+if ! grep -Fxq "export PATH=\\$GOROOT/bin:\\$PATH" ~/.profile ; then echo "export PATH=\\$GOROOT/bin:\\$PATH" >> ~/.profile; fi
+if ! grep -Fxq "export GOPATH=\\$HOME/go" ~/.profile ; then echo "export GOPATH=\\$HOME/go" >> ~/.profile; fi
 export DEBIAN_FRONTEND=noninteractive
 sudo -E apt-get -q -y install git mysql-server-5.5 libltdl-dev rabbitmq-server make nginx
 SETUP_SCRIPT
