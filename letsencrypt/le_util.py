@@ -314,7 +314,7 @@ def check_domain_sanity(domain):
     # FQDN checks from
     # http://www.mkyong.com/regular-expressions/domain-name-regular-expression-example/
     #  Characters used, domain parts < 63 chars, tld > 1 < 64 chars
-    #  first and last char is not "-"
-    fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,63}$")
+    #  first and last char is not "-", optional trailing period
+    fqdn = re.compile(r"^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,63}\.?$")
     if not fqdn.match(domain):
         raise errors.ConfigurationError("Requested domain is not a FQDN")

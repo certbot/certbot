@@ -389,13 +389,14 @@ class ChooseNamesTest(unittest.TestCase):
     def test_get_valid_domains(self):
         from letsencrypt.display.ops import get_valid_domains
         all_valid = ["example.com", "second.example.com",
-                     "also.example.com"]
+                     "also.example.com", "trailing.period.com."]
         all_invalid = ["xn--ls8h.tld", "*.wildcard.com", "notFQDN",
                        "uniçodé.com"]
-        two_valid = ["example.com", "xn--ls8h.tld", "also.example.com"]
+        three_valid = ["example.com", "xn--ls8h.tld", "also.example.com",
+                       "trailing.period.com."]
         self.assertEqual(get_valid_domains(all_valid), all_valid)
         self.assertEqual(get_valid_domains(all_invalid), [])
-        self.assertEqual(len(get_valid_domains(two_valid)), 2)
+        self.assertEqual(len(get_valid_domains(three_valid)), 3)
 
     @mock.patch("letsencrypt.display.ops.util")
     def test_choose_manually(self, mock_util):
@@ -424,9 +425,12 @@ class ChooseNamesTest(unittest.TestCase):
         # Two valid domains
         mock_util().input.return_value = (display_util.OK,
                                           ("example.com,"
-                                           "valid.example.com"))
+                                           "valid.example.com,"
+                                           "trailing.period.com."))
         self.assertEqual(_choose_names_manually(),
-                         ["example.com", "valid.example.com"])
+                         ["example.com",
+                          "valid.example.com",
+                          "trailing.period.com."])
         # Three iterations
         mock_util().input.return_value = (display_util.OK,
                                           "notFQDN")
