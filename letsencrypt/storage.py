@@ -274,7 +274,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         try:
             target = os.readlink(link)
         except OSError as e:
-            if not e.errno is errno.EINVAL:
+            if not e.errno == errno.EINVAL:
                 raise
             raise errors.CertStorageError(
                 'Expected %s to be a symlink to a file in %s, was a '
