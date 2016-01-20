@@ -1236,6 +1236,7 @@ class DomainFlagProcessor(argparse.Action): # pylint: disable=missing-docstring
         {domain : webrootpath} if -w / --webroot-path is in use
         """
         for domain in (d.strip() for d in domain_arg.split(",")):
+            domain = domain[:-1] if domain.endswith('.') else domain
             if domain not in config.domains:
                 config.domains.append(domain)
                 # Each domain has a webroot_path of the most recent -w flag
