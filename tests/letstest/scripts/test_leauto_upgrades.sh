@@ -11,8 +11,12 @@ export PIP_INDEX_URL="https://isnot.org/pip/0.1.0/"
 
 #OLD_LEAUTO="https://raw.githubusercontent.com/letsencrypt/letsencrypt/5747ab7fd9641986833bad474d71b46a8c589247/letsencrypt-auto"
 
+
 if ! command -v git ; then
-    if ! ( sudo apt-get update || sudo apt-get install -y git || sudo yum install -y git-all || sudo yum install -y git || sudo dnf install -y git ) ; then
+    if [ "$OS_TYPE" = "ubuntu" ] ; then
+        sudo apt-get update
+    fi
+    if ! (  sudo apt-get install -y git || sudo yum install -y git-all || sudo yum install -y git || sudo dnf install -y git ) ; then
         echo git installation failed!
         exit 1
     fi
