@@ -1196,10 +1196,9 @@ def _plugins_parsing(helpful, plugins):
                      "handle different domains; each domain will have the webroot path that"
                      " preceded it.  For instance: `-w /var/www/example -d example.com -d "
                      "www.example.com -w /var/www/thing -d thing.net -d m.thing.net`")
-    parse_dict = lambda s: dict(json.loads(s))
     # --webroot-map still has some awkward properties, so it is undocumented
-    helpful.add("webroot", "--webroot-map", default={}, type=parse_dict,
-                help=argparse.SUPPRESS)
+    helpful.add("webroot", "--webroot-map", default={},
+                action=WebrootMapProcessor, help=argparse.SUPPRESS)
 
 
 class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
@@ -1227,6 +1226,14 @@ class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
             raise errors.Error("If you specify multiple webroot paths, one of "
                                "them must precede all domain flags")
         config.webroot_path.append(webroot)
+
+
+class WebrootMapProcessor(argparse.Action): # pylint: disable=missing-docstring
+    def __call__(self, parser, config, webroot_map_arg, option_string=None):
+        webroot_map = json.loads(webroot_map_arg)
+        for domain, webroot in webroot_map.iteritems():
+            domain = domain[:-1] if domain.endswith('.') else domain
+            config.webroot_map[domain] = webroot
 
 
 class DomainFlagProcessor(argparse.Action): # pylint: disable=missing-docstring

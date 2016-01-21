@@ -379,9 +379,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         webroot_args = ['-d', 'stray.example.com'] + webroot_args
         self.assertRaises(errors.Error, cli.prepare_and_parse_args, plugins, webroot_args)
 
-        webroot_map_args = ['--webroot-map', '{"eg.com" : "/tmp"}']
+        webroot_map_args = ['--webroot-map',
+                            '{"eg.com": "/tmp", "www.eg.com.": "/tmp"}']
         namespace = cli.prepare_and_parse_args(plugins, webroot_map_args)
-        self.assertEqual(namespace.webroot_map, {u"eg.com": u"/tmp"})
+        self.assertEqual(namespace.webroot_map,
+                         {u"eg.com": u"/tmp", u"www.eg.com": u"/tmp"})
 
     @mock.patch('letsencrypt.cli._suggest_donate')
     @mock.patch('letsencrypt.crypto_util.notAfter')
