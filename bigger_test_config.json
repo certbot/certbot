@@ -1,7 +1,7 @@
 {
   "timestamp": 1401414363,
   "author": "Electronic Frontier Foundation https://eff.org",
-  "expires": 1404242424,
+  "expires": "2015-08-01T12:00:00+08:00",
   "tls-policies": {
     ".yahoodns.net": {
       "require-valid-certificate": true
