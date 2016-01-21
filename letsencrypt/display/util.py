@@ -21,7 +21,7 @@ CANCEL = "cancel"
 HELP = "help"
 """Display exit code when for when the user requests more help."""
 
-def _wrap_lines(msg):  # pylint: disable=no-self-use
+def _wrap_lines(msg):
     """Format lines nicely to 80 chars.
 
     :param str msg: Original message
