@@ -412,7 +412,7 @@ class FileDisplay(object):
         return OK, selection
 
 class NoninteractiveDisplay(object):
-    """File-based display."""
+    """An iDisplay implementation that never asks for interactive user input"""
 
     zope.interface.implements(interfaces.IDisplay)
 
