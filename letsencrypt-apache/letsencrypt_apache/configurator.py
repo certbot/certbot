@@ -557,8 +557,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # search for NameVirtualHost directive for ip_addr
         # note ip_addr can be FQDN although Apache does not recommend it
-        return (self.version >= (2, 4) or
-                self.parser.find_dir("NameVirtualHost", str(target_addr)))
+        if (self.version >= (2,4)):
+            return True
+        else:
+            self.save("don't lose config changes", True)
+            return (self.parser.find_dir("NameVirtualHost", str(target_addr)))
 
     def add_name_vhost(self, addr):
         """Adds NameVirtualHost directive for given address.
