@@ -399,6 +399,9 @@ class IDisplay(zope.interface.Interface):
             `input` - str of the user's input
         :rtype: tuple
 
+        :raises errors.MissingCommandlineFlag: if called in non-interactive
+            mode without a default set
+
         """
 
     def yesno(message, yes_label="Yes", no_label="No", default=None,
