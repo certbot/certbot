@@ -291,6 +291,12 @@ class NoninteractiveDisplayTest(unittest.TestCase):
         self.mock_stdout = mock.MagicMock()
         self.displayer = display_util.NoninteractiveDisplay(self.mock_stdout)
 
+    def test_notification_no_pause(self):
+        self.displayer.notification("message", 10)
+        string = self.mock_stdout.write.call_args[0][0]
+
+        self.assertTrue("message" in string)
+
     def test_input(self):
         d = "an incomputable value"
         ret = self.displayer.input("message", default=d)
@@ -310,7 +316,7 @@ class NoninteractiveDisplayTest(unittest.TestCase):
 
     def test_checklist(self):
         d = [1, 3]
-        ret = self.displayer.menu("message", TAGS, default=d)
+        ret = self.displayer.checklist("message", TAGS, default=d)
         self.assertEqual(ret, (display_util.OK, d))
         self.assertRaises(errors.MissingCommandlineFlag, self.displayer.checklist, "message", TAGS)
 
