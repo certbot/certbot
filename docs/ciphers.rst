@@ -170,7 +170,7 @@ Changing your settings
 
 This will probably look something like
 
-..code-block: shell
+.. code-block:: shell
 
   letsencrypt --cipher-recommendations mozilla-secure
   letsencrypt --cipher-recommendations mozilla-intermediate
@@ -179,14 +179,14 @@ This will probably look something like
 to track Mozilla's *Secure*, *Intermediate*, or *Old* recommendations,
 and
 
-..code-block: shell
+.. code-block:: shell
 
   letsencrypt --update-ciphers on
 
 to enable updating ciphers with each new Let's Encrypt client release,
 or
 
-..code-block: shell
+.. code-block:: shell
 
   letsencrypt --update-ciphers off
 
