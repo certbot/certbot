@@ -64,7 +64,7 @@ class NcursesDisplay(object):
         self.dialog.msgbox(message, height, width=self.width)
 
     def menu(self, message, choices, ok_label="OK", cancel_label="Cancel",
-             help_label="", **_kwargs):
+             help_label="", **unused_kwargs):
         """Display a menu.
 
         :param str message: title of menu
@@ -75,7 +75,7 @@ class NcursesDisplay(object):
 
         :param str ok_label: label of the OK button
         :param str help_label: label of the help button
-        :param dict _kwargs: absorbs default / cli_args
+        :param dict unused_kwargs: absorbs default / cli_args
 
         :returns: tuple of the form (`code`, `index`) where
             `code` - int display exit code
@@ -120,7 +120,7 @@ class NcursesDisplay(object):
             return code, int(index) - 1
 
 
-    def input(self, message, **_kwargs):
+    def input(self, message, **unused_kwargs):
         """Display an input box to the user.
 
         :param str message: Message to display that asks for input.
@@ -138,7 +138,7 @@ class NcursesDisplay(object):
         return self.dialog.inputbox(message, width=self.width, height=height)
 
 
-    def yesno(self, message, yes_label="Yes", no_label="No", **_kwargs):
+    def yesno(self, message, yes_label="Yes", no_label="No", **unused_kwargs):
         """Display a Yes/No dialog box.
 
         Yes and No label must begin with different letters.
@@ -156,7 +156,7 @@ class NcursesDisplay(object):
             message, self.height, self.width,
             yes_label=yes_label, no_label=no_label)
 
-    def checklist(self, message, tags, default_status=True, **_kwargs):
+    def checklist(self, message, tags, default_status=True, **unused_kwargs):
         """Displays a checklist.
 
         :param message: Message to display before choices
@@ -204,7 +204,7 @@ class FileDisplay(object):
             raw_input("Press Enter to Continue")
 
     def menu(self, message, choices, ok_label="", cancel_label="",
-             help_label="", **_kwargs):
+             help_label="", **unused_kwargs):
         # pylint: disable=unused-argument
         """Display a menu.
 
@@ -230,7 +230,7 @@ class FileDisplay(object):
 
         return code, selection - 1
 
-    def input(self, message, **_kwargs):
+    def input(self, message, **unused_kwargs):
         # pylint: disable=no-self-use
         """Accept input from the user.
 
@@ -251,7 +251,7 @@ class FileDisplay(object):
         else:
             return OK, ans
 
-    def yesno(self, message, yes_label="Yes", no_label="No", **_kwargs):
+    def yesno(self, message, yes_label="Yes", no_label="No", **unused_kwargs):
         """Query the user with a yes/no question.
 
         Yes and No label must begin with different letters, and must contain at
@@ -287,7 +287,7 @@ class FileDisplay(object):
                     ans.startswith(no_label[0].upper())):
                 return False
 
-    def checklist(self, message, tags, default_status=True, **_kwargs):
+    def checklist(self, message, tags, default_status=True, **unused_kwargs):
         # pylint: disable=unused-argument
         """Display a checklist.
 
@@ -445,8 +445,9 @@ class NoninteractiveDisplay(object):
             "{line}{frame}{line}{msg}{line}{frame}{line}".format(
                 line=os.linesep, frame=side_frame, msg=message))
 
-    def menu(self, message, choices, default=None, cli_flag=None, **kwargs):
-        # pylint: disable=unused-argument
+    def menu(self, message, choices, ok_label=None, cancel_label=None,
+             default=None, cli_flag=None):
+        # pylint: disable=unused-argument,too-many-arguments
         """Avoid displaying a menu.
 
         :param str message: title of menu
