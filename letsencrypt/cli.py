@@ -647,17 +647,14 @@ def install(args, config, plugins):
     except errors.PluginSelectionError, e:
         return e.message
 
-    try:
-        domains = _find_domains(args, installer)
-        le_client = _init_le_client(
-            args, config, authenticator=None, installer=installer)
-        assert args.cert_path is not None  # required=True in the subparser
-        le_client.deploy_certificate(
-            domains, args.key_path, args.cert_path, args.chain_path,
-            args.fullchain_path)
-        le_client.enhance_config(domains, config)
-    except errors.MissingCommandlineFlag, e:
-        return e.message
+    domains = _find_domains(args, installer)
+    le_client = _init_le_client(
+        args, config, authenticator=None, installer=installer)
+    assert args.cert_path is not None  # required=True in the subparser
+    le_client.deploy_certificate(
+        domains, args.key_path, args.cert_path, args.chain_path,
+        args.fullchain_path)
+    le_client.enhance_config(domains, config)
 
 
 def revoke(args, config, unused_plugins):  # TODO: coop with renewal config
