@@ -77,9 +77,9 @@ class NcursesDisplay(object):
         :param str help_label: label of the help button
         :param dict _kwargs: absorbs default / cli_args
 
-        :returns: tuple of the form (code, tag) where
-            code - int display exit code
-            tag - str corresponding to the item chosen
+        :returns: tuple of the form (`code`, `tag`) where
+            `code` - int display exit code
+            `tag` - str corresponding to the item chosen
         :rtype: tuple
 
         """
@@ -126,7 +126,7 @@ class NcursesDisplay(object):
         :param str message: Message to display that asks for input.
         :param dict _kwargs: absorbs default / cli_args
 
-        :returns: tuple of the form (code, string) where
+        :returns: tuple of the form (`code`, `string`) where
             `code` - int display exit code
             `string` - input entered by the user
 
@@ -166,7 +166,7 @@ class NcursesDisplay(object):
         :param dict _kwargs: absorbs default / cli_args
 
 
-        :returns: tuple of the form (code, list_tags) where
+        :returns: tuple of the form (`code`, `list_tags`) where
             `code` - int display exit code
             `list_tags` - list of str tags selected by the user
 
