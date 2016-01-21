@@ -278,7 +278,7 @@ class Config(BaseConfig):
         labels = mx_hostname.split(".")
         for n in range(1, len(labels)):
             parent = "." + ".".join(labels[n:])
-            if parent in mx_to_domains_map:
+            if parent in mx_to_domain_map:
                 return mx_to_domain_map[parent]
         return None
 

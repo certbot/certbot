@@ -3,7 +3,7 @@ import re
 import sys
 import collections
 
-import Config as config
+import Config
 
 # TODO: There's more to be learned from postfix logs!  Here's one sample
 # observed during failures from the sender vagrant vm:
@@ -47,7 +47,8 @@ def get_counts(input, config):
         seen_trusted = True
       address_domains = config.get_address_domains(mx_hostname, mx_to_domain_mapping)
       if address_domains:
-        d = ', '.join(address_domains)
+        domains_str = [ a.domain for a in address_domains ]
+        d = ', '.join(domains_str)
         counts[d][validation] += 1
         counts[d]["all"] += 1
     elif deferred:
@@ -70,8 +71,8 @@ if __name__ == "__main__":
   if len(sys.argv) != 2:
     print "Usage: %s starttls-everywhere.json" % sys.argv[0]
     sys.exit(1)
-  c = config.Config()
-  c.load_from_json_file(sys.argv[1])
+  config = Config.Config()
+  config.load_from_json_file(sys.argv[1])
   (counts, tls_deferred) = get_counts(sys.stdin, config)
   print_summary(counts)
   print tls_deferred
