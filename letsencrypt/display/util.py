@@ -77,9 +77,9 @@ class NcursesDisplay(object):
         :param str help_label: label of the help button
         :param dict _kwargs: absorbs default / cli_args
 
-        :returns: tuple of the form (`code`, `tag`) where
+        :returns: tuple of the form (`code`, `index`) where
             `code` - int display exit code
-            `tag` - str corresponding to the item chosen
+            `int` - index of the selected item
         :rtype: tuple
 
         """
@@ -112,12 +112,12 @@ class NcursesDisplay(object):
                 (str(i), choice) for i, choice in enumerate(choices, 1)
             ]
             # pylint: disable=star-args
-            code, tag = self.dialog.menu(message, **menu_options)
+            code, index = self.dialog.menu(message, **menu_options)
 
             if code == CANCEL:
                 return code, -1
 
-            return code, int(tag) - 1
+            return code, int(index) - 1
 
 
     def input(self, message, **_kwargs):
