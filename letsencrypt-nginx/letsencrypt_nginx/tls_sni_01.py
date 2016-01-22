@@ -146,7 +146,6 @@ class NginxTlsSni01(common.TLSSNI01):
 
         block.extend([['server_name',
                        achall.response(achall.account_key).z_domain],
-                      ['include', self.configurator.parser.loc["ssl_options"]],
                       # access and error logs necessary for
                       # integration testing (non-root)
                       ['access_log', os.path.join(
@@ -155,6 +154,7 @@ class NginxTlsSni01(common.TLSSNI01):
                           self.configurator.config.work_dir, 'error.log')],
                       ['ssl_certificate', self.get_cert_path(achall)],
                       ['ssl_certificate_key', self.get_key_path(achall)],
-                      [['location', '/'], [['root', document_root]]]])
+                      [['location', '/'], [['root', document_root]]]] +
+                     self.configurator.parser.loc["ssl_options"])
 
         return [['server'], block]
