@@ -175,11 +175,10 @@ class NginxParser(object):
                 with open(ssl_options) as _file:
                     return nginxparser.load(_file)
             except IOError:
-                logger.debug("Could not open file: %s", item)
+                logger.debug("Could not open file: %s", ssl_options)
             except pyparsing.ParseException:
-                logger.debug("Could not parse file: %s", item)
-        else:
-            return []
+                logger.debug("Could not parse file: %s", ssl_options)
+        return []
                 
     def _set_locations(self, ssl_options):
         """Set default location for directives.
