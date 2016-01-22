@@ -169,6 +169,18 @@ class NginxParser(object):
                 logger.debug("Could not parse file: %s", item)
         return trees
 
+    def _parse_ssl_options(self, ssl_options):
+        if ssl_options is not None:
+            try:
+                with open(ssl_options) as _file:
+                    return nginxparser.load(_file)
+            except IOError:
+                logger.debug("Could not open file: %s", item)
+            except pyparsing.ParseException:
+                logger.debug("Could not parse file: %s", item)
+        else:
+            return []
+                
     def _set_locations(self, ssl_options):
         """Set default location for directives.
 
@@ -188,7 +200,7 @@ class NginxParser(object):
             name = default
 
         return {"root": root, "default": default, "listen": listen,
-                "name": name, "ssl_options": ssl_options}
+                "name": name, "ssl_options": self._parse_ssl_options(ssl_options)}
 
     def _find_config_root(self):
         """Find the Nginx Configuration Root file."""
@@ -503,6 +515,10 @@ def _add_directive(block, directive, replace):
     See _add_directives for more documentation.
 
     """
+    if directive[0] == '#':
+        block.append(directive)
+        return
+
     location = -1
     # Find the index of a config line where the name of the directive matches
     # the name of the directive we want to add.

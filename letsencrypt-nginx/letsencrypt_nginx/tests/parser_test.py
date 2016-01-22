@@ -249,5 +249,16 @@ class NginxParserTest(util.NginxTest):
 	])
         self.assertTrue(server['ssl'])
 
+    def test_ssl_options_should_be_parsed_ssl_directives(self):
+        nparser = parser.NginxParser(self.config_path, self.ssl_options)
+        self.assertEqual(nparser.loc["ssl_options"],
+                         [['ssl_session_cache', 'shared:SSL:1m'],
+                          ['ssl_session_timeout', '1440m'],
+                          ['ssl_protocols', 'TLSv1 TLSv1.1 TLSv1.2'],
+                          ['ssl_prefer_server_ciphers', 'on'],
+                          ['#', ' Using list of ciphers from "Bulletproof SSL and TLS"'],
+                          ['ssl_ciphers', '"ECDHE-ECDSA-AES128-GCM-SHA256 ECDHE-ECDSA-AES256-GCM-SHA384 ECDHE-ECDSA-AES128-SHA ECDHE-ECDSA-AES256-SHA ECDHE-ECDSA-AES128-SHA256 ECDHE-ECDSA-AES256-SHA384 ECDHE-RSA-AES128-GCM-SHA256 ECDHE-RSA-AES256-GCM-SHA384 ECDHE-RSA-AES128-SHA ECDHE-RSA-AES128-SHA256 ECDHE-RSA-AES256-SHA384 DHE-RSA-AES128-GCM-SHA256 DHE-RSA-AES256-GCM-SHA384 DHE-RSA-AES128-SHA DHE-RSA-AES256-SHA DHE-RSA-AES128-SHA256 DHE-RSA-AES256-SHA256 EDH-RSA-DES-CBC3-SHA"']
+                         ])
+        
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
