@@ -317,4 +317,4 @@ def check_domain_sanity(domain):
     #  first and last char is not "-"
     fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,63}$")
     if not fqdn.match(domain):
-        raise errors.ConfigurationError("Requested domain is not a FQDN")
+        raise errors.ConfigurationError("Requested domain \"%s\" is not a FQDN" % domain)
