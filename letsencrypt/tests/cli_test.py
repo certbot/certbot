@@ -134,12 +134,14 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     @mock.patch('letsencrypt.cli._determine_account')
     @mock.patch('letsencrypt.cli.client.Client.obtain_and_enroll_certificate')
     @mock.patch('letsencrypt.cli._auth_from_domains')
-    def test_user_agent(self, _afd, _obt, det, _client):
+    def test_user_agent(self, afd, _obt, det, _client):
         # Normally the client is totally mocked out, but here we need more
         # arguments to automate it...
         args = ["--standalone", "certonly", "-m", "none@none.com",
                 "-d", "example.com", '--agree-tos'] + self.standard_args
         det.return_value = mock.MagicMock(), None
+        afd.return_value = mock.MagicMock(), "newcert"
+
         with mock.patch('letsencrypt.cli.client.acme_client.ClientNetwork') as acme_net:
             self._call_no_clientmock(args)
             os_ver = " ".join(le_util.get_os_info())
