@@ -15,6 +15,7 @@ sudo tar -C /usr/local -xzf /tmp/go1.5.3.linux-amd64.tar.gz
 if ! grep -Fxq "export GOROOT=/usr/local/go" ~/.profile ; then echo "export GOROOT=/usr/local/go" >> ~/.profile; fi
 if ! grep -Fxq "export PATH=\\$GOROOT/bin:\\$PATH" ~/.profile ; then echo "export PATH=\\$GOROOT/bin:\\$PATH" >> ~/.profile; fi
 if ! grep -Fxq "export GOPATH=\\$HOME/go" ~/.profile ; then echo "export GOPATH=\\$HOME/go" >> ~/.profile; fi
+if ! grep -Fxq "cd /vagrant/tests/; ./boulder-start.sh &" /etc/rc.local ; then sed -i -e '$i \cd /vagrant/tests/; ./boulder-start.sh &\n' /etc/rc.local; fi
 export DEBIAN_FRONTEND=noninteractive
 sudo -E apt-get -q -y install git make libltdl-dev mariadb-server rabbitmq-server nginx-light
 SETUP_SCRIPT
