@@ -46,7 +46,11 @@ logger = logging.getLogger(__name__)
 
 # For help strings, figure out how the user ran us.
 # When invoked from letsencrypt-auto, sys.argv[0] is something like:
-# /home/user/.local/share/letsencrypt/bin/letsencrypt"
+# "/home/user/.local/share/letsencrypt/bin/letsencrypt"
+# Note that this won't work if the user set VENV_PATH or XDG_DATA_HOME before running
+# letsencrypt-auto (and sudo stops us from seing if they did), so it should only be used
+# for purposes where inability to detect letsencrypt-auto fails safely
+
 fragment = os.path.join(".local", "share", "letsencrypt")
 cli_command = "letsencrypt-auto" if fragment in sys.argv[0] else "letsencrypt"
 
