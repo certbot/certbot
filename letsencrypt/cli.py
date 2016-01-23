@@ -194,6 +194,8 @@ def _find_duplicative_certs(config, domains):
     le_util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
 
     for renewal_file in os.listdir(configs_dir):
+        if not renewal_file.endswith(".conf"):
+            continue
         try:
             full_path = os.path.join(configs_dir, renewal_file)
             candidate_lineage = storage.RenewableCert(full_path, cli_config)
