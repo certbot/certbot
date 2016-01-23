@@ -16,7 +16,7 @@ if ! grep -Fxq "export GOROOT=/usr/local/go" ~/.profile ; then echo "export GORO
 if ! grep -Fxq "export PATH=\\$GOROOT/bin:\\$PATH" ~/.profile ; then echo "export PATH=\\$GOROOT/bin:\\$PATH" >> ~/.profile; fi
 if ! grep -Fxq "export GOPATH=\\$HOME/go" ~/.profile ; then echo "export GOPATH=\\$HOME/go" >> ~/.profile; fi
 export DEBIAN_FRONTEND=noninteractive
-sudo -E apt-get -q -y install git mysql-server-5.5 libltdl-dev rabbitmq-server make nginx
+sudo -E apt-get -q -y install git make libltdl-dev mariadb-server rabbitmq-server nginx-light
 SETUP_SCRIPT
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
