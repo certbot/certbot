@@ -384,7 +384,7 @@ def _auth_from_domains(le_client, config, domains):
     if action == "reinstall":
         # The lineage already exists; allow the caller to try installing
         # it without getting a new certificate at all.
-        return lineage
+        return lineage, "reinstall"
     elif action == "renew":
         original_server = lineage.configuration["renewalparams"]["server"]
         _avoid_invalidating_lineage(config, lineage, original_server)
@@ -409,7 +409,7 @@ def _auth_from_domains(le_client, config, domains):
 
     _report_new_cert(lineage.cert, lineage.fullchain)
 
-    return lineage
+    return lineage, action
 
 def _avoid_invalidating_lineage(config, lineage, original_server):
     "Do not renew a valid cert with one from a staging server!"
@@ -558,7 +558,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(args, config, authenticator, installer)
 
-    lineage = _auth_from_domains(le_client, config, domains)
+    lineage, action = _auth_from_domains(le_client, config, domains)
 
     le_client.deploy_certificate(
         domains, lineage.privkey, lineage.cert,
@@ -569,7 +569,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     if len(lineage.available_versions("cert")) == 1:
         display_ops.success_installation(domains)
     else:
-        display_ops.success_renewal(domains)
+        display_ops.success_renewal(domains, action)
 
     _suggest_donate()
 
