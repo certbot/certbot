@@ -138,9 +138,11 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         return all_names
 
     def get_position(self):
-        p = re.compile("\[(?P<position>\d+)\]$")
+        """Return the position of the vhost in the config file
+            if multiple vhosts are defined in one file. Otherwise None"""
+        p = re.compile(r"\[(?P<position>\d+)\]$")
         m = p.search(self.path)
-	return m.group('position') if m else None
+        return m.group('position') if m else None
 
     def __str__(self):
         return (

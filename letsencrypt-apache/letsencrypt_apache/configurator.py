@@ -533,7 +533,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     # ex: sites-enabled/vh.conf -> sites-available/vh.conf
 
                     # remove old (most likely) symlinked one
-                    vhs = [v for v in vhs if ((v.filep != vhost_paths[realpath]) or (v.get_position() != new_vhost.get_position()))]
+                    vhs = [v for v in vhs
+                             if (v.filep != vhost_paths[realpath]) or
+                                (v.get_position() != new_vhost.get_position())]
                     vhs.append(new_vhost)
                     vhost_paths[realpath] = realpath
         return vhs
