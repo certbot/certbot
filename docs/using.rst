@@ -378,20 +378,49 @@ Packages for Debian Jessie are coming in the next few weeks.
 
 **Gentoo**
 
+The official Let's Encrypt client is available in Gentoo Portage. If you
+want to use the Apache plugin, it has to be installed separately:
+
 .. code-block:: shell
 
    emerge -av app-crypt/letsencrypt
+   emerge -av app-crypt/letsencrypt-apache
 
-Currently, the Apache and nginx plugins are not included in Portage. You can
-however use Layman to add the mrueg overlay which does include the plugin
-packages:
+Currently, only the Apache plugin is included in Portage. However, if you 
+want the nginx plugin, you can use Layman to add the mrueg overlay which 
+does include the nginx plugin package:
 
 .. code-block:: shell
 
    emerge -av app-portage/layman
    layman -S
    layman -a mrueg
-   emerge -av app-crypt/letsencrypt-apache app-crypt/letsencrypt-nginx
+   emerge -av app-crypt/letsencrypt-nginx
+
+When using the Apache plugin, you will run into a "cannot find a cert or key 
+directive" error if you're sporting the default Gentoo ``httpd.conf``.
+You can fix this by commenting out two lines in ``/etc/apache2/httpd.conf`` 
+as follows:
+
+Change
+
+.. code-block:: shell
+
+   <IfDefine SSL>
+   LoadModule ssl_module modules/mod_ssl.so
+   </IfDefine>
+
+to
+
+.. code-block:: shell
+
+   #<IfDefine SSL>
+   LoadModule ssl_module modules/mod_ssl.so
+   #</IfDefine>
+
+For the time being, this is the only way for the Apache plugin to recognise 
+the appropriate directives when installing the certificate.
+Note: this change is not required for the other plugins.
 
 **Other Operating Systems**
 
