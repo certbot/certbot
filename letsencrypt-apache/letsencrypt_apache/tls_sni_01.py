@@ -76,6 +76,7 @@ class ApacheTlsSni01(common.TLSSNI01):
 
         # Setup the configuration
         addrs = self._mod_config()
+        self.configurator.save("Don't lose mod_config changes", True)
         self.configurator.make_addrs_sni_ready(addrs)
 
         # Save reversible changes
