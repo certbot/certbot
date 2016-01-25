@@ -395,6 +395,6 @@ class NginxConfiguratorTest(util.NginxTest):
 
         generated_conf = self.config.parser.parsed[example_conf]
         self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
-                
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
