@@ -172,6 +172,8 @@ def main(cli_args=sys.argv[1:]):
                                constants.CONFIG_DIRS_MODE, uid)
 
     for renewal_file in os.listdir(cli_config.renewal_configs_dir):
+        if not renewal_file.endswith(".conf"):
+            continue
         print("Processing " + renewal_file)
         try:
             # TODO: Before trying to initialize the RenewableCert object,
