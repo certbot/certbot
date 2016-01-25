@@ -179,7 +179,7 @@ class NginxParser(object):
             except pyparsing.ParseException:
                 logger.debug("Could not parse file: %s", ssl_options)
         return []
-                
+
     def _set_locations(self, ssl_options):
         """Set default location for directives.
 
