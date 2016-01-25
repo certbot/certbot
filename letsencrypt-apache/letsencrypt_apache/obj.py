@@ -137,6 +137,11 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
         return all_names
 
+    def get_position(self):
+        p = re.compile("\[(?P<position>\d+)\]$")
+        m = p.search(self.path)
+	return m.group('position') if m else None
+
     def __str__(self):
         return (
             "File: {filename}\n"
@@ -146,7 +151,8 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
             "Aliases: {aliases}\n"
             "TLS Enabled: {tls}\n"
             "Site Enabled: {active}\n"
-            "mod_macro Vhost: {modmacro}".format(
+            "mod_macro Vhost: {modmacro}\n"
+            "position: {position}".format(
                 filename=self.filep,
                 vhpath=self.path,
                 addrs=", ".join(str(addr) for addr in self.addrs),
@@ -154,7 +160,8 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
                 aliases=", ".join(name for name in self.aliases),
                 tls="Yes" if self.ssl else "No",
                 active="Yes" if self.enabled else "No",
-                modmacro="Yes" if self.modmacro else "No"))
+                modmacro="Yes" if self.modmacro else "No",
+                position=self.get_position()))
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
