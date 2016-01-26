@@ -41,6 +41,7 @@ from letsencrypt import storage
 from letsencrypt.display import util as display_util
 from letsencrypt.display import ops as display_ops
 from letsencrypt.plugins import disco as plugins_disco
+from letsencrypt.plugins.standalone import Authenticator as StandaloneAuthenticator
 
 logger = logging.getLogger(__name__)
 
@@ -526,6 +527,11 @@ def choose_configurator_plugins(args, config, plugins, verb):  # pylint: disable
         if need_auth:
             authenticator = display_ops.pick_authenticator(config, req_auth, plugins)
     logger.debug("Selected authenticator %s and installer %s", authenticator, installer)
+
+    # StandaloneAuthenticator needs certain required ports to be available
+    if isinstance(authenticator, StandaloneAuthenticator):
+        # If a port is already in use, this will throw an MisconfigurationError
+        authenticator.check_required_ports()
 
     # Report on any failures
     if need_inst and not installer:
