@@ -48,7 +48,9 @@ log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
             [],
             ['error_log', 'logs/error.log  notice', '# not really'],
             [],
-            ['log_format', 'main  \'$remote_addr - $remote_user [$time_local] "$request" \'\n                  \'$status $body_bytes_sent "$http_referer" \'\n                  \'"$http_user_agent" "$http_x_forwarded_for"\'']
+            ['log_format', 'main  \'$remote_addr - $remote_user [$time_local] "$request" \'\n'+
+             '                  \'$status $body_bytes_sent "$http_referer" \'\n'+
+             '                  \'"$http_user_agent" "$http_x_forwarded_for"\'']
 
          ])
 
@@ -140,7 +142,8 @@ log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
             parsed = load(handle)
         self.assertEqual(
             parsed,
-            [['#', ' This is not a valid nginx config file but it tests edge cases in valid nginx syntax'],
+            [['#', ' This is not a valid nginx config'+
+              ' file but it tests edge cases in valid nginx syntax'],
              [],
              [['server'], [['server_name', 'simple']]],
              [],

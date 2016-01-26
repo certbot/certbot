@@ -60,7 +60,9 @@ class NginxParser(object):
                     for subentry in entry[1]:
                         if _is_include_directive(subentry):
                             self._parse_recursively(subentry[1])
-                        elif entry[0] == ['http'] and len(subentry) > 0 and subentry[0] == ['server']:
+                        elif (entry[0] == ['http'] and
+                              len(subentry) > 0 and
+                              subentry[0] == ['server']):
                             # Look for includes in a 'server' context within
                             # an 'http' context
                             for server_entry in subentry[1]:

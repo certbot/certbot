@@ -4,8 +4,11 @@ retain all parsed information, so that the file can be reconstituted."""
 import StringIO
 
 class ParseException(Exception):
+    """A parsing exception happened."""
     def __init__(self, value):
         self.value = value
+        super(ParseException, self).__init__()
+
     def __str__(self):
         return repr(self.value)
 
@@ -17,19 +20,21 @@ class RawNginxParser(object):
         self.source = source
 
     def as_list(self):
+        """Returns the parsed tree as a list."""
         return self.parse()
 
     def parse(self):
         """Returns the parsed tree."""
-        return RawNginxParser.Internal(self.source).parseFile()
+        return RawNginxParser.Internal(self.source).parse_file()
 
     class Internal(object):
+        """An internal class to keep track of parsing state."""
         def __init__(self, source):
             self.src = StringIO.StringIO(source)
             self.peeked = None
             self.eof = False
 
-        def peek(self):
+        def _peek(self):
             if self.eof:
                 return None
 
@@ -40,7 +45,7 @@ class RawNginxParser(object):
                     return None
             return self.peeked
 
-        def read(self):
+        def _read(self):
             if self.eof:
                 return None
 
@@ -54,171 +59,179 @@ class RawNginxParser(object):
                 return None
             return val
 
-        def parseFile(self):
-            result = self.parseBlock()
-            if not(self.eof):
+        def parse_file(self):
+            """Tries to parse the file and returns a list of blocks parsed."""
+
+            result = self._parse_block()
+            if not self.eof:
                 raise ParseException("Invalid configuration file")
 
             return result
 
-        def parseBlock(self):
+        def _parse_block(self):
             result = []
             while True:
-                res = self.parseNext()
+                res = self._parse_next()
                 if res is None:
                     return result
                 result.append(res)
 
-        def isWhitespace(self, val, includeNL):
+        def _is_whitespace(self, val, includeNL):
             if includeNL:
                 return val in [' ', '\t', '\n', '\r']
-            else:
-                return val in [' ', '\t']
+            return val in [' ', '\t']
 
-        def parseWhitespace(self, includeNL):
-            if self.isWhitespace(self.peek(), includeNL):
-                return self.read()
+        def _parse_whitespace(self, includeNL):
+            if self._is_whitespace(self._peek(), includeNL):
+                return self._read()
             return None
 
-        def isAtNewline(self):
-            val = self.peek()
-            return val == '\n' or val == '\r'
+        def _is_at_newline(self):
+            return self._peek() in ['\n', '\r']
 
-        def readNewline(self):
-            if self.read() == '\r' and self.peek() == '\n':
-                self.read()
+        def _read_newline(self):
+            if self._read() == '\r' and self._peek() == '\n':
+                self._expect('\n')
 
-        def parseNewline(self):
-            if self.isAtNewline():
-                self.readNewline()
+        def _parse_newline(self):
+            if self._is_at_newline():
+                self._read_newline()
                 return []
             return None
 
-        def readUntilEndOfLine(self):
+        def _collect_until_end_of_line(self):
             result = ''
 
-            while not(self.isAtNewline()):
-                result = result + self.read()
+            while not self._is_at_newline():
+                result = result + self._read()
 
-            self.readNewline()
+            self._read_newline()
 
             return result
 
-        def parseComment(self):
-            val = self.peek()
-            if val == '#':
-                self.read()
-                return ['#', self.readUntilEndOfLine()]
+        def _parse_comment(self):
+            if self._peek() == '#':
+                self._expect('#')
+                return ['#', self._collect_until_end_of_line()]
             return None
 
-        def isKeyChar(self, val):
+        def _is_key_char(self, val):
             return val.isalnum() or val == '_' or val == '/'
 
-        def parseKey(self):
+        def _parse_key(self):
             result = ''
             while True:
-                val = self.peek()
-                if val is None or not(self.isKeyChar(val)):
+                val = self._peek()
+                if val is None or not self._is_key_char(val):
                     if result == '':
                         return None
                     return result
-                result = result + self.read()
+                result = result + self._read()
 
-        def parseString(self):
-            startVal = self.read()
+        def _parse_string(self):
+            startVal = self._read()
             result = startVal
             while True:
-                val = self.read()
+                val = self._read()
                 result = result + val
                 if val == None:
-                    raise ParseException("Invalid configuration file")
+                    raise ParseException("Invalid configuration file, unfinished string literal")
                 if val == startVal:
                     return result
 
-        def parseValue(self):
-            self.passWhitespace(True)
+        def _parse_value(self):
+            self._pass_whitespace(True)
             result = ''
             while True:
-                val = self.peek()
-                if val is None or val == '{' or val == '}' or val == ';':
+                val = self._peek()
+                if val is None or val in ['{', ';']:
                     result = result.rstrip()
                     if result == '':
                         return None
                     return result
                 if val == '"' or val == "'":
-                    result = result + self.parseString()
+                    result = result + self._parse_string()
                 else:
-                    result = result + self.read()
+                    result = result + self._read()
 
-        def parseModifier(self):
+        def _parse_modifier(self):
             """Parses a modifier - this is slightly looser than the original parser"""
-            self.passWhitespace(True)
-            val = self.peek()
+            self._pass_whitespace(True)
+            val = self._peek()
             if val in ['=', '~', '^']:
-                first = self.read()
-                second = self.peek()
-                if not(self.isWhitespace(second, True)):
-                    self.read()
+                first = self._read()
+                second = self._peek()
+                if not self._is_whitespace(second, True):
+                    self._read()
                     return first + second
                 else:
                     return first
             return None
 
-        def expect(self, val):
-            r = self.read()
+        def _expect(self, val):
+            """Reads a character, and raises an exception if it's not the expected value"""
+            r = self._read()
             if r != val:
                 raise ParseException("Expected %s but got %s" % (val, r))
 
-        def parseAssignmentOrBlock(self):
-            key = self.parseKey()
+        def _finish_assignment(self, directive, val):
+            self._expect(';')
+            directive.append(val)
+            self._pass_whitespace(False)
+
+            comment = self._parse_comment()
+            if comment:
+                directive.append(''.join(comment))
+            else:
+                self._parse_newline()
+            return directive
+
+        def _finish_block(self, directive, val):
+            self._expect('{')
+            self._parse_newline()
+            block = self._parse_block()
+            self._expect('}')
+            self._parse_newline()
+            if val:
+                directive.append(val)
+            return [directive, block]
+
+        def _parse_assignment_or_block(self):
+            key = self._parse_key()
             if key is None:
                 return None
             result = [key]
             if key == 'location':
-                mod = self.parseModifier()
+                mod = self._parse_modifier()
                 if mod is not None:
                     result.append(mod)
-            val = self.parseValue()
-            nx = self.peek()
+            val = self._parse_value()
+            nx = self._peek()
 
             if nx == ';':
-                self.expect(';')
-                result.append(val)
-                self.passWhitespace(False)
-                comment = self.parseComment()
-                if comment:
-                    result.append(''.join(comment))
-                    return result
-                self.parseNewline()
-                return result
+                return self._finish_assignment(result, val)
 
             if nx == '{':
-                self.expect('{')
-                self.parseNewline()
-                block = self.parseBlock()
-                self.expect('}')
-                self.parseNewline()
-                if val:
-                    result.append(val)
-                return [result, block]
+                return self._finish_block(result, val)
 
+            raise ParseException("Bad configuration file - unfinished value")
 
-        def passWhitespace(self, includeNL):
-            while self.parseWhitespace(includeNL) is not None:
+        def _pass_whitespace(self, includeNL):
+            while self._parse_whitespace(includeNL) is not None:
                 pass
 
-        def parseNext(self):
-            self.passWhitespace(False)
+        def _parse_next(self):
+            self._pass_whitespace(False)
 
-            res = self.parseNewline()
+            res = self._parse_newline()
             if res is not None:
                 return res
 
-            res = self.parseComment()
+            res = self._parse_comment()
             if res is not None:
                 return res
 
-            res = self.parseAssignmentOrBlock()
+            res = self._parse_assignment_or_block()
             if res is not None:
                 return res
 
