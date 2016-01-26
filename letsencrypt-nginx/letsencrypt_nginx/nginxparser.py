@@ -257,10 +257,13 @@ class RawNginxDumper(object):
                 elif key == '#':
                     yield spacer * current_indent + key + values
                 else:
-                    if values is None:
-                        yield spacer * current_indent + key + ';'
-                    else:
-                        yield spacer * current_indent + key + spacer + values + ';'
+                    result = spacer * current_indent + key
+                    if values is not None:
+                        result = result + spacer + values
+                    result = result + ';'
+                    if comment is not None:
+                        result = result + spacer + comment
+                    yield result
 
     def __str__(self):
         """Return the parsed block as a string."""
