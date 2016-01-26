@@ -17,7 +17,7 @@ CLI_DEFAULTS_DEBIAN = dict(
     handle_mods=True,
     handle_sites=True,
     challenge_location="/etc/apache2",
-    MOD_SSL_CONF_SRC = pkg_resources.resource_filename(
+    MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
     "letsencrypt_apache", "options-ssl-apache.conf")
 )
 CLI_DEFAULTS_CENTOS = dict(
@@ -34,7 +34,7 @@ CLI_DEFAULTS_CENTOS = dict(
     handle_mods=False,
     handle_sites=False,
     challenge_location="/etc/httpd/conf.d",
-    MOD_SSL_CONF_SRC = pkg_resources.resource_filename(
+    MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
     "letsencrypt_apache", "centos-options-ssl-apache.conf")
 )
 CLI_DEFAULTS_GENTOO = dict(
@@ -51,7 +51,7 @@ CLI_DEFAULTS_GENTOO = dict(
     handle_mods=False,
     handle_sites=False,
     challenge_location="/etc/apache2/vhosts.d",
-    MOD_SSL_CONF_SRC = pkg_resources.resource_filename(
+    MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
     "letsencrypt_apache", "options-ssl-apache.conf")
 )
 CLI_DEFAULTS = {

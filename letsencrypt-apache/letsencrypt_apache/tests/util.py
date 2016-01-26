@@ -33,7 +33,7 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
             pkg="letsencrypt_apache.tests")
 
         self.ssl_options = common.setup_ssl_options(
-            self.config_dir, constants.MOD_SSL_CONF_SRC,
+            self.config_dir, constants.os_constant("MOD_SSL_CONF_SRC"),
             constants.MOD_SSL_CONF_DEST)
 
         self.config_path = os.path.join(self.temp_dir, config_root)
