@@ -99,11 +99,14 @@ class NginxTlsSni01(common.TLSSNI01):
         bucket_directive = ['server_names_hash_bucket_size', '128']
 
         main = self.configurator.parser.parsed[root]
-        for key, body in main:
+        for block in main:
+            key = block[0] if len(block) > 0 else None
+            body = block[1] if len(block) > 1 else None
+
             if key == ['http']:
                 found_bucket = False
-                for k, _ in body:
-                    if k == bucket_directive[0]:
+                for b in body:
+                    if len(b) > 0 and b[0] == bucket_directive[0]:
                         found_bucket = True
                 if not found_bucket:
                     body.insert(0, bucket_directive)

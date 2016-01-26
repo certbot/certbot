@@ -45,7 +45,7 @@ class NginxParserTest(util.NginxTest):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
         nparser.load()
         self.assertEqual(set([nparser.abs_path(x) for x in
-                              ['foo.conf', 'nginx.conf', 'server.conf',
+                              ['foo.conf', 'nginx.conf', 'server.conf', 'mime.types',
                                'sites-enabled/default',
                                'sites-enabled/example.com']]),
                          set(nparser.parsed.keys()))
@@ -70,7 +70,7 @@ class NginxParserTest(util.NginxTest):
         # pylint: disable=protected-access
         parsed = nparser._parse_files(nparser.abs_path(
             'sites-enabled/example.com.test'))
-        self.assertEqual(3, len(glob.glob(nparser.abs_path('*.test'))))
+        self.assertEqual(4, len(glob.glob(nparser.abs_path('*.test'))))
         self.assertEqual(2, len(
             glob.glob(nparser.abs_path('sites-enabled/*.test'))))
         self.assertEqual([[['server'], [['listen', '69.50.225.155:9000'],
@@ -160,8 +160,8 @@ class NginxParserTest(util.NginxTest):
 
         # Check that our server block got inserted first among all server
         # blocks.
-        http_block = [x for x in root if x[0] == ['http']][0][1]
-        server_blocks = [x for x in http_block if x[0] == ['server']]
+        http_block = [x for x in root if (len(x) > 0 and x[0] == ['http'])][0][1]
+        server_blocks = [x for x in http_block if (len(x) > 0 and x[0] == ['server'])]
         self.assertEqual(server_blocks[0], block)
 
     def test_replace_server_directives(self):

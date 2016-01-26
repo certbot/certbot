@@ -38,7 +38,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_prepare(self):
         self.assertEquals((1, 6, 2), self.config.version)
-        self.assertEquals(5, len(self.config.parser.parsed))
+        self.assertEquals(6, len(self.config.parser.parsed))
 
     @mock.patch("letsencrypt_nginx.configurator.le_util.exe_exists")
     @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")
