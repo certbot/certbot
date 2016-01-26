@@ -102,3 +102,8 @@ class StandaloneBindError(Error):
 
 class ConfigurationError(Error):
     """Configuration sanity error."""
+
+# NoninteractiveDisplay iDisplay plugin error:
+
+class MissingCommandlineFlag(Error):
+    """A command line argument was missing in noninteractive usage"""

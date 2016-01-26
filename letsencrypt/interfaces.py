@@ -365,8 +365,8 @@ class IDisplay(zope.interface.Interface):
 
         """
 
-    def menu(message, choices,
-             ok_label="OK", cancel_label="Cancel", help_label=""):
+    def menu(message, choices, ok_label="OK",      # pylint: disable=too-many-arguments
+             cancel_label="Cancel", help_label="", default=None, cli_flag=None):
         """Displays a generic menu.
 
         :param str message: message to display
@@ -377,14 +377,19 @@ class IDisplay(zope.interface.Interface):
         :param str ok_label: label for OK button
         :param str cancel_label: label for Cancel button
         :param str help_label: label for Help button
+        :param int default: default (non-interactive) choice from the menu
+        :param str cli_flag: to automate choice from the menu, eg "--keep"
 
         :returns: tuple of (`code`, `index`) where
             `code` - str display exit code
             `index` - int index of the user's selection
 
+        :raises errors.MissingCommandlineFlag: if called in non-interactive
+            mode without a default set
+
         """
 
-    def input(message):
+    def input(message, default=None, cli_args=None):
         """Accept input from the user.
 
         :param str message: message to display to the user
@@ -394,27 +399,45 @@ class IDisplay(zope.interface.Interface):
             `input` - str of the user's input
         :rtype: tuple
 
+        :raises errors.MissingCommandlineFlag: if called in non-interactive
+            mode without a default set
+
         """
 
-    def yesno(message, yes_label="Yes", no_label="No"):
+    def yesno(message, yes_label="Yes", no_label="No", default=None,
+              cli_args=None):
         """Query the user with a yes/no question.
 
         Yes and No label must begin with different letters.
 
         :param str message: question for the user
+        :param str default: default (non-interactive) choice from the menu
+        :param str cli_flag: to automate choice from the menu, eg "--redirect / --no-redirect"
 
         :returns: True for "Yes", False for "No"
         :rtype: bool
 
+        :raises errors.MissingCommandlineFlag: if called in non-interactive
+            mode without a default set
+
         """
 
-    def checklist(message, tags, default_state):
+    def checklist(message, tags, default_state, default=None, cli_args=None):
         """Allow for multiple selections from a menu.
 
         :param str message: message to display to the user
         :param list tags: where each is of type :class:`str` len(tags) > 0
-        :param bool default_status: If True, items are in a selected state by
-            default.
+        :param bool default_status: If True, items are in a selected state by default.
+        :param str default: default (non-interactive) state of the checklist
+        :param str cli_flag: to automate choice from the menu, eg "--domains"
+
+        :returns: tuple of the form (code, list_tags) where
+            `code` - int display exit code
+            `list_tags` - list of str tags selected by the user
+        :rtype: tuple
+
+        :raises errors.MissingCommandlineFlag: if called in non-interactive
+            mode without a default set
 
         """
 
