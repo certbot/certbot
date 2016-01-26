@@ -257,7 +257,7 @@ def _handle_identical_cert_request(config, cert):
 
     """
     if config.renew_by_default:
-        logger.info("Auto-renewal forced with --renew-by-default...")
+        logger.info("Auto-renewal forced with --force-renewal or --renew-by-default...")
         return "renew", cert
     if cert.should_autorenew(interactive=True):
         logger.info("Cert is due for renewal, auto-renewing...")
@@ -986,10 +986,12 @@ def prepare_and_parse_args(plugins, args):
         version="%(prog)s {0}".format(letsencrypt.__version__),
         help="show program's version number and exit")
     helpful.add(
-        "automation", "--renew-by-default", action="store_true",
-        help="Select renewal by default when domains are a superset of a "
-             "previously attained cert (often --keep-until-expiring is "
-             "more appropriate). Implies --expand.")
+        "automation", "--force-renewal", "--renew-by-default",
+        action="store_true", dest="renew_by_default", help="If a certificate "
+             "already exists for the requested domains, renew it now, "
+             "regardless of whether it is near expiry. (Often "
+             "--keep-until-expiring is more appropriate). Also implies "
+             "--expand.")
     helpful.add(
         "automation", "--agree-tos", dest="tos", action="store_true",
         help="Agree to the Let's Encrypt Subscriber Agreement")
