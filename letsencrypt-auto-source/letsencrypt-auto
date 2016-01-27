@@ -438,7 +438,7 @@ if [ "$NO_SELF_UPGRADE" = 1 ]; then
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/letsencrypt-auto-requirements.txt"
 # This is the flattened list of packages letsencrypt-auto installs. To generate
-# this, do `pip install -r -e acme -e . -e letsencrypt-apache`, `pip freeze`,
+# this, do `pip install -e acme -e . -e letsencrypt-apache`, `pip freeze`,
 # and then gather the hashes.
 
 # sha256: wxZH7baf09RlqEfqMVfTe-0flfGXYLEaR6qRwEtmYxQ
@@ -510,6 +510,9 @@ ipaddress==1.0.16
 
 # sha256: 6MFV_evZxLywgQtO0BrhmHVUse4DTddTLXuP2uOKYnQ
 ndg-httpsclient==0.4.0
+
+# sha256: HDW0rCBs7y0kgWyJ-Jzyid09OM98RJuz-re_bUPwGx8
+ordereddict==1.1
 
 # sha256: OnTxAPkNZZGDFf5kkHca0gi8PxOv0y01_P5OjQs7gSs
 # sha256: Paa-K-UG9ZzOMuGeMOIBBT4btNB-JWaJGOAPikmtQKs
