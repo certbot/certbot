@@ -2,7 +2,6 @@
 import glob
 import logging
 import os
-import pyparsing
 import re
 
 from letsencrypt import errors
@@ -167,7 +166,7 @@ class NginxParser(object):
                     trees.append(parsed)
             except IOError:
                 logger.warn("Could not open file: %s", item)
-            except pyparsing.ParseException:
+            except nginxparser.ParseException:
                 logger.debug("Could not parse file: %s", item)
         return trees
 
