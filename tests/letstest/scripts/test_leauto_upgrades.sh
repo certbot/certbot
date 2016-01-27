@@ -29,7 +29,7 @@ unset PIP_INDEX_URL
 export PIP_EXTRA_INDEX_URL="$SAVE"
 
 git checkout -f "$BRANCH"
-if ! ./letsencrypt-auto -v --debug --version | grep 0.1.1 ; then
+if ! ./letsencrypt-auto -v --debug --version | grep 0.3.0 ; then
     echo upgrade appeared to fail
     exit 1
 fi

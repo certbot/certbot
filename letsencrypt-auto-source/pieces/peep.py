@@ -104,7 +104,7 @@ except ImportError:
 
     DownloadProgressBar = DownloadProgressSpinner = NullProgressBar
 
-__version__ = 2, 5, 0
+__version__ = 3, 0, 0
 
 try:
     from pip.index import FormatControl  # noqa
@@ -362,9 +362,11 @@ def package_finder(argv):
     # Carry over PackageFinder kwargs that have [about] the same names as
     # options attr names:
     possible_options = [
-        'find_links', FORMAT_CONTROL_ARG, 'allow_external', 'allow_unverified',
-        'allow_all_external', ('allow_all_prereleases', 'pre'),
-        'process_dependency_links']
+        'find_links',
+        FORMAT_CONTROL_ARG,
+        ('allow_all_prereleases', 'pre'),
+        'process_dependency_links'
+    ]
     kwargs = {}
     for option in possible_options:
         kw, attr = option if isinstance(option, tuple) else (option, option)

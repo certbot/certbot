@@ -69,7 +69,7 @@ class PickPluginTest(unittest.TestCase):
     """Tests for letsencrypt.display.ops.pick_plugin."""
 
     def setUp(self):
-        self.config = mock.Mock()
+        self.config = mock.Mock(noninteractive_mode=False)
         self.default = None
         self.reg = mock.MagicMock()
         self.question = "Question?"
@@ -465,7 +465,7 @@ class SuccessRenewalTest(unittest.TestCase):
     @classmethod
     def _call(cls, names):
         from letsencrypt.display.ops import success_renewal
-        success_renewal(names)
+        success_renewal(names, "renew")
 
     @mock.patch("letsencrypt.display.ops.util")
     def test_success_renewal(self, mock_util):

@@ -96,11 +96,32 @@ Integration testing with the boulder CA
 Generally it is sufficient to open a pull request and let Github and Travis run
 integration tests for you.
 
-Mac OS X users: Run `./tests/mac-bootstrap.sh` instead of `boulder-start.sh` to
-install dependencies, configure the environment, and start boulder.
+Mac OS X users: Run ``./tests/mac-bootstrap.sh`` instead of
+``boulder-start.sh`` to install dependencies, configure the
+environment, and start boulder.
 
-Otherwise, install `Go`_ 1.5, libtool-ltdl, mariadb-server and
-rabbitmq-server and then start Boulder_, an ACME CA server::
+Otherwise, install `Go`_ 1.5, ``libtool-ltdl``, ``mariadb-server`` and
+``rabbitmq-server`` and then start Boulder_, an ACME CA server.
+
+If you can't get packages of Go 1.5 for your Linux system,
+you can execute the following commands to install it:
+
+.. code-block:: shell
+
+  wget https://storage.googleapis.com/golang/go1.5.3.linux-amd64.tar.gz -P /tmp/
+  sudo tar -C /usr/local -xzf /tmp/go1.5.3.linux-amd64.tar.gz
+  if ! grep -Fxq "export GOROOT=/usr/local/go" ~/.profile ; then echo "export GOROOT=/usr/local/go" >> ~/.profile; fi
+  if ! grep -Fxq "export PATH=\\$GOROOT/bin:\\$PATH" ~/.profile ; then echo "export PATH=\\$GOROOT/bin:\\$PATH" >> ~/.profile; fi
+
+These commands download `Go`_ 1.5.3 to ``/tmp/``, extracts to ``/usr/local``,
+and then adds the export lines required to execute ``boulder-start.sh`` to
+``~/.profile`` if they were not previously added
+
+Make sure you execute the following command after `Go`_ finishes installing::
+
+  if ! grep -Fxq "export GOPATH=\\$HOME/go" ~/.profile ; then echo "export GOPATH=\\$HOME/go" >> ~/.profile; fi
+
+Afterwards, you'd be able to start Boulder_ using the following command::
 
   ./tests/boulder-start.sh
 

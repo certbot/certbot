@@ -4,6 +4,7 @@ import os
 
 import zope.component
 
+from letsencrypt import errors
 from letsencrypt import interfaces
 
 import letsencrypt.display.util as display_util
@@ -78,12 +79,18 @@ def _vhost_menu(domain, vhosts):
                 name_size=disp_name_size)
         )
 
-    code, tag = zope.component.getUtility(interfaces.IDisplay).menu(
-        "We were unable to find a vhost with a ServerName "
-        "or Address of {0}.{1}Which virtual host would you "
-        "like to choose?".format(
-            domain, os.linesep),
-        choices, help_label="More Info", ok_label="Select")
+    try:
+        code, tag = zope.component.getUtility(interfaces.IDisplay).menu(
+            "We were unable to find a vhost with a ServerName "
+            "or Address of {0}.{1}Which virtual host would you "
+            "like to choose?".format(domain, os.linesep),
+            choices, help_label="More Info", ok_label="Select")
+    except errors.MissingCommandlineFlag, e:
+        msg = ("Failed to run Apache plugin non-interactively{1}{0}{1}"
+               "(The best solution is to add ServerName or ServerAlias "
+               "entries to the VirtualHost directives of your apache "
+               "configuration files.)".format(e, os.linesep))
+        raise errors.MissingCommandlineFlag, msg
 
     return code, tag
 

@@ -3,6 +3,7 @@
 # Tested with:
 #   - Fedora 22, 23 (x64)
 #   - Centos 7 (x64: on DigitalOcean droplet)
+#   - CentOS 7 Minimal install in a Hyper-V VM
 
 if type dnf 2>/dev/null
 then
@@ -21,12 +22,16 @@ fi
 if ! $tool install -y \
        python \
        python-devel \
-       python-virtualenv
+       python-virtualenv \
+       python-tools \
+       python-pip
 then
   if ! $tool install -y \
          python27 \
          python27-devel \
-         python27-virtualenv
+         python27-virtualenv \
+         python27-tools \
+         python27-pip
   then
     echo "Could not install Python dependencies. Aborting bootstrap!"
     exit 1
