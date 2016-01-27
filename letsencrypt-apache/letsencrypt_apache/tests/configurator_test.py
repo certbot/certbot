@@ -606,6 +606,14 @@ class TwoVhost80Test(util.ApacheTest):
         self.config._add_name_vhost_if_necessary(self.vh_truth[0])
         self.assertTrue(self.config.save.called)
 
+        new_addrs = set()
+        for addr in self.vh_truth[0].addrs:
+            new_addrs.add(obj.Addr(("_default_", addr.get_port(),)))
+
+        self.vh_truth[0].addrs = new_addrs
+        self.config._add_name_vhost_if_necessary(self.vh_truth[0])
+        self.assertEqual(self.config.save.call_count, 2)
+
     @mock.patch("letsencrypt_apache.configurator.tls_sni_01.ApacheTlsSni01.perform")
     @mock.patch("letsencrypt_apache.configurator.ApacheConfigurator.restart")
     def test_perform(self, mock_restart, mock_perform):
