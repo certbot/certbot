@@ -708,6 +708,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Add directives
         self._add_dummy_ssl_directives(vh_p)
+        self.save("don't lose ssl directives", True)
         if target_name:
             self._add_servername_alias(target_name, vh_p)
 
@@ -863,7 +864,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def _add_servername_alias(self, target_name, vh_path):
         if (self.parser.find_dir("ServerName", target_name, start=vh_path, exclude=False)
            or self.parser.find_dir("ServerAlias", target_name, start=vh_path, exclude=False)):
-               return
+            return
         if not self.parser.find_dir("ServerName", None, start=vh_path, exclude=False):
             self.parser.add_dir(vh_path, "ServerName", target_name)
         else:
