@@ -612,15 +612,20 @@ class NginxConfigurator(common.Plugin):
         outstanding challenges will have to be designed better.
 
         """
-        self._chall_out += len(achalls)
-        responses = [None] * len(achalls)
         chall_doer = tls_sni_01.NginxTlsSni01(self)
 
         for i, achall in enumerate(achalls):
             # Currently also have chall_doer hold associated index of the
             # challenge. This helps to put all of the responses back together
             # when they are all complete.
-            chall_doer.add_chall(achall, i)
+            # As we does not create vhost when it isn't found in the current configuration,
+            # we will filter out this domains before to perform TLS challenge
+            if self.choose_vhost(achall.domain) is not None:
+                chall_doer.add_chall(achall, i)
+
+        count_achalls = len(chall_doer.achalls)
+        self._chall_out += count_achalls
+        responses = [None] * count_achalls
 
         sni_response = chall_doer.perform()
         # Must restart in order to activate the challenges.

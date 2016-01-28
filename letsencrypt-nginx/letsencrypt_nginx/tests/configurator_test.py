@@ -287,6 +287,31 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEqual(responses, expected)
         self.assertEqual(mock_restart.call_count, 1)
 
+    @mock.patch("letsencrypt_nginx.configurator.NginxConfigurator.restart")
+    @mock.patch("letsencrypt_nginx.configurator.tls_sni_01.NginxTlsSni01.perform")
+    @mock.patch("letsencrypt_nginx.configurator.NginxConfigurator.choose_vhost")
+    def test_perform_does_not_process_domains_without_vhost(self, mock_choose_vhost,
+                                                            mock_perform, mock_restart):
+        achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=messages.ChallengeBody(
+                chall=challenges.TLSSNI01(token="kNdwjwOeX0I_A8DXt9Msmg"),
+                uri="https://ca.org/chall0_uri",
+                status=messages.Status("pending"),
+            ), domain="localhost", account_key=self.rsa512jwk)
+        achall_invalid = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=messages.ChallengeBody(
+                chall=challenges.TLSSNI01(token="m8TdO1qik4JVFtgPPurJmg"),
+                uri="https://ca.org/chall1_uri",
+                status=messages.Status("pending"),
+            ), domain="invalid_vhost", account_key=self.rsa512jwk)
+
+        mock_choose_vhost.side_effect = ["vhost", None]
+        mock_perform.return_value = [achall1.response(self.rsa512jwk)]
+
+        responses = self.config.perform([achall1, achall_invalid])
+        self.assertEqual(1, len(responses))
+        self.assertEqual(mock_perform.call_count, 1)
+
     @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")
     def test_get_version(self, mock_popen):
         mock_popen().communicate.return_value = (
