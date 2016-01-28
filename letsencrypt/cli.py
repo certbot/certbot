@@ -1207,6 +1207,10 @@ def _paths_parser(helpful):
     add("testing", "--test-cert", "--staging", action='store_true', dest='staging',
         help='Use the staging server to obtain test (invalid) certs; equivalent'
              ' to --server ' + constants.STAGING_URI)
+    add("testing", "--dry-run", action="store_true", dest="dry_run",
+        help="Perform a test run of the client, obtaining test (invalid) certs"
+             " but not saving them to disk. This can currently only be used"
+             " with the 'certonly' subcommand.")
 
 
 def _plugins_parsing(helpful, plugins):
