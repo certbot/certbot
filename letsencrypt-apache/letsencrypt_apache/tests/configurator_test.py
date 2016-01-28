@@ -188,12 +188,12 @@ class TwoVhost80Test(util.ApacheTest):
     def test_find_best_vhost(self):
         # pylint: disable=protected-access
         self.assertEqual(
-            (self.vh_truth[3], True), self.config._find_best_vhost("letsencrypt.demo"))
+            self.vh_truth[3], self.config._find_best_vhost("letsencrypt.demo"))
         self.assertEqual(
-            (self.vh_truth[0], True),
+            self.vh_truth[0],
             self.config._find_best_vhost("encryption-example.demo"))
         self.assertEqual(
-            self.config._find_best_vhost("does-not-exist.com"), (None, True))
+            self.config._find_best_vhost("does-not-exist.com"), None)
 
     def test_find_best_vhost_variety(self):
         # pylint: disable=protected-access
@@ -202,7 +202,7 @@ class TwoVhost80Test(util.ApacheTest):
                              obj.Addr(("zombo.com",))]),
             True, False)
         self.config.vhosts.append(ssl_vh)
-        self.assertEqual(self.config._find_best_vhost("zombo.com"), (ssl_vh, True))
+        self.assertEqual(self.config._find_best_vhost("zombo.com"), ssl_vh)
 
     def test_find_best_vhost_default(self):
         # pylint: disable=protected-access
@@ -213,7 +213,7 @@ class TwoVhost80Test(util.ApacheTest):
         ]
 
         self.assertEqual(
-            self.config._find_best_vhost("example.demo"), (self.vh_truth[2], True))
+            self.config._find_best_vhost("example.demo"), self.vh_truth[2])
 
     def test_non_default_vhosts(self):
         # pylint: disable=protected-access

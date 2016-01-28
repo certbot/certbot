@@ -298,12 +298,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return self.assoc[target_name]
 
         # Try to find a reasonable vhost
-        vhost, is_generic_host = self._find_best_vhost(target_name)
+        vhost = self._find_best_vhost(target_name)
         if vhost is not None:
             if temp:
                 return vhost
             if not vhost.ssl:
-                vhost = self.make_vhost_ssl(vhost, is_generic_host, target_name)
+                vhost = self.make_vhost_ssl(vhost, target_name)
 
             self.assoc[target_name] = vhost
             return vhost
@@ -326,7 +326,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # TODO: Conflicts is too conservative
             if not any(vhost.enabled and vhost.conflicts(addrs) for
                        vhost in self.vhosts):
-                vhost = self.make_vhost_ssl(vhost)
+                vhost = self.make_vhost_ssl(vhost, target_name)
             else:
                 logger.error(
                     "The selected vhost would conflict with other HTTPS "
@@ -353,8 +353,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Points 1 - Address name with no SSL
         best_candidate = None
         best_points = 0
-        is_generic_host = False
-
         for vhost in self.vhosts:
             if vhost.modmacro is True:
                 continue
@@ -365,7 +363,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             else:
                 # No points given if names can't be found.
                 # This gets hit but doesn't register
-                is_generic_host = True
                 continue  # pragma: no cover
 
             if vhost.ssl:
@@ -385,7 +382,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if len(reasonable_vhosts) == 1:
                 best_candidate = reasonable_vhosts[0]
 
-        return (best_candidate, is_generic_host)
+        return (best_candidate)
 
     def _non_default_vhosts(self):
         """Return all non _default_ only vhosts."""
@@ -668,7 +665,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                              "based virtual host", addr)
                 self.add_name_vhost(addr)
 
-    def make_vhost_ssl(self, nonssl_vhost, is_generic_host=False, target_name=None):  # pylint: disable=too-many-locals
+    def make_vhost_ssl(self, nonssl_vhost, target_name=None):  # pylint: disable=too-many-locals
         """Makes an ssl_vhost version of a nonssl_vhost.
 
         Duplicates vhost and adds default ssl options
@@ -711,8 +708,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Add directives
         self._add_dummy_ssl_directives(vh_p)
-        if is_generic_host:
-            self._add_servername(target_name, vh_p)
+        if target_name:
+            self._add_servername_alias(target_name, vh_p)
 
         # Log actions and create save notes
         logger.info("Created an SSL vhost at %s", ssl_fp)
@@ -863,9 +860,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                             "insert_key_file_path")
         self.parser.add_dir(vh_path, "Include", self.mod_ssl_conf)
 
-    def _add_servername(self, servername, vh_path):
-        self.parser.add_dir(vh_path, "ServerName", servername)
-        self.parser.add_dir(vh_path, "ServerAlias", servername)
+    def _add_servername_alias(self, target_name, vh_path):
+        if not self.parser.find_dir("ServerName", None, start=vh_path, exclude=False):
+            self.parser.add_dir(vh_path, "ServerName", target_name)
+        else:
+            self.parser.add_dir(vh_path, "ServerAlias", target_name)
 
     def _add_name_vhost_if_necessary(self, vhost):
         """Add NameVirtualHost Directives if necessary for new vhost.
