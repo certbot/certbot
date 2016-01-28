@@ -382,7 +382,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if len(reasonable_vhosts) == 1:
                 best_candidate = reasonable_vhosts[0]
 
-        return (best_candidate)
+        return best_candidate
 
     def _non_default_vhosts(self):
         """Return all non _default_ only vhosts."""
@@ -861,6 +861,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.parser.add_dir(vh_path, "Include", self.mod_ssl_conf)
 
     def _add_servername_alias(self, target_name, vh_path):
+        if (self.parser.find_dir("ServerName", target_name, start=vh_path, exclude=False)
+           or self.parser.find_dir("ServerAlias", target_name, start=vh_path, exclude=False)):
+               return
         if not self.parser.find_dir("ServerName", None, start=vh_path, exclude=False):
             self.parser.add_dir(vh_path, "ServerName", target_name)
         else:
