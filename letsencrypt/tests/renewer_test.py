@@ -68,6 +68,13 @@ class BaseRenewableCertTest(unittest.TestCase):
         config.write()
         self.config = config
 
+        # We also create a file that isn't a renewal config in the same
+        # location to test that logic that reads in all-and-only renewal
+        # configs will ignore it and NOT attempt to parse it.
+        junk = open(os.path.join(self.tempdir, "renewal", "IGNORE.THIS"), "w")
+        junk.write("This file should be ignored!")
+        junk.close()
+
         self.defaults = configobj.ConfigObj()
         self.test_rc = storage.RenewableCert(config.filename, self.cli_config)
 
@@ -380,6 +387,10 @@ class RenewableCertTests(BaseRenewableCertTest):
             f.write(test_cert)
         self.assertEqual(self.test_rc.names(12),
                          ["example.com", "www.example.com"])
+
+        # Trying missing cert
+        os.unlink(self.test_rc.cert)
+        self.assertRaises(errors.CertStorageError, self.test_rc.names)
 
     @mock.patch("letsencrypt.storage.datetime")
     def test_time_interval_judgments(self, mock_datetime):

@@ -96,7 +96,8 @@ class ComplexParserTest(util.ParserTest):
         else:
             self.assertFalse(self.parser.find_dir("FNMATCH_DIRECTIVE"))
 
-    # NOTE: Only run one test per function otherwise you will have inf recursion
+    # NOTE: Only run one test per function otherwise you will have
+    # inf recursion
     def test_include(self):
         self.verify_fnmatch("test_fnmatch.?onf")
 
@@ -104,7 +105,8 @@ class ComplexParserTest(util.ParserTest):
         self.verify_fnmatch("../complex_parsing/[te][te]st_*.?onf")
 
     def test_include_fullpath(self):
-        self.verify_fnmatch(os.path.join(self.config_path, "test_fnmatch.conf"))
+        self.verify_fnmatch(os.path.join(self.config_path,
+                                         "test_fnmatch.conf"))
 
     def test_include_fullpath_trailing_slash(self):
         self.verify_fnmatch(self.config_path + "//")

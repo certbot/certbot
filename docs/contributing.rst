@@ -22,7 +22,7 @@ once:
 
    git clone https://github.com/letsencrypt/letsencrypt
    cd letsencrypt
-   ./bootstrap/install-deps.sh
+   ./letsencrypt-auto-source/letsencrypt-auto --os-packages-only
    ./bootstrap/dev/venv.sh
 
 Then in each shell where you're working on the client, do:
@@ -96,11 +96,32 @@ Integration testing with the boulder CA
 Generally it is sufficient to open a pull request and let Github and Travis run
 integration tests for you.
 
-Mac OS X users: Run `./tests/mac-bootstrap.sh` instead of `boulder-start.sh` to
-install dependencies, configure the environment, and start boulder.
+Mac OS X users: Run ``./tests/mac-bootstrap.sh`` instead of
+``boulder-start.sh`` to install dependencies, configure the
+environment, and start boulder.
 
-Otherwise, install `Go`_ 1.5, libtool-ltdl, mariadb-server and
-rabbitmq-server and then start Boulder_, an ACME CA server::
+Otherwise, install `Go`_ 1.5, ``libtool-ltdl``, ``mariadb-server`` and
+``rabbitmq-server`` and then start Boulder_, an ACME CA server.
+
+If you can't get packages of Go 1.5 for your Linux system,
+you can execute the following commands to install it:
+
+.. code-block:: shell
+
+  wget https://storage.googleapis.com/golang/go1.5.3.linux-amd64.tar.gz -P /tmp/
+  sudo tar -C /usr/local -xzf /tmp/go1.5.3.linux-amd64.tar.gz
+  if ! grep -Fxq "export GOROOT=/usr/local/go" ~/.profile ; then echo "export GOROOT=/usr/local/go" >> ~/.profile; fi
+  if ! grep -Fxq "export PATH=\\$GOROOT/bin:\\$PATH" ~/.profile ; then echo "export PATH=\\$GOROOT/bin:\\$PATH" >> ~/.profile; fi
+
+These commands download `Go`_ 1.5.3 to ``/tmp/``, extracts to ``/usr/local``,
+and then adds the export lines required to execute ``boulder-start.sh`` to
+``~/.profile`` if they were not previously added
+
+Make sure you execute the following command after `Go`_ finishes installing::
+
+  if ! grep -Fxq "export GOPATH=\\$HOME/go" ~/.profile ; then echo "export GOPATH=\\$HOME/go" >> ~/.profile; fi
+
+Afterwards, you'd be able to start Boulder_ using the following command::
 
   ./tests/boulder-start.sh
 
@@ -365,10 +386,13 @@ Now run tests inside the Docker image:
 Notes on OS dependencies
 ========================
 
-OS level dependencies are managed by scripts in ``bootstrap``.  Some notes
-are provided here mainly for the :ref:`developers <hacking>` reference.
+OS-level dependencies can be installed like so:
 
-In general:
+.. code-block:: shell
+
+    letsencrypt-auto-source/letsencrypt-auto --os-packages-only
+
+In general...
 
 * ``sudo`` is required as a suggested way of running privileged process
 * `Python`_ 2.6/2.7 is required
@@ -380,62 +404,19 @@ In general:
 .. _Augeas: http://augeas.net/
 .. _Virtualenv: https://virtualenv.pypa.io
 
-Ubuntu
-------
-
-.. code-block:: shell
-
-   sudo ./bootstrap/ubuntu.sh
-
 
 Debian
 ------
-
-.. code-block:: shell
-
-   sudo ./bootstrap/debian.sh
 
 For squeeze you will need to:
 
 - Use ``virtualenv --no-site-packages -p python`` instead of ``-p python2``.
 
 
-.. _`#280`: https://github.com/letsencrypt/letsencrypt/issues/280
-
-
-Mac OSX
--------
-
-.. code-block:: shell
-
-   ./bootstrap/mac.sh
-
-
-Fedora
-------
-
-.. code-block:: shell
-
-   sudo ./bootstrap/fedora.sh
-
-
-Centos 7
---------
-
-.. code-block:: shell
-
-   sudo ./bootstrap/centos.sh
-
-
 FreeBSD
 -------
 
-.. code-block:: shell
-
-   sudo ./bootstrap/freebsd.sh
-
-Bootstrap script for FreeBSD uses ``pkg`` for package installation,
-i.e. it does not use ports.
+Package installation for FreeBSD uses ``pkg``, not ports.
 
 FreeBSD by default uses ``tcsh``. In order to activate virtualenv (see
 below), you will need a compatible shell, e.g. ``pkg install bash &&

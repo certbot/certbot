@@ -81,7 +81,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self.assertEqual(1, mock_run.call_count)
 
     def _help_output(self, args):
-        "Run a help command, and return the help string for scrutiny"
+        "Run a command, and return the ouput string for scrutiny"
         output = StringIO.StringIO()
         with mock.patch('letsencrypt.cli.sys.stdout', new=output):
             self.assertRaises(SystemExit, self._call_stdout, args)
@@ -105,6 +105,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue("--checkpoints" not in out)
 
         out = self._help_output(['-h'])
+        self.assertTrue("letsencrypt-auto" not in out) # test cli.cli_command
         if "nginx" in plugins:
             self.assertTrue("Use the Nginx plugin" in out)
         else:
@@ -130,16 +131,39 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         out = self._help_output(['-h'])
         self.assertTrue(cli.usage_strings(plugins)[0] in out)
 
+
+    def _cli_missing_flag(self, args, message):
+        "Ensure that a particular error raises a missing cli flag error containing message"
+        exc = None
+        try:
+            with mock.patch('letsencrypt.cli.sys.stderr'):
+                cli.main(self.standard_args + args[:])  # NOTE: parser can alter its args!
+        except errors.MissingCommandlineFlag, exc:
+            self.assertTrue(message in str(exc))
+        self.assertTrue(exc is not None)
+
+    def test_noninteractive(self):
+        args = ['-n', 'certonly']
+        self._cli_missing_flag(args, "specify a plugin")
+        args.extend(['--standalone', '-d', 'eg.is'])
+        self._cli_missing_flag(args, "register before running")
+        with mock.patch('letsencrypt.cli._auth_from_domains'):
+            with mock.patch('letsencrypt.cli.client.acme_from_config_key'):
+                args.extend(['--email', 'io@io.is'])
+                self._cli_missing_flag(args, "--agree-tos")
+
     @mock.patch('letsencrypt.cli.client.acme_client.Client')
     @mock.patch('letsencrypt.cli._determine_account')
     @mock.patch('letsencrypt.cli.client.Client.obtain_and_enroll_certificate')
     @mock.patch('letsencrypt.cli._auth_from_domains')
-    def test_user_agent(self, _afd, _obt, det, _client):
+    def test_user_agent(self, afd, _obt, det, _client):
         # Normally the client is totally mocked out, but here we need more
         # arguments to automate it...
         args = ["--standalone", "certonly", "-m", "none@none.com",
                 "-d", "example.com", '--agree-tos'] + self.standard_args
         det.return_value = mock.MagicMock(), None
+        afd.return_value = mock.MagicMock(), "newcert"
+
         with mock.patch('letsencrypt.cli.client.acme_client.ClientNetwork') as acme_net:
             self._call_no_clientmock(args)
             os_ver = " ".join(le_util.get_os_info())
@@ -202,12 +226,13 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             # (we can only do that if letsencrypt-nginx is actually present)
             ret, _, _, _ = self._call(args)
             self.assertTrue("The nginx plugin is not working" in ret)
-            self.assertTrue("Could not find configuration root" in ret)
-            self.assertTrue("NoInstallationError" in ret)
+            self.assertTrue("MisconfigurationError" in ret)
 
         args = ["certonly", "--webroot"]
         ret, _, _, _ = self._call(args)
         self.assertTrue("--webroot-path must be set" in ret)
+
+        self._cli_missing_flag(["--standalone"], "With the standalone plugin, you probably")
 
         with mock.patch("letsencrypt.cli._init_le_client") as mock_init:
             with mock.patch("letsencrypt.cli._auth_from_domains"):

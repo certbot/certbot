@@ -4,7 +4,7 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.2.0.dev0'
+version = '0.4.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
@@ -63,4 +63,5 @@ setup(
             'apache = letsencrypt_apache.configurator:ApacheConfigurator',
         ],
     },
+    test_suite='letsencrypt_apache',
 )

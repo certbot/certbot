@@ -9,18 +9,21 @@
 // This program can be used to perform RSA public key signatures given only
 // the hash of the file to be signed as input.
 
-// Sign with SHA1
-#define HASH_SIZE 20
+// To compile:
+// gcc half-sign.c -lssl -lcrypto -o half-sign
+
+// Sign with SHA256
+#define HASH_SIZE 32
 
 void usage() {
 	printf("half-sign <private key file> [binary hash file]\n");
 	printf("\n");
-	printf("    Computes and prints a binary RSA signature over data given the SHA1 hash of\n");
+	printf("    Computes and prints a binary RSA signature over data given the SHA256 hash of\n");
 	printf("    the data as input.\n");
 	printf("\n");
 	printf("    <private key file> should be PEM encoded.\n");
 	printf("\n");
-	printf("    The input SHA1 hash should be %d bytes in length. If no binary hash file is\n", HASH_SIZE);
+	printf("    The input SHA256 hash should be %d bytes in length. If no binary hash file is\n", HASH_SIZE);
 	printf("    specified, it will be read from stdin.\n");
 	exit(1);
 }
@@ -38,7 +41,7 @@ void sign_hashed_data(EVP_PKEY *signing_key, unsigned char *md, size_t mdlen) {
 	if ((!ctx) 
 	|| (EVP_PKEY_sign_init(ctx) <= 0) 
 	|| (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
-	|| (EVP_PKEY_CTX_set_signature_md(ctx, EVP_sha1()) <= 0)) {
+	|| (EVP_PKEY_CTX_set_signature_md(ctx, EVP_sha256()) <= 0)) {
 		fprintf(stderr, "Failure establishing ctx for signature\n");
 		exit(1);
 	}
@@ -105,7 +108,7 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 	if (fread(buffer, HASH_SIZE, 1, input) != 1) {
-		perror("half-sign: Failed to read SHA1 from input\n");
+		perror("half-sign: Failed to read SHA256 from input\n");
 		exit(1);
 	}
 

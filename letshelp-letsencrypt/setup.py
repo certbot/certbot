@@ -4,7 +4,7 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.2.0.dev0'
+version = '0.4.0.dev0'
 
 install_requires = [
     'setuptools',  # pkg_resources
@@ -55,4 +55,5 @@ setup(
             'letshelp-letsencrypt-apache = letshelp_letsencrypt.apache:main',
         ],
     },
+    test_suite='letshelp_letsencrypt',
 )

@@ -31,8 +31,8 @@ def choose_plugin(prepared, question):
             for plugin_ep in prepared]
 
     while True:
-        code, index = util(interfaces.IDisplay).menu(
-            question, opts, help_label="More Info")
+        disp = util(interfaces.IDisplay)
+        code, index = disp.menu(question, opts, help_label="More Info")
 
         if code == display_util.OK:
             plugin_ep = prepared[index]
@@ -74,6 +74,16 @@ def pick_plugin(config, default, plugins, question, ifaces):
         # throw more UX-friendly error if default not in plugins
         filtered = plugins.filter(lambda p_ep: p_ep.name == default)
     else:
+        if config.noninteractive_mode:
+            # it's really bad to auto-select the single available plugin in
+            # non-interactive mode, because an update could later add a second
+            # available plugin
+            raise errors.MissingCommandlineFlag, ("Missing command line flags. For non-interactive "
+                "execution, you will need to specify a plugin on the command line.  Run with "
+                "'--help plugins' to see a list of options, and see "
+                " https://eff.org/letsencrypt-plugins for more detail on what the plugins "
+                "do and how to use them.")
+
         filtered = plugins.visible().ifaces(ifaces)
 
     filtered.init(config)
@@ -143,7 +153,12 @@ def get_email(more=False, invalid=False):
         msg += ('\n\nIf you really want to skip this, you can run the client with '
                 '--register-unsafely-without-email but make sure you backup your '
                 'account key from /etc/letsencrypt/accounts\n\n')
-    code, email = zope.component.getUtility(interfaces.IDisplay).input(msg)
+    try:
+        code, email = zope.component.getUtility(interfaces.IDisplay).input(msg)
+    except errors.MissingCommandlineFlag:
+        msg = ("You should register before running non-interactively, or provide --agree-tos"
+               " and --email <email_address> flags")
+        raise errors.MissingCommandlineFlag, msg
 
     if code == display_util.OK:
         if le_util.safe_email(email):
@@ -197,7 +212,8 @@ def choose_names(installer):
             "specify ServerNames in your config files in order to allow for "
             "accurate installation of your certificate.{0}"
             "If you do use the default vhost, you may specify the name "
-            "manually. Would you like to continue?{0}".format(os.linesep))
+            "manually. Would you like to continue?{0}".format(os.linesep),
+            default=True)
 
         if manual:
             return _choose_names_manually()
@@ -242,7 +258,7 @@ def _filter_names(names):
     """
     code, names = util(interfaces.IDisplay).checklist(
         "Which names would you like to activate HTTPS for?",
-        tags=names)
+        tags=names, cli_flag="--domains")
     return code, [str(s) for s in names]
 
 
@@ -250,7 +266,8 @@ def _choose_names_manually():
     """Manually input names for those without an installer."""
 
     code, input_ = util(interfaces.IDisplay).input(
-        "Please enter in your domain name(s) (comma and/or space separated) ")
+        "Please enter in your domain name(s) (comma and/or space separated) ",
+        cli_flag="--domains")
 
     if code == display_util.OK:
         invalid_domains = dict()
@@ -309,22 +326,24 @@ def success_installation(domains):
         pause=False)
 
 
-def success_renewal(domains):
+def success_renewal(domains, action):
     """Display a box confirming the renewal of an existing certificate.
 
     .. todo:: This should be centered on the screen
 
     :param list domains: domain names which were renewed
+    :param str action: can be "reinstall" or "renew"
 
     """
     util(interfaces.IDisplay).notification(
-        "Your existing certificate has been successfully renewed, and the "
+        "Your existing certificate has been successfully {3}ed, and the "
         "new certificate has been installed.{1}{1}"
         "The new certificate covers the following domains: {0}{1}{1}"
         "You should test your configuration at:{1}{2}".format(
             _gen_https_names(domains),
             os.linesep,
-            os.linesep.join(_gen_ssl_lab_urls(domains))),
+            os.linesep.join(_gen_ssl_lab_urls(domains)),
+            action),
         height=(14 + len(domains)),
         pause=False)
 
