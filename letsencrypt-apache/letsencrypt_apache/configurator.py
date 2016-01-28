@@ -708,7 +708,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Add directives
         self._add_dummy_ssl_directives(vh_p)
-        self.save("don't lose ssl directives", True)
+        self.save()
         if target_name:
             self._add_servername_alias(target_name, vh_p)
 
