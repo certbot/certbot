@@ -32,11 +32,10 @@ class TLSSNI01ServerTest(unittest.TestCase):
     """Test for acme.standalone.TLSSNI01Server."""
 
     def setUp(self):
-        self.certs = {
-            b'localhost': (test_util.load_pyopenssl_private_key('rsa512_key.pem'),
-                           # pylint: disable=protected-access
-                           test_util.load_cert('cert.pem')._wrapped),
-        }
+        self.certs = {b'localhost': (
+            test_util.load_pyopenssl_private_key('rsa512_key.pem'),
+            test_util.load_cert('cert.pem'),
+        )}
         from acme.standalone import TLSSNI01Server
         self.server = TLSSNI01Server(("", 0), certs=self.certs)
         # pylint: disable=no-member
@@ -49,7 +48,8 @@ class TLSSNI01ServerTest(unittest.TestCase):
 
     def test_it(self):
         host, port = self.server.socket.getsockname()[:2]
-        cert = crypto_util.probe_sni(b'localhost', host=host, port=port, timeout=1)
+        cert = crypto_util.probe_sni(
+            b'localhost', host=host, port=port, timeout=1)
         self.assertEqual(jose.ComparableX509(cert),
                          jose.ComparableX509(self.certs[b'localhost'][1]))
 
@@ -140,13 +140,14 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
         while max_attempts:
             max_attempts -= 1
             try:
-                cert = crypto_util.probe_sni(b'localhost', b'0.0.0.0', self.port)
+                cert = crypto_util.probe_sni(
+                    b'localhost', b'0.0.0.0', self.port)
             except errors.Error:
                 self.assertTrue(max_attempts > 0, "Timeout!")
                 time.sleep(1)  # wait until thread starts
             else:
                 self.assertEqual(jose.ComparableX509(cert),
-                                 test_util.load_cert('cert.pem'))
+                                 test_util.load_comparable_cert('cert.pem'))
                 break
 
 

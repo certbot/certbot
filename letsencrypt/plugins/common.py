@@ -136,7 +136,7 @@ class Addr(object):
 
 
 class TLSSNI01(object):
-    """Class that performs tls-sni-01 challenges."""
+    """Abstract base for TLS-SNI-01 challenge performers"""
 
     def __init__(self, configurator):
         self.configurator = configurator

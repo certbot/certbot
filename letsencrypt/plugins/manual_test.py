@@ -23,7 +23,7 @@ class AuthenticatorTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.manual import Authenticator
         self.config = mock.MagicMock(
-            http01_port=8080, manual_test_mode=False)
+            http01_port=8080, manual_test_mode=False, manual_public_ip_logging_ok=False)
         self.auth = Authenticator(config=self.config, name="manual")
         self.achalls = [achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.HTTP01_P, domain="foo.com", account_key=KEY)]
@@ -61,7 +61,9 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertTrue(self.achalls[0].chall.encode("token") in message)
 
         mock_verify.return_value = False
-        self.assertEqual([None], self.auth.perform(self.achalls))
+        with mock.patch("letsencrypt.plugins.manual.logger") as mock_logger:
+            self.auth.perform(self.achalls)
+            mock_logger.warning.assert_called_once_with(mock.ANY)
 
     @mock.patch("letsencrypt.plugins.manual.zope.component.getUtility")
     @mock.patch("letsencrypt.plugins.manual.Authenticator._notify_and_wait")
@@ -86,20 +88,6 @@ class AuthenticatorTest(unittest.TestCase):
         mock_popen.return_value.pid = 1234
         self.assertRaises(
             errors.Error, self.auth_test_mode.perform, self.achalls)
-
-    @mock.patch("letsencrypt.plugins.manual.socket.socket")
-    @mock.patch("letsencrypt.plugins.manual.time.sleep", autospec=True)
-    @mock.patch("acme.challenges.HTTP01Response.simple_verify",
-                autospec=True)
-    @mock.patch("letsencrypt.plugins.manual.subprocess.Popen", autospec=True)
-    def test_perform_test_mode(self, mock_popen, mock_verify, mock_sleep,
-                               mock_socket):
-        mock_popen.return_value.poll.side_effect = [None, 10]
-        mock_popen.return_value.pid = 1234
-        mock_verify.return_value = False
-        self.assertEqual([False], self.auth_test_mode.perform(self.achalls))
-        self.assertEqual(1, mock_sleep.call_count)
-        self.assertEqual(1, mock_socket.call_count)
 
     def test_cleanup_test_mode_already_terminated(self):
         # pylint: disable=protected-access

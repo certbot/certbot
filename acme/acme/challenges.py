@@ -228,15 +228,16 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
 
     """
 
+    WHITESPACE_CUTSET = "\n\r\t "
+    """Whitespace characters which should be ignored at the end of the body."""
+
     def simple_verify(self, chall, domain, account_public_key, port=None):
         """Simple verify.
 
         :param challenges.SimpleHTTP chall: Corresponding challenge.
         :param unicode domain: Domain name being verified.
-        :param account_public_key: Public key for the key pair
-            being authorized. If ``None`` key verification is not
-            performed!
-        :param JWK account_public_key:
+        :param JWK account_public_key: Public key for the key pair
+            being authorized.
         :param int port: Port used in the validation.
 
         :returns: ``True`` iff validation is successful, ``False``
@@ -266,17 +267,11 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
         logger.debug("Received %s: %s. Headers: %s", http_response,
                      http_response.text, http_response.headers)
 
-        found_ct = http_response.headers.get(
-            "Content-Type", chall.CONTENT_TYPE)
-        if found_ct != chall.CONTENT_TYPE:
-            logger.debug("Wrong Content-Type: found %r, expected %r",
-                         found_ct, chall.CONTENT_TYPE)
-            return False
-
-        if self.key_authorization != http_response.text:
+        challenge_response = http_response.text.rstrip(self.WHITESPACE_CUTSET)
+        if self.key_authorization != challenge_response:
             logger.debug("Key authorization from response (%r) doesn't match "
                          "HTTP response (%r)", self.key_authorization,
-                         http_response.text)
+                         challenge_response)
             return False
 
         return True
@@ -287,9 +282,6 @@ class HTTP01(KeyAuthorizationChallenge):
     """ACME http-01 challenge."""
     response_cls = HTTP01Response
     typ = response_cls.typ
-
-    CONTENT_TYPE = "text/plain"
-    """Only valid value for Content-Type if the header is included."""
 
     URI_ROOT_PATH = ".well-known/acme-challenge"
     """URI root path for the server provisioned resource."""
@@ -342,7 +334,7 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
     """
 
     @property
-    def z(self):
+    def z(self):  # pylint: disable=invalid-name
         """``z`` value used for verification.
 
         :rtype bytes:
@@ -397,7 +389,14 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
         return crypto_util.probe_sni(**kwargs)
 
     def verify_cert(self, cert):
-        """Verify tls-sni-01 challenge certificate."""
+        """Verify tls-sni-01 challenge certificate.
+
+        :param OpensSSL.crypto.X509 cert: Challenge certificate.
+
+        :returns: Whether the certificate was successfully verified.
+        :rtype: bool
+
+        """
         # pylint: disable=protected-access
         sans = crypto_util._pyopenssl_cert_or_req_san(cert)
         logging.debug('Certificate %s. SANs: %s', cert.digest('sha1'), sans)

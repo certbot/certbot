@@ -30,9 +30,13 @@ readme = read_file(os.path.join(here, 'README.rst'))
 changes = read_file(os.path.join(here, 'CHANGES.rst'))
 version = meta['version']
 
+# Please update tox.ini when modifying dependency version requirements
 install_requires = [
     'acme=={0}'.format(version),
-    'ConfigArgParse',
+    # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
+    # saying so here causes a runtime error against our temporary fork of 0.9.3
+    # in which we added 2.6 support (see #2243), so we relax the requirement.
+    'ConfigArgParse>=0.9.3',
     'configobj',
     'cryptography>=0.7',  # load_pem_x509_certificate
     'parsedatetime',
@@ -41,7 +45,6 @@ install_requires = [
     'pyrfc3339',
     'python2-pythondialog>=3.2.2rc1',  # Debian squeeze support, cf. #280
     'pytz',
-    'requests',
     'setuptools',  # pkg_resources
     'six',
     'zope.component',
@@ -49,6 +52,7 @@ install_requires = [
 ]
 
 # env markers in extras_require cause problems with older pip: #517
+# Keep in sync with conditional_requirements.py.
 if sys.version_info < (2, 7):
     install_requires.extend([
         # only some distros recognize stdlib argparse as already satisfying
@@ -119,7 +123,6 @@ setup(
         'testing': testing_extras,
     },
 
-    tests_require=install_requires,
     # to test all packages run "python setup.py test -s
     # {acme,letsencrypt_apache,letsencrypt_nginx}"
     test_suite='letsencrypt',

@@ -5,7 +5,6 @@ import re
 import shutil
 import socket
 import subprocess
-import sys
 import time
 
 import OpenSSL
@@ -24,7 +23,7 @@ from letsencrypt import reverter
 from letsencrypt.plugins import common
 
 from letsencrypt_nginx import constants
-from letsencrypt_nginx import dvsni
+from letsencrypt_nginx import tls_sni_01
 from letsencrypt_nginx import obj
 from letsencrypt_nginx import parser
 
@@ -106,10 +105,17 @@ class NginxConfigurator(common.Plugin):
 
     # This is called in determine_authenticator and determine_installer
     def prepare(self):
-        """Prepare the authenticator/installer."""
+        """Prepare the authenticator/installer.
+
+        :raises .errors.NoInstallationError: If Nginx ctl cannot be found
+        :raises .errors.MisconfigurationError: If Nginx is misconfigured
+        """
         # Verify Nginx is installed
         if not le_util.exe_exists(self.conf('ctl')):
             raise errors.NoInstallationError
+
+        # Make sure configuration is valid
+        self.config_test()
 
         self.parser = parser.NginxParser(
             self.conf('server-root'), self.mod_ssl_conf)
@@ -122,7 +128,7 @@ class NginxConfigurator(common.Plugin):
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path,
-                    chain_path, fullchain_path):
+                    chain_path=None, fullchain_path=None):
         # pylint: disable=unused-argument
         """Deploys certificate to specified virtual host.
 
@@ -136,7 +142,15 @@ class NginxConfigurator(common.Plugin):
 
         .. note:: This doesn't save the config files!
 
+        :raises errors.PluginError: When unable to deploy certificate due to
+            a lack of directives or configuration
+
         """
+        if not fullchain_path:
+            raise errors.PluginError(
+                "The nginx plugin currently requires --fullchain-path to "
+                "install a cert.")
+
         vhost = self.choose_vhost(domain)
         cert_directives = [['ssl_certificate', fullchain_path],
                            ['ssl_certificate_key', key_path]]
@@ -149,6 +163,12 @@ class NginxConfigurator(common.Plugin):
                 ['ssl_trusted_certificate', chain_path],
                 ['ssl_stapling', 'on'],
                 ['ssl_stapling_verify', 'on']]
+
+        if len(stapling_directives) != 0 and not chain_path:
+            raise errors.PluginError(
+                "--chain-path is required to enable "
+                "Online Certificate Status Protocol (OCSP) stapling "
+                "on nginx >= 1.3.7.")
 
         try:
             self.parser.add_server_directives(vhost.filep, vhost.names,
@@ -168,7 +188,7 @@ class NginxConfigurator(common.Plugin):
         self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
                             (vhost.filep,
                              ", ".join(str(addr) for addr in vhost.addrs)))
-        self.save_notes += "\tssl_certificate %s\n" % cert_path
+        self.save_notes += "\tssl_certificate %s\n" % fullchain_path
         self.save_notes += "\tssl_certificate_key %s\n" % key_path
 
     #######################
@@ -311,17 +331,11 @@ class NginxConfigurator(common.Plugin):
         """
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
         ssl_block = [['listen', '{0} ssl'.format(self.config.tls_sni_01_port)],
-                     # access and error logs necessary for integration
-                     # testing (non-root)
-                     ['access_log', os.path.join(
-                         self.config.work_dir, 'access.log')],
-                     ['error_log', os.path.join(
-                         self.config.work_dir, 'error.log')],
                      ['ssl_certificate', snakeoil_cert],
                      ['ssl_certificate_key', snakeoil_key],
                      ['include', self.parser.loc["ssl_options"]]]
         self.parser.add_server_directives(
-            vhost.filep, vhost.names, ssl_block)
+            vhost.filep, vhost.names, ssl_block, replace=False)
         vhost.ssl = True
         vhost.raw.extend(ssl_block)
         vhost.addrs.add(obj.Addr(
@@ -379,11 +393,12 @@ class NginxConfigurator(common.Plugin):
         :param unused_options: Not currently used
         :type unused_options: Not Available
         """
-        redirect_block = [[['if', '($scheme != "https")'],
+        redirect_block = [[
+            ['if', '($scheme != "https")'],
             [['return', '301 https://$host$request_uri']]
         ]]
-        self.parser.add_server_directives(vhost.filep, vhost.names,
-            redirect_block)
+        self.parser.add_server_directives(
+            vhost.filep, vhost.names, redirect_block, replace=False)
         logger.info("Redirecting all traffic to ssl in %s", vhost.filep)
 
     ######################################
@@ -392,35 +407,21 @@ class NginxConfigurator(common.Plugin):
     def restart(self):
         """Restarts nginx server.
 
-        :returns: Success
-        :rtype: bool
+        :raises .errors.MisconfigurationError: If either the reload fails.
 
         """
-        return nginx_restart(self.conf('ctl'), self.nginx_conf)
+        nginx_restart(self.conf('ctl'), self.nginx_conf)
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Nginx for errors.
 
-        :returns: Success
-        :rtype: bool
+        :raises .errors.MisconfigurationError: If config_test fails
 
         """
         try:
-            proc = subprocess.Popen(
-                [self.conf('ctl'), "-c", self.nginx_conf, "-t"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
-            stdout, stderr = proc.communicate()
-        except (OSError, ValueError):
-            logger.fatal("Unable to run nginx config test")
-            sys.exit(1)
-
-        if proc.returncode != 0:
-            # Enter recovery routine...
-            logger.error("Config test failed\n%s\n%s", stdout, stderr)
-            return False
-
-        return True
+            le_util.run_script([self.conf('ctl'), "-c", self.nginx_conf, "-t"])
+        except errors.SubprocessError as err:
+            raise errors.MisconfigurationError(str(err))
 
     def _verify_setup(self):
         """Verify the setup to ensure safe operating environment.
@@ -573,15 +574,15 @@ class NginxConfigurator(common.Plugin):
         """
         self._chall_out += len(achalls)
         responses = [None] * len(achalls)
-        nginx_dvsni = dvsni.NginxDvsni(self)
+        chall_doer = tls_sni_01.NginxTlsSni01(self)
 
         for i, achall in enumerate(achalls):
-            # Currently also have dvsni hold associated index
-            # of the challenge. This helps to put all of the responses back
-            # together when they are all complete.
-            nginx_dvsni.add_chall(achall, i)
+            # Currently also have chall_doer hold associated index of the
+            # challenge. This helps to put all of the responses back together
+            # when they are all complete.
+            chall_doer.add_chall(achall, i)
 
-        sni_response = nginx_dvsni.perform()
+        sni_response = chall_doer.perform()
         # Must restart in order to activate the challenges.
         # Handled here because we may be able to load up other challenge types
         self.restart()
@@ -590,7 +591,7 @@ class NginxConfigurator(common.Plugin):
         # in the responses return value. All responses must be in the same order
         # as the original challenges.
         for i, resp in enumerate(sni_response):
-            responses[nginx_dvsni.indices[i]] = resp
+            responses[chall_doer.indices[i]] = resp
 
         return responses
 
@@ -630,18 +631,15 @@ def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx.conf"):
 
             if nginx_proc.returncode != 0:
                 # Enter recovery routine...
-                logger.error("Nginx Restart Failed!\n%s\n%s", stdout, stderr)
-                return False
+                raise errors.MisconfigurationError(
+                    "nginx restart failed:\n%s\n%s" % (stdout, stderr))
 
     except (OSError, ValueError):
-        logger.fatal("Nginx Restart Failed - Please Check the Configuration")
-        sys.exit(1)
+        raise errors.MisconfigurationError("nginx restart failed")
     # Nginx can take a moment to recognize a newly added TLS SNI servername, so sleep
     # for a second. TODO: Check for expected servername and loop until it
     # appears or return an error if looping too long.
     time.sleep(1)
-
-    return True
 
 
 def temp_install(options_ssl):

@@ -124,7 +124,7 @@ class Header(json_util.JSONObjectWithFields):
     @x5c.encoder
     def x5c(value):  # pylint: disable=missing-docstring,no-self-argument
         return [base64.b64encode(OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_ASN1, cert)) for cert in value]
+            OpenSSL.crypto.FILETYPE_ASN1, cert.wrapped)) for cert in value]
 
     @x5c.decoder
     def x5c(value):  # pylint: disable=missing-docstring,no-self-argument

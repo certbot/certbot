@@ -23,7 +23,8 @@ from letsencrypt_apache import obj
 class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 
     def setUp(self, test_dir="debian_apache_2_4/two_vhost_80",
-              config_root="debian_apache_2_4/two_vhost_80/apache2"):
+              config_root="debian_apache_2_4/two_vhost_80/apache2",
+              vhost_root="debian_apache_2_4/two_vhost_80/apache2/sites-available"):
         # pylint: disable=arguments-differ
         super(ApacheTest, self).setUp()
 
@@ -36,16 +37,32 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
             constants.MOD_SSL_CONF_DEST)
 
         self.config_path = os.path.join(self.temp_dir, config_root)
+        self.vhost_path = os.path.join(self.temp_dir, vhost_root)
 
         self.rsa512jwk = jose.JWKRSA.load(test_util.load_vector(
             "rsa512_key.pem"))
+
+        # Make sure all vhosts in sites-enabled are symlinks (Python packaging
+        # does not preserve symlinks)
+        sites_enabled = os.path.join(self.config_path, "sites-enabled")
+        if not os.path.exists(sites_enabled):
+            return
+
+        for vhost_basename in os.listdir(sites_enabled):
+            vhost = os.path.join(sites_enabled, vhost_basename)
+            if not os.path.islink(vhost):  # pragma: no cover
+                os.remove(vhost)
+                target = os.path.join(
+                    os.path.pardir, "sites-available", vhost_basename)
+                os.symlink(target, vhost)
 
 
 class ParserTest(ApacheTest):  # pytlint: disable=too-few-public-methods
 
     def setUp(self, test_dir="debian_apache_2_4/two_vhost_80",
-              config_root="debian_apache_2_4/two_vhost_80/apache2"):
-        super(ParserTest, self).setUp(test_dir, config_root)
+              config_root="debian_apache_2_4/two_vhost_80/apache2",
+              vhost_root="debian_apache_2_4/two_vhost_80/apache2/sites-available"):
+        super(ParserTest, self).setUp(test_dir, config_root, vhost_root)
 
         zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
 
@@ -55,11 +72,12 @@ class ParserTest(ApacheTest):  # pytlint: disable=too-few-public-methods
         with mock.patch("letsencrypt_apache.parser.ApacheParser."
                         "update_runtime_variables"):
             self.parser = ApacheParser(
-                self.aug, self.config_path, "dummy_ctl_path")
+                self.aug, self.config_path, self.vhost_path)
 
 
 def get_apache_configurator(
-        config_path, config_dir, work_dir, version=(2, 4, 7), conf=None):
+        config_path, vhost_path,
+        config_dir, work_dir, version=(2, 4, 7), conf=None):
     """Create an Apache Configurator with the specified options.
 
     :param conf: Function that returns binary paths. self.conf in Configurator
@@ -68,18 +86,16 @@ def get_apache_configurator(
     backups = os.path.join(work_dir, "backups")
     mock_le_config = mock.MagicMock(
         apache_server_root=config_path,
-        apache_le_vhost_ext=constants.CLI_DEFAULTS["le_vhost_ext"],
+        apache_vhost_root=vhost_path,
+        apache_le_vhost_ext=constants.os_constant("le_vhost_ext"),
+        apache_challenge_location=config_path,
         backup_dir=backups,
         config_dir=config_dir,
         temp_checkpoint_dir=os.path.join(work_dir, "temp_checkpoints"),
         in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
         work_dir=work_dir)
 
-    with mock.patch("letsencrypt_apache.configurator."
-                    "subprocess.Popen") as mock_popen:
-        # This indicates config_test passes
-        mock_popen().communicate.return_value = ("Fine output", "No problems")
-        mock_popen().returncode = 0
+    with mock.patch("letsencrypt_apache.configurator.le_util.run_script"):
         with mock.patch("letsencrypt_apache.configurator.le_util."
                         "exe_exists") as mock_exe_exists:
             mock_exe_exists.return_value = True
@@ -128,7 +144,13 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(prefix, "mod_macro-example.conf"),
                 os.path.join(aug_pre,
                              "mod_macro-example.conf/Macro/VirtualHost"),
-                set([obj.Addr.fromstring("*:80")]), False, True, modmacro=True)
+                set([obj.Addr.fromstring("*:80")]), False, True,
+                modmacro=True),
+            obj.VirtualHost(
+                os.path.join(prefix, "default-ssl-port-only.conf"),
+                os.path.join(aug_pre, ("default-ssl-port-only.conf/"
+                                       "IfModule/VirtualHost")),
+                set([obj.Addr.fromstring("_default_:443")]), True, False),
         ]
         return vh_truth
 

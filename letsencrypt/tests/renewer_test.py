@@ -9,6 +9,8 @@ import unittest
 import configobj
 import mock
 
+from acme import jose
+
 from letsencrypt import configuration
 from letsencrypt import errors
 from letsencrypt.storage import ALL_FOUR
@@ -65,6 +67,13 @@ class BaseRenewableCertTest(unittest.TestCase):
                                        "example.org.conf")
         config.write()
         self.config = config
+
+        # We also create a file that isn't a renewal config in the same
+        # location to test that logic that reads in all-and-only renewal
+        # configs will ignore it and NOT attempt to parse it.
+        junk = open(os.path.join(self.tempdir, "renewal", "IGNORE.THIS"), "w")
+        junk.write("This file should be ignored!")
+        junk.close()
 
         self.defaults = configobj.ConfigObj()
         self.test_rc = storage.RenewableCert(config.filename, self.cli_config)
@@ -378,6 +387,10 @@ class RenewableCertTests(BaseRenewableCertTest):
             f.write(test_cert)
         self.assertEqual(self.test_rc.names(12),
                          ["example.com", "www.example.com"])
+
+        # Trying missing cert
+        os.unlink(self.test_rc.cert)
+        self.assertRaises(errors.CertStorageError, self.test_rc.names)
 
     @mock.patch("letsencrypt.storage.datetime")
     def test_time_interval_judgments(self, mock_datetime):
@@ -702,9 +715,10 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc.configfile["renewalparams"]["authenticator"] = "apache"
         mock_client = mock.MagicMock()
         # pylint: disable=star-args
+        comparable_cert = jose.ComparableX509(CERT)
         mock_client.obtain_certificate.return_value = (
-            mock.MagicMock(body=CERT), [CERT], mock.Mock(pem="key"),
-            mock.sentinel.csr)
+            mock.MagicMock(body=comparable_cert), [comparable_cert],
+            mock.Mock(pem="key"), mock.sentinel.csr)
         mock_c.return_value = mock_client
         self.assertEqual(2, renewer.renew(self.test_rc, 1))
         # TODO: We could also make several assertions about calls that should
@@ -764,6 +778,8 @@ class RenewableCertTests(BaseRenewableCertTest):
 
     def test_bad_config_file(self):
         from letsencrypt import renewer
+        os.unlink(os.path.join(self.cli_config.renewal_configs_dir,
+                               "example.org.conf"))
         with open(os.path.join(self.cli_config.renewal_configs_dir,
                                "bad.conf"), "w") as f:
             f.write("incomplete = configfile\n")

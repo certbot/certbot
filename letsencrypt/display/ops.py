@@ -4,6 +4,7 @@ import os
 
 import zope.component
 
+from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt.display import util as display_util
@@ -30,8 +31,8 @@ def choose_plugin(prepared, question):
             for plugin_ep in prepared]
 
     while True:
-        code, index = util(interfaces.IDisplay).menu(
-            question, opts, help_label="More Info")
+        disp = util(interfaces.IDisplay)
+        code, index = disp.menu(question, opts, help_label="More Info")
 
         if code == display_util.OK:
             plugin_ep = prepared[index]
@@ -73,6 +74,16 @@ def pick_plugin(config, default, plugins, question, ifaces):
         # throw more UX-friendly error if default not in plugins
         filtered = plugins.filter(lambda p_ep: p_ep.name == default)
     else:
+        if config.noninteractive_mode:
+            # it's really bad to auto-select the single available plugin in
+            # non-interactive mode, because an update could later add a second
+            # available plugin
+            raise errors.MissingCommandlineFlag, ("Missing command line flags. For non-interactive "
+                "execution, you will need to specify a plugin on the command line.  Run with "
+                "'--help plugins' to see a list of options, and see "
+                " https://eff.org/letsencrypt-plugins for more detail on what the plugins "
+                "do and how to use them.")
+
         filtered = plugins.visible().ifaces(ifaces)
 
     filtered.init(config)
@@ -122,6 +133,7 @@ def pick_configurator(
         config, default, plugins, question,
         (interfaces.IAuthenticator, interfaces.IInstaller))
 
+
 def get_email(more=False, invalid=False):
     """Prompt for valid email address.
 
@@ -141,7 +153,12 @@ def get_email(more=False, invalid=False):
         msg += ('\n\nIf you really want to skip this, you can run the client with '
                 '--register-unsafely-without-email but make sure you backup your '
                 'account key from /etc/letsencrypt/accounts\n\n')
-    code, email = zope.component.getUtility(interfaces.IDisplay).input(msg)
+    try:
+        code, email = zope.component.getUtility(interfaces.IDisplay).input(msg)
+    except errors.MissingCommandlineFlag:
+        msg = ("You should register before running non-interactively, or provide --agree-tos"
+               " and --email <email_address> flags")
+        raise errors.MissingCommandlineFlag, msg
 
     if code == display_util.OK:
         if le_util.safe_email(email):
@@ -186,7 +203,8 @@ def choose_names(installer):
         logger.debug("No installer, picking names manually")
         return _choose_names_manually()
 
-    names = list(installer.get_all_names())
+    domains = list(installer.get_all_names())
+    names = get_valid_domains(domains)
 
     if not names:
         manual = util(interfaces.IDisplay).yesno(
@@ -194,7 +212,8 @@ def choose_names(installer):
             "specify ServerNames in your config files in order to allow for "
             "accurate installation of your certificate.{0}"
             "If you do use the default vhost, you may specify the name "
-            "manually. Would you like to continue?{0}".format(os.linesep))
+            "manually. Would you like to continue?{0}".format(os.linesep),
+            default=True)
 
         if manual:
             return _choose_names_manually()
@@ -206,6 +225,24 @@ def choose_names(installer):
         return names
     else:
         return []
+
+
+def get_valid_domains(domains):
+    """Helper method for choose_names that implements basic checks
+     on domain names
+
+    :param list domains: Domain names to validate
+    :return: List of valid domains
+    :rtype: list
+    """
+    valid_domains = []
+    for domain in domains:
+        try:
+            le_util.check_domain_sanity(domain)
+            valid_domains.append(domain)
+        except errors.ConfigurationError:
+            continue
+    return valid_domains
 
 
 def _filter_names(names):
@@ -221,7 +258,7 @@ def _filter_names(names):
     """
     code, names = util(interfaces.IDisplay).checklist(
         "Which names would you like to activate HTTPS for?",
-        tags=names)
+        tags=names, cli_flag="--domains")
     return code, [str(s) for s in names]
 
 
@@ -229,10 +266,45 @@ def _choose_names_manually():
     """Manually input names for those without an installer."""
 
     code, input_ = util(interfaces.IDisplay).input(
-        "Please enter in your domain name(s) (comma and/or space separated) ")
+        "Please enter in your domain name(s) (comma and/or space separated) ",
+        cli_flag="--domains")
 
     if code == display_util.OK:
-        return display_util.separate_list_input(input_)
+        invalid_domains = dict()
+        retry_message = ""
+        try:
+            domain_list = display_util.separate_list_input(input_)
+        except UnicodeEncodeError:
+            domain_list = []
+            retry_message = (
+                "Internationalized domain names are not presently "
+                "supported.{0}{0}Would you like to re-enter the "
+                "names?{0}").format(os.linesep)
+
+        for domain in domain_list:
+            try:
+                le_util.check_domain_sanity(domain)
+            except errors.ConfigurationError as e:
+                invalid_domains[domain] = e.message
+
+        if len(invalid_domains):
+            retry_message = (
+                "One or more of the entered domain names was not valid:"
+                "{0}{0}").format(os.linesep)
+            for domain in invalid_domains:
+                retry_message = retry_message + "{1}: {2}{0}".format(
+                    os.linesep, domain, invalid_domains[domain])
+            retry_message = retry_message + (
+                "{0}Would you like to re-enter the names?{0}").format(
+                    os.linesep)
+
+        if retry_message:
+            # We had error in input
+            retry = util(interfaces.IDisplay).yesno(retry_message)
+            if retry:
+                return _choose_names_manually()
+        else:
+            return domain_list
     return []
 
 
@@ -245,7 +317,7 @@ def success_installation(domains):
 
     """
     util(interfaces.IDisplay).notification(
-        "Congratulations! You have successfully enabled {0}!{1}{1}"
+        "Congratulations! You have successfully enabled {0}{1}{1}"
         "You should test your configuration at:{1}{2}".format(
             _gen_https_names(domains),
             os.linesep,
@@ -254,22 +326,24 @@ def success_installation(domains):
         pause=False)
 
 
-def success_renewal(domains):
+def success_renewal(domains, action):
     """Display a box confirming the renewal of an existing certificate.
 
     .. todo:: This should be centered on the screen
 
     :param list domains: domain names which were renewed
+    :param str action: can be "reinstall" or "renew"
 
     """
     util(interfaces.IDisplay).notification(
-        "Your existing certificate has been successfully renewed, and the "
+        "Your existing certificate has been successfully {3}ed, and the "
         "new certificate has been installed.{1}{1}"
         "The new certificate covers the following domains: {0}{1}{1}"
         "You should test your configuration at:{1}{2}".format(
             _gen_https_names(domains),
             os.linesep,
-            os.linesep.join(_gen_ssl_lab_urls(domains))),
+            os.linesep.join(_gen_ssl_lab_urls(domains)),
+            action),
         height=(14 + len(domains)),
         pause=False)
 

@@ -13,7 +13,7 @@ from acme import other
 from acme import test_util
 
 
-CERT = test_util.load_cert('cert.pem')
+CERT = test_util.load_comparable_cert('cert.pem')
 KEY = jose.JWKRSA(key=test_util.load_rsa_private_key('rsa512_key.pem'))
 
 
@@ -73,7 +73,8 @@ class KeyAuthorizationChallengeResponseTest(unittest.TestCase):
     def test_verify_wrong_form(self):
         from acme.challenges import KeyAuthorizationChallengeResponse
         response = KeyAuthorizationChallengeResponse(
-            key_authorization='.foo.oKGqedy-b-acd5eoybm2f-NVFxvyOoET5CNy3xnv8WY')
+            key_authorization='.foo.oKGqedy-b-acd5eoybm2f-'
+            'NVFxvyOoET5CNy3xnv8WY')
         self.assertFalse(response.verify(self.chall, KEY.public_key()))
 
 
@@ -92,7 +93,6 @@ class HTTP01ResponseTest(unittest.TestCase):
         from acme.challenges import HTTP01
         self.chall = HTTP01(token=(b'x' * 16))
         self.response = self.chall.response(KEY)
-        self.good_headers = {'Content-Type': HTTP01.CONTENT_TYPE}
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
@@ -113,24 +113,26 @@ class HTTP01ResponseTest(unittest.TestCase):
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_good_validation(self, mock_get):
         validation = self.chall.validation(KEY)
-        mock_get.return_value = mock.MagicMock(
-            text=validation, headers=self.good_headers)
+        mock_get.return_value = mock.MagicMock(text=validation)
         self.assertTrue(self.response.simple_verify(
             self.chall, "local", KEY.public_key()))
         mock_get.assert_called_once_with(self.chall.uri("local"))
 
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_bad_validation(self, mock_get):
-        mock_get.return_value = mock.MagicMock(
-            text="!", headers=self.good_headers)
+        mock_get.return_value = mock.MagicMock(text="!")
         self.assertFalse(self.response.simple_verify(
             self.chall, "local", KEY.public_key()))
 
     @mock.patch("acme.challenges.requests.get")
-    def test_simple_verify_bad_content_type(self, mock_get):
-        mock_get().text = self.chall.token
-        self.assertFalse(self.response.simple_verify(
+    def test_simple_verify_whitespace_validation(self, mock_get):
+        from acme.challenges import HTTP01Response
+        mock_get.return_value = mock.MagicMock(
+            text=(self.chall.validation(KEY) +
+                  HTTP01Response.WHITESPACE_CUTSET))
+        self.assertTrue(self.response.simple_verify(
             self.chall, "local", KEY.public_key()))
+        mock_get.assert_called_once_with(self.chall.uri("local"))
 
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_connection_error(self, mock_get):
@@ -272,10 +274,12 @@ class TLSSNI01ResponseTest(unittest.TestCase):
     @mock.patch('acme.challenges.TLSSNI01Response.verify_cert', autospec=True)
     def test_simple_verify(self, mock_verify_cert):
         mock_verify_cert.return_value = mock.sentinel.verification
-        self.assertEqual(mock.sentinel.verification, self.response.simple_verify(
-            self.chall, self.domain, KEY.public_key(),
-            cert=mock.sentinel.cert))
-        mock_verify_cert.assert_called_once_with(self.response, mock.sentinel.cert)
+        self.assertEqual(
+            mock.sentinel.verification, self.response.simple_verify(
+                self.chall, self.domain, KEY.public_key(),
+                cert=mock.sentinel.cert))
+        mock_verify_cert.assert_called_once_with(
+            self.response, mock.sentinel.cert)
 
     @mock.patch('acme.challenges.TLSSNI01Response.probe_cert')
     def test_simple_verify_false_on_probe_error(self, mock_probe_cert):
@@ -420,7 +424,7 @@ class ProofOfPossessionHintsTest(unittest.TestCase):
             'jwk': jwk,
             'certFingerprints': cert_fingerprints,
             'certs': (jose.encode_b64jose(OpenSSL.crypto.dump_certificate(
-                OpenSSL.crypto.FILETYPE_ASN1, CERT)),),
+                OpenSSL.crypto.FILETYPE_ASN1, CERT.wrapped)),),
             'subjectKeyIdentifiers': subject_key_identifiers,
             'serialNumbers': serial_numbers,
             'issuers': issuers,
@@ -589,7 +593,8 @@ class DNSTest(unittest.TestCase):
 
     def test_check_validation_wrong_fields(self):
         bad_validation = jose.JWS.sign(
-            payload=self.msg.update(token=b'x' * 20).json_dumps().encode('utf-8'),
+            payload=self.msg.update(
+                token=b'x' * 20).json_dumps().encode('utf-8'),
             alg=jose.RS256, key=KEY)
         self.assertFalse(self.msg.check_validation(
             bad_validation, KEY.public_key()))

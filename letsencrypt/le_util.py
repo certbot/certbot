@@ -1,12 +1,16 @@
 """Utilities for all Let's Encrypt."""
+import argparse
 import collections
 import errno
 import logging
 import os
 import platform
 import re
-import subprocess
 import stat
+import subprocess
+import sys
+
+import configargparse
 
 from letsencrypt import errors
 
@@ -255,3 +259,62 @@ def safe_email(email):
     else:
         logger.warn("Invalid email address: %s.", email)
         return False
+
+
+def add_deprecated_argument(add_argument, argument_name, nargs):
+    """Adds a deprecated argument with the name argument_name.
+
+    Deprecated arguments are not shown in the help. If they are used on
+    the command line, a warning is shown stating that the argument is
+    deprecated and no other action is taken.
+
+    :param callable add_argument: Function that adds arguments to an
+        argument parser/group.
+    :param str argument_name: Name of deprecated argument.
+    :param nargs: Value for nargs when adding the argument to argparse.
+
+    """
+    class ShowWarning(argparse.Action):
+        """Action to log a warning when an argument is used."""
+        def __call__(self, unused1, unused2, unused3, option_string=None):
+            sys.stderr.write(
+                "Use of {0} is deprecated.\n".format(option_string))
+
+    configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE.add(ShowWarning)
+    add_argument(argument_name, action=ShowWarning,
+                 help=argparse.SUPPRESS, nargs=nargs)
+
+
+def check_domain_sanity(domain):
+    """Method which validates domain value and errors out if
+    the requirements are not met.
+
+    :param domain: Domain to check
+    :type domains: `string`
+    :raises ConfigurationError: for invalid domains and cases where Let's
+                                Encrypt currently will not issue certificates
+
+    """
+    # Check if there's a wildcard domain
+    if domain.startswith("*."):
+        raise errors.ConfigurationError(
+            "Wildcard domains are not supported")
+    # Punycode
+    if "xn--" in domain:
+        raise errors.ConfigurationError(
+            "Punycode domains are not presently supported")
+
+    # Unicode
+    try:
+        domain.encode('ascii')
+    except UnicodeDecodeError:
+        raise errors.ConfigurationError(
+            "Internationalized domain names are not presently supported")
+
+    # FQDN checks from
+    # http://www.mkyong.com/regular-expressions/domain-name-regular-expression-example/
+    #  Characters used, domain parts < 63 chars, tld > 1 < 64 chars
+    #  first and last char is not "-"
+    fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,63}$")
+    if not fqdn.match(domain):
+        raise errors.ConfigurationError("Requested domain is not a FQDN")

@@ -51,3 +51,30 @@ class MissingNonce(NonceError):
         return ('Server {0} response did not include a replay '
                 'nonce, headers: {1}'.format(
                     self.response.request.method, self.response.headers))
+
+
+class PollError(ClientError):
+    """Generic error when polling for authorization fails.
+
+    This might be caused by either timeout (`exhausted` will be non-empty)
+    or by some authorization being invalid.
+
+    :ivar exhausted: Set of `.AuthorizationResource` that didn't finish
+        within max allowed attempts.
+    :ivar updated: Mapping from original `.AuthorizationResource`
+        to the most recently updated one
+
+    """
+    def __init__(self, exhausted, updated):
+        self.exhausted = exhausted
+        self.updated = updated
+        super(PollError, self).__init__()
+
+    @property
+    def timeout(self):
+        """Was the error caused by timeout?"""
+        return bool(self.exhausted)
+
+    def __repr__(self):
+        return '{0}(exhausted={1!r}, updated={2!r})'.format(
+            self.__class__.__name__, self.exhausted, self.updated)

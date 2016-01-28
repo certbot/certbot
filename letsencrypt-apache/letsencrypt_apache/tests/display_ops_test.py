@@ -6,6 +6,7 @@ import mock
 import zope.component
 
 from letsencrypt.display import util as display_util
+from letsencrypt import errors
 
 from letsencrypt_apache import obj
 
@@ -30,6 +31,14 @@ class SelectVhostTest(unittest.TestCase):
     def test_successful_choice(self, mock_util):
         mock_util().menu.return_value = (display_util.OK, 3)
         self.assertEqual(self.vhosts[3], self._call(self.vhosts))
+
+    @mock.patch("letsencrypt_apache.display_ops.zope.component.getUtility")
+    def test_noninteractive(self, mock_util):
+        mock_util().menu.side_effect = errors.MissingCommandlineFlag("no vhost default")
+        try:
+            self._call(self.vhosts)
+        except errors.MissingCommandlineFlag, e:
+            self.assertTrue("VirtualHost directives" in e.message)
 
     @mock.patch("letsencrypt_apache.display_ops.zope.component.getUtility")
     def test_more_info_cancel(self, mock_util):
