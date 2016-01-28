@@ -400,8 +400,18 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         webroot_map_args = ['--webroot-map', '{"eg.com" : "/tmp"}']
         namespace = cli.prepare_and_parse_args(plugins, webroot_map_args)
         domains = cli._find_domains(namespace, mock.MagicMock())
-        self.assertEqual(namespace.webroot_map, {u"eg.com": u"/tmp"})
+        expected_map = {u"eg.com": u"/tmp"}
+        self.assertEqual(namespace.webroot_map, expected_map)
         self.assertEqual(domains, ["eg.com"])
+
+        # test merging webroot maps from the cli and a webroot map
+        webroot_map_args.extend(["-w", "/tmp2", "-d", "eg2.com,eg.com"])
+        namespace = cli.prepare_and_parse_args(plugins, webroot_map_args)
+        domains = cli._find_domains(namespace, mock.MagicMock())
+        # for eg.com, --webroot-map should take precedence over -w / -d
+        expected_map[u"eg2.com"] = u"/tmp2"
+        self.assertEqual(namespace.webroot_map, expected_map)
+        self.assertEqual(set(domains), set(["eg.com", "eg2.com"]))
 
     @mock.patch('letsencrypt.cli._suggest_donate')
     @mock.patch('letsencrypt.crypto_util.notAfter')

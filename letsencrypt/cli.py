@@ -112,11 +112,12 @@ def usage_strings(plugins):
     return USAGE % (apache_doc, nginx_doc), SHORT_USAGE
 
 
-def _find_domains(args, installer):
-    if not args.domains:
-        domains = display_ops.choose_names(installer)
+def _find_domains(config, installer):
+    if not config.domains:
+        # set args.domains so that it's written to the renewal conf file
+        domains = config.domains = display_ops.choose_names(installer)
     else:
-        domains = args.domains
+        domains = config.domains
 
     if not domains:
         raise errors.Error("Please specify --domains, or --installer that "
@@ -590,7 +591,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     except errors.PluginSelectionError, e:
         return e.message
 
-    domains = _find_domains(args, installer)
+    domains = _find_domains(config, installer)
 
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(args, config, authenticator, installer)
@@ -636,7 +637,7 @@ def obtain_cert(args, config, plugins):
             certr, chain, args.cert_path, args.chain_path, args.fullchain_path)
         _report_new_cert(cert_path, cert_fullchain)
     else:
-        domains = _find_domains(args, installer)
+        domains = _find_domains(config, installer)
         _auth_from_domains(le_client, config, domains)
 
     _suggest_donate()
@@ -654,7 +655,7 @@ def install(args, config, plugins):
     except errors.PluginSelectionError, e:
         return e.message
 
-    domains = _find_domains(args, installer)
+    domains = _find_domains(config, installer)
     le_client = _init_le_client(
         args, config, authenticator=None, installer=installer)
     assert args.cert_path is not None  # required=True in the subparser
