@@ -122,18 +122,12 @@ class NginxConfiguratorTest(util.NginxTest):
                    'abc.www.foo.com': "etc_nginx/foo.conf",
                    'www.bar.co.uk': "etc_nginx/nginx.conf"}
 
-        bad_results = ['www.foo.com', 'example', 't.www.bar.co',
-                       '69.255.225.155']
-
         for name in results:
             vhost = self.config.choose_vhost(name)
             path = os.path.relpath(vhost.filep, self.temp_dir)
 
             self.assertEqual(results[name], vhost.names)
             self.assertEqual(conf_path[name], path)
-
-        for name in bad_results:
-            self.assertEqual(set([name]), self.config.choose_vhost(name).names)
 
     def test_more_info(self):
         self.assertTrue('nginx.conf' in self.config.more_info())

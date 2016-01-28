@@ -219,17 +219,13 @@ class NginxConfigurator(common.Plugin):
         :rtype: :class:`~letsencrypt_nginx.obj.VirtualHost`
 
         """
-        vhost = None
-
         matches = self._get_ranked_matches(target_name)
         if not matches:
-            # No matches. Create a new vhost with this name in nginx.conf.
-            filep = self.parser.loc["root"]
-            new_block = [['server'], [['server_name', target_name]]]
-            self.parser.add_http_directives(filep, new_block)
-            vhost = obj.VirtualHost(filep, set([]), False, True,
-                                    set([target_name]), list(new_block[1]))
-        elif matches[0]['rank'] in xrange(2, 6):
+            logger.info("Virtual Host not found for %s", target_name)
+            return None
+
+
+        if matches[0]['rank'] in xrange(2, 6):
             # Wildcard match - need to find the longest one
             rank = matches[0]['rank']
             wildcards = [x for x in matches if x['rank'] == rank]
@@ -237,9 +233,8 @@ class NginxConfigurator(common.Plugin):
         else:
             vhost = matches[0]['vhost']
 
-        if vhost is not None:
-            if not vhost.ssl:
-                self._make_server_ssl(vhost)
+        if not vhost.ssl:
+            self._make_server_ssl(vhost)
 
         return vhost
 

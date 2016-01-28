@@ -65,8 +65,8 @@ class NginxTlsSni01(common.TLSSNI01):
                 if addr.default:
                     addresses.append([obj.Addr.fromstring(default_addr)])
                     break
-            else:
-                addresses.append(list(vhost.addrs))
+                else:
+                    addresses.append(list(vhost.addrs))
 
         # Create challenge certs
         responses = [self._setup_challenge_cert(x) for x in self.achalls]
