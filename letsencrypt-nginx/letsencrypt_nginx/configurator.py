@@ -239,6 +239,7 @@ class NginxConfigurator(common.Plugin):
 
     def _get_ranked_matches(self, target_name):
         """Returns a ranked list of vhosts that match target_name.
+        The ranking gives preference to SSL vhosts.
 
         :param str target_name: The name to match
         :returns: list of dicts containing the vhost, the matching name, and
