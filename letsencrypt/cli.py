@@ -113,12 +113,6 @@ def usage_strings(plugins):
 
 
 def _find_domains(args, installer):
-    # we get domains from -d, but also from the webroot map...
-    if args.webroot_map:
-        for domain in args.webroot_map.keys():
-            if domain not in args.domains:
-                args.domains.append(domain)
-
     if not args.domains:
         domains = display_ops.choose_names(installer)
     else:
@@ -834,6 +828,12 @@ class HelpfulArgumentParser(object):
         parsed_args.verb = self.verb
 
         # Do any post-parsing homework here
+
+        # we get domains from -d, but also from the webroot map...
+        if parsed_args.webroot_map:
+            for domain in parsed_args.webroot_map.keys():
+                if domain not in parsed_args.domains:
+                    parsed_args.domains.append(domain)
 
         # argparse seemingly isn't flexible enough to give us this behaviour easily...
         if parsed_args.staging:
