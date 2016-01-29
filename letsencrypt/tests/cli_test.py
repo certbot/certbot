@@ -374,18 +374,30 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         namespace = parse(long_args)
         self.assertEqual(namespace.domains, ['example.com', 'another.net'])
 
-    def test_parse_server(self):
+    def test_server_flag(self):
         parse = self._get_argument_parser()
-        short_args = ['--server', 'example.com']
-        namespace = parse(short_args)
+        namespace = parse('--server example.com'.split())
         self.assertEqual(namespace.server, 'example.com')
 
+    def _check_server_conflict_message(self, parser_args, conflicting_args):
+        parse = self._get_argument_parser()
+        try:
+            parse(parser_args)
+            self.fail("The following flags didn't conflict with "
+                      '--server: {0}'.format(', '.join(conflicting_args)))
+        except errors.Error as error:
+            self.assertTrue('--server' in error.message)
+            for arg in conflicting_args:
+                self.assertTrue(arg in error.message)
+
+    def test_staging_flag(self):
+        parse = self._get_argument_parser()
         short_args = ['--staging']
         namespace = parse(short_args)
         self.assertEqual(namespace.server, constants.STAGING_URI)
 
-        short_args = ['--staging', '--server', 'example.com']
-        self.assertRaises(errors.Error, parse, short_args)
+        short_args += '--server example.com'.split()
+        self._check_server_conflict_message(short_args, '--staging')
 
     def test_parse_webroot(self):
         parse = self._get_argument_parser()
