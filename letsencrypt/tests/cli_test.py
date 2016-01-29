@@ -1,6 +1,5 @@
 """Tests for letsencrypt.cli."""
 import argparse
-import copy
 import itertools
 import os
 import shutil
