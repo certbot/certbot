@@ -311,6 +311,7 @@ class NginxConfiguratorTest(util.NginxTest):
         responses = self.config.perform([achall1, achall_invalid])
         self.assertEqual(1, len(responses))
         self.assertEqual(mock_perform.call_count, 1)
+        self.assertEqual(mock_restart.call_count, 1)
 
     @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")
     def test_get_version(self, mock_popen):

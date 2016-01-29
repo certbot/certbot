@@ -153,7 +153,7 @@ class NginxConfigurator(common.Plugin):
 
         vhost = self.choose_vhost(domain)
         if vhost is None:
-          raise errors.PluginError("Virtual Host not found for domain: " + domain)
+            raise errors.PluginError("Virtual Host not found for domain: " + domain)
 
         cert_directives = [['ssl_certificate', fullchain_path],
                            ['ssl_certificate_key', key_path]]
@@ -376,12 +376,12 @@ class NginxConfigurator(common.Plugin):
             documentation for appropriate parameter.
 
         """
-        vhost = self.choose_vhost(domain, options)
+        vhost = self.choose_vhost(domain)
         if vhost is None:
-          raise errors.PluginError("Virtual Host not found for domain: " + domain)
+            raise errors.PluginError("Virtual Host not found for domain: " + domain)
 
         try:
-            return self._enhance_func[enhancement](vhost)
+            return self._enhance_func[enhancement](vhost, options)
         except (KeyError, ValueError):
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
@@ -630,8 +630,8 @@ class NginxConfigurator(common.Plugin):
                 chall_doer.add_chall(achall, i)
             else:
               # TODO: Handle feedback about domain without vhost
-              logger.info("As was not found a virtual host for domain %s, "
-                          "it will be ignored", achalls.domain)
+                logger.info("As was not found a virtual host for domain %s, "
+                            "it will be ignored", achall.domain)
 
         count_achalls = len(chall_doer.achalls)
         self._chall_out += count_achalls
