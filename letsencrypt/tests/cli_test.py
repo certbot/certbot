@@ -383,8 +383,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         parse = self._get_argument_parser()
         try:
             parse(parser_args)
-            self.fail("The following flags didn't conflict with "
-                      '--server: {0}'.format(', '.join(conflicting_args)))
+            self.fail(  # pragma: no cover
+                "The following flags didn't conflict with "
+                '--server: {0}'.format(', '.join(conflicting_args)))
         except errors.Error as error:
             self.assertTrue('--server' in error.message)
             for arg in conflicting_args:
@@ -442,6 +443,26 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         namespace = parse(webroot_map_args)
         self.assertEqual(namespace.webroot_map, {u"eg.com": u"/tmp"})
 
+    def _certonly_new_request_common(self, mock_client, args=None):
+        with mock.patch('letsencrypt.cli._treat_as_renewal') as mock_renewal:
+            mock_renewal.return_value = ("newcert", None)
+            with mock.patch('letsencrypt.cli._init_le_client') as mock_init:
+                mock_init.return_value = mock_client
+                if args is None:
+                    args = []
+                args += '-d foo.bar -a standalone certonly'.split()
+                self._call(args)
+
+    @mock.patch('letsencrypt.cli.zope.component.getUtility')
+    def test_certonly_dry_run_success(self, mock_get_utility):
+        mock_client = mock.MagicMock()
+        mock_client.obtain_and_enroll_certificate.return_value = None
+        self._certonly_new_request_common(mock_client, ['--dry-run'])
+        self.assertEqual(
+            mock_client.obtain_and_enroll_certificate.call_count, 1)
+        self.assertTrue(
+            'dry run' in mock_get_utility().add_message.call_args[0][0])
+
     @mock.patch('letsencrypt.cli._suggest_donate')
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
@@ -466,13 +487,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         mock_client.obtain_and_enroll_certificate.return_value = False
         self.assertRaises(errors.Error,
                           self._certonly_new_request_common, mock_client)
-
-    def _certonly_new_request_common(self, mock_client):
-        with mock.patch('letsencrypt.cli._treat_as_renewal') as mock_renewal:
-            mock_renewal.return_value = ("newcert", None)
-            with mock.patch('letsencrypt.cli._init_le_client') as mock_init:
-                mock_init.return_value = mock_client
-                self._call(['-d', 'foo.bar', '-a', 'standalone', 'certonly'])
 
     @mock.patch('letsencrypt.cli._suggest_donate')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')

@@ -383,6 +383,12 @@ def _suggest_donate():
     reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
 
 
+def _report_successful_dry_run():
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    reporter_util.add_message("The dry run was successful.",
+                              reporter_util.HIGH_PRIORITY, on_crash=False)
+
+
 def _auth_from_domains(le_client, config, domains):
     """Authenticate and enroll certificate."""
     # Note: This can raise errors... caught above us though. This is now
@@ -642,7 +648,10 @@ def obtain_cert(args, config, plugins):
         domains = _find_domains(args, installer)
         _auth_from_domains(le_client, config, domains)
 
-    _suggest_donate()
+    if args.dry_run:
+        _report_successful_dry_run()
+    else:
+        _suggest_donate()
 
 
 def install(args, config, plugins):
