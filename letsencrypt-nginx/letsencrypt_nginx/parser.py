@@ -54,14 +54,13 @@ class NginxParser(object):
                 if _is_include_directive(entry):
                     # Parse the top-level included file
                     self._parse_recursively(entry[1])
-                elif len(entry) > 0 and (entry[0] == ['http'] or entry[0] == ['server']):
+                elif entry and (entry[0] == ['http'] or entry[0] == ['server']):
                     # Look for includes in the top-level 'http'/'server' context
                     for subentry in entry[1]:
                         if _is_include_directive(subentry):
                             self._parse_recursively(subentry[1])
                         elif (entry[0] == ['http'] and
-                              len(subentry) > 0 and
-                              subentry[0] == ['server']):
+                              subentry and subentry[0] == ['server']):
                             # Look for includes in a 'server' context within
                             # an 'http' context
                             for server_entry in subentry[1]:
@@ -233,7 +232,7 @@ class NginxParser(object):
         :rtype: bool
 
         """
-        if len(names) == 0:
+        if not names:
             # Nothing to identify blocks with
             return False
 
@@ -248,7 +247,7 @@ class NginxParser(object):
                 # Can't be a server block
                 return False
 
-            if len(item) > 0 and item[0] == 'server_name':
+            if item and item[0] == 'server_name':
                 server_names.update(_get_servernames(item[1]))
 
         return server_names == names
@@ -361,19 +360,19 @@ def get_best_match(target_name, names):
         elif _regex_match(target_name, name):
             regex.append(name)
 
-    if len(exact) > 0:
+    if exact:
         # There can be more than one exact match; e.g. eff.org, .eff.org
         match = min(exact, key=len)
         return ('exact', match)
-    if len(wildcard_start) > 0:
+    if wildcard_start:
         # Return the longest wildcard
         match = max(wildcard_start, key=len)
         return ('wildcard_start', match)
-    if len(wildcard_end) > 0:
+    if wildcard_end:
         # Return the longest wildcard
         match = max(wildcard_end, key=len)
         return ('wildcard_end', match)
-    if len(regex) > 0:
+    if regex:
         # Just return the first one for now
         match = regex[0]
         return ('regex', match)
@@ -508,7 +507,7 @@ def _add_directive(block, directive, replace):
     # Find the index of a config line where the name of the directive matches
     # the name of the directive we want to add.
     for index, line in enumerate(block):
-        if len(line) > 0 and line[0] == directive[0]:
+        if line and line[0] == directive[0]:
             location = index
             break
     if replace:
@@ -537,4 +536,4 @@ def _add_directive(block, directive, replace):
 
 def _is_directive(block, directive):
     """Returns true if this block is of the directive type given."""
-    return len(block) > 0 and block[0] == directive
+    return block and block[0] == directive

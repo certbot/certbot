@@ -248,7 +248,7 @@ class RawNginxDumper(object):
         """Iterates the dumped nginx content."""
         blocks = blocks or self.blocks
         for block in blocks:
-            key = block[0] if len(block) > 0 else None
+            key = block[0] if block else None
             values = block[1] if len(block) > 1 else None
             comment = block[2] if len(block) > 2 else None
 
