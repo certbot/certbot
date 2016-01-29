@@ -115,7 +115,10 @@ def usage_strings(plugins):
 def _find_domains(config, installer):
     if not config.domains:
         # set args.domains so that it's written to the renewal conf file
-        domains = config.domains = display_ops.choose_names(installer)
+        domains = display_ops.choose_names(installer)
+        # record in config.domains, and set webroot_map entries if applicable
+        for d in domains:
+            _process_domain(config, d)
     else:
         domains = config.domains
 
@@ -1291,19 +1294,24 @@ class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
         config.webroot_path.append(webroot)
 
 
+def _process_domain(config, domain_arg):
+    """
+    Process a new -d flag, helping the webroot plugin construct a map of
+    {domain : webrootpath} if -w / --webroot-path is in use
+    """
+    for domain in (d.strip() for d in domain_arg.split(",")):
+        if domain not in config.domains:
+            config.domains.append(domain)
+            # Each domain has a webroot_path of the most recent -w flag
+            # unless it was explicitly included in webroot_map
+            if config.webroot_path:
+                config.webroot_map.setdefault(domain, config.webroot_path[-1])
+
+
 class DomainFlagProcessor(argparse.Action): # pylint: disable=missing-docstring
     def __call__(self, parser, config, domain_arg, option_string=None):
-        """
-        Process a new -d flag, helping the webroot plugin construct a map of
-        {domain : webrootpath} if -w / --webroot-path is in use
-        """
-        for domain in (d.strip() for d in domain_arg.split(",")):
-            if domain not in config.domains:
-                config.domains.append(domain)
-                # Each domain has a webroot_path of the most recent -w flag
-                # unless it was explicitly included in webroot_map
-                if config.webroot_path:
-                    config.webroot_map.setdefault(domain, config.webroot_path[-1])
+        """Just wrap _process_domain in argparseese."""
+        _process_domain(config, domain_arg)
 
 
 def setup_log_file_handler(args, logfile, fmt):
