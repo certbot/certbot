@@ -865,6 +865,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         fp = vhost.filep
         vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
                               (fp, parser.case_i("VirtualHost")))
+        if not vh_p:
+            return
         vh_path = vh_p[0]
         if (self.parser.find_dir("ServerName", target_name, start=vh_path, exclude=False)
            or self.parser.find_dir("ServerAlias", target_name, start=vh_path, exclude=False)):
