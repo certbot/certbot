@@ -421,18 +421,18 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertRaises(errors.Error, cli.prepare_and_parse_args, plugins, webroot_args)
 
         simple_map = '{"eg.com" : "/tmp"}'
-        expected_map = {u"eg.com": u"/tmp"}
+        expected_map = {"eg.com": "/tmp"}
         self._webroot_map_test(simple_map, None, None, expected_map, ["eg.com"])
 
         # test merging webroot maps from the cli and a webroot map
-        expected_map[u"eg2.com"] = u"/tmp2"
+        expected_map["eg2.com"] = "/tmp2"
         domains = ["eg.com", "eg2.com"]
         self._webroot_map_test(simple_map, "/tmp2", "eg2.com,eg.com", expected_map, domains)
 
         # test inclusion of interactively specified domains in the webroot map
         with mock.patch('letsencrypt.cli.display_ops.choose_names') as mock_choose:
             mock_choose.return_value = domains
-            expected_map[u"eg2.com"] = u"/tmp"
+            expected_map["eg2.com"] = "/tmp"
             self._webroot_map_test(None, "/tmp", None, expected_map, domains)
 
         extra_args = ['-c', test_util.vector_path('webrootconftest.ini')]
@@ -442,7 +442,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                             '{"eg.com.,www.eg.com": "/tmp", "eg.is.": "/tmp2"}']
         namespace = cli.prepare_and_parse_args(plugins, webroot_map_args)
         self.assertEqual(namespace.webroot_map,
-                         {u"eg.com": u"/tmp", u"www.eg.com": u"/tmp", u"eg.is": "/tmp2"})
+                         {"eg.com": "/tmp", "www.eg.com": "/tmp", "eg.is": "/tmp2"})
 
     @mock.patch('letsencrypt.cli._suggest_donate')
     @mock.patch('letsencrypt.crypto_util.notAfter')
