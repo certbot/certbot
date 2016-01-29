@@ -1308,14 +1308,14 @@ def _process_domain(config, domain_arg, webroot_path=None):
             # Each domain has a webroot_path of the most recent -w flag
             # unless it was explicitly included in webroot_map
             if webroot_path:
-                config.webroot_map.setdefault(domain, config.webroot_path[-1])
+                config.webroot_map.setdefault(domain, webroot_path[-1])
 
 
 class WebrootMapProcessor(argparse.Action): # pylint: disable=missing-docstring
     def __call__(self, parser, config, webroot_map_arg, option_string=None):
         webroot_map = json.loads(webroot_map_arg)
         for domains, webroot_path in webroot_map.iteritems():
-            _process_domain(config, domains, webroot)
+            _process_domain(config, domains, [webroot_path])
 
 
 class DomainFlagProcessor(argparse.Action): # pylint: disable=missing-docstring
