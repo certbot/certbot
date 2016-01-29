@@ -383,9 +383,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertRaises(errors.Error, cli.prepare_and_parse_args, plugins, short_args)
 
     def _webroot_map_test(self, map_arg, path_arg, domains_arg,
-                                       expected_map, expectect_domains):
+                          expected_map, expectect_domains, extra_args=[]):
         plugins = disco.PluginsRegistry.find_all()
-        webroot_map_args = []
+        webroot_map_args = [] + extra_args
         if map_arg:
             webroot_map_args.extend(["--webroot-map", map_arg])
         if path_arg:
@@ -426,6 +426,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mock_choose.return_value = domains
             expected_map[u"eg2.com"] = u"/tmp"
             self._webroot_map_test(None, "/tmp", None, expected_map, domains)
+
+        extra_args = ['-c', test_util.vector_path('webrootconftest.ini')]
+        self._webroot_map_test(None, None, None, expected_map, domains, extra_args)
 
 
     @mock.patch('letsencrypt.cli._suggest_donate')
