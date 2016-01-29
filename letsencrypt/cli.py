@@ -515,6 +515,8 @@ def cli_plugin_requests(args):
         req_auth = set_configurator(req_auth, "webroot")
     if args.manual:
         req_auth = set_configurator(req_auth, "manual")
+    if args.ftp:
+        req_auth = set_configurator(req_auth, "ftp")
     logger.debug("Requested authenticator %s and installer %s", req_auth, req_inst)
     return req_auth, req_inst
 
@@ -1232,6 +1234,8 @@ def _plugins_parsing(helpful, plugins):
                 help='Obtain certs using a "standalone" webserver.')
     helpful.add("plugins", "--manual", action="store_true",
                 help='Provide laborious manual instructions for obtaining a cert')
+    helpful.add("plugins", "--ftp", action="store_true",
+                help='Obtain certs by FTPing files to a webroot directory.')
     helpful.add("plugins", "--webroot", action="store_true",
                 help='Obtain certs by placing files in a webroot directory.')
 
@@ -1240,6 +1244,8 @@ def _plugins_parsing(helpful, plugins):
     # specific groups (so that plugins_group.description makes sense)
 
     helpful.add_plugin_args(plugins)
+
+    parse_dict = lambda s: dict(json.loads(s))
 
     # These would normally be a flag within the webroot plugin, but because
     # they are parsed in conjunction with --domains, they live here for
@@ -1250,10 +1256,50 @@ def _plugins_parsing(helpful, plugins):
                      "handle different domains; each domain will have the webroot path that"
                      " preceded it.  For instance: `-w /var/www/example -d example.com -d "
                      "www.example.com -w /var/www/thing -d thing.net -d m.thing.net`")
-    parse_dict = lambda s: dict(json.loads(s))
     # --webroot-map still has some awkward properties, so it is undocumented
     helpful.add("webroot", "--webroot-map", default={}, type=parse_dict,
                 help=argparse.SUPPRESS)
+
+    # These would normally be a flag within the FTP plugin, but because
+    # they are parsed in conjunction with --domains, they live here for
+    # legibility. helpful.add_plugin_ags must be called first to add the
+    # "ftp" topic
+    helpful.add("ftp", "-W", "--ftp-webroot-path", action=FTPWebrootPathProcessor,
+                help="public_html / webroot path. This can be specified multiple times to "
+                     "handle different domains; each domain will have the webroot path that"
+                     " preceded it.  For instance: `-W username@host:/var/www/example "
+                     "-d example.com -d www.example.com -W username@host:/var/www/thing "
+                     "-d thing.net -d m.thing.net`")
+    # --ftp-webroot-map still has some awkward properties, so it is undocumented
+    helpful.add("ftp", "--ftp-webroot-map", default={}, type=parse_dict,
+                help=argparse.SUPPRESS)
+
+
+class FTPWebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
+    def __init__(self, *args, **kwargs):
+        self.domain_before_webroot = False
+        argparse.Action.__init__(self, *args, **kwargs)
+
+    def __call__(self, parser, config, webroot, option_string=None):
+        """
+        Keep a record of --ftp-webroot-path / -w flags during processing, so that
+        we know which apply to which -d flags
+        """
+        if config.ftp_webroot_path is None:      # first -w flag encountered
+            config.ftp_webroot_path = []
+            # if any --domain flags preceded the first --ftp-webroot-path flag,
+            # apply that webroot path to those; subsequent entries in
+            # config.ftp_webroot_map are filled in by cli.DomainFlagProcessor
+            if config.domains:
+                self.domain_before_webroot = True
+                for d in config.domains:
+                    config.ftp_webroot_map.setdefault(d, webroot)
+        elif self.domain_before_webroot:
+            # FIXME if you set domains in a config file, you should get a different error
+            # here, pointing you to --ftp-webroot-map
+            raise errors.Error("If you specify multiple FTP webroot paths, one of "
+                               "them must precede all domain flags")
+        config.ftp_webroot_path.append(webroot)
 
 
 class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
@@ -1286,8 +1332,8 @@ class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
 class DomainFlagProcessor(argparse.Action): # pylint: disable=missing-docstring
     def __call__(self, parser, config, domain_arg, option_string=None):
         """
-        Process a new -d flag, helping the webroot plugin construct a map of
-        {domain : webrootpath} if -w / --webroot-path is in use
+        Process a new -d flag, helping the webroot and ftp plugins construct a
+        map of {domain : webrootpath} if -w / --webroot-path is in use
         """
         for domain in (d.strip() for d in domain_arg.split(",")):
             if domain not in config.domains:
@@ -1295,6 +1341,10 @@ class DomainFlagProcessor(argparse.Action): # pylint: disable=missing-docstring
                 # Each domain has a webroot_path of the most recent -w flag
                 if config.webroot_path:
                     config.webroot_map[domain] = config.webroot_path[-1]
+                # Each domain has an ftp_webroot_path of the most recent
+                # --ftp-webroot-path flag
+                if config.ftp_webroot_path:
+                    config.ftp_webroot_map[domain] = config.ftp_webroot_path[-1]
 
 
 def setup_log_file_handler(args, logfile, fmt):
