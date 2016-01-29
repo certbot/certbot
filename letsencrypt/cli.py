@@ -1261,11 +1261,10 @@ def _plugins_parsing(helpful, plugins):
                      "handle different domains; each domain will have the webroot path that"
                      " preceded it.  For instance: `-w /var/www/example -d example.com -d "
                      "www.example.com -w /var/www/thing -d thing.net -d m.thing.net`")
-    parse_dict = lambda s: dict(json.loads(s))
     # --webroot-map still has some awkward properties, so it is undocumented
-    helpful.add("webroot", "--webroot-map", default={}, type=parse_dict,
-        help="JSON dictionary mapping domains to webroot paths; this implies -d for each entry.")
-
+    helpful.add("webroot", "--webroot-map", default={}, action=WebrootMapProcessor,
+        help="JSON dictionary mapping domains to webroot paths; this implies -d "
+             "for each entry.")
 
 class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
     def __init__(self, *args, **kwargs):
@@ -1293,25 +1292,37 @@ class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
                                "them must precede all domain flags")
         config.webroot_path.append(webroot)
 
+_undot = lambda domain : domain[:-1] if domain.endswith('.') else domain
 
-def _process_domain(config, domain_arg):
+def _process_domain(config, domain_arg, webroot_path=None):
     """
     Process a new -d flag, helping the webroot plugin construct a map of
     {domain : webrootpath} if -w / --webroot-path is in use
     """
+    webroot_path = webroot_path if webroot_path else config.webroot_path
+
     for domain in (d.strip() for d in domain_arg.split(",")):
         if domain not in config.domains:
+            domain = _undot(domain)
             config.domains.append(domain)
             # Each domain has a webroot_path of the most recent -w flag
             # unless it was explicitly included in webroot_map
-            if config.webroot_path:
+            if webroot_path:
                 config.webroot_map.setdefault(domain, config.webroot_path[-1])
+
+
+class WebrootMapProcessor(argparse.Action): # pylint: disable=missing-docstring
+    def __call__(self, parser, config, webroot_map_arg, option_string=None):
+        webroot_map = json.loads(webroot_map_arg)
+        for domains, webroot_path in webroot_map.iteritems():
+            _process_domain(config, domains, webroot)
 
 
 class DomainFlagProcessor(argparse.Action): # pylint: disable=missing-docstring
     def __call__(self, parser, config, domain_arg, option_string=None):
         """Just wrap _process_domain in argparseese."""
         _process_domain(config, domain_arg)
+
 
 
 def setup_log_file_handler(args, logfile, fmt):

@@ -356,6 +356,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         namespace = cli.prepare_and_parse_args(plugins, short_args)
         self.assertEqual(namespace.domains, ['example.com'])
 
+        short_args = ['-d', 'trailing.period.com.']
+        namespace = cli.prepare_and_parse_args(plugins, short_args)
+        self.assertEqual(namespace.domains, ['trailing.period.com'])
+
         short_args = ['-d', 'example.com,another.net,third.org,example.com']
         namespace = cli.prepare_and_parse_args(plugins, short_args)
         self.assertEqual(namespace.domains, ['example.com', 'another.net',
@@ -364,6 +368,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         long_args = ['--domains', 'example.com']
         namespace = cli.prepare_and_parse_args(plugins, long_args)
         self.assertEqual(namespace.domains, ['example.com'])
+
+        long_args = ['--domains', 'trailing.period.com.']
+        namespace = cli.prepare_and_parse_args(plugins, long_args)
+        self.assertEqual(namespace.domains, ['trailing.period.com'])
 
         long_args = ['--domains', 'example.com,another.net,example.com']
         namespace = cli.prepare_and_parse_args(plugins, long_args)
@@ -401,7 +409,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         plugins = disco.PluginsRegistry.find_all()
         webroot_args = ['--webroot', '-w', '/var/www/example',
             '-d', 'example.com,www.example.com', '-w', '/var/www/superfluous',
-            '-d', 'superfluo.us', '-d', 'www.superfluo.us']
+            '-d', 'superfluo.us', '-d', 'www.superfluo.us.']
         namespace = cli.prepare_and_parse_args(plugins, webroot_args)
         self.assertEqual(namespace.webroot_map, {
             'example.com': '/var/www/example',
@@ -430,6 +438,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         extra_args = ['-c', test_util.vector_path('webrootconftest.ini')]
         self._webroot_map_test(None, None, None, expected_map, domains, extra_args)
 
+        webroot_map_args = ['--webroot-map',
+                            '{"eg.com.,www.eg.com": "/tmp", "eg.is.": "/tmp2"}']
+        namespace = cli.prepare_and_parse_args(plugins, webroot_map_args)
+        self.assertEqual(namespace.webroot_map,
+                         {u"eg.com": u"/tmp", u"www.eg.com": u"/tmp", u"eg.is": "/tmp2"})
 
     @mock.patch('letsencrypt.cli._suggest_donate')
     @mock.patch('letsencrypt.crypto_util.notAfter')
