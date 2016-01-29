@@ -1294,7 +1294,7 @@ class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
                                "them must precede all domain flags")
         config.webroot_path.append(webroot)
 
-_undot = lambda domain : domain[:-1] if domain.endswith('.') else domain
+_undot = lambda domain: domain[:-1] if domain.endswith('.') else domain
 
 def _process_domain(config, domain_arg, webroot_path=None):
     """
