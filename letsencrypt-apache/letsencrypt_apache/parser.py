@@ -597,7 +597,7 @@ class ApacheParser(object):
         .. todo:: Make sure that files are included
 
         """
-        default = self._set_user_config_file()
+        default = self.loc["root"]
 
         temp = os.path.join(self.root, "ports.conf")
         if os.path.isfile(temp):
@@ -617,23 +617,6 @@ class ApacheParser(object):
                 return os.path.join(self.root, name)
 
         raise errors.NoInstallationError("Could not find configuration root")
-
-    def _set_user_config_file(self):
-        """Set the appropriate user configuration file
-
-        .. todo:: This will have to be updated for other distros versions
-
-        :param str root: pathname which contains the user config
-
-        """
-        # Basic check to see if httpd.conf exists and
-        # in hierarchy via direct include
-        # httpd.conf was very common as a user file in Apache 2.2
-        if (os.path.isfile(os.path.join(self.root, "httpd.conf")) and
-                self.find_dir("Include", "httpd.conf", self.loc["root"])):
-            return os.path.join(self.root, "httpd.conf")
-        else:
-            return os.path.join(self.root, "apache2.conf")
 
 
 def case_i(string):
