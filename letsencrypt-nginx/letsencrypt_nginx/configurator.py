@@ -310,11 +310,11 @@ class NginxConfigurator(common.Plugin):
         key = OpenSSL.crypto.load_privatekey(
             OpenSSL.crypto.FILETYPE_PEM, le_key.pem)
         cert = acme_crypto_util.gen_ss_cert(key, domains=[socket.gethostname()])
-        cert_path = os.path.join(tmp_dir, "cert.pem")
         cert_pem = OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, cert)
-        with open(cert_path, 'w') as cert_file:
-            cert_file.write(cert_pem)
+        cert_file, cert_path = le_util.unique_file(os.path.join(tmp_dir, "cert.pem"))
+        cert_file.write(cert_pem)
+        cert_file.close()
         return cert_path, le_key.file
 
     def _make_server_ssl(self, vhost):
