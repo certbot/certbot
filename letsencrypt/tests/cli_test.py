@@ -402,6 +402,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def _assert_dry_run_flag_worked(self, namespace):
         self.assertTrue(namespace.dry_run)
+        self.assertTrue(namespace.break_my_certs)
         self.assertTrue(namespace.staging)
         self.assertEqual(namespace.server, constants.STAGING_URI)
 

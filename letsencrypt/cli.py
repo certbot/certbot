@@ -845,7 +845,7 @@ class HelpfulArgumentParser(object):
                 if self.verb != "certonly":
                     raise errors.Error("--dry-run currently only works with the "
                                        "'certonly' subcommand")
-                parsed_args.staging = True
+                parsed_args.break_my_certs = parsed_args.staging = True
 
         return parsed_args
 
