@@ -276,8 +276,8 @@ class Client(object):
         :param plugins: A PluginsFactory object.
 
         :returns: A new :class:`letsencrypt.storage.RenewableCert` instance
-            referred to the enrolled cert lineage, or False if the cert could
-            not be obtained.
+            referred to the enrolled cert lineage, False if the cert could not
+            be obtained, or None if doing a successful dry run.
 
         """
         certr, chain, key, _ = self.obtain_certificate(domains)
@@ -298,12 +298,14 @@ class Client(object):
                 "Non-standard path(s), might not work with crontab installed "
                 "by your operating system package manager")
 
-        lineage = storage.RenewableCert.new_lineage(
-            domains[0], OpenSSL.crypto.dump_certificate(
-                OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped),
-            key.pem, crypto_util.dump_pyopenssl_chain(chain),
-            params, config, cli_config)
-        return lineage
+        if cli_config.dry_run:
+            return None
+        else:
+            return storage.RenewableCert.new_lineage(
+                domains[0], OpenSSL.crypto.dump_certificate(
+                    OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped),
+                key.pem, crypto_util.dump_pyopenssl_chain(chain),
+                params, config, cli_config)
 
     def save_certificate(self, certr, chain_cert,
                          cert_path, chain_path, fullchain_path):
