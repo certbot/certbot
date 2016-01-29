@@ -205,7 +205,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         with open(self.test_rc.cert, "w") as f:
             f.write("cert")
         with self.assertRaises(errors.CertStorageError) as cm:
-            self.test_rc.current_target("cert"),
+            self.test_rc.current_target("cert")
         self.assertTrue('cert.pem to be a symlink' in cm.exception.message)
 
     def test_current_version(self):
