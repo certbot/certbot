@@ -1593,4 +1593,4 @@ def install_ssl_options_conf(options_ssl):
 
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):
-        shutil.copyfile(constants.MOD_SSL_CONF_SRC, options_ssl)
+        shutil.copyfile(constants.os_constant("MOD_SSL_CONF_SRC"), options_ssl)

@@ -16,7 +16,9 @@ CLI_DEFAULTS_DEBIAN = dict(
     le_vhost_ext="-le-ssl.conf",
     handle_mods=True,
     handle_sites=True,
-    challenge_location="/etc/apache2"
+    challenge_location="/etc/apache2",
+    MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
+    "letsencrypt_apache", "options-ssl-apache.conf")
 )
 CLI_DEFAULTS_CENTOS = dict(
     server_root="/etc/httpd",
@@ -31,7 +33,9 @@ CLI_DEFAULTS_CENTOS = dict(
     le_vhost_ext="-le-ssl.conf",
     handle_mods=False,
     handle_sites=False,
-    challenge_location="/etc/httpd/conf.d"
+    challenge_location="/etc/httpd/conf.d",
+    MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
+    "letsencrypt_apache", "centos-options-ssl-apache.conf")
 )
 CLI_DEFAULTS_GENTOO = dict(
     server_root="/etc/apache2",
@@ -46,7 +50,9 @@ CLI_DEFAULTS_GENTOO = dict(
     le_vhost_ext="-le-ssl.conf",
     handle_mods=False,
     handle_sites=False,
-    challenge_location="/etc/apache2/vhosts.d"
+    challenge_location="/etc/apache2/vhosts.d",
+    MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
+    "letsencrypt_apache", "options-ssl-apache.conf")
 )
 CLI_DEFAULTS = {
     "debian": CLI_DEFAULTS_DEBIAN,
@@ -61,11 +67,6 @@ CLI_DEFAULTS = {
 
 MOD_SSL_CONF_DEST = "options-ssl-apache.conf"
 """Name of the mod_ssl config file as saved in `IConfig.config_dir`."""
-
-MOD_SSL_CONF_SRC = pkg_resources.resource_filename(
-    "letsencrypt_apache", "options-ssl-apache.conf")
-"""Path to the Apache mod_ssl config file found in the Let's Encrypt
-distribution."""
 
 AUGEAS_LENS_DIR = pkg_resources.resource_filename(
     "letsencrypt_apache", "augeas_lens")
