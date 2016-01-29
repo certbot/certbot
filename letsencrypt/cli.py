@@ -114,9 +114,9 @@ def usage_strings(plugins):
 
 def _find_domains(config, installer):
     if not config.domains:
-        # set args.domains so that it's written to the renewal conf file
         domains = display_ops.choose_names(installer)
-        # record in config.domains, and set webroot_map entries if applicable
+        # record in config.domains (so that it can be serialised in renewal config files),
+        # and set webroot_map entries if applicable
         for d in domains:
             _process_domain(config, d)
     else:
