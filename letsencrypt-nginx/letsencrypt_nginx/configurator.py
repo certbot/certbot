@@ -152,6 +152,9 @@ class NginxConfigurator(common.Plugin):
                 "install a cert.")
 
         vhost = self.choose_vhost(domain)
+        if vhost is None:
+          raise errors.PluginError("Virtual Host not found for domain: " + domain)
+
         cert_directives = [['ssl_certificate', fullchain_path],
                            ['ssl_certificate_key', key_path]]
 
@@ -373,9 +376,12 @@ class NginxConfigurator(common.Plugin):
             documentation for appropriate parameter.
 
         """
+        vhost = self.choose_vhost(domain, options)
+        if vhost is None:
+          raise errors.PluginError("Virtual Host not found for domain: " + domain)
+
         try:
-            return self._enhance_func[enhancement](
-                self.choose_vhost(domain), options)
+            return self._enhance_func[enhancement](vhost)
         except (KeyError, ValueError):
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
@@ -622,6 +628,10 @@ class NginxConfigurator(common.Plugin):
             # we will filter out this domains before to perform TLS challenge
             if self.choose_vhost(achall.domain) is not None:
                 chall_doer.add_chall(achall, i)
+            else:
+              # TODO: Handle feedback about domain without vhost
+              logger.info("As was not found a virtual host for domain %s, "
+                          "it will be ignored", achalls.domain)
 
         count_achalls = len(chall_doer.achalls)
         self._chall_out += count_achalls
