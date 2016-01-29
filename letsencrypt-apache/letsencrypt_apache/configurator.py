@@ -303,8 +303,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if temp:
                 return vhost
             if not vhost.ssl:
-                vhost = self.make_vhost_ssl(vhost, target_name)
+                vhost = self.make_vhost_ssl(vhost)
 
+            self._add_servername_alias(target_name, vhost)
             self.assoc[target_name] = vhost
             return vhost
 
@@ -326,7 +327,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # TODO: Conflicts is too conservative
             if not any(vhost.enabled and vhost.conflicts(addrs) for
                        vhost in self.vhosts):
-                vhost = self.make_vhost_ssl(vhost, target_name)
+                vhost = self.make_vhost_ssl(vhost)
             else:
                 logger.error(
                     "The selected vhost would conflict with other HTTPS "
@@ -335,6 +336,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 raise errors.PluginError(
                     "VirtualHost not able to be selected.")
 
+        self._add_servername_alias(target_name, vhost)
         self.assoc[target_name] = vhost
         return vhost
 
@@ -665,7 +667,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                              "based virtual host", addr)
                 self.add_name_vhost(addr)
 
-    def make_vhost_ssl(self, nonssl_vhost, target_name=None):  # pylint: disable=too-many-locals
+    def make_vhost_ssl(self, nonssl_vhost):  # pylint: disable=too-many-locals
         """Makes an ssl_vhost version of a nonssl_vhost.
 
         Duplicates vhost and adds default ssl options
@@ -709,8 +711,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Add directives
         self._add_dummy_ssl_directives(vh_p)
         self.save()
-        if target_name:
-            self._add_servername_alias(target_name, vh_p)
 
         # Log actions and create save notes
         logger.info("Created an SSL vhost at %s", ssl_fp)
@@ -861,7 +861,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                             "insert_key_file_path")
         self.parser.add_dir(vh_path, "Include", self.mod_ssl_conf)
 
-    def _add_servername_alias(self, target_name, vh_path):
+    def _add_servername_alias(self, target_name, vhost):
+        fp = vhost.filep
+        vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
+                              (ssl_fp, parser.case_i("VirtualHost")))
+        vh_path = vh_p[0]
         if (self.parser.find_dir("ServerName", target_name, start=vh_path, exclude=False)
            or self.parser.find_dir("ServerAlias", target_name, start=vh_path, exclude=False)):
             return
