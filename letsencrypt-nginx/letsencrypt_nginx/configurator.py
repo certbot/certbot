@@ -313,8 +313,8 @@ class NginxConfigurator(common.Plugin):
         cert_pem = OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, cert)
         cert_file, cert_path = le_util.unique_file(os.path.join(tmp_dir, "cert.pem"))
-        cert_file.write(cert_pem)
-        cert_file.close()
+        with cert_file:
+            cert_file.write(cert_pem)
         return cert_path, le_key.file
 
     def _make_server_ssl(self, vhost):
