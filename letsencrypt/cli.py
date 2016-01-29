@@ -416,12 +416,14 @@ def _auth_from_domains(le_client, config, domains):
     elif action == "newcert":
         # TREAT AS NEW REQUEST
         lineage = le_client.obtain_and_enroll_certificate(domains)
-        if not lineage:
+        if lineage is False:
             raise errors.Error("Certificate could not be obtained")
 
-    _report_new_cert(lineage.cert, lineage.fullchain)
+    if lineage is not None:
+        _report_new_cert(lineage.cert, lineage.fullchain)
 
     return lineage, action
+
 
 def _avoid_invalidating_lineage(config, lineage, original_server):
     "Do not renew a valid cert with one from a staging server!"
