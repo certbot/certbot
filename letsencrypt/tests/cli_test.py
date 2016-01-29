@@ -382,10 +382,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         short_args = ['--staging', '--server', 'example.com']
         self.assertRaises(errors.Error, cli.prepare_and_parse_args, plugins, short_args)
 
-    def _webroot_map_test(self, map_arg, path_arg, domains_arg,
-                          expected_map, expectect_domains, extra_args=[]):
+    def _webroot_map_test(self, map_arg, path_arg, domains_arg, # pylint: disable=too-many-arguments
+                          expected_map, expectect_domains, extra_args=None):
         plugins = disco.PluginsRegistry.find_all()
-        webroot_map_args = [] + extra_args
+        webroot_map_args = extra_args if extra_args else []
         if map_arg:
             webroot_map_args.extend(["--webroot-map", map_arg])
         if path_arg:
@@ -393,7 +393,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         if domains_arg:
             webroot_map_args.extend(["-d", domains_arg])
         namespace = cli.prepare_and_parse_args(plugins, webroot_map_args)
-        domains = cli._find_domains(namespace, mock.MagicMock())
+        domains = cli._find_domains(namespace, mock.MagicMock()) # pylint: disable=protected-access
         self.assertEqual(namespace.webroot_map, expected_map)
         self.assertEqual(set(domains), set(expectect_domains))
 
@@ -413,7 +413,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertRaises(errors.Error, cli.prepare_and_parse_args, plugins, webroot_args)
 
         simple_map = '{"eg.com" : "/tmp"}'
-        expected_map = {u"eg.com" : u"/tmp"}
+        expected_map = {u"eg.com": u"/tmp"}
         self._webroot_map_test(simple_map, None, None, expected_map, ["eg.com"])
 
         # test merging webroot maps from the cli and a webroot map
