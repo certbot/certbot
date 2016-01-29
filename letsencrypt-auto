@@ -126,7 +126,7 @@ then
   elif [ -f /etc/redhat-release ] ; then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
     $SUDO $BOOTSTRAP/_rpm_common.sh
-  elif `grep -q openSUSE /etc/os-release` ; then
+  elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
     echo "Bootstrapping dependencies for openSUSE-based OSes..."
     $SUDO $BOOTSTRAP/_suse_common.sh
   elif [ -f /etc/arch-release ] ; then
