@@ -1,5 +1,6 @@
 """Tests for letsencrypt.cli."""
 import argparse
+import copy
 import itertools
 import os
 import shutil
@@ -382,6 +383,21 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         short_args = ['--staging', '--server', 'example.com']
         self.assertRaises(errors.Error, cli.prepare_and_parse_args, plugins, short_args)
 
+    def _webroot_map_test(self, map_arg, path_arg, domains_arg,
+                                       expected_map, expectect_domains):
+        plugins = disco.PluginsRegistry.find_all()
+        webroot_map_args = []
+        if map_arg:
+            webroot_map_args.extend(["--webroot-map", map_arg])
+        if path_arg:
+            webroot_map_args.extend(["-w", path_arg])
+        if domains_arg:
+            webroot_map_args.extend(["-d", domains_arg])
+        namespace = cli.prepare_and_parse_args(plugins, webroot_map_args)
+        domains = cli._find_domains(namespace, mock.MagicMock())
+        self.assertEqual(namespace.webroot_map, expected_map)
+        self.assertEqual(set(domains), set(expectect_domains))
+
     def test_parse_webroot(self):
         plugins = disco.PluginsRegistry.find_all()
         webroot_args = ['--webroot', '-w', '/var/www/example',
@@ -397,21 +413,21 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         webroot_args = ['-d', 'stray.example.com'] + webroot_args
         self.assertRaises(errors.Error, cli.prepare_and_parse_args, plugins, webroot_args)
 
-        webroot_map_args = ['--webroot-map', '{"eg.com" : "/tmp"}']
-        namespace = cli.prepare_and_parse_args(plugins, webroot_map_args)
-        domains = cli._find_domains(namespace, mock.MagicMock())
-        expected_map = {u"eg.com": u"/tmp"}
-        self.assertEqual(namespace.webroot_map, expected_map)
-        self.assertEqual(domains, ["eg.com"])
+        simple_map = '{"eg.com" : "/tmp"}'
+        expected_map = {u"eg.com" : u"/tmp"}
+        self._webroot_map_test(simple_map, None, None, expected_map, ["eg.com"])
 
         # test merging webroot maps from the cli and a webroot map
-        webroot_map_args.extend(["-w", "/tmp2", "-d", "eg2.com,eg.com"])
-        namespace = cli.prepare_and_parse_args(plugins, webroot_map_args)
-        domains = cli._find_domains(namespace, mock.MagicMock())
-        # for eg.com, --webroot-map should take precedence over -w / -d
         expected_map[u"eg2.com"] = u"/tmp2"
-        self.assertEqual(namespace.webroot_map, expected_map)
-        self.assertEqual(set(domains), set(["eg.com", "eg2.com"]))
+        domains = ["eg.com", "eg2.com"]
+        self._webroot_map_test(simple_map, "/tmp2", "eg2.com,eg.com", expected_map, domains)
+
+        # test inclusion of interactively specified domains in the webroot map
+        with mock.patch('letsencrypt.cli.display_ops.choose_names') as mock_choose:
+            mock_choose.return_value = domains
+            expected_map[u"eg2.com"] = u"/tmp"
+            self._webroot_map_test(None, "/tmp", None, expected_map, domains)
+
 
     @mock.patch('letsencrypt.cli._suggest_donate')
     @mock.patch('letsencrypt.crypto_util.notAfter')
