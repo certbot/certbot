@@ -634,9 +634,10 @@ def obtain_cert(args, config, plugins):
     if args.csr is not None:
         certr, chain = le_client.obtain_certificate_from_csr(le_util.CSR(
             file=args.csr[0], data=args.csr[1], form="der"))
-        cert_path, _, cert_fullchain = le_client.save_certificate(
-            certr, chain, args.cert_path, args.chain_path, args.fullchain_path)
-        _report_new_cert(cert_path, cert_fullchain)
+        if not args.dry_run:
+            cert_path, _, cert_fullchain = le_client.save_certificate(
+                certr, chain, args.cert_path, args.chain_path, args.fullchain_path)
+            _report_new_cert(cert_path, cert_fullchain)
     else:
         domains = _find_domains(args, installer)
         _auth_from_domains(le_client, config, domains)
