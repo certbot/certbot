@@ -394,10 +394,33 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         parse = self._get_argument_parser()
         short_args = ['--staging']
         namespace = parse(short_args)
+        self.assertTrue(namespace.staging)
         self.assertEqual(namespace.server, constants.STAGING_URI)
 
         short_args += '--server example.com'.split()
         self._check_server_conflict_message(short_args, '--staging')
+
+    def _assert_dry_run_flag_worked(self, namespace):
+        self.assertTrue(namespace.dry_run)
+        self.assertTrue(namespace.staging)
+        self.assertEqual(namespace.server, constants.STAGING_URI)
+
+    def test_dry_run_flag(self):
+        parse = self._get_argument_parser()
+        short_args = ['--dry-run']
+        self.assertRaises(errors.Error, parse, short_args)
+
+        self._assert_dry_run_flag_worked(parse(short_args + ['auth']))
+        short_args += ['certonly']
+        self._assert_dry_run_flag_worked(parse(short_args))
+
+        short_args += '--server example.com'.split()
+        conflicts = ['--dry-run']
+        self._check_server_conflict_message(short_args, '--dry-run')
+
+        short_args += ['--staging']
+        conflicts += ['--staging']
+        self._check_server_conflict_message(short_args, conflicts)
 
     def test_parse_webroot(self):
         parse = self._get_argument_parser()

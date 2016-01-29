@@ -827,15 +827,24 @@ class HelpfulArgumentParser(object):
         parsed_args.verb = self.verb
 
         # Do any post-parsing homework here
+        if parsed_args.staging or parsed_args.dry_run:
+            if (parsed_args.server not in
+                    (flag_default("server"), constants.STAGING_URI)):
+                conflicts = ["--staging"] if parsed_args.staging else []
+                if parsed_args.dry_run:
+                    conflicts.append("--dry-run")
+                raise errors.Error("--server value conflicts with {0}".format(
+                    " and ".join(conflicts)))
 
-        # argparse seemingly isn't flexible enough to give us this behaviour easily...
-        if parsed_args.staging:
-            if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
-                raise errors.Error("--server value conflicts with --staging")
             parsed_args.server = constants.STAGING_URI
 
-        return parsed_args
+            if parsed_args.dry_run:
+                if self.verb != "certonly":
+                    raise errors.Error("--dry-run currently only works with the "
+                                       "'certonly' subcommand")
+                parsed_args.staging = True
 
+        return parsed_args
 
     def determine_verb(self):
         """Determines the verb/subcommand provided by the user.
