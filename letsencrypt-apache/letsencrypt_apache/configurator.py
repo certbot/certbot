@@ -864,7 +864,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def _add_servername_alias(self, target_name, vhost):
         fp = vhost.filep
         vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
-                              (ssl_fp, parser.case_i("VirtualHost")))
+                              (fp, parser.case_i("VirtualHost")))
         vh_path = vh_p[0]
         if (self.parser.find_dir("ServerName", target_name, start=vh_path, exclude=False)
            or self.parser.find_dir("ServerAlias", target_name, start=vh_path, exclude=False)):
