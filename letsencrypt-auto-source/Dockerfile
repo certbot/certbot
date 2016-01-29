@@ -7,7 +7,6 @@ FROM ubuntu:trusty
 RUN useradd --create-home --home-dir /home/lea --shell /bin/bash --groups sudo --uid 1000 lea
 
 # Let that user sudo:
-RUN adduser lea sudo
 RUN sed -i.bkp -e \
       's/%sudo\s\+ALL=(ALL\(:ALL\)\?)\s\+ALL/%sudo ALL=NOPASSWD:ALL/g' \
       /etc/sudoers

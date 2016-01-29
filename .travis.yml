@@ -23,6 +23,7 @@ env:
   global:
     - GOPATH=/tmp/go
     - PATH=$GOPATH/bin:$PATH
+
 matrix:
   include:
     - python: "2.6"
@@ -47,6 +48,10 @@ matrix:
       env: TOXENV=py34
     - python: "3.5"
       env: TOXENV=py35
+    - sudo: required
+      env: TOXENV=le_auto
+      services: docker
+      before_install:
 
 # Only build pushes to the master branch, PRs, and branches beginning with
 # `test-`. This reduces the number of simultaneous Travis runs, which speeds
