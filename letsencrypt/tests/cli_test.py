@@ -1,5 +1,6 @@
 """Tests for letsencrypt.cli."""
 import argparse
+import functools
 import itertools
 import os
 import shutil
@@ -349,45 +350,49 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                           self._call,
                           ['-d', '*.wildcard.tld'])
 
-    def test_parse_domains(self):
+    def _get_argument_parser(self):
         plugins = disco.PluginsRegistry.find_all()
+        return functools.partial(cli.prepare_and_parse_args, plugins)
+
+    def test_parse_domains(self):
+        parse = self._get_argument_parser()
 
         short_args = ['-d', 'example.com']
-        namespace = cli.prepare_and_parse_args(plugins, short_args)
+        namespace = parse(short_args)
         self.assertEqual(namespace.domains, ['example.com'])
 
         short_args = ['-d', 'example.com,another.net,third.org,example.com']
-        namespace = cli.prepare_and_parse_args(plugins, short_args)
+        namespace = parse(short_args)
         self.assertEqual(namespace.domains, ['example.com', 'another.net',
                                              'third.org'])
 
         long_args = ['--domains', 'example.com']
-        namespace = cli.prepare_and_parse_args(plugins, long_args)
+        namespace = parse(long_args)
         self.assertEqual(namespace.domains, ['example.com'])
 
         long_args = ['--domains', 'example.com,another.net,example.com']
-        namespace = cli.prepare_and_parse_args(plugins, long_args)
+        namespace = parse(long_args)
         self.assertEqual(namespace.domains, ['example.com', 'another.net'])
 
     def test_parse_server(self):
-        plugins = disco.PluginsRegistry.find_all()
+        parse = self._get_argument_parser()
         short_args = ['--server', 'example.com']
-        namespace = cli.prepare_and_parse_args(plugins, short_args)
+        namespace = parse(short_args)
         self.assertEqual(namespace.server, 'example.com')
 
         short_args = ['--staging']
-        namespace = cli.prepare_and_parse_args(plugins, short_args)
+        namespace = parse(short_args)
         self.assertEqual(namespace.server, constants.STAGING_URI)
 
         short_args = ['--staging', '--server', 'example.com']
-        self.assertRaises(errors.Error, cli.prepare_and_parse_args, plugins, short_args)
+        self.assertRaises(errors.Error, parse, short_args)
 
     def test_parse_webroot(self):
-        plugins = disco.PluginsRegistry.find_all()
+        parse = self._get_argument_parser()
         webroot_args = ['--webroot', '-w', '/var/www/example',
             '-d', 'example.com,www.example.com', '-w', '/var/www/superfluous',
             '-d', 'superfluo.us', '-d', 'www.superfluo.us']
-        namespace = cli.prepare_and_parse_args(plugins, webroot_args)
+        namespace = parse(webroot_args)
         self.assertEqual(namespace.webroot_map, {
             'example.com': '/var/www/example',
             'www.example.com': '/var/www/example',
@@ -395,10 +400,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             'superfluo.us': '/var/www/superfluous'})
 
         webroot_args = ['-d', 'stray.example.com'] + webroot_args
-        self.assertRaises(errors.Error, cli.prepare_and_parse_args, plugins, webroot_args)
+        self.assertRaises(errors.Error, parse, webroot_args)
 
         webroot_map_args = ['--webroot-map', '{"eg.com" : "/tmp"}']
-        namespace = cli.prepare_and_parse_args(plugins, webroot_map_args)
+        namespace = parse(webroot_map_args)
         self.assertEqual(namespace.webroot_map, {u"eg.com": u"/tmp"})
 
     @mock.patch('letsencrypt.cli._suggest_donate')
