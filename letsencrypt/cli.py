@@ -404,12 +404,13 @@ def _auth_from_domains(le_client, config, domains):
         # https://github.com/letsencrypt/letsencrypt/pull/777/files#r40498574
         new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
         # TODO: Check whether it worked! <- or make sure errors are thrown (jdk)
-        lineage.save_successor(
-            lineage.latest_common_version(), OpenSSL.crypto.dump_certificate(
-                OpenSSL.crypto.FILETYPE_PEM, new_certr.body.wrapped),
-            new_key.pem, crypto_util.dump_pyopenssl_chain(new_chain))
+        if not config.dry_run:
+            lineage.save_successor(
+                lineage.latest_common_version(), OpenSSL.crypto.dump_certificate(
+                    OpenSSL.crypto.FILETYPE_PEM, new_certr.body.wrapped),
+                new_key.pem, crypto_util.dump_pyopenssl_chain(new_chain))
 
-        lineage.update_all_links_to(lineage.latest_common_version())
+            lineage.update_all_links_to(lineage.latest_common_version())
         # TODO: Check return value of save_successor
         # TODO: Also update lineage renewal config with any relevant
         #       configuration values from this attempt? <- Absolutely (jdkasten)
@@ -419,7 +420,7 @@ def _auth_from_domains(le_client, config, domains):
         if lineage is False:
             raise errors.Error("Certificate could not be obtained")
 
-    if lineage is not None:
+    if not config.dry_run:
         _report_new_cert(lineage.cert, lineage.fullchain)
 
     return lineage, action
