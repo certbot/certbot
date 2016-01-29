@@ -874,14 +874,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # See if the exact address appears in any other vhost
         # Remember 1.1.1.1:* == 1.1.1.1 -> hence any()
         for addr in vhost.addrs:
-
             # In Apache 2.2, when a NameVirtualHost directive is not
             # set, "*" and "_default_" will conflict when sharing a port
-            addrs = [addr]
-            if addr.get_addr() == "*":
-                addrs.append(obj.Addr(("_default_", addr.get_port(),)))
-            elif addr.get_addr() == "_default_":
-                addrs.append(obj.Addr(("*", addr.get_port(),)))
+            if addr.get_addr() in ("*", "_default_"):
+                addrs = [obj.Addr((a, addr.get_port(),))
+                         for a in ("*", "_default_")]
 
             for test_vh in self.vhosts:
                 if (vhost.filep != test_vh.filep and
