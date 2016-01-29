@@ -76,7 +76,7 @@ class BaseRenewableCertTest(unittest.TestCase):
         junk.close()
 
         self.defaults = configobj.ConfigObj()
-        
+
         with mock.patch("letsencrypt.storage.RenewableCert._check_symlinks") as check:
             check.return_value = True
             self.test_rc = storage.RenewableCert(config.filename, self.cli_config)

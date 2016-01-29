@@ -131,7 +131,9 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         self._check_symlinks()
 
     def _check_symlinks(self):
+        """Raises an exception if a symlink doesn't exist"""
         def check(link):
+            """Checks if symlink points to a file that exists"""
             return os.path.exists(os.path.realpath(link))
         for kind in ALL_FOUR:
             if not check(getattr(self, kind)):
