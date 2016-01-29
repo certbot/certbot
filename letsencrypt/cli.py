@@ -1264,7 +1264,9 @@ def _plugins_parsing(helpful, plugins):
     # --webroot-map still has some awkward properties, so it is undocumented
     helpful.add("webroot", "--webroot-map", default={}, action=WebrootMapProcessor,
         help="JSON dictionary mapping domains to webroot paths; this implies -d "
-             "for each entry.")
+             "for each entry. You may need to escape this from your shell. "
+             """Eg: --webroot-map '{"eg1.is,m.eg1.is":"/www/eg1/", "eg2.is":"/www/eg2"}' """
+             "This option is merged with, but takes precedence over, -w / -d entries")
 
 class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
     def __init__(self, *args, **kwargs):
