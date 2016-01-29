@@ -693,7 +693,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Reload augeas to take into account the new vhost
         self.aug.load()
-        #TODO: add line to write vhost name
         # Get Vhost augeas path for new vhost
         vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
                               (ssl_fp, parser.case_i("VirtualHost")))
