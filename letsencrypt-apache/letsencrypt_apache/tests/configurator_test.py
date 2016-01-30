@@ -161,6 +161,7 @@ class TwoVhost80Test(util.ApacheTest):
     def test_choose_vhost_select_vhost_non_ssl(self, mock_select):
         mock_select.return_value = self.vh_truth[0]
         chosen_vhost = self.config.choose_vhost("none.com")
+        self.vh_truth[0].aliases.add("none.com")
         self.assertEqual(
             self.vh_truth[0].get_names(), chosen_vhost.get_names())
 
@@ -192,8 +193,8 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(
             self.vh_truth[0],
             self.config._find_best_vhost("encryption-example.demo"))
-        self.assertTrue(
-            self.config._find_best_vhost("does-not-exist.com") is None)
+        self.assertEqual(
+            self.config._find_best_vhost("does-not-exist.com"), None)
 
     def test_find_best_vhost_variety(self):
         # pylint: disable=protected-access
