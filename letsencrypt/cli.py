@@ -850,8 +850,7 @@ class HelpfulArgumentParser(object):
             if (parsed_args.server not in
                     (flag_default("server"), constants.STAGING_URI)):
                 conflicts = ["--staging"] if parsed_args.staging else []
-                if parsed_args.dry_run:
-                    conflicts.append("--dry-run")
+                conflicts += ["--dry-run"] if parsed_args.dry_run else []
                 raise errors.Error("--server value conflicts with {0}".format(
                     " and ".join(conflicts)))
 
