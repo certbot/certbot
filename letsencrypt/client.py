@@ -299,6 +299,8 @@ class Client(object):
                 "by your operating system package manager")
 
         if cli_config.dry_run:
+            logger.info("Dry run: Skipping creating new lineage for %s",
+                        domains[0])
             return None
         else:
             return storage.RenewableCert.new_lineage(
