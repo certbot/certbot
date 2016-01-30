@@ -305,6 +305,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if not vhost.ssl:
                 vhost = self.make_vhost_ssl(vhost)
 
+            self._add_servername_alias(target_name, vhost)
             self.assoc[target_name] = vhost
             return vhost
 
@@ -335,6 +336,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 raise errors.PluginError(
                     "VirtualHost not able to be selected.")
 
+        self._add_servername_alias(target_name, vhost)
         self.assoc[target_name] = vhost
         return vhost
 
@@ -353,7 +355,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Points 1 - Address name with no SSL
         best_candidate = None
         best_points = 0
-
         for vhost in self.vhosts:
             if vhost.modmacro is True:
                 continue
@@ -692,7 +693,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Reload augeas to take into account the new vhost
         self.aug.load()
-
         # Get Vhost augeas path for new vhost
         vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
                               (ssl_fp, parser.case_i("VirtualHost")))
@@ -709,6 +709,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Add directives
         self._add_dummy_ssl_directives(vh_p)
+        self.save()
 
         # Log actions and create save notes
         logger.info("Created an SSL vhost at %s", ssl_fp)
@@ -858,6 +859,22 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.parser.add_dir(vh_path, "SSLCertificateKeyFile",
                             "insert_key_file_path")
         self.parser.add_dir(vh_path, "Include", self.mod_ssl_conf)
+
+    def _add_servername_alias(self, target_name, vhost):
+        fp = vhost.filep
+        vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
+                              (fp, parser.case_i("VirtualHost")))
+        if not vh_p:
+            return
+        vh_path = vh_p[0]
+        if (self.parser.find_dir("ServerName", target_name, start=vh_path, exclude=False)
+           or self.parser.find_dir("ServerAlias", target_name, start=vh_path, exclude=False)):
+            return
+        if not self.parser.find_dir("ServerName", None, start=vh_path, exclude=False):
+            self.parser.add_dir(vh_path, "ServerName", target_name)
+        else:
+            self.parser.add_dir(vh_path, "ServerAlias", target_name)
+        self._add_servernames(vhost)
 
     def _add_name_vhost_if_necessary(self, vhost):
         """Add NameVirtualHost Directives if necessary for new vhost.
