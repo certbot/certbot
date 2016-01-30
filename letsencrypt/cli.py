@@ -374,13 +374,15 @@ def _report_new_cert(cert_path, fullchain_path):
            .format(and_chain, path, expiry))
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
-def _suggest_donate():
-    "Suggest a donation to support Let's Encrypt"
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
-    msg = ("If you like Let's Encrypt, please consider supporting our work by:\n\n"
-           "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
-           "Donating to EFF:                    https://eff.org/donate-le\n\n")
-    reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
+
+def _suggest_donation_if_appropriate(config):
+    """Potentially suggest a donation to support Let's Encrypt."""
+    if not config.staging:  # --dry-run implies --staging
+        reporter_util = zope.component.getUtility(interfaces.IReporter)
+        msg = ("If you like Let's Encrypt, please consider supporting our work by:\n\n"
+               "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
+               "Donating to EFF:                    https://eff.org/donate-le\n\n")
+        reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
 
 
 def _report_successful_dry_run():
@@ -620,7 +622,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     else:
         display_ops.success_renewal(domains, action)
 
-    _suggest_donate()
+    _suggest_donation_if_appropriate(config)
 
 
 def obtain_cert(args, config, plugins):
@@ -656,8 +658,7 @@ def obtain_cert(args, config, plugins):
 
     if args.dry_run:
         _report_successful_dry_run()
-    else:
-        _suggest_donate()
+    _suggest_donation_if_appropriate(config)
 
 
 def install(args, config, plugins):

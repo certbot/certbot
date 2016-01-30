@@ -50,7 +50,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def _call(self, args):
         "Run the cli with output streams and actual client mocked out"
-        with mock.patch('letsencrypt.cli._suggest_donate'):
+        with mock.patch('letsencrypt.cli._suggest_donation_if_appropriate'):
             with mock.patch('letsencrypt.cli.client') as client:
                 ret, stdout, stderr = self._call_no_clientmock(args)
                 return ret, stdout, stderr, client
@@ -58,7 +58,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def _call_no_clientmock(self, args):
         "Run the client with output streams mocked out"
         args = self.standard_args + args
-        with mock.patch('letsencrypt.cli._suggest_donate'):
+        with mock.patch('letsencrypt.cli._suggest_donation_if_appropriate'):
             with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
                 with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
                     ret = cli.main(args[:])  # NOTE: parser can alter its args!
@@ -70,7 +70,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         caller.
         """
         args = self.standard_args + args
-        with mock.patch('letsencrypt.cli._suggest_donate'):
+        with mock.patch('letsencrypt.cli._suggest_donation_if_appropriate'):
             with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
                 with mock.patch('letsencrypt.cli.client') as client:
                     ret = cli.main(args[:])  # NOTE: parser can alter its args!
@@ -463,7 +463,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue(
             'dry run' in mock_get_utility().add_message.call_args[0][0])
 
-    @mock.patch('letsencrypt.cli._suggest_donate')
+    @mock.patch('letsencrypt.cli._suggest_donation_if_appropriate')
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter, _suggest):
@@ -488,7 +488,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertRaises(errors.Error,
                           self._certonly_new_request_common, mock_client)
 
-    @mock.patch('letsencrypt.cli._suggest_donate')
+    @mock.patch('letsencrypt.cli._suggest_donation_if_appropriate')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._treat_as_renewal')
     @mock.patch('letsencrypt.cli._init_le_client')
@@ -514,7 +514,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue(
             chain_path in mock_get_utility().add_message.call_args[0][0])
 
-    @mock.patch('letsencrypt.cli._suggest_donate')
+    @mock.patch('letsencrypt.cli._suggest_donation_if_appropriate')
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.display_ops.pick_installer')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
