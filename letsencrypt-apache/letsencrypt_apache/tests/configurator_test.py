@@ -162,7 +162,7 @@ class TwoVhost80Test(util.ApacheTest):
         mock_select.return_value = self.vh_truth[0]
         chosen_vhost = self.config.choose_vhost("none.com")
         self.assertEqual(
-            self.vh_truth[0].get_names(), chosen_vhost.get_names())
+            self.vh_truth[6].get_names(), chosen_vhost.get_names())
 
         # Make sure we go from HTTP -> HTTPS
         self.assertFalse(self.vh_truth[0].ssl)
