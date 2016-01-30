@@ -298,18 +298,19 @@ def check_domain_sanity(domain):
     # Check if there's a wildcard domain
     if domain.startswith("*."):
         raise errors.ConfigurationError(
-            "Wildcard domains are not supported")
+            "Wildcard domains are not supported: {0}".format(domain))
     # Punycode
     if "xn--" in domain:
         raise errors.ConfigurationError(
-            "Punycode domains are not presently supported")
+            "Punycode domains are not presently supported: {0}".format(domain))
 
     # Unicode
     try:
         domain.encode('ascii')
     except UnicodeDecodeError:
         raise errors.ConfigurationError(
-            "Internationalized domain names are not presently supported")
+            "Internationalized domain names are not presently supported: {0}"
+            .format(domain))
 
     # FQDN checks from
     # http://www.mkyong.com/regular-expressions/domain-name-regular-expression-example/
@@ -317,4 +318,4 @@ def check_domain_sanity(domain):
     #  first and last char is not "-"
     fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,63}$")
     if not fqdn.match(domain):
-        raise errors.ConfigurationError("Requested domain is not a FQDN")
+        raise errors.ConfigurationError("Requested domain {0} is not a FQDN".format(domain))
