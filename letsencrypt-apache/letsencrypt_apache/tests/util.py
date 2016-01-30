@@ -150,14 +150,8 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(prefix, "default-ssl-port-only.conf"),
                 os.path.join(aug_pre, ("default-ssl-port-only.conf/"
                                        "IfModule/VirtualHost")),
-                set([obj.Addr.fromstring("_default_:443")]), True, False),
-            obj.VirtualHost(
-                os.path.join(prefix, "encryption-example.conf"),
-                os.path.join(aug_pre, "encryption-example.conf/VirtualHost"),
-                set([obj.Addr.fromstring("*:80")]),
-                False, True, "encryption-example.demo")
+                set([obj.Addr.fromstring("_default_:443")]), True, False)
         ]
-        vh_truth[6].aliases.add("none.com")
         return vh_truth
 
     return None  # pragma: no cover
