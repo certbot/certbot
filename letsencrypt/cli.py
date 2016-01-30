@@ -410,7 +410,10 @@ def _auth_from_domains(le_client, config, domains):
         # https://github.com/letsencrypt/letsencrypt/pull/777/files#r40498574
         new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
         # TODO: Check whether it worked! <- or make sure errors are thrown (jdk)
-        if not config.dry_run:
+        if config.dry_run:
+            logger.info("Dry run: skipping updating lineage at %s",
+                        os.path.dirname(lineage.cert))
+        else:
             lineage.save_successor(
                 lineage.latest_common_version(), OpenSSL.crypto.dump_certificate(
                     OpenSSL.crypto.FILETYPE_PEM, new_certr.body.wrapped),
@@ -640,7 +643,10 @@ def obtain_cert(args, config, plugins):
     if args.csr is not None:
         certr, chain = le_client.obtain_certificate_from_csr(le_util.CSR(
             file=args.csr[0], data=args.csr[1], form="der"))
-        if not args.dry_run:
+        if args.dry_run:
+            logger.info(
+                "Dry run: skipping saving certificate to %s", args.cert_path)
+        else:
             cert_path, _, cert_fullchain = le_client.save_certificate(
                 certr, chain, args.cert_path, args.chain_path, args.fullchain_path)
             _report_new_cert(cert_path, cert_fullchain)
