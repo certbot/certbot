@@ -874,6 +874,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.parser.add_dir(vh_path, "ServerName", target_name)
         else:
             self.parser.add_dir(vh_path, "ServerAlias", target_name)
+        self._add_servernames(vhost)
 
     def _add_name_vhost_if_necessary(self, vhost):
         """Add NameVirtualHost Directives if necessary for new vhost.
