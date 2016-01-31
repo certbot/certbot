@@ -543,7 +543,7 @@ def choose_configurator_plugins(args, config, plugins, verb):
                    '{1} and "--help plugins" for more information.)'.format(
                    req_auth, os.linesep, cli_command))
 
-            raise errors.MissingCommandlineFlag, msg
+            raise errors.MissingCommandlineFlag(msg)
     else:
         need_inst = need_auth = False
     if verb == "certonly":
@@ -591,7 +591,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     """Obtain a certificate and install."""
     try:
         installer, authenticator = choose_configurator_plugins(args, config, plugins, "run")
-    except errors.PluginSelectionError, e:
+    except errors.PluginSelectionError as e:
         return e.message
 
     domains = _find_domains(config, installer)
@@ -626,7 +626,7 @@ def obtain_cert(args, config, plugins):
     try:
         # installers are used in auth mode to determine domain names
         installer, authenticator = choose_configurator_plugins(args, config, plugins, "certonly")
-    except errors.PluginSelectionError, e:
+    except errors.PluginSelectionError as e:
         return e.message
 
     # TODO: Handle errors from _init_le_client?
@@ -655,7 +655,7 @@ def install(args, config, plugins):
     try:
         installer, _ = choose_configurator_plugins(args, config,
                                                    plugins, "install")
-    except errors.PluginSelectionError, e:
+    except errors.PluginSelectionError as e:
         return e.message
 
     domains = _find_domains(config, installer)

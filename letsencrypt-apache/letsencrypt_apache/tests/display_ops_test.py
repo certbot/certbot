@@ -37,7 +37,7 @@ class SelectVhostTest(unittest.TestCase):
         mock_util().menu.side_effect = errors.MissingCommandlineFlag("no vhost default")
         try:
             self._call(self.vhosts)
-        except errors.MissingCommandlineFlag, e:
+        except errors.MissingCommandlineFlag as e:
             self.assertTrue("VirtualHost directives" in e.message)
 
     @mock.patch("letsencrypt_apache.display_ops.zope.component.getUtility")
