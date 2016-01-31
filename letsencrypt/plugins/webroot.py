@@ -31,6 +31,11 @@ to serve all files under specified web root ({0})."""
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return self.MORE_INFO.format(self.conf("path"))
 
+    @property
+    def is_root_required(self):
+        """Root privileges are not required in most cases."""
+        return False
+
     @classmethod
     def add_parser_arguments(cls, add):
         # --webroot-path and --webroot-map are added in cli.py because they

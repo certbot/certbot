@@ -574,6 +574,11 @@ def choose_configurator_plugins(args, config, plugins, verb):
     if need_auth and not authenticator:
         diagnose_configurator_problem("authenticator", req_auth, plugins)
 
+    if need_inst:
+        check_root_privileges(installer)
+    if need_auth:
+        check_root_privileges(authenticator)
+
     record_chosen_plugins(config, plugins, authenticator, installer)
     return installer, authenticator
 
@@ -583,6 +588,19 @@ def record_chosen_plugins(config, plugins, auth, inst):
     cn = config.namespace
     cn.authenticator = plugins.find_init(auth).name if auth else "none"
     cn.installer = plugins.find_init(inst).name if inst else "none"
+
+
+def check_root_privileges(plugin):
+    """Warns user about insufficient privileges."""
+    if not hasattr(plugin, 'is_root_required'):
+        return
+    if not plugin.is_root_required:
+        return
+    if not os.geteuid() == 0:
+        logger.warning(
+            "The plugin %s requires root privileges. "
+            "Since you are not root (not using sudo) it may encounter errors.",
+            plugin.name)
 
 
 # TODO: Make run as close to auth + install as possible
@@ -1469,17 +1487,6 @@ def main(cli_args=sys.argv[1:]):
     report = reporter.Reporter()
     zope.component.provideUtility(report)
     atexit.register(report.atexit_print_messages)
-
-    if not os.geteuid() == 0:
-        logger.warning(
-            "Root (sudo) is required to run most of letsencrypt functionality.")
-        # check must be done after arg parsing as --help should work
-        # w/o root; on the other hand, e.g. "letsencrypt run
-        # --authenticator dns" or "letsencrypt plugins" does not
-        # require root as well
-        #return (
-        #    "{0}Root is required to run letsencrypt.  Please use sudo.{0}"
-        #    .format(os.linesep))
 
     return args.func(args, config, plugins)
 

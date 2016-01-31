@@ -90,6 +90,16 @@ class Plugin(object):
 
         """
 
+    @property
+    def is_root_required(self):
+        """Is it necessary to warn user about insufficient privileges?
+
+        :returns: Whether the plugin requires root privileges
+        :rtype: bool
+
+        """
+        return True
+
 # other
 
 

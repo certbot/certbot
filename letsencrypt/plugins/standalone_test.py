@@ -222,5 +222,8 @@ class AuthenticatorTest(unittest.TestCase):
             "server1": set(), "server2": set([])})
         self.auth.servers.stop.assert_called_with(2)
 
+    def test_is_root_required(self):
+        self.assertTrue(self.auth.is_root_required)
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

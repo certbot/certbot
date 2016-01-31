@@ -103,6 +103,9 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth_test_mode.cleanup(self.achalls)
         mock_killpg.assert_called_once_with(1234, signal.SIGTERM)
 
+    def test_is_root_required(self):
+        self.assertFalse(self.auth.is_root_required)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

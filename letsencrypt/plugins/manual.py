@@ -83,6 +83,11 @@ s.serve_forever()" """
                       else "/tmp/letsencrypt")
         self._httpd = None
 
+    @property
+    def is_root_required(self):
+        """Root privileges are not required."""
+        return False
+
     @classmethod
     def add_parser_arguments(cls, add):
         add("test-mode", action="store_true",
