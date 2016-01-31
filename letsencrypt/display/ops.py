@@ -82,7 +82,7 @@ def pick_plugin(config, default, plugins, question, ifaces):
                 "Missing command line flags. For non-interactive execution, "
                 "you will need to specify a plugin on the command line.  Run "
                 "with '--help plugins' to see a list of options, and see "
-                " https://eff.org/letsencrypt-plugins for more detail on what "
+                "https://eff.org/letsencrypt-plugins for more detail on what "
                 "the plugins do and how to use them.")
 
         filtered = plugins.visible().ifaces(ifaces)
