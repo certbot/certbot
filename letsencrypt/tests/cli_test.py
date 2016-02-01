@@ -584,34 +584,36 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue(
             'donate' in mock_get_utility().add_message.call_args[0][0])
 
-    @mock.patch('letsencrypt.crypto_util.notAfter')
-    @mock.patch('letsencrypt.cli.display_ops.pick_installer')
-    @mock.patch('letsencrypt.cli.zope.component.getUtility')
-    @mock.patch('letsencrypt.cli._init_le_client')
-    @mock.patch('letsencrypt.cli.record_chosen_plugins')
-    def test_certonly_csr(self, _rec, mock_init, mock_get_utility,
-                          mock_pick_installer, mock_notAfter):
-        cert_path = '/etc/letsencrypt/live/blahcert.pem'
-        date = '1970-01-01'
-        mock_notAfter().date.return_value = date
-
+    def _test_certonly_csr_common(self, extra_args=None):
+        certr = 'certr'
+        chain = 'chain'
         mock_client = mock.MagicMock()
-        mock_client.obtain_certificate_from_csr.return_value = ('certr',
-                                                                'chain')
+        mock_client.obtain_certificate_from_csr.return_value = (certr, chain)
+        cert_path = '/etc/letsencrypt/live/example.com/cert.pem'
         mock_client.save_certificate.return_value = cert_path, None, None
-        mock_init.return_value = mock_client
+        with mock.patch('letsencrypt.cli._init_le_client') as mock_init:
+            mock_init.return_value = mock_client
+            get_utility_path = 'letsencrypt.cli.zope.component.getUtility'
+            with mock.patch(get_utility_path) as mock_get_utility:
+                chain_path = '/etc/letsencrypt/live/example.com/chain.pem'
+                full_path = '/etc/letsencrypt/live/example.com/fullchain.pem'
+                args = ('-a standalone certonly --csr {0} --cert-path {1} '
+                        '--chain-path {2} --fullchain-path {3}').format(
+                            CSR, cert_path, chain_path, full_path).split()
+                if extra_args:
+                    args += extra_args
+                with mock.patch('letsencrypt.cli.crypto_util'):
+                    self._call(args)
 
-        installer = 'installer'
-        self._call(
-            ['-a', 'standalone', '-i', installer, 'certonly', '--csr', CSR,
-             '--cert-path', cert_path, '--fullchain-path', '/',
-             '--chain-path', '/'])
-        self.assertEqual(mock_pick_installer.call_args[0][1], installer)
         mock_client.save_certificate.assert_called_once_with(
-            'certr', 'chain', cert_path, '/', '/')
+            certr, chain, cert_path, chain_path, full_path)
+
+        return mock_get_utility
+
+    def test_certonly_csr(self):
+        mock_get_utility = self._test_certonly_csr_common()
         cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
-        self.assertTrue(cert_path in cert_msg)
-        self.assertTrue(date in cert_msg)
+        self.assertTrue('cert.pem' in cert_msg)
         self.assertTrue(
             'donate' in mock_get_utility().add_message.call_args[0][0])
 
