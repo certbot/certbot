@@ -76,7 +76,10 @@ class BaseRenewableCertTest(unittest.TestCase):
         junk.close()
 
         self.defaults = configobj.ConfigObj()
-        self.test_rc = storage.RenewableCert(config.filename, self.cli_config)
+
+        with mock.patch("letsencrypt.storage.RenewableCert._check_symlinks") as check:
+            check.return_value = True
+            self.test_rc = storage.RenewableCert(config.filename, self.cli_config)
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
@@ -785,6 +788,12 @@ class RenewableCertTests(BaseRenewableCertTest):
             f.write("incomplete = configfile\n")
         renewer.main(cli_args=self._common_cli_args())
         # The errors.CertStorageError is caught inside and nothing happens.
+
+    def test_missing_cert(self):
+        from letsencrypt import storage
+        self.assertRaises(errors.CertStorageError,
+                          storage.RenewableCert,
+                          self.config.filename, self.cli_config)
 
 
 if __name__ == "__main__":
