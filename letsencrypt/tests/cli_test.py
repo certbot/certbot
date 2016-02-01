@@ -494,7 +494,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 self._call(args)
 
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
-    def test_certonly_dry_run_success(self, mock_get_utility):
+    def test_certonly_dry_run_new_request_success(self, mock_get_utility):
         mock_client = mock.MagicMock()
         mock_client.obtain_and_enroll_certificate.return_value = None
         self._certonly_new_request_common(mock_client, ['--dry-run'])
@@ -554,6 +554,18 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mock_lineage.latest_common_version())
         cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
         self.assertTrue(chain_path in cert_msg)
+        self.assertTrue(
+            'donate' in mock_get_utility().add_message.call_args[0][0])
+
+    @mock.patch('letsencrypt.cli.zope.component.getUtility')
+    @mock.patch('letsencrypt.cli._treat_as_renewal')
+    @mock.patch('letsencrypt.cli._init_le_client')
+    def test_certonly_reinstall(self, mock_init, mock_renewal, mock_get_utility):
+        mock_renewal.return_value = ('reinstall', mock.MagicMock())
+        mock_init.return_value = mock_client = mock.MagicMock()
+        self._call(['-d', 'foo.bar', '-a', 'standalone', 'certonly'])
+        self.assertFalse(mock_client.obtain_certificate.called)
+        self.assertFalse(mock_client.obtain_and_enroll_certificate.called)
         self.assertTrue(
             'donate' in mock_get_utility().add_message.call_args[0][0])
 
