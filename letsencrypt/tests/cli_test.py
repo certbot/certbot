@@ -50,18 +50,16 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def _call(self, args):
         "Run the cli with output streams and actual client mocked out"
-        with mock.patch('letsencrypt.cli._suggest_donation_if_appropriate'):
-            with mock.patch('letsencrypt.cli.client') as client:
-                ret, stdout, stderr = self._call_no_clientmock(args)
-                return ret, stdout, stderr, client
+        with mock.patch('letsencrypt.cli.client') as client:
+            ret, stdout, stderr = self._call_no_clientmock(args)
+            return ret, stdout, stderr, client
 
     def _call_no_clientmock(self, args):
         "Run the client with output streams mocked out"
         args = self.standard_args + args
-        with mock.patch('letsencrypt.cli._suggest_donation_if_appropriate'):
-            with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
-                with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
-                    ret = cli.main(args[:])  # NOTE: parser can alter its args!
+        with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
+            with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
+                ret = cli.main(args[:])  # NOTE: parser can alter its args!
         return ret, stdout, stderr
 
     def _call_stdout(self, args):
@@ -70,10 +68,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         caller.
         """
         args = self.standard_args + args
-        with mock.patch('letsencrypt.cli._suggest_donation_if_appropriate'):
-            with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
-                with mock.patch('letsencrypt.cli.client') as client:
-                    ret = cli.main(args[:])  # NOTE: parser can alter its args!
+        with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
+            with mock.patch('letsencrypt.cli.client') as client:
+                ret = cli.main(args[:])  # NOTE: parser can alter its args!
         return ret, None, stderr, client
 
     def test_no_flags(self):
@@ -505,11 +502,12 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mock_client.obtain_and_enroll_certificate.call_count, 1)
         self.assertTrue(
             'dry run' in mock_get_utility().add_message.call_args[0][0])
+        # Asserts we don't suggest donating after a successful dry run
+        self.assertEqual(mock_get_utility().add_message.call_count, 1)
 
-    @mock.patch('letsencrypt.cli._suggest_donation_if_appropriate')
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
-    def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter, _suggest):
+    def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter):
         cert_path = '/etc/letsencrypt/live/foo.bar'
         date = '1970-01-01'
         mock_notAfter().date.return_value = date
@@ -520,10 +518,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._certonly_new_request_common(mock_client)
         self.assertEqual(
             mock_client.obtain_and_enroll_certificate.call_count, 1)
+        cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
+        self.assertTrue(cert_path in cert_msg)
+        self.assertTrue(date in cert_msg)
         self.assertTrue(
-            cert_path in mock_get_utility().add_message.call_args[0][0])
-        self.assertTrue(
-            date in mock_get_utility().add_message.call_args[0][0])
+            'donate' in mock_get_utility().add_message.call_args[0][0])
 
     def test_certonly_new_request_failure(self):
         mock_client = mock.MagicMock()
@@ -531,11 +530,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertRaises(errors.Error,
                           self._certonly_new_request_common, mock_client)
 
-    @mock.patch('letsencrypt.cli._suggest_donation_if_appropriate')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._treat_as_renewal')
     @mock.patch('letsencrypt.cli._init_le_client')
-    def test_certonly_renewal(self, mock_init, mock_renewal, mock_get_utility, _suggest):
+    def test_certonly_renewal(self, mock_init, mock_renewal, mock_get_utility):
         cert_path = 'letsencrypt/tests/testdata/cert.pem'
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
 
@@ -554,17 +552,18 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(mock_lineage.save_successor.call_count, 1)
         mock_lineage.update_all_links_to.assert_called_once_with(
             mock_lineage.latest_common_version())
+        cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
+        self.assertTrue(chain_path in cert_msg)
         self.assertTrue(
-            chain_path in mock_get_utility().add_message.call_args[0][0])
+            'donate' in mock_get_utility().add_message.call_args[0][0])
 
-    @mock.patch('letsencrypt.cli._suggest_donation_if_appropriate')
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.display_ops.pick_installer')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._init_le_client')
     @mock.patch('letsencrypt.cli.record_chosen_plugins')
     def test_certonly_csr(self, _rec, mock_init, mock_get_utility,
-                          mock_pick_installer, mock_notAfter, _suggest):
+                          mock_pick_installer, mock_notAfter):
         cert_path = '/etc/letsencrypt/live/blahcert.pem'
         date = '1970-01-01'
         mock_notAfter().date.return_value = date
@@ -583,10 +582,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(mock_pick_installer.call_args[0][1], installer)
         mock_client.save_certificate.assert_called_once_with(
             'certr', 'chain', cert_path, '/', '/')
+        cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
+        self.assertTrue(cert_path in cert_msg)
+        self.assertTrue(date in cert_msg)
         self.assertTrue(
-            cert_path in mock_get_utility().add_message.call_args[0][0])
-        self.assertTrue(
-            date in mock_get_utility().add_message.call_args[0][0])
+            'donate' in mock_get_utility().add_message.call_args[0][0])
 
     @mock.patch('letsencrypt.cli.client.acme_client')
     def test_revoke_with_key(self, mock_acme_client):
