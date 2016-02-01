@@ -1,0 +1,36 @@
+{
+    "Version": "2012-10-17",
+    "Id": "letsencrypt-route53 sample policy",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "iam:UploadServerCertificate",
+                "iam:UpdateServerCertificate",
+                "iam:DeleteServerCertificate"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "route53:List*",
+                "route53:Get*",
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+            "Effect" : "Allow",
+            "Action" : [
+                "route53:ChangeResourceRecordSets"
+            ],
+            "Resource" : [
+                "arn:aws:route53:::hostedzone/YOURHOSTEDZONEID"
+            ]
+        }
+    ]
+}
