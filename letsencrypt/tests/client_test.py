@@ -79,7 +79,7 @@ class ClientTest(unittest.TestCase):
 
     def setUp(self):
         self.config = mock.MagicMock(
-            no_verify_ssl=False, config_dir="/etc/letsencrypt")
+            no_verify_ssl=False, config_dir="/etc/letsencrypt", allow_subset_of_names=False)
         # pylint: disable=star-args
         self.account = mock.MagicMock(**{"key.pem": KEY})
         self.eg_domains = ["example.com", "www.example.com"]
@@ -102,7 +102,9 @@ class ClientTest(unittest.TestCase):
         self.acme.fetch_chain.return_value = mock.sentinel.chain
 
     def _check_obtain_certificate(self):
-        self.client.auth_handler.get_authorizations.assert_called_once_with(self.eg_domains)
+        self.client.auth_handler.get_authorizations.assert_called_once_with(
+            self.eg_domains,
+            self.config.allow_subset_of_names)
         self.acme.request_issuance.assert_called_once_with(
             jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
                 OpenSSL.crypto.FILETYPE_ASN1, CSR_SAN)),

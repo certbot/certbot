@@ -222,7 +222,7 @@ class Client(object):
 
         logger.debug("CSR: %s, domains: %s", csr, domains)
 
-        authzr = self.auth_handler.get_authorizations(domains)
+        authzr = self.auth_handler.get_authorizations(domains, self.config.allow_subset_of_names)
         certr = self.acme.request_issuance(
             jose.ComparableX509(
                 OpenSSL.crypto.load_certificate_request(typ, csr.data)),

@@ -1603,6 +1603,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
+    helpful.add(
+        "automation", "--allow-subset-of-names", dest="allow_subset_of_names",
+        action="store_true", default=False,
+        help="Allow subsets of domain names to fail validation without exiting.")
 
     helpful.add_group(
         "renew", description="The 'renew' subcommand will attempt to renew all"
