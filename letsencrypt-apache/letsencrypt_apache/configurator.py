@@ -155,7 +155,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Set Version
         if self.version is None:
             self.version = self.get_version()
-        if self.version < (2, 4):
+        if self.version < (2, 2):
             raise errors.NotSupportedError(
                 "Apache Version %s not supported.", str(self.version))
 
@@ -305,6 +305,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if not vhost.ssl:
                 vhost = self.make_vhost_ssl(vhost)
 
+            self._add_servername_alias(target_name, vhost)
             self.assoc[target_name] = vhost
             return vhost
 
@@ -335,6 +336,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 raise errors.PluginError(
                     "VirtualHost not able to be selected.")
 
+        self._add_servername_alias(target_name, vhost)
         self.assoc[target_name] = vhost
         return vhost
 
@@ -353,7 +355,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Points 1 - Address name with no SSL
         best_candidate = None
         best_points = 0
-
         for vhost in self.vhosts:
             if vhost.modmacro is True:
                 continue
@@ -692,7 +693,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Reload augeas to take into account the new vhost
         self.aug.load()
-
         # Get Vhost augeas path for new vhost
         vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
                               (ssl_fp, parser.case_i("VirtualHost")))
@@ -709,6 +709,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Add directives
         self._add_dummy_ssl_directives(vh_p)
+        self.save()
 
         # Log actions and create save notes
         logger.info("Created an SSL vhost at %s", ssl_fp)
@@ -859,6 +860,22 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                             "insert_key_file_path")
         self.parser.add_dir(vh_path, "Include", self.mod_ssl_conf)
 
+    def _add_servername_alias(self, target_name, vhost):
+        fp = vhost.filep
+        vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
+                              (fp, parser.case_i("VirtualHost")))
+        if not vh_p:
+            return
+        vh_path = vh_p[0]
+        if (self.parser.find_dir("ServerName", target_name, start=vh_path, exclude=False)
+           or self.parser.find_dir("ServerAlias", target_name, start=vh_path, exclude=False)):
+            return
+        if not self.parser.find_dir("ServerName", None, start=vh_path, exclude=False):
+            self.parser.add_dir(vh_path, "ServerName", target_name)
+        else:
+            self.parser.add_dir(vh_path, "ServerAlias", target_name)
+        self._add_servernames(vhost)
+
     def _add_name_vhost_if_necessary(self, vhost):
         """Add NameVirtualHost Directives if necessary for new vhost.
 
@@ -874,9 +891,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # See if the exact address appears in any other vhost
         # Remember 1.1.1.1:* == 1.1.1.1 -> hence any()
         for addr in vhost.addrs:
+            # In Apache 2.2, when a NameVirtualHost directive is not
+            # set, "*" and "_default_" will conflict when sharing a port
+            if addr.get_addr() in ("*", "_default_"):
+                addrs = [obj.Addr((a, addr.get_port(),))
+                         for a in ("*", "_default_")]
+
             for test_vh in self.vhosts:
                 if (vhost.filep != test_vh.filep and
-                        any(test_addr == addr for
+                        any(test_addr in addrs for
                             test_addr in test_vh.addrs) and
                         not self.is_name_vhost(addr)):
                     self.add_name_vhost(addr)
@@ -1587,4 +1610,4 @@ def install_ssl_options_conf(options_ssl):
 
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):
-        shutil.copyfile(constants.MOD_SSL_CONF_SRC, options_ssl)
+        shutil.copyfile(constants.os_constant("MOD_SSL_CONF_SRC"), options_ssl)

@@ -112,11 +112,15 @@ def usage_strings(plugins):
     return USAGE % (apache_doc, nginx_doc), SHORT_USAGE
 
 
-def _find_domains(args, installer):
-    if not args.domains:
+def _find_domains(config, installer):
+    if not config.domains:
         domains = display_ops.choose_names(installer)
+        # record in config.domains (so that it can be serialised in renewal config files),
+        # and set webroot_map entries if applicable
+        for d in domains:
+            _process_domain(config, d)
     else:
-        domains = args.domains
+        domains = config.domains
 
     if not domains:
         raise errors.Error("Please specify --domains, or --installer that "
@@ -608,7 +612,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     except errors.PluginSelectionError, e:
         return e.message
 
-    domains = _find_domains(args, installer)
+    domains = _find_domains(config, installer)
 
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(args, config, authenticator, installer)
@@ -630,7 +634,8 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
 
 
 def obtain_cert(args, config, plugins):
-    """Authenticate & obtain cert, but do not install it."""
+    """Implements "certonly": authenticate & obtain cert, but do not install it."""
+
     if args.domains and args.csr is not None:
         # TODO: --csr could have a priority, when --domains is
         # supplied, check if CSR matches given domains?
@@ -657,7 +662,7 @@ def obtain_cert(args, config, plugins):
                 certr, chain, args.cert_path, args.chain_path, args.fullchain_path)
             _report_new_cert(cert_path, cert_fullchain)
     else:
-        domains = _find_domains(args, installer)
+        domains = _find_domains(config, installer)
         _auth_from_domains(le_client, config, domains)
 
     if args.dry_run:
@@ -677,7 +682,7 @@ def install(args, config, plugins):
     except errors.PluginSelectionError, e:
         return e.message
 
-    domains = _find_domains(args, installer)
+    domains = _find_domains(config, installer)
     le_client = _init_le_client(
         args, config, authenticator=None, installer=installer)
     assert args.cert_path is not None  # required=True in the subparser
@@ -851,6 +856,13 @@ class HelpfulArgumentParser(object):
         parsed_args.verb = self.verb
 
         # Do any post-parsing homework here
+
+        # we get domains from -d, but also from the webroot map...
+        if parsed_args.webroot_map:
+            for domain in parsed_args.webroot_map.keys():
+                if domain not in parsed_args.domains:
+                    parsed_args.domains.append(domain)
+
         if parsed_args.staging or parsed_args.dry_run:
             if (parsed_args.server not in
                     (flag_default("server"), constants.STAGING_URI)):
@@ -1286,11 +1298,12 @@ def _plugins_parsing(helpful, plugins):
                      "handle different domains; each domain will have the webroot path that"
                      " preceded it.  For instance: `-w /var/www/example -d example.com -d "
                      "www.example.com -w /var/www/thing -d thing.net -d m.thing.net`")
-    parse_dict = lambda s: dict(json.loads(s))
     # --webroot-map still has some awkward properties, so it is undocumented
-    helpful.add("webroot", "--webroot-map", default={}, type=parse_dict,
-                help=argparse.SUPPRESS)
-
+    helpful.add("webroot", "--webroot-map", default={}, action=WebrootMapProcessor,
+        help="JSON dictionary mapping domains to webroot paths; this implies -d "
+             "for each entry. You may need to escape this from your shell. "
+             """Eg: --webroot-map '{"eg1.is,m.eg1.is":"/www/eg1/", "eg2.is":"/www/eg2"}' """
+             "This option is merged with, but takes precedence over, -w / -d entries")
 
 class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
     def __init__(self, *args, **kwargs):
@@ -1319,18 +1332,36 @@ class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
         config.webroot_path.append(webroot)
 
 
+_undot = lambda domain: domain[:-1] if domain.endswith('.') else domain
+
+def _process_domain(config, domain_arg, webroot_path=None):
+    """
+    Process a new -d flag, helping the webroot plugin construct a map of
+    {domain : webrootpath} if -w / --webroot-path is in use
+    """
+    webroot_path = webroot_path if webroot_path else config.webroot_path
+
+    for domain in (d.strip() for d in domain_arg.split(",")):
+        if domain not in config.domains:
+            domain = _undot(domain)
+            config.domains.append(domain)
+            # Each domain has a webroot_path of the most recent -w flag
+            # unless it was explicitly included in webroot_map
+            if webroot_path:
+                config.webroot_map.setdefault(domain, webroot_path[-1])
+
+
+class WebrootMapProcessor(argparse.Action): # pylint: disable=missing-docstring
+    def __call__(self, parser, config, webroot_map_arg, option_string=None):
+        webroot_map = json.loads(webroot_map_arg)
+        for domains, webroot_path in webroot_map.iteritems():
+            _process_domain(config, domains, [webroot_path])
+
+
 class DomainFlagProcessor(argparse.Action): # pylint: disable=missing-docstring
     def __call__(self, parser, config, domain_arg, option_string=None):
-        """
-        Process a new -d flag, helping the webroot plugin construct a map of
-        {domain : webrootpath} if -w / --webroot-path is in use
-        """
-        for domain in (d.strip() for d in domain_arg.split(",")):
-            if domain not in config.domains:
-                config.domains.append(domain)
-                # Each domain has a webroot_path of the most recent -w flag
-                if config.webroot_path:
-                    config.webroot_map[domain] = config.webroot_path[-1]
+        """Just wrap _process_domain in argparseese."""
+        _process_domain(config, domain_arg)
 
 
 def setup_log_file_handler(args, logfile, fmt):
