@@ -554,18 +554,23 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                             self._call(args)
 
         mock_client.obtain_certificate.assert_called_once_with(['foo.bar'])
-        self.assertEqual(mock_lineage.save_successor.call_count, 1)
-        mock_lineage.update_all_links_to.assert_called_once_with(
-            mock_lineage.latest_common_version())
-        cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
-        self.assertTrue(chain_path in cert_msg)
 
-        return mock_get_utility
+        return mock_lineage, mock_get_utility
 
     def test_certonly_renewal(self):
-        mock_get_utility = self._test_certonly_renewal_common("renew")
-        self.assertTrue(
-            'donate' in mock_get_utility().add_message.call_args[0][0])
+        lineage, get_utility = self._test_certonly_renewal_common('renew')
+        self.assertEqual(lineage.save_successor.call_count, 1)
+        lineage.update_all_links_to.assert_called_once_with(
+            lineage.latest_common_version())
+        cert_msg = get_utility().add_message.call_args_list[0][0][0]
+        self.assertTrue('fullchain.pem' in cert_msg)
+        self.assertTrue('donate' in get_utility().add_message.call_args[0][0])
+
+    def test_certonly_dry_run_reinstall_is_renewal(self):
+        _, get_utility = self._test_certonly_renewal_common('reinstall',
+                                                            ['--dry-run'])
+        self.assertEqual(get_utility().add_message.call_count, 1)
+        self.assertTrue('dry run' in get_utility().add_message.call_args[0][0])
 
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._treat_as_renewal')
