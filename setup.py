@@ -56,7 +56,7 @@ setup(
     keywords = ['letsencrypt', 'route53', 'aws'],
     entry_points={
         'letsencrypt.plugins': [
-            'auth = letsencrypt_s3front.authenticator:Authenticator'
+            'auth = letsencrypt_route53.authenticator:Authenticator'
         ],
     },
 )
