@@ -605,8 +605,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 with mock.patch('letsencrypt.cli.crypto_util'):
                     self._call(args)
 
-        mock_client.save_certificate.assert_called_once_with(
-            certr, chain, cert_path, chain_path, full_path)
+        if '--dry-run' in args:
+            self.assertFalse(mock_client.save_certificate.called)
+        else:
+            mock_client.save_certificate.assert_called_once_with(
+                certr, chain, cert_path, chain_path, full_path)
 
         return mock_get_utility
 
@@ -616,6 +619,12 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue('cert.pem' in cert_msg)
         self.assertTrue(
             'donate' in mock_get_utility().add_message.call_args[0][0])
+
+    def test_certonly_csr_dry_run(self):
+        mock_get_utility = self._test_certonly_csr_common(['--dry-run'])
+        self.assertEqual(mock_get_utility().add_message.call_count, 1)
+        self.assertTrue(
+            'dry run' in mock_get_utility().add_message.call_args[0][0])
 
     @mock.patch('letsencrypt.cli.client.acme_client')
     def test_revoke_with_key(self, mock_acme_client):
