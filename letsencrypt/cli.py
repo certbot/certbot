@@ -734,7 +734,10 @@ def renew(args, cli_config, plugins):
                            "an authenticator. Skipping.", full_path)
             continue
     # ?? config = configuration.NamespaceConfig(_AttrDict(renewalparams))
-        # XXX: also need: webroot_map
+        if "webroot_map" in renewalparams:
+            config.__setattr__("webroot_map", renewalparams["webroot_map"])
+            print ("webroot_map", renewalparams["webroot_map"])
+            raw_input()
         # XXX: also need: nginx_, apache_, and plesk_ items
         # string-valued items to add if they're present
         for config_item in ["config_dir", "log_dir", "work_dir", "user_agent",
