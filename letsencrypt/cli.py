@@ -129,14 +129,14 @@ def _find_domains(config, installer):
     return domains
 
 
-def _determine_account(args, config):
+def _determine_account(config):
     """Determine which account to use.
 
     In order to make the renewer (configuration de/serialization) happy,
-    if ``args.account`` is ``None``, it will be updated based on the
-    user input. Same for ``args.email``.
+    if ``config.account`` is ``None``, it will be updated based on the
+    user input. Same for ``config.email``.
 
-    :param argparse.Namespace args: CLI arguments
+    :param argparse.Namespace config: CLI arguments
     :param letsencrypt.interface.IConfig config: Configuration object
     :param .AccountStorage account_storage: Account storage.
 
@@ -149,8 +149,8 @@ def _determine_account(args, config):
     account_storage = account.AccountFileStorage(config)
     acme = None
 
-    if args.account is not None:
-        acc = account_storage.load(args.account)
+    if config.account is not None:
+        acc = account_storage.load(config.account)
     else:
         accounts = account_storage.find_all()
         if len(accounts) > 1:
@@ -158,11 +158,11 @@ def _determine_account(args, config):
         elif len(accounts) == 1:
             acc = accounts[0]
         else:  # no account registered yet
-            if args.email is None and not args.register_unsafely_without_email:
-                args.email = display_ops.get_email()
+            if config.email is None and not config.register_unsafely_without_email:
+                config.email = display_ops.get_email()
 
             def _tos_cb(regr):
-                if args.tos:
+                if config.tos:
                     return True
                 msg = ("Please read the Terms of Service at {0}. You "
                        "must agree in order to register with the ACME "
@@ -181,14 +181,14 @@ def _determine_account(args, config):
                 raise errors.Error(
                     "Unable to register an account with ACME server")
 
-    args.account = acc.id
+    config.account = acc.id
     return acc, acme
 
 
-def _init_le_client(args, config, authenticator, installer):
+def _init_le_client(config, authenticator, installer):
     if authenticator is not None:
         # if authenticator was given, then we will need account...
-        acc, acme = _determine_account(args, config)
+        acc, acme = _determine_account(config)
         logger.debug("Picked account: %r", acc)
         # XXX
         #crypto_util.validate_key_csr(acc.key)
@@ -497,27 +497,27 @@ def set_configurator(previously, now):
             raise errors.PluginSelectionError(msg.format(repr(previously), repr(now)))
     return now
 
-def cli_plugin_requests(args):
+def cli_plugin_requests(config):
     """
     Figure out which plugins the user requested with CLI and config options
 
     :returns: (requested authenticator string or None, requested installer string or None)
     :rtype: tuple
     """
-    req_inst = req_auth = args.configurator
-    req_inst = set_configurator(req_inst, args.installer)
-    req_auth = set_configurator(req_auth, args.authenticator)
-    if args.nginx:
+    req_inst = req_auth = config.configurator
+    req_inst = set_configurator(req_inst, config.installer)
+    req_auth = set_configurator(req_auth, config.authenticator)
+    if config.nginx:
         req_inst = set_configurator(req_inst, "nginx")
         req_auth = set_configurator(req_auth, "nginx")
-    if args.apache:
+    if config.apache:
         req_inst = set_configurator(req_inst, "apache")
         req_auth = set_configurator(req_auth, "apache")
-    if args.standalone:
+    if config.standalone:
         req_auth = set_configurator(req_auth, "standalone")
-    if args.webroot:
+    if config.webroot:
         req_auth = set_configurator(req_auth, "webroot")
-    if args.manual:
+    if config.manual:
         req_auth = set_configurator(req_auth, "manual")
     logger.debug("Requested authenticator %s and installer %s", req_auth, req_inst)
     return req_auth, req_inst
@@ -525,13 +525,19 @@ def cli_plugin_requests(args):
 
 noninstaller_plugins = ["webroot", "manual", "standalone"]
 
-def choose_configurator_plugins(args, config, plugins, verb):
+def choose_configurator_plugins(config, plugins, verb):
     """
-    Figure out which configurator we're going to use
+    Figure out which configurator we're going to use, modifies
+    config.authenticator and config.istaller strings to reflect that choice if
+    necessary.
+
     :raises errors.PluginSelectionError if there was a problem
+
+    :returns: (an `IAuthenticator` or None, an `IInstaller` or None)
+    :rtype: tuple
     """
 
-    req_auth, req_inst = cli_plugin_requests(args)
+    req_auth, req_inst = cli_plugin_requests(config)
 
     # Which plugins do we need?
     if verb == "run":
@@ -550,10 +556,8 @@ def choose_configurator_plugins(args, config, plugins, verb):
         need_auth = True
     if verb == "install":
         need_inst = True
-        if args.authenticator:
+        if config.authenticator:
             logger.warn("Specifying an authenticator doesn't make sense in install mode")
-
-
 
     # Try to meet the user's request and/or ask them to pick plugins
     authenticator = installer = None
@@ -586,18 +590,18 @@ def record_chosen_plugins(config, plugins, auth, inst):
 
 
 # TODO: Make run as close to auth + install as possible
-# Possible difficulties: args.csr was hacked into auth
-def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-locals
+# Possible difficulties: config.csr was hacked into auth
+def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     """Obtain a certificate and install."""
     try:
-        installer, authenticator = choose_configurator_plugins(args, config, plugins, "run")
+        installer, authenticator = choose_configurator_plugins(config, plugins, "run")
     except errors.PluginSelectionError as e:
         return e.message
 
     domains = _find_domains(config, installer)
 
     # TODO: Handle errors from _init_le_client?
-    le_client = _init_le_client(args, config, authenticator, installer)
+    le_client = _init_le_client(config, authenticator, installer)
 
     lineage, action = _auth_from_domains(le_client, config, domains)
 
@@ -615,29 +619,29 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     _suggest_donate()
 
 
-def obtain_cert(args, config, plugins):
+def obtain_cert(config, plugins):
     """Implements "certonly": authenticate & obtain cert, but do not install it."""
 
-    if args.domains and args.csr is not None:
+    if config.domains and config.csr is not None:
         # TODO: --csr could have a priority, when --domains is
         # supplied, check if CSR matches given domains?
         return "--domains and --csr are mutually exclusive"
 
     try:
         # installers are used in auth mode to determine domain names
-        installer, authenticator = choose_configurator_plugins(args, config, plugins, "certonly")
+        installer, authenticator = choose_configurator_plugins(config, plugins, "certonly")
     except errors.PluginSelectionError as e:
         return e.message
 
     # TODO: Handle errors from _init_le_client?
-    le_client = _init_le_client(args, config, authenticator, installer)
+    le_client = _init_le_client(config, authenticator, installer)
 
     # This is a special case; cert and chain are simply saved
-    if args.csr is not None:
+    if config.csr is not None:
         certr, chain = le_client.obtain_certificate_from_csr(le_util.CSR(
-            file=args.csr[0], data=args.csr[1], form="der"))
+            file=config.csr[0], data=config.csr[1], form="der"))
         cert_path, _, cert_fullchain = le_client.save_certificate(
-            certr, chain, args.cert_path, args.chain_path, args.fullchain_path)
+            certr, chain, config.cert_path, config.chain_path, config.fullchain_path)
         _report_new_cert(cert_path, cert_fullchain)
     else:
         domains = _find_domains(config, installer)
@@ -646,51 +650,49 @@ def obtain_cert(args, config, plugins):
     _suggest_donate()
 
 
-def install(args, config, plugins):
+def install(config, plugins):
     """Install a previously obtained cert in a server."""
     # XXX: Update for renewer/RenewableCert
     # FIXME: be consistent about whether errors are raised or returned from
     # this function ...
 
     try:
-        installer, _ = choose_configurator_plugins(args, config,
-                                                   plugins, "install")
+        installer, _ = choose_configurator_plugins(config, plugins, "install")
     except errors.PluginSelectionError as e:
         return e.message
 
     domains = _find_domains(config, installer)
-    le_client = _init_le_client(
-        args, config, authenticator=None, installer=installer)
-    assert args.cert_path is not None  # required=True in the subparser
+    le_client = _init_le_client(config, authenticator=None, installer=installer)
+    assert config.cert_path is not None  # required=True in the subparser
     le_client.deploy_certificate(
-        domains, args.key_path, args.cert_path, args.chain_path,
-        args.fullchain_path)
+        domains, config.key_path, config.cert_path, config.chain_path,
+        config.fullchain_path)
     le_client.enhance_config(domains, config)
 
 
-def revoke(args, config, unused_plugins):  # TODO: coop with renewal config
+def revoke(config, unused_plugins):  # TODO: coop with renewal config
     """Revoke a previously obtained certificate."""
     # For user-agent construction
     config.namespace.installer = config.namespace.authenticator = "none"
-    if args.key_path is not None:  # revocation by cert key
+    if config.key_path is not None:  # revocation by cert key
         logger.debug("Revoking %s using cert key %s",
-                     args.cert_path[0], args.key_path[0])
-        key = jose.JWK.load(args.key_path[1])
+                     config.cert_path[0], config.key_path[0])
+        key = jose.JWK.load(config.key_path[1])
     else:  # revocation by account key
-        logger.debug("Revoking %s using Account Key", args.cert_path[0])
-        acc, _ = _determine_account(args, config)
+        logger.debug("Revoking %s using Account Key", config.cert_path[0])
+        acc, _ = _determine_account(config)
         key = acc.key
     acme = client.acme_from_config_key(config, key)
-    cert = crypto_util.pyopenssl_load_certificate(args.cert_path[1])[0]
+    cert = crypto_util.pyopenssl_load_certificate(config.cert_path[1])[0]
     acme.revoke(jose.ComparableX509(cert))
 
 
-def rollback(args, config, plugins):
+def rollback(config, plugins):
     """Rollback server configuration changes made during install."""
-    client.rollback(args.installer, args.checkpoints, config, plugins)
+    client.rollback(config.installer, config.checkpoints, config, plugins)
 
 
-def config_changes(unused_args, config, unused_plugins):
+def config_changes(config, unused_plugins):
     """Show changes made to server config during installation
 
     View checkpoints and associated configuration changes.
@@ -699,15 +701,15 @@ def config_changes(unused_args, config, unused_plugins):
     client.view_config_changes(config)
 
 
-def plugins_cmd(args, config, plugins):  # TODO: Use IDisplay rather than print
+def plugins_cmd(config, plugins):  # TODO: Use IDisplay rather than print
     """List server software plugins."""
-    logger.debug("Expected interfaces: %s", args.ifaces)
+    logger.debug("Expected interfaces: %s", config.ifaces)
 
-    ifaces = [] if args.ifaces is None else args.ifaces
+    ifaces = [] if config.ifaces is None else config.ifaces
     filtered = plugins.visible().ifaces(ifaces)
     logger.debug("Filtered plugins: %r", filtered)
 
-    if not args.init and not args.prepare:
+    if not config.init and not config.prepare:
         print(str(filtered))
         return
 
@@ -715,7 +717,7 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDisplay rather than print
     verified = filtered.verify(ifaces)
     logger.debug("Verified plugins: %r", verified)
 
-    if not args.prepare:
+    if not config.prepare:
         print(str(verified))
         return
 
@@ -1273,63 +1275,63 @@ class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
         self.domain_before_webroot = False
         argparse.Action.__init__(self, *args, **kwargs)
 
-    def __call__(self, parser, config, webroot, option_string=None):
+    def __call__(self, parser, args, webroot, option_string=None):
         """
         Keep a record of --webroot-path / -w flags during processing, so that
         we know which apply to which -d flags
         """
-        if config.webroot_path is None:      # first -w flag encountered
-            config.webroot_path = []
+        if args.webroot_path is None:      # first -w flag encountered
+            args.webroot_path = []
             # if any --domain flags preceded the first --webroot-path flag,
             # apply that webroot path to those; subsequent entries in
-            # config.webroot_map are filled in by cli.DomainFlagProcessor
-            if config.domains:
+            # args.webroot_map are filled in by cli.DomainFlagProcessor
+            if args.domains:
                 self.domain_before_webroot = True
-                for d in config.domains:
-                    config.webroot_map.setdefault(d, webroot)
+                for d in args.domains:
+                    args.webroot_map.setdefault(d, webroot)
         elif self.domain_before_webroot:
-            # FIXME if you set domains in a config file, you should get a different error
+            # FIXME if you set domains in a args file, you should get a different error
             # here, pointing you to --webroot-map
             raise errors.Error("If you specify multiple webroot paths, one of "
                                "them must precede all domain flags")
-        config.webroot_path.append(webroot)
+        args.webroot_path.append(webroot)
 
 
 _undot = lambda domain: domain[:-1] if domain.endswith('.') else domain
 
-def _process_domain(config, domain_arg, webroot_path=None):
+def _process_domain(args, domain_arg, webroot_path=None):
     """
     Process a new -d flag, helping the webroot plugin construct a map of
     {domain : webrootpath} if -w / --webroot-path is in use
     """
-    webroot_path = webroot_path if webroot_path else config.webroot_path
+    webroot_path = webroot_path if webroot_path else args.webroot_path
 
     for domain in (d.strip() for d in domain_arg.split(",")):
-        if domain not in config.domains:
+        if domain not in args.domains:
             domain = _undot(domain)
-            config.domains.append(domain)
+            args.domains.append(domain)
             # Each domain has a webroot_path of the most recent -w flag
             # unless it was explicitly included in webroot_map
             if webroot_path:
-                config.webroot_map.setdefault(domain, webroot_path[-1])
+                args.webroot_map.setdefault(domain, webroot_path[-1])
 
 
 class WebrootMapProcessor(argparse.Action): # pylint: disable=missing-docstring
-    def __call__(self, parser, config, webroot_map_arg, option_string=None):
+    def __call__(self, parser, args, webroot_map_arg, option_string=None):
         webroot_map = json.loads(webroot_map_arg)
         for domains, webroot_path in webroot_map.iteritems():
-            _process_domain(config, domains, [webroot_path])
+            _process_domain(args, domains, [webroot_path])
 
 
 class DomainFlagProcessor(argparse.Action): # pylint: disable=missing-docstring
-    def __call__(self, parser, config, domain_arg, option_string=None):
+    def __call__(self, parser, args, domain_arg, option_string=None):
         """Just wrap _process_domain in argparseese."""
-        _process_domain(config, domain_arg)
+        _process_domain(args, domain_arg)
 
 
-def setup_log_file_handler(args, logfile, fmt):
+def setup_log_file_handler(config, logfile, fmt):
     """Setup file debug logging."""
-    log_file_path = os.path.join(args.logs_dir, logfile)
+    log_file_path = os.path.join(config.logs_dir, logfile)
     handler = logging.handlers.RotatingFileHandler(
         log_file_path, maxBytes=2 ** 20, backupCount=10)
     # rotate on each invocation, rollover only possible when maxBytes
@@ -1343,8 +1345,8 @@ def setup_log_file_handler(args, logfile, fmt):
     return handler, log_file_path
 
 
-def _cli_log_handler(args, level, fmt):
-    if args.text_mode:
+def _cli_log_handler(config, level, fmt):
+    if config.text_mode:
         handler = colored_logging.StreamHandler()
         handler.setFormatter(logging.Formatter(fmt))
     else:
@@ -1355,13 +1357,13 @@ def _cli_log_handler(args, level, fmt):
     return handler
 
 
-def setup_logging(args, cli_handler_factory, logfile):
+def setup_logging(config, cli_handler_factory, logfile):
     """Setup logging."""
     fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
-    level = -args.verbose_count * 10
+    level = -config.verbose_count * 10
     file_handler, log_file_path = setup_log_file_handler(
-        args, logfile=logfile, fmt=fmt)
-    cli_handler = cli_handler_factory(args, level, fmt)
+        config, logfile=logfile, fmt=fmt)
+    cli_handler = cli_handler_factory(config, level, fmt)
 
     # TODO: use fileConfig?
 
@@ -1374,12 +1376,12 @@ def setup_logging(args, cli_handler_factory, logfile):
     logger.info("Saving debug log to %s", log_file_path)
 
 
-def _handle_exception(exc_type, exc_value, trace, args):
+def _handle_exception(exc_type, exc_value, trace, config):
     """Logs exceptions and reports them to the user.
 
-    Args is used to determine how to display exceptions to the user. In
-    general, if args.debug is True, then the full exception and traceback is
-    shown to the user, otherwise it is suppressed. If args itself is None,
+    Config is used to determine how to display exceptions to the user. In
+    general, if config.debug is True, then the full exception and traceback is
+    shown to the user, otherwise it is suppressed. If config itself is None,
     then the traceback and exception is attempted to be written to a logfile.
     If this is successful, the traceback is suppressed, otherwise it is shown
     to the user. sys.exit is always called with a nonzero status.
@@ -1390,8 +1392,8 @@ def _handle_exception(exc_type, exc_value, trace, args):
         os.linesep,
         "".join(traceback.format_exception(exc_type, exc_value, trace)))
 
-    if issubclass(exc_type, Exception) and (args is None or not args.debug):
-        if args is None:
+    if issubclass(exc_type, Exception) and (config is None or not config.debug):
+        if config is None:
             logfile = "letsencrypt.log"
             try:
                 with open(logfile, "w") as logfd:
@@ -1413,14 +1415,14 @@ def _handle_exception(exc_type, exc_value, trace, args):
             # malformed :: Error creating new registration :: Validation of contact
             # mailto:none@longrandomstring.biz failed: Server failure at resolver
             if ("urn:acme" in err and ":: " in err
-                and args.verbose_count <= flag_default("verbose_count")):
+                and config.verbose_count <= flag_default("verbose_count")):
                 # prune ACME error code, we have a human description
                 _code, _sep, err = err.partition(":: ")
             msg = "An unexpected error occurred:\n" + err + "Please see the "
-            if args is None:
+            if config is None:
                 msg += "logfile '{0}' for more details.".format(logfile)
             else:
-                msg += "logfiles in {0} for more details.".format(args.logs_dir)
+                msg += "logfiles in {0} for more details.".format(config.logs_dir)
             sys.exit(msg)
     else:
         sys.exit("".join(
@@ -1429,7 +1431,7 @@ def _handle_exception(exc_type, exc_value, trace, args):
 
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
-    sys.excepthook = functools.partial(_handle_exception, args=None)
+    sys.excepthook = functools.partial(_handle_exception, config=None)
 
     # note: arg parser internally handles --help (and exits afterwards)
     plugins = plugins_disco.PluginsRegistry.find_all()
@@ -1446,20 +1448,20 @@ def main(cli_args=sys.argv[1:]):
     # TODO: logs might contain sensitive data such as contents of the
     # private key! #525
     le_util.make_or_verify_dir(
-        args.logs_dir, 0o700, os.geteuid(), "--strict-permissions" in cli_args)
-    setup_logging(args, _cli_log_handler, logfile='letsencrypt.log')
+        config.logs_dir, 0o700, os.geteuid(), "--strict-permissions" in cli_args)
+    setup_logging(config, _cli_log_handler, logfile='letsencrypt.log')
 
     logger.debug("letsencrypt version: %s", letsencrypt.__version__)
-    # do not log `args`, as it contains sensitive data (e.g. revoke --key)!
+    # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
     logger.debug("Arguments: %r", cli_args)
     logger.debug("Discovered plugins: %r", plugins)
 
-    sys.excepthook = functools.partial(_handle_exception, args=args)
+    sys.excepthook = functools.partial(_handle_exception, config=config)
 
     # Displayer
-    if args.noninteractive_mode:
+    if config.noninteractive_mode:
         displayer = display_util.NoninteractiveDisplay(sys.stdout)
-    elif args.text_mode:
+    elif config.text_mode:
         displayer = display_util.FileDisplay(sys.stdout)
     else:
         displayer = display_util.NcursesDisplay()
@@ -1481,7 +1483,7 @@ def main(cli_args=sys.argv[1:]):
         #    "{0}Root is required to run letsencrypt.  Please use sudo.{0}"
         #    .format(os.linesep))
 
-    return args.func(args, config, plugins)
+    return config.func(config, plugins)
 
 if __name__ == "__main__":
     err_string = main()

@@ -237,7 +237,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with mock.patch("letsencrypt.cli._init_le_client") as mock_init:
             with mock.patch("letsencrypt.cli._auth_from_domains"):
                 self._call(["certonly", "--manual", "-d", "foo.bar"])
-                auth = mock_init.call_args[0][2]
+                _config, auth, _installer = mock_init.call_args[0]
                 self.assertTrue(isinstance(auth, manual.Authenticator))
 
         with MockedVerb("certonly") as mock_certonly:
@@ -318,11 +318,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                         '--chain-path', 'chain',
                         '--fullchain-path', 'fullchain'])
 
-        args = mock_obtaincert.call_args[0][0]
-        self.assertEqual(args.cert_path, os.path.abspath(cert))
-        self.assertEqual(args.key_path, os.path.abspath(key))
-        self.assertEqual(args.chain_path, os.path.abspath(chain))
-        self.assertEqual(args.fullchain_path, os.path.abspath(fullchain))
+        config, _plugins = mock_obtaincert.call_args[0]
+        self.assertEqual(config.cert_path, os.path.abspath(cert))
+        self.assertEqual(config.key_path, os.path.abspath(key))
+        self.assertEqual(config.chain_path, os.path.abspath(chain))
+        self.assertEqual(config.fullchain_path, os.path.abspath(fullchain))
 
     def test_certonly_bad_args(self):
         ret, _, _, _ = self._call(['-d', 'foo.bar', 'certonly', '--csr', CSR])
@@ -560,14 +560,14 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         # pylint: disable=protected-access
         from acme import messages
 
-        args = mock.MagicMock()
+        config = mock.MagicMock()
         mock_open = mock.mock_open()
 
         with mock.patch('letsencrypt.cli.open', mock_open, create=True):
             exception = Exception('detail')
-            args.verbose_count = 1
+            config.verbose_count = 1
             cli._handle_exception(
-                Exception, exc_value=exception, trace=None, args=None)
+                Exception, exc_value=exception, trace=None, config=None)
             mock_open().write.assert_called_once_with(''.join(
                 traceback.format_exception_only(Exception, exception)))
             error_msg = mock_sys.exit.call_args_list[0][0][0]
@@ -577,24 +577,24 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mock_open.side_effect = [KeyboardInterrupt]
             error = errors.Error('detail')
             cli._handle_exception(
-                errors.Error, exc_value=error, trace=None, args=None)
+                errors.Error, exc_value=error, trace=None, config=None)
             # assert_any_call used because sys.exit doesn't exit in cli.py
             mock_sys.exit.assert_any_call(''.join(
                 traceback.format_exception_only(errors.Error, error)))
 
         exception = messages.Error(detail='alpha', typ='urn:acme:error:triffid',
                                    title='beta')
-        args = mock.MagicMock(debug=False, verbose_count=-3)
+        config = mock.MagicMock(debug=False, verbose_count=-3)
         cli._handle_exception(
-            messages.Error, exc_value=exception, trace=None, args=args)
+            messages.Error, exc_value=exception, trace=None, config=config)
         error_msg = mock_sys.exit.call_args_list[-1][0][0]
         self.assertTrue('unexpected error' in error_msg)
         self.assertTrue('acme:error' not in error_msg)
         self.assertTrue('alpha' in error_msg)
         self.assertTrue('beta' in error_msg)
-        args = mock.MagicMock(debug=False, verbose_count=1)
+        config = mock.MagicMock(debug=False, verbose_count=1)
         cli._handle_exception(
-            messages.Error, exc_value=exception, trace=None, args=args)
+            messages.Error, exc_value=exception, trace=None, config=config)
         error_msg = mock_sys.exit.call_args_list[-1][0][0]
         self.assertTrue('unexpected error' in error_msg)
         self.assertTrue('acme:error' in error_msg)
@@ -602,7 +602,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
         interrupt = KeyboardInterrupt('detail')
         cli._handle_exception(
-            KeyboardInterrupt, exc_value=interrupt, trace=None, args=None)
+            KeyboardInterrupt, exc_value=interrupt, trace=None, config=None)
         mock_sys.exit.assert_called_with(''.join(
             traceback.format_exception_only(KeyboardInterrupt, interrupt)))
 
@@ -640,20 +640,20 @@ class DetermineAccountTest(unittest.TestCase):
         from letsencrypt.cli import _determine_account
         with mock.patch('letsencrypt.cli.account.AccountFileStorage') as mock_storage:
             mock_storage.return_value = self.account_storage
-            return _determine_account(self.args, self.config)
+            return _determine_account(self.config)
 
     def test_args_account_set(self):
         self.account_storage.save(self.accs[1])
-        self.args.account = self.accs[1].id
+        self.config.account = self.accs[1].id
         self.assertEqual((self.accs[1], None), self._call())
-        self.assertEqual(self.accs[1].id, self.args.account)
-        self.assertTrue(self.args.email is None)
+        self.assertEqual(self.accs[1].id, self.config.account)
+        self.assertTrue(self.config.email is None)
 
     def test_single_account(self):
         self.account_storage.save(self.accs[0])
         self.assertEqual((self.accs[0], None), self._call())
-        self.assertEqual(self.accs[0].id, self.args.account)
-        self.assertTrue(self.args.email is None)
+        self.assertEqual(self.accs[0].id, self.config.account)
+        self.assertTrue(self.config.email is None)
 
     @mock.patch('letsencrypt.client.display_ops.choose_account')
     def test_multiple_accounts(self, mock_choose_accounts):
@@ -663,8 +663,8 @@ class DetermineAccountTest(unittest.TestCase):
         self.assertEqual((self.accs[1], None), self._call())
         self.assertEqual(
             set(mock_choose_accounts.call_args[0][0]), set(self.accs))
-        self.assertEqual(self.accs[1].id, self.args.account)
-        self.assertTrue(self.args.email is None)
+        self.assertEqual(self.accs[1].id, self.config.account)
+        self.assertTrue(self.config.email is None)
 
     @mock.patch('letsencrypt.client.display_ops.get_email')
     def test_no_accounts_no_email(self, mock_get_email):
@@ -677,16 +677,16 @@ class DetermineAccountTest(unittest.TestCase):
         client.register.assert_called_once_with(
             self.config, self.account_storage, tos_cb=mock.ANY)
 
-        self.assertEqual(self.accs[0].id, self.args.account)
-        self.assertEqual('foo@bar.baz', self.args.email)
+        self.assertEqual(self.accs[0].id, self.config.account)
+        self.assertEqual('foo@bar.baz', self.config.email)
 
     def test_no_accounts_email(self):
-        self.args.email = 'other email'
+        self.config.email = 'other email'
         with mock.patch('letsencrypt.cli.client') as client:
             client.register.return_value = (self.accs[1], mock.sentinel.acme)
             self._call()
-        self.assertEqual(self.accs[1].id, self.args.account)
-        self.assertEqual('other email', self.args.email)
+        self.assertEqual(self.accs[1].id, self.config.account)
+        self.assertEqual('other email', self.config.email)
 
 
 class DuplicativeCertsTest(renewer_test.BaseRenewableCertTest):
