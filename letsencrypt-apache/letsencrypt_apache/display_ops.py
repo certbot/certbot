@@ -85,12 +85,12 @@ def _vhost_menu(domain, vhosts):
             "or Address of {0}.{1}Which virtual host would you "
             "like to choose?".format(domain, os.linesep),
             choices, help_label="More Info", ok_label="Select")
-    except errors.MissingCommandlineFlag, e:
+    except errors.MissingCommandlineFlag as e:
         msg = ("Failed to run Apache plugin non-interactively{1}{0}{1}"
                "(The best solution is to add ServerName or ServerAlias "
                "entries to the VirtualHost directives of your apache "
                "configuration files.)".format(e, os.linesep))
-        raise errors.MissingCommandlineFlag, msg
+        raise errors.MissingCommandlineFlag(msg)
 
     return code, tag
 

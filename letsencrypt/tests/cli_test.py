@@ -138,7 +138,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         try:
             with mock.patch('letsencrypt.cli.sys.stderr'):
                 cli.main(self.standard_args + args[:])  # NOTE: parser can alter its args!
-        except errors.MissingCommandlineFlag, exc:
+        except errors.MissingCommandlineFlag as exc:
             self.assertTrue(message in str(exc))
         self.assertTrue(exc is not None)
 
