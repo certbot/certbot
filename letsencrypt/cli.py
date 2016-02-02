@@ -795,7 +795,7 @@ def renew(cli_config, plugins):
         config.__setattr__("domains", domains)
 
         print("Trying...")
-        print(obtain_cert(config, config, plugins, renewal_candidate))
+        print(obtain_cert(config, plugins, renewal_candidate))
 
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
