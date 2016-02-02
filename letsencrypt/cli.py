@@ -6,6 +6,7 @@ from __future__ import print_function
 # (TODO: split this file into main.py and cli.py)
 import argparse
 import atexit
+import copy
 import functools
 import json
 import logging
@@ -388,7 +389,7 @@ def _suggest_donate():
     reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
 
 
-def _auth_from_domains(le_client, config, domains):
+def _auth_from_domains(le_client, config, domains, lineage=None):
     """Authenticate and enroll certificate."""
     # Note: This can raise errors... caught above us though. This is now
     # a three-way case: reinstall (which results in a no-op here because
@@ -397,7 +398,16 @@ def _auth_from_domains(le_client, config, domains):
     # (which results in treating the request as a renewal), or newcert
     # (which results in treating the request as a new certificate request).
 
-    action, lineage = _treat_as_renewal(config, domains)
+    # If lineage is specified, use that one instead of looking around for
+    # a matching one.
+    if lineage is None:
+        # This will find a relevant matching lineage that exists
+        action, lineage = _treat_as_renewal(config, domains)
+    else:
+        # Renewal, where we already know the specific lineage we're
+        # interested in
+        action = "renew" if lineage.should_autorenew() else "reinstall"
+
     if action == "reinstall":
         # The lineage already exists; allow the caller to try installing
         # it without getting a new certificate at all.
@@ -674,13 +684,13 @@ def renew(args, cli_config, plugins):
     print("Welcome to the renew verb!")
     cli_config = configuration.RenewerConfiguration(cli_config)
     configs_dir = cli_config.renewal_configs_dir
-    for renewal_file in os.listdir(configs_dir):
+    for renewal_file in reversed(os.listdir(configs_dir)):
         if not renewal_file.endswith(".conf"):
             continue
         print("Processing " + renewal_file)
         # XXX: does this succeed in making a fully independent config object
         #      each time?
-        config = configuration.RenewerConfiguration(cli_config)
+        config = configuration.RenewerConfiguration(copy.deepcopy(cli_config))
         full_path = os.path.join(configs_dir, renewal_file)
         try:
             renewal_candidate = storage.RenewableCert(full_path, config)
@@ -704,7 +714,8 @@ def renew(args, cli_config, plugins):
         # XXX: also need: nginx_, apache_, and plesk_ items
         # string-valued items to add if they're present
         for config_item in ["config_dir", "log_dir", "work_dir", "user_agent",
-                            "server", "standalone_supported_challenges"]:
+                            "server", "account",
+                            "standalone_supported_challenges"]:
             if config_item in renewalparams:
                 value = renewalparams[config_item]
                 # Unfortunately, we've lost type information from ConfigObj,
@@ -724,7 +735,7 @@ def renew(args, cli_config, plugins):
                                    "a non-numeric value for %s. Skipping.",
                                    full_path, config_item)
                     continue
-        # XXX: what does this do?
+        # XXX: ensure that each call here replaces the previous one
         zope.component.provideUtility(config)
         try:
             authenticator = plugins[renewalparams["authenticator"]]
@@ -739,7 +750,11 @@ def renew(args, cli_config, plugins):
                                "authenticator plugin. Skipping.", full_path)
             continue
         authenticator = authenticator.init(config)
-        le_client = _init_le_client(args, config, authenticator, authenticator)
+        print(config)
+        le_client = _init_le_client(config, config, authenticator, authenticator)
+        print("Trying...")
+        print(_auth_from_domains(le_client, config, renewal_candidate.names(),
+                           renewal_candidate))
         # TODO: How do we handle the separate installer vs. authenticator
         #       the same as installer issue?
         import code; code.interact(local=locals())
