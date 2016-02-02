@@ -1303,7 +1303,7 @@ def _process_domain(config, domain_arg, webroot_path=None):
     webroot_path = webroot_path if webroot_path else config.webroot_path
 
     for domain in (d.strip() for d in domain_arg.split(",")):
-        domain = enforce_domain_sanity(domain)
+        domain = le_util.enforce_domain_sanity(domain)
         if domain not in config.domains:
             config.domains.append(domain)
             # Each domain has a webroot_path of the most recent -w flag
