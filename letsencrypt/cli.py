@@ -664,11 +664,11 @@ def install(args, config, plugins):
     le_client.enhance_config(domains, config)
 
 
-def renew(args, config, plugins):
+def renew(args, cli_config, plugins):
     """Renew previously-obtained certificates."""
     print("Welcome to the renew verb!")
     plugins = plugins_disco.PluginsRegistry.find_all()
-    cli_config = configuration.RenewerConfiguration(config)
+    # cli_config = configuration.RenewerConfiguration(config)
     configs_dir = cli_config.renewal_configs_dir
     for renewal_file in os.listdir(configs_dir):
         if not renewal_file.endswith(".conf"):
@@ -676,10 +676,10 @@ def renew(args, config, plugins):
         print("Processing " + renewal_file)
         # XXX: does this succeed in making a fully independent config object
         #      each time?
-        cli_config = configuration.RenewerConfiguration(config)
+        config = configuration.RenewerConfiguration(config)
         full_path = os.path.join(configs_dir, renewal_file)
         try:
-            renewal_candidate = storage.RenewableCert(full_path, cli_config)
+            renewal_candidate = storage.RenewableCert(full_path, config)
         except (errors.CertStorageError, IOError):
             logger.warning("Renewal configuration file %s is broken. "
                            "Skipping.", full_path)
@@ -703,21 +703,21 @@ def renew(args, config, plugins):
                             "server", "standalone_supported_challenges"]:
             if config_item in renewalparams:
                 print("setting", config_item, renewalparams[config_item])
-                cli_config.namespace.__setattr__(config_item,
-                                                 renewalparams[config_item])
+                config.namespace.__setattr__(config_item,
+                                             renewalparams[config_item])
         # int-valued items to add if they're present
         for config_item in ["rsa_key_size", "tls_sni_01_port", "http01_port"]:
             if config_item in renewalparams:
                 try:
                     value = int(renewalparams[config_item])
-                    cli_config.namespace.__setattr__(config_item, value)
+                    config.namespace.__setattr__(config_item, value)
                 except ValueError:
                     logger.warning("Renewal configuration file %s specifies "
                                    "a non-numeric value for %s. Skipping.",
                                    full_path, config_item)
                     continue
         # XXX: what does this do?
-        zope.component.provideUtility(cli_config)
+        zope.component.provideUtility(config)
         try:
             authenticator = plugins[renewalparams["authenticator"]]
         except KeyError:
@@ -730,9 +730,8 @@ def renew(args, config, plugins):
                 logger.warning("Renewal configuration file %s specifies no "
                                "authenticator plugin. Skipping.", full_path)
             continue
-        authenticator = authenticator.init(cli_config)
-        le_client = _init_le_client(args, cli_config, authenticator,
-                                    authenticator)
+        authenticator = authenticator.init(config)
+        le_client = _init_le_client(args, config, authenticator, authenticator)
         # TODO: How do we handle the separate installer vs. authenticator
         #       the same as installer issue?
         import code; code.interact(local=locals())
