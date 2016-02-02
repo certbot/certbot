@@ -239,8 +239,7 @@ def get_valid_domains(domains):
     valid_domains = []
     for domain in domains:
         try:
-            le_util.check_domain_sanity(domain)
-            valid_domains.append(domain)
+            valid_domains.append(le_util.enforce_domain_sanity(domain))
         except errors.ConfigurationError:
             continue
     return valid_domains
@@ -282,9 +281,9 @@ def _choose_names_manually():
                 "supported.{0}{0}Would you like to re-enter the "
                 "names?{0}").format(os.linesep)
 
-        for domain in domain_list:
+        for i, domain in enumerate(domain_list):
             try:
-                le_util.check_domain_sanity(domain)
+                domain_list[i] = le_util.enforce_domain_sanity(domain)
             except errors.ConfigurationError as e:
                 invalid_domains[domain] = e.message
 

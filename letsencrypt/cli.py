@@ -1295,8 +1295,6 @@ class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
         config.webroot_path.append(webroot)
 
 
-_undot = lambda domain: domain[:-1] if domain.endswith('.') else domain
-
 def _process_domain(config, domain_arg, webroot_path=None):
     """
     Process a new -d flag, helping the webroot plugin construct a map of
@@ -1305,8 +1303,8 @@ def _process_domain(config, domain_arg, webroot_path=None):
     webroot_path = webroot_path if webroot_path else config.webroot_path
 
     for domain in (d.strip() for d in domain_arg.split(",")):
+        domain = enforce_domain_sanity(domain)
         if domain not in config.domains:
-            domain = _undot(domain)
             config.domains.append(domain)
             # Each domain has a webroot_path of the most recent -w flag
             # unless it was explicitly included in webroot_map
