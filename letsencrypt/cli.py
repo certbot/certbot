@@ -710,6 +710,14 @@ def install(config, plugins):
 def renew(cli_config, plugins):
     """Renew previously-obtained certificates."""
     cli_config = configuration.RenewerConfiguration(cli_config)
+    if cli_config.domains != []:
+        raise errors.Error("Currently, the renew verb is only capable of "
+                           "renewing all installed certificates that are due "
+                           "to be renewed; individual domains cannot be "
+                           "specified with this action. If you would like to "
+                           "renew specific certificates, use the certonly "
+                           "command. The renew verb may provide other options "
+                           "for selecting certificates to renew in the future.")
     configs_dir = cli_config.renewal_configs_dir
     for renewal_file in reversed(os.listdir(configs_dir)):
         if not renewal_file.endswith(".conf"):
