@@ -136,4 +136,5 @@ def check_config_sanity(config):
     # Domain checks
     if config.namespace.domains is not None:
         for domain in config.namespace.domains:
-            le_util.check_domain_sanity(domain)
+            # This may be redundant, but let's be paranoid
+            le_util.enforce_domain_sanity(domain)
