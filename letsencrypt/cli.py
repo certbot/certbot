@@ -707,7 +707,7 @@ def install(config, plugins):
     le_client.enhance_config(domains, config)
 
 
-def renew(args, cli_config, plugins):
+def renew(cli_config, plugins):
     """Renew previously-obtained certificates."""
     cli_config = configuration.RenewerConfiguration(cli_config)
     configs_dir = cli_config.renewal_configs_dir
