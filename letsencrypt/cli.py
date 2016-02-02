@@ -664,7 +664,7 @@ def obtain_cert(config, plugins):
                 "Dry run: skipping saving certificate to %s", config.cert_path)
         else:
             cert_path, _, cert_fullchain = le_client.save_certificate(
-                , chain, config.cert_path, config.chain_path, args.fullchain_path)
+                certr, chain, config.cert_path, config.chain_path, args.fullchain_path)
             _report_new_cert(cert_path, cert_fullchain)
     else:
         domains = _find_domains(config, installer)
