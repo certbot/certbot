@@ -1304,7 +1304,9 @@ def _plugins_parsing(helpful, plugins):
         help="JSON dictionary mapping domains to webroot paths; this implies -d "
              "for each entry. You may need to escape this from your shell. "
              """Eg: --webroot-map '{"eg1.is,m.eg1.is":"/www/eg1/", "eg2.is":"/www/eg2"}' """
-             "This option is merged with, but takes precedence over, -w / -d entries")
+             "This option is merged with, but takes precedence over, -w / -d entries."
+             " At present, if you put webroot-map in a config file, it needs to be "
+             ' on a single line, like: webroot-map = {"example.com":"/var/www"}.')
 
 class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
     def __init__(self, *args, **kwargs):
