@@ -405,20 +405,11 @@ def _auth_from_domains(le_client, config, domains):
     # (which results in treating the request as a new certificate request).
 
     action, lineage = _treat_as_renewal(config, domains)
-    if action == "reinstall" and not config.dry_run:
+    if action == "reinstall":
         # The lineage already exists; allow the caller to try installing
         # it without getting a new certificate at all.
         return lineage, "reinstall"
-    elif action == "newcert":
-        # TREAT AS NEW REQUEST
-        lineage = le_client.obtain_and_enroll_certificate(domains)
-        if lineage is False:
-            raise errors.Error("Certificate could not be obtained")
-    else:
-        assert action == "renew" or config.dry_run, "invalid auth command"
-        if config.dry_run and action == "reinstall":
-            logger.info("Cert not due for renewal, but "
-                        "simulating renewal for dry run")
+    elif action == "renew":
         original_server = lineage.configuration["renewalparams"]["server"]
         _avoid_invalidating_lineage(config, lineage, original_server)
         # TODO: schoen wishes to reuse key - discussion
@@ -438,6 +429,11 @@ def _auth_from_domains(le_client, config, domains):
         # TODO: Check return value of save_successor
         # TODO: Also update lineage renewal config with any relevant
         #       configuration values from this attempt? <- Absolutely (jdkasten)
+    elif action == "newcert":
+        # TREAT AS NEW REQUEST
+        lineage = le_client.obtain_and_enroll_certificate(domains)
+        if lineage is False:
+            raise errors.Error("Certificate could not be obtained")
 
     if not config.dry_run:
         _report_new_cert(lineage.cert, lineage.fullchain)
