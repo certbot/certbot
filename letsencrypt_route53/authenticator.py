@@ -36,7 +36,7 @@ class Authenticator(common.Plugin):
 
     def get_chall_pref(self, domain):
         # pylint: disable=missing-docstring,no-self-use,unused-argument
-        return [challenges.DNS]
+        return [challenges.DNS01]
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
         responses = []
@@ -48,8 +48,8 @@ class Authenticator(common.Plugin):
         # provision the TXT record, using the domain name given. Assumes the hosted zone exits, else fails the challenge
         response, validation = achall.response_and_validation()
         r53 = boto3.client('route53')
-        logger.info("Doing validation for " + achall)
-        listResponse = r53.list_hosted_zones_by_name(DNSName=achall.chall.path[1:])
+        logger.info("Doing validation for " + response.domain)
+        listResponse = r53.list_hosted_zones_by_name(DNSName=response.domain)
         matches = listResponse.HostedZones;
         if matches.size != 0:
             logger.error("Route53 returned " + mathces.size + " matching hosted zones. Expected exactly one. Auth canceled.")
@@ -62,7 +62,7 @@ class Authenticator(common.Plugin):
                     {
                         'Action': 'UPSERT',
                         'ResourceRecordSet': {
-                            'Name': achall.chall.path[1:],
+                            'Name': achall.validation_domain_name(),
                             'Type': 'TXT',
                             'TTL': 300,
                             'ResourceRecords': [
