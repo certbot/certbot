@@ -107,7 +107,7 @@ and the version implemented by the Let's Encrypt client will be the
 version that was most current as of the release date of each client
 version. Mozilla offers three separate sets of cryptographic options,
 which trade off security and compatibility differently. These are
-referred to as as the "Modern", "Intermediate", and "Old" configurations
+referred to as the "Modern", "Intermediate", and "Old" configurations
 (in order from most secure to least secure, and least-backwards compatible
 to most-backwards compatible). The client will follow the Mozilla defaults
 for the *Intermediate* configuration by default, at least with regards to
