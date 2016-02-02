@@ -43,6 +43,12 @@ class NamespaceConfig(object):
         # Check command line parameters sanity, and error out in case of problem.
         check_config_sanity(self)
 
+        # We're done setting up the attic. Now pull up the ladder after ourselves...
+        self.__setattr__ = self.__setattr_implementation__
+
+    def __setattr_implementation__(self, var, value):
+        return self.namespace.__setattr__(var, value)
+
     def __getattr__(self, name):
         return getattr(self.namespace, name)
 
