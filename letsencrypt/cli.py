@@ -1306,7 +1306,9 @@ def _plugins_parsing(helpful, plugins):
         help="JSON dictionary mapping domains to webroot paths; this implies -d "
              "for each entry. You may need to escape this from your shell. "
              """Eg: --webroot-map '{"eg1.is,m.eg1.is":"/www/eg1/", "eg2.is":"/www/eg2"}' """
-             "This option is merged with, but takes precedence over, -w / -d entries")
+             "This option is merged with, but takes precedence over, -w / -d entries."
+             " At present, if you put webroot-map in a config file, it needs to be "
+             ' on a single line, like: webroot-map = {"example.com":"/var/www"}.')
 
 class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
     def __init__(self, *args, **kwargs):
@@ -1337,21 +1339,26 @@ class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
 
 _undot = lambda domain: domain[:-1] if domain.endswith('.') else domain
 
-def _process_domain(args, domain_arg, webroot_path=None):
+def _process_domain(args_or_config, domain_arg, webroot_path=None):
     """
     Process a new -d flag, helping the webroot plugin construct a map of
     {domain : webrootpath} if -w / --webroot-path is in use
+
+    :param args_or_config: may be an argparse args object, or a NamespaceConfig object
+    :param str domain_arg: a string representing 1+ domains, eg: "eg.is, example.com"
+    :param str webroot_path: (optional) the webroot_path for these domains
+
     """
-    webroot_path = webroot_path if webroot_path else args.webroot_path
+    webroot_path = webroot_path if webroot_path else args_or_config.webroot_path
 
     for domain in (d.strip() for d in domain_arg.split(",")):
-        if domain not in args.domains:
+        if domain not in args_or_config.domains:
             domain = _undot(domain)
-            args.domains.append(domain)
+            args_or_config.domains.append(domain)
             # Each domain has a webroot_path of the most recent -w flag
             # unless it was explicitly included in webroot_map
             if webroot_path:
-                args.webroot_map.setdefault(domain, webroot_path[-1])
+                args_or_config.webroot_map.setdefault(domain, webroot_path[-1])
 
 
 class WebrootMapProcessor(argparse.Action): # pylint: disable=missing-docstring
