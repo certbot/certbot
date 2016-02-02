@@ -378,13 +378,21 @@ def _report_new_cert(cert_path, fullchain_path):
            .format(and_chain, path, expiry))
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
-def _suggest_donate():
-    "Suggest a donation to support Let's Encrypt"
+
+def _suggest_donation_if_appropriate(config):
+    """Potentially suggest a donation to support Let's Encrypt."""
+    if not config.staging:  # --dry-run implies --staging
+        reporter_util = zope.component.getUtility(interfaces.IReporter)
+        msg = ("If you like Let's Encrypt, please consider supporting our work by:\n\n"
+               "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
+               "Donating to EFF:                    https://eff.org/donate-le\n\n")
+        reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
+
+
+def _report_successful_dry_run():
     reporter_util = zope.component.getUtility(interfaces.IReporter)
-    msg = ("If you like Let's Encrypt, please consider supporting our work by:\n\n"
-           "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
-           "Donating to EFF:                    https://eff.org/donate-le\n\n")
-    reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
+    reporter_util.add_message("The dry run was successful.",
+                              reporter_util.HIGH_PRIORITY, on_crash=False)
 
 
 def _auth_from_domains(le_client, config, domains):
@@ -397,6 +405,11 @@ def _auth_from_domains(le_client, config, domains):
     # (which results in treating the request as a new certificate request).
 
     action, lineage = _treat_as_renewal(config, domains)
+    if config.dry_run and action == "reinstall":
+        logger.info(
+            "Cert not due for renewal, but simulating renewal for dry run")
+        action = "renew"
+
     if action == "reinstall":
         # The lineage already exists; allow the caller to try installing
         # it without getting a new certificate at all.
@@ -408,24 +421,30 @@ def _auth_from_domains(le_client, config, domains):
         # https://github.com/letsencrypt/letsencrypt/pull/777/files#r40498574
         new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
         # TODO: Check whether it worked! <- or make sure errors are thrown (jdk)
-        lineage.save_successor(
-            lineage.latest_common_version(), OpenSSL.crypto.dump_certificate(
-                OpenSSL.crypto.FILETYPE_PEM, new_certr.body.wrapped),
-            new_key.pem, crypto_util.dump_pyopenssl_chain(new_chain))
+        if config.dry_run:
+            logger.info("Dry run: skipping updating lineage at %s",
+                        os.path.dirname(lineage.cert))
+        else:
+            lineage.save_successor(
+                lineage.latest_common_version(), OpenSSL.crypto.dump_certificate(
+                    OpenSSL.crypto.FILETYPE_PEM, new_certr.body.wrapped),
+                new_key.pem, crypto_util.dump_pyopenssl_chain(new_chain))
 
-        lineage.update_all_links_to(lineage.latest_common_version())
+            lineage.update_all_links_to(lineage.latest_common_version())
         # TODO: Check return value of save_successor
         # TODO: Also update lineage renewal config with any relevant
         #       configuration values from this attempt? <- Absolutely (jdkasten)
     elif action == "newcert":
         # TREAT AS NEW REQUEST
         lineage = le_client.obtain_and_enroll_certificate(domains)
-        if not lineage:
+        if lineage is False:
             raise errors.Error("Certificate could not be obtained")
 
-    _report_new_cert(lineage.cert, lineage.fullchain)
+    if not config.dry_run:
+        _report_new_cert(lineage.cert, lineage.fullchain)
 
     return lineage, action
+
 
 def _avoid_invalidating_lineage(config, lineage, original_server):
     "Do not renew a valid cert with one from a staging server!"
@@ -612,7 +631,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     else:
         display_ops.success_renewal(domains, action)
 
-    _suggest_donate()
+    _suggest_donation_if_appropriate(config)
 
 
 def obtain_cert(args, config, plugins):
@@ -636,14 +655,20 @@ def obtain_cert(args, config, plugins):
     if args.csr is not None:
         certr, chain = le_client.obtain_certificate_from_csr(le_util.CSR(
             file=args.csr[0], data=args.csr[1], form="der"))
-        cert_path, _, cert_fullchain = le_client.save_certificate(
-            certr, chain, args.cert_path, args.chain_path, args.fullchain_path)
-        _report_new_cert(cert_path, cert_fullchain)
+        if args.dry_run:
+            logger.info(
+                "Dry run: skipping saving certificate to %s", args.cert_path)
+        else:
+            cert_path, _, cert_fullchain = le_client.save_certificate(
+                certr, chain, args.cert_path, args.chain_path, args.fullchain_path)
+            _report_new_cert(cert_path, cert_fullchain)
     else:
         domains = _find_domains(config, installer)
         _auth_from_domains(le_client, config, domains)
 
-    _suggest_donate()
+    if args.dry_run:
+        _report_successful_dry_run()
+    _suggest_donation_if_appropriate(config)
 
 
 def install(args, config, plugins):
@@ -839,14 +864,23 @@ class HelpfulArgumentParser(object):
                 if domain not in parsed_args.domains:
                     parsed_args.domains.append(domain)
 
-        # argparse seemingly isn't flexible enough to give us this behaviour easily...
-        if parsed_args.staging:
-            if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
-                raise errors.Error("--server value conflicts with --staging")
+        if parsed_args.staging or parsed_args.dry_run:
+            if (parsed_args.server not in
+                    (flag_default("server"), constants.STAGING_URI)):
+                conflicts = ["--staging"] if parsed_args.staging else []
+                conflicts += ["--dry-run"] if parsed_args.dry_run else []
+                raise errors.Error("--server value conflicts with {0}".format(
+                    " and ".join(conflicts)))
+
             parsed_args.server = constants.STAGING_URI
 
-        return parsed_args
+            if parsed_args.dry_run:
+                if self.verb != "certonly":
+                    raise errors.Error("--dry-run currently only works with the "
+                                       "'certonly' subcommand")
+                parsed_args.break_my_certs = parsed_args.staging = True
 
+        return parsed_args
 
     def determine_verb(self):
         """Determines the verb/subcommand provided by the user.
@@ -1218,6 +1252,10 @@ def _paths_parser(helpful):
     add("testing", "--test-cert", "--staging", action='store_true', dest='staging',
         help='Use the staging server to obtain test (invalid) certs; equivalent'
              ' to --server ' + constants.STAGING_URI)
+    add("testing", "--dry-run", action="store_true", dest="dry_run",
+        help="Perform a test run of the client, obtaining test (invalid) certs"
+             " but not saving them to disk. This can currently only be used"
+             " with the 'certonly' subcommand.")
 
 
 def _plugins_parsing(helpful, plugins):
