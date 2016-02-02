@@ -672,8 +672,7 @@ def install(args, config, plugins):
 def renew(args, cli_config, plugins):
     """Renew previously-obtained certificates."""
     print("Welcome to the renew verb!")
-    plugins = plugins_disco.PluginsRegistry.find_all()
-    # cli_config = configuration.RenewerConfiguration(config)
+    cli_config = configuration.RenewerConfiguration(cli_config)
     configs_dir = cli_config.renewal_configs_dir
     for renewal_file in os.listdir(configs_dir):
         if not renewal_file.endswith(".conf"):
@@ -681,7 +680,7 @@ def renew(args, cli_config, plugins):
         print("Processing " + renewal_file)
         # XXX: does this succeed in making a fully independent config object
         #      each time?
-        config = configuration.RenewerConfiguration(config)
+        config = configuration.RenewerConfiguration(cli_config)
         full_path = os.path.join(configs_dir, renewal_file)
         try:
             renewal_candidate = storage.RenewableCert(full_path, config)
@@ -702,20 +701,24 @@ def renew(args, cli_config, plugins):
             continue
     # ?? config = configuration.NamespaceConfig(_AttrDict(renewalparams))
         # XXX: also need: webroot_map
-        # XXX: also need: nginx_ and apache_ items
+        # XXX: also need: nginx_, apache_, and plesk_ items
         # string-valued items to add if they're present
         for config_item in ["config_dir", "log_dir", "work_dir", "user_agent",
                             "server", "standalone_supported_challenges"]:
             if config_item in renewalparams:
-                print("setting", config_item, renewalparams[config_item])
-                config.namespace.__setattr__(config_item,
-                                             renewalparams[config_item])
+                value = renewalparams[config_item]
+                # Unfortunately, we've lost type information from ConfigObj,
+                # so we don't know if the original was NoneType or str!
+                if value == "None":
+                    value = None
+                print("setting", config_item, value)
+                config.__setattr__(config_item, value)
         # int-valued items to add if they're present
         for config_item in ["rsa_key_size", "tls_sni_01_port", "http01_port"]:
             if config_item in renewalparams:
                 try:
                     value = int(renewalparams[config_item])
-                    config.namespace.__setattr__(config_item, value)
+                    config.__setattr__(config_item, value)
                 except ValueError:
                     logger.warning("Renewal configuration file %s specifies "
                                    "a non-numeric value for %s. Skipping.",

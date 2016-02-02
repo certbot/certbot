@@ -90,9 +90,15 @@ class RenewerConfiguration(object):
 
     def __init__(self, namespace):
         self.namespace = namespace
+        # We're done setting up the attic. Now pull up the ladder after ourselves...
+        self.__setattr__ = self.__setattr_implementation__
 
     def __getattr__(self, name):
         return getattr(self.namespace, name)
+
+    def __setattr_implementation__(self, var, value):
+        print("in __setattr_implementation__, setting", var, value)
+        return self.namespace.__setattr__(var, value)
 
     @property
     def archive_dir(self):  # pylint: disable=missing-docstring
