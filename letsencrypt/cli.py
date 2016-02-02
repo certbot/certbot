@@ -670,7 +670,7 @@ def obtain_cert(config, plugins):
         domains = _find_domains(config, installer)
         _auth_from_domains(le_client, config, domains)
 
-    if args.dry_run:
+    if config.dry_run:
         _report_successful_dry_run()
     _suggest_donation_if_appropriate(config)
 
