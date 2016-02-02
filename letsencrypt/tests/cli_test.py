@@ -1,5 +1,6 @@
 """Tests for letsencrypt.cli."""
 import argparse
+import functools
 import itertools
 import os
 import shutil
@@ -49,18 +50,16 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def _call(self, args):
         "Run the cli with output streams and actual client mocked out"
-        with mock.patch('letsencrypt.cli._suggest_donate'):
-            with mock.patch('letsencrypt.cli.client') as client:
-                ret, stdout, stderr = self._call_no_clientmock(args)
-                return ret, stdout, stderr, client
+        with mock.patch('letsencrypt.cli.client') as client:
+            ret, stdout, stderr = self._call_no_clientmock(args)
+            return ret, stdout, stderr, client
 
     def _call_no_clientmock(self, args):
         "Run the client with output streams mocked out"
         args = self.standard_args + args
-        with mock.patch('letsencrypt.cli._suggest_donate'):
-            with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
-                with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
-                    ret = cli.main(args[:])  # NOTE: parser can alter its args!
+        with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
+            with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
+                ret = cli.main(args[:])  # NOTE: parser can alter its args!
         return ret, stdout, stderr
 
     def _call_stdout(self, args):
@@ -69,10 +68,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         caller.
         """
         args = self.standard_args + args
-        with mock.patch('letsencrypt.cli._suggest_donate'):
-            with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
-                with mock.patch('letsencrypt.cli.client') as client:
-                    ret = cli.main(args[:])  # NOTE: parser can alter its args!
+        with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
+            with mock.patch('letsencrypt.cli.client') as client:
+                ret = cli.main(args[:])  # NOTE: parser can alter its args!
         return ret, None, stderr, client
 
     def test_no_flags(self):
@@ -349,50 +347,91 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                           self._call,
                           ['-d', '*.wildcard.tld'])
 
-    def test_parse_domains(self):
+    def _get_argument_parser(self):
         plugins = disco.PluginsRegistry.find_all()
+        return functools.partial(cli.prepare_and_parse_args, plugins)
+
+    def test_parse_domains(self):
+        parse = self._get_argument_parser()
 
         short_args = ['-d', 'example.com']
-        namespace = cli.prepare_and_parse_args(plugins, short_args)
+        namespace = parse(short_args)
         self.assertEqual(namespace.domains, ['example.com'])
 
         short_args = ['-d', 'trailing.period.com.']
-        namespace = cli.prepare_and_parse_args(plugins, short_args)
+        namespace = parse(short_args)
         self.assertEqual(namespace.domains, ['trailing.period.com'])
 
         short_args = ['-d', 'example.com,another.net,third.org,example.com']
-        namespace = cli.prepare_and_parse_args(plugins, short_args)
+        namespace = parse(short_args)
         self.assertEqual(namespace.domains, ['example.com', 'another.net',
                                              'third.org'])
 
         long_args = ['--domains', 'example.com']
-        namespace = cli.prepare_and_parse_args(plugins, long_args)
+        namespace = parse(long_args)
         self.assertEqual(namespace.domains, ['example.com'])
 
         long_args = ['--domains', 'trailing.period.com.']
-        namespace = cli.prepare_and_parse_args(plugins, long_args)
+        namespace = parse(long_args)
         self.assertEqual(namespace.domains, ['trailing.period.com'])
 
         long_args = ['--domains', 'example.com,another.net,example.com']
-        namespace = cli.prepare_and_parse_args(plugins, long_args)
+        namespace = parse(long_args)
         self.assertEqual(namespace.domains, ['example.com', 'another.net'])
 
-    def test_parse_server(self):
-        plugins = disco.PluginsRegistry.find_all()
-        short_args = ['--server', 'example.com']
-        namespace = cli.prepare_and_parse_args(plugins, short_args)
+    def test_server_flag(self):
+        parse = self._get_argument_parser()
+        namespace = parse('--server example.com'.split())
         self.assertEqual(namespace.server, 'example.com')
 
+    def _check_server_conflict_message(self, parser_args, conflicting_args):
+        parse = self._get_argument_parser()
+        try:
+            parse(parser_args)
+            self.fail(  # pragma: no cover
+                "The following flags didn't conflict with "
+                '--server: {0}'.format(', '.join(conflicting_args)))
+        except errors.Error as error:
+            self.assertTrue('--server' in error.message)
+            for arg in conflicting_args:
+                self.assertTrue(arg in error.message)
+
+    def test_staging_flag(self):
+        parse = self._get_argument_parser()
         short_args = ['--staging']
-        namespace = cli.prepare_and_parse_args(plugins, short_args)
+        namespace = parse(short_args)
+        self.assertTrue(namespace.staging)
         self.assertEqual(namespace.server, constants.STAGING_URI)
 
-        short_args = ['--staging', '--server', 'example.com']
-        self.assertRaises(errors.Error, cli.prepare_and_parse_args, plugins, short_args)
+        short_args += '--server example.com'.split()
+        self._check_server_conflict_message(short_args, '--staging')
+
+    def _assert_dry_run_flag_worked(self, namespace):
+        self.assertTrue(namespace.dry_run)
+        self.assertTrue(namespace.break_my_certs)
+        self.assertTrue(namespace.staging)
+        self.assertEqual(namespace.server, constants.STAGING_URI)
+
+    def test_dry_run_flag(self):
+        parse = self._get_argument_parser()
+        short_args = ['--dry-run']
+        self.assertRaises(errors.Error, parse, short_args)
+
+        self._assert_dry_run_flag_worked(parse(short_args + ['auth']))
+        short_args += ['certonly']
+        self._assert_dry_run_flag_worked(parse(short_args))
+
+        short_args += '--server example.com'.split()
+        conflicts = ['--dry-run']
+        self._check_server_conflict_message(short_args, '--dry-run')
+
+        short_args += ['--staging']
+        conflicts += ['--staging']
+        self._check_server_conflict_message(short_args, conflicts)
 
     def _webroot_map_test(self, map_arg, path_arg, domains_arg, # pylint: disable=too-many-arguments
                           expected_map, expectect_domains, extra_args=None):
-        plugins = disco.PluginsRegistry.find_all()
+        parse = self._get_argument_parser()
         webroot_map_args = extra_args if extra_args else []
         if map_arg:
             webroot_map_args.extend(["--webroot-map", map_arg])
@@ -400,17 +439,17 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             webroot_map_args.extend(["-w", path_arg])
         if domains_arg:
             webroot_map_args.extend(["-d", domains_arg])
-        namespace = cli.prepare_and_parse_args(plugins, webroot_map_args)
+        namespace = parse(webroot_map_args)
         domains = cli._find_domains(namespace, mock.MagicMock()) # pylint: disable=protected-access
         self.assertEqual(namespace.webroot_map, expected_map)
         self.assertEqual(set(domains), set(expectect_domains))
 
     def test_parse_webroot(self):
-        plugins = disco.PluginsRegistry.find_all()
+        parse = self._get_argument_parser()
         webroot_args = ['--webroot', '-w', '/var/www/example',
             '-d', 'example.com,www.example.com', '-w', '/var/www/superfluous',
-            '-d', 'superfluo.us', '-d', 'www.superfluo.us.']
-        namespace = cli.prepare_and_parse_args(plugins, webroot_args)
+            '-d', 'superfluo.us', '-d', 'www.superfluo.us']
+        namespace = parse(webroot_args)
         self.assertEqual(namespace.webroot_map, {
             'example.com': '/var/www/example',
             'www.example.com': '/var/www/example',
@@ -418,7 +457,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             'superfluo.us': '/var/www/superfluous'})
 
         webroot_args = ['-d', 'stray.example.com'] + webroot_args
-        self.assertRaises(errors.Error, cli.prepare_and_parse_args, plugins, webroot_args)
+        self.assertRaises(errors.Error, parse, webroot_args)
 
         simple_map = '{"eg.com" : "/tmp"}'
         expected_map = {"eg.com": "/tmp"}
@@ -440,14 +479,35 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
         webroot_map_args = ['--webroot-map',
                             '{"eg.com.,www.eg.com": "/tmp", "eg.is.": "/tmp2"}']
-        namespace = cli.prepare_and_parse_args(plugins, webroot_map_args)
+        namespace = parse(webroot_map_args)
         self.assertEqual(namespace.webroot_map,
                          {"eg.com": "/tmp", "www.eg.com": "/tmp", "eg.is": "/tmp2"})
 
-    @mock.patch('letsencrypt.cli._suggest_donate')
+    def _certonly_new_request_common(self, mock_client, args=None):
+        with mock.patch('letsencrypt.cli._treat_as_renewal') as mock_renewal:
+            mock_renewal.return_value = ("newcert", None)
+            with mock.patch('letsencrypt.cli._init_le_client') as mock_init:
+                mock_init.return_value = mock_client
+                if args is None:
+                    args = []
+                args += '-d foo.bar -a standalone certonly'.split()
+                self._call(args)
+
+    @mock.patch('letsencrypt.cli.zope.component.getUtility')
+    def test_certonly_dry_run_new_request_success(self, mock_get_utility):
+        mock_client = mock.MagicMock()
+        mock_client.obtain_and_enroll_certificate.return_value = None
+        self._certonly_new_request_common(mock_client, ['--dry-run'])
+        self.assertEqual(
+            mock_client.obtain_and_enroll_certificate.call_count, 1)
+        self.assertTrue(
+            'dry run' in mock_get_utility().add_message.call_args[0][0])
+        # Asserts we don't suggest donating after a successful dry run
+        self.assertEqual(mock_get_utility().add_message.call_count, 1)
+
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
-    def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter, _suggest):
+    def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter):
         cert_path = '/etc/letsencrypt/live/foo.bar'
         date = '1970-01-01'
         mock_notAfter().date.return_value = date
@@ -458,10 +518,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._certonly_new_request_common(mock_client)
         self.assertEqual(
             mock_client.obtain_and_enroll_certificate.call_count, 1)
+        cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
+        self.assertTrue(cert_path in cert_msg)
+        self.assertTrue(date in cert_msg)
         self.assertTrue(
-            cert_path in mock_get_utility().add_message.call_args[0][0])
-        self.assertTrue(
-            date in mock_get_utility().add_message.call_args[0][0])
+            'donate' in mock_get_utility().add_message.call_args[0][0])
 
     def test_certonly_new_request_failure(self):
         mock_client = mock.MagicMock()
@@ -469,69 +530,101 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertRaises(errors.Error,
                           self._certonly_new_request_common, mock_client)
 
-    def _certonly_new_request_common(self, mock_client):
-        with mock.patch('letsencrypt.cli._treat_as_renewal') as mock_renewal:
-            mock_renewal.return_value = ("newcert", None)
-            with mock.patch('letsencrypt.cli._init_le_client') as mock_init:
-                mock_init.return_value = mock_client
-                self._call(['-d', 'foo.bar', '-a', 'standalone', 'certonly'])
-
-    @mock.patch('letsencrypt.cli._suggest_donate')
-    @mock.patch('letsencrypt.cli.zope.component.getUtility')
-    @mock.patch('letsencrypt.cli._treat_as_renewal')
-    @mock.patch('letsencrypt.cli._init_le_client')
-    def test_certonly_renewal(self, mock_init, mock_renewal, mock_get_utility, _suggest):
+    def _test_certonly_renewal_common(self, renewal_verb, extra_args=None):
         cert_path = 'letsencrypt/tests/testdata/cert.pem'
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
-
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path)
         mock_certr = mock.MagicMock()
         mock_key = mock.MagicMock(pem='pem_key')
-        mock_renewal.return_value = ("renew", mock_lineage)
-        mock_client = mock.MagicMock()
-        mock_client.obtain_certificate.return_value = (mock_certr, 'chain',
-                                                       mock_key, 'csr')
-        mock_init.return_value = mock_client
-        with mock.patch('letsencrypt.cli.OpenSSL'):
-            with mock.patch('letsencrypt.cli.crypto_util'):
-                self._call(['-d', 'foo.bar', '-a', 'standalone', 'certonly'])
+        with mock.patch('letsencrypt.cli._treat_as_renewal') as mock_renewal:
+            mock_renewal.return_value = (renewal_verb, mock_lineage)
+            mock_client = mock.MagicMock()
+            mock_client.obtain_certificate.return_value = (mock_certr, 'chain',
+                                                           mock_key, 'csr')
+            with mock.patch('letsencrypt.cli._init_le_client') as mock_init:
+                mock_init.return_value = mock_client
+                get_utility_path = 'letsencrypt.cli.zope.component.getUtility'
+                with mock.patch(get_utility_path) as mock_get_utility:
+                    with mock.patch('letsencrypt.cli.OpenSSL'):
+                        with mock.patch('letsencrypt.cli.crypto_util'):
+                            args = ['-d', 'foo.bar', '-a',
+                                    'standalone', 'certonly']
+                            if extra_args:
+                                args += extra_args
+                            self._call(args)
+
         mock_client.obtain_certificate.assert_called_once_with(['foo.bar'])
-        self.assertEqual(mock_lineage.save_successor.call_count, 1)
-        mock_lineage.update_all_links_to.assert_called_once_with(
-            mock_lineage.latest_common_version())
-        self.assertTrue(
-            chain_path in mock_get_utility().add_message.call_args[0][0])
 
-    @mock.patch('letsencrypt.cli._suggest_donate')
-    @mock.patch('letsencrypt.crypto_util.notAfter')
-    @mock.patch('letsencrypt.cli.display_ops.pick_installer')
+        return mock_lineage, mock_get_utility
+
+    def test_certonly_renewal(self):
+        lineage, get_utility = self._test_certonly_renewal_common('renew')
+        self.assertEqual(lineage.save_successor.call_count, 1)
+        lineage.update_all_links_to.assert_called_once_with(
+            lineage.latest_common_version())
+        cert_msg = get_utility().add_message.call_args_list[0][0][0]
+        self.assertTrue('fullchain.pem' in cert_msg)
+        self.assertTrue('donate' in get_utility().add_message.call_args[0][0])
+
+    def test_certonly_dry_run_reinstall_is_renewal(self):
+        _, get_utility = self._test_certonly_renewal_common('reinstall',
+                                                            ['--dry-run'])
+        self.assertEqual(get_utility().add_message.call_count, 1)
+        self.assertTrue('dry run' in get_utility().add_message.call_args[0][0])
+
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
+    @mock.patch('letsencrypt.cli._treat_as_renewal')
     @mock.patch('letsencrypt.cli._init_le_client')
-    @mock.patch('letsencrypt.cli.record_chosen_plugins')
-    def test_certonly_csr(self, _rec, mock_init, mock_get_utility,
-                          mock_pick_installer, mock_notAfter, _suggest):
-        cert_path = '/etc/letsencrypt/live/blahcert.pem'
-        date = '1970-01-01'
-        mock_notAfter().date.return_value = date
+    def test_certonly_reinstall(self, mock_init, mock_renewal, mock_get_utility):
+        mock_renewal.return_value = ('reinstall', mock.MagicMock())
+        mock_init.return_value = mock_client = mock.MagicMock()
+        self._call(['-d', 'foo.bar', '-a', 'standalone', 'certonly'])
+        self.assertFalse(mock_client.obtain_certificate.called)
+        self.assertFalse(mock_client.obtain_and_enroll_certificate.called)
+        self.assertTrue(
+            'donate' in mock_get_utility().add_message.call_args[0][0])
 
+    def _test_certonly_csr_common(self, extra_args=None):
+        certr = 'certr'
+        chain = 'chain'
         mock_client = mock.MagicMock()
-        mock_client.obtain_certificate_from_csr.return_value = ('certr',
-                                                                'chain')
+        mock_client.obtain_certificate_from_csr.return_value = (certr, chain)
+        cert_path = '/etc/letsencrypt/live/example.com/cert.pem'
         mock_client.save_certificate.return_value = cert_path, None, None
-        mock_init.return_value = mock_client
+        with mock.patch('letsencrypt.cli._init_le_client') as mock_init:
+            mock_init.return_value = mock_client
+            get_utility_path = 'letsencrypt.cli.zope.component.getUtility'
+            with mock.patch(get_utility_path) as mock_get_utility:
+                chain_path = '/etc/letsencrypt/live/example.com/chain.pem'
+                full_path = '/etc/letsencrypt/live/example.com/fullchain.pem'
+                args = ('-a standalone certonly --csr {0} --cert-path {1} '
+                        '--chain-path {2} --fullchain-path {3}').format(
+                            CSR, cert_path, chain_path, full_path).split()
+                if extra_args:
+                    args += extra_args
+                with mock.patch('letsencrypt.cli.crypto_util'):
+                    self._call(args)
 
-        installer = 'installer'
-        self._call(
-            ['-a', 'standalone', '-i', installer, 'certonly', '--csr', CSR,
-             '--cert-path', cert_path, '--fullchain-path', '/',
-             '--chain-path', '/'])
-        self.assertEqual(mock_pick_installer.call_args[0][1], installer)
-        mock_client.save_certificate.assert_called_once_with(
-            'certr', 'chain', cert_path, '/', '/')
+        if '--dry-run' in args:
+            self.assertFalse(mock_client.save_certificate.called)
+        else:
+            mock_client.save_certificate.assert_called_once_with(
+                certr, chain, cert_path, chain_path, full_path)
+
+        return mock_get_utility
+
+    def test_certonly_csr(self):
+        mock_get_utility = self._test_certonly_csr_common()
+        cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
+        self.assertTrue('cert.pem' in cert_msg)
         self.assertTrue(
-            cert_path in mock_get_utility().add_message.call_args[0][0])
+            'donate' in mock_get_utility().add_message.call_args[0][0])
+
+    def test_certonly_csr_dry_run(self):
+        mock_get_utility = self._test_certonly_csr_common(['--dry-run'])
+        self.assertEqual(mock_get_utility().add_message.call_count, 1)
         self.assertTrue(
-            date in mock_get_utility().add_message.call_args[0][0])
+            'dry run' in mock_get_utility().add_message.call_args[0][0])
 
     @mock.patch('letsencrypt.cli.client.acme_client')
     def test_revoke_with_key(self, mock_acme_client):

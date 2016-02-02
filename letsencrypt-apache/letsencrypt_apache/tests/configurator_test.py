@@ -429,9 +429,15 @@ class TwoVhost80Test(util.ApacheTest):
         self.config.parser.add_dir_to_ifmodssl = mock_add_dir
 
         self.config.prepare_server_https("443")
+        # Changing the order these modules are enabled breaks the reverter
+        self.assertEqual(mock_enable.call_args_list[0][0][0], "socache_shmcb")
+        self.assertEqual(mock_enable.call_args[0][0], "ssl")
         self.assertEqual(mock_enable.call_args[1], {"temp": False})
 
         self.config.prepare_server_https("8080", temp=True)
+        # Changing the order these modules are enabled breaks the reverter
+        self.assertEqual(mock_enable.call_args_list[2][0][0], "socache_shmcb")
+        self.assertEqual(mock_enable.call_args[0][0], "ssl")
         # Enable mod is temporary
         self.assertEqual(mock_enable.call_args[1], {"temp": True})
 
