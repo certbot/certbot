@@ -133,8 +133,12 @@ virtualenv --no-site-packages ../venv
 . ../venv/bin/activate
 pip install -U setuptools
 pip install -U pip
-# Now, use our local PyPI
+# Now, use our local PyPI. Disable cache so we get the correct KGS even if we
+# (or our dependencies) have conditional dependencies implemented with if
+# statements in setup.py and we have cached wheels lying around that would
+# cause those ifs to not be evaluated.
 pip install \
+  --no-cache-dir \
   --extra-index-url http://localhost:$PORT \
   letsencrypt $SUBPKGS
 # stop local PyPI
