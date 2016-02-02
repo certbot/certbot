@@ -235,7 +235,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with mock.patch("letsencrypt.cli._init_le_client") as mock_init:
             with mock.patch("letsencrypt.cli._auth_from_domains"):
                 self._call(["certonly", "--manual", "-d", "foo.bar"])
-                _config, auth, _installer = mock_init.call_args[0]
+                unused_config, auth, unused_installer = mock_init.call_args[0]
                 self.assertTrue(isinstance(auth, manual.Authenticator))
 
         with MockedVerb("certonly") as mock_certonly:
@@ -316,7 +316,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                         '--chain-path', 'chain',
                         '--fullchain-path', 'fullchain'])
 
-        config, _plugins = mock_obtaincert.call_args[0]
+        config, unused_plugins = mock_obtaincert.call_args[0]
         self.assertEqual(config.cert_path, os.path.abspath(cert))
         self.assertEqual(config.key_path, os.path.abspath(key))
         self.assertEqual(config.chain_path, os.path.abspath(chain))
