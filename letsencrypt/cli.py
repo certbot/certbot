@@ -45,6 +45,15 @@ from letsencrypt.plugins import disco as plugins_disco
 
 logger = logging.getLogger(__name__)
 
+# These are the items which get pulled out of a renewal configuration
+# file's renewalparams and actually used in the client configuration
+# during the renewal process. We have to record their types here because
+# the renewal configuration process loses this information.
+STR_CONFIG_ITEMS = ["config_dir", "log_dir", "work_dir", "user_agent",
+                    "server", "account", "authenticator", "installer",
+                    "standalone_supported_challenges"]
+INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
+
 # For help strings, figure out how the user ran us.
 # When invoked from letsencrypt-auto, sys.argv[0] is something like:
 # "/home/user/.local/share/letsencrypt/bin/letsencrypt"
@@ -237,7 +246,8 @@ def _find_duplicative_certs(config, domains):
 
 
 def _treat_as_renewal(config, domains):
-    """Determine whether there are duplicated names and how to handle them.
+    """Determine whether there are duplicated names and how to handle them
+    (renew, reinstall, newcert, or no action).
 
     :returns: Two-element tuple containing desired new-certificate behavior as
               a string token ("reinstall", "renew", or "newcert"), plus either
@@ -264,6 +274,21 @@ def _treat_as_renewal(config, domains):
     elif subset_names_cert is not None:
         return _handle_subset_cert_request(config, domains, subset_names_cert)
 
+
+def _should_renew(config, lineage):
+    "Return true if any of the circumstances for automatic renewal apply."
+    if config.renew_by_default:
+        logger.info("Auto-renewal forced with --renew-by-default...")
+        return True
+    if lineage.should_autorenew(interactive=True):
+        logger.info("Cert is due for renewal, auto-renewing...")
+        return True
+    if config.dry_run:
+        logger.info("Cert not due for renewal, but simulating renewal for dry run")
+        return True
+    return False
+
+
 def _handle_identical_cert_request(config, cert):
     """Figure out what to do if a cert has the same names as a previously obtained one
 
@@ -273,17 +298,12 @@ def _handle_identical_cert_request(config, cert):
     :rtype: tuple
 
     """
-    if config.renew_by_default:
-        logger.info("Auto-renewal forced with --renew-by-default...")
-        return "renew", cert
-    if cert.should_autorenew(interactive=True):
-        logger.info("Cert is due for renewal, auto-renewing...")
+    if _should_renew(config, cert):
         return "renew", cert
     if config.reinstall:
         # Set with --reinstall, force an identical certificate to be
         # reinstalled without further prompting.
         return "reinstall", cert
-
     question = (
         "You have an existing certificate that contains exactly the same "
         "domains you requested and isn't close to expiry."
@@ -414,12 +434,7 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
     else:
         # Renewal, where we already know the specific lineage we're
         # interested in
-        action = "renew" if lineage.should_autorenew() else "reinstall"
-
-    if config.dry_run and action == "reinstall":
-        logger.info(
-            "Cert not due for renewal, but simulating renewal for dry run")
-        action = "renew"
+        action = "renew" if _should_renew(config, lineage) else "reinstall"
 
     if action == "reinstall":
         # The lineage already exists; allow the caller to try installing
@@ -745,15 +760,14 @@ def renew(cli_config, plugins):
                            "an authenticator. Skipping.", full_path)
             continue
     # ?? config = configuration.NamespaceConfig(_AttrDict(renewalparams))
+        # webroot_map is, uniquely, a dict
         if "webroot_map" in renewalparams:
             config.__setattr__("webroot_map", renewalparams["webroot_map"])
             print ("webroot_map", renewalparams["webroot_map"])
             raw_input()
         # XXX: also need: nginx_, apache_, and plesk_ items
         # string-valued items to add if they're present
-        for config_item in ["config_dir", "log_dir", "work_dir", "user_agent",
-                            "server", "account", "authenticator", "installer",
-                            "standalone_supported_challenges"]:
+        for config_item in STR_CONFIG_ITEMS:
             if config_item in renewalparams:
                 value = renewalparams[config_item]
                 # Unfortunately, we've lost type information from ConfigObj,
@@ -762,7 +776,7 @@ def renew(cli_config, plugins):
                     value = None
                 config.__setattr__(config_item, value)
         # int-valued items to add if they're present
-        for config_item in ["rsa_key_size", "tls_sni_01_port", "http01_port"]:
+        for config_item in INT_CONFIG_ITEMS:
             if config_item in renewalparams:
                 try:
                     value = int(renewalparams[config_item])
@@ -1280,6 +1294,7 @@ def prepare_and_parse_args(plugins, args):
     # parser (--help should display plugin-specific options last)
     _plugins_parsing(helpful, plugins)
 
+    import code; code.interact(local=locals())
     return helpful.parse_args()
 
 
