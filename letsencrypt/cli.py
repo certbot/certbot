@@ -726,6 +726,7 @@ def renew(cli_config, plugins):
         # XXX: does this succeed in making a fully independent config object
         #      each time?
         config = configuration.RenewerConfiguration(copy.deepcopy(cli_config))
+        config.noninteractive_mode = True
         full_path = os.path.join(configs_dir, renewal_file)
         try:
             renewal_candidate = storage.RenewableCert(full_path, config)
