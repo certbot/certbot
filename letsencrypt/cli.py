@@ -45,6 +45,10 @@ from letsencrypt.plugins import disco as plugins_disco
 
 logger = logging.getLogger(__name__)
 
+# This is global scope in order to be able to extract type information from
+# it later
+_parser = None
+
 # These are the items which get pulled out of a renewal configuration
 # file's renewalparams and actually used in the client configuration
 # during the renewal process. We have to record their types here because
@@ -53,6 +57,10 @@ STR_CONFIG_ITEMS = ["config_dir", "log_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
                     "standalone_supported_challenges"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
+
+# These are the plugins for which we should try to automatically extract
+# the types when pulling items from a renewal configuration.
+EXTRACT_PLUGIN_PREFIXES = ["apache_", "nginx_", "standalone_"]
 
 # For help strings, figure out how the user ran us.
 # When invoked from letsencrypt-auto, sys.argv[0] is something like:
@@ -723,6 +731,8 @@ def install(config, plugins):
 
 
 def renew(cli_config, plugins):
+    print ("Beginning renew")
+    import code; code.interact(local=locals())
     """Renew previously-obtained certificates."""
     cli_config = configuration.RenewerConfiguration(cli_config)
     if cli_config.domains != []:
@@ -743,6 +753,8 @@ def renew(cli_config, plugins):
         config = configuration.RenewerConfiguration(copy.deepcopy(cli_config))
         config.noninteractive_mode = True
         full_path = os.path.join(configs_dir, renewal_file)
+
+
         try:
             renewal_candidate = storage.RenewableCert(full_path, config)
         except (errors.CertStorageError, IOError):
@@ -786,6 +798,19 @@ def renew(cli_config, plugins):
                                    "a non-numeric value for %s. Skipping.",
                                    full_path, config_item)
                     continue
+        # Now use parser to get plugin-prefixed items with correct types
+        # XXX: is it true that an item will end up in _parser._actions even
+        #      when no action was explicitly specified?
+        for plugin_prefix in EXTRACT_PLUGIN_PREFIXES:
+            for config_item in renewalparams.keys():
+                if config_item.startswith(plugin_prefix):
+                    for action in _parser.parser._actions:
+                       if action.dest == config_item:
+                           if action.type is not None:
+                               config.__setattr__(config_item, action.type(renewalparams[config_item]))
+                               break
+                    else:
+                           config.__setattr__(config_item, str(renewalparams[config_item]))
         # XXX: ensure that each call here replaces the previous one
         zope.component.provideUtility(config)
         # try:
@@ -1294,7 +1319,9 @@ def prepare_and_parse_args(plugins, args):
     # parser (--help should display plugin-specific options last)
     _plugins_parsing(helpful, plugins)
 
-    import code; code.interact(local=locals())
+    global _parser
+    _parser = helpful
+    print("stored _parser")
     return helpful.parse_args()
 
 
