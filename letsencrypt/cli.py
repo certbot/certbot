@@ -726,6 +726,101 @@ def install(config, plugins):
     le_client.enhance_config(domains, config)
 
 
+def _reconstitute(full_path, config):
+    """Try to instantiate a RenewableCert, updating config with relevant items.
+
+    This is specifically for use in renewal and enforces several checks
+    and policies to ensure that we can try to proceed with the renwal
+    request. The config argument is modified by including relevant options
+    read from the renewal configuration file.
+
+    :returns: the RenewableCert object or None if a fatal error occurred
+    :rtype: `storage.RenewableCert` or NoneType
+    """
+
+    try:
+        renewal_candidate = storage.RenewableCert(full_path, config)
+    except (errors.CertStorageError, IOError):
+        logger.warning("Renewal configuration file %s is broken. "
+                       "Skipping.", full_path)
+        return None
+    if "renewalparams" not in renewal_candidate.configuration:
+        logger.warning("Renewal configuration file %s lacks "
+                       "renewalparams. Skipping.", full_path)
+        return None
+    renewalparams = renewal_candidate.configuration["renewalparams"]
+    if "authenticator" not in renewalparams:
+        logger.warning("Renewal configuration file %s does not specify "
+                       "an authenticator. Skipping.", full_path)
+        return None
+    # string-valued items to add if they're present
+    for config_item in STR_CONFIG_ITEMS:
+        if config_item in renewalparams:
+            value = renewalparams[config_item]
+            # Unfortunately, we've lost type information from ConfigObj,
+            # so we don't know if the original was NoneType or str!
+            if value == "None":
+                value = None
+            config.__setattr__(config_item, value)
+    # int-valued items to add if they're present
+    for config_item in INT_CONFIG_ITEMS:
+        if config_item in renewalparams:
+            try:
+                value = int(renewalparams[config_item])
+                config.__setattr__(config_item, value)
+            except ValueError:
+                logger.warning("Renewal configuration file %s specifies "
+                               "a non-numeric value for %s. Skipping.",
+                               full_path, config_item)
+                return None
+    # Now use parser to get plugin-prefixed items with correct types
+    # XXX: the current approach of extracting only prefixed items
+    #      related to the actually-used installer and authenticator
+    #      works as long as plugins don't need to read plugin-specific
+    #      variables set by someone else (e.g., assuming Apache
+    #      configurator doesn't need to read webroot_ variables).
+    # XXX: is it true that an item will end up in _parser._actions even
+    #      when no action was explicitly specified?
+    plugin_prefixes = [renewalparams["authenticator"]]
+    if "installer" in renewalparams and renewalparams["installer"] != None:
+        plugin_prefixes.append(renewalparams["installer"])
+    for plugin_prefix in set(renewalparams):
+        for config_item in renewalparams.keys():
+            if renewalparams[config_item] == "None":
+                # Avoid confusion when, for example, "csr = None" (avoid
+                # trying to read the file called "None")
+                # Should we omit the item entirely rather than setting
+                # its value to None?
+                config.__setattr__(config_item, None)
+                continue
+            if config_item.startswith(plugin_prefix + "_"):
+                for action in _parser.parser._actions:
+                   if action.dest == config_item:
+                       if action.type is not None:
+                           config.__setattr__(config_item, action.type(renewalparams[config_item]))
+                           break
+                else:
+                       config.__setattr__(config_item, str(renewalparams[config_item]))
+    # webroot_map is, uniquely, a dict, and the logic above is not able
+    # to correctly parse it from the serialized form.
+    if "webroot_map" in renewalparams:
+        config.__setattr__("webroot_map", renewalparams["webroot_map"])
+
+    try:
+        domains = [le_util.enforce_domain_sanity(x) for x in
+                   renewal_candidate.names()]
+    except UnicodeError, ValueError:
+        logger.warning("Renewal configuration file %s references a cert "
+                       "that mentions a domain name that we regarded as "
+                       "invalid. Skipping.", full_path)
+        return None
+
+    config.__setattr__("domains", domains)
+    # XXX: ensure that each call here replaces the previous one
+    zope.component.provideUtility(config)
+    return renewal_candidate
+
+
 def renew(cli_config, plugins):
     """Renew previously-obtained certificates."""
     cli_config = configuration.RenewerConfiguration(cli_config)
@@ -738,7 +833,7 @@ def renew(cli_config, plugins):
                            "command. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
     configs_dir = cli_config.renewal_configs_dir
-    for renewal_file in reversed(os.listdir(configs_dir)):
+    for renewal_file in os.listdir(configs_dir):
         if not renewal_file.endswith(".conf"):
             continue
         print("Processing " + renewal_file)
@@ -748,84 +843,20 @@ def renew(cli_config, plugins):
         config.noninteractive_mode = True
         full_path = os.path.join(configs_dir, renewal_file)
 
-
+        # Note that this modifies config (to add back the configuration
+        # elements from within the renewal configuration file).
         try:
-            renewal_candidate = storage.RenewableCert(full_path, config)
-        except (errors.CertStorageError, IOError):
-            logger.warning("Renewal configuration file %s is broken. "
-                           "Skipping.", full_path)
-            continue
-        if "renewalparams" not in renewal_candidate.configuration:
-            logger.warning("Renewal configuration file %s lacks "
-                           "renewalparams. Skipping.", full_path)
-            continue
-        renewalparams = renewal_candidate.configuration["renewalparams"]
-        if "authenticator" not in renewalparams:
-            logger.warning("Renewal configuration file %s does not specify "
-                           "an authenticator. Skipping.", full_path)
-            continue
-        # XXX: also need: nginx_, apache_, and plesk_ items
-        # string-valued items to add if they're present
-        for config_item in STR_CONFIG_ITEMS:
-            if config_item in renewalparams:
-                value = renewalparams[config_item]
-                # Unfortunately, we've lost type information from ConfigObj,
-                # so we don't know if the original was NoneType or str!
-                if value == "None":
-                    value = None
-                config.__setattr__(config_item, value)
-        # int-valued items to add if they're present
-        for config_item in INT_CONFIG_ITEMS:
-            if config_item in renewalparams:
-                try:
-                    value = int(renewalparams[config_item])
-                    config.__setattr__(config_item, value)
-                except ValueError:
-                    logger.warning("Renewal configuration file %s specifies "
-                                   "a non-numeric value for %s. Skipping.",
-                                   full_path, config_item)
-                    continue
-        # Now use parser to get plugin-prefixed items with correct types
-        # XXX: the current approach of extracting only prefixed items
-        #      related to the actually-used installer and authenticator
-        #      works as long as plugins don't need to read plugin-specific
-        #      variables set by someone else (e.g., assuming Apache
-        #      configurator doesn't need to read webroot_ variables).
-        # XXX: is it true that an item will end up in _parser._actions even
-        #      when no action was explicitly specified?
-        plugin_prefixes = [renewalparams["authenticator"]]
-        if "installer" in renewalparams and renewalparams["installer"] != None:
-            plugin_prefixes.append(renewalparams["installer"])
-        for plugin_prefix in set(renewalparams):
-            for config_item in renewalparams.keys():
-                if renewalparams[config_item] == "None":
-                    # Avoid confusion when, for example, csr = None (avoid
-                    # trying to read the file called "None")
-                    continue
-                if config_item.startswith(plugin_prefix + "_"):
-                    for action in _parser.parser._actions:
-                       if action.dest == config_item:
-                           if action.type is not None:
-                               config.__setattr__(config_item, action.type(renewalparams[config_item]))
-                               break
-                    else:
-                           config.__setattr__(config_item, str(renewalparams[config_item]))
-        # webroot_map is, uniquely, a dict, and the logic above is not able
-        # to correctly parse it from the serialized form.
-        if "webroot_map" in renewalparams:
-            config.__setattr__("webroot_map", renewalparams["webroot_map"])
-        # XXX: ensure that each call here replaces the previous one
-        zope.component.provideUtility(config)
-        try:
-            domains = [le_util.enforce_domain_sanity(x) for x in
-                       renewal_candidate.names()]
-        except UnicodeError, ValueError:
-            logger.warning("Renewal configuration file %s references a cert "
-                           "that mentions a domain name that we regarded as "
-                           "invalid. Skipping.", full_path)
+            renewal_candidate = _reconstitute(full_path, config)
+        except Exception as e:
+            # reconstitute encountered an unanticipated problem.
+            logger.warning("Renewal configuration file %s produced an "
+                           "unexpected error: %s. Skipping.", full_path, e)
             continue
 
-        config.__setattr__("domains", domains)
+        if renewal_candidate is None:
+            # reconstitute indicated an error or problem which has
+            # already been logged. Go on to the next config.
+            continue
 
         print("Trying...")
         # Because obtain_cert itself indirectly decides whether to renew
