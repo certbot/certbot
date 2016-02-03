@@ -768,7 +768,6 @@ def renew(cli_config, plugins):
             logger.warning("Renewal configuration file %s does not specify "
                            "an authenticator. Skipping.", full_path)
             continue
-    # ?? config = configuration.NamespaceConfig(_AttrDict(renewalparams))
         # webroot_map is, uniquely, a dict
         if "webroot_map" in renewalparams:
             config.__setattr__("webroot_map", renewalparams["webroot_map"])
@@ -808,23 +807,6 @@ def renew(cli_config, plugins):
                            config.__setattr__(config_item, str(renewalparams[config_item]))
         # XXX: ensure that each call here replaces the previous one
         zope.component.provideUtility(config)
-        # try:
-        #     authenticator = plugins[renewalparams["authenticator"]]
-        #     if "installer" in renewalparams and renewalparams["installer"] != "None":
-        #         installer = plugins[renewalparams["installer"]]
-        # except KeyError:
-        #     if "authenticator" in renewal_params:
-        #         logger.warning("Renewal configuration file %s specifies an "
-        #                        "authenticator plugin (%s) that could not be "
-        #                       "found. Skipping.", full_path,
-        #                       renewal_params["authenticator"])
-        #    else:
-        #        logger.warning("Renewal configuration file %s specifies no "
-        #                       "authenticator plugin. Skipping.", full_path)
-        #    continue
-        #authenticator = authenticator.init(config)
-        #installer = installer.init(config)
-        #le_client = _init_le_client(config, config, authenticator, installer)
         try:
             domains = [le_util.enforce_domain_sanity(x) for x in
                        renewal_candidate.names()]
