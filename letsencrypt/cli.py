@@ -45,6 +45,15 @@ from letsencrypt.plugins import disco as plugins_disco
 
 logger = logging.getLogger(__name__)
 
+# These are the items which get pulled out of a renewal configuration
+# file's renewalparams and actually used in the client configuration
+# during the renewal process. We have to record their types here because
+# the renewal configuration process loses this information.
+STR_CONFIG_ITEMS = ["config_dir", "log_dir", "work_dir", "user_agent",
+                    "server", "account", "authenticator", "installer",
+                    "standalone_supported_challenges"]
+INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
+
 # For help strings, figure out how the user ran us.
 # When invoked from letsencrypt-auto, sys.argv[0] is something like:
 # "/home/user/.local/share/letsencrypt/bin/letsencrypt"
@@ -751,15 +760,14 @@ def renew(cli_config, plugins):
                            "an authenticator. Skipping.", full_path)
             continue
     # ?? config = configuration.NamespaceConfig(_AttrDict(renewalparams))
+        # webroot_map is, uniquely, a dict
         if "webroot_map" in renewalparams:
             config.__setattr__("webroot_map", renewalparams["webroot_map"])
             print ("webroot_map", renewalparams["webroot_map"])
             raw_input()
         # XXX: also need: nginx_, apache_, and plesk_ items
         # string-valued items to add if they're present
-        for config_item in ["config_dir", "log_dir", "work_dir", "user_agent",
-                            "server", "account", "authenticator", "installer",
-                            "standalone_supported_challenges"]:
+        for config_item in STR_CONFIG_ITEMS:
             if config_item in renewalparams:
                 value = renewalparams[config_item]
                 # Unfortunately, we've lost type information from ConfigObj,
@@ -768,7 +776,7 @@ def renew(cli_config, plugins):
                     value = None
                 config.__setattr__(config_item, value)
         # int-valued items to add if they're present
-        for config_item in ["rsa_key_size", "tls_sni_01_port", "http01_port"]:
+        for config_item in INT_CONFIG_ITEMS:
             if config_item in renewalparams:
                 try:
                     value = int(renewalparams[config_item])
@@ -1286,6 +1294,7 @@ def prepare_and_parse_args(plugins, args):
     # parser (--help should display plugin-specific options last)
     _plugins_parsing(helpful, plugins)
 
+    import code; code.interact(local=locals())
     return helpful.parse_args()
 
 
