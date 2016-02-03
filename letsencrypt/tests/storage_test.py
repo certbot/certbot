@@ -544,6 +544,10 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.assertEqual(self.test_rc.current_version(kind), 8)
         with open(self.test_rc.version("fullchain", 9)) as f:
             self.assertEqual(f.read(), "last" + "attempt")
+        temp_config_file = os.path.join(self.cli_config.renewal_configs_dir,
+                                        self.test_rc.lineagename) + ".conf.new"
+        with open(temp_config_file, "w") as f:
+            f.write("We previously crashed while writing me :(")
         # Test updating when providing a new privkey.  The key should
         # be saved in a new file rather than creating a new symlink.
         self.assertEqual(
@@ -551,6 +555,7 @@ class RenewableCertTests(BaseRenewableCertTest):
                                             "key", self.cli_config))
         self.assertTrue(os.path.exists(self.test_rc.version("privkey", 10)))
         self.assertFalse(os.path.islink(self.test_rc.version("privkey", 10)))
+        self.assertFalse(os.path.exists(temp_config_file))
 
     def test_new_lineage(self):
         """Test for new_lineage() class method."""
