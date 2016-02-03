@@ -727,33 +727,7 @@ def install(config, plugins):
     le_client.enhance_config(domains, config)
 
 
-def _reconstitute(full_path, config):
-    """Try to instantiate a RenewableCert, updating config with relevant items.
-
-    This is specifically for use in renewal and enforces several checks
-    and policies to ensure that we can try to proceed with the renwal
-    request. The config argument is modified by including relevant options
-    read from the renewal configuration file.
-
-    :returns: the RenewableCert object or None if a fatal error occurred
-    :rtype: `storage.RenewableCert` or NoneType
-    """
-
-    try:
-        renewal_candidate = storage.RenewableCert(full_path, config)
-    except (errors.CertStorageError, IOError):
-        logger.warning("Renewal configuration file %s is broken. "
-                       "Skipping.", full_path)
-        return None
-    if "renewalparams" not in renewal_candidate.configuration:
-        logger.warning("Renewal configuration file %s lacks "
-                       "renewalparams. Skipping.", full_path)
-        return None
-    renewalparams = renewal_candidate.configuration["renewalparams"]
-    if "authenticator" not in renewalparams:
-        logger.warning("Renewal configuration file %s does not specify "
-                       "an authenticator. Skipping.", full_path)
-        return None
+def _restore_required_config_elements(full_path, config, renewalparams):
     # string-valued items to add if they're present
     for config_item in STR_CONFIG_ITEMS:
         if config_item in renewalparams:
@@ -773,7 +747,7 @@ def _reconstitute(full_path, config):
                 logger.warning("Renewal configuration file %s specifies "
                                "a non-numeric value for %s. Skipping.",
                                full_path, config_item)
-                return None
+                raise
     # Now use parser to get plugin-prefixed items with correct types
     # XXX: the current approach of extracting only prefixed items
     #      related to the actually-used installer and authenticator
@@ -802,15 +776,55 @@ def _reconstitute(full_path, config):
                            break
                 else:
                        config.__setattr__(config_item, str(renewalparams[config_item]))
-    # webroot_map is, uniquely, a dict, and the logic above is not able
-    # to correctly parse it from the serialized form.
+    return True
+
+
+def _reconstitute(full_path, config):
+    """Try to instantiate a RenewableCert, updating config with relevant items.
+
+    This is specifically for use in renewal and enforces several checks
+    and policies to ensure that we can try to proceed with the renwal
+    request. The config argument is modified by including relevant options
+    read from the renewal configuration file.
+
+    :returns: the RenewableCert object or None if a fatal error occurred
+    :rtype: `storage.RenewableCert` or NoneType
+    """
+
+    try:
+        renewal_candidate = storage.RenewableCert(full_path, config)
+    except (errors.CertStorageError, IOError):
+        logger.warning("Renewal configuration file %s is broken. "
+                       "Skipping.", full_path)
+        return None
+    if "renewalparams" not in renewal_candidate.configuration:
+        logger.warning("Renewal configuration file %s lacks "
+                       "renewalparams. Skipping.", full_path)
+        return None
+    renewalparams = renewal_candidate.configuration["renewalparams"]
+    if "authenticator" not in renewalparams:
+        logger.warning("Renewal configuration file %s does not specify "
+                       "an authenticator. Skipping.", full_path)
+        return None
+    # Now restore specific values along with their data types, if
+    # those elements are present.
+    try:
+        _restore_required_config_elements(full_path, config, renewalparams)
+    except ValueError:
+        # There was a data type error which has already been
+        # logged.
+        return None
+
+    # webroot_map is, uniquely, a dict, and the general-purpose
+    # configuration restoring logic is not able to correctly parse it
+    # from the serialized form.
     if "webroot_map" in renewalparams:
         config.__setattr__("webroot_map", renewalparams["webroot_map"])
 
     try:
         domains = [le_util.enforce_domain_sanity(x) for x in
                    renewal_candidate.names()]
-    except UnicodeError, ValueError:
+    except (UnicodeError, ValueError):
         logger.warning("Renewal configuration file %s references a cert "
                        "that mentions a domain name that we regarded as "
                        "invalid. Skipping.", full_path)
