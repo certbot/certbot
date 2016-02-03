@@ -383,7 +383,7 @@ def _report_new_cert(cert_path, fullchain_path):
 
 def _suggest_donation_if_appropriate(config):
     """Potentially suggest a donation to support Let's Encrypt."""
-    if not config.staging or config.verb == "renew":  # --dry-run implies --staging
+    if not config.staging and not config.verb == "renew":  # --dry-run implies --staging
         reporter_util = zope.component.getUtility(interfaces.IReporter)
         msg = ("If you like Let's Encrypt, please consider supporting our work by:\n\n"
                "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
