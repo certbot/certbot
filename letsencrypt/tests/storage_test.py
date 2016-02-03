@@ -1,4 +1,4 @@
-"""Tests for letsencrypt.renewer."""
+"""Tests for letsencrypt.storage."""
 import datetime
 import pytz
 import os
@@ -98,7 +98,7 @@ class BaseRenewableCertTest(unittest.TestCase):
 
 class RenewableCertTests(BaseRenewableCertTest):
     # pylint: disable=too-many-public-methods
-    """Tests for letsencrypt.renewer.*."""
+    """Tests for letsencrypt.storage."""
 
     def test_initialization(self):
         self.assertEqual(self.test_rc.lineagename, "example.org")
