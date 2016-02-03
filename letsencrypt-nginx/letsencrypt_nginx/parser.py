@@ -54,7 +54,7 @@ class NginxParser(object):
                 if _is_include_directive(entry):
                     # Parse the top-level included file
                     self._parse_recursively(entry[1])
-                elif entry and (entry[0] == ['http'] or entry[0] == ['server']):
+                elif entry and entry[0] in [['http'], ['server']]:
                     # Look for includes in the top-level 'http'/'server' context
                     for subentry in entry[1]:
                         if _is_include_directive(subentry):

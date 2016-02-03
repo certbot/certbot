@@ -76,13 +76,13 @@ class RawNginxParser(object):
                     return result
                 result.append(res)
 
-        def _is_whitespace(self, val, includeNL):
-            if includeNL:
+        def _is_whitespace(self, val, include_newline):
+            if include_newline:
                 return val in [' ', '\t', '\n', '\r']
             return val in [' ', '\t']
 
-        def _parse_whitespace(self, includeNL):
-            if self._is_whitespace(self._peek(), includeNL):
+        def _parse_whitespace(self, include_newline):
+            if self._is_whitespace(self._peek(), include_newline):
                 return self._read()
             return None
 
@@ -91,7 +91,7 @@ class RawNginxParser(object):
 
         def _read_newline(self):
             if self._read() == '\r' and self._peek() == '\n':
-                self._expect('\n')
+                self._read()
 
         def _parse_newline(self):
             if self._is_at_newline():
@@ -100,18 +100,18 @@ class RawNginxParser(object):
             return None
 
         def _collect_until_end_of_line(self):
-            result = ''
+            result = []
 
             while not self._is_at_newline():
-                result = result + self._read()
+                result.append(self._read())
 
             self._read_newline()
 
-            return result
+            return ''.join(result)
 
         def _parse_comment(self):
             if self._peek() == '#':
-                self._expect('#')
+                self._read()
                 return ['#', self._collect_until_end_of_line()]
             return None
 
@@ -129,14 +129,14 @@ class RawNginxParser(object):
                 result = result + self._read()
 
         def _parse_string(self):
-            startVal = self._read()
-            result = startVal
+            start = self._read()
+            result = start
             while True:
                 val = self._read()
                 result = result + val
                 if val == None:
                     raise ParseException("Invalid configuration file, unfinished string literal")
-                if val == startVal:
+                if val == start:
                     return result
 
         def _parse_value(self):
@@ -144,7 +144,7 @@ class RawNginxParser(object):
             result = ''
             while True:
                 val = self._peek()
-                if val is None or val in ['{', ';']:
+                if val is None or val in '{;':
                     result = result.rstrip()
                     if result == '':
                         return None
