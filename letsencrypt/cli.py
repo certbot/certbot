@@ -738,7 +738,7 @@ def _diff_from_default(default_conf, cli_conf, value):
     else:
         return False
 
-def _restore_required_config_elements(full_path, config, renewalparams):
+def _restore_required_config_elements(full_path, config, renewalparams, cli_config, default_conf):
     # string-valued items to add if they're present
     for config_item in STR_CONFIG_ITEMS:
         if config_item in renewalparams and not _diff_from_default(default_conf, cli_config, config_item):
@@ -790,7 +790,7 @@ def _restore_required_config_elements(full_path, config, renewalparams):
     return True
 
 
-def _reconstitute(full_path, config):
+def _reconstitute(full_path, config, cli_config):
     """Try to instantiate a RenewableCert, updating config with relevant items.
 
     This is specifically for use in renewal and enforces several checks
@@ -802,6 +802,8 @@ def _reconstitute(full_path, config):
     :rtype: `storage.RenewableCert` or NoneType
     """
 
+    default_args = prepare_and_parse_args(plugins, [])
+    default_conf = configuration.NamespaceConfig(default_args)
     try:
         renewal_candidate = storage.RenewableCert(full_path, config)
     except (errors.CertStorageError, IOError):
@@ -820,7 +822,7 @@ def _reconstitute(full_path, config):
     # Now restore specific values along with their data types, if
     # those elements are present.
     try:
-        _restore_required_config_elements(full_path, config, renewalparams)
+        _restore_required_config_elements(full_path, config, renewalparams, cli_config, default_conf)
     except ValueError:
         # There was a data type error which has already been
         # logged.
@@ -866,14 +868,12 @@ def renew(cli_config, plugins):
         #      each time?
         config = configuration.RenewerConfiguration(copy.deepcopy(cli_config))
         config.noninteractive_mode = True
-        default_args = prepare_and_parse_args(plugins, [])
-        default_conf = configuration.NamespaceConfig(default_args)
         full_path = os.path.join(configs_dir, renewal_file)
 
         # Note that this modifies config (to add back the configuration
         # elements from within the renewal configuration file).
         try:
-            renewal_candidate = _reconstitute(full_path, config)
+            renewal_candidate = _reconstitute(full_path, config, cli_config)
         except Exception as e:
             # reconstitute encountered an unanticipated problem.
             logger.warning("Renewal configuration file %s produced an "
