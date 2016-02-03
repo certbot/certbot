@@ -237,7 +237,8 @@ def _find_duplicative_certs(config, domains):
 
 
 def _treat_as_renewal(config, domains):
-    """Determine whether there are duplicated names and how to handle them.
+    """Determine whether there are duplicated names and how to handle them
+    (renew, reinstall, newcert, or no action).
 
     :returns: Two-element tuple containing desired new-certificate behavior as
               a string token ("reinstall", "renew", or "newcert"), plus either
@@ -264,6 +265,21 @@ def _treat_as_renewal(config, domains):
     elif subset_names_cert is not None:
         return _handle_subset_cert_request(config, domains, subset_names_cert)
 
+
+def _should_renew(config, lineage):
+    "Return true if any of the circumstances for automatic renewal apply."
+    if config.renew_by_default:
+        logger.info("Auto-renewal forced with --renew-by-default...")
+        return True
+    if cert.should_autorenew(interactive=True):
+        logger.info("Cert is due for renewal, auto-renewing...")
+        return True
+    if config.dry_run:
+        logger.info("Cert not due for renewal, but simulating renewal for dry run")
+        return True
+    return False
+
+
 def _handle_identical_cert_request(config, cert):
     """Figure out what to do if a cert has the same names as a previously obtained one
 
@@ -273,17 +289,12 @@ def _handle_identical_cert_request(config, cert):
     :rtype: tuple
 
     """
-    if config.renew_by_default:
-        logger.info("Auto-renewal forced with --renew-by-default...")
-        return "renew", cert
-    if cert.should_autorenew(interactive=True):
-        logger.info("Cert is due for renewal, auto-renewing...")
+    if _should_renew(config, cert):
         return "renew", cert
     if config.reinstall:
         # Set with --reinstall, force an identical certificate to be
         # reinstalled without further prompting.
         return "reinstall", cert
-
     question = (
         "You have an existing certificate that contains exactly the same "
         "domains you requested and isn't close to expiry."
@@ -414,12 +425,7 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
     else:
         # Renewal, where we already know the specific lineage we're
         # interested in
-        action = "renew" if lineage.should_autorenew() else "reinstall"
-
-    if config.dry_run and action == "reinstall":
-        logger.info(
-            "Cert not due for renewal, but simulating renewal for dry run")
-        action = "renew"
+        action = "renew" if _should_renew(config, lineage) else "reinstall"
 
     if action == "reinstall":
         # The lineage already exists; allow the caller to try installing
