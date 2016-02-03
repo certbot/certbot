@@ -1,8 +1,6 @@
 """Very low-level hand rolled nginx config parser, using recursive descent to
 retain all parsed information, so that the file can be reconstituted."""
 
-import StringIO
-
 class ParseException(Exception):
     """A parsing exception happened."""
     def __init__(self, value):
@@ -30,40 +28,26 @@ class RawNginxParser(object):
     class Internal(object):
         """An internal class to keep track of parsing state."""
         def __init__(self, source):
-            self.src = StringIO.StringIO(source)
-            self.peeked = None
-            self.eof = False
+            self.src = source
+            self.pos = 0
 
         def _peek(self):
-            if self.eof:
+            try:
+                return self.src[self.pos]
+            except:
                 return None
-
-            if self.peeked is None:
-                self.peeked = self.src.read(1)
-                if self.peeked == '':
-                    self.eof = True
-                    return None
-            return self.peeked
 
         def _read(self):
-            if self.eof:
-                return None
-
-            if self.peeked:
-                val = self.peeked
-                self.peeked = None
-                return val
-            val = self.src.read(1)
-            if val == '':
-                self.eof = True
-                return None
-            return val
+            ret = self._peek()
+            if ret:
+                self.pos += 1
+            return ret
 
         def parse_file(self):
             """Tries to parse the file and returns a list of blocks parsed."""
 
             result = self._parse_block()
-            if not self.eof:
+            if self.pos < len(self.src):
                 raise ParseException("Invalid configuration file")
 
             return result
@@ -77,9 +61,12 @@ class RawNginxParser(object):
                 result.append(res)
 
         def _is_whitespace(self, val, include_newline):
+            if not val:
+                return False
+
             if include_newline:
-                return val in [' ', '\t', '\n', '\r']
-            return val in [' ', '\t']
+                return val in ' \t\n\r'
+            return val in ' \t'
 
         def _parse_whitespace(self, include_newline):
             if self._is_whitespace(self._peek(), include_newline):
@@ -87,7 +74,8 @@ class RawNginxParser(object):
             return None
 
         def _is_at_newline(self):
-            return self._peek() in ['\n', '\r']
+            val = self._peek()
+            return val and val in '\n\r'
 
         def _read_newline(self):
             if self._read() == '\r' and self._peek() == '\n':
@@ -116,49 +104,50 @@ class RawNginxParser(object):
             return None
 
         def _is_key_char(self, val):
-            return val.isalnum() or val == '_' or val == '/'
+            return val.isalnum() or val in '_/'
 
         def _parse_key(self):
-            result = ''
+            result = []
             while True:
                 val = self._peek()
                 if val is None or not self._is_key_char(val):
-                    if result == '':
+                    if not result:
                         return None
-                    return result
-                result = result + self._read()
+                    return ''.join(result)
+                result.append(self._read())
 
         def _parse_string(self):
             start = self._read()
-            result = start
+            result = []
+            result.append(start)
             while True:
                 val = self._read()
-                result = result + val
+                result.append(val)
                 if val == None:
                     raise ParseException("Invalid configuration file, unfinished string literal")
                 if val == start:
-                    return result
+                    return ''.join(result)
 
         def _parse_value(self):
             self._pass_whitespace(True)
-            result = ''
+            result = []
             while True:
                 val = self._peek()
                 if val is None or val in '{;':
-                    result = result.rstrip()
-                    if result == '':
+                    ret = ''.join(result).rstrip()
+                    if ret == '':
                         return None
-                    return result
+                    return ret
                 if val == '"' or val == "'":
-                    result = result + self._parse_string()
+                    result.append(self._parse_string())
                 else:
-                    result = result + self._read()
+                    result.append(self._read())
 
         def _parse_modifier(self):
             """Parses a modifier - this is slightly looser than the original parser"""
             self._pass_whitespace(True)
             val = self._peek()
-            if val in ['=', '~', '^']:
+            if val in '=~^':
                 first = self._read()
                 second = self._peek()
                 if not self._is_whitespace(second, True):
