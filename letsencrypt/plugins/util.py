@@ -51,16 +51,18 @@ def already_listening(port, renewer=False):
             display = zope.component.getUtility(interfaces.IDisplay)
             extra = ""
             if renewer:
-                extra = (" For automated renewal, you may want to use a script that stops"
-                         " and starts your webserver. You can find an example at"
-                         " https://letsencrypt.org/howitworks/#writing-your-own-renewal-script"
-                         ". Alternatively you can use the webroot plugin to renew without"
-                         " needing to stop and start your webserver.")
+                extra = (
+                    " For automated renewal, you may want to use a script that stops"
+                    " and starts your webserver. You can find an example at"
+                    " https://letsencrypt.org/howitworks/#writing-your-own-renewal-script"
+                    ". Alternatively you can use the webroot plugin to renew without"
+                    " needing to stop and start your webserver.")
             display.notification(
                 "The program {0} (process ID {1}) is already listening "
                 "on TCP port {2}. This will prevent us from binding to "
                 "that port. Please stop the {0} program temporarily "
-                "and then try again.{3}".format(name, pid, port, extra))
+                "and then try again.{3}".format(name, pid, port, extra),
+                height=20)
             return True
     except (psutil.NoSuchProcess, psutil.AccessDenied):
         # Perhaps the result of a race where the process could have
