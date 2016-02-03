@@ -630,7 +630,7 @@ class NginxConfigurator(common.Plugin):
                 chall_doer.add_chall(achall, i)
             else:
               # TODO: Handle feedback about domain without vhost
-                logger.info("As was not found a virtual host for domain %s, "
+                logger.info("As we couldn't find a virtual host for domain %s, "
                             "it will be ignored", achall.domain)
 
         count_achalls = len(chall_doer.achalls)
