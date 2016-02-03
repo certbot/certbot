@@ -201,6 +201,15 @@ class RenewableCertTests(BaseRenewableCertTest):
                                                       "example.org",
                                                       "cert17.pem")))
 
+        # Users may scp the "live" dir somewhere and scp it back without
+        # realizing that the "live" dir contains symlinks. Test that the error
+        # message in this case is readable
+        os.unlink(self.test_rc.cert)
+        with open(self.test_rc.cert, "w") as f:
+            f.write("cert")
+        self.assertRaises(errors.CertStorageError,
+                          self.test_rc.current_target, "cert")
+
     def test_current_version(self):
         for ver in (1, 5, 10, 20):
             os.symlink(os.path.join("..", "..", "archive", "example.org",
