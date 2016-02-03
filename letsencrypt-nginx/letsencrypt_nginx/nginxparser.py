@@ -104,7 +104,7 @@ class RawNginxParser(object):
             return None
 
         def _is_key_char(self, val):
-            return val.isalnum() or val in '_/'
+            return val and (val.isalnum() or val in '_/')
 
         def _parse_key(self):
             result = []
@@ -147,7 +147,7 @@ class RawNginxParser(object):
             """Parses a modifier - this is slightly looser than the original parser"""
             self._pass_whitespace(True)
             val = self._peek()
-            if val in '=~^':
+            if val and val in '=~^':
                 first = self._read()
                 second = self._peek()
                 if not self._is_whitespace(second, True):
