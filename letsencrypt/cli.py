@@ -790,7 +790,7 @@ def _restore_required_config_elements(full_path, config, renewalparams, cli_conf
     return True
 
 
-def _reconstitute(full_path, config, cli_config):
+def _reconstitute(full_path, config, cli_config, default_conf):
     """Try to instantiate a RenewableCert, updating config with relevant items.
 
     This is specifically for use in renewal and enforces several checks
@@ -802,8 +802,6 @@ def _reconstitute(full_path, config, cli_config):
     :rtype: `storage.RenewableCert` or NoneType
     """
 
-    default_args = prepare_and_parse_args(plugins, [])
-    default_conf = configuration.NamespaceConfig(default_args)
     try:
         renewal_candidate = storage.RenewableCert(full_path, config)
     except (errors.CertStorageError, IOError):
@@ -868,6 +866,8 @@ def renew(cli_config, plugins):
         #      each time?
         config = configuration.RenewerConfiguration(copy.deepcopy(cli_config))
         config.noninteractive_mode = True
+        default_args = prepare_and_parse_args(plugins, [])
+        default_conf = configuration.NamespaceConfig(default_args)
         full_path = os.path.join(configs_dir, renewal_file)
 
         # Note that this modifies config (to add back the configuration
