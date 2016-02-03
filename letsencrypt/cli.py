@@ -58,10 +58,6 @@ STR_CONFIG_ITEMS = ["config_dir", "log_dir", "work_dir", "user_agent",
                     "standalone_supported_challenges"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
 
-# These are the plugins for which we should try to automatically extract
-# the types when pulling items from a renewal configuration.
-EXTRACT_PLUGIN_PREFIXES = ["apache_", "nginx_", "standalone_"]
-
 # For help strings, figure out how the user ran us.
 # When invoked from letsencrypt-auto, sys.argv[0] is something like:
 # "/home/user/.local/share/letsencrypt/bin/letsencrypt"
@@ -771,10 +767,6 @@ def renew(cli_config, plugins):
             logger.warning("Renewal configuration file %s does not specify "
                            "an authenticator. Skipping.", full_path)
             continue
-    # ?? config = configuration.NamespaceConfig(_AttrDict(renewalparams))
-        # webroot_map is, uniquely, a dict
-        if "webroot_map" in renewalparams:
-            config.__setattr__("webroot_map", renewalparams["webroot_map"])
         # XXX: also need: nginx_, apache_, and plesk_ items
         # string-valued items to add if they're present
         for config_item in STR_CONFIG_ITEMS:
@@ -797,11 +789,23 @@ def renew(cli_config, plugins):
                                    full_path, config_item)
                     continue
         # Now use parser to get plugin-prefixed items with correct types
+        # XXX: the current approach of extracting only prefixed items
+        #      related to the actually-used installer and authenticator
+        #      works as long as plugins don't need to read plugin-specific
+        #      variables set by someone else (e.g., assuming Apache
+        #      configurator doesn't need to read webroot_ variables).
         # XXX: is it true that an item will end up in _parser._actions even
         #      when no action was explicitly specified?
-        for plugin_prefix in EXTRACT_PLUGIN_PREFIXES:
+        plugin_prefixes = [renewalparams["authenticator"]]
+        if "installer" in renewalparams and renewalparams["installer"] != None:
+            plugin_prefixes.append(renewalparams["installer"])
+        for plugin_prefix in set(renewalparams):
             for config_item in renewalparams.keys():
-                if config_item.startswith(plugin_prefix):
+                if renewalparams[config_item] == "None":
+                    # Avoid confusion when, for example, csr = None (avoid
+                    # trying to read the file called "None")
+                    continue
+                if config_item.startswith(plugin_prefix + "_"):
                     for action in _parser.parser._actions:
                        if action.dest == config_item:
                            if action.type is not None:
@@ -809,25 +813,12 @@ def renew(cli_config, plugins):
                                break
                     else:
                            config.__setattr__(config_item, str(renewalparams[config_item]))
+        # webroot_map is, uniquely, a dict, and the logic above is not able
+        # to correctly parse it from the serialized form.
+        if "webroot_map" in renewalparams:
+            config.__setattr__("webroot_map", renewalparams["webroot_map"])
         # XXX: ensure that each call here replaces the previous one
         zope.component.provideUtility(config)
-        # try:
-        #     authenticator = plugins[renewalparams["authenticator"]]
-        #     if "installer" in renewalparams and renewalparams["installer"] != "None":
-        #         installer = plugins[renewalparams["installer"]]
-        # except KeyError:
-        #     if "authenticator" in renewal_params:
-        #         logger.warning("Renewal configuration file %s specifies an "
-        #                        "authenticator plugin (%s) that could not be "
-        #                       "found. Skipping.", full_path,
-        #                       renewal_params["authenticator"])
-        #    else:
-        #        logger.warning("Renewal configuration file %s specifies no "
-        #                       "authenticator plugin. Skipping.", full_path)
-        #    continue
-        #authenticator = authenticator.init(config)
-        #installer = installer.init(config)
-        #le_client = _init_le_client(config, config, authenticator, installer)
         try:
             domains = [le_util.enforce_domain_sanity(x) for x in
                        renewal_candidate.names()]
@@ -840,7 +831,11 @@ def renew(cli_config, plugins):
         config.__setattr__("domains", domains)
 
         print("Trying...")
-        print(obtain_cert(config, plugins, renewal_candidate))
+        # Because obtain_cert itself indirectly decides whether to renew
+        # or not, we couldn't currently make a UI/logging distinction at
+        # this stage to indicate whether renewal was actually attempted
+        # (or successful).
+        obtain_cert(config, plugins, renewal_candidate)
 
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
