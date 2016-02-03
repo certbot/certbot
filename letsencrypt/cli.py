@@ -811,8 +811,8 @@ def renew(cli_config, plugins):
         # XXX: is it true that an item will end up in _parser._actions even
         #      when no action was explicitly specified?
         for plugin_prefix in EXTRACT_PLUGIN_PREFIXES:
-            for config_item in renewalparams.keys() and not _diff_from_default(default_conf, cli_config, config_item):
-                if config_item.startswith(plugin_prefix):
+            for config_item in renewalparams.keys():
+                if config_item.startswith(plugin_prefix) and not _diff_from_default(default_conf, cli_config, config_item):
                     for action in _parser.parser._actions:
                        if action.dest == config_item:
                            if action.type is not None:
@@ -848,7 +848,8 @@ def renew(cli_config, plugins):
                            "invalid. Skipping.", full_path)
             continue
 
-        config.__setattr__("domains", domains)
+        if not _diff_from_default(default_conf, cli_config, "domains"):
+            config.__setattr__("domains", domains)
 
         print("Trying...")
         print(obtain_cert(config, plugins, renewal_candidate))
