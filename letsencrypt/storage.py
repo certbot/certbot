@@ -50,6 +50,43 @@ def add_time_interval(base_time, interval, textparser=parsedatetime.Calendar()):
     return textparser.parseDT(interval, base_time, tzinfo=tzinfo)[0]
 
 
+def write_renewal_config(filename, target, cli_config):
+    """Writes a renewal config file with the specified name and values.
+
+    :param str filename: Absolute path to the config file
+    :param dict target: Maps ALL_FOUR to their symlink paths
+    :param .RenewerConfiguration cli_config: parsed command line
+        arguments
+
+    :returns: Configuration object for the new config file
+    :rtype: configobj.ConfigObj
+
+    """
+    # create_empty creates a new config file if filename does not exist
+    config = configobj.ConfigObj(filename, create_empty=True)
+    for kind in ALL_FOUR:
+        config[kind] = target[kind]
+
+    # XXX: We clearly need a more general and correct way of getting
+    # options into the configobj for the RenewableCert instance.
+    # This is a quick-and-dirty way to do it to allow integration
+    # testing to start.  (Note that the config parameter to new_lineage
+    # ideally should be a ConfigObj, but in this case a dict will be
+    # accepted in practice.)
+    renewalparams = vars(cli_config.namespace)
+    if renewalparams:
+        config["renewalparams"] = renewalparams
+        config.comments["renewalparams"] = ["",
+                                            "Options and defaults used"
+                                            " in the renewal process"]
+
+    # TODO: add human-readable comments explaining other available
+    #       parameters
+    logger.debug("Writing new config %s.", filename)
+    config.write()
+    return config
+
+
 class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     """Renewable certificate.
 
