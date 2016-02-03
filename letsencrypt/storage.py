@@ -87,6 +87,31 @@ def write_renewal_config(filename, target, cli_config):
     return config
 
 
+def update_configuration(lineagename, target, cli_config):
+    """Modifies lineagename's config to contain the specified values.
+
+    :param str lineagename: Name of the lineage being modified
+    :param dict target: Maps ALL_FOUR to their symlink paths
+    :param .RenewerConfiguration cli_config: parsed command line
+        arguments
+
+    :returns: Configuration object for the updated config file
+    :rtype: configobj.ConfigObj
+
+    """
+    config_filename = os.path.join(
+        cli_config.renewal_configs_dir, lineagename) + ".conf"
+    temp_filename = config_filename + ".new"
+
+    # If an existing tempfile exists, delete it
+    if os.path.exists(temp_filename):
+        os.unlink(temp_filename)
+    write_renewal_config(temp_filename, target, cli_config)
+    os.rename(temp_filename, config_filename)
+
+    return configobj.ConfigObj(config_filename)
+
+
 class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     """Renewable certificate.
 
@@ -711,7 +736,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         new_config = write_renewal_config(config_filename, target, cli_config)
         return cls(new_config.filename, cli_config)
 
-    def save_successor(self, prior_version, new_cert, new_privkey, new_chain):
+    def save_successor(self, prior_version, new_cert,
+                       new_privkey, new_chain, cli_config):
         """Save new cert and chain as a successor of a prior version.
 
         Returns the new version number that was created.
@@ -727,6 +753,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :param str new_privkey: the new private key, in PEM format,
             or ``None``, if the private key has not changed
         :param str new_chain: the new chain, in PEM format
+        :param .RenewerConfiguration cli_config: parsed command line
+            arguments
 
         :returns: the new version number that was created
         :rtype: int
@@ -775,4 +803,10 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         with open(target["fullchain"], "w") as f:
             logger.debug("Writing full chain to %s.", target["fullchain"])
             f.write(new_cert + new_chain)
+
+        # Update renewal config file
+        self.configfile = update_configuration(
+            self.lineagename, target, cli_config)
+        self.configuration = config_with_defaults(self.configfile)
+
         return target_version

@@ -504,8 +504,9 @@ class RenewableCertTests(BaseRenewableCertTest):
                 with open(where, "w") as f:
                     f.write(kind)
         self.test_rc.update_all_links_to(3)
-        self.assertEqual(6, self.test_rc.save_successor(3, "new cert", None,
-                                                        "new chain"))
+        self.assertEqual(
+            6, self.test_rc.save_successor(3, "new cert", None,
+                                           "new chain", self.cli_config))
         with open(self.test_rc.version("cert", 6)) as f:
             self.assertEqual(f.read(), "new cert")
         with open(self.test_rc.version("chain", 6)) as f:
@@ -516,10 +517,12 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertFalse(os.path.islink(self.test_rc.version("privkey", 3)))
         self.assertTrue(os.path.islink(self.test_rc.version("privkey", 6)))
         # Let's try two more updates
-        self.assertEqual(7, self.test_rc.save_successor(6, "again", None,
-                                                        "newer chain"))
-        self.assertEqual(8, self.test_rc.save_successor(7, "hello", None,
-                                                        "other chain"))
+        self.assertEqual(
+            7, self.test_rc.save_successor(6, "again", None,
+                                           "newer chain", self.cli_config))
+        self.assertEqual(
+            8, self.test_rc.save_successor(7, "hello", None,
+                                           "other chain", self.cli_config))
         # All of the subsequent versions should link directly to the original
         # privkey.
         for i in (6, 7, 8):
@@ -532,8 +535,9 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.assertEqual(self.test_rc.current_version(kind), 3)
         # Test updating from latest version rather than old version
         self.test_rc.update_all_links_to(8)
-        self.assertEqual(9, self.test_rc.save_successor(8, "last", None,
-                                                        "attempt"))
+        self.assertEqual(
+            9, self.test_rc.save_successor(8, "last", None,
+                                           "attempt", self.cli_config))
         for kind in ALL_FOUR:
             self.assertEqual(self.test_rc.available_versions(kind),
                              range(1, 10))
@@ -542,8 +546,9 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.assertEqual(f.read(), "last" + "attempt")
         # Test updating when providing a new privkey.  The key should
         # be saved in a new file rather than creating a new symlink.
-        self.assertEqual(10, self.test_rc.save_successor(9, "with", "a",
-                                                         "key"))
+        self.assertEqual(
+            10, self.test_rc.save_successor(9, "with", "a",
+                                            "key", self.cli_config))
         self.assertTrue(os.path.exists(self.test_rc.version("privkey", 10)))
         self.assertFalse(os.path.islink(self.test_rc.version("privkey", 10)))
 
