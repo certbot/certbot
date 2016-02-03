@@ -1315,7 +1315,6 @@ def prepare_and_parse_args(plugins, args):
 
     global _parser
     _parser = helpful
-    print("stored _parser")
     return helpful.parse_args()
 
 

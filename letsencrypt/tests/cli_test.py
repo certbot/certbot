@@ -567,7 +567,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue('donate' in get_utility().add_message.call_args[0][0])
 
     def test_certonly_dry_run_reinstall_is_renewal(self):
-        _, get_utility = self._test_certonly_renewal_common('reinstall',
+        _, get_utility = self._test_certonly_renewal_common('renew',
                                                             ['--dry-run'])
         self.assertEqual(get_utility().add_message.call_count, 1)
         self.assertTrue('dry run' in get_utility().add_message.call_args[0][0])
