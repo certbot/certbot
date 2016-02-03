@@ -97,7 +97,6 @@ class RenewerConfiguration(object):
         return getattr(self.namespace, name)
 
     def __setattr_implementation__(self, var, value):
-        print("in __setattr_implementation__, setting", var, value)
         return self.namespace.__setattr__(var, value)
 
     @property
