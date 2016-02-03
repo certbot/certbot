@@ -280,7 +280,7 @@ def _should_renew(config, lineage):
     if config.renew_by_default:
         logger.info("Auto-renewal forced with --renew-by-default...")
         return True
-    if cert.should_autorenew(interactive=True):
+    if lineage.should_autorenew(interactive=True):
         logger.info("Cert is due for renewal, auto-renewing...")
         return True
     if config.dry_run:
