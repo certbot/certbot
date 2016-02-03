@@ -283,16 +283,14 @@ def _should_renew(config, lineage):
     "Return true if any of the circumstances for automatic renewal apply."
     if config.renew_by_default:
         logger.info("Auto-renewal forced with --renew-by-default...")
-        print("forced")
         return True
     if lineage.should_autorenew(interactive=True):
         logger.info("Cert is due for renewal, auto-renewing...")
-        print("due")
         return True
     if config.dry_run:
         logger.info("Cert not due for renewal, but simulating renewal for dry run")
-        print("dry")
         return True
+    logger.info("Cert not yet due for renewal")
     return False
 
 

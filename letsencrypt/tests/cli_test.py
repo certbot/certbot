@@ -573,12 +573,14 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def test_certonly_renewal_triggers(self):
         # --dry-run should force renewal
-        _, get_utility = self._test_renewal_common(False, ['--dry-run'], None)
+        _, get_utility = self._test_renewal_common(False, ['--dry-run'], "simulating renewal")
         self.assertEqual(get_utility().add_message.call_count, 1)
         self.assertTrue('dry run' in get_utility().add_message.call_args[0][0])
 
-        _, _ = self._test_renewal_common(False, ['--renew-by-default', '-tvv', '--debug'], "Auto-renewal forced")
+        _, _ = self._test_renewal_common(False, ['--renew-by-default', '-tvv', '--debug'],
+                                        "Auto-renewal forced")
         self.assertEqual(get_utility().add_message.call_count, 1)
+
 
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._treat_as_renewal')
