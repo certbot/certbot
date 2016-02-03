@@ -200,7 +200,8 @@ class Authenticator(common.Plugin):
         return self.supported_challenges
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
-        if any(util.already_listening(port) for port in self._necessary_ports):
+        renewer = self.config.verb == "renew"
+        if any(util.already_listening(port, renewer) for port in self._necessary_ports):
             raise errors.MisconfigurationError(
                 "At least one of the (possibly) required ports is "
                 "already taken.")
