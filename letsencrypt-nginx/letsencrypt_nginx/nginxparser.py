@@ -34,7 +34,7 @@ class RawNginxParser(object):
         def _peek(self):
             try:
                 return self.src[self.pos]
-            except:
+            except IndexError:
                 return None
 
         def _read(self):
