@@ -53,7 +53,7 @@ _parser = None
 # file's renewalparams and actually used in the client configuration
 # during the renewal process. We have to record their types here because
 # the renewal configuration process loses this information.
-STR_CONFIG_ITEMS = ["config_dir", "log_dir", "work_dir", "user_agent",
+STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
                     "standalone_supported_challenges"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
@@ -730,6 +730,17 @@ def install(config, plugins):
     le_client.enhance_config(domains, config)
 
 
+def _diff_from_default(default_conf, cli_conf, value):
+    try:
+        default = default_conf.__getattr__(value)
+        cli = cli_conf.__getattr__(value)
+    except AttributeError:
+        return False
+    if cli != default:
+        return True
+    else:
+        return False
+
 def renew(cli_config, plugins):
     """Renew previously-obtained certificates."""
     cli_config = configuration.RenewerConfiguration(cli_config)
@@ -750,6 +761,8 @@ def renew(cli_config, plugins):
         #      each time?
         config = configuration.RenewerConfiguration(copy.deepcopy(cli_config))
         config.noninteractive_mode = True
+        default_args = prepare_and_parse_args(plugins, [])
+        default_conf = configuration.NamespaceConfig(default_args)
         full_path = os.path.join(configs_dir, renewal_file)
 
 
@@ -770,12 +783,13 @@ def renew(cli_config, plugins):
             continue
     # ?? config = configuration.NamespaceConfig(_AttrDict(renewalparams))
         # webroot_map is, uniquely, a dict
-        if "webroot_map" in renewalparams:
+        if "webroot_map" in renewalparams and not _diff_from_default(default_conf, cli_config, "webroot_map"):
             config.__setattr__("webroot_map", renewalparams["webroot_map"])
         # XXX: also need: nginx_, apache_, and plesk_ items
         # string-valued items to add if they're present
         for config_item in STR_CONFIG_ITEMS:
-            if config_item in renewalparams:
+            #TODO make sure that we don't lose passed command line args if they aren't in renewal params?
+            if config_item in renewalparams and not _diff_from_default(default_conf, cli_config, config_item):
                 value = renewalparams[config_item]
                 # Unfortunately, we've lost type information from ConfigObj,
                 # so we don't know if the original was NoneType or str!
@@ -784,7 +798,7 @@ def renew(cli_config, plugins):
                 config.__setattr__(config_item, value)
         # int-valued items to add if they're present
         for config_item in INT_CONFIG_ITEMS:
-            if config_item in renewalparams:
+            if config_item in renewalparams and not _diff_from_default(default_conf, cli_config, config_item):
                 try:
                     value = int(renewalparams[config_item])
                     config.__setattr__(config_item, value)
@@ -797,7 +811,7 @@ def renew(cli_config, plugins):
         # XXX: is it true that an item will end up in _parser._actions even
         #      when no action was explicitly specified?
         for plugin_prefix in EXTRACT_PLUGIN_PREFIXES:
-            for config_item in renewalparams.keys():
+            for config_item in renewalparams.keys() and not _diff_from_default(default_conf, cli_config, config_item):
                 if config_item.startswith(plugin_prefix):
                     for action in _parser.parser._actions:
                        if action.dest == config_item:
