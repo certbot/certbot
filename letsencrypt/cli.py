@@ -394,7 +394,7 @@ def _report_new_cert(cert_path, fullchain_path):
 
 def _suggest_donation_if_appropriate(config):
     """Potentially suggest a donation to support Let's Encrypt."""
-    if not config.staging:  # --dry-run implies --staging
+    if not config.staging and not config.verb == "renew":  # --dry-run implies --staging
         reporter_util = zope.component.getUtility(interfaces.IReporter)
         msg = ("If you like Let's Encrypt, please consider supporting our work by:\n\n"
                "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
@@ -716,6 +716,14 @@ def install(config, plugins):
 def renew(cli_config, plugins):
     """Renew previously-obtained certificates."""
     cli_config = configuration.RenewerConfiguration(cli_config)
+    if cli_config.domains != []:
+        raise errors.Error("Currently, the renew verb is only capable of "
+                           "renewing all installed certificates that are due "
+                           "to be renewed; individual domains cannot be "
+                           "specified with this action. If you would like to "
+                           "renew specific certificates, use the certonly "
+                           "command. The renew verb may provide other options "
+                           "for selecting certificates to renew in the future.")
     configs_dir = cli_config.renewal_configs_dir
     for renewal_file in reversed(os.listdir(configs_dir)):
         if not renewal_file.endswith(".conf"):
@@ -724,6 +732,7 @@ def renew(cli_config, plugins):
         # XXX: does this succeed in making a fully independent config object
         #      each time?
         config = configuration.RenewerConfiguration(copy.deepcopy(cli_config))
+        config.noninteractive_mode = True
         full_path = os.path.join(configs_dir, renewal_file)
         try:
             renewal_candidate = storage.RenewableCert(full_path, config)
@@ -742,7 +751,10 @@ def renew(cli_config, plugins):
                            "an authenticator. Skipping.", full_path)
             continue
     # ?? config = configuration.NamespaceConfig(_AttrDict(renewalparams))
-        # XXX: also need: webroot_map
+        if "webroot_map" in renewalparams:
+            config.__setattr__("webroot_map", renewalparams["webroot_map"])
+            print ("webroot_map", renewalparams["webroot_map"])
+            raw_input()
         # XXX: also need: nginx_, apache_, and plesk_ items
         # string-valued items to add if they're present
         for config_item in ["config_dir", "log_dir", "work_dir", "user_agent",
@@ -798,7 +810,7 @@ def renew(cli_config, plugins):
         config.__setattr__("domains", domains)
 
         print("Trying...")
-        print(obtain_cert(config, config, plugins, renewal_candidate))
+        print(obtain_cert(config, plugins, renewal_candidate))
 
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
