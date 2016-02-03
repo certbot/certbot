@@ -731,8 +731,6 @@ def install(config, plugins):
 
 
 def renew(cli_config, plugins):
-    print ("Beginning renew")
-    import code; code.interact(local=locals())
     """Renew previously-obtained certificates."""
     cli_config = configuration.RenewerConfiguration(cli_config)
     if cli_config.domains != []:
@@ -761,7 +759,6 @@ def renew(cli_config, plugins):
             logger.warning("Renewal configuration file %s is broken. "
                            "Skipping.", full_path)
             continue
-        print(renewal_candidate.names(), renewal_candidate.should_autorenew())
         if "renewalparams" not in renewal_candidate.configuration:
             logger.warning("Renewal configuration file %s lacks "
                            "renewalparams. Skipping.", full_path)
@@ -775,8 +772,6 @@ def renew(cli_config, plugins):
         # webroot_map is, uniquely, a dict
         if "webroot_map" in renewalparams:
             config.__setattr__("webroot_map", renewalparams["webroot_map"])
-            print ("webroot_map", renewalparams["webroot_map"])
-            raw_input()
         # XXX: also need: nginx_, apache_, and plesk_ items
         # string-valued items to add if they're present
         for config_item in STR_CONFIG_ITEMS:
@@ -829,7 +824,6 @@ def renew(cli_config, plugins):
         #    continue
         #authenticator = authenticator.init(config)
         #installer = installer.init(config)
-        print(config)
         #le_client = _init_le_client(config, config, authenticator, installer)
         try:
             domains = [le_util.enforce_domain_sanity(x) for x in
