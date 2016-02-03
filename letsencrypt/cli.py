@@ -816,8 +816,6 @@ def _reconstitute(full_path, config):
         return None
 
     config.__setattr__("domains", domains)
-    # XXX: ensure that each call here replaces the previous one
-    zope.component.provideUtility(config)
     return renewal_candidate
 
 
@@ -857,6 +855,8 @@ def renew(cli_config, plugins):
             # reconstitute indicated an error or problem which has
             # already been logged. Go on to the next config.
             continue
+        # XXX: ensure that each call here replaces the previous one
+        zope.component.provideUtility(config)
 
         print("Trying...")
         # Because obtain_cert itself indirectly decides whether to renew
