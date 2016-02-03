@@ -9,8 +9,6 @@ import unittest
 import configobj
 import mock
 
-from acme import jose
-
 from letsencrypt import configuration
 from letsencrypt import errors
 from letsencrypt.storage import ALL_FOUR
@@ -680,114 +678,6 @@ class RenewableCertTests(BaseRenewableCertTest):
             base_time, interval = parameters
             self.assertEqual(storage.add_time_interval(base_time, interval),
                              excepted)
-
-    @mock.patch("letsencrypt.renewer.plugins_disco")
-    @mock.patch("letsencrypt.account.AccountFileStorage")
-    @mock.patch("letsencrypt.client.Client")
-    def test_renew(self, mock_c, mock_acc_storage, mock_pd):
-        from letsencrypt import renewer
-
-        test_cert = test_util.load_vector("cert-san.pem")
-        for kind in ALL_FOUR:
-            os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                    kind + "1.pem"),
-                       getattr(self.test_rc, kind))
-        fill_with_sample_data(self.test_rc)
-        with open(self.test_rc.cert, "w") as f:
-            f.write(test_cert)
-
-        # Fails because renewalparams are missing
-        self.assertFalse(renewer.renew(self.test_rc, 1))
-        self.test_rc.configfile["renewalparams"] = {"some": "stuff"}
-        # Fails because there's no authenticator specified
-        self.assertFalse(renewer.renew(self.test_rc, 1))
-        self.test_rc.configfile["renewalparams"]["rsa_key_size"] = "2048"
-        self.test_rc.configfile["renewalparams"]["server"] = "acme.example.com"
-        self.test_rc.configfile["renewalparams"]["authenticator"] = "fake"
-        self.test_rc.configfile["renewalparams"]["tls_sni_01_port"] = "4430"
-        self.test_rc.configfile["renewalparams"]["http01_port"] = "1234"
-        self.test_rc.configfile["renewalparams"]["account"] = "abcde"
-        self.test_rc.configfile["renewalparams"]["domains"] = ["example.com"]
-        self.test_rc.configfile["renewalparams"]["config_dir"] = "config"
-        self.test_rc.configfile["renewalparams"]["work_dir"] = "work"
-        self.test_rc.configfile["renewalparams"]["logs_dir"] = "logs"
-        mock_auth = mock.MagicMock()
-        mock_pd.PluginsRegistry.find_all.return_value = {"apache": mock_auth}
-        # Fails because "fake" != "apache"
-        self.assertFalse(renewer.renew(self.test_rc, 1))
-        self.test_rc.configfile["renewalparams"]["authenticator"] = "apache"
-        mock_client = mock.MagicMock()
-        # pylint: disable=star-args
-        comparable_cert = jose.ComparableX509(CERT)
-        mock_client.obtain_certificate.return_value = (
-            mock.MagicMock(body=comparable_cert), [comparable_cert],
-            mock.Mock(pem="key"), mock.sentinel.csr)
-        mock_c.return_value = mock_client
-        self.assertEqual(2, renewer.renew(self.test_rc, 1))
-        # TODO: We could also make several assertions about calls that should
-        #       have been made to the mock functions here.
-        mock_acc_storage().load.assert_called_once_with(account_id="abcde")
-        mock_client.obtain_certificate.return_value = (
-            mock.sentinel.certr, [], mock.sentinel.key, mock.sentinel.csr)
-        # This should fail because the renewal itself appears to fail
-        self.assertFalse(renewer.renew(self.test_rc, 1))
-
-    def _common_cli_args(self):
-        return [
-            "--config-dir", self.cli_config.config_dir,
-            "--work-dir", self.cli_config.work_dir,
-            "--logs-dir", self.cli_config.logs_dir,
-        ]
-
-    @mock.patch("letsencrypt.renewer.notify")
-    @mock.patch("letsencrypt.storage.RenewableCert")
-    @mock.patch("letsencrypt.renewer.renew")
-    def test_main(self, mock_renew, mock_rc, mock_notify):
-        from letsencrypt import renewer
-        mock_rc_instance = mock.MagicMock()
-        mock_rc_instance.should_autodeploy.return_value = True
-        mock_rc_instance.should_autorenew.return_value = True
-        mock_rc_instance.latest_common_version.return_value = 10
-        mock_rc.return_value = mock_rc_instance
-        with open(os.path.join(self.cli_config.renewal_configs_dir,
-                               "example.org.conf"), "w") as f:
-            # This isn't actually parsed in this test; we have a separate
-            # test_initialization that tests the initialization, assuming
-            # that configobj can correctly parse the config file.
-            f.write("cert = cert.pem\nprivkey = privkey.pem\n")
-            f.write("chain = chain.pem\nfullchain = fullchain.pem\n")
-        with open(os.path.join(self.cli_config.renewal_configs_dir,
-                               "example.com.conf"), "w") as f:
-            f.write("cert = cert.pem\nprivkey = privkey.pem\n")
-            f.write("chain = chain.pem\nfullchain = fullchain.pem\n")
-        renewer.main(cli_args=self._common_cli_args())
-        self.assertEqual(mock_rc.call_count, 2)
-        self.assertEqual(mock_rc_instance.update_all_links_to.call_count, 2)
-        self.assertEqual(mock_notify.notify.call_count, 4)
-        self.assertEqual(mock_renew.call_count, 2)
-        # If we have instances that don't need any work done, no work should
-        # be done (call counts associated with processing deployments or
-        # renewals should not increase).
-        mock_happy_instance = mock.MagicMock()
-        mock_happy_instance.should_autodeploy.return_value = False
-        mock_happy_instance.should_autorenew.return_value = False
-        mock_happy_instance.latest_common_version.return_value = 10
-        mock_rc.return_value = mock_happy_instance
-        renewer.main(cli_args=self._common_cli_args())
-        self.assertEqual(mock_rc.call_count, 4)
-        self.assertEqual(mock_happy_instance.update_all_links_to.call_count, 0)
-        self.assertEqual(mock_notify.notify.call_count, 4)
-        self.assertEqual(mock_renew.call_count, 2)
-
-    def test_bad_config_file(self):
-        from letsencrypt import renewer
-        os.unlink(os.path.join(self.cli_config.renewal_configs_dir,
-                               "example.org.conf"))
-        with open(os.path.join(self.cli_config.renewal_configs_dir,
-                               "bad.conf"), "w") as f:
-            f.write("incomplete = configfile\n")
-        renewer.main(cli_args=self._common_cli_args())
-        # The errors.CertStorageError is caught inside and nothing happens.
 
     def test_missing_cert(self):
         from letsencrypt import storage
