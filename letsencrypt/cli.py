@@ -873,7 +873,7 @@ def renew(cli_config, plugins):
         # Note that this modifies config (to add back the configuration
         # elements from within the renewal configuration file).
         try:
-            renewal_candidate = _reconstitute(full_path, config, cli_config)
+            renewal_candidate = _reconstitute(full_path, config, cli_config, default_conf)
         except Exception as e:
             # reconstitute encountered an unanticipated problem.
             logger.warning("Renewal configuration file %s produced an "
