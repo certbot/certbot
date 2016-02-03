@@ -428,8 +428,8 @@ def _auth_from_domains(le_client, config, domains):
             lineage.save_successor(
                 lineage.latest_common_version(), OpenSSL.crypto.dump_certificate(
                     OpenSSL.crypto.FILETYPE_PEM, new_certr.body.wrapped),
-                new_key.pem, crypto_util.dump_pyopenssl_chain(new_chain))
-
+                new_key.pem, crypto_util.dump_pyopenssl_chain(new_chain),
+                configuration.RenewerConfiguration(config))
             lineage.update_all_links_to(lineage.latest_common_version())
         # TODO: Check return value of save_successor
         # TODO: Also update lineage renewal config with any relevant
