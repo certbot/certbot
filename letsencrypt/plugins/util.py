@@ -62,7 +62,7 @@ def already_listening(port, renewer=False):
                 "on TCP port {2}. This will prevent us from binding to "
                 "that port. Please stop the {0} program temporarily "
                 "and then try again.{3}".format(name, pid, port, extra),
-                height=20)
+                height=13)
             return True
     except (psutil.NoSuchProcess, psutil.AccessDenied):
         # Perhaps the result of a race where the process could have
