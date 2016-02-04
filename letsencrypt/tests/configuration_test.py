@@ -86,6 +86,11 @@ class NamespaceConfigTest(unittest.TestCase):
         self.assertTrue(os.path.isabs(config.key_dir))
         self.assertTrue(os.path.isabs(config.temp_checkpoint_dir))
 
+    def test_setattr(self):
+        self.config.foo = 'bar'
+        self.assertTrue(hasattr(self.config.namespace, 'foo'))
+        self.assertEqual(self.config.foo, 'bar')
+
 
 class RenewerConfigurationTest(unittest.TestCase):
     """Test for letsencrypt.configuration.RenewerConfiguration."""
