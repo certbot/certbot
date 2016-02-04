@@ -882,8 +882,8 @@ def renew(cli_config, plugins):
         # or not, we couldn't currently make a UI/logging distinction at
         # this stage to indicate whether renewal was actually attempted
         # (or successful).
-        obtain_cert(config, plugins, renewal_candidate)
-
+        obtain_cert(config, plugins_disco.PluginsRegistry.find_all(),
+                    renewal_candidate)
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
     """Revoke a previously obtained certificate."""
