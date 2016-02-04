@@ -734,13 +734,13 @@ def _restore_required_config_elements(full_path, config, renewalparams):
             # so we don't know if the original was NoneType or str!
             if value == "None":
                 value = None
-            config.__setattr__(config_item, value)
+            config.namespace__setattr__(config_item, value)
     # int-valued items to add if they're present
     for config_item in INT_CONFIG_ITEMS:
         if config_item in renewalparams:
             try:
                 value = int(renewalparams[config_item])
-                config.__setattr__(config_item, value)
+                config.namespace__setattr__(config_item, value)
             except ValueError:
                 logger.warning("Renewal configuration file %s specifies "
                                "a non-numeric value for %s. Skipping.",
@@ -766,15 +766,18 @@ def _restore_plugin_configs(config, renewalparams):
                 # trying to read the file called "None")
                 # Should we omit the item entirely rather than setting
                 # its value to None?
-                config.__setattr__(config_item, None)
+                config.namespace__setattr__(config_item, None)
                 continue
             if config_item.startswith(plugin_prefix + "_"):
                 for action in _parser.parser._actions: # pylint: disable=protected-access
                     if action.type is not None and action.dest == config_item:
-                        config.__setattr__(config_item, action.type(renewalparams[config_item]))
+                        config.namespace__setattr__(
+                            config_item,
+                            action.type(renewalparams[config_item]))
                         break
                 else:
-                    config.__setattr__(config_item, str(renewalparams[config_item]))
+                    config.namespace__setattr__(
+                        config_item, str(renewalparams[config_item]))
     return True
 
 
@@ -819,7 +822,8 @@ def _reconstitute(full_path, config):
     # configuration restoring logic is not able to correctly parse it
     # from the serialized form.
     if "webroot_map" in renewalparams:
-        config.__setattr__("webroot_map", renewalparams["webroot_map"])
+        config.namespace__setattr__(
+            "webroot_map", renewalparams["webroot_map"])
 
     try:
         domains = [le_util.enforce_domain_sanity(x) for x in
@@ -830,7 +834,7 @@ def _reconstitute(full_path, config):
                        "invalid. Skipping.", full_path)
         return None
 
-    config.__setattr__("domains", domains)
+    config.namespace__setattr__("domains", domains)
     return renewal_candidate
 
 
