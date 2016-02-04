@@ -20,3 +20,7 @@ ls /etc/letsencrypt/archive/$PUBLIC_HOSTNAME | grep -q 2.pem
 if [ $? -ne 0 ] ; then
     FAIL=1
 fi
+
+if [ "$FAIL" = 1 ] ; then
+    exit 1
+fi
