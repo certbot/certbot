@@ -224,7 +224,7 @@ def _find_duplicative_certs(config, domains):
     # Verify the directory is there
     le_util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
 
-    for renewal_file in _renewal_conf_files(config):
+    for renewal_file in _renewal_conf_files(cli_config):
         try:
             candidate_lineage = storage.RenewableCert(renewal_file, cli_config)
         except (errors.CertStorageError, IOError):
