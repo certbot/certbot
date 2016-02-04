@@ -609,8 +609,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with open(rc, "w") as dest:
             dest.write(renewal_conf)
 
-        self._test_renewal_common(True, [], args=["renew", "--dry-run", "-tvv"],
-                                  renew=True)
+        with mock.patch('letsencrypt.cli.copy.deepcopy'):
+            self._test_renewal_common(True, [], args=["renew", "--dry-run", "-tvv"],
+                                      renew=True)
 
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._treat_as_renewal')
