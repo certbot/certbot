@@ -1,26 +1,55 @@
 #!/bin/bash -x
 
-# $PUBLIC_IP $PRIVATE_IP $PUBLIC_HOSTNAME $BOULDER_URL are dynamically set at execution
+# $OS_TYPE $PUBLIC_IP $PRIVATE_IP $PUBLIC_HOSTNAME $BOULDER_URL
+# are dynamically set at execution
 
-# with curl, instance metadata available from EC2 metadata service:
-#public_host=$(curl -s http://169.254.169.254/2014-11-05/meta-data/public-hostname)
-#public_ip=$(curl -s http://169.254.169.254/2014-11-05/meta-data/public-ipv4)
-#private_ip=$(curl -s http://169.254.169.254/2014-11-05/meta-data/local-ipv4)
-
+# run letsencrypt-apache2 via letsencrypt-auto
 cd letsencrypt
-./letsencrypt-auto certonly -v --standalone --debug \
-                   --text --agree-dev-preview --agree-tos \
-                   --renew-by-default --redirect \
-                   --register-unsafely-without-email \
-                   --domain $PUBLIC_HOSTNAME --server $BOULDER_URL
 
-./letsencrypt-auto renew --renew-by-default
+export SUDO=sudo
+if [ -f /etc/debian_version ] ; then
+  echo "Bootstrapping dependencies for Debian-based OSes..."
+  $SUDO bootstrap/_deb_common.sh
+elif [ -f /etc/redhat-release ] ; then
+  echo "Bootstrapping dependencies for RedHat-based OSes..."
+  $SUDO bootstrap/_rpm_common.sh
+else
+  echo "Dont have bootstrapping for this OS!"
+  exit 1
+fi
 
-ls /etc/letsencrypt/archive/$PUBLIC_HOSTNAME | grep -q 2.pem
+bootstrap/dev/venv.sh
+sudo venv/bin/letsencrypt certonly --debug --standalone -t --agree-dev-preview --agree-tos \
+                   --renew-by-default --redirect --register-unsafely-without-email \
+                   --domain $PUBLIC_HOSTNAME --server $BOULDER_URL -v
 if [ $? -ne 0 ] ; then
     FAIL=1
 fi
 
+if [ "$OS_TYPE" = "ubuntu" ] ; then
+    venv/bin/tox -e apacheconftest
+else
+    echo Not running hackish apache tests on $OS_TYPE
+fi
+
+if [ $? -ne 0 ] ; then
+    FAIL=1
+fi
+
+sudo venv/bin/letsencrypt renew --renew-by-default
+
+if [ $? -ne 0 ] ; then
+    FAIL=1
+fi
+
+
+ls /etc/letsencrypt/archive/$PUBLIC_HOSTNAME | grep -q 2.pem
+
+if [ $? -ne 0 ] ; then
+    FAIL=1
+fi
+
+# return error if any of the subtests failed
 if [ "$FAIL" = 1 ] ; then
     exit 1
 fi
