@@ -32,9 +32,6 @@ CERT = test_util.vector_path('cert.pem')
 CSR = test_util.vector_path('csr.der')
 KEY = test_util.vector_path('rsa256_key.pem')
 
-def hack(x):
-    return x
-
 
 class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     """Tests for different commands."""
@@ -573,6 +570,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 self.assertEqual(mock_client.obtain_certificate.call_count, 0)
         except:
             self._dump_log()
+            raise
 
         return mock_lineage, mock_get_utility
 
@@ -618,7 +616,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         rc = os.path.join(rd, "sample-renewal.conf")
         with open(rc, "w") as dest:
             dest.write(renewal_conf)
-        hack_copy.side_effect = hack
+        hack_copy.side_effect = lambda x: x
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, renew=True)
 
