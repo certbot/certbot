@@ -51,7 +51,7 @@ common renew
 sed -i "4arenew_before_expiry = 10 years" "$root/conf/renewal/le1.wtf.conf"
 common renew
 
-# letsencrypt-renewer $store_flags
+ls "$root/conf/archive/le1.wtf"
 # dir="$root/conf/archive/le1.wtf"
 # for x in cert chain fullchain privkey;
 # do
