@@ -766,6 +766,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         #      if needed (ensuring their permissions are correct)
         # Figure out what the new version is and hence where to save things
 
+        self.cli_config = cli_config
         target_version = self.next_free_version()
         archive = self.cli_config.archive_dir
         prefix = os.path.join(archive, self.lineagename)
