@@ -840,11 +840,15 @@ def _renewal_conf_files(config):
     """Return /path/to/*.conf in the renewal conf directory"""
     return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
 
+def _rc_from_config(config):
+    ns = copy.deepcopy(config.namespace)
+    new_config = configuration.NamespaceConfig(ns)
+    return configuration.RenewerConfiguration(new_config)
 
 def renew(cli_config, unused_plugins):
     """Renew previously-obtained certificates."""
-    cli_config = configuration.RenewerConfiguration(cli_config)
-    if cli_config.domains != []:
+    config = _rc_from_config(cli_config)
+    if config.domains != []:
         raise errors.Error("Currently, the renew verb is only capable of "
                            "renewing all installed certificates that are due "
                            "to be renewed; individual domains cannot be "
@@ -852,13 +856,13 @@ def renew(cli_config, unused_plugins):
                            "renew specific certificates, use the certonly "
                            "command. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
-    for renewal_file in _renewal_conf_files(cli_config):
+    for renewal_file in _renewal_conf_files(config):
         if not renewal_file.endswith(".conf"):
             continue
         print("Processing " + renewal_file)
         # XXX: does this succeed in making a fully independent config object
         #      each time?
-        config = configuration.RenewerConfiguration(copy.deepcopy(cli_config))
+        config = _rc_from_config(cli_config)
         config.noninteractive_mode = True
 
         # Note that this modifies config (to add back the configuration
