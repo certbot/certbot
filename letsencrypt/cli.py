@@ -53,7 +53,7 @@ _parser = None
 # file's renewalparams and actually used in the client configuration
 # during the renewal process. We have to record their types here because
 # the renewal configuration process loses this information.
-STR_CONFIG_ITEMS = ["config_dir", "log_dir", "work_dir", "user_agent",
+STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
                     "standalone_supported_challenges"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
@@ -727,10 +727,21 @@ def install(config, plugins):
     le_client.enhance_config(domains, config)
 
 
-def _restore_required_config_elements(full_path, config, renewalparams):
+def _diff_from_default(default_conf, cli_conf, value):
+    try:
+        default = default_conf.__getattr__(value)
+        cli = cli_conf.__getattr__(value)
+    except AttributeError:
+        return False
+    if cli != default:
+        return True
+    else:
+        return False
+
+def _restore_required_config_elements(full_path, config, renewalparams, cli_config, default_conf):
     # string-valued items to add if they're present
     for config_item in STR_CONFIG_ITEMS:
-        if config_item in renewalparams:
+        if config_item in renewalparams and not _diff_from_default(default_conf, cli_config, config_item):
             value = renewalparams[config_item]
             # Unfortunately, we've lost type information from ConfigObj,
             # so we don't know if the original was NoneType or str!
@@ -739,7 +750,7 @@ def _restore_required_config_elements(full_path, config, renewalparams):
             config.__setattr__(config_item, value)
     # int-valued items to add if they're present
     for config_item in INT_CONFIG_ITEMS:
-        if config_item in renewalparams:
+        if config_item in renewalparams and not _diff_from_default(default_conf, cli_config, config_item):
             try:
                 value = int(renewalparams[config_item])
                 config.__setattr__(config_item, value)
@@ -768,7 +779,7 @@ def _restore_required_config_elements(full_path, config, renewalparams):
                 # its value to None?
                 config.__setattr__(config_item, None)
                 continue
-            if config_item.startswith(plugin_prefix + "_"):
+            if config_item.startswith(plugin_prefix + "_") and not _diff_from_default(default_conf, cli_config, config_item):
                 for action in _parser.parser._actions:
                    if action.dest == config_item:
                        if action.type is not None:
@@ -779,7 +790,7 @@ def _restore_required_config_elements(full_path, config, renewalparams):
     return True
 
 
-def _reconstitute(full_path, config):
+def _reconstitute(full_path, config, cli_config, default_conf):
     """Try to instantiate a RenewableCert, updating config with relevant items.
 
     This is specifically for use in renewal and enforces several checks
@@ -809,7 +820,7 @@ def _reconstitute(full_path, config):
     # Now restore specific values along with their data types, if
     # those elements are present.
     try:
-        _restore_required_config_elements(full_path, config, renewalparams)
+        _restore_required_config_elements(full_path, config, renewalparams, cli_config, default_conf)
     except ValueError:
         # There was a data type error which has already been
         # logged.
@@ -818,7 +829,7 @@ def _reconstitute(full_path, config):
     # webroot_map is, uniquely, a dict, and the general-purpose
     # configuration restoring logic is not able to correctly parse it
     # from the serialized form.
-    if "webroot_map" in renewalparams:
+    if "webroot_map" in renewalparams and not _diff_from_default(default_conf, cli_config, "webroot_map"):
         config.__setattr__("webroot_map", renewalparams["webroot_map"])
 
     try:
@@ -830,9 +841,10 @@ def _reconstitute(full_path, config):
                        "invalid. Skipping.", full_path)
         return None
 
-    config.__setattr__("domains", domains)
-    return renewal_candidate
+    if not _diff_from_default(default_conf, cli_config, "domains"):
+        config.__setattr__("domains", domains)
 
+    return renewal_candidate
 
 def renew(cli_config, plugins):
     """Renew previously-obtained certificates."""
@@ -854,12 +866,14 @@ def renew(cli_config, plugins):
         #      each time?
         config = configuration.RenewerConfiguration(copy.deepcopy(cli_config))
         config.noninteractive_mode = True
+        default_args = prepare_and_parse_args(plugins, [])
+        default_conf = configuration.NamespaceConfig(default_args)
         full_path = os.path.join(configs_dir, renewal_file)
 
         # Note that this modifies config (to add back the configuration
         # elements from within the renewal configuration file).
         try:
-            renewal_candidate = _reconstitute(full_path, config)
+            renewal_candidate = _reconstitute(full_path, config, cli_config, default_conf)
         except Exception as e:
             # reconstitute encountered an unanticipated problem.
             logger.warning("Renewal configuration file %s produced an "
