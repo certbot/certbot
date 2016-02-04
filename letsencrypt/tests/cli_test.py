@@ -24,7 +24,7 @@ from letsencrypt import le_util
 from letsencrypt.plugins import disco
 from letsencrypt.plugins import manual
 
-from letsencrypt.tests import renewer_test
+from letsencrypt.tests import storage_test
 from letsencrypt.tests import test_util
 
 
@@ -822,7 +822,7 @@ class DetermineAccountTest(unittest.TestCase):
         self.assertEqual('other email', self.config.email)
 
 
-class DuplicativeCertsTest(renewer_test.BaseRenewableCertTest):
+class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
     """Test to avoid duplicate lineages."""
 
     def setUp(self):
