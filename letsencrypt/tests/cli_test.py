@@ -559,14 +559,17 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                                 args += extra_args
                             self._call(args)
 
-        if log_out:
-            with open(os.path.join(self.logs_dir, "letsencrypt.log")) as lf:
-                self.assertTrue(log_out in lf.read())
+        try:
+            if log_out:
+                with open(os.path.join(self.logs_dir, "letsencrypt.log")) as lf:
+                    self.assertTrue(log_out in lf.read())
 
-        if renew:
-            mock_client.obtain_certificate.assert_called_once_with(['isnot.org'])
-        else:
-            self.assertEqual(mock_client.obtain_certificate.call_count, 0)
+            if renew:
+                mock_client.obtain_certificate.assert_called_once_with(['isnot.org'])
+            else:
+                self.assertEqual(mock_client.obtain_certificate.call_count, 0)
+        except:
+            self._dump_log()
 
         return mock_lineage, mock_get_utility
 
@@ -609,8 +612,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with open(rc, "w") as dest:
             dest.write(renewal_conf)
 
-        self._test_renewal_common(True, [], args=["renew", "--dry-run", "-tvv"],
-                                  renew=True)
+        # Work around https://bugs.python.org/issue1515 for py26 tests :( :(
+        # https://travis-ci.org/letsencrypt/letsencrypt/jobs/106900743#L3276
+        with mock.patch('letsencrypt.cli.copy.deepcopy', side_effect=lambda x: x) as hack:
+            args = ["renew", "--dry-run", "-tvv"]
+            self._test_renewal_common(True, [], args=args, renew=True)
 
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._treat_as_renewal')
