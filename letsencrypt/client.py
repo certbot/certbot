@@ -249,7 +249,7 @@ class Client(object):
 
         `.register` must be called before `.obtain_certificate`
 
-        :param set domains: domains to get a certificate
+        :param list domains: domains to get a certificate
 
         :returns: `.CertificateResource`, certificate chain (as
             returned by `.fetch_chain`), and newly generated private key
