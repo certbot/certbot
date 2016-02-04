@@ -805,9 +805,10 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             logger.debug("Writing full chain to %s.", target["fullchain"])
             f.write(new_cert + new_chain)
 
+        symlinks = dict((kind, self.configuration[kind]) for kind in ALL_FOUR)
         # Update renewal config file
         self.configfile = update_configuration(
-            self.lineagename, target, cli_config)
+            self.lineagename, symlinks, cli_config)
         self.configuration = config_with_defaults(self.configfile)
 
         return target_version
