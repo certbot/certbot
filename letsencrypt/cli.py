@@ -8,6 +8,7 @@ import argparse
 import atexit
 import copy
 import functools
+import glob
 import json
 import logging
 import logging.handlers
@@ -223,15 +224,12 @@ def _find_duplicative_certs(config, domains):
     # Verify the directory is there
     le_util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
 
-    for renewal_file in os.listdir(configs_dir):
-        if not renewal_file.endswith(".conf"):
-            continue
+    for renewal_file in _renewal_conf_files(config):
         try:
-            full_path = os.path.join(configs_dir, renewal_file)
-            candidate_lineage = storage.RenewableCert(full_path, cli_config)
+            candidate_lineage = storage.RenewableCert(renewal_file, cli_config)
         except (errors.CertStorageError, IOError):
-            logger.warning("Renewal configuration file %s is broken. "
-                           "Skipping.", full_path)
+            logger.warning("Renewal conf file %s is broken. Skipping.", renewal_file)
+            logger.info("Traceback was:\n%s", traceback.format_exc())
             continue
         # TODO: Handle these differently depending on whether they are
         #       expired or still valid?
@@ -794,8 +792,8 @@ def _reconstitute(full_path, config):
     try:
         renewal_candidate = storage.RenewableCert(full_path, config)
     except (errors.CertStorageError, IOError):
-        logger.warning("Renewal configuration file %s is broken. "
-                       "Skipping.", full_path)
+        logger.warning("Renewal configuration file %s is broken. Skipping.", full_path)
+        logger.info("Traceback was:\n%s", traceback.format_exc())
         return None
     if "renewalparams" not in renewal_candidate.configuration:
         logger.warning("Renewal configuration file %s lacks "
@@ -834,6 +832,11 @@ def _reconstitute(full_path, config):
     return renewal_candidate
 
 
+def _renewal_conf_files(config):
+    """Return /path/to/*.conf in the renewal conf directory"""
+    return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
+
+
 def renew(cli_config, plugins):
     """Renew previously-obtained certificates."""
     cli_config = configuration.RenewerConfiguration(cli_config)
@@ -845,8 +848,7 @@ def renew(cli_config, plugins):
                            "renew specific certificates, use the certonly "
                            "command. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
-    configs_dir = cli_config.renewal_configs_dir
-    for renewal_file in os.listdir(configs_dir):
+    for renewal_file in _renewal_conf_files(cli_config):
         if not renewal_file.endswith(".conf"):
             continue
         print("Processing " + renewal_file)
@@ -854,16 +856,16 @@ def renew(cli_config, plugins):
         #      each time?
         config = configuration.RenewerConfiguration(copy.deepcopy(cli_config))
         config.noninteractive_mode = True
-        full_path = os.path.join(configs_dir, renewal_file)
 
         # Note that this modifies config (to add back the configuration
         # elements from within the renewal configuration file).
         try:
-            renewal_candidate = _reconstitute(full_path, config)
+            renewal_candidate = _reconstitute(renewal_file, config)
         except Exception as e:
             # reconstitute encountered an unanticipated problem.
             logger.warning("Renewal configuration file %s produced an "
-                           "unexpected error: %s. Skipping.", full_path, e)
+                           "unexpected error: %s. Skipping.", renewal_file, e)
+            logger.info("Traceback was:\n%s", traceback.format_exc())
             continue
 
         if renewal_candidate is None:
@@ -1063,9 +1065,9 @@ class HelpfulArgumentParser(object):
             parsed_args.server = constants.STAGING_URI
 
             if parsed_args.dry_run:
-                if self.verb != "certonly":
+                if self.verb not in ["certonly", "renew"]:
                     raise errors.Error("--dry-run currently only works with the "
-                                       "'certonly' subcommand")
+                                       "'certonly' or 'renew' subcommands")
                 parsed_args.break_my_certs = parsed_args.staging = True
 
         return parsed_args
