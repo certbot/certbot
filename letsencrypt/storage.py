@@ -728,6 +728,9 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         target_version = self.next_free_version()
         archive = self.cli_config.archive_dir
+        # XXX if anyone ever moves a renewal configuration file, this will
+        # break... perhaps prefix should be the dirname of the previous
+        # cert.pem?
         prefix = os.path.join(archive, self.lineagename)
         target = dict(
             [(kind,
