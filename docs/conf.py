@@ -281,8 +281,6 @@ man_pages = [
      [project], 7),
     ('man/letsencrypt', 'letsencrypt', u'letsencrypt script documentation',
      [project], 1),
-    ('man/letsencrypt-renewer', 'letsencrypt-renewer',
-     u'letsencrypt-renewer script documentation', [project], 1),
 ]
 
 # If true, show URL addresses after external links.
