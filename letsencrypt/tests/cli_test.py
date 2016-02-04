@@ -531,7 +531,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                           self._certonly_new_request_common, mock_client)
 
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
-                             args=None, renew=True, out=False):
+                             args=None, renew=True):
+        # pylint: disable=too-many-locals
         cert_path = 'letsencrypt/tests/testdata/cert.pem'
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path)
@@ -556,10 +557,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                                 args = ['-d', 'isnot.org', '-a', 'standalone', 'certonly']
                             if extra_args:
                                 args += extra_args
-                            if out:
-                                self._call_stdout(args)
-                            else:
-                                self._call(args)
+                            self._call(args)
 
         if log_out:
             with open(os.path.join(self.logs_dir, "letsencrypt.log")) as lf:

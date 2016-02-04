@@ -746,6 +746,8 @@ def _restore_required_config_elements(full_path, config, renewalparams):
                                "a non-numeric value for %s. Skipping.",
                                full_path, config_item)
                 raise
+
+def _restore_plugin_configs(config, renewalparams):
     # Now use parser to get plugin-prefixed items with correct types
     # XXX: the current approach of extracting only prefixed items
     #      related to the actually-used installer and authenticator
@@ -767,13 +769,12 @@ def _restore_required_config_elements(full_path, config, renewalparams):
                 config.__setattr__(config_item, None)
                 continue
             if config_item.startswith(plugin_prefix + "_"):
-                for action in _parser.parser._actions:
-                   if action.dest == config_item:
-                       if action.type is not None:
-                           config.__setattr__(config_item, action.type(renewalparams[config_item]))
-                           break
+                for action in _parser.parser._actions: # pylint: disable=protected-access
+                    if action.type is not None and action.dest == config_item:
+                        config.__setattr__(config_item, action.type(renewalparams[config_item]))
+                        break
                 else:
-                       config.__setattr__(config_item, str(renewalparams[config_item]))
+                    config.__setattr__(config_item, str(renewalparams[config_item]))
     return True
 
 
@@ -808,6 +809,7 @@ def _reconstitute(full_path, config):
     # those elements are present.
     try:
         _restore_required_config_elements(full_path, config, renewalparams)
+        _restore_plugin_configs(config, renewalparams)
     except ValueError:
         # There was a data type error which has already been
         # logged.
@@ -861,7 +863,7 @@ def renew(cli_config, plugins):
         # elements from within the renewal configuration file).
         try:
             renewal_candidate = _reconstitute(renewal_file, config)
-        except Exception as e:
+        except Exception as e: # pylint: disable=broad-except
             # reconstitute encountered an unanticipated problem.
             logger.warning("Renewal configuration file %s produced an "
                            "unexpected error: %s. Skipping.", renewal_file, e)
@@ -1356,7 +1358,7 @@ def prepare_and_parse_args(plugins, args):
     # parser (--help should display plugin-specific options last)
     _plugins_parsing(helpful, plugins)
 
-    global _parser
+    global _parser # pylint: disable=global-statement
     _parser = helpful
     return helpful.parse_args()
 
