@@ -865,7 +865,6 @@ def renew(cli_config, unused_plugins):
         # XXX: does this succeed in making a fully independent config object
         #      each time?
         config = configuration.RenewerConfiguration(copy.deepcopy(cli_config))
-        config.noninteractive_mode = True
 
         # Note that this modifies config (to add back the configuration
         # elements from within the renewal configuration file).
@@ -1706,6 +1705,8 @@ def main(cli_args=sys.argv[1:]):
         displayer = display_util.NoninteractiveDisplay(sys.stdout)
     elif config.text_mode:
         displayer = display_util.FileDisplay(sys.stdout)
+    elif config.renew:
+        displayer = display_util.NoninteractiveDisplay(sys.stdout)
     else:
         displayer = display_util.NcursesDisplay()
     zope.component.provideUtility(displayer)
