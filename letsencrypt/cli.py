@@ -818,7 +818,7 @@ def _reconstitute(config, full_path):
             full_path, configuration.RenewerConfiguration(config))
     except (errors.CertStorageError, IOError):
         logger.warning("Renewal configuration file %s is broken. Skipping.", full_path)
-        logger.info("Traceback was:\n%s", traceback.format_exc())
+        logger.debug("Traceback was:\n%s", traceback.format_exc())
         return None
     if "renewalparams" not in renewal_candidate.configuration:
         logger.warning("Renewal configuration file %s lacks "
@@ -896,7 +896,7 @@ def renew(config, unused_plugins):
             # reconstitute encountered an unanticipated problem.
             logger.warning("Renewal configuration file %s produced an "
                            "unexpected error: %s. Skipping.", renewal_file, e)
-            logger.info("Traceback was:\n%s", traceback.format_exc())
+            logger.debug("Traceback was:\n%s", traceback.format_exc())
             continue
 
         if renewal_candidate is None:
