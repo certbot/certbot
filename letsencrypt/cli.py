@@ -879,7 +879,6 @@ def renew(config, unused_plugins):
         raise errors.Error("Currently, the renew verb cannot be used when "
                            "specifying a CSR file. Please try the certonly "
                            "command instead.")
-    config.noninteractive_mode = True
     renewer_config = configuration.RenewerConfiguration(config)
     for renewal_file in _renewal_conf_files(renewer_config):
         if not renewal_file.endswith(".conf"):
@@ -1729,6 +1728,7 @@ def main(cli_args=sys.argv[1:]):
     elif config.text_mode:
         displayer = display_util.FileDisplay(sys.stdout)
     elif config.verb == "renew":
+        config.noninteractive_mode = True
         displayer = display_util.NoninteractiveDisplay(sys.stdout)
     else:
         displayer = display_util.NcursesDisplay()
