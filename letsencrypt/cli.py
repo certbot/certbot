@@ -892,7 +892,7 @@ def renew(config, unused_plugins):
         # Note that this modifies config (to add back the configuration
         # elements from within the renewal configuration file).
         try:
-            renewal_candidate = _reconstitute(renewal_file, lineage_config)
+            renewal_candidate = _reconstitute(lineage_config, renewal_file)
         except Exception as e: # pylint: disable=broad-except
             # reconstitute encountered an unanticipated problem.
             logger.warning("Renewal configuration file %s produced an "
@@ -912,7 +912,8 @@ def renew(config, unused_plugins):
         # or not, we couldn't currently make a UI/logging distinction at
         # this stage to indicate whether renewal was actually attempted
         # (or successful).
-        obtain_cert(lineage_config, plugins_disco.PluginsRegistry.find_all(),
+        obtain_cert(lineage_config.namespace,
+                    plugins_disco.PluginsRegistry.find_all(),
                     renewal_candidate)
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
