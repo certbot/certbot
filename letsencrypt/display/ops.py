@@ -78,11 +78,12 @@ def pick_plugin(config, default, plugins, question, ifaces):
             # it's really bad to auto-select the single available plugin in
             # non-interactive mode, because an update could later add a second
             # available plugin
-            raise errors.MissingCommandlineFlag, ("Missing command line flags. For non-interactive "
-                "execution, you will need to specify a plugin on the command line.  Run with "
-                "'--help plugins' to see a list of options, and see "
-                " https://eff.org/letsencrypt-plugins for more detail on what the plugins "
-                "do and how to use them.")
+            raise errors.MissingCommandlineFlag(
+                "Missing command line flags. For non-interactive execution, "
+                "you will need to specify a plugin on the command line.  Run "
+                "with '--help plugins' to see a list of options, and see "
+                "https://eff.org/letsencrypt-plugins for more detail on what "
+                "the plugins do and how to use them.")
 
         filtered = plugins.visible().ifaces(ifaces)
 
@@ -158,7 +159,7 @@ def get_email(more=False, invalid=False):
     except errors.MissingCommandlineFlag:
         msg = ("You should register before running non-interactively, or provide --agree-tos"
                " and --email <email_address> flags")
-        raise errors.MissingCommandlineFlag, msg
+        raise errors.MissingCommandlineFlag(msg)
 
     if code == display_util.OK:
         if le_util.safe_email(email):
@@ -238,8 +239,7 @@ def get_valid_domains(domains):
     valid_domains = []
     for domain in domains:
         try:
-            le_util.check_domain_sanity(domain)
-            valid_domains.append(domain)
+            valid_domains.append(le_util.enforce_domain_sanity(domain))
         except errors.ConfigurationError:
             continue
     return valid_domains
@@ -281,9 +281,9 @@ def _choose_names_manually():
                 "supported.{0}{0}Would you like to re-enter the "
                 "names?{0}").format(os.linesep)
 
-        for domain in domain_list:
+        for i, domain in enumerate(domain_list):
             try:
-                le_util.check_domain_sanity(domain)
+                domain_list[i] = le_util.enforce_domain_sanity(domain)
             except errors.ConfigurationError as e:
                 invalid_domains[domain] = e.message
 

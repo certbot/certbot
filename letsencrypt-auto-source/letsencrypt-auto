@@ -105,9 +105,7 @@ DeterminePythonVersion() {
   fi
 
   PYVER=`"$LE_PYTHON" --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
-  if [ $PYVER -eq 26 ]; then
-    ExperimentalBootstrap "Python 2.6"
-  elif [ $PYVER -lt 26 ]; then
+  if [ $PYVER -lt 26 ]; then
     echo "You have an ancient version of Python entombed in your operating system..."
     echo "This isn't going to work; you'll need at least version 2.6."
     exit 1
@@ -438,8 +436,8 @@ if [ "$NO_SELF_UPGRADE" = 1 ]; then
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/letsencrypt-auto-requirements.txt"
 # This is the flattened list of packages letsencrypt-auto installs. To generate
-# this, do `pip install -e acme -e . -e letsencrypt-apache`, `pip freeze`,
-# and then gather the hashes.
+# this, do `pip install --no-cache-dir -e acme -e . -e letsencrypt-apache`, and
+# then use `hashin` or a more secure method to gather the hashes.
 
 # sha256: wxZH7baf09RlqEfqMVfTe-0flfGXYLEaR6qRwEtmYxQ
 # sha256: YrCJpVvh2JSc0rx-DfC9254Cj678jDIDjMhIYq791uQ
@@ -507,6 +505,10 @@ idna==2.0
 # sha256: k1cSgAzkdgcB2JrWd2Zs1SaR_S9vCzQMi0I5o8F5iKU
 # sha256: WjGCsyKnBlJcRigspvBk0noCz_vUSfn0dBbx3JaqcbA
 ipaddress==1.0.16
+
+# sha256: 54vpwKDfy6xxL-BPv5K5bN2ugLG4QvJCSCFMhJbwBu8
+# sha256: Syb_TnEQ23butvWntkqCYjg51ZXCA47tpmLyott46Xw
+linecache2==1.0.0
 
 # sha256: 6MFV_evZxLywgQtO0BrhmHVUse4DTddTLXuP2uOKYnQ
 ndg-httpsclient==0.4.0
@@ -598,6 +600,14 @@ requests==2.9.1
 # sha256: D_eMQD2bzPWkJabTGhKqa0fxwhyk3CVzp-LzKpczXrE
 # sha256: EF-NaGFvgkjiS_DpNy7wTTzBAQTxmA9U1Xss5zpa1Wo
 six==1.10.0
+
+# sha256: glPOvsSxkJTWfMXtWvmb8duhKFKSIm6Yoxkp-HpdayM
+# sha256: BazGegmYDC7P7dNCP3rgEEg57MtV_GRXc-HKoJUcMDA
+traceback2==1.4.0
+
+# sha256: E_d9CHXbbZtDXh1PQedK1MwutuHVyCSZYJKzQw8Ii7g
+# sha256: IogqDkGMKE4fcYqCKzsCKUTVPS2QjhaQsxmp0-ssBXk
+unittest2==1.1.0
 
 # sha256: aUkbUwUVfDxuDwSnAZhNaud_1yn8HJrNJQd_HfOFMms
 # sha256: 619wCpv8lkILBVY1r5AC02YuQ9gMP_0x8iTCW8DV9GI
