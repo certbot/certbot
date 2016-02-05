@@ -864,12 +864,6 @@ def _renewal_conf_files(config):
     """Return /path/to/*.conf in the renewal conf directory"""
     return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
 
-def _copy_nsconfig(config):
-    # Work around https://bugs.python.org/issue1515 for py26 tests :( :(
-    # https://travis-ci.org/letsencrypt/letsencrypt/jobs/106900743#L3276
-    ns = copy.deepcopy(config.namespace)
-    new_config = configuration.NamespaceConfig(ns)
-    return new_config
 
 def renew(config, unused_plugins):
     """Renew previously-obtained certificates."""
@@ -893,7 +887,7 @@ def renew(config, unused_plugins):
         print("Processing " + renewal_file)
         # XXX: does this succeed in making a fully independent config object
         #      each time?
-        lineage_config = _copy_nsconfig(config)
+        lineage_config = copy.deepcopy(config)
 
         # Note that this modifies config (to add back the configuration
         # elements from within the renewal configuration file).
