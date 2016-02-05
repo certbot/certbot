@@ -704,6 +704,12 @@ def obtain_cert(config, plugins, lineage=None):
 
     if config.dry_run:
         _report_successful_dry_run()
+    elif config.verb == "renew" and installer is not None:
+        # In case of a renewal, reload server to pick up new certificate.
+        # In principle we could have a configuration option to inhibit this
+        # from happening.
+        installer.restart()
+        print("reloaded")
     _suggest_donation_if_appropriate(config)
 
 
