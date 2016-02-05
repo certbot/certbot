@@ -1,4 +1,5 @@
 """Let's Encrypt user-supplied configuration."""
+import copy
 import os
 import urlparse
 
@@ -43,12 +44,6 @@ class NamespaceConfig(object):
         # Check command line parameters sanity, and error out in case of problem.
         check_config_sanity(self)
 
-        # We're done setting up the attic. Now pull up the ladder after ourselves...
-        self.__setattr__ = self.__setattr_implementation__
-
-    def __setattr_implementation__(self, var, value):
-        return self.namespace.__setattr__(var, value)
-
     def __getattr__(self, name):
         return getattr(self.namespace, name)
 
@@ -84,21 +79,21 @@ class NamespaceConfig(object):
         return os.path.join(
             self.namespace.work_dir, constants.TEMP_CHECKPOINT_DIR)
 
+    def __deepcopy__(self, _memo):
+        # Work around https://bugs.python.org/issue1515 for py26 tests :( :(
+        # https://travis-ci.org/letsencrypt/letsencrypt/jobs/106900743#L3276
+        new_ns = copy.deepcopy(self.namespace)
+        return type(self)(new_ns)
+
 
 class RenewerConfiguration(object):
     """Configuration wrapper for renewer."""
 
     def __init__(self, namespace):
         self.namespace = namespace
-        # We're done setting up the attic. Now pull up the ladder after ourselves...
-        self.__setattr__ = self.__setattr_implementation__
 
     def __getattr__(self, name):
         return getattr(self.namespace, name)
-
-    def __setattr_implementation__(self, var, value):
-        print("in __setattr_implementation__, setting", var, value)
-        return self.namespace.__setattr__(var, value)
 
     @property
     def archive_dir(self):  # pylint: disable=missing-docstring
