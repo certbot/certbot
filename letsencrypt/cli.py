@@ -159,7 +159,7 @@ def _determine_account(config):
             acc = accounts[0]
         else:  # no account registered yet
             if config.email is None and not config.register_unsafely_without_email:
-                config.email = display_ops.get_email()
+                config.namespace.email = display_ops.get_email()
 
             def _tos_cb(regr):
                 if config.tos:
@@ -181,7 +181,7 @@ def _determine_account(config):
                 raise errors.Error(
                     "Unable to register an account with ACME server")
 
-    config.account = acc.id
+    config.namespace.account = acc.id
     return acc, acme
 
 
