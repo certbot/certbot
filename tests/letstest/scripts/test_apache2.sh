@@ -44,7 +44,7 @@ if [ $? -ne 0 ] ; then
     exit 1
 fi
 
-bootstrap/dev/venv.sh
+tools/venv.sh
 sudo venv/bin/letsencrypt -v --debug --text --agree-dev-preview --agree-tos \
                    --renew-by-default --redirect --register-unsafely-without-email \
                    --domain $PUBLIC_HOSTNAME --server $BOULDER_URL

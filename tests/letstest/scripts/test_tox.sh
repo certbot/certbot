@@ -14,7 +14,7 @@ VENV_BIN=${VENV_PATH}/bin
 "$LEA_PATH/letsencrypt-auto" --os-packages-only
 
 cd letsencrypt
-./bootstrap/dev/venv.sh
+./tools/venv.sh
 PYVER=`python --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
 
 if [ $PYVER -eq 26 ] ; then
