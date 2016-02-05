@@ -35,19 +35,13 @@ then
     #sudo cp /etc/httpd/sites-available/$PUBLIC_HOSTNAME.conf /etc/httpd/sites-enabled/
 fi
 
-# run letsencrypt-apache2 via letsencrypt-auto
+# Run letsencrypt-apache2.
 cd letsencrypt
 
-export SUDO=sudo
-if [ -f /etc/debian_version ] ; then
-  echo "Bootstrapping dependencies for Debian-based OSes..."
-  $SUDO bootstrap/_deb_common.sh
-elif [ -f /etc/redhat-release ] ; then
-  echo "Bootstrapping dependencies for RedHat-based OSes..."
-  $SUDO bootstrap/_rpm_common.sh
-else
-  echo "Dont have bootstrapping for this OS!"
-  exit 1
+echo "Bootstrapping dependencies..."
+letsencrypt-auto-source/letsencrypt-auto --os-packages-only
+if [ $? -ne 0 ] ; then
+    exit 1
 fi
 
 bootstrap/dev/venv.sh
