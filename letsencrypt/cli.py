@@ -886,8 +886,7 @@ def renew(config, unused_plugins):
         print("Processing " + renewal_file)
         # XXX: does this succeed in making a fully independent config object
         #      each time?
-        lineage_config = configuration.RenewerConfiguration(
-            copy.deepcopy(config))
+        lineage_config = copy.deepcopy(config)
 
         # Note that this modifies config (to add back the configuration
         # elements from within the renewal configuration file).
@@ -912,8 +911,7 @@ def renew(config, unused_plugins):
         # or not, we couldn't currently make a UI/logging distinction at
         # this stage to indicate whether renewal was actually attempted
         # (or successful).
-        obtain_cert(lineage_config.namespace,
-                    plugins_disco.PluginsRegistry.find_all(),
+        obtain_cert(lineage_config, plugins_disco.PluginsRegistry.find_all(),
                     renewal_candidate)
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
