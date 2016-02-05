@@ -727,7 +727,15 @@ def install(config, plugins):
     le_client.enhance_config(domains, config)
 
 
-def _restore_required_config_elements(full_path, config, renewalparams):
+def _restore_required_config_elements(config, renewalparams):
+    """Sets non-plugin specific values in config from renewalparams
+
+    :param configuration.NamespaceConfig config: configuration for the
+        current lineage
+    :param configobj.Section renewalparams: Parameters from the renewal
+        configuration file that defines this lineage
+
+    """
     # string-valued items to add if they're present
     for config_item in STR_CONFIG_ITEMS:
         if config_item in renewalparams:
@@ -744,12 +752,18 @@ def _restore_required_config_elements(full_path, config, renewalparams):
                 value = int(renewalparams[config_item])
                 setattr(config.namespace, config_item, value)
             except ValueError:
-                logger.warning("Renewal configuration file %s specifies "
-                               "a non-numeric value for %s. Skipping.",
-                               full_path, config_item)
-                raise
+                raise errors.Error(
+                    "Expected a numeric value for {0}".format(config_item))
 
 def _restore_plugin_configs(config, renewalparams):
+    """Sets plugin specific values in config from renewalparams
+
+    :param configuration.NamespaceConfig config: configuration for the
+        current lineage
+    :param configobj.Section renewalparams: Parameters from the renewal
+        configuration file that defines this lineage
+
+    """
     # Now use parser to get plugin-prefixed items with correct types
     # XXX: the current approach of extracting only prefixed items
     #      related to the actually-used installer and authenticator
@@ -782,7 +796,7 @@ def _restore_plugin_configs(config, renewalparams):
     return True
 
 
-def _reconstitute(full_path, config):
+def _reconstitute(config, full_path):
     """Try to instantiate a RenewableCert, updating config with relevant items.
 
     This is specifically for use in renewal and enforces several checks
@@ -790,12 +804,18 @@ def _reconstitute(full_path, config):
     request. The config argument is modified by including relevant options
     read from the renewal configuration file.
 
+    :param configuration.NamespaceConfig config: configuration for the
+        current lineage
+    :param str full_path: Absolute path to the configuration file that
+        defines this lineage
+
     :returns: the RenewableCert object or None if a fatal error occurred
     :rtype: `storage.RenewableCert` or NoneType
-    """
 
+    """
     try:
-        renewal_candidate = storage.RenewableCert(full_path, config)
+        renewal_candidate = storage.RenewableCert(
+            full_path, configuration.RenewerConfiguration(config))
     except (errors.CertStorageError, IOError):
         logger.warning("Renewal configuration file %s is broken. Skipping.", full_path)
         logger.info("Traceback was:\n%s", traceback.format_exc())
@@ -812,11 +832,12 @@ def _reconstitute(full_path, config):
     # Now restore specific values along with their data types, if
     # those elements are present.
     try:
-        _restore_required_config_elements(full_path, config, renewalparams)
+        _restore_required_config_elements(config, renewalparams)
         _restore_plugin_configs(config, renewalparams)
-    except ValueError:
-        # There was a data type error which has already been
-        # logged.
+    except (ValueError, errors.Error) as error:
+        logger.warning(
+            "An error occured while parsing %s. The error was %s. "
+            "Skipping the file.", full_path, error.message)
         return None
 
     # webroot_map is, uniquely, a dict, and the general-purpose
@@ -843,10 +864,9 @@ def _renewal_conf_files(config):
     return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
 
 
-def renew(cli_config, unused_plugins):
+def renew(config, unused_plugins):
     """Renew previously-obtained certificates."""
-    cli_config = configuration.RenewerConfiguration(cli_config)
-    if cli_config.domains != []:
+    if config.domains != []:
         raise errors.Error("Currently, the renew verb is only capable of "
                            "renewing all installed certificates that are due "
                            "to be renewed; individual domains cannot be "
@@ -854,22 +874,24 @@ def renew(cli_config, unused_plugins):
                            "renew specific certificates, use the certonly "
                            "command. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
-    if cli_config.csr is not None:
+    if config.csr is not None:
         raise errors.Error("Currently, the renew verb cannot be used when "
                            "specifying a CSR file. Please try the certonly "
                            "command instead.")
-    for renewal_file in _renewal_conf_files(cli_config):
+    renewer_config = configuration.RenewerConfiguration(config)
+    for renewal_file in _renewal_conf_files(renewer_config):
         if not renewal_file.endswith(".conf"):
             continue
         print("Processing " + renewal_file)
         # XXX: does this succeed in making a fully independent config object
         #      each time?
-        config = configuration.RenewerConfiguration(copy.deepcopy(cli_config))
+        lineage_config = configuration.RenewerConfiguration(
+            copy.deepcopy(config))
 
         # Note that this modifies config (to add back the configuration
         # elements from within the renewal configuration file).
         try:
-            renewal_candidate = _reconstitute(renewal_file, config)
+            renewal_candidate = _reconstitute(renewal_file, lineage_config)
         except Exception as e: # pylint: disable=broad-except
             # reconstitute encountered an unanticipated problem.
             logger.warning("Renewal configuration file %s produced an "
@@ -882,14 +904,14 @@ def renew(cli_config, unused_plugins):
             # already been logged. Go on to the next config.
             continue
         # XXX: ensure that each call here replaces the previous one
-        zope.component.provideUtility(config)
+        zope.component.provideUtility(lineage_config)
 
         print("Trying...")
         # Because obtain_cert itself indirectly decides whether to renew
         # or not, we couldn't currently make a UI/logging distinction at
         # this stage to indicate whether renewal was actually attempted
         # (or successful).
-        obtain_cert(config, plugins_disco.PluginsRegistry.find_all(),
+        obtain_cert(lineage_config, plugins_disco.PluginsRegistry.find_all(),
                     renewal_candidate)
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
