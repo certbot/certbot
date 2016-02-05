@@ -229,7 +229,7 @@ def _find_duplicative_certs(config, domains):
             candidate_lineage = storage.RenewableCert(renewal_file, cli_config)
         except (errors.CertStorageError, IOError):
             logger.warning("Renewal conf file %s is broken. Skipping.", renewal_file)
-            logger.info("Traceback was:\n%s", traceback.format_exc())
+            logger.debug("Traceback was:\n%s", traceback.format_exc())
             continue
         # TODO: Handle these differently depending on whether they are
         #       expired or still valid?
@@ -248,8 +248,10 @@ def _find_duplicative_certs(config, domains):
 
 
 def _treat_as_renewal(config, domains):
-    """Determine whether there are duplicated names and how to handle them
-    (renew, reinstall, newcert, or no action).
+    """Determine whether there are duplicated names and how to handle
+    them (renew, reinstall, newcert, or raising an error to stop
+    the client run if the user chooses to cancel the operation when
+    prompted).
 
     :returns: Two-element tuple containing desired new-certificate behavior as
               a string token ("reinstall", "renew", or "newcert"), plus either
@@ -852,6 +854,10 @@ def renew(cli_config, unused_plugins):
                            "renew specific certificates, use the certonly "
                            "command. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
+    if cli_config.csr is not None:
+        raise errors.Error("Currently, the renew verb cannot be used when "
+                           "specifying a CSR file. Please try the certonly "
+                           "command instead.")
     for renewal_file in _renewal_conf_files(cli_config):
         if not renewal_file.endswith(".conf"):
             continue
