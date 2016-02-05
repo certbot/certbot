@@ -1,4 +1,5 @@
 """Let's Encrypt user-supplied configuration."""
+import copy
 import os
 import urlparse
 
@@ -77,6 +78,12 @@ class NamespaceConfig(object):
     def temp_checkpoint_dir(self):  # pylint: disable=missing-docstring
         return os.path.join(
             self.namespace.work_dir, constants.TEMP_CHECKPOINT_DIR)
+
+    def __deepcopy__(self, _memo):
+        # Work around https://bugs.python.org/issue1515 for py26 tests :( :(
+        # https://travis-ci.org/letsencrypt/letsencrypt/jobs/106900743#L3276
+        new_ns = copy.deepcopy(self.namespace)
+        return type(self)(new_ns)
 
 
 class RenewerConfiguration(object):
