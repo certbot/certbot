@@ -770,8 +770,10 @@ def _restore_plugin_configs(config, renewalparams):
     #      works as long as plugins don't need to read plugin-specific
     #      variables set by someone else (e.g., assuming Apache
     #      configurator doesn't need to read webroot_ variables).
-    # XXX: is it true that an item will end up in _parser._actions even
-    #      when no action was explicitly specified?
+    # Note: if a parameter that used to be defined in the parser is no
+    #      longer defined, stored copies of that parameter will be
+    #      deserialized as strings by this logic even if they were
+    #      originally meant to be some other type.
     plugin_prefixes = [renewalparams["authenticator"]]
     if renewalparams.get("installer", None) is not None:
         plugin_prefixes.append(renewalparams["installer"])
@@ -895,20 +897,26 @@ def renew(config, unused_plugins):
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             continue
 
-        if renewal_candidate is not None:
-            # _reconstitute succeeded in producing a RenewableCert, so we
-            # have something to work with from this particular config file.
+        try:
+            if renewal_candidate is not None:
+                # _reconstitute succeeded in producing a RenewableCert, so we
+                # have something to work with from this particular config file.
 
-            # XXX: ensure that each call here replaces the previous one
-            zope.component.provideUtility(lineage_config)
-            print("Trying...")
-            # Because obtain_cert itself indirectly decides whether to renew
-            # or not, we couldn't currently make a UI/logging distinction at
-            # this stage to indicate whether renewal was actually attempted
-            # (or successful).
-            obtain_cert(lineage_config,
-                        plugins_disco.PluginsRegistry.find_all(),
-                        renewal_candidate)
+                # XXX: ensure that each call here replaces the previous one
+                zope.component.provideUtility(lineage_config)
+                print("Trying...")
+                # Because obtain_cert itself indirectly decides whether to renew
+                # or not, we couldn't currently make a UI/logging distinction at
+                # this stage to indicate whether renewal was actually attempted
+                # (or successful).
+                obtain_cert(lineage_config,
+                            plugins_disco.PluginsRegistry.find_all(),
+                            renewal_candidate)
+        except Exception as e: # pylint: disable=broad-except
+            # obtain_cert (presumably) encountered an unanticipated problem.
+            logger.warning("Attempting to renew cert from %s produced an "
+                           "unexpected error: %s. Skipping.", renewal_file, e)
+            logger.debug("Traceback was:\n%s", traceback.format_exc())
 
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
