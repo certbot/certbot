@@ -732,7 +732,7 @@ def _restore_required_config_elements(config, renewalparams):
 
     :param configuration.NamespaceConfig config: configuration for the
         current lineage
-    :param configobj.Section renewalparams: Parameters from the renewal
+    :param configobj.Section renewalparams: parameters from the renewal
         configuration file that defines this lineage
 
     """
