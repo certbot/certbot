@@ -773,27 +773,25 @@ def _restore_plugin_configs(config, renewalparams):
     # XXX: is it true that an item will end up in _parser._actions even
     #      when no action was explicitly specified?
     plugin_prefixes = [renewalparams["authenticator"]]
-    if "installer" in renewalparams and renewalparams["installer"] != None:
+    if renewalparams.get("installer", None) is not None:
         plugin_prefixes.append(renewalparams["installer"])
     for plugin_prefix in set(renewalparams):
-        for config_item in renewalparams.keys():
-            if renewalparams[config_item] == "None":
+        for config_item, config_value in renewalparams.iteritems():
+            if config_item.startswith(plugin_prefix + "_"):
                 # Avoid confusion when, for example, "csr = None" (avoid
                 # trying to read the file called "None")
                 # Should we omit the item entirely rather than setting
                 # its value to None?
-                setattr(config.namespace, config_item, None)
-                continue
-            if config_item.startswith(plugin_prefix + "_"):
+                if config_value == "None":
+                    setattr(config.namespace, config_item, None)
+                    continue
                 for action in _parser.parser._actions: # pylint: disable=protected-access
                     if action.type is not None and action.dest == config_item:
                         setattr(config.namespace, config_item,
-                                action.type(renewalparams[config_item]))
+                                action.type(config_value))
                         break
                 else:
-                    setattr(config.namespace, config_item,
-                            str(renewalparams[config_item]))
-    return True
+                    setattr(config.namespace, config_item, str(config_value))
 
 
 def _reconstitute(config, full_path):
@@ -881,8 +879,6 @@ def renew(config, unused_plugins):
                            "command instead.")
     renewer_config = configuration.RenewerConfiguration(config)
     for renewal_file in _renewal_conf_files(renewer_config):
-        if not renewal_file.endswith(".conf"):
-            continue
         print("Processing " + renewal_file)
         # XXX: does this succeed in making a fully independent config object
         #      each time?
@@ -899,20 +895,21 @@ def renew(config, unused_plugins):
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             continue
 
-        if renewal_candidate is None:
-            # reconstitute indicated an error or problem which has
-            # already been logged. Go on to the next config.
-            continue
-        # XXX: ensure that each call here replaces the previous one
-        zope.component.provideUtility(lineage_config)
+        if renewal_candidate is not None:
+            # _reconstitute succeeded in producing a RenewableCert, so we
+            # have something to work with from this particular config file.
 
-        print("Trying...")
-        # Because obtain_cert itself indirectly decides whether to renew
-        # or not, we couldn't currently make a UI/logging distinction at
-        # this stage to indicate whether renewal was actually attempted
-        # (or successful).
-        obtain_cert(lineage_config, plugins_disco.PluginsRegistry.find_all(),
-                    renewal_candidate)
+            # XXX: ensure that each call here replaces the previous one
+            zope.component.provideUtility(lineage_config)
+            print("Trying...")
+            # Because obtain_cert itself indirectly decides whether to renew
+            # or not, we couldn't currently make a UI/logging distinction at
+            # this stage to indicate whether renewal was actually attempted
+            # (or successful).
+            obtain_cert(lineage_config,
+                        plugins_disco.PluginsRegistry.find_all(),
+                        renewal_candidate)
+
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
     """Revoke a previously obtained certificate."""
