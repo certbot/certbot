@@ -249,7 +249,7 @@ class Client(object):
 
         `.register` must be called before `.obtain_certificate`
 
-        :param set domains: domains to get a certificate
+        :param list domains: domains to get a certificate
 
         :returns: `.CertificateResource`, certificate chain (as
             returned by `.fetch_chain`), and newly generated private key
@@ -282,23 +282,13 @@ class Client(object):
         """
         certr, chain, key, _ = self.obtain_certificate(domains)
 
-        # XXX: We clearly need a more general and correct way of getting
-        # options into the configobj for the RenewableCert instance.
-        # This is a quick-and-dirty way to do it to allow integration
-        # testing to start.  (Note that the config parameter to new_lineage
-        # ideally should be a ConfigObj, but in this case a dict will be
-        # accepted in practice.)
-        params = vars(self.config.namespace)
-        config = {}
-        cli_config = configuration.RenewerConfiguration(self.config.namespace)
-
-        if (cli_config.config_dir != constants.CLI_DEFAULTS["config_dir"] or
-                cli_config.work_dir != constants.CLI_DEFAULTS["work_dir"]):
+        if (self.config.config_dir != constants.CLI_DEFAULTS["config_dir"] or
+                self.config.work_dir != constants.CLI_DEFAULTS["work_dir"]):
             logger.warning(
                 "Non-standard path(s), might not work with crontab installed "
                 "by your operating system package manager")
 
-        if cli_config.dry_run:
+        if self.config.dry_run:
             logger.info("Dry run: Skipping creating new lineage for %s",
                         domains[0])
             return None
@@ -307,7 +297,7 @@ class Client(object):
                 domains[0], OpenSSL.crypto.dump_certificate(
                     OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped),
                 key.pem, crypto_util.dump_pyopenssl_chain(chain),
-                params, config, cli_config)
+                configuration.RenewerConfiguration(self.config.namespace))
 
     def save_certificate(self, certr, chain_cert,
                          cert_path, chain_path, fullchain_path):

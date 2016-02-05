@@ -101,9 +101,7 @@ DeterminePythonVersion() {
   fi
 
   PYVER=`$LE_PYTHON --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
-  if [ $PYVER -eq 26 ] ; then
-    ExperimentalBootstrap "Python 2.6"
-  elif [ $PYVER -lt 26 ] ; then
+  if [ $PYVER -lt 26 ] ; then
     echo "You have an ancient version of Python entombed in your operating system..."
     echo "This isn't going to work; you'll need at least version 2.6."
     exit 1
