@@ -865,6 +865,8 @@ def _renewal_conf_files(config):
     return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
 
 def _copy_nsconfig(config):
+    # Work around https://bugs.python.org/issue1515 for py26 tests :( :(
+    # https://travis-ci.org/letsencrypt/letsencrypt/jobs/106900743#L3276
     ns = copy.deepcopy(config.namespace)
     new_config = configuration.NamespaceConfig(ns)
     return new_config

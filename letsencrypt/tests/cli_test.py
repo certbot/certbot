@@ -603,11 +603,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             print lf.read()
 
 
-    # Work around https://bugs.python.org/issue1515 for py26 tests :( :(
-    # https://travis-ci.org/letsencrypt/letsencrypt/jobs/106900743#L3276
-    @mock.patch('letsencrypt.cli.copy.deepcopy')
-    def test_renewal_verb(self, hack_copy):
-
+    def test_renewal_verb(self):
         with open(test_util.vector_path('sample-renewal.conf')) as src:
             # put the correct path for cert.pem, chain.pem etc in the renewal conf
             renewal_conf = src.read().replace("MAGICDIR", test_util.vector_path())
@@ -616,7 +612,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         rc = os.path.join(rd, "sample-renewal.conf")
         with open(rc, "w") as dest:
             dest.write(renewal_conf)
-        hack_copy.side_effect = lambda x: x
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, renew=True)
 
