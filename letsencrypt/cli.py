@@ -838,6 +838,7 @@ def _reconstitute(config, full_path):
         logger.warning(
             "An error occured while parsing %s. The error was %s. "
             "Skipping the file.", full_path, error.message)
+        logger.debug("Traceback was:\n%s", traceback.format_exc())
         return None
 
     # webroot_map is, uniquely, a dict, and the general-purpose
