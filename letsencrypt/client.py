@@ -228,21 +228,30 @@ class Client(object):
             authzr)
         return certr, self.acme.fetch_chain(certr)
 
-    def obtain_certificate_from_csr(self, csr):
+    def obtain_certificate_from_csr(self, domain_callback):
         """Obtain certficiate from CSR.
 
-        :param .le_util.CSR csr: DER-encoded Certificate Signing
-            Request.
+        :param function(config, domains) domain_callback: callback for each
+        domain extracted from the CSR, to ensure that webroot-map and similar
+        housekeeping in cli.py is performed correctly
 
         :returns: `.CertificateResource` and certificate chain (as
             returned by `.fetch_chain`).
         :rtype: tuple
 
         """
-        return self._obtain_certificate(
-            # TODO: add CN to domains?
-            crypto_util.get_sans_from_csr(
-                csr.data, OpenSSL.crypto.FILETYPE_ASN1), csr)
+
+        #raise TypeError("About to call %r" % le_util.CSR)
+        csr = le_util.CSR(file=self.config.csr[0], data=self.config.csr[1], form="der")
+        # TODO: add CN to domains?
+        try:
+            domains = crypto_util.get_sans_from_csr(csr.data, OpenSSL.crypto.FILETYPE_ASN1)
+        except:
+            raise TypeError("Failed %r %r %r" % (self.config.csr, csr, csr.data))
+        for d in domains:
+            domain_callback(self.config, d)
+
+        return self._obtain_certificate(domains, csr)
 
     def obtain_certificate(self, domains):
         """Obtains a certificate from the ACME server.

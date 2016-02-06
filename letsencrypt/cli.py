@@ -689,8 +689,7 @@ def obtain_cert(config, plugins, lineage=None):
     # This is a special case; cert and chain are simply saved
     if config.csr is not None:
         assert lineage is None, "Did not expect a CSR with a RenewableCert"
-        certr, chain = le_client.obtain_certificate_from_csr(le_util.CSR(
-            file=config.csr[0], data=config.csr[1], form="der"))
+        certr, chain = le_client.obtain_certificate_from_csr(_process_domain)
         if config.dry_run:
             logger.info(
                 "Dry run: skipping saving certificate to %s", config.cert_path)
