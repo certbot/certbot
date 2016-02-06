@@ -46,8 +46,7 @@ from letsencrypt.plugins import disco as plugins_disco
 
 logger = logging.getLogger(__name__)
 
-# This is global scope in order to be able to extract type information from
-# it later
+# Global, to save us from a lot of argument passing within the scope of this module
 _parser = None
 
 # These are the items which get pulled out of a renewal configuration
@@ -733,17 +732,31 @@ def install(config, plugins):
     le_client.enhance_config(domains, config)
 
 
-def _diff_from_default(default_detector_conf, value):
+def _set_by_cli(variable):
+    """
+    Return True if a particular config variable has been set by the user
+    (CLI or config file) including if the user explicitly set it to the
+    default.  Returns False if the variable was assigned a default variable.
+    """
+    if _set_by_cli.detector is None:
+        # Setup on first run: `detector` is a weird version of config in which
+        # the default value of every attribute is wrangled to be boolean-false
+        plugins = plugins_disco.PluginsRegistry.find_all()
+        default_args = prepare_and_parse_args(plugins, sys.argv[1:], empty_defaults=True)
+        _set_by_cli.detector = configuration.NamespaceConfig(default_args, fake=True)
     try:
-        if default_detector_conf.__getattr__(value):
+        # Is detector.variable something that isn't false?
+        if _set_by_cli.detector.__getattr__(variable):
             return True
         else:
             return False
     except AttributeError:
-        print("Missing default", value)
+        logger.warning("Missing default analysis for %r", variable)
         return False
+# static housekeeping variable
+_set_by_cli.detector = None
 
-def _restore_required_config_elements(config, renewalparams, default_detector_conf):
+def _restore_required_config_elements(config, renewalparams):
     """Sets non-plugin specific values in config from renewalparams
 
     :param configuration.NamespaceConfig config: configuration for the
@@ -754,8 +767,7 @@ def _restore_required_config_elements(config, renewalparams, default_detector_co
     """
     # string-valued items to add if they're present
     for config_item in STR_CONFIG_ITEMS:
-        if config_item in renewalparams and not _diff_from_default(default_detector_conf,
-                                                                   config_item):
+        if config_item in renewalparams and not _set_by_cli(config_item):
             value = renewalparams[config_item]
             # Unfortunately, we've lost type information from ConfigObj,
             # so we don't know if the original was NoneType or str!
@@ -764,8 +776,7 @@ def _restore_required_config_elements(config, renewalparams, default_detector_co
             setattr(config.namespace, config_item, value)
     # int-valued items to add if they're present
     for config_item in INT_CONFIG_ITEMS:
-        if config_item in renewalparams and not _diff_from_default(default_detector_conf,
-                                                                   config_item):
+        if config_item in renewalparams and not _set_by_cli(config_item):
             try:
                 value = int(renewalparams[config_item])
                 setattr(config.namespace, config_item, value)
@@ -773,7 +784,7 @@ def _restore_required_config_elements(config, renewalparams, default_detector_co
                 raise errors.Error(
                     "Expected a numeric value for {0}".format(config_item))
 
-def _restore_plugin_configs(config, renewalparams, default_detector_conf):
+def _restore_plugin_configs(config, renewalparams):
     """Sets plugin specific values in config from renewalparams
 
     :param configuration.NamespaceConfig config: configuration for the
@@ -797,8 +808,7 @@ def _restore_plugin_configs(config, renewalparams, default_detector_conf):
         plugin_prefixes.append(renewalparams["installer"])
     for plugin_prefix in set(plugin_prefixes):
         for config_item, config_value in renewalparams.iteritems():
-            if config_item.startswith(plugin_prefix + "_") and not _diff_from_default(
-                    default_detector_conf, config_item):
+            if config_item.startswith(plugin_prefix + "_") and not _set_by_cli(config_item):
                 # Avoid confusion when, for example, "csr = None" (avoid
                 # trying to read the file called "None")
                 # Should we omit the item entirely rather than setting
@@ -816,7 +826,7 @@ def _restore_plugin_configs(config, renewalparams, default_detector_conf):
                     setattr(config.namespace, config_item, str(config_value))
 
 
-def _reconstitute(config, full_path, default_detector_conf):
+def _reconstitute(config, full_path):
     """Try to instantiate a RenewableCert, updating config with relevant items.
 
     This is specifically for use in renewal and enforces several checks
@@ -852,8 +862,8 @@ def _reconstitute(config, full_path, default_detector_conf):
     # Now restore specific values along with their data types, if
     # those elements are present.
     try:
-        _restore_required_config_elements(config, renewalparams, default_detector_conf)
-        _restore_plugin_configs(config, renewalparams, default_detector_conf)
+        _restore_required_config_elements(config, renewalparams)
+        _restore_plugin_configs(config, renewalparams)
     except (ValueError, errors.Error) as error:
         logger.warning(
             "An error occured while parsing %s. The error was %s. "
@@ -864,8 +874,7 @@ def _reconstitute(config, full_path, default_detector_conf):
     # webroot_map is, uniquely, a dict, and the general-purpose
     # configuration restoring logic is not able to correctly parse it
     # from the serialized form.
-    if "webroot_map" in renewalparams and not _diff_from_default(default_detector_conf,
-                                                                 "webroot_map"):
+    if "webroot_map" in renewalparams and not _set_by_cli("webroot_map"):
         setattr(config.namespace, "webroot_map", renewalparams["webroot_map"])
 
     try:
@@ -877,7 +886,7 @@ def _reconstitute(config, full_path, default_detector_conf):
                        "invalid. Skipping.", full_path)
         return None
 
-    if not _diff_from_default(default_detector_conf, "domains"):
+    if not _set_by_cli("domains"):
         setattr(config.namespace, "domains", domains)
 
     return renewal_candidate
@@ -887,11 +896,8 @@ def _renewal_conf_files(config):
     return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
 
 
-def renew(config, plugins):
+def renew(config, unused_plugins):
     """Renew previously-obtained certificates."""
-
-    default_args = prepare_and_parse_args(plugins, sys.argv[1:], empty_defaults=True)
-    default_detector_conf = configuration.NamespaceConfig(default_args, fake=True)
 
     if config.domains != []:
         raise errors.Error("Currently, the renew verb is only capable of "
@@ -916,8 +922,7 @@ def renew(config, plugins):
         # Note that this modifies config (to add back the configuration
         # elements from within the renewal configuration file).
         try:
-            renewal_candidate = _reconstitute(lineage_config, renewal_file,
-                                              default_detector_conf)
+            renewal_candidate = _reconstitute(lineage_config, renewal_file)
         except Exception as e: # pylint: disable=broad-except
             # reconstitute encountered an unanticipated problem.
             logger.warning("Renewal configuration file %s produced an "
@@ -1752,9 +1757,9 @@ def _handle_exception(exc_type, exc_value, trace, config):
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     sys.excepthook = functools.partial(_handle_exception, config=None)
+    plugins = plugins_disco.PluginsRegistry.find_all()
 
     # note: arg parser internally handles --help (and exits afterwards)
-    plugins = plugins_disco.PluginsRegistry.find_all()
     args = prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
