@@ -28,3 +28,20 @@ letsencrypt_test () {
         -vvvvvvv \
         "$@"
 }
+
+letsencrypt_test_no_force_renew () {
+    letsencrypt \
+        --server "${SERVER:-http://localhost:4000/directory}" \
+        --no-verify-ssl \
+        --tls-sni-01-port 5001 \
+        --http-01-port 5002 \
+        --manual-test-mode \
+        $store_flags \
+        --text \
+        --no-redirect \
+        --agree-tos \
+        --register-unsafely-without-email \
+        --debug \
+        -vvvvvvv \
+        "$@"
+}
