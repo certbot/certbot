@@ -41,7 +41,6 @@ letsencrypt_test_no_force_renew () {
         --no-redirect \
         --agree-tos \
         --register-unsafely-without-email \
-        --renew-by-default \
         --debug \
         -vvvvvvv \
         "$@"
