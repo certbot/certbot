@@ -707,14 +707,14 @@ def obtain_cert(config, plugins, lineage=None):
     elif config.verb == "renew":
         if installer is None:
             # Tell the user that the server was not restarted.
-            print("new certificate deployed without restart, fullchain",
+            print("new certificate deployed without reload, fullchain",
                   lineage.fullchain)
         else:
             # In case of a renewal, reload server to pick up new certificate.
             # In principle we could have a configuration option to inhibit this
             # from happening.
             installer.restart()
-            print("new certificate deployed with restart of plugin",
+            print("new certificate deployed with reload of plugin",
                   config.installer, "fullchain is", lineage.fullchain)
     _suggest_donation_if_appropriate(config)
 
