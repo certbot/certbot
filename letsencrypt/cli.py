@@ -54,7 +54,7 @@ _parser = None
 # file's renewalparams and actually used in the client configuration
 # during the renewal process. We have to record their types here because
 # the renewal configuration process loses this information.
-STR_CONFIG_ITEMS = ["config_dir", "log_dir", "work_dir", "user_agent",
+STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
                     "standalone_supported_challenges"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
@@ -704,6 +704,12 @@ def obtain_cert(config, plugins, lineage=None):
 
     if config.dry_run:
         _report_successful_dry_run()
+    elif config.verb == "renew" and installer is not None:
+        # In case of a renewal, reload server to pick up new certificate.
+        # In principle we could have a configuration option to inhibit this
+        # from happening.
+        installer.restart()
+        print("reloaded")
     _suggest_donation_if_appropriate(config)
 
 
@@ -770,30 +776,30 @@ def _restore_plugin_configs(config, renewalparams):
     #      works as long as plugins don't need to read plugin-specific
     #      variables set by someone else (e.g., assuming Apache
     #      configurator doesn't need to read webroot_ variables).
-    # XXX: is it true that an item will end up in _parser._actions even
-    #      when no action was explicitly specified?
+    # Note: if a parameter that used to be defined in the parser is no
+    #      longer defined, stored copies of that parameter will be
+    #      deserialized as strings by this logic even if they were
+    #      originally meant to be some other type.
     plugin_prefixes = [renewalparams["authenticator"]]
-    if "installer" in renewalparams and renewalparams["installer"] != None:
+    if renewalparams.get("installer", None) is not None:
         plugin_prefixes.append(renewalparams["installer"])
-    for plugin_prefix in set(renewalparams):
-        for config_item in renewalparams.keys():
-            if renewalparams[config_item] == "None":
+    for plugin_prefix in set(plugin_prefixes):
+        for config_item, config_value in renewalparams.iteritems():
+            if config_item.startswith(plugin_prefix + "_"):
                 # Avoid confusion when, for example, "csr = None" (avoid
                 # trying to read the file called "None")
                 # Should we omit the item entirely rather than setting
                 # its value to None?
-                setattr(config.namespace, config_item, None)
-                continue
-            if config_item.startswith(plugin_prefix + "_"):
+                if config_value == "None":
+                    setattr(config.namespace, config_item, None)
+                    continue
                 for action in _parser.parser._actions: # pylint: disable=protected-access
                     if action.type is not None and action.dest == config_item:
                         setattr(config.namespace, config_item,
-                                action.type(renewalparams[config_item]))
+                                action.type(config_value))
                         break
                 else:
-                    setattr(config.namespace, config_item,
-                            str(renewalparams[config_item]))
-    return True
+                    setattr(config.namespace, config_item, str(config_value))
 
 
 def _reconstitute(config, full_path):
@@ -881,8 +887,6 @@ def renew(config, unused_plugins):
                            "command instead.")
     renewer_config = configuration.RenewerConfiguration(config)
     for renewal_file in _renewal_conf_files(renewer_config):
-        if not renewal_file.endswith(".conf"):
-            continue
         print("Processing " + renewal_file)
         # XXX: does this succeed in making a fully independent config object
         #      each time?
@@ -899,20 +903,27 @@ def renew(config, unused_plugins):
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             continue
 
-        if renewal_candidate is None:
-            # reconstitute indicated an error or problem which has
-            # already been logged. Go on to the next config.
-            continue
-        # XXX: ensure that each call here replaces the previous one
-        zope.component.provideUtility(lineage_config)
+        try:
+            if renewal_candidate is not None:
+                # _reconstitute succeeded in producing a RenewableCert, so we
+                # have something to work with from this particular config file.
 
-        print("Trying...")
-        # Because obtain_cert itself indirectly decides whether to renew
-        # or not, we couldn't currently make a UI/logging distinction at
-        # this stage to indicate whether renewal was actually attempted
-        # (or successful).
-        obtain_cert(lineage_config, plugins_disco.PluginsRegistry.find_all(),
-                    renewal_candidate)
+                # XXX: ensure that each call here replaces the previous one
+                zope.component.provideUtility(lineage_config)
+                print("Trying...")
+                # Because obtain_cert itself indirectly decides whether to renew
+                # or not, we couldn't currently make a UI/logging distinction at
+                # this stage to indicate whether renewal was actually attempted
+                # (or successful).
+                obtain_cert(lineage_config,
+                            plugins_disco.PluginsRegistry.find_all(),
+                            renewal_candidate)
+        except Exception as e: # pylint: disable=broad-except
+            # obtain_cert (presumably) encountered an unanticipated problem.
+            logger.warning("Attempting to renew cert from %s produced an "
+                           "unexpected error: %s. Skipping.", renewal_file, e)
+            logger.debug("Traceback was:\n%s", traceback.format_exc())
+
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
     """Revoke a previously obtained certificate."""
@@ -1610,7 +1621,7 @@ def setup_log_file_handler(config, logfile, fmt):
 
 
 def _cli_log_handler(config, level, fmt):
-    if config.text_mode:
+    if config.text_mode or config.noninteractive_mode or config.verb == "renew":
         handler = colored_logging.StreamHandler()
         handler.setFormatter(logging.Formatter(fmt))
     else:
