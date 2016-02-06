@@ -1389,7 +1389,7 @@ def setup_log_file_handler(config, logfile, fmt):
 
 
 def _cli_log_handler(config, level, fmt):
-    if config.text_mode:
+    if config.text_mode or config.noninteractive_mode:
         handler = colored_logging.StreamHandler()
         handler.setFormatter(logging.Formatter(fmt))
     else:
