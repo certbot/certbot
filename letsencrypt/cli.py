@@ -727,18 +727,17 @@ def install(config, plugins):
     le_client.enhance_config(domains, config)
 
 
-def _diff_from_default(default_conf, cli_conf, value):
+def _diff_from_default(default_detector_conf, value):
     try:
-        default = default_conf.__getattr__(value)
-        cli = cli_conf.__getattr__(value)
+        if default_detector_conf.__getattr__(value):
+            return True
+        else:
+            return False
     except AttributeError:
-        return False
-    if cli != default:
-        return True
-    else:
+        print("Missing default", value)
         return False
 
-def _restore_required_config_elements(config, renewalparams, cli_config, default_conf):
+def _restore_required_config_elements(config, renewalparams, default_detector_conf):
     """Sets non-plugin specific values in config from renewalparams
 
     :param configuration.NamespaceConfig config: configuration for the
@@ -749,7 +748,8 @@ def _restore_required_config_elements(config, renewalparams, cli_config, default
     """
     # string-valued items to add if they're present
     for config_item in STR_CONFIG_ITEMS:
-        if config_item in renewalparams and not _diff_from_default(default_conf, cli_config, config_item):
+        if config_item in renewalparams and not _diff_from_default(default_detector_conf,
+                                                                   config_item):
             value = renewalparams[config_item]
             # Unfortunately, we've lost type information from ConfigObj,
             # so we don't know if the original was NoneType or str!
@@ -758,7 +758,8 @@ def _restore_required_config_elements(config, renewalparams, cli_config, default
             setattr(config.namespace, config_item, value)
     # int-valued items to add if they're present
     for config_item in INT_CONFIG_ITEMS:
-        if config_item in renewalparams and not _diff_from_default(default_conf, cli_config, config_item):
+        if config_item in renewalparams and not _diff_from_default(default_detector_conf,
+                                                                   config_item):
             try:
                 value = int(renewalparams[config_item])
                 setattr(config.namespace, config_item, value)
@@ -766,7 +767,7 @@ def _restore_required_config_elements(config, renewalparams, cli_config, default
                 raise errors.Error(
                     "Expected a numeric value for {0}".format(config_item))
 
-def _restore_plugin_configs(config, renewalparams):
+def _restore_plugin_configs(config, renewalparams, default_detector_conf):
     """Sets plugin specific values in config from renewalparams
 
     :param configuration.NamespaceConfig config: configuration for the
@@ -795,7 +796,8 @@ def _restore_plugin_configs(config, renewalparams):
                 # its value to None?
                 setattr(config.namespace, config_item, None)
                 continue
-            if config_item.startswith(plugin_prefix + "_") and not _diff_from_default(default_conf, cli_config, config_item):
+            if config_item.startswith(plugin_prefix + "_") and not _diff_from_default(
+                default_detector_conf, config_item):
                 for action in _parser.parser._actions: # pylint: disable=protected-access
                     if action.type is not None and action.dest == config_item:
                         setattr(config.namespace, config_item,
@@ -807,7 +809,7 @@ def _restore_plugin_configs(config, renewalparams):
     return True
 
 
-def _reconstitute(config, full_path, cli_config, default_conf):
+def _reconstitute(config, full_path, default_detector_conf):
     """Try to instantiate a RenewableCert, updating config with relevant items.
 
     This is specifically for use in renewal and enforces several checks
@@ -843,8 +845,8 @@ def _reconstitute(config, full_path, cli_config, default_conf):
     # Now restore specific values along with their data types, if
     # those elements are present.
     try:
-        _restore_required_config_elements(config, renewalparams, cli_config, default_conf)
-        _restore_plugin_configs(config, renewalparams)
+        _restore_required_config_elements(config, renewalparams, default_detector_conf)
+        _restore_plugin_configs(config, renewalparams, default_detector_conf)
     except (ValueError, errors.Error) as error:
         logger.warning(
             "An error occured while parsing %s. The error was %s. "
@@ -855,7 +857,8 @@ def _reconstitute(config, full_path, cli_config, default_conf):
     # webroot_map is, uniquely, a dict, and the general-purpose
     # configuration restoring logic is not able to correctly parse it
     # from the serialized form.
-    if "webroot_map" in renewalparams and not _diff_from_default(default_conf, cli_config, "webroot_map"):
+    if "webroot_map" in renewalparams and not _diff_from_default(default_detector_conf,
+                                                                 "webroot_map"):
         setattr(config.namespace, "webroot_map", renewalparams["webroot_map"])
 
     try:
@@ -867,7 +870,7 @@ def _reconstitute(config, full_path, cli_config, default_conf):
                        "invalid. Skipping.", full_path)
         return None
 
-    if not _diff_from_default(default_conf, cli_config, "domains"):
+    if not _diff_from_default(default_detector_conf, "domains"):
         setattr(config.namespace, "domains", domains)
 
     return renewal_candidate
@@ -877,8 +880,12 @@ def _renewal_conf_files(config):
     return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
 
 
-def renew(config, unused_plugins):
+def renew(config, plugins):
     """Renew previously-obtained certificates."""
+
+    default_args = prepare_and_parse_args(plugins, sys.argv[1:], empty_defaults=True)
+    default_detector_conf = configuration.NamespaceConfig(default_args, fake=True)
+
     if config.domains != []:
         raise errors.Error("Currently, the renew verb is only capable of "
                            "renewing all installed certificates that are due "
@@ -892,20 +899,20 @@ def renew(config, unused_plugins):
                            "specifying a CSR file. Please try the certonly "
                            "command instead.")
     renewer_config = configuration.RenewerConfiguration(config)
+
     for renewal_file in _renewal_conf_files(renewer_config):
         if not renewal_file.endswith(".conf"):
             continue
         print("Processing " + renewal_file)
         # XXX: does this succeed in making a fully independent config object
         #      each time?
-        default_args = prepare_and_parse_args(plugins, [])
-        default_conf = configuration.NamespaceConfig(default_args)
         lineage_config = copy.deepcopy(config)
 
         # Note that this modifies config (to add back the configuration
         # elements from within the renewal configuration file).
         try:
-            renewal_candidate = _reconstitute(lineage_config, renewal_file, config, default_conf)
+            renewal_candidate = _reconstitute(lineage_config, renewal_file,
+                                              default_detector_conf)
         except Exception as e: # pylint: disable=broad-except
             # reconstitute encountered an unanticipated problem.
             logger.warning("Renewal configuration file %s produced an "
@@ -1053,7 +1060,7 @@ class HelpfulArgumentParser(object):
     HELP_TOPICS = ["all", "security",
                    "paths", "automation", "testing"] + VERBS.keys()
 
-    def __init__(self, args, plugins):
+    def __init__(self, args, plugins, empty_defaults=False):
         plugin_names = [name for name, _p in plugins.iteritems()]
         self.help_topics = self.HELP_TOPICS + plugin_names + [None]
         usage, short_usage = usage_strings(plugins)
@@ -1066,6 +1073,11 @@ class HelpfulArgumentParser(object):
         # This is the only way to turn off overly verbose config flag documentation
         self.parser._add_config_file_help = False  # pylint: disable=protected-access
         self.silent_parser = SilentParser(self.parser)
+
+        # This setting attempts to force all default values to None; it
+        # is used to detect when values have been explicitly set by the user,
+        # including when they are set to their normal default value
+        self.empty_defaults = empty_defaults
 
         self.args = args
         self.determine_verb()
@@ -1100,19 +1112,19 @@ class HelpfulArgumentParser(object):
                     parsed_args.domains.append(domain)
 
         if parsed_args.staging or parsed_args.dry_run:
-            if (parsed_args.server not in
-                    (flag_default("server"), constants.STAGING_URI)):
+            if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
                 conflicts = ["--staging"] if parsed_args.staging else []
                 conflicts += ["--dry-run"] if parsed_args.dry_run else []
-                raise errors.Error("--server value conflicts with {0}".format(
-                    " and ".join(conflicts)))
+                if not self.empty_defaults:
+                    raise errors.Error("--server value conflicts with {0}".format(
+                        " and ".join(conflicts)))
 
             parsed_args.server = constants.STAGING_URI
 
             if parsed_args.dry_run:
                 if self.verb not in ["certonly", "renew"]:
                     raise errors.Error("--dry-run currently only works with the "
-                                       "'certonly' or 'renew' subcommands")
+                                       "'certonly' or 'renew' subcommands (%r)" % self.verb)
                 parsed_args.break_my_certs = parsed_args.staging = True
 
         return parsed_args
@@ -1169,6 +1181,24 @@ class HelpfulArgumentParser(object):
         it, but can be None for `always documented'.
 
         """
+
+        if self.empty_defaults:
+            # These are config elements which cannot tolerate being set to ""
+            # during parsing; that's fine as long as their defaults evalute to
+            # boolean false.
+            if not any(exception in args for exception in ["--webroot-map", "-d", "-w", "-v"]):
+                if kwargs.get("type", None) == int:
+                    kwargs["default"] = 0
+                elif "--csr" in args:
+                    kwargs["default"] = ""
+                    kwargs["type"] = str
+                else:
+                    kwargs["default"] = ""
+                #logger.info("Munging %r %r", args, "-v" in args)
+            else:
+                #logger.info("Not munging default for %r", args)
+                pass
+
         if self.visible_topics[topic]:
             if topic in self.groups:
                 group = self.groups[topic]
@@ -1246,7 +1276,7 @@ class HelpfulArgumentParser(object):
             return dict([(t, t == chosen_topic) for t in self.help_topics])
 
 
-def prepare_and_parse_args(plugins, args):
+def prepare_and_parse_args(plugins, args, empty_defaults=False):
     """Returns parsed command line arguments.
 
     :param .PluginsRegistry plugins: available plugins
@@ -1256,7 +1286,7 @@ def prepare_and_parse_args(plugins, args):
     :rtype: argparse.Namespace
 
     """
-    helpful = HelpfulArgumentParser(args, plugins)
+    helpful = HelpfulArgumentParser(args, plugins, empty_defaults)
 
     # --help is automatically provided by argparse
     helpful.add(
