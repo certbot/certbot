@@ -115,7 +115,7 @@ def make_csr(key_str, domains):
         OpenSSL.crypto.X509Extension(
             "subjectAltName",
             critical=False,
-            value=", ".join("DNS:%s" % d for d in domains)
+            value=str(", ".join("DNS:%s" % d for d in domains))
         ),
     ])
     req.set_pubkey(pkey)
