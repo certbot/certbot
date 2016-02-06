@@ -244,12 +244,16 @@ class Client(object):
         #raise TypeError("About to call %r" % le_util.CSR)
         csr = le_util.CSR(file=self.config.csr[0], data=self.config.csr[1], form="der")
         # TODO: add CN to domains?
-        try:
-            domains = crypto_util.get_sans_from_csr(csr.data, OpenSSL.crypto.FILETYPE_ASN1)
-        except:
-            raise TypeError("Failed %r %r %r" % (self.config.csr, csr, csr.data))
+        domains = crypto_util.get_sans_from_csr(csr.data, OpenSSL.crypto.FILETYPE_ASN1)
         for d in domains:
             domain_callback(self.config, d)
+
+        csr_domains, config_domains = set(domains), set(self.config.domains)
+        if csr_domains != config_domains:
+            raise errors.ConfigurationError(
+                "Inconsistent domain requests:\ncsr:{0}\n:cli config{1}"
+                .format(", ".join(csr_domains), ", ".join(config_domains))
+            )
 
         return self._obtain_certificate(domains, csr)
 

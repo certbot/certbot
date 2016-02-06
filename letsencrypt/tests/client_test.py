@@ -115,13 +115,14 @@ class ClientTest(unittest.TestCase):
         test_csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
         with mock.patch("letsencrypt.client.le_util.CSR") as mock_CSR:
             mock_CSR.return_value = test_csr
+            self.client.config.domains=self.eg_domains
             self.assertEqual(
                 (mock.sentinel.certr, mock.sentinel.chain),
                 self.client.obtain_certificate_from_csr(mock_process_domain))
 
             # make sure cli processing occurred
             cli_processed = (call[0][1] for call in mock_process_domain.call_args_list)
-            self.assertEqual(set(cli_processed), set(self.eg_domains))
+            self.assertEqual(set(cli_processed), set(("example.com", "www.example.com")))
 
             # and that the cert was obtained correctly
             self._check_obtain_certificate()
