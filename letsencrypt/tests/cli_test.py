@@ -602,18 +602,25 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             print "Logs:"
             print lf.read()
 
-
-    def test_renewal_verb(self):
+    def test_renew_verb(self):
         with open(test_util.vector_path('sample-renewal.conf')) as src:
             # put the correct path for cert.pem, chain.pem etc in the renewal conf
             renewal_conf = src.read().replace("MAGICDIR", test_util.vector_path())
         rd = os.path.join(self.config_dir, "renewal")
-        os.makedirs(rd)
+        if not os.path.exists(rd):
+            os.makedirs(rd)
         rc = os.path.join(rd, "sample-renewal.conf")
         with open(rc, "w") as dest:
             dest.write(renewal_conf)
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, renew=True)
+
+    def test_renew_verb_empty_config(self):
+        renewer_configs_dir = os.path.join(self.config_dir, 'renewal')
+        os.makedirs(renewer_configs_dir)
+        with open(os.path.join(renewer_configs_dir, 'empty.conf'), 'w'):
+            pass  # leave the file empty
+        self.test_renew_verb()
 
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._treat_as_renewal')
