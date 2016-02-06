@@ -57,7 +57,7 @@ class AuthHandler(object):
     def get_authorizations(self, domains, best_effort=False):
         """Retrieve all authorizations for challenges.
 
-        :param set domains: Domains for authorization
+        :param list domains: Domains for authorization
         :param bool best_effort: Whether or not all authorizations are
              required (this is useful in renewal)
 
