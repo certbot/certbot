@@ -27,6 +27,13 @@ common() {
         "$@"
 }
 
+common_no_force_renew() {
+    letsencrypt_test_no_force_renew \
+        --authenticator standalone \
+        --installer null \
+        "$@"
+}
+
 common --domains le1.wtf --standalone-supported-challenges tls-sni-01 auth
 common --domains le2.wtf --standalone-supported-challenges http-01 run
 common -a manual -d le.wtf auth
@@ -44,13 +51,12 @@ common --domains le3.wtf install \
        --cert-path "${root}/csr/cert.pem" \
        --key-path "${root}/csr/key.pem"
 
-# This won't renew (because it's not time yet) - not using common because
-# common forces renewal
-letsencrypt_test --authenticator standalone --installer null renew
+# This won't renew (because it's not time yet)
+letsencrypt_test_no_force_renew --authenticator standalone --installer null renew
 
-# This will renew
+# This will renew because the expiry is less than 10 years from now
 sed -i "4arenew_before_expiry = 10 years" "$root/conf/renewal/le1.wtf.conf"
-letsencrypt_test --authenticator standalone --installer null renew
+letsencrypt_test_no_force_renew --authenticator standalone --installer null renew
 
 ls "$root/conf/archive/le1.wtf"
 # dir="$root/conf/archive/le1.wtf"
