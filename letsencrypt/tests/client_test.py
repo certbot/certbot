@@ -98,6 +98,7 @@ class ClientTest(unittest.TestCase):
 
     def _mock_obtain_certificate(self):
         self.client.auth_handler = mock.MagicMock()
+        self.client.auth_handler.get_authorizations.return_value = (None, None)
         self.acme.request_issuance.return_value = mock.sentinel.certr
         self.acme.fetch_chain.return_value = mock.sentinel.chain
 
@@ -105,10 +106,14 @@ class ClientTest(unittest.TestCase):
         self.client.auth_handler.get_authorizations.assert_called_once_with(
             self.eg_domains,
             self.config.allow_subset_of_names)
+
+        authzr, _ = self.client.auth_handler.get_authorizations()
+
         self.acme.request_issuance.assert_called_once_with(
             jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
                 OpenSSL.crypto.FILETYPE_ASN1, CSR_SAN)),
-            self.client.auth_handler.get_authorizations())
+            authzr)
+
         self.acme.fetch_chain.assert_called_once_with(mock.sentinel.certr)
 
     # FIXME move parts of this to test_cli.py...
@@ -147,6 +152,11 @@ class ClientTest(unittest.TestCase):
         mock_crypto_util.init_save_csr.return_value = csr
         mock_crypto_util.init_save_key.return_value = mock.sentinel.key
         domains = ["example.com", "www.example.com"]
+
+        # return_value is essentially set to (None, None) in
+        # _mock_obtain_certificate(), which breaks this test.
+        # Thus fixed by the next line.
+        self.client.auth_handler.get_authorizations.return_value = (None, domains)
 
         self.assertEqual(
             self.client.obtain_certificate(domains),
