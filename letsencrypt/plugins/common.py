@@ -1,11 +1,11 @@
 """Plugin common functions."""
 import os
-import pkg_resources
 import re
 import shutil
 import tempfile
 
 import OpenSSL
+import pkg_resources
 import zope.interface
 
 from acme.jose import util as jose_util

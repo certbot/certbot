@@ -1,8 +1,8 @@
 """Tests for letsencrypt.plugins.disco."""
-import pkg_resources
 import unittest
 
 import mock
+import pkg_resources
 import zope.interface
 
 from letsencrypt import errors
