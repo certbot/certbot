@@ -167,7 +167,7 @@ class GetAuthorizationsTest(unittest.TestCase):
 
         # Test _simple_verify's behaviour when implementation of challenge is not implemented
         response_dummy = mock.Mock()
-        challenge_dummy = mock.Mock(chall=mock.Mock(), uri="foo")
+        challenge_dummy = mock.Mock(chall=mock.Mock(), uri="foo", typ="Mock")
 
         self.handler.dv_c = [challenge_http_01,
                              challenge_tls_sni_01,
@@ -194,20 +194,23 @@ class GetAuthorizationsTest(unittest.TestCase):
             challenge_tls_sni_01.account_key.public_key(),
             port=self.config.tls_sni_01_port)
 
-        logger_calls = [mock.call(mock.ANY,
-                                  challenge_http_01.chall.__class__.__name__,
-                                  challenge_http_01.domain,
-                                  challenge_http_01.uri),
-                        mock.call(mock.ANY,
-                                  challenge_tls_sni_01.chall.__class__.__name__,
-                                  challenge_tls_sni_01.domain,
-                                  challenge_tls_sni_01.uri)]
+        logger_calls = [mock.call(
+                            mock.ANY,
+                            challenge_http_01.chall.__class__.__name__,
+                            challenge_http_01.domain,
+                            challenge_http_01.uri),
+                        mock.call(
+                            mock.ANY,
+                            challenge_tls_sni_01.chall.__class__.__name__,
+                            challenge_tls_sni_01.domain,
+                            challenge_tls_sni_01.uri)]
 
         mock_logger.warning.assert_has_calls(logger_calls)
 
-        mock_logger.debug.assert_called_with(mock.ANY,
-                                            challenge_dummy.chall.__class__.__name__,
-                                            challenge_dummy.uri)
+        mock_logger.debug.assert_called_with(
+            mock.ANY,
+            challenge_dummy.chall.__class__.__name__,
+            challenge_dummy.uri)
 
     def _validate_all(self, unused_1, unused_2):
         for dom in self.handler.authzr.keys():

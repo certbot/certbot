@@ -106,25 +106,22 @@ class AuthHandler(object):
 
     def _simple_verify(self, achall, response):
         """Self-verifies a response with the corresponding challenge"""
-        return_value = True
-
         if isinstance(response, challenges.HTTP01Response):
-            return_value = response.simple_verify(
+            return response.simple_verify(
                     achall.chall, achall.domain,
                     achall.account_key.public_key(),
                     self.config.http01_port)
         elif isinstance(response, challenges.TLSSNI01Response):
-            return_value = response.simple_verify(
+            return response.simple_verify(
                     achall.chall, achall.domain,
                     achall.account_key.public_key(),
                     port=self.config.tls_sni_01_port)
         else:
             logger.debug("Self-verify of challenge %s is not "
                          "implemented, ignoring %s",
-                         achall.chall.__class__.__name__,
+                         achall.typ,
                          achall.uri)
-
-        return return_value
+            return True
 
     def _solve_challenges(self):
         """Get Responses for challenges from authenticators."""
@@ -138,11 +135,11 @@ class AuthHandler(object):
                     dv_resp = self.dv_auth.perform(self.dv_c)
                     for achall, response in zip(self.dv_c, dv_resp):
                         if not self._simple_verify(achall, response):
-                            logger.warning("Self-verify of %s challenge (%s) "
-                                           "for domain %s failed.",
-                                           achall.chall.__class__.__name__,
-                                           achall.domain,
-                                           achall.uri)
+                            logger.warning(
+                                "Self-verify of %s challenge (%s) "
+                                "for domain %s failed.",
+                                achall.chall.__class__.__name__,
+                                achall.domain, achall.uri)
 
             except errors.AuthorizationError:
                 logger.critical("Failure in setting up challenges.")
