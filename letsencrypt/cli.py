@@ -744,16 +744,16 @@ def _set_by_cli(var):
         plugins = plugins_disco.PluginsRegistry.find_all()
         # reconstructed_args == sys.argv[1:], or whatever was passed to main()
         reconstructed_args = _parser.args + [_parser.verb]
-        default_args = prepare_and_parse_args(plugins, reconstructed_args, empty_defaults=True)
+        default_args = prepare_and_parse_args(plugins, reconstructed_args, detect_defaults=True)
         _set_by_cli.detector = configuration.NamespaceConfig(default_args, fake=True)
     try:
         # Is detector.var something that isn't false?
         change_detected = _set_by_cli.detector.__getattr__(var)
         if change_detected:
             return True
-        # Special case: like --no-redirect vars that get set True -> False are
-        # will be None here
-        elif var in _set_by_cli.detector.store_false_vars and change_detected == False:
+        # Special case: vars like --no-redirect that get set True -> False
+        # default to None; False means they were set
+        elif var in _set_by_cli.detector.store_false_vars and change_detected is not None:
             return True
         else:
             return False
@@ -1084,7 +1084,7 @@ class HelpfulArgumentParser(object):
     HELP_TOPICS = ["all", "security",
                    "paths", "automation", "testing"] + VERBS.keys()
 
-    def __init__(self, args, plugins, empty_defaults=False):
+    def __init__(self, args, plugins, detect_defaults=False):
         plugin_names = [name for name, _p in plugins.iteritems()]
         self.help_topics = self.HELP_TOPICS + plugin_names + [None]
         usage, short_usage = usage_strings(plugins)
@@ -1101,8 +1101,8 @@ class HelpfulArgumentParser(object):
         # This setting attempts to force all default values to None; it
         # is used to detect when values have been explicitly set by the user,
         # including when they are set to their normal default value
-        self.empty_defaults = empty_defaults
-        if empty_defaults:
+        self.detect_defaults = detect_defaults
+        if detect_defaults:
             self.store_false_vars = {}  # vars that use "store_false"
 
         self.args = args
@@ -1141,7 +1141,7 @@ class HelpfulArgumentParser(object):
             if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
                 conflicts = ["--staging"] if parsed_args.staging else []
                 conflicts += ["--dry-run"] if parsed_args.dry_run else []
-                if not self.empty_defaults:
+                if not self.detect_defaults:
                     raise errors.Error("--server value conflicts with {0}".format(
                         " and ".join(conflicts)))
 
@@ -1203,34 +1203,15 @@ class HelpfulArgumentParser(object):
     def add(self, topic, *args, **kwargs):
         """Add a new command line argument.
 
-        @topic is required, to indicate which part of the help will document
-        it, but can be None for `always documented'.
+        :param str: help topic this should be listed under, can be None for
+                    "always documented"
+        :param list *args: the names of this argument flag
+        :param dict **kwargs: various argparse settings for this argument
 
         """
 
-        if self.empty_defaults:
-            # These are config elements which cannot tolerate being set to ""
-            # during parsing; that's fine as long as their defaults evalute to
-            # boolean false.
-
-            # argument either doesn't have a default, or the default doesn't
-            # isn't Pythonically false
-            if kwargs.get("default", True):
-                arg_type = kwargs.get("type", None)
-                if arg_type == int or kwargs.get("action", "") == "count":
-                    kwargs["default"] = 0
-                elif arg_type == read_file or "-c" in args:
-                    kwargs["default"] = ""
-                    kwargs["type"] = str
-                else:
-                    kwargs["default"] = ""
-                # This doesn't matter at present (none of the store_false args
-                # are renewal-relevant), but implement it for future sanity:
-                # detect the setting of args whose presence causes True -> False
-            elif kwargs.get("action", "") == "store_false":
-                kwargs["default"] = None
-                for var in args:
-                    self.store_false_vars[var] = True
+        if self.detect_defaults:
+            self.modify_arg_for_default_detection(self, *args, **kwargs)
 
         if self.visible_topics[topic]:
             if topic in self.groups:
@@ -1241,6 +1222,35 @@ class HelpfulArgumentParser(object):
         else:
             kwargs["help"] = argparse.SUPPRESS
             self.parser.add_argument(*args, **kwargs)
+
+
+    def modify_arg_for_default_detection(self, *args, **kwargs):
+        """
+        Adding an arg, but ensure that it has a default that evaluates to false,
+        so that _set_by_cli can tell if it was set.  Only called if detect_defaults==True.
+
+        :param list *args: the names of this argument flag
+        :param dict **kwargs: various argparse settings for this argument
+        """
+        # argument either doesn't have a default, or the default doesn't
+        # isn't Pythonically false
+        if kwargs.get("default", True):
+            arg_type = kwargs.get("type", None)
+            if arg_type == int or kwargs.get("action", "") == "count":
+                kwargs["default"] = 0
+            elif arg_type == read_file or "-c" in args:
+                kwargs["default"] = ""
+                kwargs["type"] = str
+            else:
+                kwargs["default"] = ""
+            # This doesn't matter at present (none of the store_false args
+            # are renewal-relevant), but implement it for future sanity:
+            # detect the setting of args whose presence causes True -> False
+        elif kwargs.get("action", "") == "store_false":
+            kwargs["default"] = None
+            for var in args:
+                self.store_false_vars[var] = True
+
 
     def add_deprecated_argument(self, argument_name, num_args):
         """Adds a deprecated argument with the name argument_name.
@@ -1309,7 +1319,7 @@ class HelpfulArgumentParser(object):
             return dict([(t, t == chosen_topic) for t in self.help_topics])
 
 
-def prepare_and_parse_args(plugins, args, empty_defaults=False):
+def prepare_and_parse_args(plugins, args, detect_defaults=False):
     """Returns parsed command line arguments.
 
     :param .PluginsRegistry plugins: available plugins
@@ -1319,7 +1329,7 @@ def prepare_and_parse_args(plugins, args, empty_defaults=False):
     :rtype: argparse.Namespace
 
     """
-    helpful = HelpfulArgumentParser(args, plugins, empty_defaults)
+    helpful = HelpfulArgumentParser(args, plugins, detect_defaults)
 
     # --help is automatically provided by argparse
     helpful.add(
