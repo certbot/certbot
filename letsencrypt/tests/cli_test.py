@@ -228,7 +228,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
         args = ["certonly", "--webroot"]
         ret, _, _, _ = self._call(args)
-        self.assertTrue("--webroot-path must be set" in ret)
+        self.assertTrue("please set either --webroot-path" in ret)
 
         self._cli_missing_flag(["--standalone"], "With the standalone plugin, you probably")
 
@@ -323,9 +323,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(config.fullchain_path, os.path.abspath(fullchain))
 
     def test_certonly_bad_args(self):
-        ret, _, _, _ = self._call(['-d', 'foo.bar', 'certonly', '--csr', CSR])
-        self.assertEqual(ret, '--domains and --csr are mutually exclusive')
-
         ret, _, _, _ = self._call(['-a', 'bad_auth', 'certonly'])
         self.assertEqual(ret, 'The requested bad_auth plugin does not appear to be installed')
 
