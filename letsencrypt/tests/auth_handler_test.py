@@ -96,7 +96,7 @@ class GetAuthorizationsTest(unittest.TestCase):
 
         mock_poll.side_effect = self._validate_all
 
-        authzr = self.handler.get_authorizations(["0"])
+        authzr, domains = self.handler.get_authorizations(["0"])
 
         self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
 
@@ -120,7 +120,7 @@ class GetAuthorizationsTest(unittest.TestCase):
 
         mock_poll.side_effect = self._validate_all
 
-        authzr = self.handler.get_authorizations(["0", "1", "2"])
+        authzr, domains = self.handler.get_authorizations(["0", "1", "2"])
 
         self.assertEqual(self.mock_net.answer_challenge.call_count, 6)
 
