@@ -493,7 +493,9 @@ _ERROR_HELP = {
     "connection":
         _ERROR_HELP_COMMON + " Additionally, please check that your computer "
         "has a publicly routable IP address and that no firewalls are preventing "
-        "the server from communicating with the client.",
+        "the server from communicating with the client. If you're using the "
+        "webroot plugin, you should also verify that you are serving files "
+        "from the webroot path you provided.",
     "dnssec":
         _ERROR_HELP_COMMON + " Additionally, if you have DNSSEC enabled for "
         "your domain, please ensure that the signature is valid.",
