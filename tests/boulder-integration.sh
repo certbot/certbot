@@ -36,7 +36,7 @@ common_no_force_renew() {
 
 common --domains le1.wtf --standalone-supported-challenges tls-sni-01 auth
 common --domains le2.wtf --standalone-supported-challenges http-01 run
-common -a manual -d le.wtf auth
+common -a manual -d le.wtf auth --rsa-key-size 4096
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
        OPENSSL_CNF=examples/openssl.cnf
@@ -70,17 +70,17 @@ common_no_force_renew --authenticator standalone --installer null renew --renew-
 CheckCertCount 8
 
 # Check Param setting in renewal...
-common_no_force_renew --authenticator standalone --installer null renew --renew-by-default
+common_no_force_renew --authenticator standalone --installer null renew --renew-by-default  --rsa-key-size 2048
 CheckCertCount 12
 
 # The 4096 bit setting should persist to the first renewal, but be overriden in the second
 size2=`wc -c ${root}/conf/archive/le.wtf/privkey2.pem | cut -d" " -f1`
 size3=`wc -c ${root}/conf/archive/le.wtf/privkey3.pem | cut -d" " -f1`
-#if ! [ "$size3" -lt "$size2" ] ; then
-#    echo "key size failure:"
-#    ls -l ${root}/conf/archive/le.wtf/
-#    exit 1
-#fi
+if ! [ "$size3" -lt "$size2" ] ; then
+    echo "key size failure:"
+    ls -l ${root}/conf/archive/le.wtf/
+    exit 1
+fi
 
 
 # dir="$root/conf/archive/le1.wtf"
