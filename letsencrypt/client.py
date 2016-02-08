@@ -251,7 +251,7 @@ class Client(object):
         csr_domains, config_domains = set(domains), set(self.config.domains)
         if csr_domains != config_domains:
             raise errors.ConfigurationError(
-                "Inconsistent domain requests:\ncsr:{0}\n:cli config{1}"
+                "Inconsistent domain requests:\ncsr: {0}\ncli config: {1}"
                 .format(", ".join(csr_domains), ", ".join(config_domains))
             )
 
