@@ -742,7 +742,9 @@ def _set_by_cli(variable):
         # Setup on first run: `detector` is a weird version of config in which
         # the default value of every attribute is wrangled to be boolean-false
         plugins = plugins_disco.PluginsRegistry.find_all()
-        default_args = prepare_and_parse_args(plugins, sys.argv[1:], empty_defaults=True)
+        # reconstructed_args == sys.argv[1:], or whatever was passed to main()
+        reconstructed_args = _parser.args + [_parser.verb]
+        default_args = prepare_and_parse_args(plugins, reconstructed_args, empty_defaults=True)
         _set_by_cli.detector = configuration.NamespaceConfig(default_args, fake=True)
     try:
         # Is detector.variable something that isn't false?
