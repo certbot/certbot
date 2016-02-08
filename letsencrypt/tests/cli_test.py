@@ -650,7 +650,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mock_lineage = mock.MagicMock()
             mock_rc.return_value = mock_lineage
             mock_lineage.configuration = {
-                'renewalparams': {'authenticator': None,
+                'renewalparams': {'authenticator': 'webroot',
                                   'rsa_key_size': 'over 9000'}}
             with mock.patch('letsencrypt.cli.obtain_cert') as mock_obtain_cert:
                 self._test_renewal_common(True, None,
@@ -665,9 +665,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with mock.patch('letsencrypt.storage.RenewableCert') as mock_rc:
             mock_lineage = mock.MagicMock()
             mock_rc.return_value = mock_lineage
-            mock_rc.names.return_value = ['*.example.com']
             mock_lineage.configuration = {
-                'renewalparams': {'authenticator': None}}
+                'renewalparams': {'authenticator': 'webroot'}}
+            mock_lineage.names.return_value = ['*.example.com']
             with mock.patch('letsencrypt.cli.obtain_cert') as mock_obtain_cert:
                 self._test_renewal_common(True, None,
                                           args=['renew'], renew=False)
