@@ -480,6 +480,9 @@ def is_preferred(offered_challb, satisfied,
     return True
 
 
+_ACME_PREFIX = "urn:acme:error:"
+
+
 _ERROR_HELP_COMMON = (
     "To fix these errors, please make sure that your domain name was entered "
     "correctly and the DNS A record(s) for that domain contain(s) the "
@@ -540,11 +543,13 @@ def _generate_failed_chall_msg(failed_achalls):
 
     """
     typ = failed_achalls[0].error.typ
+    if typ.startswith(_ACME_PREFIX):
+        typ = typ[len(_ACME_PREFIX):]
     msg = ["The following errors were reported by the server:"]
 
     for achall in failed_achalls:
         msg.append("\n\nDomain: %s\nType:   %s\nDetail: %s" % (
-            achall.domain, achall.error.typ, achall.error.detail))
+            achall.domain, typ, achall.error.detail))
 
     if typ in _ERROR_HELP:
         msg.append("\n\n")
