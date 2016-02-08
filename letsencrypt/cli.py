@@ -1204,9 +1204,12 @@ class HelpfulArgumentParser(object):
             # during parsing; that's fine as long as their defaults evalute to
             # boolean false.
             if not any(exception in args for exception in ["--webroot-map", "-d", "-w", "-v"]):
-                if kwargs.get("type", None) == int:
+                arg_type = kwargs.get("type", None)
+                if arg_type == int:
                     kwargs["default"] = 0
-                elif "--csr" in args:
+                elif arg_type == read_file or "-c" in args:
+                    #if "-c" in args:
+                    #    raise TypeError("Skipping %r " % args)
                     kwargs["default"] = ""
                     kwargs["type"] = str
                 else:
