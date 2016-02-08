@@ -19,7 +19,7 @@ letsencrypt_test () {
         --http-01-port 5002 \
         --manual-test-mode \
         $store_flags \
-        --non-interactive \
+        --text \
         --no-redirect \
         --agree-tos \
         --register-unsafely-without-email \
@@ -37,7 +37,7 @@ letsencrypt_test_no_force_renew () {
         --http-01-port 5002 \
         --manual-test-mode \
         $store_flags \
-        --non-interactive \
+        --text \
         --no-redirect \
         --agree-tos \
         --register-unsafely-without-email \

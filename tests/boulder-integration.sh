@@ -63,7 +63,7 @@ CheckCertCount() {
 
 CheckCertCount 4
 # This won't renew (because it's not time yet)
-letsencrypt_test_no_force_renew --authenticator standalone --installer null renew -nvv
+letsencrypt_test_no_force_renew --authenticator standalone --installer null renew -tvv
 CheckCertCount 4
 
 echo round 2
