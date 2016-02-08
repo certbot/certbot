@@ -673,6 +673,24 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                                           args=['renew'], renew=False)
             self.assertFalse(mock_obtain_cert.called)
 
+    def test_renew_plugin_config_restoration(self):
+        renewer_configs_dir = os.path.join(self.config_dir, 'renewal')
+        os.makedirs(renewer_configs_dir)
+        with open(os.path.join(renewer_configs_dir, 'test.conf'), 'w') as f:
+            f.write("My contents don't matter")
+        with mock.patch('letsencrypt.storage.RenewableCert') as mock_rc:
+            mock_lineage = mock.MagicMock()
+            mock_rc.return_value = mock_lineage
+            mock_lineage.configuration = {
+                'renewalparams':
+                    {'authenticator': 'webroot',
+                     'webroot_path': 'None',
+                     'webroot_imaginary_flag': '42'}}
+            with mock.patch('letsencrypt.cli.obtain_cert') as mock_obtain_cert:
+                self._test_renewal_common(True, None,
+                                          args=['renew'], renew=False)
+            self.assertEqual(mock_obtain_cert.call_count, 1)
+
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._treat_as_renewal')
     @mock.patch('letsencrypt.cli._init_le_client')
