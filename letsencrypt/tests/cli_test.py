@@ -691,6 +691,19 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                                           args=['renew'], renew=False)
             self.assertEqual(mock_obtain_cert.call_count, 1)
 
+    def test_renew_reconstitute_error(self):
+        renewer_configs_dir = os.path.join(self.config_dir, 'renewal')
+        os.makedirs(renewer_configs_dir)
+        with open(os.path.join(renewer_configs_dir, 'test.conf'), 'w') as f:
+            f.write("My contents don't matter")
+        # pylint: disable=protected-access
+        with mock.patch('letsencrypt.cli._reconstitute') as mock_reconstitute:
+            mock_reconstitute.side_effect = [Exception]
+            with mock.patch('letsencrypt.cli.obtain_cert') as mock_obtain_cert:
+                self._test_renewal_common(True, None,
+                                          args=['renew'], renew=False)
+            self.assertFalse(mock_obtain_cert.called)
+
     def test_renew_with_bad_cli_args(self):
         self.assertRaises(errors.Error, self._test_renewal_common, True, None,
                           args='renew -d example.com'.split(), renew=False)
