@@ -1210,15 +1210,11 @@ class HelpfulArgumentParser(object):
                 if arg_type == int:
                     kwargs["default"] = 0
                 elif arg_type == read_file or "-c" in args:
-                    #if "-c" in args:
-                    #    raise TypeError("Skipping %r " % args)
                     kwargs["default"] = ""
                     kwargs["type"] = str
                 else:
                     kwargs["default"] = ""
-                #logger.info("Munging %r %r", args, "-v" in args)
             else:
-                #logger.info("Not munging default for %r", args)
                 pass
 
         if self.visible_topics[topic]:
