@@ -622,93 +622,64 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             pass  # leave the file empty
         self.test_renew_verb()
 
-    def test_renew_sparse_config(self):
+    def _make_dummy_renewal_config(self):
         renewer_configs_dir = os.path.join(self.config_dir, 'renewal')
         os.makedirs(renewer_configs_dir)
         with open(os.path.join(renewer_configs_dir, 'test.conf'), 'w') as f:
             f.write("My contents don't matter")
+
+    def _test_renew_common(self, renewalparams=None,
+                           names=None, assert_oc_called=None):
+        self._make_dummy_renewal_config()
         with mock.patch('letsencrypt.storage.RenewableCert') as mock_rc:
             mock_lineage = mock.MagicMock()
+            if renewalparams is not None:
+                mock_lineage.configuration = {'renewalparams': renewalparams}
+            if names is not None:
+                mock_lineage.names.return_value = names
             mock_rc.return_value = mock_lineage
-            mock_lineage.configuration = ['not renewalparams']
             with mock.patch('letsencrypt.cli.obtain_cert') as mock_obtain_cert:
                 self._test_renewal_common(True, None,
                                           args=['renew'], renew=False)
-            self.assertFalse(mock_obtain_cert.called)
-            mock_lineage.configuration = {'renewalparams': ['no auth']}
-            with mock.patch('letsencrypt.cli.obtain_cert') as mock_obtain_cert:
-                self._test_renewal_common(True, None,
-                                          args=['renew'], renew=False)
-            self.assertFalse(mock_obtain_cert.called)
+            if assert_oc_called is not None:
+                if assert_oc_called:
+                    self.assertTrue(mock_obtain_cert.called)
+                else:
+                    self.assertFalse(mock_obtain_cert.called)
+
+    def test_renew_no_renewalparams(self):
+        self._test_renew_common(assert_oc_called=False)
+
+    def test_renew_no_authenticator(self):
+        self._test_renew_common(renewalparams={}, assert_oc_called=False)
 
     def test_renew_with_bad_int(self):
-        renewer_configs_dir = os.path.join(self.config_dir, 'renewal')
-        os.makedirs(renewer_configs_dir)
-        with open(os.path.join(renewer_configs_dir, 'test.conf'), 'w') as f:
-            f.write("My contents don't matter")
-        with mock.patch('letsencrypt.storage.RenewableCert') as mock_rc:
-            mock_lineage = mock.MagicMock()
-            mock_rc.return_value = mock_lineage
-            mock_lineage.configuration = {
-                'renewalparams': {'authenticator': 'webroot',
-                                  'rsa_key_size': 'over 9000'}}
-            with mock.patch('letsencrypt.cli.obtain_cert') as mock_obtain_cert:
-                self._test_renewal_common(True, None,
-                                          args=['renew'], renew=False)
-            self.assertFalse(mock_obtain_cert.called)
+        renewalparams = {'authenticator': 'webroot',
+                         'rsa_key_size': 'over 9000'}
+        self._test_renew_common(renewalparams=renewalparams,
+                                assert_oc_called=False)
 
     def test_renew_with_bad_domain(self):
-        renewer_configs_dir = os.path.join(self.config_dir, 'renewal')
-        os.makedirs(renewer_configs_dir)
-        with open(os.path.join(renewer_configs_dir, 'test.conf'), 'w') as f:
-            f.write("My contents don't matter")
-        with mock.patch('letsencrypt.storage.RenewableCert') as mock_rc:
-            mock_lineage = mock.MagicMock()
-            mock_rc.return_value = mock_lineage
-            mock_lineage.configuration = {
-                'renewalparams': {'authenticator': 'webroot'}}
-            mock_lineage.names.return_value = ['*.example.com']
-            with mock.patch('letsencrypt.cli.obtain_cert') as mock_obtain_cert:
-                self._test_renewal_common(True, None,
-                                          args=['renew'], renew=False)
-            self.assertFalse(mock_obtain_cert.called)
+        renewalparams = {'authenticator': 'webroot'}
+        names = ['*.example.com']
+        self._test_renew_common(renewalparams=renewalparams,
+                                names=names, assert_oc_called=False)
 
     def test_renew_plugin_config_restoration(self):
-        renewer_configs_dir = os.path.join(self.config_dir, 'renewal')
-        os.makedirs(renewer_configs_dir)
-        with open(os.path.join(renewer_configs_dir, 'test.conf'), 'w') as f:
-            f.write("My contents don't matter")
-        with mock.patch('letsencrypt.storage.RenewableCert') as mock_rc:
-            mock_lineage = mock.MagicMock()
-            mock_rc.return_value = mock_lineage
-            mock_lineage.configuration = {
-                'renewalparams':
-                    {'authenticator': 'webroot',
-                     'webroot_path': 'None',
-                     'webroot_imaginary_flag': '42'}}
-            with mock.patch('letsencrypt.cli.obtain_cert') as mock_obtain_cert:
-                self._test_renewal_common(True, None,
-                                          args=['renew'], renew=False)
-            self.assertEqual(mock_obtain_cert.call_count, 1)
+        renewalparams = {'authenticator': 'webroot',
+                         'webroot_path': 'None',
+                         'webroot_imaginary_flag': '42'}
+        self._test_renew_common(renewalparams=renewalparams,
+                                assert_oc_called=True)
 
     def test_renew_reconstitute_error(self):
-        renewer_configs_dir = os.path.join(self.config_dir, 'renewal')
-        os.makedirs(renewer_configs_dir)
-        with open(os.path.join(renewer_configs_dir, 'test.conf'), 'w') as f:
-            f.write("My contents don't matter")
         # pylint: disable=protected-access
         with mock.patch('letsencrypt.cli._reconstitute') as mock_reconstitute:
             mock_reconstitute.side_effect = Exception
-            with mock.patch('letsencrypt.cli.obtain_cert') as mock_obtain_cert:
-                self._test_renewal_common(True, None,
-                                          args=['renew'], renew=False)
-            self.assertFalse(mock_obtain_cert.called)
+            self._test_renew_common(assert_oc_called=False)
 
     def test_renew_obtain_cert_error(self):
-        renewer_configs_dir = os.path.join(self.config_dir, 'renewal')
-        os.makedirs(renewer_configs_dir)
-        with open(os.path.join(renewer_configs_dir, 'test.conf'), 'w') as f:
-            f.write("My contents don't matter")
+        self._make_dummy_renewal_config()
         with mock.patch('letsencrypt.storage.RenewableCert') as mock_rc:
             mock_lineage = mock.MagicMock()
             mock_rc.return_value = mock_lineage
