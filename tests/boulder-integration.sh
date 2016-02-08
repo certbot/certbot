@@ -69,8 +69,8 @@ CheckCertCount 4
 echo round 2
 
 # This will renew because the expiry is less than 10 years from now
-#sed -i "4arenew_before_expiry = 10 years" "$root/conf/renewal/le1.wtf.conf"
-letsencrypt_test_no_force_renew --authenticator standalone --installer null renew --renew-by-default
+sed -i "4arenew_before_expiry = 10 years" "$root/conf/renewal/le.wtf.conf"
+letsencrypt_test_no_force_renew --authenticator standalone --installer null renew # --renew-by-default
 CheckCertCount 8
 
 echo round 3
