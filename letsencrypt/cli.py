@@ -471,7 +471,7 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
         if lineage is False:
             raise errors.Error("Certificate could not be obtained")
 
-    if not config.dry_run:
+    if not config.dry_run and not config.verb == "renew":
         _report_new_cert(lineage.cert, lineage.fullchain)
 
     return lineage, action
@@ -681,7 +681,9 @@ def obtain_cert(config, plugins, lineage=None):
         # installers are used in auth mode to determine domain names
         installer, authenticator = choose_configurator_plugins(config, plugins, "certonly")
     except errors.PluginSelectionError as e:
-        return e.message
+        logger.info(
+            "Could not choose appropriate plugin: %s", e)
+        raise
 
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(config, authenticator, installer)
@@ -707,7 +709,7 @@ def obtain_cert(config, plugins, lineage=None):
     elif config.verb == "renew":
         if installer is None:
             # Tell the user that the server was not restarted.
-            print("new certificate deployed without reload, fullchain",
+            print("new certificate deployed without reload, fullchain is",
                   lineage.fullchain)
         else:
             # In case of a renewal, reload server to pick up new certificate.
@@ -877,6 +879,30 @@ def _renewal_conf_files(config):
     return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
 
 
+def _renew_describe_results(renew_successes, renew_failures, parse_failures):
+    print()
+    if not renew_successes and not renew_failures:
+        print("No renewals were attempted.")
+    elif renew_successes and not renew_failures:
+        print("Congratulations, all renewals succeeded. The following certs "
+              "have been renewed:")
+        print("\t" + "\n\t".join(x + " (success)" for x in renew_successes))
+    elif renew_failures and not renew_successes:
+        print("All renewal attempts failed. The following certs could not be "
+              "renewed:")
+        print("\t" + "\n\t".join(x + " (failure)" for x in renew_failures))
+    elif renew_failures and renew_successes:
+        print("The following certs were successfully renewed:")
+        print("\t" + "\n\t".join(x + " (success)" for x in renew_successes))
+        print("\nThe following certs could not be renewed:")
+        print("\t" + "\n\t".join(x + " (failure)" for x in renew_failures))
+
+    if parse_failures:
+        print("\nAdditionally, the following renewal configuration files "
+              "were invalid: ")
+        print("\t" + "\n\t".join(x + " (parsefail)" for x in parse_failures))
+
+
 def renew(config, unused_plugins):
     """Renew previously-obtained certificates."""
     if config.domains != []:
@@ -892,6 +918,9 @@ def renew(config, unused_plugins):
                            "specifying a CSR file. Please try the certonly "
                            "command instead.")
     renewer_config = configuration.RenewerConfiguration(config)
+    renew_successes = []
+    renew_failures = []
+    parse_failures = []
     for renewal_file in _renewal_conf_files(renewer_config):
         print("Processing " + renewal_file)
         # XXX: does this succeed in making a fully independent config object
@@ -907,28 +936,42 @@ def renew(config, unused_plugins):
             logger.warning("Renewal configuration file %s produced an "
                            "unexpected error: %s. Skipping.", renewal_file, e)
             logger.debug("Traceback was:\n%s", traceback.format_exc())
+            parse_failures.append(renewal_file)
             continue
 
         try:
-            if renewal_candidate is not None:
+            if renewal_candidate is None:
+                parse_failures.append(renewal_file)
+            else:
                 # _reconstitute succeeded in producing a RenewableCert, so we
                 # have something to work with from this particular config file.
 
                 # XXX: ensure that each call here replaces the previous one
                 zope.component.provideUtility(lineage_config)
-                print("Trying...")
-                # Because obtain_cert itself indirectly decides whether to renew
-                # or not, we couldn't currently make a UI/logging distinction at
-                # this stage to indicate whether renewal was actually attempted
-                # (or successful).
-                obtain_cert(lineage_config,
-                            plugins_disco.PluginsRegistry.find_all(),
-                            renewal_candidate)
+                # Although obtain_cert itself also indirectly decides
+                # whether to renew or not, we need to check at this
+                # stage in order to avoid claiming that renewal
+                # succeeded when it wasn't even attempted (since
+                # obtain_cert wouldn't raise an error in that case).
+                if _should_renew(lineage_config, renewal_candidate):
+                    err = obtain_cert(lineage_config,
+                                      plugins_disco.PluginsRegistry.find_all(),
+                                      renewal_candidate)
+                    if err is None:
+                        renew_successes.append(renewal_candidate.fullchain)
+                    else:
+                        renew_failures.append(renewal_candidate.fullchain)
+                else:
+                    print("We skipped this one at the outset!")
         except Exception as e: # pylint: disable=broad-except
             # obtain_cert (presumably) encountered an unanticipated problem.
             logger.warning("Attempting to renew cert from %s produced an "
                            "unexpected error: %s. Skipping.", renewal_file, e)
             logger.debug("Traceback was:\n%s", traceback.format_exc())
+            renew_failures.append(renewal_candidate.fullchain)
+
+    # Describe all the results
+    _renew_describe_results(renew_successes, renew_failures, parse_failures)
 
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
