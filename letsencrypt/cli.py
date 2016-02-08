@@ -732,11 +732,11 @@ def install(config, plugins):
     le_client.enhance_config(domains, config)
 
 
-def _set_by_cli(variable):
+def _set_by_cli(var):
     """
     Return True if a particular config variable has been set by the user
     (CLI or config file) including if the user explicitly set it to the
-    default.  Returns False if the variable was assigned a default variable.
+    default.  Returns False if the variable was assigned a default value.
     """
     if _set_by_cli.detector is None:
         # Setup on first run: `detector` is a weird version of config in which
@@ -747,15 +747,20 @@ def _set_by_cli(variable):
         default_args = prepare_and_parse_args(plugins, reconstructed_args, empty_defaults=True)
         _set_by_cli.detector = configuration.NamespaceConfig(default_args, fake=True)
     try:
-        # Is detector.variable something that isn't false?
-        if _set_by_cli.detector.__getattr__(variable):
+        # Is detector.var something that isn't false?
+        change_detected = _set_by_cli.detector.__getattr__(var)
+        if change_detected:
+            return True
+        # Special case: like --no-redirect vars that get set True -> False are
+        # will be None here
+        elif var in _set_by_cli.detector.store_false_vars and change_detected == False:
             return True
         else:
             return False
     except AttributeError:
-        logger.warning("Missing default analysis for %r", variable)
+        logger.warning("Missing default analysis for %r", var)
         return False
-# static housekeeping variable
+# static housekeeping var
 _set_by_cli.detector = None
 
 def _restore_required_config_elements(config, renewalparams):
@@ -1097,6 +1102,8 @@ class HelpfulArgumentParser(object):
         # is used to detect when values have been explicitly set by the user,
         # including when they are set to their normal default value
         self.empty_defaults = empty_defaults
+        if empty_defaults:
+            self.store_false_vars = {}  # vars that use "store_false"
 
         self.args = args
         self.determine_verb()
@@ -1109,7 +1116,7 @@ class HelpfulArgumentParser(object):
             print(usage)
             sys.exit(0)
         self.visible_topics = self.determine_help_topics(self.help_arg)
-        self.groups = {}  # elements are added by .add_group()
+        self.groups = {}       # elements are added by .add_group()
 
     def parse_args(self):
         """Parses command line arguments and returns the result.
@@ -1205,17 +1212,25 @@ class HelpfulArgumentParser(object):
             # These are config elements which cannot tolerate being set to ""
             # during parsing; that's fine as long as their defaults evalute to
             # boolean false.
-            if not any(exception in args for exception in ["--webroot-map", "-d", "-w", "-v"]):
+
+            # argument either doesn't have a default, or the default doesn't
+            # isn't Pythonically false
+            if kwargs.get("default", True):
                 arg_type = kwargs.get("type", None)
-                if arg_type == int:
+                if arg_type == int or kwargs.get("action", "") == "count":
                     kwargs["default"] = 0
                 elif arg_type == read_file or "-c" in args:
                     kwargs["default"] = ""
                     kwargs["type"] = str
                 else:
                     kwargs["default"] = ""
-            else:
-                pass
+                # This doesn't matter at present (none of the store_false args
+                # are renewal-relevant), but implement it for future sanity:
+                # detect the setting of args whose presence causes True -> False
+            elif kwargs.get("action", "") == "store_false":
+                kwargs["default"] = None
+                for var in args:
+                    self.store_false_vars[var] = True
 
         if self.visible_topics[topic]:
             if topic in self.groups:
