@@ -181,7 +181,12 @@ if [ "$VERBOSE" = 1 ]  ; then
     $VENV_BIN/pip install -U letsencrypt letsencrypt-nginx
   fi
 else
-  $VENV_BIN/pip install -U setuptools > /dev/null
+  # Python's InsecurePlatformWarning is about a number of flaws in old python
+  # libraries. The fact that it's raised by these commands is a result of the
+  # system's copy of pip not having access to a good python TLS binding. But
+  # we've tried our best, and within our venv letsencrypt itself will be safe.
+  export PYTHONWARNINGS=ignore
+  $VENV_BIN/pip install -U setuptools 2>&1 > /dev/null
   printf .
   $VENV_BIN/pip install -U pip > /dev/null
   printf .
@@ -194,6 +199,7 @@ else
     $VENV_BIN/pip install -U letsencrypt-nginx > /dev/null
   fi
   echo
+  unset PYTHONWARNINGS
 fi
 
 # Explain what's about to happen, for the benefit of those getting sudo
