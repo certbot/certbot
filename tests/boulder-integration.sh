@@ -61,16 +61,16 @@ CheckCertCount() {
 
 CheckCertCount 4
 # This won't renew (because it's not time yet)
-common_no_force_renew --authenticator standalone --installer null renew -tvv
+letsencrypt_test_no_force_renew --authenticator standalone --installer null renew -tvv
 CheckCertCount 4
 
 # This will renew because the expiry is less than 10 years from now
 #sed -i "4arenew_before_expiry = 10 years" "$root/conf/renewal/le1.wtf.conf"
-common_no_force_renew --authenticator standalone --installer null renew --renew-by-default
+letsencrypt_test_no_force_renew --authenticator standalone --installer null renew --renew-by-default
 CheckCertCount 8
 
 # Check Param setting in renewal...
-common_no_force_renew --authenticator standalone --installer null renew --renew-by-default  --rsa-key-size 2048
+letsencrypt_test_no_force_renew --authenticator standalone --installer null renew --renew-by-default  --rsa-key-size 2048
 CheckCertCount 12
 
 # The 4096 bit setting should persist to the first renewal, but be overriden in the second
