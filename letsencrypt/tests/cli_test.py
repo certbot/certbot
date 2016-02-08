@@ -691,6 +691,13 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                                           args=['renew'], renew=False)
             self.assertEqual(mock_obtain_cert.call_count, 1)
 
+    def test_renew_with_bad_cli_args(self):
+        self.assertRaises(errors.Error, self._test_renewal_common, True, None,
+                          args='renew -d example.com'.split(), renew=False)
+        self.assertRaises(errors.Error, self._test_renewal_common, True, None,
+                          args='renew --csr {0}'.format(CSR).split(),
+                          renew=False)
+
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._treat_as_renewal')
     @mock.patch('letsencrypt.cli._init_le_client')
