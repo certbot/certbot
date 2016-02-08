@@ -51,19 +51,36 @@ common --domains le3.wtf install \
        --cert-path "${root}/csr/cert.pem" \
        --key-path "${root}/csr/key.pem"
 
+CheckCertCount() {
+    CERTCOUNT=`ls "${root}/conf/archive/le.wtf/"* | wc -l`
+    if [ "$CERTCOUNT" -ne "$1" ] ; then
+        echo Wrong cert count, not "$1" `ls "${root}/conf/archive/le.wtf/"*`
+        exit 1
+    fi
+}
+
+CheckCertCount 4
 # This won't renew (because it's not time yet)
-common --authenticator standalone --installer null renew
+common_no_force_renew --authenticator standalone --installer null renew -tvv
+CheckCertCount 4
 
-CERTCOUNT=`ls "${root}/conf/archive/le1.wtf/*" | wc -l`
-
-[ "$CERTCOUNT" -eq 4 ] || echo Wrong cert count `ls "${root}/conf/archive/le.wtf/*"` && exit 1
 # This will renew because the expiry is less than 10 years from now
 #sed -i "4arenew_before_expiry = 10 years" "$root/conf/renewal/le1.wtf.conf"
-common --authenticator standalone --installer null renew --renew-by-default
-[ "$CERTCOUNT" -eq 8 ] || echo Wrong cert count `ls "${root}/conf/archive/le.wtf/*"` && exit 1
+common_no_force_renew --authenticator standalone --installer null renew --renew-by-default --rsa-key-size 2048
+CheckCertCount 8
+
+# Check Param setting in renewal...
+common_no_force_renew --authenticator standalone --installer null renew --renew-by-default --rsa-key-size 4096
+CheckCertCount 12
+size1=`wc -c ${root}/conf/archive/le.wtf/privkey2.pem | cut -d" " -f1`
+size2=`wc -c ${root}/conf/archive/le.wtf/privkey3.pem | cut -d" " -f1`
+if ! [ "$size2" -gt "$size1" ] ; then
+    echo "key size failure:"
+    ls -l ${root}/conf/archive/le.wtf/
+    exit 1
+fi
 
 
-ls "$root/conf/archive/le.wtf"
 # dir="$root/conf/archive/le1.wtf"
 # for x in cert chain fullchain privkey;
 # do
