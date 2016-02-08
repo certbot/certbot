@@ -127,6 +127,12 @@ class ClientTest(unittest.TestCase):
             # and that the cert was obtained correctly
             self._check_obtain_certificate()
 
+            # Now provoke an inconsistent domains error...
+
+            self.client.config.domains.append("hippopotamus.io")
+            self.assertRaises(errors.ConfigurationError,
+                self.client.obtain_certificate_from_csr, mock_process_domain)
+
     @mock.patch("letsencrypt.client.crypto_util")
     def test_obtain_certificate(self, mock_crypto_util):
         self._mock_obtain_certificate()
