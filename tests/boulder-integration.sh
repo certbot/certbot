@@ -56,14 +56,14 @@ common --authenticator standalone --installer null renew
 
 CERTCOUNT=`ls "${root}/conf/archive/le1.wtf/*" | wc -l`
 
-[ "$CERTCOUNT" -eq 4 ] || echo Wrong cert count `ls "${root}/conf/archive/le1.wtf/*"` && exit 1
+[ "$CERTCOUNT" -eq 4 ] || echo Wrong cert count `ls "${root}/conf/archive/le.wtf/*"` && exit 1
 # This will renew because the expiry is less than 10 years from now
 #sed -i "4arenew_before_expiry = 10 years" "$root/conf/renewal/le1.wtf.conf"
 common --authenticator standalone --installer null renew --renew-by-default
-[ "$CERTCOUNT" -eq 8 ] || echo Wrong cert count `ls "${root}/conf/archive/le1.wtf/*"` && exit 1
+[ "$CERTCOUNT" -eq 8 ] || echo Wrong cert count `ls "${root}/conf/archive/le.wtf/*"` && exit 1
 
 
-ls "$root/conf/archive/le1.wtf"
+ls "$root/conf/archive/le.wtf"
 # dir="$root/conf/archive/le1.wtf"
 # for x in cert chain fullchain privkey;
 # do
