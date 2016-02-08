@@ -715,7 +715,7 @@ def obtain_cert(config, plugins, lineage=None):
         # from happening.
         installer.restart()
         print("reloaded")
-    _suggest_donation_if_appropriate(config)
+    _suggest_donation_if_appropriate(config, action)
 
 
 def install(config, plugins):
