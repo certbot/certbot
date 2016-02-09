@@ -888,8 +888,8 @@ def _renew_describe_results(config, renew_successes, renew_failures,
                             renew_skipped, parse_failures):
     status = lambda x, msg: "  " + "\n  ".join(i + " (" + msg +")" for i in x)
     if config.dry_run:
-        print("** DRY RUN (messages below refer to test certs only!")
-        print("**         The certificates mentioned have not been saved.")
+        print("** DRY RUN: simulating 'letsencrypt renew' close to cert expiry")
+        print("**          (The test certificates below have not been saved.)")
     print()
     if renew_skipped:
         print("The following certs are not due for renewal yet:")
@@ -916,8 +916,8 @@ def _renew_describe_results(config, renew_successes, renew_failures,
         print(status(parse_failures, "parsefail"))
 
     if config.dry_run:
-        print("** DRY RUN (messages above refer to test certs only!")
-        print("**         The certificates mentioned have not been saved.")
+        print("** DRY RUN: simulating 'letsencrypt renew' close to cert expiry")
+        print("**          (The test certificates above have not been saved.)")
 
 
 def renew(config, unused_plugins):
