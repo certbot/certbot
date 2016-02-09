@@ -755,8 +755,13 @@ def _set_by_cli(var):
         default_args = prepare_and_parse_args(plugins, reconstructed_args, detect_defaults=True)
         detector = _set_by_cli.detector = configuration.NamespaceConfig(default_args, fake=True)
         # propagate plugin requests: eg --standalone modifies config.authenticator
-        plugin_reqs = cli_plugin_requests(detector)
-        detector.authenticator, detector.installer = plugin_reqs
+        auth, inst = cli_plugin_requests(detector)
+        if auth:
+            detector.namespace.__setattr__("authenticator", auth)
+        if inst:
+            detector.namespace.__setattr__("installer", inst)
+        # more spammy than just debug
+        logger.log(-10, "Default Detector is %r", auth, inst, detector.namespace)
 
     try:
         # Is detector.var something that isn't false?
