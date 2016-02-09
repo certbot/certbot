@@ -1246,7 +1246,7 @@ class HelpfulArgumentParser(object):
             # This doesn't matter at present (none of the store_false args
             # are renewal-relevant), but implement it for future sanity:
             # detect the setting of args whose presence causes True -> False
-        elif kwargs.get("action", "") == "store_false":
+        if kwargs.get("action", "") == "store_false":
             kwargs["default"] = None
             for var in args:
                 self.store_false_vars[var] = True
