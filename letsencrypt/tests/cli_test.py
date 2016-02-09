@@ -329,10 +329,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         ret, _, _, _ = self._call(['-d', 'foo.bar', 'certonly', '--csr', CSR])
         self.assertEqual(ret, '--domains and --csr are mutually exclusive')
 
-        # ret, _, _, _ = self._call(['-a', 'bad_auth', 'certonly'])
-        self.assertRaises(errors.PluginSelectionError, self._call,
-                          ['-a', 'bad_auth', 'certonly'])
-        # self.assertEqual(ret, 'The requested bad_auth plugin does not appear to be installed')
+        try:
+            self._call(['-a', 'bad_auth', 'certonly'])
+            assert False, "Exception should have been raised"
+        except errors.PluginSelectionError as e:
+            self.assertTrue('The requested bad_auth plugin does not appear' in e.message)
 
     def test_check_config_sanity_domain(self):
         # Punycode

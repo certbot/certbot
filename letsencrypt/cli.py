@@ -686,8 +686,7 @@ def obtain_cert(config, plugins, lineage=None):
         # installers are used in auth mode to determine domain names
         installer, authenticator = choose_configurator_plugins(config, plugins, "certonly")
     except errors.PluginSelectionError as e:
-        logger.info(
-            "Could not choose appropriate plugin: %s", e)
+        logger.info("Could not choose appropriate plugin: %s", e)
         raise
 
     # TODO: Handle errors from _init_le_client?
