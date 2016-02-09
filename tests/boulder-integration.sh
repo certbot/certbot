@@ -51,7 +51,7 @@ common --domains le3.wtf install \
        --key-path "${root}/csr/key.pem"
 
 CheckCertCount() {
-    CERTCOUNT=`ls "${root}/conf/archive/le.wtf/cert*" | wc -l`
+    CERTCOUNT=`ls "${root}/conf/archive/le.wtf/cert"* | wc -l`
     if [ "$CERTCOUNT" -ne "$1" ] ; then
         echo Wrong cert count, not "$1" `ls "${root}/conf/archive/le.wtf/"*`
         exit 1
