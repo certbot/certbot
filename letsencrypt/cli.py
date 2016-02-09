@@ -943,7 +943,6 @@ def renew(config, unused_plugins):
         try:
             renewal_candidate = _reconstitute(lineage_config, renewal_file)
         except Exception as e:  # pylint: disable=broad-except
-            # reconstitute encountered an unanticipated problem.
             logger.warning("Renewal configuration file %s produced an "
                            "unexpected error: %s. Skipping.", renewal_file, e)
             logger.debug("Traceback was:\n%s", traceback.format_exc())
@@ -954,24 +953,12 @@ def renew(config, unused_plugins):
             if renewal_candidate is None:
                 parse_failures.append(renewal_file)
             else:
-                # _reconstitute succeeded in producing a RenewableCert, so we
-                # have something to work with from this particular config file.
-
                 # XXX: ensure that each call here replaces the previous one
                 zope.component.provideUtility(lineage_config)
-                # Although obtain_cert itself also indirectly decides
-                # whether to renew or not, we need to check at this
-                # stage in order to avoid claiming that renewal
-                # succeeded when it wasn't even attempted (since
-                # obtain_cert wouldn't raise an error in that case).
                 if _should_renew(lineage_config, renewal_candidate):
-                    err = obtain_cert(lineage_config,
-                                      plugins_disco.PluginsRegistry.find_all(),
-                                      renewal_candidate)
-                    if err is None:
-                        renew_successes.append(renewal_candidate.fullchain)
-                    else:
-                        renew_failures.append(renewal_candidate.fullchain)
+                    plugins = plugins_disco.PluginsRegistry.find_all()
+                    obtain_cert(lineage_config, plugins, renewal_candidate)
+                    renew_successes.append(renewal_candidate.fullchain)
                 else:
                     renew_skipped.append(renewal_candidate.fullchain)
         except Exception as e:  # pylint: disable=broad-except
@@ -1197,7 +1184,6 @@ class HelpfulArgumentParser(object):
                 logger.debug("DER CSR parse error %s", e1)
                 logger.debug("PEM CSR parse error %s", traceback.format_exc())
                 raise errors.Error("Failed to parse CSR file: {0}".format(parsed_args.csr[0]))
-
         for d in domains:
             _process_domain(parsed_args, d)
 
