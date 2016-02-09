@@ -164,6 +164,8 @@ then
   else
     virtualenv --no-site-packages --python $LE_PYTHON $VENV_PATH > /dev/null
   fi
+
+  echo "Install appears to have been successful"
 else
   DeterminePythonVersion
 fi
