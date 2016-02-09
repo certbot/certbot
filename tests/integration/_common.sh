@@ -13,7 +13,8 @@ export root store_flags
 
 letsencrypt_test () {
     letsencrypt_test_no_force_renew \
-        --renew-by-default
+        --renew-by-default \
+        "$@"
 }
 
 letsencrypt_test_no_force_renew () {
