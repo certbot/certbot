@@ -753,6 +753,9 @@ def _set_by_cli(var):
         reconstructed_args = _parser.args + [_parser.verb]
         default_args = prepare_and_parse_args(plugins, reconstructed_args, detect_defaults=True)
         _set_by_cli.detector = configuration.NamespaceConfig(default_args, fake=True)
+        # propagate plugin requests: eg --standalone modifies config.authenticator
+        plugin_reqs = cli_plugin_requests(_set_by_cli.detector)
+        _set_by_cli.detector.authenticator, _set_by_cli.detector.installer = plugin_reqs
 
     try:
         # Is detector.var something that isn't false?
