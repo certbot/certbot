@@ -228,34 +228,21 @@ class Client(object):
             authzr)
         return certr, self.acme.fetch_chain(certr)
 
-    def obtain_certificate_from_csr(self, domain_callback):
+    def obtain_certificate_from_csr(self, csr):
         """Obtain certficiate from CSR.
 
-        :param function(config, domains) domain_callback: callback for each
-        domain extracted from the CSR, to ensure that webroot-map and similar
-        housekeeping in cli.py is performed correctly
+        :param .le_util.CSR csr: DER-encoded Certificate Signing
+            Request.
 
         :returns: `.CertificateResource` and certificate chain (as
             returned by `.fetch_chain`).
         :rtype: tuple
 
         """
-
-        #raise TypeError("About to call %r" % le_util.CSR)
-        csr = le_util.CSR(file=self.config.csr[0], data=self.config.csr[1], form="der")
-        # TODO: add CN to domains?
-        domains = crypto_util.get_sans_from_csr(csr.data, OpenSSL.crypto.FILETYPE_ASN1)
-        for d in domains:
-            domain_callback(self.config, d)
-
-        csr_domains, config_domains = set(domains), set(self.config.domains)
-        if csr_domains != config_domains:
-            raise errors.ConfigurationError(
-                "Inconsistent domain requests:\ncsr: {0}\ncli config: {1}"
-                .format(", ".join(csr_domains), ", ".join(config_domains))
-            )
-
-        return self._obtain_certificate(domains, csr)
+        return self._obtain_certificate(
+            # TODO: add CN to domains?
+            crypto_util.get_sans_from_csr(
+                csr.data, OpenSSL.crypto.FILETYPE_ASN1), csr)
 
     def obtain_certificate(self, domains):
         """Obtains a certificate from the ACME server.

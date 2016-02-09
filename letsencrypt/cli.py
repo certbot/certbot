@@ -675,6 +675,11 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
 def obtain_cert(config, plugins, lineage=None):
     """Implements "certonly": authenticate & obtain cert, but do not install it."""
 
+    if config.domains and config.csr is not None:
+        # TODO: --csr could have a priority, when --domains is
+        # supplied, check if CSR matches given domains?
+        return "--domains and --csr are mutually exclusive"
+
     try:
         # installers are used in auth mode to determine domain names
         installer, authenticator = choose_configurator_plugins(config, plugins, "certonly")
@@ -689,7 +694,8 @@ def obtain_cert(config, plugins, lineage=None):
     # This is a special case; cert and chain are simply saved
     if config.csr is not None:
         assert lineage is None, "Did not expect a CSR with a RenewableCert"
-        certr, chain = le_client.obtain_certificate_from_csr(_process_domain)
+        certr, chain = le_client.obtain_certificate_from_csr(le_util.CSR(
+            file=config.csr[0], data=config.csr[1], form="der"))
         if config.dry_run:
             logger.info(
                 "Dry run: skipping saving certificate to %s", config.cert_path)

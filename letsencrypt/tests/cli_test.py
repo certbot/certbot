@@ -326,10 +326,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(config.fullchain_path, os.path.abspath(fullchain))
 
     def test_certonly_bad_args(self):
-        _, _, _, _ = self._call(['-d', 'foo.bar', 'certonly', '--csr', CSR])
-        # self.assertEqual(ret, '--domains and --csr are mutually exclusive')
-        # self.assertRaises(errors.Error, self._call,
-        #                  ['-d', 'foo.bar', 'certonly', '--csr', CSR])
+        ret, _, _, _ = self._call(['-d', 'foo.bar', 'certonly', '--csr', CSR])
+        self.assertEqual(ret, '--domains and --csr are mutually exclusive')
 
         # ret, _, _, _ = self._call(['-a', 'bad_auth', 'certonly'])
         self.assertRaises(errors.PluginSelectionError, self._call,
@@ -640,6 +638,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._make_dummy_renewal_config()
         with mock.patch('letsencrypt.storage.RenewableCert') as mock_rc:
             mock_lineage = mock.MagicMock()
+            mock_lineage.fullchain = "somepath/fullchain.pem"
             if renewalparams is not None:
                 mock_lineage.configuration = {'renewalparams': renewalparams}
             if names is not None:
@@ -689,6 +688,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._make_dummy_renewal_config()
         with mock.patch('letsencrypt.storage.RenewableCert') as mock_rc:
             mock_lineage = mock.MagicMock()
+            mock_lineage.fullchain = "somewhere/fullchain.pem"
             mock_rc.return_value = mock_lineage
             mock_lineage.configuration = {
                 'renewalparams': {'authenticator': 'webroot'}}
