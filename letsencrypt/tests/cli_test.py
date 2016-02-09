@@ -231,7 +231,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self._call(args)
             assert False, "Exception should have been raised"
         except errors.PluginSelectionError as e:
-            self.assertTrue("--webroot-path must be set" in e.message)
+            self.assertTrue("please set either --webroot-path" in e.message)
 
         self._cli_missing_flag(["--standalone"], "With the standalone plugin, you probably")
 
@@ -326,9 +326,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(config.fullchain_path, os.path.abspath(fullchain))
 
     def test_certonly_bad_args(self):
-        ret, _, _, _ = self._call(['-d', 'foo.bar', 'certonly', '--csr', CSR])
-        self.assertEqual(ret, '--domains and --csr are mutually exclusive')
-
         try:
             self._call(['-a', 'bad_auth', 'certonly'])
             assert False, "Exception should have been raised"
