@@ -419,7 +419,8 @@ def _suggest_donation_if_appropriate(config):
 
 def _report_successful_dry_run():
     reporter_util = zope.component.getUtility(interfaces.IReporter)
-    reporter_util.add_message("The dry run was successful.",
+    reporter_util.add_message("A test certificate requested in dry run was "
+                              "successfully issued.",
                               reporter_util.HIGH_PRIORITY, on_crash=False)
 
 
@@ -979,8 +980,14 @@ def renew(config, unused_plugins):
             renew_failures.append(renewal_candidate.fullchain)
 
     # Describe all the results
+    if config.dry_run:
+        print("** DRY RUN (messages below refer to test certs only!")
+        print("**         The certificates mentioned have not been saved.")
     _renew_describe_results(renew_successes, renew_failures, renew_skipped,
                             parse_failures)
+    if config.dry_run:
+        print("** DRY RUN (messages above refer to test certs only!")
+        print("**         The certificates mentioned have not been saved.")
 
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
