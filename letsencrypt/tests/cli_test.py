@@ -227,8 +227,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self.assertTrue("MisconfigurationError" in ret)
 
         args = ["certonly", "--webroot"]
-        ret, _, _, _ = self._call(args)
-        self.assertTrue("--webroot-path must be set" in ret)
+        try:
+            self._call(args)
+            assert False, "Exception should have been raised"
+        except errors.PluginSelectionError as e:
+            self.assertTrue("please set either --webroot-path" in e.message)
 
         self._cli_missing_flag(["--standalone"], "With the standalone plugin, you probably")
 
@@ -323,11 +326,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(config.fullchain_path, os.path.abspath(fullchain))
 
     def test_certonly_bad_args(self):
-        ret, _, _, _ = self._call(['-d', 'foo.bar', 'certonly', '--csr', CSR])
-        self.assertEqual(ret, '--domains and --csr are mutually exclusive')
-
-        ret, _, _, _ = self._call(['-a', 'bad_auth', 'certonly'])
-        self.assertEqual(ret, 'The requested bad_auth plugin does not appear to be installed')
+        try:
+            self._call(['-a', 'bad_auth', 'certonly'])
+            assert False, "Exception should have been raised"
+        except errors.PluginSelectionError as e:
+            self.assertTrue('The requested bad_auth plugin does not appear' in e.message)
 
     def test_check_config_sanity_domain(self):
         # Punycode
@@ -633,6 +636,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._make_dummy_renewal_config()
         with mock.patch('letsencrypt.storage.RenewableCert') as mock_rc:
             mock_lineage = mock.MagicMock()
+            mock_lineage.fullchain = "somepath/fullchain.pem"
             if renewalparams is not None:
                 mock_lineage.configuration = {'renewalparams': renewalparams}
             if names is not None:
@@ -682,6 +686,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._make_dummy_renewal_config()
         with mock.patch('letsencrypt.storage.RenewableCert') as mock_rc:
             mock_lineage = mock.MagicMock()
+            mock_lineage.fullchain = "somewhere/fullchain.pem"
             mock_rc.return_value = mock_lineage
             mock_lineage.configuration = {
                 'renewalparams': {'authenticator': 'webroot'}}
