@@ -338,6 +338,7 @@ def _handle_identical_cert_request(config, cert):
     else:
         assert False, "This is impossible"
 
+
 def _handle_subset_cert_request(config, domains, cert):
     """Figure out what to do if a previous cert had a subset of the names now requested
 
@@ -488,7 +489,7 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
                                                   open(lineage.cert).read())
     # all our test certs are from happy hacker fake CA, though maybe one day
     # we should test more methodically
-    now_valid = not "fake" in repr(latest_cert.get_issuer()).lower()
+    now_valid = "fake" not in repr(latest_cert.get_issuer()).lower()
 
     if _is_staging(config.server):
         if not _is_staging(original_server) or now_valid:
@@ -547,6 +548,7 @@ def set_configurator(previously, now):
             raise errors.PluginSelectionError(msg.format(repr(previously), repr(now)))
     return now
 
+
 def cli_plugin_requests(config):
     """
     Figure out which plugins the user requested with CLI and config options
@@ -575,6 +577,7 @@ def cli_plugin_requests(config):
 
 noninstaller_plugins = ["webroot", "manual", "standalone"]
 
+
 def choose_configurator_plugins(config, plugins, verb):
     """
     Figure out which configurator we're going to use, modifies
@@ -597,7 +600,7 @@ def choose_configurator_plugins(config, plugins, verb):
                    '{1}    {2} certonly --{0}{1}{1}'
                    '(Alternatively, add a --installer flag. See https://eff.org/letsencrypt-plugins'
                    '{1} and "--help plugins" for more information.)'.format(
-                   req_auth, os.linesep, cli_command))
+                       req_auth, os.linesep, cli_command))
 
             raise errors.MissingCommandlineFlag(msg)
     else:
@@ -769,6 +772,7 @@ def _restore_required_config_elements(config, renewalparams):
                 raise errors.Error(
                     "Expected a numeric value for {0}".format(config_item))
 
+
 def _restore_plugin_configs(config, renewalparams):
     """Sets plugin specific values in config from renewalparams
 
@@ -801,7 +805,7 @@ def _restore_plugin_configs(config, renewalparams):
                 if config_value == "None":
                     setattr(config.namespace, config_item, None)
                     continue
-                for action in _parser.parser._actions: # pylint: disable=protected-access
+                for action in _parser.parser._actions:  # pylint: disable=protected-access
                     if action.type is not None and action.dest == config_item:
                         setattr(config.namespace, config_item,
                                 action.type(config_value))
@@ -931,7 +935,7 @@ def renew(config, unused_plugins):
         # elements from within the renewal configuration file).
         try:
             renewal_candidate = _reconstitute(lineage_config, renewal_file)
-        except Exception as e: # pylint: disable=broad-except
+        except Exception as e:  # pylint: disable=broad-except
             # reconstitute encountered an unanticipated problem.
             logger.warning("Renewal configuration file %s produced an "
                            "unexpected error: %s. Skipping.", renewal_file, e)
@@ -963,7 +967,7 @@ def renew(config, unused_plugins):
                         renew_failures.append(renewal_candidate.fullchain)
                 else:
                     print("We skipped this one at the outset!")
-        except Exception as e: # pylint: disable=broad-except
+        except Exception as e:  # pylint: disable=broad-except
             # obtain_cert (presumably) encountered an unanticipated problem.
             logger.warning("Attempting to renew cert from %s produced an "
                            "unexpected error: %s. Skipping.", renewal_file, e)
@@ -1447,7 +1451,7 @@ def prepare_and_parse_args(plugins, args):
     # parser (--help should display plugin-specific options last)
     _plugins_parsing(helpful, plugins)
 
-    global _parser # pylint: disable=global-statement
+    global _parser  # pylint: disable=global-statement
     _parser = helpful
     return helpful.parse_args()
 
@@ -1584,14 +1588,17 @@ def _plugins_parsing(helpful, plugins):
                      "www.example.com -w /var/www/thing -d thing.net -d m.thing.net`")
     # --webroot-map still has some awkward properties, so it is undocumented
     helpful.add("webroot", "--webroot-map", default={}, action=WebrootMapProcessor,
-        help="JSON dictionary mapping domains to webroot paths; this implies -d "
-             "for each entry. You may need to escape this from your shell. "
-             """Eg: --webroot-map '{"eg1.is,m.eg1.is":"/www/eg1/", "eg2.is":"/www/eg2"}' """
-             "This option is merged with, but takes precedence over, -w / -d entries."
-             " At present, if you put webroot-map in a config file, it needs to be "
-             ' on a single line, like: webroot-map = {"example.com":"/var/www"}.')
+                help="JSON dictionary mapping domains to webroot paths; this "
+                     "implies -d for each entry. You may need to escape this "
+                     "from your shell. "
+                     """E.g.: --webroot-map '{"eg1.is,m.eg1.is":"/www/eg1/", "eg2.is":"/www/eg2"}' """
+                     "This option is merged with, but takes precedence over, "
+                     "-w / -d entries. At present, if you put webroot-map in "
+                     "a config file, it needs to be on a single line, like: "
+                     'webroot-map = {"example.com":"/var/www"}.')
 
-class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
+
+class WebrootPathProcessor(argparse.Action):  # pylint: disable=missing-docstring
     def __init__(self, *args, **kwargs):
         self.domain_before_webroot = False
         argparse.Action.__init__(self, *args, **kwargs)
@@ -1640,14 +1647,14 @@ def _process_domain(args_or_config, domain_arg, webroot_path=None):
                 args_or_config.webroot_map.setdefault(domain, webroot_path[-1])
 
 
-class WebrootMapProcessor(argparse.Action): # pylint: disable=missing-docstring
+class WebrootMapProcessor(argparse.Action):  # pylint: disable=missing-docstring
     def __call__(self, parser, args, webroot_map_arg, option_string=None):
         webroot_map = json.loads(webroot_map_arg)
         for domains, webroot_path in webroot_map.iteritems():
             _process_domain(args, domains, [webroot_path])
 
 
-class DomainFlagProcessor(argparse.Action): # pylint: disable=missing-docstring
+class DomainFlagProcessor(argparse.Action):  # pylint: disable=missing-docstring
     def __call__(self, parser, args, domain_arg, option_string=None):
         """Just wrap _process_domain in argparseese."""
         _process_domain(args, domain_arg)
@@ -1738,8 +1745,8 @@ def _handle_exception(exc_type, exc_value, trace, config):
             # acme.messages.Error: urn:acme:error:malformed :: The request message was
             # malformed :: Error creating new registration :: Validation of contact
             # mailto:none@longrandomstring.biz failed: Server failure at resolver
-            if ("urn:acme" in err and ":: " in err
-                and config.verbose_count <= flag_default("verbose_count")):
+            if (("urn:acme" in err and ":: " in err and
+                 config.verbose_count <= flag_default("verbose_count"))):
                 # prune ACME error code, we have a human description
                 _code, _sep, err = err.partition(":: ")
             msg = "An unexpected error occurred:\n" + err + "Please see the "
