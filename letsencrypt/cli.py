@@ -884,9 +884,12 @@ def _renewal_conf_files(config):
     return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
 
 
-def _renew_describe_results(renew_successes, renew_failures, renew_skipped,
-                            parse_failures):
+def _renew_describe_results(config, renew_successes, renew_failures,
+                            renew_skipped, parse_failures):
     status = lambda x, msg: "  " + "\n  ".join(i + " (" + msg +")" for i in x)
+    if config.dry_run:
+        print("** DRY RUN (messages below refer to test certs only!")
+        print("**         The certificates mentioned have not been saved.")
     print()
     if renew_skipped:
         print("The following certs are not due for renewal yet:")
@@ -911,6 +914,10 @@ def _renew_describe_results(renew_successes, renew_failures, renew_skipped,
         print("\nAdditionally, the following renewal configuration files "
               "were invalid: ")
         print(status(parse_failures, "parsefail"))
+
+    if config.dry_run:
+        print("** DRY RUN (messages above refer to test certs only!")
+        print("**         The certificates mentioned have not been saved.")
 
 
 def renew(config, unused_plugins):
@@ -980,14 +987,8 @@ def renew(config, unused_plugins):
             renew_failures.append(renewal_candidate.fullchain)
 
     # Describe all the results
-    if config.dry_run:
-        print("** DRY RUN (messages below refer to test certs only!")
-        print("**         The certificates mentioned have not been saved.")
-    _renew_describe_results(renew_successes, renew_failures, renew_skipped,
-                            parse_failures)
-    if config.dry_run:
-        print("** DRY RUN (messages above refer to test certs only!")
-        print("**         The certificates mentioned have not been saved.")
+    _renew_describe_results(config, renew_successes, renew_failures,
+                            renew_skipped, parse_failures)
 
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
