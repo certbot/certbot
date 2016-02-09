@@ -60,35 +60,17 @@ CheckCertCount() {
 
 CheckCertCount 1
 # This won't renew (because it's not time yet)
-letsencrypt_test_no_force_renew --authenticator standalone --installer null renew -tvv
+letsencrypt_test_no_force_renew renew
 CheckCertCount 1
+
+# --renew-by-default is used, so renewal should occur
+letsencrypt_test renew
+CheckCertCount 2
 
 # This will renew because the expiry is less than 10 years from now
 sed -i "4arenew_before_expiry = 10 years" "$root/conf/renewal/le.wtf.conf"
-letsencrypt_test_no_force_renew --authenticator standalone --installer null renew # --renew-by-default
-CheckCertCount 2
-
-# Check Param setting in renewal...
-letsencrypt_test_no_force_renew --authenticator standalone --installer null renew --renew-by-default 
+letsencrypt_test_no_force_renew
 CheckCertCount 3
-
-# The 4096 bit setting should persist to the first renewal, but be overriden in the second
-size2=`wc -c ${root}/conf/archive/le.wtf/privkey2.pem | cut -d" " -f1`
-size3=`wc -c ${root}/conf/archive/le.wtf/privkey3.pem | cut -d" " -f1`
-#if ! [ "$size3" -lt "$size2" ] ; then
-#    echo "key size failure:"
-#    ls -l ${root}/conf/archive/le.wtf/
-#    exit 1
-#fi
-
-
-# dir="$root/conf/archive/le1.wtf"
-# for x in cert chain fullchain privkey;
-# do
-#     latest="$(ls -1t $dir/ | grep -e "^${x}" | head -n1)"
-#     live="$($readlink -f "$root/conf/live/le1.wtf/${x}.pem")"
-#     [ "${dir}/${latest}" = "$live" ]  # renewer fails this test
-# done
 
 # revoke by account key
 common revoke --cert-path "$root/conf/live/le.wtf/cert.pem"
