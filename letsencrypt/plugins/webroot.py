@@ -49,8 +49,10 @@ to serve all files under specified web root ({0})."""
         path_map = self.conf("map")
 
         if not path_map:
-            raise errors.PluginError("--{0} must be set".format(
-                self.option_name("path")))
+            raise errors.PluginError(
+                "Missing parts of webroot configuration; please set either "
+                "--webroot-path and --domains, or --webroot-map. Run with "
+                " --help webroot for examples.")
         for name, path in path_map.items():
             if not os.path.isdir(path):
                 raise errors.PluginError(path + " does not exist or is not a directory")
