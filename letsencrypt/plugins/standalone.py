@@ -90,6 +90,9 @@ class ServerManager(object):
         logger.debug("Stopping server at %s:%d...",
                      *instance.server.socket.getsockname()[:2])
         instance.server.shutdown()
+        # Not calling server_close causes problems when renewing multiple
+        # certs with `letsencrypt renew` using TLSSNI01 and PyOpenSSL 0.13
+        instance.server.server_close()
         instance.thread.join()
         del self._instances[port]
 

@@ -20,17 +20,16 @@ else
   readlink="readlink"
 fi
 
-common() {
-    letsencrypt_test \
+common_no_force_renew() {
+    letsencrypt_test_no_force_renew \
         --authenticator standalone \
         --installer null \
         "$@"
 }
 
-common_no_force_renew() {
-    letsencrypt_test_no_force_renew \
-        --authenticator standalone \
-        --installer null \
+common() {
+    common_no_force_renew \
+        --renew-by-default \
         "$@"
 }
 
@@ -51,21 +50,27 @@ common --domains le3.wtf install \
        --cert-path "${root}/csr/cert.pem" \
        --key-path "${root}/csr/key.pem"
 
+CheckCertCount() {
+    CERTCOUNT=`ls "${root}/conf/archive/le.wtf/cert"* | wc -l`
+    if [ "$CERTCOUNT" -ne "$1" ] ; then
+        echo Wrong cert count, not "$1" `ls "${root}/conf/archive/le.wtf/"*`
+        exit 1
+    fi
+}
+
+CheckCertCount 1
 # This won't renew (because it's not time yet)
-letsencrypt_test_no_force_renew --authenticator standalone --installer null renew
+common_no_force_renew renew
+CheckCertCount 1
+
+# --renew-by-default is used, so renewal should occur
+common renew
+CheckCertCount 2
 
 # This will renew because the expiry is less than 10 years from now
-sed -i "4arenew_before_expiry = 10 years" "$root/conf/renewal/le1.wtf.conf"
-letsencrypt_test_no_force_renew --authenticator standalone --installer null renew
-
-ls "$root/conf/archive/le1.wtf"
-# dir="$root/conf/archive/le1.wtf"
-# for x in cert chain fullchain privkey;
-# do
-#     latest="$(ls -1t $dir/ | grep -e "^${x}" | head -n1)"
-#     live="$($readlink -f "$root/conf/live/le1.wtf/${x}.pem")"
-#     [ "${dir}/${latest}" = "$live" ]  # renewer fails this test
-# done
+sed -i "4arenew_before_expiry = 10 years" "$root/conf/renewal/le.wtf.conf"
+common_no_force_renew renew
+CheckCertCount 3
 
 # revoke by account key
 common revoke --cert-path "$root/conf/live/le.wtf/cert.pem"
