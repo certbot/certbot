@@ -440,7 +440,7 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
     else:
         # Renewal, where we already know the specific lineage we're
         # interested in
-        action = "renew" if _should_renew(config, lineage) else "reinstall"
+        action = "renew"
 
     if action == "reinstall":
         # The lineage already exists; allow the caller to try installing
