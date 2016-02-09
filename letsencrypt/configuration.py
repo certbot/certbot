@@ -44,8 +44,16 @@ class NamespaceConfig(object):
         # Check command line parameters sanity, and error out in case of problem.
         check_config_sanity(self)
 
+        self._initialized = True
+
     def __getattr__(self, name):
         return getattr(self.namespace, name)
+
+    def __setattr__(self, name, value):
+        if hasattr(self, "_initialized"):
+            return setattr(self.namespace, name, value)
+        else:
+            return super(NamespaceConfig, self).__setattr__(name, value)
 
     @property
     def server_path(self):
