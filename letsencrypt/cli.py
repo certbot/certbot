@@ -417,11 +417,12 @@ def _suggest_donation_if_appropriate(config):
         reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
 
 
-def _report_successful_dry_run():
+
+def _report_successful_dry_run(config):
     reporter_util = zope.component.getUtility(interfaces.IReporter)
-    reporter_util.add_message("A test certificate requested in dry run was "
-                              "successfully issued.",
-                              reporter_util.HIGH_PRIORITY, on_crash=False)
+    if config.verb != "renew":
+        reporter_util.add_message("The dry run was successful.",
+                                  reporter_util.HIGH_PRIORITY, on_crash=False)
 
 
 def _auth_from_domains(le_client, config, domains, lineage=None):
@@ -709,7 +710,7 @@ def obtain_cert(config, plugins, lineage=None):
         _auth_from_domains(le_client, config, domains, lineage)
 
     if config.dry_run:
-        _report_successful_dry_run()
+        _report_successful_dry_run(config)
     elif config.verb == "renew":
         if installer is None:
             # Tell the user that the server was not restarted.
