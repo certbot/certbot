@@ -51,8 +51,6 @@ common --domains le3.wtf install \
        --cert-path "${root}/csr/cert.pem" \
        --key-path "${root}/csr/key.pem"
 
-echo round 1
-
 CheckCertCount() {
     CERTCOUNT=`ls "${root}/conf/archive/le.wtf/"* | wc -l`
     if [ "$CERTCOUNT" -ne "$1" ] ; then
@@ -66,19 +64,14 @@ CheckCertCount 4
 letsencrypt_test_no_force_renew --authenticator standalone --installer null renew -tvv
 CheckCertCount 4
 
-echo round 2
-
 # This will renew because the expiry is less than 10 years from now
 sed -i "4arenew_before_expiry = 10 years" "$root/conf/renewal/le.wtf.conf"
 letsencrypt_test_no_force_renew --authenticator standalone --installer null renew # --renew-by-default
 CheckCertCount 8
 
-echo round 3
-
 # Check Param setting in renewal...
 letsencrypt_test_no_force_renew --authenticator standalone --installer null renew --renew-by-default 
 CheckCertCount 12
-echo round 4
 
 # The 4096 bit setting should persist to the first renewal, but be overriden in the second
 size2=`wc -c ${root}/conf/archive/le.wtf/privkey2.pem | cut -d" " -f1`
