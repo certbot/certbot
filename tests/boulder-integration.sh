@@ -20,17 +20,16 @@ else
   readlink="readlink"
 fi
 
-common() {
-    letsencrypt_test \
+common_no_force_renew() {
+    letsencrypt_test_no_force_renew \
         --authenticator standalone \
         --installer null \
         "$@"
 }
 
-common_no_force_renew() {
-    letsencrypt_test_no_force_renew \
-        --authenticator standalone \
-        --installer null \
+common() {
+    common_no_force_renew \
+        --renew-by-default \
         "$@"
 }
 
