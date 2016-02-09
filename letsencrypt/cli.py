@@ -1132,20 +1132,27 @@ class HelpfulArgumentParser(object):
                 logger.debug("PEM CSR parse error %s", traceback.format_exc())
                 raise errors.Error("Failed to parse CSR file: {0}".format(parsed_args.csr[0]))
 
+        for d in domains:
+            _process_domain(parsed_args, d)
+
+        for d in domains:
+            sanitised = le_util.enforce_domain_sanity(d):
+            if d.lower() != sanitised:
+                raise errors.ConfigurationError(
+                    "CSR domain {0} needs to be sanitised to {1}.".format(d, sanitised))
+
         if not domains:
             # TODO: add CN to domains instead:
             raise errors.Error(
                 "Unfortunately, your CSR %s needs to have a SubjectAltName for every domain"
                 % parsed_args.csr[0])
-        for d in domains:
-            _process_domain(parsed_args, d)
+
         parsed_args.actual_csr = (csr, typ)
         csr_domains, config_domains = set(domains), set(parsed_args.domains)
         if csr_domains != config_domains:
             raise errors.ConfigurationError(
                 "Inconsistent domain requests:\nFrom the CSR: {0}\nFrom command line/config: {1}"
-                .format(", ".join(csr_domains), ", ".join(config_domains))
-            )
+                .format(", ".join(csr_domains), ", ".join(config_domains)))
 
 
     def determine_verb(self):

@@ -308,7 +308,7 @@ def enforce_domain_sanity(domain):
 
     # Unicode
     try:
-        domain = domain.encode('ascii')
+        domain = domain.encode('ascii').lower()
     except UnicodeDecodeError:
         raise errors.ConfigurationError(
             "Internationalized domain names are not presently supported: {0}"
