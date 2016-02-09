@@ -39,26 +39,24 @@ def already_listening(port):
                  conn.type == socket.SOCK_STREAM and
                  conn.laddr[1] == port]
     try:
-        if listeners and listeners[0] is not None:
-            # conn.pid may be None if the current process doesn't have
-            # permission to identify the listening process!  Additionally,
-            # listeners may have more than one element if separate
-            # sockets have bound the same port on separate interfaces.
-            # We currently only have UI to notify the user about one
-            # of them at a time.
-            pid = listeners[0]
-            name = psutil.Process(pid).name()
-            display = zope.component.getUtility(interfaces.IDisplay)
-            display.notification(
-                "The program {0} (process ID {1}) is already listening "
-                "on TCP port {2}. This will prevent us from binding to "
-                "that port. Please stop the {0} program temporarily "
-                "and then try again.".format(name, pid, port))
-            return True
-    except (psutil.NoSuchProcess, psutil.AccessDenied):
-        # Perhaps the result of a race where the process could have
-        # exited or relinquished the port (NoSuchProcess), or the result
-        # of an OS policy where we're not allowed to look up the process
-        # name (AccessDenied).
-        pass
+        socket.socket().bind(('', port))
+    except (socket.error):
+        names = []
+        for pids in listeners:
+            names.append(psutil.Process(pids).name() + " (with PID " + str(pids) + ")" + " on port " + str(port))
+
+        name = ""
+        if len(names) > 1:
+            name = " or ".join(names)
+        else:
+            name = "".join(names)
+
+        display = zope.component.getUtility(interfaces.IDisplay)
+        display.notification(
+            "The program {0} is already "
+            "listening. This will prevent us from binding to "
+            "that port. Please stop this program temporarily "
+            "and then try again.".format(name))
+        return True
+
     return False
