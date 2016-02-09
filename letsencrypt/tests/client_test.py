@@ -109,21 +109,26 @@ class ClientTest(unittest.TestCase):
             self.client.auth_handler.get_authorizations())
         self.acme.fetch_chain.assert_called_once_with(mock.sentinel.certr)
 
-    def test_obtain_certificate_from_csr(self):
+    # FIXME move parts of this to test_cli.py...
+    @mock.patch("letsencrypt.cli._process_domain")
+    def test_obtain_certificate_from_csr(self, mock_process_domain):
         self._mock_obtain_certificate()
-        mock_process_domain = mock.MagicMock()
+        from letsencrypt import cli
         test_csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
+        mock_parsed_args = mock.MagicMock()
         with mock.patch("letsencrypt.client.le_util.CSR") as mock_CSR:
             mock_CSR.return_value = test_csr
-            self.client.config.domains = self.eg_domains
-            self.assertEqual(
-                (mock.sentinel.certr, mock.sentinel.chain),
-                self.client.obtain_certificate_from_csr(mock_process_domain))
+            mock_parsed_args.domains = self.eg_domains
+            mock_parser = mock.MagicMock(cli.HelpfulArgumentParser)
+            cli.HelpfulArgumentParser.handle_csr(mock_parser, mock_parsed_args)
 
             # make sure cli processing occurred
             cli_processed = (call[0][1] for call in mock_process_domain.call_args_list)
             self.assertEqual(set(cli_processed), set(("example.com", "www.example.com")))
 
+            self.assertEqual(
+                (mock.sentinel.certr, mock.sentinel.chain),
+                self.client.obtain_certificate_from_csr(self.eg_domains, test_csr))
             # and that the cert was obtained correctly
             self._check_obtain_certificate()
 
