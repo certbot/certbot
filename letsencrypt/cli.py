@@ -745,21 +745,22 @@ def _set_by_cli(var):
     (CLI or config file) including if the user explicitly set it to the
     default.  Returns False if the variable was assigned a default value.
     """
-    if _set_by_cli.detector is None:
+    detector = _set_by_cli.detector
+    if detector is None:
         # Setup on first run: `detector` is a weird version of config in which
         # the default value of every attribute is wrangled to be boolean-false
         plugins = plugins_disco.PluginsRegistry.find_all()
         # reconstructed_args == sys.argv[1:], or whatever was passed to main()
         reconstructed_args = _parser.args + [_parser.verb]
         default_args = prepare_and_parse_args(plugins, reconstructed_args, detect_defaults=True)
-        _set_by_cli.detector = configuration.NamespaceConfig(default_args, fake=True)
+        detector = _set_by_cli.detector = configuration.NamespaceConfig(default_args, fake=True)
         # propagate plugin requests: eg --standalone modifies config.authenticator
-        plugin_reqs = cli_plugin_requests(_set_by_cli.detector)
-        _set_by_cli.detector.authenticator, _set_by_cli.detector.installer = plugin_reqs
+        plugin_reqs = cli_plugin_requests(detector)
+        detector.authenticator, detector.installer = plugin_reqs
 
     try:
         # Is detector.var something that isn't false?
-        change_detected = _set_by_cli.detector.__getattr__(var)
+        change_detected = detector.__getattr__(var)
     except AttributeError:
         logger.warning("Missing default analysis for %r", var)
         return False
@@ -768,7 +769,7 @@ def _set_by_cli(var):
         return True
     # Special case: vars like --no-redirect that get set True -> False
     # default to None; False means they were set
-    elif var in _set_by_cli.detector.store_false_vars and change_detected is not None:
+    elif var in detector.store_false_vars and change_detected is not None:
         return True
     else:
         return False
