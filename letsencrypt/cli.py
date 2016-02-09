@@ -744,8 +744,8 @@ def _set_by_cli(var):
         plugins = plugins_disco.PluginsRegistry.find_all()
         # reconstructed_args == sys.argv[1:], or whatever was passed to main()
         reconstructed_args = _parser.args + [_parser.verb]
-        default_args = prepare_and_parse_args(plugins, reconstructed_args, detect_defaults=True)
-        _set_by_cli.detector = configuration.NamespaceConfig(default_args, fake=True)
+        _set_by_cli.detector = prepare_and_parse_args(plugins, reconstructed_args,
+                                                      detect_defaults=True)
 
     try:
         # Is detector.var something that isn't false?
@@ -758,7 +758,7 @@ def _set_by_cli(var):
         return True
     # Special case: vars like --no-redirect that get set True -> False
     # default to None; False means they were set
-    elif var in _set_by_cli.detector.namespace.store_false_vars and change_detected is not None:
+    elif var in _set_by_cli.detector.store_false_vars and change_detected is not None:
         return True
     else:
         return False
@@ -1154,6 +1154,9 @@ class HelpfulArgumentParser(object):
                     raise errors.Error("--dry-run currently only works with the "
                                        "'certonly' or 'renew' subcommands (%r)" % self.verb)
                 parsed_args.break_my_certs = parsed_args.staging = True
+        
+        if self.detect_defaults:  # plumbing
+            parsed_args.store_false_vars = self.store_false_vars
 
         return parsed_args
 
@@ -1476,8 +1479,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
     # parser (--help should display plugin-specific options last)
     _plugins_parsing(helpful, plugins)
 
-    global _parser # pylint: disable=global-statement
-    _parser = helpful
+    if not detect_defaults:
+        global _parser # pylint: disable=global-statement
+        _parser = helpful
     return helpful.parse_args()
 
 
