@@ -1114,23 +1114,23 @@ class HelpfulArgumentParser(object):
 
     def handle_csr(self, parsed_args):
         """
-        Process a --csr flag. This needs to happen early enought that the
+        Process a --csr flag. This needs to happen early enough that the
         webroot plugin can know about the calls to _process_domain
         """
         try:
             csr = le_util.CSR(file=parsed_args.csr[0], data=parsed_args.csr[1], form="der")
             typ = OpenSSL.crypto.FILETYPE_ASN1
             domains = crypto_util.get_sans_from_csr(csr.data, OpenSSL.crypto.FILETYPE_ASN1)
-        except:
+        except OpenSSL.crypto.Error:
             try:
                 e1 = traceback.format_exc()
                 typ = OpenSSL.crypto.FILETYPE_PEM
                 csr = le_util.CSR(file=parsed_args.csr[0], data=parsed_args.csr[1], form="pem")
                 domains = crypto_util.get_sans_from_csr(csr.data, typ)
-            except:
+            except OpenSSL.crypto.Error:
                 logger.debug("DER CSR parse error %s", e1)
                 logger.debug("PEM CSR parse error %s", traceback.format_exc())
-                raise errors.Error("Failed to CSR file: %s", parsed_args.csr[0])
+                raise errors.Error("Failed to parse CSR file: {0}".format(parsed_args.csr[0]))
 
         if not domains:
             # TODO: add CN to domains instead:
@@ -1143,7 +1143,7 @@ class HelpfulArgumentParser(object):
         csr_domains, config_domains = set(domains), set(parsed_args.domains)
         if csr_domains != config_domains:
             raise errors.ConfigurationError(
-                "Inconsistent domain requests:\ncsr: {0}\ncli config: {1}"
+                "Inconsistent domain requests:\nFrom the CSR: {0}\nFrom command line/config: {1}"
                 .format(", ".join(csr_domains), ", ".join(config_domains))
             )
 
