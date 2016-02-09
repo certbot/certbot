@@ -326,7 +326,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(config.fullchain_path, os.path.abspath(fullchain))
 
     def test_certonly_bad_args(self):
-        ret, _, _, _ = self._call(['-d', 'foo.bar', 'certonly', '--csr', CSR])
+        _, _, _, _ = self._call(['-d', 'foo.bar', 'certonly', '--csr', CSR])
         # self.assertEqual(ret, '--domains and --csr are mutually exclusive')
         # self.assertRaises(errors.Error, self._call,
         #                  ['-d', 'foo.bar', 'certonly', '--csr', CSR])

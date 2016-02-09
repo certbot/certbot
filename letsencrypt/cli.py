@@ -1589,8 +1589,8 @@ def _plugins_parsing(helpful, plugins):
     helpful.add("webroot", "--webroot-map", default={}, action=WebrootMapProcessor,
                 help="JSON dictionary mapping domains to webroot paths; this "
                      "implies -d for each entry. You may need to escape this "
-                     "from your shell. "
-                     """E.g.: --webroot-map '{"eg1.is,m.eg1.is":"/www/eg1/", "eg2.is":"/www/eg2"}' """
+                     "from your shell. E.g.: --webroot-map "
+                     """'{"eg1.is,m.eg1.is":"/www/eg1/", "eg2.is":"/www/eg2"}' """
                      "This option is merged with, but takes precedence over, "
                      "-w / -d entries. At present, if you put webroot-map in "
                      "a config file, it needs to be on a single line, like: "
