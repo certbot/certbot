@@ -60,16 +60,16 @@ CheckCertCount() {
 
 CheckCertCount 1
 # This won't renew (because it's not time yet)
-letsencrypt_test_no_force_renew renew
+common_no_force_renew renew
 CheckCertCount 1
 
 # --renew-by-default is used, so renewal should occur
-letsencrypt_test renew
+common renew
 CheckCertCount 2
 
 # This will renew because the expiry is less than 10 years from now
 sed -i "4arenew_before_expiry = 10 years" "$root/conf/renewal/le.wtf.conf"
-letsencrypt_test_no_force_renew
+common_no_force_renew renew
 CheckCertCount 3
 
 # revoke by account key
