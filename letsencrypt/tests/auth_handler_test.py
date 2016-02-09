@@ -437,8 +437,11 @@ class ReportFailedChallsTest(unittest.TestCase):
             "chall": acme_util.HTTP01,
             "uri": "uri",
             "status": messages.STATUS_INVALID,
-            "error": messages.Error(typ="tls", detail="detail"),
+            "error": messages.Error(typ="urn:acme:error:tls", detail="detail"),
         }
+
+        # Prevent future regressions if the error type changes
+        self.assertTrue(kwargs["error"].description is not None)
 
         self.http01 = achallenges.KeyAuthorizationAnnotatedChallenge(
             # pylint: disable=star-args
