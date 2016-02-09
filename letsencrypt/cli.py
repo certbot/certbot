@@ -1194,13 +1194,14 @@ class HelpfulArgumentParser(object):
                 if domain not in parsed_args.domains:
                     parsed_args.domains.append(domain)
 
-        if parsed_args.staging or parsed_args.dry_run:
-            if parsed_args.server not in ("", flag_default("server"), constants.STAGING_URI):
-                conflicts = ["--staging"] if parsed_args.staging else []
-                conflicts += ["--dry-run"] if parsed_args.dry_run else []
-                if not self.detect_defaults:
-                    raise errors.Error("--server value conflicts with {0}".format(
-                        " and ".join(conflicts)))
+        if not self.detect_defaults:
+            if parsed_args.staging or parsed_args.dry_run:
+                if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
+                    conflicts = ["--staging"] if parsed_args.staging else []
+                    conflicts += ["--dry-run"] if parsed_args.dry_run else []
+                    if not self.detect_defaults:
+                        raise errors.Error("--server value conflicts with {0}".format(
+                            " and ".join(conflicts)))
 
             parsed_args.server = constants.STAGING_URI
 
@@ -1316,7 +1317,7 @@ class HelpfulArgumentParser(object):
         """
 
         if self.detect_defaults:
-            self.modify_arg_for_default_detection(self, *args, **kwargs)
+            kwargs = self.modify_arg_for_default_detection(self, *args, **kwargs)
 
         if self.visible_topics[topic]:
             if topic in self.groups:
@@ -1336,6 +1337,8 @@ class HelpfulArgumentParser(object):
 
         :param list *args: the names of this argument flag
         :param dict **kwargs: various argparse settings for this argument
+
+        :returns: a modified versions of kwargs
         """
         # argument either doesn't have a default, or the default doesn't
         # isn't Pythonically false
@@ -1356,8 +1359,7 @@ class HelpfulArgumentParser(object):
             for var in args:
                 self.store_false_vars[var] = True
 
-        if "--server" in args:
-            print("Munged? server to", kwargs)
+        return kwargs
 
 
     def add_deprecated_argument(self, argument_name, num_args):
