@@ -82,6 +82,7 @@ class ClientTest(unittest.TestCase):
             no_verify_ssl=False, config_dir="/etc/letsencrypt")
         # pylint: disable=star-args
         self.account = mock.MagicMock(**{"key.pem": KEY})
+        self.eg_domains = ["example.com", "www.example.com"]
 
         from letsencrypt.client import Client
         with mock.patch("letsencrypt.client.acme_client.Client") as acme:
@@ -101,8 +102,7 @@ class ClientTest(unittest.TestCase):
         self.acme.fetch_chain.return_value = mock.sentinel.chain
 
     def _check_obtain_certificate(self):
-        self.client.auth_handler.get_authorizations.assert_called_once_with(
-            ["example.com", "www.example.com"])
+        self.client.auth_handler.get_authorizations.assert_called_once_with(self.eg_domains)
         self.acme.request_issuance.assert_called_once_with(
             jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
                 OpenSSL.crypto.FILETYPE_ASN1, CSR_SAN)),
@@ -111,11 +111,21 @@ class ClientTest(unittest.TestCase):
 
     def test_obtain_certificate_from_csr(self):
         self._mock_obtain_certificate()
-        self.assertEqual(
-            (mock.sentinel.certr, mock.sentinel.chain),
-            self.client.obtain_certificate_from_csr(le_util.CSR(
-                form="der", file=None, data=CSR_SAN)))
-        self._check_obtain_certificate()
+        mock_process_domain = mock.MagicMock()
+        test_csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
+        with mock.patch("letsencrypt.client.le_util.CSR") as mock_CSR:
+            mock_CSR.return_value = test_csr
+            self.client.config.domains = self.eg_domains
+            self.assertEqual(
+                (mock.sentinel.certr, mock.sentinel.chain),
+                self.client.obtain_certificate_from_csr(mock_process_domain))
+
+            # make sure cli processing occurred
+            cli_processed = (call[0][1] for call in mock_process_domain.call_args_list)
+            self.assertEqual(set(cli_processed), set(("example.com", "www.example.com")))
+
+            # and that the cert was obtained correctly
+            self._check_obtain_certificate()
 
     @mock.patch("letsencrypt.client.crypto_util")
     def test_obtain_certificate(self, mock_crypto_util):
