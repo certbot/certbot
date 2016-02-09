@@ -918,7 +918,7 @@ def _reconstitute(config, full_path):
 
 def _renewal_conf_files(config):
     """Return /path/to/*.conf in the renewal conf directory"""
-    return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
+    return glob.glob(os.path.join(config.renewal_configs_dir, config.renewal_glob))
 
 
 def _renew_describe_results(config, renew_successes, renew_failures,
@@ -1356,6 +1356,9 @@ class HelpfulArgumentParser(object):
             for var in args:
                 self.store_false_vars[var] = True
 
+        if "--server" in args:
+            print("Munged? server to", kwargs)
+
 
     def add_deprecated_argument(self, argument_name, num_args):
         """Adds a deprecated argument with the name argument_name.
@@ -1484,6 +1487,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "automation", "--expand", action="store_true",
         help="If an existing cert covers some subset of the requested names, "
              "always expand and replace it with the additional names.")
+    helpful.add(
+        "automation", "--renewal-glob", default=flag_default("renewal_glob"),
+        help="A pattern for which renewal files in /etc/letsencrypt/renewal/ to process")
     helpful.add(
         "automation", "--version", action="version",
         version="%(prog)s {0}".format(letsencrypt.__version__),
