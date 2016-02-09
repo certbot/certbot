@@ -1154,7 +1154,7 @@ class HelpfulArgumentParser(object):
                     raise errors.Error("--dry-run currently only works with the "
                                        "'certonly' or 'renew' subcommands (%r)" % self.verb)
                 parsed_args.break_my_certs = parsed_args.staging = True
-        
+
         if self.detect_defaults:  # plumbing
             parsed_args.store_false_vars = self.store_false_vars
 
