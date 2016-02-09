@@ -1194,14 +1194,13 @@ class HelpfulArgumentParser(object):
                 if domain not in parsed_args.domains:
                     parsed_args.domains.append(domain)
 
-        if not self.detect_defaults:
-            if parsed_args.staging or parsed_args.dry_run:
-                if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
-                    conflicts = ["--staging"] if parsed_args.staging else []
-                    conflicts += ["--dry-run"] if parsed_args.dry_run else []
-                    if not self.detect_defaults:
-                        raise errors.Error("--server value conflicts with {0}".format(
-                            " and ".join(conflicts)))
+        if parsed_args.staging or parsed_args.dry_run:
+            if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
+                conflicts = ["--staging"] if parsed_args.staging else []
+                conflicts += ["--dry-run"] if parsed_args.dry_run else []
+                if not self.detect_defaults:
+                    raise errors.Error("--server value conflicts with {0}".format(
+                        " and ".join(conflicts)))
 
             parsed_args.server = constants.STAGING_URI
 
