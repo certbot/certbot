@@ -719,8 +719,8 @@ def obtain_cert(config, plugins, lineage=None):
             # In principle we could have a configuration option to inhibit this
             # from happening.
             installer.restart()
-            print("new certificate deployed with reload of plugin",
-                  config.installer, "fullchain is", lineage.fullchain)
+            print("new certificate deployed with reload of",
+                  config.installer, "server; fullchain is", lineage.fullchain)
     _suggest_donation_if_appropriate(config)
 
 
@@ -883,8 +883,12 @@ def _renewal_conf_files(config):
     return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
 
 
-def _renew_describe_results(renew_successes, renew_failures, parse_failures):
+def _renew_describe_results(renew_successes, renew_failures, renew_skipped,
+                            parse_failures):
     print()
+    if renew_skipped:
+        print("The following certs are not due for renewal yet:")
+        print("\t" + "\n\t".join(x + " (skipped)" for x in renew_skipped))
     if not renew_successes and not renew_failures:
         print("No renewals were attempted.")
     elif renew_successes and not renew_failures:
@@ -924,11 +928,10 @@ def renew(config, unused_plugins):
     renewer_config = configuration.RenewerConfiguration(config)
     renew_successes = []
     renew_failures = []
+    renew_skipped = []
     parse_failures = []
     for renewal_file in _renewal_conf_files(renewer_config):
         print("Processing " + renewal_file)
-        # XXX: does this succeed in making a fully independent config object
-        #      each time?
         lineage_config = copy.deepcopy(config)
 
         # Note that this modifies config (to add back the configuration
@@ -966,7 +969,7 @@ def renew(config, unused_plugins):
                     else:
                         renew_failures.append(renewal_candidate.fullchain)
                 else:
-                    print("We skipped this one at the outset!")
+                    renew_skipped.append(renewal_candidate.fullchain)
         except Exception as e:  # pylint: disable=broad-except
             # obtain_cert (presumably) encountered an unanticipated problem.
             logger.warning("Attempting to renew cert from %s produced an "
@@ -975,7 +978,8 @@ def renew(config, unused_plugins):
             renew_failures.append(renewal_candidate.fullchain)
 
     # Describe all the results
-    _renew_describe_results(renew_successes, renew_failures, parse_failures)
+    _renew_describe_results(renew_successes, renew_failures, renew_skipped,
+                            parse_failures)
 
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
