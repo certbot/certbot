@@ -34,7 +34,7 @@ class NamespaceConfig(object):
     """
     zope.interface.implements(interfaces.IConfig)
 
-    def __init__(self, namespace):
+    def __init__(self, namespace, fake=False):
         self.namespace = namespace
 
         self.namespace.config_dir = os.path.abspath(self.namespace.config_dir)
@@ -42,7 +42,8 @@ class NamespaceConfig(object):
         self.namespace.logs_dir = os.path.abspath(self.namespace.logs_dir)
 
         # Check command line parameters sanity, and error out in case of problem.
-        check_config_sanity(self)
+        if not fake:
+            check_config_sanity(self)
 
     def __getattr__(self, name):
         return getattr(self.namespace, name)
