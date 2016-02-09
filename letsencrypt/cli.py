@@ -1202,7 +1202,7 @@ class HelpfulArgumentParser(object):
             _process_domain(parsed_args, d)
 
         for d in domains:
-            sanitised = le_util.enforce_domain_sanity(d):
+            sanitised = le_util.enforce_domain_sanity(d)
             if d.lower() != sanitised:
                 raise errors.ConfigurationError(
                     "CSR domain {0} needs to be sanitised to {1}.".format(d, sanitised))
