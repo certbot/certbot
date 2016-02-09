@@ -222,16 +222,16 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         if "nginx" in real_plugins:
             # Sending nginx a non-existent conf dir will simulate misconfiguration
             # (we can only do that if letsencrypt-nginx is actually present)
-            self._call(args)
-            # XXX: This probably now raises an exception (when nginx is
-            #      present, but I don't know which one!)
-            # self.assertTrue("The nginx plugin is not working" in ret)
-            # self.assertTrue("MisconfigurationError" in ret)
+            ret, _, _, _ = self._call(args)
+            self.assertTrue("The nginx plugin is not working" in ret)
+            self.assertTrue("MisconfigurationError" in ret)
 
         args = ["certonly", "--webroot"]
-        # ret, _, _, _ = self._call(args)
-        self.assertRaises(errors.PluginSelectionError, self._call, args)
-        # self.assertTrue("--webroot-path must be set" in ret)
+        try:
+            self._call(args)
+            assert False, "Exception should have been raised"
+        except errors.PluginSelectionError as e:
+            self.assertTrue("--webroot-path must be set" in e.message)
 
         self._cli_missing_flag(["--standalone"], "With the standalone plugin, you probably")
 
