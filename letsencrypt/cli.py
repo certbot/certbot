@@ -416,7 +416,6 @@ def _suggest_donation_if_appropriate(config):
         reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
 
 
-
 def _report_successful_dry_run(config):
     reporter_util = zope.component.getUtility(interfaces.IReporter)
     if config.verb != "renew":
@@ -771,6 +770,10 @@ def _set_by_cli(var):
         return False
 
     if change_detected:
+        return True
+    # Special case: we actually want account to be set to "" if the server
+    # the account was on has changed
+    elif var == "account" and (detector.server or detector.dry_run or detector.staging):
         return True
     # Special case: vars like --no-redirect that get set True -> False
     # default to None; False means they were set
@@ -1209,6 +1212,11 @@ class HelpfulArgumentParser(object):
                     raise errors.Error("--dry-run currently only works with the "
                                        "'certonly' or 'renew' subcommands (%r)" % self.verb)
                 parsed_args.break_my_certs = parsed_args.staging = True
+                if glob.glob(os.path.join(parsed_args.config_dir, constants.ACCOUNTS_DIR, "*")):
+                    # The user has a prod account, but might not have a staging
+                    # one; we don't want to start trying to perform interactive registration
+                    parsed_args.agree_tos = True
+                    parsed_args.register_unsafely_without_email = True
 
         if parsed_args.csr:
             self.handle_csr(parsed_args)
