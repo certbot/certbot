@@ -106,6 +106,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         add("handle-sites", default=constants.os_constant("handle_sites"),
             help="Let installer handle enabling sites for you." +
                  "(Only Ubuntu/Debian currently)")
+        le_util.add_deprecated_argument(add, argument_name="ctl", nargs=1)
         le_util.add_deprecated_argument(
             add, argument_name="init-script", nargs=1)
 
