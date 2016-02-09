@@ -684,7 +684,7 @@ def obtain_cert(config, plugins, lineage=None):
     # This is a special case; cert and chain are simply saved
     if config.csr is not None:
         assert lineage is None, "Did not expect a CSR with a RenewableCert"
-        certr, chain = le_client.obtain_certificate_from_csr(_process_domain)
+        certr, chain = le_client.obtain_certificate_from_csr(config.domains, config.actual_csr)
         if config.dry_run:
             logger.info(
                 "Dry run: skipping saving certificate to %s", config.cert_path)
@@ -1106,7 +1106,29 @@ class HelpfulArgumentParser(object):
                                        "'certonly' or 'renew' subcommands")
                 parsed_args.break_my_certs = parsed_args.staging = True
 
+        if parsed_args.csr:
+            self.handle_csr(parsed_args)
+
         return parsed_args
+
+    def handle_csr(self, parsed_args):
+        """
+        Process a --csr flag. This needs to happen early enought that the
+        webroot plugin can know about the calls to _process_domain
+        """
+        csr = le_util.CSR(file=parsed_args.csr[0], data=parsed_args.csr[1], form="der")
+        # TODO: add CN to domains?
+        domains = crypto_util.get_sans_from_csr(csr.data, OpenSSL.crypto.FILETYPE_ASN1)
+        for d in domains:
+            _process_domain(parsed_args, d)
+        parsed_args.actual_csr = csr
+        csr_domains, config_domains = set(domains), set(parsed_args.domains)
+        if csr_domains != config_domains:
+            raise errors.ConfigurationError(
+                "Inconsistent domain requests:\ncsr: {0}\ncli config: {1}"
+                .format(", ".join(csr_domains), ", ".join(config_domains))
+            )
+
 
     def determine_verb(self):
         """Determines the verb/subcommand provided by the user.

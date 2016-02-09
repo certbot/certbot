@@ -195,7 +195,7 @@ class Client(object):
         else:
             self.auth_handler = None
 
-    def _obtain_certificate(self, domains, csr):
+    def obtain_certificate_from_csr(self, domains, csr):
         """Obtain certificate.
 
         Internal function with precondition that `domains` are
@@ -228,34 +228,6 @@ class Client(object):
             authzr)
         return certr, self.acme.fetch_chain(certr)
 
-    def obtain_certificate_from_csr(self, domain_callback):
-        """Obtain certficiate from CSR.
-
-        :param function(config, domains) domain_callback: callback for each
-        domain extracted from the CSR, to ensure that webroot-map and similar
-        housekeeping in cli.py is performed correctly
-
-        :returns: `.CertificateResource` and certificate chain (as
-            returned by `.fetch_chain`).
-        :rtype: tuple
-
-        """
-
-        #raise TypeError("About to call %r" % le_util.CSR)
-        csr = le_util.CSR(file=self.config.csr[0], data=self.config.csr[1], form="der")
-        # TODO: add CN to domains?
-        domains = crypto_util.get_sans_from_csr(csr.data, OpenSSL.crypto.FILETYPE_ASN1)
-        for d in domains:
-            domain_callback(self.config, d)
-
-        csr_domains, config_domains = set(domains), set(self.config.domains)
-        if csr_domains != config_domains:
-            raise errors.ConfigurationError(
-                "Inconsistent domain requests:\ncsr: {0}\ncli config: {1}"
-                .format(", ".join(csr_domains), ", ".join(config_domains))
-            )
-
-        return self._obtain_certificate(domains, csr)
 
     def obtain_certificate(self, domains):
         """Obtains a certificate from the ACME server.
@@ -276,7 +248,7 @@ class Client(object):
             self.config.rsa_key_size, self.config.key_dir)
         csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
-        return self._obtain_certificate(domains, csr) + (key, csr)
+        return self.obtain_certificate_from_csr(domains, csr) + (key, csr)
 
     def obtain_and_enroll_certificate(self, domains):
         """Obtain and enroll certificate.
