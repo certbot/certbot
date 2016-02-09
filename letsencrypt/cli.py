@@ -753,7 +753,7 @@ def _set_by_cli(var):
             return True
         # Special case: vars like --no-redirect that get set True -> False
         # default to None; False means they were set
-        elif var in _set_by_cli.detector.store_false_vars and change_detected is not None:
+        elif var in _set_by_cli.detector.namespace.store_false_vars and change_detected is not None:
             return True
         else:
             return False
