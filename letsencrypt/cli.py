@@ -885,30 +885,31 @@ def _renewal_conf_files(config):
 
 def _renew_describe_results(renew_successes, renew_failures, renew_skipped,
                             parse_failures):
+    status = lambda x, msg: "  " + "\n  ".join(i + " (" + msg +")" for i in x)
     print()
     if renew_skipped:
         print("The following certs are not due for renewal yet:")
-        print("\t" + "\n\t".join(x + " (skipped)" for x in renew_skipped))
+        print(status(renew_skipped, "skipped"))
     if not renew_successes and not renew_failures:
         print("No renewals were attempted.")
     elif renew_successes and not renew_failures:
         print("Congratulations, all renewals succeeded. The following certs "
               "have been renewed:")
-        print("\t" + "\n\t".join(x + " (success)" for x in renew_successes))
+        print(status(renew_successes, "success"))
     elif renew_failures and not renew_successes:
         print("All renewal attempts failed. The following certs could not be "
               "renewed:")
-        print("\t" + "\n\t".join(x + " (failure)" for x in renew_failures))
+        print(status(renew_failures, "failure"))
     elif renew_failures and renew_successes:
         print("The following certs were successfully renewed:")
-        print("\t" + "\n\t".join(x + " (success)" for x in renew_successes))
+        print(status(renew_successes, "success"))
         print("\nThe following certs could not be renewed:")
-        print("\t" + "\n\t".join(x + " (failure)" for x in renew_failures))
+        print(status(renew_failures, "failure"))
 
     if parse_failures:
         print("\nAdditionally, the following renewal configuration files "
               "were invalid: ")
-        print("\t" + "\n\t".join(x + " (parsefail)" for x in parse_failures))
+        print(status(parse_failures, "parsefail"))
 
 
 def renew(config, unused_plugins):
