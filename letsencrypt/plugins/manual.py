@@ -91,7 +91,7 @@ s.serve_forever()" """
             help="Automatically allows public IP logging.")
 
     def prepare(self):  # pylint: disable=missing-docstring,no-self-use
-        if self.config.noninteractive_mode:
+        if self.config.noninteractive_mode and not self.conf("test-mode"):
             raise errors.PluginError("Running manual mode non-interactively is not supported")
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
