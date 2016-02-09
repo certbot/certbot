@@ -118,13 +118,17 @@ class ClientTest(unittest.TestCase):
         mock_parsed_args = mock.MagicMock()
         with mock.patch("letsencrypt.client.le_util.CSR") as mock_CSR:
             mock_CSR.return_value = test_csr
-            mock_parsed_args.domains = self.eg_domains
+            mock_parsed_args.domains = self.eg_domains[:]
             mock_parser = mock.MagicMock(cli.HelpfulArgumentParser)
             cli.HelpfulArgumentParser.handle_csr(mock_parser, mock_parsed_args)
 
             # make sure cli processing occurred
             cli_processed = (call[0][1] for call in mock_process_domain.call_args_list)
             self.assertEqual(set(cli_processed), set(("example.com", "www.example.com")))
+            # Now provoke an inconsistent domains error...
+            mock_parsed_args.domains.append("hippopotamus.io")
+            self.assertRaises(errors.ConfigurationError,
+                cli.HelpfulArgumentParser.handle_csr, mock_parser, mock_parsed_args)
 
             self.assertEqual(
                 (mock.sentinel.certr, mock.sentinel.chain),
@@ -132,11 +136,6 @@ class ClientTest(unittest.TestCase):
             # and that the cert was obtained correctly
             self._check_obtain_certificate()
 
-            # Now provoke an inconsistent domains error...
-
-            self.client.config.domains.append("hippopotamus.io")
-            self.assertRaises(errors.ConfigurationError,
-                self.client.obtain_certificate_from_csr, mock_process_domain)
 
     @mock.patch("letsencrypt.client.crypto_util")
     def test_obtain_certificate(self, mock_crypto_util):
