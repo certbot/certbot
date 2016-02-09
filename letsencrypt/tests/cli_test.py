@@ -542,24 +542,24 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         mock_client = mock.MagicMock()
         mock_client.obtain_certificate.return_value = (mock_certr, 'chain',
                                                        mock_key, 'csr')
-        with mock.patch('letsencrypt.cli._find_duplicative_certs') as mock_fdc:
-            mock_fdc.return_value = (mock_lineage, None)
-            with mock.patch('letsencrypt.cli._init_le_client') as mock_init:
-                mock_init.return_value = mock_client
-                get_utility_path = 'letsencrypt.cli.zope.component.getUtility'
-                with mock.patch(get_utility_path) as mock_get_utility:
-                    with mock.patch('letsencrypt.cli.OpenSSL') as mock_ssl:
-                        mock_latest = mock.MagicMock()
-                        mock_latest.get_issuer.return_value = "Fake fake"
-                        mock_ssl.crypto.load_certificate.return_value = mock_latest
-                        with mock.patch('letsencrypt.cli.crypto_util'):
-                            if not args:
-                                args = ['-d', 'isnot.org', '-a', 'standalone', 'certonly']
-                            if extra_args:
-                                args += extra_args
-                            self._call(args)
-
         try:
+            with mock.patch('letsencrypt.cli._find_duplicative_certs') as mock_fdc:
+                mock_fdc.return_value = (mock_lineage, None)
+                with mock.patch('letsencrypt.cli._init_le_client') as mock_init:
+                    mock_init.return_value = mock_client
+                    get_utility_path = 'letsencrypt.cli.zope.component.getUtility'
+                    with mock.patch(get_utility_path) as mock_get_utility:
+                        with mock.patch('letsencrypt.cli.OpenSSL') as mock_ssl:
+                            mock_latest = mock.MagicMock()
+                            mock_latest.get_issuer.return_value = "Fake fake"
+                            mock_ssl.crypto.load_certificate.return_value = mock_latest
+                            with mock.patch('letsencrypt.cli.crypto_util'):
+                                if not args:
+                                    args = ['-d', 'isnot.org', '-a', 'standalone', 'certonly']
+                                if extra_args:
+                                    args += extra_args
+                                self._call(args)
+
             if log_out:
                 with open(os.path.join(self.logs_dir, "letsencrypt.log")) as lf:
                     self.assertTrue(log_out in lf.read())

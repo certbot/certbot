@@ -200,10 +200,11 @@ class Authenticator(common.Plugin):
         return self.supported_challenges
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
-        if any(util.already_listening(port) for port in self._necessary_ports):
-            raise errors.MisconfigurationError(
-                "At least one of the (possibly) required ports is "
-                "already taken.")
+        # is psutil or standalone the problem?
+        #if any(util.already_listening(port) for port in self._necessary_ports):
+        #    raise errors.MisconfigurationError(
+        #        "At least one of the (possibly) required ports is "
+        #        "already taken.")
 
         try:
             return self.perform2(achalls)

@@ -46,8 +46,7 @@ from letsencrypt.plugins import disco as plugins_disco
 
 logger = logging.getLogger(__name__)
 
-# This is global scope in order to be able to extract type information from
-# it later
+# Global, to save us from a lot of argument passing within the scope of this module
 _parser = None
 
 # These are the items which get pulled out of a renewal configuration
@@ -733,6 +732,32 @@ def install(config, plugins):
     le_client.enhance_config(domains, config)
 
 
+def _set_by_cli(variable):
+    """
+    Return True if a particular config variable has been set by the user
+    (CLI or config file) including if the user explicitly set it to the
+    default.  Returns False if the variable was assigned a default variable.
+    """
+    if _set_by_cli.detector is None:
+        # Setup on first run: `detector` is a weird version of config in which
+        # the default value of every attribute is wrangled to be boolean-false
+        plugins = plugins_disco.PluginsRegistry.find_all()
+        # reconstructed_args == sys.argv[1:], or whatever was passed to main()
+        reconstructed_args = _parser.args + [_parser.verb]
+        default_args = prepare_and_parse_args(plugins, reconstructed_args, empty_defaults=True)
+        _set_by_cli.detector = configuration.NamespaceConfig(default_args, fake=True)
+    try:
+        # Is detector.variable something that isn't false?
+        if _set_by_cli.detector.__getattr__(variable):
+            return True
+        else:
+            return False
+    except AttributeError:
+        logger.warning("Missing default analysis for %r", variable)
+        return False
+# static housekeeping variable
+_set_by_cli.detector = None
+
 def _restore_required_config_elements(config, renewalparams):
     """Sets non-plugin specific values in config from renewalparams
 
@@ -744,7 +769,7 @@ def _restore_required_config_elements(config, renewalparams):
     """
     # string-valued items to add if they're present
     for config_item in STR_CONFIG_ITEMS:
-        if config_item in renewalparams:
+        if config_item in renewalparams and not _set_by_cli(config_item):
             value = renewalparams[config_item]
             # Unfortunately, we've lost type information from ConfigObj,
             # so we don't know if the original was NoneType or str!
@@ -753,7 +778,7 @@ def _restore_required_config_elements(config, renewalparams):
             setattr(config.namespace, config_item, value)
     # int-valued items to add if they're present
     for config_item in INT_CONFIG_ITEMS:
-        if config_item in renewalparams:
+        if config_item in renewalparams and not _set_by_cli(config_item):
             try:
                 value = int(renewalparams[config_item])
                 setattr(config.namespace, config_item, value)
@@ -785,7 +810,7 @@ def _restore_plugin_configs(config, renewalparams):
         plugin_prefixes.append(renewalparams["installer"])
     for plugin_prefix in set(plugin_prefixes):
         for config_item, config_value in renewalparams.iteritems():
-            if config_item.startswith(plugin_prefix + "_"):
+            if config_item.startswith(plugin_prefix + "_") and not _set_by_cli(config_item):
                 # Avoid confusion when, for example, "csr = None" (avoid
                 # trying to read the file called "None")
                 # Should we omit the item entirely rather than setting
@@ -793,6 +818,7 @@ def _restore_plugin_configs(config, renewalparams):
                 if config_value == "None":
                     setattr(config.namespace, config_item, None)
                     continue
+
                 for action in _parser.parser._actions: # pylint: disable=protected-access
                     if action.type is not None and action.dest == config_item:
                         setattr(config.namespace, config_item,
@@ -850,7 +876,7 @@ def _reconstitute(config, full_path):
     # webroot_map is, uniquely, a dict, and the general-purpose
     # configuration restoring logic is not able to correctly parse it
     # from the serialized form.
-    if "webroot_map" in renewalparams:
+    if "webroot_map" in renewalparams and not _set_by_cli("webroot_map"):
         setattr(config.namespace, "webroot_map", renewalparams["webroot_map"])
 
     try:
@@ -862,9 +888,10 @@ def _reconstitute(config, full_path):
                        "was: %s. Skipping.", full_path, error)
         return None
 
-    setattr(config.namespace, "domains", domains)
-    return renewal_candidate
+    if not _set_by_cli("domains"):
+        setattr(config.namespace, "domains", domains)
 
+    return renewal_candidate
 
 def _renewal_conf_files(config):
     """Return /path/to/*.conf in the renewal conf directory"""
@@ -873,6 +900,7 @@ def _renewal_conf_files(config):
 
 def renew(config, unused_plugins):
     """Renew previously-obtained certificates."""
+
     if config.domains != []:
         raise errors.Error("Currently, the renew verb is only capable of "
                            "renewing all installed certificates that are due "
@@ -886,6 +914,7 @@ def renew(config, unused_plugins):
                            "specifying a CSR file. Please try the certonly "
                            "command instead.")
     renewer_config = configuration.RenewerConfiguration(config)
+
     for renewal_file in _renewal_conf_files(renewer_config):
         print("Processing " + renewal_file)
         # XXX: does this succeed in making a fully independent config object
@@ -1050,7 +1079,7 @@ class HelpfulArgumentParser(object):
     HELP_TOPICS = ["all", "security",
                    "paths", "automation", "testing"] + VERBS.keys()
 
-    def __init__(self, args, plugins):
+    def __init__(self, args, plugins, empty_defaults=False):
         plugin_names = [name for name, _p in plugins.iteritems()]
         self.help_topics = self.HELP_TOPICS + plugin_names + [None]
         usage, short_usage = usage_strings(plugins)
@@ -1063,6 +1092,11 @@ class HelpfulArgumentParser(object):
         # This is the only way to turn off overly verbose config flag documentation
         self.parser._add_config_file_help = False  # pylint: disable=protected-access
         self.silent_parser = SilentParser(self.parser)
+
+        # This setting attempts to force all default values to None; it
+        # is used to detect when values have been explicitly set by the user,
+        # including when they are set to their normal default value
+        self.empty_defaults = empty_defaults
 
         self.args = args
         self.determine_verb()
@@ -1097,19 +1131,19 @@ class HelpfulArgumentParser(object):
                     parsed_args.domains.append(domain)
 
         if parsed_args.staging or parsed_args.dry_run:
-            if (parsed_args.server not in
-                    (flag_default("server"), constants.STAGING_URI)):
+            if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
                 conflicts = ["--staging"] if parsed_args.staging else []
                 conflicts += ["--dry-run"] if parsed_args.dry_run else []
-                raise errors.Error("--server value conflicts with {0}".format(
-                    " and ".join(conflicts)))
+                if not self.empty_defaults:
+                    raise errors.Error("--server value conflicts with {0}".format(
+                        " and ".join(conflicts)))
 
             parsed_args.server = constants.STAGING_URI
 
             if parsed_args.dry_run:
                 if self.verb not in ["certonly", "renew"]:
                     raise errors.Error("--dry-run currently only works with the "
-                                       "'certonly' or 'renew' subcommands")
+                                       "'certonly' or 'renew' subcommands (%r)" % self.verb)
                 parsed_args.break_my_certs = parsed_args.staging = True
 
         return parsed_args
@@ -1166,6 +1200,23 @@ class HelpfulArgumentParser(object):
         it, but can be None for `always documented'.
 
         """
+
+        if self.empty_defaults:
+            # These are config elements which cannot tolerate being set to ""
+            # during parsing; that's fine as long as their defaults evalute to
+            # boolean false.
+            if not any(exception in args for exception in ["--webroot-map", "-d", "-w", "-v"]):
+                arg_type = kwargs.get("type", None)
+                if arg_type == int:
+                    kwargs["default"] = 0
+                elif arg_type == read_file or "-c" in args:
+                    kwargs["default"] = ""
+                    kwargs["type"] = str
+                else:
+                    kwargs["default"] = ""
+            else:
+                pass
+
         if self.visible_topics[topic]:
             if topic in self.groups:
                 group = self.groups[topic]
@@ -1243,7 +1294,7 @@ class HelpfulArgumentParser(object):
             return dict([(t, t == chosen_topic) for t in self.help_topics])
 
 
-def prepare_and_parse_args(plugins, args):
+def prepare_and_parse_args(plugins, args, empty_defaults=False):
     """Returns parsed command line arguments.
 
     :param .PluginsRegistry plugins: available plugins
@@ -1253,7 +1304,7 @@ def prepare_and_parse_args(plugins, args):
     :rtype: argparse.Namespace
 
     """
-    helpful = HelpfulArgumentParser(args, plugins)
+    helpful = HelpfulArgumentParser(args, plugins, empty_defaults)
 
     # --help is automatically provided by argparse
     helpful.add(
@@ -1707,9 +1758,9 @@ def _handle_exception(exc_type, exc_value, trace, config):
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     sys.excepthook = functools.partial(_handle_exception, config=None)
+    plugins = plugins_disco.PluginsRegistry.find_all()
 
     # note: arg parser internally handles --help (and exits afterwards)
-    plugins = plugins_disco.PluginsRegistry.find_all()
     args = prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
