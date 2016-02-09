@@ -746,19 +746,21 @@ def _set_by_cli(var):
         reconstructed_args = _parser.args + [_parser.verb]
         default_args = prepare_and_parse_args(plugins, reconstructed_args, detect_defaults=True)
         _set_by_cli.detector = configuration.NamespaceConfig(default_args, fake=True)
+
     try:
         # Is detector.var something that isn't false?
         change_detected = _set_by_cli.detector.__getattr__(var)
-        if change_detected:
-            return True
-        # Special case: vars like --no-redirect that get set True -> False
-        # default to None; False means they were set
-        elif var in _set_by_cli.detector.namespace.store_false_vars and change_detected is not None:
-            return True
-        else:
-            return False
     except AttributeError:
         logger.warning("Missing default analysis for %r", var)
+        return False
+
+    if change_detected:
+        return True
+    # Special case: vars like --no-redirect that get set True -> False
+    # default to None; False means they were set
+    elif var in _set_by_cli.detector.namespace.store_false_vars and change_detected is not None:
+        return True
+    else:
         return False
 # static housekeeping var
 _set_by_cli.detector = None
