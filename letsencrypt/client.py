@@ -195,7 +195,8 @@ class Client(object):
         else:
             self.auth_handler = None
 
-    def obtain_certificate_from_csr(self, domains, csr):
+    def obtain_certificate_from_csr(self, domains, csr,
+        typ=OpenSSL.crypto.FILETYPE_ASN1):
         """Obtain certificate.
 
         Internal function with precondition that `domains` are
@@ -223,8 +224,8 @@ class Client(object):
 
         authzr = self.auth_handler.get_authorizations(domains)
         certr = self.acme.request_issuance(
-            jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
-                OpenSSL.crypto.FILETYPE_ASN1, csr.data)),
+            jose.ComparableX509(
+                OpenSSL.crypto.load_certificate_request(typ, csr.data)),
             authzr)
         return certr, self.acme.fetch_chain(certr)
 

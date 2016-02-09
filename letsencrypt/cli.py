@@ -684,7 +684,8 @@ def obtain_cert(config, plugins, lineage=None):
     # This is a special case; cert and chain are simply saved
     if config.csr is not None:
         assert lineage is None, "Did not expect a CSR with a RenewableCert"
-        certr, chain = le_client.obtain_certificate_from_csr(config.domains, config.actual_csr)
+        csr, typ = config.actual_csr
+        certr, chain = le_client.obtain_certificate_from_csr(config.domains, csr, typ)
         if config.dry_run:
             logger.info(
                 "Dry run: skipping saving certificate to %s", config.cert_path)
@@ -1116,12 +1117,29 @@ class HelpfulArgumentParser(object):
         Process a --csr flag. This needs to happen early enought that the
         webroot plugin can know about the calls to _process_domain
         """
-        csr = le_util.CSR(file=parsed_args.csr[0], data=parsed_args.csr[1], form="der")
-        # TODO: add CN to domains?
-        domains = crypto_util.get_sans_from_csr(csr.data, OpenSSL.crypto.FILETYPE_ASN1)
+        try:
+            csr = le_util.CSR(file=parsed_args.csr[0], data=parsed_args.csr[1], form="der")
+            typ = OpenSSL.crypto.FILETYPE_ASN1
+            domains = crypto_util.get_sans_from_csr(csr.data, OpenSSL.crypto.FILETYPE_ASN1)
+        except:
+            try:
+                e1 = traceback.format_exc()
+                typ = OpenSSL.crypto.FILETYPE_PEM
+                csr = le_util.CSR(file=parsed_args.csr[0], data=parsed_args.csr[1], form="pem")
+                domains = crypto_util.get_sans_from_csr(csr.data, typ)
+            except:
+                logger.debug("DER CSR parse error %s", e1)
+                logger.debug("PEM CSR parse error %s", traceback.format_exc())
+                raise errors.Error("Failed to CSR file: %s", parsed_args.csr[0])
+
+        if not domains:
+            # TODO: add CN to domains instead:
+            raise errors.Error(
+                "Unfortunately, your CSR %s needs to have a SubjectAltName for every domain"
+                % parsed_args.csr[0])
         for d in domains:
             _process_domain(parsed_args, d)
-        parsed_args.actual_csr = csr
+        parsed_args.actual_csr = (csr, typ)
         csr_domains, config_domains = set(domains), set(parsed_args.domains)
         if csr_domains != config_domains:
             raise errors.ConfigurationError(
