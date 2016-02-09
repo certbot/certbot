@@ -8,7 +8,7 @@ VAGRANTFILE_API_VERSION = "2"
 $ubuntu_setup_script = <<SETUP_SCRIPT
 cd /vagrant
 ./letsencrypt-auto-source/letsencrypt-auto --os-packages-only
-./bootstrap/dev/venv.sh
+./tools/venv.sh
 SETUP_SCRIPT
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
