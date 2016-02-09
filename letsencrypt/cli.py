@@ -761,7 +761,7 @@ def _set_by_cli(var):
         if inst:
             detector.namespace.__setattr__("installer", inst)
         # more spammy than just debug
-        logger.log(-10, "Default Detector is %r",detector.namespace)
+        logger.log(-10, "Default Detector is %r", detector.namespace)
 
     try:
         # Is detector.var something that isn't false?
