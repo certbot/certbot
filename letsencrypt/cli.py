@@ -921,7 +921,7 @@ def _reconstitute(config, full_path):
 
 def _renewal_conf_files(config):
     """Return /path/to/*.conf in the renewal conf directory"""
-    return glob.glob(os.path.join(config.renewal_configs_dir, config.renewal_glob))
+    return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
 
 
 def _renew_describe_results(config, renew_successes, renew_failures,
@@ -1496,9 +1496,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "automation", "--expand", action="store_true",
         help="If an existing cert covers some subset of the requested names, "
              "always expand and replace it with the additional names.")
-    helpful.add(
-        "automation", "--renewal-glob", default=flag_default("renewal_glob"),
-        help="A pattern for which renewal files in /etc/letsencrypt/renewal/ to process")
     helpful.add(
         "automation", "--version", action="version",
         version="%(prog)s {0}".format(letsencrypt.__version__),
