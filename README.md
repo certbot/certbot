@@ -13,7 +13,7 @@ It's expected that the root hosted zone for the domain in question already exist
   pip install letsencrypt
   ```
 
-1. Install the letsencrypt-s3front plugin
+1. Install the letsencrypt-route53 plugin
 
   ```
   pip install letsencrypt-route53
