@@ -850,10 +850,10 @@ def _reconstitute(config, full_path):
     try:
         domains = [le_util.enforce_domain_sanity(x) for x in
                    renewal_candidate.names()]
-    except (UnicodeError, ValueError):
+    except errors.ConfigurationError as error:
         logger.warning("Renewal configuration file %s references a cert "
-                       "that mentions a domain name that we regarded as "
-                       "invalid. Skipping.", full_path)
+                       "that contains an invalid domain name. The problem "
+                       "was: %s. Skipping.", full_path, error)
         return None
 
     setattr(config.namespace, "domains", domains)
