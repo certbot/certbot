@@ -407,14 +407,18 @@ def _report_new_cert(cert_path, fullchain_path):
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
 
-def _suggest_donation_if_appropriate(config):
+def _suggest_donation_if_appropriate(config, action):
     """Potentially suggest a donation to support Let's Encrypt."""
-    if not config.staging and not config.verb == "renew":  # --dry-run implies --staging
-        reporter_util = zope.component.getUtility(interfaces.IReporter)
-        msg = ("If you like Let's Encrypt, please consider supporting our work by:\n\n"
-               "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
-               "Donating to EFF:                    https://eff.org/donate-le\n\n")
-        reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
+    if config.staging or config.verb == "renew":
+        # --dry-run implies --staging
+        return
+    if action not in ["renew", "newcert"]:
+        return
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    msg = ("If you like Let's Encrypt, please consider supporting our work by:\n\n"
+           "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
+           "Donating to EFF:                    https://eff.org/donate-le\n\n")
+    reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
 
 
 
@@ -671,12 +675,12 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     else:
         display_ops.success_renewal(domains, action)
 
-    _suggest_donation_if_appropriate(config)
+    _suggest_donation_if_appropriate(config, action)
 
 
 def obtain_cert(config, plugins, lineage=None):
     """Implements "certonly": authenticate & obtain cert, but do not install it."""
-
+    # pylint: disable=too-many-locals
     try:
         # installers are used in auth mode to determine domain names
         installer, authenticator = choose_configurator_plugins(config, plugins, "certonly")
@@ -687,6 +691,7 @@ def obtain_cert(config, plugins, lineage=None):
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(config, authenticator, installer)
 
+    action = "newcert"
     # This is a special case; cert and chain are simply saved
     if config.csr is not None:
         assert lineage is None, "Did not expect a CSR with a RenewableCert"
@@ -701,7 +706,7 @@ def obtain_cert(config, plugins, lineage=None):
             _report_new_cert(cert_path, cert_fullchain)
     else:
         domains = _find_domains(config, installer)
-        _auth_from_domains(le_client, config, domains, lineage)
+        _, action = _auth_from_domains(le_client, config, domains, lineage)
 
     if config.dry_run:
         _report_successful_dry_run(config)
@@ -717,7 +722,7 @@ def obtain_cert(config, plugins, lineage=None):
             installer.restart()
             print("new certificate deployed with reload of",
                   config.installer, "server; fullchain is", lineage.fullchain)
-    _suggest_donation_if_appropriate(config)
+    _suggest_donation_if_appropriate(config, action)
 
 
 def install(config, plugins):
