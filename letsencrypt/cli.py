@@ -751,8 +751,8 @@ def _set_by_cli(var):
         plugins = plugins_disco.PluginsRegistry.find_all()
         # reconstructed_args == sys.argv[1:], or whatever was passed to main()
         reconstructed_args = _parser.args + [_parser.verb]
-        default_args = prepare_and_parse_args(plugins, reconstructed_args, detect_defaults=True)
-        detector = _set_by_cli.detector = configuration.NamespaceConfig(default_args, fake=True)
+        detector = _set_by_cli.detector = prepare_and_parse_args(
+            plugins, reconstructed_args, detect_defaults=True)
         # propagate plugin requests: eg --standalone modifies config.authenticator
         auth, inst = cli_plugin_requests(detector)
         detector.namespace.authenticator = auth if auth else ""
