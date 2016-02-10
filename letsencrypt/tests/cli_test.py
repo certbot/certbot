@@ -236,7 +236,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._cli_missing_flag(["--standalone"], "With the standalone plugin, you probably")
 
         with mock.patch("letsencrypt.cli._init_le_client") as mock_init:
-            with mock.patch("letsencrypt.cli._auth_from_domains"):
+            with mock.patch("letsencrypt.cli._auth_from_domains") as mock_afd:
+                mock_afd.return_value = (mock.MagicMock(), mock.MagicMock())
                 self._call(["certonly", "--manual", "-d", "foo.bar"])
                 unused_config, auth, unused_installer = mock_init.call_args[0]
                 self.assertTrue(isinstance(auth, manual.Authenticator))
@@ -711,8 +712,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._call(['-d', 'foo.bar', '-a', 'standalone', 'certonly'])
         self.assertFalse(mock_client.obtain_certificate.called)
         self.assertFalse(mock_client.obtain_and_enroll_certificate.called)
-        self.assertTrue(
-            'donate' in mock_get_utility().add_message.call_args[0][0])
+        self.assertEqual(mock_get_utility().add_message.call_count, 0)
+        #self.assertTrue('donate' not in mock_get_utility().add_message.call_args[0][0])
 
     def _test_certonly_csr_common(self, extra_args=None):
         certr = 'certr'

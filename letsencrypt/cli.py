@@ -281,7 +281,7 @@ def _treat_as_renewal(config, domains):
 def _should_renew(config, lineage):
     "Return true if any of the circumstances for automatic renewal apply."
     if config.renew_by_default:
-        logger.info("Auto-renewal forced with --renew-by-default...")
+        logger.info("Auto-renewal forced with --force-renewal...")
         return True
     if lineage.should_autorenew(interactive=True):
         logger.info("Cert is due for renewal, auto-renewing...")
@@ -406,14 +406,18 @@ def _report_new_cert(cert_path, fullchain_path):
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
 
-def _suggest_donation_if_appropriate(config):
+def _suggest_donation_if_appropriate(config, action):
     """Potentially suggest a donation to support Let's Encrypt."""
-    if not config.staging and not config.verb == "renew":  # --dry-run implies --staging
-        reporter_util = zope.component.getUtility(interfaces.IReporter)
-        msg = ("If you like Let's Encrypt, please consider supporting our work by:\n\n"
-               "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
-               "Donating to EFF:                    https://eff.org/donate-le\n\n")
-        reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
+    if config.staging or config.verb == "renew":
+        # --dry-run implies --staging
+        return
+    if action not in ["renew", "newcert"]:
+        return
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    msg = ("If you like Let's Encrypt, please consider supporting our work by:\n\n"
+           "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
+           "Donating to EFF:                    https://eff.org/donate-le\n\n")
+    reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
 
 
 def _report_successful_dry_run(config):
@@ -669,12 +673,12 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     else:
         display_ops.success_renewal(domains, action)
 
-    _suggest_donation_if_appropriate(config)
+    _suggest_donation_if_appropriate(config, action)
 
 
 def obtain_cert(config, plugins, lineage=None):
     """Implements "certonly": authenticate & obtain cert, but do not install it."""
-
+    # pylint: disable=too-many-locals
     try:
         # installers are used in auth mode to determine domain names
         installer, authenticator = choose_configurator_plugins(config, plugins, "certonly")
@@ -685,6 +689,7 @@ def obtain_cert(config, plugins, lineage=None):
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(config, authenticator, installer)
 
+    action = "newcert"
     # This is a special case; cert and chain are simply saved
     if config.csr is not None:
         assert lineage is None, "Did not expect a CSR with a RenewableCert"
@@ -699,7 +704,7 @@ def obtain_cert(config, plugins, lineage=None):
             _report_new_cert(cert_path, cert_fullchain)
     else:
         domains = _find_domains(config, installer)
-        _auth_from_domains(le_client, config, domains, lineage)
+        _, action = _auth_from_domains(le_client, config, domains, lineage)
 
     if config.dry_run:
         _report_successful_dry_run(config)
@@ -715,7 +720,7 @@ def obtain_cert(config, plugins, lineage=None):
             installer.restart()
             print("new certificate deployed with reload of",
                   config.installer, "server; fullchain is", lineage.fullchain)
-    _suggest_donation_if_appropriate(config)
+    _suggest_donation_if_appropriate(config, action)
 
 
 def install(config, plugins):
@@ -751,16 +756,13 @@ def _set_by_cli(var):
         plugins = plugins_disco.PluginsRegistry.find_all()
         # reconstructed_args == sys.argv[1:], or whatever was passed to main()
         reconstructed_args = _parser.args + [_parser.verb]
-        default_args = prepare_and_parse_args(plugins, reconstructed_args, detect_defaults=True)
-        detector = _set_by_cli.detector = configuration.NamespaceConfig(default_args, fake=True)
+        detector = _set_by_cli.detector = prepare_and_parse_args(
+            plugins, reconstructed_args, detect_defaults=True)
         # propagate plugin requests: eg --standalone modifies config.authenticator
         auth, inst = cli_plugin_requests(detector)
-        if auth:
-            detector.namespace.__setattr__("authenticator", auth)
-        if inst:
-            detector.namespace.__setattr__("installer", inst)
-        # more spammy than just debug
-        logger.debug("Default Detector is %r", detector.namespace)
+        detector.authenticator = auth if auth else ""
+        detector.installer = inst if inst else ""
+        logger.debug("Default Detector is %r", detector)
 
     try:
         # Is detector.var something that isn't false?
@@ -915,7 +917,7 @@ def _reconstitute(config, full_path):
         return None
 
     if not _set_by_cli("domains"):
-        setattr(config.namespace, "domains", domains)
+        config.namespace.domains = domains
 
     return renewal_candidate
 
@@ -1158,9 +1160,10 @@ class HelpfulArgumentParser(object):
         self.parser._add_config_file_help = False  # pylint: disable=protected-access
         self.silent_parser = SilentParser(self.parser)
 
-        # This setting attempts to force all default values to None; it
-        # is used to detect when values have been explicitly set by the user,
-        # including when they are set to their normal default value
+        # This setting attempts to force all default values to things that are
+        # pythonically false; it is used to detect when values have been
+        # explicitly set by the user, including when they are set to their
+        # normal default value
         self.detect_defaults = detect_defaults
         if detect_defaults:
             self.store_false_vars = {}  # vars that use "store_false"
@@ -1464,6 +1467,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
               "additional command line flags; the client will try to explain "
               "which ones are required if it finds one missing")
     helpful.add(
+        None, "--dry-run", action="store_true", dest="dry_run",
+        help="Perform a test run of the client, obtaining test (invalid) certs"
+             " but not saving them to disk. This can currently only be used"
+             " with the 'certonly' subcommand.")
+    helpful.add(
         None, "--register-unsafely-without-email", action="store_true",
         help="Specifying this flag enables registering an account with no "
              "email address. This is strongly discouraged, because in the "
@@ -1501,10 +1509,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         version="%(prog)s {0}".format(letsencrypt.__version__),
         help="show program's version number and exit")
     helpful.add(
-        "automation", "--renew-by-default", action="store_true",
-        help="Select renewal by default when domains are a superset of a "
-             "previously attained cert (often --keep-until-expiring is "
-             "more appropriate). Implies --expand.")
+        "automation", "--force-renewal", "--renew-by-default",
+        action="store_true", dest="renew_by_default", help="If a certificate "
+             "already exists for the requested domains, renew it now, "
+             "regardless of whether it is near expiry. (Often "
+             "--keep-until-expiring is more appropriate). Also implies "
+             "--expand.")
     helpful.add(
         "automation", "--agree-tos", dest="tos", action="store_true",
         help="Agree to the Let's Encrypt Subscriber Agreement")
@@ -1582,6 +1592,16 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
+
+    helpful.add_group(
+        "renew", description="The 'renew' subcommand will attempt to renew all"
+        " certificates (or more precisely, certificate lineages) you have"
+        " previously obtained if they are close to expiry, and print a"
+        " summary of the results. By default, 'renew' will reuse the options"
+        " used to create obtain or most recently successfully renew each"
+        " certificate lineage. You can try it with `--dry-run` first. For"
+        " more fine-grained control, you can renew individual lineages with"
+        " the `certonly` subcommand.")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
 
@@ -1680,10 +1700,6 @@ def _paths_parser(helpful):
     add("testing", "--test-cert", "--staging", action='store_true', dest='staging',
         help='Use the staging server to obtain test (invalid) certs; equivalent'
              ' to --server ' + constants.STAGING_URI)
-    add("testing", "--dry-run", action="store_true", dest="dry_run",
-        help="Perform a test run of the client, obtaining test (invalid) certs"
-             " but not saving them to disk. This can currently only be used"
-             " with the 'certonly' subcommand.")
 
 
 def _plugins_parsing(helpful, plugins):
