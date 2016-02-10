@@ -35,7 +35,7 @@ common() {
 
 common --domains le1.wtf --standalone-supported-challenges tls-sni-01 auth
 common --domains le2.wtf --standalone-supported-challenges http-01 run
-common -a manual -d le.wtf auth
+common -a manual -d le.wtf auth --rsa-key-size 4096
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
        OPENSSL_CNF=examples/openssl.cnf
@@ -69,8 +69,20 @@ CheckCertCount 2
 
 # This will renew because the expiry is less than 10 years from now
 sed -i "4arenew_before_expiry = 10 years" "$root/conf/renewal/le.wtf.conf"
-common_no_force_renew renew
+common_no_force_renew renew --rsa-key-size 2048
 CheckCertCount 3
+
+# The 4096 bit setting should persist to the first renewal, but be overriden in the second
+
+size1=`wc -c ${root}/conf/archive/le.wtf/privkey1.pem | cut -d" " -f1`
+size2=`wc -c ${root}/conf/archive/le.wtf/privkey2.pem | cut -d" " -f1`
+size3=`wc -c ${root}/conf/archive/le.wtf/privkey3.pem | cut -d" " -f1`
+# 4096 bit PEM keys are about ~3270 bytes, 2048 ones are about 1700 bytes
+if [ "$size1" -lt 3000 ] || [ "$size2" -lt 3000 ] || [ "$size3" -gt 1800 ] ; then
+    echo key sizes violate assumptions:
+    ls -l "${root}/conf/archive/le.wtf/privkey"*
+    exit 1
+fi
 
 # revoke by account key
 common revoke --cert-path "$root/conf/live/le.wtf/cert.pem"
