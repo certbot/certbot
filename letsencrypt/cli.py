@@ -834,7 +834,12 @@ def _restore_plugin_configs(config, renewalparams):
     #      longer defined, stored copies of that parameter will be
     #      deserialized as strings by this logic even if they were
     #      originally meant to be some other type.
-    plugin_prefixes = [renewalparams["authenticator"]]
+    if renewalparams["authenticator"] == "webroot":
+        _restore_webroot_config(config, renewalparams)
+        plugin_prefixes = []
+    else:
+        plugin_prefixes = [renewalparams["authenticator"]]
+
     if renewalparams.get("installer", None) is not None:
         plugin_prefixes.append(renewalparams["installer"])
     for plugin_prefix in set(plugin_prefixes):
@@ -854,6 +859,21 @@ def _restore_plugin_configs(config, renewalparams):
                         break
                 else:
                     setattr(config.namespace, config_item, str(config_value))
+
+def _restore_webroot_config(config, renewalparams):
+    """
+    webroot_map is, uniquely, a dict, and the general-purpose configuration
+    restoring logic is not able to correctly parse it from the serialized
+    form.
+    """
+    if "webroot_map" in renewalparams:
+        # if the user does anything that would create a new webroot map on the
+        # CLI, don't use the old one
+        if not (_set_by_cli("webroot_map") or _set_by_cli("webroot_path")):
+            setattr(config.namespace, "webroot_map", renewalparams["webroot_map"])
+    elif "webroot_path" in renewalparams:
+        logger.info("Ancient renewal conf file without webroot-map, restoring webroot-path")
+        setattr(config.namespace, "webroot_path", renewalparams["webroot_path"])
 
 
 def _reconstitute(config, full_path):
@@ -901,23 +921,14 @@ def _reconstitute(config, full_path):
         logger.debug("Traceback was:\n%s", traceback.format_exc())
         return None
 
-    # webroot_map is, uniquely, a dict, and the general-purpose
-    # configuration restoring logic is not able to correctly parse it
-    # from the serialized form.
-    if "webroot_map" in renewalparams and not _set_by_cli("webroot_map"):
-        setattr(config.namespace, "webroot_map", renewalparams["webroot_map"])
-
     try:
-        domains = [le_util.enforce_domain_sanity(x) for x in
-                   renewal_candidate.names()]
+        for d in renewal_candidate.names():
+            _process_domain(config, d)
     except errors.ConfigurationError as error:
         logger.warning("Renewal configuration file %s references a cert "
                        "that contains an invalid domain name. The problem "
                        "was: %s. Skipping.", full_path, error)
         return None
-
-    if not _set_by_cli("domains"):
-        config.namespace.domains = domains
 
     return renewal_candidate
 
@@ -1738,7 +1749,7 @@ def _plugins_parsing(helpful, plugins):
     # they are parsed in conjunction with --domains, they live here for
     # legibility. helpful.add_plugin_ags must be called first to add the
     # "webroot" topic
-    helpful.add("webroot", "-w", "--webroot-path", action=WebrootPathProcessor,
+    helpful.add("webroot", "-w", "--webroot-path", default=[], action=WebrootPathProcessor,
                 help="public_html / webroot path. This can be specified multiple times to "
                      "handle different domains; each domain will have the webroot path that"
                      " preceded it.  For instance: `-w /var/www/example -d example.com -d "
@@ -1765,8 +1776,7 @@ class WebrootPathProcessor(argparse.Action):  # pylint: disable=missing-docstrin
         Keep a record of --webroot-path / -w flags during processing, so that
         we know which apply to which -d flags
         """
-        if args.webroot_path is None:      # first -w flag encountered
-            args.webroot_path = []
+        if not args.webroot_path:      # first -w flag encountered
             # if any --domain flags preceded the first --webroot-path flag,
             # apply that webroot path to those; subsequent entries in
             # args.webroot_map are filled in by cli.DomainFlagProcessor
