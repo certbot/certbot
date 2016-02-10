@@ -22,7 +22,6 @@ CLI_DEFAULTS = dict(
     config_dir="/etc/letsencrypt",
     work_dir="/var/lib/letsencrypt",
     logs_dir="/var/log/letsencrypt",
-    renewal_glob="*.conf",
     no_verify_ssl=False,
     http01_port=challenges.HTTP01Response.PORT,
     tls_sni_01_port=challenges.TLSSNI01Response.PORT,

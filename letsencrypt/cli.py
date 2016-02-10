@@ -755,11 +755,8 @@ def _set_by_cli(var):
         detector = _set_by_cli.detector = configuration.NamespaceConfig(default_args, fake=True)
         # propagate plugin requests: eg --standalone modifies config.authenticator
         auth, inst = cli_plugin_requests(detector)
-        if auth:
-            detector.namespace.__setattr__("authenticator", auth)
-        if inst:
-            detector.namespace.__setattr__("installer", inst)
-        # more spammy than just debug
+        detector.namespace.authenticator = auth if auth else ""
+        detector.namespace.installer = inst if inst else ""
         logger.debug("Default Detector is %r", detector.namespace)
 
     try:
@@ -915,7 +912,7 @@ def _reconstitute(config, full_path):
         return None
 
     if not _set_by_cli("domains"):
-        setattr(config.namespace, "domains", domains)
+        config.namespace.domains = domains
 
     return renewal_candidate
 
@@ -1158,9 +1155,10 @@ class HelpfulArgumentParser(object):
         self.parser._add_config_file_help = False  # pylint: disable=protected-access
         self.silent_parser = SilentParser(self.parser)
 
-        # This setting attempts to force all default values to None; it
-        # is used to detect when values have been explicitly set by the user,
-        # including when they are set to their normal default value
+        # This setting attempts to force all default values to things that are
+        # pythonically false; it is used to detect when values have been
+        # explicitly set by the user, including when they are set to their
+        # normal default value
         self.detect_defaults = detect_defaults
         if detect_defaults:
             self.store_false_vars = {}  # vars that use "store_false"
