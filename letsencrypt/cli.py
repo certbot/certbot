@@ -282,7 +282,7 @@ def _treat_as_renewal(config, domains):
 def _should_renew(config, lineage):
     "Return true if any of the circumstances for automatic renewal apply."
     if config.renew_by_default:
-        logger.info("Auto-renewal forced with --renew-by-default...")
+        logger.info("Auto-renewal forced with --force-renewal...")
         return True
     if lineage.should_autorenew(interactive=True):
         logger.info("Cert is due for renewal, auto-renewing...")
