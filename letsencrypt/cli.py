@@ -870,7 +870,6 @@ def _restore_webroot_config(config, renewalparams):
         # if the user does anything that would create a new webroot map on the
         # CLI, don't use the old one
         if not (_set_by_cli("webroot_map") or _set_by_cli("webroot_path")):
-            wrm = renewalparams["webroot_map"]
             setattr(config.namespace, "webroot_map", renewalparams["webroot_map"])
     elif "webroot_path" in renewalparams:
         logger.info("Ancient renewal conf file without webroot-map, restoring webroot-path")
