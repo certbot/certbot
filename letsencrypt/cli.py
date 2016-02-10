@@ -680,7 +680,7 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
 
 def obtain_cert(config, plugins, lineage=None):
     """Implements "certonly": authenticate & obtain cert, but do not install it."""
-
+    # pylint: disable=too-many-locals
     try:
         # installers are used in auth mode to determine domain names
         installer, authenticator = choose_configurator_plugins(config, plugins, "certonly")
