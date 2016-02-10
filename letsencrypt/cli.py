@@ -842,7 +842,7 @@ def _restore_plugin_configs(config, renewalparams):
 
     if renewalparams.get("installer", None) is not None:
         plugin_prefixes.append(renewalparams["installer"])
-    for plugin_prefix in set(plugin_prefixes) - set("webroot"): # webroot is special
+    for plugin_prefix in set(plugin_prefixes):
         for config_item, config_value in renewalparams.iteritems():
             if config_item.startswith(plugin_prefix + "_") and not _set_by_cli(config_item):
                 # Avoid confusion when, for example, "csr = None" (avoid
