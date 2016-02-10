@@ -290,7 +290,7 @@ BootstrapArchCommon() {
   #
   # "python-virtualenv" is Python3, but "python2-virtualenv" provides
   # only "virtualenv2" binary, not "virtualenv" necessary in
-  # ./bootstrap/dev/_common_venv.sh
+  # ./tools/_venv_common.sh
 
   deps="
     python2
@@ -372,7 +372,7 @@ Bootstrap() {
   elif [ -f /etc/redhat-release ]; then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
     BootstrapRpmCommon
-  elif [ -f /etc/os-release] && `grep -q openSUSE /etc/os-release` ; then
+  elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
     echo "Bootstrapping dependencies for openSUSE-based OSes..."
     BootstrapSuseCommon
   elif [ -f /etc/arch-release ]; then

@@ -23,7 +23,7 @@ once:
    git clone https://github.com/letsencrypt/letsencrypt
    cd letsencrypt
    ./letsencrypt-auto-source/letsencrypt-auto --os-packages-only
-   ./bootstrap/dev/venv.sh
+   ./tools/venv.sh
 
 Then in each shell where you're working on the client, do:
 
@@ -300,7 +300,7 @@ Steps:
 
 1. Write your code!
 2. Make sure your environment is set up properly and that you're in your
-   virtualenv. You can do this by running ``./bootstrap/dev/venv.sh``.
+   virtualenv. You can do this by running ``./tools/venv.sh``.
    (this is a **very important** step)
 3. Run ``./pep8.travis.sh`` to do a cursory check of your code style.
    Fix any errors.

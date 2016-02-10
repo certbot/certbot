@@ -16,27 +16,12 @@ letsencrypt-auto
 ----------------
 
 ``letsencrypt-auto`` is a wrapper which installs some dependencies
-from your OS standard package repositories (e.g using `apt-get` or
+from your OS standard package repositories (e.g. using `apt-get` or
 `yum`), and for other dependencies it sets up a virtualized Python
 environment with packages downloaded from PyPI [#venv]_. It also
 provides automated updates.
 
-Firstly, please `install Git`_ and run the following commands:
-
-.. code-block:: shell
-
-   git clone https://github.com/letsencrypt/letsencrypt
-   cd letsencrypt
-
-
-.. _`install Git`: https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
-
-.. note:: On RedHat/CentOS 6 you will need to enable the EPEL_
-   repository before install.
-
-.. _EPEL: http://fedoraproject.org/wiki/EPEL
-
-To install and run the client you just need to type:
+To install and run the client, just type...
 
 .. code-block:: shell
 

@@ -195,7 +195,8 @@ class Client(object):
         else:
             self.auth_handler = None
 
-    def _obtain_certificate(self, domains, csr):
+    def obtain_certificate_from_csr(self, domains, csr,
+        typ=OpenSSL.crypto.FILETYPE_ASN1):
         """Obtain certificate.
 
         Internal function with precondition that `domains` are
@@ -223,26 +224,11 @@ class Client(object):
 
         authzr = self.auth_handler.get_authorizations(domains)
         certr = self.acme.request_issuance(
-            jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
-                OpenSSL.crypto.FILETYPE_ASN1, csr.data)),
+            jose.ComparableX509(
+                OpenSSL.crypto.load_certificate_request(typ, csr.data)),
             authzr)
         return certr, self.acme.fetch_chain(certr)
 
-    def obtain_certificate_from_csr(self, csr):
-        """Obtain certficiate from CSR.
-
-        :param .le_util.CSR csr: DER-encoded Certificate Signing
-            Request.
-
-        :returns: `.CertificateResource` and certificate chain (as
-            returned by `.fetch_chain`).
-        :rtype: tuple
-
-        """
-        return self._obtain_certificate(
-            # TODO: add CN to domains?
-            crypto_util.get_sans_from_csr(
-                csr.data, OpenSSL.crypto.FILETYPE_ASN1), csr)
 
     def obtain_certificate(self, domains):
         """Obtains a certificate from the ACME server.
@@ -263,7 +249,7 @@ class Client(object):
             self.config.rsa_key_size, self.config.key_dir)
         csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
-        return self._obtain_certificate(domains, csr) + (key, csr)
+        return self.obtain_certificate_from_csr(domains, csr) + (key, csr)
 
     def obtain_and_enroll_certificate(self, domains):
         """Obtain and enroll certificate.
