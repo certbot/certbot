@@ -766,7 +766,7 @@ def _set_by_cli(var):
 
     try:
         # Is detector.var something that isn't false?
-        change_detected = detector.__getattr__(var)
+        change_detected = getattr(detector, var)
     except AttributeError:
         logger.warning("Missing default analysis for %r", var)
         return False
