@@ -1496,14 +1496,14 @@ def prepare_and_parse_args(plugins, args):
              "user; only needed if your config is somewhere unsafe like /tmp/")
 
     helpful.add_group(
-        "renew", description="The 'renew' subcommand will attempt to renew all "
-        "certificates (or more precisely, certificate lineages) you have previously "
-        "obtained, and print a summary of the results. "
-        "By default, 'renew' will reuse the options "
-        "used to create obtain or most recently successfully renew each certificate lineage. "
-        "You can try it with `--dry-run` first. "
-        "For more fine-grained control, you can renew individual lineages with"
-        "the `certonly` subcommand.")
+        "renew", description="The 'renew' subcommand will attempt to renew all"
+        " certificates (or more precisely, certificate lineages) you have"
+        " previously obtained if they are close to expiry, and print a"
+        " summary of the results. By default, 'renew' will reuse the options"
+        " used to create obtain or most recently successfully renew each"
+        " certificate lineage. You can try it with `--dry-run` first. For"
+        " more fine-grained control, you can renew individual lineages with"
+        " the `certonly` subcommand.")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
 
