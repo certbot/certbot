@@ -755,9 +755,9 @@ def _set_by_cli(var):
             plugins, reconstructed_args, detect_defaults=True)
         # propagate plugin requests: eg --standalone modifies config.authenticator
         auth, inst = cli_plugin_requests(detector)
-        detector.namespace.authenticator = auth if auth else ""
-        detector.namespace.installer = inst if inst else ""
-        logger.debug("Default Detector is %r", detector.namespace)
+        detector.authenticator = auth if auth else ""
+        detector.installer = inst if inst else ""
+        logger.debug("Default Detector is %r", detector)
 
     try:
         # Is detector.var something that isn't false?
