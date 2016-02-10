@@ -860,7 +860,7 @@ def _restore_plugin_configs(config, renewalparams):
                 else:
                     setattr(config.namespace, config_item, str(config_value))
 
-def _restore_webroot_config(config, renewalparams)
+def _restore_webroot_config(config, renewalparams):
     """
     webroot_map is, uniquely, a dict, and the general-purpose configuration
     restoring logic is not able to correctly parse it from the serialized
