@@ -69,7 +69,7 @@ class PickPluginTest(unittest.TestCase):
     """Tests for letsencrypt.display.ops.pick_plugin."""
 
     def setUp(self):
-        self.config = mock.Mock()
+        self.config = mock.Mock(noninteractive_mode=False)
         self.default = None
         self.reg = mock.MagicMock()
         self.question = "Question?"

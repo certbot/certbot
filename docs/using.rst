@@ -16,27 +16,12 @@ letsencrypt-auto
 ----------------
 
 ``letsencrypt-auto`` is a wrapper which installs some dependencies
-from your OS standard package repositories (e.g using `apt-get` or
+from your OS standard package repositories (e.g. using `apt-get` or
 `yum`), and for other dependencies it sets up a virtualized Python
 environment with packages downloaded from PyPI [#venv]_. It also
 provides automated updates.
 
-Firstly, please `install Git`_ and run the following commands:
-
-.. code-block:: shell
-
-   git clone https://github.com/letsencrypt/letsencrypt
-   cd letsencrypt
-
-
-.. _`install Git`: https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
-
-.. note:: On RedHat/CentOS 6 you will need to enable the EPEL_
-   repository before install.
-
-.. _EPEL: http://fedoraproject.org/wiki/EPEL
-
-To install and run the client you just need to type:
+To install and run the client, just type...
 
 .. code-block:: shell
 
@@ -182,18 +167,19 @@ interested, you can also :ref:`write your own plugin <dev-plugin>`.
 Renewal
 =======
 
-.. note:: Let's Encrypt CA issues short lived certificates (90
+.. note:: Let's Encrypt CA issues short-lived certificates (90
    days). Make sure you renew the certificates at least once in 3
    months.
 
 In order to renew certificates simply call the ``letsencrypt`` (or
-letsencrypt-auto_) again, and use the same values when prompted. You
-can automate it slightly by passing necessary flags on the CLI (see
-`--help all`), or even further using the :ref:`config-file`. The
-``--renew-by-default`` flag may be helpful for automating renewal. If
-you're sure that UI doesn't prompt for any details you can add the
-command to ``crontab`` (make it less than every 90 days to avoid
-problems, say every month).
+letsencrypt-auto_) again, and use the same values when prompted. You can
+automate it slightly by passing necessary flags on the CLI (see `--help
+all`), or even further using the :ref:`config-file`. The ``--force-renew``
+flag may be helpful for automating renewal; it causes the expiration time
+of the certificate(s) to be ignored when considering renewal.  If you're
+sure that UI doesn't prompt for any details you can add the command to
+``crontab`` (make it less than every 90 days to avoid problems, say
+every month).
 
 Please note that the CA will send notification emails to the address
 you provide if you do not renew certificates that are about to expire.

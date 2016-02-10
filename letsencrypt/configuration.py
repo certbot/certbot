@@ -1,4 +1,5 @@
 """Let's Encrypt user-supplied configuration."""
+import copy
 import os
 import urlparse
 
@@ -78,6 +79,12 @@ class NamespaceConfig(object):
         return os.path.join(
             self.namespace.work_dir, constants.TEMP_CHECKPOINT_DIR)
 
+    def __deepcopy__(self, _memo):
+        # Work around https://bugs.python.org/issue1515 for py26 tests :( :(
+        # https://travis-ci.org/letsencrypt/letsencrypt/jobs/106900743#L3276
+        new_ns = copy.deepcopy(self.namespace)
+        return type(self)(new_ns)
+
 
 class RenewerConfiguration(object):
     """Configuration wrapper for renewer."""
@@ -124,4 +131,5 @@ def check_config_sanity(config):
     # Domain checks
     if config.namespace.domains is not None:
         for domain in config.namespace.domains:
-            le_util.check_domain_sanity(domain)
+            # This may be redundant, but let's be paranoid
+            le_util.enforce_domain_sanity(domain)

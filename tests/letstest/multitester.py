@@ -139,7 +139,15 @@ def make_instance(instance_name,
     time.sleep(1.0)
 
     # give instance a name
-    new_instance.create_tags(Tags=[{'Key': 'Name', 'Value': instance_name}])
+    try:
+        new_instance.create_tags(Tags=[{'Key': 'Name', 'Value': instance_name}])
+    except botocore.exceptions.ClientError as e:
+        if "InvalidInstanceID.NotFound" in str(e):
+            # This seems to be ephemeral... retry
+            time.sleep(1)
+            new_instance.create_tags(Tags=[{'Key': 'Name', 'Value': instance_name}])
+        else:
+            raise
     return new_instance
 
 def terminate_and_clean(instances):

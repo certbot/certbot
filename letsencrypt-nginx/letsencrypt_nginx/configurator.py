@@ -239,6 +239,7 @@ class NginxConfigurator(common.Plugin):
 
     def _get_ranked_matches(self, target_name):
         """Returns a ranked list of vhosts that match target_name.
+        The ranking gives preference to SSL vhosts.
 
         :param str target_name: The name to match
         :returns: list of dicts containing the vhost, the matching name, and
@@ -309,10 +310,10 @@ class NginxConfigurator(common.Plugin):
         key = OpenSSL.crypto.load_privatekey(
             OpenSSL.crypto.FILETYPE_PEM, le_key.pem)
         cert = acme_crypto_util.gen_ss_cert(key, domains=[socket.gethostname()])
-        cert_path = os.path.join(tmp_dir, "cert.pem")
         cert_pem = OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, cert)
-        with open(cert_path, 'w') as cert_file:
+        cert_file, cert_path = le_util.unique_file(os.path.join(tmp_dir, "cert.pem"))
+        with cert_file:
             cert_file.write(cert_pem)
         return cert_path, le_key.file
 

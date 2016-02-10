@@ -33,7 +33,10 @@ version = meta['version']
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
     'acme=={0}'.format(version),
-    'ConfigArgParse>=0.10.0',  # python2.6 support, upstream #17
+    # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
+    # saying so here causes a runtime error against our temporary fork of 0.9.3
+    # in which we added 2.6 support (see #2243), so we relax the requirement.
+    'ConfigArgParse>=0.9.3',
     'configobj',
     'cryptography>=0.7',  # load_pem_x509_certificate
     'parsedatetime',
@@ -127,7 +130,6 @@ setup(
     entry_points={
         'console_scripts': [
             'letsencrypt = letsencrypt.cli:main',
-            'letsencrypt-renewer = letsencrypt.renewer:main',
         ],
         'letsencrypt.plugins': [
             'manual = letsencrypt.plugins.manual:Authenticator',

@@ -1,4 +1,4 @@
-"""Tests for letsencrypt.renewer."""
+"""Tests for letsencrypt.storage."""
 import datetime
 import pytz
 import os
@@ -8,8 +8,6 @@ import unittest
 
 import configobj
 import mock
-
-from acme import jose
 
 from letsencrypt import configuration
 from letsencrypt import errors
@@ -76,7 +74,10 @@ class BaseRenewableCertTest(unittest.TestCase):
         junk.close()
 
         self.defaults = configobj.ConfigObj()
-        self.test_rc = storage.RenewableCert(config.filename, self.cli_config)
+
+        with mock.patch("letsencrypt.storage.RenewableCert._check_symlinks") as check:
+            check.return_value = True
+            self.test_rc = storage.RenewableCert(config.filename, self.cli_config)
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
@@ -97,7 +98,7 @@ class BaseRenewableCertTest(unittest.TestCase):
 
 class RenewableCertTests(BaseRenewableCertTest):
     # pylint: disable=too-many-public-methods
-    """Tests for letsencrypt.renewer.*."""
+    """Tests for letsencrypt.storage."""
 
     def test_initialization(self):
         self.assertEqual(self.test_rc.lineagename, "example.org")
@@ -503,8 +504,9 @@ class RenewableCertTests(BaseRenewableCertTest):
                 with open(where, "w") as f:
                     f.write(kind)
         self.test_rc.update_all_links_to(3)
-        self.assertEqual(6, self.test_rc.save_successor(3, "new cert", None,
-                                                        "new chain"))
+        self.assertEqual(
+            6, self.test_rc.save_successor(3, "new cert", None,
+                                           "new chain", self.cli_config))
         with open(self.test_rc.version("cert", 6)) as f:
             self.assertEqual(f.read(), "new cert")
         with open(self.test_rc.version("chain", 6)) as f:
@@ -515,10 +517,12 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertFalse(os.path.islink(self.test_rc.version("privkey", 3)))
         self.assertTrue(os.path.islink(self.test_rc.version("privkey", 6)))
         # Let's try two more updates
-        self.assertEqual(7, self.test_rc.save_successor(6, "again", None,
-                                                        "newer chain"))
-        self.assertEqual(8, self.test_rc.save_successor(7, "hello", None,
-                                                        "other chain"))
+        self.assertEqual(
+            7, self.test_rc.save_successor(6, "again", None,
+                                           "newer chain", self.cli_config))
+        self.assertEqual(
+            8, self.test_rc.save_successor(7, "hello", None,
+                                           "other chain", self.cli_config))
         # All of the subsequent versions should link directly to the original
         # privkey.
         for i in (6, 7, 8):
@@ -531,27 +535,33 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.assertEqual(self.test_rc.current_version(kind), 3)
         # Test updating from latest version rather than old version
         self.test_rc.update_all_links_to(8)
-        self.assertEqual(9, self.test_rc.save_successor(8, "last", None,
-                                                        "attempt"))
+        self.assertEqual(
+            9, self.test_rc.save_successor(8, "last", None,
+                                           "attempt", self.cli_config))
         for kind in ALL_FOUR:
             self.assertEqual(self.test_rc.available_versions(kind),
                              range(1, 10))
             self.assertEqual(self.test_rc.current_version(kind), 8)
         with open(self.test_rc.version("fullchain", 9)) as f:
             self.assertEqual(f.read(), "last" + "attempt")
+        temp_config_file = os.path.join(self.cli_config.renewal_configs_dir,
+                                        self.test_rc.lineagename) + ".conf.new"
+        with open(temp_config_file, "w") as f:
+            f.write("We previously crashed while writing me :(")
         # Test updating when providing a new privkey.  The key should
         # be saved in a new file rather than creating a new symlink.
-        self.assertEqual(10, self.test_rc.save_successor(9, "with", "a",
-                                                         "key"))
+        self.assertEqual(
+            10, self.test_rc.save_successor(9, "with", "a",
+                                            "key", self.cli_config))
         self.assertTrue(os.path.exists(self.test_rc.version("privkey", 10)))
         self.assertFalse(os.path.islink(self.test_rc.version("privkey", 10)))
+        self.assertFalse(os.path.exists(temp_config_file))
 
     def test_new_lineage(self):
         """Test for new_lineage() class method."""
         from letsencrypt import storage
         result = storage.RenewableCert.new_lineage(
-            "the-lineage.com", "cert", "privkey", "chain", None,
-            self.defaults, self.cli_config)
+            "the-lineage.com", "cert", "privkey", "chain", self.cli_config)
         # This consistency check tests most relevant properties about the
         # newly created cert lineage.
         # pylint: disable=protected-access
@@ -562,27 +572,23 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.assertEqual(f.read(), "cert" + "chain")
         # Let's do it again and make sure it makes a different lineage
         result = storage.RenewableCert.new_lineage(
-            "the-lineage.com", "cert2", "privkey2", "chain2", None,
-            self.defaults, self.cli_config)
+            "the-lineage.com", "cert2", "privkey2", "chain2", self.cli_config)
         self.assertTrue(os.path.exists(os.path.join(
             self.cli_config.renewal_configs_dir, "the-lineage.com-0001.conf")))
         # Now trigger the detection of already existing files
         os.mkdir(os.path.join(
             self.cli_config.live_dir, "the-lineage.com-0002"))
         self.assertRaises(errors.CertStorageError,
-                          storage.RenewableCert.new_lineage,
-                          "the-lineage.com", "cert3", "privkey3", "chain3",
-                          None, self.defaults, self.cli_config)
+                          storage.RenewableCert.new_lineage, "the-lineage.com",
+                          "cert3", "privkey3", "chain3", self.cli_config)
         os.mkdir(os.path.join(self.cli_config.archive_dir, "other-example.com"))
         self.assertRaises(errors.CertStorageError,
                           storage.RenewableCert.new_lineage,
-                          "other-example.com", "cert4", "privkey4", "chain4",
-                          None, self.defaults, self.cli_config)
+                          "other-example.com", "cert4",
+                          "privkey4", "chain4", self.cli_config)
         # Make sure it can accept renewal parameters
-        params = {"stuff": "properties of stuff", "great": "awesome"}
         result = storage.RenewableCert.new_lineage(
-            "the-lineage.com", "cert2", "privkey2", "chain2",
-            params, self.defaults, self.cli_config)
+            "the-lineage.com", "cert2", "privkey2", "chain2", self.cli_config)
         # TODO: Conceivably we could test that the renewal parameters actually
         #       got saved
 
@@ -594,8 +600,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         shutil.rmtree(self.cli_config.live_dir)
 
         storage.RenewableCert.new_lineage(
-            "the-lineage.com", "cert2", "privkey2", "chain2",
-            None, self.defaults, self.cli_config)
+            "the-lineage.com", "cert2", "privkey2", "chain2", self.cli_config)
         self.assertTrue(os.path.exists(
             os.path.join(
                 self.cli_config.renewal_configs_dir, "the-lineage.com.conf")))
@@ -609,9 +614,8 @@ class RenewableCertTests(BaseRenewableCertTest):
         from letsencrypt import storage
         mock_uln.return_value = "this_does_not_end_with_dot_conf", "yikes"
         self.assertRaises(errors.CertStorageError,
-                          storage.RenewableCert.new_lineage,
-                          "example.com", "cert", "privkey", "chain",
-                          None, self.defaults, self.cli_config)
+                          storage.RenewableCert.new_lineage, "example.com",
+                          "cert", "privkey", "chain", self.cli_config)
 
     def test_bad_kind(self):
         self.assertRaises(
@@ -678,113 +682,11 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.assertEqual(storage.add_time_interval(base_time, interval),
                              excepted)
 
-    @mock.patch("letsencrypt.renewer.plugins_disco")
-    @mock.patch("letsencrypt.account.AccountFileStorage")
-    @mock.patch("letsencrypt.client.Client")
-    def test_renew(self, mock_c, mock_acc_storage, mock_pd):
-        from letsencrypt import renewer
-
-        test_cert = test_util.load_vector("cert-san.pem")
-        for kind in ALL_FOUR:
-            os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                    kind + "1.pem"),
-                       getattr(self.test_rc, kind))
-        fill_with_sample_data(self.test_rc)
-        with open(self.test_rc.cert, "w") as f:
-            f.write(test_cert)
-
-        # Fails because renewalparams are missing
-        self.assertFalse(renewer.renew(self.test_rc, 1))
-        self.test_rc.configfile["renewalparams"] = {"some": "stuff"}
-        # Fails because there's no authenticator specified
-        self.assertFalse(renewer.renew(self.test_rc, 1))
-        self.test_rc.configfile["renewalparams"]["rsa_key_size"] = "2048"
-        self.test_rc.configfile["renewalparams"]["server"] = "acme.example.com"
-        self.test_rc.configfile["renewalparams"]["authenticator"] = "fake"
-        self.test_rc.configfile["renewalparams"]["tls_sni_01_port"] = "4430"
-        self.test_rc.configfile["renewalparams"]["http01_port"] = "1234"
-        self.test_rc.configfile["renewalparams"]["account"] = "abcde"
-        self.test_rc.configfile["renewalparams"]["domains"] = ["example.com"]
-        self.test_rc.configfile["renewalparams"]["config_dir"] = "config"
-        self.test_rc.configfile["renewalparams"]["work_dir"] = "work"
-        self.test_rc.configfile["renewalparams"]["logs_dir"] = "logs"
-        mock_auth = mock.MagicMock()
-        mock_pd.PluginsRegistry.find_all.return_value = {"apache": mock_auth}
-        # Fails because "fake" != "apache"
-        self.assertFalse(renewer.renew(self.test_rc, 1))
-        self.test_rc.configfile["renewalparams"]["authenticator"] = "apache"
-        mock_client = mock.MagicMock()
-        # pylint: disable=star-args
-        comparable_cert = jose.ComparableX509(CERT)
-        mock_client.obtain_certificate.return_value = (
-            mock.MagicMock(body=comparable_cert), [comparable_cert],
-            mock.Mock(pem="key"), mock.sentinel.csr)
-        mock_c.return_value = mock_client
-        self.assertEqual(2, renewer.renew(self.test_rc, 1))
-        # TODO: We could also make several assertions about calls that should
-        #       have been made to the mock functions here.
-        mock_acc_storage().load.assert_called_once_with(account_id="abcde")
-        mock_client.obtain_certificate.return_value = (
-            mock.sentinel.certr, [], mock.sentinel.key, mock.sentinel.csr)
-        # This should fail because the renewal itself appears to fail
-        self.assertFalse(renewer.renew(self.test_rc, 1))
-
-    def _common_cli_args(self):
-        return [
-            "--config-dir", self.cli_config.config_dir,
-            "--work-dir", self.cli_config.work_dir,
-            "--logs-dir", self.cli_config.logs_dir,
-        ]
-
-    @mock.patch("letsencrypt.renewer.notify")
-    @mock.patch("letsencrypt.storage.RenewableCert")
-    @mock.patch("letsencrypt.renewer.renew")
-    def test_main(self, mock_renew, mock_rc, mock_notify):
-        from letsencrypt import renewer
-        mock_rc_instance = mock.MagicMock()
-        mock_rc_instance.should_autodeploy.return_value = True
-        mock_rc_instance.should_autorenew.return_value = True
-        mock_rc_instance.latest_common_version.return_value = 10
-        mock_rc.return_value = mock_rc_instance
-        with open(os.path.join(self.cli_config.renewal_configs_dir,
-                               "example.org.conf"), "w") as f:
-            # This isn't actually parsed in this test; we have a separate
-            # test_initialization that tests the initialization, assuming
-            # that configobj can correctly parse the config file.
-            f.write("cert = cert.pem\nprivkey = privkey.pem\n")
-            f.write("chain = chain.pem\nfullchain = fullchain.pem\n")
-        with open(os.path.join(self.cli_config.renewal_configs_dir,
-                               "example.com.conf"), "w") as f:
-            f.write("cert = cert.pem\nprivkey = privkey.pem\n")
-            f.write("chain = chain.pem\nfullchain = fullchain.pem\n")
-        renewer.main(cli_args=self._common_cli_args())
-        self.assertEqual(mock_rc.call_count, 2)
-        self.assertEqual(mock_rc_instance.update_all_links_to.call_count, 2)
-        self.assertEqual(mock_notify.notify.call_count, 4)
-        self.assertEqual(mock_renew.call_count, 2)
-        # If we have instances that don't need any work done, no work should
-        # be done (call counts associated with processing deployments or
-        # renewals should not increase).
-        mock_happy_instance = mock.MagicMock()
-        mock_happy_instance.should_autodeploy.return_value = False
-        mock_happy_instance.should_autorenew.return_value = False
-        mock_happy_instance.latest_common_version.return_value = 10
-        mock_rc.return_value = mock_happy_instance
-        renewer.main(cli_args=self._common_cli_args())
-        self.assertEqual(mock_rc.call_count, 4)
-        self.assertEqual(mock_happy_instance.update_all_links_to.call_count, 0)
-        self.assertEqual(mock_notify.notify.call_count, 4)
-        self.assertEqual(mock_renew.call_count, 2)
-
-    def test_bad_config_file(self):
-        from letsencrypt import renewer
-        os.unlink(os.path.join(self.cli_config.renewal_configs_dir,
-                               "example.org.conf"))
-        with open(os.path.join(self.cli_config.renewal_configs_dir,
-                               "bad.conf"), "w") as f:
-            f.write("incomplete = configfile\n")
-        renewer.main(cli_args=self._common_cli_args())
-        # The errors.CertStorageError is caught inside and nothing happens.
+    def test_missing_cert(self):
+        from letsencrypt import storage
+        self.assertRaises(errors.CertStorageError,
+                          storage.RenewableCert,
+                          self.config.filename, self.cli_config)
 
 
 if __name__ == "__main__":

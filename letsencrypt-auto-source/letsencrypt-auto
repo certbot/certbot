@@ -19,7 +19,7 @@ XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN=${VENV_PATH}/bin
-LE_AUTO_VERSION="0.2.1.dev0"
+LE_AUTO_VERSION="0.4.0.dev0"
 
 # This script takes the same arguments as the main letsencrypt program, but it
 # additionally responds to --verbose (more output) and --debug (allow support
@@ -105,9 +105,7 @@ DeterminePythonVersion() {
   fi
 
   PYVER=`"$LE_PYTHON" --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
-  if [ $PYVER -eq 26 ]; then
-    ExperimentalBootstrap "Python 2.6"
-  elif [ $PYVER -lt 26 ]; then
+  if [ $PYVER -lt 26 ]; then
     echo "You have an ancient version of Python entombed in your operating system..."
     echo "This isn't going to work; you'll need at least version 2.6."
     exit 1
@@ -292,7 +290,7 @@ BootstrapArchCommon() {
   #
   # "python-virtualenv" is Python3, but "python2-virtualenv" provides
   # only "virtualenv2" binary, not "virtualenv" necessary in
-  # ./bootstrap/dev/_common_venv.sh
+  # ./tools/_venv_common.sh
 
   deps="
     python2
@@ -374,7 +372,7 @@ Bootstrap() {
   elif [ -f /etc/redhat-release ]; then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
     BootstrapRpmCommon
-  elif `grep -q openSUSE /etc/os-release` ; then
+  elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
     echo "Bootstrapping dependencies for openSUSE-based OSes..."
     BootstrapSuseCommon
   elif [ -f /etc/arch-release ]; then
@@ -438,8 +436,8 @@ if [ "$NO_SELF_UPGRADE" = 1 ]; then
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/letsencrypt-auto-requirements.txt"
 # This is the flattened list of packages letsencrypt-auto installs. To generate
-# this, do `pip install -r -e acme -e . -e letsencrypt-apache`, `pip freeze`,
-# and then gather the hashes.
+# this, do `pip install --no-cache-dir -e acme -e . -e letsencrypt-apache`, and
+# then use `hashin` or a more secure method to gather the hashes.
 
 # sha256: wxZH7baf09RlqEfqMVfTe-0flfGXYLEaR6qRwEtmYxQ
 # sha256: YrCJpVvh2JSc0rx-DfC9254Cj678jDIDjMhIYq791uQ
@@ -508,8 +506,15 @@ idna==2.0
 # sha256: WjGCsyKnBlJcRigspvBk0noCz_vUSfn0dBbx3JaqcbA
 ipaddress==1.0.16
 
+# sha256: 54vpwKDfy6xxL-BPv5K5bN2ugLG4QvJCSCFMhJbwBu8
+# sha256: Syb_TnEQ23butvWntkqCYjg51ZXCA47tpmLyott46Xw
+linecache2==1.0.0
+
 # sha256: 6MFV_evZxLywgQtO0BrhmHVUse4DTddTLXuP2uOKYnQ
 ndg-httpsclient==0.4.0
+
+# sha256: HDW0rCBs7y0kgWyJ-Jzyid09OM98RJuz-re_bUPwGx8
+ordereddict==1.1
 
 # sha256: OnTxAPkNZZGDFf5kkHca0gi8PxOv0y01_P5OjQs7gSs
 # sha256: Paa-K-UG9ZzOMuGeMOIBBT4btNB-JWaJGOAPikmtQKs
@@ -596,6 +601,14 @@ requests==2.9.1
 # sha256: EF-NaGFvgkjiS_DpNy7wTTzBAQTxmA9U1Xss5zpa1Wo
 six==1.10.0
 
+# sha256: glPOvsSxkJTWfMXtWvmb8duhKFKSIm6Yoxkp-HpdayM
+# sha256: BazGegmYDC7P7dNCP3rgEEg57MtV_GRXc-HKoJUcMDA
+traceback2==1.4.0
+
+# sha256: E_d9CHXbbZtDXh1PQedK1MwutuHVyCSZYJKzQw8Ii7g
+# sha256: IogqDkGMKE4fcYqCKzsCKUTVPS2QjhaQsxmp0-ssBXk
+unittest2==1.1.0
+
 # sha256: aUkbUwUVfDxuDwSnAZhNaud_1yn8HJrNJQd_HfOFMms
 # sha256: 619wCpv8lkILBVY1r5AC02YuQ9gMP_0x8iTCW8DV9GI
 Werkzeug==0.11.3
@@ -625,17 +638,17 @@ zope.event==4.1.0
 # sha256: sJyMHUezUxxADgGVaX8UFKYyId5u9HhZik8UYPfZo5I
 zope.interface==4.1.3
 
-# sha256: fYwCUXn3Wd_tKYHuPfufzDQZuDNng0HZb_th3xepC7U
-# sha256: dKkCf9CZnKaDTFOof-KoazoewjKTSAVxZUJmnj_3i_U
-acme==0.2.0
+# sha256: QMIkIvGF3mcJhGLAKRX7n5EVIPjOrfLtklN6ePjbJes
+# sha256: fNFWiij6VxfG5o7u3oNbtrYKQ4q9vhzOLATfxNlozvQ
+acme==0.3.0
 
-# sha256: 4x7K5lzKwm_GjYMojvUh053qL4EfIC5hGFmW370-7jI
-# sha256: kcm3VmxXIGNS7ShcKFnYdA9AfXnqcbV_otMsADr1p2A
-letsencrypt==0.2.0
+# sha256: qdnzpoRf_44QXKoktNoAKs2RBAxUta2Sr6GS0t_tAKo
+# sha256: ELWJaHNvBZIqVPJYkla8yXLtXIuamqAf6f_VAFv16Uk
+letsencrypt==0.3.0
 
-# sha256: AKuIT6b7gXXD2Cs7Qoem8ZrxcqBjABz1IgxhHGxmwX0
-# sha256: Cak7i4RaDsZixQMXWWpW-blTHaak09l94aLi9v7lljs
-letsencrypt-apache==0.2.0
+# sha256: EypLpEw3-Tr8unw4aSFsHXgRiU8ZYLrJKOJohP2tC9M
+# sha256: HYvP13GzA-DDJYwlfOoaraJO0zuYO48TCSAyTUAGCqA
+letsencrypt-apache==0.3.0
 
 # sha256: uDndLZwRfHAUMMFJlWkYpCOphjtIsJyQ4wpgE-fS9E8
 # sha256: j4MIDaoknQNsvM-4rlzG_wB7iNbZN1ITca-r57Gbrbw

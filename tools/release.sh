@@ -81,21 +81,6 @@ if [ "$RELEASE_BRANCH" != "candidate-$version" ] ; then
 fi
 git checkout "$RELEASE_BRANCH"
 
-# ensure we have the latest built version of leauto
-letsencrypt-auto-source/build.py
-
-# and that it's signed correctly
-if ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
-        letsencrypt-auto-source/letsencrypt-auto.sig \
-        letsencrypt-auto-source/letsencrypt-auto            ; then
-   echo Failed letsencrypt-auto signature check on "$RELEASE_BRANCH"
-   echo please fix that and re-run
-   exit 1
-else
-    echo Signature check on letsencrypt-auto successful
-fi
-
-
 SetVersion() {
     ver="$1"
     for pkg_dir in $SUBPKGS letsencrypt-compatibility-test
@@ -110,9 +95,6 @@ SetVersion() {
 }
 
 SetVersion "$version"
-git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"
-git tag --local-user "$RELEASE_GPG_KEY" \
-    --sign --message "Release $version" "$tag"
 
 echo "Preparing sdists and wheels"
 for pkg_dir in . $SUBPKGS
@@ -151,8 +133,12 @@ virtualenv --no-site-packages ../venv
 . ../venv/bin/activate
 pip install -U setuptools
 pip install -U pip
-# Now, use our local PyPI
+# Now, use our local PyPI. Disable cache so we get the correct KGS even if we
+# (or our dependencies) have conditional dependencies implemented with if
+# statements in setup.py and we have cached wheels lying around that would
+# cause those ifs to not be evaluated.
 pip install \
+  --no-cache-dir \
   --extra-index-url http://localhost:$PORT \
   letsencrypt $SUBPKGS
 # stop local PyPI
@@ -174,6 +160,21 @@ for module in letsencrypt $subpkgs_modules ; do
     nosetests $module
 done
 deactivate
+
+# ensure we have the latest built version of leauto
+letsencrypt-auto-source/build.py
+
+# and that it's signed correctly
+while ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
+        letsencrypt-auto-source/letsencrypt-auto.sig \
+        letsencrypt-auto-source/letsencrypt-auto            ; do
+   read -p "Please correctly sign letsencrypt-auto with offline-signrequest.sh"
+done
+
+git diff --cached
+git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"
+git tag --local-user "$RELEASE_GPG_KEY" \
+    --sign --message "Release $version" "$tag"
 
 cd ..
 echo Now in $PWD

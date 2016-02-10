@@ -161,6 +161,7 @@ class TwoVhost80Test(util.ApacheTest):
     def test_choose_vhost_select_vhost_non_ssl(self, mock_select):
         mock_select.return_value = self.vh_truth[0]
         chosen_vhost = self.config.choose_vhost("none.com")
+        self.vh_truth[0].aliases.add("none.com")
         self.assertEqual(
             self.vh_truth[0].get_names(), chosen_vhost.get_names())
 
@@ -192,8 +193,8 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(
             self.vh_truth[0],
             self.config._find_best_vhost("encryption-example.demo"))
-        self.assertTrue(
-            self.config._find_best_vhost("does-not-exist.com") is None)
+        self.assertEqual(
+            self.config._find_best_vhost("does-not-exist.com"), None)
 
     def test_find_best_vhost_variety(self):
         # pylint: disable=protected-access
@@ -428,9 +429,15 @@ class TwoVhost80Test(util.ApacheTest):
         self.config.parser.add_dir_to_ifmodssl = mock_add_dir
 
         self.config.prepare_server_https("443")
+        # Changing the order these modules are enabled breaks the reverter
+        self.assertEqual(mock_enable.call_args_list[0][0][0], "socache_shmcb")
+        self.assertEqual(mock_enable.call_args[0][0], "ssl")
         self.assertEqual(mock_enable.call_args[1], {"temp": False})
 
         self.config.prepare_server_https("8080", temp=True)
+        # Changing the order these modules are enabled breaks the reverter
+        self.assertEqual(mock_enable.call_args_list[2][0][0], "socache_shmcb")
+        self.assertEqual(mock_enable.call_args[0][0], "ssl")
         # Enable mod is temporary
         self.assertEqual(mock_enable.call_args[1], {"temp": True})
 
@@ -605,6 +612,14 @@ class TwoVhost80Test(util.ApacheTest):
         self.config.version = (2, 2)
         self.config._add_name_vhost_if_necessary(self.vh_truth[0])
         self.assertTrue(self.config.save.called)
+
+        new_addrs = set()
+        for addr in self.vh_truth[0].addrs:
+            new_addrs.add(obj.Addr(("_default_", addr.get_port(),)))
+
+        self.vh_truth[0].addrs = new_addrs
+        self.config._add_name_vhost_if_necessary(self.vh_truth[0])
+        self.assertEqual(self.config.save.call_count, 2)
 
     @mock.patch("letsencrypt_apache.configurator.tls_sni_01.ApacheTlsSni01.perform")
     @mock.patch("letsencrypt_apache.configurator.ApacheConfigurator.restart")
