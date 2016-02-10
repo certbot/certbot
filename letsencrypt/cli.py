@@ -1369,6 +1369,11 @@ def prepare_and_parse_args(plugins, args):
               "additional command line flags; the client will try to explain "
               "which ones are required if it finds one missing")
     helpful.add(
+        None, "--dry-run", action="store_true", dest="dry_run",
+        help="Perform a test run of the client, obtaining test (invalid) certs"
+             " but not saving them to disk. This can currently only be used"
+             " with the 'certonly' subcommand.")
+    helpful.add(
         None, "--register-unsafely-without-email", action="store_true",
         help="Specifying this flag enables registering an account with no "
              "email address. This is strongly discouraged, because in the "
@@ -1490,6 +1495,16 @@ def prepare_and_parse_args(plugins, args):
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
 
+    helpful.add_group(
+        "renew", description="The 'renew' subcommand will attempt to renew all "
+        "certificates (or more precisely, certificate lineages) you have previously "
+        "obtained, and print a summary of the results. "
+        "By default, 'renew' will reuse the options "
+        "used to create obtain or most recently successfully renew each certificate lineage. "
+        "You can try it with `--dry-run` first. "
+        "For more fine-grained control, you can renew individual lineages with"
+        "the `certonly` subcommand.")
+
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
 
     _create_subparsers(helpful)
@@ -1586,10 +1601,6 @@ def _paths_parser(helpful):
     add("testing", "--test-cert", "--staging", action='store_true', dest='staging',
         help='Use the staging server to obtain test (invalid) certs; equivalent'
              ' to --server ' + constants.STAGING_URI)
-    add("testing", "--dry-run", action="store_true", dest="dry_run",
-        help="Perform a test run of the client, obtaining test (invalid) certs"
-             " but not saving them to disk. This can currently only be used"
-             " with the 'certonly' subcommand.")
 
 
 def _plugins_parsing(helpful, plugins):
