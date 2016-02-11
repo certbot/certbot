@@ -11,13 +11,16 @@ from six.moves import http_client  # pylint: disable=import-error
 import OpenSSL
 import requests
 import sys
-import werkzeug
 
 from acme import errors
 from acme import jose
 from acme import jws
 from acme import messages
 
+try:
+    from email.utils import parsedate_tz
+except ImportError: # pragma: no cover
+    from email.Utils import parsedate_tz
 
 logger = logging.getLogger(__name__)
 
@@ -245,7 +248,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def retry_after(cls, response, default):
-        """Compute next `poll` time based on response ``Retry-After`` header.
+        """Compute next `poll` time based on response ``Retry-After`` header,
+        per https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.37
 
         :param requests.Response response: Response from `poll`.
         :param int default: Default value (in seconds), used when
@@ -256,17 +260,26 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         """
         retry_after = response.headers.get('Retry-After', str(default))
+        now = datetime.datetime.now()
+        year_now = now[0]
         try:
             seconds = int(retry_after)
         except ValueError:
             # pylint: disable=no-member
-            decoded = werkzeug.parse_date(retry_after)  # RFC1123
-            if decoded is None:
+            t = parsedate_tz(value.strip())
+            try:
+                year = t[0] # raises TypeError if t is None
+                # Handle two-digit years -- but any webserver that thinks
+                # "retry after 99" means "come back after 1999" is.. deprecated
+                if year >= 0 and year < 100:
+                    year += 2000
+                t_corrected = datetime(*([year] + t[1:7])) # raises ValueError
+                tz = t[-1] if t[-1] else 0
+                return t_corrected - timedelta(tz)      # raises OverflowError
+            except (TypeError, ValueError, OverflowError):
                 seconds = default
-            else:
-                return decoded
 
-        return datetime.datetime.now() + datetime.timedelta(seconds=seconds)
+        return now + datetime.timedelta(seconds=seconds)
 
     def poll(self, authzr):
         """Poll Authorization Resource for status.
