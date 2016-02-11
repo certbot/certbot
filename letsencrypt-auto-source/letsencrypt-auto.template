@@ -209,6 +209,7 @@ UNLIKELY_EOF
       echo "$PEEP_OUT"
       exit 1
     fi
+    echo "Installation succeeded."
   fi
   echo "Requesting root privileges to run letsencrypt..."
   echo "  " $SUDO "$VENV_BIN/letsencrypt" "$@"
