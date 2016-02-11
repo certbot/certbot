@@ -3,7 +3,7 @@
 
 export VENV_ARGS="--python python2"
 
-./bootstrap/dev/_venv_common.sh \
+./tools/_venv_common.sh \
   -e acme[testing] \
   -e .[dev,docs,testing] \
   -e letsencrypt-apache \
