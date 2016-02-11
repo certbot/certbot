@@ -261,7 +261,6 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         """
         retry_after = response.headers.get('Retry-After', str(default))
         now = datetime.datetime.now()
-        year_now = now[0]
         try:
             seconds = int(retry_after)
         except ValueError:
