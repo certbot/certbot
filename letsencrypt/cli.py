@@ -845,12 +845,12 @@ def _restore_plugin_configs(config, renewalparams):
     for plugin_prefix in set(plugin_prefixes):
         for config_item, config_value in renewalparams.iteritems():
             if config_item.startswith(plugin_prefix + "_") and not _set_by_cli(config_item):
-                # Avoid confusion when, for example, "csr = None" (avoid
-                # trying to read the file called "None")
-                # Should we omit the item entirely rather than setting
-                # its value to None?
-                if config_value == "None":
-                    setattr(config.namespace, config_item, None)
+                # Values None, True, and False need to be treated specially,
+                # As they don't get parsed correctly based on type
+                if config_value in ("None", "True", "False"):
+                    # bool("False") == True
+                    # pylint: disable=eval-used
+                    setattr(config.namespace, config_item, eval(config_value))
                     continue
                 for action in _parser.parser._actions:  # pylint: disable=protected-access
                     if action.type is not None and action.dest == config_item:
