@@ -1973,17 +1973,6 @@ def main(cli_args=sys.argv[1:]):
     zope.component.provideUtility(report)
     atexit.register(report.atexit_print_messages)
 
-    if not os.geteuid() == 0:
-        logger.warning(
-            "Root (sudo) is required to run most of letsencrypt functionality.")
-        # check must be done after arg parsing as --help should work
-        # w/o root; on the other hand, e.g. "letsencrypt run
-        # --authenticator dns" or "letsencrypt plugins" does not
-        # require root as well
-        #return (
-        #    "{0}Root is required to run letsencrypt.  Please use sudo.{0}"
-        #    .format(os.linesep))
-
     return config.func(config, plugins)
 
 if __name__ == "__main__":
