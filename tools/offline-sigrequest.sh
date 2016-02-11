@@ -11,7 +11,7 @@ function sayhash { # $1 <-- HASH ; $2 <---SIGFILEBALL
   while read -p "Press Enter to read the hash aloud or type 'done':  " INP && [ "$INP" = "" ] ; do
     cat $1 | (echo "(Parameter.set 'Duration_Stretch 1.8)"; \
                 echo -n '(SayText "'; \
-                sha1sum | cut -c1-64 | fold -1 | sed 's/^a$/alpha/; s/^b$/bravo/; s/^c$/charlie/; s/^d$/delta/; s/^e$/echo/; s/^f$/foxtrot/'; \
+                sha256sum | cut -c1-64 | fold -1 | sed 's/^a$/alpha/; s/^b$/bravo/; s/^c$/charlie/; s/^d$/delta/; s/^e$/echo/; s/^f$/foxtrot/'; \
                 echo '")' ) | festival
   done
 
