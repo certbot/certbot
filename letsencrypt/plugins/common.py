@@ -41,6 +41,36 @@ class Plugin(object):
         self.config = config
         self.name = name
 
+    @jose_util.abstractclassmethod
+    def add_parser_arguments(cls, add):
+        """Add plugin arguments to the CLI argument parser.
+
+        :param callable add: Function that proxies calls to
+            `argparse.ArgumentParser.add_argument` prepending options
+            with unique plugin name prefix.
+
+        NOTE: if you add argpase arguments such that users setting them can
+        create a config entry that python's bool() would consider false (ie,
+        the use might set the variable to "", [], 0, etc), please ensure that
+        cli._set_by_cli() works for your variable.
+
+        """
+
+    @classmethod
+    def inject_parser_options(cls, parser, name):
+        """Inject parser options.
+
+        See `~.IPlugin.inject_parser_options` for docs.
+
+        """
+        # dummy function, doesn't check if dest.startswith(self.dest_namespace)
+        def add(arg_name_no_prefix, *args, **kwargs):
+            # pylint: disable=missing-docstring
+            return parser.add_argument(
+                "--{0}{1}".format(option_namespace(name), arg_name_no_prefix),
+                *args, **kwargs)
+        return cls.add_parser_arguments(add)
+
     @property
     def option_namespace(self):
         """ArgumentParser options namespace (prefix of all options)."""
@@ -64,32 +94,6 @@ class Plugin(object):
     def conf(self, var):
         """Find a configuration value for variable ``var``."""
         return getattr(self.config, self.dest(var))
-
-    @classmethod
-    def inject_parser_options(cls, parser, name):
-        """Inject parser options.
-
-        See `~.IPlugin.inject_parser_options` for docs.
-
-        """
-        # dummy function, doesn't check if dest.startswith(self.dest_namespace)
-        def add(arg_name_no_prefix, *args, **kwargs):
-            # pylint: disable=missing-docstring
-            return parser.add_argument(
-                "--{0}{1}".format(option_namespace(name), arg_name_no_prefix),
-                *args, **kwargs)
-        return cls.add_parser_arguments(add)
-
-    @jose_util.abstractclassmethod
-    def add_parser_arguments(cls, add):
-        """Add plugin arguments to the CLI argument parser.
-
-        :param callable add: Function that proxies calls to
-            `argparse.ArgumentParser.add_argument` prepending options
-            with unique plugin name prefix.
-
-        """
-
 # other
 
 

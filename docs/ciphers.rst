@@ -107,7 +107,7 @@ and the version implemented by the Let's Encrypt client will be the
 version that was most current as of the release date of each client
 version. Mozilla offers three separate sets of cryptographic options,
 which trade off security and compatibility differently. These are
-referred to as as the "Modern", "Intermediate", and "Old" configurations
+referred to as the "Modern", "Intermediate", and "Old" configurations
 (in order from most secure to least secure, and least-backwards compatible
 to most-backwards compatible). The client will follow the Mozilla defaults
 for the *Intermediate* configuration by default, at least with regards to
@@ -170,7 +170,7 @@ Changing your settings
 
 This will probably look something like
 
-..code-block: shell
+.. code-block:: shell
 
   letsencrypt --cipher-recommendations mozilla-secure
   letsencrypt --cipher-recommendations mozilla-intermediate
@@ -179,14 +179,14 @@ This will probably look something like
 to track Mozilla's *Secure*, *Intermediate*, or *Old* recommendations,
 and
 
-..code-block: shell
+.. code-block:: shell
 
   letsencrypt --update-ciphers on
 
 to enable updating ciphers with each new Let's Encrypt client release,
 or
 
-..code-block: shell
+.. code-block:: shell
 
   letsencrypt --update-ciphers off
 

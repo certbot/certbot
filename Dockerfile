@@ -22,8 +22,8 @@ WORKDIR /opt/letsencrypt
 # directories in its path.
 
 
-COPY bootstrap/ubuntu.sh /opt/letsencrypt/src/ubuntu.sh
-RUN /opt/letsencrypt/src/ubuntu.sh && \
+COPY letsencrypt-auto-source/letsencrypt-auto /opt/letsencrypt/src/letsencrypt-auto-source/letsencrypt-auto
+RUN /opt/letsencrypt/src/letsencrypt-auto-source/letsencrypt-auto --os-packages-only && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* \
            /tmp/* \
@@ -49,7 +49,6 @@ COPY letsencrypt-apache /opt/letsencrypt/src/letsencrypt-apache/
 COPY letsencrypt-nginx /opt/letsencrypt/src/letsencrypt-nginx/
 
 
-# py26reqs.txt not installed!
 RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv && \
     /opt/letsencrypt/venv/bin/pip install \
     -e /opt/letsencrypt/src/acme \

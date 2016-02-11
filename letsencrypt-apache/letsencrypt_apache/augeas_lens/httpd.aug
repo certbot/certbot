@@ -59,7 +59,7 @@ let empty               = Util.empty_dos
 let indent              = Util.indent
 
 (* borrowed from shellvars.aug *)
-let char_arg_dir  = /([^\\ '"{\t\r\n]|[^ '"{\t\r\n]+[^\\ '"\t\r\n])|\\\\"|\\\\'/
+let char_arg_dir  = /([^\\ '"{\t\r\n]|[^ '"{\t\r\n]+[^\\ \t\r\n])|\\\\"|\\\\'/
 let char_arg_sec  = /[^ '"\t\r\n>]|\\\\"|\\\\'/
 let char_arg_wl   = /([^\\ '"},\t\r\n]|[^ '"},\t\r\n]+[^\\ '"},\t\r\n])/
 
@@ -106,11 +106,17 @@ let section (body:lens) =
     let inner = (sep_spc . argv arg_sec)? . sep_osp .
              dels ">" . opt_eol . ((body|comment) . (body|empty|comment)*)? .
              indent . dels "</" in
-    let kword = key word in
-    let dword = del word "a" in
+    let kword = key (word - /perl/i) in
+    let dword = del (word - /perl/i) "a" in
         [ indent . dels "<" . square kword inner dword . del />[ \t\n\r]*/ ">\n" ]
 
+let perl_section = [ indent . label "Perl" . del /<perl>/i "<Perl>"
+                   . store /[^<]*/
+                   . del /<\/perl>/i "</Perl>" . eol ]
+
+
 let rec content = section (content|directive)
+                | perl_section
 
 let lns = (content|directive|comment|empty)*
 
@@ -121,6 +127,7 @@ let filter = (incl "/etc/apache2/apache2.conf") .
              (incl "/etc/apache2/conf-available/*.conf") .
              (incl "/etc/apache2/mods-available/*") .
              (incl "/etc/apache2/sites-available/*") .
+             (incl "/etc/apache2/vhosts.d/*.conf") .
              (incl "/etc/httpd/conf.d/*.conf") .
              (incl "/etc/httpd/httpd.conf") .
              (incl "/etc/httpd/conf/httpd.conf") .

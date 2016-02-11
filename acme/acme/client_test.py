@@ -34,8 +34,10 @@ class ClientTest(unittest.TestCase):
         self.net.get.return_value = self.response
 
         self.directory = messages.Directory({
-            messages.NewRegistration: 'https://www.letsencrypt-demo.org/acme/new-reg',
-            messages.Revocation: 'https://www.letsencrypt-demo.org/acme/revoke-cert',
+            messages.NewRegistration:
+                'https://www.letsencrypt-demo.org/acme/new-reg',
+            messages.Revocation:
+                'https://www.letsencrypt-demo.org/acme/revoke-cert',
         })
 
         from acme.client import Client
@@ -126,6 +128,13 @@ class ClientTest(unittest.TestCase):
     def test_query_registration(self):
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr, self.client.query_registration(self.regr))
+
+    def test_query_registration_updates_new_authzr_uri(self):
+        self.response.json.return_value = self.regr.body.to_json()
+        self.response.links = {'next': {'url': 'UPDATED'}}
+        self.assertEqual(
+            'UPDATED',
+            self.client.query_registration(self.regr).new_authzr_uri)
 
     def test_agree_to_tos(self):
         self.client.update_registration = mock.Mock()
@@ -310,7 +319,10 @@ class ClientTest(unittest.TestCase):
         )
 
         cert, updated_authzrs = self.client.poll_and_request_issuance(
-            csr, authzrs, mintime=mintime)
+            csr, authzrs, mintime=mintime,
+            # make sure that max_attempts is per-authorization, rather
+            # than global
+            max_attempts=max(len(authzrs[0].retries), len(authzrs[1].retries)))
         self.assertTrue(cert[0] is csr)
         self.assertTrue(cert[1] is updated_authzrs)
         self.assertEqual(updated_authzrs[0].uri, 'a...')
@@ -331,7 +343,8 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(clock.dt, datetime.datetime(2015, 3, 27, 0, 1, 7))
 
         # CA sets invalid | TODO: move to a separate test
-        invalid_authzr = mock.MagicMock(times=[], retries=[messages.STATUS_INVALID])
+        invalid_authzr = mock.MagicMock(
+            times=[], retries=[messages.STATUS_INVALID])
         self.assertRaises(
             errors.PollError, self.client.poll_and_request_issuance,
             csr, authzrs=(invalid_authzr,), mintime=mintime)
