@@ -71,7 +71,9 @@ Plugin      Auth Inst Notes
 =========== ==== ==== ===============================================================
 apache_     Y    Y    Automates obtaining and installing a cert with Apache 2.4 on
                       Debian-based distributions with ``libaugeas0`` 1.0+.
-standalone_ Y    N    Uses a "standalone" webserver to obtain a cert.
+standalone_ Y    N    Uses a "standalone" webserver to obtain a cert. This is useful
+                      on systems with no webserver, or when direct integration with
+                      the local webserver is not supported or not desired.
 webroot_    Y    N    Obtains a cert by writing to the webroot directory of an
                       already running webserver.
 manual_     Y    N    Helps you obtain a cert by giving you instructions to perform
@@ -171,21 +173,59 @@ Renewal
    days). Make sure you renew the certificates at least once in 3
    months.
 
-In order to renew certificates simply call the ``letsencrypt`` (or
+The ``letsencrypt`` client now supports a ``renew`` action to check
+all installed certificates for impending expiry and attempt to renew
+them. The simplest form is simply
+
+``letsencrypt renew``
+
+This will attempt to renew any previously-obtained certificates that
+expire in less than 30 days. The same plugin and options that were used
+at the time the certificate was originally issued will be used for the
+renewal attempt, unless you specify other plugins or options.
+
+If you're sure that UI doesn't prompt for any details you can add the
+command to ``crontab`` (make it less than every 90 days to avoid problems,
+say every month); note that the current version provides detailed output
+describing either renewal success or failure.
+
+The ``--force-renew`` flag may be helpful for automating renewal;
+it causes the expiration time of the certificate(s) to be ignored when
+considering renewal, and attempts to renew each and every installed
+certificate regardless of its age.
+
+Note that options provided to ``letsencrypt renew`` will apply to
+*every* certificate for which renewal is attempted; for example,
+``letsencrypt renew --rsa-key-size 4096`` would try to replace every
+near-expiry certificate with an equivalent certificate using a 4096-bit
+RSA public key. If a certificate is successfully renewed using
+specified options, those options will be saved and used for future
+renewals of that certificate.
+
+
+An alternative form that provides for more fine-grained control over the
+renewal process (while renewing specified certificates one at a time),
+is ``letsencrypt certonly`` with the complete set of subject domains of
+a specific certificate specified via `-d` flags, like
+
+``letsencrypt certonly -d example.com -d www.example.com``
+
+(All of the domains covered by the certificate must be specified in
+this case in order to renew and replace the old certificate rather
+than obtaining a new one; don't forget any `www.` domains!) The
+``certonly`` form attempts to renew one individual certificate.
+
 letsencrypt-auto_) again, and use the same values when prompted. You can
 automate it slightly by passing necessary flags on the CLI (see `--help
-all`), or even further using the :ref:`config-file`. The ``--force-renew``
-flag may be helpful for automating renewal; it causes the expiration time
-of the certificate(s) to be ignored when considering renewal.  If you're
-sure that UI doesn't prompt for any details you can add the command to
-``crontab`` (make it less than every 90 days to avoid problems, say
-every month).
+all`), or even further using the :ref:`config-file`.
+
 
 Please note that the CA will send notification emails to the address
 you provide if you do not renew certificates that are about to expire.
 
-Let's Encrypt is working hard on automating the renewal process. Until
-the tool is ready, we are sorry for the inconvenience!
+Let's Encrypt is working hard on improving the renewal process, and we
+apologize for any inconveniences you encounter in integrating these
+commands into your individual environment.
 
 
 .. _where-certs:
