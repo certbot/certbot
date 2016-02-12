@@ -271,7 +271,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                 # Handle two-digit years -- but any webserver that thinks
                 # "retry after 99" means "come back after 1999" is.. deprecated
                 if year >= 0 and year < 100:
-                    when = [year + 2000] + when[1:]
+                    when = [year + 2000] + list(when[1:])
                 tzone = when[-1] if when[-1] else 0
                 # raises ValueError/OverflowError
                 return datetime.datetime(*when[:7]) - datetime.timedelta(tzone)
