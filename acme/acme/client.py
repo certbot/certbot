@@ -265,16 +265,15 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             seconds = int(retry_after)
         except ValueError:
             # pylint: disable=no-member
-            t = parsedate_tz(value.strip())
+            t = list(parsedate_tz(value.strip())) # returns None on fail
             try:
                 year = t[0] # raises TypeError if t is None
                 # Handle two-digit years -- but any webserver that thinks
                 # "retry after 99" means "come back after 1999" is.. deprecated
                 if year >= 0 and year < 100:
-                    year += 2000
-                t_corrected = datetime(*([year] + t[1:7])) # raises ValueError
+                    t[0] = year + 2000
                 tz = t[-1] if t[-1] else 0
-                return t_corrected - timedelta(tz)      # raises OverflowError
+                return datetime(*t) - timedelta(tz) # raises Value/OverflowError
             except (TypeError, ValueError, OverflowError):
                 seconds = default
 
