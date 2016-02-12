@@ -1,0 +1,17 @@
+#!/bin/bash
+# @usage: wget -qO le <goo.gl shortener url> && sudo bash le
+
+currentscript="$0"
+
+# Function that is called when the script exits:
+function finish {
+    echo "Securely shredding ${currentscript}"; shred -u ${currentscript};
+}
+
+# NOTE(CelticParser): The <RELEASE_VERSION> field will need updating w/ea release
+wget https://github.com/codePile/letsencrypt/archive/<RELEASE_VERSION>.tar.gz -O le.tar.gz
+tar xzf le.tar.gz -C letsencrypt  --strip-components=1
+cd letsencrypt && ./letsencrypt-auto --help
+
+# When the script is finished, exit with a call to the function, "finish":
+trap finish EXIT
