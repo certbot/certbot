@@ -49,7 +49,7 @@ or for full help, type:
 
 ``letsencrypt-auto`` is the recommended method of running the Let's Encrypt
 client beta releases on systems that don't have a packaged version.  Debian,
-Arch linux, Gentoo, FreeBSD, and OpenBSD now have native packages, so on those
+Arch Linux, Gentoo, FreeBSD, and OpenBSD now have native packages, so on those
 systems you can just install ``letsencrypt`` (and perhaps
 ``letsencrypt-apache``).  If you'd like to run the latest copy from Git, or
 run your own locally modified copy of the client, follow the instructions in
@@ -71,7 +71,9 @@ Plugin      Auth Inst Notes
 =========== ==== ==== ===============================================================
 apache_     Y    Y    Automates obtaining and installing a cert with Apache 2.4 on
                       Debian-based distributions with ``libaugeas0`` 1.0+.
-standalone_ Y    N    Uses a "standalone" webserver to obtain a cert.
+standalone_ Y    N    Uses a "standalone" webserver to obtain a cert. This is useful
+                      on systems with no webserver, or when direct integration with
+                      the local webserver is not supported or not desired.
 webroot_    Y    N    Obtains a cert by writing to the webroot directory of an
                       already running webserver.
 manual_     Y    N    Helps you obtain a cert by giving you instructions to perform
@@ -91,36 +93,27 @@ This automates both obtaining *and* installing certs on an Apache
 webserver. To specify this plugin on the command line, simply include
 ``--apache``.
 
-Standalone
-----------
-
-To obtain a cert using a "standalone" webserver, you can use the
-standalone plugin by including ``certonly`` and ``--standalone``
-on the command line. This plugin needs to bind to port 80 or 443 in
-order to perform domain validation, so you may need to stop your
-existing webserver. To control which port the plugin uses, include
-one of the options shown below on the command line.
-
-    * ``--standalone-supported-challenges http-01`` to use port 80
-    * ``--standalone-supported-challenges tls-sni-01`` to use port 443
-
 Webroot
 -------
 
-If you're running a webserver that you don't want to stop to use
-standalone, you can use the webroot plugin to obtain a cert by
-including ``certonly`` and ``--webroot`` on the command line. In
-addition, you'll need to specify ``--webroot-path`` or ``-w`` with the root
-directory of the files served by your webserver. For example,
-``--webroot-path /var/www/html`` or
-``--webroot-path /usr/share/nginx/html`` are two common webroot paths.
+If you're running a local webserver for which you have the ability
+to modify the content being served, and you'd prefer not to stop the
+webserver during the certificate issuance process, you can use the webroot
+plugin to obtain a cert by including ``certonly`` and ``--webroot`` on
+the command line. In addition, you'll need to specify ``--webroot-path``
+or ``-w`` with the top-level directory ("web root") containing the files
+served by your webserver. For example, ``--webroot-path /var/www/html``
+or ``--webroot-path /usr/share/nginx/html`` are two common webroot paths.
 
-If you're getting a certificate for many domains at once, each domain will use
-the most recent ``--webroot-path``.  So for instance:
+If you're getting a certificate for many domains at once, the plugin
+needs to know where each domain's files are served from, which could
+potentially be a separate directory for each domain. When requested a
+certificate for multiple domains, each domain will use the most recently
+specified ``--webroot-path``.  So, for instance,
 
 ``letsencrypt certonly --webroot -w /var/www/example/ -d www.example.com -d example.com -w /var/www/eg -d eg.is -d www.eg.is``
 
-Would obtain a single certificate for all of those names, using the
+would obtain a single certificate for all of those names, using the
 ``/var/www/example`` webroot directory for the first two, and
 ``/var/www/eg`` for the second two.
 
@@ -135,8 +128,28 @@ made to your web server would look like:
     66.133.109.36 - - [05/Jan/2016:20:11:24 -0500] "GET /.well-known/acme-challenge/HGr8U1IeTW4kY_Z6UIyaakzOkyQgPr_7ArlLgtZE8SX HTTP/1.1" 200 87 "-" "Mozilla/5.0 (compatible; Let's Encrypt validation server; +https://www.letsencrypt.org)"
 
 Note that to use the webroot plugin, your server must be configured to serve
-files from hidden directories.
+files from hidden directories. If ``/.well-known`` is treated specially by
+your webserver configuration, you might need to modify the configuration
+to ensure that files inside ``/.well-known/ache-challenge`` are served by
+the webserver.
 
+Standalone
+----------
+
+To obtain a cert using a "standalone" webserver, you can use the
+standalone plugin by including ``certonly`` and ``--standalone``
+on the command line. This plugin needs to bind to port 80 or 443 in
+order to perform domain validation, so you may need to stop your
+existing webserver. To control which port the plugin uses, include
+one of the options shown below on the command line.
+
+    * ``--standalone-supported-challenges http-01`` to use port 80
+    * ``--standalone-supported-challenges tls-sni-01`` to use port 443
+
+The standalone plugin does not rely on any other server software running
+on the machine where you obtain the certificate. It must still be possible
+for that machine to accept inbound connections from the Internet on the
+specified port using each requested domain name.
 
 Manual
 ------
@@ -146,7 +159,8 @@ other than your target webserver or perform the steps for domain
 validation yourself, you can use the manual plugin. While hidden from
 the UI, you can use the plugin to obtain a cert by specifying
 ``certonly`` and ``--manual`` on the command line. This requires you
-to copy and paste commands into another terminal session.
+to copy and paste commands into another terminal session, which may
+be on a different computer.
 
 Nginx
 -----
@@ -157,7 +171,7 @@ is still experimental, however, and is not installed with
 letsencrypt-auto_. If installed, you can select this plugin on the
 command line by including ``--nginx``.
 
-Third party plugins
+Third-party plugins
 -------------------
 
 These plugins are listed at
@@ -171,21 +185,61 @@ Renewal
    days). Make sure you renew the certificates at least once in 3
    months.
 
-In order to renew certificates simply call the ``letsencrypt`` (or
-letsencrypt-auto_) again, and use the same values when prompted. You can
-automate it slightly by passing necessary flags on the CLI (see `--help
-all`), or even further using the :ref:`config-file`. The ``--force-renew``
-flag may be helpful for automating renewal; it causes the expiration time
-of the certificate(s) to be ignored when considering renewal.  If you're
-sure that UI doesn't prompt for any details you can add the command to
-``crontab`` (make it less than every 90 days to avoid problems, say
-every month).
+The ``letsencrypt`` client now supports a ``renew`` action to check
+all installed certificates for impending expiry and attempt to renew
+them. The simplest form is simply
+
+``letsencrypt renew``
+
+This will attempt to renew any previously-obtained certificates that
+expire in less than 30 days. The same plugin and options that were used
+at the time the certificate was originally issued will be used for the
+renewal attempt, unless you specify other plugins or options.
+
+If you're sure that this command executes successfully without human
+intervention, you can add the command to ``crontab`` (since certificates
+are only renewed when they're determined to be near expiry, the command
+can run on a regular basis, like every week or every day); note that
+the current version provides detailed output describing either renewal
+success or failure.
+
+The ``--force-renew`` flag may be helpful for automating renewal;
+it causes the expiration time of the certificate(s) to be ignored when
+considering renewal, and attempts to renew each and every installed
+certificate regardless of its age. (This form is not appropriate to run
+daily because each certificate will be renewed every day, which will
+quickly run into the certificate authority rate limit.)
+
+Note that options provided to ``letsencrypt renew`` will apply to
+*every* certificate for which renewal is attempted; for example,
+``letsencrypt renew --rsa-key-size 4096`` would try to replace every
+near-expiry certificate with an equivalent certificate using a 4096-bit
+RSA public key. If a certificate is successfully renewed using
+specified options, those options will be saved and used for future
+renewals of that certificate.
+
+
+An alternative form that provides for more fine-grained control over the
+renewal process (while renewing specified certificates one at a time),
+is ``letsencrypt certonly`` with the complete set of subject domains of
+a specific certificate specified via `-d` flags, like
+
+``letsencrypt certonly -d example.com -d www.example.com``
+
+(All of the domains covered by the certificate must be specified in
+this case in order to renew and replace the old certificate rather
+than obtaining a new one; don't forget any `www.` domains! Specifying
+a subset of the domains creates a new, separate certificate containing
+only those domains, rather than replacing the original certificate.)
+The ``certonly`` form attempts to renew one individual certificate.
+
 
 Please note that the CA will send notification emails to the address
 you provide if you do not renew certificates that are about to expire.
 
-Let's Encrypt is working hard on automating the renewal process. Until
-the tool is ready, we are sorry for the inconvenience!
+Let's Encrypt is working hard on improving the renewal process, and we
+apologize for any inconveniences you encounter in integrating these
+commands into your individual environment.
 
 
 .. _where-certs:
