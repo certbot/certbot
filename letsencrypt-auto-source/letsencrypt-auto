@@ -104,7 +104,7 @@ DeterminePythonVersion() {
     exit 1
   fi
 
-  PYVER=`"$LE_PYTHON" --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
+  PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
   if [ $PYVER -lt 26 ]; then
     echo "You have an ancient version of Python entombed in your operating system..."
     echo "This isn't going to work; you'll need at least version 2.6."
@@ -324,13 +324,13 @@ BootstrapGentooCommon() {
 
   case "$PACKAGE_MANAGER" in
     (paludis)
-      "$SUDO" cave resolve --keep-targets if-possible $PACKAGES -x
+      "$SUDO" cave resolve --preserve-world --keep-targets if-possible $PACKAGES -x
       ;;
     (pkgcore)
-      "$SUDO" pmerge --noreplace $PACKAGES
+      "$SUDO" pmerge --noreplace --oneshot $PACKAGES
       ;;
     (portage|*)
-      "$SUDO" emerge --noreplace $PACKAGES
+      "$SUDO" emerge --noreplace --oneshot $PACKAGES
       ;;
   esac
 }
