@@ -18,7 +18,7 @@ set -e  # Work even if somebody does "sh thisscript.sh".
 XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
-VENV_BIN=${VENV_PATH}/bin
+VENV_BIN="$VENV_PATH/bin"
 LE_AUTO_VERSION="{{ LE_AUTO_VERSION }}"
 
 # This script takes the same arguments as the main letsencrypt program, but it
@@ -105,7 +105,7 @@ DeterminePythonVersion() {
   fi
 
   PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
-  if [ $PYVER -lt 26 ]; then
+  if [ "$PYVER" -lt 26 ]; then
     echo "You have an ancient version of Python entombed in your operating system..."
     echo "This isn't going to work; you'll need at least version 2.6."
     exit 1
