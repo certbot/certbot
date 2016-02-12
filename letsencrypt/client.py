@@ -195,7 +195,7 @@ class Client(object):
         else:
             self.auth_handler = None
 
-    def obtain_certificate_from_csr(self, domains, csr, authzr,
+    def obtain_certificate_from_csr(self, domains, csr, authzr=False,
         typ=OpenSSL.crypto.FILETYPE_ASN1):
         """Obtain certificate.
 
@@ -222,10 +222,15 @@ class Client(object):
 
         logger.debug("CSR: %s, domains: %s", csr, domains)
 
+        if authzr is False:
+            authzr, _ = self.auth_handler.get_authorizations(
+                            domains,
+                            self.config.allow_subset_of_names)
+
         certr = self.acme.request_issuance(
             jose.ComparableX509(
                 OpenSSL.crypto.load_certificate_request(typ, csr.data)),
-            authzr)
+                authzr)
         return certr, self.acme.fetch_chain(certr)
 
     def obtain_certificate(self, domains):

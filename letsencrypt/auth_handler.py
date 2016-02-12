@@ -90,6 +90,8 @@ class AuthHandler(object):
 
         my_authzr = self.authzr
 
+        logger.debug("authzr: %s", my_authzr)
+
         returnDomains = []
         #Remove failing domains if best_effort is true
         for domain in domains:

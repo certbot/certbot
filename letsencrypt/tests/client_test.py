@@ -137,9 +137,14 @@ class ClientTest(unittest.TestCase):
             self.assertRaises(errors.ConfigurationError,
                 cli.HelpfulArgumentParser.handle_csr, mock_parser, mock_parsed_args)
 
+            authzr, _ = self.client.auth_handler.get_authorizations(self.eg_domains, False)
+
             self.assertEqual(
                 (mock.sentinel.certr, mock.sentinel.chain),
-                self.client.obtain_certificate_from_csr(self.eg_domains, test_csr))
+                self.client.obtain_certificate_from_csr(
+                    self.eg_domains,
+                    test_csr,
+                    authzr))
             # and that the cert was obtained correctly
             self._check_obtain_certificate()
 
