@@ -25,18 +25,24 @@ LE_AUTO_VERSION="0.5.0.dev0"
 # additionally responds to --verbose (more output) and --debug (allow support
 # for experimental platforms)
 for arg in "$@" ; do
-  # This first clause is redundant with the third, but hedging on portability
-  if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- "-v+$" ; then
-    VERBOSE=1
-  elif [ "$arg" = "--no-self-upgrade" ] ; then
-    # Do not upgrade this script (also prevents client upgrades, because each
-    # copy of the script pins a hash of the python client)
-    NO_SELF_UPGRADE=1
-  elif [ "$arg" = "--os-packages-only" ] ; then
-    OS_PACKAGES_ONLY=1
-  elif [ "$arg" = "--debug" ]; then
-    DEBUG=1
-  fi
+  case "$arg" in
+    --debug)
+      DEBUG=1;;
+    --os-packages-only)
+      OS_PACKAGES_ONLY=1;;
+    --no-self-upgrade)
+      # Do not upgrade this script (also prevents client upgrades, because each
+      # copy of the script pins a hash of the python client)
+      NO_SELF_UPGRADE=1;;
+    --verbose)
+      VERBOSE=1;;
+    [!-]*|-*[!v]*|-)
+      # Anything that isn't -v, -vv, etc.: that is, anything that does not
+      # start with a -, contains anything that's not a v, or is just "-"
+      ;;
+    *)  # -v+ remains.
+      VERBOSE=1;;
+  esac
 done
 
 # letsencrypt-auto needs root access to bootstrap OS dependencies, and
