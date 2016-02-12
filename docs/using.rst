@@ -327,12 +327,27 @@ If you're still not convinced and have decided to use this method,
 from the server that the domain you're requesting a cert for resolves
 to, `install Docker`_, then issue the following command:
 
+
+
+Stagging :  
+Cert from Fake CA
+
 .. code-block:: shell
 
    sudo docker run -it --rm -p 443:443 -p 80:80 --name letsencrypt \
                -v "/etc/letsencrypt:/etc/letsencrypt" \
                -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
                quay.io/letsencrypt/letsencrypt:latest auth
+
+Prodcution :  
+Cert from Let's Encrypt CA  
+
+.. code-block:: shell
+
+   sudo docker run -it --rm -p 443:443 -p 80:80 --name letsencrypt \
+               -v "/etc/letsencrypt:/etc/letsencrypt" \
+               -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+               quay.io/letsencrypt/letsencrypt:latest auth --server https://acme-v01.api.letsencrypt.org/directory
 
 and follow the instructions (note that ``auth`` command is explicitly
 used - no installer plugins involved). Your new cert will be available
