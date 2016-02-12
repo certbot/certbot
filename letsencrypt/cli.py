@@ -323,7 +323,7 @@ def _handle_identical_cert_request(config, cert):
 
     display = zope.component.getUtility(interfaces.IDisplay)
     response = display.menu(question, choices, "OK", "Cancel", default=0)
-    if response[0] == "cancel" or response[1] == 2:
+    if response[0] == display_util.CANCEL:
         # TODO: Add notification related to command-line options for
         #       skipping the menu for this case.
         raise errors.Error(
