@@ -17,11 +17,7 @@ from acme import jose
 from acme import jws
 from acme import messages
 
-try:
-    from email.utils import parsedate_tz
-except ImportError: # pragma: no cover
-    # pylint: disable=import-error,no-name-in-module
-    from email.Utils import parsedate_tz
+from email.utils import parsedate_tz
 
 logger = logging.getLogger(__name__)
 
