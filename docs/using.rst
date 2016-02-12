@@ -111,11 +111,11 @@ potentially be a separate directory for each domain. When requested a
 certificate for multiple domains, each domain will use the most recently
 specified ``--webroot-path``.  So, for instance,
 
-``letsencrypt certonly --webroot -w /var/www/example/ -d www.example.com -d example.com -w /var/www/eg -d eg.is -d www.eg.is``
+``letsencrypt certonly --webroot -w /var/www/example/ -d www.example.com -d example.com -w /var/www/other -d other.example.net -d another.other.example.net``
 
 would obtain a single certificate for all of those names, using the
 ``/var/www/example`` webroot directory for the first two, and
-``/var/www/eg`` for the second two.
+``/var/www/other`` for the second two.
 
 The webroot plugin works by creating a temporary file for each of your requested
 domains in ``${webroot-path}/.well-known/acme-challenge``. Then the Let's
