@@ -1,9 +1,10 @@
 """ACME client API."""
 import collections
-import datetime
 import heapq
 import logging
 import time
+
+from datetime import datetime, timedelta
 
 import six
 from six.moves import http_client  # pylint: disable=import-error
@@ -259,13 +260,12 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `datetime.datetime`
 
         """
-        retry_after = response.headers.get('Retry-After', str(default))
-        now = datetime.datetime.now()
+        retry_after = response.headers.get('Retry-After', str(default)).strip()
         try:
             seconds = int(retry_after)
         except ValueError:
             # pylint: disable=no-member
-            t = list(parsedate_tz(value.strip())) # returns None on fail
+            t = list(parsedate_tz(retry_after))
             try:
                 year = t[0] # raises TypeError if t is None
                 # Handle two-digit years -- but any webserver that thinks
@@ -273,11 +273,12 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                 if year >= 0 and year < 100:
                     t[0] = year + 2000
                 tz = t[-1] if t[-1] else 0
-                return datetime(*t) - timedelta(tz) # raises Value/OverflowError
+                # raises ValueError/OverflowError
+                return datetime(*t) - timedelta(tz)
             except (TypeError, ValueError, OverflowError):
                 seconds = default
 
-        return now + datetime.timedelta(seconds=seconds)
+        return datetime.now() + timedelta(seconds=seconds)
 
     def poll(self, authzr):
         """Poll Authorization Resource for status.
@@ -369,7 +370,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         # priority queue with datetime (based on Retry-After) as key,
         # and original Authorization Resource as value
-        waiting = [(datetime.datetime.now(), authzr) for authzr in authzrs]
+        waiting = [(datetime.now(), authzr) for authzr in authzrs]
         # mapping between original Authorization Resource and the most
         # recently updated one
         updated = dict((authzr, authzr) for authzr in authzrs)
@@ -377,7 +378,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         while waiting:
             # find the smallest Retry-After, and sleep if necessary
             when, authzr = heapq.heappop(waiting)
-            now = datetime.datetime.now()
+            now = datetime.now()
             if when > now:
                 seconds = (when - now).seconds
                 logger.debug('Sleeping for %d seconds', seconds)
