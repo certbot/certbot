@@ -23,7 +23,7 @@ once:
    git clone https://github.com/letsencrypt/letsencrypt
    cd letsencrypt
    ./letsencrypt-auto-source/letsencrypt-auto --os-packages-only
-   ./bootstrap/dev/venv.sh
+   ./tools/venv.sh
 
 Then in each shell where you're working on the client, do:
 
@@ -157,7 +157,7 @@ Plugin-architecture
 Let's Encrypt has a plugin architecture to facilitate support for
 different webservers, other TLS servers, and operating systems.
 The interfaces available for plugins to implement are defined in
-`interfaces.py`_.
+`interfaces.py`_ and `plugins/common.py`_.
 
 The most common kind of plugin is a "Configurator", which is likely to
 implement the `~letsencrypt.interfaces.IAuthenticator` and
@@ -168,6 +168,7 @@ There are also `~letsencrypt.interfaces.IDisplay` plugins,
 which implement bindings to alternative UI libraries.
 
 .. _interfaces.py: https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/interfaces.py
+.. _plugins/common.py: https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/plugins/common.py#L34
 
 
 Authenticators
@@ -300,7 +301,7 @@ Steps:
 
 1. Write your code!
 2. Make sure your environment is set up properly and that you're in your
-   virtualenv. You can do this by running ``./bootstrap/dev/venv.sh``.
+   virtualenv. You can do this by running ``./tools/venv.sh``.
    (this is a **very important** step)
 3. Run ``./pep8.travis.sh`` to do a cursory check of your code style.
    Fix any errors.

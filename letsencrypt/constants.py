@@ -37,7 +37,9 @@ STAGING_URI = "https://acme-staging.api.letsencrypt.org/directory"
 RENEWER_DEFAULTS = dict(
     renewer_enabled="yes",
     renew_before_expiry="30 days",
-    deploy_before_expiry="20 days",
+    # This value should ensure that there is never a deployment delay by
+    # default.
+    deploy_before_expiry="99 years",
 )
 """Defaults for renewer script."""
 

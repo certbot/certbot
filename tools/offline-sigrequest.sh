@@ -9,9 +9,9 @@ fi
 
 function sayhash { # $1 <-- HASH ; $2 <---SIGFILEBALL
   while read -p "Press Enter to read the hash aloud or type 'done':  " INP && [ "$INP" = "" ] ; do
-    cat $1 | (echo "(Parameter.set 'Duration_Stretch 1.5)"; \
+    cat $1 | (echo "(Parameter.set 'Duration_Stretch 1.8)"; \
                 echo -n '(SayText "'; \
-                sha1sum | cut -c1-40 | fold -1 | sed 's/^a$/alpha/; s/^b$/bravo/; s/^c$/charlie/; s/^d$/delta/; s/^e$/echo/; s/^f$/foxtrot/'; \
+                sha256sum | cut -c1-64 | fold -1 | sed 's/^a$/alpha/; s/^b$/bravo/; s/^c$/charlie/; s/^d$/delta/; s/^e$/echo/; s/^f$/foxtrot/'; \
                 echo '")' ) | festival
   done
 
@@ -23,8 +23,8 @@ function offlinesign {  # $1 <-- INPFILE ; $2 <---SIGFILE
   echo HASH FOR SIGNING:
   SIGFILEBALL="$2.lzma.base64"
   #echo "(place the resulting raw binary signature in $SIGFILEBALL)"
-  sha1sum $1 
-  echo metahash for confirmation only $(sha1sum $1   |cut -d' ' -f1 | tr -d '\n' | sha1sum  | cut -c1-6) ...
+  sha256sum $1
+  echo metahash for confirmation only $(sha256sum $1   |cut -d' ' -f1 | tr -d '\n' | sha256sum  | cut -c1-6) ...
   echo
   sayhash $1 $SIGFILEBALL
 }

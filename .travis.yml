@@ -72,7 +72,7 @@ addons:
   apt:
     sources:
     - augeas
-    packages:  # keep in sync with bootstrap/ubuntu.sh and Boulder
+    packages:  # Keep in sync with letsencrypt-auto-source/pieces/bootstrappers/deb_common.sh and Boulder.
     - python-dev
     - python-virtualenv
     - gcc

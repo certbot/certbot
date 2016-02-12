@@ -6,7 +6,9 @@ from __future__ import print_function
 # (TODO: split this file into main.py and cli.py)
 import argparse
 import atexit
+import copy
 import functools
+import glob
 import json
 import logging
 import logging.handlers
@@ -44,6 +46,18 @@ from letsencrypt.plugins import disco as plugins_disco
 
 logger = logging.getLogger(__name__)
 
+# Global, to save us from a lot of argument passing within the scope of this module
+_parser = None
+
+# These are the items which get pulled out of a renewal configuration
+# file's renewalparams and actually used in the client configuration
+# during the renewal process. We have to record their types here because
+# the renewal configuration process loses this information.
+STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
+                    "server", "account", "authenticator", "installer",
+                    "standalone_supported_challenges"]
+INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
+
 # For help strings, figure out how the user ran us.
 # When invoked from letsencrypt-auto, sys.argv[0] is something like:
 # "/home/user/.local/share/letsencrypt/bin/letsencrypt"
@@ -69,6 +83,7 @@ the cert. Major SUBCOMMANDS are:
   (default) run        Obtain & install a cert in your current webserver
   certonly             Obtain cert, but do not install it (aka "auth")
   install              Install a previously obtained cert in a server
+  renew                Renew previously obtained certs that are near expiry
   revoke               Revoke a previously obtained certificate
   rollback             Rollback server configuration changes made during install
   config_changes       Show changes made to server config during installation
@@ -208,15 +223,12 @@ def _find_duplicative_certs(config, domains):
     # Verify the directory is there
     le_util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
 
-    for renewal_file in os.listdir(configs_dir):
-        if not renewal_file.endswith(".conf"):
-            continue
+    for renewal_file in _renewal_conf_files(cli_config):
         try:
-            full_path = os.path.join(configs_dir, renewal_file)
-            candidate_lineage = storage.RenewableCert(full_path, cli_config)
+            candidate_lineage = storage.RenewableCert(renewal_file, cli_config)
         except (errors.CertStorageError, IOError):
-            logger.warning("Renewal configuration file %s is broken. "
-                           "Skipping.", full_path)
+            logger.warning("Renewal conf file %s is broken. Skipping.", renewal_file)
+            logger.debug("Traceback was:\n%s", traceback.format_exc())
             continue
         # TODO: Handle these differently depending on whether they are
         #       expired or still valid?
@@ -235,7 +247,10 @@ def _find_duplicative_certs(config, domains):
 
 
 def _treat_as_renewal(config, domains):
-    """Determine whether there are duplicated names and how to handle them.
+    """Determine whether there are duplicated names and how to handle
+    them (renew, reinstall, newcert, or raising an error to stop
+    the client run if the user chooses to cancel the operation when
+    prompted).
 
     :returns: Two-element tuple containing desired new-certificate behavior as
               a string token ("reinstall", "renew", or "newcert"), plus either
@@ -262,8 +277,24 @@ def _treat_as_renewal(config, domains):
     elif subset_names_cert is not None:
         return _handle_subset_cert_request(config, domains, subset_names_cert)
 
+
+def _should_renew(config, lineage):
+    "Return true if any of the circumstances for automatic renewal apply."
+    if config.renew_by_default:
+        logger.info("Auto-renewal forced with --force-renewal...")
+        return True
+    if lineage.should_autorenew(interactive=True):
+        logger.info("Cert is due for renewal, auto-renewing...")
+        return True
+    if config.dry_run:
+        logger.info("Cert not due for renewal, but simulating renewal for dry run")
+        return True
+    logger.info("Cert not yet due for renewal")
+    return False
+
+
 def _handle_identical_cert_request(config, cert):
-    """Figure out what to do if a cert has the same names as a perviously obtained one
+    """Figure out what to do if a cert has the same names as a previously obtained one
 
     :param storage.RenewableCert cert:
 
@@ -271,17 +302,12 @@ def _handle_identical_cert_request(config, cert):
     :rtype: tuple
 
     """
-    if config.renew_by_default:
-        logger.info("Auto-renewal forced with --renew-by-default...")
-        return "renew", cert
-    if cert.should_autorenew(interactive=True):
-        logger.info("Cert is due for renewal, auto-renewing...")
+    if _should_renew(config, cert):
         return "renew", cert
     if config.reinstall:
         # Set with --reinstall, force an identical certificate to be
         # reinstalled without further prompting.
         return "reinstall", cert
-
     question = (
         "You have an existing certificate that contains exactly the same "
         "domains you requested and isn't close to expiry."
@@ -310,6 +336,7 @@ def _handle_identical_cert_request(config, cert):
         return "renew", cert
     else:
         assert False, "This is impossible"
+
 
 def _handle_subset_cert_request(config, domains, cert):
     """Figure out what to do if a previous cert had a subset of the names now requested
@@ -379,23 +406,28 @@ def _report_new_cert(cert_path, fullchain_path):
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
 
-def _suggest_donation_if_appropriate(config):
+def _suggest_donation_if_appropriate(config, action):
     """Potentially suggest a donation to support Let's Encrypt."""
-    if not config.staging:  # --dry-run implies --staging
-        reporter_util = zope.component.getUtility(interfaces.IReporter)
-        msg = ("If you like Let's Encrypt, please consider supporting our work by:\n\n"
-               "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
-               "Donating to EFF:                    https://eff.org/donate-le\n\n")
-        reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
-
-
-def _report_successful_dry_run():
+    if config.staging or config.verb == "renew":
+        # --dry-run implies --staging
+        return
+    if action not in ["renew", "newcert"]:
+        return
     reporter_util = zope.component.getUtility(interfaces.IReporter)
-    reporter_util.add_message("The dry run was successful.",
-                              reporter_util.HIGH_PRIORITY, on_crash=False)
+    msg = ("If you like Let's Encrypt, please consider supporting our work by:\n\n"
+           "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
+           "Donating to EFF:                    https://eff.org/donate-le\n\n")
+    reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
 
 
-def _auth_from_domains(le_client, config, domains):
+def _report_successful_dry_run(config):
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    if config.verb != "renew":
+        reporter_util.add_message("The dry run was successful.",
+                                  reporter_util.HIGH_PRIORITY, on_crash=False)
+
+
+def _auth_from_domains(le_client, config, domains, lineage=None):
     """Authenticate and enroll certificate."""
     # Note: This can raise errors... caught above us though. This is now
     # a three-way case: reinstall (which results in a no-op here because
@@ -404,10 +436,14 @@ def _auth_from_domains(le_client, config, domains):
     # (which results in treating the request as a renewal), or newcert
     # (which results in treating the request as a new certificate request).
 
-    action, lineage = _treat_as_renewal(config, domains)
-    if config.dry_run and action == "reinstall":
-        logger.info(
-            "Cert not due for renewal, but simulating renewal for dry run")
+    # If lineage is specified, use that one instead of looking around for
+    # a matching one.
+    if lineage is None:
+        # This will find a relevant matching lineage that exists
+        action, lineage = _treat_as_renewal(config, domains)
+    else:
+        # Renewal, where we already know the specific lineage we're
+        # interested in
         action = "renew"
 
     if action == "reinstall":
@@ -440,7 +476,7 @@ def _auth_from_domains(le_client, config, domains):
         if lineage is False:
             raise errors.Error("Certificate could not be obtained")
 
-    if not config.dry_run:
+    if not config.dry_run and not config.verb == "renew":
         _report_new_cert(lineage.cert, lineage.fullchain)
 
     return lineage, action
@@ -457,7 +493,7 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
                                                   open(lineage.cert).read())
     # all our test certs are from happy hacker fake CA, though maybe one day
     # we should test more methodically
-    now_valid = not "fake" in repr(latest_cert.get_issuer()).lower()
+    now_valid = "fake" not in repr(latest_cert.get_issuer()).lower()
 
     if _is_staging(config.server):
         if not _is_staging(original_server) or now_valid:
@@ -516,6 +552,7 @@ def set_configurator(previously, now):
             raise errors.PluginSelectionError(msg.format(repr(previously), repr(now)))
     return now
 
+
 def cli_plugin_requests(config):
     """
     Figure out which plugins the user requested with CLI and config options
@@ -544,6 +581,7 @@ def cli_plugin_requests(config):
 
 noninstaller_plugins = ["webroot", "manual", "standalone"]
 
+
 def choose_configurator_plugins(config, plugins, verb):
     """
     Figure out which configurator we're going to use, modifies
@@ -566,7 +604,7 @@ def choose_configurator_plugins(config, plugins, verb):
                    '{1}    {2} certonly --{0}{1}{1}'
                    '(Alternatively, add a --installer flag. See https://eff.org/letsencrypt-plugins'
                    '{1} and "--help plugins" for more information.)'.format(
-                   req_auth, os.linesep, cli_command))
+                       req_auth, os.linesep, cli_command))
 
             raise errors.MissingCommandlineFlag(msg)
     else:
@@ -635,30 +673,28 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     else:
         display_ops.success_renewal(domains, action)
 
-    _suggest_donation_if_appropriate(config)
+    _suggest_donation_if_appropriate(config, action)
 
 
-def obtain_cert(config, plugins):
+def obtain_cert(config, plugins, lineage=None):
     """Implements "certonly": authenticate & obtain cert, but do not install it."""
-
-    if config.domains and config.csr is not None:
-        # TODO: --csr could have a priority, when --domains is
-        # supplied, check if CSR matches given domains?
-        return "--domains and --csr are mutually exclusive"
-
+    # pylint: disable=too-many-locals
     try:
         # installers are used in auth mode to determine domain names
         installer, authenticator = choose_configurator_plugins(config, plugins, "certonly")
     except errors.PluginSelectionError as e:
-        return e.message
+        logger.info("Could not choose appropriate plugin: %s", e)
+        raise
 
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(config, authenticator, installer)
 
+    action = "newcert"
     # This is a special case; cert and chain are simply saved
     if config.csr is not None:
-        certr, chain = le_client.obtain_certificate_from_csr(le_util.CSR(
-            file=config.csr[0], data=config.csr[1], form="der"))
+        assert lineage is None, "Did not expect a CSR with a RenewableCert"
+        csr, typ = config.actual_csr
+        certr, chain = le_client.obtain_certificate_from_csr(config.domains, csr, typ)
         if config.dry_run:
             logger.info(
                 "Dry run: skipping saving certificate to %s", config.cert_path)
@@ -668,11 +704,23 @@ def obtain_cert(config, plugins):
             _report_new_cert(cert_path, cert_fullchain)
     else:
         domains = _find_domains(config, installer)
-        _auth_from_domains(le_client, config, domains)
+        _, action = _auth_from_domains(le_client, config, domains, lineage)
 
     if config.dry_run:
-        _report_successful_dry_run()
-    _suggest_donation_if_appropriate(config)
+        _report_successful_dry_run(config)
+    elif config.verb == "renew":
+        if installer is None:
+            # Tell the user that the server was not restarted.
+            print("new certificate deployed without reload, fullchain is",
+                  lineage.fullchain)
+        else:
+            # In case of a renewal, reload server to pick up new certificate.
+            # In principle we could have a configuration option to inhibit this
+            # from happening.
+            installer.restart()
+            print("new certificate deployed with reload of",
+                  config.installer, "server; fullchain is", lineage.fullchain)
+    _suggest_donation_if_appropriate(config, action)
 
 
 def install(config, plugins):
@@ -693,6 +741,295 @@ def install(config, plugins):
         domains, config.key_path, config.cert_path, config.chain_path,
         config.fullchain_path)
     le_client.enhance_config(domains, config)
+
+
+def _set_by_cli(var):
+    """
+    Return True if a particular config variable has been set by the user
+    (CLI or config file) including if the user explicitly set it to the
+    default.  Returns False if the variable was assigned a default value.
+    """
+    detector = _set_by_cli.detector
+    if detector is None:
+        # Setup on first run: `detector` is a weird version of config in which
+        # the default value of every attribute is wrangled to be boolean-false
+        plugins = plugins_disco.PluginsRegistry.find_all()
+        # reconstructed_args == sys.argv[1:], or whatever was passed to main()
+        reconstructed_args = _parser.args + [_parser.verb]
+        detector = _set_by_cli.detector = prepare_and_parse_args(
+            plugins, reconstructed_args, detect_defaults=True)
+        # propagate plugin requests: eg --standalone modifies config.authenticator
+        auth, inst = cli_plugin_requests(detector)
+        detector.authenticator = auth if auth else ""
+        detector.installer = inst if inst else ""
+        logger.debug("Default Detector is %r", detector)
+
+    try:
+        # Is detector.var something that isn't false?
+        change_detected = getattr(detector, var)
+    except AttributeError:
+        logger.warning("Missing default analysis for %r", var)
+        return False
+
+    if change_detected:
+        return True
+    # Special case: we actually want account to be set to "" if the server
+    # the account was on has changed
+    elif var == "account" and (detector.server or detector.dry_run or detector.staging):
+        return True
+    # Special case: vars like --no-redirect that get set True -> False
+    # default to None; False means they were set
+    elif var in detector.store_false_vars and change_detected is not None:
+        return True
+    else:
+        return False
+# static housekeeping var
+_set_by_cli.detector = None
+
+def _restore_required_config_elements(config, renewalparams):
+    """Sets non-plugin specific values in config from renewalparams
+
+    :param configuration.NamespaceConfig config: configuration for the
+        current lineage
+    :param configobj.Section renewalparams: parameters from the renewal
+        configuration file that defines this lineage
+
+    """
+    # string-valued items to add if they're present
+    for config_item in STR_CONFIG_ITEMS:
+        if config_item in renewalparams and not _set_by_cli(config_item):
+            value = renewalparams[config_item]
+            # Unfortunately, we've lost type information from ConfigObj,
+            # so we don't know if the original was NoneType or str!
+            if value == "None":
+                value = None
+            setattr(config.namespace, config_item, value)
+    # int-valued items to add if they're present
+    for config_item in INT_CONFIG_ITEMS:
+        if config_item in renewalparams and not _set_by_cli(config_item):
+            try:
+                value = int(renewalparams[config_item])
+                setattr(config.namespace, config_item, value)
+            except ValueError:
+                raise errors.Error(
+                    "Expected a numeric value for {0}".format(config_item))
+
+
+def _restore_plugin_configs(config, renewalparams):
+    """Sets plugin specific values in config from renewalparams
+
+    :param configuration.NamespaceConfig config: configuration for the
+        current lineage
+    :param configobj.Section renewalparams: Parameters from the renewal
+        configuration file that defines this lineage
+
+    """
+    # Now use parser to get plugin-prefixed items with correct types
+    # XXX: the current approach of extracting only prefixed items
+    #      related to the actually-used installer and authenticator
+    #      works as long as plugins don't need to read plugin-specific
+    #      variables set by someone else (e.g., assuming Apache
+    #      configurator doesn't need to read webroot_ variables).
+    # Note: if a parameter that used to be defined in the parser is no
+    #      longer defined, stored copies of that parameter will be
+    #      deserialized as strings by this logic even if they were
+    #      originally meant to be some other type.
+    if renewalparams["authenticator"] == "webroot":
+        _restore_webroot_config(config, renewalparams)
+        plugin_prefixes = []
+    else:
+        plugin_prefixes = [renewalparams["authenticator"]]
+
+    if renewalparams.get("installer", None) is not None:
+        plugin_prefixes.append(renewalparams["installer"])
+    for plugin_prefix in set(plugin_prefixes):
+        for config_item, config_value in renewalparams.iteritems():
+            if config_item.startswith(plugin_prefix + "_") and not _set_by_cli(config_item):
+                # Values None, True, and False need to be treated specially,
+                # As they don't get parsed correctly based on type
+                if config_value in ("None", "True", "False"):
+                    # bool("False") == True
+                    # pylint: disable=eval-used
+                    setattr(config.namespace, config_item, eval(config_value))
+                    continue
+                for action in _parser.parser._actions:  # pylint: disable=protected-access
+                    if action.type is not None and action.dest == config_item:
+                        setattr(config.namespace, config_item,
+                                action.type(config_value))
+                        break
+                else:
+                    setattr(config.namespace, config_item, str(config_value))
+
+def _restore_webroot_config(config, renewalparams):
+    """
+    webroot_map is, uniquely, a dict, and the general-purpose configuration
+    restoring logic is not able to correctly parse it from the serialized
+    form.
+    """
+    if "webroot_map" in renewalparams:
+        # if the user does anything that would create a new webroot map on the
+        # CLI, don't use the old one
+        if not (_set_by_cli("webroot_map") or _set_by_cli("webroot_path")):
+            setattr(config.namespace, "webroot_map", renewalparams["webroot_map"])
+    elif "webroot_path" in renewalparams:
+        logger.info("Ancient renewal conf file without webroot-map, restoring webroot-path")
+        setattr(config.namespace, "webroot_path", renewalparams["webroot_path"])
+
+
+def _reconstitute(config, full_path):
+    """Try to instantiate a RenewableCert, updating config with relevant items.
+
+    This is specifically for use in renewal and enforces several checks
+    and policies to ensure that we can try to proceed with the renwal
+    request. The config argument is modified by including relevant options
+    read from the renewal configuration file.
+
+    :param configuration.NamespaceConfig config: configuration for the
+        current lineage
+    :param str full_path: Absolute path to the configuration file that
+        defines this lineage
+
+    :returns: the RenewableCert object or None if a fatal error occurred
+    :rtype: `storage.RenewableCert` or NoneType
+
+    """
+    try:
+        renewal_candidate = storage.RenewableCert(
+            full_path, configuration.RenewerConfiguration(config))
+    except (errors.CertStorageError, IOError):
+        logger.warning("Renewal configuration file %s is broken. Skipping.", full_path)
+        logger.debug("Traceback was:\n%s", traceback.format_exc())
+        return None
+    if "renewalparams" not in renewal_candidate.configuration:
+        logger.warning("Renewal configuration file %s lacks "
+                       "renewalparams. Skipping.", full_path)
+        return None
+    renewalparams = renewal_candidate.configuration["renewalparams"]
+    if "authenticator" not in renewalparams:
+        logger.warning("Renewal configuration file %s does not specify "
+                       "an authenticator. Skipping.", full_path)
+        return None
+    # Now restore specific values along with their data types, if
+    # those elements are present.
+    try:
+        _restore_required_config_elements(config, renewalparams)
+        _restore_plugin_configs(config, renewalparams)
+    except (ValueError, errors.Error) as error:
+        logger.warning(
+            "An error occured while parsing %s. The error was %s. "
+            "Skipping the file.", full_path, error.message)
+        logger.debug("Traceback was:\n%s", traceback.format_exc())
+        return None
+
+    try:
+        for d in renewal_candidate.names():
+            _process_domain(config, d)
+    except errors.ConfigurationError as error:
+        logger.warning("Renewal configuration file %s references a cert "
+                       "that contains an invalid domain name. The problem "
+                       "was: %s. Skipping.", full_path, error)
+        return None
+
+    return renewal_candidate
+
+def _renewal_conf_files(config):
+    """Return /path/to/*.conf in the renewal conf directory"""
+    return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
+
+
+def _renew_describe_results(config, renew_successes, renew_failures,
+                            renew_skipped, parse_failures):
+    status = lambda x, msg: "  " + "\n  ".join(i + " (" + msg +")" for i in x)
+    if config.dry_run:
+        print("** DRY RUN: simulating 'letsencrypt renew' close to cert expiry")
+        print("**          (The test certificates below have not been saved.)")
+    print()
+    if renew_skipped:
+        print("The following certs are not due for renewal yet:")
+        print(status(renew_skipped, "skipped"))
+    if not renew_successes and not renew_failures:
+        print("No renewals were attempted.")
+    elif renew_successes and not renew_failures:
+        print("Congratulations, all renewals succeeded. The following certs "
+              "have been renewed:")
+        print(status(renew_successes, "success"))
+    elif renew_failures and not renew_successes:
+        print("All renewal attempts failed. The following certs could not be "
+              "renewed:")
+        print(status(renew_failures, "failure"))
+    elif renew_failures and renew_successes:
+        print("The following certs were successfully renewed:")
+        print(status(renew_successes, "success"))
+        print("\nThe following certs could not be renewed:")
+        print(status(renew_failures, "failure"))
+
+    if parse_failures:
+        print("\nAdditionally, the following renewal configuration files "
+              "were invalid: ")
+        print(status(parse_failures, "parsefail"))
+
+    if config.dry_run:
+        print("** DRY RUN: simulating 'letsencrypt renew' close to cert expiry")
+        print("**          (The test certificates above have not been saved.)")
+
+
+def renew(config, unused_plugins):
+    """Renew previously-obtained certificates."""
+
+    if config.domains != []:
+        raise errors.Error("Currently, the renew verb is only capable of "
+                           "renewing all installed certificates that are due "
+                           "to be renewed; individual domains cannot be "
+                           "specified with this action. If you would like to "
+                           "renew specific certificates, use the certonly "
+                           "command. The renew verb may provide other options "
+                           "for selecting certificates to renew in the future.")
+    if config.csr is not None:
+        raise errors.Error("Currently, the renew verb cannot be used when "
+                           "specifying a CSR file. Please try the certonly "
+                           "command instead.")
+    renewer_config = configuration.RenewerConfiguration(config)
+    renew_successes = []
+    renew_failures = []
+    renew_skipped = []
+    parse_failures = []
+    for renewal_file in _renewal_conf_files(renewer_config):
+        print("Processing " + renewal_file)
+        lineage_config = copy.deepcopy(config)
+
+        # Note that this modifies config (to add back the configuration
+        # elements from within the renewal configuration file).
+        try:
+            renewal_candidate = _reconstitute(lineage_config, renewal_file)
+        except Exception as e:  # pylint: disable=broad-except
+            logger.warning("Renewal configuration file %s produced an "
+                           "unexpected error: %s. Skipping.", renewal_file, e)
+            logger.debug("Traceback was:\n%s", traceback.format_exc())
+            parse_failures.append(renewal_file)
+            continue
+
+        try:
+            if renewal_candidate is None:
+                parse_failures.append(renewal_file)
+            else:
+                # XXX: ensure that each call here replaces the previous one
+                zope.component.provideUtility(lineage_config)
+                if _should_renew(lineage_config, renewal_candidate):
+                    plugins = plugins_disco.PluginsRegistry.find_all()
+                    obtain_cert(lineage_config, plugins, renewal_candidate)
+                    renew_successes.append(renewal_candidate.fullchain)
+                else:
+                    renew_skipped.append(renewal_candidate.fullchain)
+        except Exception as e:  # pylint: disable=broad-except
+            # obtain_cert (presumably) encountered an unanticipated problem.
+            logger.warning("Attempting to renew cert from %s produced an "
+                           "unexpected error: %s. Skipping.", renewal_file, e)
+            logger.debug("Traceback was:\n%s", traceback.format_exc())
+            renew_failures.append(renewal_candidate.fullchain)
+
+    # Describe all the results
+    _renew_describe_results(config, renew_successes, renew_failures,
+                            renew_skipped, parse_failures)
 
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
@@ -813,14 +1150,14 @@ class HelpfulArgumentParser(object):
     # Maps verbs/subcommands to the functions that implement them
     VERBS = {"auth": obtain_cert, "certonly": obtain_cert,
              "config_changes": config_changes, "everything": run,
-             "install": install, "plugins": plugins_cmd,
+             "install": install, "plugins": plugins_cmd, "renew": renew,
              "revoke": revoke, "rollback": rollback, "run": run}
 
     # List of topics for which additional help can be provided
     HELP_TOPICS = ["all", "security",
                    "paths", "automation", "testing"] + VERBS.keys()
 
-    def __init__(self, args, plugins):
+    def __init__(self, args, plugins, detect_defaults=False):
         plugin_names = [name for name, _p in plugins.iteritems()]
         self.help_topics = self.HELP_TOPICS + plugin_names + [None]
         usage, short_usage = usage_strings(plugins)
@@ -834,6 +1171,14 @@ class HelpfulArgumentParser(object):
         self.parser._add_config_file_help = False  # pylint: disable=protected-access
         self.silent_parser = SilentParser(self.parser)
 
+        # This setting attempts to force all default values to things that are
+        # pythonically false; it is used to detect when values have been
+        # explicitly set by the user, including when they are set to their
+        # normal default value
+        self.detect_defaults = detect_defaults
+        if detect_defaults:
+            self.store_false_vars = {}  # vars that use "store_false"
+
         self.args = args
         self.determine_verb()
         help1 = self.prescan_for_flag("-h", self.help_topics)
@@ -845,7 +1190,7 @@ class HelpfulArgumentParser(object):
             print(usage)
             sys.exit(0)
         self.visible_topics = self.determine_help_topics(self.help_arg)
-        self.groups = {}  # elements are added by .add_group()
+        self.groups = {}       # elements are added by .add_group()
 
     def parse_args(self):
         """Parses command line arguments and returns the result.
@@ -867,22 +1212,75 @@ class HelpfulArgumentParser(object):
                     parsed_args.domains.append(domain)
 
         if parsed_args.staging or parsed_args.dry_run:
-            if (parsed_args.server not in
-                    (flag_default("server"), constants.STAGING_URI)):
+            if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
                 conflicts = ["--staging"] if parsed_args.staging else []
                 conflicts += ["--dry-run"] if parsed_args.dry_run else []
-                raise errors.Error("--server value conflicts with {0}".format(
-                    " and ".join(conflicts)))
+                if not self.detect_defaults:
+                    raise errors.Error("--server value conflicts with {0}".format(
+                        " and ".join(conflicts)))
 
             parsed_args.server = constants.STAGING_URI
 
             if parsed_args.dry_run:
-                if self.verb != "certonly":
+                if self.verb not in ["certonly", "renew"]:
                     raise errors.Error("--dry-run currently only works with the "
-                                       "'certonly' subcommand")
+                                       "'certonly' or 'renew' subcommands (%r)" % self.verb)
                 parsed_args.break_my_certs = parsed_args.staging = True
+                if glob.glob(os.path.join(parsed_args.config_dir, constants.ACCOUNTS_DIR, "*")):
+                    # The user has a prod account, but might not have a staging
+                    # one; we don't want to start trying to perform interactive registration
+                    parsed_args.agree_tos = True
+                    parsed_args.register_unsafely_without_email = True
+
+        if parsed_args.csr:
+            self.handle_csr(parsed_args)
+
+        if self.detect_defaults:  # plumbing
+            parsed_args.store_false_vars = self.store_false_vars
 
         return parsed_args
+
+    def handle_csr(self, parsed_args):
+        """
+        Process a --csr flag. This needs to happen early enough that the
+        webroot plugin can know about the calls to _process_domain
+        """
+        try:
+            csr = le_util.CSR(file=parsed_args.csr[0], data=parsed_args.csr[1], form="der")
+            typ = OpenSSL.crypto.FILETYPE_ASN1
+            domains = crypto_util.get_sans_from_csr(csr.data, OpenSSL.crypto.FILETYPE_ASN1)
+        except OpenSSL.crypto.Error:
+            try:
+                e1 = traceback.format_exc()
+                typ = OpenSSL.crypto.FILETYPE_PEM
+                csr = le_util.CSR(file=parsed_args.csr[0], data=parsed_args.csr[1], form="pem")
+                domains = crypto_util.get_sans_from_csr(csr.data, typ)
+            except OpenSSL.crypto.Error:
+                logger.debug("DER CSR parse error %s", e1)
+                logger.debug("PEM CSR parse error %s", traceback.format_exc())
+                raise errors.Error("Failed to parse CSR file: {0}".format(parsed_args.csr[0]))
+        for d in domains:
+            _process_domain(parsed_args, d)
+
+        for d in domains:
+            sanitised = le_util.enforce_domain_sanity(d)
+            if d.lower() != sanitised:
+                raise errors.ConfigurationError(
+                    "CSR domain {0} needs to be sanitised to {1}.".format(d, sanitised))
+
+        if not domains:
+            # TODO: add CN to domains instead:
+            raise errors.Error(
+                "Unfortunately, your CSR %s needs to have a SubjectAltName for every domain"
+                % parsed_args.csr[0])
+
+        parsed_args.actual_csr = (csr, typ)
+        csr_domains, config_domains = set(domains), set(parsed_args.domains)
+        if csr_domains != config_domains:
+            raise errors.ConfigurationError(
+                "Inconsistent domain requests:\nFrom the CSR: {0}\nFrom command line/config: {1}"
+                .format(", ".join(csr_domains), ", ".join(config_domains)))
+
 
     def determine_verb(self):
         """Determines the verb/subcommand provided by the user.
@@ -932,10 +1330,16 @@ class HelpfulArgumentParser(object):
     def add(self, topic, *args, **kwargs):
         """Add a new command line argument.
 
-        @topic is required, to indicate which part of the help will document
-        it, but can be None for `always documented'.
+        :param str: help topic this should be listed under, can be None for
+                    "always documented"
+        :param list *args: the names of this argument flag
+        :param dict **kwargs: various argparse settings for this argument
 
         """
+
+        if self.detect_defaults:
+            kwargs = self.modify_arg_for_default_detection(self, *args, **kwargs)
+
         if self.visible_topics[topic]:
             if topic in self.groups:
                 group = self.groups[topic]
@@ -945,6 +1349,39 @@ class HelpfulArgumentParser(object):
         else:
             kwargs["help"] = argparse.SUPPRESS
             self.parser.add_argument(*args, **kwargs)
+
+
+    def modify_arg_for_default_detection(self, *args, **kwargs):
+        """
+        Adding an arg, but ensure that it has a default that evaluates to false,
+        so that _set_by_cli can tell if it was set.  Only called if detect_defaults==True.
+
+        :param list *args: the names of this argument flag
+        :param dict **kwargs: various argparse settings for this argument
+
+        :returns: a modified versions of kwargs
+        """
+        # argument either doesn't have a default, or the default doesn't
+        # isn't Pythonically false
+        if kwargs.get("default", True):
+            arg_type = kwargs.get("type", None)
+            if arg_type == int or kwargs.get("action", "") == "count":
+                kwargs["default"] = 0
+            elif arg_type == read_file or "-c" in args:
+                kwargs["default"] = ""
+                kwargs["type"] = str
+            else:
+                kwargs["default"] = ""
+            # This doesn't matter at present (none of the store_false args
+            # are renewal-relevant), but implement it for future sanity:
+            # detect the setting of args whose presence causes True -> False
+        if kwargs.get("action", "") == "store_false":
+            kwargs["default"] = None
+            for var in args:
+                self.store_false_vars[var] = True
+
+        return kwargs
+
 
     def add_deprecated_argument(self, argument_name, num_args):
         """Adds a deprecated argument with the name argument_name.
@@ -1013,7 +1450,7 @@ class HelpfulArgumentParser(object):
             return dict([(t, t == chosen_topic) for t in self.help_topics])
 
 
-def prepare_and_parse_args(plugins, args):
+def prepare_and_parse_args(plugins, args, detect_defaults=False):
     """Returns parsed command line arguments.
 
     :param .PluginsRegistry plugins: available plugins
@@ -1023,7 +1460,7 @@ def prepare_and_parse_args(plugins, args):
     :rtype: argparse.Namespace
 
     """
-    helpful = HelpfulArgumentParser(args, plugins)
+    helpful = HelpfulArgumentParser(args, plugins, detect_defaults)
 
     # --help is automatically provided by argparse
     helpful.add(
@@ -1040,6 +1477,11 @@ def prepare_and_parse_args(plugins, args):
         help="Run without ever asking for user input. This may require "
               "additional command line flags; the client will try to explain "
               "which ones are required if it finds one missing")
+    helpful.add(
+        None, "--dry-run", action="store_true", dest="dry_run",
+        help="Perform a test run of the client, obtaining test (invalid) certs"
+             " but not saving them to disk. This can currently only be used"
+             " with the 'certonly' subcommand.")
     helpful.add(
         None, "--register-unsafely-without-email", action="store_true",
         help="Specifying this flag enables registering an account with no "
@@ -1078,10 +1520,12 @@ def prepare_and_parse_args(plugins, args):
         version="%(prog)s {0}".format(letsencrypt.__version__),
         help="show program's version number and exit")
     helpful.add(
-        "automation", "--renew-by-default", action="store_true",
-        help="Select renewal by default when domains are a superset of a "
-             "previously attained cert (often --keep-until-expiring is "
-             "more appropriate). Implies --expand.")
+        "automation", "--force-renewal", "--renew-by-default",
+        action="store_true", dest="renew_by_default", help="If a certificate "
+             "already exists for the requested domains, renew it now, "
+             "regardless of whether it is near expiry. (Often "
+             "--keep-until-expiring is more appropriate). Also implies "
+             "--expand.")
     helpful.add(
         "automation", "--agree-tos", dest="tos", action="store_true",
         help="Agree to the Let's Encrypt Subscriber Agreement")
@@ -1160,6 +1604,16 @@ def prepare_and_parse_args(plugins, args):
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
 
+    helpful.add_group(
+        "renew", description="The 'renew' subcommand will attempt to renew all"
+        " certificates (or more precisely, certificate lineages) you have"
+        " previously obtained if they are close to expiry, and print a"
+        " summary of the results. By default, 'renew' will reuse the options"
+        " used to create obtain or most recently successfully renew each"
+        " certificate lineage. You can try it with `--dry-run` first. For"
+        " more fine-grained control, you can renew individual lineages with"
+        " the `certonly` subcommand.")
+
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
 
     _create_subparsers(helpful)
@@ -1168,6 +1622,9 @@ def prepare_and_parse_args(plugins, args):
     # parser (--help should display plugin-specific options last)
     _plugins_parsing(helpful, plugins)
 
+    if not detect_defaults:
+        global _parser # pylint: disable=global-statement
+        _parser = helpful
     return helpful.parse_args()
 
 
@@ -1254,10 +1711,6 @@ def _paths_parser(helpful):
     add("testing", "--test-cert", "--staging", action='store_true', dest='staging',
         help='Use the staging server to obtain test (invalid) certs; equivalent'
              ' to --server ' + constants.STAGING_URI)
-    add("testing", "--dry-run", action="store_true", dest="dry_run",
-        help="Perform a test run of the client, obtaining test (invalid) certs"
-             " but not saving them to disk. This can currently only be used"
-             " with the 'certonly' subcommand.")
 
 
 def _plugins_parsing(helpful, plugins):
@@ -1296,21 +1749,24 @@ def _plugins_parsing(helpful, plugins):
     # they are parsed in conjunction with --domains, they live here for
     # legibility. helpful.add_plugin_ags must be called first to add the
     # "webroot" topic
-    helpful.add("webroot", "-w", "--webroot-path", action=WebrootPathProcessor,
+    helpful.add("webroot", "-w", "--webroot-path", default=[], action=WebrootPathProcessor,
                 help="public_html / webroot path. This can be specified multiple times to "
                      "handle different domains; each domain will have the webroot path that"
                      " preceded it.  For instance: `-w /var/www/example -d example.com -d "
                      "www.example.com -w /var/www/thing -d thing.net -d m.thing.net`")
     # --webroot-map still has some awkward properties, so it is undocumented
     helpful.add("webroot", "--webroot-map", default={}, action=WebrootMapProcessor,
-        help="JSON dictionary mapping domains to webroot paths; this implies -d "
-             "for each entry. You may need to escape this from your shell. "
-             """Eg: --webroot-map '{"eg1.is,m.eg1.is":"/www/eg1/", "eg2.is":"/www/eg2"}' """
-             "This option is merged with, but takes precedence over, -w / -d entries."
-             " At present, if you put webroot-map in a config file, it needs to be "
-             ' on a single line, like: webroot-map = {"example.com":"/var/www"}.')
+                help="JSON dictionary mapping domains to webroot paths; this "
+                     "implies -d for each entry. You may need to escape this "
+                     "from your shell. E.g.: --webroot-map "
+                     """'{"eg1.is,m.eg1.is":"/www/eg1/", "eg2.is":"/www/eg2"}' """
+                     "This option is merged with, but takes precedence over, "
+                     "-w / -d entries. At present, if you put webroot-map in "
+                     "a config file, it needs to be on a single line, like: "
+                     'webroot-map = {"example.com":"/var/www"}.')
 
-class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
+
+class WebrootPathProcessor(argparse.Action):  # pylint: disable=missing-docstring
     def __init__(self, *args, **kwargs):
         self.domain_before_webroot = False
         argparse.Action.__init__(self, *args, **kwargs)
@@ -1320,8 +1776,7 @@ class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
         Keep a record of --webroot-path / -w flags during processing, so that
         we know which apply to which -d flags
         """
-        if args.webroot_path is None:      # first -w flag encountered
-            args.webroot_path = []
+        if not args.webroot_path:      # first -w flag encountered
             # if any --domain flags preceded the first --webroot-path flag,
             # apply that webroot path to those; subsequent entries in
             # args.webroot_map are filled in by cli.DomainFlagProcessor
@@ -1359,14 +1814,14 @@ def _process_domain(args_or_config, domain_arg, webroot_path=None):
                 args_or_config.webroot_map.setdefault(domain, webroot_path[-1])
 
 
-class WebrootMapProcessor(argparse.Action): # pylint: disable=missing-docstring
+class WebrootMapProcessor(argparse.Action):  # pylint: disable=missing-docstring
     def __call__(self, parser, args, webroot_map_arg, option_string=None):
         webroot_map = json.loads(webroot_map_arg)
         for domains, webroot_path in webroot_map.iteritems():
             _process_domain(args, domains, [webroot_path])
 
 
-class DomainFlagProcessor(argparse.Action): # pylint: disable=missing-docstring
+class DomainFlagProcessor(argparse.Action):  # pylint: disable=missing-docstring
     def __call__(self, parser, args, domain_arg, option_string=None):
         """Just wrap _process_domain in argparseese."""
         _process_domain(args, domain_arg)
@@ -1389,7 +1844,7 @@ def setup_log_file_handler(config, logfile, fmt):
 
 
 def _cli_log_handler(config, level, fmt):
-    if config.text_mode:
+    if config.text_mode or config.noninteractive_mode or config.verb == "renew":
         handler = colored_logging.StreamHandler()
         handler.setFormatter(logging.Formatter(fmt))
     else:
@@ -1457,8 +1912,8 @@ def _handle_exception(exc_type, exc_value, trace, config):
             # acme.messages.Error: urn:acme:error:malformed :: The request message was
             # malformed :: Error creating new registration :: Validation of contact
             # mailto:none@longrandomstring.biz failed: Server failure at resolver
-            if ("urn:acme" in err and ":: " in err
-                and config.verbose_count <= flag_default("verbose_count")):
+            if (("urn:acme" in err and ":: " in err and
+                 config.verbose_count <= flag_default("verbose_count"))):
                 # prune ACME error code, we have a human description
                 _code, _sep, err = err.partition(":: ")
             msg = "An unexpected error occurred:\n" + err + "Please see the "
@@ -1475,9 +1930,9 @@ def _handle_exception(exc_type, exc_value, trace, config):
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     sys.excepthook = functools.partial(_handle_exception, config=None)
+    plugins = plugins_disco.PluginsRegistry.find_all()
 
     # note: arg parser internally handles --help (and exits afterwards)
-    plugins = plugins_disco.PluginsRegistry.find_all()
     args = prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
@@ -1506,6 +1961,9 @@ def main(cli_args=sys.argv[1:]):
         displayer = display_util.NoninteractiveDisplay(sys.stdout)
     elif config.text_mode:
         displayer = display_util.FileDisplay(sys.stdout)
+    elif config.verb == "renew":
+        config.noninteractive_mode = True
+        displayer = display_util.NoninteractiveDisplay(sys.stdout)
     else:
         displayer = display_util.NcursesDisplay()
     zope.component.provideUtility(displayer)
@@ -1514,17 +1972,6 @@ def main(cli_args=sys.argv[1:]):
     report = reporter.Reporter()
     zope.component.provideUtility(report)
     atexit.register(report.atexit_print_messages)
-
-    if not os.geteuid() == 0:
-        logger.warning(
-            "Root (sudo) is required to run most of letsencrypt functionality.")
-        # check must be done after arg parsing as --help should work
-        # w/o root; on the other hand, e.g. "letsencrypt run
-        # --authenticator dns" or "letsencrypt plugins" does not
-        # require root as well
-        #return (
-        #    "{0}Root is required to run letsencrypt.  Please use sudo.{0}"
-        #    .format(os.linesep))
 
     return config.func(config, plugins)
 
