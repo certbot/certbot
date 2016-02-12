@@ -4,7 +4,7 @@ import heapq
 import logging
 import time
 
-from datetime import datetime, timedelta
+import datetime
 
 import six
 from six.moves import http_client  # pylint: disable=import-error
@@ -21,7 +21,8 @@ from acme import messages
 try:
     from email.utils import parsedate_tz
 except ImportError: # pragma: no cover
-    from email.Utils import parsedate_tz
+    # pylint: disable=import-error,no-name-in-module
+    from email.Utils import parsedate_tz 
 
 logger = logging.getLogger(__name__)
 
@@ -257,7 +258,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             ``Retry-After`` header is not present or invalid.
 
         :returns: Time point when next `poll` should be performed.
-        :rtype: `datetime.datetime`
+        :rtype: `datetime.datetime.datetime`
 
         """
         retry_after = response.headers.get('Retry-After', str(default)).strip()
@@ -265,20 +266,20 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             seconds = int(retry_after)
         except ValueError:
             # pylint: disable=no-member
-            t = list(parsedate_tz(retry_after))
+            when = parsedate_tz(retry_after)
             try:
-                year = t[0] # raises TypeError if t is None
+                year = when[0] # raises TypeError if t is None
                 # Handle two-digit years -- but any webserver that thinks
                 # "retry after 99" means "come back after 1999" is.. deprecated
                 if year >= 0 and year < 100:
-                    t[0] = year + 2000
-                tz = t[-1] if t[-1] else 0
+                    when = [year + 2000] + when[1:]
+                tzone = when[-1] if when[-1] else 0
                 # raises ValueError/OverflowError
-                return datetime(*t) - timedelta(tz)
+                return datetime.datetime(*when[:7]) - datetime.timedelta(tzone)
             except (TypeError, ValueError, OverflowError):
                 seconds = default
 
-        return datetime.now() + timedelta(seconds=seconds)
+        return datetime.datetime.now() + datetime.timedelta(seconds=seconds)
 
     def poll(self, authzr):
         """Poll Authorization Resource for status.
@@ -368,9 +369,9 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         attempts = collections.defaultdict(int)
         exhausted = set()
 
-        # priority queue with datetime (based on Retry-After) as key,
+        # priority queue with datetime.datetime (based on Retry-After) as key,
         # and original Authorization Resource as value
-        waiting = [(datetime.now(), authzr) for authzr in authzrs]
+        waiting = [(datetime.datetime.now(), authzr) for authzr in authzrs]
         # mapping between original Authorization Resource and the most
         # recently updated one
         updated = dict((authzr, authzr) for authzr in authzrs)
@@ -378,7 +379,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         while waiting:
             # find the smallest Retry-After, and sleep if necessary
             when, authzr = heapq.heappop(waiting)
-            now = datetime.now()
+            now = datetime.datetime.now()
             if when > now:
                 seconds = (when - now).seconds
                 logger.debug('Sleeping for %d seconds', seconds)
