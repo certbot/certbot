@@ -130,7 +130,7 @@ made to your web server would look like:
 Note that to use the webroot plugin, your server must be configured to serve
 files from hidden directories. If ``/.well-known`` is treated specially by
 your webserver configuration, you might need to modify the configuration
-to ensure that files inside ``/.well-known/ache-challenge`` are served by
+to ensure that files inside ``/.well-known/acme-challenge`` are served by
 the webserver.
 
 Standalone
@@ -439,8 +439,8 @@ want to use the Apache plugin, it has to be installed separately:
    emerge -av app-crypt/letsencrypt
    emerge -av app-crypt/letsencrypt-apache
 
-Currently, only the Apache plugin is included in Portage. However, if you 
-want the nginx plugin, you can use Layman to add the mrueg overlay which 
+Currently, only the Apache plugin is included in Portage. However, if you
+want the nginx plugin, you can use Layman to add the mrueg overlay which
 does include the nginx plugin package:
 
 .. code-block:: shell
@@ -450,9 +450,9 @@ does include the nginx plugin package:
    layman -a mrueg
    emerge -av app-crypt/letsencrypt-nginx
 
-When using the Apache plugin, you will run into a "cannot find a cert or key 
+When using the Apache plugin, you will run into a "cannot find a cert or key
 directive" error if you're sporting the default Gentoo ``httpd.conf``.
-You can fix this by commenting out two lines in ``/etc/apache2/httpd.conf`` 
+You can fix this by commenting out two lines in ``/etc/apache2/httpd.conf``
 as follows:
 
 Change
@@ -471,7 +471,7 @@ to
    LoadModule ssl_module modules/mod_ssl.so
    #</IfDefine>
 
-For the time being, this is the only way for the Apache plugin to recognise 
+For the time being, this is the only way for the Apache plugin to recognise
 the appropriate directives when installing the certificate.
 Note: this change is not required for the other plugins.
 
