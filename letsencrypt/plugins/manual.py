@@ -91,7 +91,8 @@ s.serve_forever()" """
             help="Automatically allows public IP logging.")
 
     def prepare(self):  # pylint: disable=missing-docstring,no-self-use
-        pass  # pragma: no cover
+        if self.config.noninteractive_mode and not self.conf("test-mode"):
+            raise errors.PluginError("Running manual mode non-interactively is not supported")
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return ("This plugin requires user's manual intervention in setting "
@@ -165,7 +166,8 @@ s.serve_forever()" """
         else:
             if not self.conf("public-ip-logging-ok"):
                 if not zope.component.getUtility(interfaces.IDisplay).yesno(
-                        self.IP_DISCLAIMER, "Yes", "No"):
+                        self.IP_DISCLAIMER, "Yes", "No",
+                        cli_flag="--manual-public-ip-logging-ok"):
                     raise errors.PluginError("Must agree to IP logging to proceed")
 
             self._notify_and_wait(self.MESSAGE_TEMPLATE.format(

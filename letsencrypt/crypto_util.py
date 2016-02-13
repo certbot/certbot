@@ -53,8 +53,8 @@ def init_save_key(key_size, key_dir, keyname="key-letsencrypt.pem"):
                                config.strict_permissions)
     key_f, key_path = le_util.unique_file(
         os.path.join(key_dir, keyname), 0o600)
-    key_f.write(key_pem)
-    key_f.close()
+    with key_f:
+        key_f.write(key_pem)
 
     logger.info("Generating key (%d bits): %s", key_size, key_path)
 

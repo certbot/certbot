@@ -96,11 +96,12 @@ class ApacheParser(object):
     def update_runtime_variables(self):
         """"
 
-        .. note:: Compile time variables (apache2ctl -V) are not used within the
-            dynamic configuration files.  These should not be parsed or
+        .. note:: Compile time variables (apache2ctl -V) are not used within
+            the dynamic configuration files.  These should not be parsed or
             interpreted.
 
-        .. todo:: Create separate compile time variables... simply for arg_get()
+        .. todo:: Create separate compile time variables...
+            simply for arg_get()
 
         """
         stdout = self._get_runtime_cfg()
@@ -177,7 +178,8 @@ class ApacheParser(object):
                     # Make sure we don't cause an IndexError (end of list)
                     # Check to make sure arg + 1 doesn't exist
                     if (i == (len(matches) - 1) or
-                            not matches[i + 1].endswith("/arg[%d]" % (args + 1))):
+                            not matches[i + 1].endswith("/arg[%d]" %
+                                                        (args + 1))):
                         filtered.append(matches[i][:-len("/arg[%d]" % args)])
 
         return filtered
@@ -311,8 +313,6 @@ class ApacheParser(object):
         for match in matches:
             dir_ = self.aug.get(match).lower()
             if dir_ == "include" or dir_ == "includeoptional":
-                # start[6:] to strip off /files
-                #print self._get_include_path(self.get_arg(match +"/arg")), directive, arg
                 ordered_matches.extend(self.find_dir(
                     directive, arg,
                     self._get_include_path(self.get_arg(match + "/arg")),
@@ -331,8 +331,8 @@ class ApacheParser(object):
         """
         value = self.aug.get(match)
 
-        # No need to strip quotes for variables, as apache2ctl already does this
-        # but we do need to strip quotes for all normal arguments.
+        # No need to strip quotes for variables, as apache2ctl already does
+        # this, but we do need to strip quotes for all normal arguments.
 
         # Note: normal argument may be a quoted variable
         # e.g. strip now, not later
@@ -454,7 +454,7 @@ class ApacheParser(object):
         https://apr.apache.org/docs/apr/2.0/apr__fnmatch_8h_source.html
         http://apache2.sourcearchive.com/documentation/2.2.16-6/apr__fnmatch_8h_source.html
 
-        :param str clean_fn_match: Apache style filename match, similar to globs
+        :param str clean_fn_match: Apache style filename match, like globs
 
         :returns: regex suitable for augeas
         :rtype: str
@@ -597,7 +597,7 @@ class ApacheParser(object):
         .. todo:: Make sure that files are included
 
         """
-        default = self._set_user_config_file()
+        default = self.loc["root"]
 
         temp = os.path.join(self.root, "ports.conf")
         if os.path.isfile(temp):
@@ -617,23 +617,6 @@ class ApacheParser(object):
                 return os.path.join(self.root, name)
 
         raise errors.NoInstallationError("Could not find configuration root")
-
-    def _set_user_config_file(self):
-        """Set the appropriate user configuration file
-
-        .. todo:: This will have to be updated for other distros versions
-
-        :param str root: pathname which contains the user config
-
-        """
-        # Basic check to see if httpd.conf exists and
-        # in hierarchy via direct include
-        # httpd.conf was very common as a user file in Apache 2.2
-        if (os.path.isfile(os.path.join(self.root, "httpd.conf")) and
-                self.find_dir("Include", "httpd.conf", self.loc["root"])):
-            return os.path.join(self.root, "httpd.conf")
-        else:
-            return os.path.join(self.root, "apache2.conf")
 
 
 def case_i(string):

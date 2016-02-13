@@ -33,7 +33,7 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
             pkg="letsencrypt_apache.tests")
 
         self.ssl_options = common.setup_ssl_options(
-            self.config_dir, constants.MOD_SSL_CONF_SRC,
+            self.config_dir, constants.os_constant("MOD_SSL_CONF_SRC"),
             constants.MOD_SSL_CONF_DEST)
 
         self.config_path = os.path.join(self.temp_dir, config_root)
@@ -41,6 +41,20 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 
         self.rsa512jwk = jose.JWKRSA.load(test_util.load_vector(
             "rsa512_key.pem"))
+
+        # Make sure all vhosts in sites-enabled are symlinks (Python packaging
+        # does not preserve symlinks)
+        sites_enabled = os.path.join(self.config_path, "sites-enabled")
+        if not os.path.exists(sites_enabled):
+            return
+
+        for vhost_basename in os.listdir(sites_enabled):
+            vhost = os.path.join(sites_enabled, vhost_basename)
+            if not os.path.islink(vhost):  # pragma: no cover
+                os.remove(vhost)
+                target = os.path.join(
+                    os.path.pardir, "sites-available", vhost_basename)
+                os.symlink(target, vhost)
 
 
 class ParserTest(ApacheTest):  # pytlint: disable=too-few-public-methods
@@ -62,7 +76,8 @@ class ParserTest(ApacheTest):  # pytlint: disable=too-few-public-methods
 
 
 def get_apache_configurator(
-        config_path, vhost_path, config_dir, work_dir, version=(2, 4, 7), conf=None):
+        config_path, vhost_path,
+        config_dir, work_dir, version=(2, 4, 7), conf=None):
     """Create an Apache Configurator with the specified options.
 
     :param conf: Function that returns binary paths. self.conf in Configurator
@@ -129,11 +144,13 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(prefix, "mod_macro-example.conf"),
                 os.path.join(aug_pre,
                              "mod_macro-example.conf/Macro/VirtualHost"),
-                set([obj.Addr.fromstring("*:80")]), False, True, modmacro=True),
+                set([obj.Addr.fromstring("*:80")]), False, True,
+                modmacro=True),
             obj.VirtualHost(
                 os.path.join(prefix, "default-ssl-port-only.conf"),
-                os.path.join(aug_pre, "default-ssl-port-only.conf/IfModule/VirtualHost"),
-                set([obj.Addr.fromstring("_default_:443")]), True, False),
+                os.path.join(aug_pre, ("default-ssl-port-only.conf/"
+                                       "IfModule/VirtualHost")),
+                set([obj.Addr.fromstring("_default_:443")]), True, False)
         ]
         return vh_truth
 

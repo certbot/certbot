@@ -106,22 +106,13 @@ class BasicParserTest(util.ParserTest):
     def test_set_locations(self):
         with mock.patch("letsencrypt_apache.parser.os.path") as mock_path:
 
-            mock_path.isfile.side_effect = [True, False, False]
+            mock_path.isfile.side_effect = [False, False]
 
             # pylint: disable=protected-access
             results = self.parser._set_locations()
 
             self.assertEqual(results["default"], results["listen"])
             self.assertEqual(results["default"], results["name"])
-
-    def test_set_user_config_file(self):
-        # pylint: disable=protected-access
-        path = os.path.join(self.parser.root, "httpd.conf")
-        open(path, 'w').close()
-        self.parser.add_dir(self.parser.loc["default"], "Include", "httpd.conf")
-
-        self.assertEqual(
-            path, self.parser._set_user_config_file())
 
     @mock.patch("letsencrypt_apache.parser.ApacheParser._get_runtime_cfg")
     def test_update_runtime_variables(self, mock_cfg):

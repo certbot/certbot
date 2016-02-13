@@ -49,8 +49,10 @@ to serve all files under specified web root ({0})."""
         path_map = self.conf("map")
 
         if not path_map:
-            raise errors.PluginError("--{0} must be set".format(
-                self.option_name("path")))
+            raise errors.PluginError(
+                "Missing parts of webroot configuration; please set either "
+                "--webroot-path and --domains, or --webroot-map. Run with "
+                " --help webroot for examples.")
         for name, path in path_map.items():
             if not os.path.isdir(path):
                 raise errors.PluginError(path + " does not exist or is not a directory")
@@ -98,8 +100,8 @@ to serve all files under specified web root ({0})."""
     def _path_for_achall(self, achall):
         try:
             path = self.full_roots[achall.domain]
-        except IndexError:
-            raise errors.PluginError("Missing --webroot-path for domain: {1}"
+        except KeyError:
+            raise errors.PluginError("Missing --webroot-path for domain: {0}"
                                      .format(achall.domain))
         if not os.path.exists(path):
             raise errors.PluginError("Mysteriously missing path {0} for domain: {1}"

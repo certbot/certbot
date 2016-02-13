@@ -47,7 +47,8 @@ class VirtualHostTest(unittest.TestCase):
         self.assertTrue(self.vhost1.conflicts([self.addr2]))
         self.assertFalse(self.vhost1.conflicts([self.addr_default]))
 
-        self.assertFalse(self.vhost2.conflicts([self.addr1, self.addr_default]))
+        self.assertFalse(self.vhost2.conflicts([self.addr1,
+                                                self.addr_default]))
 
     def test_same_server(self):
         from letsencrypt_apache.obj import VirtualHost

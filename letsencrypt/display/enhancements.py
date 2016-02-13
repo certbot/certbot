@@ -48,7 +48,7 @@ def redirect_by_default():
 
     code, selection = util(interfaces.IDisplay).menu(
         "Please choose whether HTTPS access is required or optional.",
-        choices)
+        choices, default=0, cli_flag="--redirect / --no-redirect")
 
     if code != display_util.OK:
         return False

@@ -146,7 +146,7 @@ def perform_registration(acme, config):
     """
     try:
         return acme.register(messages.NewRegistration.from_data(email=config.email))
-    except messages.Error, e:
+    except messages.Error as e:
         err = repr(e)
         if "MX record" in err or "Validation of contact mailto" in err:
             config.namespace.email = display_ops.get_email(more=True, invalid=True)
@@ -195,7 +195,8 @@ class Client(object):
         else:
             self.auth_handler = None
 
-    def _obtain_certificate(self, domains, csr):
+    def obtain_certificate_from_csr(self, domains, csr,
+        typ=OpenSSL.crypto.FILETYPE_ASN1):
         """Obtain certificate.
 
         Internal function with precondition that `domains` are
@@ -223,33 +224,18 @@ class Client(object):
 
         authzr = self.auth_handler.get_authorizations(domains)
         certr = self.acme.request_issuance(
-            jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
-                OpenSSL.crypto.FILETYPE_ASN1, csr.data)),
+            jose.ComparableX509(
+                OpenSSL.crypto.load_certificate_request(typ, csr.data)),
             authzr)
         return certr, self.acme.fetch_chain(certr)
 
-    def obtain_certificate_from_csr(self, csr):
-        """Obtain certficiate from CSR.
-
-        :param .le_util.CSR csr: DER-encoded Certificate Signing
-            Request.
-
-        :returns: `.CertificateResource` and certificate chain (as
-            returned by `.fetch_chain`).
-        :rtype: tuple
-
-        """
-        return self._obtain_certificate(
-            # TODO: add CN to domains?
-            crypto_util.get_sans_from_csr(
-                csr.data, OpenSSL.crypto.FILETYPE_ASN1), csr)
 
     def obtain_certificate(self, domains):
         """Obtains a certificate from the ACME server.
 
         `.register` must be called before `.obtain_certificate`
 
-        :param set domains: domains to get a certificate
+        :param list domains: domains to get a certificate
 
         :returns: `.CertificateResource`, certificate chain (as
             returned by `.fetch_chain`), and newly generated private key
@@ -263,7 +249,7 @@ class Client(object):
             self.config.rsa_key_size, self.config.key_dir)
         csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
-        return self._obtain_certificate(domains, csr) + (key, csr)
+        return self.obtain_certificate_from_csr(domains, csr) + (key, csr)
 
     def obtain_and_enroll_certificate(self, domains):
         """Obtain and enroll certificate.
@@ -276,34 +262,28 @@ class Client(object):
         :param plugins: A PluginsFactory object.
 
         :returns: A new :class:`letsencrypt.storage.RenewableCert` instance
-            referred to the enrolled cert lineage, or False if the cert could
-            not be obtained.
+            referred to the enrolled cert lineage, False if the cert could not
+            be obtained, or None if doing a successful dry run.
 
         """
         certr, chain, key, _ = self.obtain_certificate(domains)
 
-        # XXX: We clearly need a more general and correct way of getting
-        # options into the configobj for the RenewableCert instance.
-        # This is a quick-and-dirty way to do it to allow integration
-        # testing to start.  (Note that the config parameter to new_lineage
-        # ideally should be a ConfigObj, but in this case a dict will be
-        # accepted in practice.)
-        params = vars(self.config.namespace)
-        config = {}
-        cli_config = configuration.RenewerConfiguration(self.config.namespace)
-
-        if (cli_config.config_dir != constants.CLI_DEFAULTS["config_dir"] or
-                cli_config.work_dir != constants.CLI_DEFAULTS["work_dir"]):
+        if (self.config.config_dir != constants.CLI_DEFAULTS["config_dir"] or
+                self.config.work_dir != constants.CLI_DEFAULTS["work_dir"]):
             logger.warning(
                 "Non-standard path(s), might not work with crontab installed "
                 "by your operating system package manager")
 
-        lineage = storage.RenewableCert.new_lineage(
-            domains[0], OpenSSL.crypto.dump_certificate(
-                OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped),
-            key.pem, crypto_util.dump_pyopenssl_chain(chain),
-            params, config, cli_config)
-        return lineage
+        if self.config.dry_run:
+            logger.info("Dry run: Skipping creating new lineage for %s",
+                        domains[0])
+            return None
+        else:
+            return storage.RenewableCert.new_lineage(
+                domains[0], OpenSSL.crypto.dump_certificate(
+                    OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped),
+                key.pem, crypto_util.dump_pyopenssl_chain(chain),
+                configuration.RenewerConfiguration(self.config.namespace))
 
     def save_certificate(self, certr, chain_cert,
                          cert_path, chain_path, fullchain_path):
