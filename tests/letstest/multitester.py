@@ -139,7 +139,15 @@ def make_instance(instance_name,
     time.sleep(1.0)
 
     # give instance a name
-    new_instance.create_tags(Tags=[{'Key': 'Name', 'Value': instance_name}])
+    try:
+        new_instance.create_tags(Tags=[{'Key': 'Name', 'Value': instance_name}])
+    except botocore.exceptions.ClientError as e:
+        if "InvalidInstanceID.NotFound" in str(e):
+            # This seems to be ephemeral... retry
+            time.sleep(1)
+            new_instance.create_tags(Tags=[{'Key': 'Name', 'Value': instance_name}])
+        else:
+            raise
     return new_instance
 
 def terminate_and_clean(instances):
@@ -233,21 +241,21 @@ def local_git_clone(repo_url):
     "clones master of repo_url"
     with lcd(LOGDIR):
         local('if [ -d letsencrypt ]; then rm -rf letsencrypt; fi')
-        local('git clone %s'% repo_url)
+        local('git clone %s letsencrypt'% repo_url)
         local('tar czf le.tar.gz letsencrypt')
 
 def local_git_branch(repo_url, branch_name):
     "clones branch <branch_name> of repo_url"
     with lcd(LOGDIR):
         local('if [ -d letsencrypt ]; then rm -rf letsencrypt; fi')
-        local('git clone %s --branch %s --single-branch'%(repo_url, branch_name))
+        local('git clone %s letsencrypt --branch %s --single-branch'%(repo_url, branch_name))
         local('tar czf le.tar.gz letsencrypt')
 
 def local_git_PR(repo_url, PRnumstr, merge_master=True):
     "clones specified pull request from repo_url and optionally merges into master"
     with lcd(LOGDIR):
         local('if [ -d letsencrypt ]; then rm -rf letsencrypt; fi')
-        local('git clone %s'% repo_url)
+        local('git clone %s letsencrypt'% repo_url)
         local('cd letsencrypt && git fetch origin pull/%s/head:lePRtest'%PRnumstr)
         local('cd letsencrypt && git co lePRtest')
         if merge_master:

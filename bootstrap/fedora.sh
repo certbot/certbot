@@ -1,1 +1,0 @@
-_rpm_common.sh

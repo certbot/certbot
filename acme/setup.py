@@ -4,7 +4,7 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.2.0.dev0'
+version = '0.5.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
@@ -24,6 +24,7 @@ install_requires = [
 ]
 
 # env markers in extras_require cause problems with older pip: #517
+# Keep in sync with conditional_requirements.py.
 if sys.version_info < (2, 7):
     install_requires.extend([
         # only some distros recognize stdlib argparse as already satisfying
@@ -42,15 +43,16 @@ else:
         'dnspython3',
     ]
 
+dev_extras = [
+    'nose',
+    'pep8',
+    'tox',
+]
+
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
     'sphinx_rtd_theme',
     'sphinxcontrib-programoutput',
-]
-
-testing_extras = [
-    'nose',
-    'tox',
 ]
 
 
@@ -83,8 +85,8 @@ setup(
     install_requires=install_requires,
     extras_require={
         'dns': dns_extras,
+        'dev': dev_extras,
         'docs': docs_extras,
-        'testing': testing_extras,
     },
     entry_points={
         'console_scripts': [

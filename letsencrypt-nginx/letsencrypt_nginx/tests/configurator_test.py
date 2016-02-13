@@ -54,6 +54,7 @@ class NginxConfiguratorTest(util.NginxTest):
         mock_exe_exists.return_value = True
 
         self.config.version = None
+        self.config.config_test = mock.Mock()
         self.config.prepare()
         self.assertEquals((1, 6, 2), self.config.version)
 
@@ -361,12 +362,14 @@ class NginxConfiguratorTest(util.NginxTest):
         mock_popen.side_effect = OSError("Can't find program")
         self.assertRaises(errors.MisconfigurationError, self.config.restart)
 
-    @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")
-    def test_config_test(self, mock_popen):
-        mocked = mock_popen()
-        mocked.communicate.return_value = ('', '')
-        mocked.returncode = 0
-        self.assertTrue(self.config.config_test())
+    @mock.patch("letsencrypt.le_util.run_script")
+    def test_config_test(self, _):
+        self.config.config_test()
+
+    @mock.patch("letsencrypt.le_util.run_script")
+    def test_config_test_bad_process(self, mock_run_script):
+        mock_run_script.side_effect = errors.SubprocessError
+        self.assertRaises(errors.MisconfigurationError, self.config.config_test)
 
     def test_get_snakeoil_paths(self):
         # pylint: disable=protected-access
