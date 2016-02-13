@@ -38,6 +38,11 @@ class TxtRecordsForNameTest(unittest.TestCase):
 
     @mock.patch("acme.dns_resolver.dns.resolver.query")
     def test_txt_records_for_name_domain_not_found(self, mock_dns):
+        mock_dns.side_effect = dns.resolver.NXDOMAIN
+        self.assertEquals([], dns_resolver.txt_records_for_name('name'))
+
+    @mock.patch("acme.dns_resolver.dns.resolver.query")
+    def test_txt_records_for_name_domain_other_error(self, mock_dns):
         mock_dns.side_effect = dns.exception.DNSException
         self.assertEquals([], dns_resolver.txt_records_for_name('name'))
 
