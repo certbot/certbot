@@ -25,18 +25,24 @@ LE_AUTO_VERSION="{{ LE_AUTO_VERSION }}"
 # additionally responds to --verbose (more output) and --debug (allow support
 # for experimental platforms)
 for arg in "$@" ; do
-  # This first clause is redundant with the third, but hedging on portability
-  if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- "-v+$" ; then
-    VERBOSE=1
-  elif [ "$arg" = "--no-self-upgrade" ] ; then
-    # Do not upgrade this script (also prevents client upgrades, because each
-    # copy of the script pins a hash of the python client)
-    NO_SELF_UPGRADE=1
-  elif [ "$arg" = "--os-packages-only" ] ; then
-    OS_PACKAGES_ONLY=1
-  elif [ "$arg" = "--debug" ]; then
-    DEBUG=1
-  fi
+  case "$arg" in
+    --debug)
+      DEBUG=1;;
+    --os-packages-only)
+      OS_PACKAGES_ONLY=1;;
+    --no-self-upgrade)
+      # Do not upgrade this script (also prevents client upgrades, because each
+      # copy of the script pins a hash of the python client)
+      NO_SELF_UPGRADE=1;;
+    --verbose)
+      VERBOSE=1;;
+    [!-]*|-*[!v]*|-)
+      # Anything that isn't -v, -vv, etc.: that is, anything that does not
+      # start with a -, contains anything that's not a v, or is just "-"
+      ;;
+    *)  # -v+ remains.
+      VERBOSE=1;;
+  esac
 done
 
 # letsencrypt-auto needs root access to bootstrap OS dependencies, and
@@ -91,18 +97,15 @@ ExperimentalBootstrap() {
 }
 
 DeterminePythonVersion() {
-  if command -v python2.7 > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python2.7}
-  elif command -v python27 > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python27}
-  elif command -v python2 > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python2}
-  elif command -v python > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python}
-  else
-    echo "Cannot find any Pythons... please install one!"
+  for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
+    # Break (while keeping the LE_PYTHON value) if found.
+    command -v "$LE_PYTHON" > /dev/null && break
+  done
+  if [ "$?" != "0" ]; then
+    echo "Cannot find any Pythons; please install one!"
     exit 1
   fi
+  export LE_PYTHON
 
   PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
   if [ "$PYVER" -lt 26 ]; then
