@@ -74,6 +74,15 @@ class RegisterTest(unittest.TestCase):
         self.config.email = None
         self.assertRaises(errors.Error, self._call)
 
+    @mock.patch("letsencrypt.client.logger")
+    def test_without_email(self, mock_logger):
+        with mock.patch("letsencrypt.client.acme_client.Client"):
+            with mock.patch("letsencrypt.account.report_new_account"):
+                self.config.email = None
+                self.config.register_unsafely_without_email = True
+                self._call()
+                mock_logger.warn.assert_called_once_with(mock.ANY)
+
 class ClientTest(unittest.TestCase):
     """Tests for letsencrypt.client.Client."""
 
