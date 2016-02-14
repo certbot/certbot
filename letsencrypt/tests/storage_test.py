@@ -687,6 +687,10 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertRaises(errors.CertStorageError,
                           storage.RenewableCert,
                           self.config.filename, self.cli_config)
+        os.symlink("missing", self.config[ALL_FOUR[0]])
+        self.assertRaises(errors.CertStorageError,
+                          storage.RenewableCert,
+                          self.config.filename, self.cli_config)
 
 
 if __name__ == "__main__":
