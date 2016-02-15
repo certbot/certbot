@@ -155,7 +155,7 @@ class GetAuthorizationsTest(unittest.TestCase):
     @mock.patch("acme.challenges.HTTP01Response.simple_verify")
     @mock.patch("acme.challenges.TLSSNI01Response.simple_verify")
     @mock.patch("letsencrypt.auth_handler.logger")
-    def test_simple_verify(self, mock_logger, mock_tlssni01_verify, mock_http01_verify):
+    def test_solve_challenges(self, mock_logger, mock_tlssni01_verify, mock_http01_verify):
         account_key = mock.Mock()
         challenge_http_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.HTTP01_P, domain=b'localhost', account_key=account_key)
@@ -210,6 +210,44 @@ class GetAuthorizationsTest(unittest.TestCase):
         mock_logger.debug.assert_called_with(
             mock.ANY,
             challenge_dummy.chall.__class__.__name__,
+            challenge_dummy.uri)
+
+    @mock.patch("letsencrypt.auth_handler.logger")
+    def test_simple_verify(self, mock_logger):
+        # pylint: disable=protected-access
+        account_key = mock.Mock()
+
+        challenge_http_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.HTTP01_P, domain=b'localhost', account_key=account_key)
+        challenge_tls_sni_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.TLSSNI01_P, domain=b'localhost', account_key=account_key)
+        challenge_dummy = mock.Mock(chall=mock.Mock(), uri="foo", typ="Mock")
+
+        response_http_01 = challenges.HTTP01Response(key_authorization=u'foo')
+        response_tls_sni_01 = challenges.TLSSNI01Response(key_authorization=u'foo')
+        response_dummy = mock.Mock()
+
+        self.assertEqual(
+            self.handler._simple_verify(
+                challenge_http_01,
+                response_http_01),
+            False)
+
+        self.assertEqual(
+            self.handler._simple_verify(
+                challenge_tls_sni_01,
+                response_tls_sni_01),
+            False)
+
+        self.assertEqual(
+            self.handler._simple_verify(
+                challenge_dummy,
+                response_dummy),
+            True)
+
+        mock_logger.debug.assert_called_once_with(  # For challenge_dummy
+            mock.ANY,
+            challenge_dummy.typ,
             challenge_dummy.uri)
 
     def _validate_all(self, unused_1, unused_2):
