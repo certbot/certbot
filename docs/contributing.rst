@@ -22,8 +22,8 @@ once:
 
    git clone https://github.com/letsencrypt/letsencrypt
    cd letsencrypt
-   ./bootstrap/install-deps.sh
-   ./bootstrap/dev/venv.sh
+   ./letsencrypt-auto-source/letsencrypt-auto --os-packages-only
+   ./tools/venv.sh
 
 Then in each shell where you're working on the client, do:
 
@@ -65,8 +65,14 @@ Testing
 
 The following tools are there to help you:
 
-- ``tox`` starts a full set of tests. Please make sure you run it
-  before submitting a new pull request.
+- ``tox`` starts a full set of tests. Please note that it includes
+  apacheconftest, which uses the system's Apache install to test config file
+  parsing, so it should only be run on systems that have an
+  experimental, non-production Apache2 install on them.  ``tox -e
+  apacheconftest`` can be used to run those specific Apache conf tests.
+
+- ``tox -e py27``, ``tox -e py26`` etc, run unit tests for specific Python
+  versions.
 
 - ``tox -e cover`` checks the test coverage only. Calling the
   ``./tox.cover.sh`` script directly (or even ``./tox.cover.sh $pkg1
@@ -90,11 +96,32 @@ Integration testing with the boulder CA
 Generally it is sufficient to open a pull request and let Github and Travis run
 integration tests for you.
 
-Mac OS X users: Run `./tests/mac-bootstrap.sh` instead of `boulder-start.sh` to
-install dependencies, configure the environment, and start boulder.
+Mac OS X users: Run ``./tests/mac-bootstrap.sh`` instead of
+``boulder-start.sh`` to install dependencies, configure the
+environment, and start boulder.
 
-Otherwise, install `Go`_ 1.5, libtool-ltdl, mariadb-server and
-rabbitmq-server and then start Boulder_, an ACME CA server::
+Otherwise, install `Go`_ 1.5, ``libtool-ltdl``, ``mariadb-server`` and
+``rabbitmq-server`` and then start Boulder_, an ACME CA server.
+
+If you can't get packages of Go 1.5 for your Linux system,
+you can execute the following commands to install it:
+
+.. code-block:: shell
+
+  wget https://storage.googleapis.com/golang/go1.5.3.linux-amd64.tar.gz -P /tmp/
+  sudo tar -C /usr/local -xzf /tmp/go1.5.3.linux-amd64.tar.gz
+  if ! grep -Fxq "export GOROOT=/usr/local/go" ~/.profile ; then echo "export GOROOT=/usr/local/go" >> ~/.profile; fi
+  if ! grep -Fxq "export PATH=\\$GOROOT/bin:\\$PATH" ~/.profile ; then echo "export PATH=\\$GOROOT/bin:\\$PATH" >> ~/.profile; fi
+
+These commands download `Go`_ 1.5.3 to ``/tmp/``, extracts to ``/usr/local``,
+and then adds the export lines required to execute ``boulder-start.sh`` to
+``~/.profile`` if they were not previously added
+
+Make sure you execute the following command after `Go`_ finishes installing::
+
+  if ! grep -Fxq "export GOPATH=\\$HOME/go" ~/.profile ; then echo "export GOPATH=\\$HOME/go" >> ~/.profile; fi
+
+Afterwards, you'd be able to start Boulder_ using the following command::
 
   ./tests/boulder-start.sh
 
@@ -130,7 +157,7 @@ Plugin-architecture
 Let's Encrypt has a plugin architecture to facilitate support for
 different webservers, other TLS servers, and operating systems.
 The interfaces available for plugins to implement are defined in
-`interfaces.py`_.
+`interfaces.py`_ and `plugins/common.py`_.
 
 The most common kind of plugin is a "Configurator", which is likely to
 implement the `~letsencrypt.interfaces.IAuthenticator` and
@@ -141,6 +168,7 @@ There are also `~letsencrypt.interfaces.IDisplay` plugins,
 which implement bindings to alternative UI libraries.
 
 .. _interfaces.py: https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/interfaces.py
+.. _plugins/common.py: https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/plugins/common.py#L34
 
 
 Authenticators
@@ -273,7 +301,7 @@ Steps:
 
 1. Write your code!
 2. Make sure your environment is set up properly and that you're in your
-   virtualenv. You can do this by running ``./bootstrap/dev/venv.sh``.
+   virtualenv. You can do this by running ``./tools/venv.sh``.
    (this is a **very important** step)
 3. Run ``./pep8.travis.sh`` to do a cursory check of your code style.
    Fix any errors.
@@ -359,75 +387,37 @@ Now run tests inside the Docker image:
 Notes on OS dependencies
 ========================
 
-OS level dependencies are managed by scripts in ``bootstrap``.  Some notes
-are provided here mainly for the :ref:`developers <hacking>` reference.
+OS-level dependencies can be installed like so:
 
-In general:
+.. code-block:: shell
+
+    letsencrypt-auto-source/letsencrypt-auto --os-packages-only
+
+In general...
 
 * ``sudo`` is required as a suggested way of running privileged process
+* `Python`_ 2.6/2.7 is required
 * `Augeas`_ is required for the Python bindings
 * ``virtualenv`` and ``pip`` are used for managing other python library
   dependencies
 
+.. _Python: https://wiki.python.org/moin/BeginnersGuide/Download
 .. _Augeas: http://augeas.net/
 .. _Virtualenv: https://virtualenv.pypa.io
-
-Ubuntu
-------
-
-.. code-block:: shell
-
-   sudo ./bootstrap/ubuntu.sh
 
 
 Debian
 ------
-
-.. code-block:: shell
-
-   sudo ./bootstrap/debian.sh
 
 For squeeze you will need to:
 
 - Use ``virtualenv --no-site-packages -p python`` instead of ``-p python2``.
 
 
-.. _`#280`: https://github.com/letsencrypt/letsencrypt/issues/280
-
-
-Mac OSX
--------
-
-.. code-block:: shell
-
-   ./bootstrap/mac.sh
-
-
-Fedora
-------
-
-.. code-block:: shell
-
-   sudo ./bootstrap/fedora.sh
-
-
-Centos 7
---------
-
-.. code-block:: shell
-
-   sudo ./bootstrap/centos.sh
-
-
 FreeBSD
 -------
 
-.. code-block:: shell
-
-   sudo ./bootstrap/freebsd.sh
-
-Bootstrap script for FreeBSD uses ``pkg`` for package installation,
-i.e. it does not use ports.
+Package installation for FreeBSD uses ``pkg``, not ports.
 
 FreeBSD by default uses ``tcsh``. In order to activate virtualenv (see
 below), you will need a compatible shell, e.g. ``pkg install bash &&

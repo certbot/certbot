@@ -127,7 +127,8 @@ class NginxParserTest(util.NginxTest):
                                       set(['localhost',
                                            r'~^(www\.)?(example|bar)\.']),
                                       [['foo', 'bar'], ['ssl_certificate',
-                                                        '/etc/ssl/cert.pem']])
+                                                        '/etc/ssl/cert.pem']],
+                                      replace=False)
         ssl_re = re.compile(r'\n\s+ssl_certificate /etc/ssl/cert.pem')
         dump = nginxparser.dumps(nparser.parsed[nparser.abs_path('nginx.conf')])
         self.assertEqual(1, len(re.findall(ssl_re, dump)))
@@ -136,12 +137,15 @@ class NginxParserTest(util.NginxTest):
         names = set(['alias', 'another.alias', 'somename'])
         nparser.add_server_directives(server_conf, names,
                                       [['foo', 'bar'], ['ssl_certificate',
-                                                        '/etc/ssl/cert2.pem']])
-        nparser.add_server_directives(server_conf, names, [['foo', 'bar']])
+                                                        '/etc/ssl/cert2.pem']],
+                                      replace=False)
+        nparser.add_server_directives(server_conf, names, [['foo', 'bar']],
+                                      replace=False)
         self.assertEqual(nparser.parsed[server_conf],
-                         [['ssl_certificate', '/etc/ssl/cert2.pem'],
+                         [['server_name', 'somename  alias  another.alias'],
                           ['foo', 'bar'],
-                          ['server_name', 'somename  alias  another.alias']])
+                          ['ssl_certificate', '/etc/ssl/cert2.pem']
+                          ])
 
     def test_add_http_directives(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
@@ -165,17 +169,19 @@ class NginxParserTest(util.NginxTest):
         target = set(['.example.com', 'example.*'])
         filep = nparser.abs_path('sites-enabled/example.com')
         nparser.add_server_directives(
-            filep, target, [['server_name', 'foo bar']], True)
+            filep, target, [['server_name', 'foobar.com']], replace=True)
         self.assertEqual(
             nparser.parsed[filep],
             [[['server'], [['listen', '69.50.225.155:9000'],
                            ['listen', '127.0.0.1'],
-                           ['server_name', 'foo bar'],
-                           ['server_name', 'foo bar']]]])
+                           ['server_name', 'foobar.com'],
+                           ['server_name', 'example.*'],
+                           ]]])
         self.assertRaises(errors.MisconfigurationError,
                           nparser.add_server_directives,
-                          filep, set(['foo', 'bar']),
-                          [['ssl_certificate', 'cert.pem']], True)
+                          filep, set(['foobar.com', 'example.*']),
+                          [['ssl_certificate', 'cert.pem']],
+                          replace=True)
 
     def test_get_best_match(self):
         target_name = 'www.eff.org'
@@ -217,10 +223,31 @@ class NginxParserTest(util.NginxTest):
                                       set(['.example.com', 'example.*']),
                                       [['ssl_certificate', 'foo.pem'],
                                        ['ssl_certificate_key', 'bar.key'],
-                                       ['listen', '443 ssl']])
+                                       ['listen', '443 ssl']],
+                                      replace=False)
         c_k = nparser.get_all_certs_keys()
         self.assertEqual(set([('foo.pem', 'bar.key', filep)]), c_k)
 
+    def test_parse_server_ssl(self):
+        server = parser.parse_server([
+	    ['listen', '443']
+	])
+        self.assertFalse(server['ssl'])
+
+        server = parser.parse_server([
+	    ['listen', '443 ssl']
+	])
+        self.assertTrue(server['ssl'])
+
+        server = parser.parse_server([
+	    ['listen', '443'], ['ssl', 'off']
+	])
+        self.assertFalse(server['ssl'])
+
+        server = parser.parse_server([
+	    ['listen', '443'], ['ssl', 'on']
+	])
+        self.assertTrue(server['ssl'])
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

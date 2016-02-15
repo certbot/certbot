@@ -9,6 +9,8 @@ from letsencrypt.plugins import common_test
 from letsencrypt_apache import obj
 from letsencrypt_apache.tests import util
 
+from six.moves import xrange  # pylint: disable=redefined-builtin, import-error
+
 
 class TlsSniPerformTest(util.ApacheTest):
     """Test the ApacheTlsSni01 challenge."""
@@ -20,7 +22,7 @@ class TlsSniPerformTest(util.ApacheTest):
         super(TlsSniPerformTest, self).setUp()
 
         config = util.get_apache_configurator(
-            self.config_path, self.config_dir, self.work_dir)
+            self.config_path, self.vhost_path, self.config_dir, self.work_dir)
         config.config.tls_sni_01_port = 443
 
         from letsencrypt_apache import tls_sni_01
@@ -58,7 +60,7 @@ class TlsSniPerformTest(util.ApacheTest):
 
         mock_setup_cert.assert_called_once_with(achall)
 
-        # Check to make sure challenge config path is included in apache config.
+        # Check to make sure challenge config path is included in apache config
         self.assertEqual(
             len(self.sni.configurator.parser.find_dir(
                 "Include", self.sni.challenge_conf)), 1)
@@ -78,7 +80,8 @@ class TlsSniPerformTest(util.ApacheTest):
         # pylint: disable=protected-access
         self.sni._setup_challenge_cert = mock_setup_cert
 
-        sni_responses = self.sni.perform()
+        with mock.patch("letsencrypt_apache.configurator.ApacheConfigurator.enable_mod"):
+            sni_responses = self.sni.perform()
 
         self.assertEqual(mock_setup_cert.call_count, 2)
 
@@ -124,13 +127,15 @@ class TlsSniPerformTest(util.ApacheTest):
     def test_get_addrs_default(self):
         self.sni.configurator.choose_vhost = mock.Mock(
             return_value=obj.VirtualHost(
-                "path", "aug_path", set([obj.Addr.fromstring("_default_:443")]),
+                "path", "aug_path",
+                set([obj.Addr.fromstring("_default_:443")]),
                 False, False)
         )
 
+        # pylint: disable=protected-access
         self.assertEqual(
             set([obj.Addr.fromstring("*:443")]),
-            self.sni._get_addrs(self.achalls[0]))  # pylint: disable=protected-access
+            self.sni._get_addrs(self.achalls[0]))
 
 
 if __name__ == "__main__":

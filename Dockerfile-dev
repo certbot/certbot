@@ -22,8 +22,8 @@ WORKDIR /opt/letsencrypt
 
 # TODO: Install non-default Python versions for tox.
 # TODO: Install Apache/Nginx for plugin development.
-COPY bootstrap/ubuntu.sh /opt/letsencrypt/src/ubuntu.sh
-RUN /opt/letsencrypt/src/ubuntu.sh && \
+COPY letsencrypt-auto-source/letsencrypt-auto /opt/letsencrypt/src/letsencrypt-auto-source/letsencrypt-auto
+RUN /opt/letsencrypt/src/letsencrypt-auto-source/letsencrypt-auto --os-packages-only && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* \
            /tmp/* \
@@ -32,7 +32,6 @@ RUN /opt/letsencrypt/src/ubuntu.sh && \
 # the above is not likely to change, so by putting it further up the
 # Dockerfile we make sure we cache as much as possible
 
-# py26reqs.txt not installed!
 COPY setup.py README.rst CHANGES.rst MANIFEST.in linter_plugin.py tox.cover.sh tox.ini pep8.travis.sh .pep8 .pylintrc /opt/letsencrypt/src/
 
 # all above files are necessary for setup.py, however, package source
@@ -59,7 +58,7 @@ RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv && \
     -e /opt/letsencrypt/src/letsencrypt-nginx \
     -e /opt/letsencrypt/src/letshelp-letsencrypt \
     -e /opt/letsencrypt/src/letsencrypt-compatibility-test \
-    -e /opt/letsencrypt/src[dev,docs,testing]
+    -e /opt/letsencrypt/src[dev,docs]
 
 # install in editable mode (-e) to save space: it's not possible to
 # "rm -rf /opt/letsencrypt/src" (it's stays in the underlaying image);
