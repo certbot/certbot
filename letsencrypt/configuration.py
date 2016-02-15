@@ -1,8 +1,8 @@
 """Let's Encrypt user-supplied configuration."""
 import copy
 import os
-import urlparse
 
+from six.moves.urllib import parse  # pylint: disable=import-error
 import zope.interface
 
 from letsencrypt import constants
@@ -50,7 +50,7 @@ class NamespaceConfig(object):
     @property
     def server_path(self):
         """File path based on ``server``."""
-        parsed = urlparse.urlparse(self.namespace.server)
+        parsed = parse.urlparse(self.namespace.server)
         return (parsed.netloc + parsed.path).replace('/', os.path.sep)
 
     @property
