@@ -13,11 +13,22 @@
 
 set -e  # Work even if somebody does "sh thisscript.sh".
 
+# Support for non-posix variable updates that sets a default if the
+# argument is empty, replaces ${VAR:default}
+VarOrDefault() {
+  if [ "x$1" = "x" ]; then
+    echo $2;
+  else
+    echo $1;
+  fi;
+}
+
 # Note: you can set XDG_DATA_HOME or VENV_PATH before running this script,
 # if you want to change where the virtual environment will be installed
-XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
+DEFAULT_HOME=~/.local/share
+XDG_DATA_HOME=$(VarOrDefault "${XDG_DATA_HOME}" "${DEFAULT_HOME}")
 VENV_NAME="letsencrypt"
-VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
+VENV_PATH=$(VarOrDefault "${VENV_PATH}" "$XDG_DATA_HOME/$VENV_NAME")
 VENV_BIN="$VENV_PATH/bin"
 LE_AUTO_VERSION="{{ LE_AUTO_VERSION }}"
 
@@ -45,13 +56,24 @@ for arg in "$@" ; do
   esac
 done
 
+# Support for busybox and others where there is no "command",
+# but "which" instead
+if command -v command > /dev/null 2>&1 ; then
+  export WHERE_IS="command -v"
+elif which which > /dev/null 2>&1 ; then
+  export WHERE_IS="which"
+else
+  echo "Cannot find command nor which... please install one!"
+  exit 1
+fi
+
 # letsencrypt-auto needs root access to bootstrap OS dependencies, and
 # letsencrypt itself needs root access for almost all modes of operation
 # The "normal" case is that sudo is used for the steps that need root, but
 # this script *can* be run as root (not recommended), or fall back to using
 # `su`
 if test "`id -u`" -ne "0" ; then
-  if command -v sudo 1>/dev/null 2>&1; then
+  if ${WHERE_IS} sudo 1>/dev/null 2>&1; then
     SUDO=sudo
   else
     echo \"sudo\" is not available, will use \"su\" for installation steps...
@@ -99,7 +121,7 @@ ExperimentalBootstrap() {
 DeterminePythonVersion() {
   for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
     # Break (while keeping the LE_PYTHON value) if found.
-    command -v "$LE_PYTHON" > /dev/null && break
+    ${WHERE_IS} "$LE_PYTHON" > /dev/null && break
   done
   if [ "$?" != "0" ]; then
     echo "Cannot find any Pythons; please install one!"
