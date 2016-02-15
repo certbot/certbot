@@ -245,15 +245,17 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def retry_after(cls, response, default):
-        """Compute next `poll` time based on response ``Retry-After`` header,
-        per https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.37
+        """Compute next `poll` time based on response ``Retry-After`` header.
+
+        Handles integers and various datestring formats per
+        https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.37
 
         :param requests.Response response: Response from `poll`.
         :param int default: Default value (in seconds), used when
             ``Retry-After`` header is not present or invalid.
 
         :returns: Time point when next `poll` should be performed.
-        :rtype: `datetime.datetime.datetime`
+        :rtype: `datetime.datetime`
 
         """
         retry_after = response.headers.get('Retry-After', str(default)).strip()
