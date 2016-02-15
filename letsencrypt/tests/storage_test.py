@@ -1,13 +1,13 @@
 """Tests for letsencrypt.storage."""
 import datetime
-import pytz
 import os
-import tempfile
 import shutil
+import tempfile
 import unittest
 
 import configobj
 import mock
+import pytz
 
 from letsencrypt import configuration
 from letsencrypt import errors
