@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from functools import partial
 from json import dumps
 from os import chmod, environ
-from os.path import abspath, dirname, join
+from os.path import abspath, dirname, exists, join
 import re
 from shutil import copy, rmtree
 import socket
@@ -338,6 +338,12 @@ class AutoTests(TestCase):
                     self.assertIn("THE FOLLOWING PACKAGES DIDN'T MATCH THE "
                                   "HASHES SPECIFIED IN THE REQUIREMENTS",
                                   exc.output)
+                    ok_(not exists(join(venv_dir, 'letsencrypt')),
+                        msg="The virtualenv was left around, even though "
+                            "installation didn't succeed. We shouldn't do "
+                            "this, as it foils our detection of whether we "
+                            "need to recreate the virtualenv, which hinges "
+                            "on the presence of $VENV_BIN/letsencrypt.")
                 else:
                     self.fail("Peep didn't detect a bad hash and stop the "
                               "installation.")

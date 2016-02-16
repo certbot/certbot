@@ -1640,6 +1640,7 @@ UNLIKELY_EOF
       # Report error. (Otherwise, be quiet.)
       echo "Had a problem while downloading and verifying Python packages:"
       echo "$PEEP_OUT"
+      rm -rf "$VENV_PATH"
       exit 1
     fi
     echo "Installation succeeded."
