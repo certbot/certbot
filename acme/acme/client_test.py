@@ -194,10 +194,6 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(
             datetime.datetime(1999, 12, 31, 23, 59, 59),
             self.client.retry_after(response=self.response, default=10))
-        self.response.headers['Retry-After'] = 'Fri, 31-Dec-17 23:59:59 GMT'
-        self.assertEqual(
-            datetime.datetime(2017, 12, 31, 23, 59, 59),
-            self.client.retry_after(response=self.response, default=10))
 
     @mock.patch('acme.client.datetime')
     def test_retry_after_invalid(self, dt_mock):

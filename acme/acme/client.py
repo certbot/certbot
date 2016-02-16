@@ -262,19 +262,14 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         try:
             seconds = int(retry_after)
         except ValueError:
-            # pylint: disable=no-member
             when = parsedate_tz(retry_after)
-            try:
-                year = when[0] # raises TypeError if t is None
-                # py26: Handle two-digit years -- but any server that thinks
-                # "retry after 99" means "come back after 1999" is.. deprecated
-                if year >= 0 and year < 100:
-                    when = [year + 2000] + list(when[1:]) #  pragma: no cover
-                tzone = when[-1] if when[-1] else 0
-                # raises ValueError/OverflowError
-                return datetime.datetime(*when[:7]) - datetime.timedelta(tzone)
-            except (TypeError, ValueError, OverflowError):
-                seconds = default
+            if when is not None:
+                try:
+                    tz_secs = datetime.timedelta(when[-1] if when[-1] else 0)
+                    return datetime.datetime(*when[:7]) - tz_secs
+                except (ValueError, OverflowError):
+                    pass
+            seconds = default
 
         return datetime.datetime.now() + datetime.timedelta(seconds=seconds)
 
