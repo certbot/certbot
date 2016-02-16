@@ -262,6 +262,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         try:
             seconds = int(retry_after)
         except ValueError:
+            # The RFC 2822 parser handles all of RFC 2616's cases in modern
+            # environments (primarily HTTP 1.1+ but also py27+)
             when = parsedate_tz(retry_after)
             if when is not None:
                 try:
