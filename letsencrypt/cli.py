@@ -319,12 +319,11 @@ def _handle_identical_cert_request(config, cert):
     elif config.verb == "certonly":
         keep_opt = "Keep the existing certificate for now"
     choices = [keep_opt,
-               "Renew & replace the cert (limit ~5 per 7 days)",
-               "Cancel this operation and do nothing"]
+               "Renew & replace the cert (limit ~5 per 7 days)"]
 
     display = zope.component.getUtility(interfaces.IDisplay)
     response = display.menu(question, choices, "OK", "Cancel", default=0)
-    if response[0] == "cancel" or response[1] == 2:
+    if response[0] == display_util.CANCEL:
         # TODO: Add notification related to command-line options for
         #       skipping the menu for this case.
         raise errors.Error(
@@ -1972,17 +1971,6 @@ def main(cli_args=sys.argv[1:]):
     report = reporter.Reporter()
     zope.component.provideUtility(report)
     atexit.register(report.atexit_print_messages)
-
-    if not os.geteuid() == 0:
-        logger.warning(
-            "Root (sudo) is required to run most of letsencrypt functionality.")
-        # check must be done after arg parsing as --help should work
-        # w/o root; on the other hand, e.g. "letsencrypt run
-        # --authenticator dns" or "letsencrypt plugins" does not
-        # require root as well
-        #return (
-        #    "{0}Root is required to run letsencrypt.  Please use sudo.{0}"
-        #    .format(os.linesep))
 
     return config.func(config, plugins)
 
