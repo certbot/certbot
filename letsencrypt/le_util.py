@@ -319,7 +319,7 @@ def enforce_domain_sanity(domain):
     domain = domain[:-1] if domain.endswith('.') else domain
 
     # Explain separately that IP addresses aren't allowed (apart from not
-    # being FQDNs) because hope springs eternal on this point
+    # being FQDNs) because hope springs eternal concerning this point
     try:
         socket.inet_aton(domain)
         raise errors.ConfigurationError(
