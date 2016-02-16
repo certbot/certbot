@@ -201,6 +201,13 @@ zope.event==4.1.0
 # sha256: sJyMHUezUxxADgGVaX8UFKYyId5u9HhZik8UYPfZo5I
 zope.interface==4.1.3
 
+# sha256: uDndLZwRfHAUMMFJlWkYpCOphjtIsJyQ4wpgE-fS9E8
+# sha256: j4MIDaoknQNsvM-4rlzG_wB7iNbZN1ITca-r57Gbrbw
+mock==1.0.1
+
+# THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT,
+# ADD ALL DEPENDENCIES ABOVE
+
 # sha256: QMIkIvGF3mcJhGLAKRX7n5EVIPjOrfLtklN6ePjbJes
 # sha256: fNFWiij6VxfG5o7u3oNbtrYKQ4q9vhzOLATfxNlozvQ
 acme==0.3.0
@@ -212,7 +219,3 @@ letsencrypt==0.3.0
 # sha256: EypLpEw3-Tr8unw4aSFsHXgRiU8ZYLrJKOJohP2tC9M
 # sha256: HYvP13GzA-DDJYwlfOoaraJO0zuYO48TCSAyTUAGCqA
 letsencrypt-apache==0.3.0
-
-# sha256: uDndLZwRfHAUMMFJlWkYpCOphjtIsJyQ4wpgE-fS9E8
-# sha256: j4MIDaoknQNsvM-4rlzG_wB7iNbZN1ITca-r57Gbrbw
-mock==1.0.1
