@@ -205,6 +205,11 @@ class ClientTest(unittest.TestCase):
             datetime.datetime(2015, 3, 27, 0, 0, 10),
             self.client.retry_after(response=self.response, default=10))
 
+        self.response.headers['Retry-After'] = '20 '
+        self.assertEqual(
+            datetime.datetime(2015, 3, 27, 0, 0, 20),
+            self.client.retry_after(response=self.response, default=10))
+
     @mock.patch('acme.client.datetime')
     def test_retry_after_seconds(self, dt_mock):
         dt_mock.datetime.now.return_value = datetime.datetime(2015, 3, 27)
