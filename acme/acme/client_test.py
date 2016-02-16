@@ -210,6 +210,13 @@ class ClientTest(unittest.TestCase):
             datetime.datetime(2015, 3, 27, 0, 0, 20),
             self.client.retry_after(response=self.response, default=10))
 
+        # wrong date -> ValueError
+        dt_mock.datetime.side_effect = datetime.datetime
+        self.response.headers['Retry-After'] = "Tue, 116 Feb 2016 11:50:00 MST"
+        self.assertEqual(
+            datetime.datetime(2015, 3, 27, 0, 0, 10),
+            self.client.retry_after(response=self.response, default=10))
+
     @mock.patch('acme.client.datetime')
     def test_retry_after_seconds(self, dt_mock):
         dt_mock.datetime.now.return_value = datetime.datetime(2015, 3, 27)
