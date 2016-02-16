@@ -96,6 +96,14 @@ Integration testing with the boulder CA
 Generally it is sufficient to open a pull request and let Github and Travis run
 integration tests for you.
 
+However, if you prefer to run tests, you can use Vagrant, using the Vagrantfile
+in Let's Encrypt's repository. To execute the tests on a Vagrant box, the only
+command you are required to run is::
+
+  ./tests/boulder-integration.sh
+
+Otherwise, please follow the following instructions.
+
 Mac OS X users: Run ``./tests/mac-bootstrap.sh`` instead of
 ``boulder-start.sh`` to install dependencies, configure the
 environment, and start boulder.
