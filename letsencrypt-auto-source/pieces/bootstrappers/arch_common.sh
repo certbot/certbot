@@ -18,9 +18,9 @@ BootstrapArchCommon() {
     pkg-config
   "
 
-  missing=$("$SUDO" pacman -T $deps)
+  missing=$($SUDO pacman -T $deps)
 
   if [ "$missing" ]; then
-    "$SUDO" pacman -S --needed $missing
+    $SUDO pacman -S --needed $missing
   fi
 }
