@@ -189,7 +189,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
                     return True
         return False
 
-    def same_server(self, vhost):
+    def same_server(self, vhost, generic=False):
         """Determines if the vhost is the same 'server'.
 
         Used in redirection - indicates whether or not the two virtual hosts
@@ -199,12 +199,17 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
         """
 
-        if vhost.get_names() != self.get_names():
-            return False
+        if not generic:
+            if vhost.get_names() != self.get_names():
+                return False
 
-        # If equal and set is not empty... assume same server
-        if self.name is not None or self.aliases:
-            return True
+            # If equal and set is not empty... assume same server
+            if self.name is not None or self.aliases:
+                return True
+        # If we're looking for a generic vhost, don't return one with a ServerName
+        else:
+            if self.name:
+                return False
 
         # Both sets of names are empty.
 
