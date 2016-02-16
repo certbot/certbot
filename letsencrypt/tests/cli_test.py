@@ -351,6 +351,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                           self._call,
                           ['-d', '*.wildcard.tld'])
 
+        # Bare IP address (this is actually a different error message now)
+        self.assertRaises(errors.ConfigurationError,
+                          self._call,
+                          ['-d', '204.11.231.35'])
+
     def _get_argument_parser(self):
         plugins = disco.PluginsRegistry.find_all()
         return functools.partial(cli.prepare_and_parse_args, plugins)
