@@ -2,8 +2,10 @@
 import errno
 import logging
 import os
+from collections import defaultdict
 
 import zope.interface
+import six
 
 from acme import challenges
 
@@ -44,6 +46,7 @@ to serve all files under specified web root ({0})."""
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
         self.full_roots = {}
+        self.performed = defaultdict(set)
 
     def prepare(self):  # pylint: disable=missing-docstring
         path_map = self.conf("map")
@@ -127,6 +130,8 @@ to serve all files under specified web root ({0})."""
         finally:
             os.umask(old_umask)
 
+        self.performed[root_path].add(achall)
+
         return response
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
@@ -135,3 +140,10 @@ to serve all files under specified web root ({0})."""
             validation_path = self._get_validation_path(root_path, achall)
             logger.debug("Removing %s", validation_path)
             os.remove(validation_path)
+            self.performed[root_path].remove(achall)
+
+        for root_path, achalls in six.iteritems(self.performed):
+            if not achalls:
+                logger.debug("All challenges cleaned up, removing %s",
+                             root_path)
+                os.rmdir(root_path)
