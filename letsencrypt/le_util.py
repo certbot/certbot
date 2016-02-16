@@ -322,7 +322,10 @@ def enforce_domain_sanity(domain):
     # being FQDNs) because hope springs eternal on this point
     try:
         socket.inet_aton(domain)
-        raise errors.ConfigurationError("Requested name {0} is an IP address. The Let's Encrypt certificate authority will not issue certificates for a bare IP address.".format(domain))
+        raise errors.ConfigurationError(
+            "Requested name {0} is an IP address. The Let's Encrypt "
+            "certificate authority will not issue certificates for a "
+            "bare IP address.".format(domain))
     except socket.error:
         # It wasn't an IP address, so that's good
         pass
