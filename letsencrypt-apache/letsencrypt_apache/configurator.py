@@ -895,9 +895,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         for addr in vhost.addrs:
             # In Apache 2.2, when a NameVirtualHost directive is not
             # set, "*" and "_default_" will conflict when sharing a port
+            addrs = set((addr,))
             if addr.get_addr() in ("*", "_default_"):
-                addrs = [obj.Addr((a, addr.get_port(),))
-                         for a in ("*", "_default_")]
+                addrs.update(obj.Addr((a, addr.get_port(),))
+                             for a in ("*", "_default_"))
 
             for test_vh in self.vhosts:
                 if (vhost.filep != test_vh.filep and
