@@ -30,8 +30,10 @@ class AuthenticatorTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.webroot import Authenticator
         self.path = tempfile.mkdtemp()
+        self.root_challenge_path = os.path.join(
+            self.path, ".well-known", "acme-challenge")
         self.validation_path = os.path.join(
-            self.path, ".well-known", "acme-challenge",
+            self.root_challenge_path,
             "ZXZhR3hmQURzNnBTUmIyTEF2OUlaZjE3RHQzanV4R0orUEN0OTJ3citvQQ")
         self.config = mock.MagicMock(webroot_path=self.path,
                                      webroot_map={"thing.com": self.path})
@@ -137,6 +139,7 @@ class AuthenticatorTest(unittest.TestCase):
 
         self.auth.cleanup([self.achall])
         self.assertFalse(os.path.exists(self.validation_path))
+        self.assertFalse(os.path.exists(self.root_challenge_path))
 
 
 if __name__ == "__main__":
