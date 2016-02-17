@@ -3,7 +3,7 @@ import re
 import sys
 import collections
 
-import ConfigParser
+import Config
 
 # TODO: There's more to be learned from postfix logs!  Here's one sample
 # observed during failures from the sender vagrant vm:
@@ -35,21 +35,24 @@ def get_counts(input, config):
   # Log lines for when a TLS connection was successfully established. These can
   # indicate the difference between Untrusted, Trusted, and Verified certs.
   connected_re = re.compile("([A-Za-z]+) TLS connection established to ([^[]*)")
+  mx_to_domain_mapping = config.get_mx_to_domain_policy_map()
+
   for line in sys.stdin:
     deferred = deferred_re.search(line)
     connected = connected_re.search(line)
     if connected:
-      validation = result.group(1)
-      mx_hostname = result.group(2).lower()
+      validation = connected.group(1)
+      mx_hostname = connected.group(2).lower()
       if validation == "Trusted" or validation == "Verified":
         seen_trusted = True
-      address_domains = config.get_address_domains(mx_hostname)
+      address_domains = config.get_address_domains(mx_hostname, mx_to_domain_mapping)
       if address_domains:
-        for d in address_domains:
-          counts[d][validation] += 1
-          counts[d]["all"] += 1
+        domains_str = [ a.domain for a in address_domains ]
+        d = ', '.join(domains_str)
+        counts[d][validation] += 1
+        counts[d]["all"] += 1
     elif deferred:
-      mx_hostname = result.group(1).lower()
+      mx_hostname = deferred.group(1).lower()
       tls_deferred[mx_hostname] += 1
   if not seen_trusted:
     # Postfix will only emit 'Trusted' if the certificate validates according to
@@ -65,7 +68,11 @@ def print_summary(counts):
       print mx_hostname, validation, validation_count / validations["all"], "of", validations["all"]
 
 if __name__ == "__main__":
-  config = ConfigParser.Config("starttls-everywhere.json")
+  if len(sys.argv) != 2:
+    print "Usage: %s starttls-everywhere.json" % sys.argv[0]
+    sys.exit(1)
+  config = Config.Config()
+  config.load_from_json_file(sys.argv[1])
   (counts, tls_deferred) = get_counts(sys.stdin, config)
   print_summary(counts)
   print tls_deferred

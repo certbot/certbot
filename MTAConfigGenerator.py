@@ -33,6 +33,7 @@ class PostfixConfigGenerator(MTAConfigGenerator):
     self.postfix_cf_file = self.find_postfix_cf()
     self.wrangle_existing_config()
     self.set_domainwise_tls_policies()
+    #TODO make this optional for testing, etc.
     os.system("sudo service postfix reload")
 
   def ensure_cf_var(self, var, ideal, also_acceptable):
@@ -120,33 +121,37 @@ class PostfixConfigGenerator(MTAConfigGenerator):
 
   def set_domainwise_tls_policies(self):
     self.policy_lines = []
-    for address_domain, properties in self.policy_config.acceptable_mxs.items():
-      mx_list = properties["accept-mx-domains"]
+    all_acceptable_mxs = self.policy_config.get_acceptable_mxs_dict()
+    for address_domain, properties in all_acceptable_mxs.items():
+      mx_list = properties.accept_mx_domains
       if len(mx_list) > 1:
-        print "Lists of multiple accept-mx-domains not yet supported, skipping ", address_domain
+        print "Lists of multiple accept-mx-domains not yet supported."
+        print "Using MX %s for %s" % (mx_list[0], address_domain)
+        print "Ignoring: %s" % (', '.join(mx_list[1:]))
       mx_domain = mx_list[0]
-      mx_policy = self.policy_config.tls_policies[mx_domain]
+      mx_policy = self.policy_config.get_tls_policy(mx_domain)
       entry = address_domain + " encrypt"
-      if "min-tls-version" in mx_policy:
-        if mx_policy["min-tls-version"].lower() == "tlsv1":
-          entry += " protocols=!SSLv2,!SSLv3"
-        elif mx_policy["min-tls-version"].lower() == "tlsv1.1":
-          entry += " protocols=!SSLv2,!SSLv3,!TLSv1"
-        elif mx_policy["min-tls-version"].lower() == "tlsv1.2":
-          entry += " protocols=!SSLv2,!SSLv3,!TLSv1,!TLSv1.1"
-        else:
-          print mx_policy["min-tls-version"]
+      if mx_policy.min_tls_version.lower() == "tlsv1":
+        entry += " protocols=!SSLv2,!SSLv3"
+      elif mx_policy.min_tls_version.lower() == "tlsv1.1":
+        entry += " protocols=!SSLv2,!SSLv3,!TLSv1"
+      elif mx_policy.min_tls_version.lower() == "tlsv1.2":
+        entry += " protocols=!SSLv2,!SSLv3,!TLSv1,!TLSv1.1"
+      else:
+        print mx_policy.min_tls_version
       self.policy_lines.append(entry)
 
     f = open(self.policy_file, "w")
     f.write("\n".join(self.policy_lines) + "\n")
     f.close()
 
+
 if __name__ == "__main__":
-  import ConfigParser
+  import Config as config
   if len(sys.argv) != 3:
     print "Usage: MTAConfigGenerator starttls-everywhere.json /etc/postfix"
     sys.exit(1)
-  c = ConfigParser.Config(sys.argv[1])
+  c = config.Config()
+  c.load_from_json_file(sys.argv[1])
   postfix_dir = sys.argv[2]
   pcgen = PostfixConfigGenerator(c, postfix_dir, fixup=True)
