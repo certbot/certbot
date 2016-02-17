@@ -81,7 +81,6 @@ class PostfixConfigGenerator(MTAConfigGenerator):
 
         self.ensure_cf_var("smtp_tls_policy_maps", policy_cf_entry, [])
 
-        self.maybe_add_config_lines()
 
     def maybe_add_config_lines(self):
         if not self.additions:
@@ -186,8 +185,9 @@ class PostfixConfigGenerator(MTAConfigGenerator):
             file (cert plus chain)
         :raises .PluginError: when cert cannot be deployed
         """
-
         self.wrangle_existing_config()
+        self.ensure_cf_var("smtpd_tls_cert_file", fullchain_path, [])
+        self.ensure_cf_var("smtpd_tls_key_file", key_path, [])
         self.set_domainwise_tls_policies()
 
     def enhance(domain, enhancement, options=None):
@@ -233,6 +233,8 @@ class PostfixConfigGenerator(MTAConfigGenerator):
         :raises .PluginError: when save is unsuccessful
         """
 
+        self.maybe_add_config_lines()
+
     def rollback_checkpoints(rollback=1):
         """Revert `rollback` number of configuration checkpoints.
         :raises .PluginError: when configuration cannot be fully reverted
@@ -277,4 +279,5 @@ if __name__ == "__main__":
     pcgen = PostfixConfigGenerator(c, postfix_dir, fixup=True)
     pcgen.prepare()
     pcgen.deploy_cert() # XXX add cert args!
+    pcgen.save()
     pcgen.restart()
