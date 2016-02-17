@@ -290,6 +290,6 @@ if __name__ == "__main__":
     cert, key, chain, fullchain = pieces
     pcgen = PostfixConfigGenerator(c, postfix_dir, fixup=True)
     pcgen.prepare()
-    pcgen.deploy_cert(cert, key, chain, fullchain)
+    pcgen.deploy_cert("example.com", cert, key, chain, fullchain)
     pcgen.save()
     pcgen.restart()
