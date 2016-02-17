@@ -224,7 +224,9 @@ class NginxConfigurator(common.Plugin):
         """
         matches = self._get_ranked_matches(target_name)
         if not matches:
-            logger.info("Virtual Host not found for %s", target_name)
+            logger.info("Virtual Host not found for %s. "
+                        "Are you sure you're really serving that domain name?",
+                        target_name)
             return None
 
 
