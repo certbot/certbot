@@ -144,6 +144,13 @@ to serve all files under specified web root ({0})."""
 
         for root_path, achalls in six.iteritems(self.performed):
             if not achalls:
-                logger.debug("All challenges cleaned up, removing %s",
-                             root_path)
-                os.rmdir(root_path)
+                try:
+                    os.rmdir(root_path)
+                    logger.debug("All challenges cleaned up, removing %s",
+                                 root_path)
+                except OSError as exc:
+                    if exc.errno == errno.ENOTEMPTY:
+                        logger.debug("Challenges cleaned up but %s not empty",
+                                     root_path)
+                    else:
+                        raise
