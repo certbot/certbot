@@ -83,6 +83,14 @@ class RegisterTest(unittest.TestCase):
                 self._call()
                 mock_logger.warn.assert_called_once_with(mock.ANY)
 
+    def test_unsupported_error(self):
+        from acme import messages
+        msg = "Test"
+        mx_err = messages.Error(detail=msg, typ="malformed", title="title")
+        with mock.patch("letsencrypt.client.acme_client.Client") as mock_client:
+            mock_client().register.side_effect = [mx_err, mock.MagicMock()]
+            self.assertRaises(messages.Error, self._call)
+
 class ClientTest(unittest.TestCase):
     """Tests for letsencrypt.client.Client."""
 
