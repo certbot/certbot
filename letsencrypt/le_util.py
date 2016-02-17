@@ -6,6 +6,7 @@ import logging
 import os
 import platform
 import re
+import socket
 import stat
 import subprocess
 import sys
@@ -316,6 +317,18 @@ def enforce_domain_sanity(domain):
 
     # Remove trailing dot
     domain = domain[:-1] if domain.endswith('.') else domain
+
+    # Explain separately that IP addresses aren't allowed (apart from not
+    # being FQDNs) because hope springs eternal concerning this point
+    try:
+        socket.inet_aton(domain)
+        raise errors.ConfigurationError(
+            "Requested name {0} is an IP address. The Let's Encrypt "
+            "certificate authority will not issue certificates for a "
+            "bare IP address.".format(domain))
+    except socket.error:
+        # It wasn't an IP address, so that's good
+        pass
 
     # FQDN checks from
     # http://www.mkyong.com/regular-expressions/domain-name-regular-expression-example/
