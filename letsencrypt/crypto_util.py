@@ -53,8 +53,8 @@ def init_save_key(key_size, key_dir, keyname="key-letsencrypt.pem"):
                                config.strict_permissions)
     key_f, key_path = le_util.unique_file(
         os.path.join(key_dir, keyname), 0o600)
-    key_f.write(key_pem)
-    key_f.close()
+    with key_f:
+        key_f.write(key_pem)
 
     logger.info("Generating key (%d bits): %s", key_size, key_path)
 
@@ -271,7 +271,7 @@ def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
     def _dump_cert(cert):
         if isinstance(cert, jose.ComparableX509):
             # pylint: disable=protected-access
-            cert = cert._wrapped
+            cert = cert.wrapped
         return OpenSSL.crypto.dump_certificate(filetype, cert)
 
     # assumes that OpenSSL.crypto.dump_certificate includes ending

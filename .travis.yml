@@ -1,8 +1,14 @@
 language: python
 
+cache:
+    directories:
+        - $HOME/.cache/pip
+
 services:
   - rabbitmq
   - mariadb
+  # apacheconftest
+  #- apache2
 
 # http://docs.travis-ci.com/user/ci-environment/#CI-environment-OS
 # gimme has to be kept in sync with Boulder's Go version setting in .travis.yml
@@ -17,12 +23,35 @@ env:
   global:
     - GOPATH=/tmp/go
     - PATH=$GOPATH/bin:$PATH
-  matrix:
-    - TOXENV=py26 BOULDER_INTEGRATION=1
-    - TOXENV=py27 BOULDER_INTEGRATION=1
-    - TOXENV=lint
-    - TOXENV=cover
 
+matrix:
+  include:
+    - python: "2.6"
+      env: TOXENV=py26 BOULDER_INTEGRATION=1
+    - python: "2.6"
+      env: TOXENV=py26-oldest BOULDER_INTEGRATION=1
+# Disabled for now due to requiring sudo -> causing more boulder integration
+# DNS timeouts :(
+#   - python: "2.7"
+#     env: TOXENV=apacheconftest
+    - python: "2.7"
+      env: TOXENV=py27 BOULDER_INTEGRATION=1
+    - python: "2.7"
+      env: TOXENV=py27-oldest BOULDER_INTEGRATION=1
+    - python: "2.7"
+      env: TOXENV=lint
+    - sudo: required
+      env: TOXENV=le_auto
+      services: docker
+      before_install:
+    - python: "2.7"
+      env: TOXENV=cover
+    - python: "3.3"
+      env: TOXENV=py33
+    - python: "3.4"
+      env: TOXENV=py34
+    - python: "3.5"
+      env: TOXENV=py35
 
 # Only build pushes to the master branch, PRs, and branches beginning with
 # `test-`. This reduces the number of simultaneous Travis runs, which speeds
@@ -48,8 +77,7 @@ addons:
   apt:
     sources:
     - augeas
-    packages:  # keep in sync with bootstrap/ubuntu.sh and Boulder
-    - python
+    packages:  # Keep in sync with letsencrypt-auto-source/pieces/bootstrappers/deb_common.sh and Boulder.
     - python-dev
     - python-virtualenv
     - gcc
@@ -63,6 +91,12 @@ addons:
     - openssl
     # For Boulder integration testing
     - rsyslog
+    # for apacheconftest
+    #- realpath
+    #- apache2
+    #- libapache2-mod-wsgi
+    #- libapache2-mod-macro
+    #- sudo
 
 install: "travis_retry pip install tox coveralls"
 script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/travis-integration.sh)'

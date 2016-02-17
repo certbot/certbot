@@ -90,6 +90,9 @@ class ServerManager(object):
         logger.debug("Stopping server at %s:%d...",
                      *instance.server.socket.getsockname()[:2])
         instance.server.shutdown()
+        # Not calling server_close causes problems when renewing multiple
+        # certs with `letsencrypt renew` using TLSSNI01 and PyOpenSSL 0.13
+        instance.server.server_close()
         instance.thread.join()
         del self._instances[port]
 
@@ -150,7 +153,7 @@ class Authenticator(common.Plugin):
 
         # one self-signed key for all tls-sni-01 certificates
         self.key = OpenSSL.crypto.PKey()
-        self.key.generate_key(OpenSSL.crypto.TYPE_RSA, bits=2048)
+        self.key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
 
         self.served = collections.defaultdict(set)
 
@@ -200,7 +203,8 @@ class Authenticator(common.Plugin):
         return self.supported_challenges
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
-        if any(util.already_listening(port) for port in self._necessary_ports):
+        renewer = self.config.verb == "renew"
+        if any(util.already_listening(port, renewer) for port in self._necessary_ports):
             raise errors.MisconfigurationError(
                 "At least one of the (possibly) required ports is "
                 "already taken.")

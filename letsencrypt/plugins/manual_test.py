@@ -23,15 +23,20 @@ class AuthenticatorTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.manual import Authenticator
         self.config = mock.MagicMock(
-            http01_port=8080, manual_test_mode=False, manual_public_ip_logging_ok=False)
+            http01_port=8080, manual_test_mode=False,
+            manual_public_ip_logging_ok=False, noninteractive_mode=True)
         self.auth = Authenticator(config=self.config, name="manual")
         self.achalls = [achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.HTTP01_P, domain="foo.com", account_key=KEY)]
 
         config_test_mode = mock.MagicMock(
-            http01_port=8080, manual_test_mode=True)
+            http01_port=8080, manual_test_mode=True, noninteractive_mode=True)
         self.auth_test_mode = Authenticator(
             config=config_test_mode, name="manual")
+
+    def test_prepare(self):
+        self.assertRaises(errors.PluginError, self.auth.prepare)
+        self.auth_test_mode.prepare()  # error not raised
 
     def test_more_info(self):
         self.assertTrue(isinstance(self.auth.more_info(), str))

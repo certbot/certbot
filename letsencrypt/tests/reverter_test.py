@@ -385,6 +385,15 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         self.assertRaises(
             errors.ReverterError, self.reverter.view_config_changes)
 
+    def test_view_config_changes_for_logging(self):
+        self._setup_three_checkpoints()
+
+        config_changes = self.reverter.view_config_changes(for_logging=True)
+
+        self.assertTrue("First Checkpoint" in config_changes)
+        self.assertTrue("Second Checkpoint" in config_changes)
+        self.assertTrue("Third Checkpoint" in config_changes)
+
     def _setup_three_checkpoints(self):
         """Generate some finalized checkpoints."""
         # Checkpoint1 - config1

@@ -12,6 +12,12 @@ store_flags="$store_flags --logs-dir $root/logs"
 export root store_flags
 
 letsencrypt_test () {
+    letsencrypt_test_no_force_renew \
+        --renew-by-default \
+        "$@"
+}
+
+letsencrypt_test_no_force_renew () {
     letsencrypt \
         --server "${SERVER:-http://localhost:4000/directory}" \
         --no-verify-ssl \
@@ -19,11 +25,10 @@ letsencrypt_test () {
         --http-01-port 5002 \
         --manual-test-mode \
         $store_flags \
-        --text \
+        --non-interactive \
         --no-redirect \
         --agree-tos \
         --register-unsafely-without-email \
-        --renew-by-default \
         --debug \
         -vvvvvvv \
         "$@"

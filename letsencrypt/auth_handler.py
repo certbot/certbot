@@ -58,7 +58,7 @@ class AuthHandler(object):
     def get_authorizations(self, domains, best_effort=False):
         """Retrieve all authorizations for challenges.
 
-        :param set domains: Domains for authorization
+        :param list domains: Domains for authorization
         :param bool best_effort: Whether or not all authorizations are
              required (this is useful in renewal)
 
@@ -508,6 +508,9 @@ def is_preferred(offered_challb, satisfied,
     return True
 
 
+_ACME_PREFIX = "urn:acme:error:"
+
+
 _ERROR_HELP_COMMON = (
     "To fix these errors, please make sure that your domain name was entered "
     "correctly and the DNS A record(s) for that domain contain(s) the "
@@ -518,7 +521,9 @@ _ERROR_HELP = {
     "connection":
         _ERROR_HELP_COMMON + " Additionally, please check that your computer "
         "has a publicly routable IP address and that no firewalls are preventing "
-        "the server from communicating with the client.",
+        "the server from communicating with the client. If you're using the "
+        "webroot plugin, you should also verify that you are serving files "
+        "from the webroot path you provided.",
     "dnssec":
         _ERROR_HELP_COMMON + " Additionally, if you have DNSSEC enabled for "
         "your domain, please ensure that the signature is valid.",
@@ -568,16 +573,13 @@ def _generate_failed_chall_msg(failed_achalls):
 
     """
     typ = failed_achalls[0].error.typ
-    msg = [
-        "The following '{0}' errors were reported by the server:".format(typ)]
+    if typ.startswith(_ACME_PREFIX):
+        typ = typ[len(_ACME_PREFIX):]
+    msg = ["The following errors were reported by the server:"]
 
-    problems = dict()
     for achall in failed_achalls:
-        problems.setdefault(achall.error.description, set()).add(achall.domain)
-    for problem in problems:
-        msg.append("\n\nDomains: ")
-        msg.append(", ".join(sorted(problems[problem])))
-        msg.append("\nError: {0}".format(problem))
+        msg.append("\n\nDomain: %s\nType:   %s\nDetail: %s" % (
+            achall.domain, typ, achall.error.detail))
 
     if typ in _ERROR_HELP:
         msg.append("\n\n")

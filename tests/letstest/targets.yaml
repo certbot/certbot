@@ -1,0 +1,99 @@
+targets:
+  #-----------------------------------------------------------------------------
+  #Ubuntu
+  - ami: ami-26d5af4c
+    name: ubuntu15.10
+    type: ubuntu
+    virt: hvm
+    user: ubuntu
+  - ami: ami-d92e6bb3
+    name: ubuntu15.04LTS
+    type: ubuntu
+    virt: hvm
+    user: ubuntu
+  - ami: ami-7b89cc11
+    name: ubuntu14.04LTS
+    type: ubuntu
+    virt: hvm
+    user: ubuntu
+  - ami: ami-9295d0f8
+    name: ubuntu14.04LTS_32bit
+    type: ubuntu
+    virt: pv
+    user: ubuntu
+  - ami: ami-0611546c
+    name: ubuntu12.04LTS
+    type: ubuntu
+    virt: hvm
+    user: ubuntu
+  #-----------------------------------------------------------------------------
+  # Debian
+  - ami: ami-116d857a
+    name: debian8.1
+    type: ubuntu
+    virt: hvm
+    user: admin
+    # userdata: |
+    #   #cloud-init
+    #   runcmd:
+    #     - [ apt-get, install, -y, curl ]
+  - ami: ami-e0efab88
+    name: debian7.8.aws.1
+    type: ubuntu
+    virt: hvm
+    user: admin
+    # userdata: |
+    #   #cloud-init
+    #   runcmd:
+    #     - [ apt-get, install, -y, curl ]
+  - ami: ami-e6eeaa8e
+    name: debian7.8.aws.1_32bit
+    type: ubuntu
+    virt: pv
+    user: admin
+    # userdata: |
+    #   #cloud-init
+    #   runcmd:
+    #     - [ apt-get, install, -y, curl ]
+  #-----------------------------------------------------------------------------
+  # Other Redhat Distros
+  - ami: ami-60b6c60a
+    name: amazonlinux-2015.09.1
+    type: centos
+    virt: hvm
+    user: ec2-user
+  - ami: ami-0d4cfd66
+    name: amazonlinux-2015.03.1
+    type: centos
+    virt: hvm
+    user: ec2-user
+  - ami: ami-a8d369c0
+    name: RHEL7
+    type: centos
+    virt: hvm
+    user: ec2-user
+  - ami: ami-518bfb3b
+    name: fedora23
+    type: centos
+    virt: hvm
+    user: fedora
+  #-----------------------------------------------------------------------------
+  # CentOS
+  # These Marketplace AMIs must, irritatingly, have their terms manually
+  # agreed to on the AWS marketplace site for any new AWS account using them...
+  - ami: ami-61bbf104
+    name: centos7
+    type: centos
+    virt: hvm
+    user: centos
+  # centos6 requires EPEL repo added
+  - ami: ami-57cd8732
+    name: centos6
+    type: centos
+    virt: hvm
+    user: centos
+    userdata: |
+      #cloud-config
+      runcmd:
+        - yum install -y epel-release
+        - iptables -F

@@ -125,7 +125,7 @@ class AuthenticatorTest(unittest.TestCase):
             self.config.standalone_supported_challenges = chall
             self.assertRaises(
                 errors.MisconfigurationError, self.auth.perform, [])
-            mock_util.already_listening.assert_called_once_with(port)
+            mock_util.already_listening.assert_called_once_with(port, False)
             mock_util.already_listening.reset_mock()
 
     @mock.patch("letsencrypt.plugins.standalone.zope.component.getUtility")

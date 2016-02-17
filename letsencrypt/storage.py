@@ -50,6 +50,83 @@ def add_time_interval(base_time, interval, textparser=parsedatetime.Calendar()):
     return textparser.parseDT(interval, base_time, tzinfo=tzinfo)[0]
 
 
+def write_renewal_config(filename, target, cli_config):
+    """Writes a renewal config file with the specified name and values.
+
+    :param str filename: Absolute path to the config file
+    :param dict target: Maps ALL_FOUR to their symlink paths
+    :param .RenewerConfiguration cli_config: parsed command line
+        arguments
+
+    :returns: Configuration object for the new config file
+    :rtype: configobj.ConfigObj
+
+    """
+    # create_empty creates a new config file if filename does not exist
+    config = configobj.ConfigObj(filename, create_empty=True)
+    for kind in ALL_FOUR:
+        config[kind] = target[kind]
+
+    # XXX: We clearly need a more general and correct way of getting
+    # options into the configobj for the RenewableCert instance.
+    # This is a quick-and-dirty way to do it to allow integration
+    # testing to start.  (Note that the config parameter to new_lineage
+    # ideally should be a ConfigObj, but in this case a dict will be
+    # accepted in practice.)
+    renewalparams = vars(cli_config.namespace)
+    if renewalparams:
+        config["renewalparams"] = renewalparams
+        config.comments["renewalparams"] = ["",
+                                            "Options and defaults used"
+                                            " in the renewal process"]
+
+    # TODO: add human-readable comments explaining other available
+    #       parameters
+    logger.debug("Writing new config %s.", filename)
+    config.write()
+    return config
+
+
+def update_configuration(lineagename, target, cli_config):
+    """Modifies lineagename's config to contain the specified values.
+
+    :param str lineagename: Name of the lineage being modified
+    :param dict target: Maps ALL_FOUR to their symlink paths
+    :param .RenewerConfiguration cli_config: parsed command line
+        arguments
+
+    :returns: Configuration object for the updated config file
+    :rtype: configobj.ConfigObj
+
+    """
+    config_filename = os.path.join(
+        cli_config.renewal_configs_dir, lineagename) + ".conf"
+    temp_filename = config_filename + ".new"
+
+    # If an existing tempfile exists, delete it
+    if os.path.exists(temp_filename):
+        os.unlink(temp_filename)
+    write_renewal_config(temp_filename, target, cli_config)
+    os.rename(temp_filename, config_filename)
+
+    return configobj.ConfigObj(config_filename)
+
+
+def get_link_target(link):
+    """Get an absolute path to the target of link.
+
+    :param str link: Path to a symbolic link
+
+    :returns: Absolute path to the target of link
+    :rtype: str
+
+    """
+    target = os.readlink(link)
+    if not os.path.isabs(target):
+        target = os.path.join(os.path.dirname(link), target)
+    return os.path.abspath(target)
+
+
 class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     """Renewable certificate.
 
@@ -128,6 +205,19 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         self.fullchain = self.configuration["fullchain"]
 
         self._fix_symlinks()
+        self._check_symlinks()
+
+    def _check_symlinks(self):
+        """Raises an exception if a symlink doesn't exist"""
+        for kind in ALL_FOUR:
+            link = getattr(self, kind)
+            if not os.path.islink(link):
+                raise errors.CertStorageError(
+                    "expected {0} to be a symlink".format(link))
+            target = get_link_target(link)
+            if not os.path.exists(target):
+                raise errors.CertStorageError("target {0} of symlink {1} does "
+                                              "not exist".format(target, link))
 
     def _consistent(self):
         """Are the files associated with this lineage self-consistent?
@@ -152,10 +242,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                 return False
         for kind in ALL_FOUR:
             link = getattr(self, kind)
-            where = os.path.dirname(link)
-            target = os.readlink(link)
-            if not os.path.isabs(target):
-                target = os.path.join(where, target)
+            target = get_link_target(link)
 
             # Each element's link must point within the cert lineage's
             # directory within the official archive directory
@@ -260,7 +347,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         :returns: The path to the current version of the specified
             member.
-        :rtype: str
+        :rtype: str or None
 
         """
         if kind not in ALL_FOUR:
@@ -270,10 +357,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             logger.debug("Expected symlink %s for %s does not exist.",
                          link, kind)
             return None
-        target = os.readlink(link)
-        if not os.path.isabs(target):
-            target = os.path.join(os.path.dirname(link), target)
-        return os.path.abspath(target)
+        return get_link_target(link)
 
     def current_version(self, kind):
         """Returns numerical version of the specified item.
@@ -450,12 +534,15 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :param int version: the desired version number
         :returns: the subject names
         :rtype: `list` of `str`
+        :raises .CertStorageError: if could not find cert file.
 
         """
         if version is None:
             target = self.current_target("cert")
         else:
             target = self.version("cert", version)
+        if target is None:
+            raise errors.CertStorageError("could not find cert file")
         with open(target) as f:
             return crypto_util.get_sans_from_cert(f.read())
 
@@ -471,7 +558,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         return ("autodeploy" not in self.configuration or
                 self.configuration.as_bool("autodeploy"))
 
-    def should_autodeploy(self):
+    def should_autodeploy(self, interactive=False):
         """Should this lineage now automatically deploy a newer version?
 
         This is a policy question and does not only depend on whether
@@ -480,12 +567,16 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         exists, and whether the time interval for autodeployment has
         been reached.)
 
+        :param bool interactive: set to True to examine the question
+            regardless of whether the renewal configuration allows
+            automated deployment (for interactive use). Default False.
+
         :returns: whether the lineage now ought to autodeploy an
             existing newer cert version
         :rtype: bool
 
         """
-        if self.autodeployment_is_enabled():
+        if interactive or self.autodeployment_is_enabled():
             if self.has_pending_deployment():
                 interval = self.configuration.get("deploy_before_expiry",
                                                   "5 days")
@@ -529,7 +620,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         return ("autorenew" not in self.configuration or
                 self.configuration.as_bool("autorenew"))
 
-    def should_autorenew(self):
+    def should_autorenew(self, interactive=False):
         """Should we now try to autorenew the most recent cert version?
 
         This is a policy question and does not only depend on whether
@@ -540,12 +631,16 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         Note that this examines the numerically most recent cert version,
         not the currently deployed version.
 
+        :param bool interactive: set to True to examine the question
+            regardless of whether the renewal configuration allows
+            automated renewal (for interactive use). Default False.
+
         :returns: whether an attempt should now be made to autorenew the
             most current cert version in this lineage
         :rtype: bool
 
         """
-        if self.autorenewal_is_enabled():
+        if interactive or self.autorenewal_is_enabled():
             # Consider whether to attempt to autorenew this cert now
 
             # Renewals on the basis of revocation
@@ -553,22 +648,22 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                 logger.debug("Should renew, certificate is revoked.")
                 return True
 
-            # Renewals on the basis of expiry time
-            interval = self.configuration.get("renew_before_expiry", "10 days")
+            # Renews some period before expiry time
+            default_interval = constants.RENEWER_DEFAULTS["renew_before_expiry"]
+            interval = self.configuration.get("renew_before_expiry", default_interval)
             expiry = crypto_util.notAfter(self.version(
                 "cert", self.latest_common_version()))
             now = pytz.UTC.fromutc(datetime.datetime.utcnow())
             if expiry < add_time_interval(now, interval):
-                logger.debug("Should renew, certificate "
-                             "has been expired since %s.",
+                logger.debug("Should renew, less than %s before certificate "
+                             "expiry %s.", interval,
                              expiry.strftime("%Y-%m-%d %H:%M:%S %Z"))
                 return True
         return False
 
     @classmethod
-    def new_lineage(cls, lineagename, cert, privkey, chain,
-                    renewalparams=None, config=None, cli_config=None):
-        # pylint: disable=too-many-locals,too-many-arguments
+    def new_lineage(cls, lineagename, cert, privkey, chain, cli_config):
+        # pylint: disable=too-many-locals
         """Create a new certificate lineage.
 
         Attempts to create a certificate lineage -- enrolled for
@@ -588,26 +683,13 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :param str cert: the initial certificate version in PEM format
         :param str privkey: the private key in PEM format
         :param str chain: the certificate chain in PEM format
-        :param configobj.ConfigObj renewalparams: parameters that
-            should be used when instantiating authenticator and installer
-            objects in the future to attempt to renew this cert or deploy
-            new versions of it
-        :param configobj.ConfigObj config: renewal configuration
-            defaults, affecting, for example, the locations of the
-            directories where the associated files will be saved
         :param .RenewerConfiguration cli_config: parsed command line
             arguments
 
         :returns: the newly-created RenewalCert object
-        :rtype: :class:`storage.renewableCert`"""
+        :rtype: :class:`storage.renewableCert`
 
-        config = config_with_defaults(config)
-        # This attempts to read the renewer config file and augment or replace
-        # the renewer defaults with any options contained in that file.  If
-        # renewer_config_file is undefined or if the file is nonexistent or
-        # empty, this .merge() will have no effect.
-        config.merge(configobj.ConfigObj(cli_config.renewer_config_file))
-
+        """
         # Examine the configuration and find the new lineage's name
         for i in (cli_config.renewal_configs_dir, cli_config.archive_dir,
                   cli_config.live_dir):
@@ -662,21 +744,11 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         # Document what we've done in a new renewal config file
         config_file.close()
-        new_config = configobj.ConfigObj(config_filename, create_empty=True)
-        for kind in ALL_FOUR:
-            new_config[kind] = target[kind]
-        if renewalparams:
-            new_config["renewalparams"] = renewalparams
-            new_config.comments["renewalparams"] = ["",
-                                                    "Options and defaults used"
-                                                    " in the renewal process"]
-        # TODO: add human-readable comments explaining other available
-        #       parameters
-        logger.debug("Writing new config %s.", config_filename)
-        new_config.write()
+        new_config = write_renewal_config(config_filename, target, cli_config)
         return cls(new_config.filename, cli_config)
 
-    def save_successor(self, prior_version, new_cert, new_privkey, new_chain):
+    def save_successor(self, prior_version, new_cert,
+                       new_privkey, new_chain, cli_config):
         """Save new cert and chain as a successor of a prior version.
 
         Returns the new version number that was created.
@@ -692,6 +764,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :param str new_privkey: the new private key, in PEM format,
             or ``None``, if the private key has not changed
         :param str new_chain: the new chain, in PEM format
+        :param .RenewerConfiguration cli_config: parsed command line
+            arguments
 
         :returns: the new version number that was created
         :rtype: int
@@ -703,8 +777,12 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         #      if needed (ensuring their permissions are correct)
         # Figure out what the new version is and hence where to save things
 
+        self.cli_config = cli_config
         target_version = self.next_free_version()
         archive = self.cli_config.archive_dir
+        # XXX if anyone ever moves a renewal configuration file, this will
+        # break... perhaps prefix should be the dirname of the previous
+        # cert.pem?
         prefix = os.path.join(archive, self.lineagename)
         target = dict(
             [(kind,
@@ -740,4 +818,11 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         with open(target["fullchain"], "w") as f:
             logger.debug("Writing full chain to %s.", target["fullchain"])
             f.write(new_cert + new_chain)
+
+        symlinks = dict((kind, self.configuration[kind]) for kind in ALL_FOUR)
+        # Update renewal config file
+        self.configfile = update_configuration(
+            self.lineagename, symlinks, cli_config)
+        self.configuration = config_with_defaults(self.configfile)
+
         return target_version

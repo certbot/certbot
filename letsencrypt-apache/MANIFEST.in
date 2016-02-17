@@ -2,5 +2,6 @@ include LICENSE.txt
 include README.rst
 recursive-include docs *
 recursive-include letsencrypt_apache/tests/testdata *
+include letsencrypt_apache/centos-options-ssl-apache.conf
 include letsencrypt_apache/options-ssl-apache.conf
 recursive-include letsencrypt_apache/augeas_lens *.aug
