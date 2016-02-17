@@ -141,6 +141,32 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertFalse(os.path.exists(self.validation_path))
         self.assertFalse(os.path.exists(self.root_challenge_path))
 
+    def test_cleanup_leftovers(self):
+        self.auth.prepare()
+        self.auth.perform([self.achall])
+
+        leftover_path = os.path.join(self.root_challenge_path, 'leftover')
+        os.mkdir(leftover_path)
+
+        self.auth.cleanup([self.achall])
+        self.assertFalse(os.path.exists(self.validation_path))
+        self.assertTrue(os.path.exists(self.root_challenge_path))
+
+        os.rmdir(leftover_path)
+
+    @mock.patch('os.rmdir')
+    def test_cleanup_oserror(self, mock_rmdir):
+        self.auth.prepare()
+        self.auth.perform([self.achall])
+
+        os_error = OSError()
+        os_error.errno = errno.EACCES
+        mock_rmdir.side_effect = os_error
+
+        self.assertRaises(OSError, self.auth.cleanup, [self.achall])
+        self.assertFalse(os.path.exists(self.validation_path))
+        self.assertTrue(os.path.exists(self.root_challenge_path))
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
