@@ -30,11 +30,6 @@ class PostfixConfigGenerator(MTAConfigGenerator):
         self.postfix_dir = postfix_dir
         self.policy_file = os.path.join(postfix_dir, "starttls_everywhere_policy")
         MTAConfigGenerator.__init__(self, policy_config)
-        self.postfix_cf_file = self.find_postfix_cf()
-        self.wrangle_existing_config()
-        self.set_domainwise_tls_policies()
-        #TODO make this optional for testing, etc.
-        os.system("sudo service postfix reload")
 
     def ensure_cf_var(self, var, ideal, also_acceptable):
         """
@@ -88,7 +83,6 @@ class PostfixConfigGenerator(MTAConfigGenerator):
 
         self.ensure_cf_var("smtp_tls_policy_maps", policy_cf_entry, [])
 
-        self.maybe_add_config_lines()
 
     def maybe_add_config_lines(self):
         if not self.additions:
@@ -121,7 +115,7 @@ class PostfixConfigGenerator(MTAConfigGenerator):
 
     def set_domainwise_tls_policies(self):
         self.policy_lines = []
-        all_acceptable_mxs = self.policy_config.get_acceptable_mxs_dict()
+        all_acceptable_mxs = self.policy_config.acceptable_mxs
         for address_domain, properties in all_acceptable_mxs.items():
             mx_list = properties.accept_mx_domains
             if len(mx_list) > 1:
@@ -145,13 +139,157 @@ class PostfixConfigGenerator(MTAConfigGenerator):
         f.write("\n".join(self.policy_lines) + "\n")
         f.close()
 
+    ### Let's Encrypt client IPlugin ###
+
+    def prepare(self):
+        """Prepare the plugin.
+        Finish up any additional initialization.
+        :raises .PluginError:
+            when full initialization cannot be completed.
+        :raises .MisconfigurationError:
+            when full initialization cannot be completed. Plugin will
+            be displayed on a list of available plugins.
+        :raises .NoInstallationError:
+            when the necessary programs/files cannot be located. Plugin
+            will NOT be displayed on a list of available plugins.
+        :raises .NotSupportedError:
+            when the installation is recognized, but the version is not
+            currently supported.
+        """
+        # XXX ensure we raise the right kinds of exceptions
+        self.postfix_cf_file = self.find_postfix_cf()
+
+
+    def more_info(self):
+        """Human-readable string to help the user.
+        Should describe the steps taken and any relevant info to help the user
+        decide which plugin to use.
+        :rtype str:
+        """
+
+
+    ### Let's Encrypt client IInstaller ###
+
+    def get_all_names(self):
+        """Returns all names that may be authenticated.
+        :rtype: `list` of `str`
+        """
+
+    def deploy_cert(self, domain, _cert_path, key_path, _chain_path, fullchain_path):
+        """Deploy certificate.
+        :param str domain: domain to deploy certificate file
+        :param str cert_path: absolute path to the certificate file
+        :param str key_path: absolute path to the private key file
+        :param str chain_path: absolute path to the certificate chain file
+        :param str fullchain_path: absolute path to the certificate fullchain
+            file (cert plus chain)
+        :raises .PluginError: when cert cannot be deployed
+        """
+        self.wrangle_existing_config()
+        self.ensure_cf_var("smtpd_tls_cert_file", fullchain_path, [])
+        self.ensure_cf_var("smtpd_tls_key_file", key_path, [])
+        self.set_domainwise_tls_policies()
+
+    def enhance(self, domain, enhancement, options=None):
+        """Perform a configuration enhancement.
+        :param str domain: domain for which to provide enhancement
+        :param str enhancement: An enhancement as defined in
+            :const:`~letsencrypt.constants.ENHANCEMENTS`
+        :param options: Flexible options parameter for enhancement.
+            Check documentation of
+            :const:`~letsencrypt.constants.ENHANCEMENTS`
+            for expected options for each enhancement.
+        :raises .PluginError: If Enhancement is not supported, or if
+            an error occurs during the enhancement.
+        """
+
+    def supported_enhancements(self):
+        """Returns a list of supported enhancements.
+        :returns: supported enhancements which should be a subset of
+            :const:`~letsencrypt.constants.ENHANCEMENTS`
+        :rtype: :class:`list` of :class:`str`
+        """
+
+    def get_all_certs_keys(self):
+        """Retrieve all certs and keys set in configuration.
+        :returns: tuples with form `[(cert, key, path)]`, where:
+            - `cert` - str path to certificate file
+            - `key` - str path to associated key file
+            - `path` - file path to configuration file
+        :rtype: list
+        """
+
+    def save(self, title=None, temporary=False):
+        """Saves all changes to the configuration files.
+        Both title and temporary are needed because a save may be
+        intended to be permanent, but the save is not ready to be a full
+        checkpoint. If an exception is raised, it is assumed a new
+        checkpoint was not created.
+        :param str title: The title of the save. If a title is given, the
+            configuration will be saved as a new checkpoint and put in a
+            timestamped directory. `title` has no effect if temporary is true.
+        :param bool temporary: Indicates whether the changes made will
+            be quickly reversed in the future (challenges)
+        :raises .PluginError: when save is unsuccessful
+        """
+
+        self.maybe_add_config_lines()
+
+    def rollback_checkpoints(self, rollback=1):
+        """Revert `rollback` number of configuration checkpoints.
+        :raises .PluginError: when configuration cannot be fully reverted
+        """
+
+    def recovery_routine(self):
+        """Revert configuration to most recent finalized checkpoint.
+        Remove all changes (temporary and permanent) that have not been
+        finalized. This is useful to protect against crashes and other
+        execution interruptions.
+        :raises .errors.PluginError: If unable to recover the configuration
+        """
+
+    def view_config_changes(self):
+        """Display all of the LE config changes.
+        :raises .PluginError: when config changes cannot be parsed
+        """
+
+    def config_test(self):
+        """Make sure the configuration is valid.
+        :raises .MisconfigurationError: when the config is not in a usable state
+        """
+
+    def restart(self):
+        """Restart or refresh the server content.
+        :raises .PluginError: when server cannot be restarted
+        """
+        if os.geteuid() != 0:
+            os.system("sudo service postfix reload")
+        else:
+            os.system("service postfix reload")
+
+
+def usage():
+    print ("Usage: %s starttls-everywhere.json /etc/postfix /etc/letsencrypt/live/example.com/" %
+          sys.argv[0])
+    sys.exit(1)
 
 if __name__ == "__main__":
     import Config as config
-    if len(sys.argv) != 3:
-        print "Usage: MTAConfigGenerator starttls-everywhere.json /etc/postfix"
-        sys.exit(1)
+    if len(sys.argv) != 4:
+        usage()
     c = config.Config()
     c.load_from_json_file(sys.argv[1])
     postfix_dir = sys.argv[2]
+    le_lineage = sys.argv[3]
+    pieces = [os.path.join(le_lineage, f) for f in (
+        "cert.pem", "privkey.pem", "chain.pem", "fullchain.pem")]
+    if not os.path.isdir(le_lineage) or not all(os.path.isfile(p) for p in pieces) :
+        print "Let's Encrypt directory", le_lineage, "does not appear to contain a valid lineage"
+        print
+        usage()
+    cert, key, chain, fullchain = pieces
     pcgen = PostfixConfigGenerator(c, postfix_dir, fixup=True)
+    pcgen.prepare()
+    pcgen.deploy_cert("example.com", cert, key, chain, fullchain)
+    pcgen.save()
+    pcgen.restart()
