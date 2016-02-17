@@ -115,7 +115,7 @@ class PostfixConfigGenerator(MTAConfigGenerator):
 
     def set_domainwise_tls_policies(self):
         self.policy_lines = []
-        all_acceptable_mxs = self.policy_config.get_acceptable_mxs_dict()
+        all_acceptable_mxs = self.policy_config.acceptable_mxs
         for address_domain, properties in all_acceptable_mxs.items():
             mx_list = properties.accept_mx_domains
             if len(mx_list) > 1:
