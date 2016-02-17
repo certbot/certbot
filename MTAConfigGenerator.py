@@ -269,7 +269,8 @@ class PostfixConfigGenerator(MTAConfigGenerator):
 
 
 def usage():
-    print "Usage: MTAConfigGenerator starttls-everywhere.json /etc/postfix /etc/letsencrypt/live/example.com/"
+    print ("Usage: %s starttls-everywhere.json /etc/postfix /etc/letsencrypt/live/example.com/" %
+          sys.argv[0])
     sys.exit(1)
 
 if __name__ == "__main__":
@@ -280,8 +281,9 @@ if __name__ == "__main__":
     c.load_from_json_file(sys.argv[1])
     postfix_dir = sys.argv[2]
     le_lineage = sys.argv[3]
-    pieces = [os.path.join(le_lineage, f) for f in ("cert.pem", "privkey.pem", "chain.pem", "fullchain.pem")]
-    if not os.isdir(le_lineage) or not all(os.isfile(p) for p in pieces) :
+    pieces = [os.path.join(le_lineage, f) for f in (
+        "cert.pem", "privkey.pem", "chain.pem", "fullchain.pem")]
+    if not os.path.isdir(le_lineage) or not all(os.path.isfile(p) for p in pieces) :
         print "Let's Encrypt directory", le_lineage, "does not appear to contain a valid lineage"
         print
         usage()
