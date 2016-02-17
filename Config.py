@@ -1,5 +1,5 @@
 from datetime import datetime
-from dateutil import dateutil_parser
+from dateutil import parser as dateutil_parser
 import collections
 import json
 import logging
