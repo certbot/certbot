@@ -17,7 +17,7 @@ RUN apt-get update && \
     apt-get clean
 RUN pip install nose
 
-RUN mkdir -p /home/lea/letsencrypt
+RUN mkdir -p /home/lea/letsencrypt/letsencrypt
 
 # Install fake testing CA:
 COPY ./tests/certs/ca/my-root-ca.crt.pem /usr/local/share/ca-certificates/
