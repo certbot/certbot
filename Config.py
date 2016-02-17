@@ -1,5 +1,5 @@
 from datetime import datetime
-from dateutil import parser
+from dateutil import dateutil_parser
 import collections
 import json
 import logging
@@ -36,7 +36,7 @@ def parse_timestamp(value, attr_name):
     except (TypeError, ValueError):
         pass
     try:
-        return parser.parse(value)
+        return dateutil_parser.parse(value)
     except (TypeError, ValueError):
         raise ConfigError('Config value %s is an invalid date or timestamp.' % attr_name)
 
@@ -96,6 +96,30 @@ class BaseConfig(object):
         return s
 
     def update(self, newer_config, merge=False, **kwargs):
+        """Create a fresh config combining the new and old configs.
+
+        It does this by iterating over the 'config_properties' class
+        attribute which contains names of property attributes for the config.
+
+        Two methods of combining configs are possible, an 'update' and
+        a 'merge', the latter set by the keyword argument 'merge=True'.
+        
+        An update overrides older values with new values -- even if those
+        new values are None.  Update will remove values that are present in
+        the old config if they are not present in the new config.
+
+        A merge by comparison will allow old values to persist if they are
+        not specified in the new config.  This can be used for end-user
+        customizations to override specific settings without having to re-create
+        large portions of a config to override it.
+
+        Arguments:
+          newer_config: A config object to combine with the current config.
+          merge: Allows old values not overridden to survive into the fresh config.
+
+        Returns:
+          A config object of the same sort as called upon.
+        """
         # removed 'merge' kw arg - and it was passed to constructor
         # make a note to not do that, consume it on the param list
         fresh_config = self.__class__(**kwargs)
@@ -117,6 +141,17 @@ class BaseConfig(object):
         return fresh_config
 
     def merge(self, newer_config, **kwargs):
+        """Combines configs and keeps old values if they are not overridden.
+
+        See docstring for 'update' method for more details.
+
+        Arguments:
+          newer_config: A config object to combine with the current config.
+          merge: Allows old values not overridden to survive into the fresh config.
+
+        Returns:
+          A config object of the same sort as called upon.
+        """
         kwargs['merge'] = True
         logger.debug('from parent merge: %s' % kwargs)
         return self.update(newer_config, **kwargs)
