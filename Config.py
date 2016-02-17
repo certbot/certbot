@@ -130,6 +130,7 @@ class BaseConfig(object):
                 self.__class__,
                 newer_config.__class__))
         for prop_name in self.config_properties:
+            # get the specified property off of the current class
             prop = self.__class__.__dict__.get(prop_name)
             assert prop
             new_value = prop.fget(newer_config)
