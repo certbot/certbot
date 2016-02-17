@@ -125,7 +125,9 @@ class PostfixConfigGenerator(MTAConfigGenerator):
     for address_domain, properties in all_acceptable_mxs.items():
       mx_list = properties.accept_mx_domains
       if len(mx_list) > 1:
-        print "Lists of multiple accept-mx-domains not yet supported, skipping ", address_domain
+        print "Lists of multiple accept-mx-domains not yet supported."
+        print "Using MX %s for %s" % (mx_list[0], address_domain)
+        print "Ignoring: %s" % (', '.join(mx_list[1:]))
       mx_domain = mx_list[0]
       mx_policy = self.policy_config.get_tls_policy(mx_domain)
       entry = address_domain + " encrypt"
