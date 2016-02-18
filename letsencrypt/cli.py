@@ -1633,7 +1633,8 @@ def _create_subparsers(helpful):
     helpful.add_group("revoke", description="Options for revocation of certs")
     helpful.add_group("rollback", description="Options for reverting config changes")
     helpful.add_group("plugins", description="Plugin options")
-    helpful.add_group("config_changes", description="Options for showing a history of config changes")
+    helpful.add_group("config_changes",
+                      description="Options for showing a history of config changes")
     helpful.add("config_changes", "--num", type=int,
                 help="How many past revisions you want to be displayed")
     helpful.add(
