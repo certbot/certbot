@@ -543,7 +543,7 @@ def rollback(default_installer, checkpoints, config, plugins):
         installer.restart()
 
 
-def view_config_changes(config):
+def view_config_changes(config, num=None):
     """View checkpoints and associated configuration changes.
 
     .. note:: This assumes that the installation is using a Reverter object.
@@ -554,7 +554,7 @@ def view_config_changes(config):
     """
     rev = reverter.Reverter(config)
     rev.recovery_routine()
-    rev.view_config_changes()
+    rev.view_config_changes(num)
 
 
 def _save_chain(chain_pem, chain_path):
