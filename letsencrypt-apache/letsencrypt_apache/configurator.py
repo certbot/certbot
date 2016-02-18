@@ -908,6 +908,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     self.add_name_vhost(addr)
                     logger.info("Enabling NameVirtualHosts on %s", addr)
                     need_to_save = True
+                    break
 
         if need_to_save:
             self.save()
