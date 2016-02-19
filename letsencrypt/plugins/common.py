@@ -115,8 +115,8 @@ class Addr(object):
             endIndex = str_addr.rfind(']')
             host = str_addr[:endIndex + 1]
             port = ''
-            if len(str_addr) > endIndex + 3 and str_addr[endIndex + 2] == ':':
-                port = str_addr[endIndex + 3:]
+            if len(str_addr) > endIndex + 2 and str_addr[endIndex + 1] == ':':
+                port = str_addr[endIndex + 2:]
             return cls((host, port))
         else:
             tup = str_addr.partition(':')
