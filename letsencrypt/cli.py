@@ -649,6 +649,11 @@ def record_chosen_plugins(config, plugins, auth, inst):
 # Possible difficulties: config.csr was hacked into auth
 def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     """Obtain a certificate and install."""
+    if config.csr is not None:
+        raise errors.Error("Currently, the default 'run' verb cannot be used "
+                           "when specifying a CSR file. Please try the "
+                           "certonly command instead.")
+
     try:
         installer, authenticator = choose_configurator_plugins(config, plugins, "run")
     except errors.PluginSelectionError as e:
