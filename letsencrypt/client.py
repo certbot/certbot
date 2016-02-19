@@ -191,7 +191,7 @@ class Client(object):
             cont_auth = continuity_auth.ContinuityAuthenticator(config,
                                                                 installer)
             self.auth_handler = auth_handler.AuthHandler(
-                dv_auth, cont_auth, self.acme, self.account)
+                self.config, dv_auth, cont_auth, self.acme, self.account)
         else:
             self.auth_handler = None
 

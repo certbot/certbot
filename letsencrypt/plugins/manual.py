@@ -175,11 +175,6 @@ s.serve_forever()" """
                 uri=achall.chall.uri(achall.domain),
                 command=command))
 
-        if not response.simple_verify(
-                achall.chall, achall.domain,
-                achall.account_key.public_key(), self.config.http01_port):
-            logger.warning("Self-verify of challenge failed.")
-
         return response
 
     def _notify_and_wait(self, message):  # pylint: disable=no-self-use

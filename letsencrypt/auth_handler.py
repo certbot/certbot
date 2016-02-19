@@ -42,12 +42,13 @@ class AuthHandler(object):
         form of :class:`letsencrypt.achallenges.AnnotatedChallenge`
 
     """
-    def __init__(self, dv_auth, cont_auth, acme, account):
+    def __init__(self, config, dv_auth, cont_auth, acme, account):
+        self.config = config
         self.dv_auth = dv_auth
         self.cont_auth = cont_auth
         self.acme = acme
-
         self.account = account
+
         self.authzr = dict()
 
         # List must be used to keep responses straight.
@@ -103,6 +104,25 @@ class AuthHandler(object):
             self.dv_c.extend(dom_dv_c)
             self.cont_c.extend(dom_cont_c)
 
+    def _simple_verify(self, achall, response):
+        """Self-verifies a response with the corresponding challenge"""
+        if isinstance(response, challenges.HTTP01Response):
+            return response.simple_verify(
+                    achall.chall, achall.domain,
+                    achall.account_key.public_key(),
+                    self.config.http01_port)
+        elif isinstance(response, challenges.TLSSNI01Response):
+            return response.simple_verify(
+                    achall.chall, achall.domain,
+                    achall.account_key.public_key(),
+                    port=self.config.tls_sni_01_port)
+        else:
+            logger.debug("Self-verify of challenge %s is not "
+                         "implemented, ignoring %s",
+                         achall.typ,
+                         achall.uri)
+            return True
+
     def _solve_challenges(self):
         """Get Responses for challenges from authenticators."""
         cont_resp = []
@@ -113,6 +133,14 @@ class AuthHandler(object):
                     cont_resp = self.cont_auth.perform(self.cont_c)
                 if self.dv_c:
                     dv_resp = self.dv_auth.perform(self.dv_c)
+                    for achall, response in zip(self.dv_c, dv_resp):
+                        if not self._simple_verify(achall, response):
+                            logger.warning(
+                                "Self-verify of %s challenge (%s) "
+                                "for domain %s failed.",
+                                achall.chall.__class__.__name__,
+                                achall.domain, achall.uri)
+
             except errors.AuthorizationError:
                 logger.critical("Failure in setting up challenges.")
                 logger.info("Attempting to clean up outstanding challenges...")

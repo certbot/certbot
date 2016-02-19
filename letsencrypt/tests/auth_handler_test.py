@@ -22,9 +22,10 @@ class ChallengeFactoryTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.auth_handler import AuthHandler
 
-        # Account is mocked...
+        # Account and config are mocked
+        self.config = mock.Mock()
         self.handler = AuthHandler(
-            None, None, None, mock.Mock(key="mock_key"))
+            self.config, None, None, None, mock.Mock(key="mock_key"))
 
         self.dom = "test"
         self.handler.authzr[self.dom] = acme_util.gen_authzr(
@@ -80,8 +81,11 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.mock_account = mock.Mock(key=le_util.Key("file_path", "PEM"))
         self.mock_net = mock.MagicMock(spec=acme_client.Client)
 
+        self.config = mock.MagicMock(
+            tls_sni_01_port=1234, http01_port=4321)
+
         self.handler = AuthHandler(
-            self.mock_dv_auth, self.mock_cont_auth,
+            self.config, self.mock_dv_auth, self.mock_cont_auth,
             self.mock_net, self.mock_account)
 
         logging.disable(logging.CRITICAL)
@@ -148,6 +152,104 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.assertRaises(
             errors.AuthorizationError, self.handler.get_authorizations, ["0"])
 
+    @mock.patch("acme.challenges.HTTP01Response.simple_verify")
+    @mock.patch("acme.challenges.TLSSNI01Response.simple_verify")
+    @mock.patch("letsencrypt.auth_handler.logger")
+    def test_solve_challenges(self, mock_logger, mock_tlssni01_verify, mock_http01_verify):
+        account_key = mock.Mock()
+        challenge_http_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.HTTP01_P, domain=b'localhost', account_key=account_key)
+        challenge_tls_sni_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.TLSSNI01_P, domain=b'localhost', account_key=account_key)
+
+        response_http_01 = challenges.HTTP01Response(key_authorization=u'foo')
+        response_tls_sni_01 = challenges.TLSSNI01Response(key_authorization=u'foo')
+
+        # Test _simple_verify's behaviour when implementation of challenge is not implemented
+        response_dummy = mock.Mock()
+        challenge_dummy = mock.Mock(chall=mock.Mock(), uri="foo", typ="Mock")
+
+        self.handler.dv_c = [challenge_http_01,
+                             challenge_tls_sni_01,
+                             challenge_dummy]
+
+        self.mock_dv_auth.perform.side_effect = [[response_http_01,
+                                                  response_tls_sni_01,
+                                                  response_dummy]]
+
+        mock_http01_verify.return_value = False
+        mock_tlssni01_verify.return_value = False
+
+        self.handler._solve_challenges()  # pylint: disable=protected-access
+
+        response_http_01.simple_verify.assert_called_once_with(
+            challenge_http_01.chall,
+            challenge_http_01.domain,
+            challenge_http_01.account_key.public_key(),
+            self.config.http01_port)
+
+        response_tls_sni_01.simple_verify.assert_called_once_with(
+            challenge_tls_sni_01.chall,
+            challenge_tls_sni_01.domain,
+            challenge_tls_sni_01.account_key.public_key(),
+            port=self.config.tls_sni_01_port)
+
+        logger_calls = [mock.call(
+                            mock.ANY,
+                            challenge_http_01.chall.__class__.__name__,
+                            challenge_http_01.domain,
+                            challenge_http_01.uri),
+                        mock.call(
+                            mock.ANY,
+                            challenge_tls_sni_01.chall.__class__.__name__,
+                            challenge_tls_sni_01.domain,
+                            challenge_tls_sni_01.uri)]
+
+        mock_logger.warning.assert_has_calls(logger_calls)
+
+        mock_logger.debug.assert_called_with(
+            mock.ANY,
+            challenge_dummy.chall.__class__.__name__,
+            challenge_dummy.uri)
+
+    @mock.patch("letsencrypt.auth_handler.logger")
+    def test_simple_verify(self, mock_logger):
+        # pylint: disable=protected-access
+        account_key = mock.Mock()
+
+        challenge_http_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.HTTP01_P, domain=b'localhost', account_key=account_key)
+        challenge_tls_sni_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.TLSSNI01_P, domain=b'localhost', account_key=account_key)
+        challenge_dummy = mock.Mock(chall=mock.Mock(), uri="foo", typ="Mock")
+
+        response_http_01 = challenges.HTTP01Response(key_authorization=u'foo')
+        response_tls_sni_01 = challenges.TLSSNI01Response(key_authorization=u'foo')
+        response_dummy = mock.Mock()
+
+        self.assertEqual(
+            self.handler._simple_verify(
+                challenge_http_01,
+                response_http_01),
+            False)
+
+        self.assertEqual(
+            self.handler._simple_verify(
+                challenge_tls_sni_01,
+                response_tls_sni_01),
+            False)
+
+        self.assertEqual(
+            self.handler._simple_verify(
+                challenge_dummy,
+                response_dummy),
+            True)
+
+        mock_logger.debug.assert_called_once_with(  # For challenge_dummy
+            mock.ANY,
+            challenge_dummy.typ,
+            challenge_dummy.uri)
+
     def _validate_all(self, unused_1, unused_2):
         for dom in self.handler.authzr.keys():
             azr = self.handler.authzr[dom]
@@ -167,10 +269,11 @@ class PollChallengesTest(unittest.TestCase):
         from letsencrypt.auth_handler import challb_to_achall
         from letsencrypt.auth_handler import AuthHandler
 
-        # Account and network are mocked...
+        # Account, config and network are mocked
         self.mock_net = mock.MagicMock()
+        self.config = mock.Mock()
         self.handler = AuthHandler(
-            None, None, self.mock_net, mock.Mock(key="mock_key"))
+            self.config, None, None, self.mock_net, mock.Mock(key="mock_key"))
 
         self.doms = ["0", "1", "2"]
         self.handler.authzr[self.doms[0]] = acme_util.gen_authzr(

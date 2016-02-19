@@ -50,25 +50,16 @@ class AuthenticatorTest(unittest.TestCase):
 
     @mock.patch("letsencrypt.plugins.manual.zope.component.getUtility")
     @mock.patch("letsencrypt.plugins.manual.sys.stdout")
-    @mock.patch("acme.challenges.HTTP01Response.simple_verify")
     @mock.patch("__builtin__.raw_input")
-    def test_perform(self, mock_raw_input, mock_verify, mock_stdout, mock_interaction):
-        mock_verify.return_value = True
+    def test_perform(self, mock_raw_input, mock_stdout, mock_interaction):
         mock_interaction().yesno.return_value = True
 
         resp = self.achalls[0].response(KEY)
         self.assertEqual([resp], self.auth.perform(self.achalls))
         self.assertEqual(1, mock_raw_input.call_count)
-        mock_verify.assert_called_with(
-            self.achalls[0].challb.chall, "foo.com", KEY.public_key(), 8080)
 
         message = mock_stdout.write.mock_calls[0][1][0]
         self.assertTrue(self.achalls[0].chall.encode("token") in message)
-
-        mock_verify.return_value = False
-        with mock.patch("letsencrypt.plugins.manual.logger") as mock_logger:
-            self.auth.perform(self.achalls)
-            mock_logger.warning.assert_called_once_with(mock.ANY)
 
     @mock.patch("letsencrypt.plugins.manual.zope.component.getUtility")
     @mock.patch("letsencrypt.plugins.manual.Authenticator._notify_and_wait")
