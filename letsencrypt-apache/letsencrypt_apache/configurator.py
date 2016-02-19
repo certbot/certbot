@@ -342,6 +342,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.assoc[target_name] = vhost
         return vhost
 
+    def included_in_wildcard(self, names, target_name):
+        """Helper function to see if alias is covered by wildcard"""
+        wildcards = [domain for domain in names if domain.startswith("*")]
+        for wildcard in wildcards:
+            if wildcard.split(".")[1] == target_name.split(".")[1]:
+                return True
+        return False
+
     def _find_best_vhost(self, target_name):
         """Finds the best vhost for a target_name.
 
@@ -360,7 +368,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         for vhost in self.vhosts:
             if vhost.modmacro is True:
                 continue
-            if target_name in vhost.get_names():
+            names = vhost.get_names()
+            if target_name in names:
+                points = 3
+            elif self.included_in_wildcard(names, target_name):
                 points = 2
             elif any(addr.get_addr() == target_name for addr in vhost.addrs):
                 points = 1
