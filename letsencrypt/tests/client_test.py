@@ -125,6 +125,9 @@ class ClientTest(unittest.TestCase):
         from letsencrypt import cli
         test_csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
         mock_parsed_args = mock.MagicMock()
+        # The CLI should believe that this is a certonly request, because
+        # a CSR would not be allowed with other kinds of requests!
+        mock_parsed_args.verb = "certonly"
         with mock.patch("letsencrypt.client.le_util.CSR") as mock_CSR:
             mock_CSR.return_value = test_csr
             mock_parsed_args.domains = self.eg_domains[:]

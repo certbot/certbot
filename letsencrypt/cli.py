@@ -649,11 +649,6 @@ def record_chosen_plugins(config, plugins, auth, inst):
 # Possible difficulties: config.csr was hacked into auth
 def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     """Obtain a certificate and install."""
-    if config.csr is not None:
-        raise errors.Error("Currently, the default 'run' verb cannot be used "
-                           "when specifying a CSR file. Please try the "
-                           "certonly command instead.")
-
     try:
         installer, authenticator = choose_configurator_plugins(config, plugins, "run")
     except errors.PluginSelectionError as e:
@@ -988,10 +983,6 @@ def renew(config, unused_plugins):
                            "renew specific certificates, use the certonly "
                            "command. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
-    if config.csr is not None:
-        raise errors.Error("Currently, the renew verb cannot be used when "
-                           "specifying a CSR file. Please try the certonly "
-                           "command instead.")
     renewer_config = configuration.RenewerConfiguration(config)
     renew_successes = []
     renew_failures = []
@@ -1249,6 +1240,12 @@ class HelpfulArgumentParser(object):
         Process a --csr flag. This needs to happen early enough that the
         webroot plugin can know about the calls to _process_domain
         """
+        if parsed_args.verb != "certonly":
+            raise errors.Error("Currently, a CSR file may only be specified "
+                               "when obtaining a new or replacement "
+                               "via the certonly command. Please try the "
+                               "certonly command instead.")
+
         try:
             csr = le_util.CSR(file=parsed_args.csr[0], data=parsed_args.csr[1], form="der")
             typ = OpenSSL.crypto.FILETYPE_ASN1
