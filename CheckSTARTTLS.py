@@ -7,9 +7,14 @@ import socket
 import subprocess
 import re
 import json
+import collections
 
 import dns.resolver
 from M2Crypto import X509
+from publicsuffix import PublicSuffixList
+
+public_suffix_list = PublicSuffixList()
+CERTS_OBSERVED = 'certs-observed'
 
 def mkdirp(path):
     try:
@@ -20,7 +25,7 @@ def mkdirp(path):
         else: raise
 
 def extract_names(pem):
-    """Return a list of DNS subject names from PEM-encoded leaf cert."""
+    """Return a set of DNS subject names from PEM-encoded leaf cert."""
     leaf = X509.load_cert_string(pem, X509.FORMAT_PEM)
 
     subj = leaf.get_subject()
@@ -59,7 +64,7 @@ def tls_connect(mx_host, mail_domain):
       return
 
     # Save a copy of the certificate for later analysis
-    with open(os.path.join(mail_domain, mx_host), "w") as f:
+    with open(os.path.join(CERTS_OBSERVED, mail_domain, mx_host), "w") as f:
       f.write(output)
 
 def valid_cert(filename):
@@ -71,6 +76,8 @@ def valid_cert(filename):
   if open(filename).read().find("-----BEGIN CERTIFICATE-----") == -1:
     return False
   try:
+    # The file contains both the leaf cert and any intermediates, so we pass it
+    # as both the cert to validate and as the "untrusted" chain.
     output = subprocess.check_output("""openssl verify -CApath /home/jsha/mozilla/ -purpose sslserver \
               -untrusted "%s" \
               "%s"
@@ -80,17 +87,25 @@ def valid_cert(filename):
     return False
 
 def check_certs(mail_domain):
+  """
+  Return "" if any certs for any mx domains pointed to by mail_domain
+  were invalid, and a public suffix for one if they were all valid
+  """
+  dir = os.path.join(CERTS_OBSERVED, mail_domain)
+  if not os.path.exists(dir):
+    collect(mail_domain)
   names = set()
-  for mx_hostname in os.listdir(mail_domain):
-    filename = os.path.join(mail_domain, mx_hostname)
+  for mx_hostname in os.listdir(dir):
+    filename = os.path.join(dir, mx_hostname)
     if not valid_cert(filename):
       return ""
     else:
       new_names = extract_names_from_openssl_output(filename)
+      new_names = set(public_suffix_list.get_public_suffix(n) for n in new_names)
       names.update(new_names)
-      names.add(filename.rstrip("."))
   if len(names) >= 1:
-    return common_suffix(names)
+    # Hack: Just pick an arbitrary suffix for now. Do something cleverer later.
+    return names.pop()
   else:
     return ""
 
@@ -120,21 +135,32 @@ def supports_starttls(mx_host):
   except socket.error as e:
     print "Connection to %s failed: %s" % (mx_host, e.strerror)
     return False
-  except smtplib.SMTPException:
-    print "No STARTTLS support on %s" % mx_host
+  except smtplib.SMTPException, e:
+    # In order to talk to some hosts, you need to run this from a host that has a
+    # reverse DNS entry. AWS instances all have reverse DNS, as an example.
+    if e[0] == 554:
+      print e[1]
+    else:
+      print "No STARTTLS support on %s" % mx_host, e[0]
     return False
 
 def min_tls_version(mail_domain):
   protocols = []
-  for mx_hostname in os.listdir(mail_domain):
-    filename = os.path.join(mail_domain, mx_hostname)
+  for mx_hostname in os.listdir(os.path.join(CERTS_OBSERVED, mail_domain)):
+    filename = os.path.join(CERTS_OBSERVED, mail_domain, mx_hostname)
     contents = open(filename).read()
     protocol = re.findall("Protocol  : (.*)", contents)[0]
     protocols.append(protocol)
   return min(protocols)
 
 def collect(mail_domain):
-  mkdirp(mail_domain)
+  """
+  Attempt to connect to each MX hostname for mail_doman and negotiate STARTTLS.
+  Store the output in a directory with the same name as mail_domain to make
+  subsequent analysis faster.
+  """
+  print "Checking domain %s" % mail_domain
+  mkdirp(os.path.join(CERTS_OBSERVED, mail_domain))
   answers = dns.resolver.query(mail_domain, 'MX')
   for rdata in answers:
       mx_host = str(rdata.exchange).rstrip(".")
@@ -142,29 +168,24 @@ def collect(mail_domain):
 
 if __name__ == '__main__':
   """Consume a target list of domains and output a configuration file for those domains."""
-  if len(sys.argv) == 1:
-    print("Please pass at least one mail domain as an argument")
+  if len(sys.argv) < 2:
+    print("Usage: CheckSTARTTLS.py list-of-domains.txt > output.json")
 
-  config = {
-    "address-domains": {
-    },
-    "mx-domains": {
-    }
-  }
-  for domain in sys.argv[1:]:
-    collect(domain)
-    if len(os.listdir(domain)) == 0:
-      continue
-    suffix = check_certs(domain)
-    min_version = min_tls_version(domain)
-    if suffix != "":
-      suffix_match = "*." + suffix
-      config["address-domains"][domain] = {
-        "accept-mx-domains": [suffix_match]
-      }
-      config["mx-domains"][suffix_match] = {
-        "require-tls": True,
-        "min-tls-version": min_version
-      }
+  config = collections.defaultdict(dict)
 
-  print json.dumps(config, indent=2)
+  for input in sys.argv[1:]:
+    for domain in open(input).readlines():
+      domain = domain.strip()
+      suffix = check_certs(domain)
+      if suffix != "":
+        min_version = min_tls_version(domain)
+        suffix_match = "." + suffix
+        config["acceptable-mxs"][domain] = {
+          "accept-mx-domains": [suffix_match]
+        }
+        config["tls-policies"][suffix_match] = {
+          "require-tls": True,
+          "min-tls-version": min_version
+        }
+
+  print json.dumps(config, indent=2, sort_keys=True)

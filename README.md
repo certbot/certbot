@@ -7,6 +7,10 @@ yet!
 
 Jacob Hoffman-Andrews <jsha@eff.org>, Peter Eckersley <pde@eff.org>, Daniel Wilcox <dmwilcox@gmail.com>
 
+## Mailing List
+
+starttls-everywhere@eff.org, https://lists.eff.org/mailman/listinfo/starttls-everywhere
+
 ## Background
 
 Most email transferred between SMTP servers (aka MTAs) is transmitted in the clear and trivially interceptable. Encryption of SMTP traffic is possible using the STARTTLS mechanism, which encrypts traffic but is vulnerable to a trivial downgrade attack.
@@ -31,6 +35,14 @@ STARTTLS by itself thwarts purely passive eavesdroppers. However, as currently d
 *   Refuse delivery on the recipient side if sender does not negotiate TLS (this may be a future project).
 *   Develop a fully-decentralized solution.
 *   Initially we are not engineering to scale to all mail domains on the Internet, though we believe this design can be scaled as required if large numbers of domains publish policies to it.
+
+## Motivating examples
+
+*   [Unnammed mobile broadband provider overwrites STARTTLS flag and commands to
+    prevent negotiating an encrypted connection]
+    (https://www.techdirt.com/articles/20141012/06344928801/revealed-isps-already-violating-net-neutrality-to-block-encryption-make-everyone-less-safe-online.shtml)
+*   [Unknown party removes STARTTLS flag from all SMTP connections leaving
+    Thailand](http://www.telecomasia.net/content/google-yahoo-smtp-email-severs-hit-thailand)
 
 ## Threat model
 
