@@ -1,8 +1,11 @@
 # STARTTLS Everywhere
 
+NOTE: this is a pre-alpha codebase.  Do not run it on non-experimental systems
+yet!
+
 ## Authors
 
-Jacob Hoffman-Andrews <jsha@eff.org>, Peter Eckersley <pde@eff.org>
+Jacob Hoffman-Andrews <jsha@eff.org>, Peter Eckersley <pde@eff.org>, Daniel Wilcox <dmwilcox@gmail.com>
 
 ## Background
 
