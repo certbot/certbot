@@ -30,10 +30,9 @@ matrix:
       env: TOXENV=py26 BOULDER_INTEGRATION=1
     - python: "2.6"
       env: TOXENV=py26-oldest BOULDER_INTEGRATION=1
-# Disabled for now due to requiring sudo -> causing more boulder integration
-# DNS timeouts :(
-#   - python: "2.7"
-#     env: TOXENV=apacheconftest
+    - python: "2.7"
+      env: TOXENV=apacheconftest
+      sudo: required
     - python: "2.7"
       env: TOXENV=py27 BOULDER_INTEGRATION=1
     - python: "2.7"
