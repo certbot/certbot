@@ -11,9 +11,9 @@ from letsencrypt.plugins import common
 logger = logging.getLogger(__name__)
 
 
+@zope.interface.implementer(interfaces.IInstaller)
 class Installer(common.Plugin):
     """Null installer."""
-    zope.interface.implements(interfaces.IInstaller)
     zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "Null Installer"

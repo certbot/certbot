@@ -36,10 +36,9 @@ def _wrap_lines(msg):
         fixed_l.append(textwrap.fill(line, 80))
     return os.linesep.join(fixed_l)
 
+@zope.interface.implementer(interfaces.IDisplay)
 class NcursesDisplay(object):
     """Ncurses-based display."""
-
-    zope.interface.implements(interfaces.IDisplay)
 
     def __init__(self, width=WIDTH, height=HEIGHT):
         super(NcursesDisplay, self).__init__()
@@ -176,10 +175,9 @@ class NcursesDisplay(object):
             message, width=self.width, height=self.height, choices=choices)
 
 
+@zope.interface.implementer(interfaces.IDisplay)
 class FileDisplay(object):
     """File-based display."""
-
-    zope.interface.implements(interfaces.IDisplay)
 
     def __init__(self, outfile):
         super(FileDisplay, self).__init__()
@@ -411,10 +409,9 @@ class FileDisplay(object):
 
         return OK, selection
 
+@zope.interface.implementer(interfaces.IDisplay)
 class NoninteractiveDisplay(object):
     """An iDisplay implementation that never asks for interactive user input"""
-
-    zope.interface.implements(interfaces.IDisplay)
 
     def __init__(self, outfile):
         super(NoninteractiveDisplay, self).__init__()

@@ -9,6 +9,7 @@ from letsencrypt import interfaces
 from letsencrypt import proof_of_possession
 
 
+@zope.interface.implementer(interfaces.IAuthenticator)
 class ContinuityAuthenticator(object):
     """IAuthenticator for
     :const:`~acme.challenges.ContinuityChallenge` class challenges.
@@ -18,7 +19,6 @@ class ContinuityAuthenticator(object):
         :class:`letsencrypt.proof_of_possession.Proof_of_Possession`
 
     """
-    zope.interface.implements(interfaces.IAuthenticator)
 
     # This will have an installer soon for get_key/cert purposes
     def __init__(self, config, installer):  # pylint: disable=unused-argument

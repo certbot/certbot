@@ -31,9 +31,9 @@ hostname_regex = re.compile(
     r"^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*[a-z]+$", re.IGNORECASE)
 
 
+@zope.interface.implementer(interfaces.IPlugin)
 class Plugin(object):
     """Generic plugin."""
-    zope.interface.implements(interfaces.IPlugin)
     # classProvides is not inherited, subclasses must define it on their own
     #zope.interface.classProvides(interfaces.IPluginFactory)
 

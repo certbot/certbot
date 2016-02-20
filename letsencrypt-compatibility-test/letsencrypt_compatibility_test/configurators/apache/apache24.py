@@ -34,10 +34,9 @@ SHARED_MODULES = {
     "vhost_alias"}
 
 
+@zope.interface.implementer(interfaces.IConfiguratorProxy)
 class Proxy(apache_common.Proxy):
     """Wraps the ApacheConfigurator for Apache 2.4 tests"""
-
-    zope.interface.implements(interfaces.IConfiguratorProxy)
 
     def __init__(self, args):
         """Initializes the plugin with the given command line args"""

@@ -17,9 +17,9 @@ from letsencrypt.plugins import common
 logger = logging.getLogger(__name__)
 
 
+@zope.interface.implementer(interfaces.IAuthenticator)
 class Authenticator(common.Plugin):
     """Webroot Authenticator."""
-    zope.interface.implements(interfaces.IAuthenticator)
     zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "Webroot Authenticator"
