@@ -19,6 +19,7 @@ import traceback
 
 import configargparse
 import OpenSSL
+import six
 import zope.component
 import zope.interface.exceptions
 import zope.interface.verify
@@ -1159,7 +1160,7 @@ class HelpfulArgumentParser(object):
 
     # List of topics for which additional help can be provided
     HELP_TOPICS = ["all", "security",
-                   "paths", "automation", "testing"] + VERBS.keys()
+                   "paths", "automation", "testing"] + list(six.iterkeys(VERBS))
 
     def __init__(self, args, plugins, detect_defaults=False):
         plugin_names = [name for name, _p in plugins.iteritems()]
