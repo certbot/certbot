@@ -26,3 +26,4 @@ letsencrypt.log
 # letstest
 tests/letstest/letest-*/
 tests/letstest/*.pem
+tests/letstest/venv/
