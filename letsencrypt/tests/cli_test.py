@@ -7,12 +7,12 @@ import functools
 import itertools
 import os
 import shutil
-import StringIO
 import traceback
 import tempfile
 import unittest
 
 import mock
+import six
 
 from acme import jose
 
@@ -84,7 +84,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def _help_output(self, args):
         "Run a command, and return the ouput string for scrutiny"
-        output = StringIO.StringIO()
+        output = six.StringIO()
         with mock.patch('letsencrypt.cli.sys.stdout', new=output):
             self.assertRaises(SystemExit, self._call_stdout, args)
             out = output.getvalue()
