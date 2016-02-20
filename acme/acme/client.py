@@ -1,4 +1,5 @@
 """ACME client API."""
+import collections
 import datetime
 import heapq
 import logging
@@ -66,15 +67,13 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def _regr_from_response(cls, response, uri=None, new_authzr_uri=None,
                             terms_of_service=None):
-        terms_of_service = (
-            response.links['terms-of-service']['url']
-            if 'terms-of-service' in response.links else terms_of_service)
+        if 'terms-of-service' in response.links:
+            terms_of_service = response.links['terms-of-service']['url']
+        if 'next' in response.links:
+            new_authzr_uri = response.links['next']['url']
 
         if new_authzr_uri is None:
-            try:
-                new_authzr_uri = response.links['next']['url']
-            except KeyError:
-                raise errors.ClientError('"next" link missing')
+            raise errors.ClientError('"next" link missing')
 
         return messages.RegistrationResource(
             body=messages.Registration.from_json(response.json()),
@@ -181,40 +180,41 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
-    def request_challenges(self, identifier, new_authzr_uri):
+    def request_challenges(self, identifier, new_authzr_uri=None):
         """Request challenges.
 
-        :param identifier: Identifier to be challenged.
-        :type identifier: `.messages.Identifier`
-
-        :param str new_authzr_uri: new-authorization URI
+        :param .messages.Identifier identifier: Identifier to be challenged.
+        :param str new_authzr_uri: ``new-authorization`` URI. If omitted,
+            will default to value found in ``directory``.
 
         :returns: Authorization Resource.
         :rtype: `.AuthorizationResource`
 
         """
         new_authz = messages.NewAuthorization(identifier=identifier)
-        response = self.net.post(new_authzr_uri, new_authz)
+        response = self.net.post(self.directory.new_authz
+                                 if new_authzr_uri is None else new_authzr_uri,
+                                 new_authz)
         # TODO: handle errors
         assert response.status_code == http_client.CREATED
         return self._authzr_from_response(response, identifier)
 
-    def request_domain_challenges(self, domain, new_authz_uri):
+    def request_domain_challenges(self, domain, new_authzr_uri=None):
         """Request challenges for domain names.
 
         This is simply a convenience function that wraps around
         `request_challenges`, but works with domain names instead of
-        generic identifiers.
+        generic identifiers. See ``request_challenges`` for more
+        documentation.
 
         :param str domain: Domain name to be challenged.
-        :param str new_authzr_uri: new-authorization URI
 
         :returns: Authorization Resource.
         :rtype: `.AuthorizationResource`
 
         """
         return self.request_challenges(messages.Identifier(
-            typ=messages.IDENTIFIER_FQDN, value=domain), new_authz_uri)
+            typ=messages.IDENTIFIER_FQDN, value=domain), new_authzr_uri)
 
     def answer_challenge(self, challb, response):
         """Answer challenge.
@@ -336,8 +336,9 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :param authzrs: `list` of `.AuthorizationResource`
         :param int mintime: Minimum time before next attempt, used if
             ``Retry-After`` is not present in the response.
-        :param int max_attempts: Maximum number of attempts before
-            `PollError` with non-empty ``waiting`` is raised.
+        :param int max_attempts: Maximum number of attempts (per
+            authorization) before `PollError` with non-empty ``waiting``
+            is raised.
 
         :returns: ``(cert, updated_authzrs)`` `tuple` where ``cert`` is
             the issued certificate (`.messages.CertificateResource`),
@@ -351,6 +352,11 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             was marked by the CA as invalid
 
         """
+        # pylint: disable=too-many-locals
+        assert max_attempts > 0
+        attempts = collections.defaultdict(int)
+        exhausted = set()
+
         # priority queue with datetime (based on Retry-After) as key,
         # and original Authorization Resource as value
         waiting = [(datetime.datetime.now(), authzr) for authzr in authzrs]
@@ -358,8 +364,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         # recently updated one
         updated = dict((authzr, authzr) for authzr in authzrs)
 
-        while waiting and max_attempts:
-            max_attempts -= 1
+        while waiting:
             # find the smallest Retry-After, and sleep if necessary
             when, authzr = heapq.heappop(waiting)
             now = datetime.datetime.now()
@@ -373,16 +378,20 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             updated_authzr, response = self.poll(updated[authzr])
             updated[authzr] = updated_authzr
 
+            attempts[authzr] += 1
             # pylint: disable=no-member
             if updated_authzr.body.status not in (
                     messages.STATUS_VALID, messages.STATUS_INVALID):
-                # push back to the priority queue, with updated retry_after
-                heapq.heappush(waiting, (self.retry_after(
-                    response, default=mintime), authzr))
+                if attempts[authzr] < max_attempts:
+                    # push back to the priority queue, with updated retry_after
+                    heapq.heappush(waiting, (self.retry_after(
+                        response, default=mintime), authzr))
+                else:
+                    exhausted.add(authzr)
 
-        if not max_attempts or any(authzr.body.status == messages.STATUS_INVALID
-                                   for authzr in six.itervalues(updated)):
-            raise errors.PollError(waiting, updated)
+        if exhausted or any(authzr.body.status == messages.STATUS_INVALID
+                            for authzr in six.itervalues(updated)):
+            raise errors.PollError(exhausted, updated)
 
         updated_authzrs = tuple(updated[authzr] for authzr in authzrs)
         return self.request_issuance(csr, updated_authzrs), updated_authzrs
@@ -483,7 +492,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                 'Successful revocation must return HTTP OK status')
 
 
-class ClientNetwork(object):
+class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     """Client network."""
     JSON_CONTENT_TYPE = 'application/json'
     JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
@@ -539,7 +548,7 @@ class ClientNetwork(object):
             # TODO: response.json() is called twice, once here, and
             # once in _get and _post clients
             jobj = response.json()
-        except ValueError as error:
+        except ValueError:
             jobj = None
 
         if not response.ok:

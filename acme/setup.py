@@ -4,13 +4,15 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.2.0.dev0'
+version = '0.5.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
     # load_pem_private/public_key (>=0.6)
     # rsa_recover_prime_factors (>=0.8)
     'cryptography>=0.8',
+    'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
+    'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
     # Connection.set_tlsext_host_name (>=0.13)
     'PyOpenSSL>=0.13',
     'pyrfc3339',
@@ -22,6 +24,7 @@ install_requires = [
 ]
 
 # env markers in extras_require cause problems with older pip: #517
+# Keep in sync with conditional_requirements.py.
 if sys.version_info < (2, 7):
     install_requires.extend([
         # only some distros recognize stdlib argparse as already satisfying
@@ -31,20 +34,16 @@ if sys.version_info < (2, 7):
 else:
     install_requires.append('mock')
 
-if sys.version_info < (2, 7, 9):
-    # For secure SSL connection with Python 2.7 (InsecurePlatformWarning)
-    install_requires.append('ndg-httpsclient')
-    install_requires.append('pyasn1')
+dev_extras = [
+    'nose',
+    'pep8',
+    'tox',
+]
 
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
     'sphinx_rtd_theme',
     'sphinxcontrib-programoutput',
-]
-
-testing_extras = [
-    'nose',
-    'tox',
 ]
 
 
@@ -76,8 +75,8 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     extras_require={
+        'dev': dev_extras,
         'docs': docs_extras,
-        'testing': testing_extras,
     },
     entry_points={
         'console_scripts': [

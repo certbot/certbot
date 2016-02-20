@@ -69,7 +69,7 @@ class PickPluginTest(unittest.TestCase):
     """Tests for letsencrypt.display.ops.pick_plugin."""
 
     def setUp(self):
-        self.config = mock.Mock()
+        self.config = mock.Mock(noninteractive_mode=False)
         self.default = None
         self.reg = mock.MagicMock()
         self.question = "Question?"
@@ -407,10 +407,11 @@ class ChooseNamesTest(unittest.TestCase):
                                           "uniçodé.com")
         self.assertEqual(_choose_names_manually(), [])
         # IDN exception with previous mocks
-        with mock.patch("letsencrypt.display.util") as mock_sl:
-            uerror = UnicodeEncodeError('mock', u'',
-                                        0, 1, 'mock')
-            mock_sl.separate_list_input.side_effect = uerror
+        with mock.patch(
+                "letsencrypt.display.ops.display_util.separate_list_input"
+        ) as mock_sli:
+            unicode_error = UnicodeEncodeError('mock', u'', 0, 1, 'mock')
+            mock_sli.side_effect = unicode_error
             self.assertEqual(_choose_names_manually(), [])
         # Punycode and no retry
         mock_util().input.return_value = (display_util.OK,
@@ -464,7 +465,7 @@ class SuccessRenewalTest(unittest.TestCase):
     @classmethod
     def _call(cls, names):
         from letsencrypt.display.ops import success_renewal
-        success_renewal(names)
+        success_renewal(names, "renew")
 
     @mock.patch("letsencrypt.display.ops.util")
     def test_success_renewal(self, mock_util):

@@ -2,8 +2,10 @@
 import errno
 import logging
 import os
+from collections import defaultdict
 
 import zope.interface
+import six
 
 from acme import challenges
 
@@ -44,13 +46,16 @@ to serve all files under specified web root ({0})."""
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
         self.full_roots = {}
+        self.performed = defaultdict(set)
 
     def prepare(self):  # pylint: disable=missing-docstring
         path_map = self.conf("map")
 
         if not path_map:
-            raise errors.PluginError("--{0} must be set".format(
-                self.option_name("path")))
+            raise errors.PluginError(
+                "Missing parts of webroot configuration; please set either "
+                "--webroot-path and --domains, or --webroot-map. Run with "
+                " --help webroot for examples.")
         for name, path in path_map.items():
             if not os.path.isdir(path):
                 raise errors.PluginError(path + " does not exist or is not a directory")
@@ -95,36 +100,57 @@ to serve all files under specified web root ({0})."""
         assert self.full_roots, "Webroot plugin appears to be missing webroot map"
         return [self._perform_single(achall) for achall in achalls]
 
-    def _path_for_achall(self, achall):
+    def _get_root_path(self, achall):
         try:
             path = self.full_roots[achall.domain]
-        except IndexError:
-            raise errors.PluginError("Missing --webroot-path for domain: {1}"
+        except KeyError:
+            raise errors.PluginError("Missing --webroot-path for domain: {0}"
                                      .format(achall.domain))
         if not os.path.exists(path):
             raise errors.PluginError("Mysteriously missing path {0} for domain: {1}"
                                      .format(path, achall.domain))
-        return os.path.join(path, achall.chall.encode("token"))
+        return path
+
+    def _get_validation_path(self, root_path, achall):
+        return os.path.join(root_path, achall.chall.encode("token"))
 
     def _perform_single(self, achall):
         response, validation = achall.response_and_validation()
 
-        path = self._path_for_achall(achall)
-        logger.debug("Attempting to save validation to %s", path)
+        root_path = self._get_root_path(achall)
+        validation_path = self._get_validation_path(root_path, achall)
+        logger.debug("Attempting to save validation to %s", validation_path)
 
         # Change permissions to be world-readable, owner-writable (GH #1795)
         old_umask = os.umask(0o022)
 
         try:
-            with open(path, "w") as validation_file:
+            with open(validation_path, "w") as validation_file:
                 validation_file.write(validation.encode())
         finally:
             os.umask(old_umask)
+
+        self.performed[root_path].add(achall)
 
         return response
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         for achall in achalls:
-            path = self._path_for_achall(achall)
-            logger.debug("Removing %s", path)
-            os.remove(path)
+            root_path = self._get_root_path(achall)
+            validation_path = self._get_validation_path(root_path, achall)
+            logger.debug("Removing %s", validation_path)
+            os.remove(validation_path)
+            self.performed[root_path].remove(achall)
+
+        for root_path, achalls in six.iteritems(self.performed):
+            if not achalls:
+                try:
+                    os.rmdir(root_path)
+                    logger.debug("All challenges cleaned up, removing %s",
+                                 root_path)
+                except OSError as exc:
+                    if exc.errno == errno.ENOTEMPTY:
+                        logger.debug("Challenges cleaned up but %s not empty",
+                                     root_path)
+                    else:
+                        raise

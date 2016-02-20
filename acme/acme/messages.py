@@ -130,8 +130,9 @@ class Directory(jose.JSONDeSerializable):
     @classmethod
     def register(cls, resource_body_cls):
         """Register resource."""
-        assert resource_body_cls.resource_type not in cls._REGISTERED_TYPES
-        cls._REGISTERED_TYPES[resource_body_cls.resource_type] = resource_body_cls
+        resource_type = resource_body_cls.resource_type
+        assert resource_type not in cls._REGISTERED_TYPES
+        cls._REGISTERED_TYPES[resource_type] = resource_body_cls
         return resource_body_cls
 
     def __init__(self, jobj):

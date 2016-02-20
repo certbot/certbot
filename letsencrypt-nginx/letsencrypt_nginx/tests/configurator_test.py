@@ -54,6 +54,7 @@ class NginxConfiguratorTest(util.NginxTest):
         mock_exe_exists.return_value = True
 
         self.config.version = None
+        self.config.config_test = mock.Mock()
         self.config.prepare()
         self.assertEquals((1, 6, 2), self.config.version)
 
@@ -361,12 +362,39 @@ class NginxConfiguratorTest(util.NginxTest):
         mock_popen.side_effect = OSError("Can't find program")
         self.assertRaises(errors.MisconfigurationError, self.config.restart)
 
-    @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")
-    def test_config_test(self, mock_popen):
-        mocked = mock_popen()
-        mocked.communicate.return_value = ('', '')
-        mocked.returncode = 0
-        self.assertTrue(self.config.config_test())
+    @mock.patch("letsencrypt.le_util.run_script")
+    def test_config_test(self, _):
+        self.config.config_test()
+
+    @mock.patch("letsencrypt.le_util.run_script")
+    def test_config_test_bad_process(self, mock_run_script):
+        mock_run_script.side_effect = errors.SubprocessError
+        self.assertRaises(errors.MisconfigurationError, self.config.config_test)
+
+    @mock.patch("letsencrypt.reverter.Reverter.recovery_routine")
+    def test_recovery_routine_throws_error_from_reverter(self, mock_recovery_routine):
+        mock_recovery_routine.side_effect = errors.ReverterError("foo")
+        self.assertRaises(errors.PluginError, self.config.recovery_routine)
+
+    @mock.patch("letsencrypt.reverter.Reverter.view_config_changes")
+    def test_view_config_changes_throws_error_from_reverter(self, mock_view_config_changes):
+        mock_view_config_changes.side_effect = errors.ReverterError("foo")
+        self.assertRaises(errors.PluginError, self.config.view_config_changes)
+
+    @mock.patch("letsencrypt.reverter.Reverter.rollback_checkpoints")
+    def test_rollback_checkpoints_throws_error_from_reverter(self, mock_rollback_checkpoints):
+        mock_rollback_checkpoints.side_effect = errors.ReverterError("foo")
+        self.assertRaises(errors.PluginError, self.config.rollback_checkpoints)
+
+    @mock.patch("letsencrypt.reverter.Reverter.revert_temporary_config")
+    def test_revert_challenge_config_throws_error_from_reverter(self, mock_revert_temporary_config):
+        mock_revert_temporary_config.side_effect = errors.ReverterError("foo")
+        self.assertRaises(errors.PluginError, self.config.revert_challenge_config)
+
+    @mock.patch("letsencrypt.reverter.Reverter.add_to_checkpoint")
+    def test_save_throws_error_from_reverter(self, mock_add_to_checkpoint):
+        mock_add_to_checkpoint.side_effect = errors.ReverterError("foo")
+        self.assertRaises(errors.PluginError, self.config.save)
 
     def test_get_snakeoil_paths(self):
         # pylint: disable=protected-access

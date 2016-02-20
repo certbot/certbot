@@ -30,8 +30,10 @@ class AuthenticatorTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.webroot import Authenticator
         self.path = tempfile.mkdtemp()
+        self.root_challenge_path = os.path.join(
+            self.path, ".well-known", "acme-challenge")
         self.validation_path = os.path.join(
-            self.path, ".well-known", "acme-challenge",
+            self.root_challenge_path,
             "ZXZhR3hmQURzNnBTUmIyTEF2OUlaZjE3RHQzanV4R0orUEN0OTJ3citvQQ")
         self.config = mock.MagicMock(webroot_path=self.path,
                                      webroot_map={"thing.com": self.path})
@@ -111,6 +113,18 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(os.stat(self.validation_path).st_gid, parent_gid)
         self.assertEqual(os.stat(self.validation_path).st_uid, parent_uid)
 
+    def test_perform_missing_path(self):
+        self.auth.prepare()
+
+        missing_achall = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.HTTP01_P, domain="thing2.com", account_key=KEY)
+        self.assertRaises(
+            errors.PluginError, self.auth.perform, [missing_achall])
+
+        self.auth.full_roots[self.achall.domain] = 'null'
+        self.assertRaises(
+            errors.PluginError, self.auth.perform, [self.achall])
+
     def test_perform_cleanup(self):
         self.auth.prepare()
         responses = self.auth.perform([self.achall])
@@ -125,6 +139,33 @@ class AuthenticatorTest(unittest.TestCase):
 
         self.auth.cleanup([self.achall])
         self.assertFalse(os.path.exists(self.validation_path))
+        self.assertFalse(os.path.exists(self.root_challenge_path))
+
+    def test_cleanup_leftovers(self):
+        self.auth.prepare()
+        self.auth.perform([self.achall])
+
+        leftover_path = os.path.join(self.root_challenge_path, 'leftover')
+        os.mkdir(leftover_path)
+
+        self.auth.cleanup([self.achall])
+        self.assertFalse(os.path.exists(self.validation_path))
+        self.assertTrue(os.path.exists(self.root_challenge_path))
+
+        os.rmdir(leftover_path)
+
+    @mock.patch('os.rmdir')
+    def test_cleanup_oserror(self, mock_rmdir):
+        self.auth.prepare()
+        self.auth.perform([self.achall])
+
+        os_error = OSError()
+        os_error.errno = errno.EACCES
+        mock_rmdir.side_effect = os_error
+
+        self.assertRaises(OSError, self.auth.cleanup, [self.achall])
+        self.assertFalse(os.path.exists(self.validation_path))
+        self.assertTrue(os.path.exists(self.root_challenge_path))
 
 
 if __name__ == "__main__":

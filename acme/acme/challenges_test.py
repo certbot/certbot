@@ -73,7 +73,8 @@ class KeyAuthorizationChallengeResponseTest(unittest.TestCase):
     def test_verify_wrong_form(self):
         from acme.challenges import KeyAuthorizationChallengeResponse
         response = KeyAuthorizationChallengeResponse(
-            key_authorization='.foo.oKGqedy-b-acd5eoybm2f-NVFxvyOoET5CNy3xnv8WY')
+            key_authorization='.foo.oKGqedy-b-acd5eoybm2f-'
+            'NVFxvyOoET5CNy3xnv8WY')
         self.assertFalse(response.verify(self.chall, KEY.public_key()))
 
 
@@ -273,10 +274,12 @@ class TLSSNI01ResponseTest(unittest.TestCase):
     @mock.patch('acme.challenges.TLSSNI01Response.verify_cert', autospec=True)
     def test_simple_verify(self, mock_verify_cert):
         mock_verify_cert.return_value = mock.sentinel.verification
-        self.assertEqual(mock.sentinel.verification, self.response.simple_verify(
-            self.chall, self.domain, KEY.public_key(),
-            cert=mock.sentinel.cert))
-        mock_verify_cert.assert_called_once_with(self.response, mock.sentinel.cert)
+        self.assertEqual(
+            mock.sentinel.verification, self.response.simple_verify(
+                self.chall, self.domain, KEY.public_key(),
+                cert=mock.sentinel.cert))
+        mock_verify_cert.assert_called_once_with(
+            self.response, mock.sentinel.cert)
 
     @mock.patch('acme.challenges.TLSSNI01Response.probe_cert')
     def test_simple_verify_false_on_probe_error(self, mock_probe_cert):
@@ -590,7 +593,8 @@ class DNSTest(unittest.TestCase):
 
     def test_check_validation_wrong_fields(self):
         bad_validation = jose.JWS.sign(
-            payload=self.msg.update(token=b'x' * 20).json_dumps().encode('utf-8'),
+            payload=self.msg.update(
+                token=b'x' * 20).json_dumps().encode('utf-8'),
             alg=jose.RS256, key=KEY)
         self.assertFalse(self.msg.check_validation(
             bad_validation, KEY.public_key()))
