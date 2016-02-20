@@ -1,0 +1,4 @@
+[pep8]
+# E265 block comment should start with '# '
+# E501 line too long (X > 79 characters)
+ignore = E265,E501
