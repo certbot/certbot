@@ -1,4 +1,7 @@
 """Tests for letsencrypt.cli."""
+
+from __future__ import print_function
+
 import argparse
 import functools
 import itertools
@@ -580,7 +583,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                                 try:
                                     ret, _, _, _ = self._call(args)
                                     if ret:
-                                        print "Returned", ret
+                                        print("Returned", ret)
                                         raise AssertionError(ret)
                                     assert not error_expected, "renewal should have errored"
                                 except: # pylint: disable=bare-except
@@ -628,8 +631,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def _dump_log(self):
         with open(os.path.join(self.logs_dir, "letsencrypt.log")) as lf:
-            print "Logs:"
-            print lf.read()
+            print("Logs:")
+            print(lf.read())
 
 
     def _make_test_renewal_conf(self, testfile):
