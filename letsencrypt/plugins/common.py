@@ -34,8 +34,8 @@ hostname_regex = re.compile(
 @zope.interface.implementer(interfaces.IPlugin)
 class Plugin(object):
     """Generic plugin."""
-    # classProvides is not inherited, subclasses must define it on their own
-    #zope.interface.classProvides(interfaces.IPluginFactory)
+    # provider is not inherited, subclasses must define it on their own
+    # @zope.interface.provider(interfaces.IPluginFactory)
 
     def __init__(self, config, name):
         self.config = config

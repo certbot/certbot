@@ -61,6 +61,7 @@ logger = logging.getLogger(__name__)
 #     and load()
 
 @zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
+@zope.interface.provider(interfaces.IPluginFactory)
 class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Apache configurator.
@@ -81,7 +82,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     :ivar dict assoc: Mapping between domains and vhosts
 
     """
-    zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "Apache Web Server - Alpha"
 

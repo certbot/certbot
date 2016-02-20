@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)
+@zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(common.Plugin):
     """Manual Authenticator.
 
@@ -35,7 +36,6 @@ class Authenticator(common.Plugin):
     .. todo:: Support for `~.challenges.TLSSNI01`.
 
     """
-    zope.interface.classProvides(interfaces.IPluginFactory)
     hidden = True
 
     description = "Manually configure an HTTP server"

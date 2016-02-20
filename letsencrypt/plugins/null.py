@@ -12,9 +12,9 @@ logger = logging.getLogger(__name__)
 
 
 @zope.interface.implementer(interfaces.IInstaller)
+@zope.interface.provider(interfaces.IPluginFactory)
 class Installer(common.Plugin):
     """Null installer."""
-    zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "Null Installer"
     hidden = True

@@ -18,9 +18,9 @@ logger = logging.getLogger(__name__)
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)
+@zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(common.Plugin):
     """Webroot Authenticator."""
-    zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "Webroot Authenticator"
 

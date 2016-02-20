@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 @zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
+@zope.interface.provider(interfaces.IPluginFactory)
 class NginxConfigurator(common.Plugin):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Nginx configurator.
@@ -53,7 +54,6 @@ class NginxConfigurator(common.Plugin):
     :ivar tup version: version of Nginx
 
     """
-    zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "Nginx Web Server - currently doesn't work"
 
