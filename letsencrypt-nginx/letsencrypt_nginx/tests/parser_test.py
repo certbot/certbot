@@ -230,23 +230,23 @@ class NginxParserTest(util.NginxTest):
 
     def test_parse_server_ssl(self):
         server = parser.parse_server([
-	    ['listen', '443']
-	])
+            ['listen', '443']
+        ])
         self.assertFalse(server['ssl'])
 
         server = parser.parse_server([
-	    ['listen', '443 ssl']
-	])
+            ['listen', '443 ssl']
+        ])
         self.assertTrue(server['ssl'])
 
         server = parser.parse_server([
-	    ['listen', '443'], ['ssl', 'off']
-	])
+            ['listen', '443'], ['ssl', 'off']
+        ])
         self.assertFalse(server['ssl'])
 
         server = parser.parse_server([
-	    ['listen', '443'], ['ssl', 'on']
-	])
+            ['listen', '443'], ['ssl', 'on']
+        ])
         self.assertTrue(server['ssl'])
 
 if __name__ == "__main__":
