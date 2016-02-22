@@ -2,7 +2,12 @@
 import errno
 import logging
 import os
+import shutil
+import subprocess
+import tempfile
 from collections import defaultdict
+from urlparse import urlparse
+from itertools import groupby
 
 import zope.interface
 import six
@@ -45,6 +50,8 @@ to serve all files under specified web root ({0})."""
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
+        self.paths = {}
+        self.temp_dirs = {}
         self.full_roots = {}
         self.performed = defaultdict(set)
 
@@ -57,8 +64,17 @@ to serve all files under specified web root ({0})."""
                 "--webroot-path and --domains, or --webroot-map. Run with "
                 " --help webroot for examples.")
         for name, path in path_map.items():
-            if not os.path.isdir(path):
-                raise errors.PluginError(path + " does not exist or is not a directory")
+            self.paths[name] = urlparse(path)
+            if self.paths[name].scheme == "" or self.paths[name].scheme == "file":
+                if not os.path.isdir(path):
+                    raise errors.PluginError(path + " does not exist or is not a directory")
+            elif self.paths[name].scheme == "rsync":
+                if path not in self.temp_dirs:
+                    self.temp_dirs[path] = tempfile.mkdtemp()
+                path = self.temp_dirs[path]
+            else:
+                raise errors.PluginError(self.paths[name].scheme + " URLs not supported")
+
             self.full_roots[name] = os.path.join(path, challenges.HTTP01.URI_ROOT_PATH)
 
             logger.debug("Creating root challenges validation dir at %s",
@@ -98,7 +114,9 @@ to serve all files under specified web root ({0})."""
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
         assert self.full_roots, "Webroot plugin appears to be missing webroot map"
-        return [self._perform_single(achall) for achall in achalls]
+        responses = [self._perform_single(achall) for achall in achalls]
+        self._sync_root(achalls)
+        return responses
 
     def _get_root_path(self, achall):
         try:
@@ -142,8 +160,8 @@ to serve all files under specified web root ({0})."""
             os.remove(validation_path)
             self.performed[root_path].remove(achall)
 
-        for root_path, achalls in six.iteritems(self.performed):
-            if not achalls:
+        for root_path, path_achalls in six.iteritems(self.performed):
+            if not path_achalls:
                 try:
                     os.rmdir(root_path)
                     logger.debug("All challenges cleaned up, removing %s",
@@ -154,3 +172,28 @@ to serve all files under specified web root ({0})."""
                                      root_path)
                     else:
                         raise
+
+        self._sync_root(achalls)
+
+        for path, temp_dir in six.iteritems(self.temp_dirs):
+            shutil.rmtree(temp_dir)
+
+    def _sync_root(self, achalls):
+        achall_path = lambda achall: self.paths[achall.domain]
+        achalls = sorted(achalls, key = achall_path)
+        for path, path_achalls in groupby(achalls, key = achall_path):
+            temp_dir = self.temp_dirs[path.geturl()]
+            logger.debug("Syncing webroot to %s", path.geturl())
+            if path.scheme == "rsync":
+                rsync = subprocess.Popen([
+                    "rsync", "--recursive", "--delete",
+                    "--include-from=-", "--exclude=*",
+                    temp_dir + "/", path.geturl()
+                ], stdin=subprocess.PIPE)
+                print >> rsync.stdin, "**/"
+                for achall in path_achalls:
+                    print >> rsync.stdin, achall.chall.encode("token")
+                rsync.stdin.close()
+                rsync.wait()
+                if rsync.returncode != 0:
+                    raise errors.PluginError("Error syncing webroot to " + path.geturl())
