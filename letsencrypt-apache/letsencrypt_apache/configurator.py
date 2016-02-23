@@ -1075,7 +1075,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             #     even with save() and load()
             if not self._is_rewrite_engine_on(general_vh):
                 self.parser.add_dir(general_vh.path, "RewriteEngine", "on")
-
+            names = ssl_vhost.get_names()
+            for idx, name in enumerate(names):
+                args = ["%{SERVER_NAME}", "={0}".format(name), "[OR]"]
+                if idx == len(names) - 1:
+                    args.pop()
+                self.parser.add_dir(general_vh.path, "RewriteCond", args)
             if self.get_version() >= (2, 3, 9):
                 self.parser.add_dir(general_vh.path, "RewriteRule",
                                     constants.REWRITE_HTTPS_ARGS_WITH_END)
@@ -1244,6 +1249,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Second filter - check addresses
         for http_vh in candidate_http_vhs:
             if http_vh.same_server(ssl_vhost):
+                return http_vh
+        # Third filter - if none with same names, return generic
+        for http_vh in candidate_http_vhs:
+            if http_vh.same_server(ssl_vhost, generic=True):
                 return http_vh
 
         return None
