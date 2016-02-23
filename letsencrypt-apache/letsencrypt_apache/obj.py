@@ -194,6 +194,8 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
         Used in redirection - indicates whether or not the two virtual hosts
         serve on the exact same IP combinations, but different ports.
+        The generic flag indicates that that we're trying to match to a
+        default or generic vhost
 
         .. todo:: Handle _default_
 
@@ -207,8 +209,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
             if self.name is not None or self.aliases:
                 return True
         # If we're looking for a generic vhost, don't return one with a ServerName
-        else:
-            if self.name:
+        elif self.name:
                 return False
 
         # Both sets of names are empty.
