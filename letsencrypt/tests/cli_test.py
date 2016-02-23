@@ -541,7 +541,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
                              args=None, renew=True, error_expected=False):
-        # pylint: disable=too-many-locals
+        # pylint: disable=too-many-locals,too-many-arguments
         cert_path = 'letsencrypt/tests/testdata/cert.pem'
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path)
@@ -573,8 +573,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                                         print "Returned", ret
                                         raise AssertionError(ret)
                                     assert not error_expected, "renewal should have errored"
-                                except:
-                                    assert error_expected, "renewal should not have errored" + traceback.format_exc()
+                                except: # pylint: disable=bare-except
+                                    if not error_expected:
+                                        raise AssertionError(
+                                            "Unexpected renewal error:\n" +
+                                            traceback.format_exc())
 
             if renew:
                 mock_client.obtain_certificate.assert_called_once_with(['isnot.org'])
@@ -631,7 +634,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, renew=True)
 
-
     def test_renew_verb_empty_config(self):
         rd = os.path.join(self.config_dir, 'renewal')
         if not os.path.exists(rd):
@@ -640,16 +642,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             pass  # leave the file empty
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(False, [], args=args, renew=False, error_expected=True)
-
-    def _unused_test(self):
-        with open(rc, "w") as dest:
-            dest.write("BLOBOFRANDOM\nJUNK")
-
-        args = ["renew", "--dry-run", "-tvv"]
-        self._test_renewal_common(True, [], args=args, renew=True,
-            log_out="1 parse failure", error_expected=True)
-
-        assert False, "Failed to raise SystemExit"
 
     def _make_dummy_renewal_config(self):
         renewer_configs_dir = os.path.join(self.config_dir, 'renewal')
