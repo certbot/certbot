@@ -118,6 +118,7 @@ def make_csr(key_str, domains):
             value=", ".join("DNS:%s" % d for d in domains)
         ),
     ])
+    req.set_version(2)
     req.set_pubkey(pkey)
     req.sign(pkey, "sha256")
     return tuple(OpenSSL.crypto.dump_certificate_request(method, req)
