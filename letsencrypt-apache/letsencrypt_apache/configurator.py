@@ -344,9 +344,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def included_in_wildcard(self, names, target_name):
         """Helper function to see if alias is covered by wildcard"""
-        wildcards = [domain for domain in names if domain.startswith("*")]
+        target_name = target_name.split(".")[::-1]
+        wildcards = [domain.split(".")[1:] for domain in names if domain.startswith("*")]
         for wildcard in wildcards:
-            if wildcard.split(".")[1] == target_name.split(".")[1]:
+            if len(wildcard) > len(target_name):
+                continue
+            for idx, segment in enumerate(wildcard[::-1]):
+                if segment != target_name[idx]:
+                    break
+            else:
+                # https://docs.python.org/2/tutorial/controlflow.html#break-and-continue-statements-and-else-clauses-on-loops
                 return True
         return False
 
@@ -359,9 +366,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :returns: VHost or None
 
         """
-        # Points 4 - Servername SSL
-        # Points 3 - Address name with SSL
-        # Points 2 - Servername no SSL
+        # Points 6 - Servername SSL
+        # Points 5 - Wildcard SSL
+        # Points 4 - Address name with SSL
+        # Points 3 - Servername no SSL
+        # Points 2 - Wildcard no SSL
         # Points 1 - Address name with no SSL
         best_candidate = None
         best_points = 0
@@ -381,7 +390,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 continue  # pragma: no cover
 
             if vhost.ssl:
-                points += 2
+                points += 3
 
             if points > best_points:
                 best_points = points
