@@ -4,6 +4,7 @@ import datetime
 import heapq
 import logging
 import time
+from email.utils import parsedate_tz
 
 import six
 from six.moves import http_client  # pylint: disable=import-error
@@ -17,7 +18,6 @@ from acme import jose
 from acme import jws
 from acme import messages
 
-from email.utils import parsedate_tz
 
 logger = logging.getLogger(__name__)
 
