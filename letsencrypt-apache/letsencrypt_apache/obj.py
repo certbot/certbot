@@ -210,7 +210,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
                 return True
         # If we're looking for a generic vhost, don't return one with a ServerName
         elif self.name:
-                return False
+            return False
 
         # Both sets of names are empty.
 
