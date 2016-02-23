@@ -14,7 +14,7 @@ services:
 # gimme has to be kept in sync with Boulder's Go version setting in .travis.yml
 before_install:
   - 'dpkg -s libaugeas0'
-  - '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || eval "$(gimme 1.5.1)"'
+  - '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || eval "$(gimme 1.6)"'
 
 # using separate envs with different TOXENVs creates 4x1 Travis build
 # matrix, which allows us to clearly distinguish which component under
