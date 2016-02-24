@@ -356,6 +356,15 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                           self._call,
                           ['-d', '204.11.231.35'])
 
+    def test_run_with_csr(self):
+        # This is an error because you can only use --csr with certonly
+        try:
+            self._call(['--csr', CSR])
+        except errors.Error as e:
+            assert "Please try the certonly" in e.message
+            return
+        assert False, "Expected supplying --csr to fail with default verb"
+
     def _get_argument_parser(self):
         plugins = disco.PluginsRegistry.find_all()
         return functools.partial(cli.prepare_and_parse_args, plugins)
