@@ -168,7 +168,7 @@ BootstrapDebCommon() {
                   /bin/echo '(Backports are only installed if explicitly requested via "apt-get install -t wheezy-backports")'
               fi
 
-              sudo sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
+              $SUDO sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
               $SUDO apt-get update
           fi
       fi
