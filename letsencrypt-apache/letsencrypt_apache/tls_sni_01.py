@@ -62,7 +62,7 @@ class ApacheTlsSni01(common.TLSSNI01):
             return []
         # Save any changes to the configuration as a precaution
         # About to make temporary changes to the config
-        self.configurator.save()
+        self.configurator.save("Changes before challenge setup", True)
 
         # Prepare the server for HTTPS
         self.configurator.prepare_server_https(

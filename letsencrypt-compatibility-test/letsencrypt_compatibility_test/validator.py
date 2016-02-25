@@ -12,10 +12,10 @@ from letsencrypt import interfaces
 logger = logging.getLogger(__name__)
 
 
+@zope.interface.implementer(interfaces.IValidator)
 class Validator(object):
     # pylint: disable=no-self-use
     """Collection of functions to test a live webserver's configuration"""
-    zope.interface.implements(interfaces.IValidator)
 
     def certificate(self, cert, name, alt_host=None, port=443):
         """Verifies the certificate presented at name is cert"""

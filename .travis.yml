@@ -30,10 +30,9 @@ matrix:
       env: TOXENV=py26 BOULDER_INTEGRATION=1
     - python: "2.6"
       env: TOXENV=py26-oldest BOULDER_INTEGRATION=1
-# Disabled for now due to requiring sudo -> causing more boulder integration
-# DNS timeouts :(
-#   - python: "2.7"
-#     env: TOXENV=apacheconftest
+    - python: "2.7"
+      env: TOXENV=apacheconftest
+      sudo: required
     - python: "2.7"
       env: TOXENV=py27 BOULDER_INTEGRATION=1
     - python: "2.7"
@@ -65,8 +64,8 @@ branches:
 sudo: false
 
 addons:
-  # Custom /etc/hosts required for SimpleHTTP simple verification,
-  # simple_verify for http01 and tls-sni-01, and letsencrypt_test_nginx
+  # Custom /etc/hosts required for simple verification of http-01
+  # and tls-sni-01, and for letsencrypt_test_nginx
   hosts:
     - le.wtf
     - le1.wtf

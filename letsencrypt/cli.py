@@ -983,10 +983,6 @@ def renew(config, unused_plugins):
                            "renew specific certificates, use the certonly "
                            "command. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
-    if config.csr is not None:
-        raise errors.Error("Currently, the renew verb cannot be used when "
-                           "specifying a CSR file. Please try the certonly "
-                           "command instead.")
     renewer_config = configuration.RenewerConfiguration(config)
     renew_successes = []
     renew_failures = []
@@ -1029,6 +1025,12 @@ def renew(config, unused_plugins):
     # Describe all the results
     _renew_describe_results(config, renew_successes, renew_failures,
                             renew_skipped, parse_failures)
+
+    if renew_failures or parse_failures:
+        raise errors.Error("{0} renew failure(s), {1} parse failure(s)".format(
+            len(renew_failures), len(parse_failures)))
+    else:
+        logger.debug("no renewal failures")
 
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
@@ -1244,6 +1246,12 @@ class HelpfulArgumentParser(object):
         Process a --csr flag. This needs to happen early enough that the
         webroot plugin can know about the calls to _process_domain
         """
+        if parsed_args.verb != "certonly":
+            raise errors.Error("Currently, a CSR file may only be specified "
+                               "when obtaining a new or replacement "
+                               "via the certonly command. Please try the "
+                               "certonly command instead.")
+
         try:
             csr = le_util.CSR(file=parsed_args.csr[0], data=parsed_args.csr[1], form="der")
             typ = OpenSSL.crypto.FILETYPE_ASN1
