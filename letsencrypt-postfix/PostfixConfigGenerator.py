@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 import sys
 import string
 import os, os.path
@@ -18,18 +17,14 @@ def parse_line(line_data):
         return None
     return (num, left.strip(), right.strip())
 
-class MTAConfigGenerator:
-    def __init__(self, policy_config):
-        self.policy_config = policy_config
-
 class ExistingConfigError(ValueError): pass
 
-class PostfixConfigGenerator(MTAConfigGenerator):
+class PostfixConfigGenerator:
     def __init__(self, policy_config, postfix_dir, fixup=False):
-        self.fixup = fixup
-        self.postfix_dir = postfix_dir
-        self.policy_file = os.path.join(postfix_dir, "starttls_everywhere_policy")
-        MTAConfigGenerator.__init__(self, policy_config)
+        self.fixup          = fixup
+        self.postfix_dir    = postfix_dir
+        self.policy_config  = policy_config
+        self.policy_file    = os.path.join(postfix_dir, "starttls_everywhere_policy")
 
     def ensure_cf_var(self, var, ideal, also_acceptable):
         """
