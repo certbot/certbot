@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from datetime import datetime
 from dateutil import parser as dateutil_parser
 import collections

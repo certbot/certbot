@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """
 Process Google's TLS delivery data from
 https://www.google.com/transparencyreport/saferemail/data/?hl=en
