@@ -363,8 +363,8 @@ BootstrapMac() {
       brew install dialog
   fi
 
-  if ! hash pip 2>/dev/null; then
-      echo "pip not installed.\nInstalling python from Homebrew..."
+  if [ -z "$(brew list --versions python)" ]; then
+      echo "python not installed.\nInstalling python from Homebrew..."
       brew install python
   fi
 
