@@ -338,8 +338,12 @@ class GenChallengePathTest(unittest.TestCase):
         prefs = [challenges.TLSSNI01]
         combos = ((0, 1),)
 
+        # smart path fails because no challs in perfs satisfies combos
         self.assertRaises(
             errors.AuthorizationError, self._call, challbs, prefs, combos)
+        # dumb path fails because all challbs are not supported
+        self.assertRaises(
+            errors.AuthorizationError, self._call, challbs, prefs, None)
 
 
 class ReportFailedChallsTest(unittest.TestCase):
