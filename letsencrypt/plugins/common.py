@@ -1,11 +1,11 @@
 """Plugin common functions."""
 import os
-import pkg_resources
 import re
 import shutil
 import tempfile
 
 import OpenSSL
+import pkg_resources
 import zope.interface
 
 from acme.jose import util as jose_util
@@ -31,11 +31,11 @@ hostname_regex = re.compile(
     r"^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*[a-z]+$", re.IGNORECASE)
 
 
+@zope.interface.implementer(interfaces.IPlugin)
 class Plugin(object):
     """Generic plugin."""
-    zope.interface.implements(interfaces.IPlugin)
-    # classProvides is not inherited, subclasses must define it on their own
-    #zope.interface.classProvides(interfaces.IPluginFactory)
+    # provider is not inherited, subclasses must define it on their own
+    # @zope.interface.provider(interfaces.IPluginFactory)
 
     def __init__(self, config, name):
         self.config = config

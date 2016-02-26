@@ -60,6 +60,8 @@ logger = logging.getLogger(__name__)
 #     sites-available doesn't allow immediate find_dir search even with save()
 #     and load()
 
+@zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
+@zope.interface.provider(interfaces.IPluginFactory)
 class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Apache configurator.
@@ -80,8 +82,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     :ivar dict assoc: Mapping between domains and vhosts
 
     """
-    zope.interface.implements(interfaces.IAuthenticator, interfaces.IInstaller)
-    zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "Apache Web Server - Alpha"
 
@@ -895,9 +895,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         for addr in vhost.addrs:
             # In Apache 2.2, when a NameVirtualHost directive is not
             # set, "*" and "_default_" will conflict when sharing a port
+            addrs = set((addr,))
             if addr.get_addr() in ("*", "_default_"):
-                addrs = [obj.Addr((a, addr.get_port(),))
-                         for a in ("*", "_default_")]
+                addrs.update(obj.Addr((a, addr.get_port(),))
+                             for a in ("*", "_default_"))
 
             for test_vh in self.vhosts:
                 if (vhost.filep != test_vh.filep and
@@ -907,6 +908,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     self.add_name_vhost(addr)
                     logger.info("Enabling NameVirtualHosts on %s", addr)
                     need_to_save = True
+                    break
 
         if need_to_save:
             self.save()
@@ -1073,7 +1075,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             #     even with save() and load()
             if not self._is_rewrite_engine_on(general_vh):
                 self.parser.add_dir(general_vh.path, "RewriteEngine", "on")
-
+            names = ssl_vhost.get_names()
+            for idx, name in enumerate(names):
+                args = ["%{SERVER_NAME}", "={0}".format(name), "[OR]"]
+                if idx == len(names) - 1:
+                    args.pop()
+                self.parser.add_dir(general_vh.path, "RewriteCond", args)
             if self.get_version() >= (2, 3, 9):
                 self.parser.add_dir(general_vh.path, "RewriteRule",
                                     constants.REWRITE_HTTPS_ARGS_WITH_END)
@@ -1242,6 +1249,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Second filter - check addresses
         for http_vh in candidate_http_vhs:
             if http_vh.same_server(ssl_vhost):
+                return http_vh
+        # Third filter - if none with same names, return generic
+        for http_vh in candidate_http_vhs:
+            if http_vh.same_server(ssl_vhost, generic=True):
                 return http_vh
 
         return None
@@ -1429,7 +1440,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         self.config_test()
-        logger.debug(self.reverter.view_config_changes(for_logging=True))
         self._reload()
 
     def _reload(self):
