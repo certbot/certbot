@@ -195,8 +195,8 @@ class Client(object):
         else:
             self.auth_handler = None
 
-    def obtain_certificate_from_csr(self, domains, csr, authzr=False,
-        typ=OpenSSL.crypto.FILETYPE_ASN1):
+    def obtain_certificate_from_csr(self, domains, csr,
+        typ=OpenSSL.crypto.FILETYPE_ASN1, authzr=False):
         """Obtain certificate.
 
         Internal function with precondition that `domains` are
@@ -255,7 +255,7 @@ class Client(object):
             self.config.rsa_key_size, self.config.key_dir)
         csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
-        return self.obtain_certificate_from_csr(domains, csr, authzr) + (key, csr)
+        return self.obtain_certificate_from_csr(domains, csr, authzr=authzr) + (key, csr)
 
     def obtain_and_enroll_certificate(self, domains):
         """Obtain and enroll certificate.

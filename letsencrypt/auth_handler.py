@@ -88,21 +88,14 @@ class AuthHandler(object):
             if response:
                 failed_domains = failed_domains.union(response)
 
-        my_authzr = self.authzr
-
-        logger.debug("authzr: %s", my_authzr)
-
-        returnDomains = []
-        #Remove failing domains if best_effort is true
-        for domain in domains:
-            if not domain in failed_domains:
-                returnDomains.append(domain)
+        returnDomains = [domain for domain in domains
+                        if domain not in failed_domains]
 
         # Just make sure all decisions are complete.
         self.verify_authzr_complete()
         # Only return valid authorizations
-        return ([authzr for authzr in my_authzr.values()
-                if authzr.body.status == messages.STATUS_VALID], returnDomains)
+        return [authzr for authzr in self.authzr.values()
+                if authzr.body.status == messages.STATUS_VALID], returnDomains
 
     def _choose_challenges(self, domains):
         """Retrieve necessary challenges to satisfy server."""
@@ -154,12 +147,12 @@ class AuthHandler(object):
 
         # Check for updated status...
         try:
-            result = self._poll_challenges(chall_update, best_effort)
+            failed_domains = self._poll_challenges(chall_update, best_effort)
         finally:
             # This removes challenges from self.dv_c and self.cont_c
             self._cleanup_challenges(active_achalls)
 
-        return result
+        return failed_domains
 
     def _send_responses(self, achalls, resps, chall_update):
         """Send responses and make sure errors are handled.

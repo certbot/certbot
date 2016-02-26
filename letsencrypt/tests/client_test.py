@@ -144,7 +144,7 @@ class ClientTest(unittest.TestCase):
                 self.client.obtain_certificate_from_csr(
                     self.eg_domains,
                     test_csr,
-                    authzr))
+                    authzr=authzr))
             # and that the cert was obtained correctly
             self._check_obtain_certificate()
 

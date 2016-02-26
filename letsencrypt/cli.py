@@ -694,7 +694,7 @@ def obtain_cert(config, plugins, lineage=None):
     if config.csr is not None:
         assert lineage is None, "Did not expect a CSR with a RenewableCert"
         csr, typ = config.actual_csr
-        certr, chain = le_client.obtain_certificate_from_csr(config.domains, csr, False, typ)
+        certr, chain = le_client.obtain_certificate_from_csr(config.domains, csr, typ, authzr=False)
         if config.dry_run:
             logger.info(
                 "Dry run: skipping saving certificate to %s", config.cert_path)
@@ -1606,7 +1606,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
     helpful.add(
         "automation", "--allow-subset-of-names", dest="allow_subset_of_names",
         action="store_true", default=False,
-        help="Allow subsets of domain names to fail validation without exiting.")
+        help="Allow subsets of domain names in a single lineage to fail "
+             "validation without exiting.")
 
     helpful.add_group(
         "renew", description="The 'renew' subcommand will attempt to renew all"
