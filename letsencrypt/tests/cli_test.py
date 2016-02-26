@@ -20,6 +20,7 @@ from letsencrypt import constants
 from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import le_util
+from letsencrypt import storage
 
 from letsencrypt.plugins import disco
 from letsencrypt.plugins import manual
@@ -630,8 +631,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             print "Logs:"
             print lf.read()
 
-    def test_renew_verb(self):
-        with open(test_util.vector_path('sample-renewal.conf')) as src:
+
+    def _make_test_renewal_conf(self, testfile):
+        with open(test_util.vector_path(testfile)) as src:
             # put the correct path for cert.pem, chain.pem etc in the renewal conf
             renewal_conf = src.read().replace("MAGICDIR", test_util.vector_path())
         rd = os.path.join(self.config_dir, "renewal")
@@ -640,8 +642,24 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         rc = os.path.join(rd, "sample-renewal.conf")
         with open(rc, "w") as dest:
             dest.write(renewal_conf)
+        return rc
+
+    def test_renew_verb(self):
+        self._make_test_renewal_conf('sample-renewal.conf')
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, renew=True)
+
+    @mock.patch("letsencrypt.cli._set_by_cli")
+    def test_ancient_webroot(self, mock_set_by_cli):
+        mock_set_by_cli.return_value = False
+        rc_path = self._make_test_renewal_conf('sample-renewal-ancient.conf')
+        args = mock.MagicMock(account=None, email=None, webroot_path=None)
+        config = configuration.NamespaceConfig(args)
+        lineage = storage.RenewableCert(rc_path,
+            configuration.RenewerConfiguration(config))
+        renewalparams = lineage.configuration["renewalparams"]
+        cli._restore_webroot_config(config, renewalparams)
+        self.assertEqual(config.webroot_path, ["/var/www/"])
 
     def test_renew_verb_empty_config(self):
         rd = os.path.join(self.config_dir, 'renewal')

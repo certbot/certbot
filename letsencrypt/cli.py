@@ -871,10 +871,10 @@ def _restore_webroot_config(config, renewalparams):
         if not (_set_by_cli("webroot_map") or _set_by_cli("webroot_path")):
             setattr(config.namespace, "webroot_map", renewalparams["webroot_map"])
     elif "webroot_path" in renewalparams:
-       wp = renewalparams["webroot_path"]
-       if isinstance(wp, str):
-            wp = [wp]
         logger.info("Ancient renewal conf file without webroot-map, restoring webroot-path")
+        wp = renewalparams["webroot_path"]
+        if isinstance(wp, str):  # prior to 0.1.0, webroot_path was a string
+            wp = [wp]
         setattr(config.namespace, "webroot_path", wp)
 
 
