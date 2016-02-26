@@ -168,7 +168,7 @@ BootstrapDebCommon() {
                   /bin/echo '(Backports are only installed if explicitly requested via "apt-get install -t wheezy-backports")'
               fi
 
-              sudo sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
+              $SUDO sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
               $SUDO apt-get update
           fi
       fi
@@ -307,10 +307,11 @@ BootstrapArchCommon() {
     pkg-config
   "
 
-  missing=$("$SUDO" pacman -T $deps)
+  # pacman -T exits with 127 if there are missing dependencies
+  missing=$($SUDO pacman -T $deps) || true
 
   if [ "$missing" ]; then
-    "$SUDO" pacman -S --needed $missing
+    $SUDO pacman -S --needed $missing
   fi
 }
 
@@ -327,19 +328,19 @@ BootstrapGentooCommon() {
 
   case "$PACKAGE_MANAGER" in
     (paludis)
-      "$SUDO" cave resolve --preserve-world --keep-targets if-possible $PACKAGES -x
+      $SUDO cave resolve --preserve-world --keep-targets if-possible $PACKAGES -x
       ;;
     (pkgcore)
-      "$SUDO" pmerge --noreplace --oneshot $PACKAGES
+      $SUDO pmerge --noreplace --oneshot $PACKAGES
       ;;
     (portage|*)
-      "$SUDO" emerge --noreplace --oneshot $PACKAGES
+      $SUDO emerge --noreplace --oneshot $PACKAGES
       ;;
   esac
 }
 
 BootstrapFreeBsd() {
-  "$SUDO" pkg install -Ay \
+  $SUDO pkg install -Ay \
     python \
     py27-virtualenv \
     augeas \
@@ -362,8 +363,8 @@ BootstrapMac() {
       brew install dialog
   fi
 
-  if ! hash pip 2>/dev/null; then
-      echo "pip not installed.\nInstalling python from Homebrew..."
+  if [ -z "$(brew list --versions python)" ]; then
+      echo "python not installed.\nInstalling python from Homebrew..."
       brew install python
   fi
 
@@ -620,10 +621,6 @@ traceback2==1.4.0
 # sha256: IogqDkGMKE4fcYqCKzsCKUTVPS2QjhaQsxmp0-ssBXk
 unittest2==1.1.0
 
-# sha256: aUkbUwUVfDxuDwSnAZhNaud_1yn8HJrNJQd_HfOFMms
-# sha256: 619wCpv8lkILBVY1r5AC02YuQ9gMP_0x8iTCW8DV9GI
-Werkzeug==0.11.3
-
 # sha256: KCwRK1XdjjyGmjVx-GdnwVCrEoSprOK97CJsWSrK-Bo
 zope.component==4.2.2
 
@@ -756,6 +753,7 @@ except ImportError:
         from pip.util import url_to_path  # 0.7.0
     except ImportError:
         from pip.util import url_to_filename as url_to_path  # 0.6.2
+from pip.exceptions import InstallationError
 from pip.index import PackageFinder, Link
 try:
     from pip.log import logger
@@ -774,7 +772,7 @@ except ImportError:
 
     DownloadProgressBar = DownloadProgressSpinner = NullProgressBar
 
-__version__ = 3, 0, 0
+__version__ = 3, 1, 1
 
 try:
     from pip.index import FormatControl  # noqa
@@ -792,6 +790,7 @@ ITS_FINE_ITS_FINE = 0
 SOMETHING_WENT_WRONG = 1
 # "Traditional" for command-line errors according to optparse docs:
 COMMAND_LINE_ERROR = 2
+UNHANDLED_EXCEPTION = 3
 
 ARCHIVE_EXTENSIONS = ('.tar.bz2', '.tar.gz', '.tgz', '.tar', '.zip')
 
@@ -1554,7 +1553,7 @@ def peep_install(argv):
             first_every_last(buckets[SatisfiedReq], *printers)
 
         return ITS_FINE_ITS_FINE
-    except (UnsupportedRequirementError, DownloadError) as exc:
+    except (UnsupportedRequirementError, InstallationError, DownloadError) as exc:
         out(str(exc))
         return SOMETHING_WENT_WRONG
     finally:
@@ -1574,16 +1573,23 @@ def peep_port(paths):
         print('Please specify one or more requirements files so I have '
               'something to port.\n')
         return COMMAND_LINE_ERROR
+
+    comes_from = None
     for req in chain.from_iterable(
             _parse_requirements(path, package_finder(argv)) for path in paths):
+        req_path, req_line = path_and_line(req)
         hashes = [hexlify(urlsafe_b64decode((hash + '=').encode('ascii'))).decode('ascii')
-                  for hash in hashes_above(*path_and_line(req))]
+                  for hash in hashes_above(req_path, req_line)]
+        if req_path != comes_from:
+            print()
+            print('# from %s' % req_path)
+            print()
+            comes_from = req_path
+
         if not hashes:
             print(req.req)
-        elif len(hashes) == 1:
-            print('%s --hash=sha256:%s' % (req.req, hashes[0]))
         else:
-            print('%s' % req.req, end='')
+            print('%s' % (req.link if getattr(req, 'link', None) else req.req), end='')
             for hash in hashes:
                 print(' \\')
                 print('    --hash=sha256:%s' % hash, end='')
@@ -1628,7 +1634,7 @@ if __name__ == '__main__':
         exit(main())
     except Exception:
         exception_handler(*sys.exc_info())
-        exit(SOMETHING_WENT_WRONG)
+        exit(UNHANDLED_EXCEPTION)
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1810,12 +1816,21 @@ UNLIKELY_EOF
       # future Windows compatibility.
       "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
 
-      # Install new copy of letsencrypt-auto. This preserves permissions and
-      # ownership from the old copy.
+      # Install new copy of letsencrypt-auto.
       # TODO: Deal with quotes in pathnames.
       echo "Replacing letsencrypt-auto..."
-      echo "  " $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$0"
-      $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$0"
+      # Clone permissions with cp. chmod and chown don't have a --reference
+      # option on OS X or BSD, and stat -c on Linux is stat -f on OS X and BSD:
+      echo "  " $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      echo "  " $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      # Using mv rather than cp leaves the old file descriptor pointing to the
+      # original copy so the shell can continue to read it unmolested. mv across
+      # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
+      # cp is unlikely to fail (esp. under sudo) if the rm doesn't.
+      echo "  " $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
+      $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
       # TODO: Clean up temp dir safely, even if it has quotes in its path.
       rm -rf "$TEMP_DIR"
     fi  # A newer version is available.

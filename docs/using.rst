@@ -429,6 +429,12 @@ If you don't want to use the Apache plugin, you can omit the
 
 Packages for Debian Jessie are coming in the next few weeks.
 
+**Fedora**
+
+.. code-block:: shell
+
+    sudo dnf install letsencrypt
+
 **Gentoo**
 
 The official Let's Encrypt client is available in Gentoo Portage. If you

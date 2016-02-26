@@ -1,6 +1,7 @@
 """ACME client API."""
 import collections
 import datetime
+from email.utils import parsedate_tz
 import heapq
 import logging
 import time
@@ -11,7 +12,6 @@ from six.moves import http_client  # pylint: disable=import-error
 import OpenSSL
 import requests
 import sys
-import werkzeug
 
 from acme import errors
 from acme import jose
@@ -248,6 +248,9 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
     def retry_after(cls, response, default):
         """Compute next `poll` time based on response ``Retry-After`` header.
 
+        Handles integers and various datestring formats per
+        https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.37
+
         :param requests.Response response: Response from `poll`.
         :param int default: Default value (in seconds), used when
             ``Retry-After`` header is not present or invalid.
@@ -260,12 +263,16 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         try:
             seconds = int(retry_after)
         except ValueError:
-            # pylint: disable=no-member
-            decoded = werkzeug.parse_date(retry_after)  # RFC1123
-            if decoded is None:
-                seconds = default
-            else:
-                return decoded
+            # The RFC 2822 parser handles all of RFC 2616's cases in modern
+            # environments (primarily HTTP 1.1+ but also py27+)
+            when = parsedate_tz(retry_after)
+            if when is not None:
+                try:
+                    tz_secs = datetime.timedelta(when[-1] if when[-1] else 0)
+                    return datetime.datetime(*when[:7]) - tz_secs
+                except (ValueError, OverflowError):
+                    pass
+            seconds = default
 
         return datetime.datetime.now() + datetime.timedelta(seconds=seconds)
 
@@ -357,7 +364,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         attempts = collections.defaultdict(int)
         exhausted = set()
 
-        # priority queue with datetime (based on Retry-After) as key,
+        # priority queue with datetime.datetime (based on Retry-After) as key,
         # and original Authorization Resource as value
         waiting = [(datetime.datetime.now(), authzr) for authzr in authzrs]
         # mapping between original Authorization Resource and the most

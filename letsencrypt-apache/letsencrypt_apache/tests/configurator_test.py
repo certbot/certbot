@@ -746,9 +746,9 @@ class TwoVhost80Test(util.ApacheTest):
         self.config.parser.modules.add("rewrite_module")
         mock_exe.return_value = True
         ssl_vh = obj.VirtualHost(
-            "fp", "ap", set([obj.Addr(("*", "443")),
-                             obj.Addr(("satoshi.com",))]),
+            "fp", "ap", set([obj.Addr(("*", "443"))]),
             True, False)
+        ssl_vh.name = "satoshi.com"
         self.config.vhosts.append(ssl_vh)
         self.assertRaises(
             errors.PluginError,

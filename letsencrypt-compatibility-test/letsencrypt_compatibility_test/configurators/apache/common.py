@@ -19,11 +19,10 @@ APACHE_VERSION_REGEX = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
 APACHE_COMMANDS = ["apachectl", "a2enmod", "a2dismod"]
 
 
+@zope.interface.implementer(interfaces.IConfiguratorProxy)
 class Proxy(configurators_common.Proxy):
     # pylint: disable=too-many-instance-attributes
     """A common base for Apache test configurators"""
-
-    zope.interface.implements(interfaces.IConfiguratorProxy)
 
     def __init__(self, args):
         """Initializes the plugin with the given command line args"""
