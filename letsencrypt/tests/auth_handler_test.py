@@ -299,7 +299,7 @@ class GenChallengePathTest(unittest.TestCase):
     def test_common_case(self):
         """Given TLSSNI01 and HTTP01 with appropriate combos."""
         challbs = (acme_util.TLSSNI01_P, acme_util.HTTP01_P)
-        prefs = [challenges.TLSSNI01]
+        prefs = [challenges.TLSSNI01, challenges.HTTP01]
         combos = ((0,), (1,))
 
         # Smart then trivial dumb path test
@@ -318,9 +318,6 @@ class GenChallengePathTest(unittest.TestCase):
         combos = acme_util.gen_combos(challbs)
         self.assertEqual(self._call(challbs, prefs, combos), (0, 2))
 
-        # dumb_path() trivial test
-        self.assertTrue(self._call(challbs, prefs, None))
-
     def test_full_cont_server(self):
         challbs = (acme_util.RECOVERY_CONTACT_P,
                    acme_util.POP_P,
@@ -336,9 +333,6 @@ class GenChallengePathTest(unittest.TestCase):
         combos = acme_util.gen_combos(challbs)
         self.assertEqual(self._call(challbs, prefs, combos), (1, 3))
 
-        # Dumb path trivial test
-        self.assertTrue(self._call(challbs, prefs, None))
-
     def test_not_supported(self):
         challbs = (acme_util.POP_P, acme_util.TLSSNI01_P)
         prefs = [challenges.TLSSNI01]
@@ -346,74 +340,6 @@ class GenChallengePathTest(unittest.TestCase):
 
         self.assertRaises(
             errors.AuthorizationError, self._call, challbs, prefs, combos)
-
-
-class MutuallyExclusiveTest(unittest.TestCase):
-    """Tests for letsencrypt.auth_handler.mutually_exclusive."""
-
-    # pylint: disable=missing-docstring,too-few-public-methods
-    class A(object):
-        pass
-
-    class B(object):
-        pass
-
-    class C(object):
-        pass
-
-    class D(C):
-        pass
-
-    @classmethod
-    def _call(cls, chall1, chall2, different=False):
-        from letsencrypt.auth_handler import mutually_exclusive
-        return mutually_exclusive(chall1, chall2, groups=frozenset([
-            frozenset([cls.A, cls.B]), frozenset([cls.A, cls.C]),
-        ]), different=different)
-
-    def test_group_members(self):
-        self.assertFalse(self._call(self.A(), self.B()))
-        self.assertFalse(self._call(self.A(), self.C()))
-
-    def test_cross_group(self):
-        self.assertTrue(self._call(self.B(), self.C()))
-
-    def test_same_type(self):
-        self.assertFalse(self._call(self.A(), self.A(), different=False))
-        self.assertTrue(self._call(self.A(), self.A(), different=True))
-
-        # in particular...
-        obj = self.A()
-        self.assertFalse(self._call(obj, obj, different=False))
-        self.assertTrue(self._call(obj, obj, different=True))
-
-    def test_subclass(self):
-        self.assertFalse(self._call(self.A(), self.D()))
-        self.assertFalse(self._call(self.D(), self.A()))
-
-
-class IsPreferredTest(unittest.TestCase):
-    """Tests for letsencrypt.auth_handler.is_preferred."""
-
-    @classmethod
-    def _call(cls, chall, satisfied):
-        from letsencrypt.auth_handler import is_preferred
-        return is_preferred(chall, satisfied, exclusive_groups=frozenset([
-            frozenset([challenges.TLSSNI01, challenges.HTTP01]),
-            frozenset([challenges.DNS, challenges.HTTP01]),
-        ]))
-
-    def test_empty_satisfied(self):
-        self.assertTrue(self._call(acme_util.DNS_P, frozenset()))
-
-    def test_mutually_exclusvie(self):
-        self.assertFalse(
-            self._call(
-                acme_util.TLSSNI01_P, frozenset([acme_util.HTTP01_P])))
-
-    def test_mutually_exclusive_same_type(self):
-        self.assertTrue(
-            self._call(acme_util.TLSSNI01_P, frozenset([acme_util.TLSSNI01_P])))
 
 
 class ReportFailedChallsTest(unittest.TestCase):

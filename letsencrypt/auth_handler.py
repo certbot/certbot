@@ -9,7 +9,6 @@ from acme import challenges
 from acme import messages
 
 from letsencrypt import achallenges
-from letsencrypt import constants
 from letsencrypt import errors
 from letsencrypt import error_handler
 from letsencrypt import interfaces
@@ -396,10 +395,7 @@ def _find_smart_path(challbs, preferences, combinations):
         combo_total = 0
 
     if not best_combo:
-        msg = ("Client does not support any combination of challenges that "
-               "will satisfy the CA.")
-        logger.fatal(msg)
-        raise errors.AuthorizationError(msg)
+        _report_no_chall_path()
 
     return best_combo
 
@@ -408,48 +404,29 @@ def _find_dumb_path(challbs, preferences):
     """Find challenge path without server hints.
 
     Should be called if the combinations hint is not included by the
-    server. This function returns the best path that does not contain
-    multiple mutually exclusive challenges.
+    server. This function either returns a path containing all
+    challenges provided by the CA or raises an exception.
 
     """
-    assert len(preferences) == len(set(preferences))
-
     path = []
-    satisfied = set()
-    for pref_c in preferences:
-        for i, offered_challb in enumerate(challbs):
-            if (isinstance(offered_challb.chall, pref_c) and
-                    is_preferred(offered_challb, satisfied)):
-                path.append(i)
-                satisfied.add(offered_challb)
+    for i, challb in enumerate(challbs):
+        # supported is set to True if the challenge type is supported
+        supported = next((True for pref_c in preferences
+                          if isinstance(challb.chall, pref_c)), False)
+        if supported:
+            path.append(i)
+        else:
+            _report_no_chall_path()
+
     return path
 
 
-def mutually_exclusive(obj1, obj2, groups, different=False):
-    """Are two objects mutually exclusive?"""
-    for group in groups:
-        obj1_present = False
-        obj2_present = False
-
-        for obj_cls in group:
-            obj1_present |= isinstance(obj1, obj_cls)
-            obj2_present |= isinstance(obj2, obj_cls)
-
-            if obj1_present and obj2_present and (
-                    not different or not isinstance(obj1, obj2.__class__)):
-                return False
-    return True
-
-
-def is_preferred(offered_challb, satisfied,
-                 exclusive_groups=constants.EXCLUSIVE_CHALLENGES):
-    """Return whether or not the challenge is preferred in path."""
-    for challb in satisfied:
-        if not mutually_exclusive(
-                offered_challb.chall, challb.chall, exclusive_groups,
-                different=True):
-            return False
-    return True
+def _report_no_chall_path():
+    """Logs and raises an error that no satisfiable chall path exists."""
+    msg = ("Client with the currently selected authenticator does not support "
+           "any combination of challenges that will satisfy the CA.")
+    logger.fatal(msg)
+    raise errors.AuthorizationError(msg)
 
 
 _ACME_PREFIX = "urn:acme:error:"
