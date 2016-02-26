@@ -658,6 +658,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         lineage = storage.RenewableCert(rc_path,
             configuration.RenewerConfiguration(config))
         renewalparams = lineage.configuration["renewalparams"]
+        # pylint: disable=protected-access
         cli._restore_webroot_config(config, renewalparams)
         self.assertEqual(config.webroot_path, ["/var/www/"])
 
