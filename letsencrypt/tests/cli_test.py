@@ -650,7 +650,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._test_renewal_common(True, [], args=args, renew=True)
 
     @mock.patch("letsencrypt.cli._set_by_cli")
-    def test_ancient_webroot(self, mock_set_by_cli):
+    def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         rc_path = self._make_test_renewal_conf('sample-renewal-ancient.conf')
         args = mock.MagicMock(account=None, email=None, webroot_path=None)
