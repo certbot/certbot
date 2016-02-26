@@ -130,7 +130,7 @@ class GetAuthorizationsTest(unittest.TestCase):
 
     def test_perform_failure(self):
         self.mock_net.request_domain_challenges.side_effect = functools.partial(
-            gen_dom_authzr, challs=acme_util.CHALLENGES)
+            gen_dom_authzr, challs=acme_util.DV_CHALLENGES)
         self.mock_dv_auth.perform.side_effect = errors.AuthorizationError
 
         self.assertRaises(
