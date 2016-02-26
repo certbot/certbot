@@ -423,9 +423,10 @@ TempDir() {
 
 
 
-if [ "$NO_SELF_UPGRADE" = 1 ]; then
+if [ "$1" = "--le-auto-phase2" ]; then
   # Phase 2: Create venv, install LE, and run.
 
+  shift 1  # the --le-auto-phase2 arg
   if [ -f "$VENV_BIN/letsencrypt" ]; then
     INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | cut -d " " -f 2)
   else
@@ -1671,10 +1672,11 @@ else
     exit 0
   fi
 
-  echo "Checking for new version..."
-  TEMP_DIR=$(TempDir)
-  # ---------------------------------------------------------------------------
-  cat << "UNLIKELY_EOF" > "$TEMP_DIR/fetch.py"
+  if [ "$NO_SELF_UPGRADE" != 1 ]; then
+    echo "Checking for new version..."
+    TEMP_DIR=$(TempDir)
+    # ---------------------------------------------------------------------------
+    cat << "UNLIKELY_EOF" > "$TEMP_DIR/fetch.py"
 """Do downloading and JSON parsing without additional dependencies. ::
 
     # Print latest released version of LE to stdout:
@@ -1803,34 +1805,36 @@ if __name__ == '__main__':
     exit(main())
 
 UNLIKELY_EOF
-  # ---------------------------------------------------------------------------
-  DeterminePythonVersion
-  REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version`
-  if [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
-    echo "Upgrading letsencrypt-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
+    # ---------------------------------------------------------------------------
+    DeterminePythonVersion
+    REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version`
+    if [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
+      echo "Upgrading letsencrypt-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
 
-    # Now we drop into Python so we don't have to install even more
-    # dependencies (curl, etc.), for better flow control, and for the option of
-    # future Windows compatibility.
-    "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
+      # Now we drop into Python so we don't have to install even more
+      # dependencies (curl, etc.), for better flow control, and for the option of
+      # future Windows compatibility.
+      "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
 
-    # Install new copy of letsencrypt-auto.
-    # TODO: Deal with quotes in pathnames.
-    echo "Replacing letsencrypt-auto..."
-    # Clone permissions with cp. chmod and chown don't have a --reference
-    # option on OS X or BSD, and stat -c on Linux is stat -f on OS X and BSD:
-    echo "  " $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
-    $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
-    echo "  " $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
-    $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
-    # Using mv rather than cp leaves the old file descriptor pointing to the
-    # original copy so the shell can continue to read it unmolested. mv across
-    # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
-    # cp is unlikely to fail (esp. under sudo) if the rm doesn't.
-    echo "  " $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
-    $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
-    # TODO: Clean up temp dir safely, even if it has quotes in its path.
-    rm -rf "$TEMP_DIR"
-  fi  # should upgrade
-  "$0" --no-self-upgrade "$@"
+      # Install new copy of letsencrypt-auto.
+      # TODO: Deal with quotes in pathnames.
+      echo "Replacing letsencrypt-auto..."
+      # Clone permissions with cp. chmod and chown don't have a --reference
+      # option on OS X or BSD, and stat -c on Linux is stat -f on OS X and BSD:
+      echo "  " $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      echo "  " $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      # Using mv rather than cp leaves the old file descriptor pointing to the
+      # original copy so the shell can continue to read it unmolested. mv across
+      # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
+      # cp is unlikely to fail (esp. under sudo) if the rm doesn't.
+      echo "  " $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
+      $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
+      # TODO: Clean up temp dir safely, even if it has quotes in its path.
+      rm -rf "$TEMP_DIR"
+    fi  # A newer version is available.
+  fi  # Self-upgrading is allowed.
+
+  "$0" --le-auto-phase2 "$@"
 fi
