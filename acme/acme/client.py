@@ -1,10 +1,10 @@
 """ACME client API."""
 import collections
 import datetime
+from email.utils import parsedate_tz
 import heapq
 import logging
 import time
-from email.utils import parsedate_tz
 
 import six
 from six.moves import http_client  # pylint: disable=import-error
