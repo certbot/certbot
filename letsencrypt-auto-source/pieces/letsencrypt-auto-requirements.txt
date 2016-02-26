@@ -172,10 +172,6 @@ traceback2==1.4.0
 # sha256: IogqDkGMKE4fcYqCKzsCKUTVPS2QjhaQsxmp0-ssBXk
 unittest2==1.1.0
 
-# sha256: aUkbUwUVfDxuDwSnAZhNaud_1yn8HJrNJQd_HfOFMms
-# sha256: 619wCpv8lkILBVY1r5AC02YuQ9gMP_0x8iTCW8DV9GI
-Werkzeug==0.11.3
-
 # sha256: KCwRK1XdjjyGmjVx-GdnwVCrEoSprOK97CJsWSrK-Bo
 zope.component==4.2.2
 
