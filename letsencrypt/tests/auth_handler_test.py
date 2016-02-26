@@ -103,6 +103,31 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.assertEqual(len(authzr), 1)
 
     @mock.patch("letsencrypt.auth_handler.AuthHandler._poll_challenges")
+    def test_name1_tls_sni_01_1_http_01_1_dns_1(self, mock_poll):
+        self.mock_net.request_domain_challenges.side_effect = functools.partial(
+            gen_dom_authzr, challs=acme_util.DV_CHALLENGES, combos=False)
+
+        mock_poll.side_effect = self._validate_all
+        self.mock_dv_auth.get_chall_pref.return_value.append(challenges.HTTP01)
+        self.mock_dv_auth.get_chall_pref.return_value.append(challenges.DNS)
+
+        authzr = self.handler.get_authorizations(["0"])
+
+        self.assertEqual(self.mock_net.answer_challenge.call_count, 3)
+
+        self.assertEqual(mock_poll.call_count, 1)
+        chall_update = mock_poll.call_args[0][0]
+        self.assertEqual(chall_update.keys(), ["0"])
+        self.assertEqual(len(chall_update.values()), 1)
+
+        self.assertEqual(self.mock_dv_auth.cleanup.call_count, 1)
+        # Test if list first element is TLSSNI01, use typ because it is an achall
+        for achall in self.mock_dv_auth.cleanup.call_args[0][0]:
+            self.assertTrue(achall.typ in ["tls-sni-01", "http-01", "dns"])
+
+        self.assertEqual(len(authzr), 1)
+
+    @mock.patch("letsencrypt.auth_handler.AuthHandler._poll_challenges")
     def test_name3_tls_sni_01_3(self, mock_poll):
         self.mock_net.request_domain_challenges.side_effect = functools.partial(
             gen_dom_authzr, challs=acme_util.DV_CHALLENGES)
@@ -404,11 +429,11 @@ def gen_auth_resp(chall_list):
             for chall in chall_list]
 
 
-def gen_dom_authzr(domain, unused_new_authzr_uri, challs):
+def gen_dom_authzr(domain, unused_new_authzr_uri, challs, combos=True):
     """Generates new authzr for domains."""
     return acme_util.gen_authzr(
         messages.STATUS_PENDING, domain, challs,
-        [messages.STATUS_PENDING] * len(challs))
+        [messages.STATUS_PENDING] * len(challs), combos)
 
 
 if __name__ == "__main__":
