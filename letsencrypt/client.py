@@ -17,7 +17,6 @@ from letsencrypt import account
 from letsencrypt import auth_handler
 from letsencrypt import configuration
 from letsencrypt import constants
-from letsencrypt import continuity_auth
 from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import error_handler
@@ -188,10 +187,8 @@ class Client(object):
         # standalone (then default is False, otherwise default is True)
 
         if dv_auth is not None:
-            cont_auth = continuity_auth.ContinuityAuthenticator(config,
-                                                                installer)
             self.auth_handler = auth_handler.AuthHandler(
-                dv_auth, cont_auth, self.acme, self.account)
+                dv_auth, self.acme, self.account)
         else:
             self.auth_handler = None
 

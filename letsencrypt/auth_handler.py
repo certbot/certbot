@@ -25,10 +25,6 @@ class AuthHandler(object):
         :class:`~acme.challenges.DVChallenge` types
     :type dv_auth: :class:`letsencrypt.interfaces.IAuthenticator`
 
-    :ivar cont_auth: Authenticator capable of solving
-        :class:`~acme.challenges.ContinuityChallenge` types
-    :type cont_auth: :class:`letsencrypt.interfaces.IAuthenticator`
-
     :ivar acme.client.Client acme: ACME client API.
 
     :ivar account: Client's Account
@@ -38,13 +34,10 @@ class AuthHandler(object):
         and values are :class:`acme.messages.AuthorizationResource`
     :ivar list dv_c: DV challenges in the form of
         :class:`letsencrypt.achallenges.AnnotatedChallenge`
-    :ivar list cont_c: Continuity challenges in the
-        form of :class:`letsencrypt.achallenges.AnnotatedChallenge`
 
     """
-    def __init__(self, dv_auth, cont_auth, acme, account):
+    def __init__(self, dv_auth, acme, account):
         self.dv_auth = dv_auth
-        self.cont_auth = cont_auth
         self.acme = acme
 
         self.account = account
@@ -52,7 +45,6 @@ class AuthHandler(object):
 
         # List must be used to keep responses straight.
         self.dv_c = []
-        self.cont_c = []
 
     def get_authorizations(self, domains, best_effort=False):
         """Retrieve all authorizations for challenges.
@@ -76,12 +68,12 @@ class AuthHandler(object):
         self._choose_challenges(domains)
 
         # While there are still challenges remaining...
-        while self.dv_c or self.cont_c:
-            cont_resp, dv_resp = self._solve_challenges()
+        while self.dv_c:
+            dv_resp = self._solve_challenges()
             logger.info("Waiting for verification...")
 
-            # Send all Responses - this modifies dv_c and cont_c
-            self._respond(cont_resp, dv_resp, best_effort)
+            # Send all Responses - this modifies dv_c
+            self._respond(dv_resp, best_effort)
 
         # Just make sure all decisions are complete.
         self.verify_authzr_complete()
@@ -98,19 +90,15 @@ class AuthHandler(object):
                 self._get_chall_pref(dom),
                 self.authzr[dom].body.combinations)
 
-            dom_cont_c, dom_dv_c = self._challenge_factory(
+            dom_dv_c = self._challenge_factory(
                 dom, path)
             self.dv_c.extend(dom_dv_c)
-            self.cont_c.extend(dom_cont_c)
 
     def _solve_challenges(self):
         """Get Responses for challenges from authenticators."""
-        cont_resp = []
         dv_resp = []
         with error_handler.ErrorHandler(self._cleanup_challenges):
             try:
-                if self.cont_c:
-                    cont_resp = self.cont_auth.perform(self.cont_c)
                 if self.dv_c:
                     dv_resp = self.dv_auth.perform(self.dv_c)
             except errors.AuthorizationError:
@@ -118,12 +106,11 @@ class AuthHandler(object):
                 logger.info("Attempting to clean up outstanding challenges...")
                 raise
 
-        assert len(cont_resp) == len(self.cont_c)
         assert len(dv_resp) == len(self.dv_c)
 
-        return cont_resp, dv_resp
+        return dv_resp
 
-    def _respond(self, cont_resp, dv_resp, best_effort):
+    def _respond(self, dv_resp, best_effort):
         """Send/Receive confirmation of all challenges.
 
         .. note:: This method also cleans up the auth_handler state.
@@ -134,14 +121,12 @@ class AuthHandler(object):
         active_achalls = []
         active_achalls.extend(
             self._send_responses(self.dv_c, dv_resp, chall_update))
-        active_achalls.extend(
-            self._send_responses(self.cont_c, cont_resp, chall_update))
 
         # Check for updated status...
         try:
             self._poll_challenges(chall_update, best_effort)
         finally:
-            # This removes challenges from self.dv_c and self.cont_c
+            # This removes challenges from self.dv_c
             self._cleanup_challenges(active_achalls)
 
     def _send_responses(self, achalls, resps, chall_update):
@@ -255,7 +240,6 @@ class AuthHandler(object):
         """
         # Make sure to make a copy...
         chall_prefs = []
-        chall_prefs.extend(self.cont_auth.get_chall_pref(domain))
         chall_prefs.extend(self.dv_auth.get_chall_pref(domain))
         return chall_prefs
 
@@ -269,21 +253,14 @@ class AuthHandler(object):
 
         if achall_list is None:
             dv_c = self.dv_c
-            cont_c = self.cont_c
         else:
             dv_c = [achall for achall in achall_list
                     if isinstance(achall.chall, challenges.DVChallenge)]
-            cont_c = [achall for achall in achall_list if isinstance(
-                achall.chall, challenges.ContinuityChallenge)]
 
         if dv_c:
             self.dv_auth.cleanup(dv_c)
             for achall in dv_c:
                 self.dv_c.remove(achall)
-        if cont_c:
-            self.cont_auth.cleanup(cont_c)
-            for achall in cont_c:
-                self.cont_c.remove(achall)
 
     def verify_authzr_complete(self):
         """Verifies that all authorizations have been decided.
@@ -306,15 +283,12 @@ class AuthHandler(object):
 
         :returns: dv_chall, list of DVChallenge type
             :class:`letsencrypt.achallenges.Indexed`
-            cont_chall, list of ContinuityChallenge type
-            :class:`letsencrypt.achallenges.Indexed`
-        :rtype: tuple
+        :rtype: list
 
         :raises .errors.Error: if challenge type is not recognized
 
         """
         dv_chall = []
-        cont_chall = []
 
         for index in path:
             challb = self.authzr[domain].body.challenges[index]
@@ -322,12 +296,10 @@ class AuthHandler(object):
 
             achall = challb_to_achall(challb, self.account.key, domain)
 
-            if isinstance(chall, challenges.ContinuityChallenge):
-                cont_chall.append(achall)
-            elif isinstance(chall, challenges.DVChallenge):
+            if isinstance(chall, challenges.DVChallenge):
                 dv_chall.append(achall)
 
-        return cont_chall, dv_chall
+        return dv_chall
 
 
 def challb_to_achall(challb, account_key, domain):

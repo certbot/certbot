@@ -23,8 +23,7 @@ class ChallengeFactoryTest(unittest.TestCase):
         from letsencrypt.auth_handler import AuthHandler
 
         # Account is mocked...
-        self.handler = AuthHandler(
-            None, None, None, mock.Mock(key="mock_key"))
+        self.handler = AuthHandler(None, None, mock.Mock(key="mock_key"))
 
         self.dom = "test"
         self.handler.authzr[self.dom] = acme_util.gen_authzr(
@@ -32,19 +31,15 @@ class ChallengeFactoryTest(unittest.TestCase):
             [messages.STATUS_PENDING] * 6, False)
 
     def test_all(self):
-        cont_c, dv_c = self.handler._challenge_factory(
+        dv_c = self.handler._challenge_factory(
             self.dom, range(0, len(acme_util.CHALLENGES)))
 
         self.assertEqual(
-            [achall.chall for achall in cont_c], acme_util.CONT_CHALLENGES)
-        self.assertEqual(
             [achall.chall for achall in dv_c], acme_util.DV_CHALLENGES)
 
-    def test_one_dv_one_cont(self):
-        cont_c, dv_c = self.handler._challenge_factory(self.dom, [1, 3])
+    def test_one_dv(self):
+        dv_c = self.handler._challenge_factory(self.dom, [1, 3])
 
-        self.assertEqual(
-            [achall.chall for achall in cont_c], [acme_util.RECOVERY_CONTACT])
         self.assertEqual([achall.chall for achall in dv_c], [acme_util.TLSSNI01])
 
     def test_unrecognized(self):
@@ -68,21 +63,16 @@ class GetAuthorizationsTest(unittest.TestCase):
         from letsencrypt.auth_handler import AuthHandler
 
         self.mock_dv_auth = mock.MagicMock(name="ApacheConfigurator")
-        self.mock_cont_auth = mock.MagicMock(name="ContinuityAuthenticator")
 
         self.mock_dv_auth.get_chall_pref.return_value = [challenges.TLSSNI01]
-        self.mock_cont_auth.get_chall_pref.return_value = [
-            challenges.RecoveryContact]
 
-        self.mock_cont_auth.perform.side_effect = gen_auth_resp
         self.mock_dv_auth.perform.side_effect = gen_auth_resp
 
         self.mock_account = mock.Mock(key=le_util.Key("file_path", "PEM"))
         self.mock_net = mock.MagicMock(spec=acme_client.Client)
 
         self.handler = AuthHandler(
-            self.mock_dv_auth, self.mock_cont_auth,
-            self.mock_net, self.mock_account)
+            self.mock_dv_auth, self.mock_net, self.mock_account)
 
         logging.disable(logging.CRITICAL)
 
@@ -106,7 +96,6 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.assertEqual(len(chall_update.values()), 1)
 
         self.assertEqual(self.mock_dv_auth.cleanup.call_count, 1)
-        self.assertEqual(self.mock_cont_auth.cleanup.call_count, 0)
         # Test if list first element is TLSSNI01, use typ because it is an achall
         self.assertEqual(
             self.mock_dv_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
@@ -114,29 +103,28 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.assertEqual(len(authzr), 1)
 
     @mock.patch("letsencrypt.auth_handler.AuthHandler._poll_challenges")
-    def test_name3_tls_sni_01_3_rectok_3(self, mock_poll):
+    def test_name3_tls_sni_01_3(self, mock_poll):
         self.mock_net.request_domain_challenges.side_effect = functools.partial(
-            gen_dom_authzr, challs=acme_util.CHALLENGES)
+            gen_dom_authzr, challs=acme_util.DV_CHALLENGES)
 
         mock_poll.side_effect = self._validate_all
 
         authzr = self.handler.get_authorizations(["0", "1", "2"])
 
-        self.assertEqual(self.mock_net.answer_challenge.call_count, 6)
+        self.assertEqual(self.mock_net.answer_challenge.call_count, 3)
 
         # Check poll call
         self.assertEqual(mock_poll.call_count, 1)
         chall_update = mock_poll.call_args[0][0]
         self.assertEqual(len(chall_update.keys()), 3)
         self.assertTrue("0" in chall_update.keys())
-        self.assertEqual(len(chall_update["0"]), 2)
+        self.assertEqual(len(chall_update["0"]), 1)
         self.assertTrue("1" in chall_update.keys())
-        self.assertEqual(len(chall_update["1"]), 2)
+        self.assertEqual(len(chall_update["1"]), 1)
         self.assertTrue("2" in chall_update.keys())
-        self.assertEqual(len(chall_update["2"]), 2)
+        self.assertEqual(len(chall_update["2"]), 1)
 
         self.assertEqual(self.mock_dv_auth.cleanup.call_count, 1)
-        self.assertEqual(self.mock_cont_auth.cleanup.call_count, 1)
 
         self.assertEqual(len(authzr), 3)
 
@@ -170,7 +158,7 @@ class PollChallengesTest(unittest.TestCase):
         # Account and network are mocked...
         self.mock_net = mock.MagicMock()
         self.handler = AuthHandler(
-            None, None, self.mock_net, mock.Mock(key="mock_key"))
+            None, self.mock_net, mock.Mock(key="mock_key"))
 
         self.doms = ["0", "1", "2"]
         self.handler.authzr[self.doms[0]] = acme_util.gen_authzr(
