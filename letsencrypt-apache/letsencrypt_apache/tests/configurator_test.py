@@ -85,7 +85,7 @@ class TwoVhost80Test(util.ApacheTest):
         mock_getutility.notification = mock.MagicMock(return_value=True)
         names = self.config.get_all_names()
         self.assertEqual(names, set(
-            ["letsencrypt.demo", "encryption-example.demo", "ip-172-30-0-17"]))
+            ["letsencrypt.demo", "encryption-example.demo", "ip-172-30-0-17", "*.blue.purple.com"]))
 
     @mock.patch("zope.component.getUtility")
     @mock.patch("letsencrypt_apache.configurator.socket.gethostbyaddr")
@@ -103,7 +103,7 @@ class TwoVhost80Test(util.ApacheTest):
         self.config.vhosts.append(vhost)
 
         names = self.config.get_all_names()
-        self.assertEqual(len(names), 5)
+        self.assertEqual(len(names), 6)
         self.assertTrue("zombo.com" in names)
         self.assertTrue("google.com" in names)
         self.assertTrue("letsencrypt.demo" in names)
@@ -124,7 +124,7 @@ class TwoVhost80Test(util.ApacheTest):
 
         """
         vhs = self.config.get_virtual_hosts()
-        self.assertEqual(len(vhs), 6)
+        self.assertEqual(len(vhs), 7)
         found = 0
 
         for vhost in vhs:
@@ -135,7 +135,7 @@ class TwoVhost80Test(util.ApacheTest):
             else:
                 raise Exception("Missed: %s" % vhost)  # pragma: no cover
 
-        self.assertEqual(found, 6)
+        self.assertEqual(found, 7)
 
         # Handle case of non-debian layout get_virtual_hosts
         with mock.patch(
@@ -143,7 +143,7 @@ class TwoVhost80Test(util.ApacheTest):
         ) as mock_conf:
             mock_conf.return_value = False
             vhs = self.config.get_virtual_hosts()
-            self.assertEqual(len(vhs), 6)
+            self.assertEqual(len(vhs), 7)
 
     @mock.patch("letsencrypt_apache.display_ops.select_vhost")
     def test_choose_vhost_none_avail(self, mock_select):
@@ -186,6 +186,20 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertRaises(
             errors.PluginError, self.config.choose_vhost, "none.com")
 
+    def test_choosevhost_select_vhost_with_wildcard(self):
+        chosen_vhost = self.config.choose_vhost("blue.purple.com", temp=True)
+        self.assertEqual(self.vh_truth[6], chosen_vhost)
+
+    def test_findbest_continues_on_short_domain(self):
+        # pylint: disable=protected-access
+        chosen_vhost = self.config._find_best_vhost("purple.com")
+        self.assertEqual(None, chosen_vhost)
+
+    def test_findbest_continues_on_long_domain(self):
+        # pylint: disable=protected-access
+        chosen_vhost = self.config._find_best_vhost("green.red.purple.com")
+        self.assertEqual(None, chosen_vhost)
+
     def test_find_best_vhost(self):
         # pylint: disable=protected-access
         self.assertEqual(
@@ -211,6 +225,7 @@ class TwoVhost80Test(util.ApacheTest):
         self.config.vhosts = [
             vh for vh in self.config.vhosts
             if vh.name not in ["letsencrypt.demo", "encryption-example.demo"]
+            and "*.blue.purple.com" not in vh.aliases
         ]
 
         self.assertEqual(
@@ -218,7 +233,7 @@ class TwoVhost80Test(util.ApacheTest):
 
     def test_non_default_vhosts(self):
         # pylint: disable=protected-access
-        self.assertEqual(len(self.config._non_default_vhosts()), 4)
+        self.assertEqual(len(self.config._non_default_vhosts()), 5)
 
     def test_is_site_enabled(self):
         """Test if site is enabled.
@@ -524,7 +539,7 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(self.config.is_name_vhost(self.vh_truth[0]),
                          self.config.is_name_vhost(ssl_vhost))
 
-        self.assertEqual(len(self.config.vhosts), 7)
+        self.assertEqual(len(self.config.vhosts), 8)
 
     def test_clean_vhost_ssl(self):
         # pylint: disable=protected-access
@@ -942,7 +957,7 @@ class TwoVhost80Test(util.ApacheTest):
 
         # pylint: disable=protected-access
         self.config._enable_redirect(self.vh_truth[1], "")
-        self.assertEqual(len(self.config.vhosts), 7)
+        self.assertEqual(len(self.config.vhosts), 8)
 
     def test_create_own_redirect_for_old_apache_version(self):
         self.config.parser.modules.add("rewrite_module")
@@ -953,7 +968,7 @@ class TwoVhost80Test(util.ApacheTest):
 
         # pylint: disable=protected-access
         self.config._enable_redirect(self.vh_truth[1], "")
-        self.assertEqual(len(self.config.vhosts), 7)
+        self.assertEqual(len(self.config.vhosts), 8)
 
     def test_sift_line(self):
         # pylint: disable=protected-access
