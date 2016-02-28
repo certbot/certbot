@@ -342,6 +342,21 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.assoc[target_name] = vhost
         return vhost
 
+    def included_in_wildcard(self, names, target_name):
+        """Helper function to see if alias is covered by wildcard"""
+        target_name = target_name.split(".")[::-1]
+        wildcards = [domain.split(".")[1:] for domain in names if domain.startswith("*")]
+        for wildcard in wildcards:
+            if len(wildcard) > len(target_name):
+                continue
+            for idx, segment in enumerate(wildcard[::-1]):
+                if segment != target_name[idx]:
+                    break
+            else:
+                # https://docs.python.org/2/tutorial/controlflow.html#break-and-continue-statements-and-else-clauses-on-loops
+                return True
+        return False
+
     def _find_best_vhost(self, target_name):
         """Finds the best vhost for a target_name.
 
@@ -351,16 +366,21 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :returns: VHost or None
 
         """
-        # Points 4 - Servername SSL
-        # Points 3 - Address name with SSL
-        # Points 2 - Servername no SSL
+        # Points 6 - Servername SSL
+        # Points 5 - Wildcard SSL
+        # Points 4 - Address name with SSL
+        # Points 3 - Servername no SSL
+        # Points 2 - Wildcard no SSL
         # Points 1 - Address name with no SSL
         best_candidate = None
         best_points = 0
         for vhost in self.vhosts:
             if vhost.modmacro is True:
                 continue
-            if target_name in vhost.get_names():
+            names = vhost.get_names()
+            if target_name in names:
+                points = 3
+            elif self.included_in_wildcard(names, target_name):
                 points = 2
             elif any(addr.get_addr() == target_name for addr in vhost.addrs):
                 points = 1
@@ -370,7 +390,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 continue  # pragma: no cover
 
             if vhost.ssl:
-                points += 2
+                points += 3
 
             if points > best_points:
                 best_points = points
@@ -1440,7 +1460,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         self.config_test()
-        logger.debug(self.reverter.view_config_changes(for_logging=True))
         self._reload()
 
     def _reload(self):

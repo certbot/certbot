@@ -20,7 +20,6 @@ install_requires = [
     'requests',
     'setuptools',  # pkg_resources
     'six',
-    'werkzeug',
 ]
 
 # env markers in extras_require cause problems with older pip: #517
