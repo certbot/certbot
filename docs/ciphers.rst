@@ -139,7 +139,7 @@ client's priorities. The Mozilla security team is likely to have more
 resources and expertise to bring to bear on evaluating reasons why its
 recommendations should be updated.
 
-The Let's Encrpyt project will entertain proposals to create a *very*
+The Let's Encrypt project will entertain proposals to create a *very*
 small number of alternative configurations (apart from Modern,
 Intermediate, and Old) that there's reason to believe would be widely
 used by sysadmins; this would usually be a preferable course to modifying

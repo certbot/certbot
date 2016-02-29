@@ -319,12 +319,11 @@ def _handle_identical_cert_request(config, cert):
     elif config.verb == "certonly":
         keep_opt = "Keep the existing certificate for now"
     choices = [keep_opt,
-               "Renew & replace the cert (limit ~5 per 7 days)",
-               "Cancel this operation and do nothing"]
+               "Renew & replace the cert (limit ~5 per 7 days)"]
 
     display = zope.component.getUtility(interfaces.IDisplay)
     response = display.menu(question, choices, "OK", "Cancel", default=0)
-    if response[0] == "cancel" or response[1] == 2:
+    if response[0] == display_util.CANCEL:
         # TODO: Add notification related to command-line options for
         #       skipping the menu for this case.
         raise errors.Error(
@@ -873,7 +872,10 @@ def _restore_webroot_config(config, renewalparams):
             setattr(config.namespace, "webroot_map", renewalparams["webroot_map"])
     elif "webroot_path" in renewalparams:
         logger.info("Ancient renewal conf file without webroot-map, restoring webroot-path")
-        setattr(config.namespace, "webroot_path", renewalparams["webroot_path"])
+        wp = renewalparams["webroot_path"]
+        if isinstance(wp, str):  # prior to 0.1.0, webroot_path was a string
+            wp = [wp]
+        setattr(config.namespace, "webroot_path", wp)
 
 
 def _reconstitute(config, full_path):
@@ -984,10 +986,6 @@ def renew(config, unused_plugins):
                            "renew specific certificates, use the certonly "
                            "command. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
-    if config.csr is not None:
-        raise errors.Error("Currently, the renew verb cannot be used when "
-                           "specifying a CSR file. Please try the certonly "
-                           "command instead.")
     renewer_config = configuration.RenewerConfiguration(config)
     renew_successes = []
     renew_failures = []
@@ -1030,6 +1028,12 @@ def renew(config, unused_plugins):
     # Describe all the results
     _renew_describe_results(config, renew_successes, renew_failures,
                             renew_skipped, parse_failures)
+
+    if renew_failures or parse_failures:
+        raise errors.Error("{0} renew failure(s), {1} parse failure(s)".format(
+            len(renew_failures), len(parse_failures)))
+    else:
+        logger.debug("no renewal failures")
 
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
@@ -1245,6 +1249,12 @@ class HelpfulArgumentParser(object):
         Process a --csr flag. This needs to happen early enough that the
         webroot plugin can know about the calls to _process_domain
         """
+        if parsed_args.verb != "certonly":
+            raise errors.Error("Currently, a CSR file may only be specified "
+                               "when obtaining a new or replacement "
+                               "via the certonly command. Please try the "
+                               "certonly command instead.")
+
         try:
             csr = le_util.CSR(file=parsed_args.csr[0], data=parsed_args.csr[1], form="der")
             typ = OpenSSL.crypto.FILETYPE_ASN1
@@ -1972,17 +1982,6 @@ def main(cli_args=sys.argv[1:]):
     report = reporter.Reporter()
     zope.component.provideUtility(report)
     atexit.register(report.atexit_print_messages)
-
-    if not os.geteuid() == 0:
-        logger.warning(
-            "Root (sudo) is required to run most of letsencrypt functionality.")
-        # check must be done after arg parsing as --help should work
-        # w/o root; on the other hand, e.g. "letsencrypt run
-        # --authenticator dns" or "letsencrypt plugins" does not
-        # require root as well
-        #return (
-        #    "{0}Root is required to run letsencrypt.  Please use sudo.{0}"
-        #    .format(os.linesep))
 
     return config.func(config, plugins)
 

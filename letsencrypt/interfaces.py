@@ -169,7 +169,9 @@ class IAuthenticator(IPlugin):
               Authenticator will never be able to perform (error).
 
         :rtype: :class:`list` of
-            :class:`acme.challenges.ChallengeResponse`
+            :class:`acme.challenges.ChallengeResponse`,
+            where responses are required to be returned in
+            the same order as corresponding input challenges
 
         :raises .PluginError: If challenges cannot be performed
 

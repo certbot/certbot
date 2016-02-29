@@ -172,10 +172,6 @@ traceback2==1.4.0
 # sha256: IogqDkGMKE4fcYqCKzsCKUTVPS2QjhaQsxmp0-ssBXk
 unittest2==1.1.0
 
-# sha256: aUkbUwUVfDxuDwSnAZhNaud_1yn8HJrNJQd_HfOFMms
-# sha256: 619wCpv8lkILBVY1r5AC02YuQ9gMP_0x8iTCW8DV9GI
-Werkzeug==0.11.3
-
 # sha256: KCwRK1XdjjyGmjVx-GdnwVCrEoSprOK97CJsWSrK-Bo
 zope.component==4.2.2
 
@@ -208,14 +204,14 @@ mock==1.0.1
 # THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT,
 # ADD ALL DEPENDENCIES ABOVE
 
-# sha256: QMIkIvGF3mcJhGLAKRX7n5EVIPjOrfLtklN6ePjbJes
-# sha256: fNFWiij6VxfG5o7u3oNbtrYKQ4q9vhzOLATfxNlozvQ
-acme==0.3.0
+# sha256: ilvjjTWOS86xchl0WBZ0YOAw_0rmqdnjNsxb1hq2RD8
+# sha256: T37KMj0TnsuvHIzCCmoww2fpfpOBTj7cd4NAqucXcpw
+acme==0.4.0
 
-# sha256: qdnzpoRf_44QXKoktNoAKs2RBAxUta2Sr6GS0t_tAKo
-# sha256: ELWJaHNvBZIqVPJYkla8yXLtXIuamqAf6f_VAFv16Uk
-letsencrypt==0.3.0
+# sha256: 33BQiANlNLGqGpirTfdCEElTF9YbpaKiYpTbK4zeGD8
+# sha256: lwsV1OdEzzlMeb08C_PRxaCXZ2vOk_1AI2755rZHmPM
+letsencrypt==0.4.0
 
-# sha256: EypLpEw3-Tr8unw4aSFsHXgRiU8ZYLrJKOJohP2tC9M
-# sha256: HYvP13GzA-DDJYwlfOoaraJO0zuYO48TCSAyTUAGCqA
-letsencrypt-apache==0.3.0
+# sha256: D3YDaVFjLsMSEfjI5B5D5tn5FeWUtNHYXCObw3ih2tg
+# sha256: VTgvsePYGRmI4IOSAnxoYFHd8KciD73bxIuIHtbVFd8
+letsencrypt-apache==0.4.0

@@ -17,6 +17,7 @@ from letsencrypt import le_util
 logger = logging.getLogger(__name__)
 
 
+@zope.interface.implementer(interfaces.IReporter)
 class Reporter(object):
     """Collects and displays information to the user.
 
@@ -24,7 +25,6 @@ class Reporter(object):
         the user.
 
     """
-    zope.interface.implements(interfaces.IReporter)
 
     HIGH_PRIORITY = 0
     """High priority constant. See `add_message`."""

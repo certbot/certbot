@@ -54,6 +54,23 @@ CLI_DEFAULTS_GENTOO = dict(
     MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
     "letsencrypt_apache", "options-ssl-apache.conf")
 )
+CLI_DEFAULTS_DARWIN = dict(
+    server_root="/etc/apache2",
+    vhost_root="/etc/apache2/other",
+    vhost_files="*.conf",
+    version_cmd=['/usr/sbin/httpd', '-v'],
+    define_cmd=['/usr/sbin/httpd', '-t', '-D', 'DUMP_RUN_CFG'],
+    restart_cmd=['apachectl', 'graceful'],
+    conftest_cmd=['apachectl', 'configtest'],
+    enmod=None,
+    dismod=None,
+    le_vhost_ext="-le-ssl.conf",
+    handle_mods=False,
+    handle_sites=False,
+    challenge_location="/etc/apache2/other",
+    MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
+    "letsencrypt_apache", "options-ssl-apache.conf")
+)
 CLI_DEFAULTS = {
     "debian": CLI_DEFAULTS_DEBIAN,
     "ubuntu": CLI_DEFAULTS_DEBIAN,
@@ -61,7 +78,8 @@ CLI_DEFAULTS = {
     "centos linux": CLI_DEFAULTS_CENTOS,
     "fedora": CLI_DEFAULTS_CENTOS,
     "red hat enterprise linux server": CLI_DEFAULTS_CENTOS,
-    "gentoo base system": CLI_DEFAULTS_GENTOO
+    "gentoo base system": CLI_DEFAULTS_GENTOO,
+    "darwin": CLI_DEFAULTS_DARWIN,
 }
 """CLI defaults."""
 

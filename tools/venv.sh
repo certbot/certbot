@@ -3,9 +3,9 @@
 
 export VENV_ARGS="--python python2"
 
-./bootstrap/dev/_venv_common.sh \
-  -e acme[testing] \
-  -e .[dev,docs,testing] \
+./tools/_venv_common.sh \
+  -e acme[dev] \
+  -e .[dev,docs] \
   -e letsencrypt-apache \
   -e letsencrypt-nginx \
   -e letshelp-letsencrypt \

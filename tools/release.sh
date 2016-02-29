@@ -188,10 +188,13 @@ while ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
    read -p "Please correctly sign letsencrypt-auto with offline-signrequest.sh"
 done
 
+# copy leauto to the root, overwriting the previous release version
+cp -p letsencrypt-auto-source/letsencrypt-auto letsencrypt-auto
+
+git add letsencrypt-auto letsencrypt-auto-source
 git diff --cached
 git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"
-git tag --local-user "$RELEASE_GPG_KEY" \
-    --sign --message "Release $version" "$tag"
+git tag --local-user "$RELEASE_GPG_KEY" --sign --message "Release $version" "$tag"
 
 cd ..
 echo Now in $PWD

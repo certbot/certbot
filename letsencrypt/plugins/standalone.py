@@ -135,6 +135,8 @@ def supported_challenges_validator(data):
     return data
 
 
+@zope.interface.implementer(interfaces.IAuthenticator)
+@zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(common.Plugin):
     """Standalone Authenticator.
 
@@ -143,8 +145,6 @@ class Authenticator(common.Plugin):
     challenges from the certificate authority. Therefore, it does not
     rely on any existing server program.
     """
-    zope.interface.implements(interfaces.IAuthenticator)
-    zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "Automatically use a temporary webserver"
 

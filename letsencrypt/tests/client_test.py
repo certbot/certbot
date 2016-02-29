@@ -74,6 +74,23 @@ class RegisterTest(unittest.TestCase):
         self.config.email = None
         self.assertRaises(errors.Error, self._call)
 
+    @mock.patch("letsencrypt.client.logger")
+    def test_without_email(self, mock_logger):
+        with mock.patch("letsencrypt.client.acme_client.Client"):
+            with mock.patch("letsencrypt.account.report_new_account"):
+                self.config.email = None
+                self.config.register_unsafely_without_email = True
+                self._call()
+                mock_logger.warn.assert_called_once_with(mock.ANY)
+
+    def test_unsupported_error(self):
+        from acme import messages
+        msg = "Test"
+        mx_err = messages.Error(detail=msg, typ="malformed", title="title")
+        with mock.patch("letsencrypt.client.acme_client.Client") as mock_client:
+            mock_client().register.side_effect = [mx_err, mock.MagicMock()]
+            self.assertRaises(messages.Error, self._call)
+
 class ClientTest(unittest.TestCase):
     """Tests for letsencrypt.client.Client."""
 
@@ -110,12 +127,16 @@ class ClientTest(unittest.TestCase):
         self.acme.fetch_chain.assert_called_once_with(mock.sentinel.certr)
 
     # FIXME move parts of this to test_cli.py...
+    @mock.patch("letsencrypt.client.logger")
     @mock.patch("letsencrypt.cli._process_domain")
-    def test_obtain_certificate_from_csr(self, mock_process_domain):
+    def test_obtain_certificate_from_csr(self, mock_process_domain, mock_logger):
         self._mock_obtain_certificate()
         from letsencrypt import cli
         test_csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
         mock_parsed_args = mock.MagicMock()
+        # The CLI should believe that this is a certonly request, because
+        # a CSR would not be allowed with other kinds of requests!
+        mock_parsed_args.verb = "certonly"
         with mock.patch("letsencrypt.client.le_util.CSR") as mock_CSR:
             mock_CSR.return_value = test_csr
             mock_parsed_args.domains = self.eg_domains[:]
@@ -136,6 +157,14 @@ class ClientTest(unittest.TestCase):
             # and that the cert was obtained correctly
             self._check_obtain_certificate()
 
+            # Test for no auth_handler
+            self.client.auth_handler = None
+            self.assertRaises(
+                errors.Error,
+                self.client.obtain_certificate_from_csr,
+                self.eg_domains,
+                test_csr)
+            mock_logger.warning.assert_called_once_with(mock.ANY)
 
     @mock.patch("letsencrypt.client.crypto_util")
     def test_obtain_certificate(self, mock_crypto_util):

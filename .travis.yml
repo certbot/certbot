@@ -30,28 +30,27 @@ matrix:
       env: TOXENV=py26 BOULDER_INTEGRATION=1
     - python: "2.6"
       env: TOXENV=py26-oldest BOULDER_INTEGRATION=1
-# Disabled for now due to requiring sudo -> causing more boulder integration
-# DNS timeouts :(
-#   - python: "2.7"
-#     env: TOXENV=apacheconftest
+    - python: "2.7"
+      env: TOXENV=apacheconftest
+      sudo: required
     - python: "2.7"
       env: TOXENV=py27 BOULDER_INTEGRATION=1
     - python: "2.7"
       env: TOXENV=py27-oldest BOULDER_INTEGRATION=1
     - python: "2.7"
-      env: TOXENV=cover
-    - python: "2.7"
       env: TOXENV=lint
+    - sudo: required
+      env: TOXENV=le_auto
+      services: docker
+      before_install:
+    - python: "2.7"
+      env: TOXENV=cover
     - python: "3.3"
       env: TOXENV=py33
     - python: "3.4"
       env: TOXENV=py34
     - python: "3.5"
       env: TOXENV=py35
-    - sudo: required
-      env: TOXENV=le_auto
-      services: docker
-      before_install:
 
 # Only build pushes to the master branch, PRs, and branches beginning with
 # `test-`. This reduces the number of simultaneous Travis runs, which speeds
@@ -65,9 +64,14 @@ branches:
 sudo: false
 
 addons:
-  # make sure simplehttp simple verification works (custom /etc/hosts)
+  # Custom /etc/hosts required for simple verification of http-01
+  # and tls-sni-01, and for letsencrypt_test_nginx
   hosts:
     - le.wtf
+    - le1.wtf
+    - le2.wtf
+    - le3.wtf
+    - nginx.wtf
   mariadb: "10.0"
   apt:
     sources:

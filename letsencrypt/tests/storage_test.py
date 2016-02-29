@@ -1,13 +1,13 @@
 """Tests for letsencrypt.storage."""
 import datetime
-import pytz
 import os
-import tempfile
 import shutil
+import tempfile
 import unittest
 
 import configobj
 import mock
+import pytz
 
 from letsencrypt import configuration
 from letsencrypt import errors
@@ -684,6 +684,10 @@ class RenewableCertTests(BaseRenewableCertTest):
 
     def test_missing_cert(self):
         from letsencrypt import storage
+        self.assertRaises(errors.CertStorageError,
+                          storage.RenewableCert,
+                          self.config.filename, self.cli_config)
+        os.symlink("missing", self.config[ALL_FOUR[0]])
         self.assertRaises(errors.CertStorageError,
                           storage.RenewableCert,
                           self.config.filename, self.cli_config)
