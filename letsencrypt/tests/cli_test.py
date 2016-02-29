@@ -13,7 +13,7 @@ import mock
 
 from acme import jose
 
-from letsencrypt import account
+from letsencrypt import account, main
 from letsencrypt import cli
 from letsencrypt import configuration
 from letsencrypt import constants
@@ -60,7 +60,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         args = self.standard_args + args
         with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
             with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
-                ret = cli.main(args[:])  # NOTE: parser can alter its args!
+                ret = main.main(args[:])  # NOTE: parser can alter its args!
         return ret, stdout, stderr
 
     def _call_stdout(self, args):
@@ -71,7 +71,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         args = self.standard_args + args
         with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
             with mock.patch('letsencrypt.cli.client') as client:
-                ret = cli.main(args[:])  # NOTE: parser can alter its args!
+                ret = main.main(args[:])  # NOTE: parser can alter its args!
         return ret, None, stderr, client
 
     def test_no_flags(self):
@@ -136,7 +136,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         exc = None
         try:
             with mock.patch('letsencrypt.cli.sys.stderr'):
-                cli.main(self.standard_args + args[:])  # NOTE: parser can alter its args!
+                main.main(self.standard_args + args[:])  # NOTE: parser can alter its args!
         except errors.MissingCommandlineFlag as exc:
             self.assertTrue(message in str(exc))
         self.assertTrue(exc is not None)
@@ -459,7 +459,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         if domains_arg:
             webroot_map_args.extend(["-d", domains_arg])
         namespace = parse(webroot_map_args)
-        domains = cli._find_domains(namespace, mock.MagicMock()) # pylint: disable=protected-access
+        domains = main._find_domains(namespace, mock.MagicMock()) # pylint: disable=protected-access
         self.assertEqual(namespace.webroot_map, expected_map)
         self.assertEqual(set(domains), set(expectect_domains))
 
@@ -835,7 +835,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with mock.patch('letsencrypt.cli.open', mock_open, create=True):
             exception = Exception('detail')
             config.verbose_count = 1
-            cli._handle_exception(
+            main._handle_exception(
                 Exception, exc_value=exception, trace=None, config=None)
             mock_open().write.assert_called_once_with(''.join(
                 traceback.format_exception_only(Exception, exception)))
@@ -845,7 +845,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with mock.patch('letsencrypt.cli.open', mock_open, create=True):
             mock_open.side_effect = [KeyboardInterrupt]
             error = errors.Error('detail')
-            cli._handle_exception(
+            main._handle_exception(
                 errors.Error, exc_value=error, trace=None, config=None)
             # assert_any_call used because sys.exit doesn't exit in cli.py
             mock_sys.exit.assert_any_call(''.join(
@@ -854,7 +854,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         exception = messages.Error(detail='alpha', typ='urn:acme:error:triffid',
                                    title='beta')
         config = mock.MagicMock(debug=False, verbose_count=-3)
-        cli._handle_exception(
+        main._handle_exception(
             messages.Error, exc_value=exception, trace=None, config=config)
         error_msg = mock_sys.exit.call_args_list[-1][0][0]
         self.assertTrue('unexpected error' in error_msg)
@@ -862,7 +862,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue('alpha' in error_msg)
         self.assertTrue('beta' in error_msg)
         config = mock.MagicMock(debug=False, verbose_count=1)
-        cli._handle_exception(
+        main._handle_exception(
             messages.Error, exc_value=exception, trace=None, config=config)
         error_msg = mock_sys.exit.call_args_list[-1][0][0]
         self.assertTrue('unexpected error' in error_msg)
@@ -870,7 +870,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue('alpha' in error_msg)
 
         interrupt = KeyboardInterrupt('detail')
-        cli._handle_exception(
+        main._handle_exception(
             KeyboardInterrupt, exc_value=interrupt, trace=None, config=None)
         mock_sys.exit.assert_called_with(''.join(
             traceback.format_exception_only(KeyboardInterrupt, interrupt)))
@@ -909,7 +909,7 @@ class DetermineAccountTest(unittest.TestCase):
         from letsencrypt.cli import _determine_account
         with mock.patch('letsencrypt.cli.account.AccountFileStorage') as mock_storage:
             mock_storage.return_value = self.account_storage
-            return _determine_account(self.config)
+            return main._determine_account(self.config)
 
     def test_args_account_set(self):
         self.account_storage.save(self.accs[1])
@@ -977,24 +977,24 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
             f.write(test_cert)
 
         # No overlap at all
-        result = _find_duplicative_certs(
+        result = main._find_duplicative_certs(
             self.cli_config, ['wow.net', 'hooray.org'])
         self.assertEqual(result, (None, None))
 
         # Totally identical
-        result = _find_duplicative_certs(
+        result = main._find_duplicative_certs(
             self.cli_config, ['example.com', 'www.example.com'])
         self.assertTrue(result[0].configfile.filename.endswith('example.org.conf'))
         self.assertEqual(result[1], None)
 
         # Superset
-        result = _find_duplicative_certs(
+        result = main._find_duplicative_certs(
             self.cli_config, ['example.com', 'www.example.com', 'something.new'])
         self.assertEqual(result[0], None)
         self.assertTrue(result[1].configfile.filename.endswith('example.org.conf'))
 
         # Partial overlap doesn't count
-        result = _find_duplicative_certs(
+        result = main._find_duplicative_certs(
             self.cli_config, ['example.com', 'something.new'])
         self.assertEqual(result, (None, None))
 
