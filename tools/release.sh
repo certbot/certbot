@@ -168,7 +168,7 @@ for pkg in acme letsencrypt letsencrypt-apache ; do
     echo $pkg==$version
 done > /tmp/hashes.$$
 
-if ! wc -l /tmp/hashes.$$ | grep -qE "^12 " ; then
+if ! wc -l /tmp/hashes.$$ | grep -qE "^\s*12 " ; then
     echo Unexpected peep hash output
     exit 1
 fi
