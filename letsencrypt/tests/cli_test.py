@@ -13,13 +13,14 @@ import mock
 
 from acme import jose
 
-from letsencrypt import account, main
+from letsencrypt import account
 from letsencrypt import cli
 from letsencrypt import configuration
 from letsencrypt import constants
 from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import le_util
+from letsencrypt import main
 from letsencrypt import storage
 
 from letsencrypt.plugins import disco
@@ -906,10 +907,10 @@ class DetermineAccountTest(unittest.TestCase):
 
     def _call(self):
         # pylint: disable=protected-access
-        from letsencrypt.cli import _determine_account
+        from letsencrypt.main import _determine_account
         with mock.patch('letsencrypt.cli.account.AccountFileStorage') as mock_storage:
             mock_storage.return_value = self.account_storage
-            return main._determine_account(self.config)
+            return _determine_account(self.config)
 
     def test_args_account_set(self):
         self.account_storage.save(self.accs[1])
@@ -971,30 +972,30 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
 
     @mock.patch('letsencrypt.le_util.make_or_verify_dir')
     def test_find_duplicative_names(self, unused_makedir):
-        from letsencrypt.cli import _find_duplicative_certs
+        from letsencrypt.main import _find_duplicative_certs
         test_cert = test_util.load_vector('cert-san.pem')
         with open(self.test_rc.cert, 'w') as f:
             f.write(test_cert)
 
         # No overlap at all
-        result = main._find_duplicative_certs(
+        result = _find_duplicative_certs(
             self.cli_config, ['wow.net', 'hooray.org'])
         self.assertEqual(result, (None, None))
 
         # Totally identical
-        result = main._find_duplicative_certs(
+        result = _find_duplicative_certs(
             self.cli_config, ['example.com', 'www.example.com'])
         self.assertTrue(result[0].configfile.filename.endswith('example.org.conf'))
         self.assertEqual(result[1], None)
 
         # Superset
-        result = main._find_duplicative_certs(
+        result = _find_duplicative_certs(
             self.cli_config, ['example.com', 'www.example.com', 'something.new'])
         self.assertEqual(result[0], None)
         self.assertTrue(result[1].configfile.filename.endswith('example.org.conf'))
 
         # Partial overlap doesn't count
-        result = main._find_duplicative_certs(
+        result = _find_duplicative_certs(
             self.cli_config, ['example.com', 'something.new'])
         self.assertEqual(result, (None, None))
 

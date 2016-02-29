@@ -1,16 +1,13 @@
-"""Let's Encrypt CLI."""
+"""Let's Encrypt command CLI argument processing."""
 from __future__ import print_function
 import argparse
-import atexit
 import copy
-import functools
 import glob
 import json
 import logging
 import logging.handlers
 import os
 import sys
-import time
 import traceback
 
 import configargparse
@@ -19,31 +16,19 @@ import zope.component
 import zope.interface.exceptions
 import zope.interface.verify
 
-from letsencrypt import account
-from letsencrypt import colored_logging
+import letsencrypt
+
 from letsencrypt import configuration
 from letsencrypt import constants
-from letsencrypt import client
 from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
-from letsencrypt import log
 from letsencrypt import main
-from letsencrypt import reporter
 from letsencrypt import storage
 
-from letsencrypt.display import util as display_util
 from letsencrypt.display import ops as display_ops
 from letsencrypt.plugins import disco as plugins_disco
-
-# TODO: Sanity check all input.  Be sure to avoid shell code etc...
-# pylint: disable=too-many-lines
-# (TODO: split this file into main.py and cli.py)
-
-
-
-
 
 
 logger = logging.getLogger(__name__)
@@ -1321,10 +1306,3 @@ class DomainFlagProcessor(argparse.Action):  # pylint: disable=missing-docstring
     def __call__(self, parser, args, domain_arg, option_string=None):
         """Just wrap process_domain in argparseese."""
         process_domain(args, domain_arg)
-
-
-if __name__ == "__main__":
-    err_string = main.main()
-    if err_string:
-        logger.warn("Exiting with message %s", err_string)
-    sys.exit(err_string)  # pragma: no cover

@@ -1,9 +1,12 @@
+"""Let's Encrypt main entry point."""
 from __future__ import print_function
 import atexit
 import functools
 import os
 import sys
 import zope.component
+
+import letsencrypt
 
 from letsencrypt import account
 from letsencrypt import client
@@ -694,3 +697,9 @@ def main(cli_args=sys.argv[1:]):
     atexit.register(report.atexit_print_messages)
 
     return config.func(config, plugins)
+
+if __name__ == "__main__":
+    err_string = main()
+    if err_string:
+        logger.warn("Exiting with message %s", err_string)
+    sys.exit(err_string)  # pragma: no cover
