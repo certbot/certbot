@@ -164,7 +164,7 @@ deactivate
 # pin peep hashes of the things we just built
 for pkg in acme letsencrypt letsencrypt-apache ; do
     echo
-    peep hash dist."$version/$pkg"/*.{whl,gz}
+    letsencrypt-auto-source/pieces/peep.py hash dist."$version/$pkg"/*.{whl,gz}
     echo $pkg==$version
 done > /tmp/hashes.$$
 
