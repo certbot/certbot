@@ -182,10 +182,6 @@ class Client(object):
             acme = acme_from_config_key(config, self.account.key)
         self.acme = acme
 
-        # TODO: Check if self.config.enroll_autorenew is None. If
-        # so, set it based to the default: figure out if dv_auth is
-        # standalone (then default is False, otherwise default is True)
-
         if dv_auth is not None:
             self.auth_handler = auth_handler.AuthHandler(
                 dv_auth, self.acme, self.account)
