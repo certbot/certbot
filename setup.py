@@ -39,7 +39,7 @@ install_requires = [
     'ConfigArgParse>=0.9.3',
     'configobj',
     'cryptography>=0.7',  # load_pem_x509_certificate
-    'parsedatetime',
+    'parsedatetime<2.0',  # parsedatetime 2.0 doesn't work on py26
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
     'PyOpenSSL',
     'pyrfc3339',
