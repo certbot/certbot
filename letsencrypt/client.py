@@ -162,7 +162,7 @@ class Client(object):
     :ivar .AuthHandler auth_handler: Authorizations handler that will
         dispatch DV and Continuity challenges to appropriate
         authenticators (providing `.IAuthenticator` interface).
-    :ivar .IAuthenticator dv_auth: Prepared (`.IAuthenticator.prepare`)
+    :ivar .IAuthenticator auth: Prepared (`.IAuthenticator.prepare`)
         authenticator that can solve the `.constants.DV_CHALLENGES`.
     :ivar .IInstaller installer: Installer.
     :ivar acme.client.Client acme: Optional ACME client API handle.
@@ -170,11 +170,11 @@ class Client(object):
 
     """
 
-    def __init__(self, config, account_, dv_auth, installer, acme=None):
+    def __init__(self, config, account_, auth, installer, acme=None):
         """Initialize a client."""
         self.config = config
         self.account = account_
-        self.dv_auth = dv_auth
+        self.auth = auth
         self.installer = installer
 
         # Initialize ACME if account is provided
@@ -182,9 +182,9 @@ class Client(object):
             acme = acme_from_config_key(config, self.account.key)
         self.acme = acme
 
-        if dv_auth is not None:
+        if auth is not None:
             self.auth_handler = auth_handler.AuthHandler(
-                dv_auth, self.acme, self.account)
+                auth, self.acme, self.account)
         else:
             self.auth_handler = None
 
