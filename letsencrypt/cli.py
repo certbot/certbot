@@ -872,7 +872,10 @@ def _restore_webroot_config(config, renewalparams):
             setattr(config.namespace, "webroot_map", renewalparams["webroot_map"])
     elif "webroot_path" in renewalparams:
         logger.info("Ancient renewal conf file without webroot-map, restoring webroot-path")
-        setattr(config.namespace, "webroot_path", renewalparams["webroot_path"])
+        wp = renewalparams["webroot_path"]
+        if isinstance(wp, str):  # prior to 0.1.0, webroot_path was a string
+            wp = [wp]
+        setattr(config.namespace, "webroot_path", wp)
 
 
 def _reconstitute(config, full_path):
