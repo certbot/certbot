@@ -31,16 +31,17 @@ class ChallengeFactoryTest(unittest.TestCase):
             [messages.STATUS_PENDING] * 6, False)
 
     def test_all(self):
-        dv_c = self.handler._challenge_factory(
+        achalls = self.handler._challenge_factory(
             self.dom, range(0, len(acme_util.CHALLENGES)))
 
         self.assertEqual(
-            [achall.chall for achall in dv_c], acme_util.DV_CHALLENGES)
+            [achall.chall for achall in achalls], acme_util.DV_CHALLENGES)
 
-    def test_one_dv(self):
-        dv_c = self.handler._challenge_factory(self.dom, [1, 3])
+    def test_one_tls_sni(self):
+        achalls = self.handler._challenge_factory(self.dom, [1, 3])
 
-        self.assertEqual([achall.chall for achall in dv_c], [acme_util.TLSSNI01])
+        self.assertEqual(
+            [achall.chall for achall in achalls], [acme_util.TLSSNI01])
 
     def test_unrecognized(self):
         self.handler.authzr["failure.com"] = acme_util.gen_authzr(
@@ -62,17 +63,17 @@ class GetAuthorizationsTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.auth_handler import AuthHandler
 
-        self.mock_dv_auth = mock.MagicMock(name="ApacheConfigurator")
+        self.mock_auth = mock.MagicMock(name="ApacheConfigurator")
 
-        self.mock_dv_auth.get_chall_pref.return_value = [challenges.TLSSNI01]
+        self.mock_auth.get_chall_pref.return_value = [challenges.TLSSNI01]
 
-        self.mock_dv_auth.perform.side_effect = gen_auth_resp
+        self.mock_auth.perform.side_effect = gen_auth_resp
 
         self.mock_account = mock.Mock(key=le_util.Key("file_path", "PEM"))
         self.mock_net = mock.MagicMock(spec=acme_client.Client)
 
         self.handler = AuthHandler(
-            self.mock_dv_auth, self.mock_net, self.mock_account)
+            self.mock_auth, self.mock_net, self.mock_account)
 
         logging.disable(logging.CRITICAL)
 
@@ -95,10 +96,10 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.assertEqual(chall_update.keys(), ["0"])
         self.assertEqual(len(chall_update.values()), 1)
 
-        self.assertEqual(self.mock_dv_auth.cleanup.call_count, 1)
+        self.assertEqual(self.mock_auth.cleanup.call_count, 1)
         # Test if list first element is TLSSNI01, use typ because it is an achall
         self.assertEqual(
-            self.mock_dv_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
+            self.mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
 
         self.assertEqual(len(authzr), 1)
 
@@ -108,8 +109,8 @@ class GetAuthorizationsTest(unittest.TestCase):
             gen_dom_authzr, challs=acme_util.DV_CHALLENGES, combos=False)
 
         mock_poll.side_effect = self._validate_all
-        self.mock_dv_auth.get_chall_pref.return_value.append(challenges.HTTP01)
-        self.mock_dv_auth.get_chall_pref.return_value.append(challenges.DNS)
+        self.mock_auth.get_chall_pref.return_value.append(challenges.HTTP01)
+        self.mock_auth.get_chall_pref.return_value.append(challenges.DNS)
 
         authzr = self.handler.get_authorizations(["0"])
 
@@ -120,9 +121,9 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.assertEqual(chall_update.keys(), ["0"])
         self.assertEqual(len(chall_update.values()), 1)
 
-        self.assertEqual(self.mock_dv_auth.cleanup.call_count, 1)
+        self.assertEqual(self.mock_auth.cleanup.call_count, 1)
         # Test if list first element is TLSSNI01, use typ because it is an achall
-        for achall in self.mock_dv_auth.cleanup.call_args[0][0]:
+        for achall in self.mock_auth.cleanup.call_args[0][0]:
             self.assertTrue(achall.typ in ["tls-sni-01", "http-01", "dns"])
 
         self.assertEqual(len(authzr), 1)
@@ -149,14 +150,14 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.assertTrue("2" in chall_update.keys())
         self.assertEqual(len(chall_update["2"]), 1)
 
-        self.assertEqual(self.mock_dv_auth.cleanup.call_count, 1)
+        self.assertEqual(self.mock_auth.cleanup.call_count, 1)
 
         self.assertEqual(len(authzr), 3)
 
     def test_perform_failure(self):
         self.mock_net.request_domain_challenges.side_effect = functools.partial(
             gen_dom_authzr, challs=acme_util.DV_CHALLENGES)
-        self.mock_dv_auth.perform.side_effect = errors.AuthorizationError
+        self.mock_auth.perform.side_effect = errors.AuthorizationError
 
         self.assertRaises(
             errors.AuthorizationError, self.handler.get_authorizations, ["0"])
