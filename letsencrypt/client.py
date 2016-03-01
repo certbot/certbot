@@ -160,8 +160,8 @@ class Client(object):
     :ivar .IConfig config: Client configuration.
     :ivar .Account account: Account registered with `register`.
     :ivar .AuthHandler auth_handler: Authorizations handler that will
-        dispatch DV and Continuity challenges to appropriate
-        authenticators (providing `.IAuthenticator` interface).
+        dispatch DV challenges to appropriate authenticators
+        (providing `.IAuthenticator` interface).
     :ivar .IAuthenticator auth: Prepared (`.IAuthenticator.prepare`)
         authenticator that can solve the `.constants.DV_CHALLENGES`.
     :ivar .IInstaller installer: Installer.
