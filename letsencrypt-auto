@@ -18,25 +18,31 @@ set -e  # Work even if somebody does "sh thisscript.sh".
 XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
-VENV_BIN=${VENV_PATH}/bin
-LE_AUTO_VERSION="0.4.0"
+VENV_BIN="$VENV_PATH/bin"
+LE_AUTO_VERSION="0.4.1"
 
 # This script takes the same arguments as the main letsencrypt program, but it
 # additionally responds to --verbose (more output) and --debug (allow support
 # for experimental platforms)
 for arg in "$@" ; do
-  # This first clause is redundant with the third, but hedging on portability
-  if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- "-v+$" ; then
-    VERBOSE=1
-  elif [ "$arg" = "--no-self-upgrade" ] ; then
-    # Do not upgrade this script (also prevents client upgrades, because each
-    # copy of the script pins a hash of the python client)
-    NO_SELF_UPGRADE=1
-  elif [ "$arg" = "--os-packages-only" ] ; then
-    OS_PACKAGES_ONLY=1
-  elif [ "$arg" = "--debug" ]; then
-    DEBUG=1
-  fi
+  case "$arg" in
+    --debug)
+      DEBUG=1;;
+    --os-packages-only)
+      OS_PACKAGES_ONLY=1;;
+    --no-self-upgrade)
+      # Do not upgrade this script (also prevents client upgrades, because each
+      # copy of the script pins a hash of the python client)
+      NO_SELF_UPGRADE=1;;
+    --verbose)
+      VERBOSE=1;;
+    [!-]*|-*[!v]*|-)
+      # Anything that isn't -v, -vv, etc.: that is, anything that does not
+      # start with a -, contains anything that's not a v, or is just "-"
+      ;;
+    *)  # -v+ remains.
+      VERBOSE=1;;
+  esac
 done
 
 # letsencrypt-auto needs root access to bootstrap OS dependencies, and
@@ -91,21 +97,18 @@ ExperimentalBootstrap() {
 }
 
 DeterminePythonVersion() {
-  if command -v python2.7 > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python2.7}
-  elif command -v python27 > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python27}
-  elif command -v python2 > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python2}
-  elif command -v python > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python}
-  else
-    echo "Cannot find any Pythons... please install one!"
+  for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
+    # Break (while keeping the LE_PYTHON value) if found.
+    command -v "$LE_PYTHON" > /dev/null && break
+  done
+  if [ "$?" != "0" ]; then
+    echo "Cannot find any Pythons; please install one!"
     exit 1
   fi
+  export LE_PYTHON
 
-  PYVER=`"$LE_PYTHON" --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
-  if [ $PYVER -lt 26 ]; then
+  PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
+  if [ "$PYVER" -lt 26 ]; then
     echo "You have an ancient version of Python entombed in your operating system..."
     echo "This isn't going to work; you'll need at least version 2.6."
     exit 1
@@ -165,7 +168,7 @@ BootstrapDebCommon() {
                   /bin/echo '(Backports are only installed if explicitly requested via "apt-get install -t wheezy-backports")'
               fi
 
-              sudo sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
+              $SUDO sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
               $SUDO apt-get update
           fi
       fi
@@ -304,10 +307,11 @@ BootstrapArchCommon() {
     pkg-config
   "
 
-  missing=$("$SUDO" pacman -T $deps)
+  # pacman -T exits with 127 if there are missing dependencies
+  missing=$($SUDO pacman -T $deps) || true
 
   if [ "$missing" ]; then
-    "$SUDO" pacman -S --needed $missing
+    $SUDO pacman -S --needed $missing
   fi
 }
 
@@ -324,19 +328,19 @@ BootstrapGentooCommon() {
 
   case "$PACKAGE_MANAGER" in
     (paludis)
-      "$SUDO" cave resolve --keep-targets if-possible $PACKAGES -x
+      $SUDO cave resolve --preserve-world --keep-targets if-possible $PACKAGES -x
       ;;
     (pkgcore)
-      "$SUDO" pmerge --noreplace $PACKAGES
+      $SUDO pmerge --noreplace --oneshot $PACKAGES
       ;;
     (portage|*)
-      "$SUDO" emerge --noreplace $PACKAGES
+      $SUDO emerge --noreplace --oneshot $PACKAGES
       ;;
   esac
 }
 
 BootstrapFreeBsd() {
-  "$SUDO" pkg install -Ay \
+  $SUDO pkg install -Ay \
     python \
     py27-virtualenv \
     augeas \
@@ -345,20 +349,27 @@ BootstrapFreeBsd() {
 
 BootstrapMac() {
   if ! hash brew 2>/dev/null; then
-      echo "Homebrew Not Installed\nDownloading..."
+      echo "Homebrew not installed.\nDownloading..."
       ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
   fi
 
-  brew install augeas
-  brew install dialog
+  if [ -z "$(brew list --versions augeas)" ]; then
+      echo "augeas not installed.\nInstalling augeas from Homebrew..."
+      brew install augeas
+  fi
 
-  if ! hash pip 2>/dev/null; then
-      echo "pip Not Installed\nInstalling python from Homebrew..."
+  if [ -z "$(brew list --versions dialog)" ]; then
+      echo "dialog not installed.\nInstalling dialog from Homebrew..."
+      brew install dialog
+  fi
+
+  if [ -z "$(brew list --versions python)" ]; then
+      echo "python not installed.\nInstalling python from Homebrew..."
       brew install python
   fi
 
   if ! hash virtualenv 2>/dev/null; then
-      echo "virtualenv Not Installed\nInstalling with pip"
+      echo "virtualenv not installed.\nInstalling with pip..."
       pip install virtualenv
   fi
 }
@@ -412,9 +423,10 @@ TempDir() {
 
 
 
-if [ "$NO_SELF_UPGRADE" = 1 ]; then
+if [ "$1" = "--le-auto-phase2" ]; then
   # Phase 2: Create venv, install LE, and run.
 
+  shift 1  # the --le-auto-phase2 arg
   if [ -f "$VENV_BIN/letsencrypt" ]; then
     INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | cut -d " " -f 2)
   else
@@ -609,10 +621,6 @@ traceback2==1.4.0
 # sha256: IogqDkGMKE4fcYqCKzsCKUTVPS2QjhaQsxmp0-ssBXk
 unittest2==1.1.0
 
-# sha256: aUkbUwUVfDxuDwSnAZhNaud_1yn8HJrNJQd_HfOFMms
-# sha256: 619wCpv8lkILBVY1r5AC02YuQ9gMP_0x8iTCW8DV9GI
-Werkzeug==0.11.3
-
 # sha256: KCwRK1XdjjyGmjVx-GdnwVCrEoSprOK97CJsWSrK-Bo
 zope.component==4.2.2
 
@@ -638,21 +646,24 @@ zope.event==4.1.0
 # sha256: sJyMHUezUxxADgGVaX8UFKYyId5u9HhZik8UYPfZo5I
 zope.interface==4.1.3
 
-# sha256: ilvjjTWOS86xchl0WBZ0YOAw_0rmqdnjNsxb1hq2RD8
-# sha256: T37KMj0TnsuvHIzCCmoww2fpfpOBTj7cd4NAqucXcpw
-acme==0.4.0
-
-# sha256: 33BQiANlNLGqGpirTfdCEElTF9YbpaKiYpTbK4zeGD8
-# sha256: lwsV1OdEzzlMeb08C_PRxaCXZ2vOk_1AI2755rZHmPM
-letsencrypt==0.4.0
-
-# sha256: D3YDaVFjLsMSEfjI5B5D5tn5FeWUtNHYXCObw3ih2tg
-# sha256: VTgvsePYGRmI4IOSAnxoYFHd8KciD73bxIuIHtbVFd8
-letsencrypt-apache==0.4.0
-
 # sha256: uDndLZwRfHAUMMFJlWkYpCOphjtIsJyQ4wpgE-fS9E8
 # sha256: j4MIDaoknQNsvM-4rlzG_wB7iNbZN1ITca-r57Gbrbw
 mock==1.0.1
+
+# THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT;
+# ADD ALL DEPENDENCIES ABOVE
+
+# sha256: zd_qpRKPaFs00y5hex5Rbu5CVLWzed7pBGL28juxoHM
+# sha256: 18Gfo85AbZXE46GyTkyePthTNiUeoGTQNcXlSvmRQvM
+acme==0.4.1
+
+# sha256: wIuGh8yh1TeOClXW0qLz70bKeM9Ax4bfFNrkKSDjbbo
+# sha256: 7TeAUt8cZ0IZQuQNuUm8MoH8vPWlKaCrwWAkdCEs_5s
+letsencrypt==0.4.1
+
+# sha256: bnpKXJTXy9cFSktJLtvTCTovJJybc__Ivqs6XaXxk9U
+# sha256: bcvJ6j5UB8sOJ_M88DAsqvmaLxD2UnAP9ys-_J6Bdcc
+letsencrypt-apache==0.4.1
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -745,6 +756,7 @@ except ImportError:
         from pip.util import url_to_path  # 0.7.0
     except ImportError:
         from pip.util import url_to_filename as url_to_path  # 0.6.2
+from pip.exceptions import InstallationError
 from pip.index import PackageFinder, Link
 try:
     from pip.log import logger
@@ -763,7 +775,7 @@ except ImportError:
 
     DownloadProgressBar = DownloadProgressSpinner = NullProgressBar
 
-__version__ = 3, 0, 0
+__version__ = 3, 1, 1
 
 try:
     from pip.index import FormatControl  # noqa
@@ -781,6 +793,7 @@ ITS_FINE_ITS_FINE = 0
 SOMETHING_WENT_WRONG = 1
 # "Traditional" for command-line errors according to optparse docs:
 COMMAND_LINE_ERROR = 2
+UNHANDLED_EXCEPTION = 3
 
 ARCHIVE_EXTENSIONS = ('.tar.bz2', '.tar.gz', '.tgz', '.tar', '.zip')
 
@@ -1543,7 +1556,7 @@ def peep_install(argv):
             first_every_last(buckets[SatisfiedReq], *printers)
 
         return ITS_FINE_ITS_FINE
-    except (UnsupportedRequirementError, DownloadError) as exc:
+    except (UnsupportedRequirementError, InstallationError, DownloadError) as exc:
         out(str(exc))
         return SOMETHING_WENT_WRONG
     finally:
@@ -1563,16 +1576,23 @@ def peep_port(paths):
         print('Please specify one or more requirements files so I have '
               'something to port.\n')
         return COMMAND_LINE_ERROR
+
+    comes_from = None
     for req in chain.from_iterable(
             _parse_requirements(path, package_finder(argv)) for path in paths):
+        req_path, req_line = path_and_line(req)
         hashes = [hexlify(urlsafe_b64decode((hash + '=').encode('ascii'))).decode('ascii')
-                  for hash in hashes_above(*path_and_line(req))]
+                  for hash in hashes_above(req_path, req_line)]
+        if req_path != comes_from:
+            print()
+            print('# from %s' % req_path)
+            print()
+            comes_from = req_path
+
         if not hashes:
             print(req.req)
-        elif len(hashes) == 1:
-            print('%s --hash=sha256:%s' % (req.req, hashes[0]))
         else:
-            print('%s' % req.req, end='')
+            print('%s' % (req.link if getattr(req, 'link', None) else req.req), end='')
             for hash in hashes:
                 print(' \\')
                 print('    --hash=sha256:%s' % hash, end='')
@@ -1617,7 +1637,7 @@ if __name__ == '__main__':
         exit(main())
     except Exception:
         exception_handler(*sys.exc_info())
-        exit(SOMETHING_WENT_WRONG)
+        exit(UNHANDLED_EXCEPTION)
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1630,8 +1650,10 @@ UNLIKELY_EOF
       # Report error. (Otherwise, be quiet.)
       echo "Had a problem while downloading and verifying Python packages:"
       echo "$PEEP_OUT"
+      rm -rf "$VENV_PATH"
       exit 1
     fi
+    echo "Installation succeeded."
   fi
   echo "Requesting root privileges to run letsencrypt..."
   echo "  " $SUDO "$VENV_BIN/letsencrypt" "$@"
@@ -1653,10 +1675,11 @@ else
     exit 0
   fi
 
-  echo "Checking for new version..."
-  TEMP_DIR=$(TempDir)
-  # ---------------------------------------------------------------------------
-  cat << "UNLIKELY_EOF" > "$TEMP_DIR/fetch.py"
+  if [ "$NO_SELF_UPGRADE" != 1 ]; then
+    echo "Checking for new version..."
+    TEMP_DIR=$(TempDir)
+    # ---------------------------------------------------------------------------
+    cat << "UNLIKELY_EOF" > "$TEMP_DIR/fetch.py"
 """Do downloading and JSON parsing without additional dependencies. ::
 
     # Print latest released version of LE to stdout:
@@ -1785,25 +1808,36 @@ if __name__ == '__main__':
     exit(main())
 
 UNLIKELY_EOF
-  # ---------------------------------------------------------------------------
-  DeterminePythonVersion
-  REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version`
-  if [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
-    echo "Upgrading letsencrypt-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
+    # ---------------------------------------------------------------------------
+    DeterminePythonVersion
+    REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version`
+    if [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
+      echo "Upgrading letsencrypt-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
 
-    # Now we drop into Python so we don't have to install even more
-    # dependencies (curl, etc.), for better flow control, and for the option of
-    # future Windows compatibility.
-    "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
+      # Now we drop into Python so we don't have to install even more
+      # dependencies (curl, etc.), for better flow control, and for the option of
+      # future Windows compatibility.
+      "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
 
-    # Install new copy of letsencrypt-auto. This preserves permissions and
-    # ownership from the old copy.
-    # TODO: Deal with quotes in pathnames.
-    echo "Replacing letsencrypt-auto..."
-    echo "  " $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$0"
-    $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$0"
-    # TODO: Clean up temp dir safely, even if it has quotes in its path.
-    rm -rf "$TEMP_DIR"
-  fi  # should upgrade
-  "$0" --no-self-upgrade "$@"
+      # Install new copy of letsencrypt-auto.
+      # TODO: Deal with quotes in pathnames.
+      echo "Replacing letsencrypt-auto..."
+      # Clone permissions with cp. chmod and chown don't have a --reference
+      # option on OS X or BSD, and stat -c on Linux is stat -f on OS X and BSD:
+      echo "  " $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      echo "  " $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      # Using mv rather than cp leaves the old file descriptor pointing to the
+      # original copy so the shell can continue to read it unmolested. mv across
+      # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
+      # cp is unlikely to fail (esp. under sudo) if the rm doesn't.
+      echo "  " $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
+      $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
+      # TODO: Clean up temp dir safely, even if it has quotes in its path.
+      rm -rf "$TEMP_DIR"
+    fi  # A newer version is available.
+  fi  # Self-upgrading is allowed.
+
+  "$0" --le-auto-phase2 "$@"
 fi
