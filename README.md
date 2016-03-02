@@ -18,7 +18,8 @@ letsencrypt-postfix/PostfixConfigGenerator.py examples/starttls-everywhere.json 
 ```
 
 This will:
-* Install the cert in Postfix
+* Ensure your mail server initiates STARTTLS encryption
+* Install the Let's Encrypt cert in Postfix
 * Enforce mandatory TLS to some major email domains
 * Enforce minimum TLS versions to some major email domains
 
