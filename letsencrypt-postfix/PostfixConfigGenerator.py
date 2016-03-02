@@ -135,6 +135,7 @@ class PostfixConfigGenerator:
         f.close()
 
     ### Let's Encrypt client IPlugin ###
+    # https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/plugins/common.py#L35
 
     def prepare(self):
         """Prepare the plugin.
@@ -164,6 +165,7 @@ class PostfixConfigGenerator:
 
 
     ### Let's Encrypt client IInstaller ###
+    # https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/interfaces.py#L232
 
     def get_all_names(self):
         """Returns all names that may be authenticated.
