@@ -121,11 +121,11 @@ class PostfixConfigGenerator:
             mx_policy = self.policy_config.get_tls_policy(mx_domain)
             entry = address_domain + " encrypt"
             if mx_policy.min_tls_version.lower() == "tlsv1":
-                entry += " protocols=!SSLv2,!SSLv3"
+                entry += " protocols=!SSLv2:!SSLv3"
             elif mx_policy.min_tls_version.lower() == "tlsv1.1":
-                entry += " protocols=!SSLv2,!SSLv3,!TLSv1"
+                entry += " protocols=!SSLv2:!SSLv3:!TLSv1"
             elif mx_policy.min_tls_version.lower() == "tlsv1.2":
-                entry += " protocols=!SSLv2,!SSLv3,!TLSv1,!TLSv1.1"
+                entry += " protocols=!SSLv2:!SSLv3:!TLSv1:!TLSv1.1"
             else:
                 print mx_policy.min_tls_version
             self.policy_lines.append(entry)
