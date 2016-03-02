@@ -21,7 +21,7 @@ class AuthHandler(object):
     """ACME Authorization Handler for a client.
 
     :ivar auth: Authenticator capable of solving
-        :class:`~acme.challenges.DVChallenge` types
+        :class:`~acme.challenges.Challenge` types
     :type auth: :class:`letsencrypt.interfaces.IAuthenticator`
 
     :ivar acme.client.Client acme: ACME client API.
@@ -117,9 +117,8 @@ class AuthHandler(object):
         """
         # TODO: chall_update is a dirty hack to get around acme-spec #105
         chall_update = dict()
-        active_achalls = []
-        active_achalls.extend(
-            self._send_responses(self.achalls, resp, chall_update))
+        active_achalls = self._send_responses(self.achalls,
+                                              resp, chall_update)
 
         # Check for updated status...
         try:
@@ -253,8 +252,7 @@ class AuthHandler(object):
         if achall_list is None:
             achalls = self.achalls
         else:
-            achalls = [achall for achall in achall_list
-                       if isinstance(achall.chall, challenges.DVChallenge)]
+            achalls = achall_list
 
         if achalls:
             self.auth.cleanup(achalls)
@@ -280,7 +278,7 @@ class AuthHandler(object):
 
         :param list path: List of indices from `challenges`.
 
-        :returns: achalls, list of DVChallenge type
+        :returns: achalls, list of challenge type
             :class:`letsencrypt.achallenges.Indexed`
         :rtype: list
 
@@ -291,12 +289,7 @@ class AuthHandler(object):
 
         for index in path:
             challb = self.authzr[domain].body.challenges[index]
-            chall = challb.chall
-
-            achall = challb_to_achall(challb, self.account.key, domain)
-
-            if isinstance(chall, challenges.DVChallenge):
-                achalls.append(achall)
+            achalls.append(challb_to_achall(challb, self.account.key, domain))
 
         return achalls
 
