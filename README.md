@@ -35,8 +35,9 @@ objectives:
 * SMTP-STS integration: none yet
 * Direct mechanisms for mail domains to request inclusion: none yet
 * Failure reporting mechanisms: early progress, not yet ready
-* Mechanisms for secure mutli-organization signature on the policy database:
+* Mechanisms for secure multi-organization signature on the policy database:
   none yet
+* Support for mail servers other than Postfix: none yet
 
 ## Authors
 
