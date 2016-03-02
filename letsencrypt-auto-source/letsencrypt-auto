@@ -528,9 +528,9 @@ ndg-httpsclient==0.4.0
 # sha256: HDW0rCBs7y0kgWyJ-Jzyid09OM98RJuz-re_bUPwGx8
 ordereddict==1.1
 
-# sha256: OnTxAPkNZZGDFf5kkHca0gi8PxOv0y01_P5OjQs7gSs
-# sha256: Paa-K-UG9ZzOMuGeMOIBBT4btNB-JWaJGOAPikmtQKs
-parsedatetime==1.5
+# sha256: zp1CIWXPbpY5Bc1fdPJ06_fMmMlBkWFpF475Pw5VeDg
+# sha256: F8V4d1UgyZExY04Jz8paBeqeG9KgXNBpZ-vs4Q33ry0
+parsedatetime==2.1
 
 # sha256: Rsjbda51oFa9HMB_ohc0_i5gPRGgeDPswe63TDXHLgw
 # sha256: 4hJ2JqkebIhduJZol22zECDwry2nKJJLVkgPx8zwlkk
