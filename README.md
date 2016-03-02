@@ -27,6 +27,8 @@ This will:
 * Postfix configuration generation: working pre-alpha, not yet safe
 * Email security database: working pre-alpha, definitely not yet safe
 * Fully integrated Let's Encrypt client postfix plugin: in progress, not yet ready
+* DANE support: none yet
+* SMTP-STS integration: none yet
 
 ## Authors
 
