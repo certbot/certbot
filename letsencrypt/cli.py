@@ -19,6 +19,7 @@ import traceback
 
 import configargparse
 import OpenSSL
+import six
 import zope.component
 import zope.interface.exceptions
 import zope.interface.verify
@@ -842,7 +843,7 @@ def _restore_plugin_configs(config, renewalparams):
     if renewalparams.get("installer", None) is not None:
         plugin_prefixes.append(renewalparams["installer"])
     for plugin_prefix in set(plugin_prefixes):
-        for config_item, config_value in renewalparams.iteritems():
+        for config_item, config_value in six.iteritems(renewalparams):
             if config_item.startswith(plugin_prefix + "_") and not _set_by_cli(config_item):
                 # Values None, True, and False need to be treated specially,
                 # As they don't get parsed correctly based on type
@@ -1159,10 +1160,10 @@ class HelpfulArgumentParser(object):
 
     # List of topics for which additional help can be provided
     HELP_TOPICS = ["all", "security",
-                   "paths", "automation", "testing"] + VERBS.keys()
+                   "paths", "automation", "testing"] + list(six.iterkeys(VERBS))
 
     def __init__(self, args, plugins, detect_defaults=False):
-        plugin_names = [name for name, _p in plugins.iteritems()]
+        plugin_names = list(six.iterkeys(plugins))
         self.help_topics = self.HELP_TOPICS + plugin_names + [None]
         usage, short_usage = usage_strings(plugins)
         self.parser = configargparse.ArgParser(
@@ -1432,7 +1433,7 @@ class HelpfulArgumentParser(object):
         may or may not be displayed as help topics.
 
         """
-        for name, plugin_ep in plugins.iteritems():
+        for name, plugin_ep in six.iteritems(plugins):
             parser_or_group = self.add_group(name, description=plugin_ep.description)
             #print(parser_or_group)
             plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)
@@ -1827,7 +1828,7 @@ def _process_domain(args_or_config, domain_arg, webroot_path=None):
 class WebrootMapProcessor(argparse.Action):  # pylint: disable=missing-docstring
     def __call__(self, parser, args, webroot_map_arg, option_string=None):
         webroot_map = json.loads(webroot_map_arg)
-        for domains, webroot_path in webroot_map.iteritems():
+        for domains, webroot_path in six.iteritems(webroot_map):
             _process_domain(args, domains, [webroot_path])
 
 

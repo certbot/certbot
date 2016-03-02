@@ -1,15 +1,18 @@
 """Tests for letsencrypt.cli."""
+
+from __future__ import print_function
+
 import argparse
 import functools
 import itertools
 import os
 import shutil
-import StringIO
 import traceback
 import tempfile
 import unittest
 
 import mock
+import six
 
 from acme import jose
 
@@ -81,7 +84,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def _help_output(self, args):
         "Run a command, and return the ouput string for scrutiny"
-        output = StringIO.StringIO()
+        output = six.StringIO()
         with mock.patch('letsencrypt.cli.sys.stdout', new=output):
             self.assertRaises(SystemExit, self._call_stdout, args)
             out = output.getvalue()
@@ -580,7 +583,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                                 try:
                                     ret, _, _, _ = self._call(args)
                                     if ret:
-                                        print "Returned", ret
+                                        print("Returned", ret)
                                         raise AssertionError(ret)
                                     assert not error_expected, "renewal should have errored"
                                 except: # pylint: disable=bare-except
@@ -628,8 +631,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def _dump_log(self):
         with open(os.path.join(self.logs_dir, "letsencrypt.log")) as lf:
-            print "Logs:"
-            print lf.read()
+            print("Logs:")
+            print(lf.read())
 
 
     def _make_test_renewal_conf(self, testfile):

@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 """Let's Encrypt Apache configuration submission script"""
+
+from __future__ import print_function
+
 import argparse
 import atexit
 import contextlib
@@ -48,20 +51,20 @@ def make_and_verify_selection(server_root, temp_dir):
     """
     copied_files, copied_dirs = copy_config(server_root, temp_dir)
 
-    print textwrap.fill("A secure copy of the files that have been selected "
+    print(textwrap.fill("A secure copy of the files that have been selected "
                         "for submission has been created under {0}. All "
                         "comments have been removed and the files are only "
                         "accessible by the current user. A list of the files "
                         "that have been included is shown below. Please make "
                         "sure that this selection does not contain private "
                         "keys, passwords, or any other sensitive "
-                        "information.".format(temp_dir))
-    print "\nFiles:"
+                        "information.".format(temp_dir)))
+    print("\nFiles:")
     for copied_file in copied_files:
-        print copied_file
-    print "Directories (including all contained files):"
+        print(copied_file)
+    print("Directories (including all contained files):")
     for copied_dir in copied_dirs:
-        print copied_dir
+        print(copied_dir)
 
     sys.stdout.write("\nIs it safe to submit these files? ")
     while True:
