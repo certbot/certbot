@@ -24,11 +24,18 @@ This will:
 
 ## Project status
 
+STARTTLS Everywhere development is re-starting after a hiatus.  Initial
+objectives:
+
 * Postfix configuration generation: working pre-alpha, not yet safe
 * Email security database: working pre-alpha, definitely not yet safe
 * Fully integrated Let's Encrypt client postfix plugin: in progress, not yet ready
 * DANE support: none yet
 * SMTP-STS integration: none yet
+* Direct mechanisms for mail domains to request inclusion: none yet
+* Failure reporting mechanisms: early progress, not yet ready
+* Mechanisms for secure mutli-organization signature on the policy database:
+  none yet
 
 ## Authors
 
