@@ -807,12 +807,18 @@ def _restore_required_config_elements(config, renewalparams):
     # int-valued items to add if they're present
     for config_item in INT_CONFIG_ITEMS:
         if config_item in renewalparams and not _set_by_cli(config_item):
-            try:
-                value = int(renewalparams[config_item])
-                setattr(config.namespace, config_item, value)
-            except ValueError:
-                raise errors.Error(
-                    "Expected a numeric value for {0}".format(config_item))
+            config_value = renewalparams[config_item]
+            # the default value for http01_port was None during private beta
+            if config_item == "http01_port" and config_value == "None":
+                logger.info("updating legacy http01_port value")
+                int_value = flag_default("http01_port")
+            else:
+                try:
+                    int_value = int(config_value)
+                except ValueError:
+                    raise errors.Error(
+                        "Expected a numeric value for {0}".format(config_item))
+            setattr(config.namespace, config_item, int_value)
 
 
 def _restore_plugin_configs(config, renewalparams):

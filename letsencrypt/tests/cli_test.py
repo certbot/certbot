@@ -713,6 +713,12 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._test_renew_common(renewalparams=renewalparams, error_expected=True,
                                 assert_oc_called=False)
 
+    def test_renew_with_nonetype_http01(self):
+        renewalparams = {'authenticator': 'webroot',
+                         'http01_port': 'None'}
+        self._test_renew_common(renewalparams=renewalparams, error_expected=False,
+                                assert_oc_called=True)
+
     def test_renew_with_bad_domain(self):
         renewalparams = {'authenticator': 'webroot'}
         names = ['*.example.com']
