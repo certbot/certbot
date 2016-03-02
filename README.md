@@ -1,11 +1,36 @@
 # STARTTLS Everywhere
 
-NOTE: this is a pre-alpha codebase.  Do not run it on non-experimental systems
-yet!
+
+## Example usage
+
+**WARNING: this is a pre-alpha codebase.  Do not run it on production
+mailservers!!!**
+
+
+If you have a Postfix server you're willing to endanger deliverability on, you
+can try obtain a certificate with the [Let's Encrypt Python Client](https://github.com/letsencrypt/letsencrypt), not the directory it lives in below `/etc/letsencrypt/live` and then do:
+
+```
+git clone https://github.com/EFForg/starttls-everywhere
+cd starttls-everywhere
+# Promise you don't care if deliverability breaks on this mail server
+letsencrypt-postfix/PostfixConfigGenerator.py examples/starttls-everywhere.json /etc/postfix /etc/letsencrypt/live/YOUR.DOMAIN.EXAMPLE.COM
+```
+
+This will:
+* Install the cert in Postfix
+* Enforce mandatory TLS to some major email domains
+* Enforce minimum TLS versions to some major email domains
+
+## Project status
+
+* Postfix configuration generation: working pre-alpha, not yet safe
+* Email security database: working pre-alpha, definitely not yet safe
+* Let's Encrypt client plugin: in progress
 
 ## Authors
 
-Jacob Hoffman-Andrews <jsha@eff.org>, Peter Eckersley <pde@eff.org>, Daniel Wilcox <dmwilcox@gmail.com>
+Jacob Hoffman-Andrews <jsha@eff.org>, Peter Eckersley <pde@eff.org>, Daniel Wilcox <dmwilcox@gmail.com>, Aaron Zauner <azet@azet.org>
 
 ## Mailing List
 
