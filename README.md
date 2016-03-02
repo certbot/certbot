@@ -8,7 +8,7 @@ mailservers!!!**
 
 
 If you have a Postfix server you're willing to endanger deliverability on, you
-can try obtain a certificate with the [Let's Encrypt Python Client](https://github.com/letsencrypt/letsencrypt), not the directory it lives in below `/etc/letsencrypt/live` and then do:
+can try obtain a certificate with the [Let's Encrypt Python Client](https://github.com/letsencrypt/letsencrypt), note the directory it lives in below `/etc/letsencrypt/live` and then do:
 
 ```
 git clone https://github.com/EFForg/starttls-everywhere
@@ -26,7 +26,7 @@ This will:
 
 * Postfix configuration generation: working pre-alpha, not yet safe
 * Email security database: working pre-alpha, definitely not yet safe
-* Let's Encrypt client plugin: in progress
+* Fully integrated Let's Encrypt client postfix plugin: in progress, not yet ready
 
 ## Authors
 
