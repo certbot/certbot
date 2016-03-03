@@ -1,0 +1,5 @@
+# cryptography requires a more modern version of setuptools.
+# sha256: _ANFf7h6utSdwJ-cMTOGNpPn3bbKgrtQpzmnc3nOWpo
+# sha256: JPz8FTZKn-CaIg830tztyEl5Xj3j5LOT7piOZqnL2Fo
+# sha256: gJaELiTE8ddN_xKr6Qwm0S8F0NmlbtXgb8qm-qHkC2o
+setuptools==20.2.2
