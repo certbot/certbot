@@ -159,7 +159,7 @@ Bootstrap() {
   else
     echo "Sorry, I don't know how to bootstrap Let's Encrypt on your operating system!"
     echo
-    echo "You will need to bootstrap, configure virtualenv, and run a peep install manually."
+    echo "You will need to bootstrap, configure virtualenv, and run pip install manually."
     echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
     echo "for more info."
   fi
@@ -169,19 +169,6 @@ TempDir() {
   mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || OS X
 }
 
-InstallRequirements() {
-    set +e
-    PEEP_OUT=`"$VENV_BIN/python" "$TEMP_DIR/peep.py" install -r "$TEMP_DIR/$1"`
-    PEEP_STATUS=$?
-    set -e
-    if [ "$PEEP_STATUS" != 0 ]; then
-      # Report error. (Otherwise, be quiet.)
-      echo "Had a problem while downloading and verifying Python packages:"
-      echo "$PEEP_OUT"
-      rm -rf "$VENV_PATH"
-      exit 1
-    fi
-}
 
 
 if [ "$1" = "--le-auto-phase2" ]; then
@@ -205,23 +192,30 @@ if [ "$1" = "--le-auto-phase2" ]; then
 
     echo "Installing Python packages..."
     TEMP_DIR=$(TempDir)
-    trap "rm -rf '$TEMP_DIR'" EXIT
     # There is no $ interpolation due to quotes on starting heredoc delimiter.
-    # -------------------------------------------------------------------------
-    cat << "UNLIKELY_EOF" > "$TEMP_DIR/setuptools-requirements.txt"
-{{ setuptools-requirements.txt }}
-UNLIKELY_EOF
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/letsencrypt-auto-requirements.txt"
 {{ letsencrypt-auto-requirements.txt }}
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
-    cat << "UNLIKELY_EOF" > "$TEMP_DIR/peep.py"
-{{ peep.py }}
+    cat << "UNLIKELY_EOF" > "$TEMP_DIR/pipstrap.py"
+{{ pipstrap.py }}
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
-    InstallRequirements "setuptools-requirements.txt"
-    InstallRequirements "letsencrypt-auto-requirements.txt"
+    # Set PATH so pipstrap upgrades the right (v)env:
+    PATH="$VENV_BIN:$PATH" "$VENV_BIN/python" "$TEMP_DIR/pipstrap.py"
+    set +e
+    PIP_OUT=`"$VENV_BIN/pip" install --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt" 2>&1`
+    PIP_STATUS=$?
+    set -e
+    rm -rf "$TEMP_DIR"
+    if [ "$PIP_STATUS" != 0 ]; then
+      # Report error. (Otherwise, be quiet.)
+      echo "Had a problem while installing Python packages:"
+      echo "$PIP_OUT"
+      rm -rf "$VENV_PATH"
+      exit 1
+    fi
     echo "Installation succeeded."
   fi
   echo "Requesting root privileges to run letsencrypt..."
