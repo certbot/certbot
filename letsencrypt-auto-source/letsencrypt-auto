@@ -451,12 +451,6 @@ if [ "$1" = "--le-auto-phase2" ]; then
 # this, do `pip install --no-cache-dir -e acme -e . -e letsencrypt-apache`, and
 # then use `hashin` or a more secure method to gather the hashes.
 
-# cryptography requires a more modern version of setuptools
-# sha256: _ANFf7h6utSdwJ-cMTOGNpPn3bbKgrtQpzmnc3nOWpo
-# sha256: JPz8FTZKn-CaIg830tztyEl5Xj3j5LOT7piOZqnL2Fo
-# sha256: gJaELiTE8ddN_xKr6Qwm0S8F0NmlbtXgb8qm-qHkC2o
-setuptools==20.2.2
-
 # sha256: wxZH7baf09RlqEfqMVfTe-0flfGXYLEaR6qRwEtmYxQ
 # sha256: YrCJpVvh2JSc0rx-DfC9254Cj678jDIDjMhIYq791uQ
 argparse==1.4.0
