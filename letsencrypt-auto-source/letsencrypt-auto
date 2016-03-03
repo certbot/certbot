@@ -431,7 +431,6 @@ InstallRequirements() {
       echo "Had a problem while downloading and verifying Python packages:"
       echo "$PEEP_OUT"
       rm -rf "$VENV_PATH"
-      rm -rf "$TEMP_DIR"
       exit 1
     fi
 }
@@ -458,6 +457,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
 
     echo "Installing Python packages..."
     TEMP_DIR=$(TempDir)
+    trap "rm -rf $TEMP_DIR" EXIT
     # There is no $ interpolation due to quotes on starting heredoc delimiter.
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/setuptools-requirements.txt"
@@ -1666,7 +1666,6 @@ UNLIKELY_EOF
     # -------------------------------------------------------------------------
     InstallRequirements "setuptools-requirements.txt"
     InstallRequirements "letsencrypt-auto-requirements.txt"
-    rm -rf "$TEMP_DIR"
     echo "Installation succeeded."
   fi
   echo "Requesting root privileges to run letsencrypt..."
