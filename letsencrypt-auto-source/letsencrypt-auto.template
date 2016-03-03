@@ -169,6 +169,20 @@ TempDir() {
   mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || OS X
 }
 
+InstallRequirements() {
+    set +e
+    PEEP_OUT=`"$VENV_BIN/python" "$TEMP_DIR/peep.py" install -r "$TEMP_DIR/$1"`
+    PEEP_STATUS=$?
+    set -e
+    if [ "$PEEP_STATUS" != 0 ]; then
+      # Report error. (Otherwise, be quiet.)
+      echo "Had a problem while downloading and verifying Python packages:"
+      echo "$PEEP_OUT"
+      rm -rf "$VENV_PATH"
+      rm -rf "$TEMP_DIR"
+      exit 1
+    fi
+}
 
 
 if [ "$1" = "--le-auto-phase2" ]; then
@@ -194,6 +208,10 @@ if [ "$1" = "--le-auto-phase2" ]; then
     TEMP_DIR=$(TempDir)
     # There is no $ interpolation due to quotes on starting heredoc delimiter.
     # -------------------------------------------------------------------------
+    cat << "UNLIKELY_EOF" > "$TEMP_DIR/setuptools-requirements.txt"
+{{ setuptools-requirements.txt }}
+UNLIKELY_EOF
+    # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/letsencrypt-auto-requirements.txt"
 {{ letsencrypt-auto-requirements.txt }}
 UNLIKELY_EOF
@@ -202,18 +220,9 @@ UNLIKELY_EOF
 {{ peep.py }}
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
-    set +e
-    PEEP_OUT=`"$VENV_BIN/python" "$TEMP_DIR/peep.py" install -r "$TEMP_DIR/letsencrypt-auto-requirements.txt"`
-    PEEP_STATUS=$?
-    set -e
+    InstallRequirements "setuptools-requirements.txt"
+    InstallRequirements "letsencrypt-auto-requirements.txt"
     rm -rf "$TEMP_DIR"
-    if [ "$PEEP_STATUS" != 0 ]; then
-      # Report error. (Otherwise, be quiet.)
-      echo "Had a problem while downloading and verifying Python packages:"
-      echo "$PEEP_OUT"
-      rm -rf "$VENV_PATH"
-      exit 1
-    fi
     echo "Installation succeeded."
   fi
   echo "Requesting root privileges to run letsencrypt..."

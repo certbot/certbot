@@ -421,6 +421,20 @@ TempDir() {
   mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || OS X
 }
 
+InstallRequirements() {
+    set +e
+    PEEP_OUT=`"$VENV_BIN/python" "$TEMP_DIR/peep.py" install -r "$TEMP_DIR/$1"`
+    PEEP_STATUS=$?
+    set -e
+    if [ "$PEEP_STATUS" != 0 ]; then
+      # Report error. (Otherwise, be quiet.)
+      echo "Had a problem while downloading and verifying Python packages:"
+      echo "$PEEP_OUT"
+      rm -rf "$VENV_PATH"
+      rm -rf "$TEMP_DIR"
+      exit 1
+    fi
+}
 
 
 if [ "$1" = "--le-auto-phase2" ]; then
@@ -445,6 +459,15 @@ if [ "$1" = "--le-auto-phase2" ]; then
     echo "Installing Python packages..."
     TEMP_DIR=$(TempDir)
     # There is no $ interpolation due to quotes on starting heredoc delimiter.
+    # -------------------------------------------------------------------------
+    cat << "UNLIKELY_EOF" > "$TEMP_DIR/setuptools-requirements.txt"
+# cryptography requires a more modern version of setuptools
+# sha256: _ANFf7h6utSdwJ-cMTOGNpPn3bbKgrtQpzmnc3nOWpo
+# sha256: JPz8FTZKn-CaIg830tztyEl5Xj3j5LOT7piOZqnL2Fo
+# sha256: gJaELiTE8ddN_xKr6Qwm0S8F0NmlbtXgb8qm-qHkC2o
+setuptools==20.2.2
+
+UNLIKELY_EOF
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/letsencrypt-auto-requirements.txt"
 # This is the flattened list of packages letsencrypt-auto installs. To generate
@@ -1641,18 +1664,9 @@ if __name__ == '__main__':
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
-    set +e
-    PEEP_OUT=`"$VENV_BIN/python" "$TEMP_DIR/peep.py" install -r "$TEMP_DIR/letsencrypt-auto-requirements.txt"`
-    PEEP_STATUS=$?
-    set -e
+    InstallRequirements "setuptools-requirements.txt"
+    InstallRequirements "letsencrypt-auto-requirements.txt"
     rm -rf "$TEMP_DIR"
-    if [ "$PEEP_STATUS" != 0 ]; then
-      # Report error. (Otherwise, be quiet.)
-      echo "Had a problem while downloading and verifying Python packages:"
-      echo "$PEEP_OUT"
-      rm -rf "$VENV_PATH"
-      exit 1
-    fi
     echo "Installation succeeded."
   fi
   echo "Requesting root privileges to run letsencrypt..."
