@@ -6,6 +6,11 @@
 # sha256: YrCJpVvh2JSc0rx-DfC9254Cj678jDIDjMhIYq791uQ
 argparse==1.4.0
 
+# This comes before cffi because cffi will otherwise install an unchecked
+# version via setup_requires.
+# sha256: eVm0p0q9wnsxL-0cIebK-TCc4LKeqGtZH9Lpns3yf3M
+pycparser==2.14
+
 # sha256: U8HJ3bMEMVE-t_PN7wo-BrDxJSGIqqd0SvD1pM1F268
 # sha256: pWj0nfyhKo2fNwGHJX78WKOBCeHu5xTZKFYdegGKZPg
 # sha256: gJxsqM-8ruv71DK0V2ABtA04_yRjdzy1dXfXXhoCC8M
@@ -122,9 +127,6 @@ psutil==3.3.0
 # sha256: gyPgNjey0HLMcEEwC6xuxEjDwolQq0A3YDZ4jpoa9ik
 # sha256: hTys2W0fcB3dZ6oD7MBfUYkBNbcmLpInEBEvEqLtKn8
 pyasn1==0.1.9
-
-# sha256: eVm0p0q9wnsxL-0cIebK-TCc4LKeqGtZH9Lpns3yf3M
-pycparser==2.14
 
 # sha256: iORea7Jd_tJyoe8ucoRh1EtjTCzWiemJtuVqNJxaOuU
 # sha256: 8KJgcNbbCIHei8x4RpNLfDyTDY-cedRYg-5ImEvA1nI
