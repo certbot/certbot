@@ -6,6 +6,11 @@
 # sha256: YrCJpVvh2JSc0rx-DfC9254Cj678jDIDjMhIYq791uQ
 argparse==1.4.0
 
+# This comes before cffi because cffi will otherwise install an unchecked
+# version via setup_requires.
+# sha256: eVm0p0q9wnsxL-0cIebK-TCc4LKeqGtZH9Lpns3yf3M
+pycparser==2.14
+
 # sha256: U8HJ3bMEMVE-t_PN7wo-BrDxJSGIqqd0SvD1pM1F268
 # sha256: pWj0nfyhKo2fNwGHJX78WKOBCeHu5xTZKFYdegGKZPg
 # sha256: gJxsqM-8ruv71DK0V2ABtA04_yRjdzy1dXfXXhoCC8M
@@ -79,9 +84,9 @@ ndg-httpsclient==0.4.0
 # sha256: HDW0rCBs7y0kgWyJ-Jzyid09OM98RJuz-re_bUPwGx8
 ordereddict==1.1
 
-# sha256: OnTxAPkNZZGDFf5kkHca0gi8PxOv0y01_P5OjQs7gSs
-# sha256: Paa-K-UG9ZzOMuGeMOIBBT4btNB-JWaJGOAPikmtQKs
-parsedatetime==1.5
+# sha256: zp1CIWXPbpY5Bc1fdPJ06_fMmMlBkWFpF475Pw5VeDg
+# sha256: F8V4d1UgyZExY04Jz8paBeqeG9KgXNBpZ-vs4Q33ry0
+parsedatetime==2.1
 
 # sha256: Rsjbda51oFa9HMB_ohc0_i5gPRGgeDPswe63TDXHLgw
 # sha256: 4hJ2JqkebIhduJZol22zECDwry2nKJJLVkgPx8zwlkk
@@ -122,9 +127,6 @@ psutil==3.3.0
 # sha256: gyPgNjey0HLMcEEwC6xuxEjDwolQq0A3YDZ4jpoa9ik
 # sha256: hTys2W0fcB3dZ6oD7MBfUYkBNbcmLpInEBEvEqLtKn8
 pyasn1==0.1.9
-
-# sha256: eVm0p0q9wnsxL-0cIebK-TCc4LKeqGtZH9Lpns3yf3M
-pycparser==2.14
 
 # sha256: iORea7Jd_tJyoe8ucoRh1EtjTCzWiemJtuVqNJxaOuU
 # sha256: 8KJgcNbbCIHei8x4RpNLfDyTDY-cedRYg-5ImEvA1nI
@@ -204,14 +206,14 @@ mock==1.0.1
 # THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT;
 # ADD ALL DEPENDENCIES ABOVE
 
-# sha256: ilvjjTWOS86xchl0WBZ0YOAw_0rmqdnjNsxb1hq2RD8
-# sha256: T37KMj0TnsuvHIzCCmoww2fpfpOBTj7cd4NAqucXcpw
-acme==0.4.0
+# sha256: zd_qpRKPaFs00y5hex5Rbu5CVLWzed7pBGL28juxoHM
+# sha256: 18Gfo85AbZXE46GyTkyePthTNiUeoGTQNcXlSvmRQvM
+acme==0.4.1
 
-# sha256: 33BQiANlNLGqGpirTfdCEElTF9YbpaKiYpTbK4zeGD8
-# sha256: lwsV1OdEzzlMeb08C_PRxaCXZ2vOk_1AI2755rZHmPM
-letsencrypt==0.4.0
+# sha256: wIuGh8yh1TeOClXW0qLz70bKeM9Ax4bfFNrkKSDjbbo
+# sha256: 7TeAUt8cZ0IZQuQNuUm8MoH8vPWlKaCrwWAkdCEs_5s
+letsencrypt==0.4.1
 
-# sha256: D3YDaVFjLsMSEfjI5B5D5tn5FeWUtNHYXCObw3ih2tg
-# sha256: VTgvsePYGRmI4IOSAnxoYFHd8KciD73bxIuIHtbVFd8
-letsencrypt-apache==0.4.0
+# sha256: bnpKXJTXy9cFSktJLtvTCTovJJybc__Ivqs6XaXxk9U
+# sha256: bcvJ6j5UB8sOJ_M88DAsqvmaLxD2UnAP9ys-_J6Bdcc
+letsencrypt-apache==0.4.1
