@@ -461,7 +461,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
     # There is no $ interpolation due to quotes on starting heredoc delimiter.
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/setuptools-requirements.txt"
-# cryptography requires a more modern version of setuptools
+# cryptography requires a more modern version of setuptools.
 # sha256: _ANFf7h6utSdwJ-cMTOGNpPn3bbKgrtQpzmnc3nOWpo
 # sha256: JPz8FTZKn-CaIg830tztyEl5Xj3j5LOT7piOZqnL2Fo
 # sha256: gJaELiTE8ddN_xKr6Qwm0S8F0NmlbtXgb8qm-qHkC2o
