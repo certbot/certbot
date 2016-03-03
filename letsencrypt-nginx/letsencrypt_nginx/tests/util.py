@@ -78,15 +78,18 @@ def get_nginx_configurator(
 
 
 def filter_comments(tree):
-    """Filter comment nodes from parsed configurations."""
+    """Filter comment nodes and newlines from parsed configurations."""
 
     def traverse(tree):
         """Generator dropping comment nodes"""
-        for key, values in tree:
+        for t in tree:
+            key = t[0] if len(t) > 0 else None
+            values = t[1] if len(t) > 1 else None
+
             if isinstance(key, list):
                 yield [key, filter_comments(values)]
             else:
-                if key != '#':
+                if t != [] and key != '#':
                     yield [key, values]
 
     return list(traverse(tree))

@@ -11,7 +11,6 @@ install_requires = [
     'acme=={0}'.format(version),
     'letsencrypt=={0}'.format(version),
     'PyOpenSSL',
-    'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
     'setuptools',  # pkg_resources
     'zope.interface',
 ]
