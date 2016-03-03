@@ -19,7 +19,7 @@ XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN="$VENV_PATH/bin"
-LE_AUTO_VERSION="0.5.0.dev0"
+LE_AUTO_VERSION="0.4.2"
 
 # This script takes the same arguments as the main letsencrypt program, but it
 # additionally responds to --verbose (more output) and --debug (allow support
@@ -678,17 +678,17 @@ mock==1.0.1
 # THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT;
 # ADD ALL DEPENDENCIES ABOVE
 
-# sha256: zd_qpRKPaFs00y5hex5Rbu5CVLWzed7pBGL28juxoHM
-# sha256: 18Gfo85AbZXE46GyTkyePthTNiUeoGTQNcXlSvmRQvM
-acme==0.4.1
+# sha256: UMVihR1TbyvQNHzx1CzYiydDitJVGw_mLAGr3-gCGJk
+# sha256: ClkIqiGQsLTyyLASRkWYniS9n4CAW6D4GSuBETXFALY
+acme==0.4.2
 
-# sha256: wIuGh8yh1TeOClXW0qLz70bKeM9Ax4bfFNrkKSDjbbo
-# sha256: 7TeAUt8cZ0IZQuQNuUm8MoH8vPWlKaCrwWAkdCEs_5s
-letsencrypt==0.4.1
+# sha256: hbUGND6Eo_q6a97o3o66wwLYJ7koNvwOXh9u5bZNCVI
+# sha256: 460kqywseljbDW_Gr_ZU23rWlzNeE-AL4_JwYCRdS-Y
+letsencrypt==0.4.2
 
-# sha256: bnpKXJTXy9cFSktJLtvTCTovJJybc__Ivqs6XaXxk9U
-# sha256: bcvJ6j5UB8sOJ_M88DAsqvmaLxD2UnAP9ys-_J6Bdcc
-letsencrypt-apache==0.4.1
+# sha256: KNMAOMrJMr1vLJBDaihGqEmvPbfxgH_dvRk1OFHaM_I
+# sha256: SXSg-gIabiV4CBzrfPIyABhfTjKl7YZrKDSVkfE4Vbo
+letsencrypt-apache==0.4.2
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
