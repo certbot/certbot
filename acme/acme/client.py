@@ -25,6 +25,8 @@ logger = logging.getLogger(__name__)
 # many important security related options. On these platforms we use PyOpenSSL
 # for SSL, which does allow these options to be configured.
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
+
+# @mitigates @acme:@client against @cwe_693_protection_mechanism_failure with loads better library if old python version detected
 if sys.version_info < (2, 7, 9):  # pragma: no cover
     requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
 
@@ -44,6 +46,9 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         supplied, it will be initialized using `key`, `alg` and
         `verify_ssl`.
 
+    @transfers @cwe_320_key_management_errors to @app:@caller with no key validation or checks carried out
+    @mitigates @acme:@client against @cwe_295_improper_certificate_validation with verifies SSL by default
+    @review alg makes sense? RS256?
     """
     DER_CONTENT_TYPE = 'application/pkix-cert'
 
@@ -423,6 +428,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         """
         # TODO: acme-spec 5.1 table action should be renamed to
         # "refresh cert", and this method integrated with self.refresh
+        #
+        # @review Looking at Location header but is that for a 3xx? What if something else includes that head?
         response, cert = self._get_cert(certr.uri)
         if 'Location' not in response.headers:
             raise errors.ClientError('Location header missing')
