@@ -20,7 +20,9 @@ RUN sed -i.bkp -e \
 RUN mkdir -p /home/lea/letsencrypt/letsencrypt
 
 # Install fake testing CA:
-COPY ./tests/certs/ca/my-root-ca.crt.pem /usr/local/share/ca-certificates/
+RUN mkdir /usr/share/ca-certificates/letsencrypt
+COPY ./tests/certs/ca/my-root-ca.crt.pem /usr/share/ca-certificates/letsencrypt/my-root-ca.crt
+RUN echo "letsencrypt/my-root-ca.crt" > /etc/ca-certificates.conf
 RUN update-ca-certificates
 
 # Copy code:
