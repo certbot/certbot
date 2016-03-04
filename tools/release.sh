@@ -161,6 +161,23 @@ for module in letsencrypt $subpkgs_modules ; do
 done
 deactivate
 
+# pin peep hashes of the things we just built
+for pkg in acme letsencrypt letsencrypt-apache ; do
+    echo
+    letsencrypt-auto-source/pieces/peep.py hash dist."$version/$pkg"/*.{whl,gz}
+    echo $pkg==$version
+done > /tmp/hashes.$$
+
+if ! wc -l /tmp/hashes.$$ | grep -qE "^\s*12 " ; then
+    echo Unexpected peep hash output
+    exit 1
+fi
+
+# perform hideous surgery on requirements.txt...
+head -n -12 letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt > /tmp/req.$$
+cat /tmp/hashes.$$ >> /tmp/req.$$
+cp /tmp/req.$$ letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt
+
 # ensure we have the latest built version of leauto
 letsencrypt-auto-source/build.py
 
@@ -199,6 +216,8 @@ echo twine upload "$root/dist.$version/*/*"
 
 if [ "$RELEASE_BRANCH" = candidate-"$version" ] ; then
     SetVersion "$nextversion".dev0
+    letsencrypt-auto-source/build.py
+    git add letsencrypt-auto-source/letsencrypt-auto
     git diff
     git commit -m "Bump version to $nextversion"
 fi
