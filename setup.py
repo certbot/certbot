@@ -43,7 +43,6 @@ install_requires = [
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
     'PyOpenSSL',
     'pyrfc3339',
-    'python2-pythondialog>=3.2.2rc1',  # Debian squeeze support, cf. #280
     'pytz',
     # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
     # will tolerate; see #2599:
@@ -63,6 +62,13 @@ if sys.version_info < (2, 7):
     ])
 else:
     install_requires.append('mock')
+
+if sys.version_info < (3,):
+    install_requires.append(
+        'python2-pythondialog>=3.2.2rc1',  # Debian squeeze support, cf. #280
+    )
+else:
+    install_requires.append('pythondialog>=3.2.2rc1')
 
 dev_extras = [
     # Pin astroid==1.3.5, pylint==1.4.2 as a workaround for #289
