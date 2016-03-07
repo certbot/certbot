@@ -21,7 +21,6 @@ RUN mkdir -p /home/lea/letsencrypt/letsencrypt
 
 # Install fake testing CA:
 COPY ./tests/certs/ca/my-root-ca.crt.pem /usr/local/share/ca-certificates/
-RUN update-ca-certificates
 
 # Copy code:
 COPY . /home/lea/letsencrypt/letsencrypt-auto-source
