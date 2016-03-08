@@ -694,7 +694,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         for i in (cli_config.renewal_configs_dir, cli_config.archive_dir,
                   cli_config.live_dir):
             if not os.path.exists(i):
-                os.makedirs(i, 0700)
+                os.makedirs(i, 0o700)
                 logger.debug("Creating directory %s.", i)
         config_file, config_filename = le_util.unique_lineage_name(
             cli_config.renewal_configs_dir, lineagename)

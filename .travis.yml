@@ -43,6 +43,7 @@ matrix:
       env: TOXENV=le_auto
       services: docker
       before_install:
+      addons:
     - python: "2.7"
       env: TOXENV=cover
     - python: "3.3"

@@ -1,7 +1,8 @@
 """Tests for letsencrypt.colored_logging."""
 import logging
-import StringIO
 import unittest
+
+import six
 
 from letsencrypt import le_util
 
@@ -12,7 +13,7 @@ class StreamHandlerTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt import colored_logging
 
-        self.stream = StringIO.StringIO()
+        self.stream = six.StringIO()
         self.stream.isatty = lambda: True
         self.handler = colored_logging.StreamHandler(self.stream)
 

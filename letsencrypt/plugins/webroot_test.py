@@ -1,4 +1,7 @@
 """Tests for letsencrypt.plugins.webroot."""
+
+from __future__ import print_function
+
 import errno
 import os
 import shutil
@@ -74,7 +77,7 @@ class AuthenticatorTest(unittest.TestCase):
         os.chmod(self.path, 0o000)
         try:
             open(permission_canary, "r")
-            print "Warning, running tests as root skips permissions tests..."
+            print("Warning, running tests as root skips permissions tests...")
         except IOError:
             # ok, permissions work, test away...
             self.assertRaises(errors.PluginError, self.auth.prepare)

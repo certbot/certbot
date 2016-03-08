@@ -4,10 +4,10 @@ from __future__ import print_function
 import collections
 import logging
 import os
-import Queue
 import sys
 import textwrap
 
+from six.moves import queue  # pylint: disable=import-error
 import zope.interface
 
 from letsencrypt import interfaces
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class Reporter(object):
     """Collects and displays information to the user.
 
-    :ivar `Queue.PriorityQueue` messages: Messages to be displayed to
+    :ivar `queue.PriorityQueue` messages: Messages to be displayed to
         the user.
 
     """
@@ -36,7 +36,7 @@ class Reporter(object):
     _msg_type = collections.namedtuple('ReporterMsg', 'priority text on_crash')
 
     def __init__(self):
-        self.messages = Queue.PriorityQueue()
+        self.messages = queue.PriorityQueue()
 
     def add_message(self, msg, priority, on_crash=True):
         """Adds msg to the list of messages to be printed.
