@@ -16,7 +16,6 @@ from acme import jose
 from acme import other
 
 
-# @exposes
 logger = logging.getLogger(__name__)
 
 
