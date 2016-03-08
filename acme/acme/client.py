@@ -395,6 +395,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         updated_authzrs = tuple(updated[authzr] for authzr in authzrs)
         return self.request_issuance(csr, updated_authzrs), updated_authzrs
 
+    # @review what sort of validation is done on response.content ? malicious content parsed etc
     def _get_cert(self, uri):
         """Returns certificate from URI.
 
@@ -576,6 +577,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
         return response
 
+    # @review requests default timeout? Possible DoS?
     def _send_request(self, method, url, *args, **kwargs):
         """Send HTTP request.
 
@@ -618,6 +620,8 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         return self._check_response(
             self._send_request('GET', url, **kwargs), content_type=content_type)
 
+    # @review should this check if nonce is already known? i guess a nonce is used across multiple \
+    # http calls. When does a nonce change?
     def _add_nonce(self, response):
         if self.REPLAY_NONCE_HEADER in response.headers:
             nonce = response.headers[self.REPLAY_NONCE_HEADER]
