@@ -105,7 +105,9 @@ class _JWARSA(object):
     hash = NotImplemented
 
     def sign(self, key, msg):
-        """Sign the ``msg`` using ``key``."""
+        """Sign the ``msg`` using ``key``.
+        @exposes @acme:@jose to @cwe_779_logging_of_excessive_data with logging signer failures to the unprotected log.
+        """
         try:
             signer = key.signer(self.padding, self.hash)
         except AttributeError as error:
@@ -122,12 +124,15 @@ class _JWARSA(object):
             raise errors.Error(str(error))
 
     def verify(self, key, msg, sig):
-        """Verify the ``msg` and ``sig`` using ``key``."""
+        """Verify the ``msg` and ``sig`` using ``key``.
+        @exposes @acme:@jose to @cwe_779_logging_of_excessive_data with logging signer failures to the unprotected log.
+        """
         verifier = key.verifier(sig, self.padding, self.hash)
         verifier.update(msg)
         try:
             verifier.verify()
         except cryptography.exceptions.InvalidSignature as error:
+
             logger.debug(error, exc_info=True)
             return False
         else:

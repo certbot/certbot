@@ -16,6 +16,7 @@ from acme import jose
 from acme import other
 
 
+# @exposes
 logger = logging.getLogger(__name__)
 
 
@@ -395,6 +396,9 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
 
         :returns: Whether the certificate was successfully verified.
         :rtype: bool
+
+        @exposes @acme:@client to @cwe_295_improper_certificate_validation with not proper \
+            verification of a certificate chain (it doesn't do anything).
 
         """
         # pylint: disable=protected-access

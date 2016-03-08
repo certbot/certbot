@@ -136,12 +136,18 @@ class Directory(jose.JSONDeSerializable):
         return resource_body_cls
 
     def __init__(self, jobj):
+        """
+        @exposes @acme:@directory to @cwe_36_absolute_path_traversal with possible relative URLs
+        @exposes @acme:@directory to @cwe_502_deserialization_of_untrusted_data with deserialization of \
+            data that's not defined in the ACME spec
+        """
         canon_jobj = util.map_keys(jobj, self._canon_key)
         if not set(canon_jobj).issubset(self._REGISTERED_TYPES):
             # TODO: acme-spec is not clear about this: 'It is a JSON
             # dictionary, whose keys are the "resource" values listed
             # in {{https-requests}}'z
             raise ValueError('Wrong directory fields')
+
         # TODO: check that everything is an absolute URL; acme-spec is
         # not clear on that
         self._jobj = canon_jobj
@@ -163,6 +169,10 @@ class Directory(jose.JSONDeSerializable):
 
     @classmethod
     def from_json(cls, jobj):
+        """
+        @exposes @acme:@directory to @cwe_502_deserialization_of_untrusted_data with deserialization of \
+            data that's not defined in the ACME spec
+        """
         try:
             return cls(jobj)
         except ValueError as error:
@@ -361,6 +371,8 @@ class Authorization(ResourceBody):
     # general, but for Key Authorization '[t]he "expires" field MUST
     # be absent'... then acme-spec gives example with 'expires'
     # present... That's confusing!
+
+    # @review Ensure that the `expires` field belongs in this Authorization message
     expires = fields.RFC3339Field('expires', omitempty=True)
 
     @challenges.decoder

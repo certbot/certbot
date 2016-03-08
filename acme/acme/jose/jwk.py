@@ -258,6 +258,9 @@ class JWKRSA(JWK):
 
     def fields_to_partial_json(self):
         # pylint: disable=protected-access
+        """
+        @exposes @acme:@client to @cwe_320_key_management_errors by leaking private key material in JSON structure
+        """
         if isinstance(self.key._wrapped, rsa.RSAPublicKey):
             numbers = self.key.public_numbers()
             params = {

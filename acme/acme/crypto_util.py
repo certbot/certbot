@@ -227,6 +227,7 @@ def gen_ss_cert(key, domains, not_before=None,
     cert.gmtime_adj_notBefore(0 if not_before is None else not_before)
     cert.gmtime_adj_notAfter(validity)
 
+    # @review This self-signed cert carries the PRIVATE KEY and is signed by the private key. Uh oh.
     cert.set_pubkey(key)
     cert.sign(key, "sha256")
     return cert
