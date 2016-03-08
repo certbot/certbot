@@ -35,10 +35,6 @@ class Challenge(jose.TypedJSONObjectWithFields):
             return UnrecognizedChallenge.from_json(jobj)
 
 
-class DVChallenge(Challenge):  # pylint: disable=abstract-method
-    """Domain validation challenges."""
-
-
 class ChallengeResponse(jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json | pylint: disable=abstract-method
     """ACME challenge response."""
@@ -73,8 +69,8 @@ class UnrecognizedChallenge(Challenge):
         return cls(jobj)
 
 
-class _TokenDVChallenge(DVChallenge):
-    """DV Challenge with token.
+class _TokenChallenge(Challenge):
+    """Challenge with token.
 
     :ivar bytes token:
 
@@ -144,7 +140,7 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
         return True
 
 
-class KeyAuthorizationChallenge(_TokenDVChallenge):
+class KeyAuthorizationChallenge(_TokenChallenge):
     # pylint: disable=abstract-class-little-used,too-many-ancestors
     """Challenge based on Key Authorization.
 
@@ -456,7 +452,7 @@ class TLSSNI01(KeyAuthorizationChallenge):
 
 
 @Challenge.register  # pylint: disable=too-many-ancestors
-class DNS(_TokenDVChallenge):
+class DNS(_TokenChallenge):
     """ACME "dns" challenge."""
     typ = "dns"
 
