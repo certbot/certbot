@@ -88,7 +88,7 @@ Plugin      Auth Inst Notes
 =========== ==== ==== ===============================================================
 plesk_      Y    Y    Integration with the Plesk web hosting tool
                       https://github.com/plesk/letsencrypt-plesk
-haproxy_    Y    Y    Inegration with the HAProxy load balancer
+haproxy_    Y    Y    Integration with the HAProxy load balancer
                       https://code.greenhost.net/open/letsencrypt-haproxy
 s3front_    Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
                       https://github.com/dlapiduz/letsencrypt-s3front
