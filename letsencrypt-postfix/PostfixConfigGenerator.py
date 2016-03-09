@@ -25,6 +25,7 @@ class PostfixConfigGenerator:
         self.postfix_dir    = postfix_dir
         self.policy_config  = policy_config
         self.policy_file    = os.path.join(postfix_dir, "starttls_everywhere_policy")
+        self.ca_file = os.path.join(postfix_dir, "starttls_everywhere_CAfile")
 
     def ensure_cf_var(self, var, ideal, also_acceptable):
         """
@@ -40,7 +41,6 @@ class PostfixConfigGenerator:
             values = map(parse_line, l)
             if len(set(values)) > 1:
                 if self.fixup:
-                    #print "Scheduling deletions:" + `values`
                     conflicting_lines = [num for num,_var,val in values]
                     self.deletions.extend(conflicting_lines)
                     self.additions.append(var + " = " + ideal)
@@ -48,7 +48,6 @@ class PostfixConfigGenerator:
                     raise ExistingConfigError, "Conflicting existing config values " + `l`
             val = values[0][2]
             if val not in acceptable:
-                #print "Scheduling deletions:" + `values`
                 if self.fixup:
                     self.deletions.append(values[0][0])
                     self.additions.append(var + " = " + ideal)
@@ -99,10 +98,11 @@ class PostfixConfigGenerator:
                 self.new_cf += line
         self.new_cf += sep + new_cf_lines
 
-        #print self.new_cf
-        f = open(self.fn, "w")
-        f.write(self.new_cf)
-        f.close()
+        if not os.access(self.postfix_cf_file, os.W_OK):
+            raise Exception("Can't write to %s, please re-run as root."
+                % self.postfix_cf_file)
+        with open(self.fn, "w") as f:
+            f.write(self.new_cf)
 
     def find_postfix_cf(self):
         "Search far and wide for the correct postfix configuration file"
@@ -186,6 +186,7 @@ class PostfixConfigGenerator:
         self.ensure_cf_var("smtpd_tls_cert_file", fullchain_path, [])
         self.ensure_cf_var("smtpd_tls_key_file", key_path, [])
         self.set_domainwise_tls_policies()
+        self.update_CAfile()
 
     def enhance(self, domain, enhancement, options=None):
         """Perform a configuration enhancement.
@@ -259,16 +260,21 @@ class PostfixConfigGenerator:
         """Restart or refresh the server content.
         :raises .PluginError: when server cannot be restarted
         """
+        print "Reloading postfix config..."
         if os.geteuid() != 0:
             os.system("sudo service postfix reload")
         else:
             os.system("service postfix reload")
+
+    def update_CAfile(self):
+        os.system("cat /usr/share/ca-certificates/mozilla/*.crt > " + self.ca_file)
 
 
 def usage():
     print ("Usage: %s starttls-everywhere.json /etc/postfix /etc/letsencrypt/live/example.com/" %
           sys.argv[0])
     sys.exit(1)
+
 
 if __name__ == "__main__":
     import Config as config
