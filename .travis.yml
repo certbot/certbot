@@ -51,21 +51,37 @@ matrix:
       before_install:
       addons:
     - sudo: required
-      env: TOXENV=le_auto
-      services: docker
-      before_install:
-      addons:
-    - sudo: required
-<<<<<<< 2564fb785b7d174cb8a4ced964c63184b3ae1a61
-      env: TOXENV=apache_compat
-=======
-      env: TOXENV=le_auto_wily
->>>>>>> Adding Ubuntu Wily to LEA testing
-      services: docker
-      before_install:
-      addons:
-    - sudo: required
       env: TOXENV=le_auto_precise
+      services: docker
+      before_install:
+      addons:
+    - sudo: required
+      env: TOXENV=apache_compat
+      services: docker
+      before_install:
+      addons:
+    - sudo: required
+      env: TOXENV=apache_compat
+      services: docker
+      before_install:
+      addons:
+    - sudo: required
+      env: TOXENV=le_auto_wily
+      services: docker
+      before_install:
+      addons:
+    - sudo: required
+      env: TOXENV=le_auto_trusty
+      services: docker
+      before_install:
+      addons:
+    - sudo: required
+      env: TOXENV=le_auto_vivid
+      services: docker
+      before_install:
+      addons:
+    - sudo: required
+      env: TOXENV=le_auto_wily
       services: docker
       before_install:
       addons:
