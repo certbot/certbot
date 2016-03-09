@@ -1,0 +1,34 @@
+# For running tests, build a docker image with a passwordless sudo and a trust
+# store we can manipulate.
+
+FROM ubuntu:vivid
+
+# Add an unprivileged user:
+RUN useradd --create-home --home-dir /home/lea --shell /bin/bash --groups sudo --uid 1000 lea
+
+# Install pip, sudo and nose:
+RUN apt-get update && \
+    apt-get -q -y install python-pip sudo && \
+    apt-get clean
+RUN pip install nose
+
+# Let that user sudo:
+RUN sed -i.bkp -e \
+      's/%sudo\s\+ALL=(ALL\(:ALL\)\?)\s\+ALL/%sudo ALL=NOPASSWD:ALL/g' \
+      /etc/sudoers
+
+RUN mkdir -p /home/lea/letsencrypt/letsencrypt
+
+# Install fake testing CA:
+RUN mkdir /usr/share/ca-certificates/letsencrypt
+COPY ./tests/certs/ca/my-root-ca.crt.pem /usr/share/ca-certificates/letsencrypt/my-root-ca.crt
+RUN echo "letsencrypt/my-root-ca.crt" > /etc/ca-certificates.conf
+RUN update-ca-certificates
+
+# Copy code:
+COPY . /home/lea/letsencrypt/letsencrypt-auto-source
+
+USER lea
+WORKDIR /home/lea
+
+CMD ["nosetests", "-v", "-s", "letsencrypt/letsencrypt-auto-source/tests"]
