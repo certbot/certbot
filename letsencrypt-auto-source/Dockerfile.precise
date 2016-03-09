@@ -8,7 +8,7 @@ RUN useradd --create-home --home-dir /home/lea --shell /bin/bash --groups sudo -
 
 # Install pip, sudo and nose:
 RUN apt-get update && \
-    apt-get -q -y install python-pip sudo && \
+    apt-get -q -y install python-pip sudo openssl && \
     apt-get clean
 RUN pip install nose
 
