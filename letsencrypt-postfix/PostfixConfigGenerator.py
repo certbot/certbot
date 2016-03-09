@@ -76,6 +76,7 @@ class PostfixConfigGenerator:
         policy_cf_entry = "texthash:" + self.policy_file
 
         self.ensure_cf_var("smtp_tls_policy_maps", policy_cf_entry, [])
+        self.ensure_cf_var("smtp_tls_CAfile", self.ca_file, [])
 
 
     def maybe_add_config_lines(self):
