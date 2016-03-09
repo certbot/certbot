@@ -19,7 +19,7 @@ XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN="$VENV_PATH/bin"
-LE_AUTO_VERSION="0.4.1"
+LE_AUTO_VERSION="0.4.2"
 
 # This script takes the same arguments as the main letsencrypt program, but it
 # additionally responds to --verbose (more output) and --debug (allow support
@@ -421,6 +421,19 @@ TempDir() {
   mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || OS X
 }
 
+InstallRequirements() {
+    set +e
+    PEEP_OUT=`"$VENV_BIN/python" "$TEMP_DIR/peep.py" install -r "$TEMP_DIR/$1"`
+    PEEP_STATUS=$?
+    set -e
+    if [ "$PEEP_STATUS" != 0 ]; then
+      # Report error. (Otherwise, be quiet.)
+      echo "Had a problem while downloading and verifying Python packages:"
+      echo "$PEEP_OUT"
+      rm -rf "$VENV_PATH"
+      exit 1
+    fi
+}
 
 
 if [ "$1" = "--le-auto-phase2" ]; then
@@ -444,7 +457,17 @@ if [ "$1" = "--le-auto-phase2" ]; then
 
     echo "Installing Python packages..."
     TEMP_DIR=$(TempDir)
+    trap "rm -rf '$TEMP_DIR'" EXIT
     # There is no $ interpolation due to quotes on starting heredoc delimiter.
+    # -------------------------------------------------------------------------
+    cat << "UNLIKELY_EOF" > "$TEMP_DIR/setuptools-requirements.txt"
+# cryptography requires a more modern version of setuptools.
+# sha256: _ANFf7h6utSdwJ-cMTOGNpPn3bbKgrtQpzmnc3nOWpo
+# sha256: JPz8FTZKn-CaIg830tztyEl5Xj3j5LOT7piOZqnL2Fo
+# sha256: gJaELiTE8ddN_xKr6Qwm0S8F0NmlbtXgb8qm-qHkC2o
+setuptools==20.2.2
+
+UNLIKELY_EOF
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/letsencrypt-auto-requirements.txt"
 # This is the flattened list of packages letsencrypt-auto installs. To generate
@@ -454,6 +477,11 @@ if [ "$1" = "--le-auto-phase2" ]; then
 # sha256: wxZH7baf09RlqEfqMVfTe-0flfGXYLEaR6qRwEtmYxQ
 # sha256: YrCJpVvh2JSc0rx-DfC9254Cj678jDIDjMhIYq791uQ
 argparse==1.4.0
+
+# This comes before cffi because cffi will otherwise install an unchecked
+# version via setup_requires.
+# sha256: eVm0p0q9wnsxL-0cIebK-TCc4LKeqGtZH9Lpns3yf3M
+pycparser==2.14
 
 # sha256: U8HJ3bMEMVE-t_PN7wo-BrDxJSGIqqd0SvD1pM1F268
 # sha256: pWj0nfyhKo2fNwGHJX78WKOBCeHu5xTZKFYdegGKZPg
@@ -479,28 +507,28 @@ ConfigArgParse==0.10.0
 # sha256: ovVlB3DhyH-zNa8Zqbfrc_wFzPIhROto230AzSvLCQI
 configobj==5.0.6
 
-# sha256: 1U_hszrB4J8cEj4vl0948z6V1h1PSALdISIKXD6MEX0
-# sha256: B1X2aE4RhSAFs2MTdh7ctbqEOmTNAizhrC3L1JqTYG0
-# sha256: zjhNo4lZlluh90VKJfVp737yqxRd8ueiml4pS3TgRnc
-# sha256: GvQDkV3LmWHDB2iuZRr6tpKC0dpaut-mN1IhrBGHdQM
-# sha256: ag08d91PH-W8ZfJ--3fsjQSjiNpesl66DiBAwJgZ30o
-# sha256: KdelgcO6_wTh--IAaltHjZ7cfPmib8ijWUkkf09lA3k
-# sha256: IPAWEKpAh_bVadjMIMR4uB8DhIYnWqqx3Dx12VAsZ-A
-# sha256: l9hGUIulDVomml82OK4cFmWbNTFaH0B_oVF2cH2j0Jc
-# sha256: djfqRMLL1NsvLKccsmtmPRczORqnafi8g2xZVilbd5g
-# sha256: gR-eqJVbPquzLgQGU0XDB4Ui5rPuPZLz0n08fNcWpjM
-# sha256: DXCMjYz97Qm4fCoLqHY856ZjWG4EPmrEL9eDHpKQHLY
-# sha256: Efnq11YqPgATWGytM5o_em9Yg8zhw7S5jhrGnft3p_Y
-# sha256: dNhnm55-0ePs-wq1NNyTUruxz3PTYsmQkJTAlyivqJY
-# sha256: z1Hd-123eBaiB1OKZgEUuC4w4IAD_uhJmwILi4SA2sU
-# sha256: 47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU
-# sha256: dITvgYGUFB3_eUdf-74vd6-FHiw7v-Lk1ZEjEi-KTjM
-# sha256: 7gLB6J7l7pUBV6VK1YTXN8Ec83putMCFPozz8n6WLcA
-# sha256: pfGPaxhQpVVKV9v2YsrSUSpGBW5paHJqmFjngN1bnQo
-# sha256: 26GA8xrb5xi6qdbPirY0hJSwlLK4GAL_8zvVDSfRPnM
-# sha256: 5RinlLjzjoOC9_B3kUGBPOtIE6z9MRVBwNsOGJ69eN4
-# sha256: f1FFn4TWcERCdeYVg59FQsk1R6Euk4oKSQba_l994VM
-cryptography==1.1.2
+# sha256: Axk49zpcXrPoCeGP98rraGU1GHFBe-YFDLjIapogK5o
+# sha256: oXmjjVD41otJHXoxPbePjKvikIQs7N3dx7NNQI5Z2wo
+# sha256: kGyIsqrc-Zz6uyQJgmPRv2WrDIaIrN4Q2uHwnYZZIPE
+# sha256: bnBsXGCIdwsdG2NOlZ4hlj4xWwJV9fR3cSWtPVQIKXc
+# sha256: 9ev44xxI-HB5Idyg6ZTed4E6nJub8DwRnF3fl73P_nM
+# sha256: x7ieQiiMx_vuOBLpnvXHRPIkUuEdaCL2gHr8bWs76D4
+# sha256: hAjSmGWUcQnYto8YN6fN4apNyG4Peco7pYwMRORD1qU
+# sha256: x-ds88PZJd0x-iOM-4Bs_7pxjA8IcH13pTh2hHeWmVY
+# sha256: fY3jU4DzFwJ1i3dTu1xAcjgyxzAG3tsvkJm_YaN_coc
+# sha256: XtvucfrlRp7oP-CjeGa5OYyM46RjJcJPzt-_CXu0ihk
+# sha256: WU7a_kgBwTvcHMMF53BKkMGWF-lZNvarRX7k_-AAulA
+# sha256: t_2xagp_SBvkLadEv-HqIWMCXeIfkPLGiKMW88NU2pw
+# sha256: IHuL8P4JBzNt84tzO0h1Ic-eE4GJq6kjStVP5UXdDbg
+# sha256: UJovBThicM94OZPJDUn_77PdYq7kW_HqjOPSzecnHCE
+# sha256: rGm2XdGvAXnt5AyfFXiMiPc-Yo6mwFGd44OOJ5uziMY
+# sha256: jfb61sauEv1wBOopNX8KK003dOrsp2VlMNCNLZDNQao
+# sha256: C4uW3YHMFTOgTzA4LA_iHBly4Yn3lNDEJhoYzsCP2bU
+# sha256: yuj8oYg_I8UOp42J3m_k_v20zqgxd3YPRxd1WUFN7ZM
+# sha256: GkccpXapzc4bHNnzoisdCe5E1GhiA3VX3heRnA20RCU
+# sha256: jsTo49RTs6G2O19Xc3pDTc8e5KLyb2_3xaN8P2eRBNI
+# sha256: jrEcd92Oc_SN9rL3p-Fhc_4P6P3-JmIygy6IR34IRU4
+cryptography==1.2.3
 
 # sha256: JHXX_N31lR6S_1RpcnWIAt5SYL9Akxmp8ZNOa7yLHcc
 # sha256: NZB977D5krdat3iPZf7cHPIP-iJojg5vbxKvwGs-pQE
@@ -528,9 +556,9 @@ ndg-httpsclient==0.4.0
 # sha256: HDW0rCBs7y0kgWyJ-Jzyid09OM98RJuz-re_bUPwGx8
 ordereddict==1.1
 
-# sha256: OnTxAPkNZZGDFf5kkHca0gi8PxOv0y01_P5OjQs7gSs
-# sha256: Paa-K-UG9ZzOMuGeMOIBBT4btNB-JWaJGOAPikmtQKs
-parsedatetime==1.5
+# sha256: zp1CIWXPbpY5Bc1fdPJ06_fMmMlBkWFpF475Pw5VeDg
+# sha256: F8V4d1UgyZExY04Jz8paBeqeG9KgXNBpZ-vs4Q33ry0
+parsedatetime==2.1
 
 # sha256: Rsjbda51oFa9HMB_ohc0_i5gPRGgeDPswe63TDXHLgw
 # sha256: 4hJ2JqkebIhduJZol22zECDwry2nKJJLVkgPx8zwlkk
@@ -571,9 +599,6 @@ psutil==3.3.0
 # sha256: gyPgNjey0HLMcEEwC6xuxEjDwolQq0A3YDZ4jpoa9ik
 # sha256: hTys2W0fcB3dZ6oD7MBfUYkBNbcmLpInEBEvEqLtKn8
 pyasn1==0.1.9
-
-# sha256: eVm0p0q9wnsxL-0cIebK-TCc4LKeqGtZH9Lpns3yf3M
-pycparser==2.14
 
 # sha256: iORea7Jd_tJyoe8ucoRh1EtjTCzWiemJtuVqNJxaOuU
 # sha256: 8KJgcNbbCIHei8x4RpNLfDyTDY-cedRYg-5ImEvA1nI
@@ -653,17 +678,17 @@ mock==1.0.1
 # THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT;
 # ADD ALL DEPENDENCIES ABOVE
 
-# sha256: zd_qpRKPaFs00y5hex5Rbu5CVLWzed7pBGL28juxoHM
-# sha256: 18Gfo85AbZXE46GyTkyePthTNiUeoGTQNcXlSvmRQvM
-acme==0.4.1
+# sha256: UMVihR1TbyvQNHzx1CzYiydDitJVGw_mLAGr3-gCGJk
+# sha256: ClkIqiGQsLTyyLASRkWYniS9n4CAW6D4GSuBETXFALY
+acme==0.4.2
 
-# sha256: wIuGh8yh1TeOClXW0qLz70bKeM9Ax4bfFNrkKSDjbbo
-# sha256: 7TeAUt8cZ0IZQuQNuUm8MoH8vPWlKaCrwWAkdCEs_5s
-letsencrypt==0.4.1
+# sha256: hbUGND6Eo_q6a97o3o66wwLYJ7koNvwOXh9u5bZNCVI
+# sha256: 460kqywseljbDW_Gr_ZU23rWlzNeE-AL4_JwYCRdS-Y
+letsencrypt==0.4.2
 
-# sha256: bnpKXJTXy9cFSktJLtvTCTovJJybc__Ivqs6XaXxk9U
-# sha256: bcvJ6j5UB8sOJ_M88DAsqvmaLxD2UnAP9ys-_J6Bdcc
-letsencrypt-apache==0.4.1
+# sha256: KNMAOMrJMr1vLJBDaihGqEmvPbfxgH_dvRk1OFHaM_I
+# sha256: SXSg-gIabiV4CBzrfPIyABhfTjKl7YZrKDSVkfE4Vbo
+letsencrypt-apache==0.4.2
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1641,18 +1666,8 @@ if __name__ == '__main__':
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
-    set +e
-    PEEP_OUT=`"$VENV_BIN/python" "$TEMP_DIR/peep.py" install -r "$TEMP_DIR/letsencrypt-auto-requirements.txt"`
-    PEEP_STATUS=$?
-    set -e
-    rm -rf "$TEMP_DIR"
-    if [ "$PEEP_STATUS" != 0 ]; then
-      # Report error. (Otherwise, be quiet.)
-      echo "Had a problem while downloading and verifying Python packages:"
-      echo "$PEEP_OUT"
-      rm -rf "$VENV_PATH"
-      exit 1
-    fi
+    InstallRequirements "setuptools-requirements.txt"
+    InstallRequirements "letsencrypt-auto-requirements.txt"
     echo "Installation succeeded."
   fi
   echo "Requesting root privileges to run letsencrypt..."
