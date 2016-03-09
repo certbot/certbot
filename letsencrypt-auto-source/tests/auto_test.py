@@ -225,8 +225,8 @@ class AutoTests(TestCase):
     * There was an out-of-date LE script installed.
     * There was a current LE script installed.
     * There was no LE script installed (less important).
-    * Pip hash-verification passes.
-    * Pip has a hash mismatch.
+    * Peep verification passes.
+    * Peep has a hash mismatch.
     * The OpenSSL sig matches.
     * The OpenSSL sig mismatches.
 
@@ -252,7 +252,8 @@ class AutoTests(TestCase):
         """
         NEW_LE_AUTO = build_le_auto(
                 version='99.9.9',
-                requirements='letsencrypt==99.9.9 --hash=sha256:1cc14d61ab424cdee446f51e50f1123f8482ec740587fe78626c933bba2873a0')
+                requirements='# sha256: HMFNYatCTN7kRvUeUPESP4SC7HQFh_54YmyTO7ooc6A\n'
+                             'letsencrypt==99.9.9')
         NEW_LE_AUTO_SIG = signed(NEW_LE_AUTO)
 
         with ephemeral_dir() as venv_dir:
@@ -271,7 +272,7 @@ class AutoTests(TestCase):
                                             'dist'))
 
                 # Test when a phase-1 upgrade is needed, there's no LE binary
-                # installed, and pip hashes verify:
+                # installed, and peep verifies:
                 install_le_auto(build_le_auto(version='50.0.0'), venv_dir)
                 out, err = run_letsencrypt_auto()
                 ok_(re.match(r'letsencrypt \d+\.\d+\.\d+',
@@ -317,8 +318,8 @@ class AutoTests(TestCase):
                 else:
                     self.fail('Signature check on letsencrypt-auto erroneously passed.')
 
-    def test_pip_failure(self):
-        """Make sure pip stops us if there is a hash mismatch."""
+    def test_peep_failure(self):
+        """Make sure peep stops us if there is a hash mismatch."""
         with ephemeral_dir() as venv_dir:
             resources = {'': '<a href="letsencrypt/">letsencrypt/</a>',
                          'letsencrypt/json': dumps({'releases': {'99.9.9': None}})}
@@ -327,14 +328,15 @@ class AutoTests(TestCase):
                 install_le_auto(
                     build_le_auto(
                         version='99.9.9',
-                        requirements='configobj==5.0.6 --hash=sha256:badbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadb'),
+                        requirements='# sha256: badbadbadbadbadbadbadbadbadbadbadbadbadbadb\n'
+                                     'configobj==5.0.6'),
                     venv_dir)
                 try:
                     out, err = run_le_auto(venv_dir, base_url)
                 except CalledProcessError as exc:
                     eq_(exc.returncode, 1)
-                    self.assertIn("THESE PACKAGES DO NOT MATCH THE HASHES "
-                                  "FROM THE REQUIREMENTS FILE",
+                    self.assertIn("THE FOLLOWING PACKAGES DIDN'T MATCH THE "
+                                  "HASHES SPECIFIED IN THE REQUIREMENTS",
                                   exc.output)
                     ok_(not exists(join(venv_dir, 'letsencrypt')),
                         msg="The virtualenv was left around, even though "
@@ -343,5 +345,5 @@ class AutoTests(TestCase):
                             "need to recreate the virtualenv, which hinges "
                             "on the presence of $VENV_BIN/letsencrypt.")
                 else:
-                    self.fail("Pip didn't detect a bad hash and stop the "
+                    self.fail("Peep didn't detect a bad hash and stop the "
                               "installation.")

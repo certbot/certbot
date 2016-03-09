@@ -161,19 +161,20 @@ for module in letsencrypt $subpkgs_modules ; do
 done
 deactivate
 
-# pin pip hashes of the things we just built
+# pin peep hashes of the things we just built
 for pkg in acme letsencrypt letsencrypt-apache ; do
-    echo $pkg==$version \\
-    pip hash dist."$version/$pkg"/*.{whl,gz} | grep "^--hash" | python2 -c 'from sys import stdin; input = stdin.read(); print "   ", input.replace("\n--hash", " \\\n    --hash"),'
+    echo
+    letsencrypt-auto-source/pieces/peep.py hash dist."$version/$pkg"/*.{whl,gz}
+    echo $pkg==$version
 done > /tmp/hashes.$$
 
-if ! wc -l /tmp/hashes.$$ | grep -qE "^\s*9 " ; then
-    echo Unexpected pip hash output
+if ! wc -l /tmp/hashes.$$ | grep -qE "^\s*12 " ; then
+    echo Unexpected peep hash output
     exit 1
 fi
 
 # perform hideous surgery on requirements.txt...
-head -n -9 letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt > /tmp/req.$$
+head -n -12 letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt > /tmp/req.$$
 cat /tmp/hashes.$$ >> /tmp/req.$$
 cp /tmp/req.$$ letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt
 
