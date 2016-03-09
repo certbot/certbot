@@ -76,11 +76,6 @@ matrix:
       before_install:
       addons:
     - sudo: required
-      env: TOXENV=le_auto_vivid
-      services: docker
-      before_install:
-      addons:
-    - sudo: required
       env: TOXENV=le_auto_wily
       services: docker
       before_install:
