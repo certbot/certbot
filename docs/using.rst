@@ -81,6 +81,21 @@ manual_     Y    N    Helps you obtain a cert by giving you instructions to perf
 nginx_      Y    Y    Very experimental and not included in letsencrypt-auto_.
 =========== ==== ==== ===============================================================
 
+There are also a number of third-party plugins for the client, provided by other developers:
+
+=========== ==== ==== ===============================================================
+Plugin      Auth Inst Notes
+=========== ==== ==== ===============================================================
+plesk_      Y    Y    Integration with the Plesk web hosting tool
+                      https://github.com/plesk/letsencrypt-plesk
+haproxy_    Y    Y    Integration with the HAProxy load balancer
+                      https://code.greenhost.net/open/letsencrypt-haproxy
+s3front_    Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
+                      https://github.com/dlapiduz/letsencrypt-s3front
+gandi_      Y    Y    Integration with Gandi's hosting products and API
+                      https://github.com/Gandi/letsencrypt-gandi
+=========== ==== ==== ===============================================================
+
 Future plugins for IMAP servers, SMTP servers, IRC servers, etc, are likely to
 be installers but not authenticators.
 

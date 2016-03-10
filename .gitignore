@@ -6,6 +6,7 @@ dist*/
 /venv*/
 /kgs/
 /.tox/
+/releases/
 letsencrypt.log
 
 # coverage
