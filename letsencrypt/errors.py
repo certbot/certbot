@@ -48,19 +48,6 @@ class FailedChallenges(AuthorizationError):
                 for achall in self.failed_achalls if achall.error is not None))
 
 
-class ContAuthError(AuthorizationError):
-    """Let's Encrypt Continuity Authenticator error."""
-
-
-class DvAuthError(AuthorizationError):
-    """Let's Encrypt DV Authenticator error."""
-
-
-# Authenticator - Challenge specific errors
-class TLSSNI01Error(DvAuthError):
-    """Let's Encrypt TLSSNI01 error."""
-
-
 # Plugin Errors
 class PluginError(Error):
     """Let's Encrypt Plugin error."""
