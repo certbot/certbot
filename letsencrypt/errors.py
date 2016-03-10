@@ -86,10 +86,6 @@ class NotSupportedError(PluginError):
     """Let's Encrypt Plugin function not supported error."""
 
 
-class RevokerError(Error):
-    """Let's Encrypt Revoker error."""
-
-
 class StandaloneBindError(Error):
     """Standalone plugin bind error."""
 
