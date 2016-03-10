@@ -87,7 +87,7 @@ There are also a number of third-party plugins for the client, provided by other
 Plugin      Auth Inst Notes
 =========== ==== ==== ===============================================================
 plesk_      Y    Y    Integration with the Plesk web hosting tool
-haproxy_    Y    Y    Inegration with the HAProxy load balancer
+haproxy_    Y    Y    Integration with the HAProxy load balancer
 s3front_    Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
 gandi_      Y    Y    Integration with Gandi's hosting products and API
 =========== ==== ==== ===============================================================
