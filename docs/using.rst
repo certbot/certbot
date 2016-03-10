@@ -75,7 +75,8 @@ webroot_    Y    N    Obtains a cert by writing to the webroot directory of an
                       already running webserver.
 standalone_ Y    N    Uses a "standalone" webserver to obtain a cert. Requires
                       port 80 or 443 to be available. This is useful on systems
-                      with no webserver, or when direct integration with the local                       webserver is not supported or not desired.
+                      with no webserver, or when direct integration with the local
+                      webserver is not supported or not desired.
 manual_     Y    N    Helps you obtain a cert by giving you instructions to perform
                       domain validation yourself.
 nginx_      Y    Y    Very experimental and not included in letsencrypt-auto_.
