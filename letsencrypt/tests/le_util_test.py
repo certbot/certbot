@@ -4,11 +4,11 @@ import errno
 import os
 import shutil
 import stat
-import StringIO
 import tempfile
 import unittest
 
 import mock
+import six
 
 from letsencrypt import errors
 
@@ -307,14 +307,14 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
         self.assertTrue("--old-option is deprecated" in stderr)
 
     def _get_argparse_warnings(self, args):
-        stderr = StringIO.StringIO()
+        stderr = six.StringIO()
         with mock.patch("letsencrypt.le_util.sys.stderr", new=stderr):
             self.parser.parse_args(args)
         return stderr.getvalue()
 
     def test_help(self):
         self._call("--old-option", 2)
-        stdout = StringIO.StringIO()
+        stdout = six.StringIO()
         with mock.patch("letsencrypt.le_util.sys.stdout", new=stdout):
             try:
                 self.parser.parse_args(["-h"])

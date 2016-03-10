@@ -59,9 +59,14 @@ def gen_combos(challbs):
         else:
             cont_chall.append(i)
 
-    # Gen combos for 1 of each type, lowest index first (makes testing easier)
-    return tuple((i, j) if i < j else (j, i)
-                 for i in dv_chall for j in cont_chall)
+    if cont_chall:
+        # Gen combos for 1 of each type, lowest
+        # index included first (makes testing easier)
+        return tuple((i, j) if i < j else (j, i)
+                     for i in dv_chall for j in cont_chall)
+    else:
+        # completing a single DV chall satisfies the CA
+        return tuple((i,) for i in dv_chall)
 
 
 def chall_to_challb(chall, status):  # pylint: disable=redefined-outer-name
