@@ -42,7 +42,6 @@ function oncesigned { # $1 <-- INPFILE ; $2 <--SIGFILE
     echo `file $2`
     exit 1
   fi
-  rm $SIGFILEBALL
 }
 
 HERE=`dirname $0`
