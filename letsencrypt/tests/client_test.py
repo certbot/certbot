@@ -107,7 +107,7 @@ class ClientTest(unittest.TestCase):
             self.acme = acme.return_value = mock.MagicMock()
             self.client = Client(
                 config=self.config, account_=self.account,
-                dv_auth=None, installer=None)
+                auth=None, installer=None)
 
     def test_init_acme_verify_ssl(self):
         net = self.acme_client.call_args[1]["net"]
