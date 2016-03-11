@@ -12,6 +12,7 @@ import traceback
 
 import configargparse
 import OpenSSL
+import six
 import zope.component
 import zope.interface.exceptions
 import zope.interface.verify
@@ -334,12 +335,18 @@ def _restore_required_config_elements(config, renewalparams):
     # int-valued items to add if they're present
     for config_item in INT_CONFIG_ITEMS:
         if config_item in renewalparams and not _set_by_cli(config_item):
-            try:
-                value = int(renewalparams[config_item])
-                setattr(config.namespace, config_item, value)
-            except ValueError:
-                raise errors.Error(
-                    "Expected a numeric value for {0}".format(config_item))
+            config_value = renewalparams[config_item]
+            # the default value for http01_port was None during private beta
+            if config_item == "http01_port" and config_value == "None":
+                logger.info("updating legacy http01_port value")
+                int_value = flag_default("http01_port")
+            else:
+                try:
+                    int_value = int(config_value)
+                except ValueError:
+                    raise errors.Error(
+                        "Expected a numeric value for {0}".format(config_item))
+            setattr(config.namespace, config_item, int_value)
 
 
 def _restore_plugin_configs(config, renewalparams):
@@ -370,7 +377,7 @@ def _restore_plugin_configs(config, renewalparams):
     if renewalparams.get("installer", None) is not None:
         plugin_prefixes.append(renewalparams["installer"])
     for plugin_prefix in set(plugin_prefixes):
-        for config_item, config_value in renewalparams.iteritems():
+        for config_item, config_value in six.iteritems(renewalparams):
             if config_item.startswith(plugin_prefix + "_") and not _set_by_cli(config_item):
                 # Values None, True, and False need to be treated specially,
                 # As they don't get parsed correctly based on type
@@ -623,14 +630,14 @@ class HelpfulArgumentParser(object):
     """
 
     def __init__(self, args, plugins, detect_defaults=False):
+
         from letsencrypt import main
         self.VERBS = main.VERBS
-
         # List of topics for which additional help can be provided
         HELP_TOPICS = ["all", "security",
-                       "paths", "automation", "testing"] + main.VERBS.keys()
+                       "paths", "automation", "testing"] + list(six.iterkeys(self.VERBS)
 
-        plugin_names = [name for name, _p in plugins.iteritems()]
+        plugin_names = list(six.iterkeys(plugins))
         self.help_topics = HELP_TOPICS + plugin_names + [None]
         usage, short_usage = usage_strings(plugins)
         self.parser = configargparse.ArgParser(
@@ -900,7 +907,7 @@ class HelpfulArgumentParser(object):
         may or may not be displayed as help topics.
 
         """
-        for name, plugin_ep in plugins.iteritems():
+        for name, plugin_ep in six.iteritems(plugins):
             parser_or_group = self.add_group(name, description=plugin_ep.description)
             #print(parser_or_group)
             plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)
@@ -1295,7 +1302,7 @@ def process_domain(args_or_config, domain_arg, webroot_path=None):
 class WebrootMapProcessor(argparse.Action):  # pylint: disable=missing-docstring
     def __call__(self, parser, args, webroot_map_arg, option_string=None):
         webroot_map = json.loads(webroot_map_arg)
-        for domains, webroot_path in webroot_map.iteritems():
+        for domains, webroot_path in six.iteritems(webroot_map):
             process_domain(args, domains, [webroot_path])
 
 
