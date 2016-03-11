@@ -1,4 +1,5 @@
 """Let's Encrypt command CLI argument processing."""
+# pylint: disable=too-many-lines
 from __future__ import print_function
 import argparse
 import copy
@@ -30,7 +31,6 @@ from letsencrypt import storage
 from letsencrypt.display import ops as display_ops
 from letsencrypt.plugins import disco as plugins_disco
 
-# pylint: disable=too-many-lines
 
 logger = logging.getLogger(__name__)
 
@@ -635,7 +635,7 @@ class HelpfulArgumentParser(object):
         self.VERBS = main.VERBS
         # List of topics for which additional help can be provided
         HELP_TOPICS = ["all", "security",
-                       "paths", "automation", "testing"] + list(six.iterkeys(self.VERBS)
+                       "paths", "automation", "testing"] + list(six.iterkeys(self.VERBS))
 
         plugin_names = list(six.iterkeys(plugins))
         self.help_topics = HELP_TOPICS + plugin_names + [None]
