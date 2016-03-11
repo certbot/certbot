@@ -52,15 +52,15 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def _call(self, args):
         "Run the cli with output streams and actual client mocked out"
-        with mock.patch('letsencrypt.cli.client') as client:
+        with mock.patch('letsencrypt.main.client') as client:
             ret, stdout, stderr = self._call_no_clientmock(args)
             return ret, stdout, stderr, client
 
     def _call_no_clientmock(self, args):
         "Run the client with output streams mocked out"
         args = self.standard_args + args
-        with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
-            with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
+        with mock.patch('letsencrypt.main.sys.stdout') as stdout:
+            with mock.patch('letsencrypt.main.sys.stderr') as stderr:
                 ret = main.main(args[:])  # NOTE: parser can alter its args!
         return ret, stdout, stderr
 
@@ -70,8 +70,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         caller.
         """
         args = self.standard_args + args
-        with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
-            with mock.patch('letsencrypt.cli.client') as client:
+        with mock.patch('letsencrypt.main.sys.stderr') as stderr:
+            with mock.patch('letsencrypt.main.client') as client:
                 ret = main.main(args[:])  # NOTE: parser can alter its args!
         return ret, None, stderr, client
 
@@ -83,7 +83,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def _help_output(self, args):
         "Run a command, and return the ouput string for scrutiny"
         output = StringIO.StringIO()
-        with mock.patch('letsencrypt.cli.sys.stdout', new=output):
+        with mock.patch('letsencrypt.main.sys.stdout', new=output):
             self.assertRaises(SystemExit, self._call_stdout, args)
             out = output.getvalue()
             return out
@@ -136,7 +136,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         "Ensure that a particular error raises a missing cli flag error containing message"
         exc = None
         try:
-            with mock.patch('letsencrypt.cli.sys.stderr'):
+            with mock.patch('letsencrypt.main.sys.stderr'):
                 main.main(self.standard_args + args[:])  # NOTE: parser can alter its args!
         except errors.MissingCommandlineFlag as exc:
             self.assertTrue(message in str(exc))
@@ -147,15 +147,15 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._cli_missing_flag(args, "specify a plugin")
         args.extend(['--standalone', '-d', 'eg.is'])
         self._cli_missing_flag(args, "register before running")
-        with mock.patch('letsencrypt.cli._auth_from_domains'):
-            with mock.patch('letsencrypt.cli.client.acme_from_config_key'):
+        with mock.patch('letsencrypt.main._auth_from_domains'):
+            with mock.patch('letsencrypt.main.client.acme_from_config_key'):
                 args.extend(['--email', 'io@io.is'])
                 self._cli_missing_flag(args, "--agree-tos")
 
-    @mock.patch('letsencrypt.cli.client.acme_client.Client')
-    @mock.patch('letsencrypt.cli._determine_account')
-    @mock.patch('letsencrypt.cli.client.Client.obtain_and_enroll_certificate')
-    @mock.patch('letsencrypt.cli._auth_from_domains')
+    @mock.patch('letsencrypt.main.client.acme_client.Client')
+    @mock.patch('letsencrypt.main._determine_account')
+    @mock.patch('letsencrypt.main.client.Client.obtain_and_enroll_certificate')
+    @mock.patch('letsencrypt.main._auth_from_domains')
     def test_user_agent(self, afd, _obt, det, _client):
         # Normally the client is totally mocked out, but here we need more
         # arguments to automate it...
@@ -164,7 +164,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         det.return_value = mock.MagicMock(), None
         afd.return_value = mock.MagicMock(), "newcert"
 
-        with mock.patch('letsencrypt.cli.client.acme_client.ClientNetwork') as acme_net:
+        with mock.patch('letsencrypt.main.client.acme_client.ClientNetwork') as acme_net:
             self._call_no_clientmock(args)
             os_ver = " ".join(le_util.get_os_info())
             ua = acme_net.call_args[1]["user_agent"]
@@ -174,7 +174,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             if "linux" in plat.lower():
                 self.assertTrue(platform.linux_distribution()[0] in ua)
 
-        with mock.patch('letsencrypt.cli.client.acme_client.ClientNetwork') as acme_net:
+        with mock.patch('letsencrypt.main.client.acme_client.ClientNetwork') as acme_net:
             ua = "bandersnatch"
             args += ["--user-agent", ua]
             self._call_no_clientmock(args)
@@ -197,8 +197,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(args.chain_path, os.path.abspath(chain))
         self.assertEqual(args.fullchain_path, os.path.abspath(fullchain))
 
-    @mock.patch('letsencrypt.cli.record_chosen_plugins')
-    @mock.patch('letsencrypt.cli.display_ops')
+    @mock.patch('letsencrypt.main.cli.record_chosen_plugins')
+    @mock.patch('letsencrypt.main.cli.display_ops')
     def test_installer_selection(self, mock_display_ops, _rec):
         self._call(['install', '--domains', 'foo.bar', '--cert-path', 'cert',
                     '--key-path', 'key', '--chain-path', 'chain'])
@@ -237,8 +237,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
         self._cli_missing_flag(["--standalone"], "With the standalone plugin, you probably")
 
-        with mock.patch("letsencrypt.cli._init_le_client") as mock_init:
-            with mock.patch("letsencrypt.cli._auth_from_domains") as mock_afd:
+        with mock.patch("letsencrypt.main._init_le_client") as mock_init:
+            with mock.patch("letsencrypt.main._auth_from_domains") as mock_afd:
                 mock_afd.return_value = (mock.MagicMock(), mock.MagicMock())
                 self._call(["certonly", "--manual", "-d", "foo.bar"])
                 unused_config, auth, unused_installer = mock_init.call_args[0]
@@ -267,8 +267,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                   for r in xrange(len(flags)))):
             self._call(['plugins'] + list(args))
 
-    @mock.patch('letsencrypt.cli.plugins_disco')
-    @mock.patch('letsencrypt.cli.HelpfulArgumentParser.determine_help_topics')
+    @mock.patch('letsencrypt.main.plugins_disco')
+    @mock.patch('letsencrypt.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_no_args(self, _det, mock_disco):
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
@@ -279,8 +279,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         filtered = plugins.visible().ifaces()
         stdout.write.called_once_with(str(filtered))
 
-    @mock.patch('letsencrypt.cli.plugins_disco')
-    @mock.patch('letsencrypt.cli.HelpfulArgumentParser.determine_help_topics')
+    @mock.patch('letsencrypt.main.plugins_disco')
+    @mock.patch('letsencrypt.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_init(self, _det, mock_disco):
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
@@ -294,8 +294,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         verified = filtered.verify()
         stdout.write.called_once_with(str(verified))
 
-    @mock.patch('letsencrypt.cli.plugins_disco')
-    @mock.patch('letsencrypt.cli.HelpfulArgumentParser.determine_help_topics')
+    @mock.patch('letsencrypt.main.plugins_disco')
+    @mock.patch('letsencrypt.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_prepare(self, _det, mock_disco):
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
@@ -504,9 +504,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                          {"eg.com": "/tmp", "www.eg.com": "/tmp", "eg.is": "/tmp2"})
 
     def _certonly_new_request_common(self, mock_client, args=None):
-        with mock.patch('letsencrypt.cli._treat_as_renewal') as mock_renewal:
+        with mock.patch('letsencrypt.main._treat_as_renewal') as mock_renewal:
             mock_renewal.return_value = ("newcert", None)
-            with mock.patch('letsencrypt.cli._init_le_client') as mock_init:
+            with mock.patch('letsencrypt.main._init_le_client') as mock_init:
                 mock_init.return_value = mock_client
                 if args is None:
                     args = []
@@ -563,17 +563,17 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         mock_client.obtain_certificate.return_value = (mock_certr, 'chain',
                                                        mock_key, 'csr')
         try:
-            with mock.patch('letsencrypt.cli._find_duplicative_certs') as mock_fdc:
+            with mock.patch('letsencrypt.main._find_duplicative_certs') as mock_fdc:
                 mock_fdc.return_value = (mock_lineage, None)
-                with mock.patch('letsencrypt.cli._init_le_client') as mock_init:
+                with mock.patch('letsencrypt.main._init_le_client') as mock_init:
                     mock_init.return_value = mock_client
-                    get_utility_path = 'letsencrypt.cli.zope.component.getUtility'
+                    get_utility_path = 'letsencrypt.main.zope.component.getUtility'
                     with mock.patch(get_utility_path) as mock_get_utility:
-                        with mock.patch('letsencrypt.cli.OpenSSL') as mock_ssl:
+                        with mock.patch('letsencrypt.main.OpenSSL') as mock_ssl:
                             mock_latest = mock.MagicMock()
                             mock_latest.get_issuer.return_value = "Fake fake"
                             mock_ssl.crypto.load_certificate.return_value = mock_latest
-                            with mock.patch('letsencrypt.cli.crypto_util'):
+                            with mock.patch('letsencrypt.main.crypto_util'):
                                 if not args:
                                     args = ['-d', 'isnot.org', '-a', 'standalone', 'certonly']
                                 if extra_args:
@@ -689,7 +689,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             if names is not None:
                 mock_lineage.names.return_value = names
             mock_rc.return_value = mock_lineage
-            with mock.patch('letsencrypt.cli.obtain_cert') as mock_obtain_cert:
+            with mock.patch('letsencrypt.main.obtain_cert') as mock_obtain_cert:
                 self._test_renewal_common(True, None, error_expected=error_expected,
                                           args=['renew'], renew=False)
             if assert_oc_called is not None:
@@ -738,7 +738,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mock_rc.return_value = mock_lineage
             mock_lineage.configuration = {
                 'renewalparams': {'authenticator': 'webroot'}}
-            with mock.patch('letsencrypt.cli.obtain_cert') as mock_obtain_cert:
+            with mock.patch('letsencrypt.main.obtain_cert') as mock_obtain_cert:
                 mock_obtain_cert.side_effect = Exception
                 self._test_renewal_common(True, None, error_expected=True,
                                           args=['renew'], renew=False)
@@ -750,8 +750,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                                   renew=False, error_expected=True)
 
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
-    @mock.patch('letsencrypt.cli._treat_as_renewal')
-    @mock.patch('letsencrypt.cli._init_le_client')
+    @mock.patch('letsencrypt.main._treat_as_renewal')
+    @mock.patch('letsencrypt.main._init_le_client')
     def test_certonly_reinstall(self, mock_init, mock_renewal, mock_get_utility):
         mock_renewal.return_value = ('reinstall', mock.MagicMock())
         mock_init.return_value = mock_client = mock.MagicMock()
@@ -768,9 +768,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         mock_client.obtain_certificate_from_csr.return_value = (certr, chain)
         cert_path = '/etc/letsencrypt/live/example.com/cert.pem'
         mock_client.save_certificate.return_value = cert_path, None, None
-        with mock.patch('letsencrypt.cli._init_le_client') as mock_init:
+        with mock.patch('letsencrypt.main._init_le_client') as mock_init:
             mock_init.return_value = mock_client
-            get_utility_path = 'letsencrypt.cli.zope.component.getUtility'
+            get_utility_path = 'letsencrypt.main.zope.component.getUtility'
             with mock.patch(get_utility_path) as mock_get_utility:
                 chain_path = '/etc/letsencrypt/live/example.com/chain.pem'
                 full_path = '/etc/letsencrypt/live/example.com/fullchain.pem'
@@ -779,7 +779,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                             CSR, cert_path, chain_path, full_path).split()
                 if extra_args:
                     args += extra_args
-                with mock.patch('letsencrypt.cli.crypto_util'):
+                with mock.patch('letsencrypt.main.crypto_util'):
                     self._call(args)
 
         if '--dry-run' in args:
@@ -803,7 +803,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue(
             'dry run' in mock_get_utility().add_message.call_args[0][0])
 
-    @mock.patch('letsencrypt.cli.client.acme_client')
+    @mock.patch('letsencrypt.main.client.acme_client')
     def test_revoke_with_key(self, mock_acme_client):
         server = 'foo.bar'
         self._call_no_clientmock(['--cert-path', CERT, '--key-path', KEY,
@@ -816,7 +816,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mock_revoke = mock_acme_client.Client().revoke
             mock_revoke.assert_called_once_with(jose.ComparableX509(cert))
 
-    @mock.patch('letsencrypt.cli._determine_account')
+    @mock.patch('letsencrypt.main._determine_account')
     def test_revoke_without_key(self, mock_determine_account):
         mock_determine_account.return_value = (mock.MagicMock(), None)
         _, _, _, client = self._call(['--cert-path', CERT, 'revoke'])
@@ -825,7 +825,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mock_revoke = client.acme_from_config_key().revoke
             mock_revoke.assert_called_once_with(jose.ComparableX509(cert))
 
-    @mock.patch('letsencrypt.cli.sys')
+    @mock.patch('letsencrypt.main.sys')
     def test_handle_exception(self, mock_sys):
         # pylint: disable=protected-access
         from acme import messages
@@ -833,7 +833,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         config = mock.MagicMock()
         mock_open = mock.mock_open()
 
-        with mock.patch('letsencrypt.cli.open', mock_open, create=True):
+        with mock.patch('letsencrypt.main.open', mock_open, create=True):
             exception = Exception('detail')
             config.verbose_count = 1
             main._handle_exception(
@@ -843,7 +843,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             error_msg = mock_sys.exit.call_args_list[0][0][0]
             self.assertTrue('unexpected error' in error_msg)
 
-        with mock.patch('letsencrypt.cli.open', mock_open, create=True):
+        with mock.patch('letsencrypt.main.open', mock_open, create=True):
             mock_open.side_effect = [KeyboardInterrupt]
             error = errors.Error('detail')
             main._handle_exception(
@@ -908,7 +908,7 @@ class DetermineAccountTest(unittest.TestCase):
     def _call(self):
         # pylint: disable=protected-access
         from letsencrypt.main import _determine_account
-        with mock.patch('letsencrypt.cli.account.AccountFileStorage') as mock_storage:
+        with mock.patch('letsencrypt.main.account.AccountFileStorage') as mock_storage:
             mock_storage.return_value = self.account_storage
             return _determine_account(self.config)
 
@@ -940,7 +940,7 @@ class DetermineAccountTest(unittest.TestCase):
     def test_no_accounts_no_email(self, mock_get_email):
         mock_get_email.return_value = 'foo@bar.baz'
 
-        with mock.patch('letsencrypt.cli.client') as client:
+        with mock.patch('letsencrypt.main.client') as client:
             client.register.return_value = (
                 self.accs[0], mock.sentinel.acme)
             self.assertEqual((self.accs[0], mock.sentinel.acme), self._call())
@@ -952,7 +952,7 @@ class DetermineAccountTest(unittest.TestCase):
 
     def test_no_accounts_email(self):
         self.config.email = 'other email'
-        with mock.patch('letsencrypt.cli.client') as client:
+        with mock.patch('letsencrypt.main.client') as client:
             client.register.return_value = (self.accs[1], mock.sentinel.acme)
             self._call()
         self.assertEqual(self.accs[1].id, self.config.account)
@@ -1014,7 +1014,7 @@ class MockedVerb(object):
 
     """
     def __init__(self, verb_name):
-        self.verb_dict = cli.HelpfulArgumentParser.VERBS
+        self.verb_dict = main.VERBS
         self.verb_func = None
         self.verb_name = verb_name
 

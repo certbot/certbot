@@ -24,7 +24,6 @@ from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
-from letsencrypt import main
 from letsencrypt import storage
 
 from letsencrypt.display import ops as display_ops
@@ -542,6 +541,7 @@ def renew(config, unused_plugins):
                 zope.component.provideUtility(lineage_config)
                 if should_renew(lineage_config, renewal_candidate):
                     plugins = plugins_disco.PluginsRegistry.find_all()
+                    from letsencrypt import main
                     main.obtain_cert(lineage_config, plugins, renewal_candidate)
                     renew_successes.append(renewal_candidate.fullchain)
                 else:
@@ -612,7 +612,6 @@ class SilentParser(object):  # pylint: disable=too-few-public-methods
         kwargs["help"] = argparse.SUPPRESS
         self.parser.add_argument(*args, **kwargs)
 
-
 class HelpfulArgumentParser(object):
     """Argparse Wrapper.
 
@@ -622,19 +621,16 @@ class HelpfulArgumentParser(object):
 
     """
 
-    # Maps verbs/subcommands to the functions that implement them
-    VERBS = {"auth": main.obtain_cert, "certonly": main.obtain_cert,
-             "config_changes": main.config_changes, "everything": main.run,
-             "install": main.install, "plugins": main.plugins_cmd, "renew": renew,
-             "revoke": main.revoke, "rollback": main.rollback, "run": main.run}
-
-    # List of topics for which additional help can be provided
-    HELP_TOPICS = ["all", "security",
-                   "paths", "automation", "testing"] + VERBS.keys()
-
     def __init__(self, args, plugins, detect_defaults=False):
+        from letsencrypt import main
+        self.VERBS = main.VERBS
+
+        # List of topics for which additional help can be provided
+        HELP_TOPICS = ["all", "security",
+                       "paths", "automation", "testing"] + main.VERBS.keys()
+
         plugin_names = [name for name, _p in plugins.iteritems()]
-        self.help_topics = self.HELP_TOPICS + plugin_names + [None]
+        self.help_topics = HELP_TOPICS + plugin_names + [None]
         usage, short_usage = usage_strings(plugins)
         self.parser = configargparse.ArgParser(
             usage=short_usage,
