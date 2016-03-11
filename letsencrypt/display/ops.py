@@ -8,8 +8,6 @@ from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt.display import util as display_util
-import letsencrypt.plugins.selection
-
 
 logger = logging.getLogger(__name__)
 

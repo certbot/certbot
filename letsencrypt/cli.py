@@ -13,6 +13,7 @@ import configargparse
 import OpenSSL
 import six
 
+import letsencrypt
 
 from letsencrypt import constants
 from letsencrypt import crypto_util
@@ -20,9 +21,8 @@ from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
 
-from letsencrypt.display import ops as display_ops
 from letsencrypt.plugins import disco as plugins_disco
-from letsencrypt.plugin.selection import cli_plugin_requests
+from letsencrypt.plugins.selection import cli_plugin_requests
 
 
 logger = logging.getLogger(__name__)
@@ -118,7 +118,7 @@ def set_by_cli(var):
         detector = set_by_cli.detector = prepare_and_parse_args(
             plugins, reconstructed_args, detect_defaults=True)
         # propagate plugin requests: eg --standalone modifies config.authenticator
-        auth, inst = plugin_selection.cli_plugin_requests(detector)
+        auth, inst = cli_plugin_requests(detector)
         detector.authenticator = auth if auth else ""
         detector.installer = inst if inst else ""
         logger.debug("Default Detector is %r", detector)

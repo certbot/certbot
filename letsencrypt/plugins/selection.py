@@ -1,6 +1,14 @@
+"""Decide which plugins to use for authentication & installation"""
 from __future__ import print_function
+
 import os
-from letsencrypt import errors, interfaces
+import logging
+
+import zope.component
+
+from letsencrypt import errors
+from letsencrypt import interfaces
+
 from letsencrypt.display import util as display_util
 
 logger = logging.getLogger(__name__)

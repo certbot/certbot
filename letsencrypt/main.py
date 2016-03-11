@@ -6,6 +6,8 @@ import os
 import sys
 import zope.component
 
+import letsencrypt
+
 from letsencrypt import account
 from letsencrypt import client
 from letsencrypt import cli

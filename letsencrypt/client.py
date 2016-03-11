@@ -11,6 +11,8 @@ from acme import client as acme_client
 from acme import jose
 from acme import messages
 
+import letsencrypt
+
 from letsencrypt import account
 from letsencrypt import auth_handler
 from letsencrypt import configuration
