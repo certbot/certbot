@@ -208,34 +208,35 @@ def should_renew(config, lineage):
 
 def _renew_describe_results(config, renew_successes, renew_failures,
                             renew_skipped, parse_failures):
-    status = lambda ms, category: "  " + "\n  ".join(m + " (%s)" % category for m in ms)
+    def _status(msgs, category):
+        return "  " + "\n  ".join("%s (%s)" % (m, category) for m in msgs)
     if config.dry_run:
         print("** DRY RUN: simulating 'letsencrypt renew' close to cert expiry")
         print("**          (The test certificates below have not been saved.)")
     print()
     if renew_skipped:
         print("The following certs are not due for renewal yet:")
-        print(status(renew_skipped, "skipped"))
+        print(_status(renew_skipped, "skipped"))
     if not renew_successes and not renew_failures:
         print("No renewals were attempted.")
     elif renew_successes and not renew_failures:
         print("Congratulations, all renewals succeeded. The following certs "
               "have been renewed:")
-        print(status(renew_successes, "success"))
+        print(_status(renew_successes, "success"))
     elif renew_failures and not renew_successes:
         print("All renewal attempts failed. The following certs could not be "
               "renewed:")
-        print(status(renew_failures, "failure"))
+        print(_status(renew_failures, "failure"))
     elif renew_failures and renew_successes:
         print("The following certs were successfully renewed:")
-        print(status(renew_successes, "success"))
+        print(_status(renew_successes, "success"))
         print("\nThe following certs could not be renewed:")
-        print(status(renew_failures, "failure"))
+        print(_status(renew_failures, "failure"))
 
     if parse_failures:
         print("\nAdditionally, the following renewal configuration files "
               "were invalid: ")
-        print(status(parse_failures, "parsefail"))
+        print(_status(parse_failures, "parsefail"))
 
     if config.dry_run:
         print("** DRY RUN: simulating 'letsencrypt renew' close to cert expiry")
