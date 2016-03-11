@@ -201,12 +201,12 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(args.chain_path, os.path.abspath(chain))
         self.assertEqual(args.fullchain_path, os.path.abspath(fullchain))
 
-    @mock.patch('letsencrypt.main.cli.record_chosen_plugins')
-    @mock.patch('letsencrypt.main.cli.display_ops')
-    def test_installer_selection(self, mock_display_ops, _rec):
+    @mock.patch('letsencrypt.main.ps.record_chosen_plugins')
+    @mock.patch('letsencrypt.main.ps.pick_installer')
+    def test_installer_selection(self, mock_pick_installer, _rec):
         self._call(['install', '--domains', 'foo.bar', '--cert-path', 'cert',
                     '--key-path', 'key', '--chain-path', 'chain'])
-        self.assertEqual(mock_display_ops.pick_installer.call_count, 1)
+        self.assertEqual(mock_pick_installer.call_count, 1)
 
     @mock.patch('letsencrypt.le_util.exe_exists')
     def test_configurator_selection(self, mock_exe_exists):
@@ -493,7 +493,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._webroot_map_test(simple_map, "/tmp2", "eg2.com,eg.com", expected_map, domains)
 
         # test inclusion of interactively specified domains in the webroot map
-        with mock.patch('letsencrypt.cli.display_ops.choose_names') as mock_choose:
+        with mock.patch('letsencrypt.display.ops.choose_names') as mock_choose:
             mock_choose.return_value = domains
             expected_map["eg2.com"] = "/tmp"
             self._webroot_map_test(None, "/tmp", None, expected_map, domains)
