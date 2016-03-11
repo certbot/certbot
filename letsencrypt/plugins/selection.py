@@ -1,7 +1,128 @@
 from __future__ import print_function
 import os
-from letsencrypt import errors
-from letsencrypt.display import ops as display_ops
+from letsencrypt import errors, interfaces
+from letsencrypt.display import util as display_util
+
+logger = logging.getLogger(__name__)
+z_util = zope.component.getUtility
+
+def pick_configurator(
+        config, default, plugins,
+        question="How would you like to authenticate and install "
+                 "certificates?"):
+    """Pick configurator plugin."""
+    return pick_plugin(
+        config, default, plugins, question,
+        (interfaces.IAuthenticator, interfaces.IInstaller))
+
+
+def pick_installer(config, default, plugins,
+                   question="How would you like to install certificates?"):
+    """Pick installer plugin."""
+    return pick_plugin(
+        config, default, plugins, question, (interfaces.IInstaller,))
+
+
+def pick_authenticator(
+        config, default, plugins, question="How would you "
+        "like to authenticate with the Let's Encrypt CA?"):
+    """Pick authentication plugin."""
+    return pick_plugin(
+        config, default, plugins, question, (interfaces.IAuthenticator,))
+
+
+def pick_plugin(config, default, plugins, question, ifaces):
+    """Pick plugin.
+
+    :param letsencrypt.interfaces.IConfig: Configuration
+    :param str default: Plugin name supplied by user or ``None``.
+    :param letsencrypt.plugins.disco.PluginsRegistry plugins:
+        All plugins registered as entry points.
+    :param str question: Question to be presented to the user in case
+        multiple candidates are found.
+    :param list ifaces: Interfaces that plugins must provide.
+
+    :returns: Initialized plugin.
+    :rtype: IPlugin
+
+    """
+    if default is not None:
+        # throw more UX-friendly error if default not in plugins
+        filtered = plugins.filter(lambda p_ep: p_ep.name == default)
+    else:
+        if config.noninteractive_mode:
+            # it's really bad to auto-select the single available plugin in
+            # non-interactive mode, because an update could later add a second
+            # available plugin
+            raise errors.MissingCommandlineFlag(
+                "Missing command line flags. For non-interactive execution, "
+                "you will need to specify a plugin on the command line.  Run "
+                "with '--help plugins' to see a list of options, and see "
+                "https://eff.org/letsencrypt-plugins for more detail on what "
+                "the plugins do and how to use them.")
+
+        filtered = plugins.visible().ifaces(ifaces)
+
+    filtered.init(config)
+    verified = filtered.verify(ifaces)
+    verified.prepare()
+    prepared = verified.available()
+
+    if len(prepared) > 1:
+        logger.debug("Multiple candidate plugins: %s", prepared)
+        plugin_ep = choose_plugin(prepared.values(), question)
+        if plugin_ep is None:
+            return None
+        else:
+            return plugin_ep.init()
+    elif len(prepared) == 1:
+        plugin_ep = prepared.values()[0]
+        logger.debug("Single candidate plugin: %s", plugin_ep)
+        if plugin_ep.misconfigured:
+            return None
+        return plugin_ep.init()
+    else:
+        logger.debug("No candidate plugin")
+        return None
+
+
+def choose_plugin(prepared, question):
+    """Allow the user to choose their plugin.
+
+    :param list prepared: List of `~.PluginEntryPoint`.
+    :param str question: Question to be presented to the user.
+
+    :returns: Plugin entry point chosen by the user.
+    :rtype: `~.PluginEntryPoint`
+
+    """
+    opts = [plugin_ep.description_with_name +
+            (" [Misconfigured]" if plugin_ep.misconfigured else "")
+            for plugin_ep in prepared]
+
+    while True:
+        disp = z_util(interfaces.IDisplay)
+        code, index = disp.menu(question, opts, help_label="More Info")
+
+        if code == display_util.OK:
+            plugin_ep = prepared[index]
+            if plugin_ep.misconfigured:
+                z_util(interfaces.IDisplay).notification(
+                    "The selected plugin encountered an error while parsing "
+                    "your server configuration and cannot be used. The error "
+                    "was:\n\n{0}".format(plugin_ep.prepare()),
+                    height=display_util.HEIGHT, pause=False)
+            else:
+                return plugin_ep
+        elif code == display_util.HELP:
+            if prepared[index].misconfigured:
+                msg = "Reported Error: %s" % prepared[index].prepare()
+            else:
+                msg = prepared[index].init().more_info()
+            z_util(interfaces.IDisplay).notification(
+                msg, height=display_util.HEIGHT)
+        else:
+            return None
 
 logger = logging.getLogger(__name__)
 
@@ -54,12 +175,12 @@ def choose_configurator_plugins(config, plugins, verb):
     if verb == "run" and req_auth == req_inst:
         # Unless the user has explicitly asked for different auth/install,
         # only consider offering a single choice
-        authenticator = installer = display_ops.pick_configurator(config, req_inst, plugins)
+        authenticator = installer = pick_configurator(config, req_inst, plugins)
     else:
         if need_inst or req_inst:
-            installer = display_ops.pick_installer(config, req_inst, plugins)
+            installer = pick_installer(config, req_inst, plugins)
         if need_auth:
-            authenticator = display_ops.pick_authenticator(config, req_auth, plugins)
+            authenticator = pick_authenticator(config, req_auth, plugins)
     logger.debug("Selected authenticator %s and installer %s", authenticator, installer)
 
     # Report on any failures

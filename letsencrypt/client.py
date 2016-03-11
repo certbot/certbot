@@ -11,8 +11,6 @@ from acme import client as acme_client
 from acme import jose
 from acme import messages
 
-import letsencrypt
-
 from letsencrypt import account
 from letsencrypt import auth_handler
 from letsencrypt import configuration
@@ -27,6 +25,7 @@ from letsencrypt import storage
 
 from letsencrypt.display import ops as display_ops
 from letsencrypt.display import enhancements
+from letsencrypt.plugins import selection as plugin_selection
 
 
 logger = logging.getLogger(__name__)
@@ -524,7 +523,7 @@ def rollback(default_installer, checkpoints, config, plugins):
 
     """
     # Misconfigurations are only a slight problems... allow the user to rollback
-    installer = display_ops.pick_installer(
+    installer = plugin_selection.pick_installer(
         config, default_installer, plugins, question="Which installer "
         "should be used for rollback?")
 

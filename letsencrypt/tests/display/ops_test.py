@@ -76,7 +76,7 @@ class PickPluginTest(unittest.TestCase):
         self.ifaces = []
 
     def _call(self):
-        from letsencrypt.display.ops import pick_plugin
+        from letsencrypt.plugins.selection import pick_plugin
         return pick_plugin(self.config, self.default, self.reg,
                            self.question, self.ifaces)
 
@@ -149,17 +149,17 @@ class ConveniencePickPluginTest(unittest.TestCase):
             config, default, plugins, "Question?", ifaces)
 
     def test_authenticator(self):
-        from letsencrypt.display.ops import pick_authenticator
+        from letsencrypt.plugins.selection import pick_authenticator
         self._test(pick_authenticator, (interfaces.IAuthenticator,))
 
     def test_installer(self):
-        from letsencrypt.display.ops import pick_installer
+        from letsencrypt.plugins.selection import pick_installer
         self._test(pick_installer, (interfaces.IInstaller,))
 
     def test_configurator(self):
-        from letsencrypt.display.ops import pick_configurator
-        self._test(pick_configurator, (
-            interfaces.IAuthenticator, interfaces.IInstaller))
+        from letsencrypt.plugins.selection import pick_configurator
+        self._test(pick_configurator,
+            (interfaces.IAuthenticator, interfaces.IInstaller))
 
 
 class GetEmailTest(unittest.TestCase):
