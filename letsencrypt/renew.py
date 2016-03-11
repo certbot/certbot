@@ -139,21 +139,14 @@ def _restore_plugin_configs(config, renewalparams):
         for config_item, config_value in six.iteritems(renewalparams):
             if config_item.startswith(plugin_prefix + "_") and not cli.set_by_cli(config_item):
                 # Values None, True, and False need to be treated specially,
-                # As they don't get parsed correctly based on type
+                # As their types aren't handled correctly by configobj
                 if config_value in ("None", "True", "False"):
                     # bool("False") == True
                     # pylint: disable=eval-used
                     setattr(config.namespace, config_item, eval(config_value))
-                    continue
-                # If argparse has a type for this variable, use it:
-                # pylint: disable=protected-access
-                for action in cli.helpful_parser.parser._actions:
-                    if action.type is not None and action.dest == config_item:
-                        setattr(config.namespace, config_item,
-                                action.type(config_value))
-                        break
                 else:
-                    setattr(config.namespace, config_item, str(config_value))
+                    cast = cli.argparse_type(config_item)
+                    setattr(config.namespace, config_item, cast(config_value))
 
 
 def _restore_required_config_elements(config, renewalparams):
