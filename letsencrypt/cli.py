@@ -283,6 +283,16 @@ def set_by_cli(var):
 # static housekeeping var
 set_by_cli.detector = None
 
+
+def argparse_type(variable):
+    "Return our argparse type function for a config variable (default: str)"
+    # pylint: disable=protected-access
+    for action in helpful_parser.parser._actions:
+        if action.type is not None and action.dest == variable:
+            return action.type
+    return str
+
+
 def read_file(filename, mode="rb"):
     """Returns the given file's contents.
 
@@ -304,6 +314,10 @@ def read_file(filename, mode="rb"):
 
 def flag_default(name):
     """Default value for CLI flag."""
+    # XXX: this is an internal housekeeping notion of defaults before
+    # argparse has been set up; it is not accurate for all flags.  Call it
+    # with caution.  Plugin defaults are missing, and some things are using
+    # defaults defined in this file, not in constants.py :(
     return constants.CLI_DEFAULTS[name]
 
 
