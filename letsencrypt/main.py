@@ -701,7 +701,7 @@ def main(cli_args=sys.argv[1:]):
 
 
 # Maps verbs/subcommands to the functions that implement them
-# In principle this should live in cli.HelpfulArgumentParser, but 
+# In principle this should live in cli.HelpfulArgumentParser, but
 # due to issues with import cycles and testing, it lives here
 VERBS = {"auth": obtain_cert, "certonly": obtain_cert,
          "config_changes": config_changes, "everything": run,

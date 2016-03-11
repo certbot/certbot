@@ -29,6 +29,7 @@ from letsencrypt import storage
 from letsencrypt.display import ops as display_ops
 from letsencrypt.plugins import disco as plugins_disco
 
+# pylint: disable=too-many-lines
 
 logger = logging.getLogger(__name__)
 

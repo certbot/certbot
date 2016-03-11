@@ -8,7 +8,6 @@ import letsencrypt.errors as errors
 
 from letsencrypt.display import util as display_util
 
-
 CHOICES = [("First", "Description1"), ("Second", "Description2")]
 TAGS = ["tag1", "tag2", "tag3"]
 TAGS_CHOICES = [("1", "tag1"), ("2", "tag2"), ("3", "tag3")]
