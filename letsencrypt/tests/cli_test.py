@@ -517,7 +517,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 args += '-d foo.bar -a standalone certonly'.split()
                 self._call(args)
 
-    @mock.patch('letsencrypt.cli.zope.component.getUtility')
+    @mock.patch('letsencrypt.main.zope.component.getUtility')
     def test_certonly_dry_run_new_request_success(self, mock_get_utility):
         mock_client = mock.MagicMock()
         mock_client.obtain_and_enroll_certificate.return_value = None
@@ -530,7 +530,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(mock_get_utility().add_message.call_count, 1)
 
     @mock.patch('letsencrypt.crypto_util.notAfter')
-    @mock.patch('letsencrypt.cli.zope.component.getUtility')
+    @mock.patch('letsencrypt.main.zope.component.getUtility')
     def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter):
         cert_path = '/etc/letsencrypt/live/foo.bar'
         date = '1970-01-01'
@@ -736,7 +736,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def test_renew_reconstitute_error(self):
         # pylint: disable=protected-access
-        with mock.patch('letsencrypt.cli._reconstitute') as mock_reconstitute:
+        with mock.patch('letsencrypt.main.renew._reconstitute') as mock_reconstitute:
             mock_reconstitute.side_effect = Exception
             self._test_renew_common(assert_oc_called=False, error_expected=True)
 
@@ -759,7 +759,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._test_renewal_common(True, None, args='renew --csr {0}'.format(CSR).split(),
                                   should_renew=False, error_expected=True)
 
-    @mock.patch('letsencrypt.cli.zope.component.getUtility')
+    @mock.patch('letsencrypt.main.zope.component.getUtility')
     @mock.patch('letsencrypt.main._treat_as_renewal')
     @mock.patch('letsencrypt.main._init_le_client')
     def test_certonly_reinstall(self, mock_init, mock_renewal, mock_get_utility):

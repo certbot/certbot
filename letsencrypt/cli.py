@@ -1,5 +1,4 @@
 """Let's Encrypt command CLI argument processing."""
-# pylint: disable=too-many-lines
 from __future__ import print_function
 import argparse
 import glob
