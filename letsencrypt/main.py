@@ -20,9 +20,9 @@ from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt import log
 from letsencrypt import reporter
+from letsencrypt import renew
 from letsencrypt import storage
 
-from letsencrypt.cli import choose_configurator_plugins, _renewal_conf_files, should_renew
 from letsencrypt.display import util as display_util, ops as display_ops
 from letsencrypt.plugins import disco as plugins_disco
 
@@ -184,7 +184,7 @@ def _handle_identical_cert_request(config, cert):
     :rtype: tuple
 
     """
-    if should_renew(config, cert):
+    if renew.should_renew(config, cert):
         return "renew", cert
     if config.reinstall:
         # Set with --reinstall, force an identical certificate to be
@@ -261,7 +261,7 @@ def _find_duplicative_certs(config, domains):
     # Verify the directory is there
     le_util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
 
-    for renewal_file in _renewal_conf_files(cli_config):
+    for renewal_file in renew.renewal_conf_files(cli_config):
         try:
             candidate_lineage = storage.RenewableCert(renewal_file, cli_config)
         except (errors.CertStorageError, IOError):
@@ -404,7 +404,7 @@ def install(config, plugins):
     # this function ...
 
     try:
-        installer, _ = choose_configurator_plugins(config, plugins, "install")
+        installer, _ = cli.choose_configurator_plugins(config, plugins, "install")
     except errors.PluginSelectionError as e:
         return e.message
 
@@ -479,7 +479,7 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     # TODO: Make run as close to auth + install as possible
     # Possible difficulties: config.csr was hacked into auth
     try:
-        installer, authenticator = choose_configurator_plugins(config, plugins, "run")
+        installer, authenticator = cli.choose_configurator_plugins(config, plugins, "run")
     except errors.PluginSelectionError as e:
         return e.message
 
@@ -509,7 +509,7 @@ def obtain_cert(config, plugins, lineage=None):
     # pylint: disable=too-many-locals
     try:
         # installers are used in auth mode to determine domain names
-        installer, authenticator = choose_configurator_plugins(config, plugins, "certonly")
+        installer, authenticator = cli.choose_configurator_plugins(config, plugins, "certonly")
     except errors.PluginSelectionError as e:
         logger.info("Could not choose appropriate plugin: %s", e)
         raise
@@ -705,7 +705,7 @@ def main(cli_args=sys.argv[1:]):
 # due to issues with import cycles and testing, it lives here
 VERBS = {"auth": obtain_cert, "certonly": obtain_cert,
          "config_changes": config_changes, "everything": run,
-         "install": install, "plugins": plugins_cmd, "renew": cli.renew,
+         "install": install, "plugins": plugins_cmd, "renew": renew.renew,
          "revoke": revoke, "rollback": rollback, "run": run}
 
 

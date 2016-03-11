@@ -1,5 +1,4 @@
 """Tests for letsencrypt.cli."""
-
 from __future__ import print_function
 
 import argparse
@@ -24,6 +23,7 @@ from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import le_util
 from letsencrypt import main
+from letsencrypt import renew
 from letsencrypt import storage
 
 from letsencrypt.plugins import disco
@@ -555,7 +555,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                           self._certonly_new_request_common, mock_client)
 
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
-                             args=None, renew=True, error_expected=False):
+                             args=None, should_renew=True, error_expected=False):
         # pylint: disable=too-many-locals,too-many-arguments
         cert_path = 'letsencrypt/tests/testdata/cert.pem'
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
@@ -594,7 +594,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                                             "Unexpected renewal error:\n" +
                                             traceback.format_exc())
 
-            if renew:
+            if should_renew:
                 mock_client.obtain_certificate.assert_called_once_with(['isnot.org'])
             else:
                 self.assertEqual(mock_client.obtain_certificate.call_count, 0)
@@ -629,7 +629,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(get_utility().add_message.call_count, 1)
 
         _, _ = self._test_renewal_common(False, ['-tvv', '--debug', '--keep'],
-                                        log_out="not yet due", renew=False)
+                                        log_out="not yet due", should_renew=False)
 
     def _dump_log(self):
         with open(os.path.join(self.logs_dir, "letsencrypt.log")) as lf:
@@ -652,9 +652,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_renew_verb(self):
         self._make_test_renewal_conf('sample-renewal.conf')
         args = ["renew", "--dry-run", "-tvv"]
-        self._test_renewal_common(True, [], args=args, renew=True)
+        self._test_renewal_common(True, [], args=args, should_renew=True)
 
-    @mock.patch("letsencrypt.cli._set_by_cli")
+    @mock.patch("letsencrypt.cli.set_by_cli")
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         rc_path = self._make_test_renewal_conf('sample-renewal-ancient.conf')
@@ -664,7 +664,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             configuration.RenewerConfiguration(config))
         renewalparams = lineage.configuration["renewalparams"]
         # pylint: disable=protected-access
-        cli._restore_webroot_config(config, renewalparams)
+        renew._restore_webroot_config(config, renewalparams)
         self.assertEqual(config.webroot_path, ["/var/www/"])
 
     def test_renew_verb_empty_config(self):
@@ -674,7 +674,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with open(os.path.join(rd, 'empty.conf'), 'w'):
             pass  # leave the file empty
         args = ["renew", "--dry-run", "-tvv"]
-        self._test_renewal_common(False, [], args=args, renew=False, error_expected=True)
+        self._test_renewal_common(False, [], args=args, should_renew=False, error_expected=True)
 
     def _make_dummy_renewal_config(self):
         renewer_configs_dir = os.path.join(self.config_dir, 'renewal')
@@ -695,7 +695,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mock_rc.return_value = mock_lineage
             with mock.patch('letsencrypt.main.obtain_cert') as mock_obtain_cert:
                 self._test_renewal_common(True, None, error_expected=error_expected,
-                                          args=['renew'], renew=False)
+                                          args=['renew'], should_renew=False)
             if assert_oc_called is not None:
                 if assert_oc_called:
                     self.assertTrue(mock_obtain_cert.called)
@@ -751,13 +751,13 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             with mock.patch('letsencrypt.main.obtain_cert') as mock_obtain_cert:
                 mock_obtain_cert.side_effect = Exception
                 self._test_renewal_common(True, None, error_expected=True,
-                                          args=['renew'], renew=False)
+                                          args=['renew'], should_renew=False)
 
     def test_renew_with_bad_cli_args(self):
         self._test_renewal_common(True, None, args='renew -d example.com'.split(),
-                                  renew=False, error_expected=True)
+                                  should_renew=False, error_expected=True)
         self._test_renewal_common(True, None, args='renew --csr {0}'.format(CSR).split(),
-                                  renew=False, error_expected=True)
+                                  should_renew=False, error_expected=True)
 
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.main._treat_as_renewal')
