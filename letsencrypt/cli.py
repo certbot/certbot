@@ -22,7 +22,7 @@ from letsencrypt import interfaces
 from letsencrypt import le_util
 
 from letsencrypt.plugins import disco as plugins_disco
-import letsencrypt.plugins.selection as plugin_selection 
+import letsencrypt.plugins.selection as plugin_selection
 
 logger = logging.getLogger(__name__)
 
