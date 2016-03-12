@@ -83,7 +83,8 @@ def _vhost_menu(domain, vhosts):
         code, tag = zope.component.getUtility(interfaces.IDisplay).menu(
             "We were unable to find a vhost with a ServerName "
             "or Address of {0}.{1}Which virtual host would you "
-            "like to choose?".format(domain, os.linesep),
+            "like to choose?\n(note: conf files with multiple "
+            "vhosts are not currently supported)".format(domain, os.linesep),
             choices, help_label="More Info", ok_label="Select")
     except errors.MissingCommandlineFlag as e:
         msg = ("Failed to run Apache plugin non-interactively{1}{0}{1}"
