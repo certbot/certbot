@@ -422,7 +422,7 @@ class RollbackTest(unittest.TestCase):
     @classmethod
     def _call(cls, checkpoints, side_effect):
         from letsencrypt.client import rollback
-        with mock.patch("letsencrypt.client.plugin_selection.pick_installer") as mpi
+        with mock.patch("letsencrypt.client.plugin_selection.pick_installer") as mpi:
             mpi.side_effect = side_effect
             rollback(None, checkpoints, {}, mock.MagicMock())
 
