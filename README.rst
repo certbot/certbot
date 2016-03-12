@@ -90,6 +90,8 @@ IRC Channel: #letsencrypt on `Freenode`_
 
 Community: https://community.letsencrypt.org
 
+ACME spec: https://letsencrypt.github.io/acme-spec/
+
 Mailing list: `client-dev`_ (to subscribe without a Google account, send an
 email to client-dev+subscribe@letsencrypt.org)
 
