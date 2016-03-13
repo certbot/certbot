@@ -310,10 +310,10 @@ def enforce_domain_sanity(domain):
     # Unicode
     try:
         domain = domain.encode('ascii').lower()
-    except UnicodeDecodeError:
+    except UnicodeEncodeError:
         raise errors.ConfigurationError(
             "Internationalized domain names are not presently supported: {0}"
-            .format(domain))
+            .format(domain.encode("utf-8")))
 
     # Remove trailing dot
     domain = domain[:-1] if domain.endswith('.') else domain
