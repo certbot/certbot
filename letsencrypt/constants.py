@@ -44,11 +44,6 @@ RENEWER_DEFAULTS = dict(
 """Defaults for renewer script."""
 
 
-EXCLUSIVE_CHALLENGES = frozenset([frozenset([
-    challenges.TLSSNI01, challenges.HTTP01])])
-"""Mutually exclusive challenges."""
-
-
 ENHANCEMENTS = ["redirect", "http-header", "ocsp-stapling", "spdy"]
 """List of possible :class:`letsencrypt.interfaces.IInstaller`
 enhancements.

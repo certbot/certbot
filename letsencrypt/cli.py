@@ -19,6 +19,7 @@ import traceback
 
 import configargparse
 import OpenSSL
+import six
 import zope.component
 import zope.interface.exceptions
 import zope.interface.verify
@@ -806,12 +807,18 @@ def _restore_required_config_elements(config, renewalparams):
     # int-valued items to add if they're present
     for config_item in INT_CONFIG_ITEMS:
         if config_item in renewalparams and not _set_by_cli(config_item):
-            try:
-                value = int(renewalparams[config_item])
-                setattr(config.namespace, config_item, value)
-            except ValueError:
-                raise errors.Error(
-                    "Expected a numeric value for {0}".format(config_item))
+            config_value = renewalparams[config_item]
+            # the default value for http01_port was None during private beta
+            if config_item == "http01_port" and config_value == "None":
+                logger.info("updating legacy http01_port value")
+                int_value = flag_default("http01_port")
+            else:
+                try:
+                    int_value = int(config_value)
+                except ValueError:
+                    raise errors.Error(
+                        "Expected a numeric value for {0}".format(config_item))
+            setattr(config.namespace, config_item, int_value)
 
 
 def _restore_plugin_configs(config, renewalparams):
@@ -842,7 +849,7 @@ def _restore_plugin_configs(config, renewalparams):
     if renewalparams.get("installer", None) is not None:
         plugin_prefixes.append(renewalparams["installer"])
     for plugin_prefix in set(plugin_prefixes):
-        for config_item, config_value in renewalparams.iteritems():
+        for config_item, config_value in six.iteritems(renewalparams):
             if config_item.startswith(plugin_prefix + "_") and not _set_by_cli(config_item):
                 # Values None, True, and False need to be treated specially,
                 # As they don't get parsed correctly based on type
@@ -872,7 +879,10 @@ def _restore_webroot_config(config, renewalparams):
             setattr(config.namespace, "webroot_map", renewalparams["webroot_map"])
     elif "webroot_path" in renewalparams:
         logger.info("Ancient renewal conf file without webroot-map, restoring webroot-path")
-        setattr(config.namespace, "webroot_path", renewalparams["webroot_path"])
+        wp = renewalparams["webroot_path"]
+        if isinstance(wp, str):  # prior to 0.1.0, webroot_path was a string
+            wp = [wp]
+        setattr(config.namespace, "webroot_path", wp)
 
 
 def _reconstitute(config, full_path):
@@ -983,10 +993,6 @@ def renew(config, unused_plugins):
                            "renew specific certificates, use the certonly "
                            "command. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
-    if config.csr is not None:
-        raise errors.Error("Currently, the renew verb cannot be used when "
-                           "specifying a CSR file. Please try the certonly "
-                           "command instead.")
     renewer_config = configuration.RenewerConfiguration(config)
     renew_successes = []
     renew_failures = []
@@ -1030,6 +1036,12 @@ def renew(config, unused_plugins):
     _renew_describe_results(config, renew_successes, renew_failures,
                             renew_skipped, parse_failures)
 
+    if renew_failures or parse_failures:
+        raise errors.Error("{0} renew failure(s), {1} parse failure(s)".format(
+            len(renew_failures), len(parse_failures)))
+    else:
+        logger.debug("no renewal failures")
+
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
     """Revoke a previously obtained certificate."""
@@ -1059,7 +1071,7 @@ def config_changes(config, unused_plugins):
     View checkpoints and associated configuration changes.
 
     """
-    client.view_config_changes(config)
+    client.view_config_changes(config, num=config.num)
 
 
 def plugins_cmd(config, plugins):  # TODO: Use IDisplay rather than print
@@ -1154,10 +1166,10 @@ class HelpfulArgumentParser(object):
 
     # List of topics for which additional help can be provided
     HELP_TOPICS = ["all", "security",
-                   "paths", "automation", "testing"] + VERBS.keys()
+                   "paths", "automation", "testing"] + list(six.iterkeys(VERBS))
 
     def __init__(self, args, plugins, detect_defaults=False):
-        plugin_names = [name for name, _p in plugins.iteritems()]
+        plugin_names = list(six.iterkeys(plugins))
         self.help_topics = self.HELP_TOPICS + plugin_names + [None]
         usage, short_usage = usage_strings(plugins)
         self.parser = configargparse.ArgParser(
@@ -1244,6 +1256,12 @@ class HelpfulArgumentParser(object):
         Process a --csr flag. This needs to happen early enough that the
         webroot plugin can know about the calls to _process_domain
         """
+        if parsed_args.verb != "certonly":
+            raise errors.Error("Currently, a CSR file may only be specified "
+                               "when obtaining a new or replacement "
+                               "via the certonly command. Please try the "
+                               "certonly command instead.")
+
         try:
             csr = le_util.CSR(file=parsed_args.csr[0], data=parsed_args.csr[1], form="der")
             typ = OpenSSL.crypto.FILETYPE_ASN1
@@ -1421,7 +1439,7 @@ class HelpfulArgumentParser(object):
         may or may not be displayed as help topics.
 
         """
-        for name, plugin_ep in plugins.iteritems():
+        for name, plugin_ep in six.iteritems(plugins):
             parser_or_group = self.add_group(name, description=plugin_ep.description)
             #print(parser_or_group)
             plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)
@@ -1633,6 +1651,10 @@ def _create_subparsers(helpful):
     helpful.add_group("revoke", description="Options for revocation of certs")
     helpful.add_group("rollback", description="Options for reverting config changes")
     helpful.add_group("plugins", description="Plugin options")
+    helpful.add_group("config_changes",
+                      description="Options for showing a history of config changes")
+    helpful.add("config_changes", "--num", type=int,
+                help="How many past revisions you want to be displayed")
     helpful.add(
         None, "--user-agent", default=None,
         help="Set a custom user agent string for the client. User agent strings allow "
@@ -1816,7 +1838,7 @@ def _process_domain(args_or_config, domain_arg, webroot_path=None):
 class WebrootMapProcessor(argparse.Action):  # pylint: disable=missing-docstring
     def __call__(self, parser, args, webroot_map_arg, option_string=None):
         webroot_map = json.loads(webroot_map_arg)
-        for domains, webroot_path in webroot_map.iteritems():
+        for domains, webroot_path in six.iteritems(webroot_map):
             _process_domain(args, domains, [webroot_path])
 
 

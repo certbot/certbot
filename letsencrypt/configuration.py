@@ -11,6 +11,7 @@ from letsencrypt import interfaces
 from letsencrypt import le_util
 
 
+@zope.interface.implementer(interfaces.IConfig)
 class NamespaceConfig(object):
     """Configuration wrapper around :class:`argparse.Namespace`.
 
@@ -32,7 +33,6 @@ class NamespaceConfig(object):
     :type namespace: :class:`argparse.Namespace`
 
     """
-    zope.interface.implements(interfaces.IConfig)
 
     def __init__(self, namespace):
         self.namespace = namespace

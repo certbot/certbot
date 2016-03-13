@@ -161,6 +161,22 @@ for module in letsencrypt $subpkgs_modules ; do
 done
 deactivate
 
+# pin pip hashes of the things we just built
+for pkg in acme letsencrypt letsencrypt-apache ; do
+    echo $pkg==$version \\
+    pip hash dist."$version/$pkg"/*.{whl,gz} | grep "^--hash" | python2 -c 'from sys import stdin; input = stdin.read(); print "   ", input.replace("\n--hash", " \\\n    --hash"),'
+done > /tmp/hashes.$$
+
+if ! wc -l /tmp/hashes.$$ | grep -qE "^\s*9 " ; then
+    echo Unexpected pip hash output
+    exit 1
+fi
+
+# perform hideous surgery on requirements.txt...
+head -n -9 letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt > /tmp/req.$$
+cat /tmp/hashes.$$ >> /tmp/req.$$
+cp /tmp/req.$$ letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt
+
 # ensure we have the latest built version of leauto
 letsencrypt-auto-source/build.py
 
@@ -171,7 +187,10 @@ while ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
    read -p "Please correctly sign letsencrypt-auto with offline-signrequest.sh"
 done
 
-git add letsencrypt-auto-source
+# copy leauto to the root, overwriting the previous release version
+cp -p letsencrypt-auto-source/letsencrypt-auto letsencrypt-auto
+
+git add letsencrypt-auto letsencrypt-auto-source
 git diff --cached
 git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"
 git tag --local-user "$RELEASE_GPG_KEY" --sign --message "Release $version" "$tag"
@@ -196,6 +215,8 @@ echo twine upload "$root/dist.$version/*/*"
 
 if [ "$RELEASE_BRANCH" = candidate-"$version" ] ; then
     SetVersion "$nextversion".dev0
+    letsencrypt-auto-source/build.py
+    git add letsencrypt-auto-source/letsencrypt-auto
     git diff
     git commit -m "Bump version to $nextversion"
 fi

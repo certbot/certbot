@@ -150,7 +150,12 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(prefix, "default-ssl-port-only.conf"),
                 os.path.join(aug_pre, ("default-ssl-port-only.conf/"
                                        "IfModule/VirtualHost")),
-                set([obj.Addr.fromstring("_default_:443")]), True, False)
+                set([obj.Addr.fromstring("_default_:443")]), True, False),
+            obj.VirtualHost(
+                os.path.join(prefix, "wildcard.conf"),
+                os.path.join(aug_pre, "wildcard.conf/VirtualHost"),
+                set([obj.Addr.fromstring("*:80")]), False, False,
+                "ip-172-30-0-17", aliases=["*.blue.purple.com"])
         ]
         return vh_truth
 

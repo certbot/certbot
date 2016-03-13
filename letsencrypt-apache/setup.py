@@ -11,7 +11,9 @@ install_requires = [
     'acme=={0}'.format(version),
     'letsencrypt=={0}'.format(version),
     'python-augeas',
-    'setuptools',  # pkg_resources
+    # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
+    # will tolerate; see #2599:
+    'setuptools>=1.0',
     'zope.component',
     'zope.interface',
 ]

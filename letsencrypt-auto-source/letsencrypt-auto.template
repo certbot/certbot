@@ -159,7 +159,7 @@ Bootstrap() {
   else
     echo "Sorry, I don't know how to bootstrap Let's Encrypt on your operating system!"
     echo
-    echo "You will need to bootstrap, configure virtualenv, and run a peep install manually."
+    echo "You will need to bootstrap, configure virtualenv, and run pip install manually."
     echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
     echo "for more info."
   fi
@@ -171,9 +171,10 @@ TempDir() {
 
 
 
-if [ "$NO_SELF_UPGRADE" = 1 ]; then
+if [ "$1" = "--le-auto-phase2" ]; then
   # Phase 2: Create venv, install LE, and run.
 
+  shift 1  # the --le-auto-phase2 arg
   if [ -f "$VENV_BIN/letsencrypt" ]; then
     INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | cut -d " " -f 2)
   else
@@ -197,19 +198,22 @@ if [ "$NO_SELF_UPGRADE" = 1 ]; then
 {{ letsencrypt-auto-requirements.txt }}
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
-    cat << "UNLIKELY_EOF" > "$TEMP_DIR/peep.py"
-{{ peep.py }}
+    cat << "UNLIKELY_EOF" > "$TEMP_DIR/pipstrap.py"
+{{ pipstrap.py }}
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
+    # Set PATH so pipstrap upgrades the right (v)env:
+    PATH="$VENV_BIN:$PATH" "$VENV_BIN/python" "$TEMP_DIR/pipstrap.py"
     set +e
-    PEEP_OUT=`"$VENV_BIN/python" "$TEMP_DIR/peep.py" install -r "$TEMP_DIR/letsencrypt-auto-requirements.txt"`
-    PEEP_STATUS=$?
+    PIP_OUT=`"$VENV_BIN/pip" install --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt" 2>&1`
+    PIP_STATUS=$?
     set -e
     rm -rf "$TEMP_DIR"
-    if [ "$PEEP_STATUS" != 0 ]; then
+    if [ "$PIP_STATUS" != 0 ]; then
       # Report error. (Otherwise, be quiet.)
-      echo "Had a problem while downloading and verifying Python packages:"
-      echo "$PEEP_OUT"
+      echo "Had a problem while installing Python packages:"
+      echo "$PIP_OUT"
+      rm -rf "$VENV_PATH"
       exit 1
     fi
     echo "Installation succeeded."
@@ -234,31 +238,43 @@ else
     exit 0
   fi
 
-  echo "Checking for new version..."
-  TEMP_DIR=$(TempDir)
-  # ---------------------------------------------------------------------------
-  cat << "UNLIKELY_EOF" > "$TEMP_DIR/fetch.py"
+  if [ "$NO_SELF_UPGRADE" != 1 ]; then
+    echo "Checking for new version..."
+    TEMP_DIR=$(TempDir)
+    # ---------------------------------------------------------------------------
+    cat << "UNLIKELY_EOF" > "$TEMP_DIR/fetch.py"
 {{ fetch.py }}
 UNLIKELY_EOF
-  # ---------------------------------------------------------------------------
-  DeterminePythonVersion
-  REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version`
-  if [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
-    echo "Upgrading letsencrypt-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
+    # ---------------------------------------------------------------------------
+    DeterminePythonVersion
+    REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version`
+    if [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
+      echo "Upgrading letsencrypt-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
 
-    # Now we drop into Python so we don't have to install even more
-    # dependencies (curl, etc.), for better flow control, and for the option of
-    # future Windows compatibility.
-    "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
+      # Now we drop into Python so we don't have to install even more
+      # dependencies (curl, etc.), for better flow control, and for the option of
+      # future Windows compatibility.
+      "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
 
-    # Install new copy of letsencrypt-auto. This preserves permissions and
-    # ownership from the old copy.
-    # TODO: Deal with quotes in pathnames.
-    echo "Replacing letsencrypt-auto..."
-    echo "  " $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$0"
-    $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$0"
-    # TODO: Clean up temp dir safely, even if it has quotes in its path.
-    rm -rf "$TEMP_DIR"
-  fi  # should upgrade
-  "$0" --no-self-upgrade "$@"
+      # Install new copy of letsencrypt-auto.
+      # TODO: Deal with quotes in pathnames.
+      echo "Replacing letsencrypt-auto..."
+      # Clone permissions with cp. chmod and chown don't have a --reference
+      # option on OS X or BSD, and stat -c on Linux is stat -f on OS X and BSD:
+      echo "  " $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      echo "  " $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      # Using mv rather than cp leaves the old file descriptor pointing to the
+      # original copy so the shell can continue to read it unmolested. mv across
+      # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
+      # cp is unlikely to fail (esp. under sudo) if the rm doesn't.
+      echo "  " $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
+      $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
+      # TODO: Clean up temp dir safely, even if it has quotes in its path.
+      rm -rf "$TEMP_DIR"
+    fi  # A newer version is available.
+  fi  # Self-upgrading is allowed.
+
+  "$0" --le-auto-phase2 "$@"
 fi

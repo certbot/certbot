@@ -59,15 +59,3 @@ class DNS(AnnotatedChallenge):
     """Client annotated "dns" ACME challenge."""
     __slots__ = ('challb', 'domain')
     acme_type = challenges.DNS
-
-
-class RecoveryContact(AnnotatedChallenge):
-    """Client annotated "recoveryContact" ACME challenge."""
-    __slots__ = ('challb', 'domain')
-    acme_type = challenges.RecoveryContact
-
-
-class ProofOfPossession(AnnotatedChallenge):
-    """Client annotated "proofOfPossession" ACME challenge."""
-    __slots__ = ('challb', 'domain')
-    acme_type = challenges.ProofOfPossession
