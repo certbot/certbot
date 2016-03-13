@@ -90,6 +90,8 @@ IRC Channel: #letsencrypt on `Freenode`_
 
 Community: https://community.letsencrypt.org
 
+ACME spec: https://tools.ietf.org/pdf/draft-ietf-acme-acme-01.pdf
+
 Mailing list: `client-dev`_ (to subscribe without a Google account, send an
 email to client-dev+subscribe@letsencrypt.org)
 
