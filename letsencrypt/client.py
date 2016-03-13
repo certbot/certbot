@@ -246,7 +246,8 @@ class Client(object):
         """
         # Create CSR from names
         key = crypto_util.init_save_key(
-            self.config.rsa_key_size, self.config.key_dir)
+            self.config.privkey_signature_algorithm, self.config.rsa_key_size,
+            self.config.ecdsa_curve, self.config.key_dir)
         csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
         return self.obtain_certificate_from_csr(domains, csr) + (key, csr)

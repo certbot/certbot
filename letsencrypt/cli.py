@@ -55,7 +55,8 @@ _parser = None
 # the renewal configuration process loses this information.
 STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
-                    "standalone_supported_challenges"]
+                    "standalone_supported_challenges", "ecdsa_curve",
+                    "privkey_signature_algorithm"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
 
 # For help strings, figure out how the user ran us.
@@ -1582,6 +1583,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
     helpful.add(
         "security", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
+    helpful.add(
+        "security", "--ecdsa_curve", default=flag_default("ecdsa_curve"))
+    helpful.add(
+        "security", "--privkey_signature_algorithm", default=flag_default("privkey_signature_algorithm"))
     helpful.add(
         "security", "--redirect", action="store_true",
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
