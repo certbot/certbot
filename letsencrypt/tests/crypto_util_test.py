@@ -35,16 +35,16 @@ class InitSaveKeyTest(unittest.TestCase):
     @classmethod
     def _call(cls, key_size, key_dir):
         from letsencrypt.crypto_util import init_save_key
-        return init_save_key(key_size, key_dir, 'key-letsencrypt.pem')
+        return init_save_key('RSA', key_size, '', key_dir, 'key-letsencrypt.pem')
 
-    @mock.patch('letsencrypt.crypto_util.make_key')
+    @mock.patch('letsencrypt.crypto_util.make_key_rsa')
     def test_success(self, mock_make):
         mock_make.return_value = 'key_pem'
         key = self._call(1024, self.key_dir)
         self.assertEqual(key.pem, 'key_pem')
         self.assertTrue('key-letsencrypt.pem' in key.file)
 
-    @mock.patch('letsencrypt.crypto_util.make_key')
+    @mock.patch('letsencrypt.crypto_util.make_key_rsa')
     def test_key_failure(self, mock_make):
         mock_make.side_effect = ValueError
         self.assertRaises(ValueError, self._call, 431, self.key_dir)
@@ -140,15 +140,14 @@ class CSRMatchesPubkeyTest(unittest.TestCase):
             test_util.load_vector('csr.pem'), RSA256_KEY))
 
 
-class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
-    """Tests for letsencrypt.crypto_util.make_key."""
+class MakeKeyRSATest(unittest.TestCase):  # pylint: disable=too-few-public-methods
+    """Tests for letsencrypt.crypto_util.make_key_rsa."""
 
     def test_it(self):  # pylint: disable=no-self-use
-        from letsencrypt.crypto_util import make_key
+        from letsencrypt.crypto_util import make_key_rsa
         # Do not test larger keys as it takes too long.
         OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, make_key(1024))
-
+            OpenSSL.crypto.FILETYPE_PEM, make_key_rsa(1024))
 
 class ValidPrivkeyTest(unittest.TestCase):
     """Tests for letsencrypt.crypto_util.valid_privkey."""
