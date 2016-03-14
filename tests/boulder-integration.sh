@@ -68,7 +68,7 @@ common renew
 CheckCertCount 2
 
 # This will renew because the expiry is less than 10 years from now
-sed -i "4arenew_before_expiry = 10 years" "$root/conf/renewal/le.wtf.conf"
+sed -i "4arenew_before_expiry = 4 years" "$root/conf/renewal/le.wtf.conf"
 common_no_force_renew renew --rsa-key-size 2048
 CheckCertCount 3
 

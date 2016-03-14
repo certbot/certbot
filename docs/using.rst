@@ -71,15 +71,32 @@ Plugin      Auth Inst Notes
 =========== ==== ==== ===============================================================
 apache_     Y    Y    Automates obtaining and installing a cert with Apache 2.4 on
                       Debian-based distributions with ``libaugeas0`` 1.0+.
-standalone_ Y    N    Uses a "standalone" webserver to obtain a cert. This is useful
-                      on systems with no webserver, or when direct integration with
-                      the local webserver is not supported or not desired.
 webroot_    Y    N    Obtains a cert by writing to the webroot directory of an
                       already running webserver.
+standalone_ Y    N    Uses a "standalone" webserver to obtain a cert. Requires
+                      port 80 or 443 to be available. This is useful on systems
+                      with no webserver, or when direct integration with the local
+                      webserver is not supported or not desired.
 manual_     Y    N    Helps you obtain a cert by giving you instructions to perform
                       domain validation yourself.
 nginx_      Y    Y    Very experimental and not included in letsencrypt-auto_.
 =========== ==== ==== ===============================================================
+
+There are also a number of third-party plugins for the client, provided by other developers:
+
+=========== ==== ==== ===============================================================
+Plugin      Auth Inst Notes
+=========== ==== ==== ===============================================================
+plesk_      Y    Y    Integration with the Plesk web hosting tool
+haproxy_    Y    Y    Integration with the HAProxy load balancer
+s3front_    Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
+gandi_      Y    Y    Integration with Gandi's hosting products and API
+=========== ==== ==== ===============================================================
+
+.. _plesk: https://github.com/plesk/letsencrypt-plesk
+.. _haproxy: https://code.greenhost.net/open/letsencrypt-haproxy
+.. _s3front: https://github.com/dlapiduz/letsencrypt-s3front
+.. _gandi: https://github.com/Gandi/letsencrypt-gandi
 
 Future plugins for IMAP servers, SMTP servers, IRC servers, etc, are likely to
 be installers but not authenticators.
@@ -111,11 +128,13 @@ potentially be a separate directory for each domain. When requested a
 certificate for multiple domains, each domain will use the most recently
 specified ``--webroot-path``.  So, for instance,
 
-``letsencrypt certonly --webroot -w /var/www/example/ -d www.example.com -d example.com -w /var/www/eg -d eg.is -d www.eg.is``
+::
+
+    letsencrypt certonly --webroot -w /var/www/example/ -d www.example.com -d example.com -w /var/www/other -d other.example.net -d another.other.example.net
 
 would obtain a single certificate for all of those names, using the
 ``/var/www/example`` webroot directory for the first two, and
-``/var/www/eg`` for the second two.
+``/var/www/other`` for the second two.
 
 The webroot plugin works by creating a temporary file for each of your requested
 domains in ``${webroot-path}/.well-known/acme-challenge``. Then the Let's
@@ -130,7 +149,7 @@ made to your web server would look like:
 Note that to use the webroot plugin, your server must be configured to serve
 files from hidden directories. If ``/.well-known`` is treated specially by
 your webserver configuration, you might need to modify the configuration
-to ensure that files inside ``/.well-known/ache-challenge`` are served by
+to ensure that files inside ``/.well-known/acme-challenge`` are served by
 the webserver.
 
 Standalone
@@ -429,6 +448,12 @@ If you don't want to use the Apache plugin, you can omit the
 
 Packages for Debian Jessie are coming in the next few weeks.
 
+**Fedora**
+
+.. code-block:: shell
+
+    sudo dnf install letsencrypt
+
 **Gentoo**
 
 The official Let's Encrypt client is available in Gentoo Portage. If you
@@ -439,8 +464,8 @@ want to use the Apache plugin, it has to be installed separately:
    emerge -av app-crypt/letsencrypt
    emerge -av app-crypt/letsencrypt-apache
 
-Currently, only the Apache plugin is included in Portage. However, if you 
-want the nginx plugin, you can use Layman to add the mrueg overlay which 
+Currently, only the Apache plugin is included in Portage. However, if you
+want the nginx plugin, you can use Layman to add the mrueg overlay which
 does include the nginx plugin package:
 
 .. code-block:: shell
@@ -450,9 +475,9 @@ does include the nginx plugin package:
    layman -a mrueg
    emerge -av app-crypt/letsencrypt-nginx
 
-When using the Apache plugin, you will run into a "cannot find a cert or key 
+When using the Apache plugin, you will run into a "cannot find a cert or key
 directive" error if you're sporting the default Gentoo ``httpd.conf``.
-You can fix this by commenting out two lines in ``/etc/apache2/httpd.conf`` 
+You can fix this by commenting out two lines in ``/etc/apache2/httpd.conf``
 as follows:
 
 Change
@@ -471,7 +496,7 @@ to
    LoadModule ssl_module modules/mod_ssl.so
    #</IfDefine>
 
-For the time being, this is the only way for the Apache plugin to recognise 
+For the time being, this is the only way for the Apache plugin to recognise
 the appropriate directives when installing the certificate.
 Note: this change is not required for the other plugins.
 

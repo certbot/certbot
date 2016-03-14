@@ -9,10 +9,10 @@ from letsencrypt import interfaces
 from letsencrypt.plugins import common
 
 
+@zope.interface.implementer(interfaces.IAuthenticator)
+@zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(common.Plugin):
     """Example Authenticator."""
-    zope.interface.implements(interfaces.IAuthenticator)
-    zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "Example Authenticator plugin"
 
@@ -20,10 +20,10 @@ class Authenticator(common.Plugin):
     # "self" as first argument, e.g. def prepare(self)...
 
 
+@zope.interface.implementer(interfaces.IInstaller)
+@zope.interface.provider(interfaces.IPluginFactory)
 class Installer(common.Plugin):
     """Example Installer."""
-    zope.interface.implements(interfaces.IInstaller)
-    zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "Example Installer plugin"
 

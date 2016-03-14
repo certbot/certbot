@@ -1,8 +1,8 @@
 """Let's Encrypt user-supplied configuration."""
 import copy
 import os
-import urlparse
 
+from six.moves.urllib import parse  # pylint: disable=import-error
 import zope.interface
 
 from letsencrypt import constants
@@ -11,6 +11,7 @@ from letsencrypt import interfaces
 from letsencrypt import le_util
 
 
+@zope.interface.implementer(interfaces.IConfig)
 class NamespaceConfig(object):
     """Configuration wrapper around :class:`argparse.Namespace`.
 
@@ -32,7 +33,6 @@ class NamespaceConfig(object):
     :type namespace: :class:`argparse.Namespace`
 
     """
-    zope.interface.implements(interfaces.IConfig)
 
     def __init__(self, namespace):
         self.namespace = namespace
@@ -50,7 +50,7 @@ class NamespaceConfig(object):
     @property
     def server_path(self):
         """File path based on ``server``."""
-        parsed = urlparse.urlparse(self.namespace.server)
+        parsed = parse.urlparse(self.namespace.server)
         return (parsed.netloc + parsed.path).replace('/', os.path.sep)
 
     @property

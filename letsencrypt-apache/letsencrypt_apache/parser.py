@@ -477,7 +477,7 @@ class ApacheParser(object):
         # Note: This works for augeas globs, ie. *.conf
         if use_new:
             inc_test = self.aug.match(
-                "/augeas/load/Httpd/incl [. ='%s']" % filepath)
+                "/augeas/load/Httpd['%s' =~ glob(incl)]" % filepath)
             if not inc_test:
                 # Load up files
                 # This doesn't seem to work on TravisCI
