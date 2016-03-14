@@ -71,11 +71,12 @@ Plugin      Auth Inst Notes
 =========== ==== ==== ===============================================================
 apache_     Y    Y    Automates obtaining and installing a cert with Apache 2.4 on
                       Debian-based distributions with ``libaugeas0`` 1.0+.
-standalone_ Y    N    Uses a "standalone" webserver to obtain a cert. This is useful
-                      on systems with no webserver, or when direct integration with
-                      the local webserver is not supported or not desired.
 webroot_    Y    N    Obtains a cert by writing to the webroot directory of an
                       already running webserver.
+standalone_ Y    N    Uses a "standalone" webserver to obtain a cert. Requires
+                      port 80 or 443 to be available. This is useful on systems
+                      with no webserver, or when direct integration with the local
+                      webserver is not supported or not desired.
 manual_     Y    N    Helps you obtain a cert by giving you instructions to perform
                       domain validation yourself.
 nginx_      Y    Y    Very experimental and not included in letsencrypt-auto_.
@@ -87,14 +88,15 @@ There are also a number of third-party plugins for the client, provided by other
 Plugin      Auth Inst Notes
 =========== ==== ==== ===============================================================
 plesk_      Y    Y    Integration with the Plesk web hosting tool
-                      https://github.com/plesk/letsencrypt-plesk
 haproxy_    Y    Y    Integration with the HAProxy load balancer
-                      https://code.greenhost.net/open/letsencrypt-haproxy
 s3front_    Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
-                      https://github.com/dlapiduz/letsencrypt-s3front
 gandi_      Y    Y    Integration with Gandi's hosting products and API
-                      https://github.com/Gandi/letsencrypt-gandi
 =========== ==== ==== ===============================================================
+
+.. _plesk: https://github.com/plesk/letsencrypt-plesk
+.. _haproxy: https://code.greenhost.net/open/letsencrypt-haproxy
+.. _s3front: https://github.com/dlapiduz/letsencrypt-s3front
+.. _gandi: https://github.com/Gandi/letsencrypt-gandi
 
 Future plugins for IMAP servers, SMTP servers, IRC servers, etc, are likely to
 be installers but not authenticators.
@@ -126,7 +128,9 @@ potentially be a separate directory for each domain. When requested a
 certificate for multiple domains, each domain will use the most recently
 specified ``--webroot-path``.  So, for instance,
 
-``letsencrypt certonly --webroot -w /var/www/example/ -d www.example.com -d example.com -w /var/www/other -d other.example.net -d another.other.example.net``
+::
+
+    letsencrypt certonly --webroot -w /var/www/example/ -d www.example.com -d example.com -w /var/www/other -d other.example.net -d another.other.example.net
 
 would obtain a single certificate for all of those names, using the
 ``/var/www/example`` webroot directory for the first two, and

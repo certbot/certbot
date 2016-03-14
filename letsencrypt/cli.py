@@ -1071,7 +1071,7 @@ def config_changes(config, unused_plugins):
     View checkpoints and associated configuration changes.
 
     """
-    client.view_config_changes(config)
+    client.view_config_changes(config, num=config.num)
 
 
 def plugins_cmd(config, plugins):  # TODO: Use IDisplay rather than print
@@ -1651,6 +1651,10 @@ def _create_subparsers(helpful):
     helpful.add_group("revoke", description="Options for revocation of certs")
     helpful.add_group("rollback", description="Options for reverting config changes")
     helpful.add_group("plugins", description="Plugin options")
+    helpful.add_group("config_changes",
+                      description="Options for showing a history of config changes")
+    helpful.add("config_changes", "--num", type=int,
+                help="How many past revisions you want to be displayed")
     helpful.add(
         None, "--user-agent", default=None,
         help="Set a custom user agent string for the client. User agent strings allow "
