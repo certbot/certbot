@@ -50,13 +50,12 @@ def add_time_interval(base_time, interval, textparser=parsedatetime.Calendar()):
     return textparser.parseDT(interval, base_time, tzinfo=tzinfo)[0]
 
 
-def write_renewal_config(filename, target, cli_config):
+def write_renewal_config(filename, target, relevant_data):
     """Writes a renewal config file with the specified name and values.
 
     :param str filename: Absolute path to the config file
     :param dict target: Maps ALL_FOUR to their symlink paths
-    :param .RenewerConfiguration cli_config: parsed command line
-        arguments
+    :param dict relevant_data: Renewal configuration options to save
 
     :returns: Configuration object for the new config file
     :rtype: configobj.ConfigObj
@@ -67,18 +66,11 @@ def write_renewal_config(filename, target, cli_config):
     for kind in ALL_FOUR:
         config[kind] = target[kind]
 
-    # XXX: We clearly need a more general and correct way of getting
-    # options into the configobj for the RenewableCert instance.
-    # This is a quick-and-dirty way to do it to allow integration
-    # testing to start.  (Note that the config parameter to new_lineage
-    # ideally should be a ConfigObj, but in this case a dict will be
-    # accepted in practice.)
-    renewalparams = vars(cli_config.namespace)
-    if renewalparams:
-        config["renewalparams"] = renewalparams
+    if relevant_data:
+        config["renewalparams"] = relevant_data
         config.comments["renewalparams"] = ["",
-                                            "Options and defaults used"
-                                            " in the renewal process"]
+                                            "Options used in "
+                                            "the renewal process"]
 
     # TODO: add human-readable comments explaining other available
     #       parameters
@@ -106,7 +98,10 @@ def update_configuration(lineagename, target, cli_config):
     # If an existing tempfile exists, delete it
     if os.path.exists(temp_filename):
         os.unlink(temp_filename)
-    write_renewal_config(temp_filename, target, cli_config)
+
+    # Save only the config items that are relevant to renewal
+    values = relevant_values(vars(cli_config.namespace))
+    write_renewal_config(temp_filename, target, values)
     os.rename(temp_filename, config_filename)
 
     return configobj.ConfigObj(config_filename)
@@ -125,6 +120,50 @@ def get_link_target(link):
     if not os.path.isabs(target):
         target = os.path.join(os.path.dirname(link), target)
     return os.path.abspath(target)
+
+
+def relevant_values(all_values):
+    """Return a new dict containing only items relevant for renewal.
+
+    :param dict all_values: The original values.
+
+    :returns: A new dictionary containing items that can be used in renewal.
+    :rtype dict:"""
+
+    from letsencrypt import cli
+
+    import code
+    code.interact(local=locals())
+    def _is_cli_default(option, value):
+        # Look through the CLI parser defaults and see if this option is
+        # both present and equal to the specified value. If not, return
+        # False.
+        for x in cli._parser.parser._actions:
+            if x.dest == option:
+                if x.default == value:
+                    return True
+                else:
+                    break
+        return False
+
+    values = dict()
+    for option, value in all_values.iteritems():
+        # Try to find reasons to store this item in the
+        # renewal config.  It can be stored if it is relevant and
+        # (it is _set_by_cli() or flag_default() is different
+        # from the value or flag_default() doesn't exist).
+        if cli._relevant(option):
+            if (cli._set_by_cli(option)
+                or not _is_cli_default(option, value)):
+#                or option not in constants.CLI_DEFAULTS
+#                or constants.CLI_DEFAULTS[option] != value):
+                values[option] = value
+                print option, value
+            else:
+                print "not saving", option, value
+        else:
+            print "not relevant", option, value
+    return values
 
 
 class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
@@ -690,6 +729,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :rtype: :class:`storage.renewableCert`
 
         """
+
         # Examine the configuration and find the new lineage's name
         for i in (cli_config.renewal_configs_dir, cli_config.archive_dir,
                   cli_config.live_dir):
@@ -744,7 +784,12 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         # Document what we've done in a new renewal config file
         config_file.close()
-        new_config = write_renewal_config(config_filename, target, cli_config)
+
+        # Save only the config items that are relevant to renewal
+        values = relevant_values(vars(cli_config.namespace))
+        print (values)
+
+        new_config = write_renewal_config(config_filename, target, values)
         return cls(new_config.filename, cli_config)
 
     def save_successor(self, prior_version, new_cert,
