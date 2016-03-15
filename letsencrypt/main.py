@@ -455,7 +455,7 @@ def config_changes(config, unused_plugins):
     View checkpoints and associated configuration changes.
 
     """
-    client.view_config_changes(config)
+    client.view_config_changes(config, num=config.num)
 
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
