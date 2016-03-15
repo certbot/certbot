@@ -1,4 +1,4 @@
-"""Let's Encrypt command CLI argument processing."""
+"""Let's Encrypt command line argument & config processing."""
 # pylint: disable=too-many-lines
 from __future__ import print_function
 import argparse
@@ -634,10 +634,9 @@ class HelpfulArgumentParser(object):
         from letsencrypt import main
         self.VERBS = main.VERBS
         # List of topics for which additional help can be provided
-        HELP_TOPICS = ["all", "security",
-                       "paths", "automation", "testing"] + list(six.iterkeys(self.VERBS))
+        HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
 
-        plugin_names = list(six.iterkeys(plugins))
+        plugin_names = list(plugins)
         self.help_topics = HELP_TOPICS + plugin_names + [None]
         usage, short_usage = usage_strings(plugins)
         self.parser = configargparse.ArgParser(

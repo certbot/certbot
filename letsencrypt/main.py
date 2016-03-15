@@ -2,8 +2,13 @@
 from __future__ import print_function
 import atexit
 import functools
+import logging.handlers
 import os
 import sys
+import time
+import traceback
+
+import OpenSSL
 import zope.component
 
 import letsencrypt
@@ -22,15 +27,11 @@ from letsencrypt import log
 from letsencrypt import reporter
 from letsencrypt import storage
 
+from acme import jose
 from letsencrypt.cli import choose_configurator_plugins, _renewal_conf_files, should_renew
 from letsencrypt.display import util as display_util, ops as display_ops
 from letsencrypt.plugins import disco as plugins_disco
 
-import traceback
-import logging.handlers
-import time
-from acme import jose
-import OpenSSL
 
 logger = logging.getLogger(__name__)
 
