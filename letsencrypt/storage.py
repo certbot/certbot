@@ -132,8 +132,6 @@ def relevant_values(all_values):
 
     from letsencrypt import cli
 
-    import code
-    code.interact(local=locals())
     def _is_cli_default(option, value):
         # Look through the CLI parser defaults and see if this option is
         # both present and equal to the specified value. If not, return
