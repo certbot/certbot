@@ -557,6 +557,22 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertFalse(os.path.islink(self.test_rc.version("privkey", 10)))
         self.assertFalse(os.path.exists(temp_config_file))
 
+    def test_relevant_values(self):
+        """Test that relevant_values() can reject an irrelevant value."""
+        from letsencrypt import storage
+        self.assertEqual(storage.relevant_values({"hello": "there"}), {})
+
+    def test_relevant_values_default(self):
+        """Test that relevant_values() can reject a default value."""
+        from letsencrypt import storage
+        self.assertEqual(storage.relevant_values({"rsa_key_size": 2048}), {})
+
+    def test_relevant_values_nondefault(self):
+        """Test that relevant_values() can retain a non-default value."""
+        from letsencrypt import storage
+        self.assertEqual(storage.relevant_values({"rsa_key_size": 12}),
+                         {"rsa_key_size": 12})
+
     def test_new_lineage(self):
         """Test for new_lineage() class method."""
         from letsencrypt import storage
