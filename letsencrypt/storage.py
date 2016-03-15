@@ -156,7 +156,6 @@ def relevant_values(all_values):
 #                or option not in constants.CLI_DEFAULTS
 #                or constants.CLI_DEFAULTS[option] != value):
                 values[option] = value
-                print option, value
     return values
 
 
@@ -781,7 +780,6 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         # Save only the config items that are relevant to renewal
         values = relevant_values(vars(cli_config.namespace))
-        print (values)
 
         new_config = write_renewal_config(config_filename, target, values)
         return cls(new_config.filename, cli_config)
