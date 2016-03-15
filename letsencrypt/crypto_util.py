@@ -75,9 +75,11 @@ def init_save_csr(privkey, names, path, csrname="csr-letsencrypt.pem"):
     :rtype: :class:`letsencrypt.le_util.CSR`
 
     """
-    csr_pem, csr_der = make_csr(privkey.pem, names)
-
     config = zope.component.getUtility(interfaces.IConfig)
+
+    csr_pem, csr_der = make_csr(privkey.pem, names,
+        must_staple=config.must_staple)
+
     # Save CSR
     le_util.make_or_verify_dir(path, 0o755, os.geteuid(),
                                config.strict_permissions)
@@ -92,7 +94,7 @@ def init_save_csr(privkey, names, path, csrname="csr-letsencrypt.pem"):
 
 
 # Lower level functions
-def make_csr(key_str, domains):
+def make_csr(key_str, domains, must_staple=False):
     """Generate a CSR.
 
     :param str key_str: PEM-encoded RSA key.
@@ -111,13 +113,19 @@ def make_csr(key_str, domains):
     req.get_subject().CN = domains[0]
     # TODO: what to put into req.get_subject()?
     # TODO: put SAN if len(domains) > 1
-    req.add_extensions([
+    extensions = [
         OpenSSL.crypto.X509Extension(
             "subjectAltName",
             critical=False,
             value=", ".join("DNS:%s" % d for d in domains)
-        ),
-    ])
+        )
+    ]
+    if must_staple:
+        extensions.append(OpenSSL.crypto.X509Extension(
+            "1.3.6.1.5.5.7.1.24",
+            critical=False,
+            value="DER:30:03:02:01:05"))
+    req.add_extensions(extensions)
     req.set_version(2)
     req.set_pubkey(pkey)
     req.sign(pkey, "sha256")
