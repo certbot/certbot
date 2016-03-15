@@ -78,6 +78,10 @@ class AuthHandler(object):
 
             if response:
                 failed_domains = failed_domains.union(response)
+                for domain in failed_domains:
+                    logger.warning(
+                        "Challenge failed for domain %s",
+                        domain)
 
         returnDomains = [domain for domain in domains
                         if domain not in failed_domains]
