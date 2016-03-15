@@ -157,10 +157,6 @@ def relevant_values(all_values):
 #                or constants.CLI_DEFAULTS[option] != value):
                 values[option] = value
                 print option, value
-            else:
-                print "not saving", option, value
-        else:
-            print "not relevant", option, value
     return values
 
 
