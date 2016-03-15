@@ -312,12 +312,12 @@ def enforce_domain_sanity(domain):
     try:
         domain = domain.encode('ascii').lower()
     except UnicodeError:
-        error_fmt = ("Internationalized domain names "
-                     "are not presently supported: {0}")
+        error_fmt = (u"Internationalized domain names "
+                      "are not presently supported: {0}")
         if isinstance(domain, six.text_type):
-            raise errors.ConfigurationError(unicode(error_fmt).format(domain))
-        else:
             raise errors.ConfigurationError(error_fmt.format(domain))
+        else:
+            raise errors.ConfigurationError(str(error_fmt).format(domain))
 
     # Remove trailing dot
     domain = domain[:-1] if domain.endswith('.') else domain
