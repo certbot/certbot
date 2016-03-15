@@ -157,7 +157,7 @@ def _handle_subset_cert_request(config, domains, cert):
              br=os.linesep)
     if config.expand or config.renew_by_default or zope.component.getUtility(
             interfaces.IDisplay).yesno(question, "Expand", "Cancel",
-                                       cli_flag="--expand (or in some cases, --duplicate)"):
+                                       cli_flag="--expand"):
         return "renew", cert
     else:
         reporter_util = zope.component.getUtility(interfaces.IReporter)

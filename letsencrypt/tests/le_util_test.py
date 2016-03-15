@@ -323,5 +323,21 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
         self.assertTrue("--old-option" not in stdout.getvalue())
 
 
+class EnforceDomainSanityTest(unittest.TestCase):
+    """Test enforce_domain_sanity."""
+
+    def _call(self, domain):
+        from letsencrypt.le_util import enforce_domain_sanity
+        return enforce_domain_sanity(domain)
+
+    def test_nonascii_str(self):
+        self.assertRaises(errors.ConfigurationError, self._call,
+                          u"eichh\u00f6rnchen.example.com".encode("utf-8"))
+
+    def test_nonascii_unicode(self):
+        self.assertRaises(errors.ConfigurationError, self._call,
+                          u"eichh\u00f6rnchen.example.com")
+
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
