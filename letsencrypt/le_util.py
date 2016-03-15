@@ -6,6 +6,7 @@ import logging
 import os
 import platform
 import re
+import six
 import socket
 import stat
 import subprocess
@@ -310,10 +311,13 @@ def enforce_domain_sanity(domain):
     # Unicode
     try:
         domain = domain.encode('ascii').lower()
-    except UnicodeDecodeError:
-        raise errors.ConfigurationError(
-            "Internationalized domain names are not presently supported: {0}"
-            .format(domain))
+    except UnicodeError:
+        error_fmt = (u"Internationalized domain names "
+                      "are not presently supported: {0}")
+        if isinstance(domain, six.text_type):
+            raise errors.ConfigurationError(error_fmt.format(domain))
+        else:
+            raise errors.ConfigurationError(str(error_fmt).format(domain))
 
     # Remove trailing dot
     domain = domain[:-1] if domain.endswith('.') else domain
