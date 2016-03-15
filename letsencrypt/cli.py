@@ -537,20 +537,6 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
     raise errors.PluginSelectionError(msg)
 
 
-def _relevant(option):
-    """
-    Is this option one that could be restored and used for future renewal purposes?
-    :param str option: the name of the option
-
-    :rtype: bool
-    """
-    # The list() here produces a list of the plugin names as strings.
-    plugins = list(plugins_disco.PluginsRegistry.find_all())
-    return (option in STR_CONFIG_ITEMS
-            or option in INT_CONFIG_ITEMS
-            or any(option.startswith(x + "_") for x in plugins))
-
-
 def set_configurator(previously, now):
     """
     Setting configurators multiple ways is okay, as long as they all agree

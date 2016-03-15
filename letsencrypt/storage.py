@@ -122,6 +122,22 @@ def get_link_target(link):
     return os.path.abspath(target)
 
 
+def _relevant(option):
+    """
+    Is this option one that could be restored for future renewal purposes?
+    :param str option: the name of the option
+
+    :rtype: bool
+    """
+    # The list() here produces a list of the plugin names as strings.
+    from letsencrypt import cli
+    from letsencrypt.plugins import disco as plugins_disco
+    plugins = list(plugins_disco.PluginsRegistry.find_all())
+    return (option in cli.STR_CONFIG_ITEMS
+            or option in cli.INT_CONFIG_ITEMS
+            or any(option.startswith(x + "_") for x in plugins))
+
+
 def relevant_values(all_values):
     """Return a new dict containing only items relevant for renewal.
 
@@ -150,7 +166,7 @@ def relevant_values(all_values):
         # renewal config.  It can be stored if it is relevant and
         # (it is _set_by_cli() or flag_default() is different
         # from the value or flag_default() doesn't exist).
-        if cli._relevant(option):
+        if _relevant(option):
             if (cli._set_by_cli(option)
                 or not _is_cli_default(option, value)):
 #                or option not in constants.CLI_DEFAULTS
