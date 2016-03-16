@@ -133,7 +133,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         out = self._help_output(['-h'])
         self.assertTrue(cli.usage_strings(plugins)[0] in out)
 
-
     def _cli_missing_flag(self, args, message):
         "Ensure that a particular error raises a missing cli flag error containing message"
         exc = None
