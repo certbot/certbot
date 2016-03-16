@@ -679,8 +679,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with open(os.path.join(renewer_configs_dir, 'test.conf'), 'w') as f:
             f.write("My contents don't matter")
 
-    def _test_renew_common(self, renewalparams=None, error_expected=False,
-                           names=None, assert_oc_called=None):
+    def _test_renew_common(self, renewalparams=None, names=None,
+                           assert_oc_called=None, **kwargs):
         self._make_dummy_renewal_config()
         with mock.patch('letsencrypt.storage.RenewableCert') as mock_rc:
             mock_lineage = mock.MagicMock()
@@ -691,8 +691,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 mock_lineage.names.return_value = names
             mock_rc.return_value = mock_lineage
             with mock.patch('letsencrypt.cli.obtain_cert') as mock_obtain_cert:
-                self._test_renewal_common(True, None, error_expected=error_expected,
-                                          args=['renew'], renew=False)
+                kwargs.setdefault('args', ['renew'])
+                self._test_renewal_common(True, None, renew=False, **kwargs)
             if assert_oc_called is not None:
                 if assert_oc_called:
                     self.assertTrue(mock_obtain_cert.called)
