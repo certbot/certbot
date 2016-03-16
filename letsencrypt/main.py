@@ -701,15 +701,6 @@ def main(cli_args=sys.argv[1:]):
     return config.func(config, plugins)
 
 
-# Maps verbs/subcommands to the functions that implement them
-# In principle this should live in cli.HelpfulArgumentParser, but
-# due to issues with import cycles and testing, it lives here
-VERBS = {"auth": obtain_cert, "certonly": obtain_cert,
-         "config_changes": config_changes, "everything": run,
-         "install": install, "plugins": plugins_cmd, "renew": cli.renew,
-         "revoke": revoke, "rollback": rollback, "run": run}
-
-
 if __name__ == "__main__":
     err_string = main()
     if err_string:
