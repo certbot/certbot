@@ -51,6 +51,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
+        # Reset globals in cli
+        # pylint: disable=protected-access
+        cli._parser = cli._set_by_cli.detector = None
 
     def _call(self, args):
         "Run the cli with output streams and actual client mocked out"
@@ -723,6 +726,12 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         names = ['*.example.com']
         self._test_renew_common(renewalparams=renewalparams, error_expected=True,
                                 names=names, assert_oc_called=False)
+
+    def test_renew_with_configurator(self):
+        renewalparams = {'authenticator': 'webroot'}
+        self._test_renew_common(
+            renewalparams=renewalparams, assert_oc_called=True,
+            args='renew --configurator apache'.split())
 
     def test_renew_plugin_config_restoration(self):
         renewalparams = {'authenticator': 'webroot',
