@@ -27,37 +27,22 @@ logger = logging.getLogger(__name__)
 
 
 # High level functions
-def init_save_key(key_algo, rsa_key_size, ecdsa_curve, key_dir, keyname="key-letsencrypt.pem"):
+def save_key(key_pem, key_dir, keyname="key-letsencrypt.pem"):
     """Initializes and saves a privkey.
 
-    Inits key and saves it in PEM format on the filesystem.
+    Saves a generated private key in PEM format on the filesystem.
 
     .. note:: keyname is the attempted filename, it may be different if a file
         already exists at the path.
 
-    :param str key_algo: The algorithm used for the keypair (RSA or ECDSA)
-    :param int rsa_key_size: RSA key size in bits
-    :param str ecdsa_curve: The ECDSA curve used (currently prime256v1 or secp384r1)
+    :param str key_pem: The PEM encoded private key to save
     :param str key_dir: Key save directory.
     :param str keyname: Filename of key
 
     :returns: Key
     :rtype: :class:`letsencrypt.le_util.Key`
 
-    :raises ValueError: If unable to generate the key given key_size.
-
     """
-    try:
-        if key_algo == "RSA":
-            key_pem = make_key_rsa(rsa_key_size)
-        elif key_algo == "ECDSA":
-            key_pem = make_key_ecdsa(ecdsa_curve)
-        else:
-            logger.info("Key algorithm not valid, try \"RSA\" or \"ECDSA\".")
-            return false
-    except ValueError as err:
-        logger.exception(err)
-        raise err
 
     config = zope.component.getUtility(interfaces.IConfig)
     # Save file
@@ -66,12 +51,8 @@ def init_save_key(key_algo, rsa_key_size, ecdsa_curve, key_dir, keyname="key-let
     key_f, key_path = le_util.unique_file(
         os.path.join(key_dir, keyname), 0o600)
     with key_f:
+        logger.info("Saving private key to: %s", key_path)
         key_f.write(key_pem)
-
-    if key_algo == "RSA":
-            logger.info("Generating RSA key (%d bits): %s", rsa_key_size, key_path)
-    elif key_algo == "ECDSA":
-            logger.info("Generating ECDSA key (curve: %s): %s", ecdsa_curve, key_path)
 
     return le_util.Key(key_path, key_pem)
 

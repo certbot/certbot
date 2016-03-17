@@ -242,12 +242,48 @@ class Client(object):
             (`.le_util.Key`) and DER-encoded Certificate Signing Request
             (`.le_util.CSR`).
         :rtype: tuple
+    
+        :raises ValueError: If unable to generate the key.
 
         """
         # Create CSR from names
-        key = crypto_util.init_save_key(
-            self.config.privkey_signature_algorithm, self.config.rsa_key_size,
-            self.config.ecdsa_curve, self.config.key_dir)
+
+        # Validate self.config.key_types:
+
+        # TODO Get list of supported key types from Boulder?
+        valid_key_types = ["rsa", "ecdsa"]
+
+        key_types = self.config.key_types.split()
+
+        if len(key_types) != 1:
+            logger.warn("Currently, only one key type is supported.")
+            return False
+
+        for key in key_types:
+            if key.lower() not in valid_key_types:
+                logger.warn("Key algorithm not valid, try \"RSA\" or \"ECDSA\".")
+                return False
+
+        # TODO: Implement the issuance of multiple certificates with different keys
+        key_algo = key_types[0]
+
+        # Envoke the proper function for the requested key type
+        try:
+            if key_algo.lower() == "rsa":
+                logger.info("Generating %d bits RSA key", self.config.rsa_key_size)
+                key_pem = crypto_util.make_key_rsa(self.config.rsa_key_size)
+            elif key_algo.lower() == "ecdsa":
+                logger.info("Generating ECDSA key with curve %s", self.config.ecdsa_curve)
+                key_pem = crypto_util.make_key_ecdsa(self.config.ecdsa_curve)
+            else:
+                logger.warn("Key algorithm not valid, try \"RSA\" or \"ECDSA\".")
+                return False
+        except ValueError as err:
+            logger.exception(err)
+            raise err
+
+        key = crypto_util.save_key(
+            key_pem, self.config.key_dir)
         csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
         return self.obtain_certificate_from_csr(domains, csr) + (key, csr)
