@@ -55,8 +55,8 @@ _parser = None
 # the renewal configuration process loses this information.
 STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
-                    "standalone_supported_challenges", "ecdsa-curve",
-                    "key-types"]
+                    "standalone_supported_challenges", "ecdsa_curve",
+                    "key_types"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
 
 # For help strings, figure out how the user ran us.
