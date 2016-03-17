@@ -355,10 +355,11 @@ class HelpfulArgumentParser(object):
 
     def __init__(self, args, plugins, detect_defaults=False):
         from letsencrypt import main
+        from letsencrypt import renew
         self.VERBS = {"auth": main.obtain_cert, "certonly": main.obtain_cert,
                       "config_changes": main.config_changes, "run": main.run,
                       "install": main.install, "plugins": main.plugins_cmd,
-                      "renew": renew, "revoke": main.revoke,
+                      "renew": renew.renew, "revoke": main.revoke,
                       "rollback": main.rollback, "everything": main.run}
 
         # List of topics for which additional help can be provided
