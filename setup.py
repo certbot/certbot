@@ -127,7 +127,7 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'letsencrypt = letsencrypt.cli:main',
+            'letsencrypt = letsencrypt.main:main',
         ],
         'letsencrypt.plugins': [
             'manual = letsencrypt.plugins.manual:Authenticator',
