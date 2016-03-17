@@ -128,7 +128,7 @@ class ClientTest(unittest.TestCase):
 
     # FIXME move parts of this to test_cli.py...
     @mock.patch("letsencrypt.client.logger")
-    @mock.patch("letsencrypt.cli._process_domain")
+    @mock.patch("letsencrypt.cli.process_domain")
     def test_obtain_certificate_from_csr(self, mock_process_domain, mock_logger):
         self._mock_obtain_certificate()
         from letsencrypt import cli

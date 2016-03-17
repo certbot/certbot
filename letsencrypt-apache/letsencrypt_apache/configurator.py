@@ -545,6 +545,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             paths = self.aug.match(
                 ("/files%s//*[label()=~regexp('%s')]" %
                     (vhost_path, parser.case_i("VirtualHost"))))
+            paths = [path for path in paths if os.path.basename(path) == "VirtualHost"]
             for path in paths:
                 new_vhost = self._create_vhost(path)
                 realpath = os.path.realpath(new_vhost.filep)
