@@ -409,6 +409,9 @@ class HelpfulArgumentParser(object):
 
         # Do any post-parsing homework here
 
+        if self.verb == "renew":
+            self.noninteractive_mode = True
+
         # we get domains from -d, but also from the webroot map...
         if parsed_args.webroot_map:
             for domain in parsed_args.webroot_map.keys():
