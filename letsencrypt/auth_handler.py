@@ -66,31 +66,27 @@ class AuthHandler(object):
 
         self._choose_challenges(domains)
 
-        failed_domains = set()
 
         # While there are still challenges remaining...
         while self.achalls:
             resp = self._solve_challenges()
             logger.info("Waiting for verification...")
 
-            # Send all Responses - this modifies dv_c and cont_c
-            response = self._respond(resp, best_effort)
-
-            if response:
-                failed_domains = failed_domains.union(response)
-                for domain in failed_domains:
-                    logger.warning(
-                        "Challenge failed for domain %s",
-                        domain)
-
-        returnDomains = [domain for domain in domains
-                        if domain not in failed_domains]
+            # Send all Responses - this modifies achalls
+            self._respond(resp, best_effort)
 
         # Just make sure all decisions are complete.
         self.verify_authzr_complete()
+
         # Only return valid authorizations
-        return [authzr for authzr in self.authzr.values()
-                if authzr.body.status == messages.STATUS_VALID], returnDomains
+        retVal = [authzr for authzr in self.authzr.values()
+                if authzr.body.status == messages.STATUS_VALID]
+
+        if len(retVal) <= 0:
+            logger.critical("Challenges failed for all domains")
+            raise
+
+        return retVal
 
     def _choose_challenges(self, domains):
         """Retrieve necessary challenges to satisfy server."""
@@ -134,12 +130,10 @@ class AuthHandler(object):
 
         # Check for updated status...
         try:
-            failed_domains = self._poll_challenges(chall_update, best_effort)
+            self._poll_challenges(chall_update, best_effort)
         finally:
             # This removes challenges from self.achalls
             self._cleanup_challenges(active_achalls)
-
-        return failed_domains
 
     def _send_responses(self, achalls, resps, chall_update):
         """Send responses and make sure errors are handled.
@@ -172,7 +166,6 @@ class AuthHandler(object):
         """Wait for all challenge results to be determined."""
         dom_to_check = set(chall_update.keys())
         comp_domains = set()
-        failed_domains = set()
         rounds = 0
 
         while dom_to_check and rounds < max_rounds:
@@ -191,7 +184,10 @@ class AuthHandler(object):
                 # We failed some challenges... damage control
                 else:
                     if best_effort:
-                        failed_domains.add(domain)
+                        comp_domains.add(domain)
+                        logger.warning(
+                            "Challenge failed for domain %s",
+                            domain)
                     else:
                         all_failed_achalls.update(
                             updated for _, updated in failed_achalls)
@@ -200,11 +196,9 @@ class AuthHandler(object):
                 _report_failed_challs(all_failed_achalls)
                 raise errors.FailedChallenges(all_failed_achalls)
 
-            dom_to_check -= comp_domains.union(failed_domains)
+            dom_to_check -= comp_domains
             comp_domains.clear()
             rounds += 1
-
-        return failed_domains
 
     def _handle_check(self, domain, achalls):
         """Returns tuple of ('completed', 'failed')."""

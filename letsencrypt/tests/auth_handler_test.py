@@ -87,7 +87,7 @@ class GetAuthorizationsTest(unittest.TestCase):
 
         mock_poll.side_effect = self._validate_all
 
-        authzr, _ = self.handler.get_authorizations(["0"])
+        authzr = self.handler.get_authorizations(["0"])
 
         self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
 
@@ -127,9 +127,7 @@ class GetAuthorizationsTest(unittest.TestCase):
             self.assertTrue(achall.typ in ["tls-sni-01", "http-01", "dns"])
 
         # Length of authorizations list
-        self.assertEqual(len(authzr[0]), 1)
-        # Length of valid domains list
-        self.assertEqual(len(authzr[1]), 1)
+        self.assertEqual(len(authzr), 1)
 
     @mock.patch("letsencrypt.auth_handler.AuthHandler._poll_challenges")
     def test_name3_tls_sni_01_3(self, mock_poll):
@@ -138,7 +136,7 @@ class GetAuthorizationsTest(unittest.TestCase):
 
         mock_poll.side_effect = self._validate_all
 
-        authzr, _ = self.handler.get_authorizations(["0", "1", "2"])
+        authzr = self.handler.get_authorizations(["0", "1", "2"])
 
         self.assertEqual(self.mock_net.answer_challenge.call_count, 3)
 

@@ -124,7 +124,7 @@ class ClientTest(unittest.TestCase):
             self.eg_domains,
             self.config.allow_subset_of_names)
 
-        authzr, _ = self.client.auth_handler.get_authorizations()
+        authzr = self.client.auth_handler.get_authorizations()
 
         self.acme.request_issuance.assert_called_once_with(
             jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
@@ -158,7 +158,7 @@ class ClientTest(unittest.TestCase):
             self.assertRaises(errors.ConfigurationError,
                 cli.HelpfulArgumentParser.handle_csr, mock_parser, mock_parsed_args)
 
-            authzr, _ = self.client.auth_handler.get_authorizations(self.eg_domains, False)
+            authzr = self.client.auth_handler.get_authorizations(self.eg_domains, False)
 
             self.assertEqual(
                 (mock.sentinel.certr, mock.sentinel.chain),
@@ -190,7 +190,17 @@ class ClientTest(unittest.TestCase):
         # return_value is essentially set to (None, None) in
         # _mock_obtain_certificate(), which breaks this test.
         # Thus fixed by the next line.
-        self.client.auth_handler.get_authorizations.return_value = (None, domains)
+
+        authzr = []
+
+        for domain in domains:
+            authzr.append(
+                mock.MagicMock(
+                    body=mock.MagicMock(
+                        identifier=mock.MagicMock(
+                            value=domain))))
+
+        self.client.auth_handler.get_authorizations.return_value = authzr
 
         self.assertEqual(
             self.client.obtain_certificate(domains),

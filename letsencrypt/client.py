@@ -189,7 +189,7 @@ class Client(object):
             self.auth_handler = None
 
     def obtain_certificate_from_csr(self, domains, csr,
-        typ=OpenSSL.crypto.FILETYPE_ASN1, authzr=False):
+        typ=OpenSSL.crypto.FILETYPE_ASN1, authzr=None):
         """Obtain certificate.
 
         Internal function with precondition that `domains` are
@@ -199,6 +199,8 @@ class Client(object):
         :param .le_util.CSR csr: DER-encoded Certificate Signing
             Request. The key used to generate this CSR can be different
             than `authkey`.
+        :param dict authzr: ACME Authorization Resource dict where keys are
+            domains and values are :class:`acme.messages.AuthorizationResource`
 
         :returns: `.CertificateResource` and certificate chain (as
             returned by `.fetch_chain`).
@@ -215,10 +217,8 @@ class Client(object):
 
         logger.debug("CSR: %s, domains: %s", csr, domains)
 
-        if authzr is False:
-            authzr, _ = self.auth_handler.get_authorizations(
-                            domains,
-                            self.config.allow_subset_of_names)
+        if authzr is None:
+            authzr = self.auth_handler.get_authorizations(domains)
 
         certr = self.acme.request_issuance(
             jose.ComparableX509(
@@ -240,15 +240,20 @@ class Client(object):
         :rtype: tuple
 
         """
-        authzr, domains = self.auth_handler.get_authorizations(domains,
-                                     self.config.allow_subset_of_names)
+        authzr = self.auth_handler.get_authorizations(
+                domains,
+                self.config.allow_subset_of_names)
+
+        domains = [a.body.identifier.value.encode('ascii', 'ignore')
+                                                    for a in authzr]
 
         # Create CSR from names
         key = crypto_util.init_save_key(
             self.config.rsa_key_size, self.config.key_dir)
         csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
-        return self.obtain_certificate_from_csr(domains, csr, authzr=authzr) + (key, csr)
+        return (self.obtain_certificate_from_csr(domains, csr, authzr=authzr)
+                                                                + (key, csr))
 
     def obtain_and_enroll_certificate(self, domains):
         """Obtain and enroll certificate.
