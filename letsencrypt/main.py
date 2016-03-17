@@ -11,6 +11,8 @@ import traceback
 import OpenSSL
 import zope.component
 
+from acme import jose
+
 import letsencrypt
 
 from letsencrypt import account
@@ -27,7 +29,6 @@ from letsencrypt import log
 from letsencrypt import reporter
 from letsencrypt import storage
 
-from acme import jose
 from letsencrypt.cli import choose_configurator_plugins, _renewal_conf_files, should_renew
 from letsencrypt.display import util as display_util, ops as display_ops
 from letsencrypt.plugins import disco as plugins_disco
