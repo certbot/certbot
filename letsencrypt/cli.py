@@ -1,4 +1,4 @@
-"""Let's Encrypt command CLI argument processing."""
+"""Let's Encrypt command line argument & config processing."""
 from __future__ import print_function
 import argparse
 import glob
@@ -292,7 +292,6 @@ def argparse_type(variable):
             return action.type
     return str
 
-
 def read_file(filename, mode="rb"):
     """Returns the given file's contents.
 
@@ -355,14 +354,17 @@ class HelpfulArgumentParser(object):
     """
 
     def __init__(self, args, plugins, detect_defaults=False):
-
         from letsencrypt import main
-        self.VERBS = main.VERBS
-        # List of topics for which additional help can be provided
-        HELP_TOPICS = ["all", "security",
-                       "paths", "automation", "testing"] + list(six.iterkeys(self.VERBS))
+        self.VERBS = {"auth": main.obtain_cert, "certonly": main.obtain_cert,
+                      "config_changes": main.config_changes, "run": main.run,
+                      "install": main.install, "plugins": main.plugins_cmd,
+                      "renew": renew, "revoke": main.revoke,
+                      "rollback": main.rollback, "everything": main.run}
 
-        plugin_names = list(six.iterkeys(plugins))
+        # List of topics for which additional help can be provided
+        HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
+
+        plugin_names = list(plugins)
         self.help_topics = HELP_TOPICS + plugin_names + [None]
         usage, short_usage = usage_strings(plugins)
         self.parser = configargparse.ArgParser(
@@ -844,6 +846,10 @@ def _create_subparsers(helpful):
     helpful.add_group("revoke", description="Options for revocation of certs")
     helpful.add_group("rollback", description="Options for reverting config changes")
     helpful.add_group("plugins", description="Plugin options")
+    helpful.add_group("config_changes",
+                      description="Options for showing a history of config changes")
+    helpful.add("config_changes", "--num", type=int,
+                help="How many past revisions you want to be displayed")
     helpful.add(
         None, "--user-agent", default=None,
         help="Set a custom user agent string for the client. User agent strings allow "

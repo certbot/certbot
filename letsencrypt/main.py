@@ -2,9 +2,16 @@
 from __future__ import print_function
 import atexit
 import functools
+import logging.handlers
 import os
 import sys
+import time
+import traceback
+
+import OpenSSL
 import zope.component
+
+from acme import jose
 
 import letsencrypt
 
@@ -26,11 +33,6 @@ from letsencrypt import storage
 from letsencrypt.display import util as display_util, ops as display_ops
 from letsencrypt.plugins import disco as plugins_disco
 
-import traceback
-import logging.handlers
-import time
-from acme import jose
-import OpenSSL
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +158,7 @@ def _handle_subset_cert_request(config, domains, cert):
              br=os.linesep)
     if config.expand or config.renew_by_default or zope.component.getUtility(
             interfaces.IDisplay).yesno(question, "Expand", "Cancel",
-                                       cli_flag="--expand (or in some cases, --duplicate)"):
+                                       cli_flag="--expand"):
         return "renew", cert
     else:
         reporter_util = zope.component.getUtility(interfaces.IReporter)
@@ -454,7 +456,7 @@ def config_changes(config, unused_plugins):
     View checkpoints and associated configuration changes.
 
     """
-    client.view_config_changes(config)
+    client.view_config_changes(config, num=config.num)
 
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
@@ -698,15 +700,6 @@ def main(cli_args=sys.argv[1:]):
     atexit.register(report.atexit_print_messages)
 
     return config.func(config, plugins)
-
-
-# Maps verbs/subcommands to the functions that implement them
-# In principle this should live in cli.HelpfulArgumentParser, but
-# due to issues with import cycles and testing, it lives here
-VERBS = {"auth": obtain_cert, "certonly": obtain_cert,
-         "config_changes": config_changes, "everything": run,
-         "install": install, "plugins": plugins_cmd, "renew": renew.renew,
-         "revoke": revoke, "rollback": rollback, "run": run}
 
 
 if __name__ == "__main__":

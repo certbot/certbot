@@ -79,7 +79,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         return ret, None, stderr, client
 
     def test_no_flags(self):
-        with MockedVerb("run") as mock_run:
+        with mock.patch('letsencrypt.main.run') as mock_run:
             self._call([])
             self.assertEqual(1, mock_run.call_count)
 
@@ -190,7 +190,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         chain = 'chain'
         fullchain = 'fullchain'
 
-        with MockedVerb('install') as mock_install:
+        with mock.patch('letsencrypt.main.install') as mock_install:
             self._call(['install', '--cert-path', cert, '--key-path', 'key',
                         '--chain-path', 'chain',
                         '--fullchain-path', 'fullchain'])
@@ -248,7 +248,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 unused_config, auth, unused_installer = mock_init.call_args[0]
                 self.assertTrue(isinstance(auth, manual.Authenticator))
 
-        with MockedVerb("certonly") as mock_certonly:
+        with mock.patch('letsencrypt.main.obtain_cert') as mock_certonly:
             self._call(["auth", "--standalone"])
             self.assertEqual(1, mock_certonly.call_count)
 
@@ -321,7 +321,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         chain = 'chain'
         fullchain = 'fullchain'
 
-        with MockedVerb('certonly') as mock_obtaincert:
+        with mock.patch('letsencrypt.main.obtain_cert') as mock_obtaincert:
             self._call(['certonly', '--cert-path', cert, '--key-path', 'key',
                         '--chain-path', 'chain',
                         '--fullchain-path', 'fullchain'])
@@ -900,7 +900,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(contents, test_contents)
 
     def test_agree_dev_preview_config(self):
-        with MockedVerb('run') as mocked_run:
+        with mock.patch('letsencrypt.main.run') as mocked_run:
             self._call(['-c', test_util.vector_path('cli.ini')])
         self.assertTrue(mocked_run.called)
 
@@ -1008,35 +1008,6 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
         result = _find_duplicative_certs(
             self.cli_config, ['example.com', 'something.new'])
         self.assertEqual(result, (None, None))
-
-
-class MockedVerb(object):
-    """Simple class that can be used for mocking out verbs/subcommands.
-
-    Storing a dictionary of verbs and the functions that implement them
-    in letsencrypt.cli makes mocking much more complicated. This class
-    can be used as a simple context manager for mocking out verbs in CLI
-    tests. For example:
-
-    with MockedVerb("run") as mock_run:
-        self._call([])
-        self.assertEqual(1, mock_run.call_count)
-
-    """
-    def __init__(self, verb_name):
-        self.verb_dict = main.VERBS
-        self.verb_func = None
-        self.verb_name = verb_name
-
-    def __enter__(self):
-        self.verb_func = self.verb_dict[self.verb_name]
-        mocked_func = mock.MagicMock()
-        self.verb_dict[self.verb_name] = mocked_func
-
-        return mocked_func
-
-    def __exit__(self, unused_type, unused_value, unused_trace):
-        self.verb_dict[self.verb_name] = self.verb_func
 
 
 if __name__ == '__main__':
