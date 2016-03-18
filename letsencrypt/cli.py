@@ -168,7 +168,7 @@ def set_configurator(previously, now):
     :param str previously: previously identified request for the installer/authenticator
     :param str requested: the request currently being processed
     """
-    if now is None:
+    if not now:
         # we're not actually setting anything
         return previously
     if previously:
