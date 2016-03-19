@@ -1,0 +1,15 @@
+# Keep out unused files in our npm package
+# See: https://docs.npmjs.com/misc/developers#keeping-files-out-of-your-package
+####
+
+docs/
+examples/
+tests/
+tools
+.dockerignore
+.gitattributes
+.travis.yml
+.docker-compose.yml
+Dockerfile
+Dockerfile-dev
+readthedocs.org.requirements.txt

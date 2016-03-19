@@ -20,8 +20,20 @@ Encrypt CA (or any other CA that speaks the `ACME
 protocol) that can automate the tasks of obtaining certificates and
 configuring webservers to use them.
 
+
+
 Installation
 ------------
+
+**Using npm:*
+
+  user@webserver:~$ npm i -g @letsencrypt/letsencrypt
+
+The installer will install 'letsencrypt' into your path automatically and will
+be available as `letsencrypt <arg(s)>`. For the available arguments, see below.
+
+
+**Using Git:**
 
 If ``letsencrypt`` is packaged for your OS, you can install it from there, and
 run it by typing ``letsencrypt``.  Because not all operating systems have

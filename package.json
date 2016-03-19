@@ -1,0 +1,31 @@
+{
+  "name": "letsencrypt",
+  "version": "0.1.2",
+  "description": "Let's Encrypt is an ACME client that can obtain certs and extensibly update server configurations",
+  "bin": {
+    "letsencrypt": "./bin/npm-cli"
+  },
+  "scripts": {
+    "postinstall": "letsencrypt-auto --help",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/letsencrypt/letsencrypt"
+  },
+  "bugs": {
+    "url": "https://github.com/letsencrypt/letsencrypt/issues"
+  },
+  "keywords": [
+    "ssl", "certificate", "encrypt", "letsencrypt"
+  ],
+  "author": "Jason Robert O'Kennedy",
+  "contributors": [{
+    "name": "celticparser",
+    "email": "jason.okennedy@codepile.io"
+  }],
+  "license": "Apache-2.0",
+  "dependencies": {},
+  "devDependencies": {},
+  "preferGlobal": true
+}
