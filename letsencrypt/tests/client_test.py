@@ -96,7 +96,7 @@ class ClientTest(unittest.TestCase):
 
     def setUp(self):
         self.config = mock.MagicMock(
-            no_verify_ssl=False, config_dir="/etc/letsencrypt")
+            no_verify_ssl=False, config_dir="/etc/letsencrypt", key_types="rsa")
         # pylint: disable=star-args
         self.account = mock.MagicMock(**{"key.pem": KEY})
         self.eg_domains = ["example.com", "www.example.com"]
@@ -180,7 +180,7 @@ class ClientTest(unittest.TestCase):
             (mock.sentinel.certr, mock.sentinel.chain, mock.sentinel.key, csr))
 
         mock_crypto_util.save_key.assert_called_once_with(
-            KEY, self.config.key_dir)
+            crypto_util.make_key_rsa(), self.config.key_dir)
         mock_crypto_util.init_save_csr.assert_called_once_with(
             mock.sentinel.key, domains, self.config.csr_dir)
         self._check_obtain_certificate()
