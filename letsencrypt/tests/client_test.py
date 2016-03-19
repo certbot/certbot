@@ -172,16 +172,15 @@ class ClientTest(unittest.TestCase):
 
         csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
         mock_crypto_util.init_save_csr.return_value = csr
-        mock_crypto_util.init_save_key.return_value = mock.sentinel.key
+        mock_crypto_util.save_key.return_value = mock.sentinel.key
         domains = ["example.com", "www.example.com"]
 
         self.assertEqual(
             self.client.obtain_certificate(domains),
             (mock.sentinel.certr, mock.sentinel.chain, mock.sentinel.key, csr))
 
-        mock_crypto_util.init_save_key.assert_called_once_with(
-            self.config.privkey_signature_algorithm, self.config.rsa_key_size,
-            self.config.ecdsa_curve, self.config.key_dir)
+        mock_crypto_util.save_key.assert_called_once_with(
+            KEY, self.config.key_dir)
         mock_crypto_util.init_save_csr.assert_called_once_with(
             mock.sentinel.key, domains, self.config.csr_dir)
         self._check_obtain_certificate()

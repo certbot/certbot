@@ -20,8 +20,8 @@ CERT = test_util.load_vector('cert.pem')
 SAN_CERT = test_util.load_vector('cert-san.pem')
 
 
-class InitSaveKeyTest(unittest.TestCase):
-    """Tests for letsencrypt.crypto_util.init_save_key."""
+class SaveKeyTest(unittest.TestCase):
+    """Tests for letsencrypt.crypto_util.save_key."""
     def setUp(self):
         logging.disable(logging.CRITICAL)
         zope.component.provideUtility(
@@ -34,8 +34,8 @@ class InitSaveKeyTest(unittest.TestCase):
 
     @classmethod
     def _call(cls, key_size, key_dir):
-        from letsencrypt.crypto_util import init_save_key
-        return init_save_key('RSA', key_size, '', key_dir, 'key-letsencrypt.pem')
+        from letsencrypt.crypto_util import save_key
+        return save_key(RSA512_KEY, key_dir, 'key-letsencrypt.pem')
 
     @mock.patch('letsencrypt.crypto_util.make_key_rsa')
     def test_success(self, mock_make):
