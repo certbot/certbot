@@ -110,8 +110,17 @@ class Addr(object):
     @classmethod
     def fromstring(cls, str_addr):
         """Initialize Addr from string."""
-        tup = str_addr.partition(':')
-        return cls((tup[0], tup[2]))
+        if str_addr.startswith('['):
+            # ipv6 addresses starts with [
+            endIndex = str_addr.rfind(']')
+            host = str_addr[:endIndex + 1]
+            port = ''
+            if len(str_addr) > endIndex + 2 and str_addr[endIndex + 1] == ':':
+                port = str_addr[endIndex + 2:]
+            return cls((host, port))
+        else:
+            tup = str_addr.partition(':')
+            return cls((tup[0], tup[2]))
 
     def __str__(self):
         if self.tup[1]:
