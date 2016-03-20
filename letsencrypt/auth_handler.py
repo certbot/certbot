@@ -66,7 +66,6 @@ class AuthHandler(object):
 
         self._choose_challenges(domains)
 
-
         # While there are still challenges remaining...
         while self.achalls:
             resp = self._solve_challenges()
@@ -80,11 +79,11 @@ class AuthHandler(object):
 
         # Only return valid authorizations
         retVal = [authzr for authzr in self.authzr.values()
-                if authzr.body.status == messages.STATUS_VALID]
+                  if authzr.body.status == messages.STATUS_VALID]
 
         if len(retVal) <= 0:
-            logger.critical("Challenges failed for all domains")
-            raise
+            raise errors.AuthorizationError(
+                "Challenges failed for all domains")
 
         return retVal
 

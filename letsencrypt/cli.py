@@ -1244,6 +1244,9 @@ class HelpfulArgumentParser(object):
                     parsed_args.register_unsafely_without_email = True
 
         if parsed_args.csr:
+            if parsed_args.allow_subset_of_names:
+                raise errors.Error("--allow-subset-of-names "
+                                   "cannot be used with --csr")
             self.handle_csr(parsed_args)
 
         if self.detect_defaults:  # plumbing

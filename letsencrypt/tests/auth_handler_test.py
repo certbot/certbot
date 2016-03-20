@@ -163,6 +163,9 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.assertRaises(
             errors.AuthorizationError, self.handler.get_authorizations, ["0"])
 
+    def test_no_domains(self):
+        self.assertRaises(errors.AuthorizationError, self.handler.get_authorizations, [])
+
     def _validate_all(self, unused_1, unused_2):
         for dom in self.handler.authzr.keys():
             azr = self.handler.authzr[dom]
