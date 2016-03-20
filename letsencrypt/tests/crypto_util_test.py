@@ -33,21 +33,14 @@ class SaveKeyTest(unittest.TestCase):
         shutil.rmtree(self.key_dir)
 
     @classmethod
-    def _call(cls, key_size, key_dir):
+    def _call(cls, key_pem, key_dir):
         from letsencrypt.crypto_util import save_key
         return save_key(RSA512_KEY, key_dir, 'key-letsencrypt.pem')
 
-    @mock.patch('letsencrypt.crypto_util.make_key_rsa')
-    def test_success(self, mock_make):
-        mock_make.return_value = 'key_pem'
-        key = self._call(1024, self.key_dir)
-        self.assertEqual(key.pem, 'key_pem')
+    def test_success(self):
+        key = self._call(RSA512_KEY, self.key_dir)
+        self.assertEqual(key.pem, RSA512_KEY)
         self.assertTrue('key-letsencrypt.pem' in key.file)
-
-    @mock.patch('letsencrypt.crypto_util.make_key_rsa')
-    def test_key_failure(self, mock_make):
-        mock_make.side_effect = ValueError
-        self.assertRaises(ValueError, self._call, 431, self.key_dir)
 
 
 class InitSaveCSRTest(unittest.TestCase):
