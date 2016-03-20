@@ -131,7 +131,6 @@ class Addr(object):
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             if self.ipv6:
-                # import ipdb;ipdb.set_trace()
                 return (other.ipv6 and
                         self._normalize_ipv6(self.tup[0]) ==
                         self._normalize_ipv6(other.tup[0]) and
