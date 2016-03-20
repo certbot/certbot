@@ -98,6 +98,10 @@ class AddrTest(unittest.TestCase):
         self.assertEqual(self.addr5.get_port(), "*")
         self.assertEqual(self.addr6.get_addr(), "[fe00::1]")
         self.assertEqual(self.addr6.get_port(), "80")
+        self.assertEqual(self.addr6.get_ipv6_exploded(),
+                         "fe00:0:0:0:0:0:0:1")
+        self.assertEqual(self.addr1.get_ipv6_exploded(),
+                         "")
 
     def test_str(self):
         self.assertEqual(str(self.addr1), "192.168.1.1")
@@ -123,6 +127,10 @@ class AddrTest(unittest.TestCase):
         self.assertEqual(self.addr4, self.addr4.get_addr_obj(""))
         self.assertNotEqual(self.addr4, self.addr5)
         self.assertFalse(self.addr4 == 3333)
+        from letsencrypt.plugins.common import Addr
+        self.assertEqual(self.addr4, Addr.fromstring("[fe00:0:0::1]"))
+        self.assertEqual(self.addr4, Addr.fromstring("[fe00:0::0:0:1]"))
+
 
     def test_set_inclusion(self):
         from letsencrypt.plugins.common import Addr

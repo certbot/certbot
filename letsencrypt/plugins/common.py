@@ -104,8 +104,9 @@ class Addr(object):
     :param str port: port number or \*, or ""
 
     """
-    def __init__(self, tup):
+    def __init__(self, tup, ipv6=False):
         self.tup = tup
+        self.ipv6 = ipv6
 
     @classmethod
     def fromstring(cls, str_addr):
@@ -117,7 +118,7 @@ class Addr(object):
             port = ''
             if len(str_addr) > endIndex + 2 and str_addr[endIndex + 1] == ':':
                 port = str_addr[endIndex + 2:]
-            return cls((host, port))
+            return cls((host, port), True)
         else:
             tup = str_addr.partition(':')
             return cls((tup[0], tup[2]))
@@ -129,7 +130,15 @@ class Addr(object):
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            return self.tup == other.tup
+            if self.ipv6:
+                # import ipdb;ipdb.set_trace()
+                return (other.ipv6 and
+                        self._normalize_ipv6(self.tup[0]) ==
+                        self._normalize_ipv6(other.tup[0]) and
+                        self.tup[1] == other.tup[1])
+            else:
+                return self.tup == other.tup
+
         return False
 
     def __hash__(self):
@@ -145,7 +154,38 @@ class Addr(object):
 
     def get_addr_obj(self, port):
         """Return new address object with same addr and new port."""
-        return self.__class__((self.tup[0], port))
+        return self.__class__((self.tup[0], port), self.ipv6)
+
+    def _normalize_ipv6(self, addr):
+        """Return IPv6 address in normalized form, helper function"""
+        addr = addr.lstrip("[")
+        addr = addr.rstrip("]")
+        return self._explode_ipv6(addr)
+
+    def get_ipv6_exploded(self):
+        """Return IPv6 in normalized form"""
+        if self.ipv6:
+            return ":".join(self._normalize_ipv6(self.tup[0]))
+        return ""
+
+    def _explode_ipv6(self, addr):
+        """Explode IPv6 address for comparison"""
+        result = ['0', '0', '0', '0', '0', '0', '0', '0']
+        addr_list = addr.split(":")
+        append_to_end = False
+        for i in range(0, len(addr_list)):
+            block = addr_list[i]
+            if len(block) == 0:
+                append_to_end = True
+                continue
+            elif len(block) > 1:
+                # remove trailing zeros
+                block = block.lstrip("0")
+            if not append_to_end:
+                result[i] = str(block)
+            else:
+                result[i-len(addr_list)] = str(block)
+        return result
 
 
 class TLSSNI01(object):
