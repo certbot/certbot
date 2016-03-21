@@ -199,8 +199,8 @@ class Client(object):
         :param .le_util.CSR csr: DER-encoded Certificate Signing
             Request. The key used to generate this CSR can be different
             than `authkey`.
-        :param list authzr: ACME Authorization Resource dict where keys are
-            domains and values are :class:`acme.messages.AuthorizationResource`
+        :param list authzr: List of
+            :class:`acme.messages.AuthorizationResource`
 
         :returns: `.CertificateResource` and certificate chain (as
             returned by `.fetch_chain`).
