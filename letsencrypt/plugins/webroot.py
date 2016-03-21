@@ -155,5 +155,8 @@ to serve all files under specified web root ({0})."""
                     elif exc.errno == errno.EACCES:
                         logger.debug("Challenges cleaned up but no permissions for %s",
                                      root_path)
+                    elif exc.errno == errno.ENOENT:
+                        logger.debug("Challenges cleaned up, %s does not exists",
+                                     root_path)
                     else:
                         raise

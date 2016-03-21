@@ -176,10 +176,23 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.perform([self.achall])
 
         os_error = OSError()
-        os_error.errno = errno.ENOENT
+        os_error.errno = errno.EPERM
         mock_rmdir.side_effect = os_error
 
         self.assertRaises(OSError, self.auth.cleanup, [self.achall])
+        self.assertFalse(os.path.exists(self.validation_path))
+        self.assertTrue(os.path.exists(self.root_challenge_path))
+
+    @mock.patch('os.rmdir')
+    def test_cleanup_file_not_exists(self, mock_rmdir):
+        self.auth.prepare()
+        self.auth.perform([self.achall])
+
+        os_error = OSError()
+        os_error.errno = errno.ENOENT
+        mock_rmdir.side_effect = os_error
+
+        self.auth.cleanup([self.achall])
         self.assertFalse(os.path.exists(self.validation_path))
         self.assertTrue(os.path.exists(self.root_challenge_path))
 
