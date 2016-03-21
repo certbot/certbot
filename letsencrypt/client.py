@@ -146,8 +146,7 @@ def perform_registration(acme, config):
     try:
         return acme.register(messages.NewRegistration.from_data(email=config.email))
     except messages.Error as e:
-        err = repr(e)
-        if "MX record" in err or "Validation of contact mailto" in err:
+        if e.typ == "urn:acme:error:invalidEmail":
             config.namespace.email = display_ops.get_email(more=True, invalid=True)
             return perform_registration(acme, config)
         else:

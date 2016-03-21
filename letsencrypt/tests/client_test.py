@@ -63,8 +63,8 @@ class RegisterTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.display_ops.get_email")
     def test_email_retry(self, _rep, mock_get_email):
         from acme import messages
-        msg = "Validation of contact mailto:sousaphone@improbablylongggstring.tld failed"
-        mx_err = messages.Error(detail=msg, typ="malformed", title="title")
+        msg = "DNS problem: NXDOMAIN looking up MX for example.com"
+        mx_err = messages.Error(detail=msg, typ="urn:acme:error:invalidEmail")
         with mock.patch("letsencrypt.client.acme_client.Client") as mock_client:
             mock_client().register.side_effect = [mx_err, mock.MagicMock()]
             self._call()
