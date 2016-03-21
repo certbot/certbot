@@ -52,6 +52,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
+        # Reset globals in cli
+        # pylint: disable=protected-access
+        cli._parser = cli._set_by_cli.detector = None
 
     def _call(self, args):
         "Run the cli with output streams and actual client mocked out"
@@ -134,7 +137,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
         out = self._help_output(['-h'])
         self.assertTrue(cli.usage_strings(plugins)[0] in out)
-
 
     def _cli_missing_flag(self, args, message):
         "Ensure that a particular error raises a missing cli flag error containing message"
@@ -682,8 +684,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with open(os.path.join(renewer_configs_dir, 'test.conf'), 'w') as f:
             f.write("My contents don't matter")
 
-    def _test_renew_common(self, renewalparams=None, error_expected=False,
-                           names=None, assert_oc_called=None):
+    def _test_renew_common(self, renewalparams=None, names=None,
+                           assert_oc_called=None, **kwargs):
         self._make_dummy_renewal_config()
         with mock.patch('letsencrypt.storage.RenewableCert') as mock_rc:
             mock_lineage = mock.MagicMock()
@@ -694,8 +696,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 mock_lineage.names.return_value = names
             mock_rc.return_value = mock_lineage
             with mock.patch('letsencrypt.main.obtain_cert') as mock_obtain_cert:
-                self._test_renewal_common(True, None, error_expected=error_expected,
-                                          args=['renew'], should_renew=False)
+                kwargs.setdefault('args', ['renew'])
+                self._test_renewal_common(True, None, should_renew=False, **kwargs)
+
             if assert_oc_called is not None:
                 if assert_oc_called:
                     self.assertTrue(mock_obtain_cert.called)
@@ -718,7 +721,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_renew_with_nonetype_http01(self):
         renewalparams = {'authenticator': 'webroot',
                          'http01_port': 'None'}
-        self._test_renew_common(renewalparams=renewalparams, error_expected=False,
+        self._test_renew_common(renewalparams=renewalparams,
                                 assert_oc_called=True)
 
     def test_renew_with_bad_domain(self):
@@ -726,6 +729,12 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         names = ['*.example.com']
         self._test_renew_common(renewalparams=renewalparams, error_expected=True,
                                 names=names, assert_oc_called=False)
+
+    def test_renew_with_configurator(self):
+        renewalparams = {'authenticator': 'webroot'}
+        self._test_renew_common(
+            renewalparams=renewalparams, assert_oc_called=True,
+            args='renew --configurator apache'.split())
 
     def test_renew_plugin_config_restoration(self):
         renewalparams = {'authenticator': 'webroot',

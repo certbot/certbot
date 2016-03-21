@@ -193,7 +193,7 @@ class ParserInitTest(util.ApacheTest):
                         "update_runtime_variables"):
             path = os.path.join(
                 self.temp_dir,
-                "debian_apache_2_4/////two_vhost_80/../two_vhost_80/apache2")
+                "debian_apache_2_4/////multiple_vhosts/../multiple_vhosts/apache2")
 
             parser = ApacheParser(self.aug, path,
                                   "/dummy/vhostpath")
