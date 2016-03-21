@@ -714,6 +714,9 @@ class HelpfulArgumentParser(object):
                     parsed_args.register_unsafely_without_email = True
 
         if parsed_args.csr:
+            if parsed_args.allow_subset_of_names:
+                raise errors.Error("--allow-subset-of-names "
+                                   "cannot be used with --csr")
             self.handle_csr(parsed_args)
 
         if self.detect_defaults:  # plumbing
@@ -1090,6 +1093,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
+    helpful.add(
+        "automation", "--allow-subset-of-names",
+        action="store_true",
+        help="When performing domain validation, do not consider it a failure "
+             "if authorizations can not be obtained for a strict subset of "
+             "the requested domains. This option cannot be used with --csr.")
 
     helpful.add_group(
         "renew", description="The 'renew' subcommand will attempt to renew all"

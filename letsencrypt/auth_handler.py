@@ -52,9 +52,8 @@ class AuthHandler(object):
         :param bool best_effort: Whether or not all authorizations are
              required (this is useful in renewal)
 
-        :returns: tuple of lists of authorization resources. Takes the
-            form of (`completed`, `failed`)
-        :rtype: tuple
+        :returns: List of authorization resources
+        :rtype: list
 
         :raises .AuthorizationError: If unable to retrieve all
             authorizations
@@ -76,9 +75,16 @@ class AuthHandler(object):
 
         # Just make sure all decisions are complete.
         self.verify_authzr_complete()
+
         # Only return valid authorizations
-        return [authzr for authzr in self.authzr.values()
-                if authzr.body.status == messages.STATUS_VALID]
+        retVal = [authzr for authzr in self.authzr.values()
+                  if authzr.body.status == messages.STATUS_VALID]
+
+        if not retVal:
+            raise errors.AuthorizationError(
+                "Challenges failed for all domains")
+
+        return retVal
 
     def _choose_challenges(self, domains):
         """Retrieve necessary challenges to satisfy server."""
@@ -175,9 +181,11 @@ class AuthHandler(object):
                         chall_update[domain].remove(achall)
                 # We failed some challenges... damage control
                 else:
-                    # Right now... just assume a loss and carry on...
                     if best_effort:
                         comp_domains.add(domain)
+                        logger.warning(
+                            "Challenge failed for domain %s",
+                            domain)
                     else:
                         all_failed_achalls.update(
                             updated for _, updated in failed_achalls)
