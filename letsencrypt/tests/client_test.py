@@ -29,6 +29,7 @@ class ConfigHelper(object):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
+
 class RegisterTest(unittest.TestCase):
     """Tests for letsencrypt.client.register."""
 
@@ -90,6 +91,7 @@ class RegisterTest(unittest.TestCase):
         with mock.patch("letsencrypt.client.acme_client.Client") as mock_client:
             mock_client().register.side_effect = [mx_err, mock.MagicMock()]
             self.assertRaises(messages.Error, self._call)
+
 
 class ClientTest(unittest.TestCase):
     """Tests for letsencrypt.client.Client."""

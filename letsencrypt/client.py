@@ -229,7 +229,6 @@ class Client(object):
             authzr)
         return certr, self.acme.fetch_chain(certr)
 
-
     def obtain_certificate(self, domains):
         """Obtains a certificate from the ACME server.
 
@@ -242,7 +241,7 @@ class Client(object):
             (`.le_util.Key`) and DER-encoded Certificate Signing Request
             (`.le_util.CSR`).
         :rtype: tuple
-    
+
         :raises ValueError: If unable to generate the key.
 
         """
@@ -256,13 +255,11 @@ class Client(object):
         key_types = self.config.key_types.split()
 
         if len(key_types) != 1:
-            logger.warn("Currently, only one key type is supported.")
-            return False
+            raise errors.Error("Currently, only one key type is supported.")
 
         for key in key_types:
             if key.lower() not in valid_key_types:
-                logger.warn("Key algorithm not valid, try \"RSA\" or \"ECDSA\".")
-                return False
+                raise errors.Error("Key algorithm not valid, try \"RSA\" or \"ECDSA\".")
 
         # TODO: Implement the issuance of multiple certificates with different keys
         key_algo = key_types[0]
@@ -276,8 +273,7 @@ class Client(object):
                 logger.info("Generating ECDSA key with curve %s", self.config.ecdsa_curve)
                 key_pem = crypto_util.make_key_ecdsa(self.config.ecdsa_curve)
             else:
-                logger.warn("Key algorithm not valid, try \"RSA\" or \"ECDSA\".")
-                return False
+                raise errors.Error("Key algorithm not valid, try \"RSA\" or \"ECDSA\".")
         except ValueError as err:
             logger.exception(err)
             raise err

@@ -19,7 +19,6 @@ from letsencrypt import interfaces
 from letsencrypt import le_util
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 
@@ -181,22 +180,26 @@ def make_key_rsa(bits):
     key.generate_key(OpenSSL.crypto.TYPE_RSA, bits)
     return OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
 
+
 def make_key_ecdsa(curve):
     """Generate PEM encoded ECDSA key.
-    
+
     :param str curve: The ECDSA curve used (currently prime256v1 or secp384r1)
 
     :returns: new ECDSA key in PEM form with the specified curve
     :rtype: str
 
     """
-    
+
     if curve == "prime256v1":
         private_key = ec.generate_private_key(ec.SECP256R1(), default_backend())
     elif curve == "secp384r1":
         private_key = ec.generate_private_key(ec.SECP384R1(), default_backend())
 
-    return private_key.private_bytes(encoding=serialization.Encoding.PEM, format=serialization.PrivateFormat.TraditionalOpenSSL, encryption_algorithm=serialization.NoEncryption())
+    return private_key.private_bytes(
+        encoding=serialization.Encoding.PEM, format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption())
+
 
 def valid_privkey(privkey):
     """Is valid RSA private key?

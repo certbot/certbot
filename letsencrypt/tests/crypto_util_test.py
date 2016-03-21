@@ -12,7 +12,6 @@ from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt.tests import test_util
 
-
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')
 RSA512_KEY = test_util.load_vector('rsa512_key.pem')
 CERT_PATH = test_util.vector_path('cert.pem')
@@ -35,7 +34,7 @@ class SaveKeyTest(unittest.TestCase):
     @classmethod
     def _call(cls, key_pem, key_dir):
         from letsencrypt.crypto_util import save_key
-        return save_key(RSA512_KEY, key_dir, 'key-letsencrypt.pem')
+        return save_key(key_pem, key_dir, 'key-letsencrypt.pem')
 
     def test_success(self):
         key = self._call(RSA512_KEY, self.key_dir)
@@ -141,6 +140,23 @@ class MakeKeyRSATest(unittest.TestCase):  # pylint: disable=too-few-public-metho
         # Do not test larger keys as it takes too long.
         OpenSSL.crypto.load_privatekey(
             OpenSSL.crypto.FILETYPE_PEM, make_key_rsa(1024))
+
+
+class MakeKeyECDSATest(unittest.TestCase):
+    """Tests for letsencrypt.crypto_util.make_key_ecdsa."""
+
+    def test_it(self):
+        from letsencrypt.crypto_util import make_key_ecdsa
+        from cryptography.hazmat.backends import default_backend
+        from cryptography.hazmat.primitives.serialization import load_pem_private_key
+        from cryptography.hazmat.primitives.asymmetric import ec
+        self.assertIsInstance(load_pem_private_key(
+            make_key_ecdsa(curve="prime256v1"), password=None, backend=default_backend()),
+            ec.EllipticCurvePrivateKey)
+        self.assertIsInstance(load_pem_private_key(
+            make_key_ecdsa(curve="secp384r1"), password=None, backend=default_backend()),
+            ec.EllipticCurvePrivateKey)
+
 
 class ValidPrivkeyTest(unittest.TestCase):
     """Tests for letsencrypt.crypto_util.valid_privkey."""
