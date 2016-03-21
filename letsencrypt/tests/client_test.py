@@ -169,6 +169,17 @@ class ClientTest(unittest.TestCase):
             # and that the cert was obtained correctly
             self._check_obtain_certificate()
 
+            # Test for authzr=None
+            self.assertEqual(
+                (mock.sentinel.certr, mock.sentinel.chain),
+                self.client.obtain_certificate_from_csr(
+                    self.eg_domains,
+                    test_csr,
+                    authzr=None))
+
+            self.client.auth_handler.get_authorizations.assert_called_with(
+            self.eg_domains)
+
             # Test for no auth_handler
             self.client.auth_handler = None
             self.assertRaises(
