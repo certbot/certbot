@@ -199,7 +199,7 @@ class Client(object):
         :param .le_util.CSR csr: DER-encoded Certificate Signing
             Request. The key used to generate this CSR can be different
             than `authkey`.
-        :param dict authzr: ACME Authorization Resource dict where keys are
+        :param list authzr: ACME Authorization Resource dict where keys are
             domains and values are :class:`acme.messages.AuthorizationResource`
 
         :returns: `.CertificateResource` and certificate chain (as
@@ -244,8 +244,8 @@ class Client(object):
                 domains,
                 self.config.allow_subset_of_names)
 
-        domains = [a.body.identifier.value.encode('ascii', 'ignore')
-                                                    for a in authzr]
+        domains = [a.body.identifier.value.encode('ascii')
+                                          for a in authzr]
 
         # Create CSR from names
         key = crypto_util.init_save_key(

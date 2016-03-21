@@ -52,9 +52,8 @@ class AuthHandler(object):
         :param bool best_effort: Whether or not all authorizations are
              required (this is useful in renewal)
 
-        :returns: tuple of lists of authorization resources. Takes the
-            form of (`completed`, `failed`)
-        :rtype: tuple
+        :returns: List of authorization resources
+        :rtype: list
 
         :raises .AuthorizationError: If unable to retrieve all
             authorizations
@@ -81,7 +80,7 @@ class AuthHandler(object):
         retVal = [authzr for authzr in self.authzr.values()
                   if authzr.body.status == messages.STATUS_VALID]
 
-        if len(retVal) <= 0:
+        if not retVal:
             raise errors.AuthorizationError(
                 "Challenges failed for all domains")
 

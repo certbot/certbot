@@ -115,7 +115,7 @@ class ClientTest(unittest.TestCase):
 
     def _mock_obtain_certificate(self):
         self.client.auth_handler = mock.MagicMock()
-        self.client.auth_handler.get_authorizations.return_value = (None, None)
+        self.client.auth_handler.get_authorizations.return_value = [None]
         self.acme.request_issuance.return_value = mock.sentinel.certr
         self.acme.fetch_chain.return_value = mock.sentinel.chain
 
