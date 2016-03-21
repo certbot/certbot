@@ -127,7 +127,6 @@ class NcursesDisplay(object):
 
             return code, int(index) - 1
 
-
     def input(self, message, **unused_kwargs):
         """Display an input box to the user.
 
@@ -141,10 +140,9 @@ class NcursesDisplay(object):
         """
         sections = message.split("\n")
         # each section takes at least one line, plus extras if it's longer than self.width
-        wordlines = [1 + (len(section)/self.width) for section in sections]
+        wordlines = [1 + (len(section) / self.width) for section in sections]
         height = 6 + sum(wordlines) + len(sections)
         return self.dialog.inputbox(message, width=self.width, height=height)
-
 
     def yesno(self, message, yes_label="Yes", no_label="No", **unused_kwargs):
         """Display a Yes/No dialog box.
@@ -397,7 +395,6 @@ class FileDisplay(object):
 
         self.outfile.write(side_frame)
 
-
     def _get_valid_int_ans(self, max_):
         """Get a numerical selection.
 
@@ -432,6 +429,7 @@ class FileDisplay(object):
                     "{0}** Invalid input **{0}".format(os.linesep))
 
         return OK, selection
+
 
 @zope.interface.implementer(interfaces.IDisplay)
 class NoninteractiveDisplay(object):
@@ -506,7 +504,6 @@ class NoninteractiveDisplay(object):
             self._interaction_fail(message, cli_flag)
         else:
             return OK, default
-
 
     def yesno(self, message, yes_label=None, no_label=None, default=None, cli_flag=None):
         # pylint: disable=unused-argument
