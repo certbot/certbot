@@ -20,7 +20,7 @@ class AugeasConfiguratorTest(util.ApacheTest):
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)
 
         self.vh_truth = util.get_vh_truth(
-            self.temp_dir, "debian_apache_2_4/two_vhost_80")
+            self.temp_dir, "debian_apache_2_4/multiple_vhosts")
 
     def tearDown(self):
         shutil.rmtree(self.config_dir)
