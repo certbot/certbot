@@ -25,6 +25,8 @@ logger = logging.getLogger(__name__)
 # many important security related options. On these platforms we use PyOpenSSL
 # for SSL, which does allow these options to be configured.
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
+
+# @mitigates @acme:@client against @cwe_693_protection_mechanism_failure with loads better library if old python version detected
 if sys.version_info < (2, 7, 9):  # pragma: no cover
     requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
 
@@ -44,6 +46,9 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         supplied, it will be initialized using `key`, `alg` and
         `verify_ssl`.
 
+    @transfers @cwe_320_key_management_errors to @app:@caller with no key validation or checks carried out
+    @mitigates @acme:@client against @cwe_295_improper_certificate_validation with verifies SSL by default
+    @review alg makes sense? RS256?
     """
     DER_CONTENT_TYPE = 'application/pkix-cert'
 
@@ -403,6 +408,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         updated_authzrs = tuple(updated[authzr] for authzr in authzrs)
         return self.request_issuance(csr, updated_authzrs), updated_authzrs
 
+    # @review what sort of validation is done on response.content ? malicious content parsed etc
     def _get_cert(self, uri):
         """Returns certificate from URI.
 
@@ -431,6 +437,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         """
         # TODO: acme-spec 5.1 table action should be renamed to
         # "refresh cert", and this method integrated with self.refresh
+        #
+        # @review Looking at Location header but is that for a 3xx? What if something else includes that head?
         response, cert = self._get_cert(certr.uri)
         if 'Location' not in response.headers:
             raise errors.ClientError('Location header missing')
@@ -584,6 +592,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
         return response
 
+    # @review requests default timeout? Possible DoS?
     def _send_request(self, method, url, *args, **kwargs):
         """Send HTTP request.
 
@@ -626,6 +635,8 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         return self._check_response(
             self._send_request('GET', url, **kwargs), content_type=content_type)
 
+    # @review should this check if nonce is already known? i guess a nonce is used across multiple \
+    # http calls. When does a nonce change?
     def _add_nonce(self, response):
         if self.REPLAY_NONCE_HEADER in response.headers:
             nonce = response.headers[self.REPLAY_NONCE_HEADER]

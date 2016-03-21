@@ -107,6 +107,11 @@ class JWK(json_util.TypedJSONObjectWithFields):
         :returns: JWK of an appropriate type.
         :rtype: `JWK`
 
+        @review So if this fails to load assymetric keys, it assumes use of \
+            symmetric and loads that instead? Sounds a bit suprising. If the \
+            key was corrupted, it could contain something relatively predictable \
+            that might end up be used as a symmetric key without the user noticing
+
         """
         try:
             key = cls._load_cryptography_key(data, password, backend)
@@ -258,6 +263,9 @@ class JWKRSA(JWK):
 
     def fields_to_partial_json(self):
         # pylint: disable=protected-access
+        """
+        @exposes @acme:@client to @cwe_320_key_management_errors by leaking private key material in JSON structure
+        """
         if isinstance(self.key._wrapped, rsa.RSAPublicKey):
             numbers = self.key.public_numbers()
             params = {

@@ -387,6 +387,9 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
         :returns: Whether the certificate was successfully verified.
         :rtype: bool
 
+        @exposes @acme:@client to @cwe_295_improper_certificate_validation with not proper \
+            verification of a certificate chain (it doesn't do anything).
+
         """
         # pylint: disable=protected-access
         sans = crypto_util._pyopenssl_cert_or_req_san(cert)
