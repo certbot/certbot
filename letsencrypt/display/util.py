@@ -11,6 +11,13 @@ from letsencrypt import errors
 WIDTH = 72
 HEIGHT = 20
 
+DSELECT_HELP = (
+    "Use the arrow keys or tab to move between window elements. Space can be "
+    "used to complete the input path with the selected element in the "
+    "directory window. Pressing enter will select the currently highlighted "
+    "button.")
+"""Help text on how to use dialog's dselect."""
+
 # Display exit codes
 OK = "ok"
 """Display exit code indicating user acceptance."""
@@ -20,6 +27,7 @@ CANCEL = "cancel"
 
 HELP = "help"
 """Display exit code when for when the user requests more help."""
+
 
 def _wrap_lines(msg):
     """Format lines nicely to 80 chars.
@@ -35,6 +43,7 @@ def _wrap_lines(msg):
     for line in lines:
         fixed_l.append(textwrap.fill(line, 80))
     return os.linesep.join(fixed_l)
+
 
 @zope.interface.implementer(interfaces.IDisplay)
 class NcursesDisplay(object):
@@ -173,6 +182,21 @@ class NcursesDisplay(object):
         choices = [(tag, "", default_status) for tag in tags]
         return self.dialog.checklist(
             message, width=self.width, height=self.height, choices=choices)
+
+    def directory_select(self, message, **unused_kwargs):
+        """Display a directory selection screen.
+
+        :param str message: prompt to give the user
+
+        :returns: tuple of the form (`code`, `string`) where
+            `code` - int display exit code
+            `string` - input entered by the user
+
+        """
+        root_directory = os.path.abspath(os.sep)
+        return self.dialog.dselect(
+            filepath=root_directory, width=self.width,
+            height=self.height, help_button=True, title=message)
 
 
 @zope.interface.implementer(interfaces.IDisplay)

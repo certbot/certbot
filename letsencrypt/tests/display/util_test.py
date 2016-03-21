@@ -123,6 +123,11 @@ class NcursesDisplayTest(unittest.TestCase):
             "message", width=display_util.WIDTH, height=display_util.HEIGHT,
             choices=choices)
 
+    @mock.patch("letsencrypt.display.util.dialog.Dialog.dselect")
+    def test_directory_select(self, mock_dselect):
+        self.displayer.directory_select("message")
+        self.assertEqual(mock_dselect.call_count, 1)
+
 
 class FileOutputDisplayTest(unittest.TestCase):
     """Test stdout display.
