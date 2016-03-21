@@ -285,6 +285,7 @@ class FileOutputDisplayTest(unittest.TestCase):
                     self.displayer._get_valid_int_ans(3),
                     (display_util.CANCEL, -1))
 
+
 class NoninteractiveDisplayTest(unittest.TestCase):
     """Test non-interactive display.
 
