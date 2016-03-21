@@ -73,6 +73,7 @@ class JWASignature(JWA, collections.Hashable):
         return self.name
 
 
+# @review transfers key validation to something else
 class _JWAHS(JWASignature):
 
     kty = jwk.JWKOct
