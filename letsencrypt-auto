@@ -36,6 +36,9 @@ for arg in "$@" ; do
       NO_SELF_UPGRADE=1;;
     --verbose)
       VERBOSE=1;;
+    --help)
+      printf "No help available (but at least I don't install packages you didn't know I would)\n";
+      exit 1;;
     [!-]*|-*[!v]*|-)
       # Anything that isn't -v, -vv, etc.: that is, anything that does not
       # start with a -, contains anything that's not a v, or is just "-"
