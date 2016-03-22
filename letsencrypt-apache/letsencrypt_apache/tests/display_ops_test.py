@@ -20,7 +20,7 @@ class SelectVhostTest(unittest.TestCase):
         zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
         self.base_dir = "/example_path"
         self.vhosts = util.get_vh_truth(
-            self.base_dir, "debian_apache_2_4/two_vhost_80")
+            self.base_dir, "debian_apache_2_4/multiple_vhosts")
 
     @classmethod
     def _call(cls, vhosts):
