@@ -18,7 +18,8 @@ The Let's Encrypt Client is a fully-featured, extensible client for the Let's
 Encrypt CA (or any other CA that speaks the `ACME
 <https://github.com/ietf-wg-acme/acme/blob/master/draft-ietf-acme-acme.md>`_
 protocol) that can automate the tasks of obtaining certificates and
-configuring webservers to use them.
+configuring webservers to use them. This client runs on Unix-based operating
+systems.
 
 Installation
 ------------
