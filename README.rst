@@ -23,11 +23,11 @@ configuring webservers to use them.
 Installation
 ------------
 
-If ``letsencrypt`` is packaged for your OS, you can install it from there, and
-run it by typing ``letsencrypt``.  Because not all operating systems have
-packages yet, we provide a temporary solution via the ``letsencrypt-auto``
-wrapper script, which obtains some dependencies from your OS and puts others
-in a python virtual environment::
+If ``letsencrypt`` is packaged for your Unix OS, you can install it from
+there, and run it by typing ``letsencrypt``.  Because not all operating
+systems have packages yet, we provide a temporary solution via the
+``letsencrypt-auto`` wrapper script, which obtains some dependencies
+from your OS and puts others in a python virtual environment::
 
   user@webserver:~$ git clone https://github.com/letsencrypt/letsencrypt
   user@webserver:~$ cd letsencrypt
