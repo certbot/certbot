@@ -131,6 +131,8 @@ class Addr(object):
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             if self.ipv6:
+                # compare normalized to take different
+                # styles of representation into account
                 return (other.ipv6 and
                         self._normalize_ipv6(self.tup[0]) ==
                         self._normalize_ipv6(other.tup[0]) and
@@ -175,14 +177,17 @@ class Addr(object):
         for i in range(0, len(addr_list)):
             block = addr_list[i]
             if len(block) == 0:
+                # encountered ::, so rest of the blocks should be
+                # appended to the end
                 append_to_end = True
                 continue
             elif len(block) > 1:
-                # remove trailing zeros
+                # remove leading zeros
                 block = block.lstrip("0")
             if not append_to_end:
                 result[i] = str(block)
             else:
+                # count the location from the end using negative indices
                 result[i-len(addr_list)] = str(block)
         return result
 
