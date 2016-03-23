@@ -555,6 +555,23 @@ class NoninteractiveDisplay(object):
         else:
             return OK, default
 
+    def directory_select(self, message, default=None, cli_flag=None):
+        """Simulate prompting the user for a directory.
+
+        This function returns default if it is not ``None``, otherwise,
+        an exception is raised.
+
+        :param str message: prompt to give the user
+        :param default: default value to return (if one exists)
+        :param str cli_flag: option used to set this value with the CLI
+
+        :returns: tuple of the form (`code`, `string`) where
+            `code` - int display exit code
+            `string` - input entered by the user
+
+        """
+        return self.input(message, default, cli_flag)
+
 
 def separate_list_input(input_):
     """Separate a comma or space separated list.

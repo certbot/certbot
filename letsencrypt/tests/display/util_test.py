@@ -335,6 +335,15 @@ class NoninteractiveDisplayTest(unittest.TestCase):
         self.assertEqual(ret, (display_util.OK, d))
         self.assertRaises(errors.MissingCommandlineFlag, self.displayer.checklist, "message", TAGS)
 
+    def test_directory_select(self):
+        default = "/var/www/html"
+        expected = (display_util.OK, default)
+        actual = self.displayer.directory_select("msg", default)
+        self.assertEqual(expected, actual)
+
+        self.assertRaises(
+            errors.MissingCommandlineFlag, self.displayer.directory_select, "msg")
+
 
 class SeparateListInputTest(unittest.TestCase):
     """Test Module functions."""
