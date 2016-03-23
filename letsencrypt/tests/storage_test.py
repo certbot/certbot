@@ -493,7 +493,12 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(self.test_rc.should_autorenew())
         mock_ocsp.return_value = False
 
-    def test_save_successor(self):
+    @mock.patch("letsencrypt.storage.relevant_values")
+    def test_save_successor(self, mock_rv):
+        # Mock relevant_values() to claim that all values are relevant here
+        # (to avoid instantiating parser)
+        mock_rv.side_effect = lambda x: x
+
         for ver in xrange(1, 6):
             for kind in ALL_FOUR:
                 where = getattr(self.test_rc, kind)
@@ -557,24 +562,44 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertFalse(os.path.islink(self.test_rc.version("privkey", 10)))
         self.assertFalse(os.path.exists(temp_config_file))
 
-    def test_relevant_values(self):
+    @mock.patch("letsencrypt.cli._parser")
+    def test_relevant_values(self, mock_parser):
         """Test that relevant_values() can reject an irrelevant value."""
         from letsencrypt import storage
+        mock_parser.verb = "certonly"
+        mock_parser.args = ["--standalone"]
+        mock_action = mock.Mock(dest="rsa_key_size", default=2048)
+        mock_parser.parser._actions = [mock_action]
         self.assertEqual(storage.relevant_values({"hello": "there"}), {})
 
-    def test_relevant_values_default(self):
+    @mock.patch("letsencrypt.cli._parser")
+    def test_relevant_values_default(self, mock_parser):
         """Test that relevant_values() can reject a default value."""
         from letsencrypt import storage
+        mock_parser.verb = "certonly"
+        mock_parser.args = ["--standalone"]
+        mock_action = mock.Mock(dest="rsa_key_size", default=2048)
+        mock_parser.parser._actions = [mock_action]
         self.assertEqual(storage.relevant_values({"rsa_key_size": 2048}), {})
 
-    def test_relevant_values_nondefault(self):
+    @mock.patch("letsencrypt.cli._parser")
+    def test_relevant_values_nondefault(self, mock_parser):
         """Test that relevant_values() can retain a non-default value."""
         from letsencrypt import storage
+        mock_parser.verb = "certonly"
+        mock_parser.args = ["--standalone"]
+        mock_action = mock.Mock(dest="rsa_key_size", default=2048)
+        mock_parser.parser._actions = [mock_action]
         self.assertEqual(storage.relevant_values({"rsa_key_size": 12}),
                          {"rsa_key_size": 12})
 
-    def test_new_lineage(self):
+    @mock.patch("letsencrypt.storage.relevant_values")
+    def test_new_lineage(self, mock_rv):
         """Test for new_lineage() class method."""
+        # Mock relevant_values to say everything is relevant here (so we
+        # don't have to mock the parser to help it decide!)
+        mock_rv.side_effect = lambda x: x
+
         from letsencrypt import storage
         result = storage.RenewableCert.new_lineage(
             "the-lineage.com", "cert", "privkey", "chain", self.cli_config)
@@ -608,8 +633,13 @@ class RenewableCertTests(BaseRenewableCertTest):
         # TODO: Conceivably we could test that the renewal parameters actually
         #       got saved
 
-    def test_new_lineage_nonexistent_dirs(self):
+    @mock.patch("letsencrypt.storage.relevant_values")
+    def test_new_lineage_nonexistent_dirs(self, mock_rv):
         """Test that directories can be created if they don't exist."""
+        # Mock relevant_values to say everything is relevant here (so we
+        # don't have to mock the parser to help it decide!)
+        mock_rv.side_effect = lambda x: x
+
         from letsencrypt import storage
         shutil.rmtree(self.cli_config.renewal_configs_dir)
         shutil.rmtree(self.cli_config.archive_dir)
