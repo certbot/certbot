@@ -54,7 +54,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         shutil.rmtree(self.tmp_dir)
         # Reset globals in cli
         # pylint: disable=protected-access
-        cli._parser = cli._set_by_cli.detector = None
+        cli._parser = cli.set_by_cli.detector = None
 
     def _call(self, args):
         "Run the cli with output streams and actual client mocked out"
