@@ -7,6 +7,7 @@ import zope.interface
 
 from letsencrypt import interfaces
 from letsencrypt import errors
+from letsencrypt.display import completer
 
 WIDTH = 72
 HEIGHT = 20
@@ -338,6 +339,19 @@ class FileDisplay(object):
                         "** Error - Invalid selection **%s" % os.linesep)
             else:
                 return code, []
+
+    def directory_select(self, message, **unused_kwargs):
+        """Display a directory selection screen.
+
+        :param str message: prompt to give the user
+
+        :returns: tuple of the form (`code`, `string`) where
+            `code` - int display exit code
+            `string` - input entered by the user
+
+        """
+        with completer.Completer():
+            return self.input(message)
 
     def _scrub_checklist_input(self, indices, tags):
         # pylint: disable=no-self-use

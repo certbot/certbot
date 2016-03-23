@@ -232,6 +232,15 @@ class FileOutputDisplayTest(unittest.TestCase):
                 self.displayer._scrub_checklist_input(list_, TAGS))
             self.assertEqual(set_tags, exp[i])
 
+    @mock.patch("letsencrypt.display.util.FileDisplay.input")
+    def test_directory_select(self, mock_input):
+        message = "msg"
+        result = (display_util.OK, "/var/www/html",)
+        mock_input.return_value = result
+
+        self.assertEqual(self.displayer.directory_select(message), result)
+        mock_input.assert_called_once_with(message)
+
     def test_scrub_checklist_input_invalid(self):
         # pylint: disable=protected-access
         indices = [
