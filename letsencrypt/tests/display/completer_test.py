@@ -3,10 +3,12 @@ import os
 import readline
 import shutil
 import string
+import sys
 import tempfile
 import unittest
 
 import mock
+from six.moves import reload_module  # pylint: disable=import-error
 
 
 class CompleterTest(unittest.TestCase):
@@ -36,7 +38,6 @@ class CompleterTest(unittest.TestCase):
 
     def test_complete(self):
         from letsencrypt.display import completer
-
         my_completer = completer.Completer()
         num_paths = len(self.paths)
 
@@ -49,8 +50,17 @@ class CompleterTest(unittest.TestCase):
         completion = my_completer.complete(self.temp_dir, num_paths)
         self.assertEqual(completion, None)
 
-    def test_context_manager(self):
+    def test_import_error(self):
+        original_readline = sys.modules['readline']
+        sys.modules['readline'] = None
+
+        self.test_context_manager_with_unmocked_readline()
+
+        sys.modules['readline'] = original_readline
+
+    def test_context_manager_with_unmocked_readline(self):
         from letsencrypt.display import completer
+        reload_module(completer)
 
         original_completer = readline.get_completer()
         original_delims = readline.get_completer_delims()
@@ -64,14 +74,14 @@ class CompleterTest(unittest.TestCase):
     @mock.patch('letsencrypt.display.completer.readline', autospec=True)
     def test_context_manager_libedit(self, mock_readline):
         mock_readline.__doc__ = 'libedit'
-        self._test_mocked_readline(mock_readline)
+        self._test_context_manager_with_mock_readline(mock_readline)
 
     @mock.patch('letsencrypt.display.completer.readline', autospec=True)
     def test_context_manager_readline(self, mock_readline):
         mock_readline.__doc__ = 'GNU readline'
-        self._test_mocked_readline(mock_readline)
+        self._test_context_manager_with_mock_readline(mock_readline)
 
-    def _test_mocked_readline(self, mock_readline):
+    def _test_context_manager_with_mock_readline(self, mock_readline):
         from letsencrypt.display import completer
 
         mock_readline.parse_and_bind.side_effect = enable_tab_completion

@@ -1,6 +1,10 @@
 """Provides tab completion when prompting users for a path."""
 import glob
-import readline
+# readline module is not available on all systems
+try:
+    import readline
+except ImportError:
+    import letsencrypt.display.dummy_readline as readline
 
 
 class Completer(object):
