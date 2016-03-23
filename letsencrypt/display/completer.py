@@ -1,22 +1,22 @@
-"""Provides tab autocompletion when prompting users for a path."""
+"""Provides tab completion when prompting users for a path."""
 import glob
 import readline
 
 
 class Completer(object):
-    """Provides tab autocompletion when prompting users for a path.
+    """Provides tab completion when prompting users for a path.
 
     This class is meant to be used with readline to provide tab
-    autocompletion for users entering paths. The complete method can
-    be passed to readline.set_completer directly, however, this function
+    completion for users entering paths. The complete method can be
+    passed to readline.set_completer directly, however, this function
     works best as a context manager. For example:
 
     with Completer():
         raw_input()
 
-    In this example, tab autocompletion will be available during
-    the call to raw_input above, however, readline will be restored to
-    its previous state when exiting the body of the with statement.
+    In this example, tab completion will be available during the call to
+    raw_input above, however, readline will be restored to its previous
+    state when exiting the body of the with statement.
 
     """
 
@@ -24,7 +24,7 @@ class Completer(object):
         self._completer = self._delims = self._iter = None
 
     def complete(self, text, state):
-        """Provides path autocompletion for use with readline.
+        """Provides path completion for use with readline.
 
         :param str text: text to offer completions for
         :param int state: which completion to return
