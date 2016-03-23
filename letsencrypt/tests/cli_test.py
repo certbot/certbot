@@ -54,7 +54,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         shutil.rmtree(self.tmp_dir)
         # Reset globals in cli
         # pylint: disable=protected-access
-        cli._parser = cli._set_by_cli.detector = None
+        cli._parser = cli.set_by_cli.detector = None
 
     def _call(self, args):
         "Run the cli with output streams and actual client mocked out"
@@ -660,7 +660,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, renew=True)
 
-    @mock.patch("letsencrypt.cli._set_by_cli")
+    @mock.patch("letsencrypt.cli.set_by_cli")
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         rc_path = self._make_test_renewal_conf('sample-renewal-ancient.conf')

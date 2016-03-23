@@ -565,6 +565,7 @@ class RenewableCertTests(BaseRenewableCertTest):
     @mock.patch("letsencrypt.cli._parser")
     def test_relevant_values(self, mock_parser):
         """Test that relevant_values() can reject an irrelevant value."""
+        # pylint: disable=protected-access
         from letsencrypt import storage
         mock_parser.verb = "certonly"
         mock_parser.args = ["--standalone"]
@@ -575,6 +576,7 @@ class RenewableCertTests(BaseRenewableCertTest):
     @mock.patch("letsencrypt.cli._parser")
     def test_relevant_values_default(self, mock_parser):
         """Test that relevant_values() can reject a default value."""
+        # pylint: disable=protected-access
         from letsencrypt import storage
         mock_parser.verb = "certonly"
         mock_parser.args = ["--standalone"]
@@ -585,6 +587,7 @@ class RenewableCertTests(BaseRenewableCertTest):
     @mock.patch("letsencrypt.cli._parser")
     def test_relevant_values_nondefault(self, mock_parser):
         """Test that relevant_values() can retain a non-default value."""
+        # pylint: disable=protected-access
         from letsencrypt import storage
         mock_parser.verb = "certonly"
         mock_parser.args = ["--standalone"]

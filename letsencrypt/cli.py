@@ -271,20 +271,20 @@ def record_chosen_plugins(config, plugins, auth, inst):
     cn.installer = plugins.find_init(inst).name if inst else "none"
 
 
-def _set_by_cli(var):
+def set_by_cli(var):
     """
     Return True if a particular config variable has been set by the user
     (CLI or config file) including if the user explicitly set it to the
     default.  Returns False if the variable was assigned a default value.
     """
-    detector = _set_by_cli.detector
+    detector = set_by_cli.detector
     if detector is None:
         # Setup on first run: `detector` is a weird version of config in which
         # the default value of every attribute is wrangled to be boolean-false
         plugins = plugins_disco.PluginsRegistry.find_all()
         # reconstructed_args == sys.argv[1:], or whatever was passed to main()
         reconstructed_args = _parser.args + [_parser.verb]
-        detector = _set_by_cli.detector = prepare_and_parse_args(
+        detector = set_by_cli.detector = prepare_and_parse_args(
             plugins, reconstructed_args, detect_defaults=True)
         # propagate plugin requests: eg --standalone modifies config.authenticator
         auth, inst = cli_plugin_requests(detector)
@@ -312,7 +312,7 @@ def _set_by_cli(var):
     else:
         return False
 # static housekeeping var
-_set_by_cli.detector = None
+set_by_cli.detector = None
 
 def _restore_required_config_elements(config, renewalparams):
     """Sets non-plugin specific values in config from renewalparams
@@ -325,7 +325,7 @@ def _restore_required_config_elements(config, renewalparams):
     """
     # string-valued items to add if they're present
     for config_item in STR_CONFIG_ITEMS:
-        if config_item in renewalparams and not _set_by_cli(config_item):
+        if config_item in renewalparams and not set_by_cli(config_item):
             value = renewalparams[config_item]
             # Unfortunately, we've lost type information from ConfigObj,
             # so we don't know if the original was NoneType or str!
@@ -334,7 +334,7 @@ def _restore_required_config_elements(config, renewalparams):
             setattr(config.namespace, config_item, value)
     # int-valued items to add if they're present
     for config_item in INT_CONFIG_ITEMS:
-        if config_item in renewalparams and not _set_by_cli(config_item):
+        if config_item in renewalparams and not set_by_cli(config_item):
             config_value = renewalparams[config_item]
             # the default value for http01_port was None during private beta
             if config_item == "http01_port" and config_value == "None":
@@ -378,7 +378,7 @@ def _restore_plugin_configs(config, renewalparams):
         plugin_prefixes.append(renewalparams["installer"])
     for plugin_prefix in set(plugin_prefixes):
         for config_item, config_value in six.iteritems(renewalparams):
-            if config_item.startswith(plugin_prefix + "_") and not _set_by_cli(config_item):
+            if config_item.startswith(plugin_prefix + "_") and not set_by_cli(config_item):
                 # Values None, True, and False need to be treated specially,
                 # As they don't get parsed correctly based on type
                 if config_value in ("None", "True", "False"):
@@ -403,7 +403,7 @@ def _restore_webroot_config(config, renewalparams):
     if "webroot_map" in renewalparams:
         # if the user does anything that would create a new webroot map on the
         # CLI, don't use the old one
-        if not (_set_by_cli("webroot_map") or _set_by_cli("webroot_path")):
+        if not (set_by_cli("webroot_map") or set_by_cli("webroot_path")):
             setattr(config.namespace, "webroot_map", renewalparams["webroot_map"])
     elif "webroot_path" in renewalparams:
         logger.info("Ancient renewal conf file without webroot-map, restoring webroot-path")
@@ -844,7 +844,7 @@ class HelpfulArgumentParser(object):
     def modify_arg_for_default_detection(self, *args, **kwargs):
         """
         Adding an arg, but ensure that it has a default that evaluates to false,
-        so that _set_by_cli can tell if it was set.  Only called if detect_defaults==True.
+        so that set_by_cli can tell if it was set.  Only called if detect_defaults==True.
 
         :param list *args: the names of this argument flag
         :param dict **kwargs: various argparse settings for this argument

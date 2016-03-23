@@ -152,7 +152,7 @@ def relevant_values(all_values):
         # Look through the CLI parser defaults and see if this option is
         # both present and equal to the specified value. If not, return
         # False.
-        for x in cli._parser.parser._actions:
+        for x in cli._parser.parser._actions: # pylint: disable=protected-access
             if x.dest == option:
                 if x.default == value:
                     return True
@@ -164,10 +164,10 @@ def relevant_values(all_values):
     for option, value in all_values.iteritems():
         # Try to find reasons to store this item in the
         # renewal config.  It can be stored if it is relevant and
-        # (it is _set_by_cli() or flag_default() is different
+        # (it is set_by_cli() or flag_default() is different
         # from the value or flag_default() doesn't exist).
         if _relevant(option):
-            if (cli._set_by_cli(option)
+            if (cli.set_by_cli(option)
                 or not _is_cli_default(option, value)):
 #                or option not in constants.CLI_DEFAULTS
 #                or constants.CLI_DEFAULTS[option] != value):
