@@ -774,6 +774,27 @@ class MultipleVhostsTest(util.ApacheTest):
             errors.PluginError,
             self.config.enhance, "letsencrypt.demo", "unknown_enhancement")
 
+    @mock.patch("letsencrypt.le_util.exe_exists")
+    def test_ocsp_stapling(self, mock_exe):
+        self.config.parser.update_runtime_variables = mock.Mock()
+        self.config.parser.modules.add("mod_ssl.c")
+        mock_exe.return_value = True
+ 
+        #self.config.parser.modules.add("mod_ssl.c")
+        #self.config.parser.modules.add("socache_shmcb_module")
+
+        # This will create an ssl vhost for letsencrypt.demo
+        self.config.enhance("letsencrypt.demo", "ocsp-stapling")
+
+        # Get the ssl vhost for letsencrypt.demo
+        ssl_vhost = self.config.assoc["letsencrypt.demo"]
+        import ipdb; ipdb.set_trace() 
+
+        ssl_use_stapling = self.config.parser.find_dir(
+            "SSLUseStapling", "on", ssl_vhost.path)
+       
+
+
     @mock.patch("letsencrypt.le_util.run_script")
     @mock.patch("letsencrypt.le_util.exe_exists")
     def test_http_header_hsts(self, mock_exe, _):

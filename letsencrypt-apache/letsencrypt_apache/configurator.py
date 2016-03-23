@@ -130,7 +130,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.version = version
         self.vhosts = None
         self._enhance_func = {"redirect": self._enable_redirect,
-                              "ensure-http-header": self._set_http_header}
+                              "ensure-http-header": self._set_http_header,
+                              "ocsp-stapling": self._enable_ocsp_stapling}
 
     @property
     def mod_ssl_conf(self):
@@ -939,7 +940,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     ######################################################################
     def supported_enhancements(self):  # pylint: disable=no-self-use
         """Returns currently supported enhancements."""
-        return ["redirect", "ensure-http-header"]
+        return ["redirect", "ensure-http-header", "ocsp-stapling"]
 
     def enhance(self, domain, enhancement, options=None):
         """Enhance configuration.
@@ -965,6 +966,23 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         except errors.PluginError:
             logger.warn("Failed %s for %s", enhancement, domain)
             raise
+
+    def _enable_ocsp_stapling(self, ssl_vhost, unused_options):
+        #TODO: finish comment
+        """Enables OCSP Stapling
+    
+        """
+        min_apache_ver = (2,4,0) # min apache ver that supports ocsp stapling
+        if self.get_version() >= min_apache_ver:
+            self.parser.add_dir(ssl_vhost.path, "SSLUseStapling", "on")
+            self.parser.add_dir_to_ifmodssl(ssl_vhost.filep,
+                    "SSLStaplingCache",
+                    ["shmcb:tmp/stapling_cache(128000)"])
+            #TODO Add notes
+            self.save_notes+= "ocsp stapling\n"
+
+            #import ipdb; ipdb.set_trace()
+            self.save() 
 
     def _set_http_header(self, ssl_vhost, header_substring):
         """Enables header that is identified by header_substring on ssl_vhost.
