@@ -236,8 +236,8 @@ def _renew_describe_results(config, renew_successes, renew_failures,
         print("**          (The test certificates above have not been saved.)")
 
 
-def renew(config, unused_plugins):
-    """Renew previously-obtained certificates."""
+def renew_all_lineages(config):
+    """Examine each lineage; renew if due and report results"""
 
     if config.domains != []:
         raise errors.Error("Currently, the renew verb is only capable of "

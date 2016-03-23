@@ -23,7 +23,7 @@ from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import le_util
 from letsencrypt import main
-from letsencrypt import renew
+from letsencrypt import renewal
 from letsencrypt import storage
 
 from letsencrypt.plugins import disco
@@ -666,7 +666,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             configuration.RenewerConfiguration(config))
         renewalparams = lineage.configuration["renewalparams"]
         # pylint: disable=protected-access
-        renew._restore_webroot_config(config, renewalparams)
+        renewal._restore_webroot_config(config, renewalparams)
         self.assertEqual(config.webroot_path, ["/var/www/"])
 
     def test_renew_verb_empty_config(self):
@@ -745,7 +745,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def test_renew_reconstitute_error(self):
         # pylint: disable=protected-access
-        with mock.patch('letsencrypt.main.renew._reconstitute') as mock_reconstitute:
+        with mock.patch('letsencrypt.main.renewal._reconstitute') as mock_reconstitute:
             mock_reconstitute.side_effect = Exception
             self._test_renew_common(assert_oc_called=False, error_expected=True)
 

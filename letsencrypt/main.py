@@ -27,7 +27,7 @@ from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt import log
 from letsencrypt import reporter
-from letsencrypt import renew
+from letsencrypt import renewal
 from letsencrypt import storage
 
 from letsencrypt.display import util as display_util, ops as display_ops
@@ -186,7 +186,7 @@ def _handle_identical_cert_request(config, cert):
     :rtype: tuple
 
     """
-    if renew.should_renew(config, cert):
+    if renewal.should_renew(config, cert):
         return "renew", cert
     if config.reinstall:
         # Set with --reinstall, force an identical certificate to be
@@ -263,7 +263,7 @@ def _find_duplicative_certs(config, domains):
     # Verify the directory is there
     le_util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
 
-    for renewal_file in renew.renewal_conf_files(cli_config):
+    for renewal_file in renewal.renewal_conf_files(cli_config):
         try:
             candidate_lineage = storage.RenewableCert(renewal_file, cli_config)
         except (errors.CertStorageError, IOError):
@@ -551,6 +551,11 @@ def obtain_cert(config, plugins, lineage=None):
             print("new certificate deployed with reload of",
                   config.installer, "server; fullchain is", lineage.fullchain)
     _suggest_donation_if_appropriate(config, action)
+
+def renew(config, unused_plugins):
+    """Renew previously-obtained certificates."""
+    renewal.renew_all_lineages(config)
+
 
 
 def setup_log_file_handler(config, logfile, fmt):
