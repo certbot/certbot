@@ -9,7 +9,6 @@ from acme import challenges
 from acme import messages
 
 from letsencrypt import achallenges
-from letsencrypt import constants
 from letsencrypt import errors
 from letsencrypt import error_handler
 from letsencrypt import interfaces
@@ -21,13 +20,9 @@ logger = logging.getLogger(__name__)
 class AuthHandler(object):
     """ACME Authorization Handler for a client.
 
-    :ivar dv_auth: Authenticator capable of solving
-        :class:`~acme.challenges.DVChallenge` types
-    :type dv_auth: :class:`letsencrypt.interfaces.IAuthenticator`
-
-    :ivar cont_auth: Authenticator capable of solving
-        :class:`~acme.challenges.ContinuityChallenge` types
-    :type cont_auth: :class:`letsencrypt.interfaces.IAuthenticator`
+    :ivar auth: Authenticator capable of solving
+        :class:`~acme.challenges.Challenge` types
+    :type auth: :class:`letsencrypt.interfaces.IAuthenticator`
 
     :ivar acme.client.Client acme: ACME client API.
 
@@ -36,23 +31,19 @@ class AuthHandler(object):
 
     :ivar dict authzr: ACME Authorization Resource dict where keys are domains
         and values are :class:`acme.messages.AuthorizationResource`
-    :ivar list dv_c: DV challenges in the form of
+    :ivar list achalls: DV challenges in the form of
         :class:`letsencrypt.achallenges.AnnotatedChallenge`
-    :ivar list cont_c: Continuity challenges in the
-        form of :class:`letsencrypt.achallenges.AnnotatedChallenge`
 
     """
-    def __init__(self, dv_auth, cont_auth, acme, account):
-        self.dv_auth = dv_auth
-        self.cont_auth = cont_auth
+    def __init__(self, auth, acme, account):
+        self.auth = auth
         self.acme = acme
 
         self.account = account
         self.authzr = dict()
 
         # List must be used to keep responses straight.
-        self.dv_c = []
-        self.cont_c = []
+        self.achalls = []
 
     def get_authorizations(self, domains, best_effort=False):
         """Retrieve all authorizations for challenges.
@@ -61,9 +52,8 @@ class AuthHandler(object):
         :param bool best_effort: Whether or not all authorizations are
              required (this is useful in renewal)
 
-        :returns: tuple of lists of authorization resources. Takes the
-            form of (`completed`, `failed`)
-        :rtype: tuple
+        :returns: List of authorization resources
+        :rtype: list
 
         :raises .AuthorizationError: If unable to retrieve all
             authorizations
@@ -76,18 +66,25 @@ class AuthHandler(object):
         self._choose_challenges(domains)
 
         # While there are still challenges remaining...
-        while self.dv_c or self.cont_c:
-            cont_resp, dv_resp = self._solve_challenges()
+        while self.achalls:
+            resp = self._solve_challenges()
             logger.info("Waiting for verification...")
 
-            # Send all Responses - this modifies dv_c and cont_c
-            self._respond(cont_resp, dv_resp, best_effort)
+            # Send all Responses - this modifies achalls
+            self._respond(resp, best_effort)
 
         # Just make sure all decisions are complete.
         self.verify_authzr_complete()
+
         # Only return valid authorizations
-        return [authzr for authzr in self.authzr.values()
-                if authzr.body.status == messages.STATUS_VALID]
+        retVal = [authzr for authzr in self.authzr.values()
+                  if authzr.body.status == messages.STATUS_VALID]
+
+        if not retVal:
+            raise errors.AuthorizationError(
+                "Challenges failed for all domains")
+
+        return retVal
 
     def _choose_challenges(self, domains):
         """Retrieve necessary challenges to satisfy server."""
@@ -98,32 +95,27 @@ class AuthHandler(object):
                 self._get_chall_pref(dom),
                 self.authzr[dom].body.combinations)
 
-            dom_cont_c, dom_dv_c = self._challenge_factory(
+            dom_achalls = self._challenge_factory(
                 dom, path)
-            self.dv_c.extend(dom_dv_c)
-            self.cont_c.extend(dom_cont_c)
+            self.achalls.extend(dom_achalls)
 
     def _solve_challenges(self):
         """Get Responses for challenges from authenticators."""
-        cont_resp = []
-        dv_resp = []
+        resp = []
         with error_handler.ErrorHandler(self._cleanup_challenges):
             try:
-                if self.cont_c:
-                    cont_resp = self.cont_auth.perform(self.cont_c)
-                if self.dv_c:
-                    dv_resp = self.dv_auth.perform(self.dv_c)
+                if self.achalls:
+                    resp = self.auth.perform(self.achalls)
             except errors.AuthorizationError:
                 logger.critical("Failure in setting up challenges.")
                 logger.info("Attempting to clean up outstanding challenges...")
                 raise
 
-        assert len(cont_resp) == len(self.cont_c)
-        assert len(dv_resp) == len(self.dv_c)
+        assert len(resp) == len(self.achalls)
 
-        return cont_resp, dv_resp
+        return resp
 
-    def _respond(self, cont_resp, dv_resp, best_effort):
+    def _respond(self, resp, best_effort):
         """Send/Receive confirmation of all challenges.
 
         .. note:: This method also cleans up the auth_handler state.
@@ -131,17 +123,14 @@ class AuthHandler(object):
         """
         # TODO: chall_update is a dirty hack to get around acme-spec #105
         chall_update = dict()
-        active_achalls = []
-        active_achalls.extend(
-            self._send_responses(self.dv_c, dv_resp, chall_update))
-        active_achalls.extend(
-            self._send_responses(self.cont_c, cont_resp, chall_update))
+        active_achalls = self._send_responses(self.achalls,
+                                              resp, chall_update)
 
         # Check for updated status...
         try:
             self._poll_challenges(chall_update, best_effort)
         finally:
-            # This removes challenges from self.dv_c and self.cont_c
+            # This removes challenges from self.achalls
             self._cleanup_challenges(active_achalls)
 
     def _send_responses(self, achalls, resps, chall_update):
@@ -192,9 +181,11 @@ class AuthHandler(object):
                         chall_update[domain].remove(achall)
                 # We failed some challenges... damage control
                 else:
-                    # Right now... just assume a loss and carry on...
                     if best_effort:
                         comp_domains.add(domain)
+                        logger.warning(
+                            "Challenge failed for domain %s",
+                            domain)
                     else:
                         all_failed_achalls.update(
                             updated for _, updated in failed_achalls)
@@ -255,8 +246,7 @@ class AuthHandler(object):
         """
         # Make sure to make a copy...
         chall_prefs = []
-        chall_prefs.extend(self.cont_auth.get_chall_pref(domain))
-        chall_prefs.extend(self.dv_auth.get_chall_pref(domain))
+        chall_prefs.extend(self.auth.get_chall_pref(domain))
         return chall_prefs
 
     def _cleanup_challenges(self, achall_list=None):
@@ -268,22 +258,14 @@ class AuthHandler(object):
         logger.info("Cleaning up challenges")
 
         if achall_list is None:
-            dv_c = self.dv_c
-            cont_c = self.cont_c
+            achalls = self.achalls
         else:
-            dv_c = [achall for achall in achall_list
-                    if isinstance(achall.chall, challenges.DVChallenge)]
-            cont_c = [achall for achall in achall_list if isinstance(
-                achall.chall, challenges.ContinuityChallenge)]
+            achalls = achall_list
 
-        if dv_c:
-            self.dv_auth.cleanup(dv_c)
-            for achall in dv_c:
-                self.dv_c.remove(achall)
-        if cont_c:
-            self.cont_auth.cleanup(cont_c)
-            for achall in cont_c:
-                self.cont_c.remove(achall)
+        if achalls:
+            self.auth.cleanup(achalls)
+            for achall in achalls:
+                self.achalls.remove(achall)
 
     def verify_authzr_complete(self):
         """Verifies that all authorizations have been decided.
@@ -304,30 +286,20 @@ class AuthHandler(object):
 
         :param list path: List of indices from `challenges`.
 
-        :returns: dv_chall, list of DVChallenge type
+        :returns: achalls, list of challenge type
             :class:`letsencrypt.achallenges.Indexed`
-            cont_chall, list of ContinuityChallenge type
-            :class:`letsencrypt.achallenges.Indexed`
-        :rtype: tuple
+        :rtype: list
 
         :raises .errors.Error: if challenge type is not recognized
 
         """
-        dv_chall = []
-        cont_chall = []
+        achalls = []
 
         for index in path:
             challb = self.authzr[domain].body.challenges[index]
-            chall = challb.chall
+            achalls.append(challb_to_achall(challb, self.account.key, domain))
 
-            achall = challb_to_achall(challb, self.account.key, domain)
-
-            if isinstance(chall, challenges.ContinuityChallenge):
-                cont_chall.append(achall)
-            elif isinstance(chall, challenges.DVChallenge):
-                dv_chall.append(achall)
-
-        return cont_chall, dv_chall
+        return achalls
 
 
 def challb_to_achall(challb, account_key, domain):
@@ -349,12 +321,6 @@ def challb_to_achall(challb, account_key, domain):
             challb=challb, domain=domain, account_key=account_key)
     elif isinstance(chall, challenges.DNS):
         return achallenges.DNS(challb=challb, domain=domain)
-    elif isinstance(chall, challenges.RecoveryContact):
-        return achallenges.RecoveryContact(
-            challb=challb, domain=domain)
-    elif isinstance(chall, challenges.ProofOfPossession):
-        return achallenges.ProofOfPossession(
-            challb=challb, domain=domain)
     else:
         raise errors.Error(
             "Received unsupported challenge of type: %s", chall.typ)
@@ -424,10 +390,7 @@ def _find_smart_path(challbs, preferences, combinations):
         combo_total = 0
 
     if not best_combo:
-        msg = ("Client does not support any combination of challenges that "
-               "will satisfy the CA.")
-        logger.fatal(msg)
-        raise errors.AuthorizationError(msg)
+        _report_no_chall_path()
 
     return best_combo
 
@@ -436,48 +399,29 @@ def _find_dumb_path(challbs, preferences):
     """Find challenge path without server hints.
 
     Should be called if the combinations hint is not included by the
-    server. This function returns the best path that does not contain
-    multiple mutually exclusive challenges.
+    server. This function either returns a path containing all
+    challenges provided by the CA or raises an exception.
 
     """
-    assert len(preferences) == len(set(preferences))
-
     path = []
-    satisfied = set()
-    for pref_c in preferences:
-        for i, offered_challb in enumerate(challbs):
-            if (isinstance(offered_challb.chall, pref_c) and
-                    is_preferred(offered_challb, satisfied)):
-                path.append(i)
-                satisfied.add(offered_challb)
+    for i, challb in enumerate(challbs):
+        # supported is set to True if the challenge type is supported
+        supported = next((True for pref_c in preferences
+                          if isinstance(challb.chall, pref_c)), False)
+        if supported:
+            path.append(i)
+        else:
+            _report_no_chall_path()
+
     return path
 
 
-def mutually_exclusive(obj1, obj2, groups, different=False):
-    """Are two objects mutually exclusive?"""
-    for group in groups:
-        obj1_present = False
-        obj2_present = False
-
-        for obj_cls in group:
-            obj1_present |= isinstance(obj1, obj_cls)
-            obj2_present |= isinstance(obj2, obj_cls)
-
-            if obj1_present and obj2_present and (
-                    not different or not isinstance(obj1, obj2.__class__)):
-                return False
-    return True
-
-
-def is_preferred(offered_challb, satisfied,
-                 exclusive_groups=constants.EXCLUSIVE_CHALLENGES):
-    """Return whether or not the challenge is preferred in path."""
-    for challb in satisfied:
-        if not mutually_exclusive(
-                offered_challb.chall, challb.chall, exclusive_groups,
-                different=True):
-            return False
-    return True
+def _report_no_chall_path():
+    """Logs and raises an error that no satisfiable chall path exists."""
+    msg = ("Client with the currently selected authenticator does not support "
+           "any combination of challenges that will satisfy the CA.")
+    logger.fatal(msg)
+    raise errors.AuthorizationError(msg)
 
 
 _ACME_PREFIX = "urn:acme:error:"

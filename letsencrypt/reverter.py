@@ -94,7 +94,7 @@ class Reverter(object):
                     "Unable to load checkpoint during rollback")
             rollback -= 1
 
-    def view_config_changes(self, for_logging=False):
+    def view_config_changes(self, for_logging=False, num=None):
         """Displays all saved checkpoints.
 
         All checkpoints are printed by
@@ -107,7 +107,8 @@ class Reverter(object):
         """
         backups = os.listdir(self.config.backup_dir)
         backups.sort(reverse=True)
-
+        if num:
+            backups = backups[:num]
         if not backups:
             logger.info("The Let's Encrypt client has not saved any backups "
                         "of your configuration")

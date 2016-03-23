@@ -1,7 +1,8 @@
 """Tests for letsencrypt.reporter."""
-import StringIO
 import sys
 import unittest
+
+import six
 
 
 class ReporterTest(unittest.TestCase):
@@ -12,7 +13,7 @@ class ReporterTest(unittest.TestCase):
         self.reporter = reporter.Reporter()
 
         self.old_stdout = sys.stdout
-        sys.stdout = StringIO.StringIO()
+        sys.stdout = six.StringIO()
 
     def tearDown(self):
         sys.stdout = self.old_stdout

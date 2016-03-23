@@ -45,7 +45,9 @@ install_requires = [
     'pyrfc3339',
     'python2-pythondialog>=3.2.2rc1',  # Debian squeeze support, cf. #280
     'pytz',
-    'setuptools',  # pkg_resources
+    # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
+    # will tolerate; see #2599:
+    'setuptools>=1.0',
     'six',
     'zope.component',
     'zope.interface',
@@ -125,7 +127,7 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'letsencrypt = letsencrypt.cli:main',
+            'letsencrypt = letsencrypt.main:main',
         ],
         'letsencrypt.plugins': [
             'manual = letsencrypt.plugins.manual:Authenticator',

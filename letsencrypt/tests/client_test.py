@@ -64,8 +64,8 @@ class RegisterTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.display_ops.get_email")
     def test_email_retry(self, _rep, mock_get_email):
         from acme import messages
-        msg = "Validation of contact mailto:sousaphone@improbablylongggstring.tld failed"
-        mx_err = messages.Error(detail=msg, typ="malformed", title="title")
+        msg = "DNS problem: NXDOMAIN looking up MX for example.com"
+        mx_err = messages.Error(detail=msg, typ="urn:acme:error:invalidEmail")
         with mock.patch("letsencrypt.client.acme_client.Client") as mock_client:
             mock_client().register.side_effect = [mx_err, mock.MagicMock()]
             self._call()
@@ -98,7 +98,7 @@ class ClientTest(unittest.TestCase):
 
     def setUp(self):
         self.config = mock.MagicMock(
-            no_verify_ssl=False, config_dir="/etc/letsencrypt", key_types="rsa")
+            no_verify_ssl=False, config_dir="/etc/letsencrypt", allow_subset_of_names=False, key_types="rsa")
         # pylint: disable=star-args
         self.account = mock.MagicMock(**{"key.pem": KEY})
         self.eg_domains = ["example.com", "www.example.com"]
@@ -109,7 +109,7 @@ class ClientTest(unittest.TestCase):
             self.acme = acme.return_value = mock.MagicMock()
             self.client = Client(
                 config=self.config, account_=self.account,
-                dv_auth=None, installer=None)
+                auth=None, installer=None)
 
     def test_init_acme_verify_ssl(self):
         net = self.acme_client.call_args[1]["net"]
@@ -117,20 +117,27 @@ class ClientTest(unittest.TestCase):
 
     def _mock_obtain_certificate(self):
         self.client.auth_handler = mock.MagicMock()
+        self.client.auth_handler.get_authorizations.return_value = [None]
         self.acme.request_issuance.return_value = mock.sentinel.certr
         self.acme.fetch_chain.return_value = mock.sentinel.chain
 
     def _check_obtain_certificate(self):
-        self.client.auth_handler.get_authorizations.assert_called_once_with(self.eg_domains)
+        self.client.auth_handler.get_authorizations.assert_called_once_with(
+            self.eg_domains,
+            self.config.allow_subset_of_names)
+
+        authzr = self.client.auth_handler.get_authorizations()
+
         self.acme.request_issuance.assert_called_once_with(
             jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
                 OpenSSL.crypto.FILETYPE_ASN1, CSR_SAN)),
-            self.client.auth_handler.get_authorizations())
+            authzr)
+
         self.acme.fetch_chain.assert_called_once_with(mock.sentinel.certr)
 
     # FIXME move parts of this to test_cli.py...
     @mock.patch("letsencrypt.client.logger")
-    @mock.patch("letsencrypt.cli._process_domain")
+    @mock.patch("letsencrypt.cli.process_domain")
     def test_obtain_certificate_from_csr(self, mock_process_domain, mock_logger):
         self._mock_obtain_certificate()
         from letsencrypt import cli
@@ -153,11 +160,27 @@ class ClientTest(unittest.TestCase):
             self.assertRaises(errors.ConfigurationError,
                 cli.HelpfulArgumentParser.handle_csr, mock_parser, mock_parsed_args)
 
+            authzr = self.client.auth_handler.get_authorizations(self.eg_domains, False)
+
             self.assertEqual(
                 (mock.sentinel.certr, mock.sentinel.chain),
-                self.client.obtain_certificate_from_csr(self.eg_domains, test_csr))
+                self.client.obtain_certificate_from_csr(
+                    self.eg_domains,
+                    test_csr,
+                    authzr=authzr))
             # and that the cert was obtained correctly
             self._check_obtain_certificate()
+
+            # Test for authzr=None
+            self.assertEqual(
+                (mock.sentinel.certr, mock.sentinel.chain),
+                self.client.obtain_certificate_from_csr(
+                    self.eg_domains,
+                    test_csr,
+                    authzr=None))
+
+            self.client.auth_handler.get_authorizations.assert_called_with(
+            self.eg_domains)
 
             # Test for no auth_handler
             self.client.auth_handler = None
@@ -176,6 +199,21 @@ class ClientTest(unittest.TestCase):
         mock_crypto_util.init_save_csr.return_value = csr
         mock_crypto_util.save_key.return_value = mock.sentinel.key
         domains = ["example.com", "www.example.com"]
+
+        # return_value is essentially set to (None, None) in
+        # _mock_obtain_certificate(), which breaks this test.
+        # Thus fixed by the next line.
+
+        authzr = []
+
+        for domain in domains:
+            authzr.append(
+                mock.MagicMock(
+                    body=mock.MagicMock(
+                        identifier=mock.MagicMock(
+                            value=domain))))
+
+        self.client.auth_handler.get_authorizations.return_value = authzr
 
         self.assertEqual(
             self.client.obtain_certificate(domains),

@@ -4,11 +4,11 @@ import errno
 import os
 import shutil
 import stat
-import StringIO
 import tempfile
 import unittest
 
 import mock
+import six
 
 from letsencrypt import errors
 
@@ -307,20 +307,36 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
         self.assertTrue("--old-option is deprecated" in stderr)
 
     def _get_argparse_warnings(self, args):
-        stderr = StringIO.StringIO()
+        stderr = six.StringIO()
         with mock.patch("letsencrypt.le_util.sys.stderr", new=stderr):
             self.parser.parse_args(args)
         return stderr.getvalue()
 
     def test_help(self):
         self._call("--old-option", 2)
-        stdout = StringIO.StringIO()
+        stdout = six.StringIO()
         with mock.patch("letsencrypt.le_util.sys.stdout", new=stdout):
             try:
                 self.parser.parse_args(["-h"])
             except SystemExit:
                 pass
         self.assertTrue("--old-option" not in stdout.getvalue())
+
+
+class EnforceDomainSanityTest(unittest.TestCase):
+    """Test enforce_domain_sanity."""
+
+    def _call(self, domain):
+        from letsencrypt.le_util import enforce_domain_sanity
+        return enforce_domain_sanity(domain)
+
+    def test_nonascii_str(self):
+        self.assertRaises(errors.ConfigurationError, self._call,
+                          u"eichh\u00f6rnchen.example.com".encode("utf-8"))
+
+    def test_nonascii_unicode(self):
+        self.assertRaises(errors.ConfigurationError, self._call,
+                          u"eichh\u00f6rnchen.example.com")
 
 
 if __name__ == "__main__":
