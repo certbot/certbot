@@ -44,7 +44,13 @@ class Completer(object):
 
         readline.set_completer(self.complete)
         readline.set_completer_delims(' \t\n;')
-        readline.parse_and_bind('tab: complete')
+
+        # readline can be implemented using GNU readline or libedit
+        # which have different configuration syntax
+        if 'libedit' in readline.__doc__:
+            readline.parse_and_bind('bind ^I rl_complete')
+        else:
+            readline.parse_and_bind('tab: complete')
 
     def __exit__(self, unused_type, unused_value, unused_traceback):
         readline.set_completer_delims(self._delims)

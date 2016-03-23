@@ -6,6 +6,8 @@ import string
 import tempfile
 import unittest
 
+import mock
+
 
 class CompleterTest(unittest.TestCase):
     """Test letsencrypt.display.completer.Completer."""
@@ -32,18 +34,6 @@ class CompleterTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
 
-    def test_context_manager(self):
-        from letsencrypt.display import completer
-
-        original_completer = readline.get_completer()
-        original_delims = readline.get_completer_delims()
-
-        with completer.Completer():
-            pass
-
-        self.assertEqual(readline.get_completer(), original_completer)
-        self.assertEqual(readline.get_completer_delims(), original_delims)
-
     def test_complete(self):
         from letsencrypt.display import completer
 
@@ -59,6 +49,44 @@ class CompleterTest(unittest.TestCase):
         completion = my_completer.complete(self.temp_dir, num_paths)
         self.assertEqual(completion, None)
 
+    def test_context_manager(self):
+        from letsencrypt.display import completer
+
+        original_completer = readline.get_completer()
+        original_delims = readline.get_completer_delims()
+
+        with completer.Completer():
+            pass
+
+        self.assertEqual(readline.get_completer(), original_completer)
+        self.assertEqual(readline.get_completer_delims(), original_delims)
+
+    @mock.patch('letsencrypt.display.completer.readline', autospec=True)
+    def test_context_manager_libedit(self, mock_readline):
+        mock_readline.__doc__ = 'libedit'
+        self._test_mocked_readline(mock_readline)
+
+    @mock.patch('letsencrypt.display.completer.readline', autospec=True)
+    def test_context_manager_readline(self, mock_readline):
+        mock_readline.__doc__ = 'GNU readline'
+        self._test_mocked_readline(mock_readline)
+
+    def _test_mocked_readline(self, mock_readline):
+        from letsencrypt.display import completer
+
+        mock_readline.parse_and_bind.side_effect = enable_tab_completion
+
+        with completer.Completer():
+            pass
+
+        self.assertTrue(mock_readline.parse_and_bind.called)
+
+
+def enable_tab_completion(unused_command):
+    """Enables readline tab completion using the system specific syntax."""
+    libedit = 'libedit' in readline.__doc__
+    command = 'bind ^I rl_complete' if libedit else 'tab: complete'
+    readline.parse_and_bind(command)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
