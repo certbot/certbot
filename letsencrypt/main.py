@@ -2,9 +2,16 @@
 from __future__ import print_function
 import atexit
 import functools
+import logging.handlers
 import os
 import sys
+import time
+import traceback
+
+import OpenSSL
 import zope.component
+
+from acme import jose
 
 import letsencrypt
 
@@ -20,18 +27,13 @@ from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt import log
 from letsencrypt import reporter
-from letsencrypt import renew
+from letsencrypt import renewal
 from letsencrypt import storage
 
 from letsencrypt.display import util as display_util, ops as display_ops
 from letsencrypt.plugins import disco as plugins_disco
 from letsencrypt.plugins import selection as ps
 
-import traceback
-import logging.handlers
-import time
-from acme import jose
-import OpenSSL
 
 logger = logging.getLogger(__name__)
 
@@ -157,7 +159,7 @@ def _handle_subset_cert_request(config, domains, cert):
              br=os.linesep)
     if config.expand or config.renew_by_default or zope.component.getUtility(
             interfaces.IDisplay).yesno(question, "Expand", "Cancel",
-                                       cli_flag="--expand (or in some cases, --duplicate)"):
+                                       cli_flag="--expand"):
         return "renew", cert
     else:
         reporter_util = zope.component.getUtility(interfaces.IReporter)
@@ -185,7 +187,7 @@ def _handle_identical_cert_request(config, cert):
     :rtype: tuple
 
     """
-    if renew.should_renew(config, cert):
+    if renewal.should_renew(config, cert):
         return "renew", cert
     if config.reinstall:
         # Set with --reinstall, force an identical certificate to be
@@ -262,7 +264,7 @@ def _find_duplicative_certs(config, domains):
     # Verify the directory is there
     le_util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
 
-    for renewal_file in renew.renewal_conf_files(cli_config):
+    for renewal_file in renewal.renewal_conf_files(cli_config):
         try:
             candidate_lineage = storage.RenewableCert(renewal_file, cli_config)
         except (errors.CertStorageError, IOError):
@@ -455,7 +457,7 @@ def config_changes(config, unused_plugins):
     View checkpoints and associated configuration changes.
 
     """
-    client.view_config_changes(config)
+    client.view_config_changes(config, num=config.num)
 
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
@@ -550,6 +552,11 @@ def obtain_cert(config, plugins, lineage=None):
             print("new certificate deployed with reload of",
                   config.installer, "server; fullchain is", lineage.fullchain)
     _suggest_donation_if_appropriate(config, action)
+
+def renew(config, unused_plugins):
+    """Renew previously-obtained certificates."""
+    renewal.renew_all_lineages(config)
+
 
 
 def setup_log_file_handler(config, logfile, fmt):
@@ -699,15 +706,6 @@ def main(cli_args=sys.argv[1:]):
     atexit.register(report.atexit_print_messages)
 
     return config.func(config, plugins)
-
-
-# Maps verbs/subcommands to the functions that implement them
-# In principle this should live in cli.HelpfulArgumentParser, but
-# due to issues with import cycles and testing, it lives here
-VERBS = {"auth": obtain_cert, "certonly": obtain_cert,
-         "config_changes": config_changes, "everything": run,
-         "install": install, "plugins": plugins_cmd, "renew": renew.renew,
-         "revoke": revoke, "rollback": rollback, "run": run}
 
 
 if __name__ == "__main__":

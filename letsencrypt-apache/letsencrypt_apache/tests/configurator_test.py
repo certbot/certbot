@@ -20,17 +20,17 @@ from letsencrypt_apache import obj
 from letsencrypt_apache.tests import util
 
 
-class TwoVhost80Test(util.ApacheTest):
+class MultipleVhostsTest(util.ApacheTest):
     """Test two standard well-configured HTTP vhosts."""
 
     def setUp(self):  # pylint: disable=arguments-differ
-        super(TwoVhost80Test, self).setUp()
+        super(MultipleVhostsTest, self).setUp()
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)
         self.config = self.mock_deploy_cert(self.config)
         self.vh_truth = util.get_vh_truth(
-            self.temp_dir, "debian_apache_2_4/two_vhost_80")
+            self.temp_dir, "debian_apache_2_4/multiple_vhosts")
 
     def mock_deploy_cert(self, config):
         """A test for a mock deploy cert"""

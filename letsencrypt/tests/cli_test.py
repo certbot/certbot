@@ -23,7 +23,7 @@ from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import le_util
 from letsencrypt import main
-from letsencrypt import renew
+from letsencrypt import renewal
 from letsencrypt import storage
 
 from letsencrypt.plugins import disco
@@ -52,6 +52,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
+        # Reset globals in cli
+        # pylint: disable=protected-access
+        cli._parser = cli.set_by_cli.detector = None
 
     def _call(self, args):
         "Run the cli with output streams and actual client mocked out"
@@ -79,7 +82,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         return ret, None, stderr, client
 
     def test_no_flags(self):
-        with MockedVerb("run") as mock_run:
+        with mock.patch('letsencrypt.main.run') as mock_run:
             self._call([])
             self.assertEqual(1, mock_run.call_count)
 
@@ -135,7 +138,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         out = self._help_output(['-h'])
         self.assertTrue(cli.usage_strings(plugins)[0] in out)
 
-
     def _cli_missing_flag(self, args, message):
         "Ensure that a particular error raises a missing cli flag error containing message"
         exc = None
@@ -190,7 +192,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         chain = 'chain'
         fullchain = 'fullchain'
 
-        with MockedVerb('install') as mock_install:
+        with mock.patch('letsencrypt.main.install') as mock_install:
             self._call(['install', '--cert-path', cert, '--key-path', 'key',
                         '--chain-path', 'chain',
                         '--fullchain-path', 'fullchain'])
@@ -248,7 +250,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 unused_config, auth, unused_installer = mock_init.call_args[0]
                 self.assertTrue(isinstance(auth, manual.Authenticator))
 
-        with MockedVerb("certonly") as mock_certonly:
+        with mock.patch('letsencrypt.main.obtain_cert') as mock_certonly:
             self._call(["auth", "--standalone"])
             self.assertEqual(1, mock_certonly.call_count)
 
@@ -321,7 +323,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         chain = 'chain'
         fullchain = 'fullchain'
 
-        with MockedVerb('certonly') as mock_obtaincert:
+        with mock.patch('letsencrypt.main.obtain_cert') as mock_obtaincert:
             self._call(['certonly', '--cert-path', cert, '--key-path', 'key',
                         '--chain-path', 'chain',
                         '--fullchain-path', 'fullchain'])
@@ -361,6 +363,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertRaises(errors.ConfigurationError,
                           self._call,
                           ['-d', '204.11.231.35'])
+
+    def test_csr_with_besteffort(self):
+        args = ["--csr", CSR, "--allow-subset-of-names"]
+        self.assertRaises(errors.Error, self._call, args)
 
     def test_run_with_csr(self):
         # This is an error because you can only use --csr with certonly
@@ -664,7 +670,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             configuration.RenewerConfiguration(config))
         renewalparams = lineage.configuration["renewalparams"]
         # pylint: disable=protected-access
-        renew._restore_webroot_config(config, renewalparams)
+        renewal._restore_webroot_config(config, renewalparams)
         self.assertEqual(config.webroot_path, ["/var/www/"])
 
     def test_renew_verb_empty_config(self):
@@ -682,8 +688,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with open(os.path.join(renewer_configs_dir, 'test.conf'), 'w') as f:
             f.write("My contents don't matter")
 
-    def _test_renew_common(self, renewalparams=None, error_expected=False,
-                           names=None, assert_oc_called=None):
+    def _test_renew_common(self, renewalparams=None, names=None,
+                           assert_oc_called=None, **kwargs):
         self._make_dummy_renewal_config()
         with mock.patch('letsencrypt.storage.RenewableCert') as mock_rc:
             mock_lineage = mock.MagicMock()
@@ -694,8 +700,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 mock_lineage.names.return_value = names
             mock_rc.return_value = mock_lineage
             with mock.patch('letsencrypt.main.obtain_cert') as mock_obtain_cert:
-                self._test_renewal_common(True, None, error_expected=error_expected,
-                                          args=['renew'], should_renew=False)
+                kwargs.setdefault('args', ['renew'])
+                self._test_renewal_common(True, None, should_renew=False, **kwargs)
+
             if assert_oc_called is not None:
                 if assert_oc_called:
                     self.assertTrue(mock_obtain_cert.called)
@@ -718,7 +725,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_renew_with_nonetype_http01(self):
         renewalparams = {'authenticator': 'webroot',
                          'http01_port': 'None'}
-        self._test_renew_common(renewalparams=renewalparams, error_expected=False,
+        self._test_renew_common(renewalparams=renewalparams,
                                 assert_oc_called=True)
 
     def test_renew_with_bad_domain(self):
@@ -726,6 +733,12 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         names = ['*.example.com']
         self._test_renew_common(renewalparams=renewalparams, error_expected=True,
                                 names=names, assert_oc_called=False)
+
+    def test_renew_with_configurator(self):
+        renewalparams = {'authenticator': 'webroot'}
+        self._test_renew_common(
+            renewalparams=renewalparams, assert_oc_called=True,
+            args='renew --configurator apache'.split())
 
     def test_renew_plugin_config_restoration(self):
         renewalparams = {'authenticator': 'webroot',
@@ -736,7 +749,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def test_renew_reconstitute_error(self):
         # pylint: disable=protected-access
-        with mock.patch('letsencrypt.main.renew._reconstitute') as mock_reconstitute:
+        with mock.patch('letsencrypt.main.renewal._reconstitute') as mock_reconstitute:
             mock_reconstitute.side_effect = Exception
             self._test_renew_common(assert_oc_called=False, error_expected=True)
 
@@ -900,7 +913,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(contents, test_contents)
 
     def test_agree_dev_preview_config(self):
-        with MockedVerb('run') as mocked_run:
+        with mock.patch('letsencrypt.main.run') as mocked_run:
             self._call(['-c', test_util.vector_path('cli.ini')])
         self.assertTrue(mocked_run.called)
 
@@ -1008,35 +1021,6 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
         result = _find_duplicative_certs(
             self.cli_config, ['example.com', 'something.new'])
         self.assertEqual(result, (None, None))
-
-
-class MockedVerb(object):
-    """Simple class that can be used for mocking out verbs/subcommands.
-
-    Storing a dictionary of verbs and the functions that implement them
-    in letsencrypt.cli makes mocking much more complicated. This class
-    can be used as a simple context manager for mocking out verbs in CLI
-    tests. For example:
-
-    with MockedVerb("run") as mock_run:
-        self._call([])
-        self.assertEqual(1, mock_run.call_count)
-
-    """
-    def __init__(self, verb_name):
-        self.verb_dict = main.VERBS
-        self.verb_func = None
-        self.verb_name = verb_name
-
-    def __enter__(self):
-        self.verb_func = self.verb_dict[self.verb_name]
-        mocked_func = mock.MagicMock()
-        self.verb_dict[self.verb_name] = mocked_func
-
-        return mocked_func
-
-    def __exit__(self, unused_type, unused_value, unused_trace):
-        self.verb_dict[self.verb_name] = self.verb_func
 
 
 if __name__ == '__main__':

@@ -18,16 +18,17 @@ The Let's Encrypt Client is a fully-featured, extensible client for the Let's
 Encrypt CA (or any other CA that speaks the `ACME
 <https://github.com/ietf-wg-acme/acme/blob/master/draft-ietf-acme-acme.md>`_
 protocol) that can automate the tasks of obtaining certificates and
-configuring webservers to use them.
+configuring webservers to use them. This client runs on Unix-based operating
+systems.
 
 Installation
 ------------
 
-If ``letsencrypt`` is packaged for your OS, you can install it from there, and
-run it by typing ``letsencrypt``.  Because not all operating systems have
-packages yet, we provide a temporary solution via the ``letsencrypt-auto``
-wrapper script, which obtains some dependencies from your OS and puts others
-in a python virtual environment::
+If ``letsencrypt`` is packaged for your Unix OS, you can install it from
+there, and run it by typing ``letsencrypt``.  Because not all operating
+systems have packages yet, we provide a temporary solution via the
+``letsencrypt-auto`` wrapper script, which obtains some dependencies
+from your OS and puts others in a python virtual environment::
 
   user@webserver:~$ git clone https://github.com/letsencrypt/letsencrypt
   user@webserver:~$ cd letsencrypt
@@ -89,6 +90,11 @@ Main Website: https://letsencrypt.org/
 IRC Channel: #letsencrypt on `Freenode`_
 
 Community: https://community.letsencrypt.org
+
+ACME spec: http://ietf-wg-acme.github.io/acme/
+
+ACME working area in github: https://github.com/ietf-wg-acme/acme
+
 
 Mailing list: `client-dev`_ (to subscribe without a Google account, send an
 email to client-dev+subscribe@letsencrypt.org)
