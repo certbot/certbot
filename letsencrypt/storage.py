@@ -130,11 +130,11 @@ def _relevant(option):
     :rtype: bool
     """
     # The list() here produces a list of the plugin names as strings.
-    from letsencrypt import cli
+    from letsencrypt import renewal
     from letsencrypt.plugins import disco as plugins_disco
     plugins = list(plugins_disco.PluginsRegistry.find_all())
-    return (option in cli.STR_CONFIG_ITEMS
-            or option in cli.INT_CONFIG_ITEMS
+    return (option in renewal.STR_CONFIG_ITEMS
+            or option in renewal.INT_CONFIG_ITEMS
             or any(option.startswith(x + "_") for x in plugins))
 
 
@@ -152,7 +152,7 @@ def relevant_values(all_values):
         # Look through the CLI parser defaults and see if this option is
         # both present and equal to the specified value. If not, return
         # False.
-        for x in cli._parser.parser._actions: # pylint: disable=protected-access
+        for x in cli.helpful_parser.parser._actions:
             if x.dest == option:
                 if x.default == value:
                     return True

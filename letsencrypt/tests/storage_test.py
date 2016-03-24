@@ -562,7 +562,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertFalse(os.path.islink(self.test_rc.version("privkey", 10)))
         self.assertFalse(os.path.exists(temp_config_file))
 
-    @mock.patch("letsencrypt.cli._parser")
+    @mock.patch("letsencrypt.cli.helpful_parser")
     def test_relevant_values(self, mock_parser):
         """Test that relevant_values() can reject an irrelevant value."""
         # pylint: disable=protected-access
@@ -573,7 +573,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         mock_parser.parser._actions = [mock_action]
         self.assertEqual(storage.relevant_values({"hello": "there"}), {})
 
-    @mock.patch("letsencrypt.cli._parser")
+    @mock.patch("letsencrypt.cli.helpful_parser")
     def test_relevant_values_default(self, mock_parser):
         """Test that relevant_values() can reject a default value."""
         # pylint: disable=protected-access
@@ -584,7 +584,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         mock_parser.parser._actions = [mock_action]
         self.assertEqual(storage.relevant_values({"rsa_key_size": 2048}), {})
 
-    @mock.patch("letsencrypt.cli._parser")
+    @mock.patch("letsencrypt.cli.helpful_parser")
     def test_relevant_values_nondefault(self, mock_parser):
         """Test that relevant_values() can retain a non-default value."""
         # pylint: disable=protected-access
