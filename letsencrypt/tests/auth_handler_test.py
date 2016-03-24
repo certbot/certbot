@@ -126,6 +126,7 @@ class GetAuthorizationsTest(unittest.TestCase):
         for achall in self.mock_auth.cleanup.call_args[0][0]:
             self.assertTrue(achall.typ in ["tls-sni-01", "http-01", "dns"])
 
+        # Length of authorizations list
         self.assertEqual(len(authzr), 1)
 
     @mock.patch("letsencrypt.auth_handler.AuthHandler._poll_challenges")
@@ -161,6 +162,9 @@ class GetAuthorizationsTest(unittest.TestCase):
 
         self.assertRaises(
             errors.AuthorizationError, self.handler.get_authorizations, ["0"])
+
+    def test_no_domains(self):
+        self.assertRaises(errors.AuthorizationError, self.handler.get_authorizations, [])
 
     def _validate_all(self, unused_1, unused_2):
         for dom in self.handler.authzr.keys():
