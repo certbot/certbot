@@ -41,7 +41,7 @@ except ImportError:
             cmd = kwargs.get("args")
             if cmd is None:
                 cmd = popenargs[0]
-            raise CalledProcessError(retcode, cmd, output=output)
+            raise CalledProcessError(retcode, cmd)
         return output
 from sys import exit, version_info
 from tempfile import mkdtemp
