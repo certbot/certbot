@@ -148,7 +148,7 @@ def relevant_values(all_values):
 
     from letsencrypt import cli
 
-    def _is_cli_default(option, value):
+    def _is_cli_default(option, value): # pylint: disable=protected-access
         # Look through the CLI parser defaults and see if this option is
         # both present and equal to the specified value. If not, return
         # False.
