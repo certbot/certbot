@@ -9,130 +9,10 @@ from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt.display import util as display_util
 
-
 logger = logging.getLogger(__name__)
 
 # Define a helper function to avoid verbose code
-util = zope.component.getUtility
-
-
-def choose_plugin(prepared, question):
-    """Allow the user to choose their plugin.
-
-    :param list prepared: List of `~.PluginEntryPoint`.
-    :param str question: Question to be presented to the user.
-
-    :returns: Plugin entry point chosen by the user.
-    :rtype: `~.PluginEntryPoint`
-
-    """
-    opts = [plugin_ep.description_with_name +
-            (" [Misconfigured]" if plugin_ep.misconfigured else "")
-            for plugin_ep in prepared]
-
-    while True:
-        disp = util(interfaces.IDisplay)
-        code, index = disp.menu(question, opts, help_label="More Info")
-
-        if code == display_util.OK:
-            plugin_ep = prepared[index]
-            if plugin_ep.misconfigured:
-                util(interfaces.IDisplay).notification(
-                    "The selected plugin encountered an error while parsing "
-                    "your server configuration and cannot be used. The error "
-                    "was:\n\n{0}".format(plugin_ep.prepare()),
-                    height=display_util.HEIGHT, pause=False)
-            else:
-                return plugin_ep
-        elif code == display_util.HELP:
-            if prepared[index].misconfigured:
-                msg = "Reported Error: %s" % prepared[index].prepare()
-            else:
-                msg = prepared[index].init().more_info()
-            util(interfaces.IDisplay).notification(
-                msg, height=display_util.HEIGHT)
-        else:
-            return None
-
-
-def pick_plugin(config, default, plugins, question, ifaces):
-    """Pick plugin.
-
-    :param letsencrypt.interfaces.IConfig: Configuration
-    :param str default: Plugin name supplied by user or ``None``.
-    :param letsencrypt.plugins.disco.PluginsRegistry plugins:
-        All plugins registered as entry points.
-    :param str question: Question to be presented to the user in case
-        multiple candidates are found.
-    :param list ifaces: Interfaces that plugins must provide.
-
-    :returns: Initialized plugin.
-    :rtype: IPlugin
-
-    """
-    if default is not None:
-        # throw more UX-friendly error if default not in plugins
-        filtered = plugins.filter(lambda p_ep: p_ep.name == default)
-    else:
-        if config.noninteractive_mode:
-            # it's really bad to auto-select the single available plugin in
-            # non-interactive mode, because an update could later add a second
-            # available plugin
-            raise errors.MissingCommandlineFlag(
-                "Missing command line flags. For non-interactive execution, "
-                "you will need to specify a plugin on the command line.  Run "
-                "with '--help plugins' to see a list of options, and see "
-                "https://eff.org/letsencrypt-plugins for more detail on what "
-                "the plugins do and how to use them.")
-
-        filtered = plugins.visible().ifaces(ifaces)
-
-    filtered.init(config)
-    verified = filtered.verify(ifaces)
-    verified.prepare()
-    prepared = verified.available()
-
-    if len(prepared) > 1:
-        logger.debug("Multiple candidate plugins: %s", prepared)
-        plugin_ep = choose_plugin(prepared.values(), question)
-        if plugin_ep is None:
-            return None
-        else:
-            return plugin_ep.init()
-    elif len(prepared) == 1:
-        plugin_ep = prepared.values()[0]
-        logger.debug("Single candidate plugin: %s", plugin_ep)
-        if plugin_ep.misconfigured:
-            return None
-        return plugin_ep.init()
-    else:
-        logger.debug("No candidate plugin")
-        return None
-
-
-def pick_authenticator(
-        config, default, plugins, question="How would you "
-        "like to authenticate with the Let's Encrypt CA?"):
-    """Pick authentication plugin."""
-    return pick_plugin(
-        config, default, plugins, question, (interfaces.IAuthenticator,))
-
-
-def pick_installer(config, default, plugins,
-                   question="How would you like to install certificates?"):
-    """Pick installer plugin."""
-    return pick_plugin(
-        config, default, plugins, question, (interfaces.IInstaller,))
-
-
-def pick_configurator(
-        config, default, plugins,
-        question="How would you like to authenticate and install "
-                 "certificates?"):
-    """Pick configurator plugin."""
-    return pick_plugin(
-        config, default, plugins, question,
-        (interfaces.IAuthenticator, interfaces.IInstaller))
+z_util = zope.component.getUtility
 
 
 def get_email(more=False, invalid=False):
@@ -182,7 +62,7 @@ def choose_account(accounts):
     # Note this will get more complicated once we start recording authorizations
     labels = [acc.slug for acc in accounts]
 
-    code, index = util(interfaces.IDisplay).menu(
+    code, index = z_util(interfaces.IDisplay).menu(
         "Please choose an account", labels)
     if code == display_util.OK:
         return accounts[index]
@@ -208,7 +88,7 @@ def choose_names(installer):
     names = get_valid_domains(domains)
 
     if not names:
-        manual = util(interfaces.IDisplay).yesno(
+        manual = z_util(interfaces.IDisplay).yesno(
             "No names were found in your configuration files.{0}You should "
             "specify ServerNames in your config files in order to allow for "
             "accurate installation of your certificate.{0}"
@@ -256,7 +136,7 @@ def _filter_names(names):
     :rtype: tuple
 
     """
-    code, names = util(interfaces.IDisplay).checklist(
+    code, names = z_util(interfaces.IDisplay).checklist(
         "Which names would you like to activate HTTPS for?",
         tags=names, cli_flag="--domains")
     return code, [str(s) for s in names]
@@ -265,7 +145,7 @@ def _filter_names(names):
 def _choose_names_manually():
     """Manually input names for those without an installer."""
 
-    code, input_ = util(interfaces.IDisplay).input(
+    code, input_ = z_util(interfaces.IDisplay).input(
         "Please enter in your domain name(s) (comma and/or space separated) ",
         cli_flag="--domains")
 
@@ -300,7 +180,7 @@ def _choose_names_manually():
 
         if retry_message:
             # We had error in input
-            retry = util(interfaces.IDisplay).yesno(retry_message)
+            retry = z_util(interfaces.IDisplay).yesno(retry_message)
             if retry:
                 return _choose_names_manually()
         else:
@@ -316,7 +196,7 @@ def success_installation(domains):
     :param list domains: domain names which were enabled
 
     """
-    util(interfaces.IDisplay).notification(
+    z_util(interfaces.IDisplay).notification(
         "Congratulations! You have successfully enabled {0}{1}{1}"
         "You should test your configuration at:{1}{2}".format(
             _gen_https_names(domains),
@@ -335,7 +215,7 @@ def success_renewal(domains, action):
     :param str action: can be "reinstall" or "renew"
 
     """
-    util(interfaces.IDisplay).notification(
+    z_util(interfaces.IDisplay).notification(
         "Your existing certificate has been successfully {3}ed, and the "
         "new certificate has been installed.{1}{1}"
         "The new certificate covers the following domains: {0}{1}{1}"
