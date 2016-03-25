@@ -52,7 +52,7 @@ COPY letsencrypt-nginx /opt/letsencrypt/src/letsencrypt-nginx/
 
 RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv
 
-# PATH is set now so pipstrap upgrades the correct v(env)
+# PATH is set now so pipstrap upgrades the correct (v)env
 ENV PATH /opt/letsencrypt/venv/bin:$PATH
 RUN /opt/letsencrypt/venv/bin/python /opt/letsencrypt/src/pipstrap.py && \
     /opt/letsencrypt/venv/bin/pip install \
