@@ -137,8 +137,8 @@ noninstaller_plugins = ["webroot", "manual", "standalone"]
 def record_chosen_plugins(config, plugins, auth, inst):
     "Update the config entries to reflect the plugins we actually selected."
     cn = config.namespace
-    cn.authenticator = plugins.find_init(auth).name if auth else "none"
-    cn.installer = plugins.find_init(inst).name if inst else "none"
+    cn.authenticator = plugins.find_init(auth).name if auth else "None"
+    cn.installer = plugins.find_init(inst).name if inst else "None"
 
 
 def choose_configurator_plugins(config, plugins, verb):
