@@ -33,10 +33,11 @@ RUN /opt/letsencrypt/src/letsencrypt-auto-source/letsencrypt-auto --os-packages-
 # Dockerfile we make sure we cache as much as possible
 
 
-COPY setup.py README.rst CHANGES.rst MANIFEST.in /opt/letsencrypt/src/
+COPY setup.py README.rst CHANGES.rst MANIFEST.in letsencrypt-auto-source/pieces/pipstrap.py /opt/letsencrypt/src/
 
-# all above files are necessary for setup.py, however, package source
-# code directory has to be copied separately to a subdirectory...
+# all above files are necessary for setup.py and venv setup, however,
+# package source code directory has to be copied separately to a
+# subdirectory...
 # https://docs.docker.com/reference/builder/#copy: "If <src> is a
 # directory, the entire contents of the directory are copied,
 # including filesystem metadata. Note: The directory itself is not
@@ -49,7 +50,11 @@ COPY letsencrypt-apache /opt/letsencrypt/src/letsencrypt-apache/
 COPY letsencrypt-nginx /opt/letsencrypt/src/letsencrypt-nginx/
 
 
-RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv && \
+RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv
+
+# PATH is set now so pipstrap upgrades the correct v(env)
+ENV PATH /opt/letsencrypt/venv/bin:$PATH
+RUN /opt/letsencrypt/venv/bin/python /opt/letsencrypt/src/pipstrap.py && \
     /opt/letsencrypt/venv/bin/pip install \
     -e /opt/letsencrypt/src/acme \
     -e /opt/letsencrypt/src \
@@ -60,7 +65,5 @@ RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv && \
 # "rm -rf /opt/letsencrypt/src" (it's stays in the underlaying image);
 # this might also help in debugging: you can "docker run --entrypoint
 # bash" and investigate, apply patches, etc.
-
-ENV PATH /opt/letsencrypt/venv/bin:$PATH
 
 ENTRYPOINT [ "letsencrypt" ]
