@@ -449,7 +449,9 @@ class IDisplay(zope.interface.Interface):
         :param str message: prompt to give the user
         :param default: the default value to return, if one exists, when
             using the NoninteractiveDisplay
-        :param str cli_flag: option used to set this value with the CLI
+        :param str cli_flag: option used to set this value with the CLI,
+            if one exists, to be included in error messages given by
+            NoninteractiveDisplay
 
         :returns: tuple of the form (`code`, `string`) where
             `code` - int display exit code

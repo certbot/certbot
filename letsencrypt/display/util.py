@@ -13,7 +13,7 @@ WIDTH = 72
 HEIGHT = 20
 
 DSELECT_HELP = (
-    "Use the arrow keys or tab to move between window elements. Space can be "
+    "Use the arrow keys or Tab to move between window elements. Space can be "
     "used to complete the input path with the selected element in the "
     "directory window. Pressing enter will select the currently highlighted "
     "button.")
@@ -559,7 +559,9 @@ class NoninteractiveDisplay(object):
         """Simulate prompting the user for a directory.
 
         This function returns default if it is not ``None``, otherwise,
-        an exception is raised.
+        an exception is raised explaining the problem. If cli_flag is
+        not ``None``, the error message will include the flag that can
+        be used to set this value with the CLI.
 
         :param str message: prompt to give the user
         :param default: default value to return (if one exists)
