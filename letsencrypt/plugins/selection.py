@@ -132,8 +132,6 @@ def choose_plugin(prepared, question):
         else:
             return None
 
-logger = logging.getLogger(__name__)
-
 noninstaller_plugins = ["webroot", "manual", "standalone"]
 
 def record_chosen_plugins(config, plugins, auth, inst):
@@ -146,7 +144,7 @@ def record_chosen_plugins(config, plugins, auth, inst):
 def choose_configurator_plugins(config, plugins, verb):
     """
     Figure out which configurator we're going to use, modifies
-    config.authenticator and config.istaller strings to reflect that choice if
+    config.authenticator and config.installer strings to reflect that choice if
     necessary.
 
     :raises errors.PluginSelectionError if there was a problem

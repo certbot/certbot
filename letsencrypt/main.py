@@ -32,7 +32,7 @@ from letsencrypt import storage
 
 from letsencrypt.display import util as display_util, ops as display_ops
 from letsencrypt.plugins import disco as plugins_disco
-from letsencrypt.plugins import selection as ps
+from letsencrypt.plugins import selection as plug_sel
 
 
 logger = logging.getLogger(__name__)
@@ -407,7 +407,7 @@ def install(config, plugins):
     # this function ...
 
     try:
-        installer, _ = ps.choose_configurator_plugins(config, plugins, "install")
+        installer, _ = plug_sel.choose_configurator_plugins(config, plugins, "install")
     except errors.PluginSelectionError as e:
         return e.message
 
@@ -482,7 +482,7 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     # TODO: Make run as close to auth + install as possible
     # Possible difficulties: config.csr was hacked into auth
     try:
-        installer, authenticator = ps.choose_configurator_plugins(config, plugins, "run")
+        installer, authenticator = plug_sel.choose_configurator_plugins(config, plugins, "run")
     except errors.PluginSelectionError as e:
         return e.message
 
@@ -512,7 +512,7 @@ def obtain_cert(config, plugins, lineage=None):
     # pylint: disable=too-many-locals
     try:
         # installers are used in auth mode to determine domain names
-        installer, authenticator = ps.choose_configurator_plugins(config, plugins, "certonly")
+        installer, authenticator = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
     except errors.PluginSelectionError as e:
         logger.info("Could not choose appropriate plugin: %s", e)
         raise

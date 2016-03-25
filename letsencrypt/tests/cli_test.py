@@ -203,8 +203,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(args.chain_path, os.path.abspath(chain))
         self.assertEqual(args.fullchain_path, os.path.abspath(fullchain))
 
-    @mock.patch('letsencrypt.main.ps.record_chosen_plugins')
-    @mock.patch('letsencrypt.main.ps.pick_installer')
+    @mock.patch('letsencrypt.main.plug_sel.record_chosen_plugins')
+    @mock.patch('letsencrypt.main.plug_sel.pick_installer')
     def test_installer_selection(self, mock_pick_installer, _rec):
         self._call(['install', '--domains', 'foo.bar', '--cert-path', 'cert',
                     '--key-path', 'key', '--chain-path', 'chain'])
