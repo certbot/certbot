@@ -123,6 +123,11 @@ class NcursesDisplayTest(unittest.TestCase):
             "message", width=display_util.WIDTH, height=display_util.HEIGHT,
             choices=choices)
 
+    @mock.patch("letsencrypt.display.util.dialog.Dialog.dselect")
+    def test_directory_select(self, mock_dselect):
+        self.displayer.directory_select("message")
+        self.assertEqual(mock_dselect.call_count, 1)
+
 
 class FileOutputDisplayTest(unittest.TestCase):
     """Test stdout display.
@@ -227,6 +232,15 @@ class FileOutputDisplayTest(unittest.TestCase):
                 self.displayer._scrub_checklist_input(list_, TAGS))
             self.assertEqual(set_tags, exp[i])
 
+    @mock.patch("letsencrypt.display.util.FileDisplay.input")
+    def test_directory_select(self, mock_input):
+        message = "msg"
+        result = (display_util.OK, "/var/www/html",)
+        mock_input.return_value = result
+
+        self.assertEqual(self.displayer.directory_select(message), result)
+        mock_input.assert_called_once_with(message)
+
     def test_scrub_checklist_input_invalid(self):
         # pylint: disable=protected-access
         indices = [
@@ -280,6 +294,7 @@ class FileOutputDisplayTest(unittest.TestCase):
                     self.displayer._get_valid_int_ans(3),
                     (display_util.CANCEL, -1))
 
+
 class NoninteractiveDisplayTest(unittest.TestCase):
     """Test non-interactive display.
 
@@ -319,6 +334,15 @@ class NoninteractiveDisplayTest(unittest.TestCase):
         ret = self.displayer.checklist("message", TAGS, default=d)
         self.assertEqual(ret, (display_util.OK, d))
         self.assertRaises(errors.MissingCommandlineFlag, self.displayer.checklist, "message", TAGS)
+
+    def test_directory_select(self):
+        default = "/var/www/html"
+        expected = (display_util.OK, default)
+        actual = self.displayer.directory_select("msg", default)
+        self.assertEqual(expected, actual)
+
+        self.assertRaises(
+            errors.MissingCommandlineFlag, self.displayer.directory_select, "msg")
 
 
 class SeparateListInputTest(unittest.TestCase):

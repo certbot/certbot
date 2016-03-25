@@ -7,9 +7,17 @@ import zope.interface
 
 from letsencrypt import interfaces
 from letsencrypt import errors
+from letsencrypt.display import completer
 
 WIDTH = 72
 HEIGHT = 20
+
+DSELECT_HELP = (
+    "Use the arrow keys or Tab to move between window elements. Space can be "
+    "used to complete the input path with the selected element in the "
+    "directory window. Pressing enter will select the currently highlighted "
+    "button.")
+"""Help text on how to use dialog's dselect."""
 
 # Display exit codes
 OK = "ok"
@@ -20,6 +28,7 @@ CANCEL = "cancel"
 
 HELP = "help"
 """Display exit code when for when the user requests more help."""
+
 
 def _wrap_lines(msg):
     """Format lines nicely to 80 chars.
@@ -35,6 +44,7 @@ def _wrap_lines(msg):
     for line in lines:
         fixed_l.append(textwrap.fill(line, 80))
     return os.linesep.join(fixed_l)
+
 
 @zope.interface.implementer(interfaces.IDisplay)
 class NcursesDisplay(object):
@@ -118,7 +128,6 @@ class NcursesDisplay(object):
 
             return code, int(index) - 1
 
-
     def input(self, message, **unused_kwargs):
         """Display an input box to the user.
 
@@ -132,10 +141,9 @@ class NcursesDisplay(object):
         """
         sections = message.split("\n")
         # each section takes at least one line, plus extras if it's longer than self.width
-        wordlines = [1 + (len(section)/self.width) for section in sections]
+        wordlines = [1 + (len(section) / self.width) for section in sections]
         height = 6 + sum(wordlines) + len(sections)
         return self.dialog.inputbox(message, width=self.width, height=height)
-
 
     def yesno(self, message, yes_label="Yes", no_label="No", **unused_kwargs):
         """Display a Yes/No dialog box.
@@ -173,6 +181,21 @@ class NcursesDisplay(object):
         choices = [(tag, "", default_status) for tag in tags]
         return self.dialog.checklist(
             message, width=self.width, height=self.height, choices=choices)
+
+    def directory_select(self, message, **unused_kwargs):
+        """Display a directory selection screen.
+
+        :param str message: prompt to give the user
+
+        :returns: tuple of the form (`code`, `string`) where
+            `code` - int display exit code
+            `string` - input entered by the user
+
+        """
+        root_directory = os.path.abspath(os.sep)
+        return self.dialog.dselect(
+            filepath=root_directory, width=self.width,
+            height=self.height, help_button=True, title=message)
 
 
 @zope.interface.implementer(interfaces.IDisplay)
@@ -317,6 +340,19 @@ class FileDisplay(object):
             else:
                 return code, []
 
+    def directory_select(self, message, **unused_kwargs):
+        """Display a directory selection screen.
+
+        :param str message: prompt to give the user
+
+        :returns: tuple of the form (`code`, `string`) where
+            `code` - int display exit code
+            `string` - input entered by the user
+
+        """
+        with completer.Completer():
+            return self.input(message)
+
     def _scrub_checklist_input(self, indices, tags):
         # pylint: disable=no-self-use
         """Validate input and transform indices to appropriate tags.
@@ -373,7 +409,6 @@ class FileDisplay(object):
 
         self.outfile.write(side_frame)
 
-
     def _get_valid_int_ans(self, max_):
         """Get a numerical selection.
 
@@ -408,6 +443,7 @@ class FileDisplay(object):
                     "{0}** Invalid input **{0}".format(os.linesep))
 
         return OK, selection
+
 
 @zope.interface.implementer(interfaces.IDisplay)
 class NoninteractiveDisplay(object):
@@ -483,7 +519,6 @@ class NoninteractiveDisplay(object):
         else:
             return OK, default
 
-
     def yesno(self, message, yes_label=None, no_label=None, default=None, cli_flag=None):
         # pylint: disable=unused-argument
         """Decide Yes or No, without asking anybody
@@ -519,6 +554,25 @@ class NoninteractiveDisplay(object):
             self._interaction_fail(message, cli_flag, "? ".join(tags))
         else:
             return OK, default
+
+    def directory_select(self, message, default=None, cli_flag=None):
+        """Simulate prompting the user for a directory.
+
+        This function returns default if it is not ``None``, otherwise,
+        an exception is raised explaining the problem. If cli_flag is
+        not ``None``, the error message will include the flag that can
+        be used to set this value with the CLI.
+
+        :param str message: prompt to give the user
+        :param default: default value to return (if one exists)
+        :param str cli_flag: option used to set this value with the CLI
+
+        :returns: tuple of the form (`code`, `string`) where
+            `code` - int display exit code
+            `string` - input entered by the user
+
+        """
+        return self.input(message, default, cli_flag)
 
 
 def separate_list_input(input_):
