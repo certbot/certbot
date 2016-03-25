@@ -118,14 +118,16 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
                    "your existing configuration.\nThe error was: {1!r}"
                    .format(requested, plugins[requested].problem))
     elif cfg_type == "installer":
-        if os.path.exists("/etc/debian_version"):
-            # Debian... installers are at least possible
-            msg = ('No installers seem to be present and working on your system; '
-                   'fix that or try running letsencrypt with the "certonly" command')
+        if os.path.exists("/etc/debian_version") and le_util.exe_exists("apachectl"):
+            # Debian + Apache... installers are at least possible
+            msg = ('No certificate installer plugins were found on your system; '
+                   'fix that or run "letsencrypt certonly" to get a certificate '
+                   'you can install manually.')
         else:
             # XXX update this logic as we make progress on #788 and nginx support
-            msg = ('No installers are available on your OS yet; try running '
-                   '"letsencrypt-auto certonly" to get a cert you can install manually')
+            msg = ('No certificate installer plugins are available for your OS/'
+                   'webserver yet; try running "letsencrypt certonly" to get a '
+                   'certificate you can install manually')
     else:
         msg = "{0} could not be determined or is not installed".format(cfg_type)
     raise errors.PluginSelectionError(msg)
