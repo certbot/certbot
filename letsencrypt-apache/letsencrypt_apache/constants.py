@@ -18,7 +18,7 @@ CLI_DEFAULTS_DEBIAN = dict(
     handle_sites=True,
     challenge_location="/etc/apache2",
     MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-    "letsencrypt_apache", "options-ssl-apache.conf")
+        "letsencrypt_apache", "options-ssl-apache.conf")
 )
 CLI_DEFAULTS_CENTOS = dict(
     server_root="/etc/httpd",
@@ -35,7 +35,7 @@ CLI_DEFAULTS_CENTOS = dict(
     handle_sites=False,
     challenge_location="/etc/httpd/conf.d",
     MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-    "letsencrypt_apache", "centos-options-ssl-apache.conf")
+        "letsencrypt_apache", "centos-options-ssl-apache.conf")
 )
 CLI_DEFAULTS_GENTOO = dict(
     server_root="/etc/apache2",
@@ -52,7 +52,7 @@ CLI_DEFAULTS_GENTOO = dict(
     handle_sites=False,
     challenge_location="/etc/apache2/vhosts.d",
     MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-    "letsencrypt_apache", "options-ssl-apache.conf")
+        "letsencrypt_apache", "options-ssl-apache.conf")
 )
 CLI_DEFAULTS_DARWIN = dict(
     server_root="/etc/apache2",
@@ -69,7 +69,7 @@ CLI_DEFAULTS_DARWIN = dict(
     handle_sites=False,
     challenge_location="/etc/apache2/other",
     MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-    "letsencrypt_apache", "options-ssl-apache.conf")
+        "letsencrypt_apache", "options-ssl-apache.conf")
 )
 CLI_DEFAULTS = {
     "debian": CLI_DEFAULTS_DEBIAN,

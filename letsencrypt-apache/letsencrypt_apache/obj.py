@@ -208,7 +208,8 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
             # If equal and set is not empty... assume same server
             if self.name is not None or self.aliases:
                 return True
-        # If we're looking for a generic vhost, don't return one with a ServerName
+        # If we're looking for a generic vhost,
+        # don't return one with a ServerName
         elif self.name:
             return False
 
