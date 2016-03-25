@@ -52,7 +52,7 @@ class Plugin(object):
         NOTE: if you add argpase arguments such that users setting them can
         create a config entry that python's bool() would consider false (ie,
         the use might set the variable to "", [], 0, etc), please ensure that
-        cli._set_by_cli() works for your variable.
+        cli.set_by_cli() works for your variable.
 
         """
 
