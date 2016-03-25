@@ -118,7 +118,7 @@ class Addr(object):
             port = ''
             if len(str_addr) > endIndex + 2 and str_addr[endIndex + 1] == ':':
                 port = str_addr[endIndex + 2:]
-            return cls((host, port), True)
+            return cls((host, port), ipv6=True)
         else:
             tup = str_addr.partition(':')
             return cls((tup[0], tup[2]))
@@ -173,6 +173,9 @@ class Addr(object):
         """Explode IPv6 address for comparison"""
         result = ['0', '0', '0', '0', '0', '0', '0', '0']
         addr_list = addr.split(":")
+        if len(addr_list) > len(result):
+            # too long, truncate
+            addr_list = addr_list[0:len(result)]
         append_to_end = False
         for i in range(0, len(addr_list)):
             block = addr_list[i]

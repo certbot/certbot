@@ -84,6 +84,8 @@ class AddrTest(unittest.TestCase):
         self.addr4 = Addr.fromstring("[fe00::1]")
         self.addr5 = Addr.fromstring("[fe00::1]:*")
         self.addr6 = Addr.fromstring("[fe00::1]:80")
+        self.addr7 = Addr.fromstring("[fe00::1]:5")
+        self.addr8 = Addr.fromstring("[fe00:1:2:3:4:5:6:7:8:9]:8080")
 
     def test_fromstring(self):
         self.assertEqual(self.addr1.get_addr(), "192.168.1.1")
@@ -102,6 +104,9 @@ class AddrTest(unittest.TestCase):
                          "fe00:0:0:0:0:0:0:1")
         self.assertEqual(self.addr1.get_ipv6_exploded(),
                          "")
+        self.assertEqual(self.addr7.get_port(), "5")
+        self.assertEqual(self.addr7.get_ipv6_exploded(),
+                         "fe00:1:2:3:4:5:6:7")
 
     def test_str(self):
         self.assertEqual(str(self.addr1), "192.168.1.1")
