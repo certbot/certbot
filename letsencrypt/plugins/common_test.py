@@ -105,7 +105,7 @@ class AddrTest(unittest.TestCase):
         self.assertEqual(self.addr1.get_ipv6_exploded(),
                          "")
         self.assertEqual(self.addr7.get_port(), "5")
-        self.assertEqual(self.addr7.get_ipv6_exploded(),
+        self.assertEqual(self.addr8.get_ipv6_exploded(),
                          "fe00:1:2:3:4:5:6:7")
 
     def test_str(self):
