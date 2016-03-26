@@ -676,7 +676,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
     helpful.add(
         "security", "--staple-ocsp", action="store_true",
         help=" Enables OCSP Stapling. A valid OCSP response is stapled to"
-        "the certificate that the server offers during TLSl",
+        " the certificate that the server offers during TLS.",
         dest="stapling", default=None)
     helpful.add(
         "security", "--no-staple-ocsp", action="store_false",
