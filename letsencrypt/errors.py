@@ -25,6 +25,10 @@ class CertStorageError(Error):
     """Generic `.CertStorage` error."""
 
 
+class HookCommandNotFound(Error):
+    """Failed to find a hook command in the PATH."""
+
+
 # Auth Handler Errors
 class AuthorizationError(Error):
     """Authorization error."""

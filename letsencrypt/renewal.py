@@ -9,8 +9,13 @@ import traceback
 import six
 import zope.component
 
+import OpenSSL
+
 from letsencrypt import configuration
 from letsencrypt import cli
+from letsencrypt import constants
+
+from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import storage
 from letsencrypt.plugins import disco as plugins_disco
@@ -197,6 +202,48 @@ def should_renew(config, lineage):
         return True
     logger.info("Cert not yet due for renewal")
     return False
+
+
+def _avoid_invalidating_lineage(config, lineage, original_server):
+    "Do not renew a valid cert with one from a staging server!"
+    def _is_staging(srv):
+        return srv == constants.STAGING_URI or "staging" in srv
+
+    # Some lineages may have begun with --staging, but then had production certs
+    # added to them
+    latest_cert = OpenSSL.crypto.load_certificate(
+        OpenSSL.crypto.FILETYPE_PEM, open(lineage.cert).read())
+    # all our test certs are from happy hacker fake CA, though maybe one day
+    # we should test more methodically
+    now_valid = "fake" not in repr(latest_cert.get_issuer()).lower()
+
+    if _is_staging(config.server):
+        if not _is_staging(original_server) or now_valid:
+            if not config.break_my_certs:
+                names = ", ".join(lineage.names())
+                raise errors.Error(
+                    "You've asked to renew/replace a seemingly valid certificate with "
+                    "a test certificate (domains: {0}). We will not do that "
+                    "unless you use the --break-my-certs flag!".format(names))
+
+
+def renew_cert(config, domains, le_client, lineage):
+    "Renew a certificate lineage."
+    original_server = lineage.configuration["renewalparams"]["server"]
+    _avoid_invalidating_lineage(config, lineage, original_server)
+    new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
+    if config.dry_run:
+        logger.info("Dry run: skipping updating lineage at %s",
+                    os.path.dirname(lineage.cert))
+    else:
+        prior_version = lineage.latest_common_version()
+        new_cert = OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, new_certr.body.wrapped)
+        new_chain = crypto_util.dump_pyopenssl_chain(new_chain)
+        renewal_conf = configuration.RenewerConfiguration(config.namespace)
+        lineage.save_successor(prior_version, new_cert, new_key.pem, new_chain, renewal_conf)
+        lineage.update_all_links_to(lineage.latest_common_version())
+    # TODO: Check return value of save_successor
 
 
 def _renew_describe_results(config, renew_successes, renew_failures,

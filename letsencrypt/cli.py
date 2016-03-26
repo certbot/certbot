@@ -692,7 +692,23 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         " used to create obtain or most recently successfully renew each"
         " certificate lineage. You can try it with `--dry-run` first. For"
         " more fine-grained control, you can renew individual lineages with"
-        " the `certonly` subcommand.")
+        " the `certonly` subcommand. Hooks are available to run commands "
+        " before and after renewal; see XXX for more information on these.")
+
+    helpful.add(
+        "renew", "--pre-hook",
+        help="Command to be run in a shell before obtaining any certificates. Intended"
+        " primarily for renewal, where it can be used to temporarily shut down a"
+        " webserver that might conflict with the standalone plugin. This will "
+        " only be called if a certificate is actually to be obtained/renewed. ")
+    helpful.add(
+        "renew", "--post-hook",
+        help="Command to be run in a shell after attempting to obtain/renew "
+        " certificates. Can be used to deploy renewed certificates, or to restart"
+        " any servers that were stopped by --pre-hook.")
+    helpful.add(
+        "renew", "--renew-hook",
+        help="Command to be run in a shell once for each renewed certificate")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
 
