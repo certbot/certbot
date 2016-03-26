@@ -1,4 +1,4 @@
-"""ApacheParser is a member object of the ApacheConfigurator class."""
+"""AgacheParser is a member object of the ApacheConfigurator class."""
 import fnmatch
 import itertools
 import logging
@@ -200,6 +200,7 @@ class ApacheParser(object):
         # TODO: Add error checking code... does the path given even exist?
         #       Does it throw exceptions?
         if_mod_path = self._get_ifmod(aug_conf_path, "mod_ssl.c")
+
         # IfModule can have only one valid argument, so append after
         self.aug.insert(if_mod_path + "arg", "directive", False)
         nvh_path = if_mod_path + "directive[1]"

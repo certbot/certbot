@@ -593,7 +593,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         loc = parser.get_aug_path(self.parser.loc["name"])
-
         if addr.get_port() == "443":
             path = self.parser.add_dir_to_ifmodssl(
                 loc, "NameVirtualHost", [str(addr)])
@@ -974,10 +973,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         min_apache_ver = (2,4,0) # min apache ver that supports ocsp stapling
         if self.get_version() >= min_apache_ver:
+
             self.parser.add_dir(ssl_vhost.path, "SSLUseStapling", "on")
-            self.parser.add_dir_to_ifmodssl(ssl_vhost.filep,
+
+            ssl_vhost_aug_path = parser.get_aug_path(ssl_vhost.filep)
+            self.parser.add_dir_to_ifmodssl(ssl_vhost_aug_path,
                     "SSLStaplingCache",
-                    ["shmcb:tmp/stapling_cache(128000)"])
+                    ["shmcb:/tmp/stapling_cache(128000)"])
             #TODO Add notes
             self.save_notes+= "ocsp stapling\n"
 
