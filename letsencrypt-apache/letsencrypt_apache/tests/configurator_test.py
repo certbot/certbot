@@ -788,10 +788,13 @@ class MultipleVhostsTest(util.ApacheTest):
 
         # Get the ssl vhost for letsencrypt.demo
         ssl_vhost = self.config.assoc["letsencrypt.demo"]
-        import ipdb; ipdb.set_trace() 
 
         ssl_use_stapling = self.config.parser.find_dir(
             "SSLUseStapling", "on", ssl_vhost.path)
+
+        self.assertEqual(len(ssl_use_stapling), 1)
+
+        #TODO: add test for the ocsp cache
        
 
 
