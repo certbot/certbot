@@ -4,6 +4,7 @@ import logging
 import pkg_resources
 
 import zope.interface
+import zope.interface.verify
 
 from letsencrypt import constants
 from letsencrypt import errors
