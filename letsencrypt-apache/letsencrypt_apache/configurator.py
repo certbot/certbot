@@ -131,7 +131,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.vhosts = None
         self._enhance_func = {"redirect": self._enable_redirect,
                               "ensure-http-header": self._set_http_header,
-                              "ocsp-stapling": self._enable_ocsp_stapling}
+                              "staple-ocsp": self._enable_ocsp_stapling}
 
     @property
     def mod_ssl_conf(self):

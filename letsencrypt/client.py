@@ -410,7 +410,7 @@ class Client(object):
             self.apply_enhancement(domains, "ensure-http-header",
                     "Upgrade-Insecure-Requests")
         if stapling:
-            self.apply_enhancement(domains, "ocsp-stapling")
+            self.apply_enhancement(domains, "staple-ocsp")
 
         msg = ("We were unable to restart web server")
         if redirect or hsts or uir or stapling:
