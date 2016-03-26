@@ -992,6 +992,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # SSLStaplingCache /tmp/ocsp_stapling
             # The OS usually cleans /tmp on reboot, which means that the server
             # Would have to query LetsEncrypt's OCSP Responder (akamai) again.
+            # We want to avoid that.
             # Then we'll plant a new directive
             if stapling_cache_aug_path:
                 self.aug.remove(
@@ -1001,23 +1002,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     "SSLStaplingCache",
                     ["shmcb:/var/run/apache2/stapling_cache(128000)"])
 
+            # TODO save notes.
             self.save_notes+= "ocsp stapling\n"
 
             self.save() 
-
-    def _is_rewrite_engine_on(self, vhost):
-        """Checks if a RewriteEngine directive is on
-
-        :param vhost: vhost to check
-        :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
-
-        """
-        rewrite_engine_path = self.parser.find_dir("RewriteEngine", "on",
-                                                   start=vhost.path)
-        if rewrite_engine_path:
-            return self.parser.get_arg(rewrite_engine_path[0])
-        return False
-
 
     def _set_http_header(self, ssl_vhost, header_substring):
         """Enables header that is identified by header_substring on ssl_vhost.
