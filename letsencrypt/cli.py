@@ -674,6 +674,17 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         " upgrade-insecure-requests\" header to every HTTP response.",
         dest="uir", default=None)
     helpful.add(
+        "security", "--stapling", action="store_true",
+        help=" Enables OCSP Stapling. A valid OCSP response is stapled to"
+        "the certificate that the server offers during TLSl",
+        dest="stapling", default=None)
+    helpful.add(
+        "security", "--no-stapling", action="store_false",
+        help=" Do not automatically enable OCSP Stapling.",
+        dest="stapling", default=None)
+
+
+    helpful.add(
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
