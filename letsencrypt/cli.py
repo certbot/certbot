@@ -646,6 +646,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
     helpful.add(
         "security", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
+    
     helpful.add(
         "security", "--redirect", action="store_true",
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
@@ -677,11 +678,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "security", "--staple-ocsp", action="store_true",
         help=" Enables OCSP Stapling. A valid OCSP response is stapled to"
         " the certificate that the server offers during TLS.",
-        dest="stapling", default=None)
+        dest="staple", default=None)
     helpful.add(
         "security", "--no-staple-ocsp", action="store_false",
         help=" Do not automatically enable OCSP Stapling.",
-        dest="stapling", default=None)
+        dest="staple", default=None)
 
 
     helpful.add(

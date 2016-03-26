@@ -939,7 +939,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     ######################################################################
     def supported_enhancements(self):  # pylint: disable=no-self-use
         """Returns currently supported enhancements."""
-        return ["redirect", "ensure-http-header", "ocsp-stapling"]
+        return ["redirect", "ensure-http-header", "staple-ocsp"]
 
     def enhance(self, domain, enhancement, options=None):
         """Enhance configuration.

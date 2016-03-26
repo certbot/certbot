@@ -395,8 +395,9 @@ class Client(object):
         redirect  = config.redirect if "redirect" in supported else False
         hsts      = config.hsts if "ensure-http-header" in supported else False
         uir       = config.uir if "ensure-http-header"  in supported else False
-        stapling  = config.stapling if "stape-ocsp" in supported else False
-
+        import ipdb; ipdb.set_trace()
+        staple    = config.staple if "staple-ocsp" in supported else False
+        
         if redirect is None:
             redirect = enhancements.ask("redirect")
 
@@ -409,11 +410,11 @@ class Client(object):
         if uir:
             self.apply_enhancement(domains, "ensure-http-header",
                     "Upgrade-Insecure-Requests")
-        if stapling:
+        if staple:
             self.apply_enhancement(domains, "staple-ocsp")
 
         msg = ("We were unable to restart web server")
-        if redirect or hsts or uir or stapling:
+        if redirect or hsts or uir or staple:
             with error_handler.ErrorHandler(self._rollback_and_restart, msg):
                 self.installer.restart()
 
