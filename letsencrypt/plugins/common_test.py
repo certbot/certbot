@@ -81,6 +81,11 @@ class AddrTest(unittest.TestCase):
         self.addr1 = Addr.fromstring("192.168.1.1")
         self.addr2 = Addr.fromstring("192.168.1.1:*")
         self.addr3 = Addr.fromstring("192.168.1.1:80")
+        self.addr4 = Addr.fromstring("[fe00::1]")
+        self.addr5 = Addr.fromstring("[fe00::1]:*")
+        self.addr6 = Addr.fromstring("[fe00::1]:80")
+        self.addr7 = Addr.fromstring("[fe00::1]:5")
+        self.addr8 = Addr.fromstring("[fe00:1:2:3:4:5:6:7:8:9]:8080")
 
     def test_fromstring(self):
         self.assertEqual(self.addr1.get_addr(), "192.168.1.1")
@@ -89,21 +94,48 @@ class AddrTest(unittest.TestCase):
         self.assertEqual(self.addr2.get_port(), "*")
         self.assertEqual(self.addr3.get_addr(), "192.168.1.1")
         self.assertEqual(self.addr3.get_port(), "80")
+        self.assertEqual(self.addr4.get_addr(), "[fe00::1]")
+        self.assertEqual(self.addr4.get_port(), "")
+        self.assertEqual(self.addr5.get_addr(), "[fe00::1]")
+        self.assertEqual(self.addr5.get_port(), "*")
+        self.assertEqual(self.addr6.get_addr(), "[fe00::1]")
+        self.assertEqual(self.addr6.get_port(), "80")
+        self.assertEqual(self.addr6.get_ipv6_exploded(),
+                         "fe00:0:0:0:0:0:0:1")
+        self.assertEqual(self.addr1.get_ipv6_exploded(),
+                         "")
+        self.assertEqual(self.addr7.get_port(), "5")
+        self.assertEqual(self.addr8.get_ipv6_exploded(),
+                         "fe00:1:2:3:4:5:6:7")
 
     def test_str(self):
         self.assertEqual(str(self.addr1), "192.168.1.1")
         self.assertEqual(str(self.addr2), "192.168.1.1:*")
         self.assertEqual(str(self.addr3), "192.168.1.1:80")
+        self.assertEqual(str(self.addr4), "[fe00::1]")
+        self.assertEqual(str(self.addr5), "[fe00::1]:*")
+        self.assertEqual(str(self.addr6), "[fe00::1]:80")
 
     def test_get_addr_obj(self):
         self.assertEqual(str(self.addr1.get_addr_obj("443")), "192.168.1.1:443")
         self.assertEqual(str(self.addr2.get_addr_obj("")), "192.168.1.1")
         self.assertEqual(str(self.addr1.get_addr_obj("*")), "192.168.1.1:*")
+        self.assertEqual(str(self.addr4.get_addr_obj("443")), "[fe00::1]:443")
+        self.assertEqual(str(self.addr5.get_addr_obj("")), "[fe00::1]")
+        self.assertEqual(str(self.addr4.get_addr_obj("*")), "[fe00::1]:*")
 
     def test_eq(self):
         self.assertEqual(self.addr1, self.addr2.get_addr_obj(""))
         self.assertNotEqual(self.addr1, self.addr2)
         self.assertFalse(self.addr1 == 3333)
+
+        self.assertEqual(self.addr4, self.addr4.get_addr_obj(""))
+        self.assertNotEqual(self.addr4, self.addr5)
+        self.assertFalse(self.addr4 == 3333)
+        from letsencrypt.plugins.common import Addr
+        self.assertEqual(self.addr4, Addr.fromstring("[fe00:0:0::1]"))
+        self.assertEqual(self.addr4, Addr.fromstring("[fe00:0::0:0:1]"))
+
 
     def test_set_inclusion(self):
         from letsencrypt.plugins.common import Addr
@@ -113,6 +145,13 @@ class AddrTest(unittest.TestCase):
         set_b = set([addr1b, addr2b])
 
         self.assertEqual(set_a, set_b)
+
+        set_c = set([self.addr4, self.addr5])
+        addr4b = Addr.fromstring("[fe00::1]")
+        addr5b = Addr.fromstring("[fe00::1]:*")
+        set_d = set([addr4b, addr5b])
+
+        self.assertEqual(set_c, set_d)
 
 
 class TLSSNI01Test(unittest.TestCase):
