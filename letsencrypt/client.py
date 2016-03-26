@@ -395,7 +395,6 @@ class Client(object):
         redirect  = config.redirect if "redirect" in supported else False
         hsts      = config.hsts if "ensure-http-header" in supported else False
         uir       = config.uir if "ensure-http-header"  in supported else False
-        import ipdb; ipdb.set_trace()
         staple    = config.staple if "staple-ocsp" in supported else False
         
         if redirect is None:
