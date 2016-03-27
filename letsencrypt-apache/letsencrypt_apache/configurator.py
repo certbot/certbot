@@ -969,13 +969,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def _enable_ocsp_stapling(self, ssl_vhost, unused_options):
         """Enables OCSP Stapling
-        
+
         In OCSP, each client (e.g. browser) would have to query the
         OCSP Responder to validate that the site certificate was not revoked.
-        
+
         Enabling OCSP Stapling, would allow the web-server to query the OCSP
         Responder, and staple its response to the offered certificate during
-        TLS. i.e. clients would not have to query the OCSP responder. 
+        TLS. i.e. clients would not have to query the OCSP responder.
 
         .. note:: This function saves the configuration
 
@@ -989,11 +989,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: (bool, :class:`~letsencrypt_apache.obj.VirtualHost`)
 
         """
-        min_apache_ver = (2,4) #TODO check min apache ver that supports stapling
+        min_apache_ver = (2, 4) #TODO check min apache ver that supports stapling
         if self.version >= min_apache_ver:
             if "socache_shmcb_module" not in self.parser.modules:
                 self.enable_mod("socache_shmcb")
- 
+
             # Check if there's an existing SSLUseStapling directive on.
             use_stapling_aug_path = self.parser.find_dir("SSLUseStapling",
                     "on", start=ssl_vhost.path)
@@ -1005,7 +1005,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # Check if there's an existing SSLStaplingCache directive.
             stapling_cache_aug_path = self.parser.find_dir('SSLStaplingCache',
                     None, ssl_vhost_aug_path)
-            
+
             # We'll simply delete the directive, as it might be something like
             # SSLStaplingCache /tmp/ocsp_stapling
             # The OS usually cleans /tmp on reboot, which means that the server
@@ -1014,16 +1014,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # Then we'll plant a new directive
             if stapling_cache_aug_path:
                 self.aug.remove(
-                        re.sub(r"/\w*$", "",stapling_cache_aug_path[0]))
+                        re.sub(r"/\w*$", "", stapling_cache_aug_path[0]))
 
             self.parser.add_dir_to_ifmodssl(ssl_vhost_aug_path,
                     "SSLStaplingCache",
                     ["shmcb:/var/run/apache2/stapling_cache(128000)"])
 
-            msg = "OCSP Stapling was enabled to SSL Vhost: %s.\n"
-                %(ssl_vhost.filep)
-            self.save_notes+=msg
-            self.save() 
+            msg = "OCSP Stapling was enabled to SSL Vhost: %s.\n"%(
+                    ssl_vhost.filep)
+            self.save_notes += msg
+            self.save()
 
             logger.info(msg)
 

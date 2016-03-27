@@ -116,7 +116,7 @@ class MultipleVhostsTest(util.ApacheTest):
         # pylint: disable=protected-access
         self.config._add_servernames(ssl_vh1)
         self.assertTrue(
-                self.config._add_servername_alias("oy_vey",ssl_vh1) is None)
+                self.config._add_servername_alias("oy_vey", ssl_vh1) is None)
 
     def test_add_servernames_alias(self):
         self.config.parser.add_dir(
@@ -774,7 +774,9 @@ class MultipleVhostsTest(util.ApacheTest):
         ssl_vh1 = obj.VirtualHost(
             "fp1", "ap1", set([obj.Addr(("*", "443"))]),
             True, False)
-        mock_sel_vhost.return_value =  None
+        ssl_vh1.name = "satoshi.com"
+        self.config.vhosts.append(ssl_vh1)
+        mock_sel_vhost.return_value = None
 
         self.assertRaises(
             errors.PluginError,
@@ -812,7 +814,7 @@ class MultipleVhostsTest(util.ApacheTest):
                     ssl_vhost_aug_path)
 
         self.assertEqual(len(stapling_cache_aug_path), 1)
-    
+
     @mock.patch("letsencrypt.le_util.exe_exists")
     def test_ocsp_stapling_twice(self, mock_exe):
         self.config.parser.update_runtime_variables = mock.Mock()
@@ -823,7 +825,7 @@ class MultipleVhostsTest(util.ApacheTest):
         # This will create an ssl vhost for letsencrypt.demo
         self.config.enhance("letsencrypt.demo", "staple-ocsp")
 
-        # Checking the case with prior ocsp stapling confiugration 
+        # Checking the case with prior ocsp stapling confiugration
         self.config.enhance("letsencrypt.demo", "staple-ocsp")
 
         # Get the ssl vhost for letsencrypt.demo
@@ -847,9 +849,11 @@ class MultipleVhostsTest(util.ApacheTest):
             True, False)
         ssl_vh.name = "satoshi.com"
         self.config.vhosts.append(ssl_vh)
+
+        # pylint: disable=protected-access
         http_vh = self.config._get_http_vhost(ssl_vh)
         self.assertTrue(http_vh.ssl == False)
-            
+
     @mock.patch("letsencrypt.le_util.run_script")
     @mock.patch("letsencrypt.le_util.exe_exists")
     def test_http_header_hsts(self, mock_exe, _):
@@ -911,7 +915,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
         # four args to HSTS header
         self.assertEqual(len(uir_header), 4)
-    
+
     def test_http_header_uir_twice(self):
         self.config.parser.modules.add("mod_ssl.c")
         # skip the enable mod
@@ -1045,7 +1049,7 @@ class MultipleVhostsTest(util.ApacheTest):
         # pylint: disable=protected-access
         self.config._enable_redirect(self.vh_truth[1], "")
         self.assertEqual(len(self.config.vhosts), 8)
-    
+
     def test_sift_line(self):
         # pylint: disable=protected-access
         small_quoted_target = "RewriteRule ^ \"http://\""

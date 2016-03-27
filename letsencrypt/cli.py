@@ -646,7 +646,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
     helpful.add(
         "security", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
-    
+
     helpful.add(
         "security", "--redirect", action="store_true",
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "

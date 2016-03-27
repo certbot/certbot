@@ -392,11 +392,11 @@ class Client(object):
             raise errors.Error("No config available")
 
         supported = self.installer.supported_enhancements()
-        redirect  = config.redirect if "redirect" in supported else False
-        hsts      = config.hsts if "ensure-http-header" in supported else False
-        uir       = config.uir if "ensure-http-header"  in supported else False
-        staple    = config.staple if "staple-ocsp" in supported else False
-        
+        redirect = config.redirect if "redirect" in supported else False
+        hsts = config.hsts if "ensure-http-header" in supported else False
+        uir = config.uir if "ensure-http-header"  in supported else False
+        staple = config.staple if "staple-ocsp" in supported else False
+
         if redirect is None:
             redirect = enhancements.ask("redirect")
 
