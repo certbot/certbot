@@ -109,6 +109,15 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertTrue("google.com" in names)
         self.assertTrue("letsencrypt.demo" in names)
 
+    def test_bad_servername_alias(self):
+        ssl_vh1 = obj.VirtualHost(
+            "fp1", "ap1", set([obj.Addr(("*", "443"))]),
+            True, False)
+        # pylint: disable=protected-access
+        self.config._add_servernames(ssl_vh1)
+        self.assertTrue(
+                self.config._add_servername_alias("oy_vey",ssl_vh1) is None)
+
     def test_add_servernames_alias(self):
         self.config.parser.add_dir(
             self.vh_truth[2].path, "ServerAlias", ["*.le.co"])
@@ -757,6 +766,20 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_supported_enhancements(self):
         self.assertTrue(isinstance(self.config.supported_enhancements(), list))
 
+    @mock.patch("letsencrypt_apache.display_ops.select_vhost")
+    @mock.patch("letsencrypt.le_util.exe_exists")
+    def test_enhance_unknown_vhost(self, mock_exe, mock_sel_vhost):
+        self.config.parser.modules.add("rewrite_module")
+        mock_exe.return_value = True
+        ssl_vh1 = obj.VirtualHost(
+            "fp1", "ap1", set([obj.Addr(("*", "443"))]),
+            True, False)
+        mock_sel_vhost.return_value =  None
+
+        self.assertRaises(
+            errors.PluginError,
+            self.config.enhance, "satoshi.com", "redirect")
+
     def test_enhance_unknown_enhancement(self):
         self.assertRaises(
             errors.PluginError,
@@ -818,7 +841,15 @@ class MultipleVhostsTest(util.ApacheTest):
 
         self.assertEqual(len(stapling_cache_aug_path), 1)
 
-    
+    def test_get_http_vhost_third_filter(self):
+        ssl_vh = obj.VirtualHost(
+            "fp", "ap", set([obj.Addr(("*", "443"))]),
+            True, False)
+        ssl_vh.name = "satoshi.com"
+        self.config.vhosts.append(ssl_vh)
+        http_vh = self.config._get_http_vhost(ssl_vh)
+        self.assertTrue(http_vh.ssl == False)
+            
     @mock.patch("letsencrypt.le_util.run_script")
     @mock.patch("letsencrypt.le_util.exe_exists")
     def test_http_header_hsts(self, mock_exe, _):
@@ -880,7 +911,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
         # four args to HSTS header
         self.assertEqual(len(uir_header), 4)
-
+    
     def test_http_header_uir_twice(self):
         self.config.parser.modules.add("mod_ssl.c")
         # skip the enable mod
@@ -1014,7 +1045,7 @@ class MultipleVhostsTest(util.ApacheTest):
         # pylint: disable=protected-access
         self.config._enable_redirect(self.vh_truth[1], "")
         self.assertEqual(len(self.config.vhosts), 8)
-
+    
     def test_sift_line(self):
         # pylint: disable=protected-access
         small_quoted_target = "RewriteRule ^ \"http://\""
