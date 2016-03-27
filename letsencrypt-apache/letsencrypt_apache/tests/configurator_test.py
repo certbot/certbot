@@ -15,6 +15,7 @@ from letsencrypt import errors
 from letsencrypt.tests import acme_util
 
 from letsencrypt_apache import configurator
+from letsencrypt_apache import parser
 from letsencrypt_apache import obj
 
 from letsencrypt_apache.tests import util
@@ -774,29 +775,61 @@ class MultipleVhostsTest(util.ApacheTest):
             errors.PluginError,
             self.config.enhance, "letsencrypt.demo", "unknown_enhancement")
 
+    @mock.patch("letsencrypt.le_util.run_script")
     @mock.patch("letsencrypt.le_util.exe_exists")
-    def test_ocsp_stapling(self, mock_exe):
+    def test_ocsp_stapling(self, mock_exe, mock_run_script):
         self.config.parser.update_runtime_variables = mock.Mock()
         self.config.parser.modules.add("mod_ssl.c")
         mock_exe.return_value = True
- 
-        #self.config.parser.modules.add("mod_ssl.c")
-        #self.config.parser.modules.add("socache_shmcb_module")
 
         # This will create an ssl vhost for letsencrypt.demo
-        self.config.enhance("letsencrypt.demo", "ocsp-stapling")
+        self.config.enhance("letsencrypt.demo", "staple-ocsp")
+
+        self.assertTrue("socache_shmcb_module" in self.config.parser.modules)
+        self.assertTrue(mock_run_script.called)
 
         # Get the ssl vhost for letsencrypt.demo
         ssl_vhost = self.config.assoc["letsencrypt.demo"]
 
-        ssl_use_stapling = self.config.parser.find_dir(
+        ssl_use_stapling_aug_path = self.config.parser.find_dir(
             "SSLUseStapling", "on", ssl_vhost.path)
 
-        self.assertEqual(len(ssl_use_stapling), 1)
+        self.assertEqual(len(ssl_use_stapling_aug_path), 1)
 
-        #TODO: add test for the ocsp cache
-       
+        ssl_vhost_aug_path = parser.get_aug_path(ssl_vhost.filep)
+        stapling_cache_aug_path = self.config.parser.find_dir('SSLStaplingCache',
+                    "shmcb:/var/run/apache2/stapling_cache(128000)",
+                    ssl_vhost_aug_path)
 
+        self.assertEqual(len(stapling_cache_aug_path), 1)
+    
+    @mock.patch("letsencrypt.le_util.exe_exists")
+    def test_ocsp_stapling_twice(self, mock_exe):
+        self.config.parser.update_runtime_variables = mock.Mock()
+        self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules.add("socache_shmcb_module")
+        mock_exe.return_value = True
+
+        # This will create an ssl vhost for letsencrypt.demo
+        self.config.enhance("letsencrypt.demo", "staple-ocsp")
+
+        # Checking the case with prior ocsp stapling confiugration 
+        self.config.enhance("letsencrypt.demo", "staple-ocsp")
+
+        # Get the ssl vhost for letsencrypt.demo
+        ssl_vhost = self.config.assoc["letsencrypt.demo"]
+
+        ssl_use_stapling_aug_path = self.config.parser.find_dir(
+            "SSLUseStapling", "on", ssl_vhost.path)
+
+        self.assertEqual(len(ssl_use_stapling_aug_path), 1)
+
+        ssl_vhost_aug_path = parser.get_aug_path(ssl_vhost.filep)
+        stapling_cache_aug_path = self.config.parser.find_dir('SSLStaplingCache',
+                    "shmcb:/var/run/apache2/stapling_cache(128000)",
+                    ssl_vhost_aug_path)
+
+        self.assertEqual(len(stapling_cache_aug_path), 1)
 
     @mock.patch("letsencrypt.le_util.run_script")
     @mock.patch("letsencrypt.le_util.exe_exists")
