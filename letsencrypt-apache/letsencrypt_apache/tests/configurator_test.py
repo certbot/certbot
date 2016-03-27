@@ -791,7 +791,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
     @mock.patch("letsencrypt.le_util.run_script")
     @mock.patch("letsencrypt.le_util.exe_exists")
-    def test_ocsp_stapling(self, mock_exe, mock_run_script, mock_get):
+    def test_ocsp_stapling(self, mock_exe, mock_run_script):
         self.config.parser.update_runtime_variables = mock.Mock()
         self.config.parser.modules.add("mod_ssl.c")
         mock_exe.return_value = True
