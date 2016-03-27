@@ -968,9 +968,26 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise
 
     def _enable_ocsp_stapling(self, ssl_vhost, unused_options):
-        #TODO: finish comment
         """Enables OCSP Stapling
-    
+        
+        In OCSP, each client (e.g. browser) would have to query the
+        OCSP Responder to validate that the site certificate was not revoked.
+        
+        Enabling OCSP Stapling, would allow the web-server to query the OCSP
+        Responder, and staple its response to the offered certificate during
+        TLS. i.e. clients would not have to query the OCSP responder. 
+
+        .. note:: This function saves the configuration
+
+        :param ssl_vhost: Destination of traffic, an ssl enabled vhost
+        :type ssl_vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
+
+        :param unused_options: Not currently used
+        :type unused_options: Not Available
+
+        :returns: Success, general_vhost (HTTP vhost)
+        :rtype: (bool, :class:`~letsencrypt_apache.obj.VirtualHost`)
+
         """
         min_apache_ver = (2,4) #TODO check min apache ver that supports stapling
         if self.version >= min_apache_ver:
@@ -1003,10 +1020,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     "SSLStaplingCache",
                     ["shmcb:/var/run/apache2/stapling_cache(128000)"])
 
-            # TODO save notes.
-            self.save_notes+= "ocsp stapling\n"
-
+            msg = "OCSP Stapling was enabled to SSL Vhost: %s.\n"
+                %(ssl_vhost.filep)
+            self.save_notes+=msg
             self.save() 
+
+            logger.info(msg)
 
     def _set_http_header(self, ssl_vhost, header_substring):
         """Enables header that is identified by header_substring on ssl_vhost.
