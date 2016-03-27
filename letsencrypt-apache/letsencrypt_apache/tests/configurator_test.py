@@ -767,7 +767,8 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertTrue(isinstance(self.config.supported_enhancements(), list))
 
     @mock.patch("letsencrypt_apache.configurator.ApacheConfigurator._get_http_vhost")
-    @mock.patch("letsencrypt_apache.display_ops.select_vhost") @mock.patch("letsencrypt.le_util.exe_exists")
+    @mock.patch("letsencrypt_apache.display_ops.select_vhost")
+    @mock.patch("letsencrypt.le_util.exe_exists")
     def test_enhance_unknown_vhost(self, mock_exe, mock_sel_vhost, mock_get):
         self.config.parser.modules.add("rewrite_module")
         mock_exe.return_value = True
