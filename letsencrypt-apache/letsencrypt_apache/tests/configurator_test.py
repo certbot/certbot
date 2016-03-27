@@ -766,9 +766,9 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_supported_enhancements(self):
         self.assertTrue(isinstance(self.config.supported_enhancements(), list))
 
-    @mock.patch("letsencrypt_apache.display_ops.select_vhost")
-    @mock.patch("letsencrypt.le_util.exe_exists")
-    def test_enhance_unknown_vhost(self, mock_exe, mock_sel_vhost):
+    @mock.patch("letsencrypt_apache.configurator.ApacheConfigurator._get_http_vhost")
+    @mock.patch("letsencrypt_apache.display_ops.select_vhost") @mock.patch("letsencrypt.le_util.exe_exists")
+    def test_enhance_unknown_vhost(self, mock_exe, mock_sel_vhost, mock_get):
         self.config.parser.modules.add("rewrite_module")
         mock_exe.return_value = True
         ssl_vh1 = obj.VirtualHost(
@@ -777,6 +777,7 @@ class MultipleVhostsTest(util.ApacheTest):
         ssl_vh1.name = "satoshi.com"
         self.config.vhosts.append(ssl_vh1)
         mock_sel_vhost.return_value = None
+        mock_get.return_value = None
 
         self.assertRaises(
             errors.PluginError,
@@ -789,7 +790,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
     @mock.patch("letsencrypt.le_util.run_script")
     @mock.patch("letsencrypt.le_util.exe_exists")
-    def test_ocsp_stapling(self, mock_exe, mock_run_script):
+    def test_ocsp_stapling(self, mock_exe, mock_run_script, mock_get):
         self.config.parser.update_runtime_variables = mock.Mock()
         self.config.parser.modules.add("mod_ssl.c")
         mock_exe.return_value = True
