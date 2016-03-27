@@ -757,19 +757,6 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_supported_enhancements(self):
         self.assertTrue(isinstance(self.config.supported_enhancements(), list))
 
-    @mock.patch("letsencrypt.le_util.exe_exists")
-    def test_enhance_unknown_vhost(self, mock_exe):
-        self.config.parser.modules.add("rewrite_module")
-        mock_exe.return_value = True
-        ssl_vh = obj.VirtualHost(
-            "fp", "ap", set([obj.Addr(("*", "443"))]),
-            True, False)
-        ssl_vh.name = "satoshi.com"
-        self.config.vhosts.append(ssl_vh)
-        self.assertRaises(
-            errors.PluginError,
-            self.config.enhance, "satoshi.com", "redirect")
-
     def test_enhance_unknown_enhancement(self):
         self.assertRaises(
             errors.PluginError,
@@ -831,6 +818,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
         self.assertEqual(len(stapling_cache_aug_path), 1)
 
+    
     @mock.patch("letsencrypt.le_util.run_script")
     @mock.patch("letsencrypt.le_util.exe_exists")
     def test_http_header_hsts(self, mock_exe, _):
