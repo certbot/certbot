@@ -1,5 +1,4 @@
-"""AgacheParser is a member object of the ApacheConfigurator class."""
-import fnmatch
+"""ApacheParser is a member object of the ApacheConfigurator class.""" import fnmatch
 import itertools
 import logging
 import os
