@@ -3,6 +3,7 @@ import sys
 import string
 import os, os.path
 
+
 def parse_line(line_data):
     """
     Return the (line number, left hand side, right hand side) of a stripped
@@ -17,14 +18,29 @@ def parse_line(line_data):
         return None
     return (num, left.strip(), right.strip())
 
+
 class ExistingConfigError(ValueError): pass
 
+
 class PostfixConfigGenerator:
-    def __init__(self, policy_config, postfix_dir, fixup=False):
+    def __init__(self, policy_config, postfix_dir, fixup=False, fopen=open):
         self.fixup          = fixup
         self.postfix_dir    = postfix_dir
         self.policy_config  = policy_config
         self.policy_file    = os.path.join(postfix_dir, "starttls_everywhere_policy")
+
+        self.additions = []
+        self.deletions = []
+        self.fn = self.find_postfix_cf()
+        self.raw_cf = fopen(self.fn).readlines()
+        self.cf = map(string.strip, self.raw_cf)
+        #self.cf = [line for line in cf if line and not line.startswith("#")]
+        self.policy_lines = []
+        self.new_cf = ""
+
+    def find_postfix_cf(self):
+        "Search far and wide for the correct postfix configuration file"
+        return os.path.join(self.postfix_dir, "main.cf")
 
     def ensure_cf_var(self, var, ideal, also_acceptable):
         """
@@ -60,13 +76,6 @@ class PostfixConfigGenerator:
         Try to ensure/mutate that the config file is in a sane state.
         Fixup means we'll delete existing lines if necessary to get there.
         """
-        self.additions = []
-        self.deletions = []
-        self.fn = self.find_postfix_cf()
-        self.raw_cf = open(self.fn).readlines()
-        self.cf = map(string.strip, self.raw_cf)
-        #self.cf = [line for line in cf if line and not line.startswith("#")]
-
         # Check we're currently accepting inbound STARTTLS sensibly
         self.ensure_cf_var("smtpd_use_tls", "yes", [])
         # Ideally we use it opportunistically in the outbound direction
@@ -91,7 +100,6 @@ class PostfixConfigGenerator:
         if self.raw_cf[-1][-1] == "\n":         sep = ""
         else:                                   sep = "\n"
 
-        self.new_cf = ""
         for num, line in enumerate(self.raw_cf):
             if self.fixup and num in self.deletions:
                 self.new_cf += "# Line removed by STARTTLS Everywhere\n# " + line
@@ -104,12 +112,7 @@ class PostfixConfigGenerator:
         f.write(self.new_cf)
         f.close()
 
-    def find_postfix_cf(self):
-        "Search far and wide for the correct postfix configuration file"
-        return os.path.join(self.postfix_dir, "main.cf")
-
     def set_domainwise_tls_policies(self):
-        self.policy_lines = []
         all_acceptable_mxs = self.policy_config.acceptable_mxs
         for address_domain, properties in all_acceptable_mxs.items():
             mx_list = properties.accept_mx_domains
@@ -152,7 +155,6 @@ class PostfixConfigGenerator:
             currently supported.
         """
         # XXX ensure we raise the right kinds of exceptions
-        self.postfix_cf_file = self.find_postfix_cf()
 
 
     def more_info(self):
