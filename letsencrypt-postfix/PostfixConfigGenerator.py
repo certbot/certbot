@@ -171,6 +171,15 @@ class PostfixConfigGenerator:
         """Returns all names that may be authenticated.
         :rtype: `list` of `str`
         """
+        var_names = ('myhostname', 'mydomain', 'myorigin')
+        names_found = set()
+        for num, line in enumerate(self.cf):
+            num, found_var, found_value = parse_line((num, line))
+            if found_var in var_names:
+                names_found.add(found_value)
+        name_list = list(names_found)
+        name_list.sort()
+        return name_list
 
     def deploy_cert(self, domain, _cert_path, key_path, _chain_path, fullchain_path):
         """Deploy certificate.

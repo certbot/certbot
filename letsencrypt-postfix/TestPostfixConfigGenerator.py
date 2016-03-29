@@ -48,7 +48,7 @@ class TestPostfixConfigGenerator(unittest.TestCase):
         pass
 
     def testGetAllNames(self):
-        sorted_names = ('fubard.org', 'mail.fubard.org')
+        sorted_names = ['fubard.org', 'mail.fubard.org']
         postfix_config_gen = pcg.PostfixConfigGenerator(
             self.config,
             self.postfix_dir,
