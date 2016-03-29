@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 import string
+import subprocess
 import os, os.path
 
 def parse_line(line_data):
@@ -148,13 +149,29 @@ class PostfixConfigGenerator:
         :raises .NoInstallationError:
             when the necessary programs/files cannot be located. Plugin
             will NOT be displayed on a list of available plugins.
-        :raises .NotSupportedError:
-            when the installation is recognized, but the version is not
-            currently supported.
-        """
+	:raises .NotSupportedError:
+	    when the installation is recognized, but the version is not
+	    currently supported.
+	:rtype tuple:
+	"""
         # XXX ensure we raise the right kinds of exceptions
         self.postfix_cf_file = self.find_postfix_cf()
 
+	# Parse Postfix version number (feature support, syntax changes etc.)
+	mail_version = subprocess.Popen(['/usr/sbin/postconf', '-d', 'mail_version'], \
+				stdout=subprocess.PIPE) \
+				.communicate()[0].split()[2]
+	maj, min, rev = mail_version.split('.')
+	
+	# Postfix has changed support for TLS features, supported protocol versions
+	# KEX methods, ciphers et cetera over the years. We sort out version dependend
+	# differences here and pass them onto other configuration functions.
+	# see:
+	#  http://www.postfix.org/TLS_README.html
+	#  http://www.postfix.org/FORWARD_SECRECY_README.html
+	self.postfix_version = mail_version
+	
+	return maj, min, rev
 
     def more_info(self):
         """Human-readable string to help the user.
