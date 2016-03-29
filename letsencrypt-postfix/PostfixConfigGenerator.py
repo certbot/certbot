@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 import string
+import subprocess
 import os, os.path
 
 
@@ -28,6 +29,7 @@ class PostfixConfigGenerator:
         self.postfix_dir    = postfix_dir
         self.policy_config  = policy_config
         self.policy_file    = os.path.join(postfix_dir, "starttls_everywhere_policy")
+        self.ca_file = os.path.join(postfix_dir, "starttls_everywhere_CAfile")
 
         self.additions = []
         self.deletions = []
@@ -56,7 +58,6 @@ class PostfixConfigGenerator:
             values = map(parse_line, l)
             if len(set(values)) > 1:
                 if self.fixup:
-                    #print "Scheduling deletions:" + `values`
                     conflicting_lines = [num for num,_var,val in values]
                     self.deletions.extend(conflicting_lines)
                     self.additions.append(var + " = " + ideal)
@@ -64,7 +65,6 @@ class PostfixConfigGenerator:
                     raise ExistingConfigError, "Conflicting existing config values " + `l`
             val = values[0][2]
             if val not in acceptable:
-                #print "Scheduling deletions:" + `values`
                 if self.fixup:
                     self.deletions.append(values[0][0])
                     self.additions.append(var + " = " + ideal)
@@ -86,7 +86,15 @@ class PostfixConfigGenerator:
         policy_cf_entry = "texthash:" + self.policy_file
 
         self.ensure_cf_var("smtp_tls_policy_maps", policy_cf_entry, [])
+        self.ensure_cf_var("smtp_tls_CAfile", self.ca_file, [])
 
+	# Disable SSLv2 and SSLv3. Syntax for `smtp_tls_protocols` changed
+	# between Postfix version 2.5 and 2.6, since we only support => 2.11
+	# we don't use nor support legacy Postfix syntax.
+	# - Server:
+	self.ensure_cf_var("smtp_tls_protocols", "!SSLv2, !SSLv3", [])
+	# - Client:
+	self.ensure_cf_var("smtp_tls_mandatory_protocols", "!SSLv2, !SSLv3", [])
 
     def maybe_add_config_lines(self):
         if not self.additions:
@@ -107,10 +115,11 @@ class PostfixConfigGenerator:
                 self.new_cf += line
         self.new_cf += sep + new_cf_lines
 
-        #print self.new_cf
-        f = open(self.fn, "w")
-        f.write(self.new_cf)
-        f.close()
+        if not os.access(self.postfix_cf_file, os.W_OK):
+            raise Exception("Can't write to %s, please re-run as root."
+                % self.postfix_cf_file)
+        with open(self.fn, "w") as f:
+            f.write(self.new_cf)
 
     def set_domainwise_tls_policies(self):
         all_acceptable_mxs = self.policy_config.acceptable_mxs
@@ -124,11 +133,11 @@ class PostfixConfigGenerator:
             mx_policy = self.policy_config.get_tls_policy(mx_domain)
             entry = address_domain + " encrypt"
             if mx_policy.min_tls_version.lower() == "tlsv1":
-                entry += " protocols=!SSLv2,!SSLv3"
+                entry += " protocols=!SSLv2:!SSLv3"
             elif mx_policy.min_tls_version.lower() == "tlsv1.1":
-                entry += " protocols=!SSLv2,!SSLv3,!TLSv1"
+                entry += " protocols=!SSLv2:!SSLv3:!TLSv1"
             elif mx_policy.min_tls_version.lower() == "tlsv1.2":
-                entry += " protocols=!SSLv2,!SSLv3,!TLSv1,!TLSv1.1"
+                entry += " protocols=!SSLv2:!SSLv3:!TLSv1:!TLSv1.1"
             else:
                 print mx_policy.min_tls_version
             self.policy_lines.append(entry)
@@ -138,6 +147,7 @@ class PostfixConfigGenerator:
         f.close()
 
     ### Let's Encrypt client IPlugin ###
+    # https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/plugins/common.py#L35
 
     def prepare(self):
         """Prepare the plugin.
@@ -150,12 +160,65 @@ class PostfixConfigGenerator:
         :raises .NoInstallationError:
             when the necessary programs/files cannot be located. Plugin
             will NOT be displayed on a list of available plugins.
-        :raises .NotSupportedError:
-            when the installation is recognized, but the version is not
-            currently supported.
-        """
+	:raises .NotSupportedError:
+	    when the installation is recognized, but the version is not
+	    currently supported.
+	:rtype tuple:
+	"""
         # XXX ensure we raise the right kinds of exceptions
 
+	# Parse Postfix version number (feature support, syntax changes etc.)
+	mail_version = subprocess.Popen(['/usr/sbin/postconf', '-d', 'mail_version'], \
+				stdout=subprocess.PIPE) \
+				.communicate()[0].split()[2]
+	maj, min, rev = mail_version.split('.')
+	self.postfix_version = mail_version
+	
+	# Postfix has changed support for TLS features, supported protocol versions
+	# KEX methods, ciphers et cetera over the years. We sort out version dependend
+	# differences here and pass them onto other configuration functions.
+	# see:
+	#  http://www.postfix.org/TLS_README.html
+	#  http://www.postfix.org/FORWARD_SECRECY_README.html
+
+	# Postfix == 2.2:
+	# - TLS support introduced via 3rd party patch, see:
+	#   http://www.postfix.org/TLS_LEGACY_README.html
+	
+	# Postfix => 2.2:
+	# - built-in TLS support added
+	# - Support for PFS introduced
+	# - Support for (E)DHE params >= 1024bit (need to be generated), default 1k
+
+	# Postfix => 2.5:
+	# - Syntax to specify mandatory protocol version changes:
+	#   *  < 2.5: `smtpd_tls_mandatory_protocols = TLSv1`
+	#   * => 2.5: `smtpd_tls_mandatory_protocols = !SSLv2, !SSLv3`
+	# - Certificate fingerprint verification added
+
+	# Postfix => 2.6:
+	# - Support for ECDHE NIST P-256 curve (enable `smtpd_tls_eecdh_grade = strong`)
+	# - Support for configurable cipher-suites and protocol versions added, pre-2.6 
+	#   releases always set EXPORT, options: `smtp_tls_ciphers` and `smtp_tls_protocols`
+	# - `smtp_tls_eccert_file` and `smtp_tls_eckey_file` config. options added
+	
+	# Postfix => 2.8:
+	# - Override Client suite preference w. `tls_preempt_cipherlist = yes`
+	# - Elliptic curve crypto. support enabled by default
+	
+	# Postfix => 2.9:
+	# - Public key fingerprint support added
+	# - `permit_tls_clientcerts`, `permit_tls_all_clientcerts` and
+	#   `check_ccert_access` config. options added
+
+	# Postfix <= 2.9.5:
+	# - BUG: Public key fingerprint is computed incorrectly
+
+	# Postfix => 3.1:
+	# - Built-in support for TLS management and DANE added, see:
+	#   http://www.postfix.org/postfix-tls.1.html
+
+	return maj, min, rev
 
     def more_info(self):
         """Human-readable string to help the user.
@@ -166,6 +229,7 @@ class PostfixConfigGenerator:
 
 
     ### Let's Encrypt client IInstaller ###
+    # https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/interfaces.py#L232
 
     def get_all_names(self):
         """Returns all names that may be authenticated.
@@ -195,6 +259,7 @@ class PostfixConfigGenerator:
         self.ensure_cf_var("smtpd_tls_cert_file", fullchain_path, [])
         self.ensure_cf_var("smtpd_tls_key_file", key_path, [])
         self.set_domainwise_tls_policies()
+        self.update_CAfile()
 
     def enhance(self, domain, enhancement, options=None):
         """Perform a configuration enhancement.
@@ -268,16 +333,21 @@ class PostfixConfigGenerator:
         """Restart or refresh the server content.
         :raises .PluginError: when server cannot be restarted
         """
+        print "Reloading postfix config..."
         if os.geteuid() != 0:
             os.system("sudo service postfix reload")
         else:
             os.system("service postfix reload")
+
+    def update_CAfile(self):
+        os.system("cat /usr/share/ca-certificates/mozilla/*.crt > " + self.ca_file)
 
 
 def usage():
     print ("Usage: %s starttls-everywhere.json /etc/postfix /etc/letsencrypt/live/example.com/" %
           sys.argv[0])
     sys.exit(1)
+
 
 if __name__ == "__main__":
     import Config as config
