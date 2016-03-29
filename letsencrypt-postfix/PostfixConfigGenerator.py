@@ -79,6 +79,10 @@ class PostfixConfigGenerator:
         self.ensure_cf_var("smtp_tls_policy_maps", policy_cf_entry, [])
         self.ensure_cf_var("smtp_tls_CAfile", self.ca_file, [])
 
+	# Disable SSLv2 and SSLv3. Syntax for `smtp_tls_protocols` changed
+	# between Postfix version 2.5 and 2.6, since we only support => 2.11
+	# we don't use nor support legacy Postfix syntax.
+	self.ensure_cf_var("smtp_tls_protocols", "!SSLv2, !SSLv3", [])
 
     def maybe_add_config_lines(self):
         if not self.additions:
