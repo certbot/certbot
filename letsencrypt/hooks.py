@@ -58,9 +58,12 @@ def post_hook(config, final=False):
 def renew_hook(config, domains, lineage_path):
     "Run post-renewal hook if defined."
     if config.renew_hook:
-        os.environ["RENEWED_DOMAINS"] = " ".join(domains)
-        os.environ["RENEWED_LINEAGE"] = lineage_path
-        _run_hook(config.renew_hook)
+        if not config.dry_run:
+            os.environ["RENEWED_DOMAINS"] = " ".join(domains)
+            os.environ["RENEWED_LINEAGE"] = lineage_path
+            _run_hook(config.renew_hook)
+        else:
+            print("Dry run: skipping renewal hook command: {0}".format(config.renew_hook))
 
 def _run_hook(shell_cmd):
     """Run a hook command.

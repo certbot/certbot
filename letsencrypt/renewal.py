@@ -17,6 +17,7 @@ from letsencrypt import constants
 
 from letsencrypt import crypto_util
 from letsencrypt import errors
+from letsencrypt import hooks
 from letsencrypt import storage
 from letsencrypt.plugins import disco as plugins_disco
 
