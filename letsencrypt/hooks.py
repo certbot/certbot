@@ -27,7 +27,7 @@ def _validate_hook(shell_cmd):
     :raises .errors.HookCommandNotFound: if the command is not found
     """
     cmd = shell_cmd.partition(" ")[0]
-    if not _prog(cmd):
+    if shell_cmd and not _prog(cmd):
         path = os.environ["PATH"]
         msg = "Unable to find command {0} in the PATH.\n(PATH is {1})".format(
             cmd, path)

@@ -18,6 +18,7 @@ import letsencrypt
 from letsencrypt import constants
 from letsencrypt import crypto_util
 from letsencrypt import errors
+from letsencrypt import hooks
 from letsencrypt import interfaces
 from letsencrypt import le_util
 
@@ -305,6 +306,8 @@ class HelpfulArgumentParser(object):
 
         if self.detect_defaults:  # plumbing
             parsed_args.store_false_vars = self.store_false_vars
+
+        hooks.validate_hooks(parsed_args)
 
         return parsed_args
 
