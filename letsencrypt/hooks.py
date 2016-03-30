@@ -26,14 +26,13 @@ def _validate_hook(shell_cmd, hook_name):
 
     :raises .errors.HookCommandNotFound: if the command is not found
     """
-    cmd = shell_cmd.partition(" ")[0]
-    if shell_cmd and not _prog(cmd):
-        path = os.environ["PATH"]
-        msg = "Unable to find {2}-hook command {0} in the PATH.\n(PATH is {1})".format(
-            cmd, path, hook_name)
-        raise errors.HookCommandNotFound(msg)
-
-    return True
+    if shell_cmd:
+        cmd = shell_cmd.partition(" ")[0]
+        if not _prog(cmd):
+            path = os.environ["PATH"]
+            msg = "Unable to find {2}-hook command {0} in the PATH.\n(PATH is {1})".format(
+                cmd, path, hook_name)
+            raise errors.HookCommandNotFound(msg)
 
 def pre_hook(config):
     "Run pre-hook if it's defined and hasn't been run."
