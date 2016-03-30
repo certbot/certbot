@@ -67,7 +67,7 @@ def _run_hook(shell_cmd):
 
     :returns: stderr if there was any"""
 
-    cmd = Popen(shell_cmd, shell=True, stdout=PIPE, stderr=PIPE)
+    cmd = Popen(shell_cmd, shell=True, stdout=PIPE, stderr=PIPE, stdin=PIPE)
     _out, err = cmd.communicate()
     if cmd.returncode != 0:
         logger.error('Hook command "%s" returned error code %d', shell_cmd, cmd.returncode)
