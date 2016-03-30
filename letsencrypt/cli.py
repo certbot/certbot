@@ -711,7 +711,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         " any servers that were stopped by --pre-hook.")
     helpful.add(
         "renew", "--renew-hook",
-        help="Command to be run in a shell once for each renewed certificate."
+        help="Command to be run in a shell once for each successfully renewed certificate."
         "For this command, the shell variable $RENEWED_LINEAGE will point to the"
         "config live subdirectory containing the new certs and keys; the shell variable "
         "$RENEWED_DOMAINS will conatain a space-delimited list of renewed cert domains")

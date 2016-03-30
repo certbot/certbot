@@ -108,7 +108,7 @@ def _handle_subset_cert_request(config, domains, cert):
 
     :param storage.RenewableCert cert:
 
-    :returns: Tuple of (stringa action, cert_or_None) as per _treat_as_renewal
+    :returns: Tuple of (str action, cert_or_None) as per _treat_as_renewal
               action can be: "newcert" | "renew" | "reinstall"
     :rtype: tuple
 
@@ -150,7 +150,7 @@ def _handle_identical_cert_request(config, cert):
 
     :param storage.RenewableCert cert:
 
-    :returns: Tuple of (string action, cert_or_None) as per _treat_as_renewal
+    :returns: Tuple of (str action, cert_or_None) as per _treat_as_renewal
               action can be: "newcert" | "renew" | "reinstall"
     :rtype: tuple
 
