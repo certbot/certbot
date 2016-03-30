@@ -12,16 +12,16 @@ logger = logging.getLogger(__name__)
 
 def validate_hooks(config):
     """Check hook commands are executable."""
-    _validate_hook(config.pre_hook)
-    _validate_hook(config.post_hook)
-    _validate_hook(config.renew_hook)
+    _validate_hook(config.pre_hook, "pre")
+    _validate_hook(config.post_hook, "post")
+    _validate_hook(config.renew_hook, "renew")
 
 def _prog(shell_cmd):
     """Extract the program run by a shell command"""
     cmd = _which(shell_cmd)
     return os.path.basename(cmd) if cmd else None
 
-def _validate_hook(shell_cmd):
+def _validate_hook(shell_cmd, hook_name):
     """Check that a command provided as a hook is plausibly executable.
 
     :raises .errors.HookCommandNotFound: if the command is not found
@@ -29,8 +29,8 @@ def _validate_hook(shell_cmd):
     cmd = shell_cmd.partition(" ")[0]
     if shell_cmd and not _prog(cmd):
         path = os.environ["PATH"]
-        msg = "Unable to find command {0} in the PATH.\n(PATH is {1})".format(
-            cmd, path)
+        msg = "Unable to find {2}-hook command {0} in the PATH.\n(PATH is {1})".format(
+            cmd, path, hook_name)
         raise errors.HookCommandNotFound(msg)
 
     return True
