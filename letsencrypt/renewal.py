@@ -244,7 +244,8 @@ def renew_cert(config, domains, le_client, lineage):
         renewal_conf = configuration.RenewerConfiguration(config.namespace)
         lineage.save_successor(prior_version, new_cert, new_key.pem, new_chain, renewal_conf)
         lineage.update_all_links_to(lineage.latest_common_version())
-        hooks.renew_hook(config, domains, lineage.live_dir)
+
+    hooks.renew_hook(config, domains, lineage.live_dir)
     # TODO: Check return value of save_successor
 
 
