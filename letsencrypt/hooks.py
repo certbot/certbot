@@ -77,13 +77,14 @@ def _run_hook(shell_cmd):
     if err:
         logger.error('Error output from %s:\n%s', _prog(shell_cmd), err)
 
+def _is_exe(fpath):
+    return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
 def _which(program):
     """Test if program is in the path."""
     # Borrowed from:
     # https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
     # XXX May need more porting to handle .exe extensions on Windows
-    def _is_exe(fpath):
-        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
     fpath, _fname = os.path.split(program)
     if fpath:
