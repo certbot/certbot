@@ -1,4 +1,5 @@
 """Tests for hooks.py"""
+# pylint: disable=protected-access
 
 import os
 import unittest
@@ -7,8 +8,6 @@ import mock
 
 from letsencrypt import errors
 from letsencrypt import hooks
-
-from letsencrypt.tests import test_util
 
 class HookTest(unittest.TestCase):
     def setUp(self):
@@ -30,11 +29,11 @@ class HookTest(unittest.TestCase):
 
     @mock.patch('letsencrypt.hooks._is_exe')
     def test_which(self, mock_is_exe):
-        mock_is_exe.return_value = True 
+        mock_is_exe.return_value = True
         self.assertEqual(hooks._which("/path/to/something"), "/path/to/something")
 
         with mock.patch.dict('os.environ', {"PATH": "/floop:/fleep"}):
-            mock_is_exe.return_value = True 
+            mock_is_exe.return_value = True
             self.assertEqual(hooks._which("pingify"), "/floop/pingify")
             mock_is_exe.return_value = False
             self.assertEqual(hooks._which("pingify"), None)
@@ -42,7 +41,7 @@ class HookTest(unittest.TestCase):
 
     @mock.patch('letsencrypt.hooks._which')
     def test_prog(self, mockwhich):
-        mockwhich.return_value = "/very/very/funky" 
+        mockwhich.return_value = "/very/very/funky"
         self.assertEqual(hooks._prog("funky"), "funky")
         mockwhich.return_value = None
         self.assertEqual(hooks._prog("funky"), None)
@@ -53,7 +52,7 @@ class HookTest(unittest.TestCase):
                 hook_function(config)
                 hook_function(config)
                 self.assertEqual(mock_run_hook.call_count, calls_expected)
-    
+
     def test_pre_hook(self):
         config = mock.MagicMock(pre_hook="true")
         self._test_a_hook(config, hooks.pre_hook, 1)
@@ -98,6 +97,3 @@ class HookTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
-
-
-        
