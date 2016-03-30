@@ -313,7 +313,7 @@ The following files are available:
 
 ``fullchain.pem``
   All certificates, **including** server certificate. This is
-  concatenation of ``chain.pem`` and ``cert.pem``.
+  concatenation of ``cert.pem`` and ``chain.pem``.
 
   This is what Apache >= 2.4.8 needs for `SSLCertificateFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_,
