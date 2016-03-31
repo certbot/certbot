@@ -671,7 +671,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
              " https:// for every http:// resource.", dest="uir", default=None)
     helpful.add(
         "security", "--no-uir", action="store_false",
-        help=" Do not automatically set the \"Content-Security-Policy:"
+        help="Do not automatically set the \"Content-Security-Policy:"
         " upgrade-insecure-requests\" header to every HTTP response.",
         dest="uir", default=None)
     helpful.add(
@@ -681,7 +681,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         dest="staple", default=None)
     helpful.add(
         "security", "--no-staple-ocsp", action="store_false",
-        help=" Do not automatically enable OCSP Stapling.",
+        help="Do not automatically enable OCSP Stapling.",
         dest="staple", default=None)
 
 
