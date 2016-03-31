@@ -99,6 +99,10 @@ def usage_strings(plugins):
     return USAGE % (apache_doc, nginx_doc), SHORT_USAGE
 
 
+class _Default(object):
+    """Trivial class used to detect if an option was set by the user."""
+
+
 def set_by_cli(var):
     """
     Return True if a particular config variable has been set by the user
