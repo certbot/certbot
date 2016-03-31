@@ -481,12 +481,10 @@ class HelpfulArgumentParser(object):
 
         """
         if self.visible_topics[topic]:
-            #print("Adding visible group " + topic)
             group = self.parser.add_argument_group(topic, **kwargs)
             self.groups[topic] = group
             return group
         else:
-            #print("Invisible group " + topic)
             return self.silent_parser
 
     def add_plugin_args(self, plugins):
@@ -498,7 +496,6 @@ class HelpfulArgumentParser(object):
         """
         for name, plugin_ep in six.iteritems(plugins):
             parser_or_group = self.add_group(name, description=plugin_ep.description)
-            #print(parser_or_group)
             plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)
 
     def determine_help_topics(self, chosen_topic):
