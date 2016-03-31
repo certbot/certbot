@@ -1012,6 +1012,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # Would have to query LetsEncrypt's OCSP Responder again.
             # We want to avoid that.
             # Then we'll plant a new directive
+
+            # Another plus is that it would be nice to have a consistent OCSP
+            # cache path.
             if stapling_cache_aug_path:
                 self.aug.remove(
                         re.sub(r"/\w*$", "", stapling_cache_aug_path[0]))
