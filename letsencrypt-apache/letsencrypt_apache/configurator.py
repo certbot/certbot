@@ -1009,7 +1009,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # We'll simply delete the directive, as it might be something like
             # SSLStaplingCache /tmp/ocsp_stapling
             # The OS usually cleans /tmp on reboot, which means that the server
-            # Would have to query LetsEncrypt's OCSP Responder (akamai) again.
+            # Would have to query LetsEncrypt's OCSP Responder again.
             # We want to avoid that.
             # Then we'll plant a new directive
             if stapling_cache_aug_path:
