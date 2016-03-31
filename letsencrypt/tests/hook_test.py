@@ -81,18 +81,19 @@ class HookTest(unittest.TestCase):
                 self._test_a_hook(config, rhook, 0)
                 self.assertEqual(mock_print.call_count, 2)
 
-    @mock.patch('letsencrypt.hooks.logger.error')
     @mock.patch('letsencrypt.hooks.Popen')
-    def test_run_hook(self, mock_popen, mock_error):
-        mock_cmd = mock.MagicMock()
-        mock_cmd.returncode = 1
-        mock_cmd.communicate.return_value = ("", "")
-        mock_popen.return_value = mock_cmd
-        hooks._run_hook("ls")
-        self.assertEqual(mock_error.call_count, 1)
-        mock_cmd.communicate.return_value = ("", "thing")
-        hooks._run_hook("ls")
-        self.assertEqual(mock_error.call_count, 2)
+    def test_run_hook(self, mock_popen):
+        with mock.patch('letsencrypt.hooks.logger.error') as mock_error:
+            mock_cmd = mock.MagicMock()
+            mock_cmd.returncode = 1
+            mock_cmd.communicate.return_value = ("", "")
+            mock_popen.return_value = mock_cmd
+            hooks._run_hook("ls")
+            self.assertEqual(mock_error.call_count, 1)
+        with mock.patch('letsencrypt.hooks.logger.error') as mock_error:
+            mock_cmd.communicate.return_value = ("", "thing")
+            hooks._run_hook("ls")
+            self.assertEqual(mock_error.call_count, 2)
 
 
 if __name__ == '__main__':
