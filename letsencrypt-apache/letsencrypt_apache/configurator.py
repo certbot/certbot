@@ -1023,7 +1023,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     "SSLStaplingCache",
                     ["shmcb:/var/run/apache2/stapling_cache(128000)"])
 
-            msg = "OCSP Stapling was enabled to SSL Vhost: %s.\n"%(
+            msg = "OCSP Stapling was enabled on SSL Vhost: %s.\n"%(
                     ssl_vhost.filep)
             self.save_notes += msg
             self.save()
