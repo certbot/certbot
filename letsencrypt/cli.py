@@ -558,7 +558,14 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         None, "--dry-run", action="store_true", dest="dry_run",
         help="Perform a test run of the client, obtaining test (invalid) certs"
              " but not saving them to disk. This can currently only be used"
-             " with the 'certonly' subcommand.")
+             " with the 'certonly' and 'renew' subcommands. \nNote: Although --dry-run"
+             " tries to avoid making any persistent changes on a system, it "
+             " is not completely side-effect free: if used with webserver authenticator plugins"
+             " like apache and nginx, it makes and then reverts temporary config changes"
+             " in order to obtain test certs, and reloads webservers to deploy and then"
+             " roll back those changes.  It also calls --pre-hook and --post-hook commands"
+             " if they are defined because they may be necessary to accurately simulate"
+             " renewal. --renew-hook commands are not called.")
     helpful.add(
         None, "--register-unsafely-without-email", action="store_true",
         help="Specifying this flag enables registering an account with no "
