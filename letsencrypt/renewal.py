@@ -96,16 +96,14 @@ def _restore_webroot_config(config, renewalparams):
     form.
     """
     if "webroot_map" in renewalparams:
-        # if the user does anything that would create a new webroot map on the
-        # CLI, don't use the old one
-        if not (cli.set_by_cli("webroot_map") or cli.set_by_cli("webroot_path")):
-            setattr(config.namespace, "webroot_map", renewalparams["webroot_map"])
+        if not cli.set_by_cli("webroot_map"):
+            config.namespace.webroot_map = renewalparams["webroot_map"]
     elif "webroot_path" in renewalparams:
         logger.info("Ancient renewal conf file without webroot-map, restoring webroot-path")
         wp = renewalparams["webroot_path"]
         if isinstance(wp, str):  # prior to 0.1.0, webroot_path was a string
             wp = [wp]
-        setattr(config.namespace, "webroot_path", wp)
+        config.namespace.webroot_path = wp
 
 
 def _restore_plugin_configs(config, renewalparams):
