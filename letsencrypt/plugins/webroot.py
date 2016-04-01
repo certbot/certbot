@@ -1,5 +1,7 @@
 """Webroot plugin."""
+import argparse
 import errno
+import json
 import logging
 import os
 from collections import defaultdict
@@ -9,6 +11,7 @@ import six
 
 from acme import challenges
 
+from letsencrypt import cli
 from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt.plugins import common
@@ -155,6 +158,17 @@ to serve all files under specified web root ({0})."""
                                      root_path)
                     else:
                         raise
+
+
+class _WebrootMapAction(argparse.Action):
+    """Action class for parsing webroot_map."""
+
+    def __call__(self, parser, namespace, webroot_map, option_string=None):
+        for domains, webroot_path in six.iteritems(json.loads(webroot_map)):
+            validated_webroot_path = _validate_webroot(webroot_path)
+            namespace.webroot_map.update(
+                (d, validated_webroot_path,)
+                for d in cli.add_domains(namespace, domains))
 
 
 def _match_webroot_with_domains(args_or_config):
