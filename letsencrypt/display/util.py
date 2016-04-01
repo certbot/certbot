@@ -1,4 +1,5 @@
 """Let's Encrypt display."""
+import logging
 import os
 import textwrap
 
@@ -8,6 +9,8 @@ import zope.interface
 from letsencrypt import interfaces
 from letsencrypt import errors
 from letsencrypt.display import completer
+
+logger = logging.getLogger(__name__)
 
 WIDTH = 72
 HEIGHT = 20
@@ -47,6 +50,50 @@ def _wrap_lines(msg):
 
 
 @zope.interface.implementer(interfaces.IDisplay)
+class DisplayLogger(object):
+    """Wrap an iDisplay so that it logs what it's doing"""
+    # pylint: disable=missing-docstring
+    def __init__(self, iDisplay):
+        super(DisplayLogger, self).__init__()
+        self.iDisplay = iDisplay
+
+    def notification(self, message, *args, **kwargs):
+        logger.debug("Notification: %s", message)
+        self.iDisplay.notification(message, *args, **kwargs)
+
+    def menu(self, message, choices, *args, **kwargs):
+        logger.debug("Menu: %s", message)
+        logger.debug("Choices: %r", choices)
+        retval = self.iDisplay.menu(message, choices, *args, **kwargs)
+        logger.debug("Selected: %r", retval)
+        return retval
+
+    def input(self, message, *args, **kwargs):
+        logger.debug("Input: %r", message)
+        retval = self.iDisplay.input(message, *args, **kwargs)
+        logger.debug("Received: %r", retval)
+        return retval
+
+    def yesno(self, message, *args, **kwargs):
+        logger.debug("Yes/no: %r", message)
+        retval = self.iDisplay.yesno(message, *args, **kwargs)
+        logger.debug("Answer: %r", retval)
+        return retval
+
+    def checklist(self, message, tags, *args, **kwargs):
+        logger.debug("Checklist: %r", message)
+        logger.debug("Options: %r", tags)
+        retval = self.iDisplay.checklist(message, *args, **kwargs)
+        logger.debug("Picked: %r", retval)
+        return retval
+
+    def directory_select(self, message, *args, **kwargs):
+        logger.debug("Selecting directory: %r", message)
+        retval = self.iDisplay.directory_select(message, *args, **kwargs)
+        logger.debug("Selected: %r", retval)
+        return retval
+
+@zope.interface.implementer(interfaces.IDisplay)
 class NcursesDisplay(object):
     """Ncurses-based display."""
 
@@ -55,6 +102,10 @@ class NcursesDisplay(object):
         self.dialog = dialog.Dialog()
         self.width = width
         self.height = height
+
+    def log(self):
+        "Wrap ourselves in a DisplayLogger()"
+        return DisplayLogger(self)
 
     def notification(self, message, height=10, pause=False):
         # pylint: disable=unused-argument
@@ -70,7 +121,6 @@ class NcursesDisplay(object):
         :param bool pause: Not applicable to NcursesDisplay
 
         """
-        logger.debug("Notification: " + message)
         self.dialog.msgbox(message, height, width=self.width)
 
     def menu(self, message, choices, ok_label="OK", cancel_label="Cancel",
@@ -206,6 +256,10 @@ class FileDisplay(object):
     def __init__(self, outfile):
         super(FileDisplay, self).__init__()
         self.outfile = outfile
+
+    def log(self):
+        "Wrap ourselves in a DisplayLogger()"
+        return DisplayLogger(self)
 
     def notification(self, message, height=10, pause=True):
         # pylint: disable=unused-argument
@@ -454,6 +508,10 @@ class NoninteractiveDisplay(object):
     def __init__(self, outfile):
         super(NoninteractiveDisplay, self).__init__()
         self.outfile = outfile
+
+    def log(self):
+        "Wrap ourselves in a DisplayLogger()"
+        return DisplayLogger(self)
 
     def _interaction_fail(self, message, cli_flag, extra=""):
         "Error out in case of an attempt to interact in noninteractive mode"
