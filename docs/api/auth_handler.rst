@@ -1,5 +1,5 @@
-:mod:`letsencrypt.auth_handler`
+:mod:`certbot.auth_handler`
 -------------------------------
 
-.. automodule:: letsencrypt.auth_handler
+.. automodule:: certbot.auth_handler
    :members:

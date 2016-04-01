@@ -1,5 +1,5 @@
-:mod:`letsencrypt.continuity_auth`
+:mod:`certbot.continuity_auth`
 ----------------------------------
 
-.. automodule:: letsencrypt.continuity_auth
+.. automodule:: certbot.continuity_auth
    :members:

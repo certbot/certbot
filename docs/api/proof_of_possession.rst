@@ -1,5 +1,5 @@
-:mod:`letsencrypt.proof_of_possession`
+:mod:`certbot.proof_of_possession`
 --------------------------------------
 
-.. automodule:: letsencrypt.proof_of_possession
+.. automodule:: certbot.proof_of_possession
    :members:
