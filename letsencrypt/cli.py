@@ -104,6 +104,27 @@ VAR_MODIFIERS = {"account": ["server"], "server": ["dry_run", "staging"],
                  "webroot_map": ["webroot_path"]}
 
 
+def report_config_interaction(modified, modifiers):
+    """Registers config option interaction to be checked by set_by_cli.
+
+    This function can be called by during the __init__ method of plugins
+    to register interactions between config options.
+
+    :param modified: config options that can be modified by modifiers
+    :type modified: iterable or str
+    :param modifiers: config options that modify modified
+    :type modifiers: iterable or str
+
+    """
+    if isinstance(modified, str):
+        modified = [modified]
+    if isinstance(modifiers, str):
+        modifiers = [modifiers]
+
+    for var in modified:
+        VAR_MODIFIERS.setdefault(var, []).extend(modifiers)
+
+
 def usage_strings(plugins):
     """Make usage strings late so that plugins can be initialised late"""
     if "nginx" in plugins:
