@@ -197,21 +197,23 @@ def config_help(name, hidden=False):
         return interfaces.IConfig[name].__doc__
 
 
-class SilentParser(object):  # pylint: disable=too-few-public-methods
-    """Silent wrapper around argparse.
+class HelpfulArgumentGroup(object):
+    """Emulates an argparse group for use with HelpfulArgumentParser.
 
-    A mini parser wrapper that doesn't print help for its
-    arguments. This is needed for the use of callbacks to define
-    arguments within plugins.
+    This class is used in the add_group method of HelpfulArgumentParser.
+    Command line arguments can be added to the group, but help
+    suppression and default detection is applied by
+    HelpfulArgumentParser when necessary.
 
     """
-    def __init__(self, parser):
-        self.parser = parser
+    def __init__(self, helpful_arg_parser, topic):
+        self._parser = helpful_arg_parser
+        self._topic = topic
 
     def add_argument(self, *args, **kwargs):
-        """Wrap, but silence help"""
-        kwargs["help"] = argparse.SUPPRESS
-        self.parser.add_argument(*args, **kwargs)
+        """Add a new command line argument to the argument group."""
+        self._parser.add(self._topic, *args, **kwargs)
+
 
 class HelpfulArgumentParser(object):
     """Argparse Wrapper.
@@ -244,7 +246,6 @@ class HelpfulArgumentParser(object):
 
         # This is the only way to turn off overly verbose config flag documentation
         self.parser._add_config_file_help = False  # pylint: disable=protected-access
-        self.silent_parser = SilentParser(self.parser)
 
         self.detect_defaults = detect_defaults
 
@@ -465,20 +466,22 @@ class HelpfulArgumentParser(object):
             self.parser.add_argument, argument_name, num_args)
 
     def add_group(self, topic, **kwargs):
-        """
+        """Create a new argument group.
 
-        This has to be called once for every topic; but we leave those calls
-        next to the argument definitions for clarity. Return something
-        arguments can be added to if necessary, either the parser or an argument
-        group.
+        This method must be called once for every topic, however, calls
+        to this function are left next to the argument definitions for
+        clarity.
+
+        :param str topic: Name of the new argument group.
+
+        :returns: The new argument group.
+        :rtype: `HelpfulArgumentGroup`
 
         """
         if self.visible_topics[topic]:
-            group = self.parser.add_argument_group(topic, **kwargs)
-            self.groups[topic] = group
-            return group
-        else:
-            return self.silent_parser
+            self.groups[topic] = self.parser.add_argument_group(topic, **kwargs)
+
+        return HelpfulArgumentGroup(self, topic)
 
     def add_plugin_args(self, plugins):
         """
