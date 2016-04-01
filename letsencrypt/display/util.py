@@ -70,6 +70,7 @@ class NcursesDisplay(object):
         :param bool pause: Not applicable to NcursesDisplay
 
         """
+        logger.debug("Notification: " + message)
         self.dialog.msgbox(message, height, width=self.width)
 
     def menu(self, message, choices, ok_label="OK", cancel_label="Cancel",
@@ -216,6 +217,7 @@ class FileDisplay(object):
             user's confirmation
 
         """
+        logger.debug("Notification: " + message)
         side_frame = "-" * 79
         message = _wrap_lines(message)
         self.outfile.write(
@@ -472,6 +474,7 @@ class NoninteractiveDisplay(object):
         :param bool pause: The NoninteractiveDisplay waits for no keyboard
 
         """
+        logger.debug("Notification: " + message)
         side_frame = "-" * 79
         message = _wrap_lines(message)
         self.outfile.write(
