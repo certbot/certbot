@@ -97,6 +97,12 @@ ZERO_ARG_ACTIONS = set(("store_const", "store_true",
                         "store_false", "append_const", "count",))
 
 
+# Maps a config option to a list of config options that may have modified it.
+# This dictionary is used recursively, so if A modifies B and B modifies C,
+# it is determined that C was modified by the user if A was modified.
+VAR_MODIFIERS = {"account": ["server"], "server": ["dry_run", "staging"]}
+
+
 def usage_strings(plugins):
     """Make usage strings late so that plugins can be initialised late"""
     if "nginx" in plugins:
@@ -147,8 +153,14 @@ def set_by_cli(var):
         detector.installer = inst if inst else ""
         logger.debug("Default Detector is %r", detector)
 
-    value = getattr(detector, var)
-    return not isinstance(value, _Default)
+    if not isinstance(getattr(detector, var), _Default):
+        return True
+
+    for modifier in VAR_MODIFIERS.get(var, []):
+        if set_by_cli(modifier):
+            return True
+
+    return False
 # static housekeeping var
 set_by_cli.detector = None
 
