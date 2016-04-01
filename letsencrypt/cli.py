@@ -86,10 +86,11 @@ More detailed help:
 """
 
 
+# These argparse parameters should be removed when detecting defaults.
+ARGPARSE_PARAMS_TO_REMOVE = ("const", "nargs", "type",)
+
+
 # These sets are used when to help detect options set by the user.
-ARGPARSE_PARAMS_TO_REMOVE = set(("const", "nargs", "type",))
-
-
 EXIT_ACTIONS = set(("help", "version",))
 
 
