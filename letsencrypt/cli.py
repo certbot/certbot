@@ -97,11 +97,12 @@ ZERO_ARG_ACTIONS = set(("store_const", "store_true",
                         "store_false", "append_const", "count",))
 
 
-# Maps a config option to a list of config options that may have modified it.
+# Maps a config option to a set of config options that may have modified it.
 # This dictionary is used recursively, so if A modifies B and B modifies C,
 # it is determined that C was modified by the user if A was modified.
-VAR_MODIFIERS = {"account": ["server"], "server": ["dry_run", "staging"],
-                 "webroot_map": ["webroot_path"]}
+VAR_MODIFIERS = {"account": set(("server",)),
+                 "server": set(("dry_run", "staging",)),
+                 "webroot_map": set(("webroot_path",))}
 
 
 def report_config_interaction(modified, modifiers):
@@ -117,12 +118,12 @@ def report_config_interaction(modified, modifiers):
 
     """
     if isinstance(modified, str):
-        modified = [modified]
+        modified = (modified,)
     if isinstance(modifiers, str):
-        modifiers = [modifiers]
+        modifiers = (modifiers,)
 
     for var in modified:
-        VAR_MODIFIERS.setdefault(var, []).extend(modifiers)
+        VAR_MODIFIERS.setdefault(var, set()).update(modifiers)
 
 
 def usage_strings(plugins):
