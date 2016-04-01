@@ -876,6 +876,22 @@ class WebrootPathProcessor(argparse.Action):  # pylint: disable=missing-docstrin
         args.webroot_path.append(webroot)
 
 
+def add_domain(args_or_config, domain):
+    """Registers a new domain to be used during the current client run.
+
+    If all domains in domain have been registered, this function has no
+    effect.
+
+    :param args_or_config: parsed command line arguments
+    :type args_or_config: argparse.Namespace or
+        configuration.NamespaceConfig
+    :param str domain: one or more comma separated domains
+
+    """
+    args_or_config.domains.extend(le_util.enforce_domain_sanity(d.strip())
+        for d in domain.split(",") if d not in args_or_config.domains)
+
+
 def process_domain(args_or_config, domain_arg, webroot_path=None):
     """
     Process a new -d flag, helping the webroot plugin construct a map of
