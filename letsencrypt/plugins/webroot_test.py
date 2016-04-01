@@ -55,11 +55,6 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.add_parser_arguments(add)
         self.assertEqual(0, add.call_count)  # args moved to cli.py!
 
-    def test_prepare_bad_root(self):
-        self.config.webroot_path = os.path.join(self.path, "null")
-        self.config.webroot_map["thing.com"] = self.config.webroot_path
-        self.assertRaises(errors.PluginError, self.auth.prepare)
-
     def test_prepare_missing_root(self):
         self.config.webroot_path = None
         self.config.webroot_map = {}

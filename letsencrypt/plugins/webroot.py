@@ -57,8 +57,6 @@ to serve all files under specified web root ({0})."""
                 "--webroot-path and --domains, or --webroot-map. Run with "
                 " --help webroot for examples.")
         for name, path in path_map.items():
-            if not os.path.isdir(path):
-                raise errors.PluginError(path + " does not exist or is not a directory")
             self.full_roots[name] = os.path.join(path, challenges.HTTP01.URI_ROOT_PATH)
 
             logger.debug("Creating root challenges validation dir at %s",
@@ -157,3 +155,31 @@ to serve all files under specified web root ({0})."""
                                      root_path)
                     else:
                         raise
+
+
+def _match_webroot_with_domains(args_or_config):
+    """Applies the most recent webroot path to all unmatched domains.
+
+    :param args_or_config: parsed command line arguments
+    :type args_or_config: argparse.Namespace or
+        configuration.NamespaceConfig
+
+    """
+    webroot_path = args_or_config.webroot_path[-1]
+    for domain in args_or_config.domains:
+        args_or_config.webroot_map.set_default(domain, webroot_path)
+
+
+def _validate_webroot(webroot_path):
+    """Validates and returns the absolute path of webroot_path.
+
+    :param str webroot_path: path to the webroot directory
+
+    :returns: absolute path of webroot_path
+    :rtype: str
+
+    """
+    if not os.path.isdir(webroot_path):
+        raise errors.PluginError(webroot_path + " does not exist or is not a directory")
+
+    return os.path.abspath(webroot_path)
