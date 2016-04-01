@@ -1023,5 +1023,24 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
         self.assertEqual(result, (None, None))
 
 
+class DefaultTest(unittest.TestCase):
+    """Tests for letsencrypt.cli._Default."""
+
+    def setUp(self):
+        # pylint: disable=protected-access
+        self.default1 = cli._Default()
+        self.default2 = cli._Default()
+
+    def test_boolean(self):
+        self.assertFalse(self.default1)
+        self.assertFalse(self.default2)
+
+    def test_equality(self):
+        self.assertEqual(self.default1, self.default2)
+
+    def test_hash(self):
+        self.assertEqual(hash(self.default1), hash(self.default2))
+
+
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover

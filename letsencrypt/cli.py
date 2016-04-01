@@ -86,6 +86,17 @@ More detailed help:
 """
 
 
+# These sets are used when to help detect options set by the user.
+ARGPARSE_PARAMS_TO_REMOVE = set(("const", "nargs", "type",))
+
+
+EXIT_ACTIONS = set(("help", "version",))
+
+
+ZERO_ARG_ACTIONS = set(("store_const", "store_true",
+                        "store_false", "append_const", "count",))
+
+
 def usage_strings(plugins):
     """Make usage strings late so that plugins can be initialised late"""
     if "nginx" in plugins:
@@ -100,7 +111,19 @@ def usage_strings(plugins):
 
 
 class _Default(object):
-    """Trivial class used to detect if an option was set by the user."""
+    """A class to use as a default to detect if a value is set by a user"""
+
+    def __bool__(self):
+        return False
+
+    def __eq__(self, other):
+        return isinstance(other, _Default)
+
+    def __hash__(self):
+        return id(_Default)
+
+    def __nonzero__(self):
+        return self.__bool__()
 
 
 def set_by_cli(var):
@@ -124,25 +147,8 @@ def set_by_cli(var):
         detector.installer = inst if inst else ""
         logger.debug("Default Detector is %r", detector)
 
-    try:
-        # Is detector.var something that isn't false?
-        change_detected = getattr(detector, var)
-    except AttributeError:
-        logger.warning("Missing default analysis for %r", var)
-        return False
-
-    if change_detected:
-        return True
-    # Special case: we actually want account to be set to "" if the server
-    # the account was on has changed
-    elif var == "account" and (detector.server or detector.dry_run or detector.staging):
-        return True
-    # Special case: vars like --no-redirect that get set True -> False
-    # default to None; False means they were set
-    elif var in detector.store_false_vars and change_detected is not None:
-        return True
-    else:
-        return False
+    value = getattr(detector, var)
+    return not isinstance(value, _Default)
 # static housekeeping var
 set_by_cli.detector = None
 
@@ -240,13 +246,7 @@ class HelpfulArgumentParser(object):
         self.parser._add_config_file_help = False  # pylint: disable=protected-access
         self.silent_parser = SilentParser(self.parser)
 
-        # This setting attempts to force all default values to things that are
-        # pythonically false; it is used to detect when values have been
-        # explicitly set by the user, including when they are set to their
-        # normal default value
         self.detect_defaults = detect_defaults
-        if detect_defaults:
-            self.store_false_vars = {}  # vars that use "store_false"
 
         self.args = args
         self.determine_verb()
@@ -271,6 +271,9 @@ class HelpfulArgumentParser(object):
         parsed_args = self.parser.parse_args(self.args)
         parsed_args.func = self.VERBS[self.verb]
         parsed_args.verb = self.verb
+
+        if self.detect_defaults:
+            return parsed_args
 
         # Do any post-parsing homework here
 
@@ -306,9 +309,6 @@ class HelpfulArgumentParser(object):
                 raise errors.Error("--allow-subset-of-names "
                                    "cannot be used with --csr")
             self.handle_csr(parsed_args)
-
-        if self.detect_defaults:  # plumbing
-            parsed_args.store_false_vars = self.store_false_vars
 
         return parsed_args
 
@@ -416,7 +416,7 @@ class HelpfulArgumentParser(object):
         """
 
         if self.detect_defaults:
-            kwargs = self.modify_arg_for_default_detection(self, *args, **kwargs)
+            kwargs = self.modify_kwargs_for_default_detection(**kwargs)
 
         if self.visible_topics[topic]:
             if topic in self.groups:
@@ -428,38 +428,27 @@ class HelpfulArgumentParser(object):
             kwargs["help"] = argparse.SUPPRESS
             self.parser.add_argument(*args, **kwargs)
 
+    def modify_kwargs_for_default_detection(self, **kwargs):
+        """Modify an arg so we can check if it was set by the user.
 
-    def modify_arg_for_default_detection(self, *args, **kwargs):
-        """
-        Adding an arg, but ensure that it has a default that evaluates to false,
-        so that set_by_cli can tell if it was set.  Only called if detect_defaults==True.
+        Changes the parameters given to argparse when adding an argument
+        so we can properly detect if the value was set by the user.
 
-        :param list *args: the names of this argument flag
-        :param dict **kwargs: various argparse settings for this argument
+        :param dict kwargs: various argparse settings for this argument
 
         :returns: a modified versions of kwargs
+        :rtype: dict
+
         """
-        # argument either doesn't have a default, or the default doesn't
-        # isn't Pythonically false
-        if kwargs.get("default", True):
-            arg_type = kwargs.get("type", None)
-            if arg_type == int or kwargs.get("action", "") == "count":
-                kwargs["default"] = 0
-            elif arg_type == read_file or "-c" in args:
-                kwargs["default"] = ""
-                kwargs["type"] = str
-            else:
-                kwargs["default"] = ""
-            # This doesn't matter at present (none of the store_false args
-            # are renewal-relevant), but implement it for future sanity:
-            # detect the setting of args whose presence causes True -> False
-        if kwargs.get("action", "") == "store_false":
-            kwargs["default"] = None
-            for var in args:
-                self.store_false_vars[var] = True
+        action = kwargs.get("action", None)
+        if action not in EXIT_ACTIONS:
+            kwargs["action"] = ("store_true" if action in ZERO_ARG_ACTIONS else
+                                "store")
+            kwargs["default"] = _Default()
+            for param in ARGPARSE_PARAMS_TO_REMOVE:
+                kwargs.pop(param, None)
 
         return kwargs
-
 
     def add_deprecated_argument(self, argument_name, num_args):
         """Adds a deprecated argument with the name argument_name.
