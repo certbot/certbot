@@ -64,8 +64,7 @@ to serve all files under specified web root ({0})."""
         self.performed = defaultdict(set)
 
     def prepare(self):  # pylint: disable=missing-docstring
-        if self.conf("path"):
-            _match_webroot_with_domains(self.config)
+        pass
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
         self._create_challenge_dirs()
