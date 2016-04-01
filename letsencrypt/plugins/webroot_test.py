@@ -55,14 +55,13 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.add_parser_arguments(add)
         self.assertEqual(2, add.call_count)
 
-    def test_prepare_missing_root(self):
+    def test_prepare(self):
+        self.auth.prepare()  # shouldn't raise any exceptions
+
+    def test_perform_missing_root(self):
         self.config.webroot_path = None
         self.config.webroot_map = {}
-        self.assertRaises(errors.PluginError, self.auth.prepare)
-
-    def test_prepare_full_root_exists(self):
-        # prepare() has already been called once in setUp()
-        self.auth.prepare()  # shouldn't raise any exceptions
+        self.assertRaises(errors.PluginError, self.auth.perform, [])
 
     def test_prepare_reraises_other_errors(self):
         self.auth.full_path = os.path.join(self.path, "null")
@@ -75,7 +74,7 @@ class AuthenticatorTest(unittest.TestCase):
             print("Warning, running tests as root skips permissions tests...")
         except IOError:
             # ok, permissions work, test away...
-            self.assertRaises(errors.PluginError, self.auth.prepare)
+            self.assertRaises(errors.PluginError, self.auth.perform, [])
         os.chmod(self.path, 0o700)
 
     @mock.patch("letsencrypt.plugins.webroot.os.chown")
@@ -86,9 +85,9 @@ class AuthenticatorTest(unittest.TestCase):
     @mock.patch("letsencrypt.plugins.webroot.os.chown")
     def test_failed_chown_not_eacces(self, mock_chown):
         mock_chown.side_effect = OSError()
-        self.assertRaises(errors.PluginError, self.auth.prepare)
+        self.assertRaises(errors.PluginError, self.auth.perform, [])
 
-    def test_prepare_permissions(self):
+    def test_perform_permissions(self):
         self.auth.prepare()
 
         # Remove exec bit from permission check, so that it
@@ -110,18 +109,6 @@ class AuthenticatorTest(unittest.TestCase):
 
         self.assertEqual(os.stat(self.validation_path).st_gid, parent_gid)
         self.assertEqual(os.stat(self.validation_path).st_uid, parent_uid)
-
-    def test_perform_missing_path(self):
-        self.auth.prepare()
-
-        missing_achall = achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=acme_util.HTTP01_P, domain="thing2.com", account_key=KEY)
-        self.assertRaises(
-            errors.PluginError, self.auth.perform, [missing_achall])
-
-        self.auth.full_roots[self.achall.domain] = 'null'
-        self.assertRaises(
-            errors.PluginError, self.auth.perform, [self.achall])
 
     def test_perform_cleanup(self):
         self.auth.prepare()

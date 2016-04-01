@@ -67,6 +67,11 @@ to serve all files under specified web root ({0})."""
         if self.conf("path"):
             _match_webroot_with_domains(self.config)
 
+    def perform(self, achalls):  # pylint: disable=missing-docstring
+        self._create_challenge_dirs()
+        return [self._perform_single(achall) for achall in achalls]
+
+    def _create_challenge_dirs(self):
         path_map = self.conf("map")
         if not path_map:
             raise errors.PluginError(
@@ -110,10 +115,6 @@ to serve all files under specified web root ({0})."""
                         "challenge responses: {1}", name, exception)
             finally:
                 os.umask(old_umask)
-
-    def perform(self, achalls):  # pylint: disable=missing-docstring
-        assert self.full_roots, "Webroot plugin appears to be missing webroot map"
-        return [self._perform_single(achall) for achall in achalls]
 
     def _get_root_path(self, achall):
         try:

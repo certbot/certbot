@@ -234,13 +234,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self.assertTrue("The nginx plugin is not working" in ret)
             self.assertTrue("MisconfigurationError" in ret)
 
-        args = ["certonly", "--webroot"]
-        try:
-            self._call(args)
-            assert False, "Exception should have been raised"
-        except errors.PluginSelectionError as e:
-            self.assertTrue("please set either --webroot-path" in e.message)
-
         self._cli_missing_flag(["--standalone"], "With the standalone plugin, you probably")
 
         with mock.patch("letsencrypt.main._init_le_client") as mock_init:
