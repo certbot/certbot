@@ -201,7 +201,9 @@ class _WebrootPathAction(argparse.Action):
         if namespace.webroot_path:
             # Apply previous webroot to all matched
             # domains before setting the new webroot path
-            _match_webroot_with_domains(namespace)
+            prev_webroot = namespace.webroot_path[-1]
+            for domain in namespace.domains:
+                namespace.webroot_map.setdefault(domain, prev_webroot)
         elif namespace.domains:
             self._domain_before_webroot = True
 
@@ -221,16 +223,3 @@ def _validate_webroot(webroot_path):
         raise errors.PluginError(webroot_path + " does not exist or is not a directory")
 
     return os.path.abspath(webroot_path)
-
-
-def _match_webroot_with_domains(args_or_config):
-    """Applies the most recent webroot path to all unmatched domains.
-
-    :param args_or_config: parsed command line arguments
-    :type args_or_config: argparse.Namespace or
-        configuration.NamespaceConfig
-
-    """
-    webroot_path = args_or_config.webroot_path[-1]
-    for domain in args_or_config.domains:
-        args_or_config.webroot_map.setdefault(domain, webroot_path)
