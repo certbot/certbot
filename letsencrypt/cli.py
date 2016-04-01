@@ -109,8 +109,9 @@ VAR_MODIFIERS = {"account": set(("server",)),
 def report_config_interaction(modified, modifiers):
     """Registers config option interaction to be checked by set_by_cli.
 
-    This function can be called by during the __init__ method of plugins
-    to register interactions between config options.
+    This function can be called by during the __init__ or
+    add_parser_arguments methods of plugins to register interactions
+    between config options.
 
     :param modified: config options that can be modified by modifiers
     :type modified: iterable or str
