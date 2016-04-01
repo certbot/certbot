@@ -171,17 +171,26 @@ class _WebrootMapAction(argparse.Action):
                 for d in cli.add_domains(namespace, domains))
 
 
-def _match_webroot_with_domains(args_or_config):
-    """Applies the most recent webroot path to all unmatched domains.
+class _WebrootPathAction(argparse.Action):
+    """Action class for parsing webroot_path."""
+    def __init__(self, *args, **kwargs):
+        super(_WebrootPathAction, self).__init__(*args, **kwargs)
+        self._domain_before_webroot = False
 
-    :param args_or_config: parsed command line arguments
-    :type args_or_config: argparse.Namespace or
-        configuration.NamespaceConfig
+    def __call__(self, parser, namespace, webroot_path, option_string=None):
+        if self._domain_before_webroot:
+            raise errors.PluginError(
+                "If you specify multiple webroot paths, "
+                "one of them must precede all domain flags")
 
-    """
-    webroot_path = args_or_config.webroot_path[-1]
-    for domain in args_or_config.domains:
-        args_or_config.webroot_map.set_default(domain, webroot_path)
+        if namespace.webroot_path:
+            # Apply previous webroot to all matched
+            # domains before setting the new webroot path
+            _match_webroot_with_domains(namespace)
+        elif namespace.domains:
+            self._domain_before_webroot = True
+
+        namespace.webroot_path.append(_validate_webroot(webroot_path))
 
 
 def _validate_webroot(webroot_path):
@@ -197,3 +206,16 @@ def _validate_webroot(webroot_path):
         raise errors.PluginError(webroot_path + " does not exist or is not a directory")
 
     return os.path.abspath(webroot_path)
+
+
+def _match_webroot_with_domains(args_or_config):
+    """Applies the most recent webroot path to all unmatched domains.
+
+    :param args_or_config: parsed command line arguments
+    :type args_or_config: argparse.Namespace or
+        configuration.NamespaceConfig
+
+    """
+    webroot_path = args_or_config.webroot_path[-1]
+    for domain in args_or_config.domains:
+        args_or_config.webroot_map.set_default(domain, webroot_path)
