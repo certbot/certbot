@@ -53,7 +53,7 @@ class AuthenticatorTest(unittest.TestCase):
     def test_add_parser_arguments(self):
         add = mock.MagicMock()
         self.auth.add_parser_arguments(add)
-        self.assertEqual(0, add.call_count)  # args moved to cli.py!
+        self.assertEqual(2, add.call_count)
 
     def test_prepare_missing_root(self):
         self.config.webroot_path = None

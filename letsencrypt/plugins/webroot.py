@@ -38,9 +38,21 @@ to serve all files under specified web root ({0})."""
 
     @classmethod
     def add_parser_arguments(cls, add):
-        # --webroot-path and --webroot-map are added in cli.py because they
-        # are parsed in conjunction with --domains
-        pass
+        add("path", "-w", default=[], action=_WebrootPathAction,
+            help="public_html / webroot path. This can be specified multiple "
+                 "times to handle different domains; each domain will have "
+                 "the webroot path that preceded it.  For instance: `-w "
+                 "/var/www/example -d example.com -d www.example.com -w "
+                 "/var/www/thing -d thing.net -d m.thing.net`")
+        add("map", default={}, action=_WebrootMapAction,
+            help="JSON dictionary mapping domains to webroot paths; this "
+                 "implies -d for each entry. You may need to escape this from "
+                 "your shell. E.g.: --webroot-map "
+                 '\'{"eg1.is,m.eg1.is":"/www/eg1/", "eg2.is":"/www/eg2"}\' '
+                 "This option is merged with, but takes precedence over, -w / "
+                 "-d entries. At present, if you put webroot-map in a config "
+                 "file, it needs to be on a single line, like: webroot-map = "
+                 '{"example.com":"/var/www"}.')
 
     def get_chall_pref(self, domain):  # pragma: no cover
         # pylint: disable=missing-docstring,no-self-use,unused-argument
@@ -52,8 +64,10 @@ to serve all files under specified web root ({0})."""
         self.performed = defaultdict(set)
 
     def prepare(self):  # pylint: disable=missing-docstring
-        path_map = self.conf("map")
+        if self.conf("path"):
+            _match_webroot_with_domains(self.config)
 
+        path_map = self.conf("map")
         if not path_map:
             raise errors.PluginError(
                 "Missing parts of webroot configuration; please set either "
@@ -173,6 +187,7 @@ class _WebrootMapAction(argparse.Action):
 
 class _WebrootPathAction(argparse.Action):
     """Action class for parsing webroot_path."""
+
     def __init__(self, *args, **kwargs):
         super(_WebrootPathAction, self).__init__(*args, **kwargs)
         self._domain_before_webroot = False
@@ -218,4 +233,4 @@ def _match_webroot_with_domains(args_or_config):
     """
     webroot_path = args_or_config.webroot_path[-1]
     for domain in args_or_config.domains:
-        args_or_config.webroot_map.set_default(domain, webroot_path)
+        args_or_config.webroot_map.setdefault(domain, webroot_path)
