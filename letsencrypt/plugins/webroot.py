@@ -15,6 +15,7 @@ from acme import challenges
 from letsencrypt import cli
 from letsencrypt import errors
 from letsencrypt import interfaces
+from letsencrypt.display import util as display_util
 from letsencrypt.plugins import common
 
 
@@ -33,6 +34,9 @@ Authenticator plugin that performs http-01 challenge by saving
 necessary validation resources to appropriate paths on the file
 system. It expects that there is some other HTTP server configured
 to serve all files under specified web root ({0})."""
+
+    _INTERACTIVE_CANCEL = ("Every requested domain must have a "
+                           "webroot when using the webroot plugin.")
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return self.MORE_INFO.format(self.conf("path"))
@@ -80,17 +84,40 @@ to serve all files under specified web root ({0})."""
             for achall in achalls:
                 self.conf("map").setdefault(achall.domain, webroot_path)
         else:
-            known_webroots = list(six.itervalues(self.conf("map")))
+            known_webroots = list(set(six.itervalues(self.conf("map"))))
             for achall in achalls:
                 if achall.domain not in self.conf("map"):
-                    self._prompt_for_webroot(achall.domain, known_webroots)
+                    new_webroot = self._prompt_for_webroot(achall.domain,
+                                                           known_webroots)
+                    try:
+                        known_webroots.remove(new_webroot)
+                    except ValueError:
+                        pass
+                    known_webroots.append(new_webroot)
+                    self.conf("map")[achall.domain] = new_webroot
 
     def _prompt_for_webroot(self, domain, known_webroots):
         display = zope.component.getUtility(interfaces.IDisplay)
-        display.menu(
+        code, index = display.menu(
             "Select the webroot for {0}:".format(domain),
-            ["Enter a new webroot"] + known_webroots,
-            help_label="Help")
+            ["Enter a new webroot"] + known_webroots[::-1])
+        if code == display_util.CANCEL:
+            raise errors.PluginError(self._INTERACTIVE_CANCEL)
+        elif index != 0:
+            return known_webroots[index - 1]
+
+        while True:
+            code, webroot = display.directory_select(
+                "Input the webroot for {0}:".format(domain))
+            if code == display_util.CANCEL:
+                raise errors.PluginError(self._INTERACTIVE_CANCEL)
+            elif code == display_util.HELP:
+                display.notification(display_util.DSELECT_HELP)
+            else:
+                try:
+                    return _validate_webroot(webroot)
+                except errors.PluginError:
+                    pass
 
     def _create_challenge_dirs(self):
         path_map = self.conf("map")
