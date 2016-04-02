@@ -211,7 +211,7 @@ def _renew_describe_results(config, renew_successes, renew_failures,
                             renew_skipped, parse_failures):
     if config.quiet and (renew_failures or parse_failures):
         # In case of errors, spin up a new non-quiet output display
-        dest = display_util.NoninteractiveDisplay(sys.stdout).log()
+        dest = display_util.NoninteractiveDisplay(sys.stdout)
     else:
         dest = zope.component.getUtility(interfaces.IDisplay)
 
