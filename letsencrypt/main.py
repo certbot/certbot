@@ -673,14 +673,14 @@ def main(cli_args=sys.argv[1:]):
 
     # Displayer
     if config.noninteractive_mode:
-        displayer = display_util.NoninteractiveDisplay(sys.stdout)
+        displayer = display_util.NoninteractiveDisplay(sys.stdout).log()
     elif config.text_mode:
-        displayer = display_util.FileDisplay(sys.stdout)
+        displayer = display_util.FileDisplay(sys.stdout).log()
     elif config.verb == "renew":
         config.noninteractive_mode = True
-        displayer = display_util.NoninteractiveDisplay(sys.stdout)
+        displayer = display_util.NoninteractiveDisplay(sys.stdout).log()
     else:
-        displayer = display_util.NcursesDisplay()
+        displayer = display_util.NcursesDisplay().log()
     zope.component.provideUtility(displayer)
 
     # Reporter
