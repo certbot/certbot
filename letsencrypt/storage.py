@@ -50,10 +50,11 @@ def add_time_interval(base_time, interval, textparser=parsedatetime.Calendar()):
     return textparser.parseDT(interval, base_time, tzinfo=tzinfo)[0]
 
 
-def write_renewal_config(filename, target, relevant_data):
+def write_renewal_config(o_filename, n_filename, target, relevant_data):
     """Writes a renewal config file with the specified name and values.
 
-    :param str filename: Absolute path to the config file
+    :param str o_filename: Absolute path to the previous version of config file
+    :param str n_filename: Absolute path to the new destination of config file
     :param dict target: Maps ALL_FOUR to their symlink paths
     :param dict relevant_data: Renewal configuration options to save
 
@@ -61,21 +62,27 @@ def write_renewal_config(filename, target, relevant_data):
     :rtype: configobj.ConfigObj
 
     """
-    # create_empty creates a new config file if filename does not exist
-    config = configobj.ConfigObj(filename, create_empty=True)
+    config = configobj.ConfigObj(o_filename)
     for kind in ALL_FOUR:
         config[kind] = target[kind]
 
-    if relevant_data:
-        config["renewalparams"] = relevant_data
+    if "renewalparams" not in config:
+        config["renewalparams"] = {}
         config.comments["renewalparams"] = ["",
                                             "Options used in "
                                             "the renewal process"]
 
+    config["renewalparams"].update(relevant_data)
+
+    for k in config["renewalparams"].keys():
+        if k not in relevant_data:
+            del config["renewalparams"][k]
+
     # TODO: add human-readable comments explaining other available
     #       parameters
-    logger.debug("Writing new config %s.", filename)
-    config.write()
+    logger.debug("Writing new config %s.", n_filename)
+    with open(n_filename, "w") as f:
+        config.write(outfile=f)
     return config
 
 
@@ -101,7 +108,7 @@ def update_configuration(lineagename, target, cli_config):
 
     # Save only the config items that are relevant to renewal
     values = relevant_values(vars(cli_config.namespace))
-    write_renewal_config(temp_filename, target, values)
+    write_renewal_config(config_filename, temp_filename, target, values)
     os.rename(temp_filename, config_filename)
 
     return configobj.ConfigObj(config_filename)
@@ -799,7 +806,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # Save only the config items that are relevant to renewal
         values = relevant_values(vars(cli_config.namespace))
 
-        new_config = write_renewal_config(config_filename, target, values)
+        new_config = write_renewal_config(config_filename, config_filename, target, values)
         return cls(new_config.filename, cli_config)
 
     def save_successor(self, prior_version, new_cert,
