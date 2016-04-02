@@ -78,7 +78,7 @@ def _reconstitute(config, full_path):
         _restore_plugin_configs(config, renewalparams)
     except (ValueError, errors.Error) as error:
         logger.warning(
-            "An error occured while parsing %s. The error was %s. "
+            "An error occurred while parsing %s. The error was %s. "
             "Skipping the file.", full_path, error.message)
         logger.debug("Traceback was:\n%s", traceback.format_exc())
         return None
