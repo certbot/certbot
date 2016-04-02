@@ -14,7 +14,7 @@ elif [ -f /etc/redhat-release ] ; then
   echo "Bootstrapping dependencies for RedHat-based OSes..."
   $SUDO bootstrap/_rpm_common.sh
 else
-  echo "Dont have bootstrapping for this OS!"
+  echo "Don't have bootstrapping for this OS!"
   exit 1
 fi
 
