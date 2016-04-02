@@ -674,7 +674,7 @@ def main(cli_args=sys.argv[1:]):
     # Displayer
     if config.quiet:
         config.noninteractive_mode = True
-        displayer = display_util.NoninteractiveDisplay(open("/dev/null", "w"))
+        displayer = display_util.NoninteractiveDisplay(open(os.devnull, "w"))
     elif config.noninteractive_mode:
         displayer = display_util.NoninteractiveDisplay(sys.stdout)
     elif config.text_mode:
