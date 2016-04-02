@@ -324,6 +324,11 @@ class HelpfulArgumentParser(object):
                 logger.debug("PEM CSR parse error %s", traceback.format_exc())
                 raise errors.Error("Failed to parse CSR file: {0}".format(parsed_args.csr[0]))
 
+        # This is not necessary for webroot to work, however,
+        # obtain_certificate_from_csr requires parsed_args.domains to be set
+        for domain in domains:
+            add_domains(parsed_args, domain)
+
         if not domains:
             # TODO: add CN to domains instead:
             raise errors.Error(
