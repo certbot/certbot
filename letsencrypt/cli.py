@@ -18,6 +18,7 @@ import letsencrypt
 from letsencrypt import constants
 from letsencrypt import crypto_util
 from letsencrypt import errors
+from letsencrypt import hooks
 from letsencrypt import interfaces
 from letsencrypt import le_util
 
@@ -306,6 +307,8 @@ class HelpfulArgumentParser(object):
         if self.detect_defaults:  # plumbing
             parsed_args.store_false_vars = self.store_false_vars
 
+        hooks.validate_hooks(parsed_args)
+
         return parsed_args
 
     def handle_csr(self, parsed_args):
@@ -555,7 +558,14 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         None, "--dry-run", action="store_true", dest="dry_run",
         help="Perform a test run of the client, obtaining test (invalid) certs"
              " but not saving them to disk. This can currently only be used"
-             " with the 'certonly' subcommand.")
+             " with the 'certonly' and 'renew' subcommands. \nNote: Although --dry-run"
+             " tries to avoid making any persistent changes on a system, it "
+             " is not completely side-effect free: if used with webserver authenticator plugins"
+             " like apache and nginx, it makes and then reverts temporary config changes"
+             " in order to obtain test certs, and reloads webservers to deploy and then"
+             " roll back those changes.  It also calls --pre-hook and --post-hook commands"
+             " if they are defined because they may be necessary to accurately simulate"
+             " renewal. --renew-hook commands are not called.")
     helpful.add(
         None, "--register-unsafely-without-email", action="store_true",
         help="Specifying this flag enables registering an account with no "
@@ -692,7 +702,26 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         " used to create obtain or most recently successfully renew each"
         " certificate lineage. You can try it with `--dry-run` first. For"
         " more fine-grained control, you can renew individual lineages with"
-        " the `certonly` subcommand.")
+        " the `certonly` subcommand. Hooks are available to run commands "
+        " before and after renewal; see XXX for more information on these.")
+
+    helpful.add(
+        "renew", "--pre-hook",
+        help="Command to be run in a shell before obtaining any certificates. Intended"
+        " primarily for renewal, where it can be used to temporarily shut down a"
+        " webserver that might conflict with the standalone plugin. This will "
+        " only be called if a certificate is actually to be obtained/renewed. ")
+    helpful.add(
+        "renew", "--post-hook",
+        help="Command to be run in a shell after attempting to obtain/renew "
+        " certificates. Can be used to deploy renewed certificates, or to restart"
+        " any servers that were stopped by --pre-hook.")
+    helpful.add(
+        "renew", "--renew-hook",
+        help="Command to be run in a shell once for each successfully renewed certificate."
+        "For this command, the shell variable $RENEWED_LINEAGE will point to the"
+        "config live subdirectory containing the new certs and keys; the shell variable "
+        "$RENEWED_DOMAINS will conatain a space-delimited list of renewed cert domains")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
 

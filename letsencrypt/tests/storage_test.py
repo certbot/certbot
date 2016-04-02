@@ -1,4 +1,5 @@
 """Tests for letsencrypt.storage."""
+# pylint disable=protected-access
 import datetime
 import os
 import shutil

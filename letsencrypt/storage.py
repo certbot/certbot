@@ -259,6 +259,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         self.privkey = self.configuration["privkey"]
         self.chain = self.configuration["chain"]
         self.fullchain = self.configuration["fullchain"]
+        self.live_dir = os.path.dirname(self.cert)
 
         self._fix_symlinks()
         self._check_symlinks()
