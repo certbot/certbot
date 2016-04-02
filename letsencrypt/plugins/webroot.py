@@ -1,13 +1,15 @@
 """Webroot plugin."""
 import argparse
+import collections
 import errno
+import itertools
 import json
 import logging
 import os
-from collections import defaultdict
 
-import zope.interface
 import six
+import zope.component
+import zope.interface
 
 from acme import challenges
 
@@ -61,20 +63,38 @@ to serve all files under specified web root ({0})."""
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
         self.full_roots = {}
-        self.performed = defaultdict(set)
+        self.performed = collections.defaultdict(set)
 
     def prepare(self):  # pylint: disable=missing-docstring
         pass
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
-        if self.conf("path"):
-            webroot_path = self.conf("path")[-1]
-            for achall in achalls:
-                self.conf("map").setdefault(achall.domain, webroot_path)
+        self._get_webroots(achalls)
 
         self._create_challenge_dirs()
 
         return [self._perform_single(achall) for achall in achalls]
+
+    def _get_webroots(self, achalls):
+        if self.conf("path"):
+            webroot_path = self.conf("path")[-1]
+            for achall in achalls:
+                self.conf("map").setdefault(achall.domain, webroot_path)
+        else:
+            # An OrderedDict is used because it maintains
+            # insertion order and fast element lookup
+            known_webroots = collections.OrderedDict(
+                (path, None) for path in six.itervalues(self.conf("map")))
+            for achall in achalls:
+                if achall.domain not in self.conf("map"):
+                    self._prompt_for_webroot(achall.domain, known_webroots)
+
+    def _prompt_for_webroot(self, domain, known_webroots):
+        display = zope.component.getUtility(interfaces.IDisplay)
+        display.menu(
+            "Select the webroot for {0}:".format(domain),
+            itertools.chain(("Enter a new webroot",), known_webroots),
+            help_label="Help")
 
     def _create_challenge_dirs(self):
         path_map = self.conf("map")
