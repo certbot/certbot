@@ -231,7 +231,7 @@ def _renew_describe_results(config, renew_successes, renew_failures,
         logger.error("The following certs were successfully renewed:")
         logger.error(report(renew_successes, "success"))
         logger.error("\nThe following certs could not be renewed:")
-        logger.error(renew_failures, "failure")
+        logger.error(report(renew_failures, "failure"))
 
     if parse_failures:
         logger.error("\nAdditionally, the following renewal configuration files "
