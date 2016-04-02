@@ -4,7 +4,6 @@ import copy
 import glob
 import logging
 import os
-import sys
 import traceback
 
 import six
@@ -21,7 +20,6 @@ from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import hooks
 from letsencrypt import storage
-from letsencrypt.display import util as display_util
 from letsencrypt.plugins import disco as plugins_disco
 
 logger = logging.getLogger(__name__)
