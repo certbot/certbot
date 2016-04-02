@@ -4,6 +4,7 @@ import copy
 import glob
 import logging
 import os
+import sys
 import traceback
 
 import six
@@ -14,6 +15,7 @@ from letsencrypt import cli
 from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import storage
+from letsencrypt.display import util as display_util
 from letsencrypt.plugins import disco as plugins_disco
 
 logger = logging.getLogger(__name__)
@@ -200,15 +202,20 @@ def should_renew(config, lineage):
     return False
 
 
+def report(msgs, category):
+    "Report results for a category of renewal outcomes"
+    lines = ("%s (%s)" % (m, category) for m in msgs)
+    return "  " + "\n  ".join(lines)
+
 def _renew_describe_results(config, renew_successes, renew_failures,
                             renew_skipped, parse_failures):
-    def notify(msg):
-        "A variant of print() that is silenced by -q"
-        zope.component.getUtility(interfaces.IDisplay).notification(msg, pause=False)
+    if config.quiet and (renew_failures or parse_failures):
+        # In case of errors, spin up a new non-quiet output display
+        dest = display_util.NoninteractiveDisplay(sys.stdout).log()
+    else:
+        dest = zope.component.getUtility(interfaces.IDisplay)
 
-    def report(msgs, category):
-        "Report results for a category of renewal outcomes"
-        return "  " + "\n  ".join("%s (%s)" % (m, category) for m in msgs)
+    notify = lambda msg: dest.notification(msg, pause=False)
 
     if config.dry_run:
         notify("** DRY RUN: simulating 'letsencrypt renew' close to cert expiry")
@@ -224,19 +231,19 @@ def _renew_describe_results(config, renew_successes, renew_failures,
                "have been renewed:")
         notify(report(renew_successes, "success"))
     elif renew_failures and not renew_successes:
-        logger.error("All renewal attempts failed. The following certs could not be "
+        notify("All renewal attempts failed. The following certs could not be "
                "renewed:")
-        logger.error(report(renew_failures, "failure"))
+        notify(report(renew_failures, "failure"))
     elif renew_failures and renew_successes:
-        logger.error("The following certs were successfully renewed:")
-        logger.error(report(renew_successes, "success"))
-        logger.error("\nThe following certs could not be renewed:")
-        logger.error(report(renew_failures, "failure"))
+        notify("The following certs were successfully renewed:")
+        notify(report(renew_successes, "success"))
+        notify("\nThe following certs could not be renewed:")
+        notify(report(renew_failures, "failure"))
 
     if parse_failures:
-        logger.error("\nAdditionally, the following renewal configuration files "
-                     "were invalid: ")
-        logger.error(parse_failures, "parsefail")
+        notify("\nAdditionally, the following renewal configuration files "
+                    "were invalid: ")
+        notify(parse_failures, "parsefail")
 
     if config.dry_run:
         notify("** DRY RUN: simulating 'letsencrypt renew' close to cert expiry")
