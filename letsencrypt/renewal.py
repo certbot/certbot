@@ -228,7 +228,8 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
 
 def renew_cert(config, domains, le_client, lineage):
     "Renew a certificate lineage."
-    original_server = lineage.configuration["renewalparams"]["server"]
+    renewal_params = lineage.configuration["renewalparams"]
+    original_server = renewal_params.get("server", cli.flag_default("server"))
     _avoid_invalidating_lineage(config, lineage, original_server)
     new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
     if config.dry_run:
