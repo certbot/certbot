@@ -46,14 +46,14 @@ class HookTest(unittest.TestCase):
         mockwhich.return_value = None
         self.assertEqual(hooks._prog("funky"), None)
 
-    @mock.patch('letsencrypt.hooks.logger')
-    def _test_a_hook(self, config, hook_function, calls_expected, mock_logger):
-        mock_logger.warning = mock.MagicMock()
-        with mock.patch('letsencrypt.hooks._run_hook') as mock_run_hook:
-            hook_function(config)
-            hook_function(config)
-            self.assertEqual(mock_run_hook.call_count, calls_expected)
-        return mock_logger.warning
+    def _test_a_hook(self, config, hook_function, calls_expected):
+        with mock.patch('letsencrypt.hooks.logger') as mock_logger:
+            mock_logger.warning = mock.MagicMock()
+            with mock.patch('letsencrypt.hooks._run_hook') as mock_run_hook:
+                hook_function(config)
+                hook_function(config)
+                self.assertEqual(mock_run_hook.call_count, calls_expected)
+            return mock_logger.warning
 
     def test_pre_hook(self):
         config = mock.MagicMock(pre_hook="true")
