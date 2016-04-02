@@ -302,10 +302,7 @@ class HelpfulArgumentParser(object):
         return parsed_args
 
     def handle_csr(self, parsed_args):
-        """
-        Process a --csr flag. This needs to happen early enough that the
-        webroot plugin can know about the calls to add_domains.
-        """
+        """Process a --csr flag."""
         if parsed_args.verb != "certonly":
             raise errors.Error("Currently, a CSR file may only be specified "
                                "when obtaining a new or replacement "
@@ -327,9 +324,6 @@ class HelpfulArgumentParser(object):
                 logger.debug("PEM CSR parse error %s", traceback.format_exc())
                 raise errors.Error("Failed to parse CSR file: {0}".format(parsed_args.csr[0]))
 
-        for d in domains:
-            add_domains(parsed_args, d)
-
         if not domains:
             # TODO: add CN to domains instead:
             raise errors.Error(
@@ -337,11 +331,11 @@ class HelpfulArgumentParser(object):
                 % parsed_args.csr[0])
 
         parsed_args.actual_csr = (csr, typ)
-        csr_domains, config_domains = set(domains), set(parsed_args.domains)
-        if csr_domains != config_domains:
+        # If CSR domains are not a superset of the domains provided by the CLI
+        if set(parsed_args.domains) - set(domains):
             raise errors.ConfigurationError(
                 "Inconsistent domain requests:\nFrom the CSR: {0}\nFrom command line/config: {1}"
-                .format(", ".join(csr_domains), ", ".join(config_domains)))
+                .format(", ".join(domains), ", ".join(parsed_args.domains)))
 
 
     def determine_verb(self):

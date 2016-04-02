@@ -67,7 +67,13 @@ to serve all files under specified web root ({0})."""
         pass
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
+        if self.conf("path"):
+            webroot_path = self.conf("path")[-1]
+            for achall in achalls:
+                self.conf("map").setdefault(achall.domain, webroot_path)
+
         self._create_challenge_dirs()
+
         return [self._perform_single(achall) for achall in achalls]
 
     def _create_challenge_dirs(self):
