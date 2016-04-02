@@ -288,7 +288,7 @@ def _renew_describe_results(config, renew_successes, renew_failures,
 
     if parse_failures:
         notify("\nAdditionally, the following renewal configuration files "
-                    "were invalid: ")
+               "were invalid: ")
         notify(parse_failures, "parsefail")
 
     if config.dry_run:
@@ -307,9 +307,6 @@ def _renew_describe_results(config, renew_successes, renew_failures,
 def renew_all_lineages(config):
     """Examine each lineage; renew if due and report results"""
 
-    def _notify(msg):
-        zope.component.getUtility(interfaces.IDisplay).notification(msg, pause=False)
-
     if config.domains != []:
         raise errors.Error("Currently, the renew verb is only capable of "
                            "renewing all installed certificates that are due "
@@ -324,7 +321,8 @@ def renew_all_lineages(config):
     renew_skipped = []
     parse_failures = []
     for renewal_file in renewal_conf_files(renewer_config):
-        _notify("Processing " + renewal_file)
+        disp = zope.component.getUtility(interfaces.IDisplay)
+        disp.notification("Processing " + renewal_file, pause=False)
         lineage_config = copy.deepcopy(config)
 
         # Note that this modifies config (to add back the configuration

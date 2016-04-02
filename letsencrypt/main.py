@@ -687,7 +687,7 @@ def main(cli_args=sys.argv[1:]):
     zope.component.provideUtility(displayer)
 
     # Reporter
-    report = reporter.Reporter()
+    report = reporter.Reporter(config)
     zope.component.provideUtility(report)
     atexit.register(report.atexit_print_messages)
 

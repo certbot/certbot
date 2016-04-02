@@ -373,7 +373,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         try:
             self._call(['--csr', CSR])
         except errors.Error as e:
-            assert "Please try the certonly" in e.message
+            assert "Please try the certonly" in repr(e)
             return
         assert False, "Expected supplying --csr to fail with default verb"
 

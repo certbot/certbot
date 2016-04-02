@@ -3,7 +3,6 @@
 
 import os
 import unittest
-import sys
 
 import mock
 
@@ -47,12 +46,14 @@ class HookTest(unittest.TestCase):
         mockwhich.return_value = None
         self.assertEqual(hooks._prog("funky"), None)
 
-    def _test_a_hook(self, config, hook_function, calls_expected):
-        with mock.patch('letsencrypt.hooks.logger'):
-            with mock.patch('letsencrypt.hooks._run_hook') as mock_run_hook:
-                hook_function(config)
-                hook_function(config)
-                self.assertEqual(mock_run_hook.call_count, calls_expected)
+    @mock.patch('letsencrypt.hooks.logger')
+    def _test_a_hook(self, config, hook_function, calls_expected, mock_logger):
+        mock_logger.warning = mock.MagicMock()
+        with mock.patch('letsencrypt.hooks._run_hook') as mock_run_hook:
+            hook_function(config)
+            hook_function(config)
+            self.assertEqual(mock_run_hook.call_count, calls_expected)
+        return mock_logger.warning
 
     def test_pre_hook(self):
         config = mock.MagicMock(pre_hook="true")
@@ -78,13 +79,8 @@ class HookTest(unittest.TestCase):
             self.assertEqual(os.environ["RENEWED_LINEAGE"], "thing")
 
             config = mock.MagicMock(renew_hook="true", dry_run=True)
-            if sys.version_info < (2, 7):
-                # the print() function is not mockable in py26
-                self._test_a_hook(config, rhook, 0)
-            else:
-                with mock.patch("letsencrypt.hooks.print") as mock_print:
-                    self._test_a_hook(config, rhook, 0)
-                    self.assertEqual(mock_print.call_count, 2)
+            mock_warn = self._test_a_hook(config, rhook, 0)
+            self.assertEqual(mock_warn.call_count, 2)
 
     @mock.patch('letsencrypt.hooks.Popen')
     def test_run_hook(self, mock_popen):
