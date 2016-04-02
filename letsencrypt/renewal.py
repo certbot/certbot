@@ -12,6 +12,7 @@ import zope.component
 from letsencrypt import configuration
 from letsencrypt import cli
 from letsencrypt import errors
+from letsencrypt import interfaces
 from letsencrypt import storage
 from letsencrypt.plugins import disco as plugins_disco
 
@@ -201,43 +202,52 @@ def should_renew(config, lineage):
 
 def _renew_describe_results(config, renew_successes, renew_failures,
                             renew_skipped, parse_failures):
-    def _status(msgs, category):
-        return "  " + "\n  ".join("%s (%s)" % (m, category) for m in msgs)
+    def notify(msg):
+        "Our version of print()"
+        zope.component.getUtility(interfaces.IDisplay).notification(msg, pause=False)
+
+    def report(msgs, category):
+        "Report results for a category of renewal outcomes"
+        notify("  " + "\n  ".join("%s (%s)" % (m, category) for m in msgs))
+
     if config.dry_run:
-        print("** DRY RUN: simulating 'letsencrypt renew' close to cert expiry")
-        print("**          (The test certificates below have not been saved.)")
-    print()
+        notify("** DRY RUN: simulating 'letsencrypt renew' close to cert expiry")
+        notify("**          (The test certificates below have not been saved.)")
+    notify("")
     if renew_skipped:
-        print("The following certs are not due for renewal yet:")
-        print(_status(renew_skipped, "skipped"))
+        notify("The following certs are not due for renewal yet:")
+        report(renew_skipped, "skipped")
     if not renew_successes and not renew_failures:
-        print("No renewals were attempted.")
+        notify("No renewals were attempted.")
     elif renew_successes and not renew_failures:
-        print("Congratulations, all renewals succeeded. The following certs "
-              "have been renewed:")
-        print(_status(renew_successes, "success"))
+        notify("Congratulations, all renewals succeeded. The following certs "
+               "have been renewed:")
+        report(renew_successes, "success")
     elif renew_failures and not renew_successes:
-        print("All renewal attempts failed. The following certs could not be "
-              "renewed:")
-        print(_status(renew_failures, "failure"))
+        notify("All renewal attempts failed. The following certs could not be "
+               "renewed:")
+        report(renew_failures, "failure")
     elif renew_failures and renew_successes:
-        print("The following certs were successfully renewed:")
-        print(_status(renew_successes, "success"))
-        print("\nThe following certs could not be renewed:")
-        print(_status(renew_failures, "failure"))
+        notify("The following certs were successfully renewed:")
+        report(renew_successes, "success")
+        notify("\nThe following certs could not be renewed:")
+        report(renew_failures, "failure")
 
     if parse_failures:
-        print("\nAdditionally, the following renewal configuration files "
-              "were invalid: ")
-        print(_status(parse_failures, "parsefail"))
+        notify("\nAdditionally, the following renewal configuration files "
+                "were invalid: ")
+        report(parse_failures, "parsefail")
 
     if config.dry_run:
-        print("** DRY RUN: simulating 'letsencrypt renew' close to cert expiry")
-        print("**          (The test certificates above have not been saved.)")
+        notify("** DRY RUN: simulating 'letsencrypt renew' close to cert expiry")
+        notify("**          (The test certificates above have not been saved.)")
 
 
 def renew_all_lineages(config):
     """Examine each lineage; renew if due and report results"""
+
+    def _notify(msg):
+        zope.component.getUtility(interfaces.IDisplay).notification(msg, pause=False)
 
     if config.domains != []:
         raise errors.Error("Currently, the renew verb is only capable of "
@@ -253,7 +263,7 @@ def renew_all_lineages(config):
     renew_skipped = []
     parse_failures = []
     for renewal_file in renewal_conf_files(renewer_config):
-        print("Processing " + renewal_file)
+        _notify("Processing " + renewal_file)
         lineage_config = copy.deepcopy(config)
 
         # Note that this modifies config (to add back the configuration
