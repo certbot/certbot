@@ -2,7 +2,6 @@
 import argparse
 import collections
 import errno
-import itertools
 import json
 import logging
 import os
@@ -81,10 +80,7 @@ to serve all files under specified web root ({0})."""
             for achall in achalls:
                 self.conf("map").setdefault(achall.domain, webroot_path)
         else:
-            # An OrderedDict is used because it maintains
-            # insertion order and fast element lookup
-            known_webroots = collections.OrderedDict(
-                (path, None) for path in six.itervalues(self.conf("map")))
+            known_webroots = list(six.itervalues(self.conf("map")))
             for achall in achalls:
                 if achall.domain not in self.conf("map"):
                     self._prompt_for_webroot(achall.domain, known_webroots)
@@ -93,7 +89,7 @@ to serve all files under specified web root ({0})."""
         display = zope.component.getUtility(interfaces.IDisplay)
         display.menu(
             "Select the webroot for {0}:".format(domain),
-            itertools.chain(("Enter a new webroot",), known_webroots),
+            ["Enter a new webroot"] + known_webroots,
             help_label="Help")
 
     def _create_challenge_dirs(self):
