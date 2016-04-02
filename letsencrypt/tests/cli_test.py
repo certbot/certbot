@@ -580,11 +580,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                     mock_init.return_value = mock_client
                     get_utility_path = 'letsencrypt.main.zope.component.getUtility'
                     with mock.patch(get_utility_path) as mock_get_utility:
-                        with mock.patch('letsencrypt.main.OpenSSL') as mock_ssl:
+                        with mock.patch('letsencrypt.main.renewal.OpenSSL') as mock_ssl:
                             mock_latest = mock.MagicMock()
                             mock_latest.get_issuer.return_value = "Fake fake"
                             mock_ssl.crypto.load_certificate.return_value = mock_latest
-                            with mock.patch('letsencrypt.main.crypto_util'):
+                            with mock.patch('letsencrypt.main.renewal.crypto_util'):
                                 if not args:
                                     args = ['-d', 'isnot.org', '-a', 'standalone', 'certonly']
                                 if extra_args:
