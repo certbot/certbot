@@ -1,5 +1,4 @@
 """Tests for letsencrypt.cli."""
-
 from __future__ import print_function
 
 import argparse
@@ -13,6 +12,7 @@ import unittest
 
 import mock
 import six
+from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import jose
 
@@ -24,6 +24,7 @@ from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import le_util
 from letsencrypt import main
+from letsencrypt import renewal
 from letsencrypt import storage
 
 from letsencrypt.plugins import disco
@@ -54,7 +55,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         shutil.rmtree(self.tmp_dir)
         # Reset globals in cli
         # pylint: disable=protected-access
-        cli._parser = cli._set_by_cli.detector = None
+        cli._parser = cli.set_by_cli.detector = None
 
     def _call(self, args):
         "Run the cli with output streams and actual client mocked out"
@@ -203,12 +204,12 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(args.chain_path, os.path.abspath(chain))
         self.assertEqual(args.fullchain_path, os.path.abspath(fullchain))
 
-    @mock.patch('letsencrypt.main.cli.record_chosen_plugins')
-    @mock.patch('letsencrypt.main.cli.display_ops')
-    def test_installer_selection(self, mock_display_ops, _rec):
+    @mock.patch('letsencrypt.main.plug_sel.record_chosen_plugins')
+    @mock.patch('letsencrypt.main.plug_sel.pick_installer')
+    def test_installer_selection(self, mock_pick_installer, _rec):
         self._call(['install', '--domains', 'foo.bar', '--cert-path', 'cert',
                     '--key-path', 'key', '--chain-path', 'chain'])
-        self.assertEqual(mock_display_ops.pick_installer.call_count, 1)
+        self.assertEqual(mock_pick_installer.call_count, 1)
 
     @mock.patch('letsencrypt.le_util.exe_exists')
     def test_configurator_selection(self, mock_exe_exists):
@@ -499,7 +500,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._webroot_map_test(simple_map, "/tmp2", "eg2.com,eg.com", expected_map, domains)
 
         # test inclusion of interactively specified domains in the webroot map
-        with mock.patch('letsencrypt.cli.display_ops.choose_names') as mock_choose:
+        with mock.patch('letsencrypt.display.ops.choose_names') as mock_choose:
             mock_choose.return_value = domains
             expected_map["eg2.com"] = "/tmp"
             self._webroot_map_test(None, "/tmp", None, expected_map, domains)
@@ -523,7 +524,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 args += '-d foo.bar -a standalone certonly'.split()
                 self._call(args)
 
-    @mock.patch('letsencrypt.cli.zope.component.getUtility')
+    @mock.patch('letsencrypt.main.zope.component.getUtility')
     def test_certonly_dry_run_new_request_success(self, mock_get_utility):
         mock_client = mock.MagicMock()
         mock_client.obtain_and_enroll_certificate.return_value = None
@@ -536,7 +537,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(mock_get_utility().add_message.call_count, 1)
 
     @mock.patch('letsencrypt.crypto_util.notAfter')
-    @mock.patch('letsencrypt.cli.zope.component.getUtility')
+    @mock.patch('letsencrypt.main.zope.component.getUtility')
     def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter):
         cert_path = '/etc/letsencrypt/live/foo.bar'
         date = '1970-01-01'
@@ -561,7 +562,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                           self._certonly_new_request_common, mock_client)
 
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
-                             args=None, renew=True, error_expected=False):
+                             args=None, should_renew=True, error_expected=False):
         # pylint: disable=too-many-locals,too-many-arguments
         cert_path = 'letsencrypt/tests/testdata/cert.pem'
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
@@ -579,11 +580,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                     mock_init.return_value = mock_client
                     get_utility_path = 'letsencrypt.main.zope.component.getUtility'
                     with mock.patch(get_utility_path) as mock_get_utility:
-                        with mock.patch('letsencrypt.main.OpenSSL') as mock_ssl:
+                        with mock.patch('letsencrypt.main.renewal.OpenSSL') as mock_ssl:
                             mock_latest = mock.MagicMock()
                             mock_latest.get_issuer.return_value = "Fake fake"
                             mock_ssl.crypto.load_certificate.return_value = mock_latest
-                            with mock.patch('letsencrypt.main.crypto_util'):
+                            with mock.patch('letsencrypt.main.renewal.crypto_util'):
                                 if not args:
                                     args = ['-d', 'isnot.org', '-a', 'standalone', 'certonly']
                                 if extra_args:
@@ -600,7 +601,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                                             "Unexpected renewal error:\n" +
                                             traceback.format_exc())
 
-            if renew:
+            if should_renew:
                 mock_client.obtain_certificate.assert_called_once_with(['isnot.org'])
             else:
                 self.assertEqual(mock_client.obtain_certificate.call_count, 0)
@@ -635,7 +636,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(get_utility().add_message.call_count, 1)
 
         _, _ = self._test_renewal_common(False, ['-tvv', '--debug', '--keep'],
-                                        log_out="not yet due", renew=False)
+                                        log_out="not yet due", should_renew=False)
 
     def _dump_log(self):
         with open(os.path.join(self.logs_dir, "letsencrypt.log")) as lf:
@@ -658,9 +659,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_renew_verb(self):
         self._make_test_renewal_conf('sample-renewal.conf')
         args = ["renew", "--dry-run", "-tvv"]
-        self._test_renewal_common(True, [], args=args, renew=True)
+        self._test_renewal_common(True, [], args=args, should_renew=True)
 
-    @mock.patch("letsencrypt.cli._set_by_cli")
+    @mock.patch("letsencrypt.cli.set_by_cli")
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         rc_path = self._make_test_renewal_conf('sample-renewal-ancient.conf')
@@ -670,7 +671,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             configuration.RenewerConfiguration(config))
         renewalparams = lineage.configuration["renewalparams"]
         # pylint: disable=protected-access
-        cli._restore_webroot_config(config, renewalparams)
+        renewal._restore_webroot_config(config, renewalparams)
         self.assertEqual(config.webroot_path, ["/var/www/"])
 
     def test_renew_verb_empty_config(self):
@@ -680,7 +681,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with open(os.path.join(rd, 'empty.conf'), 'w'):
             pass  # leave the file empty
         args = ["renew", "--dry-run", "-tvv"]
-        self._test_renewal_common(False, [], args=args, renew=False, error_expected=True)
+        self._test_renewal_common(False, [], args=args, should_renew=False, error_expected=True)
 
     def _make_dummy_renewal_config(self):
         renewer_configs_dir = os.path.join(self.config_dir, 'renewal')
@@ -701,7 +702,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mock_rc.return_value = mock_lineage
             with mock.patch('letsencrypt.main.obtain_cert') as mock_obtain_cert:
                 kwargs.setdefault('args', ['renew'])
-                self._test_renewal_common(True, None, renew=False, **kwargs)
+                self._test_renewal_common(True, None, should_renew=False, **kwargs)
 
             if assert_oc_called is not None:
                 if assert_oc_called:
@@ -749,7 +750,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def test_renew_reconstitute_error(self):
         # pylint: disable=protected-access
-        with mock.patch('letsencrypt.cli._reconstitute') as mock_reconstitute:
+        with mock.patch('letsencrypt.main.renewal._reconstitute') as mock_reconstitute:
             mock_reconstitute.side_effect = Exception
             self._test_renew_common(assert_oc_called=False, error_expected=True)
 
@@ -764,15 +765,15 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             with mock.patch('letsencrypt.main.obtain_cert') as mock_obtain_cert:
                 mock_obtain_cert.side_effect = Exception
                 self._test_renewal_common(True, None, error_expected=True,
-                                          args=['renew'], renew=False)
+                                          args=['renew'], should_renew=False)
 
     def test_renew_with_bad_cli_args(self):
         self._test_renewal_common(True, None, args='renew -d example.com'.split(),
-                                  renew=False, error_expected=True)
+                                  should_renew=False, error_expected=True)
         self._test_renewal_common(True, None, args='renew --csr {0}'.format(CSR).split(),
-                                  renew=False, error_expected=True)
+                                  should_renew=False, error_expected=True)
 
-    @mock.patch('letsencrypt.cli.zope.component.getUtility')
+    @mock.patch('letsencrypt.main.zope.component.getUtility')
     @mock.patch('letsencrypt.main._treat_as_renewal')
     @mock.patch('letsencrypt.main._init_le_client')
     def test_certonly_reinstall(self, mock_init, mock_renewal, mock_get_utility):
@@ -1021,6 +1022,80 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
         result = _find_duplicative_certs(
             self.cli_config, ['example.com', 'something.new'])
         self.assertEqual(result, (None, None))
+
+
+class DefaultTest(unittest.TestCase):
+    """Tests for letsencrypt.cli._Default."""
+
+    def setUp(self):
+        # pylint: disable=protected-access
+        self.default1 = cli._Default()
+        self.default2 = cli._Default()
+
+    def test_boolean(self):
+        self.assertFalse(self.default1)
+        self.assertFalse(self.default2)
+
+    def test_equality(self):
+        self.assertEqual(self.default1, self.default2)
+
+    def test_hash(self):
+        self.assertEqual(hash(self.default1), hash(self.default2))
+
+
+class SetByCliTest(unittest.TestCase):
+    """Tests for letsencrypt.set_by_cli and related functions."""
+
+    def setUp(self):
+        reload_module(cli)
+
+    def test_webroot_map(self):
+        args = '-w /var/www/html -d example.com'.split()
+        verb = 'renew'
+        self.assertTrue(_call_set_by_cli('webroot_map', args, verb))
+
+    def test_report_config_interaction_str(self):
+        cli.report_config_interaction('manual_public_ip_logging_ok',
+                                      'manual_test_mode')
+        cli.report_config_interaction('manual_test_mode', 'manual')
+
+        self._test_report_config_interaction_common()
+
+    def test_report_config_interaction_iterable(self):
+        cli.report_config_interaction(('manual_public_ip_logging_ok',),
+                                      ('manual_test_mode',))
+        cli.report_config_interaction(('manual_test_mode',), ('manual',))
+
+        self._test_report_config_interaction_common()
+
+    def _test_report_config_interaction_common(self):
+        """Tests implied interaction between manual flags.
+
+        --manual implies --manual-test-mode which implies
+        --manual-public-ip-logging-ok. These interactions don't actually
+        exist in the client, but are used here for testing purposes.
+
+        """
+
+        args = ['--manual']
+        verb = 'renew'
+        for v in ('manual', 'manual_test_mode', 'manual_public_ip_logging_ok'):
+            self.assertTrue(_call_set_by_cli(v, args, verb))
+
+        cli.set_by_cli.detector = None
+
+        args = ['--manual-test-mode']
+        for v in ('manual_test_mode', 'manual_public_ip_logging_ok'):
+            self.assertTrue(_call_set_by_cli(v, args, verb))
+
+        self.assertFalse(_call_set_by_cli('manual', args, verb))
+
+
+def _call_set_by_cli(var, args, verb):
+    with mock.patch('letsencrypt.cli.helpful_parser') as mock_parser:
+        mock_parser.args = args
+        mock_parser.verb = verb
+        return cli.set_by_cli(var)
 
 
 if __name__ == '__main__':
