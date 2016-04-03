@@ -1065,14 +1065,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
     helpful.add(
         "security", "--ecdsa-curve", default=flag_default("ecdsa_curve"),
-        help="Set the certificate ECDSA curve. Current possible curves: "
-        "prime256v1 (default) or secp384r1")
+        help=config_help("ecdsa_curve"))
     helpful.add(
         "security", "--key-types", default=flag_default("key_types"),
-        help="Whitespace seperated list of key types for which certificates "
-        "will be issued. Possible values are: RSA and/or ECDSA. Default: \"RSA\". "
-        "Note: at the moment it's only possible to request one of the key "
-        "types listed above. This is set to change in the future.")
+        help=config_help("key_types"))
     helpful.add(
         "security", "--redirect", action="store_true",
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "

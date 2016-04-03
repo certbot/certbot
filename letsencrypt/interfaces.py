@@ -200,6 +200,14 @@ class IConfig(zope.interface.Interface):
     email = zope.interface.Attribute(
         "Email used for registration and recovery contact.")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
+    ecdsa_curve = zope.interface.Attribute(
+        "Set the certificate ECDSA curve. Current possible curves: "
+        "P-256 (default) or P-384.")
+    key_types = zope.interface.Attribute(
+        "Whitespace seperated list of key types for which certificates will be "
+        "issued. Possible values are: \"RSA\" and/or \"ECDSA\". Default: \"RSA\". "
+        "Note: at the moment it's only possible to request one of the key "
+        "types listed above. This is set to change in the future.")
 
     config_dir = zope.interface.Attribute("Configuration directory.")
     work_dir = zope.interface.Attribute("Working directory.")

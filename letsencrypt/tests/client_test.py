@@ -98,7 +98,8 @@ class ClientTest(unittest.TestCase):
 
     def setUp(self):
         self.config = mock.MagicMock(
-            no_verify_ssl=False, config_dir="/etc/letsencrypt", allow_subset_of_names=False, key_types="rsa")
+            no_verify_ssl=False, config_dir="/etc/letsencrypt", allow_subset_of_names=False,
+            key_types="rsa")
         # pylint: disable=star-args
         self.account = mock.MagicMock(**{"key.pem": KEY})
         self.eg_domains = ["example.com", "www.example.com"]
@@ -192,7 +193,7 @@ class ClientTest(unittest.TestCase):
             mock_logger.warning.assert_called_once_with(mock.ANY)
 
     @mock.patch("letsencrypt.client.crypto_util")
-    def test_obtain_certificate(self, mock_crypto_util):
+    def test_obtain_certificate_rsa(self, mock_crypto_util):
         self._mock_obtain_certificate()
 
         csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
@@ -221,6 +222,78 @@ class ClientTest(unittest.TestCase):
 
         mock_crypto_util.save_key.assert_called_once_with(
             mock_crypto_util.make_key_rsa(), self.config.key_dir)
+        mock_crypto_util.init_save_csr.assert_called_once_with(
+            mock.sentinel.key, domains, self.config.csr_dir)
+        self._check_obtain_certificate()
+
+    @mock.patch("letsencrypt.client.crypto_util")
+    def test_obtain_certificate_ecdsa_p256(self, mock_crypto_util):
+        self._mock_obtain_certificate()
+
+        self.config.key_types="ecdsa"
+        self.config.ecdsa_curve="p-256"
+        csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
+        mock_crypto_util.init_save_csr.return_value = csr
+        mock_crypto_util.save_key.return_value = mock.sentinel.key
+        domains = ["example.com", "www.example.com"]
+
+        # return_value is essentially set to (None, None) in
+        # _mock_obtain_certificate(), which breaks this test.
+        # Thus fixed by the next line.
+
+        authzr = []
+
+        for domain in domains:
+            authzr.append(
+                mock.MagicMock(
+                    body=mock.MagicMock(
+                        identifier=mock.MagicMock(
+                            value=domain))))
+
+        self.client.auth_handler.get_authorizations.return_value = authzr
+
+        self.assertEqual(
+            self.client.obtain_certificate(domains),
+            (mock.sentinel.certr, mock.sentinel.chain, mock.sentinel.key, csr))
+
+        mock_crypto_util.save_key.assert_called_once_with(
+            mock_crypto_util.make_key_ecdsa(), self.config.key_dir)
+        mock_crypto_util.init_save_csr.assert_called_once_with(
+            mock.sentinel.key, domains, self.config.csr_dir)
+        self._check_obtain_certificate()
+
+    @mock.patch("letsencrypt.client.crypto_util")
+    def test_obtain_certificate_ecdsa_p384(self, mock_crypto_util):
+        self._mock_obtain_certificate()
+
+        self.config.key_types="ecdsa"
+        self.config.ecdsa_curve="p-384"
+        csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
+        mock_crypto_util.init_save_csr.return_value = csr
+        mock_crypto_util.save_key.return_value = mock.sentinel.key
+        domains = ["example.com", "www.example.com"]
+
+        # return_value is essentially set to (None, None) in
+        # _mock_obtain_certificate(), which breaks this test.
+        # Thus fixed by the next line.
+
+        authzr = []
+
+        for domain in domains:
+            authzr.append(
+                mock.MagicMock(
+                    body=mock.MagicMock(
+                        identifier=mock.MagicMock(
+                            value=domain))))
+
+        self.client.auth_handler.get_authorizations.return_value = authzr
+
+        self.assertEqual(
+            self.client.obtain_certificate(domains),
+            (mock.sentinel.certr, mock.sentinel.chain, mock.sentinel.key, csr))
+
+        mock_crypto_util.save_key.assert_called_once_with(
+            mock_crypto_util.make_key_ecdsa(), self.config.key_dir)
         mock_crypto_util.init_save_csr.assert_called_once_with(
             mock.sentinel.key, domains, self.config.csr_dir)
         self._check_obtain_certificate()

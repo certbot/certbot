@@ -184,17 +184,21 @@ def make_key_rsa(bits):
 def make_key_ecdsa(curve):
     """Generate PEM encoded ECDSA key.
 
-    :param str curve: The ECDSA curve used (currently prime256v1 or secp384r1)
+    :param str curve: The ECDSA curve used (currently P-256 [prime256v1] or P-384 [secp384r1])
 
     :returns: new ECDSA key in PEM form with the specified curve
     :rtype: str
 
     """
 
-    if curve == "prime256v1":
+    if curve.lower() == "p-256":
         private_key = ec.generate_private_key(ec.SECP256R1(), default_backend())
-    elif curve == "secp384r1":
+    elif curve.lower() == "p-384":
         private_key = ec.generate_private_key(ec.SECP384R1(), default_backend())
+    else:
+        raise errors.Error(
+            "Elliptic curve for ECDSA keypair generation not recognised. Current allowed curves "
+            "are \"P-256\" or \"P-384\".")
 
     return private_key.private_bytes(
         encoding=serialization.Encoding.PEM, format=serialization.PrivateFormat.TraditionalOpenSSL,
