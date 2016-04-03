@@ -230,8 +230,8 @@ class ClientTest(unittest.TestCase):
     def test_obtain_certificate_ecdsa_p256(self, mock_crypto_util):
         self._mock_obtain_certificate()
 
-        self.config.key_types="ecdsa"
-        self.config.ecdsa_curve="p-256"
+        self.config.key_types = "ecdsa"
+        self.config.ecdsa_curve = "p-256"
         csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
         mock_crypto_util.init_save_csr.return_value = csr
         mock_crypto_util.save_key.return_value = mock.sentinel.key
@@ -266,8 +266,8 @@ class ClientTest(unittest.TestCase):
     def test_obtain_certificate_ecdsa_p384(self, mock_crypto_util):
         self._mock_obtain_certificate()
 
-        self.config.key_types="ecdsa"
-        self.config.ecdsa_curve="p-384"
+        self.config.key_types = "ecdsa"
+        self.config.ecdsa_curve = "p-384"
         csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
         mock_crypto_util.init_save_csr.return_value = csr
         mock_crypto_util.save_key.return_value = mock.sentinel.key
