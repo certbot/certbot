@@ -147,7 +147,7 @@ to serve all files under specified web root ({0})."""
                 try:
                     return _validate_webroot(webroot)
                 except errors.PluginError as error:
-                    display.notification(str(error))
+                    display.notification(str(error), pause=False)
 
     def _create_challenge_dirs(self):
         path_map = self.conf("map")
