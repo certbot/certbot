@@ -271,10 +271,8 @@ class AuthorizationTest(unittest.TestCase):
             ChallengeBody(uri='http://challb2', status=STATUS_VALID,
                           chall=challenges.DNS(
                               token=b'DGyRejmCefe7v4NfDGDKfA')),
-            ChallengeBody(uri='http://challb3', status=STATUS_VALID,
-                          chall=challenges.RecoveryContact()),
         )
-        combinations = ((0, 2), (1, 2))
+        combinations = ((0,), (1,))
 
         from acme.messages import Authorization
         from acme.messages import Identifier
@@ -300,8 +298,8 @@ class AuthorizationTest(unittest.TestCase):
 
     def test_resolved_combinations(self):
         self.assertEqual(self.authz.resolved_combinations, (
-            (self.challbs[0], self.challbs[2]),
-            (self.challbs[1], self.challbs[2]),
+            (self.challbs[0],),
+            (self.challbs[1],),
         ))
 
 

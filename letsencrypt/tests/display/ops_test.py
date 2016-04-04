@@ -22,146 +22,6 @@ from letsencrypt.tests import test_util
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
-class ChoosePluginTest(unittest.TestCase):
-    """Tests for letsencrypt.display.ops.choose_plugin."""
-
-    def setUp(self):
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
-        self.mock_apache = mock.Mock(
-            description_with_name="a", misconfigured=True)
-        self.mock_stand = mock.Mock(
-            description_with_name="s", misconfigured=False)
-        self.mock_stand.init().more_info.return_value = "standalone"
-        self.plugins = [
-            self.mock_apache,
-            self.mock_stand,
-        ]
-
-    def _call(self):
-        from letsencrypt.display.ops import choose_plugin
-        return choose_plugin(self.plugins, "Question?")
-
-    @mock.patch("letsencrypt.display.ops.util")
-    def test_selection(self, mock_util):
-        mock_util().menu.side_effect = [(display_util.OK, 0),
-                                        (display_util.OK, 1)]
-        self.assertEqual(self.mock_stand, self._call())
-        self.assertEqual(mock_util().notification.call_count, 1)
-
-    @mock.patch("letsencrypt.display.ops.util")
-    def test_more_info(self, mock_util):
-        mock_util().menu.side_effect = [
-            (display_util.HELP, 0),
-            (display_util.HELP, 1),
-            (display_util.OK, 1),
-        ]
-
-        self.assertEqual(self.mock_stand, self._call())
-        self.assertEqual(mock_util().notification.call_count, 2)
-
-    @mock.patch("letsencrypt.display.ops.util")
-    def test_no_choice(self, mock_util):
-        mock_util().menu.return_value = (display_util.CANCEL, 0)
-        self.assertTrue(self._call() is None)
-
-
-class PickPluginTest(unittest.TestCase):
-    """Tests for letsencrypt.display.ops.pick_plugin."""
-
-    def setUp(self):
-        self.config = mock.Mock(noninteractive_mode=False)
-        self.default = None
-        self.reg = mock.MagicMock()
-        self.question = "Question?"
-        self.ifaces = []
-
-    def _call(self):
-        from letsencrypt.display.ops import pick_plugin
-        return pick_plugin(self.config, self.default, self.reg,
-                           self.question, self.ifaces)
-
-    def test_default_provided(self):
-        self.default = "foo"
-        self._call()
-        self.assertEqual(1, self.reg.filter.call_count)
-
-    def test_no_default(self):
-        self._call()
-        self.assertEqual(1, self.reg.visible().ifaces.call_count)
-
-    def test_no_candidate(self):
-        self.assertTrue(self._call() is None)
-
-    def test_single(self):
-        plugin_ep = mock.MagicMock()
-        plugin_ep.init.return_value = "foo"
-        plugin_ep.misconfigured = False
-
-        self.reg.visible().ifaces().verify().available.return_value = {
-            "bar": plugin_ep}
-        self.assertEqual("foo", self._call())
-
-    def test_single_misconfigured(self):
-        plugin_ep = mock.MagicMock()
-        plugin_ep.init.return_value = "foo"
-        plugin_ep.misconfigured = True
-
-        self.reg.visible().ifaces().verify().available.return_value = {
-            "bar": plugin_ep}
-        self.assertTrue(self._call() is None)
-
-    def test_multiple(self):
-        plugin_ep = mock.MagicMock()
-        plugin_ep.init.return_value = "foo"
-        self.reg.visible().ifaces().verify().available.return_value = {
-            "bar": plugin_ep,
-            "baz": plugin_ep,
-        }
-        with mock.patch("letsencrypt.display.ops.choose_plugin") as mock_choose:
-            mock_choose.return_value = plugin_ep
-            self.assertEqual("foo", self._call())
-        mock_choose.assert_called_once_with(
-            [plugin_ep, plugin_ep], self.question)
-
-    def test_choose_plugin_none(self):
-        self.reg.visible().ifaces().verify().available.return_value = {
-            "bar": None,
-            "baz": None,
-        }
-
-        with mock.patch("letsencrypt.display.ops.choose_plugin") as mock_choose:
-            mock_choose.return_value = None
-            self.assertTrue(self._call() is None)
-
-
-class ConveniencePickPluginTest(unittest.TestCase):
-    """Tests for letsencrypt.display.ops.pick_*."""
-
-    def _test(self, fun, ifaces):
-        config = mock.Mock()
-        default = mock.Mock()
-        plugins = mock.Mock()
-
-        with mock.patch("letsencrypt.display.ops.pick_plugin") as mock_p:
-            mock_p.return_value = "foo"
-            self.assertEqual("foo", fun(config, default, plugins, "Question?"))
-        mock_p.assert_called_once_with(
-            config, default, plugins, "Question?", ifaces)
-
-    def test_authenticator(self):
-        from letsencrypt.display.ops import pick_authenticator
-        self._test(pick_authenticator, (interfaces.IAuthenticator,))
-
-    def test_installer(self):
-        from letsencrypt.display.ops import pick_installer
-        self._test(pick_installer, (interfaces.IInstaller,))
-
-    def test_configurator(self):
-        from letsencrypt.display.ops import pick_configurator
-        self._test(pick_configurator, (
-            interfaces.IAuthenticator, interfaces.IInstaller))
-
-
 class GetEmailTest(unittest.TestCase):
     """Tests for letsencrypt.display.ops.get_email."""
 
@@ -241,17 +101,17 @@ class ChooseAccountTest(unittest.TestCase):
         from letsencrypt.display import ops
         return ops.choose_account(accounts)
 
-    @mock.patch("letsencrypt.display.ops.util")
+    @mock.patch("letsencrypt.display.ops.z_util")
     def test_one(self, mock_util):
         mock_util().menu.return_value = (display_util.OK, 0)
         self.assertEqual(self._call([self.acc1]), self.acc1)
 
-    @mock.patch("letsencrypt.display.ops.util")
+    @mock.patch("letsencrypt.display.ops.z_util")
     def test_two(self, mock_util):
         mock_util().menu.return_value = (display_util.OK, 1)
         self.assertEqual(self._call([self.acc1, self.acc2]), self.acc2)
 
-    @mock.patch("letsencrypt.display.ops.util")
+    @mock.patch("letsencrypt.display.ops.z_util")
     def test_cancel(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, 1)
         self.assertTrue(self._call([self.acc1, self.acc2]) is None)
@@ -339,12 +199,12 @@ class ChooseNamesTest(unittest.TestCase):
         self._call(None)
         self.assertEqual(mock_manual.call_count, 1)
 
-    @mock.patch("letsencrypt.display.ops.util")
+    @mock.patch("letsencrypt.display.ops.z_util")
     def test_no_installer_cancel(self, mock_util):
         mock_util().input.return_value = (display_util.CANCEL, [])
         self.assertEqual(self._call(None), [])
 
-    @mock.patch("letsencrypt.display.ops.util")
+    @mock.patch("letsencrypt.display.ops.z_util")
     def test_no_names_choose(self, mock_util):
         self.mock_install().get_all_names.return_value = set()
         mock_util().yesno.return_value = True
@@ -355,14 +215,14 @@ class ChooseNamesTest(unittest.TestCase):
         self.assertEqual(mock_util().input.call_count, 1)
         self.assertEqual(actual_doms, [domain])
 
-    @mock.patch("letsencrypt.display.ops.util")
+    @mock.patch("letsencrypt.display.ops.z_util")
     def test_no_names_quit(self, mock_util):
         self.mock_install().get_all_names.return_value = set()
         mock_util().yesno.return_value = False
 
         self.assertEqual(self._call(self.mock_install), [])
 
-    @mock.patch("letsencrypt.display.ops.util")
+    @mock.patch("letsencrypt.display.ops.z_util")
     def test_filter_names_valid_return(self, mock_util):
         self.mock_install.get_all_names.return_value = set(["example.com"])
         mock_util().checklist.return_value = (display_util.OK, ["example.com"])
@@ -371,14 +231,14 @@ class ChooseNamesTest(unittest.TestCase):
         self.assertEqual(names, ["example.com"])
         self.assertEqual(mock_util().checklist.call_count, 1)
 
-    @mock.patch("letsencrypt.display.ops.util")
+    @mock.patch("letsencrypt.display.ops.z_util")
     def test_filter_names_nothing_selected(self, mock_util):
         self.mock_install.get_all_names.return_value = set(["example.com"])
         mock_util().checklist.return_value = (display_util.OK, [])
 
         self.assertEqual(self._call(self.mock_install), [])
 
-    @mock.patch("letsencrypt.display.ops.util")
+    @mock.patch("letsencrypt.display.ops.z_util")
     def test_filter_names_cancel(self, mock_util):
         self.mock_install.get_all_names.return_value = set(["example.com"])
         mock_util().checklist.return_value = (
@@ -397,7 +257,7 @@ class ChooseNamesTest(unittest.TestCase):
         self.assertEqual(get_valid_domains(all_invalid), [])
         self.assertEqual(len(get_valid_domains(two_valid)), 2)
 
-    @mock.patch("letsencrypt.display.ops.util")
+    @mock.patch("letsencrypt.display.ops.z_util")
     def test_choose_manually(self, mock_util):
         from letsencrypt.display.ops import _choose_names_manually
         # No retry
@@ -445,7 +305,7 @@ class SuccessInstallationTest(unittest.TestCase):
         from letsencrypt.display.ops import success_installation
         success_installation(names)
 
-    @mock.patch("letsencrypt.display.ops.util")
+    @mock.patch("letsencrypt.display.ops.z_util")
     def test_success_installation(self, mock_util):
         mock_util().notification.return_value = None
         names = ["example.com", "abc.com"]
@@ -467,7 +327,7 @@ class SuccessRenewalTest(unittest.TestCase):
         from letsencrypt.display.ops import success_renewal
         success_renewal(names, "renew")
 
-    @mock.patch("letsencrypt.display.ops.util")
+    @mock.patch("letsencrypt.display.ops.z_util")
     def test_success_renewal(self, mock_util):
         mock_util().notification.return_value = None
         names = ["example.com", "abc.com"]

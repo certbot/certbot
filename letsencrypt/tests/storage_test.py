@@ -1,4 +1,5 @@
 """Tests for letsencrypt.storage."""
+# pylint disable=protected-access
 import datetime
 import os
 import shutil
@@ -493,7 +494,12 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(self.test_rc.should_autorenew())
         mock_ocsp.return_value = False
 
-    def test_save_successor(self):
+    @mock.patch("letsencrypt.storage.relevant_values")
+    def test_save_successor(self, mock_rv):
+        # Mock relevant_values() to claim that all values are relevant here
+        # (to avoid instantiating parser)
+        mock_rv.side_effect = lambda x: x
+
         for ver in xrange(1, 6):
             for kind in ALL_FOUR:
                 where = getattr(self.test_rc, kind)
@@ -557,8 +563,47 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertFalse(os.path.islink(self.test_rc.version("privkey", 10)))
         self.assertFalse(os.path.exists(temp_config_file))
 
-    def test_new_lineage(self):
+    @mock.patch("letsencrypt.cli.helpful_parser")
+    def test_relevant_values(self, mock_parser):
+        """Test that relevant_values() can reject an irrelevant value."""
+        # pylint: disable=protected-access
+        from letsencrypt import storage
+        mock_parser.verb = "certonly"
+        mock_parser.args = ["--standalone"]
+        mock_action = mock.Mock(dest="rsa_key_size", default=2048)
+        mock_parser.parser._actions = [mock_action]
+        self.assertEqual(storage.relevant_values({"hello": "there"}), {})
+
+    @mock.patch("letsencrypt.cli.helpful_parser")
+    def test_relevant_values_default(self, mock_parser):
+        """Test that relevant_values() can reject a default value."""
+        # pylint: disable=protected-access
+        from letsencrypt import storage
+        mock_parser.verb = "certonly"
+        mock_parser.args = ["--standalone"]
+        mock_action = mock.Mock(dest="rsa_key_size", default=2048)
+        mock_parser.parser._actions = [mock_action]
+        self.assertEqual(storage.relevant_values({"rsa_key_size": 2048}), {})
+
+    @mock.patch("letsencrypt.cli.helpful_parser")
+    def test_relevant_values_nondefault(self, mock_parser):
+        """Test that relevant_values() can retain a non-default value."""
+        # pylint: disable=protected-access
+        from letsencrypt import storage
+        mock_parser.verb = "certonly"
+        mock_parser.args = ["--standalone"]
+        mock_action = mock.Mock(dest="rsa_key_size", default=2048)
+        mock_parser.parser._actions = [mock_action]
+        self.assertEqual(storage.relevant_values({"rsa_key_size": 12}),
+                         {"rsa_key_size": 12})
+
+    @mock.patch("letsencrypt.storage.relevant_values")
+    def test_new_lineage(self, mock_rv):
         """Test for new_lineage() class method."""
+        # Mock relevant_values to say everything is relevant here (so we
+        # don't have to mock the parser to help it decide!)
+        mock_rv.side_effect = lambda x: x
+
         from letsencrypt import storage
         result = storage.RenewableCert.new_lineage(
             "the-lineage.com", "cert", "privkey", "chain", self.cli_config)
@@ -592,8 +637,13 @@ class RenewableCertTests(BaseRenewableCertTest):
         # TODO: Conceivably we could test that the renewal parameters actually
         #       got saved
 
-    def test_new_lineage_nonexistent_dirs(self):
+    @mock.patch("letsencrypt.storage.relevant_values")
+    def test_new_lineage_nonexistent_dirs(self, mock_rv):
         """Test that directories can be created if they don't exist."""
+        # Mock relevant_values to say everything is relevant here (so we
+        # don't have to mock the parser to help it decide!)
+        mock_rv.side_effect = lambda x: x
+
         from letsencrypt import storage
         shutil.rmtree(self.cli_config.renewal_configs_dir)
         shutil.rmtree(self.cli_config.archive_dir)
@@ -692,6 +742,29 @@ class RenewableCertTests(BaseRenewableCertTest):
                           storage.RenewableCert,
                           self.config.filename, self.cli_config)
 
+    def test_write_renewal_config(self):
+        # Mostly tested by the process of creating and updating lineages,
+        # but we can test that this successfully creates files, removes
+        # unneeded items, and preserves comments.
+        temp = os.path.join(self.tempdir, "sample-file")
+        temp2 = os.path.join(self.tempdir, "sample-file.new")
+        with open(temp, "w") as f:
+            f.write("[renewalparams]\nuseful = value # A useful value\n"
+                    "useless = value # Not needed\n")
+        target = {}
+        for x in ALL_FOUR:
+            target[x] = "somewhere"
+        relevant_data = {"useful": "new_value"}
+        from letsencrypt import storage
+        storage.write_renewal_config(temp, temp2, target, relevant_data)
+        with open(temp2, "r") as f:
+            content = f.read()
+        # useful value was updated
+        assert "useful = new_value" in content
+        # associated comment was preserved
+        assert "A useful value" in content
+        # useless value was deleted
+        assert "useless" not in content
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
