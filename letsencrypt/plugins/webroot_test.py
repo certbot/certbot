@@ -122,7 +122,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.config.webroot_map = {}
         self.assertRaises(errors.PluginError, self.auth.perform, [])
 
-    def test_prepare_reraises_other_errors(self):
+    def test_perform_reraises_other_errors(self):
         self.auth.full_path = os.path.join(self.path, "null")
         permission_canary = os.path.join(self.path, "rnd")
         with open(permission_canary, "w") as f:
@@ -139,7 +139,7 @@ class AuthenticatorTest(unittest.TestCase):
     @mock.patch("letsencrypt.plugins.webroot.os.chown")
     def test_failed_chown_eacces(self, mock_chown):
         mock_chown.side_effect = OSError(errno.EACCES, "msg")
-        self.auth.prepare()  # exception caught and logged
+        self.auth.perform([self.achall])  # exception caught and logged
 
     @mock.patch("letsencrypt.plugins.webroot.os.chown")
     def test_failed_chown_not_eacces(self, mock_chown):
