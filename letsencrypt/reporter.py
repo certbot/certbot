@@ -95,8 +95,9 @@ class Reporter(object):
                     continue
             if no_exception or msg.on_crash:
                 if bold_on and msg.priority > self.HIGH_PRIORITY:
-                    sys.stdout.write(le_util.ANSI_SGR_RESET)
-                    bold_on = False
+                    if not self.config.quiet:
+                        sys.stdout.write(le_util.ANSI_SGR_RESET)
+                        bold_on = False
                 lines = msg.text.splitlines()
                 print(first_wrapper.fill(lines[0]))
                 if len(lines) > 1:
