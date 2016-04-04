@@ -38,15 +38,14 @@ to serve all files under specified web root ({0})."""
     _INTERACTIVE_CANCEL = ("Every requested domain must have a "
                            "webroot when using the webroot plugin.")
 
-    _INPUT_HELP_FMT = (
+    _INPUT_HELP = (
         "To use the webroot plugin, you need to have an HTTP server "
         "running on this system serving files for the requested "
         "domain. Additionally, this server should be serving all "
         "files contained in a public_html or webroot directory. The "
         "webroot plugin works by temporarily saving necessary "
         "resources in the HTTP server's webroot directory to pass "
-        "domain validation challenges.\n\nTo continue, you need to "
-        "provide the webroot directory for {0}.")
+        "domain validation challenges.")
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return self.MORE_INFO.format(self.conf("path"))
@@ -119,7 +118,7 @@ to serve all files under specified web root ({0})."""
             if code == display_util.CANCEL:
                 raise errors.PluginError(self._INTERACTIVE_CANCEL)
             elif code == display_util.HELP:
-                display.notification(self._INPUT_HELP_FMT.format(domain))
+                display.notification(self._INPUT_HELP)
             else:  # code == display_util.OK
                 if index == 0:
                     break
@@ -134,9 +133,7 @@ to serve all files under specified web root ({0})."""
             elif code == display_util.HELP:
                 # Help can currently only be selected
                 # when using the ncurses interface
-                display.notification(''.join(
-                    (self._INPUT_HELP_FMT.format(domain),
-                     "\n\n", display_util.DSELECT_HELP,)))
+                display.notification(display_util.DSELECT_HELP)
             else:
                 try:
                     return _validate_webroot(webroot)
