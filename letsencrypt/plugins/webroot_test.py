@@ -45,11 +45,6 @@ class AuthenticatorTest(unittest.TestCase):
                                      webroot_map={"thing.com": self.path})
         self.auth = Authenticator(self.config, "webroot")
 
-        self.parser = argparse.ArgumentParser()
-        self.parser.add_argument("-d", "--domains",
-                                 action="append", default=[])
-        self.auth.inject_parser_options(self.parser, self.auth.name)
-
     def tearDown(self):
         shutil.rmtree(self.path)
 
@@ -230,18 +225,31 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertFalse(os.path.exists(self.validation_path))
         self.assertTrue(os.path.exists(self.root_challenge_path))
 
+
+class WebrootActionTest(unittest.TestCase):
+    """Tests for webroot argparse actions."""
+
+    achall = achallenges.KeyAuthorizationAnnotatedChallenge(
+        challb=acme_util.HTTP01_P, domain="thing.com", account_key=KEY)
+
+    def setUp(self):
+        from letsencrypt.plugins.webroot import Authenticator
+        self.path = tempfile.mkdtemp()
+        self.parser = argparse.ArgumentParser()
+        self.parser.add_argument("-d", "--domains",
+                                 action="append", default=[])
+        Authenticator.inject_parser_options(self.parser, "webroot")
+
     def test_webroot_map_action(self):
         args = self.parser.parse_args(
             ["--webroot-map", '{{"thing.com":"{0}"}}'.format(self.path)])
-        self.assertEqual(args.webroot_map, self.config.webroot_map)
+        self.assertEqual(args.webroot_map["thing.com"], self.path)
 
     def test_domain_before_webroot(self):
         args = self.parser.parse_args(
             "-d {0} -w {1}".format(self.achall.domain, self.path).split())
-        self.auth.config = args
-        self.auth.perform([self.achall])
-        self.assertEqual(self.auth.config.webroot_map,
-                         self.config.webroot_map)
+        config = self._get_config_after_perform(args)
+        self.assertEqual(config.webroot_map[self.achall.domain], self.path)
 
     def test_domain_before_webroot_error(self):
         self.assertRaises(errors.PluginError, self.parser.parse_args,
@@ -249,6 +257,11 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertRaises(errors.PluginError, self.parser.parse_args,
                           "-d foo -w bar -d baz -w qux".split())
 
+    def _get_config_after_perform(self, config):
+        from letsencrypt.plugins.webroot import Authenticator
+        auth = Authenticator(config, "webroot")
+        auth.perform([self.achall])
+        return auth.config
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
