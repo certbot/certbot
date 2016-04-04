@@ -10,12 +10,14 @@ import tempfile
 import unittest
 
 import mock
+import six
 
 from acme import challenges
 from acme import jose
 
 from letsencrypt import achallenges
 from letsencrypt import errors
+from letsencrypt.display import util as display_util
 
 from letsencrypt.tests import acme_util
 from letsencrypt.tests import test_util
@@ -57,6 +59,22 @@ class AuthenticatorTest(unittest.TestCase):
 
     def test_prepare(self):
         self.auth.prepare()  # shouldn't raise any exceptions
+
+    @mock.patch("letsencrypt.plugins.webroot.zope.component.getUtility")
+    def test_webroot_from_list_help_and_cancel(self, mock_get_utility):
+        self.config.webroot_path = []
+        self.config.webroot_map = {"otherthing.com": self.path}
+
+        mock_display = mock_get_utility()
+        mock_display.menu.side_effect = [(display_util.HELP, -1),
+                                         (display_util.CANCEL, -1)]
+        self.assertRaises(errors.PluginError, self.auth.perform, [self.achall])
+        self.assertTrue(mock_display.notification.called)
+        for call in mock_display.menu.call_args_list:
+            self.assertTrue(self.achall.domain in call[0][0])
+            self.assertTrue(all(
+                webroot in call[0][1]
+                for webroot in six.itervalues(self.config.webroot_map)))
 
     def test_perform_missing_root(self):
         self.config.webroot_path = None
