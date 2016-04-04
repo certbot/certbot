@@ -41,7 +41,7 @@ except ImportError:
             cmd = kwargs.get("args")
             if cmd is None:
                 cmd = popenargs[0]
-            raise CalledProcessError(retcode, cmd, output=output)
+            raise CalledProcessError(retcode, cmd)
         return output
 from sys import exit, version_info
 from tempfile import mkdtemp
@@ -55,7 +55,7 @@ except ImportError:
     from urllib.parse import urlparse  # 3.4
 
 
-__version__ = 1, 1, 0
+__version__ = 1, 1, 1
 
 
 # wheel has a conditional dependency on argparse:
