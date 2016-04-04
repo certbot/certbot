@@ -221,11 +221,12 @@ to serve all files under specified web root ({0})."""
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         for achall in achalls:
-            root_path = self.full_roots[achall.domain]
-            validation_path = self._get_validation_path(root_path, achall)
-            logger.debug("Removing %s", validation_path)
-            os.remove(validation_path)
-            self.performed[root_path].remove(achall)
+            root_path = self.full_roots.get(achall.domain, None)
+            if root_path is not None:
+                validation_path = self._get_validation_path(root_path, achall)
+                logger.debug("Removing %s", validation_path)
+                os.remove(validation_path)
+                self.performed[root_path].remove(achall)
 
         for root_path, achalls in six.iteritems(self.performed):
             if not achalls:
