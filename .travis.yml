@@ -73,6 +73,8 @@ addons:
     - le2.wtf
     - le3.wtf
     - nginx.wtf
+    - boulder-mysql
+    - boulder-rabbitmq
   mariadb: "10.0"
   apt:
     sources:
