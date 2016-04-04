@@ -150,12 +150,12 @@ class MakeKeyECDSATest(unittest.TestCase):
         from cryptography.hazmat.backends import default_backend
         from cryptography.hazmat.primitives.serialization import load_pem_private_key
         from cryptography.hazmat.primitives.asymmetric import ec
-        self.assertIsInstance(load_pem_private_key(
+        self.assertTrue(isinstance(load_pem_private_key(
             make_key_ecdsa(curve="P-256"), password=None, backend=default_backend()),
-            ec.EllipticCurvePrivateKey)
-        self.assertIsInstance(load_pem_private_key(
+            ec.EllipticCurvePrivateKey))
+        self.assertTrue(isinstance(load_pem_private_key(
             make_key_ecdsa(curve="P-384"), password=None, backend=default_backend()),
-            ec.EllipticCurvePrivateKey)
+            ec.EllipticCurvePrivateKey))
         self.assertRaises(Exception, make_key_ecdsa, curve="P-123")
 
 
