@@ -243,6 +243,12 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(self.auth.config.webroot_map,
                          self.config.webroot_map)
 
+    def test_domain_before_webroot_error(self):
+        self.assertRaises(errors.PluginError, self.parser.parse_args,
+                          "-d foo -w bar -w baz".split())
+        self.assertRaises(errors.PluginError, self.parser.parse_args,
+                          "-d foo -w bar -d baz -w qux".split())
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
