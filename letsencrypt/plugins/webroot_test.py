@@ -46,7 +46,8 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth = Authenticator(self.config, "webroot")
 
         self.parser = argparse.ArgumentParser()
-        self.parser.add_argument("--domains", default=[])
+        self.parser.add_argument("-d", "--domains",
+                                 action="append", default=[])
         self.auth.inject_parser_options(self.parser, self.auth.name)
 
     def tearDown(self):
@@ -233,6 +234,15 @@ class AuthenticatorTest(unittest.TestCase):
         args = self.parser.parse_args(
             ["--webroot-map", '{{"thing.com":"{0}"}}'.format(self.path)])
         self.assertEqual(args.webroot_map, self.config.webroot_map)
+
+    def test_domain_before_webroot(self):
+        args = self.parser.parse_args(
+            "-d {0} -w {1}".format(self.achall.domain, self.path).split())
+        self.auth.config = args
+        self.auth.perform([self.achall])
+        self.assertEqual(self.auth.config.webroot_map,
+                         self.config.webroot_map)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
