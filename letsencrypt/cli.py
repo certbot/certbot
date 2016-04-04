@@ -380,11 +380,11 @@ class HelpfulArgumentParser(object):
                 % parsed_args.csr[0])
 
         parsed_args.actual_csr = (csr, typ)
-        # If CSR domains are not a superset of the domains provided by the CLI
-        if set(parsed_args.domains) - set(domains):
+        csr_domains, config_domains = set(domains), set(parsed_args.domains)
+        if csr_domains != config_domains:
             raise errors.ConfigurationError(
                 "Inconsistent domain requests:\nFrom the CSR: {0}\nFrom command line/config: {1}"
-                .format(", ".join(domains), ", ".join(parsed_args.domains)))
+                .format(", ".join(csr_domains), ", ".join(config_domains)))
 
 
     def determine_verb(self):
