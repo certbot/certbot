@@ -257,11 +257,20 @@ class WebrootActionTest(unittest.TestCase):
         self.assertRaises(errors.PluginError, self.parser.parse_args,
                           "-d foo -w bar -d baz -w qux".split())
 
+    def test_multiwebroot(self):
+        args = self.parser.parse_args("-w {0} -d {1} -w {2} -d bar".format(
+            self.path, self.achall.domain, tempfile.mkdtemp()).split())
+        self.assertEqual(args.webroot_map[self.achall.domain], self.path)
+        config = self._get_config_after_perform(args)
+        self.assertEqual(
+            config.webroot_map[self.achall.domain], self.path)
+
     def _get_config_after_perform(self, config):
         from letsencrypt.plugins.webroot import Authenticator
         auth = Authenticator(config, "webroot")
         auth.perform([self.achall])
         return auth.config
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
