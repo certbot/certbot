@@ -12,6 +12,7 @@ import unittest
 
 import mock
 import six
+from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import jose
 
@@ -518,11 +519,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                     mock_init.return_value = mock_client
                     get_utility_path = 'letsencrypt.main.zope.component.getUtility'
                     with mock.patch(get_utility_path) as mock_get_utility:
-                        with mock.patch('letsencrypt.main.OpenSSL') as mock_ssl:
+                        with mock.patch('letsencrypt.main.renewal.OpenSSL') as mock_ssl:
                             mock_latest = mock.MagicMock()
                             mock_latest.get_issuer.return_value = "Fake fake"
                             mock_ssl.crypto.load_certificate.return_value = mock_latest
-                            with mock.patch('letsencrypt.main.crypto_util'):
+                            with mock.patch('letsencrypt.main.renewal.crypto_util'):
                                 if not args:
                                     args = ['-d', 'isnot.org', '-a', 'standalone', 'certonly']
                                 if extra_args:
@@ -960,6 +961,80 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
         result = _find_duplicative_certs(
             self.cli_config, ['example.com', 'something.new'])
         self.assertEqual(result, (None, None))
+
+
+class DefaultTest(unittest.TestCase):
+    """Tests for letsencrypt.cli._Default."""
+
+    def setUp(self):
+        # pylint: disable=protected-access
+        self.default1 = cli._Default()
+        self.default2 = cli._Default()
+
+    def test_boolean(self):
+        self.assertFalse(self.default1)
+        self.assertFalse(self.default2)
+
+    def test_equality(self):
+        self.assertEqual(self.default1, self.default2)
+
+    def test_hash(self):
+        self.assertEqual(hash(self.default1), hash(self.default2))
+
+
+class SetByCliTest(unittest.TestCase):
+    """Tests for letsencrypt.set_by_cli and related functions."""
+
+    def setUp(self):
+        reload_module(cli)
+
+    def test_webroot_map(self):
+        args = '-w /var/www/html -d example.com'.split()
+        verb = 'renew'
+        self.assertTrue(_call_set_by_cli('webroot_map', args, verb))
+
+    def test_report_config_interaction_str(self):
+        cli.report_config_interaction('manual_public_ip_logging_ok',
+                                      'manual_test_mode')
+        cli.report_config_interaction('manual_test_mode', 'manual')
+
+        self._test_report_config_interaction_common()
+
+    def test_report_config_interaction_iterable(self):
+        cli.report_config_interaction(('manual_public_ip_logging_ok',),
+                                      ('manual_test_mode',))
+        cli.report_config_interaction(('manual_test_mode',), ('manual',))
+
+        self._test_report_config_interaction_common()
+
+    def _test_report_config_interaction_common(self):
+        """Tests implied interaction between manual flags.
+
+        --manual implies --manual-test-mode which implies
+        --manual-public-ip-logging-ok. These interactions don't actually
+        exist in the client, but are used here for testing purposes.
+
+        """
+
+        args = ['--manual']
+        verb = 'renew'
+        for v in ('manual', 'manual_test_mode', 'manual_public_ip_logging_ok'):
+            self.assertTrue(_call_set_by_cli(v, args, verb))
+
+        cli.set_by_cli.detector = None
+
+        args = ['--manual-test-mode']
+        for v in ('manual_test_mode', 'manual_public_ip_logging_ok'):
+            self.assertTrue(_call_set_by_cli(v, args, verb))
+
+        self.assertFalse(_call_set_by_cli('manual', args, verb))
+
+
+def _call_set_by_cli(var, args, verb):
+    with mock.patch('letsencrypt.cli.helpful_parser') as mock_parser:
+        mock_parser.args = args
+        mock_parser.verb = verb
+        return cli.set_by_cli(var)
 
 
 if __name__ == '__main__':

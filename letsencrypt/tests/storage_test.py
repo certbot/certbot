@@ -1,4 +1,5 @@
 """Tests for letsencrypt.storage."""
+# pylint disable=protected-access
 import datetime
 import os
 import shutil
@@ -741,6 +742,29 @@ class RenewableCertTests(BaseRenewableCertTest):
                           storage.RenewableCert,
                           self.config.filename, self.cli_config)
 
+    def test_write_renewal_config(self):
+        # Mostly tested by the process of creating and updating lineages,
+        # but we can test that this successfully creates files, removes
+        # unneeded items, and preserves comments.
+        temp = os.path.join(self.tempdir, "sample-file")
+        temp2 = os.path.join(self.tempdir, "sample-file.new")
+        with open(temp, "w") as f:
+            f.write("[renewalparams]\nuseful = value # A useful value\n"
+                    "useless = value # Not needed\n")
+        target = {}
+        for x in ALL_FOUR:
+            target[x] = "somewhere"
+        relevant_data = {"useful": "new_value"}
+        from letsencrypt import storage
+        storage.write_renewal_config(temp, temp2, target, relevant_data)
+        with open(temp2, "r") as f:
+            content = f.read()
+        # useful value was updated
+        assert "useful = new_value" in content
+        # associated comment was preserved
+        assert "A useful value" in content
+        # useless value was deleted
+        assert "useless" not in content
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
