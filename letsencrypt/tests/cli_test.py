@@ -65,10 +65,12 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def _call_no_clientmock(self, args):
         "Run the client with output streams mocked out"
         args = self.standard_args + args
-        with mock.patch('letsencrypt.main.sys.stdout') as stdout:
+
+        toy_stdout = six.StringIO()
+        with mock.patch('letsencrypt.main.sys.stdout', new=toy_stdout):
             with mock.patch('letsencrypt.main.sys.stderr') as stderr:
                 ret = main.main(args[:])  # NOTE: parser can alter its args!
-        return ret, stdout, stderr
+        return ret, toy_stdout, stderr
 
     def _call_stdout(self, args):
         """
@@ -283,7 +285,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         plugins.visible.assert_called_once_with()
         plugins.visible().ifaces.assert_called_once_with(ifaces)
         filtered = plugins.visible().ifaces()
-        stdout.write.called_once_with(str(filtered))
+        #stdout.write.called_once_with(str(filtered))
+        self.assertEqual(stdout.getvalue().strip(), str(filtered))
 
     @mock.patch('letsencrypt.main.plugins_disco')
     @mock.patch('letsencrypt.main.cli.HelpfulArgumentParser.determine_help_topics')
@@ -298,7 +301,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(filtered.init.call_count, 1)
         filtered.verify.assert_called_once_with(ifaces)
         verified = filtered.verify()
-        stdout.write.called_once_with(str(verified))
+        self.assertEqual(stdout.getvalue().strip(), str(verified))
+        #stdout.write.called_once_with(str(verified))
 
     @mock.patch('letsencrypt.main.plugins_disco')
     @mock.patch('letsencrypt.main.cli.HelpfulArgumentParser.determine_help_topics')
@@ -315,7 +319,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         verified.prepare.assert_called_once_with()
         verified.available.assert_called_once_with()
         available = verified.available()
-        stdout.write.called_once_with(str(available))
+        self.assertEqual(stdout.getvalue().strip(), str(available))
+        #stdout.write.called_once_with(str(available))
 
     def test_certonly_abspath(self):
         cert = 'cert'
