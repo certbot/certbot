@@ -38,6 +38,16 @@ to serve all files under specified web root ({0})."""
     _INTERACTIVE_CANCEL = ("Every requested domain must have a "
                            "webroot when using the webroot plugin.")
 
+    _INPUT_HELP_FMT = (
+        "To use the webroot plugin, you need to have an HTTP server "
+        "running on this system serving files for the requested "
+        "domain. Additionally, this server should be serving all "
+        "files contained in a public_html or webroot directory. The "
+        "webroot plugin works by temporarily saving necessary "
+        "resources in the HTTP server's webroot directory to pass "
+        "domain validation challenges.\n\nTo continue, you need to "
+        "provide the webroot directory for {0}.")
+
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return self.MORE_INFO.format(self.conf("path"))
 
@@ -72,13 +82,13 @@ to serve all files under specified web root ({0})."""
         pass
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
-        self._get_webroots(achalls)
+        self._set_webroots(achalls)
 
         self._create_challenge_dirs()
 
         return [self._perform_single(achall) for achall in achalls]
 
-    def _get_webroots(self, achalls):
+    def _set_webroots(self, achalls):
         if self.conf("path"):
             webroot_path = self.conf("path")[-1]
             for achall in achalls:
@@ -89,22 +99,32 @@ to serve all files under specified web root ({0})."""
                 if achall.domain not in self.conf("map"):
                     new_webroot = self._prompt_for_webroot(achall.domain,
                                                            known_webroots)
+                    # Put the most recently input
+                    # webroot first for easy selection
                     try:
                         known_webroots.remove(new_webroot)
                     except ValueError:
                         pass
-                    known_webroots.append(new_webroot)
+                    known_webroots.insert(0, new_webroot)
                     self.conf("map")[achall.domain] = new_webroot
 
     def _prompt_for_webroot(self, domain, known_webroots):
         display = zope.component.getUtility(interfaces.IDisplay)
-        code, index = display.menu(
-            "Select the webroot for {0}:".format(domain),
-            ["Enter a new webroot"] + known_webroots[::-1])
-        if code == display_util.CANCEL:
-            raise errors.PluginError(self._INTERACTIVE_CANCEL)
-        elif index != 0:
-            return known_webroots[index - 1]
+
+        while True:
+            code, index = display.menu(
+                "Select the webroot for {0}:".format(domain),
+                ["Enter a new webroot"] + known_webroots,
+                help_label="Help")
+            if code == display_util.CANCEL:
+                raise errors.PluginError(self._INTERACTIVE_CANCEL)
+            elif code == display_util.HELP:
+                display.notification(self._INPUT_HELP_FMT.format(domain))
+            else:  # code == display_util.OK
+                if index == 0:
+                    break
+                else:
+                    return known_webroots[index - 1]
 
         while True:
             code, webroot = display.directory_select(
@@ -112,7 +132,11 @@ to serve all files under specified web root ({0})."""
             if code == display_util.CANCEL:
                 raise errors.PluginError(self._INTERACTIVE_CANCEL)
             elif code == display_util.HELP:
-                display.notification(display_util.DSELECT_HELP)
+                # Help can currently only be selected
+                # when using the ncurses interface
+                display.notification(''.join(
+                    (self._INPUT_HELP_FMT.format(domain),
+                     "\n\n", display_util.DSELECT_HELP,)))
             else:
                 try:
                     return _validate_webroot(webroot)
