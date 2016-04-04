@@ -249,10 +249,9 @@ class _WebrootMapAction(argparse.Action):
 
     def __call__(self, parser, namespace, webroot_map, option_string=None):
         for domains, webroot_path in six.iteritems(json.loads(webroot_map)):
-            validated_webroot_path = _validate_webroot(webroot_path)
+            webroot_path = _validate_webroot(webroot_path)
             namespace.webroot_map.update(
-                (d, validated_webroot_path,)
-                for d in cli.add_domains(namespace, domains))
+                (d, webroot_path) for d in cli.add_domains(namespace, domains))
 
 
 class _WebrootPathAction(argparse.Action):
