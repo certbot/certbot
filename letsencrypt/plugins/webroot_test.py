@@ -83,8 +83,8 @@ class AuthenticatorTest(unittest.TestCase):
         self.config.webroot_map = {"otherthing.com": self.path}
 
         mock_display = mock_get_utility()
-        mock_display.menu.side_effect = [(display_util.HELP, -1),
-                                         (display_util.CANCEL, -1)]
+        mock_display.menu.side_effect = ((display_util.HELP, -1),
+                                         (display_util.CANCEL, -1),)
         self.assertRaises(errors.PluginError, self.auth.perform, [self.achall])
         self.assertTrue(mock_display.notification.called)
         self.assertTrue(mock_display.menu.called)
@@ -93,6 +93,29 @@ class AuthenticatorTest(unittest.TestCase):
             self.assertTrue(all(
                 webroot in call[0][1]
                 for webroot in six.itervalues(self.config.webroot_map)))
+
+    @mock.patch("letsencrypt.plugins.webroot.zope.component.getUtility")
+    def test_new_webroot(self, mock_get_utility):
+        self.config.webroot_path = []
+        self.config.webroot_map = {}
+
+        imaginary_dir = os.path.join(os.sep, "imaginary", "dir")
+
+        mock_display = mock_get_utility()
+        mock_display.menu.return_value = (display_util.OK, 0,)
+        mock_display.directory_select.side_effect = (
+            (display_util.HELP, -1,), (display_util.CANCEL, -1,),
+            (display_util.OK, imaginary_dir,), (display_util.OK, self.path,),)
+        self.auth.perform([self.achall])
+
+        self.assertTrue(mock_display.notification.called)
+        for call in mock_display.notification.call_args_list:
+            self.assertTrue(imaginary_dir in call[0][0] or
+                            display_util.DSELECT_HELP == call[0][0])
+
+        self.assertTrue(mock_display.directory_select.called)
+        for call in mock_display.directory_select.call_args_list:
+            self.assertTrue(self.achall.domain in call[0][0])
 
     def test_perform_missing_root(self):
         self.config.webroot_path = None
