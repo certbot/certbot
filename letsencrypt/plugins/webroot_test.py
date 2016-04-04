@@ -61,6 +61,23 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.prepare()  # shouldn't raise any exceptions
 
     @mock.patch("letsencrypt.plugins.webroot.zope.component.getUtility")
+    def test_webroot_from_list(self, mock_get_utility):
+        self.config.webroot_path = []
+        self.config.webroot_map = {"otherthing.com": self.path}
+        mock_display = mock_get_utility()
+        mock_display.menu.return_value = (display_util.OK, 1,)
+
+        self.auth.perform([self.achall])
+        self.assertTrue(mock_display.menu.called)
+        for call in mock_display.menu.call_args_list:
+            self.assertTrue(self.achall.domain in call[0][0])
+            self.assertTrue(all(
+                webroot in call[0][1]
+                for webroot in six.itervalues(self.config.webroot_map)))
+        self.assertEqual(self.config.webroot_map[self.achall.domain],
+                         self.path)
+
+    @mock.patch("letsencrypt.plugins.webroot.zope.component.getUtility")
     def test_webroot_from_list_help_and_cancel(self, mock_get_utility):
         self.config.webroot_path = []
         self.config.webroot_map = {"otherthing.com": self.path}
@@ -70,6 +87,7 @@ class AuthenticatorTest(unittest.TestCase):
                                          (display_util.CANCEL, -1)]
         self.assertRaises(errors.PluginError, self.auth.perform, [self.achall])
         self.assertTrue(mock_display.notification.called)
+        self.assertTrue(mock_display.menu.called)
         for call in mock_display.menu.call_args_list:
             self.assertTrue(self.achall.domain in call[0][0])
             self.assertTrue(all(
