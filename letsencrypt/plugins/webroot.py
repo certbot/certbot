@@ -78,6 +78,8 @@ to serve all files under specified web root ({0})."""
     def _set_webroots(self, achalls):
         if self.conf("path"):
             webroot_path = self.conf("path")[-1]
+            logger.info("Using the webroot path %s for all unmatched domains.",
+                        webroot_path)
             for achall in achalls:
                 self.conf("map").setdefault(achall.domain, webroot_path)
         else:
