@@ -1,4 +1,5 @@
 """Tests for letsencrypt.reporter."""
+import mock
 import sys
 import unittest
 
@@ -10,7 +11,7 @@ class ReporterTest(unittest.TestCase):
 
     def setUp(self):
         from letsencrypt import reporter
-        self.reporter = reporter.Reporter()
+        self.reporter = reporter.Reporter(mock.MagicMock(quiet=False))
 
         self.old_stdout = sys.stdout
         sys.stdout = six.StringIO()

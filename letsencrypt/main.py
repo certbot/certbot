@@ -34,7 +34,6 @@ from letsencrypt.display import util as display_util, ops as display_ops
 from letsencrypt.plugins import disco as plugins_disco
 from letsencrypt.plugins import selection as plug_sel
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -518,19 +517,20 @@ def obtain_cert(config, plugins, lineage=None):
         action = "newcert"
 
     # POSTPRODUCTION: Cleanup, deployment & reporting
+    notify = zope.component.getUtility(interfaces.IDisplay).notification
     if config.dry_run:
         _report_successful_dry_run(config)
     elif config.verb == "renew":
         if installer is None:
-            print("new certificate deployed without reload, fullchain is",
-                  lineage.fullchain)
+            notify("new certificate deployed without reload, fullchain is {0}".format(
+                   lineage.fullchain), pause=False)
         else:
             # In case of a renewal, reload server to pick up new certificate.
             # In principle we could have a configuration option to inhibit this
             # from happening.
             installer.restart()
-            print("new certificate deployed with reload of",
-                  config.installer, "server; fullchain is", lineage.fullchain)
+            notify("new certificate deployed with reload of {0} server; fullchain is {1}".format(
+                   config.installer, lineage.fullchain), pause=False)
     _suggest_donation_if_appropriate(config, action)
 
 
@@ -672,7 +672,10 @@ def main(cli_args=sys.argv[1:]):
     sys.excepthook = functools.partial(_handle_exception, config=config)
 
     # Displayer
-    if config.noninteractive_mode:
+    if config.quiet:
+        config.noninteractive_mode = True
+        displayer = display_util.NoninteractiveDisplay(open(os.devnull, "w"))
+    elif config.noninteractive_mode:
         displayer = display_util.NoninteractiveDisplay(sys.stdout)
     elif config.text_mode:
         displayer = display_util.FileDisplay(sys.stdout)
@@ -684,7 +687,7 @@ def main(cli_args=sys.argv[1:]):
     zope.component.provideUtility(displayer)
 
     # Reporter
-    report = reporter.Reporter()
+    report = reporter.Reporter(config)
     zope.component.provideUtility(report)
     atexit.register(report.atexit_print_messages)
 

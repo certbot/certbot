@@ -57,30 +57,21 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         # pylint: disable=protected-access
         cli._parser = cli.set_by_cli.detector = None
 
-    def _call(self, args):
+    def _call(self, args, stdout=None):
         "Run the cli with output streams and actual client mocked out"
         with mock.patch('letsencrypt.main.client') as client:
-            ret, stdout, stderr = self._call_no_clientmock(args)
+            ret, stdout, stderr = self._call_no_clientmock(args, stdout)
             return ret, stdout, stderr, client
 
-    def _call_no_clientmock(self, args):
+    def _call_no_clientmock(self, args, stdout=None):
         "Run the client with output streams mocked out"
         args = self.standard_args + args
-        with mock.patch('letsencrypt.main.sys.stdout') as stdout:
+
+        toy_stdout = stdout if stdout else six.StringIO()
+        with mock.patch('letsencrypt.main.sys.stdout', new=toy_stdout):
             with mock.patch('letsencrypt.main.sys.stderr') as stderr:
                 ret = main.main(args[:])  # NOTE: parser can alter its args!
-        return ret, stdout, stderr
-
-    def _call_stdout(self, args):
-        """
-        Variant of _call that preserves stdout so that it can be mocked by the
-        caller.
-        """
-        args = self.standard_args + args
-        with mock.patch('letsencrypt.main.sys.stderr') as stderr:
-            with mock.patch('letsencrypt.main.client') as client:
-                ret = main.main(args[:])  # NOTE: parser can alter its args!
-        return ret, None, stderr, client
+        return ret, toy_stdout, stderr
 
     def test_no_flags(self):
         with mock.patch('letsencrypt.main.run') as mock_run:
@@ -91,10 +82,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         "Run a command, and return the ouput string for scrutiny"
 
         output = six.StringIO()
-        with mock.patch('letsencrypt.main.sys.stdout', new=output):
-            self.assertRaises(SystemExit, self._call_stdout, args)
-            out = output.getvalue()
-            return out
+        self.assertRaises(SystemExit, self._call, args, output)
+        out = output.getvalue()
+        return out
 
     def test_help(self):
         self.assertRaises(SystemExit, self._call, ['--help'])
@@ -284,7 +274,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         plugins.visible.assert_called_once_with()
         plugins.visible().ifaces.assert_called_once_with(ifaces)
         filtered = plugins.visible().ifaces()
-        stdout.write.called_once_with(str(filtered))
+        self.assertEqual(stdout.getvalue().strip(), str(filtered))
 
     @mock.patch('letsencrypt.main.plugins_disco')
     @mock.patch('letsencrypt.main.cli.HelpfulArgumentParser.determine_help_topics')
@@ -299,7 +289,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(filtered.init.call_count, 1)
         filtered.verify.assert_called_once_with(ifaces)
         verified = filtered.verify()
-        stdout.write.called_once_with(str(verified))
+        self.assertEqual(stdout.getvalue().strip(), str(verified))
 
     @mock.patch('letsencrypt.main.plugins_disco')
     @mock.patch('letsencrypt.main.cli.HelpfulArgumentParser.determine_help_topics')
@@ -316,7 +306,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         verified.prepare.assert_called_once_with()
         verified.available.assert_called_once_with()
         available = verified.available()
-        stdout.write.called_once_with(str(available))
+        self.assertEqual(stdout.getvalue().strip(), str(available))
 
     def test_certonly_abspath(self):
         cert = 'cert'
@@ -374,7 +364,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         try:
             self._call(['--csr', CSR])
         except errors.Error as e:
-            assert "Please try the certonly" in e.message
+            assert "Please try the certonly" in repr(e)
             return
         assert False, "Expected supplying --csr to fail with default verb"
 
@@ -571,6 +561,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         mock_certr = mock.MagicMock()
         mock_key = mock.MagicMock(pem='pem_key')
         mock_client = mock.MagicMock()
+        stdout = None
         mock_client.obtain_certificate.return_value = (mock_certr, 'chain',
                                                        mock_key, 'csr')
         try:
@@ -590,7 +581,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                                 if extra_args:
                                     args += extra_args
                                 try:
-                                    ret, _, _, _ = self._call(args)
+                                    ret, stdout, _, _ = self._call(args)
                                     if ret:
                                         print("Returned", ret)
                                         raise AssertionError(ret)
@@ -613,10 +604,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 with open(os.path.join(self.logs_dir, "letsencrypt.log")) as lf:
                     self.assertTrue(log_out in lf.read())
 
-        return mock_lineage, mock_get_utility
+        return mock_lineage, mock_get_utility, stdout
 
     def test_certonly_renewal(self):
-        lineage, get_utility = self._test_renewal_common(True, [])
+        lineage, get_utility, _ = self._test_renewal_common(True, [])
         self.assertEqual(lineage.save_successor.call_count, 1)
         lineage.update_all_links_to.assert_called_once_with(
             lineage.latest_common_version())
@@ -626,17 +617,18 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def test_certonly_renewal_triggers(self):
         # --dry-run should force renewal
-        _, get_utility = self._test_renewal_common(False, ['--dry-run', '--keep'],
-                                                   log_out="simulating renewal")
+        _, get_utility, _ = self._test_renewal_common(False, ['--dry-run', '--keep'],
+                                                      log_out="simulating renewal")
         self.assertEqual(get_utility().add_message.call_count, 1)
         self.assertTrue('dry run' in get_utility().add_message.call_args[0][0])
 
-        _, _ = self._test_renewal_common(False, ['--renew-by-default', '-tvv', '--debug'],
-                                        log_out="Auto-renewal forced")
+        self._test_renewal_common(False, ['--renew-by-default', '-tvv', '--debug'],
+                                  log_out="Auto-renewal forced")
         self.assertEqual(get_utility().add_message.call_count, 1)
 
-        _, _ = self._test_renewal_common(False, ['-tvv', '--debug', '--keep'],
-                                        log_out="not yet due", should_renew=False)
+        self._test_renewal_common(False, ['-tvv', '--debug', '--keep'],
+                                  log_out="not yet due", should_renew=False)
+
 
     def _dump_log(self):
         with open(os.path.join(self.logs_dir, "letsencrypt.log")) as lf:
@@ -660,6 +652,19 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._make_test_renewal_conf('sample-renewal.conf')
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, should_renew=True)
+
+    def test_quiet_renew(self):
+        self._make_test_renewal_conf('sample-renewal.conf')
+        args = ["renew", "--dry-run"]
+        _, _, stdout = self._test_renewal_common(True, [], args=args, should_renew=True)
+        out = stdout.getvalue()
+        self.assertTrue("renew" in out)
+
+        args = ["renew", "--dry-run", "-q"]
+        _, _, stdout = self._test_renewal_common(True, [], args=args, should_renew=True)
+        out = stdout.getvalue()
+        self.assertEqual("", out)
+
 
     @mock.patch("letsencrypt.cli.set_by_cli")
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
