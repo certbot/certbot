@@ -35,18 +35,6 @@ necessary validation resources to appropriate paths on the file
 system. It expects that there is some other HTTP server configured
 to serve all files under specified web root ({0})."""
 
-    _INTERACTIVE_CANCEL = ("Every requested domain must have a "
-                           "webroot when using the webroot plugin.")
-
-    _INPUT_HELP = (
-        "To use the webroot plugin, you need to have an HTTP server "
-        "running on this system serving files for the requested "
-        "domain. Additionally, this server should be serving all "
-        "files contained in a public_html or webroot directory. The "
-        "webroot plugin works by temporarily saving necessary "
-        "resources in the HTTP server's webroot directory to pass "
-        "domain validation challenges.")
-
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return self.MORE_INFO.format(self.conf("path"))
 
@@ -108,6 +96,17 @@ to serve all files under specified web root ({0})."""
                     self.conf("map")[achall.domain] = new_webroot
 
     def _prompt_for_webroot(self, domain, known_webroots):
+        webroot = None
+
+        while webroot is None:
+            webroot = self._prompt_with_webroot_list(domain, known_webroots)
+
+            if webroot is None:
+                webroot = self._prompt_for_new_webroot(domain)
+
+        return webroot
+
+    def _prompt_with_webroot_list(self, domain, known_webroots):
         display = zope.component.getUtility(interfaces.IDisplay)
 
         while True:
@@ -116,29 +115,39 @@ to serve all files under specified web root ({0})."""
                 ["Enter a new webroot"] + known_webroots,
                 help_label="Help")
             if code == display_util.CANCEL:
-                raise errors.PluginError(self._INTERACTIVE_CANCEL)
+                raise errors.PluginError(
+                    "Every requested domain must have a "
+                    "webroot when using the webroot plugin.")
             elif code == display_util.HELP:
-                display.notification(self._INPUT_HELP)
+                display.notification(
+                    "To use the webroot plugin, you need to have an "
+                    "HTTP server running on this system serving files "
+                    "for the requested domain. Additionally, this "
+                    "server should be serving all files contained in a "
+                    "public_html or webroot directory. The webroot "
+                    "plugin works by temporarily saving necessary "
+                    "resources in the HTTP server's webroot directory "
+                    "to pass domain validation challenges.")
             else:  # code == display_util.OK
-                if index == 0:
-                    break
-                else:
-                    return known_webroots[index - 1]
+                return None if index == 0 else known_webroots[index - 1]
+
+    def _prompt_for_new_webroot(self, domain):
+        display = zope.component.getUtility(interfaces.IDisplay)
 
         while True:
             code, webroot = display.directory_select(
                 "Input the webroot for {0}:".format(domain))
-            if code == display_util.CANCEL:
-                raise errors.PluginError(self._INTERACTIVE_CANCEL)
-            elif code == display_util.HELP:
+            if code == display_util.HELP:
                 # Help can currently only be selected
                 # when using the ncurses interface
                 display.notification(display_util.DSELECT_HELP)
-            else:
+            elif code == display_util.CANCEL:
+                return None
+            else:  # code == display_util.OK
                 try:
                     return _validate_webroot(webroot)
-                except errors.PluginError:
-                    pass
+                except errors.PluginError as error:
+                    display.notification(str(error))
 
     def _create_challenge_dirs(self):
         path_map = self.conf("map")
