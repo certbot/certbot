@@ -560,6 +560,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         mock_certr = mock.MagicMock()
         mock_key = mock.MagicMock(pem='pem_key')
         mock_client = mock.MagicMock()
+        stdout = None
         mock_client.obtain_certificate.return_value = (mock_certr, 'chain',
                                                        mock_key, 'csr')
         try:
@@ -579,7 +580,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                                 if extra_args:
                                     args += extra_args
                                 try:
-                                    ret, _, _, _ = self._call(args)
+                                    ret, stdout, _, _ = self._call(args)
                                     if ret:
                                         print("Returned", ret)
                                         raise AssertionError(ret)
@@ -602,10 +603,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 with open(os.path.join(self.logs_dir, "letsencrypt.log")) as lf:
                     self.assertTrue(log_out in lf.read())
 
-        return mock_lineage, mock_get_utility
+        return mock_lineage, mock_get_utility, stdout
 
     def test_certonly_renewal(self):
-        lineage, get_utility = self._test_renewal_common(True, [])
+        lineage, get_utility, _ = self._test_renewal_common(True, [])
         self.assertEqual(lineage.save_successor.call_count, 1)
         lineage.update_all_links_to.assert_called_once_with(
             lineage.latest_common_version())
@@ -615,17 +616,18 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def test_certonly_renewal_triggers(self):
         # --dry-run should force renewal
-        _, get_utility = self._test_renewal_common(False, ['--dry-run', '--keep'],
-                                                   log_out="simulating renewal")
+        _, get_utility, _ = self._test_renewal_common(False, ['--dry-run', '--keep'],
+                                                      log_out="simulating renewal")
         self.assertEqual(get_utility().add_message.call_count, 1)
         self.assertTrue('dry run' in get_utility().add_message.call_args[0][0])
 
-        _, _ = self._test_renewal_common(False, ['--renew-by-default', '-tvv', '--debug'],
-                                        log_out="Auto-renewal forced")
+        self._test_renewal_common(False, ['--renew-by-default', '-tvv', '--debug'],
+                                  log_out="Auto-renewal forced")
         self.assertEqual(get_utility().add_message.call_count, 1)
 
-        _, _ = self._test_renewal_common(False, ['-tvv', '--debug', '--keep'],
-                                        log_out="not yet due", should_renew=False)
+        self._test_renewal_common(False, ['-tvv', '--debug', '--keep'],
+                                  log_out="not yet due", should_renew=False)
+
 
     def _dump_log(self):
         with open(os.path.join(self.logs_dir, "letsencrypt.log")) as lf:
@@ -649,6 +651,19 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._make_test_renewal_conf('sample-renewal.conf')
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, should_renew=True)
+
+    def test_quiet_renew(self):
+        self._make_test_renewal_conf('sample-renewal.conf')
+        args = ["renew", "--dry-run"]
+        _, _, stdout = self._test_renewal_common(True, [], args=args, should_renew=True)
+        out = stdout.getvalue()
+        self.assertTrue("renew" in out)
+
+        args = ["renew", "--dry-run", "-q"]
+        _, _, stdout = self._test_renewal_common(True, [], args=args, should_renew=True)
+        out = stdout.getvalue()
+        self.assertEqual("", out)
+
 
     @mock.patch("letsencrypt.cli.set_by_cli")
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
