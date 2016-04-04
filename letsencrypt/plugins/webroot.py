@@ -196,24 +196,13 @@ to serve all files under specified web root ({0})."""
             finally:
                 os.umask(old_umask)
 
-    def _get_root_path(self, achall):
-        try:
-            path = self.full_roots[achall.domain]
-        except KeyError:
-            raise errors.PluginError("Missing --webroot-path for domain: {0}"
-                                     .format(achall.domain))
-        if not os.path.exists(path):
-            raise errors.PluginError("Mysteriously missing path {0} for domain: {1}"
-                                     .format(path, achall.domain))
-        return path
-
     def _get_validation_path(self, root_path, achall):
         return os.path.join(root_path, achall.chall.encode("token"))
 
     def _perform_single(self, achall):
         response, validation = achall.response_and_validation()
 
-        root_path = self._get_root_path(achall)
+        root_path = self.full_roots[achall.domain]
         validation_path = self._get_validation_path(root_path, achall)
         logger.debug("Attempting to save validation to %s", validation_path)
 
@@ -232,7 +221,7 @@ to serve all files under specified web root ({0})."""
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         for achall in achalls:
-            root_path = self._get_root_path(achall)
+            root_path = self.full_roots[achall.domain]
             validation_path = self._get_validation_path(root_path, achall)
             logger.debug("Removing %s", validation_path)
             os.remove(validation_path)
