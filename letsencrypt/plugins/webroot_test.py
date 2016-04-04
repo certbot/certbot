@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 
+import argparse
 import errno
 import os
 import shutil
@@ -43,6 +44,10 @@ class AuthenticatorTest(unittest.TestCase):
         self.config = mock.MagicMock(webroot_path=self.path,
                                      webroot_map={"thing.com": self.path})
         self.auth = Authenticator(self.config, "webroot")
+
+        self.parser = argparse.ArgumentParser()
+        self.parser.add_argument("--domains", default=[])
+        self.auth.inject_parser_options(self.parser, self.auth.name)
 
     def tearDown(self):
         shutil.rmtree(self.path)
@@ -223,6 +228,11 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertRaises(OSError, self.auth.cleanup, [self.achall])
         self.assertFalse(os.path.exists(self.validation_path))
         self.assertTrue(os.path.exists(self.root_challenge_path))
+
+    def test_webroot_map_action(self):
+        args = self.parser.parse_args(
+            ["--webroot-map", '{{"thing.com":"{0}"}}'.format(self.path)])
+        self.assertEqual(args.webroot_map, self.config.webroot_map)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
