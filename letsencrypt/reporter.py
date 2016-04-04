@@ -102,5 +102,5 @@ class Reporter(object):
                 if len(lines) > 1:
                     print("\n".join(
                         next_wrapper.fill(line) for line in lines[1:]))
-        if bold_on:
+        if bold_on and not self.config.quiet:
             sys.stdout.write(le_util.ANSI_SGR_RESET)
