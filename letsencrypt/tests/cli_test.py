@@ -56,32 +56,21 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         # pylint: disable=protected-access
         cli._parser = cli.set_by_cli.detector = None
 
-    def _call(self, args):
+    def _call(self, args, stdout=None):
         "Run the cli with output streams and actual client mocked out"
         with mock.patch('letsencrypt.main.client') as client:
-            ret, stdout, stderr = self._call_no_clientmock(args)
+            ret, stdout, stderr = self._call_no_clientmock(args, stdout)
             return ret, stdout, stderr, client
 
-    def _call_no_clientmock(self, args):
+    def _call_no_clientmock(self, args, stdout=None):
         "Run the client with output streams mocked out"
         args = self.standard_args + args
 
-        toy_stdout = six.StringIO()
+        toy_stdout = stdout if stdout else six.StringIO()
         with mock.patch('letsencrypt.main.sys.stdout', new=toy_stdout):
             with mock.patch('letsencrypt.main.sys.stderr') as stderr:
                 ret = main.main(args[:])  # NOTE: parser can alter its args!
         return ret, toy_stdout, stderr
-
-    def _call_stdout(self, args):
-        """
-        Variant of _call that preserves stdout so that it can be mocked by the
-        caller.
-        """
-        args = self.standard_args + args
-        with mock.patch('letsencrypt.main.sys.stderr') as stderr:
-            with mock.patch('letsencrypt.main.client') as client:
-                ret = main.main(args[:])  # NOTE: parser can alter its args!
-        return ret, None, stderr, client
 
     def test_no_flags(self):
         with mock.patch('letsencrypt.main.run') as mock_run:
@@ -92,10 +81,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         "Run a command, and return the ouput string for scrutiny"
 
         output = six.StringIO()
-        with mock.patch('letsencrypt.main.sys.stdout', new=output):
-            self.assertRaises(SystemExit, self._call_stdout, args)
-            out = output.getvalue()
-            return out
+        self.assertRaises(SystemExit, self._call, args, output)
+        out = output.getvalue()
+        return out
 
     def test_help(self):
         self.assertRaises(SystemExit, self._call, ['--help'])
@@ -285,7 +273,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         plugins.visible.assert_called_once_with()
         plugins.visible().ifaces.assert_called_once_with(ifaces)
         filtered = plugins.visible().ifaces()
-        #stdout.write.called_once_with(str(filtered))
         self.assertEqual(stdout.getvalue().strip(), str(filtered))
 
     @mock.patch('letsencrypt.main.plugins_disco')
@@ -302,7 +289,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         filtered.verify.assert_called_once_with(ifaces)
         verified = filtered.verify()
         self.assertEqual(stdout.getvalue().strip(), str(verified))
-        #stdout.write.called_once_with(str(verified))
 
     @mock.patch('letsencrypt.main.plugins_disco')
     @mock.patch('letsencrypt.main.cli.HelpfulArgumentParser.determine_help_topics')
@@ -320,7 +306,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         verified.available.assert_called_once_with()
         available = verified.available()
         self.assertEqual(stdout.getvalue().strip(), str(available))
-        #stdout.write.called_once_with(str(available))
 
     def test_certonly_abspath(self):
         cert = 'cert'
