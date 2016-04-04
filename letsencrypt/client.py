@@ -105,7 +105,8 @@ def register(config, account_storage, tos_cb=None):
                    "--register-unsafely-without-email was not present.")
             logger.warn(msg)
             raise errors.Error(msg)
-        logger.warn("Registering without email!")
+        if not config.dry_run:
+            logger.warn("Registering without email!")
 
     # Each new registration shall use a fresh new key
     key = jose.JWKRSA(key=jose.ComparableRSAKey(

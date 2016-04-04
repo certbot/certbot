@@ -80,6 +80,7 @@ class RegisterTest(unittest.TestCase):
             with mock.patch("letsencrypt.account.report_new_account"):
                 self.config.email = None
                 self.config.register_unsafely_without_email = True
+                self.config.dry_run = False
                 self._call()
                 mock_logger.warn.assert_called_once_with(mock.ANY)
 
