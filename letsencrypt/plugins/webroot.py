@@ -115,7 +115,7 @@ to serve all files under specified web root ({0})."""
             code, index = display.menu(
                 "Select the webroot for {0}:".format(domain),
                 ["Enter a new webroot"] + known_webroots,
-                help_label="Help")
+                help_label="Help", cli_flag="--" + self.option_name("path"))
             if code == display_util.CANCEL:
                 raise errors.PluginError(
                     "Every requested domain must have a "
