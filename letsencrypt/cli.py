@@ -339,7 +339,7 @@ class HelpfulArgumentParser(object):
                 if glob.glob(os.path.join(parsed_args.config_dir, constants.ACCOUNTS_DIR, "*")):
                     # The user has a prod account, but might not have a staging
                     # one; we don't want to start trying to perform interactive registration
-                    parsed_args.agree_tos = True
+                    parsed_args.tos = True
                     parsed_args.register_unsafely_without_email = True
 
         if parsed_args.csr:
