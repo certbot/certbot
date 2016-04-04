@@ -627,6 +627,13 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
              "--keep-until-expiring is more appropriate). Also implies "
              "--expand.")
     helpful.add(
+        "automation", "--allow-subset-of-names", action="store_true",
+        help="When performing domain validation, do not consider it a failure "
+             "if authorizations can not be obtained for a strict subset of "
+             "the requested domains. This may be useful for allowing renewals for "
+             "multiple domains to succeed even if some domains no longer point "
+             "at this system. This option cannot be used with --csr.")
+    helpful.add(
         "automation", "--agree-tos", dest="tos", action="store_true",
         help="Agree to the Let's Encrypt Subscriber Agreement")
     helpful.add(
@@ -643,6 +650,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "automation", "--no-self-upgrade", action="store_true",
         help="(letsencrypt-auto only) prevent the letsencrypt-auto script from"
              " upgrading itself to newer released versions")
+    helpful.add(
+        "automation", "-q", "--quiet", dest="quiet", action="store_true",
+        help="Silence all output except errors. Useful for automation via cron."
+             "Implies --non-interactive.")
 
     helpful.add_group(
         "testing", description="The following flags are meant for "
@@ -703,12 +714,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
-    helpful.add(
-        "automation", "--allow-subset-of-names",
-        action="store_true",
-        help="When performing domain validation, do not consider it a failure "
-             "if authorizations can not be obtained for a strict subset of "
-             "the requested domains. This option cannot be used with --csr.")
 
     helpful.add_group(
         "renew", description="The 'renew' subcommand will attempt to renew all"
