@@ -176,7 +176,8 @@ if [ "$1" = "--le-auto-phase2" ]; then
 
   shift 1  # the --le-auto-phase2 arg
   if [ -f "$VENV_BIN/letsencrypt" ]; then
-    INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | cut -d " " -f 2)
+    # --version output ran through grep due to python-cryptography DeprecationWarnings
+    INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | grep ^letsencrypt | cut -d " " -f 2)
   else
     INSTALLED_VERSION="none"
   fi
