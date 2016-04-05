@@ -531,6 +531,8 @@ def obtain_cert(config, plugins, lineage=None):
             installer.restart()
             notify("new certificate deployed with reload of {0} server; fullchain is {1}".format(
                    config.installer, lineage.fullchain), pause=False)
+    elif action == "reinstall" and config.verb == "certonly":
+        notify("Certificate not yet due for renewal; no action taken.")
     _suggest_donation_if_appropriate(config, action)
 
 
