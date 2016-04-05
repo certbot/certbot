@@ -427,20 +427,40 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         short_args += '--server example.com'.split()
         self._check_server_conflict_message(short_args, '--staging')
 
-    def _assert_dry_run_flag_worked(self, namespace):
+    def _assert_dry_run_flag_worked(self, namespace, existing_account):
         self.assertTrue(namespace.dry_run)
         self.assertTrue(namespace.break_my_certs)
         self.assertTrue(namespace.staging)
         self.assertEqual(namespace.server, constants.STAGING_URI)
 
+        if existing_account:
+            self.assertTrue(namespace.tos)
+            self.assertTrue(namespace.register_unsafely_without_email)
+        else:
+            self.assertFalse(namespace.tos)
+            self.assertFalse(namespace.register_unsafely_without_email)
+
     def test_dry_run_flag(self):
         parse = self._get_argument_parser()
-        short_args = ['--dry-run']
+        config_dir = tempfile.mkdtemp()
+        short_args = '--dry-run --config-dir {0}'.format(config_dir).split()
         self.assertRaises(errors.Error, parse, short_args)
 
-        self._assert_dry_run_flag_worked(parse(short_args + ['auth']))
+        self._assert_dry_run_flag_worked(
+            parse(short_args + ['auth']), False)
+        self._assert_dry_run_flag_worked(
+            parse(short_args + ['certonly']), False)
+        self._assert_dry_run_flag_worked(
+            parse(short_args + ['renew']), False)
+
+        account_dir = os.path.join(config_dir, constants.ACCOUNTS_DIR)
+        os.mkdir(account_dir)
+        os.mkdir(os.path.join(account_dir, 'fake_account_dir'))
+
+        self._assert_dry_run_flag_worked(parse(short_args + ['auth']), True)
+        self._assert_dry_run_flag_worked(parse(short_args + ['renew']), True)
         short_args += ['certonly']
-        self._assert_dry_run_flag_worked(parse(short_args))
+        self._assert_dry_run_flag_worked(parse(short_args), True)
 
         short_args += '--server example.com'.split()
         conflicts = ['--dry-run']
