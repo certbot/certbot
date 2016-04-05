@@ -2,7 +2,6 @@
 from __future__ import print_function
 import argparse
 import glob
-import json
 import logging
 import logging.handlers
 import os
@@ -315,12 +314,6 @@ class HelpfulArgumentParser(object):
 
         # Do any post-parsing homework here
 
-        # we get domains from -d, but also from the webroot map...
-        if parsed_args.webroot_map:
-            for domain in parsed_args.webroot_map.keys():
-                if domain not in parsed_args.domains:
-                    parsed_args.domains.append(domain)
-
         if parsed_args.staging or parsed_args.dry_run:
             if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
                 conflicts = ["--staging"] if parsed_args.staging else []
@@ -353,10 +346,7 @@ class HelpfulArgumentParser(object):
         return parsed_args
 
     def handle_csr(self, parsed_args):
-        """
-        Process a --csr flag. This needs to happen early enough that the
-        webroot plugin can know about the calls to process_domain
-        """
+        """Process a --csr flag."""
         if parsed_args.verb != "certonly":
             raise errors.Error("Currently, a CSR file may only be specified "
                                "when obtaining a new or replacement "
@@ -377,14 +367,11 @@ class HelpfulArgumentParser(object):
                 logger.debug("DER CSR parse error %s", e1)
                 logger.debug("PEM CSR parse error %s", traceback.format_exc())
                 raise errors.Error("Failed to parse CSR file: {0}".format(parsed_args.csr[0]))
-        for d in domains:
-            process_domain(parsed_args, d)
 
-        for d in domains:
-            sanitised = le_util.enforce_domain_sanity(d)
-            if d.lower() != sanitised:
-                raise errors.ConfigurationError(
-                    "CSR domain {0} needs to be sanitised to {1}.".format(d, sanitised))
+        # This is not necessary for webroot to work, however,
+        # obtain_certificate_from_csr requires parsed_args.domains to be set
+        for domain in domains:
+            add_domains(parsed_args, domain)
 
         if not domains:
             # TODO: add CN to domains instead:
@@ -611,7 +598,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
     #for subparser in parser_run, parser_auth, parser_install:
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
     helpful.add(None, "-d", "--domains", "--domain", dest="domains",
-                metavar="DOMAIN", action=DomainFlagProcessor, default=[],
+                metavar="DOMAIN", action=_DomainsAction, default=[],
                 help="Domain names to apply. For multiple domains you can use "
                 "multiple -d flags or enter a comma separated list of domains "
                 "as a parameter.")
@@ -892,83 +879,35 @@ def _plugins_parsing(helpful, plugins):
 
     helpful.add_plugin_args(plugins)
 
-    # These would normally be a flag within the webroot plugin, but because
-    # they are parsed in conjunction with --domains, they live here for
-    # legibility. helpful.add_plugin_ags must be called first to add the
-    # "webroot" topic
-    helpful.add("webroot", "-w", "--webroot-path", default=[], action=WebrootPathProcessor,
-                help="public_html / webroot path. This can be specified multiple times to "
-                     "handle different domains; each domain will have the webroot path that"
-                     " preceded it.  For instance: `-w /var/www/example -d example.com -d "
-                     "www.example.com -w /var/www/thing -d thing.net -d m.thing.net`")
-    # --webroot-map still has some awkward properties, so it is undocumented
-    helpful.add("webroot", "--webroot-map", default={}, action=WebrootMapProcessor,
-                help="JSON dictionary mapping domains to webroot paths; this "
-                     "implies -d for each entry. You may need to escape this "
-                     "from your shell. E.g.: --webroot-map "
-                     """'{"eg1.is,m.eg1.is":"/www/eg1/", "eg2.is":"/www/eg2"}' """
-                     "This option is merged with, but takes precedence over, "
-                     "-w / -d entries. At present, if you put webroot-map in "
-                     "a config file, it needs to be on a single line, like: "
-                     'webroot-map = {"example.com":"/var/www"}.')
+
+class _DomainsAction(argparse.Action):
+    """Action class for parsing domains."""
+
+    def __call__(self, parser, namespace, domain, option_string=None):
+        """Just wrap add_domains in argparseese."""
+        add_domains(namespace, domain)
 
 
-class WebrootPathProcessor(argparse.Action):  # pylint: disable=missing-docstring
-    def __init__(self, *args, **kwargs):
-        self.domain_before_webroot = False
-        argparse.Action.__init__(self, *args, **kwargs)
+def add_domains(args_or_config, domains):
+    """Registers new domains to be used during the current client run.
 
-    def __call__(self, parser, args, webroot, option_string=None):
-        """
-        Keep a record of --webroot-path / -w flags during processing, so that
-        we know which apply to which -d flags
-        """
-        if not args.webroot_path:      # first -w flag encountered
-            # if any --domain flags preceded the first --webroot-path flag,
-            # apply that webroot path to those; subsequent entries in
-            # args.webroot_map are filled in by cli.DomainFlagProcessor
-            if args.domains:
-                self.domain_before_webroot = True
-                for d in args.domains:
-                    args.webroot_map.setdefault(d, webroot)
-        elif self.domain_before_webroot:
-            # FIXME if you set domains in a args file, you should get a different error
-            # here, pointing you to --webroot-map
-            raise errors.Error("If you specify multiple webroot paths, one of "
-                               "them must precede all domain flags")
-        args.webroot_path.append(webroot)
+    Domains are not added to the list of requested domains if they have
+    already been registered.
 
+    :param args_or_config: parsed command line arguments
+    :type args_or_config: argparse.Namespace or
+        configuration.NamespaceConfig
+    :param str domain: one or more comma separated domains
 
-def process_domain(args_or_config, domain_arg, webroot_path=None):
-    """
-    Process a new -d flag, helping the webroot plugin construct a map of
-    {domain : webrootpath} if -w / --webroot-path is in use
-
-    :param args_or_config: may be an argparse args object, or a NamespaceConfig object
-    :param str domain_arg: a string representing 1+ domains, eg: "eg.is, example.com"
-    :param str webroot_path: (optional) the webroot_path for these domains
+    :returns: domains after they have been normalized and validated
+    :rtype: `list` of `str`
 
     """
-    webroot_path = webroot_path if webroot_path else args_or_config.webroot_path
-
-    for domain in (d.strip() for d in domain_arg.split(",")):
-        domain = le_util.enforce_domain_sanity(domain)
+    validated_domains = []
+    for domain in domains.split(","):
+        domain = le_util.enforce_domain_sanity(domain.strip())
+        validated_domains.append(domain)
         if domain not in args_or_config.domains:
             args_or_config.domains.append(domain)
-            # Each domain has a webroot_path of the most recent -w flag
-            # unless it was explicitly included in webroot_map
-            if webroot_path:
-                args_or_config.webroot_map.setdefault(domain, webroot_path[-1])
 
-
-class WebrootMapProcessor(argparse.Action):  # pylint: disable=missing-docstring
-    def __call__(self, parser, args, webroot_map_arg, option_string=None):
-        webroot_map = json.loads(webroot_map_arg)
-        for domains, webroot_path in six.iteritems(webroot_map):
-            process_domain(args, domains, [webroot_path])
-
-
-class DomainFlagProcessor(argparse.Action):  # pylint: disable=missing-docstring
-    def __call__(self, parser, args, domain_arg, option_string=None):
-        """Just wrap process_domain in argparseese."""
-        process_domain(args, domain_arg)
+    return validated_domains

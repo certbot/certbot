@@ -18,6 +18,7 @@ from letsencrypt import constants
 from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import interfaces
+from letsencrypt import le_util
 from letsencrypt import hooks
 from letsencrypt import storage
 from letsencrypt.plugins import disco as plugins_disco
@@ -85,8 +86,8 @@ def _reconstitute(config, full_path):
         return None
 
     try:
-        for d in renewal_candidate.names():
-            cli.process_domain(config, d)
+        config.domains = [le_util.enforce_domain_sanity(d)
+                          for d in renewal_candidate.names()]
     except errors.ConfigurationError as error:
         logger.warning("Renewal configuration file %s references a cert "
                        "that contains an invalid domain name. The problem "

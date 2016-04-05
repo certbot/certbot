@@ -255,14 +255,10 @@ def _find_duplicative_certs(config, domains):
 
 
 def _find_domains(config, installer):
-    if not config.domains:
-        domains = display_ops.choose_names(installer)
-        # record in config.domains (so that it can be serialised in renewal config files),
-        # and set webroot_map entries if applicable
-        for d in domains:
-            cli.process_domain(config, d)
-    else:
+    if config.domains:
         domains = config.domains
+    else:
+        domains = display_ops.choose_names(installer)
 
     if not domains:
         raise errors.Error("Please specify --domains, or --installer that "

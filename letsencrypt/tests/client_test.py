@@ -136,8 +136,7 @@ class ClientTest(unittest.TestCase):
 
     # FIXME move parts of this to test_cli.py...
     @mock.patch("letsencrypt.client.logger")
-    @mock.patch("letsencrypt.cli.process_domain")
-    def test_obtain_certificate_from_csr(self, mock_process_domain, mock_logger):
+    def test_obtain_certificate_from_csr(self, mock_logger):
         self._mock_obtain_certificate()
         from letsencrypt import cli
         test_csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
@@ -151,9 +150,6 @@ class ClientTest(unittest.TestCase):
             mock_parser = mock.MagicMock(cli.HelpfulArgumentParser)
             cli.HelpfulArgumentParser.handle_csr(mock_parser, mock_parsed_args)
 
-            # make sure cli processing occurred
-            cli_processed = (call[0][1] for call in mock_process_domain.call_args_list)
-            self.assertEqual(set(cli_processed), set(("example.com", "www.example.com")))
             # Now provoke an inconsistent domains error...
             mock_parsed_args.domains.append("hippopotamus.io")
             self.assertRaises(errors.ConfigurationError,
