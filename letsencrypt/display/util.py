@@ -123,7 +123,7 @@ class NcursesDisplay(object):
             # pylint: disable=star-args
             code, index = self.dialog.menu(message, **menu_options)
 
-            if code == CANCEL:
+            if code == CANCEL or index == "":
                 return code, -1
 
             return code, int(index) - 1
