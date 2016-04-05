@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class Authenticator(common.Plugin):
     """Webroot Authenticator."""
 
-    description = "Webroot Authenticator"
+    description = "Place files in webroot directory"
 
     MORE_INFO = """\
 Authenticator plugin that performs http-01 challenge by saving
