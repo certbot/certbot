@@ -652,7 +652,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
     helpful.add(
         "automation", "-q", "--quiet", dest="quiet", action="store_true",
         help="Silence all output except errors. Useful for automation via cron."
-             "Implies --non-interactive.")
+             " Implies --non-interactive.")
 
     helpful.add_group(
         "testing", description="The following flags are meant for "
