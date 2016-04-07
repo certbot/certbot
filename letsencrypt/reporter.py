@@ -35,8 +35,9 @@ class Reporter(object):
 
     _msg_type = collections.namedtuple('ReporterMsg', 'priority text on_crash')
 
-    def __init__(self):
+    def __init__(self, config):
         self.messages = queue.PriorityQueue()
+        self.config = config
 
     def add_message(self, msg, priority, on_crash=True):
         """Adds msg to the list of messages to be printed.
@@ -76,9 +77,10 @@ class Reporter(object):
         if not self.messages.empty():
             no_exception = sys.exc_info()[0] is None
             bold_on = sys.stdout.isatty()
-            if bold_on:
-                print(le_util.ANSI_SGR_BOLD)
-            print('IMPORTANT NOTES:')
+            if not self.config.quiet:
+                if bold_on:
+                    print(le_util.ANSI_SGR_BOLD)
+                print('IMPORTANT NOTES:')
             first_wrapper = textwrap.TextWrapper(
                 initial_indent=' - ', subsequent_indent=(' ' * 3))
             next_wrapper = textwrap.TextWrapper(
@@ -86,14 +88,20 @@ class Reporter(object):
                 subsequent_indent=first_wrapper.subsequent_indent)
         while not self.messages.empty():
             msg = self.messages.get()
+            if self.config.quiet:
+                # In --quiet mode, we only print high priority messages that
+                # are flagged for crash cases
+                if not (msg.priority == self.HIGH_PRIORITY and msg.on_crash):
+                    continue
             if no_exception or msg.on_crash:
                 if bold_on and msg.priority > self.HIGH_PRIORITY:
-                    sys.stdout.write(le_util.ANSI_SGR_RESET)
-                    bold_on = False
+                    if not self.config.quiet:
+                        sys.stdout.write(le_util.ANSI_SGR_RESET)
+                        bold_on = False
                 lines = msg.text.splitlines()
                 print(first_wrapper.fill(lines[0]))
                 if len(lines) > 1:
                     print("\n".join(
                         next_wrapper.fill(line) for line in lines[1:]))
-        if bold_on:
+        if bold_on and not self.config.quiet:
             sys.stdout.write(le_util.ANSI_SGR_RESET)
