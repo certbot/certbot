@@ -28,15 +28,31 @@ matrix:
   include:
     - python: "2.6"
       env: TOXENV=py26 BOULDER_INTEGRATION=1
+      sudo: true
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
     - python: "2.6"
       env: TOXENV=py26-oldest BOULDER_INTEGRATION=1
+      sudo: true
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
     - python: "2.7"
       env: TOXENV=apacheconftest
       sudo: required
     - python: "2.7"
       env: TOXENV=py27 BOULDER_INTEGRATION=1
+      sudo: true
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
     - python: "2.7"
       env: TOXENV=py27-oldest BOULDER_INTEGRATION=1
+      sudo: true
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
     - python: "2.7"
       env: TOXENV=lint
     - sudo: required
