@@ -6,6 +6,7 @@
 """
 import logging
 import os
+import traceback
 
 import OpenSSL
 import pyrfc3339
@@ -169,6 +170,35 @@ def csr_matches_pubkey(csr, privkey):
     except OpenSSL.crypto.Error as error:
         logger.debug(error, exc_info=True)
         return False
+
+
+def import_csr_file(csrfile, contents):
+    """Import a CSR file, which can be either PEM or DER.
+
+    :param str csrfile: CSR filename
+    :param str contents: contens of the CSR file
+
+    :rtype: tuple
+
+    :returns: (le_util.CSR object representing the CSR,
+               OpenSSL FILETYPE_ representing DER or PEM,
+               list of domains requested in the CSR)
+    """
+    try:
+        csr = le_util.CSR(file=csrfile, data=contents, form="der")
+        typ = OpenSSL.crypto.FILETYPE_ASN1
+        domains = get_sans_from_csr(csr.data, OpenSSL.crypto.FILETYPE_ASN1)
+    except OpenSSL.crypto.Error:
+        try:
+            e1 = traceback.format_exc()
+            typ = OpenSSL.crypto.FILETYPE_PEM
+            csr = le_util.CSR(file=csrfile, data=contents, form="pem")
+            domains = get_sans_from_csr(csr.data, typ)
+        except OpenSSL.crypto.Error:
+            logger.debug("DER CSR parse error %s", e1)
+            logger.debug("PEM CSR parse error %s", traceback.format_exc())
+            raise errors.Error("Failed to parse CSR file: {0}".format(csrfile))
+    return typ, csr, domains
 
 
 def make_key(bits):

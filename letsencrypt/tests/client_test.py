@@ -134,7 +134,7 @@ class ClientTest(unittest.TestCase):
 
         self.acme.fetch_chain.assert_called_once_with(mock.sentinel.certr)
 
-    # FIXME move parts of this to test_cli.py...
+    # FIXME move parts of this to crypto_util tests...
     @mock.patch("letsencrypt.client.logger")
     def test_obtain_certificate_from_csr(self, mock_logger):
         self._mock_obtain_certificate()
@@ -144,9 +144,11 @@ class ClientTest(unittest.TestCase):
         # The CLI should believe that this is a certonly request, because
         # a CSR would not be allowed with other kinds of requests!
         mock_parsed_args.verb = "certonly"
-        with mock.patch("letsencrypt.client.le_util.CSR") as mock_CSR:
+        with mock.patch("letsencrypt.cli.crypto_util.le_util.CSR") as mock_CSR:
             mock_CSR.return_value = test_csr
             mock_parsed_args.domains = self.eg_domains[:]
+            mock_parsed_args.allow_subset_of_names = False
+            mock_parsed_args.csr = (mock.MagicMock(), mock.MagicMock())
             mock_parser = mock.MagicMock(cli.HelpfulArgumentParser)
             cli.HelpfulArgumentParser.handle_csr(mock_parser, mock_parsed_args)
 

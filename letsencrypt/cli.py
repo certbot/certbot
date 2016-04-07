@@ -6,10 +6,8 @@ import logging
 import logging.handlers
 import os
 import sys
-import traceback
 
 import configargparse
-import OpenSSL
 import six
 
 import letsencrypt
@@ -361,20 +359,8 @@ class HelpfulArgumentParser(object):
         if parsed_args.allow_subset_of_names:
             raise errors.Error("--allow-subset-of-names cannot be used with --csr")
 
-        try:
-            csr = le_util.CSR(file=parsed_args.csr[0], data=parsed_args.csr[1], form="der")
-            typ = OpenSSL.crypto.FILETYPE_ASN1
-            domains = crypto_util.get_sans_from_csr(csr.data, OpenSSL.crypto.FILETYPE_ASN1)
-        except OpenSSL.crypto.Error:
-            try:
-                e1 = traceback.format_exc()
-                typ = OpenSSL.crypto.FILETYPE_PEM
-                csr = le_util.CSR(file=parsed_args.csr[0], data=parsed_args.csr[1], form="pem")
-                domains = crypto_util.get_sans_from_csr(csr.data, typ)
-            except OpenSSL.crypto.Error:
-                logger.debug("DER CSR parse error %s", e1)
-                logger.debug("PEM CSR parse error %s", traceback.format_exc())
-                raise errors.Error("Failed to parse CSR file: {0}".format(parsed_args.csr[0]))
+        csrfile, contents = parsed_args.csr[0:2]
+        typ, csr, domains = crypto_util.import_csr_file(csrfile, contents)
 
         # This is not necessary for webroot to work, however,
         # obtain_certificate_from_csr requires parsed_args.domains to be set
