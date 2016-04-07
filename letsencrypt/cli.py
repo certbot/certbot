@@ -318,24 +318,7 @@ class HelpfulArgumentParser(object):
             parsed_args.noninteractive_mode = True
 
         if parsed_args.staging or parsed_args.dry_run:
-            if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
-                conflicts = ["--staging"] if parsed_args.staging else []
-                conflicts += ["--dry-run"] if parsed_args.dry_run else []
-                raise errors.Error("--server value conflicts with {0}".format(
-                    " and ".join(conflicts)))
-
-            parsed_args.server = constants.STAGING_URI
-
-            if parsed_args.dry_run:
-                if self.verb not in ["certonly", "renew"]:
-                    raise errors.Error("--dry-run currently only works with the "
-                                       "'certonly' or 'renew' subcommands (%r)" % self.verb)
-                parsed_args.break_my_certs = parsed_args.staging = True
-                if glob.glob(os.path.join(parsed_args.config_dir, constants.ACCOUNTS_DIR, "*")):
-                    # The user has a prod account, but might not have a staging
-                    # one; we don't want to start trying to perform interactive registration
-                    parsed_args.tos = True
-                    parsed_args.register_unsafely_without_email = True
+            self.set_test_server(parsed_args)
 
         if parsed_args.csr:
             if parsed_args.allow_subset_of_names:
@@ -346,6 +329,30 @@ class HelpfulArgumentParser(object):
         hooks.validate_hooks(parsed_args)
 
         return parsed_args
+
+
+    def set_test_server(self, parsed_args):
+        "We have --staging/--dry-run; perform sanity check and set config.server"
+
+        if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
+            conflicts = ["--staging"] if parsed_args.staging else []
+            conflicts += ["--dry-run"] if parsed_args.dry_run else []
+            raise errors.Error("--server value conflicts with {0}".format(
+                " and ".join(conflicts)))
+
+        parsed_args.server = constants.STAGING_URI
+
+        if parsed_args.dry_run:
+            if self.verb not in ["certonly", "renew"]:
+                raise errors.Error("--dry-run currently only works with the "
+                                   "'certonly' or 'renew' subcommands (%r)" % self.verb)
+            parsed_args.break_my_certs = parsed_args.staging = True
+            if glob.glob(os.path.join(parsed_args.config_dir, constants.ACCOUNTS_DIR, "*")):
+                # The user has a prod account, but might not have a staging
+                # one; we don't want to start trying to perform interactive registration
+                parsed_args.tos = True
+                parsed_args.register_unsafely_without_email = True
+
 
     def handle_csr(self, parsed_args):
         """Process a --csr flag."""
