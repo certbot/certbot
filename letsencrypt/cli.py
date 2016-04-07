@@ -321,9 +321,6 @@ class HelpfulArgumentParser(object):
             self.set_test_server(parsed_args)
 
         if parsed_args.csr:
-            if parsed_args.allow_subset_of_names:
-                raise errors.Error("--allow-subset-of-names "
-                                   "cannot be used with --csr")
             self.handle_csr(parsed_args)
 
         hooks.validate_hooks(parsed_args)
@@ -361,6 +358,8 @@ class HelpfulArgumentParser(object):
                                "when obtaining a new or replacement "
                                "via the certonly command. Please try the "
                                "certonly command instead.")
+        if parsed_args.allow_subset_of_names:
+            raise errors.Error("--allow-subset-of-names cannot be used with --csr")
 
         try:
             csr = le_util.CSR(file=parsed_args.csr[0], data=parsed_args.csr[1], form="der")
