@@ -23,7 +23,7 @@ LE_AUTO_VERSION="0.5.0"
 
 # This script takes the same arguments as the main letsencrypt program, but it
 # additionally responds to --verbose (more output) and --debug (allow support
-# for experimental platforms)
+# for experimental platforms) and a few others
 for arg in "$@" ; do
   case "$arg" in
     --debug)
@@ -36,6 +36,10 @@ for arg in "$@" ; do
       NO_SELF_UPGRADE=1;;
     --verbose)
       VERBOSE=1;;
+    --help)
+      HELP=1;;
+    -h)
+      HELP=1;;
     [!-]*|-*[!v]*|-)
       # Anything that isn't -v, -vv, etc.: that is, anything that does not
       # start with a -, contains anything that's not a v, or is just "-"
@@ -50,7 +54,7 @@ done
 # The "normal" case is that sudo is used for the steps that need root, but
 # this script *can* be run as root (not recommended), or fall back to using
 # `su`
-if test "`id -u`" -ne "0" ; then
+if test "`id -u`" -ne "0" && test "$HELP" != "1" ; then
   if command -v sudo 1>/dev/null 2>&1; then
     SUDO=sudo
   else
@@ -834,9 +838,31 @@ else
   # letsencrypt-auto (which is always the same as that of the letsencrypt
   # package). Phase 2 checks the version of the locally installed letsencrypt.
 
+  if [ "$HELP" = "1" ] ; then
+      cat << UNLIKELY_EOF
+
+$0 [--help] [<args to be passed to letsencrypt>]
+
+letsencrypt-auto on first run will install letsencrypt and its required
+dependencies. For this it will need root. Once installed, running $0 is
+equivalent to running letsencrypt.
+UNLIKELY_EOF
+  fi
+
   if [ ! -f "$VENV_BIN/letsencrypt" ]; then
-    # If it looks like we've never bootstrapped before, bootstrap:
-    Bootstrap
+    if [ "$HELP" != "1" ] ; then
+      # If it looks like we've never bootstrapped before, bootstrap:
+      Bootstrap
+    else
+      # We don't want to bootstrap just to display a help message. Instead,
+      # display a shortened help message and quit.
+      python "$(cd -P -- "$(dirname -- "$0")" && pwd)/letsencrypt/help_short_usage.py"
+      echo "Once the dependencies of letsencrypt have been installed, this help"
+      echo "message will include details on letsencrypt plug-ins, and you can look at help for topics"
+      echo "by passing --help [<topic>]."
+      echo ""
+      exit
+    fi
   fi
   if [ "$OS_PACKAGES_ONLY" = 1 ]; then
     echo "OS packages installed."
