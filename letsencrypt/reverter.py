@@ -502,22 +502,22 @@ class Reverter(object):
             shutil.move(changes_since_tmp_path, changes_since_path)
         except (IOError, OSError):
             logger.error("Unable to finalize checkpoint - adding title")
-            logger.debug("Exception was:\%s", traceback.format_exc())
+            logger.debug("Exception was:\n%s", traceback.format_exc())
             raise errors.ReverterError("Unable to add title")
 
         self._timestamp_progress_dir()
 
-    def _checkpoint_timestamp(self)
+    def _checkpoint_timestamp(self):
         "Determine the timestamp of the checkpoint, enforcing monotonicity."
         timestamp = str(time.time())
         others = os.listdir(self.config.backup_dir)
-        others.append(new_dir)
+        others.append(timestamp)
         others.sort()
         if others[-1] != timestamp:
             timetravel = str(float(others[-1]) + 1)
             logger.warn("Current timestamp %s does not correspond to newest reverter "
                 "checkpoint; your clock probably jumped. Time travelling to %s",
-                new_dir, timetravel)
+                timestamp, timetravel)
             timestamp = timetravel
         elif len(others) > 1 and others[-2] == timestamp:
             # It is possible if the checkpoints are made extremely quickly
