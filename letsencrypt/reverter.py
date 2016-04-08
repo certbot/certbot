@@ -488,7 +488,7 @@ class Reverter(object):
         changes_since_path = os.path.join(self.config.in_progress_dir, "CHANGES_SINCE")
         changes_since_tmp_path = os.path.join(self.config.in_progress_dir, "CHANGES_SINCE.tmp")
 
-        if not os.path.exists(self.config.changes_since_path):
+        if not os.path.exists(changes_since_path):
             logger.info("Rollback checkpoint is empty (no changes made?)")
             with open(self.config.changes_since_path) as f:
                 f.write("No changes\n")
