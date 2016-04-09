@@ -28,6 +28,14 @@ class ErrorTest(unittest.TestCase):
         self.error_custom = Error(typ='custom', detail='bar')
         self.jobj_cusom = {'type': 'custom', 'detail': 'bar'}
 
+    def test_default_typ(self):
+        from acme.messages import Error
+        self.assertEqual(Error().typ, 'about:blank')
+
+    def test_from_json_empty(self):
+        from acme.messages import Error
+        self.assertEqual(Error(), Error.from_json('{}'))
+
     def test_from_json_hashable(self):
         from acme.messages import Error
         hash(Error.from_json(self.error.to_json()))

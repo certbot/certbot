@@ -37,9 +37,9 @@ class Error(jose.JSONObjectWithFields, errors.Error):
         )
     )
 
-    typ = jose.Field('type')
+    typ = jose.Field('type', omitempty=True, default='about:blank')
     title = jose.Field('title', omitempty=True)
-    detail = jose.Field('detail')
+    detail = jose.Field('detail', omitempty=True)
 
     @property
     def description(self):
