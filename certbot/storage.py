@@ -78,8 +78,10 @@ def write_renewal_config(o_filename, n_filename, target, relevant_data):
         if k not in relevant_data:
             del config["renewalparams"][k]
 
-    config["renew_before_expiry"] = constants.RENEWER_DEFAULTS["renew_before_expiry"]
-    config.comments["renew_before_expiry"] = "Renewal interval"
+    if "renew_before_expiry" not in config["renewalparams"]:
+        config["renewalparams"]["renew_before_expiry"] = (
+            constants.RENEWER_DEFAULTS["renew_before_expiry"])
+    config["renewalparams"].comments["renew_before_expiry"] = ["Renewal interval"]
 
     # TODO: add human-readable comments explaining other available
     #       parameters
