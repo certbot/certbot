@@ -110,7 +110,6 @@ addons:
     # For Boulder integration testing
     - rsyslog
     # for apacheconftest
-    #- realpath
     #- apache2
     #- libapache2-mod-wsgi
     #- libapache2-mod-macro
