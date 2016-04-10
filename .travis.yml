@@ -71,6 +71,11 @@ matrix:
       services: docker
       before_install:
       addons:
+    - sudo: required
+      env: TOXENV=le_auto_centos7
+      services: docker
+      before_install:
+      addons:
     - python: "2.7"
       env: TOXENV=apacheconftest
       sudo: required
