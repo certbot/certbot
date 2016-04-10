@@ -19,13 +19,13 @@ function Setup() {
     if [ "$APPEND_APACHECONF" = "" ] ; then
         sudo cp "$f" "$EA"/sites-available/
         sudo ln -sf "$EA/sites-available/$f" "$EA/sites-enabled/$f"
-        sudo echo """
+        echo "
 <VirtualHost *:80>
     ServerName example.com
     DocumentRoot /tmp/
     ErrorLog /tmp/error.log
     CustomLog /tmp/requests.log combined
-</VirtualHost>""" >> $EA/sites-available/throwaway-example.conf
+</VirtualHost>" | sudo tee $EA/sites-available/throwaway-example.conf >/dev/null
     else
         TMP="/tmp/`basename \"$APPEND_APACHECONF\"`.$$"
         sudo cp -a "$APPEND_APACHECONF" "$TMP"
