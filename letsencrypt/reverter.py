@@ -1,5 +1,6 @@
 """Reverter class saves configuration checkpoints and allows for recovery."""
 import csv
+import glob
 import logging
 import os
 import shutil
@@ -510,7 +511,7 @@ class Reverter(object):
     def _checkpoint_timestamp(self):
         "Determine the timestamp of the checkpoint, enforcing monotonicity."
         timestamp = str(time.time())
-        others = os.listdir(self.config.backup_dir)
+        others = glob.glob(os.path.join(self.config.backup_dir, "[0-9]*"))
         others.append(timestamp)
         others.sort()
         if others[-1] != timestamp:
