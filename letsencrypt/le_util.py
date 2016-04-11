@@ -211,7 +211,55 @@ def safely_remove(path):
 
 def get_os_info():
     """
+    Get OS name and version
+
+    :returns: (os_name, os_version)
+    :rtype: `tuple` of `str`
+    """
+
+
+def get_systemd_os_info():
+    """
+    Parse systemd /etc/os-release for distribution information
+
+    :returns: (os_name, os_version)
+    :rtype: `tuple` of `str`
+    """
+
+    os_name = _get_systemd_os_release_var("ID")
+    os_version = _get_systemd_os_release_var("VERSION_ID")
+
+    return (os_name, os_version)
+
+
+def _get_systemd_os_release_var(varname):
+
+    OS_RELEASE_FILEPATH = "/etc/os-release"
+    var_string = varname+"="
+    if not os.path.isfile(OS_RELEASE_FILEPATH):
+        return ""
+    with open(OS_RELEASE_FILEPATH, 'r') as fh:
+        contents = fh.readlines()
+
+    for line in contents:
+        if line.strip().startswith(var_string):
+            # Return the value of var, normalized
+            return _normalize_string(line.strip()[len(var_string):])
+    return ""
+
+
+def _normalize_string(orig):
+    """
+    Helper function for _get_systemd_os_release_var() to remove quotes
+    and whitespaces
+    """
+    return orig.replace('"', '').replace("'", "").strip()
+
+
+def get_python_os_info():
+    """
     Get Operating System type/distribution and major version
+    using python platform module
 
     :returns: (os_name, os_version)
     :rtype: `tuple` of `str`
