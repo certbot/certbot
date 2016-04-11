@@ -512,6 +512,7 @@ class Reverter(object):
         "Determine the timestamp of the checkpoint, enforcing monotonicity."
         timestamp = str(time.time())
         others = glob.glob(os.path.join(self.config.backup_dir, "[0-9]*"))
+        others = [os.path.basename(d) for d in others]
         others.append(timestamp)
         others.sort()
         if others[-1] != timestamp:
@@ -533,7 +534,7 @@ class Reverter(object):
         # It is possible save checkpoints faster than 1 per second resulting in
         # collisions in the naming convention.
 
-        for _ in xrange(10):
+        for _ in xrange(2):
             timestamp = self._checkpoint_timestamp()
             final_dir = os.path.join(self.config.backup_dir, timestamp)
             try:
