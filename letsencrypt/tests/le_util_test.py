@@ -359,7 +359,7 @@ class OsInfoTest(unittest.TestCase):
         from letsencrypt.le_util import get_os_info
         with mock.patch('os.path.isfile', return_value=False):
             with mock.patch('platform.system_alias',
-                            return_value=('NonSystemD','42','42')):
+                            return_value=('NonSystemD', '42', '42')):
                 self.assertEqual(get_os_info()[0], 'nonsystemd')
 
             with mock.patch('platform.system_alias',
@@ -367,7 +367,7 @@ class OsInfoTest(unittest.TestCase):
                 comm_mock = mock.Mock()
                 comm_attrs = {'communicate.return_value':
                               ('42.42.42', 'error')}
-                comm_mock.configure_mock(**comm_attrs)
+                comm_mock.configure_mock(**comm_attrs) # pylint disable=star-args
                 popen_mock.return_value = comm_mock
                 self.assertEqual(get_os_info()[0], 'darwin')
                 self.assertEqual(get_os_info()[1], '42.42.42')
