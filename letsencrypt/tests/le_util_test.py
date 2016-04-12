@@ -339,5 +339,39 @@ class EnforceDomainSanityTest(unittest.TestCase):
                           u"eichh\u00f6rnchen.example.com")
 
 
+class OsInfoTest(unittest.TestCase):
+    """Test OS / distribution detection"""
+    def _call(self):
+        from letsencrypt.le_util import get_os_info
+        return get_os_info()
+
+    def test_systemd_os_release(self):
+        from letsencrypt.le_util import get_os_info
+        os_release = 'VERSION_ID=42\nID=doobian\n'
+        with mock.patch('__builtin__.open',
+                        mock.mock_open(read_data=os_release)):
+            with mock.patch('os.path.isfile', return_value=True):
+                self.assertEqual(get_os_info()[0], 'doobian')
+                self.assertEqual(get_os_info()[1], '42')
+
+    @mock.patch("letsencrypt.le_util.subprocess.Popen")
+    def test_non_systemd_os_info(self, popen_mock):
+        from letsencrypt.le_util import get_os_info
+        with mock.patch('os.path.isfile', return_value=False):
+            with mock.patch('platform.system_alias',
+                            return_value=('NonSystemD','42','42')):
+                self.assertEqual(get_os_info()[0], 'nonsystemd')
+
+            with mock.patch('platform.system_alias',
+                            return_value=('darwin', '', '')):
+                comm_mock = mock.Mock()
+                comm_attrs = {'communicate.return_value':
+                              ('42.42.42', 'error')}
+                comm_mock.configure_mock(**comm_attrs)
+                popen_mock.return_value = comm_mock
+                self.assertEqual(get_os_info()[0], 'darwin')
+                self.assertEqual(get_os_info()[1], '42.42.42')
+
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

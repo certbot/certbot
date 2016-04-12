@@ -300,7 +300,6 @@ def get_python_os_info():
             ["sw_vers", "-productVersion"],
             stdout=subprocess.PIPE
         ).communicate()[0]
-        os_ver = os_ver.partition(".")[0]
     elif os_type.startswith('freebsd'):
         # eg "9.3-RC3-p1"
         os_ver = os_ver.partition("-")[0]
