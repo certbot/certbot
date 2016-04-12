@@ -201,7 +201,8 @@ class ClientTest(unittest.TestCase):
 
         authzr = []
 
-        for domain in domains:
+        # domain ordering should not be affected by authorization order
+        for domain in reversed(domains):
             authzr.append(
                 mock.MagicMock(
                     body=mock.MagicMock(
