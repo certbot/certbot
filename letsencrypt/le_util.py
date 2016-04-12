@@ -217,6 +217,15 @@ def get_os_info():
     :rtype: `tuple` of `str`
     """
 
+    if os.path.isfile('/etc/os-release'):
+        # Systemd os-release parsing might be viable
+        os_name, os_version = get_systemd_os_info()
+        if os_name:
+            return (os_name, os_version)
+
+    # Fallback to platform module
+    return get_python_os_info()
+
 
 def get_systemd_os_info():
     """
@@ -233,6 +242,13 @@ def get_systemd_os_info():
 
 
 def _get_systemd_os_release_var(varname):
+    """
+    Get single value from systemd /etc/os-release
+
+    :param str varname: Name of variable to fetch
+    :returns: requested value
+    :rtype: `str`
+    """
 
     OS_RELEASE_FILEPATH = "/etc/os-release"
     var_string = varname+"="
