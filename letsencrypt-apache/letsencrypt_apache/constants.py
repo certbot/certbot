@@ -78,6 +78,8 @@ CLI_DEFAULTS = {
     "centos linux": CLI_DEFAULTS_CENTOS,
     "fedora": CLI_DEFAULTS_CENTOS,
     "red hat enterprise linux server": CLI_DEFAULTS_CENTOS,
+    "rhel": CLI_DEFAULTS_CENTOS,
+    "amazon": CLI_DEFAULTS_CENTOS,
     "gentoo base system": CLI_DEFAULTS_GENTOO,
     "darwin": CLI_DEFAULTS_DARWIN,
 }
