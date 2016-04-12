@@ -86,7 +86,7 @@ class MultipleVhostsTest(util.ApacheTest):
         mock_getutility.notification = mock.MagicMock(return_value=True)
         names = self.config.get_all_names()
         self.assertEqual(names, set(
-            ["letsencrypt.demo", "encryption-example.demo", "ip-172-30-0-17", "*.blue.purple.com"]))
+            ["letsencrypt.demo", "ocspvhost.com", "encryption-example.demo", "ip-172-30-0-17", "*.blue.purple.com"]))
 
     @mock.patch("zope.component.getUtility")
     @mock.patch("letsencrypt_apache.configurator.socket.gethostbyaddr")
@@ -104,7 +104,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.vhosts.append(vhost)
 
         names = self.config.get_all_names()
-        self.assertEqual(len(names), 6)
+        self.assertEqual(len(names), 7)
         self.assertTrue("zombo.com" in names)
         self.assertTrue("google.com" in names)
         self.assertTrue("letsencrypt.demo" in names)
@@ -133,8 +133,9 @@ class MultipleVhostsTest(util.ApacheTest):
             it is a problem with is_enabled.  If finding only 3, likely is_ssl
 
         """
+        import ipdb; ipdb.set_trace()
         vhs = self.config.get_virtual_hosts()
-        self.assertEqual(len(vhs), 7)
+        self.assertEqual(len(vhs), 8)
         found = 0
 
         for vhost in vhs:
@@ -169,11 +170,12 @@ class MultipleVhostsTest(util.ApacheTest):
 
     @mock.patch("letsencrypt_apache.display_ops.select_vhost")
     def test_choose_vhost_select_vhost_non_ssl(self, mock_select):
-        mock_select.return_value = self.vh_truth[0]
+        #import ipdb; ipdb.set_trace()
+        mock_select.return_value = self.vh_truth[1]
         chosen_vhost = self.config.choose_vhost("none.com")
-        self.vh_truth[0].aliases.add("none.com")
+        self.vh_truth[1].aliases.add("none.com")
         self.assertEqual(
-            self.vh_truth[0].get_names(), chosen_vhost.get_names())
+            self.vh_truth[1].get_names(), chosen_vhost.get_names())
 
         # Make sure we go from HTTP -> HTTPS
         self.assertFalse(self.vh_truth[0].ssl)
@@ -237,13 +239,14 @@ class MultipleVhostsTest(util.ApacheTest):
             if vh.name not in ["letsencrypt.demo", "encryption-example.demo"]
             and "*.blue.purple.com" not in vh.aliases
         ]
-
+        #import ipdb; ipdb.set_trace()
         self.assertEqual(
-            self.config._find_best_vhost("example.demo"), self.vh_truth[2])
+            self.config._find_best_vhost("encryption-example.demo"),
+            self.vh_truth[0])
 
     def test_non_default_vhosts(self):
         # pylint: disable=protected-access
-        self.assertEqual(len(self.config._non_default_vhosts()), 5)
+        self.assertEqual(len(self.config._non_default_vhosts()), 6)
 
     def test_is_site_enabled(self):
         """Test if site is enabled.
@@ -549,7 +552,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(self.config.is_name_vhost(self.vh_truth[0]),
                          self.config.is_name_vhost(ssl_vhost))
 
-        self.assertEqual(len(self.config.vhosts), 8)
+        self.assertEqual(len(self.config.vhosts), 9)
 
     def test_clean_vhost_ssl(self):
         # pylint: disable=protected-access
@@ -737,7 +740,7 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_get_all_certs_keys(self):
         c_k = self.config.get_all_certs_keys()
 
-        self.assertEqual(len(c_k), 2)
+        self.assertEqual(len(c_k), 3)
         cert, key, path = next(iter(c_k))
         self.assertTrue("cert" in cert)
         self.assertTrue("key" in key)
@@ -825,13 +828,13 @@ class MultipleVhostsTest(util.ApacheTest):
         mock_exe.return_value = True
 
         # This will create an ssl vhost for letsencrypt.demo
-        self.config.enhance("letsencrypt.demo", "staple-ocsp")
+        #self.config.enhance("letsencrypt.demo", "staple-ocsp")
 
         # Checking the case with prior ocsp stapling confiugration
-        self.config.enhance("letsencrypt.demo", "staple-ocsp")
+        self.config.enhance("ocspvhost.com", "staple-ocsp")
 
         # Get the ssl vhost for letsencrypt.demo
-        ssl_vhost = self.config.assoc["letsencrypt.demo"]
+        ssl_vhost = self.config.assoc["ocspvhost.com"]
 
         ssl_use_stapling_aug_path = self.config.parser.find_dir(
             "SSLUseStapling", "on", ssl_vhost.path)
@@ -1039,7 +1042,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
         # pylint: disable=protected-access
         self.config._enable_redirect(self.vh_truth[1], "")
-        self.assertEqual(len(self.config.vhosts), 8)
+        self.assertEqual(len(self.config.vhosts), 9)
 
     def test_create_own_redirect_for_old_apache_version(self):
         self.config.parser.modules.add("rewrite_module")
@@ -1050,7 +1053,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
         # pylint: disable=protected-access
         self.config._enable_redirect(self.vh_truth[1], "")
-        self.assertEqual(len(self.config.vhosts), 8)
+        self.assertEqual(len(self.config.vhosts), 9)
 
     def test_sift_line(self):
         # pylint: disable=protected-access
