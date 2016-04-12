@@ -209,17 +209,18 @@ def safely_remove(path):
             raise
 
 
-def get_os_info():
+def get_os_info(filepath="/etc/os-release"):
     """
     Get OS name and version
 
+    :param str filepath: File path of os-release file
     :returns: (os_name, os_version)
     :rtype: `tuple` of `str`
     """
 
-    if os.path.isfile('/etc/os-release'):
+    if os.path.isfile(filepath):
         # Systemd os-release parsing might be viable
-        os_name, os_version = get_systemd_os_info()
+        os_name, os_version = get_systemd_os_info(filepath=filepath)
         if os_name:
             return (os_name, os_version)
 
@@ -227,34 +228,35 @@ def get_os_info():
     return get_python_os_info()
 
 
-def get_systemd_os_info():
+def get_systemd_os_info(filepath="/etc/os-release"):
     """
     Parse systemd /etc/os-release for distribution information
 
+    :param str filepath: File path of os-release file
     :returns: (os_name, os_version)
     :rtype: `tuple` of `str`
     """
 
-    os_name = _get_systemd_os_release_var("ID")
-    os_version = _get_systemd_os_release_var("VERSION_ID")
+    os_name = _get_systemd_os_release_var("ID", filepath=filepath)
+    os_version = _get_systemd_os_release_var("VERSION_ID", filepath=filepath)
 
     return (os_name, os_version)
 
 
-def _get_systemd_os_release_var(varname):
+def _get_systemd_os_release_var(varname, filepath="/etc/os-release"):
     """
     Get single value from systemd /etc/os-release
 
     :param str varname: Name of variable to fetch
+    :param str filepath: File path of os-release file
     :returns: requested value
     :rtype: `str`
     """
 
-    OS_RELEASE_FILEPATH = "/etc/os-release"
     var_string = varname+"="
-    if not os.path.isfile(OS_RELEASE_FILEPATH):
+    if not os.path.isfile(filepath):
         return ""
-    with open(OS_RELEASE_FILEPATH, 'r') as fh:
+    with open(filepath, 'r') as fh:
         contents = fh.readlines()
 
     for line in contents:

@@ -4,6 +4,7 @@ import errno
 import os
 import shutil
 import stat
+import sys
 import tempfile
 import unittest
 
@@ -11,6 +12,7 @@ import mock
 import six
 
 from letsencrypt import errors
+from letsencrypt.tests import test_util
 
 
 class RunScriptTest(unittest.TestCase):
@@ -347,12 +349,11 @@ class OsInfoTest(unittest.TestCase):
 
     def test_systemd_os_release(self):
         from letsencrypt.le_util import get_os_info
-        os_release = 'VERSION_ID=42\nID=systemdos\n'
-        with mock.patch('__builtin__.open',
-                        mock.mock_open(read_data=os_release)):
-            with mock.patch('os.path.isfile', return_value=True):
-                self.assertEqual(get_os_info()[0], 'systemdos')
-                self.assertEqual(get_os_info()[1], '42')
+        with mock.patch('os.path.isfile', return_value=True):
+            self.assertEqual(get_os_info(
+                test_util.vector_path("os-release"))[0], 'systemdos')
+            self.assertEqual(get_os_info(
+                test_util.vector_path("os-release"))[1], '42')
 
     @mock.patch("letsencrypt.le_util.subprocess.Popen")
     def test_non_systemd_os_info(self, popen_mock):
