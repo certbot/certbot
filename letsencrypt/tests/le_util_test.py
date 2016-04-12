@@ -347,11 +347,11 @@ class OsInfoTest(unittest.TestCase):
 
     def test_systemd_os_release(self):
         from letsencrypt.le_util import get_os_info
-        os_release = 'VERSION_ID=42\nID=doobian\n'
+        os_release = 'VERSION_ID=42\nID=systemdos\n'
         with mock.patch('__builtin__.open',
                         mock.mock_open(read_data=os_release)):
             with mock.patch('os.path.isfile', return_value=True):
-                self.assertEqual(get_os_info()[0], 'doobian')
+                self.assertEqual(get_os_info()[0], 'systemdos')
                 self.assertEqual(get_os_info()[1], '42')
 
     @mock.patch("letsencrypt.le_util.subprocess.Popen")
@@ -367,7 +367,7 @@ class OsInfoTest(unittest.TestCase):
                 comm_mock = mock.Mock()
                 comm_attrs = {'communicate.return_value':
                               ('42.42.42', 'error')}
-                comm_mock.configure_mock(**comm_attrs) # pylint disable=star-args
+                comm_mock.configure_mock(**comm_attrs) # pylint: disable=star-args
                 popen_mock.return_value = comm_mock
                 self.assertEqual(get_os_info()[0], 'darwin')
                 self.assertEqual(get_os_info()[1], '42.42.42')
