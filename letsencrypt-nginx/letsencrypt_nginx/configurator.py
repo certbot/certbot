@@ -152,6 +152,9 @@ class NginxConfigurator(common.Plugin):
                 "install a cert.")
 
         vhost = self.choose_vhost(domain)
+        if vhost is None:
+            raise errors.PluginError("Virtual Host not found for domain: " + domain)
+
         cert_directives = [['ssl_certificate', fullchain_path],
                            ['ssl_certificate_key', key_path]]
 
@@ -219,17 +222,15 @@ class NginxConfigurator(common.Plugin):
         :rtype: :class:`~letsencrypt_nginx.obj.VirtualHost`
 
         """
-        vhost = None
-
         matches = self._get_ranked_matches(target_name)
         if not matches:
-            # No matches. Create a new vhost with this name in nginx.conf.
-            filep = self.parser.loc["root"]
-            new_block = [['server'], [['server_name', target_name]]]
-            self.parser.add_http_directives(filep, new_block)
-            vhost = obj.VirtualHost(filep, set([]), False, True,
-                                    set([target_name]), list(new_block[1]))
-        elif matches[0]['rank'] in xrange(2, 6):
+            logger.info("Virtual Host not found for %s. "
+                        "Are you sure you're really serving that domain name?",
+                        target_name)
+            return None
+
+
+        if matches[0]['rank'] in xrange(2, 6):
             # Wildcard match - need to find the longest one
             rank = matches[0]['rank']
             wildcards = [x for x in matches if x['rank'] == rank]
@@ -237,9 +238,8 @@ class NginxConfigurator(common.Plugin):
         else:
             vhost = matches[0]['vhost']
 
-        if vhost is not None:
-            if not vhost.ssl:
-                self._make_server_ssl(vhost)
+        if not vhost.ssl:
+            self._make_server_ssl(vhost)
 
         return vhost
 
@@ -378,9 +378,12 @@ class NginxConfigurator(common.Plugin):
             documentation for appropriate parameter.
 
         """
+        vhost = self.choose_vhost(domain)
+        if vhost is None:
+            raise errors.PluginError("Virtual Host not found for domain: " + domain)
+
         try:
-            return self._enhance_func[enhancement](
-                self.choose_vhost(domain), options)
+            return self._enhance_func[enhancement](vhost, options)
         except (KeyError, ValueError):
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
@@ -617,15 +620,24 @@ class NginxConfigurator(common.Plugin):
         outstanding challenges will have to be designed better.
 
         """
-        self._chall_out += len(achalls)
-        responses = [None] * len(achalls)
         chall_doer = tls_sni_01.NginxTlsSni01(self)
 
         for i, achall in enumerate(achalls):
             # Currently also have chall_doer hold associated index of the
             # challenge. This helps to put all of the responses back together
             # when they are all complete.
-            chall_doer.add_chall(achall, i)
+            # As we does not create vhost when it isn't found in the current configuration,
+            # we will filter out this domains before to perform TLS challenge
+            if self.choose_vhost(achall.domain) is not None:
+                chall_doer.add_chall(achall, i)
+            else:
+              # TODO: Handle feedback about domain without vhost
+                logger.info("As we couldn't find a virtual host for domain %s, "
+                            "it will be ignored", achall.domain)
+
+        count_achalls = len(chall_doer.achalls)
+        self._chall_out += count_achalls
+        responses = [None] * count_achalls
 
         sni_response = chall_doer.perform()
         # Must restart in order to activate the challenges.

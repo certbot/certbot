@@ -55,6 +55,8 @@ http {
 
     root $root/webroot;
 
+    server_name nginx.wtf;
+
     location / {
       # First attempt to serve request as file, then as directory, then fall
       # back to index.html.
