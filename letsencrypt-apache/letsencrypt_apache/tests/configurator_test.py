@@ -133,7 +133,6 @@ class MultipleVhostsTest(util.ApacheTest):
             it is a problem with is_enabled.  If finding only 3, likely is_ssl
 
         """
-        import ipdb; ipdb.set_trace()
         vhs = self.config.get_virtual_hosts()
         self.assertEqual(len(vhs), 8)
         found = 0
@@ -146,7 +145,7 @@ class MultipleVhostsTest(util.ApacheTest):
             else:
                 raise Exception("Missed: %s" % vhost)  # pragma: no cover
 
-        self.assertEqual(found, 7)
+        self.assertEqual(found, 8)
 
         # Handle case of non-debian layout get_virtual_hosts
         with mock.patch(
@@ -154,7 +153,7 @@ class MultipleVhostsTest(util.ApacheTest):
         ) as mock_conf:
             mock_conf.return_value = False
             vhs = self.config.get_virtual_hosts()
-            self.assertEqual(len(vhs), 7)
+            self.assertEqual(len(vhs), 8)
 
     @mock.patch("letsencrypt_apache.display_ops.select_vhost")
     def test_choose_vhost_none_avail(self, mock_select):
@@ -170,7 +169,6 @@ class MultipleVhostsTest(util.ApacheTest):
 
     @mock.patch("letsencrypt_apache.display_ops.select_vhost")
     def test_choose_vhost_select_vhost_non_ssl(self, mock_select):
-        #import ipdb; ipdb.set_trace()
         mock_select.return_value = self.vh_truth[1]
         chosen_vhost = self.config.choose_vhost("none.com")
         self.vh_truth[1].aliases.add("none.com")
@@ -236,13 +234,14 @@ class MultipleVhostsTest(util.ApacheTest):
         # Assume only the two default vhosts.
         self.config.vhosts = [
             vh for vh in self.config.vhosts
-            if vh.name not in ["letsencrypt.demo", "encryption-example.demo"]
+            if vh.name not in ["letsencrypt.demo",
+                "encryption-example.demo",
+                "ocspvhost.com"]
             and "*.blue.purple.com" not in vh.aliases
         ]
-        #import ipdb; ipdb.set_trace()
         self.assertEqual(
             self.config._find_best_vhost("encryption-example.demo"),
-            self.vh_truth[0])
+            self.vh_truth[2])
 
     def test_non_default_vhosts(self):
         # pylint: disable=protected-access
@@ -739,16 +738,15 @@ class MultipleVhostsTest(util.ApacheTest):
 
     def test_get_all_certs_keys(self):
         c_k = self.config.get_all_certs_keys()
-
         self.assertEqual(len(c_k), 3)
         cert, key, path = next(iter(c_k))
         self.assertTrue("cert" in cert)
         self.assertTrue("key" in key)
-        self.assertTrue("default-ssl" in path)
+        self.assertTrue("default-ssl" in path or "ocspvhost" in path)
 
     def test_get_all_certs_keys_malformed_conf(self):
         self.config.parser.find_dir = mock.Mock(
-            side_effect=[["path"], [], ["path"], []])
+            side_effect=[["path"], [], ["path"], [], ["path"], []])
         c_k = self.config.get_all_certs_keys()
 
         self.assertFalse(c_k)

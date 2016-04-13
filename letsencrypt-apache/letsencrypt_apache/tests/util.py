@@ -159,9 +159,9 @@ def get_vh_truth(temp_dir, config_name):
                 "ip-172-30-0-17", aliases=["*.blue.purple.com"]),
             obj.VirtualHost(
                 os.path.join(prefix, "ocsp-ssl.conf"),
-                os.path.join(aug_pre, "ocsp-ssl.conf/VirtualHost"),
-                set([obj.Addr.fromstring("*:443")]), True, False)
-            ]
+                os.path.join(aug_pre, "ocsp-ssl.conf/IfModule/VirtualHost"),
+                set([obj.Addr.fromstring("*:443")]), True, True,
+                "ocspvhost.com")]
         return vh_truth
 
     return None  # pragma: no cover
