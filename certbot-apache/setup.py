@@ -31,9 +31,9 @@ docs_extras = [
 setup(
     name='certbot-apache',
     version=version,
-    description="Apache plugin for Let's Encrypt client",
+    description="Apache plugin for Certbot",
     url='https://github.com/letsencrypt/letsencrypt',
-    author="Let's Encrypt Project",
+    author="Electronic Frontier Foundation",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
     classifiers=[

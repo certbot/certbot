@@ -1154,7 +1154,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             for matches in rewrite_args_dict.values():
                 if [self.aug.get(x) for x in matches] in redirect_args:
                     raise errors.PluginEnhancementAlreadyPresent(
-                        "Let's Encrypt has already enabled redirection")
+                        "Certbot has already enabled redirection")
 
     def _is_rewrite_exists(self, vhost):
         """Checks if there exists a RewriteRule directive in vhost
@@ -1635,7 +1635,7 @@ def get_file_path(vhost_path):
 
 def install_ssl_options_conf(options_ssl):
     """
-    Copy Let's Encrypt's SSL options file into the system's config dir if
+    Copy Certbot's SSL options file into the system's config dir if
     required.
     """
     # XXX if we ever try to enforce a local privilege boundary (eg, running

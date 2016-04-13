@@ -1,1 +1,1 @@
-Apache plugin for Let's Encrypt client
+Apache plugin for Certbot

@@ -1,1 +1,1 @@
-"""Let's Encrypt Apache plugin."""
+"""Certbot Apache plugin."""
