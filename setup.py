@@ -87,10 +87,10 @@ docs_extras = [
 setup(
     name='certbot',
     version=version,
-    description="Let's Encrypt client",
+    description="ACME client",
     long_description=readme,  # later: + '\n\n' + changes
     url='https://github.com/letsencrypt/letsencrypt',
-    author="Let's Encrypt Project",
+    author="Electronic Frontier Foundation",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
     classifiers=[
