@@ -2,7 +2,6 @@
 from __future__ import print_function
 import argparse
 import glob
-import json
 import logging
 import logging.handlers
 import os
@@ -18,6 +17,7 @@ import letsencrypt
 from letsencrypt import constants
 from letsencrypt import crypto_util
 from letsencrypt import errors
+from letsencrypt import hooks
 from letsencrypt import interfaces
 from letsencrypt import le_util
 
@@ -86,6 +86,48 @@ More detailed help:
 """
 
 
+# These argparse parameters should be removed when detecting defaults.
+ARGPARSE_PARAMS_TO_REMOVE = ("const", "nargs", "type",)
+
+
+# These sets are used when to help detect options set by the user.
+EXIT_ACTIONS = set(("help", "version",))
+
+
+ZERO_ARG_ACTIONS = set(("store_const", "store_true",
+                        "store_false", "append_const", "count",))
+
+
+# Maps a config option to a set of config options that may have modified it.
+# This dictionary is used recursively, so if A modifies B and B modifies C,
+# it is determined that C was modified by the user if A was modified.
+VAR_MODIFIERS = {"account": set(("server",)),
+                 "server": set(("dry_run", "staging",)),
+                 "webroot_map": set(("webroot_path",))}
+
+
+def report_config_interaction(modified, modifiers):
+    """Registers config option interaction to be checked by set_by_cli.
+
+    This function can be called by during the __init__ or
+    add_parser_arguments methods of plugins to register interactions
+    between config options.
+
+    :param modified: config options that can be modified by modifiers
+    :type modified: iterable or str
+    :param modifiers: config options that modify modified
+    :type modifiers: iterable or str
+
+    """
+    if isinstance(modified, str):
+        modified = (modified,)
+    if isinstance(modifiers, str):
+        modifiers = (modifiers,)
+
+    for var in modified:
+        VAR_MODIFIERS.setdefault(var, set()).update(modifiers)
+
+
 def usage_strings(plugins):
     """Make usage strings late so that plugins can be initialised late"""
     if "nginx" in plugins:
@@ -97,6 +139,22 @@ def usage_strings(plugins):
     else:
         apache_doc = "(the apache plugin is not installed)"
     return USAGE % (apache_doc, nginx_doc), SHORT_USAGE
+
+
+class _Default(object):
+    """A class to use as a default to detect if a value is set by a user"""
+
+    def __bool__(self):
+        return False
+
+    def __eq__(self, other):
+        return isinstance(other, _Default)
+
+    def __hash__(self):
+        return id(_Default)
+
+    def __nonzero__(self):
+        return self.__bool__()
 
 
 def set_by_cli(var):
@@ -115,30 +173,18 @@ def set_by_cli(var):
         detector = set_by_cli.detector = prepare_and_parse_args(
             plugins, reconstructed_args, detect_defaults=True)
         # propagate plugin requests: eg --standalone modifies config.authenticator
-        auth, inst = plugin_selection.cli_plugin_requests(detector)
-        detector.authenticator = auth if auth else ""
-        detector.installer = inst if inst else ""
+        detector.authenticator, detector.installer = (
+            plugin_selection.cli_plugin_requests(detector))
         logger.debug("Default Detector is %r", detector)
 
-    try:
-        # Is detector.var something that isn't false?
-        change_detected = getattr(detector, var)
-    except AttributeError:
-        logger.warning("Missing default analysis for %r", var)
-        return False
+    if not isinstance(getattr(detector, var), _Default):
+        return True
 
-    if change_detected:
-        return True
-    # Special case: we actually want account to be set to "" if the server
-    # the account was on has changed
-    elif var == "account" and (detector.server or detector.dry_run or detector.staging):
-        return True
-    # Special case: vars like --no-redirect that get set True -> False
-    # default to None; False means they were set
-    elif var in detector.store_false_vars and change_detected is not None:
-        return True
-    else:
-        return False
+    for modifier in VAR_MODIFIERS.get(var, []):
+        if set_by_cli(modifier):
+            return True
+
+    return False
 # static housekeeping var
 set_by_cli.detector = None
 
@@ -187,21 +233,23 @@ def config_help(name, hidden=False):
         return interfaces.IConfig[name].__doc__
 
 
-class SilentParser(object):  # pylint: disable=too-few-public-methods
-    """Silent wrapper around argparse.
+class HelpfulArgumentGroup(object):
+    """Emulates an argparse group for use with HelpfulArgumentParser.
 
-    A mini parser wrapper that doesn't print help for its
-    arguments. This is needed for the use of callbacks to define
-    arguments within plugins.
+    This class is used in the add_group method of HelpfulArgumentParser.
+    Command line arguments can be added to the group, but help
+    suppression and default detection is applied by
+    HelpfulArgumentParser when necessary.
 
     """
-    def __init__(self, parser):
-        self.parser = parser
+    def __init__(self, helpful_arg_parser, topic):
+        self._parser = helpful_arg_parser
+        self._topic = topic
 
     def add_argument(self, *args, **kwargs):
-        """Wrap, but silence help"""
-        kwargs["help"] = argparse.SUPPRESS
-        self.parser.add_argument(*args, **kwargs)
+        """Add a new command line argument to the argument group."""
+        self._parser.add(self._topic, *args, **kwargs)
+
 
 class HelpfulArgumentParser(object):
     """Argparse Wrapper.
@@ -234,15 +282,8 @@ class HelpfulArgumentParser(object):
 
         # This is the only way to turn off overly verbose config flag documentation
         self.parser._add_config_file_help = False  # pylint: disable=protected-access
-        self.silent_parser = SilentParser(self.parser)
 
-        # This setting attempts to force all default values to things that are
-        # pythonically false; it is used to detect when values have been
-        # explicitly set by the user, including when they are set to their
-        # normal default value
         self.detect_defaults = detect_defaults
-        if detect_defaults:
-            self.store_false_vars = {}  # vars that use "store_false"
 
         self.args = args
         self.determine_verb()
@@ -268,21 +309,17 @@ class HelpfulArgumentParser(object):
         parsed_args.func = self.VERBS[self.verb]
         parsed_args.verb = self.verb
 
-        # Do any post-parsing homework here
+        if self.detect_defaults:
+            return parsed_args
 
-        # we get domains from -d, but also from the webroot map...
-        if parsed_args.webroot_map:
-            for domain in parsed_args.webroot_map.keys():
-                if domain not in parsed_args.domains:
-                    parsed_args.domains.append(domain)
+        # Do any post-parsing homework here
 
         if parsed_args.staging or parsed_args.dry_run:
             if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
                 conflicts = ["--staging"] if parsed_args.staging else []
                 conflicts += ["--dry-run"] if parsed_args.dry_run else []
-                if not self.detect_defaults:
-                    raise errors.Error("--server value conflicts with {0}".format(
-                        " and ".join(conflicts)))
+                raise errors.Error("--server value conflicts with {0}".format(
+                    " and ".join(conflicts)))
 
             parsed_args.server = constants.STAGING_URI
 
@@ -294,7 +331,7 @@ class HelpfulArgumentParser(object):
                 if glob.glob(os.path.join(parsed_args.config_dir, constants.ACCOUNTS_DIR, "*")):
                     # The user has a prod account, but might not have a staging
                     # one; we don't want to start trying to perform interactive registration
-                    parsed_args.agree_tos = True
+                    parsed_args.tos = True
                     parsed_args.register_unsafely_without_email = True
 
         if parsed_args.csr:
@@ -303,16 +340,12 @@ class HelpfulArgumentParser(object):
                                    "cannot be used with --csr")
             self.handle_csr(parsed_args)
 
-        if self.detect_defaults:  # plumbing
-            parsed_args.store_false_vars = self.store_false_vars
+        hooks.validate_hooks(parsed_args)
 
         return parsed_args
 
     def handle_csr(self, parsed_args):
-        """
-        Process a --csr flag. This needs to happen early enough that the
-        webroot plugin can know about the calls to process_domain
-        """
+        """Process a --csr flag."""
         if parsed_args.verb != "certonly":
             raise errors.Error("Currently, a CSR file may only be specified "
                                "when obtaining a new or replacement "
@@ -333,14 +366,11 @@ class HelpfulArgumentParser(object):
                 logger.debug("DER CSR parse error %s", e1)
                 logger.debug("PEM CSR parse error %s", traceback.format_exc())
                 raise errors.Error("Failed to parse CSR file: {0}".format(parsed_args.csr[0]))
-        for d in domains:
-            process_domain(parsed_args, d)
 
-        for d in domains:
-            sanitised = le_util.enforce_domain_sanity(d)
-            if d.lower() != sanitised:
-                raise errors.ConfigurationError(
-                    "CSR domain {0} needs to be sanitised to {1}.".format(d, sanitised))
+        # This is not necessary for webroot to work, however,
+        # obtain_certificate_from_csr requires parsed_args.domains to be set
+        for domain in domains:
+            add_domains(parsed_args, domain)
 
         if not domains:
             # TODO: add CN to domains instead:
@@ -412,7 +442,7 @@ class HelpfulArgumentParser(object):
         """
 
         if self.detect_defaults:
-            kwargs = self.modify_arg_for_default_detection(self, *args, **kwargs)
+            kwargs = self.modify_kwargs_for_default_detection(**kwargs)
 
         if self.visible_topics[topic]:
             if topic in self.groups:
@@ -424,38 +454,27 @@ class HelpfulArgumentParser(object):
             kwargs["help"] = argparse.SUPPRESS
             self.parser.add_argument(*args, **kwargs)
 
+    def modify_kwargs_for_default_detection(self, **kwargs):
+        """Modify an arg so we can check if it was set by the user.
 
-    def modify_arg_for_default_detection(self, *args, **kwargs):
-        """
-        Adding an arg, but ensure that it has a default that evaluates to false,
-        so that set_by_cli can tell if it was set.  Only called if detect_defaults==True.
+        Changes the parameters given to argparse when adding an argument
+        so we can properly detect if the value was set by the user.
 
-        :param list *args: the names of this argument flag
-        :param dict **kwargs: various argparse settings for this argument
+        :param dict kwargs: various argparse settings for this argument
 
         :returns: a modified versions of kwargs
+        :rtype: dict
+
         """
-        # argument either doesn't have a default, or the default doesn't
-        # isn't Pythonically false
-        if kwargs.get("default", True):
-            arg_type = kwargs.get("type", None)
-            if arg_type == int or kwargs.get("action", "") == "count":
-                kwargs["default"] = 0
-            elif arg_type == read_file or "-c" in args:
-                kwargs["default"] = ""
-                kwargs["type"] = str
-            else:
-                kwargs["default"] = ""
-            # This doesn't matter at present (none of the store_false args
-            # are renewal-relevant), but implement it for future sanity:
-            # detect the setting of args whose presence causes True -> False
-        if kwargs.get("action", "") == "store_false":
-            kwargs["default"] = None
-            for var in args:
-                self.store_false_vars[var] = True
+        action = kwargs.get("action", None)
+        if action not in EXIT_ACTIONS:
+            kwargs["action"] = ("store_true" if action in ZERO_ARG_ACTIONS else
+                                "store")
+            kwargs["default"] = _Default()
+            for param in ARGPARSE_PARAMS_TO_REMOVE:
+                kwargs.pop(param, None)
 
         return kwargs
-
 
     def add_deprecated_argument(self, argument_name, num_args):
         """Adds a deprecated argument with the name argument_name.
@@ -472,22 +491,22 @@ class HelpfulArgumentParser(object):
             self.parser.add_argument, argument_name, num_args)
 
     def add_group(self, topic, **kwargs):
-        """
+        """Create a new argument group.
 
-        This has to be called once for every topic; but we leave those calls
-        next to the argument definitions for clarity. Return something
-        arguments can be added to if necessary, either the parser or an argument
-        group.
+        This method must be called once for every topic, however, calls
+        to this function are left next to the argument definitions for
+        clarity.
+
+        :param str topic: Name of the new argument group.
+
+        :returns: The new argument group.
+        :rtype: `HelpfulArgumentGroup`
 
         """
         if self.visible_topics[topic]:
-            #print("Adding visible group " + topic)
-            group = self.parser.add_argument_group(topic, **kwargs)
-            self.groups[topic] = group
-            return group
-        else:
-            #print("Invisible group " + topic)
-            return self.silent_parser
+            self.groups[topic] = self.parser.add_argument_group(topic, **kwargs)
+
+        return HelpfulArgumentGroup(self, topic)
 
     def add_plugin_args(self, plugins):
         """
@@ -498,7 +517,6 @@ class HelpfulArgumentParser(object):
         """
         for name, plugin_ep in six.iteritems(plugins):
             parser_or_group = self.add_group(name, description=plugin_ep.description)
-            #print(parser_or_group)
             plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)
 
     def determine_help_topics(self, chosen_topic):
@@ -555,7 +573,14 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         None, "--dry-run", action="store_true", dest="dry_run",
         help="Perform a test run of the client, obtaining test (invalid) certs"
              " but not saving them to disk. This can currently only be used"
-             " with the 'certonly' subcommand.")
+             " with the 'certonly' and 'renew' subcommands. \nNote: Although --dry-run"
+             " tries to avoid making any persistent changes on a system, it "
+             " is not completely side-effect free: if used with webserver authenticator plugins"
+             " like apache and nginx, it makes and then reverts temporary config changes"
+             " in order to obtain test certs, and reloads webservers to deploy and then"
+             " roll back those changes.  It also calls --pre-hook and --post-hook commands"
+             " if they are defined because they may be necessary to accurately simulate"
+             " renewal. --renew-hook commands are not called.")
     helpful.add(
         None, "--register-unsafely-without-email", action="store_true",
         help="Specifying this flag enables registering an account with no "
@@ -572,7 +597,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
     #for subparser in parser_run, parser_auth, parser_install:
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
     helpful.add(None, "-d", "--domains", "--domain", dest="domains",
-                metavar="DOMAIN", action=DomainFlagProcessor, default=[],
+                metavar="DOMAIN", action=_DomainsAction, default=[],
                 help="Domain names to apply. For multiple domains you can use "
                 "multiple -d flags or enter a comma separated list of domains "
                 "as a parameter.")
@@ -601,6 +626,13 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
              "--keep-until-expiring is more appropriate). Also implies "
              "--expand.")
     helpful.add(
+        "automation", "--allow-subset-of-names", action="store_true",
+        help="When performing domain validation, do not consider it a failure "
+             "if authorizations can not be obtained for a strict subset of "
+             "the requested domains. This may be useful for allowing renewals for "
+             "multiple domains to succeed even if some domains no longer point "
+             "at this system. This option cannot be used with --csr.")
+    helpful.add(
         "automation", "--agree-tos", dest="tos", action="store_true",
         help="Agree to the Let's Encrypt Subscriber Agreement")
     helpful.add(
@@ -617,6 +649,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "automation", "--no-self-upgrade", action="store_true",
         help="(letsencrypt-auto only) prevent the letsencrypt-auto script from"
              " upgrading itself to newer released versions")
+    helpful.add(
+        "automation", "-q", "--quiet", dest="quiet", action="store_true",
+        help="Silence all output except errors. Useful for automation via cron."
+             " Implies --non-interactive.")
 
     helpful.add_group(
         "testing", description="The following flags are meant for "
@@ -689,12 +725,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
-    helpful.add(
-        "automation", "--allow-subset-of-names",
-        action="store_true",
-        help="When performing domain validation, do not consider it a failure "
-             "if authorizations can not be obtained for a strict subset of "
-             "the requested domains. This option cannot be used with --csr.")
 
     helpful.add_group(
         "renew", description="The 'renew' subcommand will attempt to renew all"
@@ -704,7 +734,26 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         " used to create obtain or most recently successfully renew each"
         " certificate lineage. You can try it with `--dry-run` first. For"
         " more fine-grained control, you can renew individual lineages with"
-        " the `certonly` subcommand.")
+        " the `certonly` subcommand. Hooks are available to run commands "
+        " before and after renewal; see XXX for more information on these.")
+
+    helpful.add(
+        "renew", "--pre-hook",
+        help="Command to be run in a shell before obtaining any certificates. Intended"
+        " primarily for renewal, where it can be used to temporarily shut down a"
+        " webserver that might conflict with the standalone plugin. This will "
+        " only be called if a certificate is actually to be obtained/renewed. ")
+    helpful.add(
+        "renew", "--post-hook",
+        help="Command to be run in a shell after attempting to obtain/renew "
+        " certificates. Can be used to deploy renewed certificates, or to restart"
+        " any servers that were stopped by --pre-hook.")
+    helpful.add(
+        "renew", "--renew-hook",
+        help="Command to be run in a shell once for each successfully renewed certificate."
+        "For this command, the shell variable $RENEWED_LINEAGE will point to the"
+        "config live subdirectory containing the new certs and keys; the shell variable "
+        "$RENEWED_DOMAINS will contain a space-delimited list of renewed cert domains")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
 
@@ -841,83 +890,35 @@ def _plugins_parsing(helpful, plugins):
 
     helpful.add_plugin_args(plugins)
 
-    # These would normally be a flag within the webroot plugin, but because
-    # they are parsed in conjunction with --domains, they live here for
-    # legibility. helpful.add_plugin_ags must be called first to add the
-    # "webroot" topic
-    helpful.add("webroot", "-w", "--webroot-path", default=[], action=WebrootPathProcessor,
-                help="public_html / webroot path. This can be specified multiple times to "
-                     "handle different domains; each domain will have the webroot path that"
-                     " preceded it.  For instance: `-w /var/www/example -d example.com -d "
-                     "www.example.com -w /var/www/thing -d thing.net -d m.thing.net`")
-    # --webroot-map still has some awkward properties, so it is undocumented
-    helpful.add("webroot", "--webroot-map", default={}, action=WebrootMapProcessor,
-                help="JSON dictionary mapping domains to webroot paths; this "
-                     "implies -d for each entry. You may need to escape this "
-                     "from your shell. E.g.: --webroot-map "
-                     """'{"eg1.is,m.eg1.is":"/www/eg1/", "eg2.is":"/www/eg2"}' """
-                     "This option is merged with, but takes precedence over, "
-                     "-w / -d entries. At present, if you put webroot-map in "
-                     "a config file, it needs to be on a single line, like: "
-                     'webroot-map = {"example.com":"/var/www"}.')
+
+class _DomainsAction(argparse.Action):
+    """Action class for parsing domains."""
+
+    def __call__(self, parser, namespace, domain, option_string=None):
+        """Just wrap add_domains in argparseese."""
+        add_domains(namespace, domain)
 
 
-class WebrootPathProcessor(argparse.Action):  # pylint: disable=missing-docstring
-    def __init__(self, *args, **kwargs):
-        self.domain_before_webroot = False
-        argparse.Action.__init__(self, *args, **kwargs)
+def add_domains(args_or_config, domains):
+    """Registers new domains to be used during the current client run.
 
-    def __call__(self, parser, args, webroot, option_string=None):
-        """
-        Keep a record of --webroot-path / -w flags during processing, so that
-        we know which apply to which -d flags
-        """
-        if not args.webroot_path:      # first -w flag encountered
-            # if any --domain flags preceded the first --webroot-path flag,
-            # apply that webroot path to those; subsequent entries in
-            # args.webroot_map are filled in by cli.DomainFlagProcessor
-            if args.domains:
-                self.domain_before_webroot = True
-                for d in args.domains:
-                    args.webroot_map.setdefault(d, webroot)
-        elif self.domain_before_webroot:
-            # FIXME if you set domains in a args file, you should get a different error
-            # here, pointing you to --webroot-map
-            raise errors.Error("If you specify multiple webroot paths, one of "
-                               "them must precede all domain flags")
-        args.webroot_path.append(webroot)
+    Domains are not added to the list of requested domains if they have
+    already been registered.
 
+    :param args_or_config: parsed command line arguments
+    :type args_or_config: argparse.Namespace or
+        configuration.NamespaceConfig
+    :param str domain: one or more comma separated domains
 
-def process_domain(args_or_config, domain_arg, webroot_path=None):
-    """
-    Process a new -d flag, helping the webroot plugin construct a map of
-    {domain : webrootpath} if -w / --webroot-path is in use
-
-    :param args_or_config: may be an argparse args object, or a NamespaceConfig object
-    :param str domain_arg: a string representing 1+ domains, eg: "eg.is, example.com"
-    :param str webroot_path: (optional) the webroot_path for these domains
+    :returns: domains after they have been normalized and validated
+    :rtype: `list` of `str`
 
     """
-    webroot_path = webroot_path if webroot_path else args_or_config.webroot_path
-
-    for domain in (d.strip() for d in domain_arg.split(",")):
-        domain = le_util.enforce_domain_sanity(domain)
+    validated_domains = []
+    for domain in domains.split(","):
+        domain = le_util.enforce_domain_sanity(domain.strip())
+        validated_domains.append(domain)
         if domain not in args_or_config.domains:
             args_or_config.domains.append(domain)
-            # Each domain has a webroot_path of the most recent -w flag
-            # unless it was explicitly included in webroot_map
-            if webroot_path:
-                args_or_config.webroot_map.setdefault(domain, webroot_path[-1])
 
-
-class WebrootMapProcessor(argparse.Action):  # pylint: disable=missing-docstring
-    def __call__(self, parser, args, webroot_map_arg, option_string=None):
-        webroot_map = json.loads(webroot_map_arg)
-        for domains, webroot_path in six.iteritems(webroot_map):
-            process_domain(args, domains, [webroot_path])
-
-
-class DomainFlagProcessor(argparse.Action):  # pylint: disable=missing-docstring
-    def __call__(self, parser, args, domain_arg, option_string=None):
-        """Just wrap process_domain in argparseese."""
-        process_domain(args, domain_arg)
+    return validated_domains

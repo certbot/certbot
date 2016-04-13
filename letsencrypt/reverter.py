@@ -1,9 +1,11 @@
 """Reverter class saves configuration checkpoints and allows for recovery."""
 import csv
+import glob
 import logging
 import os
 import shutil
 import time
+import traceback
 
 import zope.component
 
@@ -333,16 +335,14 @@ class Reverter(object):
         # Make sure some files are provided... as this is an error
         # Made this mistake in my initial implementation of apache.dvsni.py
         if not files:
-            raise errors.ReverterError(
-                "Forgot to provide files to registration call")
+            raise errors.ReverterError("Forgot to provide files to registration call")
 
         cp_dir = self._get_cp_dir(temporary)
 
         # Append all new files (that aren't already registered)
         new_fd = None
         try:
-            new_fd, ex_files = self._read_and_append(
-                os.path.join(cp_dir, "NEW_FILES"))
+            new_fd, ex_files = self._read_and_append(os.path.join(cp_dir, "NEW_FILES"))
 
             for path in files:
                 if path not in ex_files:
@@ -481,48 +481,69 @@ class Reverter(object):
             checkpoint is not able to be finalized.
 
         """
-        # Adds title to self.config.in_progress_dir CHANGES_SINCE
-        # Move self.config.in_progress_dir to Backups directory and
-        # rename the directory as a timestamp
         # Check to make sure an "in progress" directory exists
         if not os.path.isdir(self.config.in_progress_dir):
             return
 
-        changes_since_path = os.path.join(
-            self.config.in_progress_dir, "CHANGES_SINCE")
+        changes_since_path = os.path.join(self.config.in_progress_dir, "CHANGES_SINCE")
+        changes_since_tmp_path = os.path.join(self.config.in_progress_dir, "CHANGES_SINCE.tmp")
 
-        changes_since_tmp_path = os.path.join(
-            self.config.in_progress_dir, "CHANGES_SINCE.tmp")
+        if not os.path.exists(changes_since_path):
+            logger.info("Rollback checkpoint is empty (no changes made?)")
+            with open(self.config.changes_since_path) as f:
+                f.write("No changes\n")
 
+        # Add title to self.config.in_progress_dir CHANGES_SINCE
         try:
             with open(changes_since_tmp_path, "w") as changes_tmp:
                 changes_tmp.write("-- %s --\n" % title)
                 with open(changes_since_path, "r") as changes_orig:
                     changes_tmp.write(changes_orig.read())
 
+        # Move self.config.in_progress_dir to Backups directory
             shutil.move(changes_since_tmp_path, changes_since_path)
         except (IOError, OSError):
             logger.error("Unable to finalize checkpoint - adding title")
+            logger.debug("Exception was:\n%s", traceback.format_exc())
             raise errors.ReverterError("Unable to add title")
 
+        # rename the directory as a timestamp
         self._timestamp_progress_dir()
+
+    def _checkpoint_timestamp(self):
+        "Determine the timestamp of the checkpoint, enforcing monotonicity."
+        timestamp = str(time.time())
+        others = glob.glob(os.path.join(self.config.backup_dir, "[0-9]*"))
+        others = [os.path.basename(d) for d in others]
+        others.append(timestamp)
+        others.sort()
+        if others[-1] != timestamp:
+            timetravel = str(float(others[-1]) + 1)
+            logger.warn("Current timestamp %s does not correspond to newest reverter "
+                "checkpoint; your clock probably jumped. Time travelling to %s",
+                timestamp, timetravel)
+            timestamp = timetravel
+        elif len(others) > 1 and others[-2] == timestamp:
+            # It is possible if the checkpoints are made extremely quickly
+            # that will result in a name collision.
+            logger.debug("Race condition with timestamp %s, incrementing by 0.01", timestamp)
+            timetravel = str(float(others[-1]) + 0.01)
+            timestamp = timetravel
+        return timestamp
 
     def _timestamp_progress_dir(self):
         """Timestamp the checkpoint."""
         # It is possible save checkpoints faster than 1 per second resulting in
         # collisions in the naming convention.
-        cur_time = time.time()
 
-        for _ in xrange(10):
-            final_dir = os.path.join(self.config.backup_dir, str(cur_time))
+        for _ in xrange(2):
+            timestamp = self._checkpoint_timestamp()
+            final_dir = os.path.join(self.config.backup_dir, timestamp)
             try:
                 os.rename(self.config.in_progress_dir, final_dir)
                 return
             except OSError:
-                # It is possible if the checkpoints are made extremely quickly
-                # that will result in a name collision.
-                # If so, increment and try again
-                cur_time += .01
+                logger.warning("Extreme, unexpected race condition, retrying (%s)", timestamp)
 
         # After 10 attempts... something is probably wrong here...
         logger.error(

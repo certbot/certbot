@@ -9,9 +9,17 @@ import traceback
 import six
 import zope.component
 
+import OpenSSL
+
 from letsencrypt import configuration
 from letsencrypt import cli
+from letsencrypt import constants
+
+from letsencrypt import crypto_util
 from letsencrypt import errors
+from letsencrypt import interfaces
+from letsencrypt import le_util
+from letsencrypt import hooks
 from letsencrypt import storage
 from letsencrypt.plugins import disco as plugins_disco
 
@@ -72,14 +80,14 @@ def _reconstitute(config, full_path):
         _restore_plugin_configs(config, renewalparams)
     except (ValueError, errors.Error) as error:
         logger.warning(
-            "An error occured while parsing %s. The error was %s. "
+            "An error occurred while parsing %s. The error was %s. "
             "Skipping the file.", full_path, error.message)
         logger.debug("Traceback was:\n%s", traceback.format_exc())
         return None
 
     try:
-        for d in renewal_candidate.names():
-            cli.process_domain(config, d)
+        config.domains = [le_util.enforce_domain_sanity(d)
+                          for d in renewal_candidate.names()]
     except errors.ConfigurationError as error:
         logger.warning("Renewal configuration file %s references a cert "
                        "that contains an invalid domain name. The problem "
@@ -96,16 +104,14 @@ def _restore_webroot_config(config, renewalparams):
     form.
     """
     if "webroot_map" in renewalparams:
-        # if the user does anything that would create a new webroot map on the
-        # CLI, don't use the old one
-        if not (cli.set_by_cli("webroot_map") or cli.set_by_cli("webroot_path")):
-            setattr(config.namespace, "webroot_map", renewalparams["webroot_map"])
+        if not cli.set_by_cli("webroot_map"):
+            config.namespace.webroot_map = renewalparams["webroot_map"]
     elif "webroot_path" in renewalparams:
         logger.info("Ancient renewal conf file without webroot-map, restoring webroot-path")
         wp = renewalparams["webroot_path"]
         if isinstance(wp, str):  # prior to 0.1.0, webroot_path was a string
             wp = [wp]
-        setattr(config.namespace, "webroot_path", wp)
+        config.namespace.webroot_path = wp
 
 
 def _restore_plugin_configs(config, renewalparams):
@@ -199,41 +205,97 @@ def should_renew(config, lineage):
     return False
 
 
+def _avoid_invalidating_lineage(config, lineage, original_server):
+    "Do not renew a valid cert with one from a staging server!"
+    def _is_staging(srv):
+        return srv == constants.STAGING_URI or "staging" in srv
+
+    # Some lineages may have begun with --staging, but then had production certs
+    # added to them
+    latest_cert = OpenSSL.crypto.load_certificate(
+        OpenSSL.crypto.FILETYPE_PEM, open(lineage.cert).read())
+    # all our test certs are from happy hacker fake CA, though maybe one day
+    # we should test more methodically
+    now_valid = "fake" not in repr(latest_cert.get_issuer()).lower()
+
+    if _is_staging(config.server):
+        if not _is_staging(original_server) or now_valid:
+            if not config.break_my_certs:
+                names = ", ".join(lineage.names())
+                raise errors.Error(
+                    "You've asked to renew/replace a seemingly valid certificate with "
+                    "a test certificate (domains: {0}). We will not do that "
+                    "unless you use the --break-my-certs flag!".format(names))
+
+
+def renew_cert(config, domains, le_client, lineage):
+    "Renew a certificate lineage."
+    renewal_params = lineage.configuration["renewalparams"]
+    original_server = renewal_params.get("server", cli.flag_default("server"))
+    _avoid_invalidating_lineage(config, lineage, original_server)
+    new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
+    if config.dry_run:
+        logger.info("Dry run: skipping updating lineage at %s",
+                    os.path.dirname(lineage.cert))
+    else:
+        prior_version = lineage.latest_common_version()
+        new_cert = OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, new_certr.body.wrapped)
+        new_chain = crypto_util.dump_pyopenssl_chain(new_chain)
+        renewal_conf = configuration.RenewerConfiguration(config.namespace)
+        # TODO: Check return value of save_successor
+        lineage.save_successor(prior_version, new_cert, new_key.pem, new_chain, renewal_conf)
+        lineage.update_all_links_to(lineage.latest_common_version())
+
+    hooks.renew_hook(config, domains, lineage.live_dir)
+
+
+def report(msgs, category):
+    "Format a results report for a category of renewal outcomes"
+    lines = ("%s (%s)" % (m, category) for m in msgs)
+    return "  " + "\n  ".join(lines)
+
 def _renew_describe_results(config, renew_successes, renew_failures,
                             renew_skipped, parse_failures):
-    def _status(msgs, category):
-        return "  " + "\n  ".join("%s (%s)" % (m, category) for m in msgs)
+
+    out = []
+    notify = out.append
+
     if config.dry_run:
-        print("** DRY RUN: simulating 'letsencrypt renew' close to cert expiry")
-        print("**          (The test certificates below have not been saved.)")
-    print()
+        notify("** DRY RUN: simulating 'letsencrypt renew' close to cert expiry")
+        notify("**          (The test certificates below have not been saved.)")
+    notify("")
     if renew_skipped:
-        print("The following certs are not due for renewal yet:")
-        print(_status(renew_skipped, "skipped"))
+        notify("The following certs are not due for renewal yet:")
+        notify(report(renew_skipped, "skipped"))
     if not renew_successes and not renew_failures:
-        print("No renewals were attempted.")
+        notify("No renewals were attempted.")
     elif renew_successes and not renew_failures:
-        print("Congratulations, all renewals succeeded. The following certs "
-              "have been renewed:")
-        print(_status(renew_successes, "success"))
+        notify("Congratulations, all renewals succeeded. The following certs "
+               "have been renewed:")
+        notify(report(renew_successes, "success"))
     elif renew_failures and not renew_successes:
-        print("All renewal attempts failed. The following certs could not be "
-              "renewed:")
-        print(_status(renew_failures, "failure"))
+        notify("All renewal attempts failed. The following certs could not be "
+               "renewed:")
+        notify(report(renew_failures, "failure"))
     elif renew_failures and renew_successes:
-        print("The following certs were successfully renewed:")
-        print(_status(renew_successes, "success"))
-        print("\nThe following certs could not be renewed:")
-        print(_status(renew_failures, "failure"))
+        notify("The following certs were successfully renewed:")
+        notify(report(renew_successes, "success"))
+        notify("\nThe following certs could not be renewed:")
+        notify(report(renew_failures, "failure"))
 
     if parse_failures:
-        print("\nAdditionally, the following renewal configuration files "
-              "were invalid: ")
-        print(_status(parse_failures, "parsefail"))
+        notify("\nAdditionally, the following renewal configuration files "
+               "were invalid: ")
+        notify(parse_failures, "parsefail")
 
     if config.dry_run:
-        print("** DRY RUN: simulating 'letsencrypt renew' close to cert expiry")
-        print("**          (The test certificates above have not been saved.)")
+        notify("** DRY RUN: simulating 'letsencrypt renew' close to cert expiry")
+        notify("**          (The test certificates above have not been saved.)")
+
+    if config.quiet and not (renew_failures or parse_failures):
+        return
+    print("\n".join(out))
 
 
 def renew_all_lineages(config):
@@ -253,7 +315,8 @@ def renew_all_lineages(config):
     renew_skipped = []
     parse_failures = []
     for renewal_file in renewal_conf_files(renewer_config):
-        print("Processing " + renewal_file)
+        disp = zope.component.getUtility(interfaces.IDisplay)
+        disp.notification("Processing " + renewal_file, pause=False)
         lineage_config = copy.deepcopy(config)
 
         # Note that this modifies config (to add back the configuration

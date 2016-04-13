@@ -346,7 +346,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def included_in_wildcard(self, names, target_name):
         """Helper function to see if alias is covered by wildcard"""
         target_name = target_name.split(".")[::-1]
-        wildcards = [domain.split(".")[1:] for domain in names if domain.startswith("*")]
+        wildcards = [domain.split(".")[1:] for domain in
+                     names if domain.startswith("*")]
         for wildcard in wildcards:
             if len(wildcard) > len(target_name):
                 continue
@@ -547,7 +548,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             paths = self.aug.match(
                 ("/files%s//*[label()=~regexp('%s')]" %
                     (vhost_path, parser.case_i("VirtualHost"))))
-            paths = [path for path in paths if os.path.basename(path) == "VirtualHost"]
+            paths = [path for path in paths if
+                     os.path.basename(path) == "VirtualHost"]
             for path in paths:
                 new_vhost = self._create_vhost(path)
                 realpath = os.path.realpath(new_vhost.filep)
@@ -891,10 +893,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if not vh_p:
             return
         vh_path = vh_p[0]
-        if (self.parser.find_dir("ServerName", target_name, start=vh_path, exclude=False)
-           or self.parser.find_dir("ServerAlias", target_name, start=vh_path, exclude=False)):
+        if (self.parser.find_dir("ServerName", target_name,
+                                 start=vh_path, exclude=False) or
+            self.parser.find_dir("ServerAlias", target_name,
+                                 start=vh_path, exclude=False)):
             return
-        if not self.parser.find_dir("ServerName", None, start=vh_path, exclude=False):
+        if not self.parser.find_dir("ServerName", None,
+                                    start=vh_path, exclude=False):
             self.parser.add_dir(vh_path, "ServerName", target_name)
         else:
             self.parser.add_dir(vh_path, "ServerAlias", target_name)

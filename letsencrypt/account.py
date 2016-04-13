@@ -98,7 +98,7 @@ def report_new_account(acc, config):
         recovery_msg = ("If you lose your account credentials, you can "
                         "recover through e-mails sent to {0}.".format(
                             ", ".join(acc.regr.body.emails)))
-        reporter.add_message(recovery_msg, reporter.HIGH_PRIORITY)
+        reporter.add_message(recovery_msg, reporter.MEDIUM_PRIORITY)
 
 
 class AccountMemoryStorage(interfaces.AccountStorage):
