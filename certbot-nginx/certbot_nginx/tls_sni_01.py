@@ -4,11 +4,11 @@ import itertools
 import logging
 import os
 
-from letsencrypt import errors
-from letsencrypt.plugins import common
+from certbot import errors
+from certbot.plugins import common
 
-from letsencrypt_nginx import obj
-from letsencrypt_nginx import nginxparser
+from certbot_nginx import obj
+from certbot_nginx import nginxparser
 
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ class NginxTlsSni01(common.TLSSNI01):
     :type configurator: :class:`~nginx.configurator.NginxConfigurator`
 
     :ivar list achalls: Annotated
-        class:`~letsencrypt.achallenges.KeyAuthorizationAnnotatedChallenge`
+        class:`~certbot.achallenges.KeyAuthorizationAnnotatedChallenge`
         challenges
 
     :param list indices: Meant to hold indices of challenges in a
@@ -39,7 +39,7 @@ class NginxTlsSni01(common.TLSSNI01):
     def perform(self):
         """Perform a challenge on Nginx.
 
-        :returns: list of :class:`letsencrypt.acme.challenges.TLSSNI01Response`
+        :returns: list of :class:`certbot.acme.challenges.TLSSNI01Response`
         :rtype: list
 
         """
@@ -83,7 +83,7 @@ class NginxTlsSni01(common.TLSSNI01):
         """Modifies Nginx config to include challenge server blocks.
 
         :param list ll_addrs: list of lists of
-            :class:`letsencrypt_nginx.obj.Addr` to apply
+            :class:`certbot_nginx.obj.Addr` to apply
 
         :raises .MisconfigurationError:
             Unable to find a suitable HTTP block in which to include
@@ -130,7 +130,7 @@ class NginxTlsSni01(common.TLSSNI01):
 
         :param achall: Annotated TLS-SNI-01 challenge
         :type achall:
-            :class:`letsencrypt.achallenges.KeyAuthorizationAnnotatedChallenge`
+            :class:`certbot.achallenges.KeyAuthorizationAnnotatedChallenge`
 
         :param list addrs: addresses of challenged domain
             :class:`list` of type :class:`~nginx.obj.Addr`

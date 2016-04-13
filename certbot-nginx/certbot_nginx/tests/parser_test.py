@@ -1,16 +1,16 @@
-"""Tests for letsencrypt_nginx.parser."""
+"""Tests for certbot_nginx.parser."""
 import glob
 import os
 import re
 import shutil
 import unittest
 
-from letsencrypt import errors
+from certbot import errors
 
-from letsencrypt_nginx import nginxparser
-from letsencrypt_nginx import obj
-from letsencrypt_nginx import parser
-from letsencrypt_nginx.tests import util
+from certbot_nginx import nginxparser
+from certbot_nginx import obj
+from certbot_nginx import parser
+from certbot_nginx.tests import util
 
 
 class NginxParserTest(util.NginxTest):

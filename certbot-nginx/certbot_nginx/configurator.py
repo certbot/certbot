@@ -13,19 +13,19 @@ import zope.interface
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
 
-from letsencrypt import constants as core_constants
-from letsencrypt import crypto_util
-from letsencrypt import errors
-from letsencrypt import interfaces
-from letsencrypt import le_util
-from letsencrypt import reverter
+from certbot import constants as core_constants
+from certbot import crypto_util
+from certbot import errors
+from certbot import interfaces
+from certbot import le_util
+from certbot import reverter
 
-from letsencrypt.plugins import common
+from certbot.plugins import common
 
-from letsencrypt_nginx import constants
-from letsencrypt_nginx import tls_sni_01
-from letsencrypt_nginx import obj
-from letsencrypt_nginx import parser
+from certbot_nginx import constants
+from certbot_nginx import tls_sni_01
+from certbot_nginx import obj
+from certbot_nginx import parser
 
 
 logger = logging.getLogger(__name__)
@@ -41,15 +41,15 @@ class NginxConfigurator(common.Plugin):
         config files modified by the configurator will lose all their comments.
 
     :ivar config: Configuration.
-    :type config: :class:`~letsencrypt.interfaces.IConfig`
+    :type config: :class:`~certbot.interfaces.IConfig`
 
     :ivar parser: Handles low level parsing
-    :type parser: :class:`~letsencrypt_nginx.parser`
+    :type parser: :class:`~certbot_nginx.parser`
 
     :ivar str save_notes: Human-readable config change notes
 
     :ivar reverter: saves and reverts checkpoints
-    :type reverter: :class:`letsencrypt.reverter.Reverter`
+    :type reverter: :class:`certbot.reverter.Reverter`
 
     :ivar tup version: version of Nginx
 
@@ -216,7 +216,7 @@ class NginxConfigurator(common.Plugin):
         :param str target_name: domain name
 
         :returns: ssl vhost associated with name
-        :rtype: :class:`~letsencrypt_nginx.obj.VirtualHost`
+        :rtype: :class:`~certbot_nginx.obj.VirtualHost`
 
         """
         vhost = None
@@ -333,7 +333,7 @@ class NginxConfigurator(common.Plugin):
             the existing one?
 
         :param vhost: The vhost to add SSL to.
-        :type vhost: :class:`~letsencrypt_nginx.obj.VirtualHost`
+        :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
 
         """
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
@@ -372,9 +372,9 @@ class NginxConfigurator(common.Plugin):
 
         :param str domain: domain to enhance
         :param str enhancement: enhancement type defined in
-            :const:`~letsencrypt.constants.ENHANCEMENTS`
+            :const:`~certbot.constants.ENHANCEMENTS`
         :param options: options for the enhancement
-            See :const:`~letsencrypt.constants.ENHANCEMENTS`
+            See :const:`~certbot.constants.ENHANCEMENTS`
             documentation for appropriate parameter.
 
         """
@@ -395,7 +395,7 @@ class NginxConfigurator(common.Plugin):
         .. note:: This function saves the configuration
 
         :param vhost: Destination of traffic, an ssl enabled vhost
-        :type vhost: :class:`~letsencrypt_nginx.obj.VirtualHost`
+        :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
 
         :param unused_options: Not currently used
         :type unused_options: Not Available

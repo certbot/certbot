@@ -9,7 +9,7 @@ version = '0.6.0.dev0'
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
     'acme=={0}'.format(version),
-    'letsencrypt=={0}'.format(version),
+    'certbot=={0}'.format(version),
     'PyOpenSSL',
     'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
     # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
@@ -29,7 +29,7 @@ docs_extras = [
 ]
 
 setup(
-    name='letsencrypt-nginx',
+    name='certbot-nginx',
     version=version,
     description="Nginx plugin for Let's Encrypt client",
     url='https://github.com/letsencrypt/letsencrypt',
@@ -61,9 +61,9 @@ setup(
         'docs': docs_extras,
     },
     entry_points={
-        'letsencrypt.plugins': [
-            'nginx = letsencrypt_nginx.configurator:NginxConfigurator',
+        'certbot.plugins': [
+            'nginx = certbot_nginx.configurator:NginxConfigurator',
         ],
     },
-    test_suite='letsencrypt_nginx',
+    test_suite='certbot_nginx',
 )

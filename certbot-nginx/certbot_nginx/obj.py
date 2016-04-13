@@ -1,7 +1,7 @@
 """Module contains classes used by the Nginx Configurator."""
 import re
 
-from letsencrypt.plugins import common
+from certbot.plugins import common
 
 
 class Addr(common.Addr):

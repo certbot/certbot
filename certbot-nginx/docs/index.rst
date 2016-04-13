@@ -1,9 +1,9 @@
-.. letsencrypt-nginx documentation master file, created by
+.. certbot-nginx documentation master file, created by
    sphinx-quickstart on Sun Oct 18 13:39:39 2015.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to letsencrypt-nginx's documentation!
+Welcome to certbot-nginx's documentation!
 =============================================
 
 Contents:
@@ -18,7 +18,7 @@ Contents:
    api
 
 
-.. automodule:: letsencrypt_nginx
+.. automodule:: certbot_nginx
    :members:
 
 

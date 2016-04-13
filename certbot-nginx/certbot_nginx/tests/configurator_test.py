@@ -1,5 +1,5 @@
 # pylint: disable=too-many-public-methods
-"""Test for letsencrypt_nginx.configurator."""
+"""Test for certbot_nginx.configurator."""
 import os
 import shutil
 import unittest
@@ -10,10 +10,10 @@ import OpenSSL
 from acme import challenges
 from acme import messages
 
-from letsencrypt import achallenges
-from letsencrypt import errors
+from certbot import achallenges
+from certbot import errors
 
-from letsencrypt_nginx.tests import util
+from certbot_nginx.tests import util
 
 
 class NginxConfiguratorTest(util.NginxTest):
@@ -30,7 +30,7 @@ class NginxConfiguratorTest(util.NginxTest):
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
 
-    @mock.patch("letsencrypt_nginx.configurator.le_util.exe_exists")
+    @mock.patch("certbot_nginx.configurator.le_util.exe_exists")
     def test_prepare_no_install(self, mock_exe_exists):
         mock_exe_exists.return_value = False
         self.assertRaises(
@@ -40,8 +40,8 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEquals((1, 6, 2), self.config.version)
         self.assertEquals(5, len(self.config.parser.parsed))
 
-    @mock.patch("letsencrypt_nginx.configurator.le_util.exe_exists")
-    @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")
+    @mock.patch("certbot_nginx.configurator.le_util.exe_exists")
+    @mock.patch("certbot_nginx.configurator.subprocess.Popen")
     def test_prepare_initializes_version(self, mock_popen, mock_exe_exists):
         mock_popen().communicate.return_value = (
             "", "\n".join(["nginx version: nginx/1.6.2",
@@ -58,7 +58,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.prepare()
         self.assertEquals((1, 6, 2), self.config.version)
 
-    @mock.patch("letsencrypt_nginx.configurator.socket.gethostbyaddr")
+    @mock.patch("certbot_nginx.configurator.socket.gethostbyaddr")
     def test_get_all_names(self, mock_gethostbyaddr):
         mock_gethostbyaddr.return_value = ('155.225.50.69.nephoscale.net', [], [])
         names = self.config.get_all_names()
@@ -263,8 +263,8 @@ class NginxConfiguratorTest(util.NginxTest):
             ('/etc/nginx/fullchain.pem', '/etc/nginx/key.pem', nginx_conf),
         ]), self.config.get_all_certs_keys())
 
-    @mock.patch("letsencrypt_nginx.configurator.tls_sni_01.NginxTlsSni01.perform")
-    @mock.patch("letsencrypt_nginx.configurator.NginxConfigurator.restart")
+    @mock.patch("certbot_nginx.configurator.tls_sni_01.NginxTlsSni01.perform")
+    @mock.patch("certbot_nginx.configurator.NginxConfigurator.restart")
     def test_perform(self, mock_restart, mock_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
@@ -293,7 +293,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEqual(responses, expected)
         self.assertEqual(mock_restart.call_count, 1)
 
-    @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")
+    @mock.patch("certbot_nginx.configurator.subprocess.Popen")
     def test_get_version(self, mock_popen):
         mock_popen().communicate.return_value = (
             "", "\n".join(["nginx version: nginx/1.4.2",
@@ -343,55 +343,55 @@ class NginxConfiguratorTest(util.NginxTest):
         mock_popen.side_effect = OSError("Can't find program")
         self.assertRaises(errors.PluginError, self.config.get_version)
 
-    @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")
+    @mock.patch("certbot_nginx.configurator.subprocess.Popen")
     def test_nginx_restart(self, mock_popen):
         mocked = mock_popen()
         mocked.communicate.return_value = ('', '')
         mocked.returncode = 0
         self.config.restart()
 
-    @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")
+    @mock.patch("certbot_nginx.configurator.subprocess.Popen")
     def test_nginx_restart_fail(self, mock_popen):
         mocked = mock_popen()
         mocked.communicate.return_value = ('', '')
         mocked.returncode = 1
         self.assertRaises(errors.MisconfigurationError, self.config.restart)
 
-    @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")
+    @mock.patch("certbot_nginx.configurator.subprocess.Popen")
     def test_no_nginx_start(self, mock_popen):
         mock_popen.side_effect = OSError("Can't find program")
         self.assertRaises(errors.MisconfigurationError, self.config.restart)
 
-    @mock.patch("letsencrypt.le_util.run_script")
+    @mock.patch("certbot.le_util.run_script")
     def test_config_test(self, _):
         self.config.config_test()
 
-    @mock.patch("letsencrypt.le_util.run_script")
+    @mock.patch("certbot.le_util.run_script")
     def test_config_test_bad_process(self, mock_run_script):
         mock_run_script.side_effect = errors.SubprocessError
         self.assertRaises(errors.MisconfigurationError, self.config.config_test)
 
-    @mock.patch("letsencrypt.reverter.Reverter.recovery_routine")
+    @mock.patch("certbot.reverter.Reverter.recovery_routine")
     def test_recovery_routine_throws_error_from_reverter(self, mock_recovery_routine):
         mock_recovery_routine.side_effect = errors.ReverterError("foo")
         self.assertRaises(errors.PluginError, self.config.recovery_routine)
 
-    @mock.patch("letsencrypt.reverter.Reverter.view_config_changes")
+    @mock.patch("certbot.reverter.Reverter.view_config_changes")
     def test_view_config_changes_throws_error_from_reverter(self, mock_view_config_changes):
         mock_view_config_changes.side_effect = errors.ReverterError("foo")
         self.assertRaises(errors.PluginError, self.config.view_config_changes)
 
-    @mock.patch("letsencrypt.reverter.Reverter.rollback_checkpoints")
+    @mock.patch("certbot.reverter.Reverter.rollback_checkpoints")
     def test_rollback_checkpoints_throws_error_from_reverter(self, mock_rollback_checkpoints):
         mock_rollback_checkpoints.side_effect = errors.ReverterError("foo")
         self.assertRaises(errors.PluginError, self.config.rollback_checkpoints)
 
-    @mock.patch("letsencrypt.reverter.Reverter.revert_temporary_config")
+    @mock.patch("certbot.reverter.Reverter.revert_temporary_config")
     def test_revert_challenge_config_throws_error_from_reverter(self, mock_revert_temporary_config):
         mock_revert_temporary_config.side_effect = errors.ReverterError("foo")
         self.assertRaises(errors.PluginError, self.config.revert_challenge_config)
 
-    @mock.patch("letsencrypt.reverter.Reverter.add_to_checkpoint")
+    @mock.patch("certbot.reverter.Reverter.add_to_checkpoint")
     def test_save_throws_error_from_reverter(self, mock_add_to_checkpoint):
         mock_add_to_checkpoint.side_effect = errors.ReverterError("foo")
         self.assertRaises(errors.PluginError, self.config.save)

@@ -1,4 +1,4 @@
-"""Common utilities for letsencrypt_nginx."""
+"""Common utilities for certbot_nginx."""
 import os
 import pkg_resources
 import unittest
@@ -8,14 +8,14 @@ import zope.component
 
 from acme import jose
 
-from letsencrypt import configuration
+from certbot import configuration
 
-from letsencrypt.tests import test_util
+from certbot.tests import test_util
 
-from letsencrypt.plugins import common
+from certbot.plugins import common
 
-from letsencrypt_nginx import constants
-from letsencrypt_nginx import configurator
+from certbot_nginx import constants
+from certbot_nginx import configurator
 
 
 class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
@@ -24,7 +24,7 @@ class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
         super(NginxTest, self).setUp()
 
         self.temp_dir, self.config_dir, self.work_dir = common.dir_setup(
-            "etc_nginx", "letsencrypt_nginx.tests")
+            "etc_nginx", "certbot_nginx.tests")
 
         self.ssl_options = common.setup_ssl_options(
             self.config_dir, constants.MOD_SSL_CONF_SRC,
@@ -39,7 +39,7 @@ class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 def get_data_filename(filename):
     """Gets the filename of a test data file."""
     return pkg_resources.resource_filename(
-        "letsencrypt_nginx.tests", os.path.join(
+        "certbot_nginx.tests", os.path.join(
             "testdata", "etc_nginx", filename))
 
 
@@ -49,9 +49,9 @@ def get_nginx_configurator(
 
     backups = os.path.join(work_dir, "backups")
 
-    with mock.patch("letsencrypt_nginx.configurator.NginxConfigurator."
+    with mock.patch("certbot_nginx.configurator.NginxConfigurator."
                     "config_test"):
-        with mock.patch("letsencrypt_nginx.configurator.le_util."
+        with mock.patch("certbot_nginx.configurator.le_util."
                         "exe_exists") as mock_exe_exists:
             mock_exe_exists.return_value = True
             config = configurator.NginxConfigurator(

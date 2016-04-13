@@ -1,4 +1,4 @@
-"""Tests for letsencrypt_nginx.tls_sni_01"""
+"""Tests for certbot_nginx.tls_sni_01"""
 import unittest
 import shutil
 
@@ -6,14 +6,14 @@ import mock
 
 from acme import challenges
 
-from letsencrypt import achallenges
-from letsencrypt import errors
+from certbot import achallenges
+from certbot import errors
 
-from letsencrypt.plugins import common_test
-from letsencrypt.tests import acme_util
+from certbot.plugins import common_test
+from certbot.tests import acme_util
 
-from letsencrypt_nginx import obj
-from letsencrypt_nginx.tests import util
+from certbot_nginx import obj
+from certbot_nginx.tests import util
 
 
 class TlsSniPerformTest(util.NginxTest):
@@ -47,7 +47,7 @@ class TlsSniPerformTest(util.NginxTest):
         config = util.get_nginx_configurator(
             self.config_path, self.config_dir, self.work_dir)
 
-        from letsencrypt_nginx import tls_sni_01
+        from certbot_nginx import tls_sni_01
         self.sni = tls_sni_01.NginxTlsSni01(config)
 
     def tearDown(self):
@@ -55,7 +55,7 @@ class TlsSniPerformTest(util.NginxTest):
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
 
-    @mock.patch("letsencrypt_nginx.configurator"
+    @mock.patch("certbot_nginx.configurator"
                 ".NginxConfigurator.choose_vhost")
     def test_perform(self, mock_choose):
         self.sni.add_chall(self.achalls[1])
@@ -67,7 +67,7 @@ class TlsSniPerformTest(util.NginxTest):
         responses = self.sni.perform()
         self.assertEqual([], responses)
 
-    @mock.patch("letsencrypt_nginx.configurator.NginxConfigurator.save")
+    @mock.patch("certbot_nginx.configurator.NginxConfigurator.save")
     def test_perform1(self, mock_save):
         self.sni.add_chall(self.achalls[0])
         response = self.achalls[0].response(self.account_key)

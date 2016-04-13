@@ -5,10 +5,10 @@ import os
 import pyparsing
 import re
 
-from letsencrypt import errors
+from certbot import errors
 
-from letsencrypt_nginx import obj
-from letsencrypt_nginx import nginxparser
+from certbot_nginx import obj
+from certbot_nginx import nginxparser
 
 
 logger = logging.getLogger(__name__)
@@ -87,7 +87,7 @@ class NginxParser(object):
         Technically this is a misnomer because Nginx does not have virtual
         hosts, it has 'server blocks'.
 
-        :returns: List of :class:`~letsencrypt_nginx.obj.VirtualHost`
+        :returns: List of :class:`~certbot_nginx.obj.VirtualHost`
             objects found in configuration
         :rtype: list
 

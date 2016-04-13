@@ -9,4 +9,4 @@
 
 -e acme
 -e .
--e letsencrypt-nginx[docs]
+-e certbot-nginx[docs]

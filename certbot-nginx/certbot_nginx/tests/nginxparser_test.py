@@ -1,12 +1,12 @@
-"""Test for letsencrypt_nginx.nginxparser."""
+"""Test for certbot_nginx.nginxparser."""
 import operator
 import unittest
 
 from pyparsing import ParseException
 
-from letsencrypt_nginx.nginxparser import (
+from certbot_nginx.nginxparser import (
     RawNginxParser, loads, load, dumps, dump)
-from letsencrypt_nginx.tests import util
+from certbot_nginx.tests import util
 
 
 FIRST = operator.itemgetter(0)
