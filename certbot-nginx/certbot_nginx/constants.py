@@ -14,5 +14,5 @@ MOD_SSL_CONF_DEST = "options-ssl-nginx.conf"
 
 MOD_SSL_CONF_SRC = pkg_resources.resource_filename(
     "certbot_nginx", "options-ssl-nginx.conf")
-"""Path to the nginx mod_ssl config file found in the Let's Encrypt
+"""Path to the nginx mod_ssl config file found in the Certbot
 distribution."""

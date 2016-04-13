@@ -1,1 +1,1 @@
-"""Let's Encrypt nginx plugin."""
+"""Certbot nginx plugin."""

@@ -1,1 +1,1 @@
-Nginx plugin for Let's Encrypt client
+Nginx plugin for Certbot

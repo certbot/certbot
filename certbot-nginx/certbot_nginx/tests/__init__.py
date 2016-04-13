@@ -1,1 +1,1 @@
-"""Let's Encrypt Nginx Tests"""
+"""Certbot Nginx Tests"""
