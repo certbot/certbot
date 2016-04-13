@@ -481,31 +481,33 @@ class Reverter(object):
             checkpoint is not able to be finalized.
 
         """
-        # Adds title to self.config.in_progress_dir CHANGES_SINCE
-        # Move self.config.in_progress_dir to Backups directory and
-        # rename the directory as a timestamp
         # Check to make sure an "in progress" directory exists
         if not os.path.isdir(self.config.in_progress_dir):
             return
 
-        changes_since_path = os.path.join(
-            self.config.in_progress_dir, "CHANGES_SINCE")
+        changes_since_path = os.path.join(self.config.in_progress_dir, "CHANGES_SINCE")
+        changes_since_tmp_path = os.path.join(self.config.in_progress_dir, "CHANGES_SINCE.tmp")
 
-        changes_since_tmp_path = os.path.join(
-            self.config.in_progress_dir, "CHANGES_SINCE.tmp")
+        if not os.path.exists(changes_since_path):
+            logger.info("Rollback checkpoint is empty (no changes made?)")
+            with open(self.config.changes_since_path) as f:
+                f.write("No changes\n")
 
+        # Add title to self.config.in_progress_dir CHANGES_SINCE
         try:
             with open(changes_since_tmp_path, "w") as changes_tmp:
                 changes_tmp.write("-- %s --\n" % title)
                 with open(changes_since_path, "r") as changes_orig:
                     changes_tmp.write(changes_orig.read())
 
+        # Move self.config.in_progress_dir to Backups directory
             shutil.move(changes_since_tmp_path, changes_since_path)
         except (IOError, OSError):
             logger.error("Unable to finalize checkpoint - adding title")
             logger.debug("Exception was:\n%s", traceback.format_exc())
             raise errors.ReverterError("Unable to add title")
 
+        # rename the directory as a timestamp
         self._timestamp_progress_dir()
 
     def _checkpoint_timestamp(self):
