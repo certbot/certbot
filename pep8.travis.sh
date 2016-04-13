@@ -7,7 +7,7 @@ pep8 --config=acme/.pep8 acme
 
 pep8 \
   setup.py \
-  letsencrypt \
+  certbot \
   letsencrypt-apache \
   letsencrypt-nginx \
   letsencrypt-compatibility-test \
