@@ -181,7 +181,7 @@ to serve all files under specified web root ({0})."""
                     os.chown(self.full_roots[name], stat_path.st_uid,
                              stat_path.st_gid)
                 except OSError as exception:
-                    if exception.errno == errno.EACCES:
+                    if exception.errno == errno.EACCES or exception.errno == errno.EPERM:
                         logger.debug("Insufficient permissions to change owner and uid - ignoring")
                     else:
                         raise errors.PluginError(
