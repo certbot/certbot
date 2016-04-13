@@ -1,4 +1,4 @@
-"""Tests Let's Encrypt plugins against different server configurations."""
+"""Tests Certbot plugins against different server configurations."""
 import argparse
 import filecmp
 import functools
@@ -25,7 +25,7 @@ from certbot_compatibility_test.configurators.apache import apache24
 
 
 DESCRIPTION = """
-Tests Let's Encrypt plugins against different server configuratons. It is
+Tests Certbot plugins against different server configuratons. It is
 assumed that Docker is already installed. If no test types is specified, all
 tests that the plugin supports are performed.
 

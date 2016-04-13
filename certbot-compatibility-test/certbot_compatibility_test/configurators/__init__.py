@@ -1,1 +1,1 @@
-"""Let's Encrypt compatibility test configurators"""
+"""Certbot compatibility test configurators"""

@@ -1,5 +1,5 @@
-"""Let's Encrypt compatibility test errors"""
+"""Certbot compatibility test errors"""
 
 
 class Error(Exception):
-    """Generic Let's Encrypt compatibility test error"""
+    """Generic Certbot compatibility test error"""

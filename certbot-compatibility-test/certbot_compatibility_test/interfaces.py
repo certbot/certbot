@@ -1,4 +1,4 @@
-"""Let's Encrypt compatibility test interfaces"""
+"""Certbot compatibility test interfaces"""
 import zope.interface
 
 import certbot.interfaces
@@ -7,7 +7,7 @@ import certbot.interfaces
 
 
 class IPluginProxy(zope.interface.Interface):
-    """Wraps a Let's Encrypt plugin"""
+    """Wraps a Certbot plugin"""
     http_port = zope.interface.Attribute(
         "The port to connect to on localhost for HTTP traffic")
 
@@ -38,15 +38,15 @@ class IPluginProxy(zope.interface.Interface):
 
 
 class IAuthenticatorProxy(IPluginProxy, certbot.interfaces.IAuthenticator):
-    """Wraps a Let's Encrypt authenticator"""
+    """Wraps a Certbot authenticator"""
 
 
 class IInstallerProxy(IPluginProxy, certbot.interfaces.IInstaller):
-    """Wraps a Let's Encrypt installer"""
+    """Wraps a Certbot installer"""
 
     def get_all_names_answer():
         """Returns all names that should be found by the installer"""
 
 
 class IConfiguratorProxy(IAuthenticatorProxy, IInstallerProxy):
-    """Wraps a Let's Encrypt configurator"""
+    """Wraps a Certbot configurator"""
