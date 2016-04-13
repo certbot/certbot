@@ -1,1 +1,1 @@
-"""Let's Encrypt Display Tests"""
+"""Certbot Display Tests"""

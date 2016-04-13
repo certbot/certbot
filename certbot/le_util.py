@@ -1,4 +1,4 @@
-"""Utilities for all Let's Encrypt."""
+"""Utilities for all Certbot."""
 import argparse
 import collections
 import errno

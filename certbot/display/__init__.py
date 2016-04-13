@@ -1,1 +1,1 @@
-"""Let's Encrypt display utilities."""
+"""Certbot display utilities."""

@@ -33,7 +33,7 @@ def pick_installer(config, default, plugins,
 
 def pick_authenticator(
         config, default, plugins, question="How would you "
-        "like to authenticate with the Let's Encrypt CA?"):
+        "like to authenticate with the ACME CA?"):
     """Pick authentication plugin."""
     return pick_plugin(
         config, default, plugins, question, (interfaces.IAuthenticator,))

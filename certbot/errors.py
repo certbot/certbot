@@ -1,8 +1,8 @@
-"""Let's Encrypt client errors."""
+"""Certbot client errors."""
 
 
 class Error(Exception):
-    """Generic Let's Encrypt client error."""
+    """Generic Certbot client error."""
 
 
 class AccountStorageError(Error):
@@ -14,7 +14,7 @@ class AccountNotFound(AccountStorageError):
 
 
 class ReverterError(Error):
-    """Let's Encrypt Reverter error."""
+    """Certbot Reverter error."""
 
 
 class SubprocessError(Error):
@@ -54,7 +54,7 @@ class FailedChallenges(AuthorizationError):
 
 # Plugin Errors
 class PluginError(Error):
-    """Let's Encrypt Plugin error."""
+    """Certbot Plugin error."""
 
 
 class PluginEnhancementAlreadyPresent(Error):
@@ -66,15 +66,15 @@ class PluginSelectionError(Error):
 
 
 class NoInstallationError(PluginError):
-    """Let's Encrypt No Installation error."""
+    """Certbot No Installation error."""
 
 
 class MisconfigurationError(PluginError):
-    """Let's Encrypt Misconfiguration error."""
+    """Certbot Misconfiguration error."""
 
 
 class NotSupportedError(PluginError):
-    """Let's Encrypt Plugin function not supported error."""
+    """Certbot Plugin function not supported error."""
 
 
 class StandaloneBindError(Error):

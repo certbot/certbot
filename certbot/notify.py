@@ -14,7 +14,7 @@ def notify(subject, whom, what):
 
     """
     msg = email.message_from_string(what)
-    msg.add_header("From", "Let's Encrypt renewal agent <root>")
+    msg.add_header("From", "Certbot renewal agent <root>")
     msg.add_header("To", whom)
     msg.add_header("Subject", subject)
     msg = msg.as_string()

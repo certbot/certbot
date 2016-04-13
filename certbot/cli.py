@@ -1,4 +1,4 @@
-"""Let's Encrypt command line argument & config processing."""
+"""Certbot command line argument & config processing."""
 from __future__ import print_function
 import argparse
 import glob
@@ -48,9 +48,9 @@ cli_command = "letsencrypt-auto" if fragment in sys.argv[0] else "certbot"
 SHORT_USAGE = """
   {0} [SUBCOMMAND] [options] [-d domain] [-d domain] ...
 
-The Let's Encrypt agent can obtain and install HTTPS/TLS/SSL certificates.  By
-default, it will attempt to use a webserver both for obtaining and installing
-the cert. Major SUBCOMMANDS are:
+Certbot can obtain and install HTTPS/TLS/SSL certificates.  By default,
+it will attempt to use a webserver both for obtaining and installing the
+cert. Major SUBCOMMANDS are:
 
   (default) run        Obtain & install a cert in your current webserver
   certonly             Obtain cert, but do not install it (aka "auth")
@@ -848,7 +848,7 @@ def _paths_parser(helpful):
 
 def _plugins_parsing(helpful, plugins):
     helpful.add_group(
-        "plugins", description="Let's Encrypt client supports an "
+        "plugins", description="Certbot client supports an "
         "extensible plugins architecture. See '%(prog)s plugins' for a "
         "list of all installed plugins and their names. You can force "
         "a particular plugin by setting options provided below. Running "

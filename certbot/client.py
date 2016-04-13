@@ -1,4 +1,4 @@
-"""Let's Encrypt client API."""
+"""Certbot client API."""
 import logging
 import os
 
@@ -360,7 +360,7 @@ class Client(object):
                     fullchain_path=fullchain_path)
                 self.installer.save()  # needed by the Apache plugin
 
-            self.installer.save("Deployed Let's Encrypt Certificate")
+            self.installer.save("Deployed ACME Certificate")
 
         msg = ("We were unable to install your certificate, "
                "however, we successfully restored your "

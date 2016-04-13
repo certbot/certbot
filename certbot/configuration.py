@@ -1,4 +1,4 @@
-"""Let's Encrypt user-supplied configuration."""
+"""Certbot user-supplied configuration."""
 import copy
 import os
 

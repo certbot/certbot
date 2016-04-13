@@ -1,1 +1,1 @@
-"""Let's Encrypt client.plugins."""
+"""Certbot client.plugins."""

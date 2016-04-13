@@ -186,9 +186,9 @@ def relevant_values(all_values):
 class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     """Renewable certificate.
 
-    Represents a lineage of certificates that is under the management
-    of the Let's Encrypt client, indicated by the existence of an
-    associated renewal configuration file.
+    Represents a lineage of certificates that is under the management of
+    Certbot, indicated by the existence of an associated renewal
+    configuration file.
 
     Note that the notion of "current version" for a lineage is
     maintained on disk in the structure of symbolic links, and is not

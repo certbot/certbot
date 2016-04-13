@@ -1,4 +1,4 @@
-"""Let's Encrypt client crypto utility functions.
+"""Certbot client crypto utility functions.
 
 .. todo:: Make the transition to use PSS rather than PKCS1_v1_5 when the server
     is capable of handling the signatures.

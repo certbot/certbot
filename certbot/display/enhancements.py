@@ -1,4 +1,4 @@
-"""Let's Encrypt Enhancement Display"""
+"""Certbot Enhancement Display"""
 import logging
 
 import zope.component

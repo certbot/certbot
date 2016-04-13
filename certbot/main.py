@@ -1,4 +1,4 @@
-"""Let's Encrypt main entry point."""
+"""Certbot main entry point."""
 from __future__ import print_function
 import atexit
 import functools
@@ -38,14 +38,14 @@ logger = logging.getLogger(__name__)
 
 
 def _suggest_donation_if_appropriate(config, action):
-    """Potentially suggest a donation to support Let's Encrypt."""
+    """Potentially suggest a donation to support Certbot."""
     if config.staging or config.verb == "renew":
         # --dry-run implies --staging
         return
     if action not in ["renew", "newcert"]:
         return
     reporter_util = zope.component.getUtility(interfaces.IReporter)
-    msg = ("If you like Let's Encrypt, please consider supporting our work by:\n\n"
+    msg = ("If you like Certbot, please consider supporting our work by:\n\n"
            "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
            "Donating to EFF:                    https://eff.org/donate-le\n\n")
     reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
@@ -289,7 +289,7 @@ def _report_new_cert(cert_path, fullchain_path):
     # and say something more informative here.
     msg = ("Congratulations! Your certificate {0} been saved at {1}."
            " Your cert will expire on {2}. To obtain a new version of the "
-           "certificate in the future, simply run Let's Encrypt again."
+           "certificate in the future, simply run Certbot again."
            .format(and_chain, path, expiry))
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 

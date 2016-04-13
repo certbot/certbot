@@ -1,4 +1,4 @@
-"""Let's Encrypt display."""
+"""Certbot display."""
 import os
 import textwrap
 

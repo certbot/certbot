@@ -1,4 +1,4 @@
-"""Let's Encrypt constants."""
+"""Certbot constants."""
 import os
 import logging
 

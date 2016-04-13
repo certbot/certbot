@@ -80,7 +80,7 @@ class Reverter(object):
 
         if not backups:
             logger.warning(
-                "Let's Encrypt hasn't modified your configuration, so rollback "
+                "Certbot hasn't modified your configuration, so rollback "
                 "isn't available.")
         elif len(backups) < rollback:
             logger.warning("Unable to rollback %d checkpoints, only %d exist",
@@ -112,8 +112,7 @@ class Reverter(object):
         if num:
             backups = backups[:num]
         if not backups:
-            logger.info("The Let's Encrypt client has not saved any backups "
-                        "of your configuration")
+            logger.info("Certbot has not saved backups of your configuration")
 
             return
         # Make sure there isn't anything unexpected in the backup folder

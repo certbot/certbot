@@ -445,7 +445,7 @@ _ERROR_HELP = {
         "your domain, please ensure that the signature is valid.",
     "malformed":
         "To fix these errors, please make sure that you did not provide any "
-        "invalid information to the client, and try running Let's Encrypt "
+        "invalid information to the client, and try running Certbot "
         "again.",
     "serverInternal":
         "Unfortunately, an error on the ACME server prevented you from completing "
@@ -453,7 +453,7 @@ _ERROR_HELP = {
     "tls":
         _ERROR_HELP_COMMON + " Additionally, please check that you have an "
         "up-to-date TLS configuration that allows the server to communicate "
-        "with the Let's Encrypt client.",
+        "with the Certbot client.",
     "unauthorized": _ERROR_HELP_COMMON,
     "unknownHost": _ERROR_HELP_COMMON,
 }

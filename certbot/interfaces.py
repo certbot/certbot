@@ -1,4 +1,4 @@
-"""Let's Encrypt client interfaces."""
+"""Certbot client interfaces."""
 import abc
 import zope.interface
 
@@ -97,7 +97,7 @@ class IPluginFactory(zope.interface.Interface):
 
 
 class IPlugin(zope.interface.Interface):
-    """Let's Encrypt plugin."""
+    """Certbot plugin."""
 
     def prepare():
         """Prepare the plugin.
@@ -130,7 +130,7 @@ class IPlugin(zope.interface.Interface):
 
 
 class IAuthenticator(IPlugin):
-    """Generic Let's Encrypt Authenticator.
+    """Generic Certbot Authenticator.
 
     Class represents all possible tools processes that have the
     ability to perform challenges and attain a certificate.
@@ -190,7 +190,7 @@ class IAuthenticator(IPlugin):
 
 
 class IConfig(zope.interface.Interface):
-    """Let's Encrypt user-supplied configuration.
+    """Certbot user-supplied configuration.
 
     .. warning:: The values stored in the configuration have not been
         filtered, stripped or sanitized.
@@ -230,7 +230,7 @@ class IConfig(zope.interface.Interface):
 
 
 class IInstaller(IPlugin):
-    """Generic Let's Encrypt Installer Interface.
+    """Generic Certbot Installer Interface.
 
     Represents any server that an X509 certificate can be placed.
 

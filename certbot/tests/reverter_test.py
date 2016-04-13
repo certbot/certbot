@@ -96,7 +96,7 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
         self.reverter.register_file_creation(True, self.config2)
         self.reverter.register_file_creation(True, config3, config4)
 
-        # Simulate Let's Encrypt crash... recovery routine is run
+        # Simulate Certbot crash... recovery routine is run
         self.reverter.recovery_routine()
 
         self.assertFalse(os.path.isfile(self.config1))
