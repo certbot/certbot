@@ -127,9 +127,9 @@ if "%1" == "qthelp" (
 	echo.
 	echo.Build finished; now you can run "qcollectiongenerator" with the ^
 .qhcp project file in %BUILDDIR%/qthelp, like this:
-	echo.^> qcollectiongenerator %BUILDDIR%\qthelp\letsencrypt-compatibility-test.qhcp
+	echo.^> qcollectiongenerator %BUILDDIR%\qthelp\certbot-compatibility-test.qhcp
 	echo.To view the help file:
-	echo.^> assistant -collectionFile %BUILDDIR%\qthelp\letsencrypt-compatibility-test.ghc
+	echo.^> assistant -collectionFile %BUILDDIR%\qthelp\certbot-compatibility-test.ghc
 	goto end
 )
 

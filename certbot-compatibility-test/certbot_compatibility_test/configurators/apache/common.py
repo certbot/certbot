@@ -6,13 +6,13 @@ import subprocess
 import mock
 import zope.interface
 
-from letsencrypt import configuration
-from letsencrypt import errors as le_errors
-from letsencrypt_apache import configurator
-from letsencrypt_compatibility_test import errors
-from letsencrypt_compatibility_test import interfaces
-from letsencrypt_compatibility_test import util
-from letsencrypt_compatibility_test.configurators import common as configurators_common
+from certbot import configuration
+from certbot import errors as le_errors
+from certbot_apache import configurator
+from certbot_compatibility_test import errors
+from certbot_compatibility_test import interfaces
+from certbot_compatibility_test import util
+from certbot_compatibility_test.configurators import common as configurators_common
 
 
 APACHE_VERSION_REGEX = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
@@ -41,20 +41,20 @@ class Proxy(configurators_common.Proxy):
         mock_subprocess.Popen = self.popen
 
         mock.patch(
-            "letsencrypt_apache.configurator.subprocess",
+            "certbot_apache.configurator.subprocess",
             mock_subprocess).start()
         mock.patch(
-            "letsencrypt_apache.parser.subprocess",
+            "certbot_apache.parser.subprocess",
             mock_subprocess).start()
         mock.patch(
-            "letsencrypt.le_util.subprocess",
+            "certbot.le_util.subprocess",
             mock_subprocess).start()
         mock.patch(
-            "letsencrypt_apache.configurator.le_util.exe_exists",
+            "certbot_apache.configurator.le_util.exe_exists",
             _is_apache_command).start()
 
         patch = mock.patch(
-            "letsencrypt_apache.configurator.display_ops.select_vhost")
+            "certbot_apache.configurator.display_ops.select_vhost")
         mock_display = patch.start()
         mock_display.side_effect = le_errors.PluginError(
             "Unable to determine vhost")

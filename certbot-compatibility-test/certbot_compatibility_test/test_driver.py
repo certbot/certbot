@@ -13,15 +13,15 @@ import OpenSSL
 from acme import challenges
 from acme import crypto_util
 from acme import messages
-from letsencrypt import achallenges
-from letsencrypt import errors as le_errors
-from letsencrypt.tests import acme_util
+from certbot import achallenges
+from certbot import errors as le_errors
+from certbot.tests import acme_util
 
-from letsencrypt_compatibility_test import errors
-from letsencrypt_compatibility_test import util
-from letsencrypt_compatibility_test import validator
+from certbot_compatibility_test import errors
+from certbot_compatibility_test import util
+from certbot_compatibility_test import validator
 
-from letsencrypt_compatibility_test.configurators.apache import apache24
+from certbot_compatibility_test.configurators.apache import apache24
 
 
 DESCRIPTION = """

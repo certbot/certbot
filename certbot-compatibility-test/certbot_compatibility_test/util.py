@@ -10,9 +10,9 @@ import tarfile
 
 from acme import jose
 from acme import test_util
-from letsencrypt import constants
+from certbot import constants
 
-from letsencrypt_compatibility_test import errors
+from certbot_compatibility_test import errors
 
 
 _KEY_BASE = "rsa1024_key.pem"
@@ -26,7 +26,7 @@ def create_le_config(parent_dir):
     """Sets up LE dirs in parent_dir and returns the config dict"""
     config = copy.deepcopy(constants.CLI_DEFAULTS)
 
-    le_dir = os.path.join(parent_dir, "letsencrypt")
+    le_dir = os.path.join(parent_dir, "certbot")
     config["config_dir"] = os.path.join(le_dir, "config")
     config["work_dir"] = os.path.join(le_dir, "work")
     config["logs_dir"] = os.path.join(le_dir, "logs_dir")

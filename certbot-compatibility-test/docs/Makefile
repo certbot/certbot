@@ -87,9 +87,9 @@ qthelp:
 	@echo
 	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
 	      ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
-	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/letsencrypt-compatibility-test.qhcp"
+	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/certbot-compatibility-test.qhcp"
 	@echo "To view the help file:"
-	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/letsencrypt-compatibility-test.qhc"
+	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/certbot-compatibility-test.qhc"
 
 applehelp:
 	$(SPHINXBUILD) -b applehelp $(ALLSPHINXOPTS) $(BUILDDIR)/applehelp
@@ -104,8 +104,8 @@ devhelp:
 	@echo
 	@echo "Build finished."
 	@echo "To view the help file:"
-	@echo "# mkdir -p $$HOME/.local/share/devhelp/letsencrypt-compatibility-test"
-	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/letsencrypt-compatibility-test"
+	@echo "# mkdir -p $$HOME/.local/share/devhelp/certbot-compatibility-test"
+	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/certbot-compatibility-test"
 	@echo "# devhelp"
 
 epub:

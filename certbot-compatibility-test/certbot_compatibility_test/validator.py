@@ -6,7 +6,7 @@ import zope.interface
 
 from acme import crypto_util
 from acme import errors as acme_errors
-from letsencrypt import interfaces
+from certbot import interfaces
 
 
 logger = logging.getLogger(__name__)

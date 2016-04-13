@@ -1,7 +1,7 @@
 """Let's Encrypt compatibility test interfaces"""
 import zope.interface
 
-import letsencrypt.interfaces
+import certbot.interfaces
 
 # pylint: disable=no-self-argument,no-method-argument
 
@@ -37,11 +37,11 @@ class IPluginProxy(zope.interface.Interface):
         """Returns the domain names that can be used in testing"""
 
 
-class IAuthenticatorProxy(IPluginProxy, letsencrypt.interfaces.IAuthenticator):
+class IAuthenticatorProxy(IPluginProxy, certbot.interfaces.IAuthenticator):
     """Wraps a Let's Encrypt authenticator"""
 
 
-class IInstallerProxy(IPluginProxy, letsencrypt.interfaces.IInstaller):
+class IInstallerProxy(IPluginProxy, certbot.interfaces.IInstaller):
     """Wraps a Let's Encrypt installer"""
 
     def get_all_names_answer():

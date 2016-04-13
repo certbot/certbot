@@ -7,8 +7,8 @@ from setuptools import find_packages
 version = '0.6.0.dev0'
 
 install_requires = [
-    'letsencrypt=={0}'.format(version),
-    'letsencrypt-apache=={0}'.format(version),
+    'certbot=={0}'.format(version),
+    'certbot-apache=={0}'.format(version),
     'docker-py',
     'requests',
     'zope.interface',
@@ -31,7 +31,7 @@ docs_extras = [
 ]
 
 setup(
-    name='letsencrypt-compatibility-test',
+    name='certbot-compatibility-test',
     version=version,
     description="Compatibility tests for Let's Encrypt client",
     url='https://github.com/letsencrypt/letsencrypt',
@@ -58,7 +58,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'letsencrypt-compatibility-test = letsencrypt_compatibility_test.test_driver:main',
+            'certbot-compatibility-test = certbot_compatibility_test.test_driver:main',
         ],
     },
 )

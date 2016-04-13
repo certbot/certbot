@@ -6,9 +6,9 @@ import tempfile
 
 import docker
 
-from letsencrypt import constants
-from letsencrypt_compatibility_test import errors
-from letsencrypt_compatibility_test import util
+from certbot import constants
+from certbot_compatibility_test import errors
+from certbot_compatibility_test import util
 
 
 logger = logging.getLogger(__name__)

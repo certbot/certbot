@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# letsencrypt-compatibility-test documentation build configuration file, created by
+# certbot-compatibility-test documentation build configuration file, created by
 # sphinx-quickstart on Sun Oct 18 13:40:53 2015.
 #
 # This file is execfile()d with the current directory set to its
@@ -59,7 +59,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'letsencrypt-compatibility-test'
+project = u'certbot-compatibility-test'
 copyright = u'2014-2015, Let\'s Encrypt Project'
 author = u'Let\'s Encrypt Project'
 
@@ -221,7 +221,7 @@ html_static_path = ['_static']
 #html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'letsencrypt-compatibility-testdoc'
+htmlhelp_basename = 'certbot-compatibility-testdoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -243,8 +243,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'letsencrypt-compatibility-test.tex',
-     u'letsencrypt-compatibility-test Documentation',
+    (master_doc, 'certbot-compatibility-test.tex',
+     u'certbot-compatibility-test Documentation',
      u'Let\'s Encrypt Project', 'manual'),
 ]
 
@@ -274,8 +274,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'letsencrypt-compatibility-test',
-     u'letsencrypt-compatibility-test Documentation',
+    (master_doc, 'certbot-compatibility-test',
+     u'certbot-compatibility-test Documentation',
      [author], 1)
 ]
 
@@ -289,9 +289,9 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'letsencrypt-compatibility-test',
-     u'letsencrypt-compatibility-test Documentation',
-     author, 'letsencrypt-compatibility-test',
+    (master_doc, 'certbot-compatibility-test',
+     u'certbot-compatibility-test Documentation',
+     author, 'certbot-compatibility-test',
      'One line description of project.', 'Miscellaneous'),
 ]
 
@@ -311,9 +311,9 @@ texinfo_documents = [
 intersphinx_mapping = {
     'python': ('https://docs.python.org/', None),
     'acme': ('https://acme-python.readthedocs.org/en/latest/', None),
-    'letsencrypt': ('https://letsencrypt.readthedocs.org/en/latest/', None),
-    'letsencrypt-apache': (
+    'certbot': ('https://letsencrypt.readthedocs.org/en/latest/', None),
+    'certbot-apache': (
         'https://letsencrypt-apache.readthedocs.org/en/latest/', None),
-    'letsencrypt-nginx': (
+    'certbot-nginx': (
         'https://letsencrypt-nginx.readthedocs.org/en/latest/', None),
 }

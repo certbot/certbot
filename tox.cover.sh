@@ -9,7 +9,7 @@
 # -e makes sure we fail fast and don't submit coveralls submit
 
 if [ "xxx$1" = "xxx" ]; then
-  pkgs="certbot acme letsencrypt_apache letsencrypt_nginx letshelp_letsencrypt"
+  pkgs="certbot acme certbot_apache certbot_nginx letshelp_letsencrypt"
 else
   pkgs="$@"
 fi
@@ -19,9 +19,9 @@ cover () {
     min=98
   elif [ "$1" = "acme" ]; then
     min=100
-  elif [ "$1" = "letsencrypt_apache" ]; then
+  elif [ "$1" = "certbot_apache" ]; then
     min=100
-  elif [ "$1" = "letsencrypt_nginx" ]; then
+  elif [ "$1" = "certbot_nginx" ]; then
     min=97
   elif [ "$1" = "letshelp_letsencrypt" ]; then
     min=100
