@@ -169,20 +169,19 @@ class GitClient:
     def __init__(self, dry_run=False):
         self.dry_run = dry_run
 
-    def run(self, args, ignore_dry_run=False):
-        dry_run_now = self.dry_run and not ignore_dry_run
-        return Command('git', *args).resudoed().run(dry_run=dry_run_now)
+    def git(self, *args):
+        return Command('git', *args).resudoed()
     
     def checked_out_branch(self):
-        output = self.run(["symbolic-ref", "--short", "-q", "HEAD"], ignore_dry_run=True)
+        output = self.git("symbolic-ref", "--short", "-q", "HEAD").run()
         return output.rstrip()
     
     def update_remote(self, remote):
-        self.run(["remote", "update", remote], ignore_dry_run=True)
+        self.git("remote", "update", remote).run()
     
     def is_up_to_date(self, branch, remote):
         try:
-            self.run(["diff", "--staged", "--quiet", remote + "/" + branch], ignore_dry_run=True)
+            self.git("diff", "--staged", "--quiet", remote + "/" + branch).run()
             return True
         except CalledProcessError as error:
             if error.returncode == 1:
@@ -191,13 +190,13 @@ class GitClient:
                 raise
 
     def stage_file(self, path):
-        self.run(["add", path])
+        self.git("add", path).run(dry_run=self.dry_run)
     
     def commit(self, message):
-        self.run(["commit", "-m", message])
+        self.git("commit", "-m", message).run(dry_run=self.dry_run)
     
     def push_to_remote(self, remote):
-        self.run(["push", remote])
+        self.git("push", remote).run(dry_run=self.dry_run)
         
 class Command:
     def __init__(self, *arguments):
