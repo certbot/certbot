@@ -55,11 +55,15 @@ class Authenticator(common.Plugin):
         pass
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
-        return ("This plugin requires user's manual intervention in setting "
-                "up an HTTP server for solving http-01 challenges and thus "
-                "does not need to be run as a privileged process. "
-                "Alternatively shows instructions on how to use Python's "
-                "built-in HTTP server.")
+        return ("This plugin writes challenge files into a directory where "
+                "they will be served from (by default, './public'), "
+                "commits them to a git branch (by default, 'master'), "
+                "and pushes them to a remote (by default, 'heroku'). "
+                "It then waits for the challenge files to appear on the live "
+                "site before telling Let's Encrypt to check them. To use it, "
+                "you must be in a git working copy of the website, with the "
+                "master branch checked out and on the same commit as the "
+                "remote repository's version of the branch.")
 
     def get_chall_pref(self, domain):
         # pylint: disable=missing-docstring,no-self-use,unused-argument
