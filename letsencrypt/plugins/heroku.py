@@ -29,35 +29,34 @@ from letsencrypt.plugins import common
 
 logger = logging.getLogger(__name__)
 
-def _resudo_if_needed(command):
-    # If we need to sudo back, set that up.
-    sudo_user = os.environ["SUDO_USER"]
+class Command:
+    def __init__(self, *arguments):
+        self.arguments = arguments
 
-    if sudo_user is None:
-        return command
-    else:
-        return ["sudo", "-u", sudo_user] + command
+    def resudoed(self):
+        # If we need to sudo back, set that up.
+        sudo_user = os.environ["SUDO_USER"]
 
-def _describe_command(command):
-    if os.getuid() == 0:
-        prompt = "# "
-    else:
-        prompt = "$ "
+        if sudo_user is None:
+            return self
+        else:
+            return Command(*(("sudo", "-u", sudo_user) + self.arguments))
 
-    return prompt + " ".join(map(cmd_quote, command))
+    def __str__(self):
+        if os.getuid() == 0:
+            prompt = "# "
+        else:
+            prompt = "$ "
 
-def _run_as_user(command, dry_run=False):
-    full_command = _resudo_if_needed(command)
+        return prompt + " ".join(map(cmd_quote, self.arguments))
 
-    description = _describe_command(full_command)
-
-    # Do it, or don't.
-    if dry_run:
-        logger.warning("Would run: " + description)
-        return None
-    else:
-        logger.debug("Running: " + description)
-        return check_output(full_command)
+    def run(self, dry_run=False):
+        if dry_run:
+            logger.warning("Would run: " + str(self))
+            return None
+        else:
+            logger.debug("Running: " + str(self))
+            return check_output(self.arguments)
 
 class GitClient:
     def __init__(self, dry_run=False):
@@ -65,7 +64,7 @@ class GitClient:
 
     def run(self, args, ignore_dry_run=False):
         dry_run_now = self.dry_run and not ignore_dry_run
-        return _run_as_user(['git'] + args, dry_run=dry_run_now)
+        return Command('git', *args).resudoed().run(dry_run=dry_run_now)
     
     def checked_out_branch(self):
         output = self.run(["symbolic-ref", "--short", "-q", "HEAD"], ignore_dry_run=True)
