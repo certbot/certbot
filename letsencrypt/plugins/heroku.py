@@ -207,7 +207,7 @@ class Command:
         if sudo_user is None:
             return self
         else:
-            return Command(*(("sudo", "-u", sudo_user) + self.arguments))
+            return Command("sudo", "-u", sudo_user, *self.arguments)
 
     def __str__(self):
         if os.getuid() == 0:
