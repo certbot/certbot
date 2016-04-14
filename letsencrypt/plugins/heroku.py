@@ -29,29 +29,34 @@ from letsencrypt.plugins import common
 
 logger = logging.getLogger(__name__)
 
-def _run_as_user(command, dry_run=False):
+def _resudo_if_needed(command):
     # If we need to sudo back, set that up.
     sudo_user = os.environ["SUDO_USER"]
 
     if sudo_user is None:
-        full_command = command
+        return command
     else:
-        full_command = ["sudo", "-u", sudo_user] + command
+        return ["sudo", "-u", sudo_user] + command
 
-    # Format a loggable version of the command.
+def _describe_command(command):
     if os.getuid() == 0:
         prompt = "# "
     else:
         prompt = "$ "
 
-    description = prompt + " ".join(map(cmd_quote, full_command))
+    return prompt + " ".join(map(cmd_quote, command))
+
+def _run_as_user(command, dry_run=False):
+    full_command = _resudo_if_needed(command)
+
+    description = _describe_command(full_command)
 
     # Do it, or don't.
     if dry_run:
         logger.warning("Would run: " + description)
         return None
     else:
-        logger.info("Running: " + description)
+        logger.debug("Running: " + description)
         return check_output(full_command)
 
 class GitClient:
