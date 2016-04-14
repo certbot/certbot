@@ -156,9 +156,11 @@ class Authenticator(common.Plugin):
         for achall in achalls:
             self._write_challenge(achall, directory=directory)
         self._chown_challenges(root=root, directory=directory, owner=owner)
+        
+        logger.warning("Committing and pushing challenges to Heroku...")
         self._commit(directory=directory)
-
         self._deploy(remote=remote)
+        logger.warning(" ")
 
         responses = []
         # TODO: group achalls by the same socket.gethostbyname(_ex)
@@ -207,7 +209,6 @@ class Authenticator(common.Plugin):
         while root != os.path.dirname(directory):
             directory = os.path.dirname(directory)
         
-        logger.warning("Chowning under " + directory)
         os.chown(directory, owner, -1)
         for (dirpath, dirs, files) in os.walk(directory):
             for file in dirs + files:
@@ -222,13 +223,13 @@ class Authenticator(common.Plugin):
         self._git_client.commit(message=commit_message)
 
     def _deploy(self, remote):
-        logger.warning("Pushing to '" + remote + "'...")
+        logger.debug("Pushing to '" + remote + "'...")
         self._git_client.push_to_remote(remote)
 
     def _wait_for_challenge_validation(self, achall):
         response, validation = achall.response_and_validation()
 
-        logger.warning("Verifying challenge for " + achall.domain + " (Ctrl-C to skip)")
+        logger.warning("Verifying challenge for " + achall.domain + ". This might take a few minutes if your app is restarting. (Ctrl-C to skip.)")
         try:
             while not response.simple_verify(
                     achall.chall, achall.domain,
@@ -238,6 +239,9 @@ class Authenticator(common.Plugin):
             pass
 
         return response
+    
+    def _display(self):
+        return zope.component.getUtility(interfaces.IDisplay)
 
     def cleanup(self, achalls):
         # pylint: disable=missing-docstring,no-self-use,unused-argument
