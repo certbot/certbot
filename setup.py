@@ -90,7 +90,7 @@ setup(
     description="ACME client",
     long_description=readme,  # later: + '\n\n' + changes
     url='https://github.com/letsencrypt/letsencrypt',
-    author="Electronic Frontier Foundation",
+    author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
     classifiers=[

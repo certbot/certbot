@@ -24,7 +24,7 @@ setup(
     version=version,
     description="Let's help Certbot client",
     url='https://github.com/letsencrypt/letsencrypt',
-    author="Electronic Frontier Foundation",
+    author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
     classifiers=[
