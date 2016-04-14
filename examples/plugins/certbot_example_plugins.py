@@ -1,12 +1,12 @@
-"""Example Let's Encrypt plugins.
+"""Example Certbot plugins.
 
-For full examples, see `letsencrypt.plugins`.
+For full examples, see `certbot.plugins`.
 
 """
 import zope.interface
 
-from letsencrypt import interfaces
-from letsencrypt.plugins import common
+from certbot import interfaces
+from certbot.plugins import common
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)

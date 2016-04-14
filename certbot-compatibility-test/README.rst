@@ -1,1 +1,1 @@
-Compatibility tests for Let's Encrypt client
+Compatibility tests for Certbot

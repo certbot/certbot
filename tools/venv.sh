@@ -1,5 +1,5 @@
 #!/bin/sh -xe
-# Developer virtualenv setup for Let's Encrypt client
+# Developer virtualenv setup for Certbot client
 
 export VENV_ARGS="--python python2"
 

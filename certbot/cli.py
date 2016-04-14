@@ -634,7 +634,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
              "at this system. This option cannot be used with --csr.")
     helpful.add(
         "automation", "--agree-tos", dest="tos", action="store_true",
-        help="Agree to the Let's Encrypt Subscriber Agreement")
+        help="Agree to the ACME Subscriber Agreement")
     helpful.add(
         "automation", "--account", metavar="ACCOUNT_ID",
         help="Account ID to use")
