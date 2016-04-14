@@ -69,6 +69,25 @@ class GitClient:
     def run(self, args, skip_if_dry=False):
         dry_run_now = self.dry_run and not skip_if_dry
         return _run_as_user(['git'] + args, dry_run=dry_run_now)
+    
+    def checked_out_branch(self):
+        output = self.run(["symbolic-ref", "--short", "-q", "HEAD"], skip_if_dry=True)
+        return output.rstrip()
+    
+    def update_remote(self, remote):
+        self.run(["remote", "update", remote], skip_if_dry=True)
+    
+    def is_up_to_date(self, branch, remote):
+        self.run(["diff", "--staged", "--quiet", remote + "/" + branch], skip_if_dry=True)
+
+    def stage_file(self, path):
+        self.run(["add", path])
+    
+    def commit(self, message):
+        self.run(["commit", "-m", message])
+    
+    def push_to_remote(self, remote):
+        self.run(["push", remote])
 
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -148,22 +167,21 @@ class Authenticator(common.Plugin):
         
         # Make sure we're on the right branch
         try:
-            output = self._git_client.run(["symbolic-ref", "--short", "-q", "HEAD"], skip_if_dry=True)
-            checked_out = output.rstrip()
-            if checked_out != branch:
-                raise errors.PluginError("Working copy has '" + checked_out +"' checked out, not '" + branch + "'")
+            current = self._git_client.checked_out_branch()
+            if current != branch:
+                raise errors.PluginError("Working copy has '" + current +"' checked out, not '" + branch + "'")
         except CalledProcessError:
             raise errors.PluginError("Cannot identify a checked-out git branch")
 
         # git remote update will fail if there's no such remote, but it's also necessary 
         # for getting the status in the next step.
         try:
-            self._git_client.run(["remote", "update", remote], skip_if_dry=True)
+            self._git_client.update_remote(remote)
         except CalledProcessError:
             raise errors.PluginError("The '" + remote + "' git remote is not configured (use --heroku-remote to set a different one)")
 
         try:
-            self._git_client.run(["diff", "--staged", "--quiet", remote + "/" + branch], skip_if_dry=True)
+            self._git_client.is_up_to_date(remote=remote, branch=branch)
         except CalledProcessError:
             raise errors.PluginError("The working copy is out of date with the '" + remote + "' remote")
 
@@ -192,16 +210,16 @@ class Authenticator(common.Plugin):
                 os.chown(os.path.join(dirpath, file), owner, -1)
 
     def _commit(self, directory):
-        self._git_client.run(["add", directory])
+        self._git_client.stage_file(directory)
         
         commit_message = "Challenges for Let's Encrypt certificate"
         if self.config.staging:
             commit_message += " (testing only)"
-        self._git_client.run(["commit", "-m", commit_message])
+        self._git_client.commit(message=commit_message)
 
     def _deploy(self, remote):
         logger.warning("Pushing to '" + remote + "'...")
-        self._git_client.run(["push", remote])
+        self._git_client.push_to_remote(remote)
 
     def _wait_for_challenge_validation(self, achall):
         response, validation = achall.response_and_validation()
