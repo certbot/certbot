@@ -11,7 +11,7 @@ from letsencrypt import interfaces
 from letsencrypt.plugins import common
 
 # Used by the Command class
-from subprocess import check_output, check_call, CalledProcessError
+import subprocess
 try:
     from shlex import quote as cmd_quote
 except ImportError:
@@ -103,14 +103,14 @@ class Authenticator(common.Plugin):
             current = self._git_client.checked_out_branch()
             if current != branch:
                 raise errors.PluginError("Working copy has '" + current +"' checked out, not '" + branch + "'")
-        except CalledProcessError:
+        except Command.ProcessError:
             raise errors.PluginError("Cannot identify a checked-out git branch")
 
         # git remote update will fail if there's no such remote, but it's also necessary 
         # for is_up_to_date to actually give the right answer.
         try:
             self._git_client.update_remote(remote)
-        except CalledProcessError:
+        except Command.ProcessError:
             raise errors.PluginError("The '" + remote + "' git remote is not configured (use --heroku-remote to set a different one)")
 
         if not self._git_client.is_up_to_date(remote=remote, branch=branch):
@@ -253,22 +253,51 @@ class Command:
         return prompt + " ".join(map(cmd_quote, self.arguments))
 
     """
-    Runs the command without capturing its output or closely examining failing
-    return codes.
+    Starts a command, returning the resulting Popen object.
+    """
+    def start(self):
+        logger.info("Running: " + str(self))
+        return subprocess.Popen(self.arguments, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
+
+    """
+    Returns an iterator which reads all lines of output from the process.
+    """
+    def read_lines_from_process(self, process):
+        return iter(process.stdout.readline, '')
+
+    """
+    Waits for the process to complete and, if the returncode is not as expected,
+    raises a `ProcessError`.
+    """
+    def finish_process(self, process):
+        process.wait()
+        if process.returncode != 0:
+            raise Command.ProcessError(process.returncode)
+
+    """
+    Runs the command, logging its output.
     """
     def run(self, dry_run=False):
         if dry_run:
             logger.warning("Would run: " + str(self))
         else:
-            logger.debug("Running: " + str(self))
-            check_call(self.arguments)
+            process = self.start()
+            for line in self.read_lines_from_process(process):
+                logger.info("Output: " + line.rstrip())
+            self.finish_process(process)        
     
     """
     Runs the command, returning a string containing its output on stdout.
     """
     def capture(self):
-        logger.debug("Running: " + str(self))
-        return check_output(self.arguments)
+        process = self.start()
+        
+        output = ""
+        for line in self.read_lines_from_process(process):
+            output += line
+        
+        self.finish_process(process)
+        return output
     
     """
     Runs the command and checks the return code, returning the corresponding 
@@ -278,9 +307,14 @@ class Command:
         try:
             self.run()
             return returncodes[0]
-        except CalledProcessError as error:
+        except ProcessError as error:
             code = error.returncode
             if code in returncodes:
                 return returncodes[code]
             else:
                 raise
+    
+    class ProcessError(Exception):
+        def __init__(self, returncode):
+            self.returncode = returncode
+        
