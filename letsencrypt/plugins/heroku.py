@@ -78,7 +78,14 @@ class GitClient:
         self.run(["remote", "update", remote], ignore_dry_run=True)
     
     def is_up_to_date(self, branch, remote):
-        self.run(["diff", "--staged", "--quiet", remote + "/" + branch], ignore_dry_run=True)
+        try:
+            self.run(["diff", "--staged", "--quiet", remote + "/" + branch], ignore_dry_run=True)
+            return True
+        except CalledProcessError as error:
+            if error.returncode == 1:
+                return False
+            else:
+                raise
 
     def stage_file(self, path):
         self.run(["add", path])
@@ -180,9 +187,7 @@ class Authenticator(common.Plugin):
         except CalledProcessError:
             raise errors.PluginError("The '" + remote + "' git remote is not configured (use --heroku-remote to set a different one)")
 
-        try:
-            self._git_client.is_up_to_date(remote=remote, branch=branch)
-        except CalledProcessError:
+        if not self._git_client.is_up_to_date(remote=remote, branch=branch):
             raise errors.PluginError("The working copy is out of date with the '" + remote + "' remote")
 
     def _clear_directory(self, directory):
