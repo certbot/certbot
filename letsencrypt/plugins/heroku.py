@@ -11,7 +11,7 @@ from letsencrypt import interfaces
 from letsencrypt.plugins import common
 
 # Used by the Command class
-from subprocess import check_output, CalledProcessError
+from subprocess import check_output, check_call, CalledProcessError
 try:
     from shlex import quote as cmd_quote
 except ImportError:
@@ -173,10 +173,11 @@ class GitClient:
         return Command('git', *args).resudoed()
     
     def checked_out_branch(self):
-        output = self.git("symbolic-ref", "--short", "-q", "HEAD").run()
+        output = self.git("symbolic-ref", "--short", "-q", "HEAD").capture()
         return output.rstrip()
     
     def update_remote(self, remote):
+        # XXX how can I quiet this?
         self.git("remote", "update", remote).run()
     
     def is_up_to_date(self, branch, remote):
@@ -222,7 +223,10 @@ class Command:
     def run(self, dry_run=False):
         if dry_run:
             logger.warning("Would run: " + str(self))
-            return None
         else:
             logger.debug("Running: " + str(self))
-            return check_output(self.arguments)
+            check_call(self.arguments)
+    
+    def capture(self):
+        logger.debug("Running: " + str(self))
+        return check_output(self.arguments)
