@@ -143,7 +143,6 @@ class Authenticator(common.Plugin):
         return [challenges.HTTP01]
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
-        # XXX make these configurable
         root = self._root
         remote = self._remote
         branch = self._branch
