@@ -10,77 +10,14 @@ from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt.plugins import common
 
+# Used by the Command class
 from subprocess import check_output, CalledProcessError
 try:
     from shlex import quote as cmd_quote
 except ImportError:
     from pipes import quote as cmd_quote
 
-
 logger = logging.getLogger(__name__)
-
-class Command:
-    def __init__(self, *arguments):
-        self.arguments = arguments
-
-    def resudoed(self):
-        # If we need to sudo back, set that up.
-        sudo_user = os.environ["SUDO_USER"]
-
-        if sudo_user is None:
-            return self
-        else:
-            return Command(*(("sudo", "-u", sudo_user) + self.arguments))
-
-    def __str__(self):
-        if os.getuid() == 0:
-            prompt = "# "
-        else:
-            prompt = "$ "
-
-        return prompt + " ".join(map(cmd_quote, self.arguments))
-
-    def run(self, dry_run=False):
-        if dry_run:
-            logger.warning("Would run: " + str(self))
-            return None
-        else:
-            logger.debug("Running: " + str(self))
-            return check_output(self.arguments)
-
-class GitClient:
-    def __init__(self, dry_run=False):
-        self.dry_run = dry_run
-
-    def run(self, args, ignore_dry_run=False):
-        dry_run_now = self.dry_run and not ignore_dry_run
-        return Command('git', *args).resudoed().run(dry_run=dry_run_now)
-    
-    def checked_out_branch(self):
-        output = self.run(["symbolic-ref", "--short", "-q", "HEAD"], ignore_dry_run=True)
-        return output.rstrip()
-    
-    def update_remote(self, remote):
-        self.run(["remote", "update", remote], ignore_dry_run=True)
-    
-    def is_up_to_date(self, branch, remote):
-        try:
-            self.run(["diff", "--staged", "--quiet", remote + "/" + branch], ignore_dry_run=True)
-            return True
-        except CalledProcessError as error:
-            if error.returncode == 1:
-                return False
-            else:
-                raise
-
-    def stage_file(self, path):
-        self.run(["add", path])
-    
-    def commit(self, message):
-        self.run(["commit", "-m", message])
-    
-    def push_to_remote(self, remote):
-        self.run(["push", remote])
 
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -227,3 +164,66 @@ class Authenticator(common.Plugin):
     def cleanup(self, achalls):
         # pylint: disable=missing-docstring,no-self-use,unused-argument
         pass
+
+class GitClient:
+    def __init__(self, dry_run=False):
+        self.dry_run = dry_run
+
+    def run(self, args, ignore_dry_run=False):
+        dry_run_now = self.dry_run and not ignore_dry_run
+        return Command('git', *args).resudoed().run(dry_run=dry_run_now)
+    
+    def checked_out_branch(self):
+        output = self.run(["symbolic-ref", "--short", "-q", "HEAD"], ignore_dry_run=True)
+        return output.rstrip()
+    
+    def update_remote(self, remote):
+        self.run(["remote", "update", remote], ignore_dry_run=True)
+    
+    def is_up_to_date(self, branch, remote):
+        try:
+            self.run(["diff", "--staged", "--quiet", remote + "/" + branch], ignore_dry_run=True)
+            return True
+        except CalledProcessError as error:
+            if error.returncode == 1:
+                return False
+            else:
+                raise
+
+    def stage_file(self, path):
+        self.run(["add", path])
+    
+    def commit(self, message):
+        self.run(["commit", "-m", message])
+    
+    def push_to_remote(self, remote):
+        self.run(["push", remote])
+        
+class Command:
+    def __init__(self, *arguments):
+        self.arguments = arguments
+
+    def resudoed(self):
+        # If we need to sudo back, set that up.
+        sudo_user = os.environ["SUDO_USER"]
+
+        if sudo_user is None:
+            return self
+        else:
+            return Command(*(("sudo", "-u", sudo_user) + self.arguments))
+
+    def __str__(self):
+        if os.getuid() == 0:
+            prompt = "# "
+        else:
+            prompt = "$ "
+
+        return prompt + " ".join(map(cmd_quote, self.arguments))
+
+    def run(self, dry_run=False):
+        if dry_run:
+            logger.warning("Would run: " + str(self))
+            return None
+        else:
+            logger.debug("Running: " + str(self))
+            return check_output(self.arguments)
