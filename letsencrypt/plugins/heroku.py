@@ -163,8 +163,6 @@ class Authenticator(common.Plugin):
         logger.warning(" ")
 
         responses = []
-        # TODO: group achalls by the same socket.gethostbyname(_ex)
-        # and prompt only once per server (one "echo -n" per domain)
         for achall in achalls:
             responses.append(self._wait_for_challenge_validation(achall))
         return responses
@@ -182,7 +180,7 @@ class Authenticator(common.Plugin):
             raise errors.PluginError("Cannot identify a checked-out git branch")
 
         # git remote update will fail if there's no such remote, but it's also necessary 
-        # for getting the status in the next step.
+        # for is_up_to_date to actually give the right answer.
         try:
             self._git_client.update_remote(remote)
         except CalledProcessError:
