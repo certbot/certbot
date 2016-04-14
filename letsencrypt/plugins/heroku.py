@@ -1,4 +1,4 @@
-"""Herkou plugin."""
+"""Heroku plugin."""
 import os
 import logging
 import pipes
