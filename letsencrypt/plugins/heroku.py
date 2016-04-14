@@ -181,14 +181,7 @@ class GitClient:
         self.git("remote", "update", remote).run()
     
     def is_up_to_date(self, branch, remote):
-        try:
-            self.git("diff", "--staged", "--quiet", remote + "/" + branch).run()
-            return True
-        except CalledProcessError as error:
-            if error.returncode == 1:
-                return False
-            else:
-                raise
+        return self.git("diff", "--staged", "--quiet", remote + "/" + branch).check({ 0: True, 1: False })
 
     def stage_file(self, path):
         self.git("add", path).run(dry_run=self.dry_run)
@@ -230,3 +223,14 @@ class Command:
     def capture(self):
         logger.debug("Running: " + str(self))
         return check_output(self.arguments)
+    
+    def check(self, returncodes):
+        try:
+            self.run()
+            return returncodes[0]
+        except CalledProcessError as error:
+            code = error.returncode
+            if code in returncodes:
+                return returncodes[code]
+            else:
+                raise
