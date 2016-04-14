@@ -66,19 +66,19 @@ class GitClient:
     def __init__(self, dry_run=False):
         self.dry_run = dry_run
 
-    def run(self, args, skip_if_dry=False):
-        dry_run_now = self.dry_run and not skip_if_dry
+    def run(self, args, ignore_dry_run=False):
+        dry_run_now = self.dry_run and not ignore_dry_run
         return _run_as_user(['git'] + args, dry_run=dry_run_now)
     
     def checked_out_branch(self):
-        output = self.run(["symbolic-ref", "--short", "-q", "HEAD"], skip_if_dry=True)
+        output = self.run(["symbolic-ref", "--short", "-q", "HEAD"], ignore_dry_run=True)
         return output.rstrip()
     
     def update_remote(self, remote):
-        self.run(["remote", "update", remote], skip_if_dry=True)
+        self.run(["remote", "update", remote], ignore_dry_run=True)
     
     def is_up_to_date(self, branch, remote):
-        self.run(["diff", "--staged", "--quiet", remote + "/" + branch], skip_if_dry=True)
+        self.run(["diff", "--staged", "--quiet", remote + "/" + branch], ignore_dry_run=True)
 
     def stage_file(self, path):
         self.run(["add", path])
