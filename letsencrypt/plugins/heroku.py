@@ -29,30 +29,22 @@ from letsencrypt.plugins import common
 
 logger = logging.getLogger(__name__)
 
-def _run_as_user(command, shell=False, dry_run=False):
+def _run_as_user(command, dry_run=False):
     # If we need to sudo back, set that up.
     sudo_user = os.environ["SUDO_USER"]
 
     if sudo_user is None:
         full_command = command
     else:
-        su_part = ["sudo", "-u", sudo_user]
-        if shell:
-            full_command = su_part + ["-s", command]
-            shell = False
-        else:
-            full_command = su_part + command
-    
+        full_command = ["sudo", "-u", sudo_user] + command
+
     # Format a loggable version of the command.
     if os.getuid() == 0:
         prompt = "# "
     else:
         prompt = "$ "
 
-    if shell:
-        description = prompt + full_command
-    else:
-        description = prompt + " ".join(map(cmd_quote, full_command))
+    description = prompt + " ".join(map(cmd_quote, full_command))
 
     # Do it, or don't.
     if dry_run:
