@@ -20,11 +20,11 @@ docs_extras = [
 ]
 
 setup(
-    name='letshelp-letsencrypt',
+    name='letshelp-certbot',
     version=version,
-    description="Let's help Let's Encrypt client",
+    description="Let's help Certbot client",
     url='https://github.com/letsencrypt/letsencrypt',
-    author="Let's Encrypt Project",
+    author="Electronic Frontier Foundation",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
     classifiers=[
@@ -52,8 +52,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'letshelp-letsencrypt-apache = letshelp_letsencrypt.apache:main',
+            'letshelp-certbot-apache = letshelp_certbot.apache:main',
         ],
     },
-    test_suite='letshelp_letsencrypt',
+    test_suite='letshelp_certbot',
 )

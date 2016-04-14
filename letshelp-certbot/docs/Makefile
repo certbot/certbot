@@ -87,9 +87,9 @@ qthelp:
 	@echo
 	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
 	      ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
-	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/letshelp-letsencrypt.qhcp"
+	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/letshelp-certbot.qhcp"
 	@echo "To view the help file:"
-	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/letshelp-letsencrypt.qhc"
+	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/letshelp-certbot.qhc"
 
 applehelp:
 	$(SPHINXBUILD) -b applehelp $(ALLSPHINXOPTS) $(BUILDDIR)/applehelp
@@ -104,8 +104,8 @@ devhelp:
 	@echo
 	@echo "Build finished."
 	@echo "To view the help file:"
-	@echo "# mkdir -p $$HOME/.local/share/devhelp/letshelp-letsencrypt"
-	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/letshelp-letsencrypt"
+	@echo "# mkdir -p $$HOME/.local/share/devhelp/letshelp-certbot"
+	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/letshelp-certbot"
 	@echo "# devhelp"
 
 epub:

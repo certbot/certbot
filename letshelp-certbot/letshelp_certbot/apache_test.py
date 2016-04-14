@@ -1,4 +1,4 @@
-"""Tests for letshelp.letshelp_letsencrypt_apache.py"""
+"""Tests for letshelp.letshelp_certbot_apache.py"""
 import argparse
 import functools
 import os
@@ -10,7 +10,7 @@ import unittest
 
 import mock
 
-import letshelp_letsencrypt.apache as letshelp_le_apache
+import letshelp_certbot.apache as letshelp_le_apache
 
 
 _PARTIAL_CONF_PATH = os.path.join("mods-available", "ssl.load")
@@ -25,7 +25,7 @@ _SECRET_FILE = pkg_resources.resource_filename(
     __name__, os.path.join("testdata", "super_secret_file.txt"))
 
 
-_MODULE_NAME = "letshelp_letsencrypt.apache"
+_MODULE_NAME = "letshelp_certbot.apache"
 
 
 _COMPILE_SETTINGS = """Server version: Apache/2.4.10 (Debian)

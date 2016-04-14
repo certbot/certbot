@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# letshelp-letsencrypt documentation build configuration file, created by
+# letshelp-certbot documentation build configuration file, created by
 # sphinx-quickstart on Sun Oct 18 13:40:19 2015.
 #
 # This file is execfile()d with the current directory set to its
@@ -58,7 +58,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'letshelp-letsencrypt'
+project = u'letshelp-certbot'
 copyright = u'2014-2015, Let\'s Encrypt Project'
 author = u'Let\'s Encrypt Project'
 
@@ -220,7 +220,7 @@ html_static_path = ['_static']
 #html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'letshelp-letsencryptdoc'
+htmlhelp_basename = 'letshelp-certbotdoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -242,7 +242,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'letshelp-letsencrypt.tex', u'letshelp-letsencrypt Documentation',
+    (master_doc, 'letshelp-certbot.tex', u'letshelp-certbot Documentation',
      u'Let\'s Encrypt Project', 'manual'),
 ]
 
@@ -272,7 +272,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'letshelp-letsencrypt', u'letshelp-letsencrypt Documentation',
+    (master_doc, 'letshelp-certbot', u'letshelp-certbot Documentation',
      [author], 1)
 ]
 
@@ -286,8 +286,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'letshelp-letsencrypt', u'letshelp-letsencrypt Documentation',
-     author, 'letshelp-letsencrypt', 'One line description of project.',
+    (master_doc, 'letshelp-certbot', u'letshelp-certbot Documentation',
+     author, 'letshelp-certbot', 'One line description of project.',
      'Miscellaneous'),
 ]
 
@@ -307,5 +307,5 @@ texinfo_documents = [
 intersphinx_mapping = {
     'python': ('https://docs.python.org/', None),
     'acme': ('https://acme-python.readthedocs.org/en/latest/', None),
-    'letsencrypt': ('https://letsencrypt.readthedocs.org/en/latest/', None),
+    'certbot': ('https://letsencrypt.readthedocs.org/en/latest/', None),
 }

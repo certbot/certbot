@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Let's Encrypt Apache configuration submission script"""
+"""Certbot Apache configuration submission script"""
 
 from __future__ import print_function
 
@@ -17,12 +17,12 @@ import textwrap
 
 
 _DESCRIPTION = """
-Let's Help is a simple script you can run to help out the Let's Encrypt
-project. Since Let's Encrypt will support automatically configuring HTTPS on
+Let's Help is a simple script you can run to help out the Certbot
+project. Since Certbot will support automatically configuring HTTPS on
 many servers, we want to test this functionality on as many configurations as
 possible. This script will create a sanitized copy of your Apache
 configuration, notifying you of the files that have been selected. If (and only
-if) you approve this selection, these files will be sent to the Let's Encrypt
+if) you approve this selection, these files will be sent to the Certbot
 developers.
 
 """
@@ -38,8 +38,9 @@ argument and the path to the binary.
 
 # Keywords likely to be found in filenames of sensitive files
 _SENSITIVE_FILENAME_REGEX = re.compile(r"^(?!.*proxy_fdpass).*pass.*$|private|"
-                                       r"secret|cert|crt|key|rsa|dsa|pw|\.pem|"
-                                       r"\.der|\.p12|\.pfx|\.p7b")
+                                       r"secret|^(?!.*certbot).*cert.*$|crt|"
+                                       r"key|rsa|dsa|pw|\.pem|\.der|\.p12|"
+                                       r"\.pfx|\.p7b")
 
 
 def make_and_verify_selection(server_root, temp_dir):
