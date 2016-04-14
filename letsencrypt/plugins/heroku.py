@@ -240,13 +240,6 @@ class Authenticator(common.Plugin):
 
         return response
 
-    def _notify_and_wait(self, message):  # pylint: disable=no-self-use
-        # TODO: IDisplay wraps messages, breaking the command
-        #answer = zope.component.getUtility(interfaces.IDisplay).notification(
-        #    message=message, height=25, pause=True)
-        sys.stdout.write(message)
-        raw_input("Press ENTER to continue")
-
     def cleanup(self, achalls):
         # pylint: disable=missing-docstring,no-self-use,unused-argument
         pass
