@@ -47,15 +47,6 @@ class Authenticator(common.Plugin):
 
     description = "Authenticate a Heroku app"
 
-    # a disclaimer about your current IP being transmitted to Let's Encrypt's servers.
-    IP_DISCLAIMER = """\
-NOTE: The IP of this machine will be publicly logged as having requested this certificate. \
-If you're running letsencrypt in manual mode on a machine that is not your server, \
-please ensure you're okay with that.
-
-Are you OK with your IP being logged?
-"""
-
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
         self._root = self.conf("root")
@@ -68,8 +59,6 @@ Are you OK with your IP being logged?
         add("root", default="public", help="Directory containing static assets.")
         add("remote", default="heroku", help="git remote to push to for deployment.")
         add("branch", default="master", help="git branch to push for deployment.")
-        add("public-ip-logging-ok", action="store_true",
-            help="Automatically allows public IP logging.")
 
     def prepare(self):  # pylint: disable=missing-docstring,no-self-use
         #if self.config.noninteractive_mode and not self.conf("test-mode"):
@@ -114,12 +103,6 @@ Are you OK with your IP being logged?
         return responses
     
     def _preflight(self, root, remote, branch):
-        if not self.conf("public-ip-logging-ok"):
-            if not zope.component.getUtility(interfaces.IDisplay).yesno(
-                    self.IP_DISCLAIMER, "Yes", "No",
-                    cli_flag="--manual-public-ip-logging-ok"):
-                raise errors.PluginError("Must agree to IP logging to proceed")
-
         if not os.path.exists(root):
             raise errors.PluginError("The '" + root + "' folder doesn't exist")
         
