@@ -76,6 +76,7 @@ class BasicParserTest(util.ParserTest):
         # This makes sure that find_dir will work
         self.parser.modules.add("mod_ssl.c")
 
+        import ipdb; ipdb.set_trace()
         self.parser.add_dir_to_ifmodssl(
             get_aug_path(self.parser.loc["default"]),
             "FakeDirective", ["123"])
