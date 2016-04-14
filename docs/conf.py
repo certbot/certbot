@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Let's Encrypt documentation build configuration file, created by
+# Certbot documentation build configuration file, created by
 # sphinx-quickstart on Sun Nov 23 20:35:21 2014.
 #
 # This file is execfile()d with the current directory set to its
