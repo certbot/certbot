@@ -52,7 +52,6 @@ class Authenticator(common.Plugin):
         self._root = self.conf("root")
         self._remote = self.conf("remote")
         self._branch = self.conf("branch")
-        self._httpd = None
 
     @classmethod
     def add_parser_arguments(cls, add):
