@@ -257,23 +257,19 @@ class Command:
     """
     def start(self):
         logger.info("Running: " + str(self))
-        return subprocess.Popen(self.arguments, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
-
-    """
-    Returns an iterator which reads all lines of output from the process.
-    """
-    def read_lines_from_process(self, process):
-        return iter(process.stdout.readline, '')
-
-    """
-    Waits for the process to complete and, if the returncode is not as expected,
-    raises a `ProcessError`.
-    """
-    def finish_process(self, process):
-        process.wait()
-        if process.returncode != 0:
-            raise Command.ProcessError(process.returncode)
-
+        return Command.Process(self)
+    
+    class Process:
+        def __init__(self, command):
+            self.command = command
+            self._process = subprocess.Popen(self.command.arguments, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
+            self.lines = iter(self._process.stdout.readline, '')
+        
+        def finish(self):
+            self._process.wait()
+            if self._process.returncode != 0:
+                raise Command.ProcessError(self._process.returncode)
+    
     """
     Runs the command, logging its output.
     """
@@ -282,9 +278,9 @@ class Command:
             logger.warning("Would run: " + str(self))
         else:
             process = self.start()
-            for line in self.read_lines_from_process(process):
+            for line in process.lines:
                 logger.info("Output: " + line.rstrip())
-            self.finish_process(process)        
+            process.finish()        
     
     """
     Runs the command, returning a string containing its output on stdout.
@@ -293,10 +289,10 @@ class Command:
         process = self.start()
         
         output = ""
-        for line in self.read_lines_from_process(process):
+        for line in process.lines:
             output += line
         
-        self.finish_process(process)
+        process.finish()
         return output
     
     """
