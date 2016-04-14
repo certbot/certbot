@@ -342,9 +342,6 @@ class EnforceDomainSanityTest(unittest.TestCase):
 
 class OsInfoTest(unittest.TestCase):
     """Test OS / distribution detection"""
-    def _call(self):
-        from letsencrypt.le_util import get_os_info
-        return get_os_info()
 
     def test_systemd_os_release(self):
         from letsencrypt.le_util import get_os_info
