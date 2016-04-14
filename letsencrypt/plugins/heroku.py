@@ -1,30 +1,20 @@
 """Heroku plugin."""
 import os
 import logging
-import pipes
 import shutil
-import signal
-import socket
-import subprocess
-import sys
-import tempfile
 import time
 
+import zope.component
+from acme import challenges
+from letsencrypt import errors
+from letsencrypt import interfaces
+from letsencrypt.plugins import common
+
+from subprocess import check_output, CalledProcessError
 try:
     from shlex import quote as cmd_quote
 except ImportError:
     from pipes import quote as cmd_quote
-
-from subprocess import check_output, CalledProcessError
-
-import zope.component
-import zope.interface
-
-from acme import challenges
-
-from letsencrypt import errors
-from letsencrypt import interfaces
-from letsencrypt.plugins import common
 
 
 logger = logging.getLogger(__name__)
@@ -234,9 +224,6 @@ class Authenticator(common.Plugin):
 
         return response
     
-    def _display(self):
-        return zope.component.getUtility(interfaces.IDisplay)
-
     def cleanup(self, achalls):
         # pylint: disable=missing-docstring,no-self-use,unused-argument
         pass
