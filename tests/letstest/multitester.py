@@ -257,7 +257,7 @@ def local_git_PR(repo_url, PRnumstr, merge_master=True):
         local('if [ -d letsencrypt ]; then rm -rf letsencrypt; fi')
         local('git clone %s letsencrypt'% repo_url)
         local('cd letsencrypt && git fetch origin pull/%s/head:lePRtest'%PRnumstr)
-        local('cd letsencrypt && git co lePRtest')
+        local('cd letsencrypt && git checkout lePRtest')
         if merge_master:
             local('cd letsencrypt && git remote update origin')
             local('cd letsencrypt && git merge origin/master -m "testmerge"')
