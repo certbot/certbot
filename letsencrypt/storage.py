@@ -764,40 +764,41 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # lineagename will now potentially be modified based on which
         # renewal configuration file could actually be created
         lineagename = os.path.basename(config_filename)[:-len(".conf")]
-        archive = os.path.join(cli_config.archive_dir, lineagename)
+        archive_dir = os.path.join(cli_config.archive_dir, lineagename)
         live_dir = os.path.join(cli_config.live_dir, lineagename)
-        if os.path.exists(archive):
+        if os.path.exists(archive_dir):
             raise errors.CertStorageError(
                 "archive directory exists for " + lineagename)
         if os.path.exists(live_dir):
             raise errors.CertStorageError(
                 "live directory exists for " + lineagename)
-        os.mkdir(archive)
+        os.mkdir(archive_dir)
         os.mkdir(live_dir)
         logger.debug("Archive directory %s and live "
-                     "directory %s created.", archive, live_dir)
-        relative_archive = os.path.join("..", "..", "archive", lineagename)
+                     "directory %s created.", archive_dir, live_dir)
+        relative_archive_dir = os.path.join("..", "..", "archive", lineagename)
 
         # Put the data into the appropriate files on disk
         target = dict([(kind, os.path.join(live_dir, kind + ".pem"))
                        for kind in ALL_FOUR])
+        archive = dict([(kind, os.path.join(archive_dir, kind + "1.pem"))
+                       for kind in ALL_FOUR])
         for kind in ALL_FOUR:
-            os.symlink(os.path.join(relative_archive, kind + "1.pem"),
+            os.symlink(os.path.join(relative_archive_dir, kind + "1.pem"),
                        target[kind])
-        with open(target["cert"], "w") as f:
-            logger.debug("Writing certificate to %s.", target["cert"])
+        with le_util.safe_open(archive["cert"], "w", chmod=0o644) as f:
+            logger.debug("Writing certificate to %s.", archive["cert"])
             f.write(cert)
-        with open(target["privkey"], "w") as f:
-            logger.debug("Writing private key to %s.", target["privkey"])
+        with le_util.safe_open(archive["privkey"], "w", chmod=0o600) as f:
+            logger.debug("Writing private key to %s.", archive["privkey"])
             f.write(privkey)
-            # XXX: Let's make sure to get the file permissions right here
-        with open(target["chain"], "w") as f:
-            logger.debug("Writing chain to %s.", target["chain"])
+        with le_util.safe_open(archive["chain"], "w", chmod=0o644) as f:
+            logger.debug("Writing chain to %s.", archive["chain"])
             f.write(chain)
-        with open(target["fullchain"], "w") as f:
+        with le_util.safe_open(archive["fullchain"], "w", chmod=0o644) as f:
             # assumes that OpenSSL.crypto.dump_certificate includes
             # ending newline character
-            logger.debug("Writing full chain to %s.", target["fullchain"])
+            logger.debug("Writing full chain to %s.", archive["fullchain"])
             f.write(cert + chain)
 
         # Document what we've done in a new renewal config file
@@ -866,18 +867,18 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             logger.debug("Writing symlink to old private key, %s.", old_privkey)
             os.symlink(old_privkey, target["privkey"])
         else:
-            with open(target["privkey"], "w") as f:
+            with le_util.safe_open(target["privkey"], "w", chmod=0o600) as f:
                 logger.debug("Writing new private key to %s.", target["privkey"])
                 f.write(new_privkey)
 
         # Save everything else
-        with open(target["cert"], "w") as f:
+        with le_util.safe_open(target["cert"], "w", chmod=0o644) as f:
             logger.debug("Writing certificate to %s.", target["cert"])
             f.write(new_cert)
-        with open(target["chain"], "w") as f:
+        with le_util.safe_open(target["chain"], "w", chmod=0o644) as f:
             logger.debug("Writing chain to %s.", target["chain"])
             f.write(new_chain)
-        with open(target["fullchain"], "w") as f:
+        with le_util.safe_open(target["fullchain"], "w", chmod=0o644) as f:
             logger.debug("Writing full chain to %s.", target["fullchain"])
             f.write(new_cert + new_chain)
 
