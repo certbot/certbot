@@ -344,16 +344,19 @@ class OsInfoTest(unittest.TestCase):
     """Test OS / distribution detection"""
 
     def test_systemd_os_release(self):
-        from letsencrypt.le_util import get_os_info
+        from letsencrypt.le_util import get_os_info, get_systemd_os_info
         with mock.patch('os.path.isfile', return_value=True):
             self.assertEqual(get_os_info(
                 test_util.vector_path("os-release"))[0], 'systemdos')
             self.assertEqual(get_os_info(
                 test_util.vector_path("os-release"))[1], '42')
+            self.assertEqual(get_systemd_os_info("/dev/null"), ("", ""))
+        with mock.patch('os.path.isfile', return_value=False):
+            self.assertEqual(get_systemd_os_info(), ("", ""))
 
     @mock.patch("letsencrypt.le_util.subprocess.Popen")
     def test_non_systemd_os_info(self, popen_mock):
-        from letsencrypt.le_util import get_os_info
+        from letsencrypt.le_util import get_os_info, get_python_os_info
         with mock.patch('os.path.isfile', return_value=False):
             with mock.patch('platform.system_alias',
                             return_value=('NonSystemD', '42', '42')):
@@ -364,10 +367,31 @@ class OsInfoTest(unittest.TestCase):
                 comm_mock = mock.Mock()
                 comm_attrs = {'communicate.return_value':
                               ('42.42.42', 'error')}
-                comm_mock.configure_mock(**comm_attrs) # pylint: disable=star-args
+                comm_mock.configure_mock(**comm_attrs)  # pylint: disable=star-args
                 popen_mock.return_value = comm_mock
                 self.assertEqual(get_os_info()[0], 'darwin')
                 self.assertEqual(get_os_info()[1], '42.42.42')
+
+            with mock.patch('platform.system_alias',
+                            return_value=('linux', '', '')):
+                with mock.patch('platform.linux_distribution',
+                                return_value=('', '', '')):
+                    self.assertEqual(get_python_os_info(), ("linux", ""))
+
+                with mock.patch('platform.linux_distribution',
+                                return_value=('testdist', '42', '')):
+                    self.assertEqual(get_python_os_info(), ("testdist", "42"))
+
+            with mock.patch('platform.system_alias',
+                            return_value=('freebsd', '9.3-RC3-p1', '')):
+                self.assertEqual(get_python_os_info(), ("freebsd", "9"))
+
+            with mock.patch('platform.system_alias',
+                            return_value=('windows', '', '')):
+                with mock.patch('platform.win32_ver',
+                                return_value=('4242', '95', '2', '')):
+                    self.assertEqual(get_python_os_info(),
+                                     ("windows", "95"))
 
 
 if __name__ == "__main__":
