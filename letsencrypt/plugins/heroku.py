@@ -173,26 +173,51 @@ class GitClient:
     def __init__(self, dry_run=False):
         self.dry_run = dry_run
 
+    """
+    Builds a git command with the provided arguments.
+    """
     def git(self, *args):
         return Command('git', *args).resudoed()
     
+    """
+    Determines the branch that the working copy in the current working directory
+    has checked out.
+    """
     def checked_out_branch(self):
         output = self.git("symbolic-ref", "--short", "-q", "HEAD").capture()
         return output.rstrip()
     
+    """
+    Updates the indicated remote in the working copy's branch. Doesn't actually 
+    affect the checked-out code; this is more like a fetch than a pull.
+    """
     def update_remote(self, remote):
         # XXX how can I quiet this?
         self.git("remote", "update", remote).run()
     
+    """
+    Returns True if the working copy and the (local cached copy of the) remote 
+    are on the same commit and there are no staged changes, False otherwise.
+    """
     def is_up_to_date(self, branch, remote):
         return self.git("diff", "--staged", "--quiet", remote + "/" + branch).check({ 0: True, 1: False })
 
+    """
+    Adds the specified file (or contents of the specified directory) to the 
+    working copy's index.
+    """
     def stage_file(self, path):
         self.git("add", path).run(dry_run=self.dry_run)
     
+    """
+    Commits the working copy's staged changes with the indicated message.
+    """
     def commit(self, message):
         self.git("commit", "-m", message).run(dry_run=self.dry_run)
     
+    """
+    Pushes recent commits to the indicated remote.
+    """
     def push_to_remote(self, remote):
         self.git("push", remote).run(dry_run=self.dry_run)
         
@@ -200,6 +225,12 @@ class Command:
     def __init__(self, *arguments):
         self.arguments = arguments
 
+    """
+    If the current environment variables indicate the current process was 
+    launched using `sudo`, returns a modified version of the command 
+    which uses `sudo` to run it as the original user. Otherwise, returns 
+    the command unmodified.
+    """
     def resudoed(self):
         # If we need to sudo back, set that up.
         sudo_user = os.environ["SUDO_USER"]
@@ -209,6 +240,10 @@ class Command:
         else:
             return Command("sudo", "-u", sudo_user, *self.arguments)
 
+    """
+    Converts the command to an equivalent shell command, including a $ or #
+    character.
+    """
     def __str__(self):
         if os.getuid() == 0:
             prompt = "# "
@@ -217,6 +252,10 @@ class Command:
 
         return prompt + " ".join(map(cmd_quote, self.arguments))
 
+    """
+    Runs the command without capturing its output or closely examining failing
+    return codes.
+    """
     def run(self, dry_run=False):
         if dry_run:
             logger.warning("Would run: " + str(self))
@@ -224,10 +263,17 @@ class Command:
             logger.debug("Running: " + str(self))
             check_call(self.arguments)
     
+    """
+    Runs the command, returning a string containing its output on stdout.
+    """
     def capture(self):
         logger.debug("Running: " + str(self))
         return check_output(self.arguments)
     
+    """
+    Runs the command and checks the return code, returning the corresponding 
+    value from the `returncodes` parameter if the code is there.
+    """
     def check(self, returncodes):
         try:
             self.run()
