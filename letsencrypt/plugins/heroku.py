@@ -29,6 +29,46 @@ from letsencrypt.plugins import common
 
 logger = logging.getLogger(__name__)
 
+def _run_as_user(command, shell=False, dry_run=False):
+    # If we need to sudo back, set that up.
+    sudo_user = os.environ["SUDO_USER"]
+
+    if sudo_user is None:
+        full_command = command
+    else:
+        su_part = ["sudo", "-u", sudo_user]
+        if shell:
+            full_command = su_part + ["-s", command]
+            shell = False
+        else:
+            full_command = su_part + command
+    
+    # Format a loggable version of the command.
+    if os.getuid() == 0:
+        prompt = "# "
+    else:
+        prompt = "$ "
+
+    if shell:
+        description = prompt + full_command
+    else:
+        description = prompt + " ".join(map(cmd_quote, full_command))
+
+    # Do it, or don't.
+    if dry_run:
+        logger.warning("Would run: " + description)
+        return None
+    else:
+        logger.info("Running: " + description)
+        return check_output(full_command)
+
+class GitClient:
+    def __init__(self, dry_run=False):
+        self.dry_run = dry_run
+
+    def run(self, args, skip_if_dry=False):
+        dry_run_now = self.dry_run and not skip_if_dry
+        return _run_as_user(['git'] + args, dry_run=dry_run_now)
 
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -52,6 +92,7 @@ class Authenticator(common.Plugin):
         self._root = self.conf("root")
         self._remote = self.conf("remote")
         self._branch = self.conf("branch")
+        self._git_client = GitClient(dry_run=self.config.dry_run)
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -107,7 +148,7 @@ class Authenticator(common.Plugin):
         
         # Make sure we're on the right branch
         try:
-            output = self._run_as_user(["git", "symbolic-ref", "--short", "-q", "HEAD"], skip_if_dry=False)
+            output = self._git_client.run(["symbolic-ref", "--short", "-q", "HEAD"], skip_if_dry=True)
             checked_out = output.rstrip()
             if checked_out != branch:
                 raise errors.PluginError("Working copy has '" + checked_out +"' checked out, not '" + branch + "'")
@@ -117,12 +158,12 @@ class Authenticator(common.Plugin):
         # git remote update will fail if there's no such remote, but it's also necessary 
         # for getting the status in the next step.
         try:
-            self._run_as_user(["git", "remote", "update", remote], skip_if_dry=False)
+            self._git_client.run(["remote", "update", remote], skip_if_dry=True)
         except CalledProcessError:
             raise errors.PluginError("The '" + remote + "' git remote is not configured (use --heroku-remote to set a different one)")
 
         try:
-            self._run_as_user(["git", "diff", "--staged", "--quiet", remote + "/" + branch], skip_if_dry=False)
+            self._git_client.run(["diff", "--staged", "--quiet", remote + "/" + branch], skip_if_dry=True)
         except CalledProcessError:
             raise errors.PluginError("The working copy is out of date with the '" + remote + "' remote")
 
@@ -151,16 +192,16 @@ class Authenticator(common.Plugin):
                 os.chown(os.path.join(dirpath, file), owner, -1)
 
     def _commit(self, directory):
-        self._run_as_user(["git", "add", directory])
+        self._git_client.run(["add", directory])
         
         commit_message = "Challenges for Let's Encrypt certificate"
         if self.config.staging:
             commit_message += " (testing only)"
-        self._run_as_user(["git", "commit", "-m", commit_message])
+        self._git_client.run(["commit", "-m", commit_message])
 
     def _deploy(self, remote):
         logger.warning("Pushing to '" + remote + "'...")
-        self._run_as_user(["git", "push", remote])
+        self._git_client.run(["push", remote])
 
     def _wait_for_challenge_validation(self, achall):
         response, validation = achall.response_and_validation()
@@ -175,39 +216,6 @@ class Authenticator(common.Plugin):
             pass
 
         return response
-
-    def _run_as_user(self, command, shell=False, skip_if_dry=True):
-        # If we need to sudo back, set that up.
-        sudo_user = os.environ["SUDO_USER"]
-
-        if sudo_user is None:
-            full_command = command
-        else:
-            su_part = ["sudo", "-u", sudo_user]
-            if shell:
-                full_command = su_part + ["-s", command]
-                shell = False
-            else:
-                full_command = su_part + command
-        
-        # Format a loggable version of the command.
-        if os.getuid() == 0:
-            prompt = "# "
-        else:
-            prompt = "$ "
-
-        if shell:
-            description = prompt + full_command
-        else:
-            description = prompt + " ".join(map(cmd_quote, full_command))
-
-        # Do it, or don't.
-        if skip_if_dry and self.config.dry_run:
-            logger.warning("Would run: " + description)
-            return None
-        else:
-            logger.info("Running: " + description)
-            return check_output(full_command)
 
     def _notify_and_wait(self, message):  # pylint: disable=no-self-use
         # TODO: IDisplay wraps messages, breaking the command
