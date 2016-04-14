@@ -32,7 +32,7 @@ server {
 		# as directory, then fall back to displaying a 404.
 		try_files $uri $uri/ =404;
 		# Uncomment to enable naxsi on this location
-		# include /etc/nginx/naxsi.rules
+		# include naxsi.rules
 	}
 
 	# Only for nginx-naxsi used with nginx-naxsi-ui : process denied requests

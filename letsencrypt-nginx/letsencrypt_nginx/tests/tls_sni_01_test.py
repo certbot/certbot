@@ -3,6 +3,7 @@ import unittest
 import shutil
 
 import mock
+import os
 
 from acme import challenges
 
@@ -106,11 +107,15 @@ class TlsSniPerformTest(util.NginxTest):
             self.assertEqual(
                 mock_setup_cert.call_args_list[index], mock.call(achall))
 
-        http = self.sni.configurator.parser.parsed[
+        root_conf = self.sni.configurator.parser.parsed[
             self.sni.configurator.parser.loc["root"]][-1]
-        self.assertTrue(['include', self.sni.challenge_conf] in http[1])
+        self.assertTrue(['include', self.sni.challenge_conf] in root_conf[1])
+
+        conf_file = os.path.join(self.temp_dir, "etc_nginx/sites-enabled/blah.conf")
+        blah_conf = self.sni.configurator.parser.parsed[conf_file][-1]
+
         self.assertTrue(
-            util.contains_at_depth(http, ['server_name', 'blah'], 3))
+            util.contains_at_depth(blah_conf, ['server_name', 'blah'], 1))
 
         self.assertEqual(len(sni_responses), 3)
         for i in xrange(3):

@@ -15,7 +15,6 @@ from letsencrypt import errors
 
 from letsencrypt_nginx.tests import util
 
-
 class NginxConfiguratorTest(util.NginxTest):
     """Test a semi complex vhost configuration."""
 
