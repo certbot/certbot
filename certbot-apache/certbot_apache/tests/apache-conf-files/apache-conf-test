@@ -59,7 +59,7 @@ trap CleanupExit INT
 for f in *.conf ; do 
     echo -n  testing "$f"...
     Setup
-    RESULT=`echo c | sudo env "PATH=$PATH" certbot -vvvv --debug --staging --apache --register-unsafely-without-email --agree-tos certonly -t 2>&1`
+    RESULT=`echo c | sudo $(command -v certbot) -vvvv --debug --staging --apache --register-unsafely-without-email --agree-tos certonly -t 2>&1`
     if echo $RESULT | grep -Eq \("Which names would you like"\|"mod_macro is not yet"\) ; then
         echo passed
     else
