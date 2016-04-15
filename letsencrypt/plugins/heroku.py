@@ -104,7 +104,6 @@ class Authenticator(common.Plugin):
             if current != branch:
                 raise errors.PluginError("Working copy has '" + current +"' checked out, not '" + branch + "'")
         except Command.UnhandledProcessError:
-            raise
             raise errors.PluginError("Cannot identify a checked-out git branch")
 
         # git remote update will fail if there's no such remote, but it's also necessary 
@@ -283,25 +282,12 @@ class Command:
         return prompt + " ".join(map(cmd_quote, self.arguments))
 
     """
-    Starts a command, returning the resulting Popen object.
+    Starts a command, returning the resulting Command.Process object.
     """
     def start(self):
         logger.info("Running: " + str(self))
         return Command.Process(self)
-    
-    class Process:
-        def __init__(self, command):
-            self.command = command
-            self._process = subprocess.Popen(self.command.arguments, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
-            self.lines = iter(self._process.stdout.readline, '')
-        
-        def finish(self):
-            self._process.wait()
-            
-            code = self._process.returncode
-            handler = self.command.handler_for_returncode(code)
-            return handler(self, code)
-    
+
     """
     Runs the command, logging its output.
     """
@@ -328,11 +314,39 @@ class Command:
         process.finish()
         return output
     
+    """
+    Represents a running process for a command. Has a `command` property
+    and a `lines` property; the latter can be looped over to retrieve each line
+    of output as they are emitted.
+    """
+    class Process:
+        def __init__(self, command):
+            self.command = command
+            self._process = subprocess.Popen(self.command.arguments, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
+            self.lines = iter(self._process.stdout.readline, '')
+        
+        """
+        Waits for the process to finish, then runs the appropriate returncode handler
+        and returns its value.
+        """
+        def finish(self):
+            self._process.wait()
+            
+            code = self._process.returncode
+            handler = self.command.handler_for_returncode(code)
+            return handler(self, code)
+        
+    """
+    Represents any error caused by a returncode.
+    """
     class ProcessError(Exception):
         def __init__(self, process, returncode):
             self.process = process
             self.returncode = returncode
     
+    """
+    Represents any error caused by an unexpected returncode.
+    """
     class UnhandledProcessError(ProcessError):
         def __str__(self):
             return "The command " + str(self.process.command) + " failed with error code " + self.returncode + "."
