@@ -176,9 +176,22 @@ class Command(object):
         self.on_returncode(0, returns=None)
         self.on_returncode(None, raises=Command.UnhandledProcessError)
     
+    """
+    Add a function which will be called for a given return code to generate
+    a return value for Command.Process.finish() or Command.run(). If 
+    returncode=None, it will be used for all unhandled codes. If 
+    there is already a handler for this returncode, it will be replaced.
+    """
     def add_returncode_handler(self, returncode, handler):
         self._returncodes[returncode] = handler
     
+    """
+    Handle a return code by returning the indicated value or raising the 
+    indicated error. `raises` can be either an Exception subclass or a 
+    function; in either case, it must be callable with (process, returncode).
+    If returncode=None, it will be used for all unhandled codes. If 
+    there is already a handler for this returncode, it will be replaced.
+    """
     def on_returncode(self, returncode, returns = None, raises = None):
         if raises:
             def make_and_raise(process, returncode):
@@ -190,6 +203,9 @@ class Command(object):
         
         self.add_returncode_handler(returncode, handler)
     
+    """
+    Returns the handler for the given returncode.
+    """
     def handler_for_returncode(self, returncode):
         if returncode in self._returncodes:
             return self._returncodes[returncode]
