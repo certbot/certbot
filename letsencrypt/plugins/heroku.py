@@ -89,10 +89,7 @@ class Authenticator(common.Plugin):
         self._deploy(remote=remote)
         logger.warning(" ")
 
-        responses = []
-        for achall in achalls:
-            responses.append(self._wait_for_challenge_validation(achall))
-        return responses
+        return map(self._wait_for_challenge_validation, achalls)
     
     def _preflight(self, root, remote, branch):
         if not os.path.exists(root):
