@@ -23,37 +23,37 @@ logger = logging.getLogger(__name__)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(common.Plugin):
     """Heroku Authenticator.
-
-    This plugin writes challenge files into the ./public folder, then 
-    commits them to git and pushes them to a remote repository. 
+    
+    This plugin writes challenge files into the ./public folder, then
+    commits them to git and pushes them to a remote repository.
     On Heroku, this will deploy the challenge files to the server, where
     they'll be served to Let's Encrypt as needed.
-
+    
     .. todo:: Support for `~.challenges.TLSSNI01`.
-
+    
     """
     hidden = False
-
+    
     description = "Authenticate a Heroku app"
-
+    
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
         self._root = self.conf("root")
         self._remote = self.conf("remote")
         self._branch = self.conf("branch")
         self._git_client = GitClient(dry_run=self.config.dry_run)
-
+    
     @classmethod
     def add_parser_arguments(cls, add):
         add("root", default="public", help="Directory containing static assets.")
         add("remote", default="heroku", help="git remote to push to for deployment.")
         add("branch", default="master", help="git branch to push for deployment.")
-
+    
     def prepare(self):  # pylint: disable=missing-docstring,no-self-use
         #if self.config.noninteractive_mode and not self.conf("test-mode"):
         #    raise errors.PluginError("Running manual mode non-interactively is not supported")
         pass
-
+    
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return ("This plugin writes challenge files into a directory where "
                 "they will be served from (by default, './public'), "
@@ -64,11 +64,11 @@ class Authenticator(common.Plugin):
                 "you must be in a git working copy of the website, with the "
                 "master branch checked out and on the same commit as the "
                 "remote repository's version of the branch.")
-
+    
     def get_chall_pref(self, domain):
         # pylint: disable=missing-docstring,no-self-use,unused-argument
         return [challenges.HTTP01]
-
+    
     def perform(self, achalls):  # pylint: disable=missing-docstring
         root = self._root
         remote = self._remote
@@ -126,7 +126,7 @@ class Authenticator(common.Plugin):
         file = directory + "/" + achall.chall.encode("token")
         with open(file, "w") as validation_file:
             validation_file.write(validation.encode())
-    
+
     def _chown_challenges(self, root, directory, owner):
         while root != os.path.dirname(directory):
             directory = os.path.dirname(directory)
@@ -135,19 +135,19 @@ class Authenticator(common.Plugin):
         for (dirpath, dirs, files) in os.walk(directory):
             for file in dirs + files:
                 os.chown(os.path.join(dirpath, file), owner, -1)
-
+    
     def _commit(self, directory):
         self._git_client.stage_file(directory)
-        
+    
         commit_message = "Challenges for Let's Encrypt certificate"
         if self.config.staging:
             commit_message += " (testing only)"
         self._git_client.commit(message=commit_message)
-
+        
     def _deploy(self, remote):
         logger.debug("Pushing to '" + remote + "'...")
         self._git_client.push_to_remote(remote)
-
+        
     def _wait_for_challenge_validation(self, achall):
         response, validation = achall.response_and_validation()
 
@@ -161,7 +161,7 @@ class Authenticator(common.Plugin):
             pass
 
         return response
-    
+
     def cleanup(self, achalls):
         # pylint: disable=missing-docstring,no-self-use,unused-argument
         pass
@@ -188,9 +188,9 @@ class GitClient:
 
         output = command.capture()
         return output.rstrip()
-    
+
     """
-    Updates the indicated remote in the working copy's branch. Doesn't actually 
+    Updates the indicated remote in the working copy's branch. Doesn't actually
     affect the checked-out code; this is more like a fetch than a pull.
     """
     def update_remote(self, remote):
@@ -201,7 +201,7 @@ class GitClient:
         command.run()
     
     """
-    Returns True if the working copy and the (local cached copy of the) remote 
+    Returns True if the working copy and the (local cached copy of the) remote
     are on the same commit and there are no staged changes, False otherwise.
     """
     def is_up_to_date(self, branch, remote):
@@ -211,9 +211,9 @@ class GitClient:
         command.on_returncode(1, returns=False)
         
         return command.run()
-
+    
     """
-    Adds the specified file (or contents of the specified directory) to the 
+    Adds the specified file (or contents of the specified directory) to the
     working copy's index.
     """
     def stage_file(self, path):
@@ -246,7 +246,7 @@ class GitClient:
         def __str__(self):
             return "The git repository appears to have a detached HEAD, so there is no branch checked out."
 
-class Command:
+class Command(object):
     def __init__(self, *arguments):
         self.arguments = arguments
         self._returncodes = {}
@@ -275,9 +275,9 @@ class Command:
             return self._returncodes[None]
 
     """
-    If the current environment variables indicate the current process was 
-    launched using `sudo`, returns a modified version of the command 
-    which uses `sudo` to run it as the original user. Otherwise, returns 
+    If the current environment variables indicate the current process was
+    launched using `sudo`, returns a modified version of the command
+    which uses `sudo` to run it as the original user. Otherwise, returns
     the command unmodified.
     """
     def resudoed(self):
@@ -319,7 +319,7 @@ class Command:
             process = self.start()
             for line in process.lines:
                 logger.info("Output: " + line.rstrip())
-            return process.finish()        
+            return process.finish()
     
     """
     Runs the command, returning a string containing its output on stdout.
