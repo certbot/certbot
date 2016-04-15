@@ -103,14 +103,15 @@ class Authenticator(common.Plugin):
             current = self._git_client.checked_out_branch()
             if current != branch:
                 raise errors.PluginError("Working copy has '" + current +"' checked out, not '" + branch + "'")
-        except Command.ProcessError:
+        except Command.UnhandledProcessError:
+            raise
             raise errors.PluginError("Cannot identify a checked-out git branch")
 
         # git remote update will fail if there's no such remote, but it's also necessary 
         # for is_up_to_date to actually give the right answer.
         try:
             self._git_client.update_remote(remote)
-        except Command.ProcessError:
+        except Command.UnhandledProcessError:
             raise errors.PluginError("The '" + remote + "' git remote is not configured (use --heroku-remote to set a different one)")
 
         if not self._git_client.is_up_to_date(remote=remote, branch=branch):
@@ -200,7 +201,12 @@ class GitClient:
     are on the same commit and there are no staged changes, False otherwise.
     """
     def is_up_to_date(self, branch, remote):
-        return self.git("diff", "--staged", "--quiet", remote + "/" + branch).check({ 0: True, 1: False })
+        command = self.git("diff", "--staged", "--quiet", remote + "/" + branch)
+        
+        command.on_returncode(0, returns=True)
+        command.on_returncode(1, returns=False)
+        
+        return command.run()
 
     """
     Adds the specified file (or contents of the specified directory) to the 
@@ -224,6 +230,30 @@ class GitClient:
 class Command:
     def __init__(self, *arguments):
         self.arguments = arguments
+        self._returncodes = {}
+        
+        self.on_returncode(0, returns=None)
+        self.on_returncode(None, raises=Command.UnhandledProcessError)
+    
+    def add_returncode_handler(self, returncode, handler):
+        self._returncodes[returncode] = handler
+    
+    def on_returncode(self, returncode, returns = None, raises = None):
+        if raises:
+            def make_and_raise(process, returncode):
+                raise raises(process, returncode)
+            handler = make_and_raise
+        else:
+            # Use returns
+            handler = lambda p, c: returns
+        
+        self.add_returncode_handler(returncode, handler)
+    
+    def handler_for_returncode(self, returncode):
+        if returncode in self._returncodes:
+            return self._returncodes[returncode]
+        else:
+            return self._returncodes[None]
 
     """
     If the current environment variables indicate the current process was 
@@ -267,8 +297,10 @@ class Command:
         
         def finish(self):
             self._process.wait()
-            if self._process.returncode != 0:
-                raise Command.ProcessError(self._process.returncode)
+            
+            code = self._process.returncode
+            handler = self.command.handler_for_returncode(code)
+            return handler(self, code)
     
     """
     Runs the command, logging its output.
@@ -276,11 +308,12 @@ class Command:
     def run(self, dry_run=False):
         if dry_run:
             logger.warning("Would run: " + str(self))
+            return self.handler_for_returncode(0)(None, 0)
         else:
             process = self.start()
             for line in process.lines:
                 logger.info("Output: " + line.rstrip())
-            process.finish()        
+            return process.finish()        
     
     """
     Runs the command, returning a string containing its output on stdout.
@@ -295,22 +328,11 @@ class Command:
         process.finish()
         return output
     
-    """
-    Runs the command and checks the return code, returning the corresponding 
-    value from the `returncodes` parameter if the code is there.
-    """
-    def check(self, returncodes):
-        try:
-            self.run()
-            return returncodes[0]
-        except ProcessError as error:
-            code = error.returncode
-            if code in returncodes:
-                return returncodes[code]
-            else:
-                raise
-    
     class ProcessError(Exception):
-        def __init__(self, returncode):
+        def __init__(self, process, returncode):
+            self.process = process
             self.returncode = returncode
-        
+    
+    class UnhandledProcessError(ProcessError):
+        def __str__(self):
+            return "The command " + str(self.process.command) + " failed with error code " + self.returncode + "."
