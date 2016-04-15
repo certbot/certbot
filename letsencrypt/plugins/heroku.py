@@ -334,7 +334,6 @@ class GitClient:
     affect the checked-out code; this is more like a fetch than a pull.
     """
     def update_remote(self, remote):
-        # XXX how can I quiet this?
         command = self.git("remote", "update", remote)
         command.on_returncode(1, raises=GitClient.NoRemoteError)
         
