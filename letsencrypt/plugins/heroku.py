@@ -177,7 +177,9 @@ class GitClient:
     Builds a git command with the provided arguments.
     """
     def git(self, *args):
-        return Command('git', *args).resudoed()
+        command = Command('git', *args).resudoed()
+        command.on_returncode(128, raises=GitClient.NoRepositoryError)
+        return command
     
     """
     Determines the branch that the working copy in the current working directory
@@ -225,7 +227,14 @@ class GitClient:
     """
     def push_to_remote(self, remote):
         self.git("push", remote).run(dry_run=self.dry_run)
-        
+    
+    class Error(Command.ProcessError):
+        pass
+    
+    class NoRepositoryError(GitClient.Error):
+        def __str__(self):
+            return "The current directory does not appear to be in a git repository."
+
 class Command:
     def __init__(self, *arguments):
         self.arguments = arguments
