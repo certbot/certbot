@@ -1,5 +1,5 @@
 # This is the flattened list of packages letsencrypt-auto installs. To generate
-# this, do `pip install --no-cache-dir -e acme -e . -e letsencrypt-apache`, and
+# this, do `pip install --no-cache-dir -e acme -e . -e certbot-apache`, and
 # then use `hashin` or a more secure method to gather the hashes.
 
 argparse==1.4.0 \
