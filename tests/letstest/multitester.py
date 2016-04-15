@@ -1,5 +1,5 @@
 """
-Letsencrypt Integration Test Tool
+Certbot Integration Test Tool
 
 - Configures (canned) boulder server
 - Launches EC2 instances with a given list of AMIs for different distros
