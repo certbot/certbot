@@ -186,7 +186,10 @@ class GitClient:
     has checked out.
     """
     def checked_out_branch(self):
-        output = self.git("symbolic-ref", "--short", "-q", "HEAD").capture()
+        command = self.git("symbolic-ref", "--short", "-q", "HEAD")
+        command.on_returncode(1, raises=GitClient.DetachedHeadError)
+
+        output = command.capture()
         return output.rstrip()
     
     """
@@ -195,7 +198,10 @@ class GitClient:
     """
     def update_remote(self, remote):
         # XXX how can I quiet this?
-        self.git("remote", "update", remote).run()
+        command = self.git("remote", "update", remote)
+        command.on_returncode(1, raises=GitClient.NoRemoteError)
+
+        command.run()
     
     """
     Returns True if the working copy and the (local cached copy of the) remote 
@@ -231,9 +237,17 @@ class GitClient:
     class Error(Command.ProcessError):
         pass
     
-    class NoRepositoryError(GitClient.Error):
+    class NoRepositoryError(Error):
         def __str__(self):
             return "The current directory does not appear to be in a git repository."
+    
+    class NoRemoteError(Error):
+        def __str__(self):
+            return "The git repository does not appear to have a remote named '" + self.process.command.arguments[-1] + "'. (Use --heroku-remote to set a different one.)"
+    
+    class DetachedHeadError(Error):
+        def __str__(self):
+            return "The git repository appears to have a detached HEAD, so there is no branch checked out."
 
 class Command:
     def __init__(self, *arguments):
