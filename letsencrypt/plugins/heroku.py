@@ -74,7 +74,8 @@ class Authenticator(common.Plugin):
         remote = self._remote
         branch = self._branch
         
-        self._preflight(root=root, remote=remote, branch=branch)
+        self._check_root(root)
+        self._check_git(remote=remote, branch=branch)
         
         owner = os.stat(root).st_uid
         directory = root + "/" + achalls[0].URI_ROOT_PATH
@@ -91,10 +92,11 @@ class Authenticator(common.Plugin):
 
         return map(self._wait_for_challenge_validation, achalls)
     
-    def _preflight(self, root, remote, branch):
+    def _check_root(self, root):
         if not os.path.exists(root):
             raise errors.PluginError("The '" + root + "' folder doesn't exist")
-        
+    
+    def _check_git(self, remote, branch):
         try:
             # Make sure we're on the right branch
             current = self._git_client.checked_out_branch()
