@@ -10,7 +10,7 @@ MAINTAINER William Budington <bill@eff.org>
 EXPOSE 443
 
 # TODO: make sure --config-dir and --work-dir cannot be changed
-# through the CLI (letsencrypt-docker wrapper that uses standalone
+# through the CLI (certbot-docker wrapper that uses standalone
 # authenticator and text mode only?)
 VOLUME /etc/letsencrypt /var/lib/letsencrypt
 

@@ -1083,7 +1083,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                         "redirection")
             self._create_redirect_vhost(ssl_vhost)
         else:
-            # Check if LetsEncrypt redirection already exists
+            # Check if Certbot redirection already exists
             self._verify_no_certbot_redirect(general_vh)
 
             # Note: if code flow gets here it means we didn't find the exact
@@ -1125,7 +1125,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """Checks to see if a redirect was already installed by certbot.
 
         Checks to see if virtualhost already contains a rewrite rule that is
-        identical to Letsencrypt's redirection rewrite rule.
+        identical to Certbot's redirection rewrite rule.
 
         :param vhost: vhost to check
         :type vhost: :class:`~certbot_apache.obj.VirtualHost`

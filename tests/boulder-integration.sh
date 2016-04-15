@@ -4,7 +4,7 @@
 # instance (see ./boulder-start.sh).
 #
 # Environment variables:
-#   SERVER: Passed as "letsencrypt --server" argument.
+#   SERVER: Passed as "certbot --server" argument.
 #
 # Note: this script is called by Boulder integration test suite!
 

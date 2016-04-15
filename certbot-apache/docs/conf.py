@@ -67,7 +67,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'certbot-apache'
 copyright = u'2014-2015, Let\'s Encrypt Project'
-author = u'Let\'s Encrypt Project'
+author = u'Certbot Project'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -250,7 +250,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'certbot-apache.tex', u'certbot-apache Documentation',
-     u'Let\'s Encrypt Project', 'manual'),
+     u'Certbot Project', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

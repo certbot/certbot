@@ -51,7 +51,7 @@ def _determine_user_agent(config):
     """
 
     if config.user_agent is None:
-        ua = "LetsEncryptPythonClient/{0} ({1}) Authenticator/{2} Installer/{3}"
+        ua = "CertbotACMEClient/{0} ({1}) Authenticator/{2} Installer/{3}"
         ua = ua.format(certbot.__version__, " ".join(le_util.get_os_info()),
                        config.authenticator, config.installer)
     else:

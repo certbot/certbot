@@ -1,4 +1,4 @@
-"""Utility functions for Let"s Encrypt plugin tests."""
+"""Utility functions for Certbot plugin tests."""
 import argparse
 import copy
 import contextlib
