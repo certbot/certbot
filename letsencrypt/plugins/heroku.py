@@ -98,24 +98,21 @@ class Authenticator(common.Plugin):
         if not os.path.exists(root):
             raise errors.PluginError("The '" + root + "' folder doesn't exist")
         
-        # Make sure we're on the right branch
         try:
+            # Make sure we're on the right branch
             current = self._git_client.checked_out_branch()
             if current != branch:
                 raise errors.PluginError("Working copy has '" + current +"' checked out, not '" + branch + "'")
-        except Command.UnhandledProcessError:
-            raise errors.PluginError("Cannot identify a checked-out git branch")
-
-        # git remote update will fail if there's no such remote, but it's also necessary 
-        # for is_up_to_date to actually give the right answer.
-        try:
+            # git remote update will fail if there's no such remote, but it's also necessary
+            # for is_up_to_date to actually give the right answer.
             self._git_client.update_remote(remote)
-        except Command.UnhandledProcessError:
-            raise errors.PluginError("The '" + remote + "' git remote is not configured (use --heroku-remote to set a different one)")
-
-        if not self._git_client.is_up_to_date(remote=remote, branch=branch):
-            raise errors.PluginError("The working copy is out of date with the '" + remote + "' remote")
-
+            # Now make sure the branch is up to date
+            if not self._git_client.is_up_to_date(remote=remote, branch=branch):
+                raise errors.PluginError("The working copy is out of date with the '" + remote + "' remote")
+        
+        except GitClient.Error as error:
+            raise errors.PluginError(str(error))
+    
     def _clear_directory(self, directory):
         if os.path.exists(directory):
             shutil.rmtree(directory)
