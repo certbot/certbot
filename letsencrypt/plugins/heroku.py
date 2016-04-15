@@ -103,9 +103,11 @@ class Authenticator(common.Plugin):
             current = self._git_client.checked_out_branch()
             if current != branch:
                 raise errors.PluginError("Working copy has '" + current +"' checked out, not '" + branch + "'")
+
             # git remote update will fail if there's no such remote, but it's also necessary
             # for is_up_to_date to actually give the right answer.
             self._git_client.update_remote(remote)
+
             # Now make sure the branch is up to date
             if not self._git_client.is_up_to_date(remote=remote, branch=branch):
                 raise errors.PluginError("The working copy is out of date with the '" + remote + "' remote")
