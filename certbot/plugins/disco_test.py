@@ -9,9 +9,14 @@ from certbot import errors
 from certbot import interfaces
 
 from certbot.plugins import standalone
+from certbot.plugins import webroot
 
 EP_SA = pkg_resources.EntryPoint(
     "sa", "certbot.plugins.standalone",
+    attrs=("Authenticator",),
+    dist=mock.MagicMock(key="certbot"))
+EP_WR = pkg_resources.EntryPoint(
+    "wr", "certbot.plugins.webroot",
     attrs=("Authenticator",),
     dist=mock.MagicMock(key="certbot"))
 
@@ -176,10 +181,13 @@ class PluginsRegistryTest(unittest.TestCase):
     def test_find_all(self):
         from certbot.plugins.disco import PluginsRegistry
         with mock.patch("certbot.plugins.disco.pkg_resources") as mock_pkg:
-            mock_pkg.iter_entry_points.return_value = iter([EP_SA])
+            mock_pkg.iter_entry_points.side_effect = [iter([EP_SA]),
+                                                      iter([EP_WR])]
             plugins = PluginsRegistry.find_all()
         self.assertTrue(plugins["sa"].plugin_cls is standalone.Authenticator)
         self.assertTrue(plugins["sa"].entry_point is EP_SA)
+        self.assertTrue(plugins["wr"].plugin_cls is webroot.Authenticator)
+        self.assertTrue(plugins["wr"].entry_point is EP_WR)
 
     def test_getitem(self):
         self.assertEqual(self.plugin_ep, self.reg["mock"])

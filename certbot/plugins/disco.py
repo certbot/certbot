@@ -1,5 +1,6 @@
 """Utilities for plugins discovery and selection."""
 import collections
+import itertools
 import logging
 import pkg_resources
 
@@ -164,8 +165,12 @@ class PluginsRegistry(collections.Mapping):
     def find_all(cls):
         """Find plugins using setuptools entry points."""
         plugins = {}
-        for entry_point in pkg_resources.iter_entry_points(
-                constants.SETUPTOOLS_PLUGINS_ENTRY_POINT):
+        entry_points = itertools.chain(
+            pkg_resources.iter_entry_points(
+                constants.SETUPTOOLS_PLUGINS_ENTRY_POINT),
+            pkg_resources.iter_entry_points(
+                constants.OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT),)
+        for entry_point in entry_points:
             plugin_ep = PluginEntryPoint(entry_point)
             assert plugin_ep.name not in plugins, (
                 "PREFIX_FREE_DISTRIBUTIONS messed up")
