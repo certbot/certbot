@@ -82,7 +82,7 @@ sudo: false
 
 addons:
   # Custom /etc/hosts required for simple verification of http-01
-  # and tls-sni-01, and for letsencrypt_test_nginx
+  # and tls-sni-01, and for certbot_test_nginx
   hosts:
     - le.wtf
     - le1.wtf
@@ -105,7 +105,7 @@ addons:
     - libssl-dev
     - libffi-dev
     - ca-certificates
-    # For letsencrypt-nginx integration testing
+    # For certbot-nginx integration testing
     - nginx-light
     - openssl
     # For Boulder integration testing
