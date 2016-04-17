@@ -6,9 +6,9 @@ import time
 
 import zope.component
 from acme import challenges
-from letsencrypt import errors
-from letsencrypt import interfaces
-from letsencrypt.plugins import common
+from certbot import errors
+from certbot import interfaces
+from certbot.plugins import common
 
 # Used by the Command class
 import subprocess
