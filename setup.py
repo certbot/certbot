@@ -134,6 +134,7 @@ setup(
             'null = certbot.plugins.null:Installer',
             'standalone = certbot.plugins.standalone:Authenticator',
             'webroot = certbot.plugins.webroot:Authenticator',
+            'heroku = certbot.plugins.heroku:Authenticator'
         ],
     },
 )
