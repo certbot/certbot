@@ -3,7 +3,7 @@
 # $OS_TYPE $PUBLIC_IP $PRIVATE_IP $PUBLIC_HOSTNAME $BOULDER_URL
 # are dynamically set at execution
 
-# run letsencrypt-apache2 via letsencrypt-auto
+# run certbot-apache2 via letsencrypt-auto
 cd letsencrypt
 
 export SUDO=sudo
@@ -19,7 +19,7 @@ else
 fi
 
 bootstrap/dev/venv.sh
-sudo venv/bin/letsencrypt certonly --debug --standalone -t --agree-dev-preview --agree-tos \
+sudo venv/bin/certbot certonly --debug --standalone -t --agree-dev-preview --agree-tos \
                    --renew-by-default --redirect --register-unsafely-without-email \
                    --domain $PUBLIC_HOSTNAME --server $BOULDER_URL -v
 if [ $? -ne 0 ] ; then
@@ -36,7 +36,7 @@ if [ $? -ne 0 ] ; then
     FAIL=1
 fi
 
-sudo venv/bin/letsencrypt renew --renew-by-default
+sudo venv/bin/certbot renew --renew-by-default
 
 if [ $? -ne 0 ] ; then
     FAIL=1

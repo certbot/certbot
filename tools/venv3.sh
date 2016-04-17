@@ -1,5 +1,5 @@
 #!/bin/sh -xe
-# Developer Python3 virtualenv setup for Let's Encrypt
+# Developer Python3 virtualenv setup for Certbot
 
 export VENV_NAME="${VENV_NAME:-venv3}"
 export VENV_ARGS="--python python3"
