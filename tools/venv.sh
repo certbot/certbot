@@ -14,6 +14,7 @@ fi
   -e acme[dev] \
   -e .[dev,docs] \
   -e certbot-apache \
+  -e certbot-heroku \
   -e certbot-nginx \
   -e letshelp-certbot \
   -e certbot-compatibility-test

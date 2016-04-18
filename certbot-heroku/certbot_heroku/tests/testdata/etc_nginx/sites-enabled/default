@@ -1,0 +1,9 @@
+server {
+    listen       myhost default_server;
+    server_name www.example.org;
+
+    location / {
+        root   html;
+        index  index.html index.htm;
+    }
+}
