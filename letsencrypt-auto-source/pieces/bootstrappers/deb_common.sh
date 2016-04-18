@@ -69,7 +69,7 @@ BootstrapDebCommon() {
           AddBackportRepo precise-backports "deb http://archive.ubuntu.com/ubuntu precise-backports main restricted universe multiverse"
       else
           echo "No libaugeas0 version is available that's new enough to run the"
-          echo "Let's Encrypt apache plugin..."
+          echo "Certbot apache plugin..."
       fi
       # XXX add a case for ubuntu PPAs
   fi

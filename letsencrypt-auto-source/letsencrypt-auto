@@ -19,7 +19,7 @@ XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN="$VENV_PATH/bin"
-LE_AUTO_VERSION="0.5.0.dev0"
+LE_AUTO_VERSION="0.6.0.dev0"
 
 # This script takes the same arguments as the main letsencrypt program, but it
 # additionally responds to --verbose (more output) and --debug (allow support
@@ -348,28 +348,45 @@ BootstrapFreeBsd() {
 }
 
 BootstrapMac() {
-  if ! hash brew 2>/dev/null; then
-      echo "Homebrew not installed.\nDownloading..."
-      ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+  if hash brew 2>/dev/null; then
+    echo "Using Homebrew to install dependencies..."
+    pkgman=brew
+    pkgcmd="brew install"
+  elif hash port 2>/dev/null; then
+    echo "Using MacPorts to install dependencies..."
+    pkgman=port
+    pkgcmd="$SUDO port install"
+  else
+    echo "No Homebrew/MacPorts; installing Homebrew..."
+    ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    pkgman=brew
+    pkgcmd="brew install"
   fi
 
-  if [ -z "$(brew list --versions augeas)" ]; then
-      echo "augeas not installed.\nInstalling augeas from Homebrew..."
-      brew install augeas
+  $pkgcmd augeas
+  $pkgcmd dialog
+  if [ "$(which python)" = "/System/Library/Frameworks/Python.framework/Versions/2.7/bin/python" ]; then
+    # We want to avoid using the system Python because it requires root to use pip.
+    # python.org, MacPorts or HomeBrew Python installations should all be OK.
+    echo "Installing python..."
+    $pkgcmd python
   fi
 
-  if [ -z "$(brew list --versions dialog)" ]; then
-      echo "dialog not installed.\nInstalling dialog from Homebrew..."
-      brew install dialog
+  # Workaround for _dlopen not finding augeas on OS X
+  if [ "$pkgman" = "port" ] && ! [ -e "/usr/local/lib/libaugeas.dylib" ] && [ -e "/opt/local/lib/libaugeas.dylib" ]; then
+    echo "Applying augeas workaround"
+    $SUDO ln -s /opt/local/lib/libaugeas.dylib /usr/local/lib
   fi
 
-  if [ -z "$(brew list --versions python)" ]; then
-      echo "python not installed.\nInstalling python from Homebrew..."
-      brew install python
+  if ! hash pip 2>/dev/null; then
+      echo "pip not installed"
+      echo "Installing pip..."
+      curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | python
   fi
 
   if ! hash virtualenv 2>/dev/null; then
-      echo "virtualenv not installed.\nInstalling with pip..."
+      echo "virtualenv not installed."
+      echo "Installing with pip..."
       pip install virtualenv
   fi
 }
@@ -428,7 +445,8 @@ if [ "$1" = "--le-auto-phase2" ]; then
 
   shift 1  # the --le-auto-phase2 arg
   if [ -f "$VENV_BIN/letsencrypt" ]; then
-    INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | cut -d " " -f 2)
+    # --version output ran through grep due to python-cryptography DeprecationWarnings
+    INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | grep ^letsencrypt | cut -d " " -f 2)
   else
     INSTALLED_VERSION="none"
   fi
@@ -627,15 +645,15 @@ mock==1.0.1 \
 
 # THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT; ADD ALL DEPENDENCIES ABOVE.
 
-acme==0.4.2 \
-    --hash=sha256:50c562851d536f2bd0347cf1d42cd88b27438ad2551b0fe62c01abdfe8021899 \
-    --hash=sha256:0a5908aa2190b0b4f2c8b0124645989e24bd9f80805ba0f8192b811135c500b6
-letsencrypt==0.4.2 \
-    --hash=sha256:85b506343e84a3faba6bdee8de8ebac302d827b92836fc0e5e1f6ee5b64d0952 \
-    --hash=sha256:e3ad24ab2c2c7a58db0d6fc6aff654db7ad697335e13e00be3f27060245d4be6
-letsencrypt-apache==0.4.2 \
-    --hash=sha256:4974a0fa021a6e2578081ceb7cf23200185f4e32a5ed866b28349591f13855ba \
-    --hash=sha256:28d30038cac932bd6f2c90436a2846a849af3db7f1807fddbd19353851da33f2
+acme==0.5.0 \
+    --hash=sha256:ceb4127c13213f0006a564be82176b968c6b374d20d9fc78555d0658a252b275 \
+    --hash=sha256:0605c63c656d33c883a05675f5db9cfb85d503f2771c885031800e0da7631abd
+letsencrypt==0.5.0 \
+    --hash=sha256:f90f883e99cdbdf8142335bdbf4f74a8af143ee4b4ec60fb49c6e47418c1114c \
+    --hash=sha256:e38a2b70b82be79bc195307652244a3e012ec73d897d4dbd3f80cf698496d15a
+letsencrypt-apache==0.5.0 \
+    --hash=sha256:a767882164a7b09d9c12c80684a28a782135fdaf35654ef5a02c0b7b1d27ab8d \
+    --hash=sha256:c20e7b9c517aa4a7d70e6bd9382da7259f00bc191b9e60d8e312e48837a00c41
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -683,7 +701,7 @@ except ImportError:
             cmd = kwargs.get("args")
             if cmd is None:
                 cmd = popenargs[0]
-            raise CalledProcessError(retcode, cmd, output=output)
+            raise CalledProcessError(retcode, cmd)
         return output
 from sys import exit, version_info
 from tempfile import mkdtemp
@@ -697,7 +715,7 @@ except ImportError:
     from urllib.parse import urlparse  # 3.4
 
 
-__version__ = 1, 1, 0
+__version__ = 1, 1, 1
 
 
 # wheel has a conditional dependency on argparse:

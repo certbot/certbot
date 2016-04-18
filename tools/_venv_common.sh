@@ -3,8 +3,8 @@
 VENV_NAME=${VENV_NAME:-venv}
 
 # .egg-info directories tend to cause bizzaire problems (e.g. `pip -e
-# .` might unexpectedly install letshelp-letsencrypt only, in case
-# `python letshelp-letsencrypt/setup.py build` has been called
+# .` might unexpectedly install letshelp-certbot only, in case
+# `python letshelp-certbot/setup.py build` has been called
 # earlier)
 rm -rf *.egg-info
 
