@@ -248,8 +248,9 @@ else
 UNLIKELY_EOF
     # ---------------------------------------------------------------------------
     DeterminePythonVersion
-    REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version`
-    if [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
+    if ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then
+      echo "WARNING: unable to check for updates."
+    elif [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
       echo "Upgrading letsencrypt-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
 
       # Now we drop into Python so we don't have to install even more
