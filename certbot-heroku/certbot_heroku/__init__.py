@@ -1,1 +1,1 @@
-"""Certbot nginx plugin."""
+"""Certbot Heroku plugin."""
