@@ -11,13 +11,12 @@ from certbot import interfaces
 from certbot.plugins import common
 
 from certbot_heroku.git_client import GitClient
-
+from certbot_heroku.heroku_client import HerokuCLI, HerokuApp
 
 logger = logging.getLogger(__name__)
 
 
-# @zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
-@zope.interface.implementer(interfaces.IAuthenticator)
+@zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
 class HerokuConfigurator(common.Plugin):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
@@ -40,6 +39,9 @@ class HerokuConfigurator(common.Plugin):
         self._remote = self.conf("remote")
         self._branch = self.conf("branch")
         self._git_client = GitClient(logger=logger, dry_run=self.config.dry_run)
+        self._heroku_cli = HerokuCLI(logger=logger, dry_run=self.config.dry_run)
+        self._cached_heroku_app = None
+        self._new_certificate = None
 
     # This is called in determine_authenticator and determine_installer
     def prepare(self):
@@ -49,6 +51,18 @@ class HerokuConfigurator(common.Plugin):
         :raises .errors.MisconfigurationError: If Nginx is misconfigured
         """
         pass
+    
+    def _heroku_app(self):
+        if self._cached_heroku_app is None:
+            if not self._heroku_cli.is_installed():
+                raise errors.PluginError("Heroku client is not installed")
+            
+            token = self._heroku_cli.get_token()
+            app_name = self._heroku_cli.get_app_name(remote=self._remote)
+            
+            self._cached_heroku_app = HerokuApp(token=token, app_name=app_name, dry_run=self.config.dry_run, logger=logger)
+
+        return self._cached_heroku_app
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path,
@@ -56,17 +70,31 @@ class HerokuConfigurator(common.Plugin):
         # pylint: disable=unused-argument
         """Deploys certificate to specified virtual host.
         """
-        pass
+        if fullchain_path is not None:
+            cert = slurp(fullchain_path)
+        elif chain_path is not None:
+            cert = slurp(chain_path)
+        else:
+            cert = slurp(cert_path)
+        
+        key = slurp(key_path)
+        
+        new_cert = dict(key=key, certificate=cert)
+        if self._new_certificate is not None and self._new_certificate != new_cert:
+            raise errors.PluginError("Heroku can't handle two different certificates")
+        
+        self._new_certificate = new_cert
 
     def get_all_names(self):
-        """Returns all names found in the Nginx Configuration.
+        """Returns all names found in the Heroku app.
 
-        :returns: All ServerNames, ServerAliases, and reverse DNS entries for
-                  virtual host addresses
+        :returns: All domains associated with the app
         :rtype: set
 
         """
-        pass
+        app = self._heroku_app()
+        
+        return set(app.get_domains())
 
     def get_all_certs_keys(self):
         """Find all existing keys, certs from configuration.
@@ -78,7 +106,8 @@ class HerokuConfigurator(common.Plugin):
         :rtype: set
 
         """
-        pass
+        logger.warning("get_all_cert_keys not implemented")
+        raise errors.NotSupportedError("Can't get existing keys, since they're not on the file system")
 
     ##################################
     # enhancement methods (IInstaller)
@@ -103,7 +132,7 @@ class HerokuConfigurator(common.Plugin):
     # Nginx server management (IInstaller)
     ######################################
     def restart(self):
-        """Restarts nginx server.
+        """Restarts server. No-op for Heroku.
 
         :raises .errors.MisconfigurationError: If either the reload fails.
 
@@ -116,7 +145,8 @@ class HerokuConfigurator(common.Plugin):
         :raises .errors.MisconfigurationError: If config_test fails
 
         """
-        pass
+        logger.warning("config_test not implemented")
+        raise errors.NotSupportedError("N/A")
 
     def more_info(self):
         """Human-readable string to help understand the module"""
@@ -148,7 +178,13 @@ class HerokuConfigurator(common.Plugin):
             checkpoint
 
         """
-        pass
+        if temporary:
+            raise errors.NotSupportedError("Heroku does not support temporary configuration changes; title=" + title)
+        
+        if self._new_certificate is not None:
+            logger.warning("Installing new certificate...")
+            self._heroku_app().update_certificate(**self._new_certificate)
+        
 
     def recovery_routine(self):
         """Revert all previously modified files.
@@ -158,7 +194,8 @@ class HerokuConfigurator(common.Plugin):
         :raises .errors.PluginError: If unable to recover the configuration
 
         """
-        pass
+        logger.warning("recovery_routine not implemented")
+        raise errors.NotSupportedError("N/A")
 
     def rollback_checkpoints(self, rollback=1):
         """Rollback saved checkpoints.
@@ -169,7 +206,8 @@ class HerokuConfigurator(common.Plugin):
             the function is unable to correctly revert the configuration
 
         """
-        pass
+        logger.warning("rollback_checkpoints not implemented")
+        raise errors.NotSupportedError("N/A")
 
     def view_config_changes(self):
         """Show all of the configuration changes that have taken place.
@@ -178,7 +216,8 @@ class HerokuConfigurator(common.Plugin):
             the checkpoints directories.
 
         """
-        pass
+        logger.warning("view_config_changes not implemented")
+        raise errors.NotSupportedError("N/A")
 
     ###########################################################################
     # Challenges Section for IAuthenticator
@@ -293,3 +332,7 @@ class HerokuConfigurator(common.Plugin):
     def cleanup(self, achalls):
         """Revert all challenges."""
         pass
+
+def slurp(path):
+    with open(path, 'r') as filehandle:
+        return filehandle.read()
