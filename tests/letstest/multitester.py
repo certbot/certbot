@@ -349,7 +349,7 @@ def test_client_process(inqueue, outqueue):
         print(env.host_string)
 
         try:
-            install_and_launch_letsencrypt(instances[ii], boulder_url, target)
+            install_and_launch_certbot(instances[ii], boulder_url, target)
             outqueue.put((ii, target, 'pass'))
             print("%s - %s SUCCESS"%(target['ami'], target['name']))
         except:
