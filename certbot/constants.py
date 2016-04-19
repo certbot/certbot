@@ -8,6 +8,9 @@ from acme import challenges
 SETUPTOOLS_PLUGINS_ENTRY_POINT = "certbot.plugins"
 """Setuptools entry point group name for plugins."""
 
+OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT = "letsencrypt.plugins"
+"""Plugins Setuptools entry point before rename."""
+
 CLI_DEFAULTS = dict(
     config_files=[
         "/etc/letsencrypt/cli.ini",
