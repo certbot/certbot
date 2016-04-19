@@ -1,5 +1,6 @@
 import os
 import subprocess
+import errno
 
 try:
     from shlex import quote as cmd_quote
@@ -82,7 +83,13 @@ class Command(object):
     """
     def start(self, logger):
         logger.info("Running: " + str(self))
-        return Command.Process(self)
+        try:
+            return Command.Process(self)
+        except OSError as error:
+            if error.errorcode == errno.ENOENT:
+                raise NotInstalledError(command=self)
+            else:
+                raise
 
     """
     Runs the command, logging its output.
@@ -146,3 +153,10 @@ class Command(object):
     class UnhandledProcessError(ProcessError):
         def __str__(self):
             return "The command " + str(self.process.command) + " failed with error code " + self.returncode + "."
+    
+    class NotInstalledError(Exception):
+        def __init__(self, command):
+            self.command = command
+        
+        def __str__(self):
+            return "The command " + str(self.command) + " is not installed."
