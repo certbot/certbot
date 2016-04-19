@@ -14,6 +14,7 @@ install_requires = [
     # will tolerate; see #2599:
     'setuptools>=1.0',
     'zope.interface',
+    'heroku3>=3.1.3'
 ]
 
 if sys.version_info < (2, 7):
