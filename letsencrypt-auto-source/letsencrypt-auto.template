@@ -50,9 +50,12 @@ done
 # The "normal" case is that sudo is used for the steps that need root, but
 # this script *can* be run as root (not recommended), or fall back to using
 # `su`
+SUDO_ENV=""
+export CERTBOT_AUTO="$0"
 if test "`id -u`" -ne "0" ; then
   if command -v sudo 1>/dev/null 2>&1; then
     SUDO=sudo
+    SUDO_ENV="CERTBOT_AUTO=\"$0\""
   else
     echo \"sudo\" is not available, will use \"su\" for installation steps...
     # Because the parameters in `su -c` has to be a string,
@@ -220,8 +223,8 @@ UNLIKELY_EOF
     echo "Installation succeeded."
   fi
   echo "Requesting root privileges to run certbot..."
-  echo "  " $SUDO "$VENV_BIN/letsencrypt" "$@"
-  $SUDO "$VENV_BIN/letsencrypt" "$@"
+  echo "  " $SUDO $SUDO_ENV "$VENV_BIN/letsencrypt" "$@"
+  $SUDO $SUDO_ENV "$VENV_BIN/letsencrypt" "$@"
 else
   # Phase 1: Upgrade letsencrypt-auto if neceesary, then self-invoke.
   #
