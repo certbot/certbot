@@ -23,6 +23,7 @@ env:
   global:
     - GOPATH=/tmp/go
     - PATH=$GOPATH/bin:$PATH
+    - GO15VENDOREXPERIMENT=1  # Fixes problems with vendor directories
 
 matrix:
   include:

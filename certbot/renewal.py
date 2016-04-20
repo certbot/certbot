@@ -287,7 +287,7 @@ def _renew_describe_results(config, renew_successes, renew_failures,
     if parse_failures:
         notify("\nAdditionally, the following renewal configuration files "
                "were invalid: ")
-        notify(parse_failures, "parsefail")
+        notify(report(parse_failures, "parsefail"))
 
     if config.dry_run:
         notify("** DRY RUN: simulating 'certbot renew' close to cert expiry")
