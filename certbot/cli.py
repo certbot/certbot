@@ -37,8 +37,9 @@ helpful_parser = None
 # should only be used for purposes where inability to detect letsencrypt-auto
 # fails safely
 
+LEAUTO = "letsencrypt-auto"
 fragment = os.path.join(".local", "share", "certbot")
-cli_command = "letsencrypt-auto" if fragment in sys.argv[0] else "certbot"
+cli_command = LEAUTO if fragment in sys.argv[0] else "certbot"
 
 # Argparse's help formatting has a lot of unhelpful peculiarities, so we want
 # to replace as much of it as we can...
@@ -139,6 +140,22 @@ def usage_strings(plugins):
     else:
         apache_doc = "(the apache plugin is not installed)"
     return USAGE % (apache_doc, nginx_doc), SHORT_USAGE
+
+
+def possible_deprecation_warning(config):
+    "A deprecation warning for users with the old, not-self-upgrading letsencrypt-auto."
+    if cli_command != LEAUTO:
+        return
+    if config.no_self_upgrade:
+        # users setting --no-self-upgrade might be hanging on a clent version like 0.3.0
+        # or 0.5.0 which is the new script, but doesn't set CERTBOT_AUTO; they don't
+        # need warnings
+        return
+    if "CERTBOT_AUTO" not in os.environ:
+        logger.warn("You are running with an old copy of letsencrypt-auto that does "
+            "not receive updates, and is less reliable than more recent versions. "
+            "We recommend upgrading to the latest certbot-auto script, or using native "
+            "OS packages.")
 
 
 class _Default(object):

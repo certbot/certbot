@@ -649,6 +649,7 @@ def main(cli_args=sys.argv[1:]):
     args = cli.prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
+    cli.possible_deprecation_warning(config)
 
     # Setup logging ASAP, otherwise "No handlers could be found for
     # logger ..." TODO: this should be done before plugins discovery
