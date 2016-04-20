@@ -32,6 +32,7 @@ objectives:
 * Email security database: working pre-alpha, definitely not yet safe
 * Fully integrated Let's Encrypt client postfix plugin: in progress, not yet ready
 * DANE support: none yet
+* DEEP support: none yet
 * SMTP-STS integration: none yet
 * Direct mechanisms for mail domains to request inclusion: none yet
 * Failure reporting mechanisms: early progress, not yet ready
@@ -41,7 +42,10 @@ objectives:
 
 ## Authors
 
-Jacob Hoffman-Andrews <jsha@eff.org>, Peter Eckersley <pde@eff.org>, Daniel Wilcox <dmwilcox@gmail.com>, Aaron Zauner <azet@azet.org>
+Jacob Hoffman-Andrews <jsha@eff.org>,     
+Peter Eckersley <pde@eff.org>,     
+Daniel Wilcox <dmwilcox@gmail.com>,     
+Aaron Zauner <azet@azet.org>
 
 ## Mailing List
 
@@ -49,13 +53,13 @@ starttls-everywhere@eff.org, https://lists.eff.org/mailman/listinfo/starttls-eve
 
 ## Background
 
-Most email transferred between SMTP servers (aka MTAs) is transmitted in the clear and trivially interceptable. Encryption of SMTP traffic is possible using the STARTTLS mechanism, which encrypts traffic but is vulnerable to a trivial downgrade attack.
+Most email transferred between SMTP servers (aka MTAs) is transmitted in the clear and trivially interceptable. Encryption of SMTP traffic is possible using the STARTTLS mechanism, which encrypts traffic but is vulnerable to trivial downgrade attacks.
 
-To illustrate an easy version of this attack, suppose a network-based attacker Mallory notices that Alice has just uploaded message to her mail server. Mallory can inject a TCP reset (RST) packet during the mail server's next TLS negotiation with another mail server. Nearly all mail servers that implement STARTTLS do so in opportunistic mode, which means that they will retry without encryption if there is any problem with a TLS connection. So Alice's message will be transmitted in the clear.
+To illustrate an easy version of this attack, suppose a network-based attacker `Mallory` notices that `Alice` has just uploaded message to her mail server. `Mallory` can inject a TCP reset (RST) packet during the mail server's next TLS negotiation with another mail server. Nearly all mail servers that implement STARTTLS do so in opportunistic mode, which means that they will retry without encryption if there is any problem with a TLS connection. So `Alice`'s message will be transmitted in the clear.
 
 Opportunistic TLS in SMTP also extends to certificate validation. Mail servers commonly provide self-signed certificates or certificates with non-validatable hostnames, and senders commonly accept these. This means that if we say 'require TLS for this mail domain,' the domain may still be vulnerable to a man-in-the-middle using any key and certificate chosen by the attacker.
 
-Even if senders require a valid certificate that matches the hostname of a mail host, a DNS MITM is still possible. The sender, to find the correct target hostname, queries DNS for MX records on the recipient domain. Absent DNSSEC, the response can be spoofed to provide the attacker's hostname, for which the attacker holds a valid certificate.
+Even if senders require a valid certificate that matches the hostname of a mail host, a DNS MITM or Denial of Service is still possible. The sender, to find the correct target hostname, queries DNS for MX records on the recipient domain. Absent DNSSEC, the response can be spoofed to provide the attacker's hostname, for which the attacker holds a valid certificate.
 
 STARTTLS by itself thwarts purely passive eavesdroppers. However, as currently deployed, it allows either bulk or semi-targeted attacks that are very unlikely to be detected. We would like to deploy both detection and prevention for such semi-targeted attacks.
 
@@ -63,7 +67,8 @@ STARTTLS by itself thwarts purely passive eavesdroppers. However, as currently d
 
 *   Prevent RST attacks from revealing email contents in transit between major MTAs that support STARTTLS.
 *   Prevent MITM attacks at the DNS, SMTP, TLS, or other layers from revealing same.
-*   Zero or minimal decrease to deliverability rates unless network attacks are actually occurring
+*   Zero or minimal decrease to deliverability rates unless network attacks are actually occurring.
+*   Create feedback-loops on targeted attacks and bulk surveilance in an opt-in, anonymized way.
 
 ## Non-goals
 
@@ -86,7 +91,7 @@ Attacker has control of routers on the path between two MTAs of interest. Attack
 
 ## Alternatives
 
-Our goals can also be accomplished through use of [DNSSEC and DANE](http://tools.ietf.org/html/draft-ietf-dane-smtp-with-dane-10), which is certainly a more scalable solution. However, operators have been very slow to roll out DNSSEC supprt. We feel there is value in deploying an intermediate solution that does not rely on DNSSEC. This will improve the email security situation more quickly. It will also provide operational experience with authenticated SMTP over TLS that will make eventual rollout of a DANE solution easier.
+Our goals can also be accomplished through use of [DNSSEC and DANE](http://tools.ietf.org/html/draft-ietf-dane-smtp-with-dane-10), which is certainly a more scalable solution. However, operators have been very slow to roll out DNSSEC supprt. We feel there is value in deploying an intermediate solution that does not rely on DNSSEC. This will improve the email security situation more quickly. It will also provide operational experience with authenticated SMTP over TLS that will make eventual rollout of DANE-based solutions easier.
 
 ## Detailed design
 
@@ -147,7 +152,7 @@ The basic file format will be JSON with comments (http://blog.getify.com/json-co
 
 A user of this file format may choose to accept multiple files. For instance, the EFF might provide an overall configuration covering major mail providers, and another organization might produce an overlay for mail providers in a specific country. If so, they override each other on a per-domain basis.
 
-The _timestamp_ field is an integer number of epoch seconds. When retrieving a fresh configuration file, config-generator should validate that the timestamp is greater than or equal to the version number of the file it already has.
+The _timestamp_ field is an integer number of epoch seconds from 00:00:00 UTC on 1 January 1970. When retrieving a fresh configuration file, config-generator should validate that the timestamp is greater than or equal to the version number of the file it already has.
 
 There is no inline signature field. The configuration file should be distributed with authentication using an offline signing key.
 
@@ -183,7 +188,7 @@ The _accept-pinset_ field references an entry in the pinsets list, which has the
 
 ## Pinning and hostname verification
 
-Like Chrome (and soon Firefox) we want to encourage pinning to a trusted root or intermediate rather than a leaf cert, to minimize spurious pinning failures when hosts rotate keys.
+Like Chrome and Firefox we want to encourage pinning to a trusted root or intermediate rather than a leaf cert, to minimize spurious pinning failures when hosts rotate keys.
 
 The other option is to automatically pin leaf certs as observed in the wild.  This would be one solution to the hostname verification and self-signed certificate problem. However, it is a non-starter. Even if we expect mail operators to auto-update configuration on a daily basis, this approach cannot add new certs until they are observed in the wild. That means that any time an operator rotates keys on a mail server, there would be a significant window of time in which the new keys would be rejected.
 
@@ -194,7 +199,7 @@ We do not attempt to solve the self-signed certificate problem. For mail hosts w
 We have three options for creating the configuration file:
 
 1.  Ask mail operators to submit policies for their domains which we incorporate.
-2.  Manually curate a set of policies for the top N mail domains.
+2.  Manually curate a set of policies for the top `N` mail domains.
 3.  Programmatically create a set of policies by connecting to the top N mail domains.
 
 For option (1), there's a bootstrapping problem: No one will opt in until it's useful; It won't be useful until people opt in. Option (1) does have the advantage that it's the only good way to get pinning directives.
@@ -225,6 +230,6 @@ Additionally, for ongoing monitoring of third-party deployments, we will create 
 
 ## Failure reporting
 
-For the mail operator deploying STARTTLS Everywhere, we will provide log analysis scripts that can be used out-of-the-box to monitor how many delivery failures or would-be failures are due to STARTTLS Everywhere policies. These would be designed to run in a cron job and send notices only when STARTTLS Everywhere-related failures exceed 0.1% for any given recipient domains. For very high-volume mail operators, it would likely be necessary to adapt the analysis scripts to their own logging and analysis infrastructure.
+For the mail operator deploying STARTTLS Everywhere, we will provide log analysis scripts that can be used out-of-the-box to monitor how many delivery failures or would-be failures are due to STARTTLS Everywhere policies. These would be designed to run in a cron job or small opt-in daemon and send notices only when STARTTLS Everywhere-related failures exceed a certain percentage for any given recipient domains. For very high-volume mail operators, it would likely be necessary to adapt the analysis scripts to their own logging and analysis infrastructure.
 
 For recipient domains who are listed in the STARTTLS Everywhere configuration, we would provide a configuration field to specify an email address or HTTPS URL to which that sender domains could send failure information. This would provide a mechanism for recipient domains to identify problems with their TLS deployment and fix them. The reported information should not contain any personal information, including email addresses.  Example fields for failure reports: timestamps at minute granularity, target MX hostname, resolved MX IP address, failure type, certificate. Since failures are likely to come in batches, the error sending mechanism should batch them up and summarize as necessary to avoid flooding the recipient.
