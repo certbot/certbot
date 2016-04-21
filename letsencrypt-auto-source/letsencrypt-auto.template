@@ -20,10 +20,24 @@ VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN="$VENV_PATH/bin"
 LE_AUTO_VERSION="{{ LE_AUTO_VERSION }}"
+BASENAME=$(basename $0)
+USAGE="Usage: $BASENAME [OPTION]
+A self-updating wrapper script for the Certbot ACME client. When run, updates
+to both this script and certbot will be downloaded and installed. After
+ensuring you have the latest versions installed, certbot will be invoked with
+all arguments you provided.
 
-# This script takes the same arguments as the main certbot program, but it
-# additionally responds to --verbose (more output) and --debug (allow support
-# for experimental platforms)
+Help for certbot itself cannot be provided until it is installed.
+
+  --debug               attempt installation on experimental platforms
+  --help                print this help
+  --no-self-upgrade     do not download updates for certbot or certbot-auto
+  --os-packages-only    install OS dependencies and exit
+  -v, --verbose         provide more output
+  --yes                 assume yes is the answer to all prompts
+
+All arguments are accepted and forwarded to the Certbot client when run."
+
 for arg in "$@" ; do
   case "$arg" in
     --debug)
@@ -85,7 +99,7 @@ else
   SUDO=
 fi
 
-if [ $(basename $0) = "letsencrypt-auto" ]; then
+if [ $BASENAME = "letsencrypt-auto" ]; then
   # letsencrypt-auto does not respect --help or --yes for backwards compatibility
   ASSUME_YES=1
   HELP=0
