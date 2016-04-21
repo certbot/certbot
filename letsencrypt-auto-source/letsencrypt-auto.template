@@ -34,6 +34,10 @@ for arg in "$@" ; do
       # Do not upgrade this script (also prevents client upgrades, because each
       # copy of the script pins a hash of the python client)
       NO_SELF_UPGRADE=1;;
+    --help)
+      HELP=1;;
+    --yes)
+      ASSUME_YES=1;;
     --verbose)
       VERBOSE=1;;
     [!-]*|-*[!v]*|-)
@@ -79,6 +83,12 @@ if test "`id -u`" -ne "0" ; then
   fi
 else
   SUDO=
+fi
+
+if [ $(basename $0) = "letsencrypt-auto" ]; then
+  # letsencrypt-auto does not respect --help or --yes for backwards compatibility
+  ASSUME_YES=1
+  HELP=0
 fi
 
 ExperimentalBootstrap() {
