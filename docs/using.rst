@@ -27,9 +27,9 @@ To install and run the client, just type...
 
    ./certbot-auto
 
-.. hint:: During the beta phase, Certbot enforces strict rate limits on
-   the number of certificates issued for one domain. It is recommended to
-   initially use the test server via `--test-cert` until you get the desired
+.. hint:: During the beta phase, the Let's Encrypt servers enforce strict rate
+   limits on the number of certificates issued for one domain. It is recommended
+   to initially use the test server via `--test-cert` until you get the desired
    certificates.
 
 Throughout the documentation, whenever you see references to
@@ -137,14 +137,14 @@ would obtain a single certificate for all of those names, using the
 ``/var/www/other`` for the second two.
 
 The webroot plugin works by creating a temporary file for each of your requested
-domains in ``${webroot-path}/.well-known/acme-challenge``. Then the Certbot
+domains in ``${webroot-path}/.well-known/acme-challenge``. Then the Let's Encrypt
 validation server makes HTTP requests to validate that the DNS for each
 requested domain resolves to the server running certbot. An example request
 made to your web server would look like:
 
 ::
 
-    66.133.109.36 - - [05/Jan/2016:20:11:24 -0500] "GET /.well-known/acme-challenge/HGr8U1IeTW4kY_Z6UIyaakzOkyQgPr_7ArlLgtZE8SX HTTP/1.1" 200 87 "-" "Mozilla/5.0 (compatible; Certbot validation server; +https://www.certbot.com)"
+    66.133.109.36 - - [05/Jan/2016:20:11:24 -0500] "GET /.well-known/acme-challenge/HGr8U1IeTW4kY_Z6UIyaakzOkyQgPr_7ArlLgtZE8SX HTTP/1.1" 200 87 "-" "Mozilla/5.0 (compatible; Let's Encryptvalidation server; +https://www.letsencrypt.org)"
 
 Note that to use the webroot plugin, your server must be configured to serve
 files from hidden directories. If ``/.well-known`` is treated specially by
@@ -272,14 +272,14 @@ you prefer to manage everything by hand, this section provides
 information on where to find necessary files.
 
 All generated keys and issued certificates can be found in
-``/etc/certbot/live/$domain``. Rather than copying, please point
+``/etc/letsencrypt/live/$domain``. Rather than copying, please point
 your (web) server configuration directly to those files (or create
-symlinks). During the renewal_, ``/etc/certbot/live`` is updated
+symlinks). During the renewal_, ``/etc/letsencrypt/live`` is updated
 with the latest necessary files.
 
-.. note:: ``/etc/certbot/archive`` and ``/etc/certbot/keys``
+.. note:: ``/etc/letsencrypt/archive`` and ``/etc/letsencrypt/keys``
    contain all previous keys and certificates, while
-   ``/etc/certbot/live`` symlinks to the latest versions.
+   ``/etc/letsencrypt/live`` symlinks to the latest versions.
 
 The following files are available:
 
@@ -348,9 +348,9 @@ example configuration file is shown below:
 
 By default, the following locations are searched:
 
-- ``/etc/certbot/cli.ini``
-- ``$XDG_CONFIG_HOME/certbot/cli.ini`` (or
-  ``~/.config/certbot/cli.ini`` if ``$XDG_CONFIG_HOME`` is not
+- ``/etc/letsencrypt/cli.ini``
+- ``$XDG_CONFIG_HOME/letsencrypt/cli.ini`` (or
+  ``~/.config/letsencrypt/cli.ini`` if ``$XDG_CONFIG_HOME`` is not
   set).
 
 .. keep it up to date with constants.py
@@ -361,7 +361,7 @@ Getting help
 
 If you're having problems you can chat with us on `IRC (#certbot @
 OFTC) <https://webchat.oftc.net?channels=%23certbot>`_ or
-get support on our `forums <https://community.certbot.org>`_.
+get support on our `forums <https://community.letsencrypt.org>`_.
 
 If you find a bug in the software, please do report it in our `issue
 tracker
@@ -371,7 +371,7 @@ give us as much information as possible:
 - copy and paste exact command line used and the output (though mind
   that the latter might include some personally identifiable
   information, including your email and domains)
-- copy and paste logs from ``/var/log/certbot`` (though mind they
+- copy and paste logs from ``/var/log/letsencrypt`` (though mind they
   also might contain personally identifiable information)
 - copy and paste ``certbot --version`` output
 - your operating system, including specific version
@@ -403,13 +403,13 @@ to, `install Docker`_, then issue the following command:
 .. code-block:: shell
 
    sudo docker run -it --rm -p 443:443 -p 80:80 --name certbot \
-               -v "/etc/certbot:/etc/certbot" \
-               -v "/var/lib/certbot:/var/lib/certbot" \
-               quay.io/certbot/certbot:latest auth
+               -v "/etc/letsencrypt:/etc/letsencrypt" \
+               -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+               quay.io/letsencrypt/letsencrypt:latest auth
 
 and follow the instructions (note that ``auth`` command is explicitly
 used - no installer plugins involved). Your new cert will be available
-in ``/etc/certbot/live`` on the host.
+in ``/etc/letsencrypt/live`` on the host.
 
 .. _Docker: https://docker.com
 .. _`install Docker`: https://docs.docker.com/userguide/
@@ -420,31 +420,31 @@ Operating System Packages
 
 **FreeBSD**
 
-  * Port: ``cd /usr/ports/security/py-certbot make install clean``
-  * Package: ``pkg install py27-certbot``
+  * Port: ``cd /usr/ports/security/py-letsencrypt make install clean``
+  * Package: ``pkg install py27-letsencrypt``
 
 **OpenBSD**
 
-  * Port: ``cd /usr/ports/security/certbot/client && make install clean``
-  * Package: ``pkg_add certbot``
+  * Port: ``cd /usr/ports/security/letsencrypt/client && make install clean``
+  * Package: ``pkg_add letsencrypt``
 
 **Arch Linux**
 
 .. code-block:: shell
 
-   sudo pacman -S certbot certbot-apache
+   sudo pacman -S letsencrypt letsencrypt-apache
 
 **Debian**
 
-If you run Debian Stretch or Debian Sid, you can install certbot packages.
+If you run Debian Stretch or Debian Sid, you can install letsencrypt packages.
 
 .. code-block:: shell
 
    sudo apt-get update
-   sudo apt-get install certbot python-certbot-apache
+   sudo apt-get install letsencrypt python-letsencrypt-apache
 
 If you don't want to use the Apache plugin, you can omit the
-``python-certbot-apache`` package.
+``python-letsencrypt-apache`` package.
 
 Packages for Debian Jessie are coming in the next few weeks.
 
@@ -452,7 +452,7 @@ Packages for Debian Jessie are coming in the next few weeks.
 
 .. code-block:: shell
 
-    sudo dnf install certbot
+    sudo dnf install letsencrypt
 
 **Gentoo**
 
@@ -461,8 +461,8 @@ want to use the Apache plugin, it has to be installed separately:
 
 .. code-block:: shell
 
-   emerge -av app-crypt/certbot
-   emerge -av app-crypt/certbot-apache
+   emerge -av app-crypt/letsencrypt
+   emerge -av app-crypt/letsencrypt-apache
 
 Currently, only the Apache plugin is included in Portage. However, if you
 want the nginx plugin, you can use Layman to add the mrueg overlay which
@@ -473,7 +473,7 @@ does include the nginx plugin package:
    emerge -av app-portage/layman
    layman -S
    layman -a mrueg
-   emerge -av app-crypt/certbot-nginx
+   emerge -av app-crypt/letsencrypt-nginx
 
 When using the Apache plugin, you will run into a "cannot find a cert or key
 directive" error if you're sporting the default Gentoo ``httpd.conf``.
