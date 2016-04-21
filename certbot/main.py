@@ -329,10 +329,15 @@ def _determine_account(config):
             def _tos_cb(regr):
                 if config.tos:
                     return True
-                msg = ("Please read the Terms of Service at {0}. You "
-                       "must agree in order to register with the ACME "
-                       "server at {1}".format(
-                           regr.terms_of_service, config.server))
+                msg = ("Please read the Terms of Service and privacy information at {0}. You must agree in order "
+                       "to register with the ACME server at {1}.\n\n"
+                       "Note that Certbot sends the following information to ACME servers:\n\n"
+                       "* contact email (optional but recommended);\n"
+                       "* requested domain names;\n"
+                       "* IP address of the machine it's run on (normally public anyway);\n" 
+                       "* User Agent information, eg:\n    {2}".format(
+                           regr.terms_of_service, config.server, 
+                           client.determine_user_agent(config)))
                 obj = zope.component.getUtility(interfaces.IDisplay)
                 return obj.yesno(msg, "Agree", "Cancel", cli_flag="--agree-tos")
 
