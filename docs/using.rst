@@ -93,10 +93,10 @@ s3front_    Y    Y    Integration with Amazon CloudFront distribution of S3 buck
 gandi_      Y    Y    Integration with Gandi's hosting products and API
 =========== ==== ==== ===============================================================
 
-.. _plesk: https://github.com/plesk/certbot-plesk
-.. _haproxy: https://code.greenhost.net/open/certbot-haproxy
-.. _s3front: https://github.com/dlapiduz/certbot-s3front
-.. _gandi: https://github.com/Gandi/certbot-gandi
+.. _plesk: https://github.com/plesk/letsencrypt-plesk
+.. _haproxy: https://code.greenhost.net/open/letsencrypt-haproxy
+.. _s3front: https://github.com/dlapiduz/letsencrypt-s3front
+.. _gandi: https://github.com/Gandi/letsencrypt-gandi
 
 Future plugins for IMAP servers, SMTP servers, IRC servers, etc, are likely to
 be installers but not authenticators.
@@ -194,7 +194,7 @@ Third-party plugins
 -------------------
 
 These plugins are listed at
-https://github.com/certbot/certbot/wiki/Plugins. If you're
+https://github.com/letsencrypt/letsencrypt/wiki/Plugins. If you're
 interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
 Renewal
@@ -365,7 +365,7 @@ get support on our `forums <https://community.certbot.org>`_.
 
 If you find a bug in the software, please do report it in our `issue
 tracker
-<https://github.com/certbot/certbot/issues>`_. Remember to
+<https://github.com/letsencrypt/letsencrypt/issues>`_. Remember to
 give us as much information as possible:
 
 - copy and paste exact command line used and the output (though mind
@@ -390,7 +390,7 @@ plugins cannot reach it from inside the Docker container.
 
 You should definitely read the :ref:`where-certs` section, in order to
 know how to manage the certs
-manually. https://github.com/certbot/certbot/wiki/Ciphersuite-guidance
+manually. https://github.com/letsencrypt/letsencrypt/wiki/Ciphersuite-guidance
 provides some information about recommended ciphersuites. If none of
 these make much sense to you, you should definitely use the
 certbot-auto_ method, which enables you to use installer plugins

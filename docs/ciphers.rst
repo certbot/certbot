@@ -153,7 +153,7 @@ recommendations with sources of expert guidance on ciphersuites and other
 cryptographic parameters. We're grateful to everyone who contributed
 suggestions. The recommendations we received are available at
 
-https://github.com/certbot/certbot/wiki/Ciphersuite-guidance
+https://github.com/letsencrypt/letsencrypt/wiki/Ciphersuite-guidance
 
 Certbot users are welcome to review these authorities to
 better inform their own cryptographic parameter choices. We also
@@ -196,7 +196,7 @@ TODO
 The status of this feature is tracked as part of issue #1123 in our
 bug tracker.
 
-https://github.com/certbot/certbot/issues/1123
+https://github.com/letsencrypt/letsencrypt/issues/1123
 
 Prior to implementation of #1123, the client does not actually modify
 ciphersuites (this is intended to be implemented as a "configuration

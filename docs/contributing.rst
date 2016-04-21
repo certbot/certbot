@@ -57,8 +57,8 @@ your pull request must have thorough unit test coverage, pass our
 `integration`_ tests, and be compliant with the :ref:`coding style
 <coding-style>`.
 
-.. _github issue tracker: https://github.com/certbot/certbot/issues
-.. _Good Volunteer Task: https://github.com/certbot/certbot/issues?q=is%3Aopen+is%3Aissue+label%3A%22Good+Volunteer+Task%22
+.. _github issue tracker: https://github.com/letsencrypt/letsencrypt/issues
+.. _Good Volunteer Task: https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aopen+is%3Aissue+label%3A%22Good+Volunteer+Task%22
 
 Testing
 -------
@@ -146,7 +146,7 @@ encouraged) make sure to install prerequisites as listed in
 ``certbot-nginx/tests/boulder-integration.sh`` and rerun
 the integration tests suite.
 
-.. _Boulder: https://github.com/certbot/boulder
+.. _Boulder: https://github.com/letsencrypt/boulder
 .. _Go: https://golang.org
 
 
@@ -175,8 +175,8 @@ Configurators may implement just one of those).
 There are also `~certbot.interfaces.IDisplay` plugins,
 which implement bindings to alternative UI libraries.
 
-.. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/interfaces.py
-.. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/plugins/common.py#L34
+.. _interfaces.py: https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/interfaces.py
+.. _plugins/common.py: https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/plugins/common.py#L34
 
 
 Authenticators
@@ -323,7 +323,7 @@ Steps:
    See `Known Issues`_. If it's not a known issue, fix any errors.
 
 .. _Known Issues:
-  https://github.com/certbot/certbot/wiki/Known-issues
+  https://github.com/letsencrypt/letsencrypt/wiki/Known-issues
 
 Updating the documentation
 ==========================
