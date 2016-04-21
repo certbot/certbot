@@ -21,11 +21,11 @@ VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN="$VENV_PATH/bin"
 LE_AUTO_VERSION="0.6.0.dev0"
 BASENAME=$(basename $0)
-USAGE="Usage: $BASENAME [OPTION]
+USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
 to both this script and certbot will be downloaded and installed. After
 ensuring you have the latest versions installed, certbot will be invoked with
-all arguments you provided.
+all arguments you have provided.
 
 Help for certbot itself cannot be provided until it is installed.
 
@@ -860,6 +860,10 @@ else
   # package). Phase 2 checks the version of the locally installed certbot.
 
   if [ ! -f "$VENV_BIN/letsencrypt" ]; then
+    if [ "$HELP" = 1 ]; then
+      echo "$USAGE"
+      exit 0
+    fi
     # If it looks like we've never bootstrapped before, bootstrap:
     Bootstrap
   fi
