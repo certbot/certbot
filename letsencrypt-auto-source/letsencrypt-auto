@@ -183,26 +183,34 @@ BootstrapDebCommon() {
       # ARGS:
       BACKPORT_NAME="$1"
       BACKPORT_SOURCELINE="$2"
+      echo "To use the Apache Certbot plugin, augeas needs to be installed from $BACKPORT_NAME."
       if ! grep -v -e ' *#' /etc/apt/sources.list | grep -q "$BACKPORT_NAME" ; then
           # This can theoretically error if sources.list.d is empty, but in that case we don't care.
           if ! grep -v -e ' *#' /etc/apt/sources.list.d/* 2>/dev/null | grep -q "$BACKPORT_NAME"; then
-              /bin/echo -n "Installing augeas from $BACKPORT_NAME in 3 seconds..."
-              sleep 1s
-              /bin/echo -ne "\e[0K\rInstalling augeas from $BACKPORT_NAME in 2 seconds..."
-              sleep 1s
-              /bin/echo -e "\e[0K\rInstalling augeas from $BACKPORT_NAME in 1 second ..."
-              sleep 1s
               if echo $BACKPORT_NAME | grep -q wheezy ; then
-                  /bin/echo '(Backports are only installed if explicitly requested via "apt-get install -t wheezy-backports")'
+                  echo 'Backports are only installed if explicitly requested via "apt-get install -t wheezy-backports"'
               fi
-
-              $SUDO sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
-              $SUDO apt-get update
+              if [ "$ASSUME_YES" = 1 ]; then
+                  add_backports=1
+              else
+                  read -p "Would you like to enable the $BACKPORT_NAME repository [Y/n]? " response
+                  case $response in
+                      [yY][eE][sS]|[yY]|"")
+                          add_backports=1;;
+                      *)
+                          add_backports=0;;
+                  esac
+              fi
+              if [ "$add_backports" = 1 ]; then
+                  $SUDO sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
+                  $SUDO apt-get update
+              fi
           fi
       fi
-      $SUDO apt-get install $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
-      augeas_pkg=
-
+      if [ "$add_backports" != 0 ]; then
+          $SUDO apt-get install $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
+          augeas_pkg=
+      fi
   }
 
 
