@@ -34,6 +34,10 @@ BootstrapDebCommon() {
   augeas_pkg="libaugeas0 augeas-lenses"
   AUGVERSION=`apt-cache show --no-all-versions libaugeas0 | grep ^Version: | cut -d" " -f2`
 
+  if [ "$ASSUME_YES" = 1 ]; then
+    YES_FLAG="-y"
+  fi
+
   AddBackportRepo() {
       # ARGS:
       BACKPORT_NAME="$1"
@@ -55,7 +59,7 @@ BootstrapDebCommon() {
               $SUDO apt-get update
           fi
       fi
-      $SUDO apt-get install -y --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
+      $SUDO apt-get install $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
       augeas_pkg=
 
   }
@@ -74,7 +78,7 @@ BootstrapDebCommon() {
       # XXX add a case for ubuntu PPAs
   fi
 
-  $SUDO apt-get install -y --no-install-recommends \
+  $SUDO apt-get install $YES_FLAG --no-install-recommends \
     python \
     python-dev \
     $virtualenv \
