@@ -4,7 +4,7 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.5.0.dev0'
+version = '0.6.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
@@ -53,7 +53,7 @@ setup(
     version=version,
     description='ACME protocol implementation in Python',
     url='https://github.com/letsencrypt/letsencrypt',
-    author="Let's Encrypt Project",
+    author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
     classifiers=[

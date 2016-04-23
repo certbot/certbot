@@ -19,7 +19,7 @@ XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN="$VENV_PATH/bin"
-LE_AUTO_VERSION="0.4.2"
+LE_AUTO_VERSION="0.5.0"
 
 # This script takes the same arguments as the main letsencrypt program, but it
 # additionally responds to --verbose (more output) and --debug (allow support
@@ -348,28 +348,45 @@ BootstrapFreeBsd() {
 }
 
 BootstrapMac() {
-  if ! hash brew 2>/dev/null; then
-      echo "Homebrew not installed.\nDownloading..."
-      ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+  if hash brew 2>/dev/null; then
+    echo "Using Homebrew to install dependencies..."
+    pkgman=brew
+    pkgcmd="brew install"
+  elif hash port 2>/dev/null; then
+    echo "Using MacPorts to install dependencies..."
+    pkgman=port
+    pkgcmd="$SUDO port install"
+  else
+    echo "No Homebrew/MacPorts; installing Homebrew..."
+    ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    pkgman=brew
+    pkgcmd="brew install"
   fi
 
-  if [ -z "$(brew list --versions augeas)" ]; then
-      echo "augeas not installed.\nInstalling augeas from Homebrew..."
-      brew install augeas
+  $pkgcmd augeas
+  $pkgcmd dialog
+  if [ "$(which python)" = "/System/Library/Frameworks/Python.framework/Versions/2.7/bin/python" ]; then
+    # We want to avoid using the system Python because it requires root to use pip.
+    # python.org, MacPorts or HomeBrew Python installations should all be OK.
+    echo "Installing python..."
+    $pkgcmd python
   fi
 
-  if [ -z "$(brew list --versions dialog)" ]; then
-      echo "dialog not installed.\nInstalling dialog from Homebrew..."
-      brew install dialog
+  # Workaround for _dlopen not finding augeas on OS X
+  if [ "$pkgman" = "port" ] && ! [ -e "/usr/local/lib/libaugeas.dylib" ] && [ -e "/opt/local/lib/libaugeas.dylib" ]; then
+    echo "Applying augeas workaround"
+    $SUDO ln -s /opt/local/lib/libaugeas.dylib /usr/local/lib
   fi
 
-  if [ -z "$(brew list --versions python)" ]; then
-      echo "python not installed.\nInstalling python from Homebrew..."
-      brew install python
+  if ! hash pip 2>/dev/null; then
+      echo "pip not installed"
+      echo "Installing pip..."
+      curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | python
   fi
 
   if ! hash virtualenv 2>/dev/null; then
-      echo "virtualenv not installed.\nInstalling with pip..."
+      echo "virtualenv not installed."
+      echo "Installing with pip..."
       pip install virtualenv
   fi
 }
@@ -411,7 +428,7 @@ Bootstrap() {
   else
     echo "Sorry, I don't know how to bootstrap Let's Encrypt on your operating system!"
     echo
-    echo "You will need to bootstrap, configure virtualenv, and run a peep install manually."
+    echo "You will need to bootstrap, configure virtualenv, and run pip install manually."
     echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
     echo "for more info."
   fi
@@ -421,19 +438,6 @@ TempDir() {
   mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || OS X
 }
 
-InstallRequirements() {
-    set +e
-    PEEP_OUT=`"$VENV_BIN/python" "$TEMP_DIR/peep.py" install -r "$TEMP_DIR/$1"`
-    PEEP_STATUS=$?
-    set -e
-    if [ "$PEEP_STATUS" != 0 ]; then
-      # Report error. (Otherwise, be quiet.)
-      echo "Had a problem while downloading and verifying Python packages:"
-      echo "$PEEP_OUT"
-      rm -rf "$VENV_PATH"
-      exit 1
-    fi
-}
 
 
 if [ "$1" = "--le-auto-phase2" ]; then
@@ -441,7 +445,8 @@ if [ "$1" = "--le-auto-phase2" ]; then
 
   shift 1  # the --le-auto-phase2 arg
   if [ -f "$VENV_BIN/letsencrypt" ]; then
-    INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | cut -d " " -f 2)
+    # --version output ran through grep due to python-cryptography DeprecationWarnings
+    INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | grep ^letsencrypt | cut -d " " -f 2)
   else
     INSTALLED_VERSION="none"
   fi
@@ -457,255 +462,214 @@ if [ "$1" = "--le-auto-phase2" ]; then
 
     echo "Installing Python packages..."
     TEMP_DIR=$(TempDir)
-    trap "rm -rf '$TEMP_DIR'" EXIT
     # There is no $ interpolation due to quotes on starting heredoc delimiter.
-    # -------------------------------------------------------------------------
-    cat << "UNLIKELY_EOF" > "$TEMP_DIR/setuptools-requirements.txt"
-# cryptography requires a more modern version of setuptools.
-# sha256: _ANFf7h6utSdwJ-cMTOGNpPn3bbKgrtQpzmnc3nOWpo
-# sha256: JPz8FTZKn-CaIg830tztyEl5Xj3j5LOT7piOZqnL2Fo
-# sha256: gJaELiTE8ddN_xKr6Qwm0S8F0NmlbtXgb8qm-qHkC2o
-setuptools==20.2.2
-
-UNLIKELY_EOF
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/letsencrypt-auto-requirements.txt"
 # This is the flattened list of packages letsencrypt-auto installs. To generate
 # this, do `pip install --no-cache-dir -e acme -e . -e letsencrypt-apache`, and
 # then use `hashin` or a more secure method to gather the hashes.
 
-# sha256: wxZH7baf09RlqEfqMVfTe-0flfGXYLEaR6qRwEtmYxQ
-# sha256: YrCJpVvh2JSc0rx-DfC9254Cj678jDIDjMhIYq791uQ
-argparse==1.4.0
+argparse==1.4.0 \
+    --hash=sha256:c31647edb69fd3d465a847ea3157d37bed1f95f19760b11a47aa91c04b666314 \
+    --hash=sha256:62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4
 
 # This comes before cffi because cffi will otherwise install an unchecked
 # version via setup_requires.
-# sha256: eVm0p0q9wnsxL-0cIebK-TCc4LKeqGtZH9Lpns3yf3M
-pycparser==2.14
+pycparser==2.14 \
+    --hash=sha256:7959b4a74abdc27b312fed1c21e6caf9309ce0b29ea86b591fd2e99ecdf27f73
 
-# sha256: U8HJ3bMEMVE-t_PN7wo-BrDxJSGIqqd0SvD1pM1F268
-# sha256: pWj0nfyhKo2fNwGHJX78WKOBCeHu5xTZKFYdegGKZPg
-# sha256: gJxsqM-8ruv71DK0V2ABtA04_yRjdzy1dXfXXhoCC8M
-# sha256: hs3KLNnLpBQiIwOQ3xff6qnzRKkR45dci-naV7NVSOk
-# sha256: JLE9uErsOFyiPHuN7YPvi7QXe8GB0UdY-fl1vl0CDYY
-# sha256: lprv_XwOCX9r4e_WgsFWriJlkaB5OpS2wtXkKT9MjU4
-# sha256: AA81jUsPokn-qrnBzn1bL-fgLnvfaAbCZBhQX8aF4mg
-# sha256: qdhvRgu9g1ii1ROtd54_P8h447k6ALUAL66_YW_-a5w
-# sha256: MSezqzPrI8ysBx-aCAJ0jlz3xcvNAkgrsGPjW0HbsLA
-# sha256: 4rLUIjZGmkAiTTnntsYFdfOIsvQj81TH7pClt_WMgGU
-# sha256: jC3Mr-6JsbQksL7GrS3ZYiyUnSAk6Sn12h7YAerHXx0
-# sha256: pN56TRGu1Ii6tPsU9JiFh6gpvs5aIEM_eA1uM7CAg8s
-# sha256: XKj-MEJSZaSSdOSwITobyY9LE0Sa5elvmEdx5dg-WME
-# sha256: pP04gC9Z5xTrqBoCT2LbcQsn2-J6fqEukRU3MnqoTTA
-# sha256: hs1pErvIPpQF1Kc81_S07oNTZS0tvHyCAQbtW00bqzo
-# sha256: jx0XfTZOo1kAQVriTKPkcb49UzTtBBkpQGjEn0WROZg
-cffi==1.4.2
+cffi==1.4.2 \
+    --hash=sha256:53c1c9ddb30431513eb7f3cdef0a3e06b0f1252188aaa7744af0f5a4cd45dbaf \
+    --hash=sha256:a568f49dfca12a8d9f370187257efc58a38109e1eee714d928561d7a018a64f8 \
+    --hash=sha256:809c6ca8cfbcaeebfbd432b4576001b40d38ff2463773cb57577d75e1a020bc3 \
+    --hash=sha256:86cdca2cd9cba41422230390df17dfeaa9f344a911e3975c8be9da57b35548e9 \
+    --hash=sha256:24b13db84aec385ca23c7b8ded83ef8bb4177bc181d14758f9f975be5d020d86 \
+    --hash=sha256:969aeffd7c0e097f6be1efd682c156ae226591a0793a94b6c2d5e4293f4c8d4e \
+    --hash=sha256:000f358d4b0fa249feaab9c1ce7d5b2fe7e02e7bdf6806c26418505fc685e268 \
+    --hash=sha256:a9d86f460bbd8358a2d513ad779e3f3fc878e3b93a00b5002faebf616ffe6b9c \
+    --hash=sha256:3127b3ab33eb23ccac071f9a0802748e5cf7c5cbcd02482bb063e35b41dbb0b0 \
+    --hash=sha256:e2b2d42236469a40224d39e7b6c60575f388b2f423f354c7ee90a5b7f58c8065 \
+    --hash=sha256:8c2dccafee89b1b424b0bec6ad2dd9622c949d2024e929f5da1ed801eac75f1d \
+    --hash=sha256:a4de7a4d11aed488bab4fb14f4988587a829bece5a20433f780d6e33b08083cb \
+    --hash=sha256:5ca8fe30425265a49274e4b0213a1bc98f4b13449ae5e96f984771e5d83e58c1 \
+    --hash=sha256:a4fd38802f59e714eba81a024f62db710b27dbe27a7ea12e911537327aa84d30 \
+    --hash=sha256:86cd6912bbc83e9405d4a73cd7f4b4ee8353652d2dbc7c820106ed5b4d1bab3a \
+    --hash=sha256:8f1d177d364ea35900415ae24ca3e471be3d5334ed0419294068c49f45913998
+ConfigArgParse==0.10.0 \
+    --hash=sha256:3b50a83dd58149dfcee98cb6565265d10b53e9c0a2bca7eeef7fb5f5524890a7
+configobj==5.0.6 \
+    --hash=sha256:a2f5650770e1c87fb335af19a9b7eb73fc05ccf22144eb68db7d00cd2bcb0902
+cryptography==1.2.3 \
+    --hash=sha256:031938f73a5c5eb3e809e18ff7caeb6865351871417be6050cb8c86a9a202b9a \
+    --hash=sha256:a179a38d50f8d68b491d7a313db78f8cabe290842cecddddc7b34d408e59db0a \
+    --hash=sha256:906c88b2aadcf99cfabb24098263d1bf65ab0c8688acde10dae1f09d865920f1 \
+    --hash=sha256:6e706c5c6088770b1d1b634e959e21963e315b0255f5f4777125ad3d54082977 \
+    --hash=sha256:f5ebf8e31c48f8707921dca0e994de77813a9c9b9bf03c119c5ddf97bdcffe73 \
+    --hash=sha256:c7b89e42288cc7fbee3812e99ef5c744f22452e11d6822f6807afc6d6b3be83e \
+    --hash=sha256:8408d29865947109d8b68f1837a7cde1aa4dc86e0f79ca3ba58c0c44e443d6a5 \
+    --hash=sha256:c7e76cf3c3d925dd31fa238cfb806cffba718c0f08707d77a538768477969956 \
+    --hash=sha256:7d8de35380f31702758b7753bb5c40723832c73006dedb2f9099bf61a37f7287 \
+    --hash=sha256:5edbee71fae5469ee83fe0a37866b9398c8ce3a46325c24fcedfbf097bb48a19 \
+    --hash=sha256:594edafe4801c13bdc1cc305e7704a90c19617e95936f6ab457ee4ffe000ba50 \
+    --hash=sha256:b7fdb16a0a7f481be42da744bfe1ea2163025de21f90f2c688a316f3c354da9c \
+    --hash=sha256:207b8bf0fe0907336df38b733b487521cf9e138189aba9234ad54fe545dd0db8 \
+    --hash=sha256:509a2f05386270cf783993c90d49ffefb3dd62aee45bf1ea8ce3d2cde7271c21 \
+    --hash=sha256:ac69b65dd1af0179ede40c9f15788c88f73e628ea6c0519de3838e279bb388c6 \
+    --hash=sha256:8df6fad6c6ae12fd7004ea29357f0a2b4d3774eaeca7656530d08d2d90cd41aa \
+    --hash=sha256:0b8b96dd81cc1533a04f30382c0fe21c1972e189f794d0c4261a18cec08fd9b5 \
+    --hash=sha256:cae8fca1883f23c50ea78d89de6fe4fefdb4cea83177760f47177559414ded93 \
+    --hash=sha256:1a471ca576a9cdce1b1cd9f3a22b1d09ee44d46862037557de17919c0db44425 \
+    --hash=sha256:8ec4e8e3d453b3a1b63b5f57737a434dcf1ee4a2f26f6ff7c5a37c3f679104d2 \
+    --hash=sha256:8eb11c77dd8e73f48df6b2f7a7e16173fe0fe8fdfe266232832e88477e08454e
+enum34==1.1.2 \
+    --hash=sha256:2475d7fcddf5951e92ff546972758802de5260bf409319a9f1934e6bbc8b1dc7 \
+    --hash=sha256:35907defb0f992b75ab7788f65fedc1cf20ffa22688e0e6f6f12afc06b3ea501
+funcsigs==0.4 \
+    --hash=sha256:ff5ad9e2f8d9e5d1e8bbfbcf47722ab527cf0d51caeeed9da6d0f40799383fde \
+    --hash=sha256:d83ce6df0b0ea6618700fe1db353526391a8a3ada1b7aba52fed7a61da772033
+idna==2.0 \
+    --hash=sha256:9b2fc50bd3c4ba306b9651b69411ef22026d4d8335b93afc2214cef1246ce707 \
+    --hash=sha256:16199aad938b290f5be1057c0e1efc6546229391c23cea61ca940c115f7d3d3b
+ipaddress==1.0.16 \
+    --hash=sha256:935712800ce4760701d89ad677666cd52691fd2f6f0b340c8b4239a3c17988a5 \
+    --hash=sha256:5a3182b322a706525c46282ca6f064d27a02cffbd449f9f47416f1dc96aa71b0
+linecache2==1.0.0 \
+    --hash=sha256:e78be9c0a0dfcbac712fe04fbf92b96cddae80b1b842f24248214c8496f006ef \
+    --hash=sha256:4b26ff4e7110db76eeb6f5a7b64a82623839d595c2038eeda662f2a2db78e97c
+ndg-httpsclient==0.4.0 \
+    --hash=sha256:e8c155fdebd9c4bcb0810b4ed01ae1987554b1ee034dd7532d7b8fdae38a6274
+ordereddict==1.1 \
+    --hash=sha256:1c35b4ac206cef2d24816c89f89cf289dd3d38cf7c449bb3fab7bf6d43f01b1f
+parsedatetime==2.1 \
+    --hash=sha256:ce9d422165cf6e963905cd5f74f274ebf7cc98c941916169178ef93f0e557838 \
+    --hash=sha256:17c578775520c99131634e09cfca5a05ea9e1bd2a05cd06967ebece10df7af2d
+pbr==1.8.1 \
+    --hash=sha256:46c8db75ae75a056bd1cc07fa21734fe2e603d11a07833ecc1eeb74c35c72e0c \
+    --hash=sha256:e2127626a91e6c885db89668976db31020f0af2da728924b56480fc7ccf09649
+psutil==3.3.0 \
+    --hash=sha256:584f0b29fcc5d523b433cb8918b2fc74d67e30ee0b44a95baf031528f424619f \
+    --hash=sha256:28ca0b6e9d99aa8dc286e8747a4471362b69812a25291de29b6a8d70a1545a0d \
+    --hash=sha256:167ad5fff52a672c4ddc1c1a0b25146d6813ebb08a9aab0a3ac45f8a5b669c3b \
+    --hash=sha256:e6dea6173a988727bb223d3497349ad5cdef5c0b282eff2d83e5f9065c53f85f \
+    --hash=sha256:2af5e0a4aad66049955d0734aa4e3dc8caa17a9eaf8b4c1a27a5f1ee6e40f6fc \
+    --hash=sha256:d9884dc0dc2e55e2448e495778dc9899c1c8bf37aeb2f434c1bea74af93c2683 \
+    --hash=sha256:e27c2fe6dfcc8738be3d2c5a022f785eb72971057e1a9e1e34fba73bce8a71a6 \
+    --hash=sha256:65afd6fecc8f3aed09ee4be63583bc8eb472f06ceaa4fe24c4d1d5a1a3c0e13f \
+    --hash=sha256:ba1c558fbfcdf94515c2394b1155c1dc56e2bc2a9c17d30349827c9ed8a67e46 \
+    --hash=sha256:ba95ea0022dcb64d36f0c1335c0605fae35bdf3e0fea8d92f5d0f6456a35e55b \
+    --hash=sha256:421b6591d16b509aaa8d8c15821d66bb94cb4a8dc4385cad5c51b85d4a096d85 \
+    --hash=sha256:326b305cbdb6f94dafbfe2c26b11da88b0ab07b8a07f8188ab9d75ff0c6e841a \
+    --hash=sha256:9aede5b2b6fe46b3748ea8e5214443890d1634027bef3d33b7dad16556830278 \
+    --hash=sha256:73bed1db894d1aa9c3c7e611d302cdeab7ae8a0dc0eeaf76727878db1ac5cd87 \
+    --hash=sha256:935b5dd6d558af512f42501a7c08f41d7aff139af1bb3959daa3abb859234d6c \
+    --hash=sha256:4ca0111cf157dcc0f2f69a323c5b5478718d68d45fc9435d84be0ec0f186215b \
+    --hash=sha256:b6f13c95398a3fcf0226c4dcfa448560ba5865259cd96ec2810658651e932189 \
+    --hash=sha256:ee6be30d1635bbdea4c4325d507dc8a0dbbde7e1c198bd62ddb9f43198b9e214 \
+    --hash=sha256:dfa786858c268d7fbbe1b6175e001ec02738d7cfae0a7ce77bf9b651af676729 \
+    --hash=sha256:aa77f9de72af9c16cc288cd4a24cf58824388f57d7a81e400c4616457629870e \
+    --hash=sha256:f500093357d04da8140d87932cac2e54ef592a54ca8a743abb2850f60c2c22eb
+pyasn1==0.1.9 \
+    --hash=sha256:61f9d99e3cef65feb1bfe3a2eef7a93eb93819d345bf54bcd42f4e63d5204dae \
+    --hash=sha256:1802a6dd32045e472a419db1441aecab469d33e0d2749e192abdec52101724af \
+    --hash=sha256:35025cd9422c96504912f04e2f15fe79390a8597b430c2ca5d0534cf9309ffa0 \
+    --hash=sha256:2f96ed5a0c329ca16230b326ca12b7461ec8f65e0be3e4f997516f36bf82a345 \
+    --hash=sha256:28fee44217991cfad9e6a0b9f7e3f26041e21ebc96629e94e585ccd05d49fa65 \
+    --hash=sha256:326e7a854a17fab07691204747695f8f692d674588a355c441fb14f660bf4e68 \
+    --hash=sha256:cda5a90485709ca6795c86056c3e5fe7266028b05e53f1d527fdf93a6365a6b8 \
+    --hash=sha256:0cb2a14742b543fdd68f931a14ce3829186ed2b1b2267a06787388c96b2dd9be \
+    --hash=sha256:5191ff6b9126d2c039dd87f8ff025bed274baf07fa78afa46f556b1ad7265d6e \
+    --hash=sha256:8323e03637b2d072cc7041300bac6ec448c3c28950ab40376036788e9a1af629 \
+    --hash=sha256:853cacd96d1f701ddd67aa03ecc05f51890135b7262e922710112f12a2ed2a7f
+pyOpenSSL==0.15.1 \
+    --hash=sha256:88e45e6bb25dfed272a1ef2e728461d44b634c2cd689e989b6e56a349c5a3ae5 \
+    --hash=sha256:f0a26070d6db0881de8bcc7846934b7c3c930d8f9c79d45883ee48984bc0d672
+pyRFC3339==1.0 \
+    --hash=sha256:eea31835c56e2096af4363a5745a784878a61d043e247d3a6d6a0a32a9741f56 \
+    --hash=sha256:8dfbc6c458b8daba1c0f3620a8c78008b323a268b27b7359e92a4ae41325f535
+python-augeas==0.5.0 \
+    --hash=sha256:67d59d66cdba8d624e0389b87b2a83a176f21f16a87553b50f5703b23f29bac2
+python2-pythondialog==3.3.0 \
+    --hash=sha256:04e93f24995c43dd90f338d5d865ca72ce3fb5a5358d4daa4965571db35fc3ec \
+    --hash=sha256:3e6f593fead98f8a526bc3e306933533236e33729f552f52896ea504f55313fa
+pytz==2015.7 \
+    --hash=sha256:3abe6a6d3fc2fbbe4c60144211f45da2edbe3182a6f6511af6bbba0598b1f992 \
+    --hash=sha256:939ef9c1e1224d980405689a97ffcf7828c56d1517b31d73464356c1f2b7769e \
+    --hash=sha256:ead4aefa7007249e05e51b01095719d5a8dd95760089f5730aac5698b1932918 \
+    --hash=sha256:3cca0df08bd0ed98432390494ce3ded003f5e661aa460be7a734bffe35983605 \
+    --hash=sha256:3ede470d3d17ba3c07638dfa0d10452bc1b6e5ad326127a65ba77e6aaeb11bec \
+    --hash=sha256:68c47964f7186eec306b13629627722b9079cd4447ed9e5ecaecd4eac84ca734 \
+    --hash=sha256:dd5d3991950aae40a6c81de1578942e73d629808cefc51d12cd157980e6cfc18 \
+    --hash=sha256:a77c52062c07eb7c7b30545dbc73e32995b7e117eea750317b5cb5c7a4618f14 \
+    --hash=sha256:81af9aec4bc960a9a0127c488f18772dae4634689233f06f65443e7b11ebeb51 \
+    --hash=sha256:e079b1dadc5c06246cc1bb6fe1b23a50b1d1173f2edd5104efd40bb73a28f406 \
+    --hash=sha256:fbd26746772c24cb93c8b97cbdad5cb9e46c86bbdb1b9d8a743ee00e2fb1fc5d \
+    --hash=sha256:99266ef30a37e43932deec2b7ca73e83c8dbc3b9ff703ec73eca6b1dae6befea \
+    --hash=sha256:8b6ce1c993909783bc96e0b4f34ea223bff7a4df2c90bdb9c4e0f1ac928689e3
+requests==2.9.1 \
+    --hash=sha256:113fbba5531a9e34945b7d36b33a084e8ba5d0664b703c81a7c572d91919a5b8 \
+    --hash=sha256:c577815dd00f1394203fc44eb979724b098f88264a9ef898ee45b8e5e9cf587f
+six==1.10.0 \
+    --hash=sha256:0ff78c403d9bccf5a425a6d31a12aa6b47f1c21ca4dc2573a7e2f32a97335eb1 \
+    --hash=sha256:105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a
+traceback2==1.4.0 \
+    --hash=sha256:8253cebec4b19094d67cc5ed5af99bf1dba1285292226e98a31929f87a5d6b23 \
+    --hash=sha256:05acc67a09980c2ecfedd3423f7ae0104839eccb55fc645773e1caa0951c3030
+unittest2==1.1.0 \
+    --hash=sha256:13f77d0875db6d9b435e1d4f41e74ad4cc2eb6e1d5c824996092b3430f088bb8 \
+    --hash=sha256:22882a0e418c284e1f718a822b3b022944d53d2d908e1690b319a9d3eb2c0579
+zope.component==4.2.2 \
+    --hash=sha256:282c112b55dd8e3c869a3571f86767c150ab1284a9ace2bdec226c592acaf81a
+zope.event==4.1.0 \
+    --hash=sha256:dc7a59a2fd91730d3793131a5d261b29e93ec4e2a97f1bc487ce8defee2fe786
+zope.interface==4.1.3 \
+    --hash=sha256:f07b631f7a601cd8cbd3332d54f43142c7088a83299f859356f08d1d4d4259b3 \
+    --hash=sha256:de5cca083b9439d8002fb76bbe6b4998c5a5a721fab25b84298967f002df4c94 \
+    --hash=sha256:6788416f7ea7f5b8a97be94825377aa25e8bdc73463e07baaf9858b29e737077 \
+    --hash=sha256:6f3230f7254518201e5a3708cbb2de98c848304f06e3ded8bfb39e5825cba2e1 \
+    --hash=sha256:5fa575a5240f04200c3088427d0d4b7b737f6e9018818a51d8d0f927a6a2517a \
+    --hash=sha256:522194ad6a545735edd75c8a83f48d65d1af064e432a7d320d64f56bafc12e99 \
+    --hash=sha256:e8c7b2d40943f71c99148c97f66caa7f5134147f57423f8db5b4825099ce9a09 \
+    --hash=sha256:279024f0208601c3caa907c53876e37ad88625f7eaf1cb3842dbe360b2287017 \
+    --hash=sha256:2e221a9eec7ccc58889a278ea13dcfed5ef939d80b07819a9a8b3cb1c681484f \
+    --hash=sha256:69118965410ec86d44dc6b9017ee3ddbd582e0c0abeef62b3a19dbf6c8ad132b \
+    --hash=sha256:d04df8686ec864d0cade8cf199f7f83aecd416109a20834d568f8310ded12dea \
+    --hash=sha256:e75a947e15ee97e7e71e02ea302feb2fc62d3a2bb4668bf9dfbed43a506ac7e7 \
+    --hash=sha256:4e45d22fb883222a5ab9f282a116fec5ee2e8d1a568ccff6a2d75bbd0eb6bcfc \
+    --hash=sha256:bce9339bb3c7a55e0803b63d21c5839e8e479bc85c4adf42ae415b72f94facb2 \
+    --hash=sha256:928138365245a0e8869a5999fbcc2a45475a0a6ed52a494d60dbdc540335fedd \
+    --hash=sha256:0d841ba1bb840eea0e6489dc5ecafa6125554971f53b5acb87764441e61bceba \
+    --hash=sha256:b09c8c1d47b3531c400e0195697f1414a63221de6ef478598a4f1460f7d9a392
+mock==1.0.1 \
+    --hash=sha256:b839dd2d9c117c701430c149956918a423a9863b48b09c90e30a6013e7d2f44f \
+    --hash=sha256:8f83080daa249d036cbccfb8ae5cc6ff007b88d6d937521371afabe7b19badbc
 
-# sha256: O1CoPdWBSd_O6Yy2VlJl0QtT6cCivKfu73-19VJIkKc
-ConfigArgParse==0.10.0
+# THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT; ADD ALL DEPENDENCIES ABOVE.
 
-# sha256: ovVlB3DhyH-zNa8Zqbfrc_wFzPIhROto230AzSvLCQI
-configobj==5.0.6
-
-# sha256: Axk49zpcXrPoCeGP98rraGU1GHFBe-YFDLjIapogK5o
-# sha256: oXmjjVD41otJHXoxPbePjKvikIQs7N3dx7NNQI5Z2wo
-# sha256: kGyIsqrc-Zz6uyQJgmPRv2WrDIaIrN4Q2uHwnYZZIPE
-# sha256: bnBsXGCIdwsdG2NOlZ4hlj4xWwJV9fR3cSWtPVQIKXc
-# sha256: 9ev44xxI-HB5Idyg6ZTed4E6nJub8DwRnF3fl73P_nM
-# sha256: x7ieQiiMx_vuOBLpnvXHRPIkUuEdaCL2gHr8bWs76D4
-# sha256: hAjSmGWUcQnYto8YN6fN4apNyG4Peco7pYwMRORD1qU
-# sha256: x-ds88PZJd0x-iOM-4Bs_7pxjA8IcH13pTh2hHeWmVY
-# sha256: fY3jU4DzFwJ1i3dTu1xAcjgyxzAG3tsvkJm_YaN_coc
-# sha256: XtvucfrlRp7oP-CjeGa5OYyM46RjJcJPzt-_CXu0ihk
-# sha256: WU7a_kgBwTvcHMMF53BKkMGWF-lZNvarRX7k_-AAulA
-# sha256: t_2xagp_SBvkLadEv-HqIWMCXeIfkPLGiKMW88NU2pw
-# sha256: IHuL8P4JBzNt84tzO0h1Ic-eE4GJq6kjStVP5UXdDbg
-# sha256: UJovBThicM94OZPJDUn_77PdYq7kW_HqjOPSzecnHCE
-# sha256: rGm2XdGvAXnt5AyfFXiMiPc-Yo6mwFGd44OOJ5uziMY
-# sha256: jfb61sauEv1wBOopNX8KK003dOrsp2VlMNCNLZDNQao
-# sha256: C4uW3YHMFTOgTzA4LA_iHBly4Yn3lNDEJhoYzsCP2bU
-# sha256: yuj8oYg_I8UOp42J3m_k_v20zqgxd3YPRxd1WUFN7ZM
-# sha256: GkccpXapzc4bHNnzoisdCe5E1GhiA3VX3heRnA20RCU
-# sha256: jsTo49RTs6G2O19Xc3pDTc8e5KLyb2_3xaN8P2eRBNI
-# sha256: jrEcd92Oc_SN9rL3p-Fhc_4P6P3-JmIygy6IR34IRU4
-cryptography==1.2.3
-
-# sha256: JHXX_N31lR6S_1RpcnWIAt5SYL9Akxmp8ZNOa7yLHcc
-# sha256: NZB977D5krdat3iPZf7cHPIP-iJojg5vbxKvwGs-pQE
-enum34==1.1.2
-
-# sha256: _1rZ4vjZ5dHou_vPR3IqtSfPDVHK7u2dptD0B5k4P94
-# sha256: 2Dzm3wsOpmGHAP4ds1NSY5Goo62ht6ulL-16Ydp3IDM
-funcsigs==0.4
-
-# sha256: my_FC9PEujBrllG2lBHvIgJtTYM1uTr8IhTO8SRs5wc
-# sha256: FhmarZOLKQ9b4QV8Dh78ZUYik5HCPOphypQMEV99PTs
-idna==2.0
-
-# sha256: k1cSgAzkdgcB2JrWd2Zs1SaR_S9vCzQMi0I5o8F5iKU
-# sha256: WjGCsyKnBlJcRigspvBk0noCz_vUSfn0dBbx3JaqcbA
-ipaddress==1.0.16
-
-# sha256: 54vpwKDfy6xxL-BPv5K5bN2ugLG4QvJCSCFMhJbwBu8
-# sha256: Syb_TnEQ23butvWntkqCYjg51ZXCA47tpmLyott46Xw
-linecache2==1.0.0
-
-# sha256: 6MFV_evZxLywgQtO0BrhmHVUse4DTddTLXuP2uOKYnQ
-ndg-httpsclient==0.4.0
-
-# sha256: HDW0rCBs7y0kgWyJ-Jzyid09OM98RJuz-re_bUPwGx8
-ordereddict==1.1
-
-# sha256: zp1CIWXPbpY5Bc1fdPJ06_fMmMlBkWFpF475Pw5VeDg
-# sha256: F8V4d1UgyZExY04Jz8paBeqeG9KgXNBpZ-vs4Q33ry0
-parsedatetime==2.1
-
-# sha256: Rsjbda51oFa9HMB_ohc0_i5gPRGgeDPswe63TDXHLgw
-# sha256: 4hJ2JqkebIhduJZol22zECDwry2nKJJLVkgPx8zwlkk
-pbr==1.8.1
-
-# sha256: WE8LKfzF1SO0M8uJGLL8dNZ-MO4LRKlbrwMVKPQkYZ8
-# sha256: KMoLbp2Zqo3Chuh0ekRxNitpgSolKR3im2qNcKFUWg0
-# sha256: FnrV__UqZyxN3BwaCyUUbWgT67CKmqsKOsRfiltmnDs
-# sha256: 5t6mFzqYhye7Ij00lzSa1c3vXAsoLv8tg-X5BlxT-F8
-# sha256: KvXgpKrWYEmVXQc0qk49yMqhep6vi0waJ6Xx7m5A9vw
-# sha256: 2YhNwNwuVeJEjklXeNyYmcHIvzeusvQ0wb6nSvk8JoM
-# sha256: 4nwv5t_Mhzi-PSxaAi94XrcpcQV-Gp4eNPunO86KcaY
-# sha256: Za_W_syPOu0J7kvmNYO8jrRy8GzqpP4kxNHVoaPA4T8
-# sha256: uhxVj7_N-UUVwjlLEVXB3FbivCqcF9MDSYJ8ntimfkY
-# sha256: upXqACLctk028MEzXAYF-uNb3z4P6o2S9dD2RWo15Vs
-# sha256: QhtlkdFrUJqqjYwVgh1mu5TLSo3EOFytXFG4XUoJbYU
-# sha256: MmswXL22-U2vv-LCaxHaiLCrB7igf4GIq511_wxuhBo
-# sha256: mu3lsrb-RrN0jqjlIURDiQ0WNAJ77z0zt9rRZVaDAng
-# sha256: c77R24lNGqnDx-YR0wLN6reuig3A7q92cnh42xrFzYc
-# sha256: k1td1tVYr1EvQlAafAj0HXr_E5rxuzlZ2qOruFkjTWw
-# sha256: TKARHPFX3MDy9poyPFtUeHGNaNRfyUNdhL4OwPGGIVs
-# sha256: tvE8lTmKP88CJsTc-kSFYLpYZSWc2W7CgQZYZR6TIYk
-# sha256: 7mvjDRY1u96kxDJdUH3IoNu95-HBmL1i3bn0MZi54hQ
-# sha256: 36eGhYwmjX-74bYXXgAewCc418-uCnzne_m2Ua9nZyk
-# sha256: qnf53nKvnBbMKIzUokz1iCQ4j1fXqB5ADEYWRXYphw4
-# sha256: 9QAJM1fQTagUDYeTLKwuVO9ZKlTKinQ6uyhQ9gwsIus
-psutil==3.3.0
-
-# sha256: YfnZnjzvZf6xv-Oi7vepPrk4GdNFv1S81C9OY9UgTa4
-# sha256: GAKm3TIEXkcqQZ2xRBrsq0adM-DSdJ4ZKr3sUhAXJK8
-# sha256: NQJc2UIsllBJEvBOLxX-eTkKhZe0MMLKXQU0z5MJ_6A
-# sha256: L5btWgwynKFiMLMmyhK3Rh7I9l4L4-T5l1FvNr-Co0U
-# sha256: KP7kQheZHPrZ5qC59-PyYEHiHryWYp6U5YXM0F1J-mU
-# sha256: Mm56hUoX-rB2kSBHR2lfj2ktZ0WIo1XEQfsU9mC_Tmg
-# sha256: zaWpBIVwnKZ5XIYFbD5f5yZgKLBeU_HVJ_35OmNlprg
-# sha256: DLKhR0K1Q_3Wj5MaFM44KRhu0rGyJnoGeHOIyWst2b4
-# sha256: UZH_a5Em0sA53Yf4_wJb7SdLrwf6eK-kb1VrGtcmXW4
-# sha256: gyPgNjey0HLMcEEwC6xuxEjDwolQq0A3YDZ4jpoa9ik
-# sha256: hTys2W0fcB3dZ6oD7MBfUYkBNbcmLpInEBEvEqLtKn8
-pyasn1==0.1.9
-
-# sha256: iORea7Jd_tJyoe8ucoRh1EtjTCzWiemJtuVqNJxaOuU
-# sha256: 8KJgcNbbCIHei8x4RpNLfDyTDY-cedRYg-5ImEvA1nI
-pyOpenSSL==0.15.1
-
-# sha256: 7qMYNcVuIJavQ2OldFp4SHimHQQ-JH06bWoKMql0H1Y
-# sha256: jfvGxFi42rocDzYgqMeACLMjomiye3NZ6SpK5BMl9TU
-pyRFC3339==1.0
-
-# sha256: Z9WdZs26jWJOA4m4eyqDoXbyHxaodVO1D1cDsj8pusI
-python-augeas==0.5.0
-
-# sha256: BOk_JJlcQ92Q8zjV2GXKcs4_taU1jU2qSWVXHbNfw-w
-# sha256: Pm9ZP-rZj4pSa8PjBpM1MyNuM3KfVS9SiW6lBPVTE_o
-python2-pythondialog==3.3.0
-
-# sha256: Or5qbT_C-75MYBRCEfRdou2-MYKm9lEa9ru6BZix-ZI
-# sha256: k575weEiTZgEBWial__PeCjFbRUXsx1zRkNWwfK3dp4
-# sha256: 6tSu-nAHJJ4F5RsBCVcZ1ajdlXYAifVzCqxWmLGTKRg
-# sha256: PMoN8IvQ7ZhDI5BJTOPe0AP15mGqRgvnpzS__jWYNgU
-# sha256: Pt5HDT0XujwHY436DRBFK8G25a0yYSemW6d-aq6xG-w
-# sha256: aMR5ZPcYbuwwaxNilidyK5B5zURH7Z5eyuzU6shMpzQ
-# sha256: 3V05kZUKrkCmyB3hV4lC5z1imAjO_FHRLNFXmA5s_Bg
-# sha256: p3xSBiwH63x7MFRdvHPjKZW34Rfup1Axe1y1x6RhjxQ
-# sha256: ga-a7EvJYKmgEnxIjxh3La5GNGiSM_BvZUQ-exHr61E
-# sha256: 4Hmx2txcBiRswbtv4bI6ULHRFz8u3VEE79QLtzoo9AY
-# sha256: -9JnRncsJMuTyLl8va1cueRshrvbG52KdD7gDi-x_F0
-# sha256: mSZu8wo35Dky3uwrfKc-g8jbw7n_cD7HPsprHa5r7-o
-# sha256: i2zhyZOQl4O8luC0806iI7_3pN8skL25xODxrJKGieM
-pytz==2015.7
-
-# sha256: ET-7pVManjSUW302szoIToul0GZLcDyBp8Vy2RkZpbg
-# sha256: xXeBXdAPE5QgP8ROuXlySwmPiCZKnviY7kW45enPWH8
-requests==2.9.1
-
-# sha256: D_eMQD2bzPWkJabTGhKqa0fxwhyk3CVzp-LzKpczXrE
-# sha256: EF-NaGFvgkjiS_DpNy7wTTzBAQTxmA9U1Xss5zpa1Wo
-six==1.10.0
-
-# sha256: glPOvsSxkJTWfMXtWvmb8duhKFKSIm6Yoxkp-HpdayM
-# sha256: BazGegmYDC7P7dNCP3rgEEg57MtV_GRXc-HKoJUcMDA
-traceback2==1.4.0
-
-# sha256: E_d9CHXbbZtDXh1PQedK1MwutuHVyCSZYJKzQw8Ii7g
-# sha256: IogqDkGMKE4fcYqCKzsCKUTVPS2QjhaQsxmp0-ssBXk
-unittest2==1.1.0
-
-# sha256: KCwRK1XdjjyGmjVx-GdnwVCrEoSprOK97CJsWSrK-Bo
-zope.component==4.2.2
-
-# sha256: 3HpZov2Rcw03kxMaXSYbKek-xOKpfxvEh86N7-4v54Y
-zope.event==4.1.0
-
-# sha256: 8HtjH3pgHNjL0zMtVPQxQscIioMpn4WTVvCNHU1CWbM
-# sha256: 3lzKCDuUOdgAL7drvmtJmMWlpyH6sluEKYln8ALfTJQ
-# sha256: Z4hBb36n9bipe-lIJTd6ol6L3HNGPge6r5hYsp5zcHc
-# sha256: bzIw9yVFGCAeWjcIy7LemMhIME8G497Yv7OeWCXLouE
-# sha256: X6V1pSQPBCAMMIhCfQ1Le3N_bpAYgYpR2ND5J6aiUXo
-# sha256: UiGUrWpUVzXt11yKg_SNZdGvBk5DKn0yDWT1a6_BLpk
-# sha256: 6Mey1AlD9xyZFIyX9myqf1E0FH9XQj-NtbSCUJnOmgk
-# sha256: J5Ak8CCGAcPKqQfFOHbjetiGJffq8cs4QtvjYLIocBc
-# sha256: LiIanux8zFiImieOoT3P7V75OdgLB4Gamos8scaBSE8
-# sha256: aRGJZUEOyG1E3GuQF-4929WC4MCr7vYrOhnb9sitEys
-# sha256: 0E34aG7IZNDK3ozxmff4OuzUFhCaIINNVo-DEN7RLeo
-# sha256: 51qUfhXul-fnHgLqMC_rL8YtOiu0Zov5377UOlBqx-c
-# sha256: TkXSL7iDIipaufKCoRb-xe4ujRpWjM_2otdbvQ62vPw
-# sha256: vOkzm7PHpV4IA7Y9IcWDno5Hm8hcSt9CrkFbcvlPrLI
-# sha256: koE4NlJFoOiGmlmZ-8wqRUdaCm7VKklNYNvcVAM1_t0
-# sha256: DYQbobuEDuoOZIncXsr6YSVVSXH1O1rLh3ZEQeYbzro
-# sha256: sJyMHUezUxxADgGVaX8UFKYyId5u9HhZik8UYPfZo5I
-zope.interface==4.1.3
-
-# sha256: uDndLZwRfHAUMMFJlWkYpCOphjtIsJyQ4wpgE-fS9E8
-# sha256: j4MIDaoknQNsvM-4rlzG_wB7iNbZN1ITca-r57Gbrbw
-mock==1.0.1
-
-# THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT;
-# ADD ALL DEPENDENCIES ABOVE
-
-# sha256: UMVihR1TbyvQNHzx1CzYiydDitJVGw_mLAGr3-gCGJk
-# sha256: ClkIqiGQsLTyyLASRkWYniS9n4CAW6D4GSuBETXFALY
-acme==0.4.2
-
-# sha256: hbUGND6Eo_q6a97o3o66wwLYJ7koNvwOXh9u5bZNCVI
-# sha256: 460kqywseljbDW_Gr_ZU23rWlzNeE-AL4_JwYCRdS-Y
-letsencrypt==0.4.2
-
-# sha256: KNMAOMrJMr1vLJBDaihGqEmvPbfxgH_dvRk1OFHaM_I
-# sha256: SXSg-gIabiV4CBzrfPIyABhfTjKl7YZrKDSVkfE4Vbo
-letsencrypt-apache==0.4.2
+acme==0.5.0 \
+    --hash=sha256:ceb4127c13213f0006a564be82176b968c6b374d20d9fc78555d0658a252b275 \
+    --hash=sha256:0605c63c656d33c883a05675f5db9cfb85d503f2771c885031800e0da7631abd
+letsencrypt==0.5.0 \
+    --hash=sha256:f90f883e99cdbdf8142335bdbf4f74a8af143ee4b4ec60fb49c6e47418c1114c \
+    --hash=sha256:e38a2b70b82be79bc195307652244a3e012ec73d897d4dbd3f80cf698496d15a
+letsencrypt-apache==0.5.0 \
+    --hash=sha256:a767882164a7b09d9c12c80684a28a782135fdaf35654ef5a02c0b7b1d27ab8d \
+    --hash=sha256:c20e7b9c517aa4a7d70e6bd9382da7259f00bc191b9e60d8e312e48837a00c41
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
-    cat << "UNLIKELY_EOF" > "$TEMP_DIR/peep.py"
+    cat << "UNLIKELY_EOF" > "$TEMP_DIR/pipstrap.py"
 #!/usr/bin/env python
-"""peep ("prudently examine every package") verifies that packages conform to a
-trusted, locally stored hash and only then installs them::
+"""A small script that can act as a trust root for installing pip 8
 
-    peep install -r requirements.txt
-
-This makes your deployments verifiably repeatable without having to maintain a
-local PyPI mirror or use a vendor lib. Just update the version numbers and
-hashes in requirements.txt, and you're all set.
+Embed this in your project, and your VCS checkout is all you have to trust. In
+a post-peep era, this lets you claw your way to a hash-checking version of pip,
+with which you can install the rest of your dependencies safely. All it assumes
+is Python 2.6 or better and *some* version of pip already installed. If
+anything goes wrong, it will exit with a non-zero status code.
 
 """
-# This is here so embedded copies of peep.py are MIT-compliant:
-# Copyright (c) 2013 Erik Rose
+# This is here so embedded copies are MIT-compliant:
+# Copyright (c) 2016 Erik Rose
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -717,957 +681,146 @@ hashes in requirements.txt, and you're all set.
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
 from __future__ import print_function
-try:
-    xrange = xrange
-except NameError:
-    xrange = range
-from base64 import urlsafe_b64encode, urlsafe_b64decode
-from binascii import hexlify
-import cgi
-from collections import defaultdict
-from functools import wraps
 from hashlib import sha256
-from itertools import chain, islice
-import mimetypes
-from optparse import OptionParser
-from os.path import join, basename, splitext, isdir
-from pickle import dumps, loads
-import re
-import sys
-from shutil import rmtree, copy
-from sys import argv, exit
-from tempfile import mkdtemp
-import traceback
+from os.path import join
+from pipes import quote
+from shutil import rmtree
 try:
-    from urllib2 import build_opener, HTTPHandler, HTTPSHandler, HTTPError
+    from subprocess import check_output
+except ImportError:
+    from subprocess import CalledProcessError, PIPE, Popen
+
+    def check_output(*popenargs, **kwargs):
+        if 'stdout' in kwargs:
+            raise ValueError('stdout argument not allowed, it will be '
+                             'overridden.')
+        process = Popen(stdout=PIPE, *popenargs, **kwargs)
+        output, unused_err = process.communicate()
+        retcode = process.poll()
+        if retcode:
+            cmd = kwargs.get("args")
+            if cmd is None:
+                cmd = popenargs[0]
+            raise CalledProcessError(retcode, cmd)
+        return output
+from sys import exit, version_info
+from tempfile import mkdtemp
+try:
+    from urllib2 import build_opener, HTTPHandler, HTTPSHandler
 except ImportError:
     from urllib.request import build_opener, HTTPHandler, HTTPSHandler
-    from urllib.error import HTTPError
 try:
     from urlparse import urlparse
 except ImportError:
     from urllib.parse import urlparse  # 3.4
-# TODO: Probably use six to make urllib stuff work across 2/3.
-
-from pkg_resources import require, VersionConflict, DistributionNotFound
-
-# We don't admit our dependency on pip in setup.py, lest a naive user simply
-# say `pip install peep.tar.gz` and thus pull down an untrusted copy of pip
-# from PyPI. Instead, we make sure it's installed and new enough here and spit
-# out an error message if not:
 
 
-def activate(specifier):
-    """Make a compatible version of pip importable. Raise a RuntimeError if we
-    couldn't."""
-    try:
-        for distro in require(specifier):
-            distro.activate()
-    except (VersionConflict, DistributionNotFound):
-        raise RuntimeError('The installed version of pip is too old; peep '
-                           'requires ' + specifier)
-
-# Before 0.6.2, the log module wasn't there, so some
-# of our monkeypatching fails. It probably wouldn't be
-# much work to support even earlier, though.
-activate('pip>=0.6.2')
-
-import pip
-from pip.commands.install import InstallCommand
-try:
-    from pip.download import url_to_path  # 1.5.6
-except ImportError:
-    try:
-        from pip.util import url_to_path  # 0.7.0
-    except ImportError:
-        from pip.util import url_to_filename as url_to_path  # 0.6.2
-from pip.exceptions import InstallationError
-from pip.index import PackageFinder, Link
-try:
-    from pip.log import logger
-except ImportError:
-    from pip import logger  # 6.0
-from pip.req import parse_requirements
-try:
-    from pip.utils.ui import DownloadProgressBar, DownloadProgressSpinner
-except ImportError:
-    class NullProgressBar(object):
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def iter(self, ret, *args, **kwargs):
-            return ret
-
-    DownloadProgressBar = DownloadProgressSpinner = NullProgressBar
-
-__version__ = 3, 1, 1
-
-try:
-    from pip.index import FormatControl  # noqa
-    FORMAT_CONTROL_ARG = 'format_control'
-
-    # The line-numbering bug will be fixed in pip 8. All 7.x releases had it.
-    PIP_MAJOR_VERSION = int(pip.__version__.split('.')[0])
-    PIP_COUNTS_COMMENTS = PIP_MAJOR_VERSION >= 8
-except ImportError:
-    FORMAT_CONTROL_ARG = 'use_wheel'  # pre-7
-    PIP_COUNTS_COMMENTS = True
+__version__ = 1, 1, 1
 
 
-ITS_FINE_ITS_FINE = 0
-SOMETHING_WENT_WRONG = 1
-# "Traditional" for command-line errors according to optparse docs:
-COMMAND_LINE_ERROR = 2
-UNHANDLED_EXCEPTION = 3
-
-ARCHIVE_EXTENSIONS = ('.tar.bz2', '.tar.gz', '.tgz', '.tar', '.zip')
-
-MARKER = object()
+# wheel has a conditional dependency on argparse:
+maybe_argparse = (
+    [('https://pypi.python.org/packages/source/a/argparse/'
+      'argparse-1.4.0.tar.gz',
+      '62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4')]
+    if version_info < (2, 7, 0) else [])
 
 
-class PipException(Exception):
-    """When I delegated to pip, it exited with an error."""
+PACKAGES = maybe_argparse + [
+    # Pip has no dependencies, as it vendors everything:
+    ('https://pypi.python.org/packages/source/p/pip/pip-8.0.3.tar.gz',
+     '30f98b66f3fe1069c529a491597d34a1c224a68640c82caf2ade5f88aa1405e8'),
+    # This version of setuptools has only optional dependencies:
+    ('https://pypi.python.org/packages/source/s/setuptools/'
+     'setuptools-20.2.2.tar.gz',
+     '24fcfc15364a9fe09a220f37d2dcedc849795e3de3e4b393ee988e66a9cbd85a'),
+    ('https://pypi.python.org/packages/source/w/wheel/wheel-0.29.0.tar.gz',
+     '1ebb8ad7e26b448e9caa4773d2357849bf80ff9e313964bcaf79cbf0201a1648')
+]
 
-    def __init__(self, error_code):
-        self.error_code = error_code
 
-
-class UnsupportedRequirementError(Exception):
-    """An unsupported line was encountered in a requirements file."""
-
-
-class DownloadError(Exception):
-    def __init__(self, link, exc):
-        self.link = link
-        self.reason = str(exc)
-
+class HashError(Exception):
     def __str__(self):
-        return 'Downloading %s failed: %s' % (self.link, self.reason)
+        url, path, actual, expected = self.args
+        return ('{url} did not match the expected hash {expected}. Instead, '
+                'it was {actual}. The file (left at {path}) may have been '
+                'tampered with.'.format(**locals()))
 
 
-def encoded_hash(sha):
-    """Return a short, 7-bit-safe representation of a hash.
+def hashed_download(url, temp, digest):
+    """Download ``url`` to ``temp``, make sure it has the SHA-256 ``digest``,
+    and return its path."""
+    # Based on pip 1.4.1's URLOpener but with cert verification removed. Python
+    # >=2.7.9 verifies HTTPS certs itself, and, in any case, the cert
+    # authenticity has only privacy (not arbitrary code execution)
+    # implications, since we're checking hashes.
+    def opener():
+        opener = build_opener(HTTPSHandler())
+        # Strip out HTTPHandler to prevent MITM spoof:
+        for handler in opener.handlers:
+            if isinstance(handler, HTTPHandler):
+                opener.handlers.remove(handler)
+        return opener
 
-    If you pass a sha256, this results in the hash algorithm that the Wheel
-    format (PEP 427) uses, except here it's intended to be run across the
-    downloaded archive before unpacking.
-
-    """
-    return urlsafe_b64encode(sha.digest()).decode('ascii').rstrip('=')
-
-
-def path_and_line(req):
-    """Return the path and line number of the file from which an
-    InstallRequirement came.
-
-    """
-    path, line = (re.match(r'-r (.*) \(line (\d+)\)$',
-                           req.comes_from).groups())
-    return path, int(line)
-
-
-def hashes_above(path, line_number):
-    """Yield hashes from contiguous comment lines before line ``line_number``.
-
-    """
-    def hash_lists(path):
-        """Yield lists of hashes appearing between non-comment lines.
-
-        The lists will be in order of appearance and, for each non-empty
-        list, their place in the results will coincide with that of the
-        line number of the corresponding result from `parse_requirements`
-        (which changed in pip 7.0 to not count comments).
-
-        """
-        hashes = []
-        with open(path) as file:
-            for lineno, line in enumerate(file, 1):
-                match = HASH_COMMENT_RE.match(line)
-                if match:  # Accumulate this hash.
-                    hashes.append(match.groupdict()['hash'])
-                if not IGNORED_LINE_RE.match(line):
-                    yield hashes  # Report hashes seen so far.
-                    hashes = []
-                elif PIP_COUNTS_COMMENTS:
-                    # Comment: count as normal req but have no hashes.
-                    yield []
-
-    return next(islice(hash_lists(path), line_number - 1, None))
-
-
-def run_pip(initial_args):
-    """Delegate to pip the given args (starting with the subcommand), and raise
-    ``PipException`` if something goes wrong."""
-    status_code = pip.main(initial_args)
-
-    # Clear out the registrations in the pip "logger" singleton. Otherwise,
-    # loggers keep getting appended to it with every run. Pip assumes only one
-    # command invocation will happen per interpreter lifetime.
-    logger.consumers = []
-
-    if status_code:
-        raise PipException(status_code)
-
-
-def hash_of_file(path):
-    """Return the hash of a downloaded file."""
-    with open(path, 'rb') as archive:
-        sha = sha256()
+    def read_chunks(response, chunk_size):
         while True:
-            data = archive.read(2 ** 20)
-            if not data:
+            chunk = response.read(chunk_size)
+            if not chunk:
                 break
-            sha.update(data)
-    return encoded_hash(sha)
-
-
-def is_git_sha(text):
-    """Return whether this is probably a git sha"""
-    # Handle both the full sha as well as the 7-character abbreviation
-    if len(text) in (40, 7):
-        try:
-            int(text, 16)
-            return True
-        except ValueError:
-            pass
-    return False
-
-
-def filename_from_url(url):
-    parsed = urlparse(url)
-    path = parsed.path
-    return path.split('/')[-1]
-
-
-def requirement_args(argv, want_paths=False, want_other=False):
-    """Return an iterable of filtered arguments.
-
-    :arg argv: Arguments, starting after the subcommand
-    :arg want_paths: If True, the returned iterable includes the paths to any
-        requirements files following a ``-r`` or ``--requirement`` option.
-    :arg want_other: If True, the returned iterable includes the args that are
-        not a requirement-file path or a ``-r`` or ``--requirement`` flag.
-
-    """
-    was_r = False
-    for arg in argv:
-        # Allow for requirements files named "-r", don't freak out if there's a
-        # trailing "-r", etc.
-        if was_r:
-            if want_paths:
-                yield arg
-            was_r = False
-        elif arg in ['-r', '--requirement']:
-            was_r = True
-        else:
-            if want_other:
-                yield arg
-
-# any line that is a comment or just whitespace
-IGNORED_LINE_RE = re.compile(r'^(\s*#.*)?\s*$')
-
-HASH_COMMENT_RE = re.compile(
-    r"""
-    \s*\#\s+                   # Lines that start with a '#'
-    (?P<hash_type>sha256):\s+  # Hash type is hardcoded to be sha256 for now.
-    (?P<hash>[^\s]+)           # Hashes can be anything except '#' or spaces.
-    \s*                        # Suck up whitespace before the comment or
-                               #   just trailing whitespace if there is no
-                               #   comment. Also strip trailing newlines.
-    (?:\#(?P<comment>.*))?     # Comments can be anything after a whitespace+#
-                               #   and are optional.
-    $""", re.X)
-
-
-def peep_hash(argv):
-    """Return the peep hash of one or more files, returning a shell status code
-    or raising a PipException.
-
-    :arg argv: The commandline args, starting after the subcommand
-
-    """
-    parser = OptionParser(
-        usage='usage: %prog hash file [file ...]',
-        description='Print a peep hash line for one or more files: for '
-                    'example, "# sha256: '
-                    'oz42dZy6Gowxw8AelDtO4gRgTW_xPdooH484k7I5EOY".')
-    _, paths = parser.parse_args(args=argv)
-    if paths:
-        for path in paths:
-            print('# sha256:', hash_of_file(path))
-        return ITS_FINE_ITS_FINE
-    else:
-        parser.print_usage()
-        return COMMAND_LINE_ERROR
-
-
-class EmptyOptions(object):
-    """Fake optparse options for compatibility with pip<1.2
-
-    pip<1.2 had a bug in parse_requirements() in which the ``options`` kwarg
-    was required. We work around that by passing it a mock object.
-
-    """
-    default_vcs = None
-    skip_requirements_regex = None
-    isolated_mode = False
-
-
-def memoize(func):
-    """Memoize a method that should return the same result every time on a
-    given instance.
-
-    """
-    @wraps(func)
-    def memoizer(self):
-        if not hasattr(self, '_cache'):
-            self._cache = {}
-        if func.__name__ not in self._cache:
-            self._cache[func.__name__] = func(self)
-        return self._cache[func.__name__]
-    return memoizer
-
-
-def package_finder(argv):
-    """Return a PackageFinder respecting command-line options.
-
-    :arg argv: Everything after the subcommand
-
-    """
-    # We instantiate an InstallCommand and then use some of its private
-    # machinery--its arg parser--for our own purposes, like a virus. This
-    # approach is portable across many pip versions, where more fine-grained
-    # ones are not. Ignoring options that don't exist on the parser (for
-    # instance, --use-wheel) gives us a straightforward method of backward
-    # compatibility.
-    try:
-        command = InstallCommand()
-    except TypeError:
-        # This is likely pip 1.3.0's "__init__() takes exactly 2 arguments (1
-        # given)" error. In that version, InstallCommand takes a top=level
-        # parser passed in from outside.
-        from pip.baseparser import create_main_parser
-        command = InstallCommand(create_main_parser())
-    # The downside is that it essentially ruins the InstallCommand class for
-    # further use. Calling out to pip.main() within the same interpreter, for
-    # example, would result in arguments parsed this time turning up there.
-    # Thus, we deepcopy the arg parser so we don't trash its singletons. Of
-    # course, deepcopy doesn't work on these objects, because they contain
-    # uncopyable regex patterns, so we pickle and unpickle instead. Fun!
-    options, _ = loads(dumps(command.parser)).parse_args(argv)
-
-    # Carry over PackageFinder kwargs that have [about] the same names as
-    # options attr names:
-    possible_options = [
-        'find_links',
-        FORMAT_CONTROL_ARG,
-        ('allow_all_prereleases', 'pre'),
-        'process_dependency_links'
-    ]
-    kwargs = {}
-    for option in possible_options:
-        kw, attr = option if isinstance(option, tuple) else (option, option)
-        value = getattr(options, attr, MARKER)
-        if value is not MARKER:
-            kwargs[kw] = value
-
-    # Figure out index_urls:
-    index_urls = [options.index_url] + options.extra_index_urls
-    if options.no_index:
-        index_urls = []
-    index_urls += getattr(options, 'mirrors', [])
-
-    # If pip is new enough to have a PipSession, initialize one, since
-    # PackageFinder requires it:
-    if hasattr(command, '_build_session'):
-        kwargs['session'] = command._build_session(options)
-
-    return PackageFinder(index_urls=index_urls, **kwargs)
-
-
-class DownloadedReq(object):
-    """A wrapper around InstallRequirement which offers additional information
-    based on downloading and examining a corresponding package archive
-
-    These are conceptually immutable, so we can get away with memoizing
-    expensive things.
-
-    """
-    def __init__(self, req, argv, finder):
-        """Download a requirement, compare its hashes, and return a subclass
-        of DownloadedReq depending on its state.
-
-        :arg req: The InstallRequirement I am based on
-        :arg argv: The args, starting after the subcommand
-
-        """
-        self._req = req
-        self._argv = argv
-        self._finder = finder
-
-        # We use a separate temp dir for each requirement so requirements
-        # (from different indices) that happen to have the same archive names
-        # don't overwrite each other, leading to a security hole in which the
-        # latter is a hash mismatch, the former has already passed the
-        # comparison, and the latter gets installed.
-        self._temp_path = mkdtemp(prefix='peep-')
-        # Think of DownloadedReq as a one-shot state machine. It's an abstract
-        # class that ratchets forward to being one of its own subclasses,
-        # depending on its package status. Then it doesn't move again.
-        self.__class__ = self._class()
-
-    def dispose(self):
-        """Delete temp files and dirs I've made. Render myself useless.
-
-        Do not call further methods on me after calling dispose().
-
-        """
-        rmtree(self._temp_path)
-
-    def _version(self):
-        """Deduce the version number of the downloaded package from its filename."""
-        # TODO: Can we delete this method and just print the line from the
-        # reqs file verbatim instead?
-        def version_of_archive(filename, package_name):
-            # Since we know the project_name, we can strip that off the left, strip
-            # any archive extensions off the right, and take the rest as the
-            # version.
-            for ext in ARCHIVE_EXTENSIONS:
-                if filename.endswith(ext):
-                    filename = filename[:-len(ext)]
-                    break
-            # Handle github sha tarball downloads.
-            if is_git_sha(filename):
-                filename = package_name + '-' + filename
-            if not filename.lower().replace('_', '-').startswith(package_name.lower()):
-                # TODO: Should we replace runs of [^a-zA-Z0-9.], not just _, with -?
-                give_up(filename, package_name)
-            return filename[len(package_name) + 1:]  # Strip off '-' before version.
-
-        def version_of_wheel(filename, package_name):
-            # For Wheel files (http://legacy.python.org/dev/peps/pep-0427/#file-
-            # name-convention) we know the format bits are '-' separated.
-            whl_package_name, version, _rest = filename.split('-', 2)
-            # Do the alteration to package_name from PEP 427:
-            our_package_name = re.sub(r'[^\w\d.]+', '_', package_name, re.UNICODE)
-            if whl_package_name != our_package_name:
-                give_up(filename, whl_package_name)
-            return version
-
-        def give_up(filename, package_name):
-            raise RuntimeError("The archive '%s' didn't start with the package name "
-                               "'%s', so I couldn't figure out the version number. "
-                               "My bad; improve me." %
-                               (filename, package_name))
-
-        get_version = (version_of_wheel
-                       if self._downloaded_filename().endswith('.whl')
-                       else version_of_archive)
-        return get_version(self._downloaded_filename(), self._project_name())
-
-    def _is_always_unsatisfied(self):
-        """Returns whether this requirement is always unsatisfied
-
-        This would happen in cases where we can't determine the version
-        from the filename.
-
-        """
-        # If this is a github sha tarball, then it is always unsatisfied
-        # because the url has a commit sha in it and not the version
-        # number.
-        url = self._url()
-        if url:
-            filename = filename_from_url(url)
-            if filename.endswith(ARCHIVE_EXTENSIONS):
-                filename, ext = splitext(filename)
-                if is_git_sha(filename):
-                    return True
-        return False
-
-    @memoize  # Avoid hitting the file[cache] over and over.
-    def _expected_hashes(self):
-        """Return a list of known-good hashes for this package."""
-        return hashes_above(*path_and_line(self._req))
-
-    def _download(self, link):
-        """Download a file, and return its name within my temp dir.
-
-        This does no verification of HTTPS certs, but our checking hashes
-        makes that largely unimportant. It would be nice to be able to use the
-        requests lib, which can verify certs, but it is guaranteed to be
-        available only in pip >= 1.5.
-
-        This also drops support for proxies and basic auth, though those could
-        be added back in.
-
-        """
-        # Based on pip 1.4.1's URLOpener but with cert verification removed
-        def opener(is_https):
-            if is_https:
-                opener = build_opener(HTTPSHandler())
-                # Strip out HTTPHandler to prevent MITM spoof:
-                for handler in opener.handlers:
-                    if isinstance(handler, HTTPHandler):
-                        opener.handlers.remove(handler)
-            else:
-                opener = build_opener()
-            return opener
-
-        # Descended from unpack_http_url() in pip 1.4.1
-        def best_filename(link, response):
-            """Return the most informative possible filename for a download,
-            ideally with a proper extension.
-
-            """
-            content_type = response.info().get('content-type', '')
-            filename = link.filename  # fallback
-            # Have a look at the Content-Disposition header for a better guess:
-            content_disposition = response.info().get('content-disposition')
-            if content_disposition:
-                type, params = cgi.parse_header(content_disposition)
-                # We use ``or`` here because we don't want to use an "empty" value
-                # from the filename param:
-                filename = params.get('filename') or filename
-            ext = splitext(filename)[1]
-            if not ext:
-                ext = mimetypes.guess_extension(content_type)
-                if ext:
-                    filename += ext
-            if not ext and link.url != response.geturl():
-                ext = splitext(response.geturl())[1]
-                if ext:
-                    filename += ext
-            return filename
-
-        # Descended from _download_url() in pip 1.4.1
-        def pipe_to_file(response, path, size=0):
-            """Pull the data off an HTTP response, shove it in a new file, and
-            show progress.
-
-            :arg response: A file-like object to read from
-            :arg path: The path of the new file
-            :arg size: The expected size, in bytes, of the download. 0 for
-                unknown or to suppress progress indication (as for cached
-                downloads)
-
-            """
-            def response_chunks(chunk_size):
-                while True:
-                    chunk = response.read(chunk_size)
-                    if not chunk:
-                        break
-                    yield chunk
-
-            print('Downloading %s%s...' % (
-                self._req.req,
-                (' (%sK)' % (size / 1000)) if size > 1000 else ''))
-            progress_indicator = (DownloadProgressBar(max=size).iter if size
-                                  else DownloadProgressSpinner().iter)
-            with open(path, 'wb') as file:
-                for chunk in progress_indicator(response_chunks(4096), 4096):
-                    file.write(chunk)
-
-        url = link.url.split('#', 1)[0]
-        try:
-            response = opener(urlparse(url).scheme != 'http').open(url)
-        except (HTTPError, IOError) as exc:
-            raise DownloadError(link, exc)
-        filename = best_filename(link, response)
-        try:
-            size = int(response.headers['content-length'])
-        except (ValueError, KeyError, TypeError):
-            size = 0
-        pipe_to_file(response, join(self._temp_path, filename), size=size)
-        return filename
-
-    # Based on req_set.prepare_files() in pip bb2a8428d4aebc8d313d05d590f386fa3f0bbd0f
-    @memoize  # Avoid re-downloading.
-    def _downloaded_filename(self):
-        """Download the package's archive if necessary, and return its
-        filename.
-
-        --no-deps is implied, as we have reimplemented the bits that would
-        ordinarily do dependency resolution.
-
-        """
-        # Peep doesn't support requirements that don't come down as a single
-        # file, because it can't hash them. Thus, it doesn't support editable
-        # requirements, because pip itself doesn't support editable
-        # requirements except for "local projects or a VCS url". Nor does it
-        # support VCS requirements yet, because we haven't yet come up with a
-        # portable, deterministic way to hash them. In summary, all we support
-        # is == requirements and tarballs/zips/etc.
-
-        # TODO: Stop on reqs that are editable or aren't ==.
-
-        # If the requirement isn't already specified as a URL, get a URL
-        # from an index:
-        link = self._link() or self._finder.find_requirement(self._req, upgrade=False)
-
-        if link:
-            lower_scheme = link.scheme.lower()  # pip lower()s it for some reason.
-            if lower_scheme == 'http' or lower_scheme == 'https':
-                file_path = self._download(link)
-                return basename(file_path)
-            elif lower_scheme == 'file':
-                # The following is inspired by pip's unpack_file_url():
-                link_path = url_to_path(link.url_without_fragment)
-                if isdir(link_path):
-                    raise UnsupportedRequirementError(
-                        "%s: %s is a directory. So that it can compute "
-                        "a hash, peep supports only filesystem paths which "
-                        "point to files" %
-                        (self._req, link.url_without_fragment))
-                else:
-                    copy(link_path, self._temp_path)
-                    return basename(link_path)
-            else:
-                raise UnsupportedRequirementError(
-                    "%s: The download link, %s, would not result in a file "
-                    "that can be hashed. Peep supports only == requirements, "
-                    "file:// URLs pointing to files (not folders), and "
-                    "http:// and https:// URLs pointing to tarballs, zips, "
-                    "etc." % (self._req, link.url))
-        else:
-            raise UnsupportedRequirementError(
-                "%s: couldn't determine where to download this requirement from."
-                % (self._req,))
-
-    def install(self):
-        """Install the package I represent, without dependencies.
-
-        Obey typical pip-install options passed in on the command line.
-
-        """
-        other_args = list(requirement_args(self._argv, want_other=True))
-        archive_path = join(self._temp_path, self._downloaded_filename())
-        # -U so it installs whether pip deems the requirement "satisfied" or
-        # not. This is necessary for GitHub-sourced zips, which change without
-        # their version numbers changing.
-        run_pip(['install'] + other_args + ['--no-deps', '-U', archive_path])
-
-    @memoize
-    def _actual_hash(self):
-        """Download the package's archive if necessary, and return its hash."""
-        return hash_of_file(join(self._temp_path, self._downloaded_filename()))
-
-    def _project_name(self):
-        """Return the inner Requirement's "unsafe name".
-
-        Raise ValueError if there is no name.
-
-        """
-        name = getattr(self._req.req, 'project_name', '')
-        if name:
-            return name
-        raise ValueError('Requirement has no project_name.')
-
-    def _name(self):
-        return self._req.name
-
-    def _link(self):
-        try:
-            return self._req.link
-        except AttributeError:
-            # The link attribute isn't available prior to pip 6.1.0, so fall
-            # back to the now deprecated 'url' attribute.
-            return Link(self._req.url) if self._req.url else None
-
-    def _url(self):
-        link = self._link()
-        return link.url if link else None
-
-    @memoize  # Avoid re-running expensive check_if_exists().
-    def _is_satisfied(self):
-        self._req.check_if_exists()
-        return (self._req.satisfied_by and
-                not self._is_always_unsatisfied())
-
-    def _class(self):
-        """Return the class I should be, spanning a continuum of goodness."""
-        try:
-            self._project_name()
-        except ValueError:
-            return MalformedReq
-        if self._is_satisfied():
-            return SatisfiedReq
-        if not self._expected_hashes():
-            return MissingReq
-        if self._actual_hash() not in self._expected_hashes():
-            return MismatchedReq
-        return InstallableReq
-
-    @classmethod
-    def foot(cls):
-        """Return the text to be printed once, after all of the errors from
-        classes of my type are printed.
-
-        """
-        return ''
-
-
-class MalformedReq(DownloadedReq):
-    """A requirement whose package name could not be determined"""
-
-    @classmethod
-    def head(cls):
-        return 'The following requirements could not be processed:\n'
-
-    def error(self):
-        return '* Unable to determine package name from URL %s; add #egg=' % self._url()
-
-
-class MissingReq(DownloadedReq):
-    """A requirement for which no hashes were specified in the requirements file"""
-
-    @classmethod
-    def head(cls):
-        return ('The following packages had no hashes specified in the requirements file, which\n'
-                'leaves them open to tampering. Vet these packages to your satisfaction, then\n'
-                'add these "sha256" lines like so:\n\n')
-
-    def error(self):
-        if self._url():
-            # _url() always contains an #egg= part, or this would be a
-            # MalformedRequest.
-            line = self._url()
-        else:
-            line = '%s==%s' % (self._name(), self._version())
-        return '# sha256: %s\n%s\n' % (self._actual_hash(), line)
-
-
-class MismatchedReq(DownloadedReq):
-    """A requirement for which the downloaded file didn't match any of my hashes."""
-    @classmethod
-    def head(cls):
-        return ("THE FOLLOWING PACKAGES DIDN'T MATCH THE HASHES SPECIFIED IN THE REQUIREMENTS\n"
-                "FILE. If you have updated the package versions, update the hashes. If not,\n"
-                "freak out, because someone has tampered with the packages.\n\n")
-
-    def error(self):
-        preamble = '    %s: expected' % self._project_name()
-        if len(self._expected_hashes()) > 1:
-            preamble += ' one of'
-        padding = '\n' + ' ' * (len(preamble) + 1)
-        return '%s %s\n%s got %s' % (preamble,
-                                     padding.join(self._expected_hashes()),
-                                     ' ' * (len(preamble) - 4),
-                                     self._actual_hash())
-
-    @classmethod
-    def foot(cls):
-        return '\n'
-
-
-class SatisfiedReq(DownloadedReq):
-    """A requirement which turned out to be already installed"""
-
-    @classmethod
-    def head(cls):
-        return ("These packages were already installed, so we didn't need to download or build\n"
-                "them again. If you installed them with peep in the first place, you should be\n"
-                "safe. If not, uninstall them, then re-attempt your install with peep.\n")
-
-    def error(self):
-        return '   %s' % (self._req,)
-
-
-class InstallableReq(DownloadedReq):
-    """A requirement whose hash matched and can be safely installed"""
-
-
-# DownloadedReq subclasses that indicate an error that should keep us from
-# going forward with installation, in the order in which their errors should
-# be reported:
-ERROR_CLASSES = [MismatchedReq, MissingReq, MalformedReq]
-
-
-def bucket(things, key):
-    """Return a map of key -> list of things."""
-    ret = defaultdict(list)
-    for thing in things:
-        ret[key(thing)].append(thing)
-    return ret
-
-
-def first_every_last(iterable, first, every, last):
-    """Execute something before the first item of iter, something else for each
-    item, and a third thing after the last.
-
-    If there are no items in the iterable, don't execute anything.
-
-    """
-    did_first = False
-    for item in iterable:
-        if not did_first:
-            did_first = True
-            first(item)
-        every(item)
-    if did_first:
-        last(item)
-
-
-def _parse_requirements(path, finder):
-    try:
-        # list() so the generator that is parse_requirements() actually runs
-        # far enough to report a TypeError
-        return list(parse_requirements(
-            path, options=EmptyOptions(), finder=finder))
-    except TypeError:
-        # session is a required kwarg as of pip 6.0 and will raise
-        # a TypeError if missing. It needs to be a PipSession instance,
-        # but in older versions we can't import it from pip.download
-        # (nor do we need it at all) so we only import it in this except block
-        from pip.download import PipSession
-        return list(parse_requirements(
-            path, options=EmptyOptions(), session=PipSession(), finder=finder))
-
-
-def downloaded_reqs_from_path(path, argv):
-    """Return a list of DownloadedReqs representing the requirements parsed
-    out of a given requirements file.
-
-    :arg path: The path to the requirements file
-    :arg argv: The commandline args, starting after the subcommand
-
-    """
-    finder = package_finder(argv)
-    return [DownloadedReq(req, argv, finder) for req in
-            _parse_requirements(path, finder)]
-
-
-def peep_install(argv):
-    """Perform the ``peep install`` subcommand, returning a shell status code
-    or raising a PipException.
-
-    :arg argv: The commandline args, starting after the subcommand
-
-    """
-    output = []
-    out = output.append
-    reqs = []
-    try:
-        req_paths = list(requirement_args(argv, want_paths=True))
-        if not req_paths:
-            out("You have to specify one or more requirements files with the -r option, because\n"
-                "otherwise there's nowhere for peep to look up the hashes.\n")
-            return COMMAND_LINE_ERROR
-
-        # We're a "peep install" command, and we have some requirement paths.
-        reqs = list(chain.from_iterable(
-            downloaded_reqs_from_path(path, argv)
-            for path in req_paths))
-        buckets = bucket(reqs, lambda r: r.__class__)
-
-        # Skip a line after pip's "Cleaning up..." so the important stuff
-        # stands out:
-        if any(buckets[b] for b in ERROR_CLASSES):
-            out('\n')
-
-        printers = (lambda r: out(r.head()),
-                    lambda r: out(r.error() + '\n'),
-                    lambda r: out(r.foot()))
-        for c in ERROR_CLASSES:
-            first_every_last(buckets[c], *printers)
-
-        if any(buckets[b] for b in ERROR_CLASSES):
-            out('-------------------------------\n'
-                'Not proceeding to installation.\n')
-            return SOMETHING_WENT_WRONG
-        else:
-            for req in buckets[InstallableReq]:
-                req.install()
-
-            first_every_last(buckets[SatisfiedReq], *printers)
-
-        return ITS_FINE_ITS_FINE
-    except (UnsupportedRequirementError, InstallationError, DownloadError) as exc:
-        out(str(exc))
-        return SOMETHING_WENT_WRONG
-    finally:
-        for req in reqs:
-            req.dispose()
-        print(''.join(output))
-
-
-def peep_port(paths):
-    """Convert a peep requirements file to one compatble with pip-8 hashing.
-
-    Loses comments and tromps on URLs, so the result will need a little manual
-    massaging, but the hard part--the hash conversion--is done for you.
-
-    """
-    if not paths:
-        print('Please specify one or more requirements files so I have '
-              'something to port.\n')
-        return COMMAND_LINE_ERROR
-
-    comes_from = None
-    for req in chain.from_iterable(
-            _parse_requirements(path, package_finder(argv)) for path in paths):
-        req_path, req_line = path_and_line(req)
-        hashes = [hexlify(urlsafe_b64decode((hash + '=').encode('ascii'))).decode('ascii')
-                  for hash in hashes_above(req_path, req_line)]
-        if req_path != comes_from:
-            print()
-            print('# from %s' % req_path)
-            print()
-            comes_from = req_path
-
-        if not hashes:
-            print(req.req)
-        else:
-            print('%s' % (req.link if getattr(req, 'link', None) else req.req), end='')
-            for hash in hashes:
-                print(' \\')
-                print('    --hash=sha256:%s' % hash, end='')
-            print()
+            yield chunk
+
+    response = opener().open(url)
+    path = join(temp, urlparse(url).path.split('/')[-1])
+    actual_hash = sha256()
+    with open(path, 'wb') as file:
+        for chunk in read_chunks(response, 4096):
+            file.write(chunk)
+            actual_hash.update(chunk)
+
+    actual_digest = actual_hash.hexdigest()
+    if actual_digest != digest:
+        raise HashError(url, path, actual_digest, digest)
+    return path
 
 
 def main():
-    """Be the top-level entrypoint. Return a shell status code."""
-    commands = {'hash': peep_hash,
-                'install': peep_install,
-                'port': peep_port}
+    temp = mkdtemp(prefix='pipstrap-')
     try:
-        if len(argv) >= 2 and argv[1] in commands:
-            return commands[argv[1]](argv[2:])
-        else:
-            # Fall through to top-level pip main() for everything else:
-            return pip.main()
-    except PipException as exc:
-        return exc.error_code
-
-
-def exception_handler(exc_type, exc_value, exc_tb):
-    print('Oh no! Peep had a problem while trying to do stuff. Please write up a bug report')
-    print('with the specifics so we can fix it:')
-    print()
-    print('https://github.com/erikrose/peep/issues/new')
-    print()
-    print('Here are some particulars you can copy and paste into the bug report:')
-    print()
-    print('---')
-    print('peep:', repr(__version__))
-    print('python:', repr(sys.version))
-    print('pip:', repr(getattr(pip, '__version__', 'no __version__ attr')))
-    print('Command line: ', repr(sys.argv))
-    print(
-        ''.join(traceback.format_exception(exc_type, exc_value, exc_tb)))
-    print('---')
+        downloads = [hashed_download(url, temp, digest)
+                     for url, digest in PACKAGES]
+        check_output('pip install --no-index --no-deps -U ' +
+                     ' '.join(quote(d) for d in downloads),
+                     shell=True)
+    except HashError as exc:
+        print(exc)
+    except Exception:
+        rmtree(temp)
+        raise
+    else:
+        rmtree(temp)
+        return 0
+    return 1
 
 
 if __name__ == '__main__':
-    try:
-        exit(main())
-    except Exception:
-        exception_handler(*sys.exc_info())
-        exit(UNHANDLED_EXCEPTION)
+    exit(main())
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
-    InstallRequirements "setuptools-requirements.txt"
-    InstallRequirements "letsencrypt-auto-requirements.txt"
+    # Set PATH so pipstrap upgrades the right (v)env:
+    PATH="$VENV_BIN:$PATH" "$VENV_BIN/python" "$TEMP_DIR/pipstrap.py"
+    set +e
+    PIP_OUT=`"$VENV_BIN/pip" install --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt" 2>&1`
+    PIP_STATUS=$?
+    set -e
+    rm -rf "$TEMP_DIR"
+    if [ "$PIP_STATUS" != 0 ]; then
+      # Report error. (Otherwise, be quiet.)
+      echo "Had a problem while installing Python packages:"
+      echo "$PIP_OUT"
+      rm -rf "$VENV_PATH"
+      exit 1
+    fi
     echo "Installation succeeded."
   fi
   echo "Requesting root privileges to run letsencrypt..."

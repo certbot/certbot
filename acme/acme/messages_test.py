@@ -90,6 +90,11 @@ class DirectoryTest(unittest.TestCase):
         self.dir = Directory({
             'new-reg': 'reg',
             mock.MagicMock(resource_type='new-cert'): 'cert',
+            'meta': Directory.Meta(
+                terms_of_service='https://example.com/acme/terms',
+                website='https://www.example.com/',
+                caa_identities=['example.com'],
+            ),
         })
 
     def test_init_wrong_key_value_error(self):
@@ -111,9 +116,16 @@ class DirectoryTest(unittest.TestCase):
     def test_getattr_fails_with_attribute_error(self):
         self.assertRaises(AttributeError, self.dir.__getattr__, 'foo')
 
-    def test_to_partial_json(self):
-        self.assertEqual(
-            self.dir.to_partial_json(), {'new-reg': 'reg', 'new-cert': 'cert'})
+    def test_to_json(self):
+        self.assertEqual(self.dir.to_json(), {
+            'new-reg': 'reg',
+            'new-cert': 'cert',
+            'meta': {
+                'terms-of-service': 'https://example.com/acme/terms',
+                'website': 'https://www.example.com/',
+                'caa-identities': ['example.com'],
+            },
+        })
 
     def test_from_json_deserialization_error_on_wrong_key(self):
         from acme.messages import Directory

@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Download and run the latest release version of the Let's Encrypt client.
+# Download and run the latest release version of the Certbot client.
 #
 # NOTE: THIS SCRIPT IS AUTO-GENERATED AND SELF-UPDATING
 #
@@ -46,7 +46,7 @@ for arg in "$@" ; do
 done
 
 # letsencrypt-auto needs root access to bootstrap OS dependencies, and
-# letsencrypt itself needs root access for almost all modes of operation
+# certbot itself needs root access for almost all modes of operation
 # The "normal" case is that sudo is used for the steps that need root, but
 # this script *can* be run as root (not recommended), or fall back to using
 # `su`
@@ -157,7 +157,7 @@ Bootstrap() {
   elif grep -iq "Amazon Linux" /etc/issue ; then
     ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
   else
-    echo "Sorry, I don't know how to bootstrap Let's Encrypt on your operating system!"
+    echo "Sorry, I don't know how to bootstrap Certbot on your operating system!"
     echo
     echo "You will need to bootstrap, configure virtualenv, and run pip install manually."
     echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
@@ -176,7 +176,8 @@ if [ "$1" = "--le-auto-phase2" ]; then
 
   shift 1  # the --le-auto-phase2 arg
   if [ -f "$VENV_BIN/letsencrypt" ]; then
-    INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | cut -d " " -f 2)
+    # --version output ran through grep due to python-cryptography DeprecationWarnings
+    INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | grep ^letsencrypt | cut -d " " -f 2)
   else
     INSTALLED_VERSION="none"
   fi
@@ -218,7 +219,7 @@ UNLIKELY_EOF
     fi
     echo "Installation succeeded."
   fi
-  echo "Requesting root privileges to run letsencrypt..."
+  echo "Requesting root privileges to run certbot..."
   echo "  " $SUDO "$VENV_BIN/letsencrypt" "$@"
   $SUDO "$VENV_BIN/letsencrypt" "$@"
 else
@@ -226,8 +227,8 @@ else
   #
   # Each phase checks the version of only the thing it is responsible for
   # upgrading. Phase 1 checks the version of the latest release of
-  # letsencrypt-auto (which is always the same as that of the letsencrypt
-  # package). Phase 2 checks the version of the locally installed letsencrypt.
+  # letsencrypt-auto (which is always the same as that of the certbot
+  # package). Phase 2 checks the version of the locally installed certbot.
 
   if [ ! -f "$VENV_BIN/letsencrypt" ]; then
     # If it looks like we've never bootstrapped before, bootstrap:
