@@ -770,7 +770,7 @@ class MultipleVhostsTest(util.ApacheTest):
     @mock.patch("certbot_apache.configurator.ApacheConfigurator._get_http_vhost")
     @mock.patch("certbot_apache.display_ops.select_vhost")
     @mock.patch("certbot.le_util.exe_exists")
-    def test_enhance_unknown_vhost(self, mock_exe):
+    def test_enhance_unknown_vhost(self, mock_exe, mock_sel_vhost, mock_get):
         self.config.parser.modules.add("rewrite_module")
         mock_exe.return_value = True
         ssl_vh1 = obj.VirtualHost(
@@ -790,21 +790,21 @@ class MultipleVhostsTest(util.ApacheTest):
             errors.PluginError,
             self.config.enhance, "certbot.demo", "unknown_enhancement")
 
-    @mock.patch("certbot.run_script")
+    @mock.patch("certbot.le_util.run_script")
     @mock.patch("certbot.le_util.exe_exists")
     def test_ocsp_stapling(self, mock_exe, mock_run_script):
         self.config.parser.update_runtime_variables = mock.Mock()
         self.config.parser.modules.add("mod_ssl.c")
         mock_exe.return_value = True
 
-        # This will create an ssl vhost for letsencrypt.demo
+        # This will create an ssl vhost for certbot.demo
         self.config.enhance("certbot.demo", "staple-ocsp")
 
         self.assertTrue("socache_shmcb_module" in self.config.parser.modules)
         self.assertTrue(mock_run_script.called)
 
-        # Get the ssl vhost for letsencrypt.demo
-        ssl_vhost = self.config.assoc["letsencrypt.demo"]
+        # Get the ssl vhost for certbot.demo
+        ssl_vhost = self.config.assoc["certbot.demo"]
 
         ssl_use_stapling_aug_path = self.config.parser.find_dir(
             "SSLUseStapling", "on", ssl_vhost.path)
@@ -825,10 +825,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.parser.modules.add("socache_shmcb_module")
         mock_exe.return_value = True
 
-        # This will create an ssl vhost for letsencrypt.demo
-        #self.config.enhance("letsencrypt.demo", "staple-ocsp")
-
-        # Checking the case with prior ocsp stapling confiugration
+        # Checking the case with already enabled ocsp stapling configuration
         self.config.enhance("ocspvhost.com", "staple-ocsp")
 
         # Get the ssl vhost for letsencrypt.demo
