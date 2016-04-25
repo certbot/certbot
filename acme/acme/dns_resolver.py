@@ -8,6 +8,7 @@ import dns.exception
 
 logger = logging.getLogger(__name__)
 
+
 def txt_records_for_name(name):
     """Resolve the name and return the TXT records.
 
