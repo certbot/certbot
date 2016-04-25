@@ -4,7 +4,7 @@
 # instance (see ./boulder-start.sh).
 #
 # Environment variables:
-#   SERVER: Passed as "letsencrypt --server" argument.
+#   SERVER: Passed as "certbot --server" argument.
 #
 # Note: this script is called by Boulder integration test suite!
 
@@ -21,7 +21,7 @@ else
 fi
 
 common_no_force_renew() {
-    letsencrypt_test_no_force_renew \
+    certbot_test_no_force_renew \
         --authenticator standalone \
         --installer null \
         "$@"
@@ -68,7 +68,7 @@ common renew
 CheckCertCount 2
 
 # This will renew because the expiry is less than 10 years from now
-sed -i "4arenew_before_expiry = 10 years" "$root/conf/renewal/le.wtf.conf"
+sed -i "4arenew_before_expiry = 4 years" "$root/conf/renewal/le.wtf.conf"
 common_no_force_renew renew --rsa-key-size 2048
 CheckCertCount 3
 
@@ -94,5 +94,5 @@ common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
 
 if type nginx;
 then
-    . ./letsencrypt-nginx/tests/boulder-integration.sh
+    . ./certbot-nginx/tests/boulder-integration.sh
 fi

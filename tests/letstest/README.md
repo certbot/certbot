@@ -1,10 +1,10 @@
 # letstest
-simple aws testfarm scripts for letsencrypt client testing
+simple aws testfarm scripts for certbot client testing
 
 - Configures (canned) boulder server
 - Launches EC2 instances with a given list of AMIs for different distros
-- Copies letsencrypt repo and puts it on the instances
-- Runs letsencrypt tests (bash scripts) on all of these
+- Copies certbot repo and puts it on the instances
+- Runs certbot tests (bash scripts) on all of these
 - Logs execution and success/fail for debugging
 
 ## Notes

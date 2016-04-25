@@ -90,6 +90,11 @@ class DirectoryTest(unittest.TestCase):
         self.dir = Directory({
             'new-reg': 'reg',
             mock.MagicMock(resource_type='new-cert'): 'cert',
+            'meta': Directory.Meta(
+                terms_of_service='https://example.com/acme/terms',
+                website='https://www.example.com/',
+                caa_identities=['example.com'],
+            ),
         })
 
     def test_init_wrong_key_value_error(self):
@@ -111,9 +116,16 @@ class DirectoryTest(unittest.TestCase):
     def test_getattr_fails_with_attribute_error(self):
         self.assertRaises(AttributeError, self.dir.__getattr__, 'foo')
 
-    def test_to_partial_json(self):
-        self.assertEqual(
-            self.dir.to_partial_json(), {'new-reg': 'reg', 'new-cert': 'cert'})
+    def test_to_json(self):
+        self.assertEqual(self.dir.to_json(), {
+            'new-reg': 'reg',
+            'new-cert': 'cert',
+            'meta': {
+                'terms-of-service': 'https://example.com/acme/terms',
+                'website': 'https://www.example.com/',
+                'caa-identities': ['example.com'],
+            },
+        })
 
     def test_from_json_deserialization_error_on_wrong_key(self):
         from acme.messages import Directory
@@ -271,10 +283,8 @@ class AuthorizationTest(unittest.TestCase):
             ChallengeBody(uri='http://challb2', status=STATUS_VALID,
                           chall=challenges.DNS(
                               token=b'DGyRejmCefe7v4NfDGDKfA')),
-            ChallengeBody(uri='http://challb3', status=STATUS_VALID,
-                          chall=challenges.RecoveryContact()),
         )
-        combinations = ((0, 2), (1, 2))
+        combinations = ((0,), (1,))
 
         from acme.messages import Authorization
         from acme.messages import Identifier
@@ -300,8 +310,8 @@ class AuthorizationTest(unittest.TestCase):
 
     def test_resolved_combinations(self):
         self.assertEqual(self.authz.resolved_combinations, (
-            (self.challbs[0], self.challbs[2]),
-            (self.challbs[1], self.challbs[2]),
+            (self.challbs[0],),
+            (self.challbs[1],),
         ))
 
 

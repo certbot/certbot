@@ -11,13 +11,13 @@ BootstrapGentooCommon() {
 
   case "$PACKAGE_MANAGER" in
     (paludis)
-      "$SUDO" cave resolve --preserve-world --keep-targets if-possible $PACKAGES -x
+      $SUDO cave resolve --preserve-world --keep-targets if-possible $PACKAGES -x
       ;;
     (pkgcore)
-      "$SUDO" pmerge --noreplace --oneshot $PACKAGES
+      $SUDO pmerge --noreplace --oneshot $PACKAGES
       ;;
     (portage|*)
-      "$SUDO" emerge --noreplace --oneshot $PACKAGES
+      $SUDO emerge --noreplace --oneshot $PACKAGES
       ;;
   esac
 }

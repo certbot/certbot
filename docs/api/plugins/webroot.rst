@@ -1,5 +1,5 @@
-:mod:`letsencrypt.plugins.webroot`
+:mod:`certbot.plugins.webroot`
 ----------------------------------
 
-.. automodule:: letsencrypt.plugins.webroot
+.. automodule:: certbot.plugins.webroot
    :members:

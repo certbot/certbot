@@ -51,7 +51,7 @@ BootstrapDebCommon() {
                   /bin/echo '(Backports are only installed if explicitly requested via "apt-get install -t wheezy-backports")'
               fi
 
-              sudo sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
+              $SUDO sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
               $SUDO apt-get update
           fi
       fi
@@ -69,7 +69,7 @@ BootstrapDebCommon() {
           AddBackportRepo precise-backports "deb http://archive.ubuntu.com/ubuntu precise-backports main restricted universe multiverse"
       else
           echo "No libaugeas0 version is available that's new enough to run the"
-          echo "Let's Encrypt apache plugin..."
+          echo "Certbot apache plugin..."
       fi
       # XXX add a case for ubuntu PPAs
   fi
