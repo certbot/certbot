@@ -83,8 +83,10 @@ class PostfixConfigGenerator:
 	# between Postfix version 2.5 and 2.6, since we only support => 2.11
 	# we don't use nor support legacy Postfix syntax.
 	# - Server:
-	self.ensure_cf_var("smtp_tls_protocols", "!SSLv2, !SSLv3", [])
+	self.ensure_cf_var("smtpd_tls_protocols", "!SSLv2, !SSLv3", [])
+	self.ensure_cf_var("smtpd_tls_mandatory_protocols", "!SSLv2, !SSLv3", [])
 	# - Client:
+	self.ensure_cf_var("smtp_tls_protocols", "!SSLv2, !SSLv3", [])
 	self.ensure_cf_var("smtp_tls_mandatory_protocols", "!SSLv2, !SSLv3", [])
 
     def maybe_add_config_lines(self):
