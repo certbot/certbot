@@ -86,7 +86,8 @@ class MultipleVhostsTest(util.ApacheTest):
         mock_getutility.notification = mock.MagicMock(return_value=True)
         names = self.config.get_all_names()
         self.assertEqual(names, set(
-            ["certbot.demo", "ocspvhost.com", "encryption-example.demo", "ip-172-30-0-17", "*.blue.purple.com"]))
+            ["certbot.demo", "ocspvhost.com", "encryption-example.demo",
+                "ip-172-30-0-17", "*.blue.purple.com"]))
 
     @mock.patch("zope.component.getUtility")
     @mock.patch("certbot_apache.configurator.socket.gethostbyaddr")
@@ -164,9 +165,9 @@ class MultipleVhostsTest(util.ApacheTest):
 
     @mock.patch("certbot_apache.display_ops.select_vhost")
     def test_choose_vhost_select_vhost_ssl(self, mock_select):
-        mock_select.return_value = self.vh_truth[0]
+        mock_select.return_value = self.vh_truth[1]
         self.assertEqual(
-            self.vh_truth[0], self.config.choose_vhost("none.com", temp=True))
+            self.vh_truth[1], self.config.choose_vhost("none.com"))
 
     @mock.patch("certbot_apache.display_ops.select_vhost")
     def test_choose_vhost_select_vhost_non_ssl(self, mock_select):
