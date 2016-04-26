@@ -160,7 +160,7 @@ def get_vh_truth(temp_dir, config_name):
             obj.VirtualHost(
                 os.path.join(prefix, "ocsp-ssl.conf"),
                 os.path.join(aug_pre, "ocsp-ssl.conf/IfModule/VirtualHost"),
-                set([obj.Addr.fromstring("*:443")]), True, True,
+                set([obj.Addr.fromstring("10.2.3.4:443")]), True, True,
                 "ocspvhost.com")]
         return vh_truth
 

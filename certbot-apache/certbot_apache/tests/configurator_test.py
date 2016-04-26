@@ -101,6 +101,7 @@ class MultipleVhostsTest(util.ApacheTest):
                  obj.Addr(("zombo.com",)),
                  obj.Addr(("192.168.1.2"))]),
             True, False)
+
         self.config.vhosts.append(vhost)
 
         names = self.config.get_all_names()
@@ -163,17 +164,17 @@ class MultipleVhostsTest(util.ApacheTest):
 
     @mock.patch("certbot_apache.display_ops.select_vhost")
     def test_choose_vhost_select_vhost_ssl(self, mock_select):
-        mock_select.return_value = self.vh_truth[1]
+        mock_select.return_value = self.vh_truth[0]
         self.assertEqual(
-            self.vh_truth[1], self.config.choose_vhost("none.com"))
+            self.vh_truth[0], self.config.choose_vhost("none.com", temp=True))
 
     @mock.patch("certbot_apache.display_ops.select_vhost")
     def test_choose_vhost_select_vhost_non_ssl(self, mock_select):
-        mock_select.return_value = self.vh_truth[1]
+        mock_select.return_value = self.vh_truth[0]
         chosen_vhost = self.config.choose_vhost("none.com")
-        self.vh_truth[1].aliases.add("none.com")
+        self.vh_truth[0].aliases.add("none.com")
         self.assertEqual(
-            self.vh_truth[1].get_names(), chosen_vhost.get_names())
+            self.vh_truth[0].get_names(), chosen_vhost.get_names())
 
         # Make sure we go from HTTP -> HTTPS
         self.assertFalse(self.vh_truth[0].ssl)
@@ -742,7 +743,8 @@ class MultipleVhostsTest(util.ApacheTest):
         cert, key, path = next(iter(c_k))
         self.assertTrue("cert" in cert)
         self.assertTrue("key" in key)
-        self.assertTrue("default-ssl" in path or "ocspvhost" in path)
+        #import ipdb; ipdb.set_trace()
+        self.assertTrue("default-ssl" in path or "ocsp-ssl" in path)
 
     def test_get_all_certs_keys_malformed_conf(self):
         self.config.parser.find_dir = mock.Mock(
