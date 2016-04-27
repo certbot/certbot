@@ -826,6 +826,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.parser.update_runtime_variables = mock.Mock()
         self.config.parser.modules.add("mod_ssl.c")
         self.config.parser.modules.add("socache_shmcb_module")
+        self.config.get_version = mock.Mock(return_value=(2, 4, 7))
         mock_exe.return_value = True
 
         # Checking the case with already enabled ocsp stapling configuration
