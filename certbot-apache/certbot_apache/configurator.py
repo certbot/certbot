@@ -1032,7 +1032,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     ssl_vhost.filep)
             self.save_notes += msg
             self.save()
-
             logger.info(msg)
         else:
             raise errors.PluginError(
