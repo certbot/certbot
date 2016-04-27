@@ -994,8 +994,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: (bool, :class:`~letsencrypt_apache.obj.VirtualHost`)
 
         """
-        min_apache_ver = (2, 4) #TODO check min apache ver that supports stapling
-        if self.version >= min_apache_ver:
+        min_apache_ver = (2, 4, 0) #TODO check min apache ver that supports stapling
+        if self.get_version() >= min_apache_ver:
             if "socache_shmcb_module" not in self.parser.modules:
                 self.enable_mod("socache_shmcb")
 

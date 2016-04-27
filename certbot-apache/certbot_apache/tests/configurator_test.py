@@ -744,7 +744,6 @@ class MultipleVhostsTest(util.ApacheTest):
         cert, key, path = next(iter(c_k))
         self.assertTrue("cert" in cert)
         self.assertTrue("key" in key)
-        #import ipdb; ipdb.set_trace()
         self.assertTrue("default-ssl" in path or "ocsp-ssl" in path)
 
     def test_get_all_certs_keys_malformed_conf(self):
@@ -798,6 +797,7 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_ocsp_stapling(self, mock_exe, mock_run_script):
         self.config.parser.update_runtime_variables = mock.Mock()
         self.config.parser.modules.add("mod_ssl.c")
+        self.config.get_version = mock.Mock(return_value=(2, 4, 7))
         mock_exe.return_value = True
 
         # This will create an ssl vhost for certbot.demo
@@ -853,9 +853,10 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.parser.update_runtime_variables = mock.Mock()
         self.config.parser.modules.add("mod_ssl.c")
         self.config.parser.modules.add("socache_shmcb_module")
-        self.config.get_version = mock.Mock(return_value=(2, 2))
+        self.config.get_version = mock.Mock(return_value=(2, 2, 0))
         self.assertRaises(errors.PluginError,
-                self.config.enhance("certbot.demo", "staple-ocsp"))
+                self.config.enhance, "certbot.demo", "staple-ocsp")
+
 
     def test_get_http_vhost_third_filter(self):
         ssl_vh = obj.VirtualHost(
@@ -993,7 +994,7 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_redirect_with_existing_rewrite(self, mock_exe, _):
         self.config.parser.update_runtime_variables = mock.Mock()
         mock_exe.return_value = True
-        self.config.get_version = mock.Mock(return_value=(2, 2))
+        self.config.get_version = mock.Mock(return_value=(2, 2, 0))
 
         # Create a preexisting rewrite rule
         self.config.parser.add_dir(
