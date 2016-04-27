@@ -846,6 +846,17 @@ class MultipleVhostsTest(util.ApacheTest):
 
         self.assertEqual(len(stapling_cache_aug_path), 1)
 
+
+    @mock.patch("certbot.le_util.exe_exists")
+    def test_ocsp_unsupported_apache_version(self, mock_exe):
+        mock_exe.return_value = True
+        self.config.parser.update_runtime_variables = mock.Mock()
+        self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules.add("socache_shmcb_module")
+        self.config.get_version = mock.Mock(return_value=(2, 2))
+        self.assertRaises(errors.PluginError,
+                self.config.enhance("certbot.demo", "staple-ocsp"))
+
     def test_get_http_vhost_third_filter(self):
         ssl_vh = obj.VirtualHost(
             "fp", "ap", set([obj.Addr(("*", "443"))]),

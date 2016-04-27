@@ -1034,6 +1034,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.save()
 
             logger.info(msg)
+        else:
+            raise errors.PluginError(
+                "Unable to set OCSP directives.\n"
+                "Apache version is below 2.4.")
 
     def _set_http_header(self, ssl_vhost, header_substring):
         """Enables header that is identified by header_substring on ssl_vhost.
