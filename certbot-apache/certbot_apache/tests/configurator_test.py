@@ -855,6 +855,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.parser.modules.add("mod_ssl.c")
         self.config.parser.modules.add("socache_shmcb_module")
         self.config.get_version = mock.Mock(return_value=(2, 2, 0))
+
         self.assertRaises(errors.PluginError,
                 self.config.enhance, "certbot.demo", "staple-ocsp")
 
