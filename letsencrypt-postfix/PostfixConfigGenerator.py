@@ -24,7 +24,12 @@ class ExistingConfigError(ValueError): pass
 
 
 class PostfixConfigGenerator:
-    def __init__(self, policy_config, postfix_dir, fixup=False, fopen=open):
+    def __init__(self,
+                 policy_config,
+                 postfix_dir,
+                 fixup=False,
+                 fopen=open,
+                 version=None):
         self.fixup          = fixup
         self.postfix_dir    = postfix_dir
         self.policy_config  = policy_config
@@ -40,6 +45,9 @@ class PostfixConfigGenerator:
         #self.cf = [line for line in cf if line and not line.startswith("#")]
         self.policy_lines = []
         self.new_cf = ""
+
+        # Set in .prepare() unless running in a test
+        self.postfix_version = version
 
     def find_postfix_cf(self):
         "Search far and wide for the correct postfix configuration file"
@@ -174,13 +182,14 @@ class PostfixConfigGenerator:
 	"""
         # XXX ensure we raise the right kinds of exceptions
 
-	# Parse Postfix version number (feature support, syntax changes etc.)
-	mail_version = subprocess.Popen(['/usr/sbin/postconf', '-d', 'mail_version'], \
-				stdout=subprocess.PIPE) \
-				.communicate()[0].split()[2]
-	maj, min, rev = mail_version.split('.')
-	self.postfix_version = mail_version
-	
+        if not self.postfix_version:
+            self.postfix_version = self.get_version()
+
+        if self.postfix_version < (2, 11, 0):
+            raise Exception(
+                'NotSupportedError: Postfix version is too old -- test.'
+            )
+
 	# Postfix has changed support for TLS features, supported protocol versions
 	# KEX methods, ciphers et cetera over the years. We sort out version dependend
 	# differences here and pass them onto other configuration functions.
@@ -225,7 +234,28 @@ class PostfixConfigGenerator:
 	# - Built-in support for TLS management and DANE added, see:
 	#   http://www.postfix.org/postfix-tls.1.html
 
-	return maj, min, rev
+    def get_version(self):
+        """Return the mail version of Postfix.
+
+        Version is returned as a tuple. (e.g. '2.11.3' is (2, 11, 3))
+
+        :returns: version
+        :rtype: tuple
+
+        :raises .PluginError:
+            Unable to find Postfix version.
+        """
+	# Parse Postfix version number (feature support, syntax changes etc.)
+	cmd = subprocess.Popen(['/usr/sbin/postconf', '-d', 'mail_version'],
+                               stdout=subprocess.PIPE)
+        stdout, _ = cmd.communicate()
+        if cmd.returncode != 0:
+            raise Exception('PluginError: Unable to determine Postfix version.')
+
+        # grabs version component of string like "mail_version = 2.11.3"
+        mail_version = stdout.split()[2]
+        postfix_version = tuple([int(i) for i in mail_version.split('.')])
+	return postfix_version
 
     def more_info(self):
         """Human-readable string to help the user.
@@ -233,6 +263,15 @@ class PostfixConfigGenerator:
         decide which plugin to use.
         :rtype str:
         """
+        return (
+            "Configures Postfix to try to authenticate mail servers, use "
+            "installed certificates and disable weak ciphers and protocols.{0}"
+            "Server root: {root}{0}"
+            "Version: {version}".format(
+                os.linesep,
+                root=self.postfix_dir,
+                version='.'.join([str(i) for i in self.postfix_version]))
+        )
 
 
     ### Let's Encrypt client IInstaller ###
