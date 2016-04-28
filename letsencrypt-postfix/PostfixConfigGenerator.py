@@ -28,7 +28,8 @@ class PostfixConfigGenerator:
         self.fixup          = fixup
         self.postfix_dir    = postfix_dir
         self.policy_config  = policy_config
-        self.policy_file    = os.path.join(postfix_dir, "starttls_everywhere_policy")
+        self.policy_file    = os.path.join(postfix_dir,
+                                           "starttls_everywhere_policy")
         self.ca_file = os.path.join(postfix_dir, "starttls_everywhere_CAfile")
 
         self.additions = []
@@ -51,7 +52,8 @@ class PostfixConfigGenerator:
         """
         acceptable = [ideal] + also_acceptable
 
-        l = [(num,line) for num,line in enumerate(self.cf) if line.startswith(var)]
+        l = [(num,line) for num,line in enumerate(self.cf)
+             if line.startswith(var)]
         if not any(l):
             self.additions.append(var + " = " + ideal)
         else:
@@ -62,14 +64,18 @@ class PostfixConfigGenerator:
                     self.deletions.extend(conflicting_lines)
                     self.additions.append(var + " = " + ideal)
                 else:
-                    raise ExistingConfigError, "Conflicting existing config values " + `l`
+                    raise ExistingConfigError(
+                        "Conflicting existing config values " + `l`
+                    )
             val = values[0][2]
             if val not in acceptable:
                 if self.fixup:
                     self.deletions.append(values[0][0])
                     self.additions.append(var + " = " + ideal)
                 else:
-                    raise ExistingConfigError, "Existing config has %s=%s"%(var,val)
+                    raise ExistingConfigError(
+                        "Existing config has %s=%s"%(var,val)
+                    )
 
     def wrangle_existing_config(self):
         """
@@ -96,12 +102,14 @@ class PostfixConfigGenerator:
 	# - Client:
 	self.ensure_cf_var("smtp_tls_mandatory_protocols", "!SSLv2, !SSLv3", [])
 
-    def maybe_add_config_lines(self):
+    def maybe_add_config_lines(self, fopen=open):
         if not self.additions:
             return
         if self.fixup:
             print "Deleting lines:", self.deletions
-        self.additions[:0]=["#","# New config lines added by STARTTLS Everywhere","#"]
+        self.additions[:0]=["#",
+                            "# New config lines added by STARTTLS Everywhere",
+                            "#"]
         new_cf_lines = "\n".join(self.additions) + "\n"
         print "Adding to %s:" % self.fn
         print new_cf_lines
@@ -118,10 +126,10 @@ class PostfixConfigGenerator:
         if not os.access(self.postfix_cf_file, os.W_OK):
             raise Exception("Can't write to %s, please re-run as root."
                 % self.postfix_cf_file)
-        with open(self.fn, "w") as f:
+        with fopen(self.fn, "w") as f:
             f.write(self.new_cf)
 
-    def set_domainwise_tls_policies(self):
+    def set_domainwise_tls_policies(self, fopen=open):
         all_acceptable_mxs = self.policy_config.acceptable_mxs
         for address_domain, properties in all_acceptable_mxs.items():
             mx_list = properties.accept_mx_domains
@@ -142,9 +150,8 @@ class PostfixConfigGenerator:
                 print mx_policy.min_tls_version
             self.policy_lines.append(entry)
 
-        f = open(self.policy_file, "w")
-        f.write("\n".join(self.policy_lines) + "\n")
-        f.close()
+        with fopen(self.policy_file, "w") as f:
+            f.write("\n".join(self.policy_lines) + "\n")
 
     ### Let's Encrypt client IPlugin ###
     # https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/plugins/common.py#L35
@@ -335,17 +342,19 @@ class PostfixConfigGenerator:
         """
         print "Reloading postfix config..."
         if os.geteuid() != 0:
-            os.system("sudo service postfix reload")
+            rc = os.system("sudo service postfix reload")
         else:
-            os.system("service postfix reload")
+            rc = os.system("service postfix reload")
+        if rc != 0:
+            raise Exception('PluginError: cannot restart postfix')
 
     def update_CAfile(self):
         os.system("cat /usr/share/ca-certificates/mozilla/*.crt > " + self.ca_file)
 
 
 def usage():
-    print ("Usage: %s starttls-everywhere.json /etc/postfix /etc/letsencrypt/live/example.com/" %
-          sys.argv[0])
+    print ("Usage: %s starttls-everywhere.json /etc/postfix "
+           "/etc/letsencrypt/live/example.com/" % sys.argv[0])
     sys.exit(1)
 
 
