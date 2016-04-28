@@ -149,7 +149,7 @@ class PostfixConfigGenerator:
             if len(mx_list) > 1:
                 logger.warn('Lists of multiple accept-mx-domains not yet '
                             'supported.')
-                logger.warn('Using MX {} for {}".format(mx_list[0],
+                logger.warn('Using MX {} for {}'.format(mx_list[0],
                                                         address_domain)
                            )
                 logger.warn('Ignoring: {}'.format(', '.join(mx_list[1:])))
