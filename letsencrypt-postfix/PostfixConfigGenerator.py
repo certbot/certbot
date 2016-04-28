@@ -364,7 +364,6 @@ class PostfixConfigGenerator:
             be quickly reversed in the future (challenges)
         :raises .PluginError: when save is unsuccessful
         """
-
         self.maybe_add_config_lines()
 
     def rollback_checkpoints(self, rollback=1):
@@ -389,6 +388,12 @@ class PostfixConfigGenerator:
         """Make sure the configuration is valid.
         :raises .MisconfigurationError: when the config is not in a usable state
         """
+        if os.geteuid() != 0:
+            rc = os.system('sudo /usr/sbin/postfix check')
+        else:
+            rc = os.system('/usr/sbin/postfix check')
+        if rc != 0:
+            raise Exception('MisconfigurationError: Postfix failed self-check.')
 
     def restart(self):
         """Restart or refresh the server content.
