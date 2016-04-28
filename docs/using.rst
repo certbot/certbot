@@ -446,7 +446,7 @@ If you run Debian Stretch or Debian Sid, you can install letsencrypt packages.
 If you don't want to use the Apache plugin, you can omit the
 ``python-letsencrypt-apache`` package.
 
-Packages for Debian Jessie are coming in the next few weeks.
+Packages for Debian Jessie are present in the backports repository. Read the `instructions <http://backports.debian.org/Instructions/>`_ to install the packages.
 
 **Fedora**
 
