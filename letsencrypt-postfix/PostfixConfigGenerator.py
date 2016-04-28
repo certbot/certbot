@@ -300,13 +300,17 @@ class PostfixConfigGenerator:
                           'smtpd_tls_cert_file': None,
                          }
         for num, line in enumerate(self.cf):
-            print 'Line is: %s' % line
             num, found_var, found_value = parse_line((num, line))
             if found_var in cert_materials.keys():
                 cert_materials[found_var] = found_value
-        return [(cert_materials['smtpd_tls_cert_file'],
-                 cert_materials['smtpd_tls_key_file'],
-                 self.fn),]
+
+        if not all(cert_materials.values()):
+            cert_material_tuples = []
+        else:
+            cert_material_tuples = [(cert_materials['smtpd_tls_cert_file'],
+                                     cert_materials['smtpd_tls_key_file'],
+                                     self.fn),]
+        return cert_material_tuples
 
     def save(self, title=None, temporary=False):
         """Saves all changes to the configuration files.

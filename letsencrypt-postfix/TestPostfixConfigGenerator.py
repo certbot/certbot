@@ -46,6 +46,8 @@ class TestPostfixConfigGenerator(unittest.TestCase):
     def setUp(self):
         self.fopen_names_only_config = GetFakeOpen(names_only_config)        
         self.fopen_certs_only_config = GetFakeOpen(certs_only_config)
+        self.fopen_no_certs_only_config = self.fopen_names_only_config
+
         #self.config = Config.Config()
         self.config = None
         self.postfix_dir = 'tests/'
@@ -74,6 +76,15 @@ class TestPostfixConfigGenerator(unittest.TestCase):
             fopen=self.fopen_certs_only_config
         )
         self.assertEqual(return_vals, postfix_config_gen.get_all_certs_keys())
+
+    def testGetAllCertsAndKeys_With_None(self):
+        postfix_config_gen = pcg.PostfixConfigGenerator(
+            self.config,
+            self.postfix_dir,
+            fixup=True,
+            fopen=self.fopen_no_certs_only_config
+        )
+        self.assertEqual([], postfix_config_gen.get_all_certs_keys())
 
 
 if __name__ == '__main__':
