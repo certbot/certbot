@@ -296,6 +296,17 @@ class PostfixConfigGenerator:
             - `path` - file path to configuration file
         :rtype: list
         """
+        cert_materials = {'smtpd_tls_key_file': None,
+                          'smtpd_tls_cert_file': None,
+                         }
+        for num, line in enumerate(self.cf):
+            print 'Line is: %s' % line
+            num, found_var, found_value = parse_line((num, line))
+            if found_var in cert_materials.keys():
+                cert_materials[found_var] = found_value
+        return [(cert_materials['smtpd_tls_cert_file'],
+                 cert_materials['smtpd_tls_key_file'],
+                 self.fn),]
 
     def save(self, title=None, temporary=False):
         """Saves all changes to the configuration files.

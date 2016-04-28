@@ -24,10 +24,9 @@ mydomain = fubard.org
 myorigin = fubard.org"""
 
 
-certs_only_config = """
-smtpd_tls_cert_file = /etc/letsencrypt/live/www.fubard.org/fullchain.pem
-smtpd_tls_key_file = /etc/letsencrypt/live/www.fubard.org/privkey.pem
-"""
+certs_only_config = (
+"""smtpd_tls_cert_file = /etc/letsencrypt/live/www.fubard.org/fullchain.pem
+smtpd_tls_key_file = /etc/letsencrypt/live/www.fubard.org/privkey.pem""")
 
 
 def GetFakeOpen(fake_file_contents):
@@ -65,9 +64,9 @@ class TestPostfixConfigGenerator(unittest.TestCase):
         self.assertEqual(sorted_names, postfix_config_gen.get_all_names())
 
     def testGetAllCertAndKeys(self):
-        return_vals = ('/etc/letsencrypt/live/www.fubard.org/fullchain.pem',
-                       '/etc/letsencrypt/live/www.fubard.org/privkey.pem',
-                       None)
+        return_vals = [('/etc/letsencrypt/live/www.fubard.org/fullchain.pem',
+                        '/etc/letsencrypt/live/www.fubard.org/privkey.pem',
+                        'tests/main.cf'),]
         postfix_config_gen = pcg.PostfixConfigGenerator(
             self.config,
             self.postfix_dir,
