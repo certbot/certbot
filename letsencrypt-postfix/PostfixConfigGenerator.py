@@ -1,8 +1,13 @@
 #!/usr/bin/env python
+
+import logging
 import sys
 import string
 import subprocess
 import os, os.path
+
+
+logger = logging.getLogger(__name__)
 
 
 def parse_line(line_data):
@@ -114,13 +119,13 @@ class PostfixConfigGenerator:
         if not self.additions:
             return
         if self.fixup:
-            print "Deleting lines:", self.deletions
+            logger.info('Deleting lines: {}'.format(self.deletions))
         self.additions[:0]=["#",
                             "# New config lines added by STARTTLS Everywhere",
                             "#"]
         new_cf_lines = "\n".join(self.additions) + "\n"
-        print "Adding to %s:" % self.fn
-        print new_cf_lines
+        logger.info('Adding to {}:'.format(self.fn))
+        logger.info(new_cf_lines)
         if self.raw_cf[-1][-1] == "\n":         sep = ""
         else:                                   sep = "\n"
 
@@ -142,9 +147,12 @@ class PostfixConfigGenerator:
         for address_domain, properties in all_acceptable_mxs.items():
             mx_list = properties.accept_mx_domains
             if len(mx_list) > 1:
-                print "Lists of multiple accept-mx-domains not yet supported."
-                print "Using MX %s for %s" % (mx_list[0], address_domain)
-                print "Ignoring: %s" % (', '.join(mx_list[1:]))
+                logger.warn('Lists of multiple accept-mx-domains not yet '
+                            'supported.')
+                logger.warn('Using MX {} for {}".format(mx_list[0],
+                                                        address_domain)
+                           )
+                logger.warn('Ignoring: {}'.format(', '.join(mx_list[1:])))
             mx_domain = mx_list[0]
             mx_policy = self.policy_config.get_tls_policy(mx_domain)
             entry = address_domain + " encrypt"
@@ -155,7 +163,9 @@ class PostfixConfigGenerator:
             elif mx_policy.min_tls_version.lower() == "tlsv1.2":
                 entry += " protocols=!SSLv2:!SSLv3:!TLSv1:!TLSv1.1"
             else:
-                print mx_policy.min_tls_version
+                logger.warn('Unknown minimum TLS version: {} '.format(
+                    mx_policy.min_tls_version)
+                )
             self.policy_lines.append(entry)
 
         with fopen(self.policy_file, "w") as f:
@@ -399,7 +409,7 @@ class PostfixConfigGenerator:
         """Restart or refresh the server content.
         :raises .PluginError: when server cannot be restarted
         """
-        print "Reloading postfix config..."
+        logger.info('Reloading postfix config...')
         if os.geteuid() != 0:
             rc = os.system("sudo service postfix reload")
         else:
