@@ -238,7 +238,9 @@ def get_os_info_ua(filepath="/etc/os-release"):
     """
 
     if os.path.isfile(filepath):
-        os_ua = _get_systemd_os_release_var("NAME", filepath=filepath)
+        os_ua = _get_systemd_os_release_var("PRETTY_NAME", filepath=filepath)
+        if not os_ua:
+            os_ua = _get_systemd_os_release_var("NAME", filepath=filepath)
         if os_ua:
             return os_ua
 
@@ -396,7 +398,7 @@ def enforce_domain_sanity(domain):
         domain = domain.encode('ascii').lower()
     except UnicodeError:
         error_fmt = (u"Internationalized domain names "
-                      "are not presently supported: {0}")
+                     "are not presently supported: {0}")
         if isinstance(domain, six.text_type):
             raise errors.ConfigurationError(error_fmt.format(domain))
         else:
@@ -423,5 +425,6 @@ def enforce_domain_sanity(domain):
     #  first and last char is not "-"
     fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,63}$")
     if not fqdn.match(domain):
-        raise errors.ConfigurationError("Requested domain {0} is not a FQDN".format(domain))
+        raise errors.ConfigurationError("Requested domain {0} is not a FQDN"
+                                        .format(domain))
     return domain
