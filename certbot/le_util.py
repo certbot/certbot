@@ -228,6 +228,24 @@ def get_os_info(filepath="/etc/os-release"):
     return get_python_os_info()
 
 
+def get_os_info_ua(filepath="/etc/os-release"):
+    """
+    Get OS name and version string for User Agent
+
+    :param str filepath: File path of os-release file
+    :returns: os_ua
+    :rtype: `str`
+    """
+
+    if os.path.isfile(filepath):
+        os_ua = _get_systemd_os_release_var("NAME", filepath=filepath)
+        if os_ua:
+            return os_ua
+
+    # Fallback
+    return " ".join(get_python_os_info())
+
+
 def get_systemd_os_info(filepath="/etc/os-release"):
     """
     Parse systemd /etc/os-release for distribution information
