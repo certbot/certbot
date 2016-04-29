@@ -344,23 +344,31 @@ class OsInfoTest(unittest.TestCase):
     """Test OS / distribution detection"""
 
     def test_systemd_os_release(self):
-        from certbot.le_util import get_os_info, get_systemd_os_info
+        from certbot.le_util import (get_os_info, get_systemd_os_info,
+                                     get_os_info_ua)
+
         with mock.patch('os.path.isfile', return_value=True):
             self.assertEqual(get_os_info(
                 test_util.vector_path("os-release"))[0], 'systemdos')
             self.assertEqual(get_os_info(
                 test_util.vector_path("os-release"))[1], '42')
             self.assertEqual(get_systemd_os_info("/dev/null"), ("", ""))
+            self.assertEqual(get_os_info_ua(
+                test_util.vector_path("os-release")),
+                "SystemdOS")
         with mock.patch('os.path.isfile', return_value=False):
             self.assertEqual(get_systemd_os_info(), ("", ""))
 
     @mock.patch("certbot.le_util.subprocess.Popen")
     def test_non_systemd_os_info(self, popen_mock):
-        from certbot.le_util import get_os_info, get_python_os_info
+        from certbot.le_util import (get_os_info, get_python_os_info,
+                                     get_os_info_ua)
         with mock.patch('os.path.isfile', return_value=False):
             with mock.patch('platform.system_alias',
                             return_value=('NonSystemD', '42', '42')):
                 self.assertEqual(get_os_info()[0], 'nonsystemd')
+                self.assertEqual(get_os_info_ua(),
+                                 " ".join(get_python_os_info()))
 
             with mock.patch('platform.system_alias',
                             return_value=('darwin', '', '')):
