@@ -136,9 +136,9 @@ class PostfixConfigGenerator:
                 self.new_cf += line
         self.new_cf += sep + new_cf_lines
 
-        if not os.access(self.postfix_cf_file, os.W_OK):
+        if not os.access(self.fn, os.W_OK):
             raise Exception("Can't write to %s, please re-run as root."
-                % self.postfix_cf_file)
+                % self.fn)
         with fopen(self.fn, "w") as f:
             f.write(self.new_cf)
 
