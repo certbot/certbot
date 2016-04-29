@@ -8,6 +8,10 @@ import os, os.path
 
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+log_handler = logging.StreamHandler()
+log_handler.setLevel(logging.DEBUG)
+logger.addHandler(log_handler)
 
 
 def parse_line(line_data):
