@@ -245,8 +245,9 @@ class Client(object):
                 domains,
                 self.config.allow_subset_of_names)
 
-        domains = [a.body.identifier.value.encode('ascii')
-                                          for a in authzr]
+        auth_domains = set(a.body.identifier.value.encode('ascii')
+                           for a in authzr)
+        domains = [d for d in domains if d in auth_domains]
 
         # Create CSR from names
         key = crypto_util.init_save_key(
