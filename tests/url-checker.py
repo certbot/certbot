@@ -31,11 +31,10 @@ threads = []
 urls = {}
 for filename in sys.argv[1:]:
     contents = open(filename).read()
-    for url in re.findall("https?://[^\s]+", contents):
-        url = url.rstrip(">.,)`_\"")
+    for url in re.findall("https?://[^\s>,)`'\"\]]+", contents):
+        url = url.rstrip("_.>,)`'\"\]")
         url = re.sub("#.*", "", url)
         if url not in urls:
-            print url
             t = threading.Thread(target=check_url, args=(filename, url, errors))
             threads.append(t)
             t.start()
