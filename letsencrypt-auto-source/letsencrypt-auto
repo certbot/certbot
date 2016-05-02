@@ -191,6 +191,12 @@ BootstrapDebCommon() {
                   echo 'Backports are only installed if explicitly requested via "apt-get install -t wheezy-backports"'
               fi
               if [ "$ASSUME_YES" = 1 ]; then
+                  /bin/echo -n "Installing augeas from $BACKPORT_NAME in 3 seconds..."
+                  sleep 1s
+                  /bin/echo -ne "\e[0K\rInstalling augeas from $BACKPORT_NAME in 2 seconds..."
+                  sleep 1s
+                  /bin/echo -e "\e[0K\rInstalling augeas from $BACKPORT_NAME in 1 second ..."
+                  sleep 1s
                   add_backports=1
               else
                   read -p "Would you like to enable the $BACKPORT_NAME repository [Y/n]? " response
