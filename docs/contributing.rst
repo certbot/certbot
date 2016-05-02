@@ -175,7 +175,7 @@ Configurators may implement just one of those).
 There are also `~certbot.interfaces.IDisplay` plugins,
 which implement bindings to alternative UI libraries.
 
-.. _interfaces.py: https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/interfaces.py
+.. _interfaces.py: https://github.com/letsencrypt/letsencrypt/blob/master/certbot/interfaces.py
 .. _plugins/common.py: https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/plugins/common.py#L34
 
 

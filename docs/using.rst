@@ -27,7 +27,7 @@ To install and run the client, just type...
 
    ./certbot-auto
 
-.. hint:: During the beta phase, the Let's Encrypt servers enforce strict rate
+.. hint:: The Let's Encrypt servers enforce rate
    limits on the number of certificates issued for one domain. It is recommended
    to initially use the test server via `--test-cert` until you get the desired
    certificates.
@@ -144,7 +144,7 @@ made to your web server would look like:
 
 ::
 
-    66.133.109.36 - - [05/Jan/2016:20:11:24 -0500] "GET /.well-known/acme-challenge/HGr8U1IeTW4kY_Z6UIyaakzOkyQgPr_7ArlLgtZE8SX HTTP/1.1" 200 87 "-" "Mozilla/5.0 (compatible; Let's Encryptvalidation server; +https://www.letsencrypt.org)"
+    66.133.109.36 - - [05/Jan/2016:20:11:24 -0500] "GET /.well-known/acme-challenge/HGr8U1IeTW4kY_Z6UIyaakzOkyQgPr_7ArlLgtZE8SX HTTP/1.1" 200 87 "-" "Mozilla/5.0 (compatible; Let's Encrypt validation server; +https://www.letsencrypt.org)"
 
 Note that to use the webroot plugin, your server must be configured to serve
 files from hidden directories. If ``/.well-known`` is treated specially by
@@ -360,8 +360,9 @@ Getting help
 ============
 
 If you're having problems you can chat with us on `IRC (#certbot @
-OFTC) <https://webchat.oftc.net?channels=%23certbot>`_ or
-get support on our `forums <https://community.letsencrypt.org>`_.
+OFTC) <https://webchat.oftc.net?channels=%23certbot>`_ or at
+`IRC (#letsencrypt @ freenode) <https://webchat.freenode.net?channels=%23letsencrypt>`_
+or get support on our `forums <https://community.letsencrypt.org>`_.
 
 If you find a bug in the software, please do report it in our `issue
 tracker
@@ -420,7 +421,7 @@ Operating System Packages
 
 **FreeBSD**
 
-  * Port: ``cd /usr/ports/security/py-letsencrypt make install clean``
+  * Port: ``cd /usr/ports/security/py-letsencrypt && make install clean``
   * Package: ``pkg install py27-letsencrypt``
 
 **OpenBSD**
