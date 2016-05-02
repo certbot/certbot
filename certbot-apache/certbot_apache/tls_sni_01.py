@@ -4,7 +4,7 @@ import os
 import logging
 
 from certbot.plugins import common
-from certbot.errors import PluginError
+from certbot.errors import PluginError, MissingCommandlineFlag
 
 from certbot_apache import obj
 from certbot_apache import parser
@@ -124,7 +124,7 @@ class ApacheTlsSni01(common.TLSSNI01):
 
         try:
             vhost = self.configurator.choose_vhost(achall.domain, temp=True)
-        except PluginError:
+        except (PluginError, MissingCommandlineFlag):
             # We couldn't find the virtualhost for this domain, possibly
             # because it's a new vhost that's not configured yet (GH #677),
             # or perhaps because there were multiple <VirtualHost> sections
