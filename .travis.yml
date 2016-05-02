@@ -118,7 +118,9 @@ addons:
     #- sudo
 
 install: "travis_retry pip install tox coveralls"
-script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/travis-integration.sh)'
+script:
+  - 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/travis-integration.sh)'
+  - git ls-files '*.md' '*.rst' '*.txt' | xargs python tests/url-checker.py
 
 after_success: '[ "$TOXENV" == "cover" ] && coveralls'
 
