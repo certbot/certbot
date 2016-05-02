@@ -15,7 +15,7 @@ def load_url(filename, url):
     Load a URL, returning an error string if there was a problem, otherwise None
     """
     try:
-        urllib2.urlopen(url)
+        urllib2.urlopen(url, headers={'User-Agent': 'Certbot documentation URL checker' })
     except urllib2.HTTPError, e:
         return ("Status code %d fetching %s (mentioned in %s)" %
             (e.code, url, filename))
