@@ -55,7 +55,7 @@ matrix:
         - sudo cat /var/log/mysql/error.log
         - ps aux | grep mysql
     - python: "2.7"
-      env: TOXENV=lint
+      env: TOXENV=lint,urlcheck
     - sudo: required
       env: TOXENV=le_auto
       services: docker
@@ -118,9 +118,7 @@ addons:
     #- sudo
 
 install: "travis_retry pip install tox coveralls"
-script:
-  - 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/travis-integration.sh)'
-  - git ls-files '*.md' '*.rst' '*.txt' | xargs python tests/url-checker.py
+script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/travis-integration.sh)'
 
 after_success: '[ "$TOXENV" == "cover" ] && coveralls'
 

@@ -3,7 +3,7 @@ import re
 import sys
 import time
 import threading
-import requests
+import urllib2
 
 def check_url(filename, url, errors):
     err = load_url(filename, url)
@@ -15,13 +15,10 @@ def load_url(filename, url):
     Load a URL, returning an error string if there was a problem, otherwise None
     """
     try:
-        r = requests.get(url)
-        if r.status_code > 500: # Do one retry.
-            time.sleep(1)
-            r = requests.get(url)
-        if r.status_code != 200:
-            return ("Status code %d fetching %s (mentioned in %s)" %
-                (r.status_code, url, filename))
+        urllib2.urlopen(url)
+    except urllib2.HTTPError, e:
+        return ("Status code %d fetching %s (mentioned in %s)" %
+            (e.code, url, filename))
     except Exception, e:
         return "Problem fetching %s (mentioned in %s): %s" % (url, filename, e.__str__())
     return None
