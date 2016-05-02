@@ -4,6 +4,7 @@ import os
 import logging
 
 from certbot.plugins import common
+from certbot.errors import PluginError
 
 from certbot_apache import obj
 from certbot_apache import parser
@@ -116,11 +117,20 @@ class ApacheTlsSni01(common.TLSSNI01):
 
     def _get_addrs(self, achall):
         """Return the Apache addresses needed for TLS-SNI-01."""
-        vhost = self.configurator.choose_vhost(achall.domain, temp=True)
         # TODO: Checkout _default_ rules.
         addrs = set()
         default_addr = obj.Addr(("*", str(
             self.configurator.config.tls_sni_01_port)))
+
+        try:
+            vhost = self.configurator.choose_vhost(achall.domain, temp=True)
+        except PluginError:
+            # We couldn't find the virtualhost for this domain, possibly
+            # because it's a new vhost that's not configured yet (GH #677),
+            # or perhaps because there were multiple <VirtualHost> sections
+            # in the config file (GH #1042).  See also GH #2600.
+            addrs.add(default_addr)
+            return addrs
 
         for addr in vhost.addrs:
             if "_default_" == addr.get_addr():
