@@ -1,8 +1,18 @@
 #!/usr/bin/env python
+
+import logging
 import sys
 import string
 import subprocess
 import os, os.path
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+log_handler = logging.StreamHandler()
+log_handler.setLevel(logging.DEBUG)
+logger.addHandler(log_handler)
+
 
 def parse_line(line_data):
     """
@@ -18,15 +28,39 @@ def parse_line(line_data):
         return None
     return (num, left.strip(), right.strip())
 
+
 class ExistingConfigError(ValueError): pass
 
+
 class PostfixConfigGenerator:
-    def __init__(self, policy_config, postfix_dir, fixup=False):
+    def __init__(self,
+                 policy_config,
+                 postfix_dir,
+                 fixup=False,
+                 fopen=open,
+                 version=None):
         self.fixup          = fixup
         self.postfix_dir    = postfix_dir
         self.policy_config  = policy_config
-        self.policy_file    = os.path.join(postfix_dir, "starttls_everywhere_policy")
+        self.policy_file    = os.path.join(postfix_dir,
+                                           "starttls_everywhere_policy")
         self.ca_file = os.path.join(postfix_dir, "starttls_everywhere_CAfile")
+
+        self.additions = []
+        self.deletions = []
+        self.fn = self.find_postfix_cf()
+        self.raw_cf = fopen(self.fn).readlines()
+        self.cf = map(string.strip, self.raw_cf)
+        #self.cf = [line for line in cf if line and not line.startswith("#")]
+        self.policy_lines = []
+        self.new_cf = ""
+
+        # Set in .prepare() unless running in a test
+        self.postfix_version = version
+
+    def find_postfix_cf(self):
+        "Search far and wide for the correct postfix configuration file"
+        return os.path.join(self.postfix_dir, "main.cf")
 
     def ensure_cf_var(self, var, ideal, also_acceptable):
         """
@@ -35,7 +69,8 @@ class PostfixConfigGenerator:
         """
         acceptable = [ideal] + also_acceptable
 
-        l = [(num,line) for num,line in enumerate(self.cf) if line.startswith(var)]
+        l = [(num,line) for num,line in enumerate(self.cf)
+             if line.startswith(var)]
         if not any(l):
             self.additions.append(var + " = " + ideal)
         else:
@@ -46,27 +81,24 @@ class PostfixConfigGenerator:
                     self.deletions.extend(conflicting_lines)
                     self.additions.append(var + " = " + ideal)
                 else:
-                    raise ExistingConfigError, "Conflicting existing config values " + `l`
+                    raise ExistingConfigError(
+                        "Conflicting existing config values " + `l`
+                    )
             val = values[0][2]
             if val not in acceptable:
                 if self.fixup:
                     self.deletions.append(values[0][0])
                     self.additions.append(var + " = " + ideal)
                 else:
-                    raise ExistingConfigError, "Existing config has %s=%s"%(var,val)
+                    raise ExistingConfigError(
+                        "Existing config has %s=%s"%(var,val)
+                    )
 
     def wrangle_existing_config(self):
         """
         Try to ensure/mutate that the config file is in a sane state.
         Fixup means we'll delete existing lines if necessary to get there.
         """
-        self.additions = []
-        self.deletions = []
-        self.fn = self.find_postfix_cf()
-        self.raw_cf = open(self.fn).readlines()
-        self.cf = map(string.strip, self.raw_cf)
-        #self.cf = [line for line in cf if line and not line.startswith("#")]
-
         # Check we're currently accepting inbound STARTTLS sensibly
         self.ensure_cf_var("smtpd_use_tls", "yes", [])
         # Ideally we use it opportunistically in the outbound direction
@@ -89,19 +121,20 @@ class PostfixConfigGenerator:
 	self.ensure_cf_var("smtp_tls_protocols", "!SSLv2, !SSLv3", [])
 	self.ensure_cf_var("smtp_tls_mandatory_protocols", "!SSLv2, !SSLv3", [])
 
-    def maybe_add_config_lines(self):
+    def maybe_add_config_lines(self, fopen=open):
         if not self.additions:
             return
         if self.fixup:
-            print "Deleting lines:", self.deletions
-        self.additions[:0]=["#","# New config lines added by STARTTLS Everywhere","#"]
+            logger.info('Deleting lines: {}'.format(self.deletions))
+        self.additions[:0]=["#",
+                            "# New config lines added by STARTTLS Everywhere",
+                            "#"]
         new_cf_lines = "\n".join(self.additions) + "\n"
-        print "Adding to %s:" % self.fn
-        print new_cf_lines
+        logger.info('Adding to {}:'.format(self.fn))
+        logger.info(new_cf_lines)
         if self.raw_cf[-1][-1] == "\n":         sep = ""
         else:                                   sep = "\n"
 
-        self.new_cf = ""
         for num, line in enumerate(self.raw_cf):
             if self.fixup and num in self.deletions:
                 self.new_cf += "# Line removed by STARTTLS Everywhere\n# " + line
@@ -109,25 +142,23 @@ class PostfixConfigGenerator:
                 self.new_cf += line
         self.new_cf += sep + new_cf_lines
 
-        if not os.access(self.postfix_cf_file, os.W_OK):
+        if not os.access(self.fn, os.W_OK):
             raise Exception("Can't write to %s, please re-run as root."
-                % self.postfix_cf_file)
-        with open(self.fn, "w") as f:
+                % self.fn)
+        with fopen(self.fn, "w") as f:
             f.write(self.new_cf)
 
-    def find_postfix_cf(self):
-        "Search far and wide for the correct postfix configuration file"
-        return os.path.join(self.postfix_dir, "main.cf")
-
-    def set_domainwise_tls_policies(self):
-        self.policy_lines = []
+    def set_domainwise_tls_policies(self, fopen=open):
         all_acceptable_mxs = self.policy_config.acceptable_mxs
         for address_domain, properties in all_acceptable_mxs.items():
             mx_list = properties.accept_mx_domains
             if len(mx_list) > 1:
-                print "Lists of multiple accept-mx-domains not yet supported."
-                print "Using MX %s for %s" % (mx_list[0], address_domain)
-                print "Ignoring: %s" % (', '.join(mx_list[1:]))
+                logger.warn('Lists of multiple accept-mx-domains not yet '
+                            'supported.')
+                logger.warn('Using MX {} for {}'.format(mx_list[0],
+                                                        address_domain)
+                           )
+                logger.warn('Ignoring: {}'.format(', '.join(mx_list[1:])))
             mx_domain = mx_list[0]
             mx_policy = self.policy_config.get_tls_policy(mx_domain)
             entry = address_domain + " encrypt"
@@ -138,12 +169,13 @@ class PostfixConfigGenerator:
             elif mx_policy.min_tls_version.lower() == "tlsv1.2":
                 entry += " protocols=!SSLv2:!SSLv3:!TLSv1:!TLSv1.1"
             else:
-                print mx_policy.min_tls_version
+                logger.warn('Unknown minimum TLS version: {} '.format(
+                    mx_policy.min_tls_version)
+                )
             self.policy_lines.append(entry)
 
-        f = open(self.policy_file, "w")
-        f.write("\n".join(self.policy_lines) + "\n")
-        f.close()
+        with fopen(self.policy_file, "w") as f:
+            f.write("\n".join(self.policy_lines) + "\n")
 
     ### Let's Encrypt client IPlugin ###
     # https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/plugins/common.py#L35
@@ -165,15 +197,15 @@ class PostfixConfigGenerator:
 	:rtype tuple:
 	"""
         # XXX ensure we raise the right kinds of exceptions
-        self.postfix_cf_file = self.find_postfix_cf()
 
-	# Parse Postfix version number (feature support, syntax changes etc.)
-	mail_version = subprocess.Popen(['/usr/sbin/postconf', '-d', 'mail_version'], \
-				stdout=subprocess.PIPE) \
-				.communicate()[0].split()[2]
-	maj, min, rev = mail_version.split('.')
-	self.postfix_version = mail_version
-	
+        if not self.postfix_version:
+            self.postfix_version = self.get_version()
+
+        if self.postfix_version < (2, 11, 0):
+            raise Exception(
+                'NotSupportedError: Postfix version is too old -- test.'
+            )
+
 	# Postfix has changed support for TLS features, supported protocol versions
 	# KEX methods, ciphers et cetera over the years. We sort out version dependend
 	# differences here and pass them onto other configuration functions.
@@ -218,7 +250,28 @@ class PostfixConfigGenerator:
 	# - Built-in support for TLS management and DANE added, see:
 	#   http://www.postfix.org/postfix-tls.1.html
 
-	return maj, min, rev
+    def get_version(self):
+        """Return the mail version of Postfix.
+
+        Version is returned as a tuple. (e.g. '2.11.3' is (2, 11, 3))
+
+        :returns: version
+        :rtype: tuple
+
+        :raises .PluginError:
+            Unable to find Postfix version.
+        """
+	# Parse Postfix version number (feature support, syntax changes etc.)
+	cmd = subprocess.Popen(['/usr/sbin/postconf', '-d', 'mail_version'],
+                               stdout=subprocess.PIPE)
+        stdout, _ = cmd.communicate()
+        if cmd.returncode != 0:
+            raise Exception('PluginError: Unable to determine Postfix version.')
+
+        # grabs version component of string like "mail_version = 2.11.3"
+        mail_version = stdout.split()[2]
+        postfix_version = tuple([int(i) for i in mail_version.split('.')])
+	return postfix_version
 
     def more_info(self):
         """Human-readable string to help the user.
@@ -226,6 +279,15 @@ class PostfixConfigGenerator:
         decide which plugin to use.
         :rtype str:
         """
+        return (
+            "Configures Postfix to try to authenticate mail servers, use "
+            "installed certificates and disable weak ciphers and protocols.{0}"
+            "Server root: {root}{0}"
+            "Version: {version}".format(
+                os.linesep,
+                root=self.postfix_dir,
+                version='.'.join([str(i) for i in self.postfix_version]))
+        )
 
 
     ### Let's Encrypt client IInstaller ###
@@ -235,6 +297,15 @@ class PostfixConfigGenerator:
         """Returns all names that may be authenticated.
         :rtype: `list` of `str`
         """
+        var_names = ('myhostname', 'mydomain', 'myorigin')
+        names_found = set()
+        for num, line in enumerate(self.cf):
+            num, found_var, found_value = parse_line((num, line))
+            if found_var in var_names:
+                names_found.add(found_value)
+        name_list = list(names_found)
+        name_list.sort()
+        return name_list
 
     def deploy_cert(self, domain, _cert_path, key_path, _chain_path, fullchain_path):
         """Deploy certificate.
@@ -280,6 +351,21 @@ class PostfixConfigGenerator:
             - `path` - file path to configuration file
         :rtype: list
         """
+        cert_materials = {'smtpd_tls_key_file': None,
+                          'smtpd_tls_cert_file': None,
+                         }
+        for num, line in enumerate(self.cf):
+            num, found_var, found_value = parse_line((num, line))
+            if found_var in cert_materials.keys():
+                cert_materials[found_var] = found_value
+
+        if not all(cert_materials.values()):
+            cert_material_tuples = []
+        else:
+            cert_material_tuples = [(cert_materials['smtpd_tls_cert_file'],
+                                     cert_materials['smtpd_tls_key_file'],
+                                     self.fn),]
+        return cert_material_tuples
 
     def save(self, title=None, temporary=False):
         """Saves all changes to the configuration files.
@@ -294,7 +380,6 @@ class PostfixConfigGenerator:
             be quickly reversed in the future (challenges)
         :raises .PluginError: when save is unsuccessful
         """
-
         self.maybe_add_config_lines()
 
     def rollback_checkpoints(self, rollback=1):
@@ -319,24 +404,32 @@ class PostfixConfigGenerator:
         """Make sure the configuration is valid.
         :raises .MisconfigurationError: when the config is not in a usable state
         """
+        if os.geteuid() != 0:
+            rc = os.system('sudo /usr/sbin/postfix check')
+        else:
+            rc = os.system('/usr/sbin/postfix check')
+        if rc != 0:
+            raise Exception('MisconfigurationError: Postfix failed self-check.')
 
     def restart(self):
         """Restart or refresh the server content.
         :raises .PluginError: when server cannot be restarted
         """
-        print "Reloading postfix config..."
+        logger.info('Reloading postfix config...')
         if os.geteuid() != 0:
-            os.system("sudo service postfix reload")
+            rc = os.system("sudo service postfix reload")
         else:
-            os.system("service postfix reload")
+            rc = os.system("service postfix reload")
+        if rc != 0:
+            raise Exception('PluginError: cannot restart postfix')
 
     def update_CAfile(self):
         os.system("cat /usr/share/ca-certificates/mozilla/*.crt > " + self.ca_file)
 
 
 def usage():
-    print ("Usage: %s starttls-everywhere.json /etc/postfix /etc/letsencrypt/live/example.com/" %
-          sys.argv[0])
+    print ("Usage: %s starttls-everywhere.json /etc/postfix "
+           "/etc/letsencrypt/live/example.com/" % sys.argv[0])
     sys.exit(1)
 
 
