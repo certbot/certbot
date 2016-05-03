@@ -188,9 +188,10 @@ while ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
 done
 
 # copy leauto to the root, overwriting the previous release version
+cp -p letsencrypt-auto-source/letsencrypt-auto certbot-auto
 cp -p letsencrypt-auto-source/letsencrypt-auto letsencrypt-auto
 
-git add letsencrypt-auto letsencrypt-auto-source
+git add certbot-auto letsencrypt-auto letsencrypt-auto-source
 git diff --cached
 git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"
 git tag --local-user "$RELEASE_GPG_KEY" --sign --message "Release $version" "$tag"
