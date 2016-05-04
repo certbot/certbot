@@ -131,7 +131,7 @@ The Let's Encrypt project may deviate from the Mozilla recommendations
 in the future if good cause is shown and we believe our users'
 priorities would be well-served by doing so. In general, please address
 relevant proposals for changing priorities to the Mozilla security
-team first, before asking the Let's Encrypt project to change
+team first, before asking the Let's Encrypt project or EFF to change
 Certbot's priorities. The Mozilla security team is likely to have more
 resources and expertise to bring to bear on evaluating reasons why its
 recommendations should be updated.
@@ -153,7 +153,7 @@ recommendations with sources of expert guidance on ciphersuites and other
 cryptographic parameters. We're grateful to everyone who contributed
 suggestions. The recommendations we received are available at
 
-https://github.com/letsencrypt/letsencrypt/wiki/Ciphersuite-guidance
+https://github.com/certbot/certbot/wiki/Ciphersuite-guidance
 
 Certbot users are welcome to review these authorities to
 better inform their own cryptographic parameter choices. We also
@@ -196,7 +196,7 @@ TODO
 The status of this feature is tracked as part of issue #1123 in our
 bug tracker.
 
-https://github.com/letsencrypt/letsencrypt/issues/1123
+https://github.com/certbot/certbot/issues/1123
 
 Prior to implementation of #1123, the client does not actually modify
 ciphersuites (this is intended to be implemented as a "configuration

@@ -194,7 +194,7 @@ Third-party plugins
 -------------------
 
 These plugins are listed at
-https://github.com/letsencrypt/letsencrypt/wiki/Plugins. If you're
+https://github.com/certbot/certbot/wiki/Plugins. If you're
 interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
 Renewal
@@ -362,11 +362,11 @@ Getting help
 If you're having problems you can chat with us on `IRC (#certbot @
 OFTC) <https://webchat.oftc.net?channels=%23certbot>`_ or at
 `IRC (#letsencrypt @ freenode) <https://webchat.freenode.net?channels=%23letsencrypt>`_
-or get support on our `forums <https://community.letsencrypt.org>`_.
+or get support on the Let's Encrypt `forums <https://community.letsencrypt.org>`_.
 
 If you find a bug in the software, please do report it in our `issue
 tracker
-<https://github.com/letsencrypt/letsencrypt/issues>`_. Remember to
+<https://github.com/certbot/certbot/issues>`_. Remember to
 give us as much information as possible:
 
 - copy and paste exact command line used and the output (though mind
@@ -391,7 +391,7 @@ plugins cannot reach it from inside the Docker container.
 
 You should definitely read the :ref:`where-certs` section, in order to
 know how to manage the certs
-manually. https://github.com/letsencrypt/letsencrypt/wiki/Ciphersuite-guidance
+manually. https://github.com/certbot/certbot/wiki/Ciphersuite-guidance
 provides some information about recommended ciphersuites. If none of
 these make much sense to you, you should definitely use the
 certbot-auto_ method, which enables you to use installer plugins
@@ -526,7 +526,7 @@ whole process is described in the :doc:`contributing`.
 Comparison of different methods
 -------------------------------
 
-Unless you have a very specific requirements, we kindly ask you to use
+Unless you have a very specific requirements, we kindly suggest that you use
 the certbot-auto_ method. It's the fastest, the most thoroughly
 tested and the most reliable way of getting our software and the free
 SSL certificates!
