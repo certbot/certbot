@@ -34,9 +34,9 @@ Because not all operating systems have packages yet, we provide a temporary
 solution via the ``certbot-auto`` wrapper script, which obtains some
 dependencies from your OS and puts others in a python virtual environment::
 
-  user@webserver:~$ git clone https://github.com/letsencrypt/letsencrypt
-  user@webserver:~$ cd letsencrypt
-  user@webserver:~/letsencrypt$ ./certbot-auto --help
+  user@webserver:~$ git clone https://github.com/certbot/certbot
+  user@webserver:~$ cd certbot
+  user@webserver:~/certbot$ ./certbot-auto --help
 
 Or for full command line help, type::
 
@@ -85,7 +85,7 @@ Links
 
 Documentation: https://letsencrypt.readthedocs.org
 
-Software project: https://github.com/letsencrypt/letsencrypt
+Software project: https://github.com/certbot/certbot
 
 Notes for developers: https://letsencrypt.readthedocs.org/en/latest/contributing.html
 
@@ -107,12 +107,12 @@ email to client-dev+subscribe@letsencrypt.org)
 
 
 
-.. |build-status| image:: https://travis-ci.org/letsencrypt/letsencrypt.svg?branch=master
-   :target: https://travis-ci.org/letsencrypt/letsencrypt
+.. |build-status| image:: https://travis-ci.org/certbot/certbot.svg?branch=master
+   :target: https://travis-ci.org/certbot/certbot
    :alt: Travis CI status
 
-.. |coverage| image:: https://coveralls.io/repos/letsencrypt/letsencrypt/badge.svg?branch=master
-   :target: https://coveralls.io/r/letsencrypt/letsencrypt
+.. |coverage| image:: https://coveralls.io/repos/certbot/certbot/badge.svg?branch=master
+   :target: https://coveralls.io/r/certbot/certbot
    :alt: Coverage status
 
 .. |docs| image:: https://readthedocs.org/projects/letsencrypt/badge/
@@ -159,7 +159,7 @@ Current Features
   - nginx/0.8.48+ (highly experimental, not included in certbot-auto)
 
 * The private key is generated locally on your system.
-* Can talk to the Let's Encrypt  CA or optionally to other ACME
+* Can talk to the Let's Encrypt CA or optionally to other ACME
   compliant services.
 * Can get domain-validated (DV) certificates.
 * Can revoke certificates.
@@ -174,4 +174,5 @@ Current Features
 
 
 .. _Freenode: https://webchat.freenode.net?channels=%23letsencrypt
+.. _OFTC: https://webchat.oftc.net?channels=%23certbot
 .. _client-dev: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev
