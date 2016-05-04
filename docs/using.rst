@@ -433,7 +433,7 @@ Operating System Packages
 
 .. code-block:: shell
 
-   sudo pacman -S letsencrypt letsencrypt-apache
+   sudo pacman -S letsencrypt
 
 **Debian**
 
@@ -442,10 +442,10 @@ If you run Debian Stretch or Debian Sid, you can install letsencrypt packages.
 .. code-block:: shell
 
    sudo apt-get update
-   sudo apt-get install letsencrypt python-letsencrypt-apache
+   sudo apt-get install certbot python-certbot-apache
 
 If you don't want to use the Apache plugin, you can omit the
-``python-letsencrypt-apache`` package.
+``python-certbot-apache`` package.
 
 Packages for Debian Jessie are coming in the next few weeks.
 
@@ -466,8 +466,12 @@ want to use the Apache plugin, it has to be installed separately:
    emerge -av app-crypt/letsencrypt-apache
 
 Currently, only the Apache plugin is included in Portage. However, if you
-want the nginx plugin, you can use Layman to add the mrueg overlay which
-does include the nginx plugin package:
+Warning!
+You can use Layman to add the mrueg overlay which does include a package for the
+Certbot Nginx plugin, however, this plugin is known to be buggy and should only
+be used with caution after creating a backup up your Nginx configuration.
+We strongly recommend you use the app-crypt/letsencrypt package instead until
+the Nginx plugin is ready.
 
 .. code-block:: shell
 
