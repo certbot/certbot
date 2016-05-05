@@ -128,8 +128,8 @@ System Requirements
 ===================
 
 The Let's Encrypt Client presently only runs on Unix-ish OSes that include
-Python 2.6 or 2.7; Python 3.x support will be added after the Public Beta
-launch. The client requires root access in order to write to
+Python 2.6 or 2.7; Python 3.x support will hopefully be added after the Public
+Beta launch. The client requires root access in order to write to
 ``/etc/letsencrypt``, ``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to
 bind to ports 80 and 443 (if you use the ``standalone`` plugin) and to read and
 modify webserver configurations (if you use the ``apache`` or ``nginx``
