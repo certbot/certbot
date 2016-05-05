@@ -320,10 +320,8 @@ class ClientTest(unittest.TestCase):
 
         self.client.auth_handler.get_authorizations.return_value = authzr
 
-        self.assertRaises(errors.Error,
-            self.client.obtain_certificate(domains),
-            (mock.sentinel.certr, mock.sentinel.chain, mock.sentinel.key, csr))
-        self._check_obtain_certificate()
+        with self.assertRaises(errors.Error):
+            self.client.obtain_certificate(domains)
 
     @mock.patch("certbot.client.crypto_util")
     def test_obtain_certificate_unsupported_alg(self, mock_crypto_util):
@@ -350,10 +348,8 @@ class ClientTest(unittest.TestCase):
 
         self.client.auth_handler.get_authorizations.return_value = authzr
 
-        self.assertRaises(errors.Error,
-            self.client.obtain_certificate(domains),
-            (mock.sentinel.certr, mock.sentinel.chain, mock.sentinel.key, csr))
-        self._check_obtain_certificate()
+        with self.assertRaises(errors.Error):
+            self.client.obtain_certificate(domains)
 
     def test_save_certificate(self):
         certs = ["matching_cert.pem", "cert.pem", "cert-san.pem"]
