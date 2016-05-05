@@ -570,6 +570,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
               "additional command line flags; the client will try to explain "
               "which ones are required if it finds one missing")
     helpful.add(
+        None, "--dialog", dest="dialog_mode", action="store_true",
+        help="Run using dialog")
+    helpful.add(
         None, "--dry-run", action="store_true", dest="dry_run",
         help="Perform a test run of the client, obtaining test (invalid) certs"
              " but not saving them to disk. This can currently only be used"

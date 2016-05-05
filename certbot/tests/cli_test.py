@@ -149,6 +149,12 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 args.extend(['--email', 'io@io.is'])
                 self._cli_missing_flag(args, "--agree-tos")
 
+    @mock.patch('certbot.main.renew')
+    def test_gui(self, renew):
+        args = ['renew', '--dialog']
+        self._call(args)
+        self.assertFalse(renew.call_args[0][0].noninteractive_mode)
+
     @mock.patch('certbot.main.client.acme_client.Client')
     @mock.patch('certbot.main._determine_account')
     @mock.patch('certbot.main.client.Client.obtain_and_enroll_certificate')
