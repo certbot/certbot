@@ -25,6 +25,12 @@ Until May 2016, Certbot was named simply ``letsencrypt`` or ``letsencrypt-auto``
 depending on install method. Instructions on the Internet, and some pieces of the
 software, may still refer to this older name.
 
+Contributing
+------------
+
+If you'd like to contribute to this project please read `Developer Guide
+<https://certbot.eff.org/docs/contributing.html>`_.
+
 Installation
 ------------
 
@@ -46,7 +52,7 @@ Or for full command line help, type::
 since ``certbot-auto`` is a wrapper to ``certbot``, it accepts exactly
 the same command line flags and arguments.  More details about this script and
 other installation methods can be found `in the User Guide
-<https://letsencrypt.readthedocs.org/en/latest/using.html#installation>`_.
+<https://certbot.eff.org/docs/using.html#installation>`_.
 
 How to run the client
 ---------------------
@@ -77,17 +83,17 @@ Understanding the client in more depth
 
 To understand what the client is doing in detail, it's important to
 understand the way it uses plugins.  Please see the `explanation of
-plugins <https://letsencrypt.readthedocs.org/en/latest/using.html#plugins>`_ in
+plugins <https://certbot.eff.org/docs/using.html#plugins>`_ in
 the User Guide.
 
 Links
 =====
 
-Documentation: https://letsencrypt.readthedocs.org
+Documentation: https://certbot.eff.org/docs
 
 Software project: https://github.com/certbot/certbot
 
-Notes for developers: https://letsencrypt.readthedocs.org/en/latest/contributing.html
+Notes for developers: https://certbot.eff.org/docs/contributing.html
 
 Main Website: https://letsencrypt.org/
 
