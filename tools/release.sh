@@ -45,7 +45,7 @@ export GPG_TTY=$(tty)
 PORT=${PORT:-1234}
 
 # subpackages to be released
-SUBPKGS=${SUBPKGS:-"acme certbot-apache certbot-nginx letshelp-certbot"}
+SUBPKGS=${SUBPKGS:-"acme certbot-apache certbot-nginx letshelp-certbot letsencrypt letsencrypt-apache letsencrypt-nginx letshelp-letsencrypt"}
 subpkgs_modules="$(echo $SUBPKGS | sed s/-/_/g)"
 # certbot_compatibility_test is not packaged because:
 # - it is not meant to be used by anyone else than Certbot devs
@@ -162,12 +162,12 @@ done
 deactivate
 
 # pin pip hashes of the things we just built
-for pkg in acme certbot certbot-apache ; do
+for pkg in acme certbot certbot-apache letsencrypt letsencrypt-apache ; do
     echo $pkg==$version \\
     pip hash dist."$version/$pkg"/*.{whl,gz} | grep "^--hash" | python2 -c 'from sys import stdin; input = stdin.read(); print "   ", input.replace("\n--hash", " \\\n    --hash"),'
 done > /tmp/hashes.$$
 
-if ! wc -l /tmp/hashes.$$ | grep -qE "^\s*9 " ; then
+if ! wc -l /tmp/hashes.$$ | grep -qE "^\s*15 " ; then
     echo Unexpected pip hash output
     exit 1
 fi
