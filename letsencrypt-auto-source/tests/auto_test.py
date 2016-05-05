@@ -146,7 +146,9 @@ def out_and_err(command, input=None, shell=False, env=None):
     out, err = process.communicate(input=input)
     status = process.poll()  # same as in check_output(), though wait() sounds better
     if status:
-        raise CalledProcessError(status, command)
+        error = CalledProcessError(status, command)
+        error.output = out
+        raise error
     return out, err
 
 
