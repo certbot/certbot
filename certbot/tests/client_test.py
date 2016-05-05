@@ -295,6 +295,66 @@ class ClientTest(unittest.TestCase):
             mock.sentinel.key, domains, self.config.csr_dir)
         self._check_obtain_certificate()
 
+    @mock.patch("certbot.client.crypto_util")
+    def test_obtain_certificate_multi_alg(self, mock_crypto_util):
+        self._mock_obtain_certificate()
+
+        self.config.key_types = "ecdsa rsa"
+        csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
+        mock_crypto_util.init_save_csr.return_value = csr
+        mock_crypto_util.save_key.return_value = mock.sentinel.key
+        domains = ["example.com", "www.example.com"]
+
+        # return_value is essentially set to (None, None) in
+        # _mock_obtain_certificate(), which breaks this test.
+        # Thus fixed by the next line.
+
+        authzr = []
+
+        for domain in domains:
+            authzr.append(
+                mock.MagicMock(
+                    body=mock.MagicMock(
+                        identifier=mock.MagicMock(
+                            value=domain))))
+
+        self.client.auth_handler.get_authorizations.return_value = authzr
+
+        self.assertRaises(errors.Error,
+            self.client.obtain_certificate(domains),
+            (mock.sentinel.certr, mock.sentinel.chain, mock.sentinel.key, csr))
+        self._check_obtain_certificate()
+
+    @mock.patch("certbot.client.crypto_util")
+    def test_obtain_certificate_unsupported_alg(self, mock_crypto_util):
+        self._mock_obtain_certificate()
+
+        self.config.key_types = "ed25519"
+        csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
+        mock_crypto_util.init_save_csr.return_value = csr
+        mock_crypto_util.save_key.return_value = mock.sentinel.key
+        domains = ["example.com", "www.example.com"]
+
+        # return_value is essentially set to (None, None) in
+        # _mock_obtain_certificate(), which breaks this test.
+        # Thus fixed by the next line.
+
+        authzr = []
+
+        for domain in domains:
+            authzr.append(
+                mock.MagicMock(
+                    body=mock.MagicMock(
+                        identifier=mock.MagicMock(
+                            value=domain))))
+
+        self.client.auth_handler.get_authorizations.return_value = authzr
+
+        self.assertRaises(errors.Error,
+            self.client.obtain_certificate(domains),
+            (mock.sentinel.certr, mock.sentinel.chain, mock.sentinel.key, csr))
+        self._check_obtain_certificate()
+
     def test_save_certificate(self):
         certs = ["matching_cert.pem", "cert.pem", "cert-san.pem"]
         tmp_path = tempfile.mkdtemp()
