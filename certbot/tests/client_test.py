@@ -95,6 +95,7 @@ class RegisterTest(unittest.TestCase):
 
 
 class ClientTest(unittest.TestCase):
+    # pylint: disable=too-many-public-methods
     """Tests for certbot.client.Client."""
 
     def setUp(self):
@@ -320,14 +321,14 @@ class ClientTest(unittest.TestCase):
 
         self.client.auth_handler.get_authorizations.return_value = authzr
 
-        with self.assertRaises(errors.Error):
-            self.client.obtain_certificate(domains)
+        self.assertRaises(errors.Error,
+            self.client.obtain_certificate, domains)
 
     @mock.patch("certbot.client.crypto_util")
     def test_obtain_certificate_unsupported_alg(self, mock_crypto_util):
         self._mock_obtain_certificate()
 
-        self.config.key_types = "ed25519"
+        self.config.key_types = "nonexistingalgo"
         csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
         mock_crypto_util.init_save_csr.return_value = csr
         mock_crypto_util.save_key.return_value = mock.sentinel.key
@@ -348,8 +349,8 @@ class ClientTest(unittest.TestCase):
 
         self.client.auth_handler.get_authorizations.return_value = authzr
 
-        with self.assertRaises(errors.Error):
-            self.client.obtain_certificate(domains)
+        self.assertRaises(errors.Error,
+            self.client.obtain_certificate, domains)
 
     def test_save_certificate(self):
         certs = ["matching_cert.pem", "cert.pem", "cert-san.pem"]
