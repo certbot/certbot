@@ -11,7 +11,7 @@ from shutil import copy, rmtree
 import socket
 import ssl
 from stat import S_IRUSR, S_IXUSR
-from subprocess import CalledProcessError, check_output, Popen, PIPE
+from subprocess import CalledProcessError, Popen, PIPE
 import sys
 from tempfile import mkdtemp
 from threading import Thread
@@ -146,7 +146,7 @@ def out_and_err(command, input=None, shell=False, env=None):
     out, err = process.communicate(input=input)
     status = process.poll()  # same as in check_output(), though wait() sounds better
     if status:
-        raise CalledProcessError(status, command, output=out)
+        raise CalledProcessError(status, command)
     return out, err
 
 
