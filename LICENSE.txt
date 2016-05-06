@@ -1,8 +1,8 @@
-Let's Encrypt Python Client
+Certbot ACME Client
 Copyright (c) Electronic Frontier Foundation and others
 Licensed Apache Version 2.0
 
-Incorporating code from nginxparser
+The nginx plugin incorporates code from nginxparser
 Copyright (c) 2014 Fatih Erikli
 Licensed MIT
 

@@ -29,5 +29,25 @@ class MissingNonceTest(unittest.TestCase):
         self.assertTrue("{}" in str(self.error))
 
 
+class PollErrorTest(unittest.TestCase):
+    """Tests for acme.errors.PollError."""
+
+    def setUp(self):
+        from acme.errors import PollError
+        self.timeout = PollError(
+            exhausted=set([mock.sentinel.AR]),
+            updated={})
+        self.invalid = PollError(exhausted=set(), updated={
+            mock.sentinel.AR: mock.sentinel.AR2})
+
+    def test_timeout(self):
+        self.assertTrue(self.timeout.timeout)
+        self.assertFalse(self.invalid.timeout)
+
+    def test_repr(self):
+        self.assertEqual('PollError(exhausted=%s, updated={sentinel.AR: '
+                         'sentinel.AR2})' % repr(set()), repr(self.invalid))
+
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

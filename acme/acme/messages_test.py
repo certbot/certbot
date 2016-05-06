@@ -8,8 +8,8 @@ from acme import jose
 from acme import test_util
 
 
-CERT = test_util.load_cert('cert.der')
-CSR = test_util.load_csr('csr.der')
+CERT = test_util.load_comparable_cert('cert.der')
+CSR = test_util.load_comparable_csr('csr.der')
 KEY = test_util.load_rsa_private_key('rsa512_key.pem')
 
 
@@ -18,41 +18,30 @@ class ErrorTest(unittest.TestCase):
 
     def setUp(self):
         from acme.messages import Error
-        self.error = Error(detail='foo', typ='malformed', title='title')
-        self.jobj = {'detail': 'foo', 'title': 'some title'}
-
-    def test_typ_prefix(self):
-        self.assertEqual('malformed', self.error.typ)
-        self.assertEqual(
-            'urn:acme:error:malformed', self.error.to_partial_json()['type'])
-        self.assertEqual(
-            'malformed', self.error.from_json(self.error.to_partial_json()).typ)
-
-    def test_typ_decoder_missing_prefix(self):
-        from acme.messages import Error
-        self.jobj['type'] = 'malformed'
-        self.assertRaises(jose.DeserializationError, Error.from_json, self.jobj)
-        self.jobj['type'] = 'not valid bare type'
-        self.assertRaises(jose.DeserializationError, Error.from_json, self.jobj)
-
-    def test_typ_decoder_not_recognized(self):
-        from acme.messages import Error
-        self.jobj['type'] = 'urn:acme:error:baz'
-        self.assertRaises(jose.DeserializationError, Error.from_json, self.jobj)
-
-    def test_description(self):
-        self.assertEqual(
-            'The request message was malformed', self.error.description)
+        self.error = Error(
+            detail='foo', typ='urn:acme:error:malformed', title='title')
+        self.jobj = {
+            'detail': 'foo',
+            'title': 'some title',
+            'type': 'urn:acme:error:malformed',
+        }
+        self.error_custom = Error(typ='custom', detail='bar')
+        self.jobj_cusom = {'type': 'custom', 'detail': 'bar'}
 
     def test_from_json_hashable(self):
         from acme.messages import Error
         hash(Error.from_json(self.error.to_json()))
 
+    def test_description(self):
+        self.assertEqual(
+            'The request message was malformed', self.error.description)
+        self.assertTrue(self.error_custom.description is None)
+
     def test_str(self):
         self.assertEqual(
-            'malformed :: The request message was malformed :: foo',
-            str(self.error))
-        self.assertEqual('foo', str(self.error.update(typ=None)))
+            'urn:acme:error:malformed :: The request message was '
+            'malformed :: foo :: title', str(self.error))
+        self.assertEqual('custom :: bar', str(self.error_custom))
 
 
 class ConstantTest(unittest.TestCase):
@@ -101,6 +90,11 @@ class DirectoryTest(unittest.TestCase):
         self.dir = Directory({
             'new-reg': 'reg',
             mock.MagicMock(resource_type='new-cert'): 'cert',
+            'meta': Directory.Meta(
+                terms_of_service='https://example.com/acme/terms',
+                website='https://www.example.com/',
+                caa_identities=['example.com'],
+            ),
         })
 
     def test_init_wrong_key_value_error(self):
@@ -122,9 +116,16 @@ class DirectoryTest(unittest.TestCase):
     def test_getattr_fails_with_attribute_error(self):
         self.assertRaises(AttributeError, self.dir.__getattr__, 'foo')
 
-    def test_to_partial_json(self):
-        self.assertEqual(
-            self.dir.to_partial_json(), {'new-reg': 'reg', 'new-cert': 'cert'})
+    def test_to_json(self):
+        self.assertEqual(self.dir.to_json(), {
+            'new-reg': 'reg',
+            'new-cert': 'cert',
+            'meta': {
+                'terms-of-service': 'https://example.com/acme/terms',
+                'website': 'https://www.example.com/',
+                'caa-identities': ['example.com'],
+            },
+        })
 
     def test_from_json_deserialization_error_on_wrong_key(self):
         from acme.messages import Directory
@@ -232,7 +233,7 @@ class ChallengeBodyTest(unittest.TestCase):
         from acme.messages import Error
         from acme.messages import STATUS_INVALID
         self.status = STATUS_INVALID
-        error = Error(typ='serverInternal',
+        error = Error(typ='urn:acme:error:serverInternal',
                       detail='Unable to communicate with DNS server')
         self.challb = ChallengeBody(
             uri='http://challb', chall=self.chall, status=self.status,
@@ -282,10 +283,8 @@ class AuthorizationTest(unittest.TestCase):
             ChallengeBody(uri='http://challb2', status=STATUS_VALID,
                           chall=challenges.DNS(
                               token=b'DGyRejmCefe7v4NfDGDKfA')),
-            ChallengeBody(uri='http://challb3', status=STATUS_VALID,
-                          chall=challenges.RecoveryContact()),
         )
-        combinations = ((0, 2), (1, 2))
+        combinations = ((0,), (1,))
 
         from acme.messages import Authorization
         from acme.messages import Identifier
@@ -311,8 +310,8 @@ class AuthorizationTest(unittest.TestCase):
 
     def test_resolved_combinations(self):
         self.assertEqual(self.authz.resolved_combinations, (
-            (self.challbs[0], self.challbs[2]),
-            (self.challbs[1], self.challbs[2]),
+            (self.challbs[0],),
+            (self.challbs[1],),
         ))
 
 

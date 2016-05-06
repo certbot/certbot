@@ -1,5 +1,7 @@
 """ACME client API."""
+import collections
 import datetime
+from email.utils import parsedate_tz
 import heapq
 import logging
 import time
@@ -10,7 +12,6 @@ from six.moves import http_client  # pylint: disable=import-error
 import OpenSSL
 import requests
 import sys
-import werkzeug
 
 from acme import errors
 from acme import jose
@@ -20,7 +21,9 @@ from acme import messages
 
 logger = logging.getLogger(__name__)
 
-# Python does not validate certificates by default before version 2.7.9
+# Prior to Python 2.7.9 the stdlib SSL module did not allow a user to configure
+# many important security related options. On these platforms we use PyOpenSSL
+# for SSL, which does allow these options to be configured.
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
 if sys.version_info < (2, 7, 9):  # pragma: no cover
     requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
@@ -64,15 +67,13 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def _regr_from_response(cls, response, uri=None, new_authzr_uri=None,
                             terms_of_service=None):
-        terms_of_service = (
-            response.links['terms-of-service']['url']
-            if 'terms-of-service' in response.links else terms_of_service)
+        if 'terms-of-service' in response.links:
+            terms_of_service = response.links['terms-of-service']['url']
+        if 'next' in response.links:
+            new_authzr_uri = response.links['next']['url']
 
         if new_authzr_uri is None:
-            try:
-                new_authzr_uri = response.links['next']['url']
-            except KeyError:
-                raise errors.ClientError('"next" link missing')
+            raise errors.ClientError('"next" link missing')
 
         return messages.RegistrationResource(
             body=messages.Registration.from_json(response.json()),
@@ -179,40 +180,41 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
-    def request_challenges(self, identifier, new_authzr_uri):
+    def request_challenges(self, identifier, new_authzr_uri=None):
         """Request challenges.
 
-        :param identifier: Identifier to be challenged.
-        :type identifier: `.messages.Identifier`
-
-        :param str new_authzr_uri: new-authorization URI
+        :param .messages.Identifier identifier: Identifier to be challenged.
+        :param str new_authzr_uri: ``new-authorization`` URI. If omitted,
+            will default to value found in ``directory``.
 
         :returns: Authorization Resource.
         :rtype: `.AuthorizationResource`
 
         """
         new_authz = messages.NewAuthorization(identifier=identifier)
-        response = self.net.post(new_authzr_uri, new_authz)
+        response = self.net.post(self.directory.new_authz
+                                 if new_authzr_uri is None else new_authzr_uri,
+                                 new_authz)
         # TODO: handle errors
         assert response.status_code == http_client.CREATED
         return self._authzr_from_response(response, identifier)
 
-    def request_domain_challenges(self, domain, new_authz_uri):
+    def request_domain_challenges(self, domain, new_authzr_uri=None):
         """Request challenges for domain names.
 
         This is simply a convenience function that wraps around
         `request_challenges`, but works with domain names instead of
-        generic identifiers.
+        generic identifiers. See ``request_challenges`` for more
+        documentation.
 
         :param str domain: Domain name to be challenged.
-        :param str new_authzr_uri: new-authorization URI
 
         :returns: Authorization Resource.
         :rtype: `.AuthorizationResource`
 
         """
         return self.request_challenges(messages.Identifier(
-            typ=messages.IDENTIFIER_FQDN, value=domain), new_authz_uri)
+            typ=messages.IDENTIFIER_FQDN, value=domain), new_authzr_uri)
 
     def answer_challenge(self, challb, response):
         """Answer challenge.
@@ -246,9 +248,10 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
     def retry_after(cls, response, default):
         """Compute next `poll` time based on response ``Retry-After`` header.
 
-        :param response: Response from `poll`.
-        :type response: `requests.Response`
+        Handles integers and various datestring formats per
+        https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.37
 
+        :param requests.Response response: Response from `poll`.
         :param int default: Default value (in seconds), used when
             ``Retry-After`` header is not present or invalid.
 
@@ -260,12 +263,16 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         try:
             seconds = int(retry_after)
         except ValueError:
-            # pylint: disable=no-member
-            decoded = werkzeug.parse_date(retry_after)  # RFC1123
-            if decoded is None:
-                seconds = default
-            else:
-                return decoded
+            # The RFC 2822 parser handles all of RFC 2616's cases in modern
+            # environments (primarily HTTP 1.1+ but also py27+)
+            when = parsedate_tz(retry_after)
+            if when is not None:
+                try:
+                    tz_secs = datetime.timedelta(when[-1] if when[-1] else 0)
+                    return datetime.datetime(*when[:7]) - tz_secs
+                except (ValueError, OverflowError):
+                    pass
+            seconds = default
 
         return datetime.datetime.now() + datetime.timedelta(seconds=seconds)
 
@@ -323,33 +330,41 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             body=jose.ComparableX509(OpenSSL.crypto.load_certificate(
                 OpenSSL.crypto.FILETYPE_ASN1, response.content)))
 
-    def poll_and_request_issuance(self, csr, authzrs, mintime=5):
+    def poll_and_request_issuance(
+            self, csr, authzrs, mintime=5, max_attempts=10):
         """Poll and request issuance.
 
         This function polls all provided Authorization Resource URIs
         until all challenges are valid, respecting ``Retry-After`` HTTP
         headers, and then calls `request_issuance`.
 
-        .. todo:: add `max_attempts` or `timeout`
-
-        :param csr: CSR.
-        :type csr: `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
-
+        :param .ComparableX509 csr: CSR (`OpenSSL.crypto.X509Req`
+            wrapped in `.ComparableX509`)
         :param authzrs: `list` of `.AuthorizationResource`
-
         :param int mintime: Minimum time before next attempt, used if
             ``Retry-After`` is not present in the response.
+        :param int max_attempts: Maximum number of attempts (per
+            authorization) before `PollError` with non-empty ``waiting``
+            is raised.
 
         :returns: ``(cert, updated_authzrs)`` `tuple` where ``cert`` is
-            the issued certificate (`.messages.CertificateResource.),
+            the issued certificate (`.messages.CertificateResource`),
             and ``updated_authzrs`` is a `tuple` consisting of updated
             Authorization Resources (`.AuthorizationResource`) as
             present in the responses from server, and in the same order
             as the input ``authzrs``.
         :rtype: `tuple`
 
+        :raises PollError: in case of timeout or if some authorization
+            was marked by the CA as invalid
+
         """
-        # priority queue with datetime (based on Retry-After) as key,
+        # pylint: disable=too-many-locals
+        assert max_attempts > 0
+        attempts = collections.defaultdict(int)
+        exhausted = set()
+
+        # priority queue with datetime.datetime (based on Retry-After) as key,
         # and original Authorization Resource as value
         waiting = [(datetime.datetime.now(), authzr) for authzr in authzrs]
         # mapping between original Authorization Resource and the most
@@ -370,11 +385,20 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             updated_authzr, response = self.poll(updated[authzr])
             updated[authzr] = updated_authzr
 
+            attempts[authzr] += 1
             # pylint: disable=no-member
-            if updated_authzr.body.status != messages.STATUS_VALID:
-                # push back to the priority queue, with updated retry_after
-                heapq.heappush(waiting, (self.retry_after(
-                    response, default=mintime), authzr))
+            if updated_authzr.body.status not in (
+                    messages.STATUS_VALID, messages.STATUS_INVALID):
+                if attempts[authzr] < max_attempts:
+                    # push back to the priority queue, with updated retry_after
+                    heapq.heappush(waiting, (self.retry_after(
+                        response, default=mintime), authzr))
+                else:
+                    exhausted.add(authzr)
+
+        if exhausted or any(authzr.body.status == messages.STATUS_INVALID
+                            for authzr in six.itervalues(updated)):
+            raise errors.PollError(exhausted, updated)
 
         updated_authzrs = tuple(updated[authzr] for authzr in authzrs)
         return self.request_issuance(csr, updated_authzrs), updated_authzrs
@@ -475,7 +499,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                 'Successful revocation must return HTTP OK status')
 
 
-class ClientNetwork(object):
+class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     """Client network."""
     JSON_CONTENT_TYPE = 'application/json'
     JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
@@ -531,7 +555,7 @@ class ClientNetwork(object):
             # TODO: response.json() is called twice, once here, and
             # once in _get and _post clients
             jobj = response.json()
-        except ValueError as error:
+        except ValueError:
             jobj = None
 
         if not response.ok:

@@ -1,36 +1,38 @@
+import codecs
+import os
 import sys
 
 from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.1.0.dev0'
+def read_file(filename, encoding='utf8'):
+    """Read unicode from given file."""
+    with codecs.open(filename, encoding=encoding) as fd:
+        return fd.read()
 
+
+here = os.path.abspath(os.path.dirname(__file__))
+readme = read_file(os.path.join(here, 'README.rst'))
+
+
+version = '0.6.0.dev0'
+
+
+# This package is a simple shim around certbot-apache
 install_requires = [
-    'acme=={0}'.format(version),
+    'certbot-apache',
     'letsencrypt=={0}'.format(version),
-    'python-augeas',
-    'setuptools',  # pkg_resources
-    'zope.component',
-    'zope.interface',
 ]
 
-if sys.version_info < (2, 7):
-    install_requires.append('mock<1.1.0')
-else:
-    install_requires.append('mock')
-
-docs_extras = [
-    'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
-    'sphinx_rtd_theme',
-]
 
 setup(
     name='letsencrypt-apache',
     version=version,
-    description="Apache plugin for Let's Encrypt client",
+    description="Apache plugin for Let's Encrypt",
+    long_description=readme,
     url='https://github.com/letsencrypt/letsencrypt',
-    author="Let's Encrypt Project",
+    author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
     classifiers=[
@@ -54,12 +56,4 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=install_requires,
-    extras_require={
-        'docs': docs_extras,
-    },
-    entry_points={
-        'letsencrypt.plugins': [
-            'apache = letsencrypt_apache.configurator:ApacheConfigurator',
-        ],
-    },
 )
