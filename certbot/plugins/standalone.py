@@ -120,6 +120,13 @@ def supported_challenges_validator(data):
 
     """
     challs = data.split(",")
+
+    # tls-sni-01 was dvsni during private beta
+    if "dvsni" in challs:
+        challs = [challenges.TLSSNI01.typ if chall == "dvsni" else chall
+                  for chall in challs]
+        data = ",".join(challs)
+
     unrecognized = [name for name in challs
                     if name not in challenges.Challenge.TYPES]
     if unrecognized:
