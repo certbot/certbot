@@ -3,9 +3,9 @@
 Disclaimer
 ==========
 
-The Let's Encrypt Client is **BETA SOFTWARE**. It contains plenty of bugs and
-rough edges, and should be tested thoroughly in staging environments before use
-on production systems.
+Certbot (previously, the Let's Encrypt client) is **BETA SOFTWARE**. It
+contains plenty of bugs and rough edges, and should be tested thoroughly in
+staging environments before use on production systems.
 
 For more information regarding the status of the project, please see
 https://letsencrypt.org. Be sure to checkout the
