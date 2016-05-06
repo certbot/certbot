@@ -18,7 +18,8 @@ virtualenv --no-site-packages $VENV_NAME $VENV_ARGS
 # Separately install setuptools and pip to make sure following
 # invocations use latest
 pip install -U setuptools
-pip install -U pip
+# --force-reinstall used to fix broken pip installation on some systems
+pip install --force-reinstall -U pip
 pip install "$@"
 
 set +x
