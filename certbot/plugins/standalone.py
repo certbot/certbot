@@ -123,6 +123,7 @@ def supported_challenges_validator(data):
 
     # tls-sni-01 was dvsni during private beta
     if "dvsni" in challs:
+        logger.info("Updating legacy standalone_supported_challenges value")
         challs = [challenges.TLSSNI01.typ if chall == "dvsni" else chall
                   for chall in challs]
         data = ",".join(challs)
