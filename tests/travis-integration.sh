@@ -6,7 +6,7 @@ set -o errexit
 
 source .tox/$TOXENV/bin/activate
 
-export LETSENCRYPT_PATH=`pwd`
+export CERTBOT_PATH=`pwd`
 
 cd $GOPATH/src/github.com/letsencrypt/boulder/
 
