@@ -3,7 +3,7 @@
 Disclaimer
 ==========
 
-The Certbot is **BETA SOFTWARE**. It contains plenty of bugs and
+Certbot is **BETA SOFTWARE**. It contains plenty of bugs and
 rough edges, and should be tested thoroughly in staging environments before use
 on production systems.
 
