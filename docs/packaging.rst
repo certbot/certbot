@@ -19,6 +19,7 @@ The following scripts are used in the process:
 - https://gist.github.com/kuba/b9a3a2ca3bd35b8368ef
 
 We currently version as ``0.0.0.devYYYYMMDD``, and will change at GA time to the following scheme:
+
 - ``0.1.0``
 - ``0.2.0dev`` for developement in ``master``
 - ``0.2.0`` (only temporarily in ``master``)
@@ -26,7 +27,8 @@ We currently version as ``0.0.0.devYYYYMMDD``, and will change at GA time to the
 
 Tracking issue for non-dev release scripts: https://github.com/letsencrypt/letsencrypt/issues/1185
 
-## Notes for package maintainers
+Notes for package maintainers
+=============================
 
 0. Please use our releases, not ``master``!
 
@@ -40,11 +42,12 @@ Tracking issue for non-dev release scripts: https://github.com/letsencrypt/letse
 
 5. Do get in touch with us. We are happy to make any changes that will make packaging easier. If you need to apply some patches don't do it downstream - make a PR here.
 
-## Already ongoing efforts
+Already ongoing efforts
+-----------------------
 
 
-
-### Arch
+Arch
+====
 
 From PyPI:
 - https://www.archlinux.org/packages/community/any/python2-acme
@@ -55,25 +58,32 @@ From PyPI:
 
 From ``master``: https://aur.archlinux.org/packages/letsencrypt-git
 
-### Debian (and its derivatives, including Ubuntu)
+Debian (and its derivatives, including Ubuntu)
+======
 
 https://alioth.debian.org/projects/letsencrypt/
 
-### Fedora
+Fedora
+======
+
 In Fedora 23+.
 
 - https://admin.fedoraproject.org/pkgdb/package/letsencrypt/
 - https://admin.fedoraproject.org/pkgdb/package/python-acme/
 - https://bugzilla.redhat.com/show_bug.cgi?id=1287193 (review request, closed)
 
-### FreeBSD
+FreeBSD
+=======
 
 https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=203405
 
-### GNU Guix
+GNU Guix
+========
+
 - https://www.gnu.org/software/guix/package-list.html#letsencrypt
 
-### OpenBSD
+OpenBSD
+=======
 
 - http://cvsweb.openbsd.org/cgi-bin/cvsweb/ports/security/letsencrypt/
 - https://github.com/letsencrypt/letsencrypt/pull/1175
