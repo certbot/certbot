@@ -131,7 +131,7 @@ The Let's Encrypt project may deviate from the Mozilla recommendations
 in the future if good cause is shown and we believe our users'
 priorities would be well-served by doing so. In general, please address
 relevant proposals for changing priorities to the Mozilla security
-team first, before asking the Let's Encrypt project or EFF to change
+team first, before asking the Certbot developers to change
 Certbot's priorities. The Mozilla security team is likely to have more
 resources and expertise to bring to bear on evaluating reasons why its
 recommendations should be updated.
@@ -187,7 +187,7 @@ to enable updating ciphers with each new Certbot release, or
   certbot --update-ciphers off
 
 to disable automatic configuration updates. These features have not yet
-been implemented and this syntax may change then they are implemented.
+been implemented and this syntax may change when they are implemented.
 
 
 TODO

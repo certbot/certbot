@@ -539,7 +539,7 @@ Comparison of different methods
 Unless you have a very specific requirements, we kindly suggest that you use
 the certbot-auto_ method. It's the fastest, the most thoroughly
 tested and the most reliable way of getting our software and the free
-SSL certificates!
+TLS/SSL certificates!
 
 Beyond the methods discussed here, other methods may be possible, such as
 installing Certbot directly with pip from PyPI or downloading a ZIP
