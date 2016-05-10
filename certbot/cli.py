@@ -38,6 +38,11 @@ helpful_parser = None
 # fails safely
 
 LEAUTO = "letsencrypt-auto"
+if "CERTBOT_AUTO" in os.environ:
+    # if we're here, this is probably going to be certbot-auto, unless the
+    # user saved the script under a different name
+    LEAUTO = os.path.basename(os.environ["CERTBOT_AUTO"])
+
 fragment = os.path.join(".local", "share", "letsencrypt")
 cli_command = LEAUTO if fragment in sys.argv[0] else "certbot"
 
