@@ -38,7 +38,7 @@ helpful_parser = None
 # fails safely
 
 LEAUTO = "letsencrypt-auto"
-fragment = os.path.join(".local", "share", "certbot")
+fragment = os.path.join(".local", "share", "letsencrypt")
 cli_command = LEAUTO if fragment in sys.argv[0] else "certbot"
 
 # Argparse's help formatting has a lot of unhelpful peculiarities, so we want

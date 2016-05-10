@@ -124,7 +124,7 @@ or ``--webroot-path /usr/share/nginx/html`` are two common webroot paths.
 
 If you're getting a certificate for many domains at once, the plugin
 needs to know where each domain's files are served from, which could
-potentially be a separate directory for each domain. When requested a
+potentially be a separate directory for each domain. When requesting a
 certificate for multiple domains, each domain will use the most recently
 specified ``--webroot-path``.  So, for instance,
 
@@ -184,11 +184,11 @@ be on a different computer.
 Nginx
 -----
 
-In the future, if you're running Nginx you can use this plugin to
-automatically obtain and install your certificate. The Nginx plugin
-is still experimental, however, and is not installed with
-letsencrypt-auto_. If installed, you can select this plugin on the
-command line by including ``--nginx``.
+In the future, if you're running Nginx you will hopefully be able to use this
+plugin to automatically obtain and install your certificate. The Nginx plugin is
+still experimental, however, and is not installed with letsencrypt-auto_. If
+installed, you can select this plugin on the command line by including
+``--nginx``.
 
 Third-party plugins
 -------------------
@@ -446,7 +446,13 @@ If you run Debian Stretch or Debian Sid, you can install letsencrypt packages.
 If you don't want to use the Apache plugin, you can omit the
 ``python-letsencrypt-apache`` package.
 
-Packages for Debian Jessie are coming in the next few weeks.
+Packages exist for Debian Jessie via backports. First you'll have to follow the
+instructions at http://backports.debian.org/Instructions/ to enable the Jessie backports
+repo, if you have not already done so. Then run:
+
+.. code-block:: shell
+
+   sudo apt-get install certbot python-certbot-apache -t jessie-backports
 
 **Fedora**
 
