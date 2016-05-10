@@ -192,9 +192,6 @@ BootstrapDebCommon() {
       if ! grep -v -e ' *#' /etc/apt/sources.list | grep -q "$BACKPORT_NAME" ; then
           # This can theoretically error if sources.list.d is empty, but in that case we don't care.
           if ! grep -v -e ' *#' /etc/apt/sources.list.d/* 2>/dev/null | grep -q "$BACKPORT_NAME"; then
-              if echo $BACKPORT_NAME | grep -q wheezy ; then
-                  echo 'Backports are only installed if explicitly requested via "apt-get install -t wheezy-backports"'
-              fi
               if [ "$ASSUME_YES" = 1 ]; then
                   /bin/echo -n "Installing augeas from $BACKPORT_NAME in 3 seconds..."
                   sleep 1s
