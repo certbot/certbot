@@ -4,6 +4,7 @@ import shutil
 
 import mock
 
+from certbot import errors
 from certbot.plugins import common_test
 
 from certbot_apache import obj
@@ -131,6 +132,16 @@ class TlsSniPerformTest(util.ApacheTest):
                 set([obj.Addr.fromstring("_default_:443")]),
                 False, False)
         )
+
+        # pylint: disable=protected-access
+        self.assertEqual(
+            set([obj.Addr.fromstring("*:443")]),
+            self.sni._get_addrs(self.achalls[0]))
+
+    def test_get_addrs_no_vhost_found(self):
+        self.sni.configurator.choose_vhost = mock.Mock(
+            side_effect=errors.MissingCommandlineFlag(
+                "Failed to run Apache plugin non-interactively"))
 
         # pylint: disable=protected-access
         self.assertEqual(

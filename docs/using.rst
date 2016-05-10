@@ -215,12 +215,25 @@ expire in less than 30 days. The same plugin and options that were used
 at the time the certificate was originally issued will be used for the
 renewal attempt, unless you specify other plugins or options.
 
+You can also specify hooks to be run before or after a certificate is
+renewed. For example, if you want to use the standalone_ plugin to renew
+your certificates, you may want to use a command like
+
+``certbot renew --standalone --pre-hook "service nginx stop" --post-hook "service nginx start"``
+
+This will stop Nginx so standalone can bind to the necessary ports and
+then restart Nginx after the plugin is finished. The hooks will only be
+run if a certificate is due for renewal, so you can run this command
+frequently without unnecessarily stopping your webserver. More
+information about renewal hooks can be found by running
+``certbot --help renew``.
+
 If you're sure that this command executes successfully without human
 intervention, you can add the command to ``crontab`` (since certificates
 are only renewed when they're determined to be near expiry, the command
-can run on a regular basis, like every week or every day); note that
-the current version provides detailed output describing either renewal
-success or failure.
+can run on a regular basis, like every week or every day). In that case,
+you are likely to want to use the ``-q`` or ``--quiet`` quiet flag to
+silence all output except errors.
 
 The ``--force-renew`` flag may be helpful for automating renewal;
 it causes the expiration time of the certificate(s) to be ignored when
@@ -241,9 +254,11 @@ renewals of that certificate.
 An alternative form that provides for more fine-grained control over the
 renewal process (while renewing specified certificates one at a time),
 is ``certbot certonly`` with the complete set of subject domains of
-a specific certificate specified via `-d` flags, like
+a specific certificate specified via `-d` flags. You may also want to
+include the ``-n`` or ``--noninteractive`` flag to prevent blocking on
+user input (which is useful when running the command from cron).
 
-``certbot certonly -d example.com -d www.example.com``
+``certbot certonly -n -d example.com -d www.example.com``
 
 (All of the domains covered by the certificate must be specified in
 this case in order to renew and replace the old certificate rather
@@ -437,7 +452,7 @@ Operating System Packages
 
 **Debian**
 
-If you run Debian Stretch or Debian Sid, you can install letsencrypt packages.
+If you run Debian Stretch or Debian Sid, you can install certbot packages.
 
 .. code-block:: shell
 
