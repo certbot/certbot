@@ -34,13 +34,14 @@ from your OS and puts others in a python virtual environment::
   user@webserver:~$ chmod a+x ./certbot-auto
   user@webserver:~$ ./certbot-auto --help
 
-.. hint:: For stronger security, you can use these steps for extra verification before running the script:
+.. hint:: If you'd like stronger security when downloading the ``certbot-auto`` script,
+          you can use these steps for extra verification before running it::
 
-  user@webserver:~$ wget https://dl.eff.org/certbot-auto.sig
-  user@webserver:~$ gpg2 --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
-  user@webserver:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.sig certbot-auto
+            user@server:~$ wget https://dl.eff.org/certbot-auto.sig
+            user@server:~$ gpg2 --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
+            user@server:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.sig certbot-auto
 
-Or for full command line help, type::
+And for full command line help, you can type::
 
   ./letsencrypt-auto --help all
 
