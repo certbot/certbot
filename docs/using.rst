@@ -254,9 +254,11 @@ renewals of that certificate.
 An alternative form that provides for more fine-grained control over the
 renewal process (while renewing specified certificates one at a time),
 is ``letsencrypt certonly`` with the complete set of subject domains of
-a specific certificate specified via `-d` flags, like
+a specific certificate specified via `-d` flags. You may also want to
+include the ``-n`` or ``--noninteractive`` flag to prevent blocking on
+user input (which is useful when running the command from cron).
 
-``letsencrypt certonly -d example.com -d www.example.com``
+``letsencrypt certonly -n -d example.com -d www.example.com``
 
 (All of the domains covered by the certificate must be specified in
 this case in order to renew and replace the old certificate rather
