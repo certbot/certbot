@@ -650,9 +650,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         help="(letsencrypt-auto only) prevent the letsencrypt-auto script from"
              " upgrading itself to newer released versions")
     helpful.add(
-        "automation", "--yes", action="store_true",
-        help="(letsencrypt-auto only) assume yes is the answer to all prompts")
-    helpful.add(
         "automation", "-q", "--quiet", dest="quiet", action="store_true",
         help="Silence all output except errors. Useful for automation via cron."
              " Implies --non-interactive.")
