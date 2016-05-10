@@ -29,14 +29,25 @@ all arguments you have provided.
 
 Help for certbot itself cannot be provided until it is installed.
 
-  --debug               attempt installation on experimental platforms
-  --help                print this help
-  --no-self-upgrade     do not download updates for certbot or certbot-auto
-  --os-packages-only    install OS dependencies and exit
-  -v, --verbose         provide more output
-  --yes                 assume yes is the answer to all prompts
+  --debug                                   attempt experimental installation
+  -h, --help                                print this help
+  -n, --non-interactive, --noninteractive   run without asking for user input
+  --no-self-upgrade                         do not download updates
+  --os-packages-only                        install OS dependencies and exit
+  -v, --verbose                             provide more output
 
 All arguments are accepted and forwarded to the Certbot client when run."
+
+while getopts ":hnv" arg; do
+    case $arg in
+        h)
+            HELP=1;;
+        n)
+            ASSUME_YES=1;;
+        v)
+            VERBOSE=1;;
+    esac
+done
 
 for arg in "$@" ; do
   case "$arg" in
@@ -50,15 +61,9 @@ for arg in "$@" ; do
       NO_SELF_UPGRADE=1;;
     --help)
       HELP=1;;
-    --yes)
+    --noninteractive|--non-interactive)
       ASSUME_YES=1;;
     --verbose)
-      VERBOSE=1;;
-    [!-]*|-*[!v]*|-)
-      # Anything that isn't -v, -vv, etc.: that is, anything that does not
-      # start with a -, contains anything that's not a v, or is just "-"
-      ;;
-    *)  # -v+ remains.
       VERBOSE=1;;
   esac
 done
