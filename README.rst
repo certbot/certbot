@@ -34,8 +34,8 @@ from your OS and puts others in a python virtual environment::
   user@webserver:~$ chmod a+x ./certbot-auto
   user@webserver:~$ ./certbot-auto --help
 
-.. hint:: If you'd like stronger security when downloading the ``certbot-auto`` script,
-          you can use these steps for extra verification before running it::
+.. hint:: The certbot-auto download is protected by HTTPS, which is pretty good, but if you'd like to
+          double check the integrity of the ``certbot-auto`` script, you can use these steps for verification before running it::
 
             user@server:~$ wget https://dl.eff.org/certbot-auto.sig
             user@server:~$ gpg2 --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
