@@ -231,9 +231,9 @@ information about renewal hooks can be found by running
 If you're sure that this command executes successfully without human
 intervention, you can add the command to ``crontab`` (since certificates
 are only renewed when they're determined to be near expiry, the command
-can run on a regular basis, like every week or every day). You may also
-want to use the ``-q`` or ``--quiet`` quiet flag to silence all output
-except errors.
+can run on a regular basis, like every week or every day). In that case,
+you are likely to want to use the ``-q`` or ``--quiet`` quiet flag to
+silence all output except errors.
 
 The ``--force-renew`` flag may be helpful for automating renewal;
 it causes the expiration time of the certificate(s) to be ignored when
