@@ -30,9 +30,9 @@ systems have packages yet, we provide a temporary solution via the
 ``letsencrypt-auto`` wrapper script, which obtains some dependencies
 from your OS and puts others in a python virtual environment::
 
-  user@webserver:~$ git clone https://github.com/letsencrypt/letsencrypt
-  user@webserver:~$ cd letsencrypt
-  user@webserver:~/letsencrypt$ ./letsencrypt-auto --help
+  user@webserver:~$ git clone https://github.com/certbot/certbot
+  user@webserver:~$ cd certbot
+  user@webserver:~/certbot$ ./letsencrypt-auto --help
 
 Or for full command line help, type::
 
