@@ -65,7 +65,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Certbot'
-copyright = u'2014-2016, Certbot Project'
+copyright = u'2014-2016 - The Certbot software and documentation are licensed under the Apache 2.0 license as described at https://eff.org/cb-license '
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
