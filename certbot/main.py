@@ -10,6 +10,7 @@ import traceback
 
 import zope.component
 
+from acme import errors as acme_errors
 from acme import jose
 
 import certbot
@@ -361,6 +362,33 @@ def _init_le_client(config, authenticator, installer):
         acc, acme = None, None
 
     return client.Client(config, acc, authenticator, installer, acme=acme)
+
+
+def register(config, unused_plugins):
+    """Create or modify accounts on the server."""
+
+    # Currently, only --update-registration is implemented. Issue #2446
+    # calls for a fuller register verb, to allow better separation of
+    # account management from obtaining certs.
+    if not config.update_registration:
+        return "Currently, only register --update-registration is implemented."
+    if config.email is None:
+        return ("Currently, --update-registration can only change the e-mail "
+                "address\nassociated with an account. A new e-mail address is "
+                "required\n(hint: --email)")
+    acc, acme = _determine_account(config)
+    acme_client = client.Client(config, acc, None, None, acme=acme)
+    try:
+        updated_reg = client.messages.Registration.from_data(email=config.email)
+        acme_client.acme.update_registration(acme_client.account.regr,
+                                             updated_reg)
+    except acme_errors.UnexpectedUpdate:
+        # We expect the unexpected update!
+        pass
+    query_data = acme_client.acme.query_registration(acme_client.account.regr)
+    # We rely on an ACME exception to interrupt this process if it didn't work.
+    print("Registration change succeeded. New registration data:\n")
+    print(query_data)
 
 
 def install(config, plugins):

@@ -265,8 +265,9 @@ class HelpfulArgumentParser(object):
         self.VERBS = {"auth": main.obtain_cert, "certonly": main.obtain_cert,
                       "config_changes": main.config_changes, "run": main.run,
                       "install": main.install, "plugins": main.plugins_cmd,
-                      "renew": main.renew, "revoke": main.revoke,
-                      "rollback": main.rollback, "everything": main.run}
+                      "register": main.register, "renew": main.renew,
+                      "revoke": main.revoke, "rollback": main.rollback,
+                      "everything": main.run}
 
         # List of topics for which additional help can be provided
         HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
@@ -591,6 +592,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
              "certificates. Updates to the Subscriber Agreement will still "
              "affect you, and will be effective 14 days after posting an "
              "update to the web site.")
+    helpful.add(
+        None, "--update-registration", action="store_true",
+        help="With the register verb, indicates that details associated "
+             "with an existing registration, such as the e-mail address, "
+             "should be updated, rather than registering a new account.")
     helpful.add(None, "-m", "--email", help=config_help("email"))
     # positional arg shadows --domains, instead of appending, and
     # --domains is useful, because it can be stored in config
