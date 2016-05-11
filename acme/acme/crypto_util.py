@@ -206,6 +206,7 @@ def gen_ss_cert(key, domains, not_before=None,
     try:
         cert.set_serial_number(int(OpenSSL.rand.bytes(16).encode("hex"), 16))
     except AttributeError:
+        # pylint: disable=E1101
         cert.set_serial_number(int.from_bytes(OpenSSL.rand.bytes(16), 'big'))
     cert.set_version(2)
 
