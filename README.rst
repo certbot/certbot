@@ -37,7 +37,7 @@ from your OS and puts others in a python virtual environment::
 .. hint:: The certbot-auto download is protected by HTTPS, which is pretty good, but if you'd like to
           double check the integrity of the ``certbot-auto`` script, you can use these steps for verification before running it::
 
-            user@server:~$ wget https://dl.eff.org/certbot-auto.asc
+            user@server:~$ wget -N https://dl.eff.org/certbot-auto.asc
             user@server:~$ gpg2 --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
             user@server:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.asc certbot-auto
 
