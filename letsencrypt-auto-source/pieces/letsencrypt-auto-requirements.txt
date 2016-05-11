@@ -1,4 +1,4 @@
-# This is the flattened list of packages letsencrypt-auto installs. To generate
+# This is the flattened list of packages certbot-auto installs. To generate
 # this, do `pip install --no-cache-dir -e acme -e . -e certbot-apache`, and
 # then use `hashin` or a more secure method to gather the hashes.
 
