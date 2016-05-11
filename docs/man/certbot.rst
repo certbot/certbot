@@ -1,1 +1,1 @@
-.. program-output:: letsencrypt --help all
+.. program-output:: certbot --help all

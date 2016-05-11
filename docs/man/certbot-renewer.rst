@@ -1,1 +1,1 @@
-.. program-output:: letsencrypt-renewer --help
+.. program-output:: certbot-renewer --help
