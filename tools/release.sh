@@ -187,6 +187,9 @@ while ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
    read -p "Please correctly sign letsencrypt-auto with offline-signrequest.sh"
 done
 
+# This signature is not quite as strong, but easier for people to verify out of band
+gpg -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign letsencrypt-auto-source/letsencrypt-auto
+
 # copy leauto to the root, overwriting the previous release version
 cp -p letsencrypt-auto-source/letsencrypt-auto letsencrypt-auto
 
