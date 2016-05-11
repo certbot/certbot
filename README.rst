@@ -3,9 +3,9 @@
 Disclaimer
 ==========
 
-The Let's Encrypt Client is **BETA SOFTWARE**. It contains plenty of bugs and
-rough edges, and should be tested thoroughly in staging environments before use
-on production systems.
+Certbot (previously, the Let's Encrypt client) is **BETA SOFTWARE**. It
+contains plenty of bugs and rough edges, and should be tested thoroughly in
+staging environments before use on production systems.
 
 For more information regarding the status of the project, please see
 https://letsencrypt.org. Be sure to checkout the
@@ -18,16 +18,17 @@ The Let's Encrypt Client is a fully-featured, extensible client for the Let's
 Encrypt CA (or any other CA that speaks the `ACME
 <https://github.com/ietf-wg-acme/acme/blob/master/draft-ietf-acme-acme.md>`_
 protocol) that can automate the tasks of obtaining certificates and
-configuring webservers to use them.
+configuring webservers to use them. This client runs on Unix-based operating
+systems.
 
 Installation
 ------------
 
-If ``letsencrypt`` is packaged for your OS, you can install it from there, and
-run it by typing ``letsencrypt``.  Because not all operating systems have
-packages yet, we provide a temporary solution via the ``letsencrypt-auto``
-wrapper script, which obtains some dependencies from your OS and puts others
-in a python virtual environment::
+If ``letsencrypt`` is packaged for your Unix OS, you can install it from
+there, and run it by typing ``letsencrypt``.  Because not all operating
+systems have packages yet, we provide a temporary solution via the
+``letsencrypt-auto`` wrapper script, which obtains some dependencies
+from your OS and puts others in a python virtual environment::
 
   user@webserver:~$ git clone https://github.com/letsencrypt/letsencrypt
   user@webserver:~$ cd letsencrypt
@@ -127,16 +128,15 @@ System Requirements
 ===================
 
 The Let's Encrypt Client presently only runs on Unix-ish OSes that include
-Python 2.6 or 2.7; Python 3.x support will be added after the Public Beta
-launch. The client requires root access in order to write to
-``/etc/letsencrypt``, ``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to
-bind to ports 80 and 443 (if you use the ``standalone`` plugin) and to read and
-modify webserver configurations (if you use the ``apache`` or ``nginx``
-plugins).  If none of these apply to you, it is theoretically possible to run
-without root privileges, but for most users who want to avoid running an ACME
-client as root, either `letsencrypt-nosudo
-<https://github.com/diafygi/letsencrypt-nosudo>`_ or `simp_le
-<https://github.com/kuba/simp_le>`_ are more appropriate choices.
+Python 2.6 or 2.7; Python 3.x support will hopefully be added in the future. The
+client requires root access in order to write to ``/etc/letsencrypt``,
+``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to bind to ports 80 and 443
+(if you use the ``standalone`` plugin) and to read and modify webserver
+configurations (if you use the ``apache`` or ``nginx`` plugins).  If none of
+these apply to you, it is theoretically possible to run without root privileges,
+but for most users who want to avoid running an ACME client as root, either
+`letsencrypt-nosudo <https://github.com/diafygi/letsencrypt-nosudo>`_ or
+`simp_le <https://github.com/kuba/simp_le>`_ are more appropriate choices.
 
 The Apache plugin currently requires a Debian-based OS with augeas version
 1.0; this includes Ubuntu 12.04+ and Debian 7+.

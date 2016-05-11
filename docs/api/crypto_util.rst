@@ -1,5 +1,5 @@
-:mod:`letsencrypt.crypto_util`
+:mod:`certbot.crypto_util`
 ------------------------------
 
-.. automodule:: letsencrypt.crypto_util
+.. automodule:: certbot.crypto_util
    :members:

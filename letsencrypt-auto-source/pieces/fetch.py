@@ -103,7 +103,7 @@ def verified_new_le_auto(get, tag, temp_dir):
                        stderr=dev_null)
     except CalledProcessError as exc:
         raise ExpectedError("Couldn't verify signature of downloaded "
-                            "letsencrypt-auto.", exc)
+                            "certbot-auto.", exc)
 
 
 def main():

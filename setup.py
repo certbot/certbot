@@ -23,7 +23,7 @@ def read_file(filename, encoding='utf8'):
 here = os.path.abspath(os.path.dirname(__file__))
 
 # read version number (and other metadata) from package init
-init_fn = os.path.join(here, 'letsencrypt', '__init__.py')
+init_fn = os.path.join(here, 'certbot', '__init__.py')
 meta = dict(re.findall(r"""__([a-z]+)__ = '([^']+)""", read_file(init_fn)))
 
 readme = read_file(os.path.join(here, 'README.rst'))
@@ -39,7 +39,7 @@ install_requires = [
     'ConfigArgParse>=0.9.3',
     'configobj',
     'cryptography>=0.7',  # load_pem_x509_certificate
-    'parsedatetime',
+    'parsedatetime>=1.3',  # Calendar.parseDT
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
     'PyOpenSSL',
     'pyrfc3339',
@@ -85,12 +85,12 @@ docs_extras = [
 ]
 
 setup(
-    name='letsencrypt',
+    name='certbot',
     version=version,
-    description="Let's Encrypt client",
+    description="ACME client",
     long_description=readme,  # later: + '\n\n' + changes
     url='https://github.com/letsencrypt/letsencrypt',
-    author="Let's Encrypt Project",
+    author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
     classifiers=[
@@ -122,18 +122,18 @@ setup(
     },
 
     # to test all packages run "python setup.py test -s
-    # {acme,letsencrypt_apache,letsencrypt_nginx}"
-    test_suite='letsencrypt',
+    # {acme,certbot_apache,certbot_nginx}"
+    test_suite='certbot',
 
     entry_points={
         'console_scripts': [
-            'letsencrypt = letsencrypt.main:main',
+            'certbot = certbot.main:main',
         ],
-        'letsencrypt.plugins': [
-            'manual = letsencrypt.plugins.manual:Authenticator',
-            'null = letsencrypt.plugins.null:Installer',
-            'standalone = letsencrypt.plugins.standalone:Authenticator',
-            'webroot = letsencrypt.plugins.webroot:Authenticator',
+        'certbot.plugins': [
+            'manual = certbot.plugins.manual:Authenticator',
+            'null = certbot.plugins.null:Installer',
+            'standalone = certbot.plugins.standalone:Authenticator',
+            'webroot = certbot.plugins.webroot:Authenticator',
         ],
     },
 )

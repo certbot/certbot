@@ -14,11 +14,11 @@ from sys import argv
 DIR = dirname(abspath(__file__))
 
 
-def le_version(build_script_dir):
-    """Return the version number stamped in letsencrypt/__init__.py."""
+def certbot_version(build_script_dir):
+    """Return the version number stamped in certbot/__init__.py."""
     return re.search('''^__version__ = ['"](.+)['"].*''',
                      file_contents(join(dirname(build_script_dir),
-                                        'letsencrypt',
+                                        'certbot',
                                         '__init__.py')),
                      re.M).group(1)
 
@@ -32,13 +32,13 @@ def build(version=None, requirements=None):
     """Return the built contents of the letsencrypt-auto script.
 
     :arg version: The version to attach to the script. Default: the version of
-        the letsencrypt package
+        the certbot package
     :arg requirements: The contents of the requirements file to embed. Default:
         contents of letsencrypt-auto-requirements.txt
 
     """
     special_replacements = {
-        'LE_AUTO_VERSION': version or le_version(DIR)
+        'LE_AUTO_VERSION': version or certbot_version(DIR)
     }
     if requirements:
         special_replacements['letsencrypt-auto-requirements.txt'] = requirements

@@ -1,1 +1,2 @@
-Nginx plugin for Let's Encrypt client
+This package is a simple shim for backwards compatibility around
+``certbot-nginx``, the Nginx plugin for ``certbot``.
