@@ -97,9 +97,9 @@ class DirectoryTest(unittest.TestCase):
             ),
         })
 
-    def test_init_wrong_key_value_error(self):
+    def test_init_wrong_key_value_success(self):  # pylint: disable=no-self-use
         from acme.messages import Directory
-        self.assertRaises(ValueError, Directory, {'foo': 'bar'})
+        Directory({'foo': 'bar'})
 
     def test_getitem(self):
         self.assertEqual('reg', self.dir['new-reg'])
@@ -127,10 +127,9 @@ class DirectoryTest(unittest.TestCase):
             },
         })
 
-    def test_from_json_deserialization_error_on_wrong_key(self):
+    def test_from_json_deserialization_unknown_key_success(self):  # pylint: disable=no-self-use
         from acme.messages import Directory
-        self.assertRaises(
-            jose.DeserializationError, Directory.from_json, {'foo': 'bar'})
+        Directory.from_json({'foo': 'bar'})
 
 
 class RegistrationTest(unittest.TestCase):

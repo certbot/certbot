@@ -143,12 +143,6 @@ class Directory(jose.JSONDeSerializable):
 
     def __init__(self, jobj):
         canon_jobj = util.map_keys(jobj, self._canon_key)
-        if not set(canon_jobj).issubset(
-                set(self._REGISTERED_TYPES).union(['meta'])):
-            # TODO: acme-spec is not clear about this: 'It is a JSON
-            # dictionary, whose keys are the "resource" values listed
-            # in {{https-requests}}'
-            raise ValueError('Wrong directory fields')
         # TODO: check that everything is an absolute URL; acme-spec is
         # not clear on that
         self._jobj = canon_jobj
@@ -171,10 +165,7 @@ class Directory(jose.JSONDeSerializable):
     @classmethod
     def from_json(cls, jobj):
         jobj['meta'] = cls.Meta.from_json(jobj.pop('meta', {}))
-        try:
-            return cls(jobj)
-        except ValueError as error:
-            raise jose.DeserializationError(str(error))
+        return cls(jobj)
 
 
 class Resource(jose.JSONObjectWithFields):
