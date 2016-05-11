@@ -85,6 +85,11 @@ class SupportedChallengesValidatorTest(unittest.TestCase):
     def test_not_subset(self):
         self.assertRaises(argparse.ArgumentTypeError, self._call, "dns")
 
+    def test_dvsni(self):
+        self.assertEqual("tls-sni-01", self._call("dvsni"))
+        self.assertEqual("http-01,tls-sni-01", self._call("http-01,dvsni"))
+        self.assertEqual("tls-sni-01,http-01", self._call("dvsni,http-01"))
+
 
 class AuthenticatorTest(unittest.TestCase):
     """Tests for certbot.plugins.standalone.Authenticator."""
