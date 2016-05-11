@@ -203,7 +203,7 @@ def gen_ss_cert(key, domains, not_before=None,
     """
     assert domains, "Must provide one or more hostnames for the cert."
     cert = OpenSSL.crypto.X509()
-    cert.set_serial_number(int(OpenSSL.rand.bytes(16).encode("hex"), 16))
+    cert.set_serial_number(int.from_bytes(OpenSSL.rand.bytes(16),'big'))
     cert.set_version(2)
 
     extensions = [
