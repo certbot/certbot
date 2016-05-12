@@ -187,6 +187,12 @@ while ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
    read -p "Please correctly sign letsencrypt-auto with offline-signrequest.sh"
 done
 
+# This signature is not quite as strong, but easier for people to verify out of band
+gpg -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign letsencrypt-auto-source/letsencrypt-auto
+# We can't rename the openssl letsencrypt-auto.sig for compatibility reasons,
+# but we can use the right name for cerbot-auto.asc from day one
+mv letsencrypt-auto-source/letsencrypt-auto.asc letsencrypt-auto-source/certbot-auto.asc
+
 # copy leauto to the root, overwriting the previous release version
 cp -p letsencrypt-auto-source/letsencrypt-auto certbot-auto
 cp -p letsencrypt-auto-source/letsencrypt-auto letsencrypt-auto
