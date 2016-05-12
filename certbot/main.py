@@ -661,6 +661,7 @@ def main(cli_args=sys.argv[1:]):
     le_util.make_or_verify_dir(
         config.logs_dir, 0o700, os.geteuid(), "--strict-permissions" in cli_args)
     setup_logging(config, _cli_log_handler, logfile='letsencrypt.log')
+    cli.possible_deprecation_warning(config)
 
     logger.debug("certbot version: %s", certbot.__version__)
     # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
