@@ -16,7 +16,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 readme = read_file(os.path.join(here, 'README.rst'))
 
 
-version = '0.6.0'
+version = '0.7.0.dev0'
 
 
 # This package is a simple shim around letshelp-certbot
