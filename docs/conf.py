@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Let's Encrypt documentation build configuration file, created by
+# Certbot documentation build configuration file, created by
 # sphinx-quickstart on Sun Nov 23 20:35:21 2014.
 #
 # This file is execfile()d with the current directory set to its
@@ -21,7 +21,7 @@ import sys
 here = os.path.abspath(os.path.dirname(__file__))
 
 # read version number (and other metadata) from package init
-init_fn = os.path.join(here, '..', 'letsencrypt', '__init__.py')
+init_fn = os.path.join(here, '..', 'certbot', '__init__.py')
 with codecs.open(init_fn, encoding='utf8') as fd:
     meta = dict(re.findall(r"""__([a-z]+)__ = '([^']+)""", fd.read()))
 
@@ -277,9 +277,9 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'letsencrypt', u'Let\'s Encrypt Documentation',
+    ('index', 'certbot', u'Let\'s Encrypt Documentation',
      [project], 7),
-    ('man/letsencrypt', 'letsencrypt', u'letsencrypt script documentation',
+    ('man/certbot', 'certbot', u'certbot script documentation',
      [project], 1),
 ]
 

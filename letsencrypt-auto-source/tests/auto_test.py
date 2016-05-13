@@ -231,7 +231,7 @@ class AutoTests(TestCase):
     * The OpenSSL sig mismatches.
 
     For tests which get to the end, we run merely ``letsencrypt --version``.
-    The functioning of the rest of the letsencrypt script is covered by other
+    The functioning of the rest of the certbot script is covered by other
     test suites.
 
     """
@@ -277,7 +277,7 @@ class AutoTests(TestCase):
                 ok_(re.match(r'letsencrypt \d+\.\d+\.\d+',
                              err.strip().splitlines()[-1]))
                 # Make a few assertions to test the validity of the next tests:
-                self.assertIn('Upgrading letsencrypt-auto ', out)
+                self.assertIn('Upgrading certbot-auto ', out)
                 self.assertIn('Creating virtual environment...', out)
 
                 # Now we have le-auto 99.9.9  and LE 99.9.9 installed. This
@@ -286,14 +286,14 @@ class AutoTests(TestCase):
                 # Test when neither phase-1 upgrade nor phase-2 upgrade is
                 # needed (probably a common case):
                 out, err = run_letsencrypt_auto()
-                self.assertNotIn('Upgrading letsencrypt-auto ', out)
+                self.assertNotIn('Upgrading certbot-auto ', out)
                 self.assertNotIn('Creating virtual environment...', out)
 
                 # Test when a phase-1 upgrade is not needed but a phase-2
                 # upgrade is:
                 set_le_script_version(venv_dir, '0.0.1')
                 out, err = run_letsencrypt_auto()
-                self.assertNotIn('Upgrading letsencrypt-auto ', out)
+                self.assertNotIn('Upgrading certbot-auto ', out)
                 self.assertIn('Creating virtual environment...', out)
 
     def test_openssl_failure(self):
@@ -312,10 +312,10 @@ class AutoTests(TestCase):
                 except CalledProcessError as exc:
                     eq_(exc.returncode, 1)
                     self.assertIn("Couldn't verify signature of downloaded "
-                                  "letsencrypt-auto.",
+                                  "certbot-auto.",
                                   exc.output)
                 else:
-                    self.fail('Signature check on letsencrypt-auto erroneously passed.')
+                    self.fail('Signature check on certbot-auto erroneously passed.')
 
     def test_pip_failure(self):
         """Make sure pip stops us if there is a hash mismatch."""

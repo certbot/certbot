@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Download and run the latest release version of the Let's Encrypt client.
+# Download and run the latest release version of the Certbot client.
 #
 # NOTE: THIS SCRIPT IS AUTO-GENERATED AND SELF-UPDATING
 #
@@ -19,11 +19,36 @@ XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN="$VENV_PATH/bin"
-LE_AUTO_VERSION="0.5.0.dev0"
+LE_AUTO_VERSION="0.6.0.dev0"
+BASENAME=$(basename $0)
+USAGE="Usage: $BASENAME [OPTIONS]
+A self-updating wrapper script for the Certbot ACME client. When run, updates
+to both this script and certbot will be downloaded and installed. After
+ensuring you have the latest versions installed, certbot will be invoked with
+all arguments you have provided.
 
-# This script takes the same arguments as the main letsencrypt program, but it
-# additionally responds to --verbose (more output) and --debug (allow support
-# for experimental platforms)
+Help for certbot itself cannot be provided until it is installed.
+
+  --debug                                   attempt experimental installation
+  -h, --help                                print this help
+  -n, --non-interactive, --noninteractive   run without asking for user input
+  --no-self-upgrade                         do not download updates
+  --os-packages-only                        install OS dependencies and exit
+  -v, --verbose                             provide more output
+
+All arguments are accepted and forwarded to the Certbot client when run."
+
+while getopts ":hnv" arg; do
+    case $arg in
+        h)
+            HELP=1;;
+        n)
+            ASSUME_YES=1;;
+        v)
+            VERBOSE=1;;
+    esac
+done
+
 for arg in "$@" ; do
   case "$arg" in
     --debug)
@@ -34,25 +59,26 @@ for arg in "$@" ; do
       # Do not upgrade this script (also prevents client upgrades, because each
       # copy of the script pins a hash of the python client)
       NO_SELF_UPGRADE=1;;
+    --help)
+      HELP=1;;
+    --noninteractive|--non-interactive)
+      ASSUME_YES=1;;
     --verbose)
-      VERBOSE=1;;
-    [!-]*|-*[!v]*|-)
-      # Anything that isn't -v, -vv, etc.: that is, anything that does not
-      # start with a -, contains anything that's not a v, or is just "-"
-      ;;
-    *)  # -v+ remains.
       VERBOSE=1;;
   esac
 done
 
-# letsencrypt-auto needs root access to bootstrap OS dependencies, and
-# letsencrypt itself needs root access for almost all modes of operation
+# certbot-auto needs root access to bootstrap OS dependencies, and
+# certbot itself needs root access for almost all modes of operation
 # The "normal" case is that sudo is used for the steps that need root, but
 # this script *can* be run as root (not recommended), or fall back to using
 # `su`
+SUDO_ENV=""
+export CERTBOT_AUTO="$0"
 if test "`id -u`" -ne "0" ; then
   if command -v sudo 1>/dev/null 2>&1; then
     SUDO=sudo
+    SUDO_ENV="CERTBOT_AUTO=$0"
   else
     echo \"sudo\" is not available, will use \"su\" for installation steps...
     # Because the parameters in `su -c` has to be a string,
@@ -79,6 +105,12 @@ if test "`id -u`" -ne "0" ; then
   fi
 else
   SUDO=
+fi
+
+if [ $BASENAME = "letsencrypt-auto" ]; then
+  # letsencrypt-auto does not respect --help or --yes for backwards compatibility
+  ASSUME_YES=1
+  HELP=0
 fi
 
 ExperimentalBootstrap() {
@@ -151,30 +183,45 @@ BootstrapDebCommon() {
   augeas_pkg="libaugeas0 augeas-lenses"
   AUGVERSION=`apt-cache show --no-all-versions libaugeas0 | grep ^Version: | cut -d" " -f2`
 
+  if [ "$ASSUME_YES" = 1 ]; then
+    YES_FLAG="-y"
+  fi
+
   AddBackportRepo() {
       # ARGS:
       BACKPORT_NAME="$1"
       BACKPORT_SOURCELINE="$2"
+      echo "To use the Apache Certbot plugin, augeas needs to be installed from $BACKPORT_NAME."
       if ! grep -v -e ' *#' /etc/apt/sources.list | grep -q "$BACKPORT_NAME" ; then
           # This can theoretically error if sources.list.d is empty, but in that case we don't care.
           if ! grep -v -e ' *#' /etc/apt/sources.list.d/* 2>/dev/null | grep -q "$BACKPORT_NAME"; then
-              /bin/echo -n "Installing augeas from $BACKPORT_NAME in 3 seconds..."
-              sleep 1s
-              /bin/echo -ne "\e[0K\rInstalling augeas from $BACKPORT_NAME in 2 seconds..."
-              sleep 1s
-              /bin/echo -e "\e[0K\rInstalling augeas from $BACKPORT_NAME in 1 second ..."
-              sleep 1s
-              if echo $BACKPORT_NAME | grep -q wheezy ; then
-                  /bin/echo '(Backports are only installed if explicitly requested via "apt-get install -t wheezy-backports")'
+              if [ "$ASSUME_YES" = 1 ]; then
+                  /bin/echo -n "Installing augeas from $BACKPORT_NAME in 3 seconds..."
+                  sleep 1s
+                  /bin/echo -ne "\e[0K\rInstalling augeas from $BACKPORT_NAME in 2 seconds..."
+                  sleep 1s
+                  /bin/echo -e "\e[0K\rInstalling augeas from $BACKPORT_NAME in 1 second ..."
+                  sleep 1s
+                  add_backports=1
+              else
+                  read -p "Would you like to enable the $BACKPORT_NAME repository [Y/n]? " response
+                  case $response in
+                      [yY][eE][sS]|[yY]|"")
+                          add_backports=1;;
+                      *)
+                          add_backports=0;;
+                  esac
               fi
-
-              $SUDO sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
-              $SUDO apt-get update
+              if [ "$add_backports" = 1 ]; then
+                  $SUDO sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
+                  $SUDO apt-get update
+              fi
           fi
       fi
-      $SUDO apt-get install -y --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
-      augeas_pkg=
-
+      if [ "$add_backports" != 0 ]; then
+          $SUDO apt-get install $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
+          augeas_pkg=
+      fi
   }
 
 
@@ -186,12 +233,12 @@ BootstrapDebCommon() {
           AddBackportRepo precise-backports "deb http://archive.ubuntu.com/ubuntu precise-backports main restricted universe multiverse"
       else
           echo "No libaugeas0 version is available that's new enough to run the"
-          echo "Let's Encrypt apache plugin..."
+          echo "Certbot apache plugin..."
       fi
       # XXX add a case for ubuntu PPAs
   fi
 
-  $SUDO apt-get install -y --no-install-recommends \
+  $SUDO apt-get install $YES_FLAG --no-install-recommends \
     python \
     python-dev \
     $virtualenv \
@@ -212,9 +259,10 @@ BootstrapDebCommon() {
 
 BootstrapRpmCommon() {
   # Tested with:
-  #   - Fedora 22, 23 (x64)
+  #   - Fedora 20, 21, 22, 23 (x64)
   #   - Centos 7 (x64: on DigitalOcean droplet)
   #   - CentOS 7 Minimal install in a Hyper-V VM
+  #   - CentOS 6 (EPEL must be installed manually)
 
   if type dnf 2>/dev/null
   then
@@ -228,54 +276,62 @@ BootstrapRpmCommon() {
     exit 1
   fi
 
+  pkgs="
+    gcc
+    dialog
+    augeas-libs
+    openssl
+    openssl-devel
+    libffi-devel
+    redhat-rpm-config
+    ca-certificates
+  "
+
   # Some distros and older versions of current distros use a "python27"
   # instead of "python" naming convention. Try both conventions.
-  if ! $SUDO $tool install -y \
-         python \
-         python-devel \
-         python-virtualenv \
-         python-tools \
-         python-pip
-  then
-    if ! $SUDO $tool install -y \
-           python27 \
-           python27-devel \
-           python27-virtualenv \
-           python27-tools \
-           python27-pip
-    then
-      echo "Could not install Python dependencies. Aborting bootstrap!"
-      exit 1
-    fi
+  if $SUDO $tool list python >/dev/null 2>&1; then
+    pkgs="$pkgs
+      python
+      python-devel
+      python-virtualenv
+      python-tools
+      python-pip
+    "
+  else
+    pkgs="$pkgs
+      python27
+      python27-devel
+      python27-virtualenv
+      python27-tools
+      python27-pip
+    "
   fi
-
-  if ! $SUDO $tool install -y \
-         gcc \
-         dialog \
-         augeas-libs \
-         openssl \
-         openssl-devel \
-         libffi-devel \
-         redhat-rpm-config \
-         ca-certificates
-  then
-      echo "Could not install additional dependencies. Aborting bootstrap!"
-      exit 1
-  fi
-
 
   if $SUDO $tool list installed "httpd" >/dev/null 2>&1; then
-    if ! $SUDO $tool install -y mod_ssl
-    then
-      echo "Apache found, but mod_ssl could not be installed."
-    fi
+    pkgs="$pkgs
+      mod_ssl
+    "
+  fi
+
+  if [ "$ASSUME_YES" = 1 ]; then
+    yes_flag="-y"
+  fi
+
+  if ! $SUDO $tool install $yes_flag $pkgs; then
+      echo "Could not install OS dependencies. Aborting bootstrap!"
+      exit 1
   fi
 }
 
 BootstrapSuseCommon() {
   # SLE12 don't have python-virtualenv
 
-  $SUDO zypper -nq in -l \
+  if [ "$ASSUME_YES" = 1 ]; then
+    zypper_flags="-nq"
+    install_flags="-l"
+  fi
+
+  $SUDO zypper $zypper_flags in $install_flags \
     python \
     python-devel \
     python-virtualenv \
@@ -310,8 +366,12 @@ BootstrapArchCommon() {
   # pacman -T exits with 127 if there are missing dependencies
   missing=$($SUDO pacman -T $deps) || true
 
+  if [ "$ASSUME_YES" = 1 ]; then
+    noconfirm="--noconfirm"
+  fi
+
   if [ "$missing" ]; then
-    $SUDO pacman -S --needed $missing
+    $SUDO pacman -S --needed $missing $noconfirm
   fi
 }
 
@@ -426,7 +486,7 @@ Bootstrap() {
   elif grep -iq "Amazon Linux" /etc/issue ; then
     ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
   else
-    echo "Sorry, I don't know how to bootstrap Let's Encrypt on your operating system!"
+    echo "Sorry, I don't know how to bootstrap Certbot on your operating system!"
     echo
     echo "You will need to bootstrap, configure virtualenv, and run pip install manually."
     echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
@@ -445,7 +505,9 @@ if [ "$1" = "--le-auto-phase2" ]; then
 
   shift 1  # the --le-auto-phase2 arg
   if [ -f "$VENV_BIN/letsencrypt" ]; then
-    INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | cut -d " " -f 2)
+    # --version output ran through grep due to python-cryptography DeprecationWarnings
+    # grep for both certbot and letsencrypt until certbot and shim packages have been released
+    INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | grep "^certbot\|^letsencrypt" | cut -d " " -f 2)
   else
     INSTALLED_VERSION="none"
   fi
@@ -464,8 +526,8 @@ if [ "$1" = "--le-auto-phase2" ]; then
     # There is no $ interpolation due to quotes on starting heredoc delimiter.
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/letsencrypt-auto-requirements.txt"
-# This is the flattened list of packages letsencrypt-auto installs. To generate
-# this, do `pip install --no-cache-dir -e acme -e . -e letsencrypt-apache`, and
+# This is the flattened list of packages certbot-auto installs. To generate
+# this, do `pip install --no-cache-dir -e acme -e . -e certbot-apache`, and
 # then use `hashin` or a more secure method to gather the hashes.
 
 argparse==1.4.0 \
@@ -644,15 +706,15 @@ mock==1.0.1 \
 
 # THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT; ADD ALL DEPENDENCIES ABOVE.
 
-acme==0.4.2 \
-    --hash=sha256:50c562851d536f2bd0347cf1d42cd88b27438ad2551b0fe62c01abdfe8021899 \
-    --hash=sha256:0a5908aa2190b0b4f2c8b0124645989e24bd9f80805ba0f8192b811135c500b6
-letsencrypt==0.4.2 \
-    --hash=sha256:85b506343e84a3faba6bdee8de8ebac302d827b92836fc0e5e1f6ee5b64d0952 \
-    --hash=sha256:e3ad24ab2c2c7a58db0d6fc6aff654db7ad697335e13e00be3f27060245d4be6
-letsencrypt-apache==0.4.2 \
-    --hash=sha256:4974a0fa021a6e2578081ceb7cf23200185f4e32a5ed866b28349591f13855ba \
-    --hash=sha256:28d30038cac932bd6f2c90436a2846a849af3db7f1807fddbd19353851da33f2
+acme==0.5.0 \
+    --hash=sha256:ceb4127c13213f0006a564be82176b968c6b374d20d9fc78555d0658a252b275 \
+    --hash=sha256:0605c63c656d33c883a05675f5db9cfb85d503f2771c885031800e0da7631abd
+letsencrypt==0.5.0 \
+    --hash=sha256:f90f883e99cdbdf8142335bdbf4f74a8af143ee4b4ec60fb49c6e47418c1114c \
+    --hash=sha256:e38a2b70b82be79bc195307652244a3e012ec73d897d4dbd3f80cf698496d15a
+letsencrypt-apache==0.5.0 \
+    --hash=sha256:a767882164a7b09d9c12c80684a28a782135fdaf35654ef5a02c0b7b1d27ab8d \
+    --hash=sha256:c20e7b9c517aa4a7d70e6bd9382da7259f00bc191b9e60d8e312e48837a00c41
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -700,7 +762,7 @@ except ImportError:
             cmd = kwargs.get("args")
             if cmd is None:
                 cmd = popenargs[0]
-            raise CalledProcessError(retcode, cmd, output=output)
+            raise CalledProcessError(retcode, cmd)
         return output
 from sys import exit, version_info
 from tempfile import mkdtemp
@@ -714,7 +776,7 @@ except ImportError:
     from urllib.parse import urlparse  # 3.4
 
 
-__version__ = 1, 1, 0
+__version__ = 1, 1, 1
 
 
 # wheel has a conditional dependency on argparse:
@@ -822,18 +884,30 @@ UNLIKELY_EOF
     fi
     echo "Installation succeeded."
   fi
-  echo "Requesting root privileges to run letsencrypt..."
-  echo "  " $SUDO "$VENV_BIN/letsencrypt" "$@"
-  $SUDO "$VENV_BIN/letsencrypt" "$@"
+  echo "Requesting root privileges to run certbot..."
+  if [ -z "$SUDO_ENV" ] ; then
+    # SUDO is su wrapper / noop
+    echo "  " $SUDO "$VENV_BIN/letsencrypt" "$@"
+    $SUDO "$VENV_BIN/letsencrypt" "$@"
+  else
+    # sudo
+    echo "  " $SUDO "$SUDO_ENV" "$VENV_BIN/letsencrypt" "$@"
+    $SUDO "$SUDO_ENV" "$VENV_BIN/letsencrypt" "$@"
+  fi
+
 else
-  # Phase 1: Upgrade letsencrypt-auto if neceesary, then self-invoke.
+  # Phase 1: Upgrade certbot-auto if neceesary, then self-invoke.
   #
   # Each phase checks the version of only the thing it is responsible for
   # upgrading. Phase 1 checks the version of the latest release of
-  # letsencrypt-auto (which is always the same as that of the letsencrypt
-  # package). Phase 2 checks the version of the locally installed letsencrypt.
+  # certbot-auto (which is always the same as that of the certbot
+  # package). Phase 2 checks the version of the locally installed certbot.
 
   if [ ! -f "$VENV_BIN/letsencrypt" ]; then
+    if [ "$HELP" = 1 ]; then
+      echo "$USAGE"
+      exit 0
+    fi
     # If it looks like we've never bootstrapped before, bootstrap:
     Bootstrap
   fi
@@ -952,7 +1026,7 @@ def verified_new_le_auto(get, tag, temp_dir):
                        stderr=dev_null)
     except CalledProcessError as exc:
         raise ExpectedError("Couldn't verify signature of downloaded "
-                            "letsencrypt-auto.", exc)
+                            "certbot-auto.", exc)
 
 
 def main():
@@ -977,29 +1051,27 @@ if __name__ == '__main__':
 UNLIKELY_EOF
     # ---------------------------------------------------------------------------
     DeterminePythonVersion
-    REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version`
-    if [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
-      echo "Upgrading letsencrypt-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
+    if ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then
+      echo "WARNING: unable to check for updates."
+    elif [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
+      echo "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
 
       # Now we drop into Python so we don't have to install even more
       # dependencies (curl, etc.), for better flow control, and for the option of
       # future Windows compatibility.
       "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
 
-      # Install new copy of letsencrypt-auto.
+      # Install new copy of certbot-auto.
       # TODO: Deal with quotes in pathnames.
-      echo "Replacing letsencrypt-auto..."
+      echo "Replacing certbot-auto..."
       # Clone permissions with cp. chmod and chown don't have a --reference
       # option on OS X or BSD, and stat -c on Linux is stat -f on OS X and BSD:
-      echo "  " $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
       $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
-      echo "  " $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
       $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
       # Using mv rather than cp leaves the old file descriptor pointing to the
       # original copy so the shell can continue to read it unmolested. mv across
       # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
       # cp is unlikely to fail (esp. under sudo) if the rm doesn't.
-      echo "  " $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
       $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
       # TODO: Clean up temp dir safely, even if it has quotes in its path.
       rm -rf "$TEMP_DIR"
