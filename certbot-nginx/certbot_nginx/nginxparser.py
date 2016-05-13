@@ -17,7 +17,7 @@ class RawNginxParser(object):
     right_bracket = Literal("}").suppress()
     semicolon = Literal(";").suppress()
     space = White().suppress()
-    key = Word(alphanums + "_/")
+    key = Word(alphanums + "_/+-.")
     # Matches anything that is not a special character AND any chars in single
     # or double quotes
     value = Regex(r"((\".*\")?(\'.*\')?[^\{\};,]?)+")
