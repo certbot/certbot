@@ -484,9 +484,11 @@ class ClientNetworkTest(unittest.TestCase):
     def test_check_response_not_ok_jobj_no_error(self):
         self.response.ok = False
         self.response.json.return_value = {}
-        # pylint: disable=protected-access
-        self.assertRaises(
-            errors.ClientError, self.net._check_response, self.response)
+        with mock.patch('acme.client.messages.Error.from_json') as from_json:
+            from_json.side_effect = jose.DeserializationError
+            # pylint: disable=protected-access
+            self.assertRaises(
+                errors.ClientError, self.net._check_response, self.response)
 
     def test_check_response_not_ok_jobj_error(self):
         self.response.ok = False

@@ -8,6 +8,7 @@ dist*/
 /.tox/
 /releases/
 letsencrypt.log
+certbot.log
 letsencrypt-auto-source/letsencrypt-auto.sig.lzma.base64
 
 # coverage

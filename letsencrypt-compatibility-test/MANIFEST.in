@@ -1,7 +1,0 @@
-include LICENSE.txt
-include README.rst
-recursive-include docs *
-include letsencrypt_compatibility_test/configurators/apache/a2enmod.sh
-include letsencrypt_compatibility_test/configurators/apache/a2dismod.sh
-include letsencrypt_compatibility_test/configurators/apache/Dockerfile
-recursive-include letsencrypt_compatibility_test/testdata *

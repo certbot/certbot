@@ -20,8 +20,8 @@ once:
 
 .. code-block:: shell
 
-   git clone https://github.com/letsencrypt/letsencrypt
-   cd letsencrypt
+   git clone https://github.com/certbot/certbot
+   cd certbot
    ./letsencrypt-auto-source/letsencrypt-auto --os-packages-only
    ./tools/venv.sh
 
@@ -36,7 +36,7 @@ client by typing:
 
 .. code-block:: shell
 
-   letsencrypt
+   certbot
 
 Activating a shell in this way makes it easier to run unit tests
 with ``tox`` and integration tests, as described below. To reverse this, you
@@ -57,8 +57,8 @@ your pull request must have thorough unit test coverage, pass our
 `integration`_ tests, and be compliant with the :ref:`coding style
 <coding-style>`.
 
-.. _github issue tracker: https://github.com/letsencrypt/letsencrypt/issues
-.. _Good Volunteer Task: https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aopen+is%3Aissue+label%3A%22Good+Volunteer+Task%22
+.. _github issue tracker: https://github.com/certbot/certbot/issues
+.. _Good Volunteer Task: https://github.com/certbot/certbot/issues?q=is%3Aopen+is%3Aissue+label%3A%22Good+Volunteer+Task%22
 
 Testing
 -------
@@ -97,7 +97,7 @@ Generally it is sufficient to open a pull request and let Github and Travis run
 integration tests for you.
 
 However, if you prefer to run tests, you can use Vagrant, using the Vagrantfile
-in Let's Encrypt's repository. To execute the tests on a Vagrant box, the only
+in Certbot's repository. To execute the tests on a Vagrant box, the only
 command you are required to run is::
 
   ./tests/boulder-integration.sh
@@ -141,9 +141,9 @@ and ``nginx.wtf`` to 127.0.0.1.  You may now run (in a separate terminal)::
 
   ./tests/boulder-integration.sh && echo OK || echo FAIL
 
-If you would like to test `letsencrypt_nginx` plugin (highly
+If you would like to test `certbot_nginx` plugin (highly
 encouraged) make sure to install prerequisites as listed in
-``letsencrypt-nginx/tests/boulder-integration.sh`` and rerun
+``certbot-nginx/tests/boulder-integration.sh`` and rerun
 the integration tests suite.
 
 .. _Boulder: https://github.com/letsencrypt/boulder
@@ -155,28 +155,28 @@ Code components and layout
 
 acme
   contains all protocol specific code
-letsencrypt
+certbot
   all client code
 
 
 Plugin-architecture
 -------------------
 
-Let's Encrypt has a plugin architecture to facilitate support for
+Certbot has a plugin architecture to facilitate support for
 different webservers, other TLS servers, and operating systems.
 The interfaces available for plugins to implement are defined in
 `interfaces.py`_ and `plugins/common.py`_.
 
 The most common kind of plugin is a "Configurator", which is likely to
-implement the `~letsencrypt.interfaces.IAuthenticator` and
-`~letsencrypt.interfaces.IInstaller` interfaces (though some
+implement the `~certbot.interfaces.IAuthenticator` and
+`~certbot.interfaces.IInstaller` interfaces (though some
 Configurators may implement just one of those).
 
-There are also `~letsencrypt.interfaces.IDisplay` plugins,
+There are also `~certbot.interfaces.IDisplay` plugins,
 which implement bindings to alternative UI libraries.
 
-.. _interfaces.py: https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/interfaces.py
-.. _plugins/common.py: https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/plugins/common.py#L34
+.. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/interfaces.py
+.. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/plugins/common.py#L34
 
 
 Authenticators
@@ -232,7 +232,7 @@ Installer Development
 ---------------------
 
 There are a few existing classes that may be beneficial while
-developing a new `~letsencrypt.interfaces.IInstaller`.
+developing a new `~certbot.interfaces.IInstaller`.
 Installers aimed to reconfigure UNIX servers may use Augeas for
 configuration parsing and can inherit from `~.AugeasConfigurator` class
 to handle much of the interface. Installers that are unable to use
@@ -244,7 +244,7 @@ Display
 ~~~~~~~
 
 We currently offer a pythondialog and "text" mode for displays. Display
-plugins implement the `~letsencrypt.interfaces.IDisplay`
+plugins implement the `~certbot.interfaces.IDisplay`
 interface.
 
 .. _dev-plugin:
@@ -252,10 +252,10 @@ interface.
 Writing your own plugin
 =======================
 
-Let's Encrypt client supports dynamic discovery of plugins through the
+Certbot client supports dynamic discovery of plugins through the
 `setuptools entry points`_. This way you can, for example, create a
-custom implementation of `~letsencrypt.interfaces.IAuthenticator` or
-the `~letsencrypt.interfaces.IInstaller` without having to merge it
+custom implementation of `~certbot.interfaces.IAuthenticator` or
+the `~certbot.interfaces.IInstaller` without having to merge it
 with the core upstream source code. An example is provided in
 ``examples/plugins/`` directory.
 
@@ -323,7 +323,7 @@ Steps:
    See `Known Issues`_. If it's not a known issue, fix any errors.
 
 .. _Known Issues:
-  https://github.com/letsencrypt/letsencrypt/wiki/Known-issues
+  https://github.com/certbot/certbot/wiki/Known-issues
 
 Updating the documentation
 ==========================
@@ -345,7 +345,7 @@ Other methods for running the client
 Vagrant
 -------
 
-If you are a Vagrant user, Let's Encrypt comes with a Vagrantfile that
+If you are a Vagrant user, Certbot comes with a Vagrantfile that
 automates setting up a development environment in an Ubuntu 14.04
 LTS VM. To set it up, simply run ``vagrant up``. The repository is
 synced to ``/vagrant``, so you can get started with:
@@ -354,7 +354,7 @@ synced to ``/vagrant``, so you can get started with:
 
   vagrant ssh
   cd /vagrant
-  sudo ./venv/bin/letsencrypt
+  sudo ./venv/bin/certbot
 
 Support for other Linux distributions coming soon.
 
@@ -373,19 +373,19 @@ Docker
 ------
 
 OSX users will probably find it easiest to set up a Docker container for
-development. Let's Encrypt comes with a Dockerfile (``Dockerfile-dev``)
+development. Certbot comes with a Dockerfile (``Dockerfile-dev``)
 for doing so. To use Docker on OSX, install and setup docker-machine using the
 instructions at https://docs.docker.com/installation/mac/.
 
 To build the development Docker image::
 
-  docker build -t letsencrypt -f Dockerfile-dev .
+  docker build -t certbot -f Dockerfile-dev .
 
 Now run tests inside the Docker image:
 
 .. code-block:: shell
 
-  docker run -it letsencrypt bash
+  docker run -it certbot bash
   cd src
   tox -e py27
 
