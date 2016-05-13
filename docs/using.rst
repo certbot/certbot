@@ -82,24 +82,7 @@ manual_     Y    N    Helps you obtain a cert by giving you instructions to perf
 nginx_      Y    Y    Very experimental and not included in certbot-auto_.
 =========== ==== ==== ===============================================================
 
-There are also a number of third-party plugins for the client, provided by other developers:
-
-=========== ==== ==== ===============================================================
-Plugin      Auth Inst Notes
-=========== ==== ==== ===============================================================
-plesk_      Y    Y    Integration with the Plesk web hosting tool
-haproxy_    Y    Y    Integration with the HAProxy load balancer
-s3front_    Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
-gandi_      Y    Y    Integration with Gandi's hosting products and API
-=========== ==== ==== ===============================================================
-
-.. _plesk: https://github.com/plesk/letsencrypt-plesk
-.. _haproxy: https://code.greenhost.net/open/letsencrypt-haproxy
-.. _s3front: https://github.com/dlapiduz/letsencrypt-s3front
-.. _gandi: https://github.com/Gandi/letsencrypt-gandi
-
-Future plugins for IMAP servers, SMTP servers, IRC servers, etc, are likely to
-be installers but not authenticators.
+There are many third-party-plugins_ available.
 
 Apache
 ------
@@ -190,12 +173,45 @@ still experimental, however, and is not installed with certbot-auto_. If
 installed, you can select this plugin on the command line by including
 ``--nginx``.
 
+.. _third-party-plugins:
+
 Third-party plugins
 -------------------
 
-These plugins are listed at
-https://github.com/certbot/certbot/wiki/Plugins. If you're
-interested, you can also :ref:`write your own plugin <dev-plugin>`.
+There are also a number of third-party plugins for the client, provided by
+other developers. Many are beta/experimental, but some are already in
+widespread use:
+
+=========== ==== ==== ===============================================================
+Plugin      Auth Inst Notes
+=========== ==== ==== ===============================================================
+plesk_      Y    Y    Integration with the Plesk web hosting tool
+haproxy_    Y    Y    Integration with the HAProxy load balancer
+s3front_    Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
+gandi_      Y    Y    Integration with Gandi's hosting products and API
+varnish_    Y    N    Obtain certs via a Varnish server
+external_   Y    N    A plugin for convenient scripting (See also ticket 2782_)
+icecast_    N    Y    Deploy certs to Icecast 2 streaming media servers
+pritunl_    N    Y    Install certs in pritunl distributed OpenVPN servers
+proxmox_    N    Y    Install certs in Proxmox Virtualization servers
+postfix_    N    Y    STARTTLS Everywhere is becoming a Certbot Postfix/Exim plugin
+=========== ==== ==== ===============================================================
+
+.. _plesk: https://github.com/plesk/letsencrypt-plesk
+.. _haproxy: https://code.greenhost.net/open/letsencrypt-haproxy
+.. _s3front: https://github.com/dlapiduz/letsencrypt-s3front
+.. _gandi: https://github.com/Gandi/letsencrypt-gandi
+.. _icecast: https://github.com/e00E/lets-encrypt-icecast
+.. _varnish: http://git.sesse.net/?p=letsencrypt-varnish-plugin
+.. _2782: https://github.com/certbot/certbot/issues/2782
+.. _pritunl: https://github.com/kharkevich/letsencrypt-pritunl
+.. _proxmox: https://github.com/kharkevich/letsencrypt-proxmox
+.. _external: https://github.com/marcan/letsencrypt-external
+.. _postfix: https://github.com/EFForg/starttls-everywhere
+
+If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
+
+
 
 Renewal
 =======
