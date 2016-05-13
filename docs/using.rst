@@ -99,7 +99,7 @@ external_   Y    N    A plugin for convenient scripting (See also ticket 2782_)
 icecast_    N    Y    Deploy certs to Icecast 2 streaming media servers
 pritunl_    N    Y    Install certs in pritunl distributed OpenVPN servers
 proxmox_    N    Y    Install certs in Proxmox Virtualization servers
-
+postfix_    N    Y    STARTTLS Everywhere is becoming a Certbot Postfix/Exim plugin
 =========== ==== ==== ===============================================================
 
 .. _plesk: https://github.com/plesk/letsencrypt-plesk
@@ -112,6 +112,7 @@ proxmox_    N    Y    Install certs in Proxmox Virtualization servers
 .. _pritunl: https://github.com/kharkevich/letsencrypt-pritunl
 .. _proxmox: https://github.com/kharkevich/letsencrypt-proxmox
 .. _external: https://github.com/marcan/letsencrypt-external
+.. _postfix: https://github.com/EFForg/starttls-everywhere
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
