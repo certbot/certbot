@@ -124,7 +124,7 @@ or ``--webroot-path /usr/share/nginx/html`` are two common webroot paths.
 
 If you're getting a certificate for many domains at once, the plugin
 needs to know where each domain's files are served from, which could
-potentially be a separate directory for each domain. When requested a
+potentially be a separate directory for each domain. When requesting a
 certificate for multiple domains, each domain will use the most recently
 specified ``--webroot-path``.  So, for instance,
 
@@ -184,11 +184,11 @@ be on a different computer.
 Nginx
 -----
 
-In the future, if you're running Nginx you can use this plugin to
-automatically obtain and install your certificate. The Nginx plugin
-is still experimental, however, and is not installed with
-letsencrypt-auto_. If installed, you can select this plugin on the
-command line by including ``--nginx``.
+In the future, if you're running Nginx you will hopefully be able to use this
+plugin to automatically obtain and install your certificate. The Nginx plugin is
+still experimental, however, and is not installed with letsencrypt-auto_. If
+installed, you can select this plugin on the command line by including
+``--nginx``.
 
 Third-party plugins
 -------------------
@@ -215,12 +215,25 @@ expire in less than 30 days. The same plugin and options that were used
 at the time the certificate was originally issued will be used for the
 renewal attempt, unless you specify other plugins or options.
 
+You can also specify hooks to be run before or after a certificate is
+renewed. For example, if you want to use the standalone_ plugin to renew
+your certificates, you may want to use a command like
+
+``letsencrypt renew --standalone --pre-hook "service nginx stop" --post-hook "service nginx start"``
+
+This will stop Nginx so standalone can bind to the necessary ports and
+then restart Nginx after the plugin is finished. The hooks will only be
+run if a certificate is due for renewal, so you can run this command
+frequently without unnecessarily stopping your webserver. More
+information about renewal hooks can be found by running
+``letsencrypt --help renew``.
+
 If you're sure that this command executes successfully without human
 intervention, you can add the command to ``crontab`` (since certificates
 are only renewed when they're determined to be near expiry, the command
-can run on a regular basis, like every week or every day); note that
-the current version provides detailed output describing either renewal
-success or failure.
+can run on a regular basis, like every week or every day). In that case,
+you are likely to want to use the ``-q`` or ``--quiet`` quiet flag to
+silence all output except errors.
 
 The ``--force-renew`` flag may be helpful for automating renewal;
 it causes the expiration time of the certificate(s) to be ignored when
@@ -241,9 +254,11 @@ renewals of that certificate.
 An alternative form that provides for more fine-grained control over the
 renewal process (while renewing specified certificates one at a time),
 is ``letsencrypt certonly`` with the complete set of subject domains of
-a specific certificate specified via `-d` flags, like
+a specific certificate specified via `-d` flags. You may also want to
+include the ``-n`` or ``--noninteractive`` flag to prevent blocking on
+user input (which is useful when running the command from cron).
 
-``letsencrypt certonly -d example.com -d www.example.com``
+``letsencrypt certonly -n -d example.com -d www.example.com``
 
 (All of the domains covered by the certificate must be specified in
 this case in order to renew and replace the old certificate rather
@@ -446,7 +461,13 @@ If you run Debian Stretch or Debian Sid, you can install letsencrypt packages.
 If you don't want to use the Apache plugin, you can omit the
 ``python-letsencrypt-apache`` package.
 
-Packages for Debian Jessie are coming in the next few weeks.
+Packages exist for Debian Jessie via backports. First you'll have to follow the
+instructions at http://backports.debian.org/Instructions/ to enable the Jessie backports
+repo, if you have not already done so. Then run:
+
+.. code-block:: shell
+
+   sudo apt-get install certbot python-certbot-apache -t jessie-backports
 
 **Fedora**
 
