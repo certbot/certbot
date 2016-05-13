@@ -5,56 +5,28 @@ User Guide
 .. contents:: Table of Contents
    :local:
 
-.. _installation:
+Getting Certbot
+===============
 
-Installation
-============
+To get specific instructions for installing Certbot on your OS, we recommend
+visiting certbot.eff.org_. If you're offline, you can find some general
+instructions `in the README / Introduction <intro.html#installation>`__
+
+__ installation_
+.. _certbot.eff.org: https://certbot.eff.org
 
 .. _certbot-auto:
 
-certbot-auto
-----------------
+The name of the certbot command
+-------------------------------
 
-``certbot-auto`` is a wrapper which installs some dependencies
-from your OS standard package repositories (e.g. using `apt-get` or
-`yum`), and for other dependencies it sets up a virtualized Python
-environment with packages downloaded from PyPI [#venv]_. It also
-provides automated updates.
-
-To install and run the client, just type...
-
-.. code-block:: shell
-
-   ./certbot-auto
-
-.. hint:: The Let's Encrypt servers enforce rate
-   limits on the number of certificates issued for one domain. It is recommended
-   to initially use the test server via `--test-cert` until you get the desired
-   certificates.
-
-Throughout the documentation, whenever you see references to
-``certbot`` script/binary, you can substitute in
-``certbot-auto``. For example, to get basic help you would type:
-
-.. code-block:: shell
-
-  ./certbot-auto --help
-
-or for full help, type:
-
-.. code-block:: shell
-
-  ./certbot-auto --help all
-
-
-``certbot-auto`` is the recommended method of running the Certbot
-client beta releases on systems that don't have a packaged version.  Debian,
-Arch Linux, Gentoo, FreeBSD, and OpenBSD now have native packages, so on those
-systems you can just install ``certbot`` (and perhaps
-``certbot-apache``).  If you'd like to run the latest copy from Git, or
-run your own locally modified copy of the client, follow the instructions in
-the :doc:`contributing`.  Some `other methods of installation`_ are discussed
-below.
+Many platforms now have native packages that give you a ``certbot`` or (for
+older packages) ``letsencrypt`` command you can run. On others, the
+``certbot-auto`` / ``letsencrypt-auto`` installer and wrapper script is a
+stand-in. Throughout the documentation, whenever you see references to
+``certbot`` script/binary, you should substitute in the name of the command
+that certbot.eff.org_ told you to use on your system (``certbot``,
+``letsencrypt``, or ``certbot-auto``).
 
 
 Plugins
@@ -275,16 +247,20 @@ Certbot is working hard on improving the renewal process, and we
 apologize for any inconveniences you encounter in integrating these
 commands into your individual environment.
 
+.. _command-line:
+
+Command line options
+====================
+
+Certbot supports a lot of command line options.  Here's the full list, from
+``certbot --help all``:
+
+.. literalinclude:: cli-help.txt
 
 .. _where-certs:
 
 Where are my certificates?
 ==========================
-
-First of all, we encourage you to use Apache or nginx installers, both
-which perform the certificate management automatically. If, however,
-you prefer to manage everything by hand, this section provides
-information on where to find necessary files.
 
 All generated keys and issued certificates can be found in
 ``/etc/letsencrypt/live/$domain``. Rather than copying, please point
@@ -391,7 +367,7 @@ give us as much information as possible:
   also might contain personally identifiable information)
 - copy and paste ``certbot --version`` output
 - your operating system, including specific version
-- specify which installation_ method you've chosen
+- specify which installation method you've chosen
 
 Other methods of installation
 =============================

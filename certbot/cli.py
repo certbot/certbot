@@ -745,7 +745,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         " certificate lineage. You can try it with `--dry-run` first. For"
         " more fine-grained control, you can renew individual lineages with"
         " the `certonly` subcommand. Hooks are available to run commands "
-        " before and after renewal; see XXX for more information on these.")
+        " before and after renewal; see"
+        " https://certbot.eff.org/docs/using.html#renewal for more information on these.")
 
     helpful.add(
         "renew", "--pre-hook",
