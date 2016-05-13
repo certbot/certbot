@@ -20,8 +20,8 @@ once:
 
 .. code-block:: shell
 
-   git clone https://github.com/letsencrypt/letsencrypt
-   cd letsencrypt
+   git clone https://github.com/certbot/certbot
+   cd certbot
    ./letsencrypt-auto-source/letsencrypt-auto --os-packages-only
    ./tools/venv.sh
 
@@ -57,8 +57,8 @@ your pull request must have thorough unit test coverage, pass our
 `integration`_ tests, and be compliant with the :ref:`coding style
 <coding-style>`.
 
-.. _github issue tracker: https://github.com/letsencrypt/letsencrypt/issues
-.. _Good Volunteer Task: https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aopen+is%3Aissue+label%3A%22Good+Volunteer+Task%22
+.. _github issue tracker: https://github.com/certbot/certbot/issues
+.. _Good Volunteer Task: https://github.com/certbot/certbot/issues?q=is%3Aopen+is%3Aissue+label%3A%22Good+Volunteer+Task%22
 
 Testing
 -------
@@ -175,8 +175,8 @@ Configurators may implement just one of those).
 There are also `~certbot.interfaces.IDisplay` plugins,
 which implement bindings to alternative UI libraries.
 
-.. _interfaces.py: https://github.com/letsencrypt/letsencrypt/blob/master/certbot/interfaces.py
-.. _plugins/common.py: https://github.com/letsencrypt/letsencrypt/blob/master/certbot/plugins/common.py#L34
+.. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/interfaces.py
+.. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/plugins/common.py#L34
 
 
 Authenticators
@@ -323,7 +323,7 @@ Steps:
    See `Known Issues`_. If it's not a known issue, fix any errors.
 
 .. _Known Issues:
-  https://github.com/letsencrypt/letsencrypt/wiki/Known-issues
+  https://github.com/certbot/certbot/wiki/Known-issues
 
 Updating the documentation
 ==========================

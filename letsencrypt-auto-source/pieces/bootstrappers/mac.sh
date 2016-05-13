@@ -26,7 +26,8 @@ BootstrapMac() {
   # Workaround for _dlopen not finding augeas on OS X
   if [ "$pkgman" = "port" ] && ! [ -e "/usr/local/lib/libaugeas.dylib" ] && [ -e "/opt/local/lib/libaugeas.dylib" ]; then
     echo "Applying augeas workaround"
-    $SUDO ln -s /opt/local/lib/libaugeas.dylib /usr/local/lib
+    $SUDO mkdir -p /usr/local/lib/
+    $SUDO ln -s /opt/local/lib/libaugeas.dylib /usr/local/lib/
   fi
 
   if ! hash pip 2>/dev/null; then
