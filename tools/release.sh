@@ -145,6 +145,9 @@ pip install \
 kill $!
 cd ~-
 
+# get a snapshot of the CLI help for the docs
+certbot --help all > docs/cli-help.txt
+
 # freeze before installing anything else, so that we know end-user KGS
 # make sure "twine upload" doesn't catch "kgs"
 if [ -d ../kgs ] ; then
@@ -197,7 +200,7 @@ mv letsencrypt-auto-source/letsencrypt-auto.asc letsencrypt-auto-source/certbot-
 cp -p letsencrypt-auto-source/letsencrypt-auto certbot-auto
 cp -p letsencrypt-auto-source/letsencrypt-auto letsencrypt-auto
 
-git add certbot-auto letsencrypt-auto letsencrypt-auto-source
+git add certbot-auto letsencrypt-auto letsencrypt-auto-source docs/cli-help.txt
 git diff --cached
 git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"
 git tag --local-user "$RELEASE_GPG_KEY" --sign --message "Release $version" "$tag"
