@@ -111,6 +111,7 @@ proxmox_    N    Y    Install certs in Proxmox Virtualization servers
 .. _2782: https://github.com/certbot/certbot/issues/2782
 .. _pritunl: https://github.com/kharkevich/letsencrypt-pritunl
 .. _proxmox: https://github.com/kharkevich/letsencrypt-proxmox
+.. _external: https://github.com/marcan/letsencrypt-external
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
