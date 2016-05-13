@@ -178,11 +178,11 @@ def import_csr_file(csrfile, contents):
     :param str csrfile: CSR filename
     :param str contents: contens of the CSR file
 
-    :rtype: tuple
-
     :returns: (le_util.CSR object representing the CSR,
-               OpenSSL FILETYPE_ representing DER or PEM,
+               `OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`,
                list of domains requested in the CSR)
+
+    :rtype: tuple
     """
     try:
         csr = le_util.CSR(file=csrfile, data=contents, form="der")

@@ -349,7 +349,7 @@ class HelpfulArgumentParser(object):
 
 
     def set_test_server(self, parsed_args):
-        "We have --staging/--dry-run; perform sanity check and set config.server"
+        """We have --staging/--dry-run; perform sanity check and set config.server"""
 
         if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
             conflicts = ["--staging"] if parsed_args.staging else []
