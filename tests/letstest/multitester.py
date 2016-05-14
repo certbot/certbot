@@ -1,10 +1,10 @@
 """
-Letsencrypt Integration Test Tool
+Certbot Integration Test Tool
 
 - Configures (canned) boulder server
 - Launches EC2 instances with a given list of AMIs for different distros
-- Copies letsencrypt repo and puts it on the instances
-- Runs letsencrypt tests (bash scripts) on all of these
+- Copies certbot repo and puts it on the instances
+- Runs certbot tests (bash scripts) on all of these
 - Logs execution and success/fail for debugging
 
 Notes:
@@ -61,10 +61,10 @@ parser.add_argument('test_script',
 #                    required=False)
 parser.add_argument('--repo',
                     default='https://github.com/letsencrypt/letsencrypt.git',
-                    help='letsencrypt git repo to use')
+                    help='certbot git repo to use')
 parser.add_argument('--branch',
                     default='~',
-                    help='letsencrypt git branch to trial')
+                    help='certbot git branch to trial')
 parser.add_argument('--pull_request',
                     default='~',
                     help='letsencrypt/letsencrypt pull request to trial')
@@ -257,7 +257,7 @@ def local_git_PR(repo_url, PRnumstr, merge_master=True):
         local('if [ -d letsencrypt ]; then rm -rf letsencrypt; fi')
         local('git clone %s letsencrypt'% repo_url)
         local('cd letsencrypt && git fetch origin pull/%s/head:lePRtest'%PRnumstr)
-        local('cd letsencrypt && git co lePRtest')
+        local('cd letsencrypt && git checkout lePRtest')
         if merge_master:
             local('cd letsencrypt && git remote update origin')
             local('cd letsencrypt && git merge origin/master -m "testmerge"')
@@ -291,7 +291,7 @@ def config_and_launch_boulder(instance):
     execute(deploy_script, 'scripts/boulder_config.sh')
     execute(run_boulder)
 
-def install_and_launch_letsencrypt(instance, boulder_url, target):
+def install_and_launch_certbot(instance, boulder_url, target):
     execute(local_repo_to_remote)
     with shell_env(BOULDER_URL=boulder_url,
                    PUBLIC_IP=instance.public_ip_address,
@@ -301,13 +301,13 @@ def install_and_launch_letsencrypt(instance, boulder_url, target):
                    OS_TYPE=target['type']):
         execute(deploy_script, cl_args.test_script)
 
-def grab_letsencrypt_log():
+def grab_certbot_log():
     "grabs letsencrypt.log via cat into logged stdout"
     sudo('if [ -f /var/log/letsencrypt/letsencrypt.log ]; then \
     cat /var/log/letsencrypt/letsencrypt.log; else echo "[novarlog]"; fi')
     # fallback file if /var/log is unwriteable...? correct?
-    sudo('if [ -f ./letsencrypt.log ]; then \
-    cat ./letsencrypt.log; else echo "[nolocallog]"; fi')
+    sudo('if [ -f ./certbot.log ]; then \
+    cat ./certbot.log; else echo "[nolocallog]"; fi')
 
 def create_client_instances(targetlist):
     "Create a fleet of client instances"
@@ -349,7 +349,7 @@ def test_client_process(inqueue, outqueue):
         print(env.host_string)
 
         try:
-            install_and_launch_letsencrypt(instances[ii], boulder_url, target)
+            install_and_launch_certbot(instances[ii], boulder_url, target)
             outqueue.put((ii, target, 'pass'))
             print("%s - %s SUCCESS"%(target['ami'], target['name']))
         except:
@@ -357,10 +357,10 @@ def test_client_process(inqueue, outqueue):
             print("%s - %s FAIL"%(target['ami'], target['name']))
             pass
 
-        # append server letsencrypt.log to each per-machine output log
-        print("\n\nletsencrypt.log\n" + "-"*80 + "\n")
+        # append server certbot.log to each per-machine output log
+        print("\n\ncertbot.log\n" + "-"*80 + "\n")
         try:
-            execute(grab_letsencrypt_log)
+            execute(grab_certbot_log)
         except:
             print("log fail\n")
             pass

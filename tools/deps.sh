@@ -2,9 +2,9 @@
 #
 # Find all Python imports.
 #
-#  ./tools/deps.sh letsencrypt
+#  ./tools/deps.sh certbot
 #  ./tools/deps.sh acme
-#  ./tools/deps.sh letsencrypt-apache
+#  ./tools/deps.sh certbot-apache
 #  ...
 #
 # Manually compare the output with deps in setup.py.
