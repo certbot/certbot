@@ -97,7 +97,7 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
         hooks.post_hook(config)
 
     if not config.dry_run and not config.verb == "renew":
-        _report_new_cert(lineage.cert, lineage.fullchain)
+        _report_new_cert(config, lineage.cert, lineage.fullchain)
 
     return lineage, action
 
@@ -267,7 +267,7 @@ def _find_domains(config, installer):
     return domains
 
 
-def _report_new_cert(cert_path, fullchain_path):
+def _report_new_cert(config, cert_path, fullchain_path):
     """Reports the creation of a new certificate to the user.
 
     :param str cert_path: path to cert
@@ -285,12 +285,15 @@ def _report_new_cert(cert_path, fullchain_path):
         # Unless we're in .csr mode and there really isn't one
         and_chain = "has "
         path = cert_path
+
+    verbswitch = ' with the "certonly" option' if config.verb == "run" else ""
     # XXX Perhaps one day we could detect the presence of known old webservers
     # and say something more informative here.
-    msg = ("Congratulations! Your certificate {0} been saved at {1}."
-           " Your cert will expire on {2}. To obtain a new version of the "
-           "certificate in the future, simply run Certbot again."
-           .format(and_chain, path, expiry))
+    msg = ('Congratulations! Your certificate {0} been saved at {1}.'
+           ' Your cert will expire on {2}. To obtain a new or tweaked version of this '
+           'certificate in the future, simply run {3} again{4}. '
+           'To non-interactively renew *all* of your ceriticates, run "{3} renew"'
+           .format(and_chain, path, expiry, cli.cli_command, verbswitch))
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
 
@@ -485,7 +488,7 @@ def _csr_obtain_cert(config, le_client):
     else:
         cert_path, _, cert_fullchain = le_client.save_certificate(
             certr, chain, config.cert_path, config.chain_path, config.fullchain_path)
-        _report_new_cert(cert_path, cert_fullchain)
+        _report_new_cert(config, cert_path, cert_fullchain)
 
 
 def obtain_cert(config, plugins, lineage=None):
