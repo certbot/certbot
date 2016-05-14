@@ -38,33 +38,36 @@ Help for certbot itself cannot be provided until it is installed.
 
 All arguments are accepted and forwarded to the Certbot client when run."
 
-while getopts ":hnv" arg; do
-    case $arg in
-        h)
-            HELP=1;;
-        n)
-            ASSUME_YES=1;;
-        v)
-            VERBOSE=1;;
-    esac
-done
-
 for arg in "$@" ; do
   case "$arg" in
-    --debug)
-      DEBUG=1;;
-    --os-packages-only)
-      OS_PACKAGES_ONLY=1;;
-    --no-self-upgrade)
-      # Do not upgrade this script (also prevents client upgrades, because each
-      # copy of the script pins a hash of the python client)
-      NO_SELF_UPGRADE=1;;
-    --help)
-      HELP=1;;
-    --noninteractive|--non-interactive)
-      ASSUME_YES=1;;
-    --verbose)
-      VERBOSE=1;;
+    --*)
+      case "$arg" in
+        --debug)
+          DEBUG=1;;
+        --os-packages-only)
+          OS_PACKAGES_ONLY=1;;
+        --no-self-upgrade)
+          # Do not upgrade this script (also prevents client upgrades, because each
+          # copy of the script pins a hash of the python client)
+          NO_SELF_UPGRADE=1;;
+        --help)
+          HELP=1;;
+        --noninteractive|--non-interactive)
+          ASSUME_YES=1;;
+        --verbose)
+          VERBOSE=1;;
+      esac ;;
+    -*)
+      for short_arg in $(echo -n $arg | fold -w1); do
+        case "$short_arg" in
+          h)
+              HELP=1;;
+          n)
+              ASSUME_YES=1;;
+          v)
+              VERBOSE=1;;
+        esac
+      done ;;
   esac
 done
 
