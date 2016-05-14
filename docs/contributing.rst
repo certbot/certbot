@@ -297,7 +297,7 @@ Please:
 4. Remember to use ``pylint``.
 
 .. _Google Python Style Guide:
-  https://google-styleguide.googlecode.com/svn/trunk/pyguide.html
+  https://google.github.io/styleguide/pyguide.html
 .. _Sphinx-style: http://sphinx-doc.org/
 .. _PEP 8 - Style Guide for Python Code:
   https://www.python.org/dev/peps/pep-0008
