@@ -546,22 +546,30 @@ class ClientNetworkTest(unittest.TestCase):
             self.net.verify_ssl = verify
             # pylint: disable=protected-access
             self.assertEqual(
-                self.response, self.net._send_request('GET',
-                'http://example.com/'))
+                self.response,
+                self.net._send_request('GET', 'http://example.com/'))
             self.net.session.request.assert_called_once_with(
                 'GET', 'http://example.com/', verify=verify, headers=mock.ANY)
 
     def test_send_request_user_agent(self):
         self.net.session = mock.MagicMock()
         # pylint: disable=protected-access
-        self.net._send_request('GET', 'http://example.com/', headers={'bar': 'baz'})
+        self.net._send_request('GET', 'http://example.com/',
+                               headers={'bar': 'baz'})
         self.net.session.request.assert_called_once_with(
             'GET', 'http://example.com/', verify=mock.ANY,
             headers={'User-Agent': 'acme-python-test', 'bar': 'baz'})
 
-        self.net._send_request('GET', 'http://example.com/', headers={'User-Agent': 'foo2'})
+        self.net._send_request('GET', 'http://example.com/',
+                               headers={'User-Agent': 'foo2'})
         self.net.session.request.assert_called_with(
-            'GET', 'http://example.com/', verify=mock.ANY, headers={'User-Agent': 'foo2'})
+            'GET', 'http://example.com/',
+            verify=mock.ANY, headers={'User-Agent': 'foo2'})
+
+    def test_del(self):
+        self.net.session = mock.MagicMock()
+        self.net.__del__()
+        self.net.session.close.assert_called_once()
 
     @mock.patch('acme.client.requests')
     def test_requests_error_passthrough(self, mock_requests):
@@ -614,15 +622,16 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         return self.checked_response
 
     def test_head(self):
-        self.assertEqual(self.response,
-            self.net.head('http://example.com/', 'foo', bar='baz'))
+        self.assertEqual(self.response, self.net.head(
+            'http://example.com/', 'foo', bar='baz'))
         self.send_request.assert_called_once_with(
             'HEAD', 'http://example.com/', 'foo', bar='baz')
 
     def test_get(self):
         self.assertEqual(self.checked_response, self.net.get(
             'http://example.com/', content_type=self.content_type, bar='baz'))
-        self.send_request.assert_called_once_with('GET', 'http://example.com/', bar='baz')
+        self.send_request.assert_called_once_with(
+            'GET', 'http://example.com/', bar='baz')
 
     def test_post(self):
         # pylint: disable=protected-access
