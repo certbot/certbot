@@ -567,9 +567,10 @@ class ClientNetworkTest(unittest.TestCase):
             verify=mock.ANY, headers={'User-Agent': 'foo2'})
 
     def test_del(self):
-        self.net.session = mock.MagicMock()
-        self.net.__del__()
-        self.net.session.close.assert_called_once()
+        sess = mock.MagicMock()
+        self.net.session = sess
+        del self.net
+        sess.close.assert_called_once()
 
     @mock.patch('acme.client.requests')
     def test_requests_error_passthrough(self, mock_requests):
