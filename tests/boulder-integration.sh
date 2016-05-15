@@ -8,6 +8,8 @@
 #
 # Note: this script is called by Boulder integration test suite!
 
+cd $(basename $0)/..
+
 . ./tests/integration/_common.sh
 export PATH="/usr/sbin:$PATH"  # /usr/sbin/nginx
 
