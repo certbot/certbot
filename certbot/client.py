@@ -317,7 +317,13 @@ class Client(object):
 
         cert_pem = OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped)
-        cert_file, act_cert_path = le_util.unique_file(cert_path, 0o644)
+
+        if cert_path != constants.CLI_DEFAULTS['auth_cert_path']:
+            cert_file = le_util.safe_open(cert_path, chmod=0o644)
+            act_cert_path = cert_path
+        else:
+            cert_file, act_cert_path = le_util.unique_file(cert_path, 0o644)
+
         try:
             cert_file.write(cert_pem)
         finally:
