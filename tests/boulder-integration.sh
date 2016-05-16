@@ -43,7 +43,7 @@ export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
 common auth --csr "$CSR_PATH" \
        --cert-path "${root}/csr/cert.pem" \
        --chain-path "${root}/csr/chain.pem"
-openssl x509 -in "${root}/csr/0000_cert.pem" -text
+openssl x509 -in "${root}/csr/cert.pem" -text
 openssl x509 -in "${root}/csr/0000_chain.pem" -text
 
 common --domains le3.wtf install \
