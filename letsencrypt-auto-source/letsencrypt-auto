@@ -38,17 +38,6 @@ Help for certbot itself cannot be provided until it is installed.
 
 All arguments are accepted and forwarded to the Certbot client when run."
 
-while getopts ":hnv" arg; do
-    case $arg in
-        h)
-            HELP=1;;
-        n)
-            ASSUME_YES=1;;
-        v)
-            VERBOSE=1;;
-    esac
-done
-
 for arg in "$@" ; do
   case "$arg" in
     --debug)
@@ -65,6 +54,17 @@ for arg in "$@" ; do
       ASSUME_YES=1;;
     --verbose)
       VERBOSE=1;;
+    -[!-]*)
+      while getopts ":hnv" short_arg $arg; do
+        case "$short_arg" in
+          h)
+            HELP=1;;
+          n)
+            ASSUME_YES=1;;
+          v)
+            VERBOSE=1;;
+        esac
+      done;;
   esac
 done
 
@@ -435,7 +435,8 @@ BootstrapMac() {
   # Workaround for _dlopen not finding augeas on OS X
   if [ "$pkgman" = "port" ] && ! [ -e "/usr/local/lib/libaugeas.dylib" ] && [ -e "/opt/local/lib/libaugeas.dylib" ]; then
     echo "Applying augeas workaround"
-    $SUDO ln -s /opt/local/lib/libaugeas.dylib /usr/local/lib
+    $SUDO mkdir -p /usr/local/lib/
+    $SUDO ln -s /opt/local/lib/libaugeas.dylib /usr/local/lib/
   fi
 
   if ! hash pip 2>/dev/null; then
