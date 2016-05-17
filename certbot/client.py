@@ -24,6 +24,7 @@ from certbot import interfaces
 from certbot import le_util
 from certbot import reverter
 from certbot import storage
+from certbot import cli
 
 from certbot.display import ops as display_ops
 from certbot.display import enhancements
@@ -318,7 +319,7 @@ class Client(object):
         cert_pem = OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped)
 
-        if cert_path != constants.CLI_DEFAULTS['auth_cert_path']:
+        if cli.set_by_cli('cert_path'):
             cert_file = le_util.safe_open(cert_path, chmod=0o644)
             act_cert_path = cert_path
         else:
