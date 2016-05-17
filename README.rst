@@ -31,14 +31,17 @@ Contributing
 If you'd like to contribute to this project please read `Developer Guide
 <https://certbot.eff.org/docs/contributing.html>`_.
 
+.. _installation:
+
 Installation
 ------------
 
-If ``certbot`` (or ``letsencrypt``) is packaged for your Unix OS, you can install
-it from there, and run it by typing ``certbot`` (or ``letsencrypt``).
-Because not all operating systems have packages yet, we provide a temporary
-solution via the ``certbot-auto`` wrapper script, which obtains some
-dependencies from your OS and puts others in a python virtual environment::
+If ``certbot`` (or ``letsencrypt``) is packaged for your Unix OS (visit
+certbot.eff.org_ to find out), you can install it
+from there, and run it by typing ``certbot`` (or ``letsencrypt``).  Because
+not all operating systems have packages yet, we provide a temporary solution
+via the ``certbot-auto`` wrapper script, which obtains some dependencies from
+your OS and puts others in a python virtual environment::
 
   user@webserver:~$ wget https://dl.eff.org/certbot-auto
   user@webserver:~$ chmod a+x ./certbot-auto
@@ -188,3 +191,4 @@ Current Features
 .. _Freenode: https://webchat.freenode.net?channels=%23letsencrypt
 .. _OFTC: https://webchat.oftc.net?channels=%23certbot
 .. _client-dev: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev
+.. _certbot.eff.org: https://certbot.eff.org/
