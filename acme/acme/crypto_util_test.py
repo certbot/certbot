@@ -132,18 +132,18 @@ class RandomSnTest(unittest.TestCase):
     """Test for random certificate serial numbers."""
 
     def setUp(self):
-        self.certCount = 5
-        self.serialNum = []
+        self.cert_count = 5
+        self.serial_num = []
         self.key = OpenSSL.crypto.PKey()
         self.key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
 
     def test_sn_collisions(self):
         from acme.crypto_util import gen_ss_cert
 
-        for _ in range(self.certCount):
+        for _ in range(self.cert_count):
             cert = gen_ss_cert(self.key, ['dummy'], force_san=True)
-            self.serialNum.append(cert.get_serial_number())
-        self.assertTrue(len(set(self.serialNum)) > 1)
+            self.serial_num.append(cert.get_serial_number())
+        self.assertTrue(len(set(self.serial_num)) > 1)
 
 
 if __name__ == '__main__':
