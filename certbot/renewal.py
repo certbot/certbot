@@ -301,6 +301,8 @@ def _renew_describe_results(config, renew_successes, renew_failures,
 def renew_all_lineages(config):
     """Examine each lineage; renew if due and report results"""
 
+    # If more plugins start using cli.add_domains,
+    # we may want to only log a warning here
     if (config.domains != [] and
             set(config.domains) != six.viewkeys(config.webroot_map)):
         raise errors.Error("Currently, the renew verb is only capable of "
