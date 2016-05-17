@@ -164,6 +164,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
                     self.ssl == other.ssl and
                     self.enabled == other.enabled and
                     self.modmacro == other.modmacro)
+
         return False
 
     def __ne__(self, other):
