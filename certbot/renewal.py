@@ -301,10 +301,10 @@ def _renew_describe_results(config, renew_successes, renew_failures,
 def renew_all_lineages(config):
     """Examine each lineage; renew if due and report results"""
 
-    # If more plugins start using cli.add_domains,
-    # we may want to only log a warning here
-    if (config.domains != [] and
-            set(config.domains) != six.viewkeys(config.webroot_map)):
+    # This is trivially False if config.domains is empty
+    if any(domain not in config.webroot_map for domain in config.domains):
+        # If more plugins start using cli.add_domains,
+        # we may want to only log a warning here
         raise errors.Error("Currently, the renew verb is only capable of "
                            "renewing all installed certificates that are due "
                            "to be renewed; individual domains cannot be "
