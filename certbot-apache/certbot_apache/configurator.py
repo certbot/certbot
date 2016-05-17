@@ -1177,7 +1177,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :type vhost: :class:`~certbot_apache.obj.VirtualHost`
 
         """
-        rewrite_engine_path_list= self.parser.find_dir("RewriteEngine", "on",
+        rewrite_engine_path_list = self.parser.find_dir("RewriteEngine", "on",
                                                    start=vhost.path)
         if rewrite_engine_path_list:
             for re_path in rewrite_engine_path_list:
