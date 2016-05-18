@@ -68,6 +68,12 @@ for arg in "$@" ; do
   esac
 done
 
+if [ $BASENAME = "letsencrypt-auto" ]; then
+  # letsencrypt-auto does not respect --help or --yes for backwards compatibility
+  ASSUME_YES=1
+  HELP=0
+fi
+
 # certbot-auto needs root access to bootstrap OS dependencies, and
 # certbot itself needs root access for almost all modes of operation
 # The "normal" case is that sudo is used for the steps that need root, but
@@ -105,12 +111,6 @@ if test "`id -u`" -ne "0" ; then
   fi
 else
   SUDO=
-fi
-
-if [ $BASENAME = "letsencrypt-auto" ]; then
-  # letsencrypt-auto does not respect --help or --yes for backwards compatibility
-  ASSUME_YES=1
-  HELP=0
 fi
 
 ExperimentalBootstrap() {
