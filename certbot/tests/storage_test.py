@@ -33,15 +33,15 @@ class RelevantValuesTest(unittest.TestCase):
                 mock.Mock(dest="rsa_key_size", default=2048)]
             return relevant_values(*args, **kwargs)
 
-    def test_relevant_values(self):
+    def test_irrelevant_values(self):
         """Test that relevant_values() can reject an irrelevant value."""
         self.assertEqual(self._call({"hello": "there"}), {})
 
-    def test_relevant_values_default(self):
+    def test_default_values(self):
         """Test that relevant_values() can reject a default value."""
         self.assertEqual(self._call({"rsa_key_size": 2048}), {})
 
-    def test_relevant_values_nondefault(self):
+    def test_nondefault_values(self):
         """Test that relevant_values() can retain a non-default value."""
         self.assertEqual(
             self._call({"rsa_key_size": 12}), {"rsa_key_size": 12})
