@@ -980,6 +980,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         Enabling OCSP Stapling, would allow the web-server to query the OCSP
         Responder, and staple its response to the offered certificate during
         TLS. i.e. clients would not have to query the OCSP responder.
+        
+        OCSP Enablement on Apache implicitly depends on SSLCertificateChainFile
+        being set by other code.
 
         .. note:: This function saves the configuration
 
@@ -1010,15 +1013,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             stapling_cache_aug_path = self.parser.find_dir('SSLStaplingCache',
                     None, ssl_vhost_aug_path)
 
-            # We'll simply delete the directive, as it might be something like
-            # SSLStaplingCache /tmp/ocsp_stapling
-            # The OS usually cleans /tmp on reboot, which means that the server
-            # Would have to query LetsEncrypt's OCSP Responder again.
-            # We want to avoid that.
-            # Then we'll plant a new directive
-
-            # Another plus is that it would be nice to have a consistent OCSP
-            # cache path.
+            # We'll simply delete the directive, so that we'll have a
+            # consistent OCSP cache path.
             if stapling_cache_aug_path:
                 self.aug.remove(
                         re.sub(r"/\w*$", "", stapling_cache_aug_path[0]))
