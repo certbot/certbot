@@ -374,7 +374,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Points 3 - Servername no SSL
         # Points 2 - Wildcard no SSL
         # Points 1 - Address name with no SSL
-
         best_candidate = None
         best_points = 0
         for vhost in self.vhosts:
