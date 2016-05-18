@@ -712,6 +712,12 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._test_renew_common(renewalparams=renewalparams,
                                 assert_oc_called=True)
 
+    def test_renew_with_webroot_map(self):
+        renewalparams = {'authenticator': 'webroot'}
+        self._test_renew_common(
+            renewalparams=renewalparams, assert_oc_called=True,
+            args=['renew', '--webroot-map', '{"example.com": "/tmp"}'])
+
     def test_renew_reconstitute_error(self):
         # pylint: disable=protected-access
         with mock.patch('certbot.main.renewal._reconstitute') as mock_reconstitute:
