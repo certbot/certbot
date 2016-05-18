@@ -228,15 +228,20 @@ def pyopenssl_load_certificate(data):
         str(error) for error in openssl_errors)))
 
 
-def _get_sans_from_cert_or_req(cert_or_req_str, load_func,
-                               typ=OpenSSL.crypto.FILETYPE_PEM):
+def _load_cert_or_req(cert_or_req_str, load_func,
+                      typ=OpenSSL.crypto.FILETYPE_PEM):
     try:
-        cert_or_req = load_func(typ, cert_or_req_str)
+        return load_func(typ, cert_or_req_str)
     except OpenSSL.crypto.Error as error:
         logger.exception(error)
         raise
+
+
+def _get_sans_from_cert_or_req(cert_or_req_str, load_func,
+                               typ=OpenSSL.crypto.FILETYPE_PEM):
     # pylint: disable=protected-access
-    return acme_crypto_util._pyopenssl_cert_or_req_san(cert_or_req)
+    return acme_crypto_util._pyopenssl_cert_or_req_san(_load_cert_or_req(
+        cert_or_req_str, load_func, typ))
 
 
 def get_sans_from_cert(cert, typ=OpenSSL.crypto.FILETYPE_PEM):
