@@ -552,10 +552,3 @@ Beyond the methods discussed here, other methods may be possible, such as
 installing Certbot directly with pip from PyPI or downloading a ZIP
 archive from GitHub may be technically possible but are not presently
 recommended or supported.
-
-
-.. rubric:: Footnotes
-
-.. [#venv] By using this virtualized Python environment (`virtualenv
-           <https://virtualenv.pypa.io>`_) we don't pollute the main
-           OS space with packages from PyPI!
