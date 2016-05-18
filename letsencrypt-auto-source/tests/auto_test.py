@@ -183,7 +183,7 @@ def run_le_auto(venv_dir, base_url, **kwargs):
     d = dict(XDG_DATA_HOME=venv_dir,
              # URL to PyPI-style JSON that tell us the latest released version
              # of LE:
-             LE_AUTO_JSON_URL=base_url + 'letsencrypt/json',
+             LE_AUTO_JSON_URL=base_url + 'certbot/json',
              # URL to dir containing letsencrypt-auto and letsencrypt-auto.sig:
              LE_AUTO_DIR_TEMPLATE=base_url + '%s/',
              # The public key corresponding to signing.key:
