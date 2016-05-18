@@ -20,6 +20,33 @@ from certbot.tests import test_util
 CERT = test_util.load_cert('cert.pem')
 
 
+class RelevantValuesTest(unittest.TestCase):
+    """Tests for certbot.storage.relevant_values."""
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.storage import relevant_values
+
+        with mock.patch("certbot.cli.helpful_parser") as mock_parser:
+            mock_parser.args = ["--standalone"]
+            mock_parser.verb = "certonly"
+            mock_parser.parser._actions = [  # pylint: disable=protected-access
+                mock.Mock(dest="rsa_key_size", default=2048)]
+            return relevant_values(*args, **kwargs)
+
+    def test_relevant_values(self):
+        """Test that relevant_values() can reject an irrelevant value."""
+        self.assertEqual(self._call({"hello": "there"}), {})
+
+    def test_relevant_values_default(self):
+        """Test that relevant_values() can reject a default value."""
+        self.assertEqual(self._call({"rsa_key_size": 2048}), {})
+
+    def test_relevant_values_nondefault(self):
+        """Test that relevant_values() can retain a non-default value."""
+        self.assertEqual(
+            self._call({"rsa_key_size": 12}), {"rsa_key_size": 12})
+
+
 def unlink_all(rc_object):
     """Unlink all four items associated with this RenewableCert."""
     for kind in ALL_FOUR:
@@ -562,40 +589,6 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(os.path.exists(self.test_rc.version("privkey", 10)))
         self.assertFalse(os.path.islink(self.test_rc.version("privkey", 10)))
         self.assertFalse(os.path.exists(temp_config_file))
-
-    @mock.patch("certbot.cli.helpful_parser")
-    def test_relevant_values(self, mock_parser):
-        """Test that relevant_values() can reject an irrelevant value."""
-        # pylint: disable=protected-access
-        from certbot import storage
-        mock_parser.verb = "certonly"
-        mock_parser.args = ["--standalone"]
-        mock_action = mock.Mock(dest="rsa_key_size", default=2048)
-        mock_parser.parser._actions = [mock_action]
-        self.assertEqual(storage.relevant_values({"hello": "there"}), {})
-
-    @mock.patch("certbot.cli.helpful_parser")
-    def test_relevant_values_default(self, mock_parser):
-        """Test that relevant_values() can reject a default value."""
-        # pylint: disable=protected-access
-        from certbot import storage
-        mock_parser.verb = "certonly"
-        mock_parser.args = ["--standalone"]
-        mock_action = mock.Mock(dest="rsa_key_size", default=2048)
-        mock_parser.parser._actions = [mock_action]
-        self.assertEqual(storage.relevant_values({"rsa_key_size": 2048}), {})
-
-    @mock.patch("certbot.cli.helpful_parser")
-    def test_relevant_values_nondefault(self, mock_parser):
-        """Test that relevant_values() can retain a non-default value."""
-        # pylint: disable=protected-access
-        from certbot import storage
-        mock_parser.verb = "certonly"
-        mock_parser.args = ["--standalone"]
-        mock_action = mock.Mock(dest="rsa_key_size", default=2048)
-        mock_parser.parser._actions = [mock_action]
-        self.assertEqual(storage.relevant_values({"rsa_key_size": 12}),
-                         {"rsa_key_size": 12})
 
     @mock.patch("certbot.storage.relevant_values")
     def test_new_lineage(self, mock_rv):
