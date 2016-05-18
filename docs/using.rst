@@ -338,7 +338,7 @@ will cause nasty errors served through the browsers!
 .. note:: All files are PEM-encoded (as the filename suffix
    suggests). If you need other format, such as DER or PFX, then you
    could convert using ``openssl``. You can automate that with
-   `--renew-hook` if you're using automatic renewal_.
+   ``--renew-hook`` if you're using automatic renewal_.
 
 
 .. _config-file:
