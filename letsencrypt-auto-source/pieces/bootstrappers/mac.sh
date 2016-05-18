@@ -16,12 +16,11 @@ BootstrapMac() {
 
   $pkgcmd augeas
   $pkgcmd dialog
-  if [ "$(which python)" = "/System/Library/Frameworks/Python.framework/Versions/2.7/bin/python" ]; then
-    # We want to avoid using the system Python because it requires root to use pip.
-    # python.org, MacPorts or HomeBrew Python installations should all be OK.
-    echo "Installing python..."
-    $pkgcmd python
-  fi
+
+  # We want to avoid using the system Python because it requires root to use pip.
+  # python.org, MacPorts or HomeBrew Python installations should all be OK.
+  echo "Installing python..."
+  $pkgcmd python
 
   # Workaround for _dlopen not finding augeas on OS X
   if [ "$pkgman" = "port" ] && ! [ -e "/usr/local/lib/libaugeas.dylib" ] && [ -e "/opt/local/lib/libaugeas.dylib" ]; then
