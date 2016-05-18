@@ -34,6 +34,7 @@ Help for certbot itself cannot be provided until it is installed.
   -n, --non-interactive, --noninteractive   run without asking for user input
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
+  -q, --quiet                               provide less output
   -v, --verbose                             provide more output
 
 All arguments are accepted and forwarded to the Certbot client when run."
@@ -52,15 +53,19 @@ for arg in "$@" ; do
       HELP=1;;
     --noninteractive|--non-interactive)
       ASSUME_YES=1;;
+    --quiet)
+      QUIET=1;;
     --verbose)
       VERBOSE=1;;
     -[!-]*)
-      while getopts ":hnv" short_arg $arg; do
+      while getopts ":hnqv" short_arg $arg; do
         case "$short_arg" in
           h)
             HELP=1;;
           n)
             ASSUME_YES=1;;
+          q)
+            QUIET=1;;
           v)
             VERBOSE=1;;
         esac
