@@ -284,10 +284,8 @@ def get_names_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
     """
     loaded_csr = _load_cert_or_req(
         csr, OpenSSL.crypto.load_certificate_request, typ)
-    common_name = loaded_csr.get_subject().CN
-
     # Use a set to avoid duplication with CN and Subject Alt Names
-    domains = set() if common_name is None else set((common_name,))
+    domains = set(d for d in (loaded_csr.get_subject().CN,) if d is not None)
     # pylint: disable=protected-access
     domains.update(acme_crypto_util._pyopenssl_cert_or_req_san(loaded_csr))
     return list(domains)
