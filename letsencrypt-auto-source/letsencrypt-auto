@@ -452,6 +452,11 @@ BootstrapMac() {
   fi
 }
 
+BootstrapSmartOS() {
+  pkgin update
+  pkgin -y install 'gcc49' 'py27-augeas' 'py27-virtualenv'
+}
+
 
 # Install required OS packages:
 Bootstrap() {
@@ -484,8 +489,10 @@ Bootstrap() {
     ExperimentalBootstrap "FreeBSD" BootstrapFreeBsd
   elif uname | grep -iq Darwin ; then
     ExperimentalBootstrap "Mac OS X" BootstrapMac
-  elif grep -iq "Amazon Linux" /etc/issue ; then
+  elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
     ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
+  elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
+    ExperimentalBootstrap "Joyent SmartOS Zone" BootstrapSmartOS
   else
     echo "Sorry, I don't know how to bootstrap Certbot on your operating system!"
     echo
