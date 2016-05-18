@@ -981,7 +981,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         Responder, and staple its response to the offered certificate during
         TLS. i.e. clients would not have to query the OCSP responder.
         
-        OCSP Enablement on Apache implicitly depends on SSLCertificateChainFile
+        OCSP enablement on Apache implicitly depends on SSLCertificateChainFile
         being set by other code.
 
         .. note:: This function saves the configuration
@@ -996,7 +996,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: (bool, :class:`~letsencrypt_apache.obj.VirtualHost`)
 
         """
-        min_apache_ver = (2, 4, 0) #TODO check min apache ver that supports stapling
+        min_apache_ver = (2, 3, 3) 
         if self.get_version() >= min_apache_ver:
             if "socache_shmcb_module" not in self.parser.modules:
                 self.enable_mod("socache_shmcb")
