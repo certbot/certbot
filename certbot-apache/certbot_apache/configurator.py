@@ -1034,7 +1034,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.save()
         logger.info(msg)
 
-        def _set_http_header(self, ssl_vhost, header_substring):
+   def _set_http_header(self, ssl_vhost, header_substring):
         """Enables header that is identified by header_substring on ssl_vhost.
 
         If the header identified by header_substring is not already set,
