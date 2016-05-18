@@ -63,6 +63,7 @@ cert. Major SUBCOMMANDS are:
   install              Install a previously obtained cert in a server
   renew                Renew previously obtained certs that are near expiry
   revoke               Revoke a previously obtained certificate
+  register             Perform tasks related to registering with the CA
   rollback             Rollback server configuration changes made during install
   config_changes       Show changes made to server config during installation
   plugins              Display information about installed plugins
