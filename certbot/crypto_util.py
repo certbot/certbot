@@ -272,6 +272,27 @@ def get_sans_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
         csr, OpenSSL.crypto.load_certificate_request, typ)
 
 
+def get_names_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
+    """Get a list of domains from a CSR, including the CN if it is set.
+
+    :param str csr: CSR (encoded).
+    :param typ: `OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`
+
+    :returns: A list of domain names.
+    :rtype: list
+
+    """
+    loaded_csr = _load_cert_or_req(
+        csr, OpenSSL.crypto.load_certificate_request, typ)
+    common_name = loaded_csr.get_subject().CN
+
+    # Use a set to avoid duplication with CN and Subject Alt Names
+    domains = set() if common_name is None else set((common_name,))
+    # pylint: disable=protected-access
+    domains.update(acme_crypto_util._pyopenssl_cert_or_req_san(loaded_csr))
+    return list(domains)
+
+
 def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
     """Dump certificate chain into a bundle.
 
