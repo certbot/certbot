@@ -146,9 +146,9 @@ def _relevant(option):
     from certbot import renewal
     from certbot.plugins import disco as plugins_disco
     plugins = list(plugins_disco.PluginsRegistry.find_all())
-    return (option in renewal.STR_CONFIG_ITEMS
-            or option in renewal.INT_CONFIG_ITEMS
-            or any(option.startswith(x + "_") for x in plugins))
+    return (option in renewal.STR_CONFIG_ITEMS or
+            option in renewal.INT_CONFIG_ITEMS or
+            any(option.startswith(x + "_") for x in plugins))
 
 
 def _is_cli_default(option, value):
