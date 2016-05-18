@@ -288,7 +288,6 @@ else
   fi
 
   if [ "$NO_SELF_UPGRADE" != 1 ]; then
-    echo "Checking for new version..."
     TEMP_DIR=$(TempDir)
     # ---------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/fetch.py"
