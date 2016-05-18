@@ -594,6 +594,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :type addr: :class:`~certbot_apache.obj.Addr`
 
         """
+
         loc = parser.get_aug_path(self.parser.loc["name"])
         if addr.get_port() == "443":
             path = self.parser.add_dir_to_ifmodssl(
