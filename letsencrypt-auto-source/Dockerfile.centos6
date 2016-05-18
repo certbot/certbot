@@ -14,7 +14,7 @@ RUN useradd --create-home --home-dir /home/lea --shell /bin/bash --groups wheel 
 
 # Let that user sudo:
 RUN sed -i.bkp -e \
-      's/# %wheel\(NOPASSWD: ALL\)\?/% wheel/g' \
+      's/# %wheel\(NOPASSWD: ALL\)\?/%wheel/g' \
       /etc/sudoers
 
 RUN mkdir -p /home/lea/letsencrypt
