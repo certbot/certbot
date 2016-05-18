@@ -88,7 +88,8 @@ More detailed help:
                         the available topics are:
 
    all, automation, paths, security, testing, or any of the subcommands or
-   plugins (certonly, install, nginx, apache, standalone, webroot, etc)
+   plugins (certonly, install, register, nginx, apache, standalone, webroot,
+   etc.)
 """
 
 
@@ -615,7 +616,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
              "affect you, and will be effective 14 days after posting an "
              "update to the web site.")
     helpful.add(
-        None, "--update-registration", action="store_true",
+        "register", "--update-registration", action="store_true",
         help="With the register verb, indicates that details associated "
              "with an existing registration, such as the e-mail address, "
              "should be updated, rather than registering a new account.")
