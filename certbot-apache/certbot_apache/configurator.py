@@ -1177,10 +1177,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :type vhost: :class:`~certbot_apache.obj.VirtualHost`
 
         """
-        rewrite_engine_path = self.parser.find_dir("RewriteEngine", "on",
+        rewrite_engine_path_list = self.parser.find_dir("RewriteEngine", "on",
                                                    start=vhost.path)
-        if rewrite_engine_path:
-            return self.parser.get_arg(rewrite_engine_path[0])
+        if rewrite_engine_path_list:
+            for re_path in rewrite_engine_path_list:
+                # A RewriteEngine directive may also be included in per
+                # directory .htaccess files. We only care about the VirtualHost.
+                if 'VirtualHost' in re_path:
+                    return self.parser.get_arg(re_path)
         return False
 
     def _create_redirect_vhost(self, ssl_vhost):

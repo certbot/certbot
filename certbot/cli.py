@@ -37,8 +37,14 @@ helpful_parser = None
 # should only be used for purposes where inability to detect letsencrypt-auto
 # fails safely
 
+LEAUTO = "letsencrypt-auto"
+if "CERTBOT_AUTO" in os.environ:
+    # if we're here, this is probably going to be certbot-auto, unless the
+    # user saved the script under a different name
+    LEAUTO = os.path.basename(os.environ["CERTBOT_AUTO"])
+
 fragment = os.path.join(".local", "share", "letsencrypt")
-cli_command = "letsencrypt-auto" if fragment in sys.argv[0] else "certbot"
+cli_command = LEAUTO if fragment in sys.argv[0] else "certbot"
 
 # Argparse's help formatting has a lot of unhelpful peculiarities, so we want
 # to replace as much of it as we can...
@@ -139,6 +145,22 @@ def usage_strings(plugins):
     else:
         apache_doc = "(the apache plugin is not installed)"
     return USAGE % (apache_doc, nginx_doc), SHORT_USAGE
+
+
+def possible_deprecation_warning(config):
+    "A deprecation warning for users with the old, not-self-upgrading letsencrypt-auto."
+    if cli_command != LEAUTO:
+        return
+    if config.no_self_upgrade:
+        # users setting --no-self-upgrade might be hanging on a clent version like 0.3.0
+        # or 0.5.0 which is the new script, but doesn't set CERTBOT_AUTO; they don't
+        # need warnings
+        return
+    if "CERTBOT_AUTO" not in os.environ:
+        logger.warn("You are running with an old copy of letsencrypt-auto that does "
+            "not receive updates, and is less reliable than more recent versions. "
+            "We recommend upgrading to the latest certbot-auto script, or using native "
+            "OS packages.")
 
 
 class _Default(object):
@@ -689,6 +711,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "security", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
     helpful.add(
+        "security", "--must-staple", action="store_true",
+        help=config_help("must_staple"), dest="must_staple", default=False)
+    helpful.add(
         "security", "--redirect", action="store_true",
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost.", dest="redirect", default=None)
@@ -729,7 +754,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         " certificate lineage. You can try it with `--dry-run` first. For"
         " more fine-grained control, you can renew individual lineages with"
         " the `certonly` subcommand. Hooks are available to run commands "
-        " before and after renewal; see XXX for more information on these.")
+        " before and after renewal; see"
+        " https://certbot.eff.org/docs/using.html#renewal for more information on these.")
 
     helpful.add(
         "renew", "--pre-hook",
