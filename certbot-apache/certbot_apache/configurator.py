@@ -998,43 +998,43 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         min_apache_ver = (2, 3, 3)
-        if self.get_version() >= min_apache_ver:
-            if "socache_shmcb_module" not in self.parser.modules:
-                self.enable_mod("socache_shmcb")
-
-            # Check if there's an existing SSLUseStapling directive on.
-            use_stapling_aug_path = self.parser.find_dir("SSLUseStapling",
-                    "on", start=ssl_vhost.path)
-            if not use_stapling_aug_path:
-                self.parser.add_dir(ssl_vhost.path, "SSLUseStapling", "on")
-
-            ssl_vhost_aug_path = parser.get_aug_path(ssl_vhost.filep)
-
-            # Check if there's an existing SSLStaplingCache directive.
-            stapling_cache_aug_path = self.parser.find_dir('SSLStaplingCache',
-                    None, ssl_vhost_aug_path)
-
-            # We'll simply delete the directive, so that we'll have a
-            # consistent OCSP cache path.
-            if stapling_cache_aug_path:
-                self.aug.remove(
-                        re.sub(r"/\w*$", "", stapling_cache_aug_path[0]))
-
-            self.parser.add_dir_to_ifmodssl(ssl_vhost_aug_path,
-                    "SSLStaplingCache",
-                    ["shmcb:/var/run/apache2/stapling_cache(128000)"])
-
-            msg = "OCSP Stapling was enabled on SSL Vhost: %s.\n"%(
-                    ssl_vhost.filep)
-            self.save_notes += msg
-            self.save()
-            logger.info(msg)
-        else:
+        if self.get_version() < min_apache_ver:
             raise errors.PluginError(
                 "Unable to set OCSP directives.\n"
                 "Apache version is below 2.4.")
 
-    def _set_http_header(self, ssl_vhost, header_substring):
+        if "socache_shmcb_module" not in self.parser.modules:
+            self.enable_mod("socache_shmcb")
+
+        # Check if there's an existing SSLUseStapling directive on.
+        use_stapling_aug_path = self.parser.find_dir("SSLUseStapling",
+                "on", start=ssl_vhost.path)
+        if not use_stapling_aug_path:
+            self.parser.add_dir(ssl_vhost.path, "SSLUseStapling", "on")
+
+        ssl_vhost_aug_path = parser.get_aug_path(ssl_vhost.filep)
+
+        # Check if there's an existing SSLStaplingCache directive.
+        stapling_cache_aug_path = self.parser.find_dir('SSLStaplingCache',
+                None, ssl_vhost_aug_path)
+
+        # We'll simply delete the directive, so that we'll have a
+        # consistent OCSP cache path.
+        if stapling_cache_aug_path:
+            self.aug.remove(
+                    re.sub(r"/\w*$", "", stapling_cache_aug_path[0]))
+
+        self.parser.add_dir_to_ifmodssl(ssl_vhost_aug_path,
+                "SSLStaplingCache",
+                ["shmcb:/var/run/apache2/stapling_cache(128000)"])
+
+        msg = "OCSP Stapling was enabled on SSL Vhost: %s.\n"%(
+                ssl_vhost.filep)
+        self.save_notes += msg
+        self.save()
+        logger.info(msg)
+
+        def _set_http_header(self, ssl_vhost, header_substring):
         """Enables header that is identified by header_substring on ssl_vhost.
 
         If the header identified by header_substring is not already set,
