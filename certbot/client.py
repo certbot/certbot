@@ -292,7 +292,6 @@ class Client(object):
                 key.pem, crypto_util.dump_pyopenssl_chain(chain),
                 configuration.RenewerConfiguration(self.config.namespace))
 
-           
     def save_certificate(self, certr, chain_cert,
                          cert_path, chain_path, fullchain_path):
         """Saves the certificate received from the ACME server.
