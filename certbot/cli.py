@@ -731,9 +731,20 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
              " https:// for every http:// resource.", dest="uir", default=None)
     helpful.add(
         "security", "--no-uir", action="store_false",
-        help=" Do not automatically set the \"Content-Security-Policy:"
+        help="Do not automatically set the \"Content-Security-Policy:"
         " upgrade-insecure-requests\" header to every HTTP response.",
         dest="uir", default=None)
+    helpful.add(
+        "security", "--staple-ocsp", action="store_true",
+        help="Enables OCSP Stapling. A valid OCSP response is stapled to"
+        " the certificate that the server offers during TLS.",
+        dest="staple", default=None)
+    helpful.add(
+        "security", "--no-staple-ocsp", action="store_false",
+        help="Do not automatically enable OCSP Stapling.",
+        dest="staple", default=None)
+
+
     helpful.add(
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
