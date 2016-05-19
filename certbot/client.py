@@ -320,30 +320,27 @@ class Client(object):
         cert_pem = OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped)
 
-        cert_file, act_cert_path = _open_pem_file('cert_path', cert_path)
+        cert_file, abs_cert_path = _open_pem_file('cert_path', cert_path)
 
         try:
             cert_file.write(cert_pem)
         finally:
             cert_file.close()
         logger.info("Server issued certificate; certificate written to %s",
-                    act_cert_path)
+                    abs_cert_path)
 
-        cert_chain_abspath = None
-        fullchain_abspath = None
         if chain_cert:
             chain_pem = crypto_util.dump_pyopenssl_chain(chain_cert)
 
-            chain_file, act_chain_path =\
+            chain_file, abs_chain_path =\
                     _open_pem_file('chain_path', chain_path)
-            fullchain_file, act_fullchain_path =\
+            fullchain_file, abs_fullchain_path =\
                     _open_pem_file('fullchain_path', fullchain_path)
 
-            cert_chain_abspath = _save_chain(chain_pem, chain_file)
-            fullchain_abspath = _save_chain(cert_pem + chain_pem,
-                                            fullchain_file)
+            _save_chain(chain_pem, chain_file)
+            _save_chain(cert_pem + chain_pem, fullchain_file
 
-        return os.path.abspath(act_cert_path), cert_chain_abspath, fullchain_abspath
+        return abs_cert_path, abs_chain_path, abs_fullchain_path
 
     def deploy_certificate(self, domains, privkey_path,
                            cert_path, chain_path, fullchain_path):
@@ -577,16 +574,14 @@ def _open_pem_file(cli_arg_path, pem_path):
         return le_util.safe_open(pem_path, chmod=0o644),\
             os.path.abspath(pem_path)
     else:
-        return le_util.unique_file(pem_path, 0o644)
+        uniq = le_util.unique_file(pem_path, 0o644)
+        return uniq[0], os.path.abspath(uniq)
 
 def _save_chain(chain_pem, chain_file):
     """Saves chain_pem at a unique path based on chain_path.
 
     :param str chain_pem: certificate chain in PEM format
     :param str chain_file: chain file object
-
-    :returns: absolute path to saved cert chain
-    :rtype: str
 
     """
     try:
@@ -595,6 +590,3 @@ def _save_chain(chain_pem, chain_file):
         chain_file.close()
 
     logger.info("Cert chain written to %s", chain_file.name)
-
-    # This expects a valid chain file
-    return os.path.abspath(chain_file.name)
