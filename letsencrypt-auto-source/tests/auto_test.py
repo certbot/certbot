@@ -258,9 +258,9 @@ class AutoTests(TestCase):
         with ephemeral_dir() as venv_dir:
             # This serves a PyPI page with a higher version, a GitHub-alike
             # with a corresponding le-auto script, and a matching signature.
-            resources = {'letsencrypt/json': dumps({'releases': {'99.9.9': None}}),
-                         'v99.9.9/letsencrypt-auto': NEW_LE_AUTO,
-                         'v99.9.9/letsencrypt-auto.sig': NEW_LE_AUTO_SIG}
+            resources = {'certbot/json': dumps({'releases': {'99.9.9': None}}),
+                         'v99.9.9/certbot-auto': NEW_LE_AUTO,
+                         'v99.9.9/certbot-auto.sig': NEW_LE_AUTO_SIG}
             with serving(resources) as base_url:
                 run_letsencrypt_auto = partial(
                         run_le_auto,
@@ -301,10 +301,10 @@ class AutoTests(TestCase):
         with ephemeral_dir() as venv_dir:
             # Serve an unrelated hash signed with the good key (easier than
             # making a bad key, and a mismatch is a mismatch):
-            resources = {'': '<a href="letsencrypt/">letsencrypt/</a>',
-                         'letsencrypt/json': dumps({'releases': {'99.9.9': None}}),
-                         'v99.9.9/letsencrypt-auto': build_le_auto(version='99.9.9'),
-                         'v99.9.9/letsencrypt-auto.sig': signed('something else')}
+            resources = {'': '<a href="certbot/">certbot/</a>',
+                         'certbot/json': dumps({'releases': {'99.9.9': None}}),
+                         'v99.9.9/certbot-auto': build_le_auto(version='99.9.9'),
+                         'v99.9.9/certbot-auto.sig': signed('something else')}
             with serving(resources) as base_url:
                 copy(LE_AUTO_PATH, venv_dir)
                 try:
@@ -320,8 +320,8 @@ class AutoTests(TestCase):
     def test_pip_failure(self):
         """Make sure pip stops us if there is a hash mismatch."""
         with ephemeral_dir() as venv_dir:
-            resources = {'': '<a href="letsencrypt/">letsencrypt/</a>',
-                         'letsencrypt/json': dumps({'releases': {'99.9.9': None}})}
+            resources = {'': '<a href="certbot/">certbot/</a>',
+                         'certbot/json': dumps({'releases': {'99.9.9': None}})}
             with serving(resources) as base_url:
                 # Build a le-auto script embedding a bad requirements file:
                 install_le_auto(
