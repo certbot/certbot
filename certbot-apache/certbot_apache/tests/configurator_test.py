@@ -1035,15 +1035,31 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertRaises(
             errors.PluginError, self.config._enable_redirect, ssl_vh, "")
 
-    def test_redirect_twice(self):
+    def test_redirect_two_domains_one_vhost(self):
         # Skip the enable mod
         self.config.parser.modules.add("rewrite_module")
         self.config.get_version = mock.Mock(return_value=(2, 3, 9))
 
-        self.config.enhance("encryption-example.demo", "redirect")
+        self.config.enhance("red.blue.purple.com", "redirect")
+        verify_no_redirect = ("certbot_apache.configurator."
+                              "ApacheConfigurator._verify_no_certbot_redirect")
+        with mock.patch(verify_no_redirect) as mock_verify:
+            self.config.enhance("green.blue.purple.com", "redirect")
+        self.assertFalse(mock_verify.called)
+
+    def test_redirect_from_previous_run(self):
+        # Skip the enable mod
+        self.config.parser.modules.add("rewrite_module")
+        self.config.get_version = mock.Mock(return_value=(2, 3, 9))
+
+        self.config.enhance("red.blue.purple.com", "redirect")
+        # Clear state about enabling redirect on this run
+        # pylint: disable=protected-access
+        self.config._enhanced_vhosts["redirect"].clear()
+
         self.assertRaises(
             errors.PluginEnhancementAlreadyPresent,
-            self.config.enhance, "encryption-example.demo", "redirect")
+            self.config.enhance, "green.blue.purple.com", "redirect")
 
     def test_create_own_redirect(self):
         self.config.parser.modules.add("rewrite_module")
