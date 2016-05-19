@@ -982,8 +982,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         Responder, and staple its response to the offered certificate during
         TLS. i.e. clients would not have to query the OCSP responder.
 
-        OCSP enablement on Apache implicitly depends on SSLCertificateChainFile
-        being set by other code.
+        OCSP Stapling enablement on Apache implicitly depends on
+        SSLCertificateChainFile being set by other code.
 
         .. note:: This function saves the configuration
 
@@ -1001,7 +1001,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if self.get_version() < min_apache_ver:
             raise errors.PluginError(
                 "Unable to set OCSP directives.\n"
-                "Apache version is below 2.4.")
+                "Apache version is below 2.3.3.")
 
         if "socache_shmcb_module" not in self.parser.modules:
             self.enable_mod("socache_shmcb")
