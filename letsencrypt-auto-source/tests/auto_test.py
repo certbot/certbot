@@ -199,7 +199,7 @@ iQIDAQAB
              **kwargs)
     env.update(d)
     return out_and_err(
-        join(venv_dir, 'letsencrypt-auto') + ' --version',
+        join(venv_dir, 'certbot-auto') + ' --version',
         shell=True,
         env=env)
 
