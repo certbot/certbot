@@ -9,7 +9,9 @@ import unittest
 import configobj
 import mock
 import pytz
+import six
 
+from certbot import constants
 from certbot import configuration
 from certbot import errors
 from certbot.storage import ALL_FOUR
@@ -30,7 +32,8 @@ class RelevantValuesTest(unittest.TestCase):
             mock_parser.args = ["--standalone"]
             mock_parser.verb = "certonly"
             mock_parser.parser._actions = [  # pylint: disable=protected-access
-                mock.Mock(dest="rsa_key_size", default=2048)]
+                mock.Mock(dest=dest, default=default)
+                for dest, default in six.iteritems(constants.CLI_DEFAULTS)]
             return relevant_values(*args, **kwargs)
 
     def test_irrelevant_values(self):
@@ -45,6 +48,12 @@ class RelevantValuesTest(unittest.TestCase):
         """Test that relevant_values() can retain a non-default value."""
         self.assertEqual(
             self._call({"rsa_key_size": 12}), {"rsa_key_size": 12})
+
+    def test_default_server_value(self):
+        """Test that the server value is always stored."""
+        self.assertEqual(
+            {"server": constants.CLI_DEFAULTS["server"]},
+            self._call({"server": constants.CLI_DEFAULTS["server"]}))
 
 
 def unlink_all(rc_object):
