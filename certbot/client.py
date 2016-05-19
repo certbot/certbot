@@ -292,6 +292,7 @@ class Client(object):
                 key.pem, crypto_util.dump_pyopenssl_chain(chain),
                 configuration.RenewerConfiguration(self.config.namespace))
 
+           
     def save_certificate(self, certr, chain_cert,
                          cert_path, chain_path, fullchain_path):
         """Saves the certificate received from the ACME server.
@@ -318,12 +319,15 @@ class Client(object):
 
         cert_pem = OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped)
-
+        """
         if cli.set_by_cli('cert_path'):
             cert_file = le_util.safe_open(cert_path, chmod=0o644)
             act_cert_path = cert_path
         else:
             cert_file, act_cert_path = le_util.unique_file(cert_path, 0o644)
+        """
+        cert_file, act_cert_path = _open_pem_file('cert_path', cert_path)
+        #import ipdb; ipdb.set_trace
 
         try:
             cert_file.write(cert_pem)
@@ -331,7 +335,14 @@ class Client(object):
             cert_file.close()
         logger.info("Server issued certificate; certificate written to %s",
                     act_cert_path)
-
+        
+        if cli.set_by_cli('chain_path'):
+            #import ipdb; ipdb.set_trace()
+            pass
+        if cli.set_by_cli('fullchain_path'):
+            #import ipdb; ipdb.set_trace()
+            pass
+        
         cert_chain_abspath = None
         fullchain_abspath = None
         if chain_cert:
@@ -569,6 +580,11 @@ def view_config_changes(config, num=None):
     rev.recovery_routine()
     rev.view_config_changes(num)
 
+def _open_pem_file(cli_arg_path, pem_path):
+    if cli.set_by_cli(cli_arg_path):
+        return le_util.safe_open(pem_path, chmod=0o644), pem_path 
+    else:
+        return le_util.unique_file(pem_path, 0o644)
 
 def _save_chain(chain_pem, chain_path):
     """Saves chain_pem at a unique path based on chain_path.
