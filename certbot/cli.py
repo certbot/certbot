@@ -769,7 +769,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "renew", "--post-hook",
         help="Command to be run in a shell after attempting to obtain/renew "
         " certificates. Can be used to deploy renewed certificates, or to restart"
-        " any servers that were stopped by --pre-hook.")
+        " any servers that were stopped by --pre-hook. This is only run if"
+        " an attempt was made to obtain/renew a certificate.")
     helpful.add(
         "renew", "--renew-hook",
         help="Command to be run in a shell once for each successfully renewed certificate."

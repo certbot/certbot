@@ -56,14 +56,22 @@ class HookTest(unittest.TestCase):
             return mock_logger.warning
 
     def test_pre_hook(self):
+        hooks.pre_hook.already = False
         config = mock.MagicMock(pre_hook="true")
         self._test_a_hook(config, hooks.pre_hook, 1)
         config = mock.MagicMock(pre_hook="")
         self._test_a_hook(config, hooks.pre_hook, 0)
 
     def test_post_hook(self):
+        hooks.pre_hook.already = False
+        # if pre-hook isn't called, post-hook shouldn't be
         config = mock.MagicMock(post_hook="true", verb="splonk")
+        self._test_a_hook(config, hooks.post_hook, 0)
+
+        config = mock.MagicMock(post_hook="true", verb="splonk")
+        self._test_a_hook(config, hooks.pre_hook, 1)
         self._test_a_hook(config, hooks.post_hook, 2)
+
         config = mock.MagicMock(post_hook="true", verb="renew")
         self._test_a_hook(config, hooks.post_hook, 0)
 
