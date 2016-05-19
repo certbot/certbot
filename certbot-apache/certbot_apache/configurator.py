@@ -124,6 +124,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.assoc = dict()
         # Outstanding challenges
         self._chall_out = set()
+        # Maps enhancements to vhosts we've enabled the enhancement for
+        self._enhanced_vhosts = defaultdict(set)
 
         # These will be set in the prepare function
         self.parser = None
@@ -1058,9 +1060,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param unused_options: Not currently used
         :type unused_options: Not Available
 
-        :returns: Success, general_vhost (HTTP vhost)
-        :rtype: (bool, :class:`~certbot_apache.obj.VirtualHost`)
-
         :raises .errors.PluginError: If no viable HTTP host can be created or
             used for the redirect.
 
@@ -1083,6 +1082,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                         "redirection")
             self._create_redirect_vhost(ssl_vhost)
         else:
+            if general_vh in self._enhanced_vhosts["redirect"]:
+                logger.debug("Already enabled redirect for this vhost")
+                return
+
             # Check if Certbot redirection already exists
             self._verify_no_certbot_redirect(general_vh)
 
@@ -1118,6 +1121,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                                 (general_vh.filep, ssl_vhost.filep))
             self.save()
 
+            self._enhanced_vhosts["redirect"].add(general_vh)
             logger.info("Redirecting vhost in %s to ssl vhost in %s",
                         general_vh.filep, ssl_vhost.filep)
 
@@ -1206,6 +1210,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Make a new vhost data structure and add it to the lists
         new_vhost = self._create_vhost(parser.get_aug_path(redirect_filepath))
         self.vhosts.append(new_vhost)
+        self._enhanced_vhosts["redirect"].add(new_vhost)
 
         # Finally create documentation for the change
         self.save_notes += ("Created a port 80 vhost, %s, for redirection to "
