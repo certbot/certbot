@@ -301,8 +301,8 @@ class AutoTests(TestCase):
         with ephemeral_dir() as venv_dir:
             # Serve an unrelated hash signed with the good key (easier than
             # making a bad key, and a mismatch is a mismatch):
-            resources = {'': '<a href="certbot/">certbot/</a>',
-                         'certbot/json': dumps({'releases': {'99.9.9': None}}),
+            resources = {'': '<a href="letsencrypt/">letsencrypt/</a>',
+                         'letsencrypt/json': dumps({'releases': {'99.9.9': None}}),
                          'v99.9.9/letsencrypt-auto': build_le_auto(version='99.9.9'),
                          'v99.9.9/letsencrypt-auto.sig': signed('something else')}
             with serving(resources) as base_url:
