@@ -338,7 +338,7 @@ class Client(object):
                     _open_pem_file('fullchain_path', fullchain_path)
 
             _save_chain(chain_pem, chain_file)
-            _save_chain(cert_pem + chain_pem, fullchain_file
+            _save_chain(cert_pem + chain_pem, fullchain_file)
 
         return abs_cert_path, abs_chain_path, abs_fullchain_path
 
