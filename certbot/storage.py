@@ -7,7 +7,9 @@ import re
 import configobj
 import parsedatetime
 import pytz
+import six
 
+from certbot import cli
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
@@ -144,9 +146,51 @@ def _relevant(option):
     from certbot import renewal
     from certbot.plugins import disco as plugins_disco
     plugins = list(plugins_disco.PluginsRegistry.find_all())
-    return (option in renewal.STR_CONFIG_ITEMS
-            or option in renewal.INT_CONFIG_ITEMS
-            or any(option.startswith(x + "_") for x in plugins))
+    return (option in renewal.STR_CONFIG_ITEMS or
+            option in renewal.INT_CONFIG_ITEMS or
+            any(option.startswith(x + "_") for x in plugins))
+
+
+def _is_cli_default(option, value):
+    """Does option have the default value?
+
+    Look through the CLI parser defaults and see if this option is
+    both present and equal to the specified value. If not, return
+    False.
+
+    :returns: True if option has the default value, otherwise False
+    :rtype: bool
+
+    """
+    # pylint: disable=protected-access
+    for x in cli.helpful_parser.parser._actions:
+        if x.dest == option:
+            if x.default == value:
+                return True
+            else:
+                break
+    return False
+
+
+def _should_store_option(option, value):
+    """Returns True if option should be stored in the renewal config.
+
+    :param str option: name of the option to be considered
+    :param value: the value of option
+
+    :returns: True if option should be stored, otherwise False
+    :rtype: bool
+
+    """
+    # Try to find reasons to store this item in the renewal config.  It
+    # can be stored if it is relevant and (it is the server option,
+    # it is set_by_cli(), or flag_default() is different from the value
+    # or flag_default() doesn't exist). server option is always stored
+    # for backwards compatibility with old versions of letsencrypt.
+    return (_relevant(option) and
+            (option == "server" or
+             cli.set_by_cli(option) or
+             not _is_cli_default(option, value)))
 
 
 def relevant_values(all_values):
@@ -155,36 +199,12 @@ def relevant_values(all_values):
     :param dict all_values: The original values.
 
     :returns: A new dictionary containing items that can be used in renewal.
-    :rtype dict:"""
+    :rtype dict:
 
-    from certbot import cli
-
-    def _is_cli_default(option, value):
-        # Look through the CLI parser defaults and see if this option is
-        # both present and equal to the specified value. If not, return
-        # False.
-        # pylint: disable=protected-access
-        for x in cli.helpful_parser.parser._actions:
-            if x.dest == option:
-                if x.default == value:
-                    return True
-                else:
-                    break
-        return False
-
-    values = dict()
-    for option, value in all_values.iteritems():
-        # Try to find reasons to store this item in the
-        # renewal config.  It can be stored if it is relevant and
-        # (it is set_by_cli() or flag_default() is different
-        # from the value or flag_default() doesn't exist).
-        if _relevant(option):
-            if (cli.set_by_cli(option)
-                or not _is_cli_default(option, value)):
-#                or option not in constants.CLI_DEFAULTS
-#                or constants.CLI_DEFAULTS[option] != value):
-                values[option] = value
-    return values
+    """
+    return dict((option, value)
+                for option, value in six.iteritems(all_values)
+                if _should_store_option(option, value))
 
 
 class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
