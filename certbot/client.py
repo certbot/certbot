@@ -319,15 +319,8 @@ class Client(object):
 
         cert_pem = OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped)
-        """
-        if cli.set_by_cli('cert_path'):
-            cert_file = le_util.safe_open(cert_path, chmod=0o644)
-            act_cert_path = cert_path
-        else:
-            cert_file, act_cert_path = le_util.unique_file(cert_path, 0o644)
-        """
+
         cert_file, act_cert_path = _open_pem_file('cert_path', cert_path)
-        #import ipdb; ipdb.set_trace
 
         try:
             cert_file.write(cert_pem)
@@ -335,21 +328,20 @@ class Client(object):
             cert_file.close()
         logger.info("Server issued certificate; certificate written to %s",
                     act_cert_path)
-        
-        if cli.set_by_cli('chain_path'):
-            #import ipdb; ipdb.set_trace()
-            pass
-        if cli.set_by_cli('fullchain_path'):
-            #import ipdb; ipdb.set_trace()
-            pass
-        
+
         cert_chain_abspath = None
         fullchain_abspath = None
         if chain_cert:
             chain_pem = crypto_util.dump_pyopenssl_chain(chain_cert)
-            cert_chain_abspath = _save_chain(chain_pem, chain_path)
+
+            chain_file, act_chain_path =\
+                    _open_pem_file('chain_path', chain_path)
+            fullchain_file, act_fullchain_path =\
+                    _open_pem_file('fullchain_path', fullchain_path)
+
+            cert_chain_abspath = _save_chain(chain_pem, chain_file)
             fullchain_abspath = _save_chain(cert_pem + chain_pem,
-                                            fullchain_path)
+                                            fullchain_file)
 
         return os.path.abspath(act_cert_path), cert_chain_abspath, fullchain_abspath
 
@@ -582,27 +574,27 @@ def view_config_changes(config, num=None):
 
 def _open_pem_file(cli_arg_path, pem_path):
     if cli.set_by_cli(cli_arg_path):
-        return le_util.safe_open(pem_path, chmod=0o644), pem_path 
+        return le_util.safe_open(pem_path, chmod=0o644),\
+            os.path.abspath(pem_path)
     else:
         return le_util.unique_file(pem_path, 0o644)
 
-def _save_chain(chain_pem, chain_path):
+def _save_chain(chain_pem, chain_file):
     """Saves chain_pem at a unique path based on chain_path.
 
     :param str chain_pem: certificate chain in PEM format
-    :param str chain_path: candidate path for the cert chain
+    :param str chain_file: chain file object
 
     :returns: absolute path to saved cert chain
     :rtype: str
 
     """
-    chain_file, act_chain_path = le_util.unique_file(chain_path, 0o644)
     try:
         chain_file.write(chain_pem)
     finally:
         chain_file.close()
 
-    logger.info("Cert chain written to %s", act_chain_path)
+    logger.info("Cert chain written to %s", chain_file.name)
 
     # This expects a valid chain file
-    return os.path.abspath(act_chain_path)
+    return os.path.abspath(chain_file.name)

@@ -151,7 +151,8 @@ def _unique_file(path, filename_pat, count, mode):
     while True:
         current_path = os.path.join(path, filename_pat(count))
         try:
-            return safe_open(current_path, chmod=mode), current_path
+            return safe_open(current_path, chmod=mode),\
+                os.path.abspath(current_path)
         except OSError as err:
             # "File exists," is okay, try a different name.
             if err.errno != errno.EEXIST:
