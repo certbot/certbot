@@ -700,6 +700,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "security", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
     helpful.add(
+        "security", "--must-staple", action="store_true",
+        help=config_help("must_staple"), dest="must_staple", default=False)
+    helpful.add(
         "security", "--redirect", action="store_true",
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost.", dest="redirect", default=None)
@@ -723,9 +726,20 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
              " https:// for every http:// resource.", dest="uir", default=None)
     helpful.add(
         "security", "--no-uir", action="store_false",
-        help=" Do not automatically set the \"Content-Security-Policy:"
+        help="Do not automatically set the \"Content-Security-Policy:"
         " upgrade-insecure-requests\" header to every HTTP response.",
         dest="uir", default=None)
+    helpful.add(
+        "security", "--staple-ocsp", action="store_true",
+        help="Enables OCSP Stapling. A valid OCSP response is stapled to"
+        " the certificate that the server offers during TLS.",
+        dest="staple", default=None)
+    helpful.add(
+        "security", "--no-staple-ocsp", action="store_false",
+        help="Do not automatically enable OCSP Stapling.",
+        dest="staple", default=None)
+
+
     helpful.add(
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
@@ -740,7 +754,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         " certificate lineage. You can try it with `--dry-run` first. For"
         " more fine-grained control, you can renew individual lineages with"
         " the `certonly` subcommand. Hooks are available to run commands "
-        " before and after renewal; see XXX for more information on these.")
+        " before and after renewal; see"
+        " https://certbot.eff.org/docs/using.html#renewal for more information on these.")
 
     helpful.add(
         "renew", "--pre-hook",
@@ -752,7 +767,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         "renew", "--post-hook",
         help="Command to be run in a shell after attempting to obtain/renew "
         " certificates. Can be used to deploy renewed certificates, or to restart"
-        " any servers that were stopped by --pre-hook.")
+        " any servers that were stopped by --pre-hook. This is only run if"
+        " an attempt was made to obtain/renew a certificate.")
     helpful.add(
         "renew", "--renew-hook",
         help="Command to be run in a shell once for each successfully renewed certificate."

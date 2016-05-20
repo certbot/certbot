@@ -30,10 +30,11 @@ class RawNginxParser(object):
     assignment = (key + Optional(space + value, default=None) + semicolon)
     location_statement = Optional(space + modifier) + Optional(space + location)
     if_statement = Literal("if") + space + Regex(r"\(.+\)") + space
+    map_statement = Literal("map") + space + Regex(r"\S+") + space + Regex(r"\$\S+") + space
     block = Forward()
 
     block << Group(
-        (Group(key + location_statement) ^ Group(if_statement)) +
+        (Group(key + location_statement) ^ Group(if_statement) ^ Group(map_statement)) +
         left_bracket +
         Group(ZeroOrMore(Group(comment | assignment) | block)) +
         right_bracket)
