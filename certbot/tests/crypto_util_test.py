@@ -10,6 +10,7 @@ import zope.component
 
 from certbot import errors
 from certbot import interfaces
+from certbot import le_util
 from certbot.tests import test_util
 
 
@@ -157,6 +158,27 @@ class CSRMatchesPubkeyTest(unittest.TestCase):
     def test_invalid_false(self):
         self.assertFalse(self._call(
             test_util.load_vector('csr.pem'), RSA256_KEY))
+
+
+class ImportCSRFileTest(unittest.TestCase):
+    """Tests for certbot.certbot_util.import_csr_file."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.crypto_util import import_csr_file
+        return import_csr_file(*args, **kwargs)
+
+    def test_der_csr(self):
+        csrfile = test_util.vector_path('csr.der')
+        data = test_util.load_vector('csr.der')
+
+        self.assertEqual(
+            (OpenSSL.crypto.FILETYPE_ASN1,
+             le_util.CSR(file=csrfile,
+                         data=data,
+                         form="der"),
+             ["example.com"],),
+            self._call(csrfile, data))
 
 
 class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
