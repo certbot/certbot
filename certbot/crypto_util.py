@@ -180,33 +180,28 @@ def csr_matches_pubkey(csr, privkey):
         return False
 
 
-def import_csr_file(csrfile, contents):
+def import_csr_file(csrfile, data):
     """Import a CSR file, which can be either PEM or DER.
 
     :param str csrfile: CSR filename
-    :param str contents: contens of the CSR file
+    :param str data: contents of the CSR file
 
-    :returns: (le_util.CSR object representing the CSR,
-               `OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`,
+    :returns: (`OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`,
+               le_util.CSR object representing the CSR,
                list of domains requested in the CSR)
-
     :rtype: tuple
+
     """
-    try:
-        csr = le_util.CSR(file=csrfile, data=contents, form="der")
-        typ = OpenSSL.crypto.FILETYPE_ASN1
-        domains = get_sans_from_csr(csr.data, OpenSSL.crypto.FILETYPE_ASN1)
-    except OpenSSL.crypto.Error:
+    for form, typ in (("der", OpenSSL.crypto.FILETYPE_ASN1,),
+                      ("pem", OpenSSL.crypto.FILETYPE_PEM,),):
         try:
-            e1 = traceback.format_exc()
-            typ = OpenSSL.crypto.FILETYPE_PEM
-            csr = le_util.CSR(file=csrfile, data=contents, form="pem")
-            domains = get_sans_from_csr(csr.data, typ)
+            domains = get_names_from_csr(data, typ)
         except OpenSSL.crypto.Error:
-            logger.debug("DER CSR parse error %s", e1)
-            logger.debug("PEM CSR parse error %s", traceback.format_exc())
-            raise errors.Error("Failed to parse CSR file: {0}".format(csrfile))
-    return typ, csr, domains
+            logger.debug("CSR parse error (form=%s, typ=%s):", form, typ)
+            logger.debug(traceback.format_exc())
+            continue
+        return typ, le_util.CSR(file=csrfile, data=data, form=form), domains
+    raise errors.Error("Failed to parse CSR file: {0}".format(csrfile))
 
 
 def make_key(bits):
