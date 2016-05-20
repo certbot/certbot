@@ -199,7 +199,7 @@ iQIDAQAB
              **kwargs)
     env.update(d)
     return out_and_err(
-        join(venv_dir, 'certbot-auto') + ' --version',
+        join(venv_dir, 'letsencrypt-auto') + ' --version',
         shell=True,
         env=env)
 
@@ -259,8 +259,8 @@ class AutoTests(TestCase):
             # This serves a PyPI page with a higher version, a GitHub-alike
             # with a corresponding le-auto script, and a matching signature.
             resources = {'certbot/json': dumps({'releases': {'99.9.9': None}}),
-                         'v99.9.9/certbot-auto': NEW_LE_AUTO,
-                         'v99.9.9/certbot-auto.sig': NEW_LE_AUTO_SIG}
+                         'v99.9.9/letsencrypt-auto': NEW_LE_AUTO,
+                         'v99.9.9/letsencrypt-auto.sig': NEW_LE_AUTO_SIG}
             with serving(resources) as base_url:
                 run_letsencrypt_auto = partial(
                         run_le_auto,
@@ -303,8 +303,8 @@ class AutoTests(TestCase):
             # making a bad key, and a mismatch is a mismatch):
             resources = {'': '<a href="certbot/">certbot/</a>',
                          'certbot/json': dumps({'releases': {'99.9.9': None}}),
-                         'v99.9.9/certbot-auto': build_le_auto(version='99.9.9'),
-                         'v99.9.9/certbot-auto.sig': signed('something else')}
+                         'v99.9.9/letsencrypt-auto': build_le_auto(version='99.9.9'),
+                         'v99.9.9/letsencrypt-auto.sig': signed('something else')}
             with serving(resources) as base_url:
                 copy(LE_AUTO_PATH, venv_dir)
                 try:
