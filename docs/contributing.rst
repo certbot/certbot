@@ -71,6 +71,9 @@ The following tools are there to help you:
   experimental, non-production Apache2 install on them.  ``tox -e
   apacheconftest`` can be used to run those specific Apache conf tests.
 
+- ``tox --skip-missing-interpreters`` runs tox while ignoring missing versions
+  of Python needed for running the tests.
+
 - ``tox -e py27``, ``tox -e py26`` etc, run unit tests for specific Python
   versions.
 
