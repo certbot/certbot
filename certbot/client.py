@@ -569,12 +569,22 @@ def view_config_changes(config, num=None):
     rev.view_config_changes(num)
 
 def _open_pem_file(cli_arg_path, pem_path):
+    """Open a pem file.
+
+    If cli_arg_path was set by the client, open that.
+    Otherwise, uniquify the file path.
+
+    :param str cli_arg_path: the cli arg name, e.g. cert_path
+    :param str pem_path: the pem file path to open
+
+    :returns a file object
+    """
     if cli.set_by_cli(cli_arg_path):
         return le_util.safe_open(pem_path, chmod=0o644),\
             os.path.abspath(pem_path)
     else:
         uniq = le_util.unique_file(pem_path, 0o644)
-        return uniq[0], os.path.abspath(uniq)
+        return uniq[0], os.path.abspath(uniq[1])
 
 def _save_chain(chain_pem, chain_file):
     """Saves chain_pem at a unique path based on chain_path.
