@@ -27,7 +27,7 @@ def _validate_hook(shell_cmd, hook_name):
     :raises .errors.HookCommandNotFound: if the command is not found
     """
     if shell_cmd:
-        cmd = shell_cmd.partition(" ")[0]
+        cmd = shell_cmd.split(None, 1)[0]
         if not _prog(cmd):
             path = os.environ["PATH"]
             msg = "Unable to find {2}-hook command {0} in the PATH.\n(PATH is {1})".format(
@@ -39,7 +39,7 @@ def pre_hook(config):
     if config.pre_hook and not pre_hook.already:
         logger.info("Running pre-hook command: %s", config.pre_hook)
         _run_hook(config.pre_hook)
-        pre_hook.already = True
+    pre_hook.already = True
 
 pre_hook.already = False
 
@@ -50,6 +50,11 @@ def post_hook(config, final=False):
     we're called with final=True before actually doing anything.
     """
     if config.post_hook:
+        if not pre_hook.already:
+            logger.info("No renewals attempted, so not running post-hook")
+            if config.verb != "renew":
+                logger.warn("Sanity failure in renewal hooks")
+            return
         if final or config.verb != "renew":
             logger.info("Running post-hook command: %s", config.post_hook)
             _run_hook(config.post_hook)

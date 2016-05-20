@@ -94,7 +94,7 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
             if lineage is False:
                 raise errors.Error("Certificate could not be obtained")
     finally:
-        hooks.post_hook(config)
+        hooks.post_hook(config, final=False)
 
     if not config.dry_run and not config.verb == "renew":
         _report_new_cert(config, lineage.cert, lineage.fullchain)
