@@ -180,6 +180,18 @@ class ImportCSRFileTest(unittest.TestCase):
              ["example.com"],),
             self._call(csrfile, data))
 
+    def test_pem_csr(self):
+        csrfile = test_util.vector_path('csr.pem')
+        data = test_util.load_vector('csr.pem')
+
+        self.assertEqual(
+            (OpenSSL.crypto.FILETYPE_PEM,
+             le_util.CSR(file=csrfile,
+                         data=data,
+                         form="pem"),
+             ["example.com"],),
+            self._call(csrfile, data))
+
 
 class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
     """Tests for certbot.crypto_util.make_key."""
