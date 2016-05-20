@@ -124,13 +124,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.assoc = dict()
         # Outstanding challenges
         self._chall_out = set()
+        # Maps enhancements to vhosts we've enabled the enhancement for
+        self._enhanced_vhosts = defaultdict(set)
 
         # These will be set in the prepare function
         self.parser = None
         self.version = version
         self.vhosts = None
         self._enhance_func = {"redirect": self._enable_redirect,
-                              "ensure-http-header": self._set_http_header}
+                              "ensure-http-header": self._set_http_header,
+                              "staple-ocsp": self._enable_ocsp_stapling}
 
     @property
     def mod_ssl_conf(self):
@@ -593,8 +596,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :type addr: :class:`~certbot_apache.obj.Addr`
 
         """
-        loc = parser.get_aug_path(self.parser.loc["name"])
 
+        loc = parser.get_aug_path(self.parser.loc["name"])
         if addr.get_port() == "443":
             path = self.parser.add_dir_to_ifmodssl(
                 loc, "NameVirtualHost", [str(addr)])
@@ -944,7 +947,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     ######################################################################
     def supported_enhancements(self):  # pylint: disable=no-self-use
         """Returns currently supported enhancements."""
-        return ["redirect", "ensure-http-header"]
+        return ["redirect", "ensure-http-header", "staple-ocsp"]
 
     def enhance(self, domain, enhancement, options=None):
         """Enhance configuration.
@@ -970,6 +973,68 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         except errors.PluginError:
             logger.warn("Failed %s for %s", enhancement, domain)
             raise
+
+    def _enable_ocsp_stapling(self, ssl_vhost, unused_options):
+        """Enables OCSP Stapling
+
+        In OCSP, each client (e.g. browser) would have to query the
+        OCSP Responder to validate that the site certificate was not revoked.
+
+        Enabling OCSP Stapling, would allow the web-server to query the OCSP
+        Responder, and staple its response to the offered certificate during
+        TLS. i.e. clients would not have to query the OCSP responder.
+
+        OCSP Stapling enablement on Apache implicitly depends on
+        SSLCertificateChainFile being set by other code.
+
+        .. note:: This function saves the configuration
+
+        :param ssl_vhost: Destination of traffic, an ssl enabled vhost
+        :type ssl_vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
+
+        :param unused_options: Not currently used
+        :type unused_options: Not Available
+
+        :returns: Success, general_vhost (HTTP vhost)
+        :rtype: (bool, :class:`~letsencrypt_apache.obj.VirtualHost`)
+
+        """
+        min_apache_ver = (2, 3, 3)
+        if self.get_version() < min_apache_ver:
+            raise errors.PluginError(
+                "Unable to set OCSP directives.\n"
+                "Apache version is below 2.3.3.")
+
+        if "socache_shmcb_module" not in self.parser.modules:
+            self.enable_mod("socache_shmcb")
+
+        # Check if there's an existing SSLUseStapling directive on.
+        use_stapling_aug_path = self.parser.find_dir("SSLUseStapling",
+                "on", start=ssl_vhost.path)
+        if not use_stapling_aug_path:
+            self.parser.add_dir(ssl_vhost.path, "SSLUseStapling", "on")
+
+        ssl_vhost_aug_path = parser.get_aug_path(ssl_vhost.filep)
+
+        # Check if there's an existing SSLStaplingCache directive.
+        stapling_cache_aug_path = self.parser.find_dir('SSLStaplingCache',
+                None, ssl_vhost_aug_path)
+
+        # We'll simply delete the directive, so that we'll have a
+        # consistent OCSP cache path.
+        if stapling_cache_aug_path:
+            self.aug.remove(
+                    re.sub(r"/\w*$", "", stapling_cache_aug_path[0]))
+
+        self.parser.add_dir_to_ifmodssl(ssl_vhost_aug_path,
+                "SSLStaplingCache",
+                ["shmcb:/var/run/apache2/stapling_cache(128000)"])
+
+        msg = "OCSP Stapling was enabled on SSL Vhost: %s.\n"%(
+                ssl_vhost.filep)
+        self.save_notes += msg
+        self.save()
+        logger.info(msg)
 
     def _set_http_header(self, ssl_vhost, header_substring):
         """Enables header that is identified by header_substring on ssl_vhost.
@@ -1058,9 +1123,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param unused_options: Not currently used
         :type unused_options: Not Available
 
-        :returns: Success, general_vhost (HTTP vhost)
-        :rtype: (bool, :class:`~certbot_apache.obj.VirtualHost`)
-
         :raises .errors.PluginError: If no viable HTTP host can be created or
             used for the redirect.
 
@@ -1083,6 +1145,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                         "redirection")
             self._create_redirect_vhost(ssl_vhost)
         else:
+            if general_vh in self._enhanced_vhosts["redirect"]:
+                logger.debug("Already enabled redirect for this vhost")
+                return
+
             # Check if Certbot redirection already exists
             self._verify_no_certbot_redirect(general_vh)
 
@@ -1118,6 +1184,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                                 (general_vh.filep, ssl_vhost.filep))
             self.save()
 
+            self._enhanced_vhosts["redirect"].add(general_vh)
             logger.info("Redirecting vhost in %s to ssl vhost in %s",
                         general_vh.filep, ssl_vhost.filep)
 
@@ -1206,6 +1273,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Make a new vhost data structure and add it to the lists
         new_vhost = self._create_vhost(parser.get_aug_path(redirect_filepath))
         self.vhosts.append(new_vhost)
+        self._enhanced_vhosts["redirect"].add(new_vhost)
 
         # Finally create documentation for the change
         self.save_notes += ("Created a port 80 vhost, %s, for redirection to "
