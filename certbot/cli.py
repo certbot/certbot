@@ -347,7 +347,6 @@ class HelpfulArgumentParser(object):
 
         return parsed_args
 
-
     def set_test_server(self, parsed_args):
         """We have --staging/--dry-run; perform sanity check and set config.server"""
 
@@ -369,7 +368,6 @@ class HelpfulArgumentParser(object):
                 # one; we don't want to start trying to perform interactive registration
                 parsed_args.tos = True
                 parsed_args.register_unsafely_without_email = True
-
 
     def handle_csr(self, parsed_args):
         """Process a --csr flag."""
