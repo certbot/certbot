@@ -349,8 +349,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                           ['-d', '204.11.231.35'])
 
     def test_csr_with_besteffort(self):
-        args = ["--csr", CSR, "--allow-subset-of-names"]
-        self.assertRaises(errors.Error, self._call, args)
+        self.assertRaises(
+            errors.Error, self._call,
+            'certonly --csr {0} --allow-subset-of-names'.format(CSR).split())
 
     def test_run_with_csr(self):
         # This is an error because you can only use --csr with certonly
