@@ -567,7 +567,7 @@ class HelpfulArgumentParser(object):
             return dict([(t, t == chosen_topic) for t in self.help_topics])
 
 
-def prepare_and_parse_args(plugins, args, detect_defaults=False):
+def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: disable=too-many-statements
     """Returns parsed command line arguments.
 
     :param .PluginsRegistry plugins: available plugins
