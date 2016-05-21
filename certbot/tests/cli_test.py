@@ -362,6 +362,12 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             return
         assert False, "Expected supplying --csr to fail with default verb"
 
+    def test_csr_with_no_domains(self):
+        self.assertRaises(
+            errors.Error, self._call,
+            'certonly --csr {0}'.format(
+                test_util.vector_path('csr-nonames.pem')).split())
+
     def _get_argument_parser(self):
         plugins = disco.PluginsRegistry.find_all()
         return functools.partial(cli.prepare_and_parse_args, plugins)
