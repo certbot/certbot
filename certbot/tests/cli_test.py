@@ -368,6 +368,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             'certonly --csr {0}'.format(
                 test_util.vector_path('csr-nonames.pem')).split())
 
+    def test_csr_with_inconsistent_domains(self):
+        self.assertRaises(
+            errors.Error, self._call,
+            'certonly -d example.org --csr {0}'.format(CSR).split())
+
     def _get_argument_parser(self):
         plugins = disco.PluginsRegistry.find_all()
         return functools.partial(cli.prepare_and_parse_args, plugins)
