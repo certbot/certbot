@@ -370,11 +370,27 @@ def _init_le_client(config, authenticator, installer):
 def register(config, unused_plugins):
     """Create or modify accounts on the server."""
 
-    # Currently, only --update-registration is implemented. Issue #2446
-    # calls for a fuller register verb, to allow better separation of
-    # account management from obtaining certs.
+    # Portion of _determine_account logic to see whether accounts already
+    # exist or not.
+    account_storage = account.AccountFileStorage(config)
+    accounts = account_storage.find_all()
+
+    # registering a new account
     if not config.update_registration:
-        return "Currently, only register --update-registration is implemented."
+        if len(accounts) > 0:
+            # TODO: add a flag to register a duplicate account (this will
+            #       also require extending _determine_account's behavior
+            #       or else extracting the registration code from there)
+            return ("There is an existing account; registration of a "
+                    "duplicate account with this command is currently "
+                    "unsupported.")
+        # _determine_account will register an account
+        _determine_account(config)
+        return
+
+    # --update-registration
+    if len(accounts) == 0:
+        return "Could not find an existing account to update."
     if config.email is None:
         return ("Currently, --update-registration can only change the e-mail "
                 "address\nassociated with an account. A new e-mail address is "
@@ -392,6 +408,7 @@ def register(config, unused_plugins):
     # We rely on an ACME exception to interrupt this process if it didn't work.
     print("Registration change succeeded. New registration data:\n")
     print(query_data)
+    return
 
 
 def install(config, plugins):
