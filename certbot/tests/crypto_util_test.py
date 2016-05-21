@@ -192,6 +192,11 @@ class ImportCSRFileTest(unittest.TestCase):
              ["example.com"],),
             self._call(csrfile, data))
 
+    def test_bad_csr(self):
+        self.assertRaises(errors.Error, self._call,
+                          test_util.vector_path('cert.pem'),
+                          test_util.load_vector('cert.pem'))
+
 
 class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
     """Tests for certbot.crypto_util.make_key."""
