@@ -14,6 +14,7 @@ import mock
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 
+from acme import errors as acme_errors
 from acme import jose
 
 from certbot import account
@@ -887,6 +888,72 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with mock.patch('certbot.main.run') as mocked_run:
             self._call(['-c', test_util.vector_path('cli.ini')])
         self.assertTrue(mocked_run.called)
+
+    def test_register(self):
+        with mock.patch('certbot.main.client') as mocked_client:
+            acc = mock.MagicMock()
+            acc.id = "imaginary_account"
+            mocked_client.register.return_value = (acc, "worked")
+            self._call_no_clientmock(["register", "--email", "user@example.org"])
+            # TODO: It would be more correct to explicitly check that
+            #       _determine_account() gets called in the above case,
+            #       but coverage statistics should also show that it did.
+            with mock.patch('certbot.main.account') as mocked_account:
+                mocked_storage = mock.MagicMock()
+                mocked_account.AccountFileStorage.return_value = mocked_storage
+                mocked_storage.find_all.return_value = ["an account"]
+                x = self._call_no_clientmock(["register", "--email", "user@example.org"])
+                assert "There is an existing account" in x[0]
+
+    def test_update_registration_no_existing_accounts(self):
+        # with mock.patch('certbot.main.client') as mocked_client:
+        with mock.patch('certbot.main.account') as mocked_account:
+            mocked_storage = mock.MagicMock()
+            mocked_account.AccountFileStorage.return_value = mocked_storage
+            mocked_storage.find_all.return_value = []
+            x = self._call_no_clientmock(
+                ["register", "--update-registration", "--email",
+                "user@example.org"])
+            assert "Could not find an existing account" in x[0]
+
+    def test_update_registration_no_email(self):
+        # This test will become obsolete when register --update-registration
+        # supports updating something other than the e-mail address!
+        # with mock.patch('certbot.main.client') as mocked_client:
+        with mock.patch('certbot.main.account') as mocked_account:
+            mocked_storage = mock.MagicMock()
+            mocked_account.AccountFileStorage.return_value = mocked_storage
+            mocked_storage.find_all.return_value = ["an account"]
+            x = self._call_no_clientmock(["register", "--update-registration"])
+            assert "can only change the e-mail" in x[0]
+
+    def test_update_registration_with_email(self):
+        with mock.patch('certbot.main.client') as mocked_client:
+            with mock.patch('certbot.main.account') as mocked_account:
+                with mock.patch('certbot.main._determine_account') as mocked_det:
+                    with mock.patch('certbot.main.client') as mocked_client:
+                        mocked_storage = mock.MagicMock()
+                        mocked_account.AccountFileStorage.return_value = mocked_storage
+                        mocked_storage.find_all.return_value = ["an account"]
+                        mocked_det.return_value = ("a", "b")
+                        acme_client = mock.MagicMock()
+                        mocked_client.Client.return_value = acme_client
+                        # Currently the update_registration() call always
+                        # raises a harmless acme_errors.UnexpectedUpdate.
+                        # If this is fixed, we should get rid of both this
+                        # side effect and the corresponding try/catch in
+                        # main.register().
+                        uu = acme_errors.UnexpectedUpdate
+                        acme_client.acme.update_registration.side_effect = uu
+                        x = self._call_no_clientmock(
+                            ["register", "--update-registration", "--email",
+                            "user@example.org"])
+                        # When registration change succeeds, the return value
+                        # of register() is None
+                        assert x[0] is None
+                        # and we got far enough to query the registration from
+                        # the server
+                        assert acme_client.acme.query_registration.call_count == 1
 
 
 class DetermineAccountTest(unittest.TestCase):
