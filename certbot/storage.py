@@ -262,6 +262,14 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                 "renewal config file {0} is missing a required "
                 "file reference".format(self.configfile))
 
+        conf_version = self.configuration.get("version")
+        if (conf_version is not None and
+                le_util.get_strict_version(conf_version) > CURRENT_VERSION):
+            logger.warning(
+                "Attempting to parse the version %s renewal configuration "
+                "file found at %s with version %s of Certbot. This might not "
+                "work.", conf_version, config_filename, certbot.__version__)
+
         self.cert = self.configuration["cert"]
         self.privkey = self.configuration["privkey"]
         self.chain = self.configuration["chain"]
