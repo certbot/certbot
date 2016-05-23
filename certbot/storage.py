@@ -8,6 +8,7 @@ import configobj
 import parsedatetime
 import pytz
 
+import certbot
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
@@ -17,6 +18,7 @@ from certbot import le_util
 logger = logging.getLogger(__name__)
 
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
+CURRENT_VERSION = le_util.get_strict_version(certbot.__version__)
 
 
 def config_with_defaults(config=None):
