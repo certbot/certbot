@@ -65,6 +65,7 @@ def write_renewal_config(o_filename, n_filename, target, relevant_data):
 
     """
     config = configobj.ConfigObj(o_filename)
+    config["version"] = certbot.__version__
     for kind in ALL_FOUR:
         config[kind] = target[kind]
 
