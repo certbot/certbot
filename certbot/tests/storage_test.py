@@ -10,6 +10,7 @@ import configobj
 import mock
 import pytz
 
+import certbot
 from certbot import configuration
 from certbot import errors
 from certbot.storage import ALL_FOUR
@@ -760,11 +761,14 @@ class RenewableCertTests(BaseRenewableCertTest):
         with open(temp2, "r") as f:
             content = f.read()
         # useful value was updated
-        assert "useful = new_value" in content
+        self.assertTrue("useful = new_value" in content)
         # associated comment was preserved
-        assert "A useful value" in content
+        self.assertTrue("A useful value" in content)
         # useless value was deleted
-        assert "useless" not in content
+        self.assertTrue("useless" not in content)
+        # check version was stored
+        self.assertTrue("version = {0}".format(certbot.__version__) in content)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
