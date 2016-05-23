@@ -351,6 +351,10 @@ class GetStrictVersionTest(unittest.TestCase):
         self.assertTrue(
             self._call("0.0.0.dev20151006") < self._call("0.0.0.dev20151008"))
 
+    def test_one_dev_one_release_version(self):
+        self.assertTrue(self._call("1.0.0.dev0") < self._call("1.0.0"))
+        self.assertTrue(self._call("1.0.0") < self._call("1.0.1.dev0"))
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
