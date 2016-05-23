@@ -138,6 +138,18 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertRaises(errors.CertStorageError, storage.RenewableCert,
                           config.filename, self.cli_config)
 
+    def test_renewal_newer_version(self):
+        from certbot import storage
+
+        self._write_out_ex_kinds()
+        self.config["version"] = "99.99.99"
+        self.config.write()
+
+        with mock.patch("certbot.storage.logger") as mock_logger:
+            storage.RenewableCert(self.config.filename, self.cli_config)
+        self.assertTrue(mock_logger.warning.called)
+        self.assertTrue("version" in mock_logger.warning.call_args[0][0])
+
     def test_consistent(self):
         # pylint: disable=too-many-statements,protected-access
         oldcert = self.test_rc.cert
