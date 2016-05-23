@@ -333,7 +333,7 @@ commands:
 
 .. code-block:: shell
 
-   make -C docs clean html
+   make -C docs clean html man
 
 This should generate documentation in the ``docs/_build/html``
 directory.
