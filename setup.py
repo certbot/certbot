@@ -71,6 +71,7 @@ dev_extras = [
     'nose',
     'nosexcover',
     'pep8',
+    'pkginfo<=1.2.1',
     'pylint==1.4.2',  # upstream #248
     'tox',
     'twine',
