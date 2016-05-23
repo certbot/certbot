@@ -10,6 +10,7 @@ import unittest
 import mock
 import six
 
+import certbot
 from certbot import errors
 
 
@@ -359,6 +360,11 @@ class GetStrictVersionTest(unittest.TestCase):
         self.assertTrue(self._call("0.0.0") < self._call("0.0.1"))
         self.assertTrue(self._call("0.0.0") < self._call("0.1.0"))
         self.assertTrue(self._call("0.0.0") < self._call("1.0.0"))
+
+    def test_current_version(self):
+        current_version = self._call(certbot.__version__)
+        self.assertTrue(self._call("0.6.0") < current_version)
+        self.assertTrue(current_version < self._call("99.99.99"))
 
 
 if __name__ == "__main__":
