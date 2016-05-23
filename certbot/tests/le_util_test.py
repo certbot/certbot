@@ -339,5 +339,18 @@ class EnforceDomainSanityTest(unittest.TestCase):
                           u"eichh\u00f6rnchen.example.com")
 
 
+class GetStrictVersionTest(unittest.TestCase):
+    """Tests for certbot.le_util.get_strict_version."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.le_util import get_strict_version
+        return get_strict_version(*args, **kwargs)
+
+    def test_two_dev_versions(self):
+        self.assertTrue(
+            self._call("0.0.0.dev20151006") < self._call("0.0.0.dev20151008"))
+
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
