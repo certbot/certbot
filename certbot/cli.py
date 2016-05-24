@@ -392,6 +392,11 @@ class HelpfulArgumentParser(object):
                         ("Conflicting values for displayer."
                         " {0} conflicts with dialog_mode").format(arg)
                     )
+        else:
+            # -v should imply --text
+            if (parsed_args.verbose_count > flag_default("verbose_count") and
+                not parsed_args.dialog_mode):
+                parsed_args.text_mode = True
 
         if parsed_args.validate_hooks:
             hooks.validate_hooks(parsed_args)
