@@ -44,7 +44,7 @@ common auth --csr "$CSR_PATH" \
        --cert-path "${root}/csr/cert.pem" \
        --chain-path "${root}/csr/chain.pem"
 openssl x509 -in "${root}/csr/cert.pem" -text
-openssl x509 -in "${root}/csr/0000_chain.pem" -text
+openssl x509 -in "${root}/csr/chain.pem" -text
 
 common --domains le3.wtf install \
        --cert-path "${root}/csr/cert.pem" \
