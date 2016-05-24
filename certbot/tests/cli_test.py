@@ -342,11 +342,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         # FQDN
         self.assertRaises(errors.ConfigurationError,
                           self._call,
-                          ['-d', 'comma,gotwrong.tld'])
+                          ['-d', 'a' * 64])
         # FQDN 2
         self.assertRaises(errors.ConfigurationError,
                           self._call,
-                          ['-d', 'illegal.character=.tld'])
+                          ['-d', (('a' * 50) + '.') * 10])
         # Wildcard
         self.assertRaises(errors.ConfigurationError,
                           self._call,
