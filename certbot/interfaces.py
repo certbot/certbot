@@ -208,6 +208,10 @@ class IConfig(zope.interface.Interface):
         "issued. Possible values are: \"RSA\" and/or \"ECDSA\". Default: \"RSA\". "
         "Note: at the moment it's only possible to request one of the key "
         "types listed above. This is set to change in the future.")
+    must_staple = zope.interface.Attribute(
+        "Whether to request the OCSP Must Staple certificate extension. "
+        "Additional setup may be required after issuance. This does not "
+        "currently autoconfigure web servers for OCSP stapling. ")
 
     config_dir = zope.interface.Attribute("Configuration directory.")
     work_dir = zope.interface.Attribute("Working directory.")

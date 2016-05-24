@@ -21,6 +21,7 @@ WORKDIR /opt/certbot
 # If <dest> doesn't exist, it is created along with all missing
 # directories in its path.
 
+ENV DEBIAN_FRONTEND=noninteractive
 
 COPY letsencrypt-auto-source/letsencrypt-auto /opt/certbot/src/letsencrypt-auto-source/letsencrypt-auto
 RUN /opt/certbot/src/letsencrypt-auto-source/letsencrypt-auto --os-packages-only && \

@@ -45,8 +45,8 @@ autoload xfm
 let dels (s:string)     = del s s
 
 (* deal with continuation lines *)
-let sep_spc             = del /([ \t]+|[ \t]*\\\\\r?\n[ \t]*)/ " "
-let sep_osp             = del /([ \t]*|[ \t]*\\\\\r?\n[ \t]*)/ ""
+let sep_spc             = del /([ \t]+|[ \t]*\\\\\r?\n[ \t]*)+/ " "
+let sep_osp             = del /([ \t]*|[ \t]*\\\\\r?\n[ \t]*)*/ ""
 let sep_eq              = del /[ \t]*=[ \t]*/ "="
 
 let nmtoken             = /[a-zA-Z:_][a-zA-Z0-9:_.-]*/
@@ -58,8 +58,8 @@ let empty               = Util.empty_dos
 let indent              = Util.indent
 
 (* borrowed from shellvars.aug *)
-let char_arg_dir  = /([^\\ '"{\t\r\n]|[^ '"{\t\r\n]+[^\\ \t\r\n])|\\\\"|\\\\'/
-let char_arg_sec  = /([^\\ '"\t\r\n>]|[^ '"\t\r\n>]+[^\\ \t\r\n>])|\\\\"|\\\\'/
+let char_arg_dir  = /([^\\ '"{\t\r\n]|[^ '"{\t\r\n]+[^\\ \t\r\n])|\\\\"|\\\\'|\\\\ /
+let char_arg_sec  = /([^\\ '"\t\r\n>]|[^ '"\t\r\n>]+[^\\ \t\r\n>])|\\\\"|\\\\'|\\\\ /
 let char_arg_wl   = /([^\\ '"},\t\r\n]|[^ '"},\t\r\n]+[^\\ '"},\t\r\n])/
 
 let cdot = /\\\\./
