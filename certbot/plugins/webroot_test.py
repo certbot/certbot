@@ -138,14 +138,9 @@ class AuthenticatorTest(unittest.TestCase):
         os.chmod(self.path, 0o700)
 
     @mock.patch("certbot.plugins.webroot.os.chown")
-    def test_failed_chown_eacces(self, mock_chown):
+    def test_failed_chown(self, mock_chown):
         mock_chown.side_effect = OSError(errno.EACCES, "msg")
         self.auth.perform([self.achall])  # exception caught and logged
-
-    @mock.patch("certbot.plugins.webroot.os.chown")
-    def test_failed_chown_not_eacces(self, mock_chown):
-        mock_chown.side_effect = OSError()
-        self.assertRaises(errors.PluginError, self.auth.perform, [])
 
     def test_perform_permissions(self):
         self.auth.prepare()
@@ -200,38 +195,12 @@ class AuthenticatorTest(unittest.TestCase):
         os.rmdir(leftover_path)
 
     @mock.patch('os.rmdir')
-    def test_cleanup_permission_denied(self, mock_rmdir):
+    def test_cleanup_failure(self, mock_rmdir):
         self.auth.prepare()
         self.auth.perform([self.achall])
 
         os_error = OSError()
         os_error.errno = errno.EACCES
-        mock_rmdir.side_effect = os_error
-
-        self.auth.cleanup([self.achall])
-        self.assertFalse(os.path.exists(self.validation_path))
-        self.assertTrue(os.path.exists(self.root_challenge_path))
-
-    @mock.patch('os.rmdir')
-    def test_cleanup_oserror(self, mock_rmdir):
-        self.auth.prepare()
-        self.auth.perform([self.achall])
-
-        os_error = OSError()
-        os_error.errno = errno.EPERM
-        mock_rmdir.side_effect = os_error
-
-        self.assertRaises(OSError, self.auth.cleanup, [self.achall])
-        self.assertFalse(os.path.exists(self.validation_path))
-        self.assertTrue(os.path.exists(self.root_challenge_path))
-
-    @mock.patch('os.rmdir')
-    def test_cleanup_file_not_exists(self, mock_rmdir):
-        self.auth.prepare()
-        self.auth.perform([self.achall])
-
-        os_error = OSError()
-        os_error.errno = errno.ENOENT
         mock_rmdir.side_effect = os_error
 
         self.auth.cleanup([self.achall])
