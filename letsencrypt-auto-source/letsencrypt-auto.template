@@ -291,6 +291,7 @@ else
 
   if [ "$NO_SELF_UPGRADE" != 1 ]; then
     TEMP_DIR=$(TempDir)
+    trap 'rm -rf "$TEMP_DIR"' EXIT
     # ---------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/fetch.py"
 {{ fetch.py }}
@@ -319,8 +320,6 @@ UNLIKELY_EOF
       # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
       # cp is unlikely to fail (esp. under sudo) if the rm doesn't.
       $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
-      # TODO: Clean up temp dir safely, even if it has quotes in its path.
-      rm -rf "$TEMP_DIR"
     fi  # A newer version is available.
   fi  # Self-upgrading is allowed.
 
