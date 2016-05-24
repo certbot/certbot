@@ -248,9 +248,9 @@ class ChooseNamesTest(unittest.TestCase):
     def test_get_valid_domains(self):
         from certbot.display.ops import get_valid_domains
         all_valid = ["example.com", "second.example.com",
-                     "also.example.com"]
-        all_invalid = ["xn--ls8h.tld", "*.wildcard.com", "notFQDN",
-                       "uniçodé.com"]
+                     "also.example.com", "under_score.example.com",
+                     "justtld"]
+        all_invalid = ["xn--ls8h.tld", "*.wildcard.com", "uniçodé.com"]
         two_valid = ["example.com", "xn--ls8h.tld", "also.example.com"]
         self.assertEqual(get_valid_domains(all_valid), all_valid)
         self.assertEqual(get_valid_domains(all_invalid), [])
@@ -276,19 +276,18 @@ class ChooseNamesTest(unittest.TestCase):
         mock_util().input.return_value = (display_util.OK,
                                           "xn--ls8h.tld")
         self.assertEqual(_choose_names_manually(), [])
-        # non-FQDN and no retry
-        mock_util().input.return_value = (display_util.OK,
-                                          "notFQDN")
-        self.assertEqual(_choose_names_manually(), [])
-        # Two valid domains
+        # Valid domains
         mock_util().input.return_value = (display_util.OK,
                                           ("example.com,"
+                                           "under_score.example.com,"
+                                           "justtld,"
                                            "valid.example.com"))
         self.assertEqual(_choose_names_manually(),
-                         ["example.com", "valid.example.com"])
+                         ["example.com", "under_score.example.com",
+                          "justtld", "valid.example.com"])
         # Three iterations
         mock_util().input.return_value = (display_util.OK,
-                                          "notFQDN")
+                                          "uniçodé.com")
         yn = mock.MagicMock()
         yn.side_effect = [True, True, False]
         mock_util().yesno = yn
