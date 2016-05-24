@@ -181,7 +181,7 @@ to serve all files under specified web root ({0})."""
                     os.chown(self.full_roots[name], stat_path.st_uid,
                              stat_path.st_gid)
                 except OSError as exception:
-                    logger.debug("Unable to change owner and uid of webroot directory")
+                    logger.info("Unable to change owner and uid of webroot directory")
                     logger.debug("Error was: %s", exception)
 
             except OSError as exception:
@@ -231,7 +231,7 @@ to serve all files under specified web root ({0})."""
                     logger.debug("All challenges cleaned up, removing %s",
                                  root_path)
                 except OSError as exc:
-                    logger.debug(
+                    logger.info(
                         "Unable to clean up challenge directory %s", root_path)
                     logger.debug("Error was: %s", exc)
 
