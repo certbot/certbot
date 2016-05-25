@@ -396,7 +396,7 @@ def register(config, unused_plugins):
                 "required\n(hint: --email)")
     acc, acme = _determine_account(config)
     acme_client = client.Client(config, acc, None, None, acme=acme)
-    data = acme_client.acme.update_registration(acc.regr.update(
+    acme_client.acme.update_registration(acc.regr.update(
         body=acc.regr.body.update(contact=('mailto:' + config.email,))))
     # We rely on an exception to interrupt this process if it didn't work.
     reporter_util = zope.component.getUtility(interfaces.IReporter)

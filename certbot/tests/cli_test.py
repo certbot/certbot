@@ -14,7 +14,6 @@ import mock
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 
-from acme import errors as acme_errors
 from acme import jose
 
 from certbot import account
