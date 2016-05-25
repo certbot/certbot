@@ -8,6 +8,7 @@ import configobj
 import parsedatetime
 import pytz
 
+import certbot
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
@@ -17,6 +18,7 @@ from certbot import le_util
 logger = logging.getLogger(__name__)
 
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
+CURRENT_VERSION = le_util.get_strict_version(certbot.__version__)
 
 
 def config_with_defaults(config=None):
@@ -63,6 +65,7 @@ def write_renewal_config(o_filename, n_filename, target, relevant_data):
 
     """
     config = configobj.ConfigObj(o_filename)
+    config["version"] = certbot.__version__
     for kind in ALL_FOUR:
         config[kind] = target[kind]
 
@@ -77,6 +80,10 @@ def write_renewal_config(o_filename, n_filename, target, relevant_data):
     for k in config["renewalparams"].keys():
         if k not in relevant_data:
             del config["renewalparams"][k]
+
+    if "renew_before_expiry" not in config:
+        default_interval = constants.RENEWER_DEFAULTS["renew_before_expiry"]
+        config.initial_comment = ["renew_before_expiry = " + default_interval]
 
     # TODO: add human-readable comments explaining other available
     #       parameters
@@ -254,6 +261,14 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             raise errors.CertStorageError(
                 "renewal config file {0} is missing a required "
                 "file reference".format(self.configfile))
+
+        conf_version = self.configuration.get("version")
+        if (conf_version is not None and
+                le_util.get_strict_version(conf_version) > CURRENT_VERSION):
+            logger.warning(
+                "Attempting to parse the version %s renewal configuration "
+                "file found at %s with version %s of Certbot. This might not "
+                "work.", conf_version, config_filename, certbot.__version__)
 
         self.cert = self.configuration["cert"]
         self.privkey = self.configuration["privkey"]

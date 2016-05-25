@@ -183,7 +183,7 @@ def run_le_auto(venv_dir, base_url, **kwargs):
     d = dict(XDG_DATA_HOME=venv_dir,
              # URL to PyPI-style JSON that tell us the latest released version
              # of LE:
-             LE_AUTO_JSON_URL=base_url + 'letsencrypt/json',
+             LE_AUTO_JSON_URL=base_url + 'certbot/json',
              # URL to dir containing letsencrypt-auto and letsencrypt-auto.sig:
              LE_AUTO_DIR_TEMPLATE=base_url + '%s/',
              # The public key corresponding to signing.key:
@@ -231,7 +231,7 @@ class AutoTests(TestCase):
     * The OpenSSL sig mismatches.
 
     For tests which get to the end, we run merely ``letsencrypt --version``.
-    The functioning of the rest of the letsencrypt script is covered by other
+    The functioning of the rest of the certbot script is covered by other
     test suites.
 
     """
@@ -258,7 +258,7 @@ class AutoTests(TestCase):
         with ephemeral_dir() as venv_dir:
             # This serves a PyPI page with a higher version, a GitHub-alike
             # with a corresponding le-auto script, and a matching signature.
-            resources = {'letsencrypt/json': dumps({'releases': {'99.9.9': None}}),
+            resources = {'certbot/json': dumps({'releases': {'99.9.9': None}}),
                          'v99.9.9/letsencrypt-auto': NEW_LE_AUTO,
                          'v99.9.9/letsencrypt-auto.sig': NEW_LE_AUTO_SIG}
             with serving(resources) as base_url:
@@ -277,7 +277,7 @@ class AutoTests(TestCase):
                 ok_(re.match(r'letsencrypt \d+\.\d+\.\d+',
                              err.strip().splitlines()[-1]))
                 # Make a few assertions to test the validity of the next tests:
-                self.assertIn('Upgrading letsencrypt-auto ', out)
+                self.assertIn('Upgrading certbot-auto ', out)
                 self.assertIn('Creating virtual environment...', out)
 
                 # Now we have le-auto 99.9.9  and LE 99.9.9 installed. This
@@ -286,14 +286,14 @@ class AutoTests(TestCase):
                 # Test when neither phase-1 upgrade nor phase-2 upgrade is
                 # needed (probably a common case):
                 out, err = run_letsencrypt_auto()
-                self.assertNotIn('Upgrading letsencrypt-auto ', out)
+                self.assertNotIn('Upgrading certbot-auto ', out)
                 self.assertNotIn('Creating virtual environment...', out)
 
                 # Test when a phase-1 upgrade is not needed but a phase-2
                 # upgrade is:
                 set_le_script_version(venv_dir, '0.0.1')
                 out, err = run_letsencrypt_auto()
-                self.assertNotIn('Upgrading letsencrypt-auto ', out)
+                self.assertNotIn('Upgrading certbot-auto ', out)
                 self.assertIn('Creating virtual environment...', out)
 
     def test_openssl_failure(self):
@@ -301,8 +301,8 @@ class AutoTests(TestCase):
         with ephemeral_dir() as venv_dir:
             # Serve an unrelated hash signed with the good key (easier than
             # making a bad key, and a mismatch is a mismatch):
-            resources = {'': '<a href="letsencrypt/">letsencrypt/</a>',
-                         'letsencrypt/json': dumps({'releases': {'99.9.9': None}}),
+            resources = {'': '<a href="certbot/">certbot/</a>',
+                         'certbot/json': dumps({'releases': {'99.9.9': None}}),
                          'v99.9.9/letsencrypt-auto': build_le_auto(version='99.9.9'),
                          'v99.9.9/letsencrypt-auto.sig': signed('something else')}
             with serving(resources) as base_url:
@@ -312,16 +312,16 @@ class AutoTests(TestCase):
                 except CalledProcessError as exc:
                     eq_(exc.returncode, 1)
                     self.assertIn("Couldn't verify signature of downloaded "
-                                  "letsencrypt-auto.",
+                                  "certbot-auto.",
                                   exc.output)
                 else:
-                    self.fail('Signature check on letsencrypt-auto erroneously passed.')
+                    self.fail('Signature check on certbot-auto erroneously passed.')
 
     def test_pip_failure(self):
         """Make sure pip stops us if there is a hash mismatch."""
         with ephemeral_dir() as venv_dir:
-            resources = {'': '<a href="letsencrypt/">letsencrypt/</a>',
-                         'letsencrypt/json': dumps({'releases': {'99.9.9': None}})}
+            resources = {'': '<a href="certbot/">certbot/</a>',
+                         'certbot/json': dumps({'releases': {'99.9.9': None}})}
             with serving(resources) as base_url:
                 # Build a le-auto script embedding a bad requirements file:
                 install_le_auto(

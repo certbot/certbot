@@ -7,6 +7,7 @@ import shutil
 import time
 import traceback
 
+
 import zope.component
 
 from certbot import constants
@@ -489,7 +490,7 @@ class Reverter(object):
 
         if not os.path.exists(changes_since_path):
             logger.info("Rollback checkpoint is empty (no changes made?)")
-            with open(self.config.changes_since_path) as f:
+            with open(changes_since_path, 'w') as f:
                 f.write("No changes\n")
 
         # Add title to self.config.in_progress_dir CHANGES_SINCE

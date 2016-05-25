@@ -39,7 +39,7 @@ install_requires = [
     'ConfigArgParse>=0.9.3',
     'configobj',
     'cryptography>=0.7',  # load_pem_x509_certificate
-    'parsedatetime',
+    'parsedatetime>=1.3',  # Calendar.parseDT
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
     'PyOpenSSL',
     'pyrfc3339',
@@ -71,6 +71,7 @@ dev_extras = [
     'nose',
     'nosexcover',
     'pep8',
+    'pkginfo<=1.2.1',
     'pylint==1.4.2',  # upstream #248
     'tox',
     'twine',

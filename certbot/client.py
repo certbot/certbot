@@ -24,6 +24,7 @@ from certbot import interfaces
 from certbot import le_util
 from certbot import reverter
 from certbot import storage
+from certbot import cli
 
 from certbot.display import ops as display_ops
 from certbot.display import enhancements
@@ -245,8 +246,9 @@ class Client(object):
                 domains,
                 self.config.allow_subset_of_names)
 
-        domains = [a.body.identifier.value.encode('ascii')
-                                          for a in authzr]
+        auth_domains = set(a.body.identifier.value.encode('ascii')
+                           for a in authzr)
+        domains = [d for d in domains if d in auth_domains]
 
         # Create CSR from names
         key = crypto_util.init_save_key(
@@ -316,23 +318,30 @@ class Client(object):
 
         cert_pem = OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped)
-        cert_file, act_cert_path = le_util.unique_file(cert_path, 0o644)
+
+        cert_file, abs_cert_path = _open_pem_file('cert_path', cert_path)
+
         try:
             cert_file.write(cert_pem)
         finally:
             cert_file.close()
         logger.info("Server issued certificate; certificate written to %s",
-                    act_cert_path)
+                    abs_cert_path)
 
-        cert_chain_abspath = None
-        fullchain_abspath = None
-        if chain_cert:
+        if not chain_cert:
+            return abs_cert_path, None, None
+        else:
             chain_pem = crypto_util.dump_pyopenssl_chain(chain_cert)
-            cert_chain_abspath = _save_chain(chain_pem, chain_path)
-            fullchain_abspath = _save_chain(cert_pem + chain_pem,
-                                            fullchain_path)
 
-        return os.path.abspath(act_cert_path), cert_chain_abspath, fullchain_abspath
+            chain_file, abs_chain_path =\
+                    _open_pem_file('chain_path', chain_path)
+            fullchain_file, abs_fullchain_path =\
+                    _open_pem_file('fullchain_path', fullchain_path)
+
+            _save_chain(chain_pem, chain_file)
+            _save_chain(cert_pem + chain_pem, fullchain_file)
+
+            return abs_cert_path, abs_chain_path, abs_fullchain_path
 
     def deploy_certificate(self, domains, privkey_path,
                            cert_path, chain_path, fullchain_path):
@@ -395,7 +404,8 @@ class Client(object):
         supported = self.installer.supported_enhancements()
         redirect = config.redirect if "redirect" in supported else False
         hsts = config.hsts if "ensure-http-header" in supported else False
-        uir = config.uir if "ensure-http-header" in supported else False
+        uir = config.uir if "ensure-http-header"  in supported else False
+        staple = config.staple if "staple-ocsp" in supported else False
 
         if redirect is None:
             redirect = enhancements.ask("redirect")
@@ -409,9 +419,11 @@ class Client(object):
         if uir:
             self.apply_enhancement(domains, "ensure-http-header",
                     "Upgrade-Insecure-Requests")
+        if staple:
+            self.apply_enhancement(domains, "staple-ocsp")
 
         msg = ("We were unable to restart web server")
-        if redirect or hsts or uir:
+        if redirect or hsts or uir or staple:
             with error_handler.ErrorHandler(self._rollback_and_restart, msg):
                 self.installer.restart()
 
@@ -561,24 +573,35 @@ def view_config_changes(config, num=None):
     rev.recovery_routine()
     rev.view_config_changes(num)
 
+def _open_pem_file(cli_arg_path, pem_path):
+    """Open a pem file.
 
-def _save_chain(chain_pem, chain_path):
+    If cli_arg_path was set by the client, open that.
+    Otherwise, uniquify the file path.
+
+    :param str cli_arg_path: the cli arg name, e.g. cert_path
+    :param str pem_path: the pem file path to open
+
+    :returns: a tuple of file object and its absolute file path
+
+    """
+    if cli.set_by_cli(cli_arg_path):
+        return le_util.safe_open(pem_path, chmod=0o644),\
+            os.path.abspath(pem_path)
+    else:
+        uniq = le_util.unique_file(pem_path, 0o644)
+        return uniq[0], os.path.abspath(uniq[1])
+
+def _save_chain(chain_pem, chain_file):
     """Saves chain_pem at a unique path based on chain_path.
 
     :param str chain_pem: certificate chain in PEM format
-    :param str chain_path: candidate path for the cert chain
-
-    :returns: absolute path to saved cert chain
-    :rtype: str
+    :param str chain_file: chain file object
 
     """
-    chain_file, act_chain_path = le_util.unique_file(chain_path, 0o644)
     try:
         chain_file.write(chain_pem)
     finally:
         chain_file.close()
 
-    logger.info("Cert chain written to %s", act_chain_path)
-
-    # This expects a valid chain file
-    return os.path.abspath(act_chain_path)
+    logger.info("Cert chain written to %s", chain_file.name)

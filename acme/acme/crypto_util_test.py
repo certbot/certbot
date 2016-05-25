@@ -8,6 +8,8 @@ import unittest
 import six
 from six.moves import socketserver  # pylint: disable=import-error
 
+import OpenSSL
+
 from acme import errors
 from acme import jose
 from acme import test_util
@@ -124,6 +126,24 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
     def test_csr_idn_sans(self):
         self.assertEqual(self._call_csr('csr-idnsans.pem'),
                          self._get_idn_names())
+
+
+class RandomSnTest(unittest.TestCase):
+    """Test for random certificate serial numbers."""
+
+    def setUp(self):
+        self.cert_count = 5
+        self.serial_num = []
+        self.key = OpenSSL.crypto.PKey()
+        self.key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
+
+    def test_sn_collisions(self):
+        from acme.crypto_util import gen_ss_cert
+
+        for _ in range(self.cert_count):
+            cert = gen_ss_cert(self.key, ['dummy'], force_san=True)
+            self.serial_num.append(cert.get_serial_number())
+        self.assertTrue(len(set(self.serial_num)) > 1)
 
 
 if __name__ == '__main__':
