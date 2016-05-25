@@ -49,7 +49,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.logs_dir = os.path.join(self.tmp_dir, 'logs')
         self.standard_args = ['--config-dir', self.config_dir,
                               '--work-dir', self.work_dir,
-                              '--logs-dir', self.logs_dir]
+                              '--logs-dir', self.logs_dir, '--text']
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
@@ -152,6 +152,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     @mock.patch('certbot.main.renew')
     def test_gui(self, renew):
         args = ['renew', '--dialog']
+        # --text conflicts with --dialog
+        self.standard_args.remove('--text')
         self._call(args)
         self.assertFalse(renew.call_args[0][0].noninteractive_mode)
 

@@ -552,6 +552,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
     :rtype: argparse.Namespace
 
     """
+
+    # pylint: disable=too-many-statements
+
     helpful = HelpfulArgumentParser(args, plugins, detect_defaults)
 
     # --help is automatically provided by argparse
