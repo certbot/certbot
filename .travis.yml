@@ -4,26 +4,18 @@ cache:
     directories:
         - $HOME/.cache/pip
 
-services:
-  - rabbitmq
-  - mariadb
-  # apacheconftest
-  #- apache2
+# This makes sure we get a host with docker-compose present.
+dist: trusty
 
-# http://docs.travis-ci.com/user/ci-environment/#CI-environment-OS
-# gimme has to be kept in sync with Boulder's Go version setting in .travis.yml
 before_install:
   - 'dpkg -s libaugeas0'
-  - '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || eval "$(gimme 1.5.1)"'
 
 # using separate envs with different TOXENVs creates 4x1 Travis build
 # matrix, which allows us to clearly distinguish which component under
 # test has failed
 env:
   global:
-    - GOPATH=/tmp/go
-    - PATH=$GOPATH/bin:$PATH
-    - GO15VENDOREXPERIMENT=1  # Fixes problems with vendor directories
+    - BOULDERPATH=$PWD/boulder/
 
 matrix:
   include:
@@ -93,7 +85,6 @@ addons:
     - boulder
     - boulder-mysql
     - boulder-rabbitmq
-  mariadb: "10.0"
   apt:
     sources:
     - augeas
@@ -109,13 +100,11 @@ addons:
     # For certbot-nginx integration testing
     - nginx-light
     - openssl
-    # For Boulder integration testing
-    - rsyslog
     # for apacheconftest
-    #- apache2
-    #- libapache2-mod-wsgi
-    #- libapache2-mod-macro
-    #- sudo
+    - apache2
+    - libapache2-mod-wsgi
+    - libapache2-mod-macro
+    - sudo
 
 install: "travis_retry pip install tox coveralls"
 script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/travis-integration.sh)'

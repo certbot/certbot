@@ -1,6 +1,9 @@
 """Utilities for all Certbot."""
 import argparse
 import collections
+# distutils.version under virtualenv confuses pylint
+# For more info, see: https://github.com/PyCQA/pylint/issues/73
+import distutils.version  # pylint: disable=import-error,no-name-in-module
 import errno
 import logging
 import os
@@ -151,7 +154,8 @@ def _unique_file(path, filename_pat, count, mode):
     while True:
         current_path = os.path.join(path, filename_pat(count))
         try:
-            return safe_open(current_path, chmod=mode), current_path
+            return safe_open(current_path, chmod=mode),\
+                os.path.abspath(current_path)
         except OSError as err:
             # "File exists," is okay, try a different name.
             if err.errno != errno.EEXIST:
@@ -342,3 +346,17 @@ def enforce_domain_sanity(domain):
     if not fqdn.match(domain):
         raise errors.ConfigurationError("Requested domain {0} is not a FQDN".format(domain))
     return domain
+
+
+def get_strict_version(normalized):
+    """Converts a normalized version to a strict version.
+
+    :param str normalized: normalized version string
+
+    :returns: An equivalent strict version
+    :rtype: distutils.version.StrictVersion
+
+    """
+    # strict version ending with "a" and a number designates a pre-release
+    # pylint: disable=no-member
+    return distutils.version.StrictVersion(normalized.replace(".dev", "a"))

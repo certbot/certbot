@@ -181,12 +181,8 @@ to serve all files under specified web root ({0})."""
                     os.chown(self.full_roots[name], stat_path.st_uid,
                              stat_path.st_gid)
                 except OSError as exception:
-                    if exception.errno == errno.EACCES:
-                        logger.debug("Insufficient permissions to change owner and uid - ignoring")
-                    else:
-                        raise errors.PluginError(
-                            "Couldn't create root for {0} http-01 "
-                            "challenge responses: {1}", name, exception)
+                    logger.info("Unable to change owner and uid of webroot directory")
+                    logger.debug("Error was: %s", exception)
 
             except OSError as exception:
                 if exception.errno != errno.EEXIST:
@@ -235,17 +231,9 @@ to serve all files under specified web root ({0})."""
                     logger.debug("All challenges cleaned up, removing %s",
                                  root_path)
                 except OSError as exc:
-                    if exc.errno == errno.ENOTEMPTY:
-                        logger.debug("Challenges cleaned up but %s not empty",
-                                     root_path)
-                    elif exc.errno == errno.EACCES:
-                        logger.debug("Challenges cleaned up but no permissions for %s",
-                                     root_path)
-                    elif exc.errno == errno.ENOENT:
-                        logger.debug("Challenges cleaned up, %s does not exists",
-                                     root_path)
-                    else:
-                        raise
+                    logger.info(
+                        "Unable to clean up challenge directory %s", root_path)
+                    logger.debug("Error was: %s", exc)
 
 
 class _WebrootMapAction(argparse.Action):
