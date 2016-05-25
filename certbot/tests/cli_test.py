@@ -422,6 +422,13 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             for arg in conflicting_args:
                 self.assertTrue(arg in error.message)
 
+    def test_must_staple_flag(self):
+        parse = self._get_argument_parser()
+        short_args = ['--must-staple']
+        namespace = parse(short_args)
+        self.assertTrue(namespace.must_staple)
+        self.assertTrue(namespace.staple)
+
     def test_staging_flag(self):
         parse = self._get_argument_parser()
         short_args = ['--staging']
