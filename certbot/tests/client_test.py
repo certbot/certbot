@@ -306,7 +306,7 @@ class ClientTest(unittest.TestCase):
 
     @mock.patch("certbot.client.enhancements")
     def test_enhance_config(self, mock_enhancements):
-        config = ConfigHelper(redirect=True, hsts=False, uir=False)
+        config = ConfigHelper(redirect=True, hsts=False, uir=False, must_staple=False)
         self.assertRaises(errors.Error,
                           self.client.enhance_config, ["foo.bar"], config)
 
@@ -322,7 +322,7 @@ class ClientTest(unittest.TestCase):
 
     @mock.patch("certbot.client.enhancements")
     def test_enhance_config_no_ask(self, mock_enhancements):
-        config = ConfigHelper(redirect=True, hsts=False, uir=False)
+        config = ConfigHelper(redirect=True, hsts=False, uir=False, must_staple=False)
         self.assertRaises(errors.Error,
                           self.client.enhance_config, ["foo.bar"], config)
 
@@ -331,16 +331,16 @@ class ClientTest(unittest.TestCase):
         self.client.installer = installer
         installer.supported_enhancements.return_value = ["redirect", "ensure-http-header"]
 
-        config = ConfigHelper(redirect=True, hsts=False, uir=False)
+        config = ConfigHelper(redirect=True, hsts=False, uir=False, must_staple=False)
         self.client.enhance_config(["foo.bar"], config)
         installer.enhance.assert_called_with("foo.bar", "redirect", None)
 
-        config = ConfigHelper(redirect=False, hsts=True, uir=False)
+        config = ConfigHelper(redirect=False, hsts=True, uir=False, must_staple=False)
         self.client.enhance_config(["foo.bar"], config)
         installer.enhance.assert_called_with("foo.bar", "ensure-http-header",
                 "Strict-Transport-Security")
 
-        config = ConfigHelper(redirect=False, hsts=False, uir=True)
+        config = ConfigHelper(redirect=False, hsts=False, uir=True, must_staple=False)
         self.client.enhance_config(["foo.bar"], config)
         installer.enhance.assert_called_with("foo.bar", "ensure-http-header",
                 "Upgrade-Insecure-Requests")
@@ -354,13 +354,13 @@ class ClientTest(unittest.TestCase):
         self.client.installer = installer
         installer.supported_enhancements.return_value = []
 
-        config = ConfigHelper(redirect=None, hsts=True, uir=True)
+        config = ConfigHelper(redirect=None, hsts=True, uir=True, must_staple=False)
         self.client.enhance_config(["foo.bar"], config)
         installer.enhance.assert_not_called()
         mock_enhancements.ask.assert_not_called()
 
     def test_enhance_config_no_installer(self):
-        config = ConfigHelper(redirect=True, hsts=False, uir=False)
+        config = ConfigHelper(redirect=True, hsts=False, uir=False, must_staple=False)
         self.assertRaises(errors.Error,
                           self.client.enhance_config, ["foo.bar"], config)
 
@@ -374,7 +374,7 @@ class ClientTest(unittest.TestCase):
         installer.supported_enhancements.return_value = ["redirect"]
         installer.enhance.side_effect = errors.PluginError
 
-        config = ConfigHelper(redirect=True, hsts=False, uir=False)
+        config = ConfigHelper(redirect=True, hsts=False, uir=False, must_staple=False)
 
         self.assertRaises(errors.PluginError,
                           self.client.enhance_config, ["foo.bar"], config)
@@ -391,7 +391,7 @@ class ClientTest(unittest.TestCase):
         installer.supported_enhancements.return_value = ["redirect"]
         installer.save.side_effect = errors.PluginError
 
-        config = ConfigHelper(redirect=True, hsts=False, uir=False)
+        config = ConfigHelper(redirect=True, hsts=False, uir=False, must_staple=False)
 
         self.assertRaises(errors.PluginError,
                           self.client.enhance_config, ["foo.bar"], config)
@@ -408,7 +408,7 @@ class ClientTest(unittest.TestCase):
         installer.supported_enhancements.return_value = ["redirect"]
         installer.restart.side_effect = [errors.PluginError, None]
 
-        config = ConfigHelper(redirect=True, hsts=False, uir=False)
+        config = ConfigHelper(redirect=True, hsts=False, uir=False, must_staple=False)
 
         self.assertRaises(errors.PluginError,
                           self.client.enhance_config, ["foo.bar"], config)
@@ -428,7 +428,7 @@ class ClientTest(unittest.TestCase):
         installer.restart.side_effect = errors.PluginError
         installer.rollback_checkpoints.side_effect = errors.ReverterError
 
-        config = ConfigHelper(redirect=True, hsts=False, uir=False)
+        config = ConfigHelper(redirect=True, hsts=False, uir=False, must_staple=False)
 
         self.assertRaises(errors.PluginError,
                           self.client.enhance_config, ["foo.bar"], config)
