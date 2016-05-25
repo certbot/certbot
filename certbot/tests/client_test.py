@@ -203,7 +203,9 @@ class ClientTest(unittest.TestCase):
             mock.sentinel.key, domains, self.config.csr_dir)
         self._check_obtain_certificate()
 
-    def test_save_certificate(self):
+    @mock.patch("certbot.cli.helpful_parser")
+    def test_save_certificate(self, mock_parser):
+        # pylint: disable=too-many-locals
         certs = ["matching_cert.pem", "cert.pem", "cert-san.pem"]
         tmp_path = tempfile.mkdtemp()
         os.chmod(tmp_path, 0o755)  # TODO: really??
@@ -214,6 +216,10 @@ class ClientTest(unittest.TestCase):
         candidate_cert_path = os.path.join(tmp_path, "certs", "cert.pem")
         candidate_chain_path = os.path.join(tmp_path, "chains", "chain.pem")
         candidate_fullchain_path = os.path.join(tmp_path, "chains", "fullchain.pem")
+        mock_parser.verb = "certonly"
+        mock_parser.args = ["--cert-path", candidate_cert_path,
+                "--chain-path", candidate_chain_path,
+                "--fullchain-path", candidate_fullchain_path]
 
         cert_path, chain_path, fullchain_path = self.client.save_certificate(
             certr, chain_cert, candidate_cert_path, candidate_chain_path,
