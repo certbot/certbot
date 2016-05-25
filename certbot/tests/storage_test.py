@@ -138,6 +138,16 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertRaises(errors.CertStorageError, storage.RenewableCert,
                           config.filename, self.cli_config)
 
+    def test_no_renewal_version(self):
+        from certbot import storage
+
+        self._write_out_ex_kinds()
+        self.assertTrue("version" not in self.config)
+
+        with mock.patch("certbot.storage.logger") as mock_logger:
+            storage.RenewableCert(self.config.filename, self.cli_config)
+        self.assertFalse(mock_logger.warning.called)
+
     def test_renewal_newer_version(self):
         from certbot import storage
 
