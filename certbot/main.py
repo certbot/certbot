@@ -690,6 +690,7 @@ def main(cli_args=sys.argv[1:]):
     elif config.dialog_mode:
         displayer = display_util.NcursesDisplay()
     elif config.verb == "renew":
+        config.noninteractive_mode = True
         displayer = display_util.NoninteractiveDisplay(sys.stdout)
     else:
         displayer = display_util.NcursesDisplay()
