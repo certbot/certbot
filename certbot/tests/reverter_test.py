@@ -39,7 +39,7 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
         mock_read.side_effect = OSError("cannot even")
         try:
             self.reverter.add_to_checkpoint(self.sets[0], "save1")
-        except:
+        except OSError:
             pass
         self.reverter.finalize_checkpoint("blah")
         path = os.listdir(self.reverter.config.backup_dir)[0]
