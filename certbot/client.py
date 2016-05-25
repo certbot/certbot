@@ -580,7 +580,8 @@ def _open_pem_file(cli_arg_path, pem_path):
     :param str cli_arg_path: the cli arg name, e.g. cert_path
     :param str pem_path: the pem file path to open
 
-    :returns a file object
+    :returns: a tuple of file object and its absolute file path
+
     """
     if cli.set_by_cli(cli_arg_path):
         return le_util.safe_open(pem_path, chmod=0o644),\
