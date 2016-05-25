@@ -10,7 +10,7 @@ import zope.component
 
 from certbot import errors
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 from certbot.tests import test_util
 
 
@@ -63,7 +63,7 @@ class InitSaveCSRTest(unittest.TestCase):
         shutil.rmtree(self.csr_dir)
 
     @mock.patch('certbot.crypto_util.make_csr')
-    @mock.patch('certbot.crypto_util.le_util.make_or_verify_dir')
+    @mock.patch('certbot.crypto_util.util.make_or_verify_dir')
     def test_it(self, unused_mock_verify, mock_csr):
         from certbot.crypto_util import init_save_csr
 
@@ -174,9 +174,9 @@ class ImportCSRFileTest(unittest.TestCase):
 
         self.assertEqual(
             (OpenSSL.crypto.FILETYPE_ASN1,
-             le_util.CSR(file=csrfile,
-                         data=data,
-                         form="der"),
+             util.CSR(file=csrfile,
+                      data=data,
+                      form="der"),
              ["example.com"],),
             self._call(csrfile, data))
 
@@ -186,9 +186,9 @@ class ImportCSRFileTest(unittest.TestCase):
 
         self.assertEqual(
             (OpenSSL.crypto.FILETYPE_PEM,
-             le_util.CSR(file=csrfile,
-                         data=data,
-                         form="pem"),
+             util.CSR(file=csrfile,
+                      data=data,
+                      form="pem"),
              ["example.com"],),
             self._call(csrfile, data))
 

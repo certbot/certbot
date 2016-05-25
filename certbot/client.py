@@ -21,7 +21,7 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import error_handler
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 from certbot import reverter
 from certbot import storage
 from certbot import cli
@@ -53,7 +53,7 @@ def _determine_user_agent(config):
 
     if config.user_agent is None:
         ua = "CertbotACMEClient/{0} ({1}) Authenticator/{2} Installer/{3}"
-        ua = ua.format(certbot.__version__, " ".join(le_util.get_os_info()),
+        ua = ua.format(certbot.__version__, " ".join(util.get_os_info()),
                        config.authenticator, config.installer)
     else:
         ua = config.user_agent
@@ -198,7 +198,7 @@ class Client(object):
         consistent with identifiers present in the `csr`.
 
         :param list domains: Domain names.
-        :param .le_util.CSR csr: DER-encoded Certificate Signing
+        :param .util.CSR csr: DER-encoded Certificate Signing
             Request. The key used to generate this CSR can be different
             than `authkey`.
         :param list authzr: List of
@@ -237,8 +237,8 @@ class Client(object):
 
         :returns: `.CertificateResource`, certificate chain (as
             returned by `.fetch_chain`), and newly generated private key
-            (`.le_util.Key`) and DER-encoded Certificate Signing Request
-            (`.le_util.CSR`).
+            (`.util.Key`) and DER-encoded Certificate Signing Request
+            (`.util.CSR`).
         :rtype: tuple
 
         """
@@ -312,7 +312,7 @@ class Client(object):
 
         """
         for path in cert_path, chain_path, fullchain_path:
-            le_util.make_or_verify_dir(
+            util.make_or_verify_dir(
                 os.path.dirname(path), 0o755, os.geteuid(),
                 self.config.strict_permissions)
 
@@ -504,9 +504,9 @@ def validate_key_csr(privkey, csr=None):
     If csr is left as None, only the key will be validated.
 
     :param privkey: Key associated with CSR
-    :type privkey: :class:`certbot.le_util.Key`
+    :type privkey: :class:`certbot.util.Key`
 
-    :param .le_util.CSR csr: CSR
+    :param .util.CSR csr: CSR
 
     :raises .errors.Error: when validation fails
 
@@ -523,7 +523,7 @@ def validate_key_csr(privkey, csr=None):
         if csr.form == "der":
             csr_obj = OpenSSL.crypto.load_certificate_request(
                 OpenSSL.crypto.FILETYPE_ASN1, csr.data)
-            csr = le_util.CSR(csr.file, OpenSSL.crypto.dump_certificate(
+            csr = util.CSR(csr.file, OpenSSL.crypto.dump_certificate(
                 OpenSSL.crypto.FILETYPE_PEM, csr_obj), "pem")
 
         # If CSR is provided, it must be readable and valid.
@@ -586,10 +586,10 @@ def _open_pem_file(cli_arg_path, pem_path):
 
     """
     if cli.set_by_cli(cli_arg_path):
-        return le_util.safe_open(pem_path, chmod=0o644),\
+        return util.safe_open(pem_path, chmod=0o644),\
             os.path.abspath(pem_path)
     else:
-        uniq = le_util.unique_file(pem_path, 0o644)
+        uniq = util.unique_file(pem_path, 0o644)
         return uniq[0], os.path.abspath(uniq[1])
 
 def _save_chain(chain_pem, chain_file):

@@ -13,7 +13,7 @@ import zope.component
 from certbot import constants
 from certbot import errors
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 
 from certbot.display import util as display_util
 
@@ -33,7 +33,7 @@ class Reverter(object):
     def __init__(self, config):
         self.config = config
 
-        le_util.make_or_verify_dir(
+        util.make_or_verify_dir(
             config.backup_dir, constants.CONFIG_DIRS_MODE, os.geteuid(),
             self.config.strict_permissions)
 
@@ -185,7 +185,7 @@ class Reverter(object):
         :raises .ReverterError: if unable to add checkpoint
 
         """
-        le_util.make_or_verify_dir(
+        util.make_or_verify_dir(
             cp_dir, constants.CONFIG_DIRS_MODE, os.geteuid(),
             self.config.strict_permissions)
 
@@ -281,7 +281,7 @@ class Reverter(object):
             csvreader = csv.reader(csvfile)
             for command in reversed(list(csvreader)):
                 try:
-                    le_util.run_script(command)
+                    util.run_script(command)
                 except errors.SubprocessError:
                     logger.error(
                         "Unable to run undo command: %s", " ".join(command))
@@ -397,7 +397,7 @@ class Reverter(object):
         else:
             cp_dir = self.config.in_progress_dir
 
-        le_util.make_or_verify_dir(
+        util.make_or_verify_dir(
             cp_dir, constants.CONFIG_DIRS_MODE, os.geteuid(),
             self.config.strict_permissions)
 

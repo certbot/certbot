@@ -17,7 +17,7 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import hooks
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 
 from certbot.plugins import disco as plugins_disco
 import certbot.plugins.selection as plugin_selection
@@ -505,7 +505,7 @@ class HelpfulArgumentParser(object):
         :param int nargs: Number of arguments the option takes.
 
         """
-        le_util.add_deprecated_argument(
+        util.add_deprecated_argument(
             self.parser.add_argument, argument_name, num_args)
 
     def add_group(self, topic, **kwargs):
@@ -938,7 +938,7 @@ def add_domains(args_or_config, domains):
     """
     validated_domains = []
     for domain in domains.split(","):
-        domain = le_util.enforce_domain_sanity(domain.strip())
+        domain = util.enforce_domain_sanity(domain.strip())
         validated_domains.append(domain)
         if domain not in args_or_config.domains:
             args_or_config.domains.append(domain)

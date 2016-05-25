@@ -193,7 +193,7 @@ class TLSSNI01Test(unittest.TestCase):
 
         with mock.patch("certbot.plugins.common.open",
                         mock_open, create=True):
-            with mock.patch("certbot.plugins.common.le_util.safe_open",
+            with mock.patch("certbot.plugins.common.util.safe_open",
                             mock_safe_open):
                 # pylint: disable=protected-access
                 self.assertEqual(response, self.sni._setup_challenge_cert(
