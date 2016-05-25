@@ -10,6 +10,7 @@ import unittest
 import mock
 import six
 
+import certbot
 from certbot import errors
 
 
@@ -337,6 +338,33 @@ class EnforceDomainSanityTest(unittest.TestCase):
     def test_nonascii_unicode(self):
         self.assertRaises(errors.ConfigurationError, self._call,
                           u"eichh\u00f6rnchen.example.com")
+
+
+class GetStrictVersionTest(unittest.TestCase):
+    """Tests for certbot.le_util.get_strict_version."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.le_util import get_strict_version
+        return get_strict_version(*args, **kwargs)
+
+    def test_two_dev_versions(self):
+        self.assertTrue(
+            self._call("0.0.0.dev20151006") < self._call("0.0.0.dev20151008"))
+
+    def test_one_dev_one_release_version(self):
+        self.assertTrue(self._call("1.0.0.dev0") < self._call("1.0.0"))
+        self.assertTrue(self._call("1.0.0") < self._call("1.0.1.dev0"))
+
+    def test_two_release_versions(self):
+        self.assertTrue(self._call("0.0.0") < self._call("0.0.1"))
+        self.assertTrue(self._call("0.0.0") < self._call("0.1.0"))
+        self.assertTrue(self._call("0.0.0") < self._call("1.0.0"))
+
+    def test_current_version(self):
+        current_version = self._call(certbot.__version__)
+        self.assertTrue(self._call("0.6.0") < current_version)
+        self.assertTrue(current_version < self._call("99.99.99"))
 
 
 if __name__ == "__main__":

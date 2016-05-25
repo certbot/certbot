@@ -349,8 +349,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                           ['-d', '204.11.231.35'])
 
     def test_csr_with_besteffort(self):
-        args = ["--csr", CSR, "--allow-subset-of-names"]
-        self.assertRaises(errors.Error, self._call, args)
+        self.assertRaises(
+            errors.Error, self._call,
+            'certonly --csr {0} --allow-subset-of-names'.format(CSR).split())
 
     def test_run_with_csr(self):
         # This is an error because you can only use --csr with certonly
@@ -360,6 +361,17 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             assert "Please try the certonly" in repr(e)
             return
         assert False, "Expected supplying --csr to fail with default verb"
+
+    def test_csr_with_no_domains(self):
+        self.assertRaises(
+            errors.Error, self._call,
+            'certonly --csr {0}'.format(
+                test_util.vector_path('csr-nonames.pem')).split())
+
+    def test_csr_with_inconsistent_domains(self):
+        self.assertRaises(
+            errors.Error, self._call,
+            'certonly -d example.org --csr {0}'.format(CSR).split())
 
     def _get_argument_parser(self):
         plugins = disco.PluginsRegistry.find_all()

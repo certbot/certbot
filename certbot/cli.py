@@ -6,10 +6,8 @@ import logging
 import logging.handlers
 import os
 import sys
-import traceback
 
 import configargparse
-import OpenSSL
 import six
 
 import certbot
@@ -336,35 +334,40 @@ class HelpfulArgumentParser(object):
 
         # Do any post-parsing homework here
 
+        if self.verb == "renew":
+            parsed_args.noninteractive_mode = True
+
         if parsed_args.staging or parsed_args.dry_run:
-            if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
-                conflicts = ["--staging"] if parsed_args.staging else []
-                conflicts += ["--dry-run"] if parsed_args.dry_run else []
-                raise errors.Error("--server value conflicts with {0}".format(
-                    " and ".join(conflicts)))
-
-            parsed_args.server = constants.STAGING_URI
-
-            if parsed_args.dry_run:
-                if self.verb not in ["certonly", "renew"]:
-                    raise errors.Error("--dry-run currently only works with the "
-                                       "'certonly' or 'renew' subcommands (%r)" % self.verb)
-                parsed_args.break_my_certs = parsed_args.staging = True
-                if glob.glob(os.path.join(parsed_args.config_dir, constants.ACCOUNTS_DIR, "*")):
-                    # The user has a prod account, but might not have a staging
-                    # one; we don't want to start trying to perform interactive registration
-                    parsed_args.tos = True
-                    parsed_args.register_unsafely_without_email = True
+            self.set_test_server(parsed_args)
 
         if parsed_args.csr:
-            if parsed_args.allow_subset_of_names:
-                raise errors.Error("--allow-subset-of-names "
-                                   "cannot be used with --csr")
             self.handle_csr(parsed_args)
 
         hooks.validate_hooks(parsed_args)
 
         return parsed_args
+
+    def set_test_server(self, parsed_args):
+        """We have --staging/--dry-run; perform sanity check and set config.server"""
+
+        if parsed_args.server not in (flag_default("server"), constants.STAGING_URI):
+            conflicts = ["--staging"] if parsed_args.staging else []
+            conflicts += ["--dry-run"] if parsed_args.dry_run else []
+            raise errors.Error("--server value conflicts with {0}".format(
+                " and ".join(conflicts)))
+
+        parsed_args.server = constants.STAGING_URI
+
+        if parsed_args.dry_run:
+            if self.verb not in ["certonly", "renew"]:
+                raise errors.Error("--dry-run currently only works with the "
+                                   "'certonly' or 'renew' subcommands (%r)" % self.verb)
+            parsed_args.break_my_certs = parsed_args.staging = True
+            if glob.glob(os.path.join(parsed_args.config_dir, constants.ACCOUNTS_DIR, "*")):
+                # The user has a prod account, but might not have a staging
+                # one; we don't want to start trying to perform interactive registration
+                parsed_args.tos = True
+                parsed_args.register_unsafely_without_email = True
 
     def handle_csr(self, parsed_args):
         """Process a --csr flag."""
@@ -373,21 +376,11 @@ class HelpfulArgumentParser(object):
                                "when obtaining a new or replacement "
                                "via the certonly command. Please try the "
                                "certonly command instead.")
+        if parsed_args.allow_subset_of_names:
+            raise errors.Error("--allow-subset-of-names cannot be used with --csr")
 
-        try:
-            csr = le_util.CSR(file=parsed_args.csr[0], data=parsed_args.csr[1], form="der")
-            typ = OpenSSL.crypto.FILETYPE_ASN1
-            domains = crypto_util.get_sans_from_csr(csr.data, OpenSSL.crypto.FILETYPE_ASN1)
-        except OpenSSL.crypto.Error:
-            try:
-                e1 = traceback.format_exc()
-                typ = OpenSSL.crypto.FILETYPE_PEM
-                csr = le_util.CSR(file=parsed_args.csr[0], data=parsed_args.csr[1], form="pem")
-                domains = crypto_util.get_sans_from_csr(csr.data, typ)
-            except OpenSSL.crypto.Error:
-                logger.debug("DER CSR parse error %s", e1)
-                logger.debug("PEM CSR parse error %s", traceback.format_exc())
-                raise errors.Error("Failed to parse CSR file: {0}".format(parsed_args.csr[0]))
+        csrfile, contents = parsed_args.csr[0:2]
+        typ, csr, domains = crypto_util.import_csr_file(csrfile, contents)
 
         # This is not necessary for webroot to work, however,
         # obtain_certificate_from_csr requires parsed_args.domains to be set
