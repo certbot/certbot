@@ -914,7 +914,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 mocked_account.AccountFileStorage.return_value = mocked_storage
                 mocked_storage.find_all.return_value = ["an account"]
                 x = self._call_no_clientmock(["register", "--email", "user@example.org"])
-                assert "There is an existing account" in x[0]
+                self.assertTrue("There is an existing account" in x[0])
 
     def test_update_registration_no_existing_accounts(self):
         # with mock.patch('certbot.main.client') as mocked_client:
@@ -924,8 +924,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mocked_storage.find_all.return_value = []
             x = self._call_no_clientmock(
                 ["register", "--update-registration", "--email",
-                "user@example.org"])
-            assert "Could not find an existing account" in x[0]
+                 "user@example.org"])
+            self.assertTrue("Could not find an existing account" in x[0])
 
     def test_update_registration_no_email(self):
         # This test will become obsolete when register --update-registration
@@ -936,7 +936,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mocked_account.AccountFileStorage.return_value = mocked_storage
             mocked_storage.find_all.return_value = ["an account"]
             x = self._call_no_clientmock(["register", "--update-registration"])
-            assert "can only change the e-mail" in x[0]
+            self.assertTrue("can only change the e-mail" in x[0])
 
     def test_update_registration_with_email(self):
         with mock.patch('certbot.main.client') as mocked_client:
@@ -951,13 +951,16 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                         mocked_client.Client.return_value = acme_client
                         x = self._call_no_clientmock(
                             ["register", "--update-registration", "--email",
-                            "user@example.org"])
+                             "user@example.org"])
                         # When registration change succeeds, the return value
                         # of register() is None
-                        assert x[0] is None
+                        self.assertTrue(x[0] is None)
                         # and we got supposedly did update the registration from
                         # the server
-                        assert acme_client.acme.update_registration.call_count == 1
+                        self.assertTrue(
+                            acme_client.acme.update_registration.called)
+                        # and we saved the updated registration on disk
+                        self.assertTrue(mocked_storage.save_regr.called)
 
 
 class DetermineAccountTest(unittest.TestCase):
