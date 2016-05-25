@@ -305,6 +305,25 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(installer.restart.call_count, 1)
 
     @mock.patch("certbot.client.enhancements")
+    def test_must_staple(self, mock_enhancements):
+        # Testing our wanted behaviour: Enable OCSP Stapling when the
+        # --must-staple flag is on. [Without having the --staple-ocsp flag on]
+        config = ConfigHelper(must_staple=True, staple=False)
+        self.assertRaises(errors.Error,
+                          self.client.enhance_config, ["foo.bar"], config)
+
+        mock_enhancements.ask.return_value = True
+        installer = mock.MagicMock()
+        self.client.installer = installer
+        installer.supported_enhancements.return_value = ["staple-ocsp"]
+
+        self.client.enhance_config(["foo.bar"], config)
+        installer.enhance.assert_called_once_with("foo.bar", "staple-ocsp", None)
+        self.assertEqual(installer.save.call_count, 1)
+        installer.restart.assert_called_once_with()
+
+
+    @mock.patch("certbot.client.enhancements")
     def test_enhance_config(self, mock_enhancements):
         config = ConfigHelper(redirect=True, hsts=False, uir=False, must_staple=False)
         self.assertRaises(errors.Error,
