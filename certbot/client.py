@@ -328,7 +328,9 @@ class Client(object):
         logger.info("Server issued certificate; certificate written to %s",
                     abs_cert_path)
 
-        if chain_cert:
+        if not chain_cert:
+            return abs_cert_path, None, None
+        else:
             chain_pem = crypto_util.dump_pyopenssl_chain(chain_cert)
 
             chain_file, abs_chain_path =\
@@ -339,7 +341,7 @@ class Client(object):
             _save_chain(chain_pem, chain_file)
             _save_chain(cert_pem + chain_pem, fullchain_file)
 
-        return abs_cert_path, abs_chain_path, abs_fullchain_path
+            return abs_cert_path, abs_chain_path, abs_fullchain_path
 
     def deploy_certificate(self, domains, privkey_path,
                            cert_path, chain_path, fullchain_path):
