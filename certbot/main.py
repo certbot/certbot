@@ -673,16 +673,6 @@ def main(cli_args=sys.argv[1:]):
 
     sys.excepthook = functools.partial(_handle_exception, config=config)
 
-    # Avoid conflicting args
-    conficting_args = ["quiet", "noninteractive_mode", "text_mode"]
-    if config.dialog_mode:
-        for arg in conficting_args:
-            if getattr(config, arg):
-                raise errors.Error(
-                    ("Conflicting values for displayer."
-                    " {0} conflicts with dialog_mode").format(arg)
-                )
-
     # Displayer
     if config.quiet:
         config.noninteractive_mode = True

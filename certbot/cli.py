@@ -343,6 +343,16 @@ class HelpfulArgumentParser(object):
         if parsed_args.csr:
             self.handle_csr(parsed_args)
 
+        # Avoid conflicting args
+        conficting_args = ["quiet", "noninteractive_mode", "text_mode"]
+        if parsed_args.dialog_mode:
+            for arg in conficting_args:
+                if getattr(parsed_args, arg):
+                    raise errors.Error(
+                        ("Conflicting values for displayer."
+                        " {0} conflicts with dialog_mode").format(arg)
+                    )
+
         hooks.validate_hooks(parsed_args)
 
         return parsed_args
