@@ -399,7 +399,7 @@ def register(config, unused_plugins):
     # We rely on an exception to interrupt this process if it didn't work.
     acc.regr = acme_client.acme.update_registration(acc.regr.update(
         body=acc.regr.body.update(contact=('mailto:' + config.email,))))
-    account_storage.save_regr(account)
+    account_storage.save_regr(acc)
     reporter_util = zope.component.getUtility(interfaces.IReporter)
     msg = "Your e-mail address was updated to {0}.".format(config.email)
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
