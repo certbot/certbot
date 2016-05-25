@@ -10,7 +10,6 @@ import traceback
 
 import zope.component
 
-from acme import errors as acme_errors
 from acme import jose
 
 import certbot
@@ -397,17 +396,12 @@ def register(config, unused_plugins):
                 "required\n(hint: --email)")
     acc, acme = _determine_account(config)
     acme_client = client.Client(config, acc, None, None, acme=acme)
-    try:
-        updated_reg = client.messages.Registration.from_data(email=config.email)
-        acme_client.acme.update_registration(acme_client.account.regr,
-                                             updated_reg)
-    except acme_errors.UnexpectedUpdate:
-        # We expect the unexpected update!
-        pass
-    query_data = acme_client.acme.query_registration(acme_client.account.regr)
-    # We rely on an ACME exception to interrupt this process if it didn't work.
-    print("Registration change succeeded. New registration data:\n")
-    print(query_data)
+    data = acme_client.acme.update_registration(acc.regr.update(
+        body=acc.regr.body.update(contact=('mailto:' + config.email,))))
+    # We rely on an exception to interrupt this process if it didn't work.
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    msg = "Your e-mail address was updated to {0}.".format(config.email)
+    reporter_util.add_message(msg, reporter_util.HIGH_PRIORITY)
     return
 
 
