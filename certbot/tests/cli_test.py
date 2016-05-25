@@ -49,7 +49,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.logs_dir = os.path.join(self.tmp_dir, 'logs')
         self.standard_args = ['--config-dir', self.config_dir,
                               '--work-dir', self.work_dir,
-                              '--logs-dir', self.logs_dir, '--text']
+                              '--logs-dir', self.logs_dir]
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
