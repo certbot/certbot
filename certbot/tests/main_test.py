@@ -1,13 +1,47 @@
 """Tests for certbot.main."""
+import os
+import shutil
+import tempfile
 import unittest
 
-
 import mock
-
+import six
 
 from certbot import cli
 from certbot import configuration
+from certbot import errors
+from certbot import main
 from certbot.plugins import disco as plugins_disco
+
+
+class MainTest(unittest.TestCase):
+    """Tests for certbot.main"""
+
+    def setUp(self):
+        self.tmp_dir = tempfile.mkdtemp()
+        self.config_dir = os.path.join(self.tmp_dir, 'config')
+        self.work_dir = os.path.join(self.tmp_dir, 'work')
+        self.logs_dir = os.path.join(self.tmp_dir, 'logs')
+        self.standard_args = ['--config-dir', self.config_dir,
+                              '--work-dir', self.work_dir,
+                              '--logs-dir', self.logs_dir, '--text']
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp_dir)
+
+    def _call(self, args, stdout=None):
+        "Run the client with output streams mocked out"
+        args = self.standard_args + args
+
+        toy_stdout = stdout if stdout else six.StringIO()
+        with mock.patch('certbot.main.sys.stdout', new=toy_stdout):
+            with mock.patch('certbot.main.sys.stderr') as stderr:
+                ret = main.main(args[:])  # NOTE: parser can alter its args!
+        return ret, toy_stdout, stderr
+
+    def test_args_conflict(self):
+        args = ['renew', '--dialog', '--text']
+        self.assertRaises(errors.Error, self._call, args)
 
 
 class ObtainCertTest(unittest.TestCase):
@@ -26,7 +60,6 @@ class ObtainCertTest(unittest.TestCase):
         config = configuration.NamespaceConfig(
             cli.prepare_and_parse_args(plugins, args))
 
-        from certbot import main
         with mock.patch('certbot.main._init_le_client') as mock_init:
             main.obtain_cert(config, plugins)
 
