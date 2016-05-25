@@ -710,6 +710,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
     helpful.add(
         "security", "--key-types", default=flag_default("key_types"),
         help=config_help("key_types"))
+    helpful.add(
         "security", "--must-staple", action="store_true",
         help=config_help("must_staple"), dest="must_staple", default=False)
     helpful.add(
