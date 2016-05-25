@@ -908,6 +908,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self._call(['-c', test_util.vector_path('cli.ini')])
         self.assertTrue(mocked_run.called)
 
+    def test_conflicting_args(self):
+        args = ['renew', '--dialog', '--text']
+        self.assertRaises(errors.Error, self._call, args)
+
 
 class DetermineAccountTest(unittest.TestCase):
     """Tests for certbot.cli._determine_account."""
