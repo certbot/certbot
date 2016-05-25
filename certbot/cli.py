@@ -343,6 +343,9 @@ class HelpfulArgumentParser(object):
         if parsed_args.csr:
             self.handle_csr(parsed_args)
 
+        if parsed_args.must_staple:
+            parsed_args.staple = True
+
         hooks.validate_hooks(parsed_args)
 
         return parsed_args
