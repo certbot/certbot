@@ -201,9 +201,9 @@ class IConfig(zope.interface.Interface):
         "Email used for registration and recovery contact.")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
     must_staple = zope.interface.Attribute(
-        "Whether to request the OCSP Must Staple certificate extension. "
-        "Additional setup may be required after issuance. This does not "
-        "currently autoconfigure web servers for OCSP stapling. ")
+        "Adds the OCSP Must Staple extension to the certificate."
+        "Autoconfigures OCSP Stapling for supported setups "
+        "(Apache version >= 2.3.3 ).")
 
     config_dir = zope.interface.Attribute("Configuration directory.")
     work_dir = zope.interface.Attribute("Working directory.")
