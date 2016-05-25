@@ -947,25 +947,18 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                         mocked_storage = mock.MagicMock()
                         mocked_account.AccountFileStorage.return_value = mocked_storage
                         mocked_storage.find_all.return_value = ["an account"]
-                        mocked_det.return_value = ("a", "b")
+                        mocked_det.return_value = (mock.MagicMock(), "foo")
                         acme_client = mock.MagicMock()
                         mocked_client.Client.return_value = acme_client
-                        # Currently the update_registration() call always
-                        # raises a harmless acme_errors.UnexpectedUpdate.
-                        # If this is fixed, we should get rid of both this
-                        # side effect and the corresponding try/catch in
-                        # main.register().
-                        uu = acme_errors.UnexpectedUpdate
-                        acme_client.acme.update_registration.side_effect = uu
                         x = self._call_no_clientmock(
                             ["register", "--update-registration", "--email",
                             "user@example.org"])
                         # When registration change succeeds, the return value
                         # of register() is None
                         assert x[0] is None
-                        # and we got far enough to query the registration from
+                        # and we got supposedly did update the registration from
                         # the server
-                        assert acme_client.acme.query_registration.call_count == 1
+                        assert acme_client.acme.update_registration.call_count == 1
 
 
 class DetermineAccountTest(unittest.TestCase):
