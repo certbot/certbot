@@ -401,8 +401,7 @@ def register(config, unused_plugins):
     # We rely on an exception to interrupt this process if it didn't work.
     reporter_util = zope.component.getUtility(interfaces.IReporter)
     msg = "Your e-mail address was updated to {0}.".format(config.email)
-    reporter_util.add_message(msg, reporter_util.HIGH_PRIORITY)
-    return
+    reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
 
 def install(config, plugins):
