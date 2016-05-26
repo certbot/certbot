@@ -176,7 +176,7 @@ if ! wc -l /tmp/hashes.$$ | grep -qE "^\s*15 " ; then
 fi
 
 # perform hideous surgery on requirements.txt...
-head -n -9 letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt > /tmp/req.$$
+head -n -15 letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt > /tmp/req.$$
 cat /tmp/hashes.$$ >> /tmp/req.$$
 cp /tmp/req.$$ letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt
 
