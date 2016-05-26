@@ -162,13 +162,13 @@ for module in certbot $subpkgs_modules ; do
     echo testing $module
     nosetests $module
 done
-deactivate
 
 # pin pip hashes of the things we just built
 for pkg in acme certbot certbot-apache letsencrypt letsencrypt-apache ; do
     echo $pkg==$version \\
     pip hash dist."$version/$pkg"/*.{whl,gz} | grep "^--hash" | python2 -c 'from sys import stdin; input = stdin.read(); print "   ", input.replace("\n--hash", " \\\n    --hash"),'
 done > /tmp/hashes.$$
+deactivate
 
 if ! wc -l /tmp/hashes.$$ | grep -qE "^\s*15 " ; then
     echo Unexpected pip hash output
