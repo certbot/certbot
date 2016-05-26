@@ -82,10 +82,15 @@ class Reporter(object):
                     print(le_util.ANSI_SGR_BOLD)
                 print('IMPORTANT NOTES:')
             first_wrapper = textwrap.TextWrapper(
-                initial_indent=' - ', subsequent_indent=(' ' * 3))
+                initial_indent=' - ',
+                subsequent_indent=(' ' * 3),
+                break_long_words=False,
+                break_on_hyphens=False)
             next_wrapper = textwrap.TextWrapper(
                 initial_indent=first_wrapper.subsequent_indent,
-                subsequent_indent=first_wrapper.subsequent_indent)
+                subsequent_indent=first_wrapper.subsequent_indent,
+                break_long_words=False,
+                break_on_hyphens=False)
         while not self.messages.empty():
             msg = self.messages.get()
             if self.config.quiet:

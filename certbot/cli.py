@@ -343,6 +343,9 @@ class HelpfulArgumentParser(object):
         if parsed_args.csr:
             self.handle_csr(parsed_args)
 
+        if parsed_args.must_staple:
+            parsed_args.staple = True
+
         # Avoid conflicting args
         conficting_args = ["quiet", "noninteractive_mode", "text_mode"]
         if parsed_args.dialog_mode:
