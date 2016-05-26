@@ -39,6 +39,7 @@ class GetEmailTest(unittest.TestCase):
     def test_cancel_none(self):
         self.input.return_value = (display_util.CANCEL, "foo@bar.baz")
         self.assertRaises(errors.Error, self._call)
+        self.assertRaises(errors.Error, self._call, optional=False)
 
     def test_ok_safe(self):
         self.input.return_value = (display_util.OK, "foo@bar.baz")
@@ -52,23 +53,24 @@ class GetEmailTest(unittest.TestCase):
             mock_safe_email.side_effect = [False, True]
             self.assertTrue(self._call() is "foo@bar.baz")
 
-    def test_more_and_invalid_flags(self):
-        optional_txt = "--register-unsafely-without-email"
+    def test_invalid_flag(self):
         invalid_txt = "There seem to be problems"
-        base_txt = "Enter email"
         self.input.return_value = (display_util.OK, "foo@bar.baz")
         with mock.patch("certbot.display.ops.le_util.safe_email") as mock_safe_email:
             mock_safe_email.return_value = True
             self._call()
-            msg = self.input.call_args[0][0]
-            self.assertTrue(optional_txt not in msg)
-            self.assertTrue(invalid_txt not in msg)
-            self.assertTrue(base_txt in msg)
+            self.assertTrue(invalid_txt not in self.input.call_args[0][0])
             self._call(invalid=True)
-            msg = self.input.call_args[0][0]
-            self.assertTrue(optional_txt in msg)
-            self.assertTrue(invalid_txt in msg)
-            self.assertTrue(base_txt in msg)
+            self.assertTrue(invalid_txt in self.input.call_args[0][0])
+
+    def test_optional_flag(self):
+        self.input.return_value = (display_util.OK, "foo@bar.baz")
+        with mock.patch("certbot.display.ops.le_util.safe_email") as mock_safe_email:
+            mock_safe_email.side_effect = [False, True]
+            self._call(optional=False)
+            for call in self.input.call_args_list:
+                self.assertTrue(
+                    "--register-unsafely-without-email" not in call[0][0])
 
 
 class ChooseAccountTest(unittest.TestCase):
