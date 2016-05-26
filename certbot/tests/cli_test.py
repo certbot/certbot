@@ -942,16 +942,17 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                  "user@example.org"])
             self.assertTrue("Could not find an existing account" in x[0])
 
-    def test_update_registration_no_email(self):
+    def test_update_registration_unsafely(self):
         # This test will become obsolete when register --update-registration
-        # supports updating something other than the e-mail address!
-        # with mock.patch('certbot.main.client') as mocked_client:
+        # supports removing an e-mail address from the account
         with mock.patch('certbot.main.account') as mocked_account:
             mocked_storage = mock.MagicMock()
             mocked_account.AccountFileStorage.return_value = mocked_storage
             mocked_storage.find_all.return_value = ["an account"]
-            x = self._call_no_clientmock(["register", "--update-registration"])
-            self.assertTrue("can only change the e-mail" in x[0])
+            x = self._call_no_clientmock(
+                "register --update-registration "
+                "--register-unsafely-without-email".split())
+            self.assertTrue("--register-unsafely-without-email" in x[0])
 
     def test_update_registration_with_email(self):
         with mock.patch('certbot.main.client') as mocked_client:

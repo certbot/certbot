@@ -391,9 +391,12 @@ def register(config, unused_plugins):
     if len(accounts) == 0:
         return "Could not find an existing account to update."
     if config.email is None:
-        return ("Currently, --update-registration can only change the e-mail "
-                "address\nassociated with an account. A new e-mail address is "
-                "required\n(hint: --email)")
+        if config.register_unsafely_without_email:
+            return ("--register-unsafely-without-email provided, however, a "
+                    "new e-mail address must\ncurrently be provided when "
+                    "updating a registration.")
+        config.namespace.email = display_ops.get_email(optional=False)
+
     acc, acme = _determine_account(config)
     acme_client = client.Client(config, acc, None, None, acme=acme)
     # We rely on an exception to interrupt this process if it didn't work.
