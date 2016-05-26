@@ -149,6 +149,14 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 args.extend(['--email', 'io@io.is'])
                 self._cli_missing_flag(args, "--agree-tos")
 
+    @mock.patch('certbot.main.renew')
+    def test_gui(self, renew):
+        args = ['renew', '--dialog']
+        # --text conflicts with --dialog
+        self.standard_args.remove('--text')
+        self._call(args)
+        self.assertFalse(renew.call_args[0][0].noninteractive_mode)
+
     @mock.patch('certbot.main.client.acme_client.Client')
     @mock.patch('certbot.main._determine_account')
     @mock.patch('certbot.main.client.Client.obtain_and_enroll_certificate')
@@ -906,6 +914,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with mock.patch('certbot.main.run') as mocked_run:
             self._call(['-c', test_util.vector_path('cli.ini')])
         self.assertTrue(mocked_run.called)
+
+    def test_conflicting_args(self):
+        args = ['renew', '--dialog', '--text']
+        self.assertRaises(errors.Error, self._call, args)
 
 
 class DetermineAccountTest(unittest.TestCase):

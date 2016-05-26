@@ -334,7 +334,7 @@ class HelpfulArgumentParser(object):
 
         # Do any post-parsing homework here
 
-        if self.verb == "renew":
+        if self.verb == "renew" and not parsed_args.dialog_mode:
             parsed_args.noninteractive_mode = True
 
         if parsed_args.staging or parsed_args.dry_run:
@@ -345,6 +345,16 @@ class HelpfulArgumentParser(object):
 
         if parsed_args.must_staple:
             parsed_args.staple = True
+
+        # Avoid conflicting args
+        conficting_args = ["quiet", "noninteractive_mode", "text_mode"]
+        if parsed_args.dialog_mode:
+            for arg in conficting_args:
+                if getattr(parsed_args, arg):
+                    raise errors.Error(
+                        ("Conflicting values for displayer."
+                        " {0} conflicts with dialog_mode").format(arg)
+                    )
 
         hooks.validate_hooks(parsed_args)
 
@@ -570,6 +580,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
     :rtype: argparse.Namespace
 
     """
+
+    # pylint: disable=too-many-statements
+
     helpful = HelpfulArgumentParser(args, plugins, detect_defaults)
 
     # --help is automatically provided by argparse
@@ -587,6 +600,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
         help="Run without ever asking for user input. This may require "
               "additional command line flags; the client will try to explain "
               "which ones are required if it finds one missing")
+    helpful.add(
+        None, "--dialog", dest="dialog_mode", action="store_true",
+        help="Run using dialog")
     helpful.add(
         None, "--dry-run", action="store_true", dest="dry_run",
         help="Perform a test run of the client, obtaining test (invalid) certs"
