@@ -149,6 +149,14 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 args.extend(['--email', 'io@io.is'])
                 self._cli_missing_flag(args, "--agree-tos")
 
+    @mock.patch('certbot.main.renew')
+    def test_gui(self, renew):
+        args = ['renew', '--dialog']
+        # --text conflicts with --dialog
+        self.standard_args.remove('--text')
+        self._call(args)
+        self.assertFalse(renew.call_args[0][0].noninteractive_mode)
+
     @mock.patch('certbot.main.client.acme_client.Client')
     @mock.patch('certbot.main._determine_account')
     @mock.patch('certbot.main.client.Client.obtain_and_enroll_certificate')
@@ -421,6 +429,13 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self.assertTrue('--server' in error.message)
             for arg in conflicting_args:
                 self.assertTrue(arg in error.message)
+
+    def test_must_staple_flag(self):
+        parse = self._get_argument_parser()
+        short_args = ['--must-staple']
+        namespace = parse(short_args)
+        self.assertTrue(namespace.must_staple)
+        self.assertTrue(namespace.staple)
 
     def test_staging_flag(self):
         parse = self._get_argument_parser()
@@ -961,6 +976,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                             acme_client.acme.update_registration.called)
                         # and we saved the updated registration on disk
                         self.assertTrue(mocked_storage.save_regr.called)
+
+    def test_conflicting_args(self):
+        args = ['renew', '--dialog', '--text']
+        self.assertRaises(errors.Error, self._call, args)
 
 
 class DetermineAccountTest(unittest.TestCase):
