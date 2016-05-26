@@ -45,7 +45,7 @@ export GPG_TTY=$(tty)
 PORT=${PORT:-1234}
 
 # subpackages to be released
-SUBPKGS=${SUBPKGS:-"acme certbot-apache certbot-nginx letshelp-certbot letsencrypt letsencrypt-apache letsencrypt-nginx letshelp-letsencrypt"}
+SUBPKGS=${SUBPKGS:-"acme certbot-apache certbot-nginx letsencrypt letsencrypt-apache letsencrypt-nginx"}
 subpkgs_modules="$(echo $SUBPKGS | sed s/-/_/g)"
 # certbot_compatibility_test is not packaged because:
 # - it is not meant to be used by anyone else than Certbot devs
