@@ -586,9 +586,11 @@ def _open_pem_file(cli_arg_path, pem_path):
 
     """
     if cli.set_by_cli(cli_arg_path):
+        logger.info("SET_BY_CLI")
         return le_util.safe_open(pem_path, chmod=0o644),\
             os.path.abspath(pem_path)
     else:
+        logger.info("NOT SET_BY_CLI")
         uniq = le_util.unique_file(pem_path, 0o644)
         return uniq[0], os.path.abspath(uniq[1])
 
