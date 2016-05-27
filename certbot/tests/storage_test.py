@@ -682,7 +682,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(os.path.exists(os.path.join(
             self.cli_config.archive_dir, "the-lineage.com", "privkey1.pem")))
 
-    @mock.patch("certbot.storage.le_util.unique_lineage_name")
+    @mock.patch("certbot.storage.util.unique_lineage_name")
     def test_invalid_config_filename(self, mock_uln):
         from certbot import storage
         mock_uln.return_value = "this_does_not_end_with_dot_conf", "yikes"

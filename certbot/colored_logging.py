@@ -2,7 +2,7 @@
 import logging
 import sys
 
-from certbot import le_util
+from certbot import util
 
 
 class StreamHandler(logging.StreamHandler):
@@ -40,6 +40,6 @@ class StreamHandler(logging.StreamHandler):
                if sys.version_info < (2, 7)
                else super(StreamHandler, self).format(record))
         if self.colored and record.levelno >= self.red_level:
-            return ''.join((le_util.ANSI_SGR_RED, out, le_util.ANSI_SGR_RESET))
+            return ''.join((util.ANSI_SGR_RED, out, util.ANSI_SGR_RESET))
         else:
             return out

@@ -13,12 +13,12 @@ from certbot import constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import error_handler
-from certbot import le_util
+from certbot import util
 
 logger = logging.getLogger(__name__)
 
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
-CURRENT_VERSION = le_util.get_strict_version(certbot.__version__)
+CURRENT_VERSION = util.get_strict_version(certbot.__version__)
 
 
 def config_with_defaults(config=None):
@@ -264,7 +264,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         conf_version = self.configuration.get("version")
         if (conf_version is not None and
-                le_util.get_strict_version(conf_version) > CURRENT_VERSION):
+                util.get_strict_version(conf_version) > CURRENT_VERSION):
             logger.warning(
                 "Attempting to parse the version %s renewal configuration "
                 "file found at %s with version %s of Certbot. This might not "
@@ -769,7 +769,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             if not os.path.exists(i):
                 os.makedirs(i, 0o700)
                 logger.debug("Creating directory %s.", i)
-        config_file, config_filename = le_util.unique_lineage_name(
+        config_file, config_filename = util.unique_lineage_name(
             cli_config.renewal_configs_dir, lineagename)
         if not config_filename.endswith(".conf"):
             raise errors.CertStorageError(

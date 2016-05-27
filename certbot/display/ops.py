@@ -6,7 +6,7 @@ import zope.component
 
 from certbot import errors
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ def get_email(more=False, invalid=False):
         raise errors.MissingCommandlineFlag(msg)
 
     if code == display_util.OK:
-        if le_util.safe_email(email):
+        if util.safe_email(email):
             return email
         else:
             # TODO catch the server's ACME invalid email address error, and
@@ -119,7 +119,7 @@ def get_valid_domains(domains):
     valid_domains = []
     for domain in domains:
         try:
-            valid_domains.append(le_util.enforce_domain_sanity(domain))
+            valid_domains.append(util.enforce_domain_sanity(domain))
         except errors.ConfigurationError:
             continue
     return valid_domains
@@ -163,7 +163,7 @@ def _choose_names_manually():
 
         for i, domain in enumerate(domain_list):
             try:
-                domain_list[i] = le_util.enforce_domain_sanity(domain)
+                domain_list[i] = util.enforce_domain_sanity(domain)
             except errors.ConfigurationError as e:
                 invalid_domains[domain] = e.message
 

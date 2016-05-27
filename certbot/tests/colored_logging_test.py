@@ -4,7 +4,7 @@ import unittest
 
 import six
 
-from certbot import le_util
+from certbot import util
 
 
 class StreamHandlerTest(unittest.TestCase):
@@ -32,9 +32,9 @@ class StreamHandlerTest(unittest.TestCase):
         self.logger.debug(msg)
 
         self.assertEqual(self.stream.getvalue(),
-                         '{0}{1}{2}\n'.format(le_util.ANSI_SGR_RED,
+                         '{0}{1}{2}\n'.format(util.ANSI_SGR_RED,
                                               msg,
-                                              le_util.ANSI_SGR_RESET))
+                                              util.ANSI_SGR_RESET))
 
 
 if __name__ == "__main__":

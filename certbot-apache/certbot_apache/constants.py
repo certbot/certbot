@@ -1,6 +1,6 @@
 """Apache plugin constants."""
 import pkg_resources
-from certbot import le_util
+from certbot import util
 
 
 CLI_DEFAULTS_DEBIAN = dict(
@@ -116,7 +116,7 @@ def os_constant(key):
     :param key: name of cli constant
     :return: value of constant for active os
     """
-    os_info = le_util.get_os_info()
+    os_info = util.get_os_info()
     try:
         constants = CLI_DEFAULTS[os_info[0].lower()]
     except KeyError:

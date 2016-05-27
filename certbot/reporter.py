@@ -11,7 +11,7 @@ from six.moves import queue  # pylint: disable=import-error
 import zope.interface
 
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 
 
 logger = logging.getLogger(__name__)
@@ -79,7 +79,7 @@ class Reporter(object):
             bold_on = sys.stdout.isatty()
             if not self.config.quiet:
                 if bold_on:
-                    print(le_util.ANSI_SGR_BOLD)
+                    print(util.ANSI_SGR_BOLD)
                 print('IMPORTANT NOTES:')
             first_wrapper = textwrap.TextWrapper(
                 initial_indent=' - ',
@@ -101,7 +101,7 @@ class Reporter(object):
             if no_exception or msg.on_crash:
                 if bold_on and msg.priority > self.HIGH_PRIORITY:
                     if not self.config.quiet:
-                        sys.stdout.write(le_util.ANSI_SGR_RESET)
+                        sys.stdout.write(util.ANSI_SGR_RESET)
                         bold_on = False
                 lines = msg.text.splitlines()
                 print(first_wrapper.fill(lines[0]))
@@ -109,4 +109,4 @@ class Reporter(object):
                     print("\n".join(
                         next_wrapper.fill(line) for line in lines[1:]))
         if bold_on and not self.config.quiet:
-            sys.stdout.write(le_util.ANSI_SGR_RESET)
+            sys.stdout.write(util.ANSI_SGR_RESET)
