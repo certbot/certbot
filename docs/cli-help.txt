@@ -28,6 +28,7 @@ optional arguments:
                         require additional command line flags; the client will
                         try to explain which ones are required if it finds one
                         missing (default: False)
+  --dialog              Run using dialog (default: False)
   --dry-run             Perform a test run of the client, obtaining test
                         (invalid) certs but not saving them to disk. This can
                         currently only be used with the 'certonly' and 'renew'
@@ -130,6 +131,10 @@ security:
   Security parameters & server settings
 
   --rsa-key-size N      Size of the RSA key. (default: 2048)
+  --must-staple         Adds the OCSP Must Staple extension to the
+                        certificate. Autoconfigures OCSP Stapling for
+                        supported setups (Apache version >= 2.3.3 ). (default:
+                        False)
   --redirect            Automatically redirect all HTTP traffic to HTTPS for
                         the newly authenticated vhost. (default: None)
   --no-redirect         Do not automatically redirect all HTTP traffic to
@@ -148,6 +153,11 @@ security:
   --no-uir              Do not automatically set the "Content-Security-Policy:
                         upgrade-insecure-requests" header to every HTTP
                         response. (default: None)
+  --staple-ocsp         Enables OCSP Stapling. A valid OCSP response is
+                        stapled to the certificate that the server offers
+                        during TLS. (default: None)
+  --no-staple-ocsp      Do not automatically enable OCSP Stapling. (default:
+                        None)
   --strict-permissions  Require that all configuration files are owned by the
                         current user; only needed if your config is somewhere
                         unsafe like /tmp/ (default: False)
@@ -173,7 +183,9 @@ renew:
                         Command to be run in a shell after attempting to
                         obtain/renew certificates. Can be used to deploy
                         renewed certificates, or to restart any servers that
-                        were stopped by --pre-hook. (default: None)
+                        were stopped by --pre-hook. This is only run if an
+                        attempt was made to obtain/renew a certificate.
+                        (default: None)
   --renew-hook RENEW_HOOK
                         Command to be run in a shell once for each
                         successfully renewed certificate.For this command, the
@@ -263,15 +275,6 @@ plugins:
   --webroot             Obtain certs by placing files in a webroot directory.
                         (default: False)
 
-nginx:
-  Nginx Web Server - currently doesn't work
-
-  --nginx-server-root NGINX_SERVER_ROOT
-                        Nginx server root directory. (default: /etc/nginx)
-  --nginx-ctl NGINX_CTL
-                        Path to the 'nginx' binary, used for 'configtest' and
-                        retrieving nginx version number. (default: nginx)
-
 standalone:
   Automatically use a temporary webserver
 
@@ -287,6 +290,15 @@ manual:
   --manual-public-ip-logging-ok
                         Automatically allows public IP logging. (default:
                         False)
+
+nginx:
+  Nginx Web Server - currently doesn't work
+
+  --nginx-server-root NGINX_SERVER_ROOT
+                        Nginx server root directory. (default: /etc/nginx)
+  --nginx-ctl NGINX_CTL
+                        Path to the 'nginx' binary, used for 'configtest' and
+                        retrieving nginx version number. (default: nginx)
 
 webroot:
   Place files in webroot directory
