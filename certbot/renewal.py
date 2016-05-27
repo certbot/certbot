@@ -18,7 +18,7 @@ from certbot import constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 from certbot import hooks
 from certbot import storage
 from certbot.plugins import disco as plugins_disco
@@ -86,7 +86,7 @@ def _reconstitute(config, full_path):
         return None
 
     try:
-        config.domains = [le_util.enforce_domain_sanity(d)
+        config.domains = [util.enforce_domain_sanity(d)
                           for d in renewal_candidate.names()]
     except errors.ConfigurationError as error:
         logger.warning("Renewal configuration file %s references a cert "
@@ -301,7 +301,10 @@ def _renew_describe_results(config, renew_successes, renew_failures,
 def renew_all_lineages(config):
     """Examine each lineage; renew if due and report results"""
 
-    if config.domains != []:
+    # This is trivially False if config.domains is empty
+    if any(domain not in config.webroot_map for domain in config.domains):
+        # If more plugins start using cli.add_domains,
+        # we may want to only log a warning here
         raise errors.Error("Currently, the renew verb is only capable of "
                            "renewing all installed certificates that are due "
                            "to be renewed; individual domains cannot be "

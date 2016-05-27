@@ -24,7 +24,7 @@ from certbot import constants
 from certbot import errors
 from certbot import hooks
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 from certbot import log
 from certbot import reporter
 from certbot import renewal
@@ -94,10 +94,10 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
             if lineage is False:
                 raise errors.Error("Certificate could not be obtained")
     finally:
-        hooks.post_hook(config)
+        hooks.post_hook(config, final=False)
 
     if not config.dry_run and not config.verb == "renew":
-        _report_new_cert(lineage.cert, lineage.fullchain)
+        _report_new_cert(config, lineage.cert, lineage.fullchain)
 
     return lineage, action
 
@@ -229,7 +229,7 @@ def _find_duplicative_certs(config, domains):
     cli_config = configuration.RenewerConfiguration(config)
     configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there
-    le_util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
+    util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
 
     for renewal_file in renewal.renewal_conf_files(cli_config):
         try:
@@ -267,7 +267,7 @@ def _find_domains(config, installer):
     return domains
 
 
-def _report_new_cert(cert_path, fullchain_path):
+def _report_new_cert(config, cert_path, fullchain_path):
     """Reports the creation of a new certificate to the user.
 
     :param str cert_path: path to cert
@@ -285,12 +285,15 @@ def _report_new_cert(cert_path, fullchain_path):
         # Unless we're in .csr mode and there really isn't one
         and_chain = "has "
         path = cert_path
+
+    verbswitch = ' with the "certonly" option' if config.verb == "run" else ""
     # XXX Perhaps one day we could detect the presence of known old webservers
     # and say something more informative here.
-    msg = ("Congratulations! Your certificate {0} been saved at {1}."
-           " Your cert will expire on {2}. To obtain a new version of the "
-           "certificate in the future, simply run Certbot again."
-           .format(and_chain, path, expiry))
+    msg = ('Congratulations! Your certificate {0} been saved at {1}.'
+           ' Your cert will expire on {2}. To obtain a new or tweaked version of this '
+           'certificate in the future, simply run {3} again{4}. '
+           'To non-interactively renew *all* of your ceriticates, run "{3} renew"'
+           .format(and_chain, path, expiry, cli.cli_command, verbswitch))
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
 
@@ -485,7 +488,7 @@ def _csr_obtain_cert(config, le_client):
     else:
         cert_path, _, cert_fullchain = le_client.save_certificate(
             certr, chain, config.cert_path, config.chain_path, config.fullchain_path)
-        _report_new_cert(cert_path, cert_fullchain)
+        _report_new_cert(config, cert_path, cert_fullchain)
 
 
 def obtain_cert(config, plugins, lineage=None):
@@ -653,14 +656,15 @@ def main(cli_args=sys.argv[1:]):
     # Setup logging ASAP, otherwise "No handlers could be found for
     # logger ..." TODO: this should be done before plugins discovery
     for directory in config.config_dir, config.work_dir:
-        le_util.make_or_verify_dir(
+        util.make_or_verify_dir(
             directory, constants.CONFIG_DIRS_MODE, os.geteuid(),
             "--strict-permissions" in cli_args)
     # TODO: logs might contain sensitive data such as contents of the
     # private key! #525
-    le_util.make_or_verify_dir(
+    util.make_or_verify_dir(
         config.logs_dir, 0o700, os.geteuid(), "--strict-permissions" in cli_args)
     setup_logging(config, _cli_log_handler, logfile='letsencrypt.log')
+    cli.possible_deprecation_warning(config)
 
     logger.debug("certbot version: %s", certbot.__version__)
     # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
@@ -677,9 +681,6 @@ def main(cli_args=sys.argv[1:]):
         displayer = display_util.NoninteractiveDisplay(sys.stdout)
     elif config.text_mode:
         displayer = display_util.FileDisplay(sys.stdout)
-    elif config.verb == "renew":
-        config.noninteractive_mode = True
-        displayer = display_util.NoninteractiveDisplay(sys.stdout)
     else:
         displayer = display_util.NcursesDisplay()
     zope.component.provideUtility(displayer)

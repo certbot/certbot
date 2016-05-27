@@ -1,4 +1,4 @@
-Welcome to the Let's Encrypt client documentation!
+Welcome to the Certbot documentation!
 ==================================================
 
 .. toctree::

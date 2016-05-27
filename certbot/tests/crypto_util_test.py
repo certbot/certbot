@@ -10,6 +10,7 @@ import zope.component
 
 from certbot import errors
 from certbot import interfaces
+from certbot import util
 from certbot.tests import test_util
 
 
@@ -62,7 +63,7 @@ class InitSaveCSRTest(unittest.TestCase):
         shutil.rmtree(self.csr_dir)
 
     @mock.patch('certbot.crypto_util.make_csr')
-    @mock.patch('certbot.crypto_util.le_util.make_or_verify_dir')
+    @mock.patch('certbot.crypto_util.util.make_or_verify_dir')
     def test_it(self, unused_mock_verify, mock_csr):
         from certbot.crypto_util import init_save_csr
 
@@ -94,6 +95,25 @@ class MakeCSRTest(unittest.TestCase):
         self.assertEqual(
             ['example.com', 'www.example.com'], get_sans_from_csr(
                 csr_der, OpenSSL.crypto.FILETYPE_ASN1))
+
+    def test_must_staple(self):
+        # TODO: Fails for RSA256_KEY
+        csr_pem, _ = self._call(
+            RSA512_KEY, ['example.com', 'www.example.com'], must_staple=True)
+        csr = OpenSSL.crypto.load_certificate_request(
+            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+
+        # In pyopenssl 0.13 (used with TOXENV=py26-oldest and py27-oldest), csr
+        # objects don't have a get_extensions() method, so we skip this test if
+        # the method isn't available.
+        if hasattr(csr, 'get_extensions'):
+            # NOTE: Ideally we would filter by the TLS Feature OID, but
+            # OpenSSL.crypto.X509Extension doesn't give us the extension's raw OID,
+            # and the shortname field is just "UNDEF"
+            must_staple_exts = [e for e in csr.get_extensions()
+                if e.get_data() == "0\x03\x02\x01\x05"]
+            self.assertEqual(len(must_staple_exts), 1,
+                "Expected exactly one Must Staple extension")
 
 
 class ValidCSRTest(unittest.TestCase):
@@ -138,6 +158,44 @@ class CSRMatchesPubkeyTest(unittest.TestCase):
     def test_invalid_false(self):
         self.assertFalse(self._call(
             test_util.load_vector('csr.pem'), RSA256_KEY))
+
+
+class ImportCSRFileTest(unittest.TestCase):
+    """Tests for certbot.certbot_util.import_csr_file."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.crypto_util import import_csr_file
+        return import_csr_file(*args, **kwargs)
+
+    def test_der_csr(self):
+        csrfile = test_util.vector_path('csr.der')
+        data = test_util.load_vector('csr.der')
+
+        self.assertEqual(
+            (OpenSSL.crypto.FILETYPE_ASN1,
+             util.CSR(file=csrfile,
+                      data=data,
+                      form="der"),
+             ["example.com"],),
+            self._call(csrfile, data))
+
+    def test_pem_csr(self):
+        csrfile = test_util.vector_path('csr.pem')
+        data = test_util.load_vector('csr.pem')
+
+        self.assertEqual(
+            (OpenSSL.crypto.FILETYPE_PEM,
+             util.CSR(file=csrfile,
+                      data=data,
+                      form="pem"),
+             ["example.com"],),
+            self._call(csrfile, data))
+
+    def test_bad_csr(self):
+        self.assertRaises(errors.Error, self._call,
+                          test_util.vector_path('cert.pem'),
+                          test_util.load_vector('cert.pem'))
 
 
 class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
@@ -213,6 +271,36 @@ class GetSANsFromCSRTest(unittest.TestCase):
     def test_parse_no_sans(self):
         self.assertEqual(
             [], self._call(test_util.load_vector('csr-nosans.pem')))
+
+
+class GetNamesFromCSRTest(unittest.TestCase):
+    """Tests for certbot.crypto_util.get_names_from_csr."""
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.crypto_util import get_names_from_csr
+        return get_names_from_csr(*args, **kwargs)
+
+    def test_extract_one_san(self):
+        self.assertEqual(['example.com'], self._call(
+            test_util.load_vector('csr.pem')))
+
+    def test_extract_two_sans(self):
+        self.assertEqual(set(('example.com', 'www.example.com',)), set(
+            self._call(test_util.load_vector('csr-san.pem'))))
+
+    def test_extract_six_sans(self):
+        self.assertEqual(
+            set(self._call(test_util.load_vector('csr-6sans.pem'))),
+            set(("example.com", "example.org", "example.net",
+                 "example.info", "subdomain.example.com",
+                 "other.subdomain.example.com",)))
+
+    def test_parse_non_csr(self):
+        self.assertRaises(OpenSSL.crypto.Error, self._call, "hello there")
+
+    def test_parse_no_sans(self):
+        self.assertEqual(["example.org"],
+                         self._call(test_util.load_vector('csr-nosans.pem')))
 
 
 class CertLoaderTest(unittest.TestCase):

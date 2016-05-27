@@ -41,10 +41,15 @@ def _wrap_lines(msg):
     """
     lines = msg.splitlines()
     fixed_l = []
-    for line in lines:
-        fixed_l.append(textwrap.fill(line, 80))
-    return os.linesep.join(fixed_l)
 
+    for line in lines:
+        fixed_l.append(textwrap.fill(
+            line,
+            80,
+            break_long_words=False,
+            break_on_hyphens=False))
+
+    return os.linesep.join(fixed_l)
 
 @zope.interface.implementer(interfaces.IDisplay)
 class NcursesDisplay(object):
@@ -265,7 +270,11 @@ class FileDisplay(object):
 
         """
         ans = raw_input(
-            textwrap.fill("%s (Enter 'c' to cancel): " % message, 80))
+            textwrap.fill(
+                "%s (Enter 'c' to cancel): " % message,
+                80,
+                break_long_words=False,
+                break_on_hyphens=False))
 
         if ans == "c" or ans == "C":
             return CANCEL, "-1"
@@ -402,7 +411,11 @@ class FileDisplay(object):
         # Write out the menu choices
         for i, desc in enumerate(choices, 1):
             self.outfile.write(
-                textwrap.fill("{num}: {desc}".format(num=i, desc=desc), 80))
+                textwrap.fill(
+                    "{num}: {desc}".format(num=i, desc=desc),
+                    80,
+                    break_long_words=False,
+                    break_on_hyphens=False))
 
             # Keep this outside of the textwrap
             self.outfile.write(os.linesep)

@@ -15,4 +15,4 @@ to the Sphinx generated docs is provided below.
 
 -->
 
-https://letsencrypt.readthedocs.org/en/latest/contributing.html
+https://certbot.eff.org/docs/contributing.html

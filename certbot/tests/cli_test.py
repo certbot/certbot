@@ -22,7 +22,7 @@ from certbot import configuration
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
-from certbot import le_util
+from certbot import util
 from certbot import main
 from certbot import renewal
 from certbot import storage
@@ -149,6 +149,14 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 args.extend(['--email', 'io@io.is'])
                 self._cli_missing_flag(args, "--agree-tos")
 
+    @mock.patch('certbot.main.renew')
+    def test_gui(self, renew):
+        args = ['renew', '--dialog']
+        # --text conflicts with --dialog
+        self.standard_args.remove('--text')
+        self._call(args)
+        self.assertFalse(renew.call_args[0][0].noninteractive_mode)
+
     @mock.patch('certbot.main.client.acme_client.Client')
     @mock.patch('certbot.main._determine_account')
     @mock.patch('certbot.main.client.Client.obtain_and_enroll_certificate')
@@ -163,7 +171,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
         with mock.patch('certbot.main.client.acme_client.ClientNetwork') as acme_net:
             self._call_no_clientmock(args)
-            os_ver = le_util.get_os_info_ua()
+            os_ver = util.get_os_info_ua()
             ua = acme_net.call_args[1]["user_agent"]
             self.assertTrue(os_ver in ua)
             import platform
@@ -201,7 +209,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                     '--key-path', 'key', '--chain-path', 'chain'])
         self.assertEqual(mock_pick_installer.call_count, 1)
 
-    @mock.patch('certbot.le_util.exe_exists')
+    @mock.patch('certbot.util.exe_exists')
     def test_configurator_selection(self, mock_exe_exists):
         mock_exe_exists.return_value = True
         real_plugins = disco.PluginsRegistry.find_all()
@@ -349,8 +357,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                           ['-d', '204.11.231.35'])
 
     def test_csr_with_besteffort(self):
-        args = ["--csr", CSR, "--allow-subset-of-names"]
-        self.assertRaises(errors.Error, self._call, args)
+        self.assertRaises(
+            errors.Error, self._call,
+            'certonly --csr {0} --allow-subset-of-names'.format(CSR).split())
 
     def test_run_with_csr(self):
         # This is an error because you can only use --csr with certonly
@@ -360,6 +369,17 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             assert "Please try the certonly" in repr(e)
             return
         assert False, "Expected supplying --csr to fail with default verb"
+
+    def test_csr_with_no_domains(self):
+        self.assertRaises(
+            errors.Error, self._call,
+            'certonly --csr {0}'.format(
+                test_util.vector_path('csr-nonames.pem')).split())
+
+    def test_csr_with_inconsistent_domains(self):
+        self.assertRaises(
+            errors.Error, self._call,
+            'certonly -d example.org --csr {0}'.format(CSR).split())
 
     def _get_argument_parser(self):
         plugins = disco.PluginsRegistry.find_all()
@@ -409,6 +429,13 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self.assertTrue('--server' in error.message)
             for arg in conflicting_args:
                 self.assertTrue(arg in error.message)
+
+    def test_must_staple_flag(self):
+        parse = self._get_argument_parser()
+        short_args = ['--must-staple']
+        namespace = parse(short_args)
+        self.assertTrue(namespace.must_staple)
+        self.assertTrue(namespace.staple)
 
     def test_staging_flag(self):
         parse = self._get_argument_parser()
@@ -712,6 +739,12 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._test_renew_common(renewalparams=renewalparams,
                                 assert_oc_called=True)
 
+    def test_renew_with_webroot_map(self):
+        renewalparams = {'authenticator': 'webroot'}
+        self._test_renew_common(
+            renewalparams=renewalparams, assert_oc_called=True,
+            args=['renew', '--webroot-map', '{"example.com": "/tmp"}'])
+
     def test_renew_reconstitute_error(self):
         # pylint: disable=protected-access
         with mock.patch('certbot.main.renewal._reconstitute') as mock_reconstitute:
@@ -882,6 +915,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self._call(['-c', test_util.vector_path('cli.ini')])
         self.assertTrue(mocked_run.called)
 
+    def test_conflicting_args(self):
+        args = ['renew', '--dialog', '--text']
+        self.assertRaises(errors.Error, self._call, args)
+
 
 class DetermineAccountTest(unittest.TestCase):
     """Tests for certbot.cli._determine_account."""
@@ -958,7 +995,7 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
-    @mock.patch('certbot.le_util.make_or_verify_dir')
+    @mock.patch('certbot.util.make_or_verify_dir')
     def test_find_duplicative_names(self, unused_makedir):
         from certbot.main import _find_duplicative_certs
         test_cert = test_util.load_vector('cert-san.pem')

@@ -11,7 +11,7 @@ from acme import jose
 
 from certbot import account
 from certbot import errors
-from certbot import le_util
+from certbot import util
 
 from certbot.tests import test_util
 
@@ -134,63 +134,45 @@ class ClientTest(unittest.TestCase):
 
         self.acme.fetch_chain.assert_called_once_with(mock.sentinel.certr)
 
-    # FIXME move parts of this to test_cli.py...
     @mock.patch("certbot.client.logger")
     def test_obtain_certificate_from_csr(self, mock_logger):
         self._mock_obtain_certificate()
-        from certbot import cli
-        test_csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
-        mock_parsed_args = mock.MagicMock()
-        # The CLI should believe that this is a certonly request, because
-        # a CSR would not be allowed with other kinds of requests!
-        mock_parsed_args.verb = "certonly"
-        with mock.patch("certbot.client.le_util.CSR") as mock_CSR:
-            mock_CSR.return_value = test_csr
-            mock_parsed_args.domains = self.eg_domains[:]
-            mock_parser = mock.MagicMock(cli.HelpfulArgumentParser)
-            cli.HelpfulArgumentParser.handle_csr(mock_parser, mock_parsed_args)
+        test_csr = util.CSR(form="der", file=None, data=CSR_SAN)
+        auth_handler = self.client.auth_handler
 
-            # Now provoke an inconsistent domains error...
-            mock_parsed_args.domains.append("hippopotamus.io")
-            self.assertRaises(errors.ConfigurationError,
-                cli.HelpfulArgumentParser.handle_csr, mock_parser, mock_parsed_args)
-
-            authzr = self.client.auth_handler.get_authorizations(self.eg_domains, False)
-
-            self.assertEqual(
-                (mock.sentinel.certr, mock.sentinel.chain),
-                self.client.obtain_certificate_from_csr(
-                    self.eg_domains,
-                    test_csr,
-                    authzr=authzr))
-            # and that the cert was obtained correctly
-            self._check_obtain_certificate()
-
-            # Test for authzr=None
-            self.assertEqual(
-                (mock.sentinel.certr, mock.sentinel.chain),
-                self.client.obtain_certificate_from_csr(
-                    self.eg_domains,
-                    test_csr,
-                    authzr=None))
-
-            self.client.auth_handler.get_authorizations.assert_called_with(
-            self.eg_domains)
-
-            # Test for no auth_handler
-            self.client.auth_handler = None
-            self.assertRaises(
-                errors.Error,
-                self.client.obtain_certificate_from_csr,
+        authzr = auth_handler.get_authorizations(self.eg_domains, False)
+        self.assertEqual(
+            (mock.sentinel.certr, mock.sentinel.chain),
+            self.client.obtain_certificate_from_csr(
                 self.eg_domains,
-                test_csr)
-            mock_logger.warning.assert_called_once_with(mock.ANY)
+                test_csr,
+                authzr=authzr))
+        # and that the cert was obtained correctly
+        self._check_obtain_certificate()
+
+        # Test for authzr=None
+        self.assertEqual(
+            (mock.sentinel.certr, mock.sentinel.chain),
+            self.client.obtain_certificate_from_csr(
+                self.eg_domains,
+                test_csr,
+                authzr=None))
+        auth_handler.get_authorizations.assert_called_with(self.eg_domains)
+
+        # Test for no auth_handler
+        self.client.auth_handler = None
+        self.assertRaises(
+            errors.Error,
+            self.client.obtain_certificate_from_csr,
+            self.eg_domains,
+            test_csr)
+        mock_logger.warning.assert_called_once_with(mock.ANY)
 
     @mock.patch("certbot.client.crypto_util")
     def test_obtain_certificate(self, mock_crypto_util):
         self._mock_obtain_certificate()
 
-        csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
+        csr = util.CSR(form="der", file=None, data=CSR_SAN)
         mock_crypto_util.init_save_csr.return_value = csr
         mock_crypto_util.init_save_key.return_value = mock.sentinel.key
         domains = ["example.com", "www.example.com"]
@@ -221,7 +203,9 @@ class ClientTest(unittest.TestCase):
             mock.sentinel.key, domains, self.config.csr_dir)
         self._check_obtain_certificate()
 
-    def test_save_certificate(self):
+    @mock.patch("certbot.cli.helpful_parser")
+    def test_save_certificate(self, mock_parser):
+        # pylint: disable=too-many-locals
         certs = ["matching_cert.pem", "cert.pem", "cert-san.pem"]
         tmp_path = tempfile.mkdtemp()
         os.chmod(tmp_path, 0o755)  # TODO: really??
@@ -232,6 +216,10 @@ class ClientTest(unittest.TestCase):
         candidate_cert_path = os.path.join(tmp_path, "certs", "cert.pem")
         candidate_chain_path = os.path.join(tmp_path, "chains", "chain.pem")
         candidate_fullchain_path = os.path.join(tmp_path, "chains", "fullchain.pem")
+        mock_parser.verb = "certonly"
+        mock_parser.args = ["--cert-path", candidate_cert_path,
+                "--chain-path", candidate_chain_path,
+                "--fullchain-path", candidate_fullchain_path]
 
         cert_path, chain_path, fullchain_path = self.client.save_certificate(
             certr, chain_cert, candidate_cert_path, candidate_chain_path,

@@ -1,4 +1,4 @@
-# This is the flattened list of packages letsencrypt-auto installs. To generate
+# This is the flattened list of packages certbot-auto installs. To generate
 # this, do `pip install --no-cache-dir -e acme -e . -e certbot-apache`, and
 # then use `hashin` or a more secure method to gather the hashes.
 
@@ -178,12 +178,18 @@ mock==1.0.1 \
 
 # THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT; ADD ALL DEPENDENCIES ABOVE.
 
-acme==0.5.0 \
-    --hash=sha256:ceb4127c13213f0006a564be82176b968c6b374d20d9fc78555d0658a252b275 \
-    --hash=sha256:0605c63c656d33c883a05675f5db9cfb85d503f2771c885031800e0da7631abd
-letsencrypt==0.5.0 \
-    --hash=sha256:f90f883e99cdbdf8142335bdbf4f74a8af143ee4b4ec60fb49c6e47418c1114c \
-    --hash=sha256:e38a2b70b82be79bc195307652244a3e012ec73d897d4dbd3f80cf698496d15a
-letsencrypt-apache==0.5.0 \
-    --hash=sha256:a767882164a7b09d9c12c80684a28a782135fdaf35654ef5a02c0b7b1d27ab8d \
-    --hash=sha256:c20e7b9c517aa4a7d70e6bd9382da7259f00bc191b9e60d8e312e48837a00c41
+acme==0.7.0 \
+    --hash=sha256:6e61dba343806ad4cb27af84628152abc9e83a0fa24be6065587d2b46f340d7a \
+    --hash=sha256:9f75a1947978402026b741bdee8a18fc5a1cfd539b78e523b7e5f279bf18eeb9
+certbot==0.7.0 \
+    --hash=sha256:55604e43d231ac226edefed8dc110d792052095c3d75ad0e4a228ae0989fe5fd \
+    --hash=sha256:ad5083d75e16d1ab806802d3a32f34973b6d7adaf083aee87e07a6c1359efe88
+certbot-apache==0.7.0 \
+    --hash=sha256:5ab5ed9b2af6c7db9495ce1491122798e9d0764e3df8f0843d11d89690bf7f88 \
+    --hash=sha256:1ddbfaf01bcb0b05c0dcc8b2ebd37637f080cf798151e8140c20c9f5fe7bae75
+letsencrypt==0.7.0 \
+    --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
+    --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
+letsencrypt-apache==0.7.0 \
+    --hash=sha256:10445980a6afc810325ea22a56e269229999120848f6c0b323b00275696b5c80 \
+    --hash=sha256:3f4656088a18e4efea7cd7eb4965e14e8d901f3b64f4691e79cafd0bb91890f0

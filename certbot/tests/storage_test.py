@@ -10,6 +10,7 @@ import configobj
 import mock
 import pytz
 
+import certbot
 from certbot import configuration
 from certbot import errors
 from certbot.storage import ALL_FOUR
@@ -136,6 +137,28 @@ class RenewableCertTests(BaseRenewableCertTest):
         config.write()
         self.assertRaises(errors.CertStorageError, storage.RenewableCert,
                           config.filename, self.cli_config)
+
+    def test_no_renewal_version(self):
+        from certbot import storage
+
+        self._write_out_ex_kinds()
+        self.assertTrue("version" not in self.config)
+
+        with mock.patch("certbot.storage.logger") as mock_logger:
+            storage.RenewableCert(self.config.filename, self.cli_config)
+        self.assertFalse(mock_logger.warning.called)
+
+    def test_renewal_newer_version(self):
+        from certbot import storage
+
+        self._write_out_ex_kinds()
+        self.config["version"] = "99.99.99"
+        self.config.write()
+
+        with mock.patch("certbot.storage.logger") as mock_logger:
+            storage.RenewableCert(self.config.filename, self.cli_config)
+        self.assertTrue(mock_logger.warning.called)
+        self.assertTrue("version" in mock_logger.warning.call_args[0][0])
 
     def test_consistent(self):
         # pylint: disable=too-many-statements,protected-access
@@ -659,7 +682,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(os.path.exists(os.path.join(
             self.cli_config.archive_dir, "the-lineage.com", "privkey1.pem")))
 
-    @mock.patch("certbot.storage.le_util.unique_lineage_name")
+    @mock.patch("certbot.storage.util.unique_lineage_name")
     def test_invalid_config_filename(self, mock_uln):
         from certbot import storage
         mock_uln.return_value = "this_does_not_end_with_dot_conf", "yikes"
@@ -760,11 +783,14 @@ class RenewableCertTests(BaseRenewableCertTest):
         with open(temp2, "r") as f:
             content = f.read()
         # useful value was updated
-        assert "useful = new_value" in content
+        self.assertTrue("useful = new_value" in content)
         # associated comment was preserved
-        assert "A useful value" in content
+        self.assertTrue("A useful value" in content)
         # useless value was deleted
-        assert "useless" not in content
+        self.assertTrue("useless" not in content)
+        # check version was stored
+        self.assertTrue("version = {0}".format(certbot.__version__) in content)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
