@@ -10,7 +10,6 @@ import unittest
 import mock
 import six
 
-import certbot
 from certbot import errors
 from certbot.tests import test_util
 
