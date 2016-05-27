@@ -60,6 +60,7 @@ your pull request must have thorough unit test coverage, pass our
 .. _github issue tracker: https://github.com/certbot/certbot/issues
 .. _Good Volunteer Task: https://github.com/certbot/certbot/issues?q=is%3Aopen+is%3Aissue+label%3A%22Good+Volunteer+Task%22
 
+
 Testing
 -------
 
@@ -153,11 +154,60 @@ the integration tests suite.
 Code components and layout
 ==========================
 
-acme
-  contains all protocol specific code
-certbot
-  all client code
+Code layout overview
+--------------------
 
+Looking at a clone of the `certbot` repo, you'll see the following
+directories:
+
+acme/
+  contains all protocol specific code
+certbot/
+  core client code
+certbot-apache/
+  the Apache plugin
+certbot-apache/
+  the Nginx plugin
+letsencrypt-auto-source/
+  the templates and components for building the `certbot-auto` script
+
+Diving into the `certbot/` directory, you'll find the following important
+components:
+
+main.py
+  the functions that implement each of the subcommands (`certonly`, `run`, etc)
+cli.py
+  command line argument definitions and processing
+
+display/util.py
+  low-level user interface routines (these are implementations of the display_
+  interface, and are available for use by plugins)
+
+display/ops.py
+  higher-level user interface routines (things like asking for an email or
+  selecting domain names)
+
+renewal.py
+  implements logic for renewal both with the `renew` verb or when the client
+  is re-run (typically with `certonly`)
+
+storage.py
+  stores certificate lineages and renewal configuration information in
+  `/etc/letsencrypt`
+
+plugins/webroot.py plugins/standalone.py plugins/manual.py
+  builtin plugins
+
+plugins/common.py
+  some generic classes that plugins may wish to inherit from
+
+plugins/selection.py
+  high and low-level logic for determining which plugins will be used in a
+  given run of Certbot
+
+plugins/reverter.py
+  a class that installer plugins can use to assist in implementing the
+  reversion methods of the `~certbot.interfaces.IInstaller` interface.
 
 Plugin-architecture
 -------------------
@@ -240,10 +290,12 @@ Augeas may still find the `~.Reverter` class helpful in handling
 configuration checkpoints and rollback.
 
 
+.. _display:
+
 Display
 ~~~~~~~
 
-We currently offer a pythondialog and "text" mode for displays. Display
+We currently offer a pythondialog, non-interactive, and "text" mode for displays. Display
 plugins implement the `~certbot.interfaces.IDisplay`
 interface.
 
