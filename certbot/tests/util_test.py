@@ -10,8 +10,8 @@ import unittest
 import mock
 import six
 
-import certbot
 from certbot import errors
+from certbot.tests import test_util
 
 
 class RunScriptTest(unittest.TestCase):
@@ -340,31 +340,66 @@ class EnforceDomainSanityTest(unittest.TestCase):
                           u"eichh\u00f6rnchen.example.com")
 
 
-class GetStrictVersionTest(unittest.TestCase):
-    """Tests for certbot.util.get_strict_version."""
+class OsInfoTest(unittest.TestCase):
+    """Test OS / distribution detection"""
 
-    @classmethod
-    def _call(cls, *args, **kwargs):
-        from certbot.util import get_strict_version
-        return get_strict_version(*args, **kwargs)
+    def test_systemd_os_release(self):
+        from certbot.util import (get_os_info, get_systemd_os_info,
+                                     get_os_info_ua)
 
-    def test_two_dev_versions(self):
-        self.assertTrue(
-            self._call("0.0.0.dev20151006") < self._call("0.0.0.dev20151008"))
+        with mock.patch('os.path.isfile', return_value=True):
+            self.assertEqual(get_os_info(
+                test_util.vector_path("os-release"))[0], 'systemdos')
+            self.assertEqual(get_os_info(
+                test_util.vector_path("os-release"))[1], '42')
+            self.assertEqual(get_systemd_os_info("/dev/null"), ("", ""))
+            self.assertEqual(get_os_info_ua(
+                test_util.vector_path("os-release")),
+                "SystemdOS")
+        with mock.patch('os.path.isfile', return_value=False):
+            self.assertEqual(get_systemd_os_info(), ("", ""))
 
-    def test_one_dev_one_release_version(self):
-        self.assertTrue(self._call("1.0.0.dev0") < self._call("1.0.0"))
-        self.assertTrue(self._call("1.0.0") < self._call("1.0.1.dev0"))
+    @mock.patch("certbot.util.subprocess.Popen")
+    def test_non_systemd_os_info(self, popen_mock):
+        from certbot.util import (get_os_info, get_python_os_info,
+                                     get_os_info_ua)
+        with mock.patch('os.path.isfile', return_value=False):
+            with mock.patch('platform.system_alias',
+                            return_value=('NonSystemD', '42', '42')):
+                self.assertEqual(get_os_info()[0], 'nonsystemd')
+                self.assertEqual(get_os_info_ua(),
+                                 " ".join(get_python_os_info()))
 
-    def test_two_release_versions(self):
-        self.assertTrue(self._call("0.0.0") < self._call("0.0.1"))
-        self.assertTrue(self._call("0.0.0") < self._call("0.1.0"))
-        self.assertTrue(self._call("0.0.0") < self._call("1.0.0"))
+            with mock.patch('platform.system_alias',
+                            return_value=('darwin', '', '')):
+                comm_mock = mock.Mock()
+                comm_attrs = {'communicate.return_value':
+                              ('42.42.42', 'error')}
+                comm_mock.configure_mock(**comm_attrs)  # pylint: disable=star-args
+                popen_mock.return_value = comm_mock
+                self.assertEqual(get_os_info()[0], 'darwin')
+                self.assertEqual(get_os_info()[1], '42.42.42')
 
-    def test_current_version(self):
-        current_version = self._call(certbot.__version__)
-        self.assertTrue(self._call("0.6.0") < current_version)
-        self.assertTrue(current_version < self._call("99.99.99"))
+            with mock.patch('platform.system_alias',
+                            return_value=('linux', '', '')):
+                with mock.patch('platform.linux_distribution',
+                                return_value=('', '', '')):
+                    self.assertEqual(get_python_os_info(), ("linux", ""))
+
+                with mock.patch('platform.linux_distribution',
+                                return_value=('testdist', '42', '')):
+                    self.assertEqual(get_python_os_info(), ("testdist", "42"))
+
+            with mock.patch('platform.system_alias',
+                            return_value=('freebsd', '9.3-RC3-p1', '')):
+                self.assertEqual(get_python_os_info(), ("freebsd", "9"))
+
+            with mock.patch('platform.system_alias',
+                            return_value=('windows', '', '')):
+                with mock.patch('platform.win32_ver',
+                                return_value=('4242', '95', '2', '')):
+                    self.assertEqual(get_python_os_info(),
+                                     ("windows", "95"))
 
 
 if __name__ == "__main__":

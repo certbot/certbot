@@ -171,13 +171,13 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
         with mock.patch('certbot.main.client.acme_client.ClientNetwork') as acme_net:
             self._call_no_clientmock(args)
-            os_ver = " ".join(util.get_os_info())
+            os_ver = util.get_os_info_ua()
             ua = acme_net.call_args[1]["user_agent"]
             self.assertTrue(os_ver in ua)
             import platform
             plat = platform.platform()
             if "linux" in plat.lower():
-                self.assertTrue(platform.linux_distribution()[0] in ua)
+                self.assertTrue(util.get_os_info_ua() in ua)
 
         with mock.patch('certbot.main.client.acme_client.ClientNetwork') as acme_net:
             ua = "bandersnatch"
