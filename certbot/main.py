@@ -292,7 +292,7 @@ def _report_new_cert(config, cert_path, fullchain_path):
     msg = ('Congratulations! Your certificate {0} been saved at {1}.'
            ' Your cert will expire on {2}. To obtain a new or tweaked version of this '
            'certificate in the future, simply run {3} again{4}. '
-           'To non-interactively renew *all* of your ceriticates, run "{3} renew"'
+           'To non-interactively renew *all* of your certificates, run "{3} renew"'
            .format(and_chain, path, expiry, cli.cli_command, verbswitch))
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
