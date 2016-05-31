@@ -18,7 +18,7 @@ z_util = zope.component.getUtility
 def get_email(invalid=False, optional=True):
     """Prompt for valid email address.
 
-    :param bool invalid: True if an invalid was provided by the user
+    :param bool invalid: True if an invalid address was provided by the user
     :param bool optional: True if the user can use
         --register-unsafely-without-email to avoid providing an e-mail
 
@@ -32,7 +32,7 @@ def get_email(invalid=False, optional=True):
     msg = "Enter email address (used for urgent notices and lost key recovery)"
     unsafe_suggestion = ("\n\nIf you really want to skip this, you can run "
                          "the client with --register-unsafely-without-email "
-                         "but make sure you backup your account key from "
+                         "but make sure you then backup your account key from "
                          "/etc/letsencrypt/accounts\n\n")
     if optional:
         if invalid:
