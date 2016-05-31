@@ -61,6 +61,7 @@ cert. Major SUBCOMMANDS are:
   install              Install a previously obtained cert in a server
   renew                Renew previously obtained certs that are near expiry
   revoke               Revoke a previously obtained certificate
+  register             Perform tasks related to registering with the CA
   rollback             Rollback server configuration changes made during install
   config_changes       Show changes made to server config during installation
   plugins              Display information about installed plugins
@@ -86,7 +87,8 @@ More detailed help:
                         the available topics are:
 
    all, automation, paths, security, testing, or any of the subcommands or
-   plugins (certonly, install, nginx, apache, standalone, webroot, etc)
+   plugins (certonly, install, register, nginx, apache, standalone, webroot,
+   etc.)
 """
 
 
@@ -285,8 +287,9 @@ class HelpfulArgumentParser(object):
         self.VERBS = {"auth": main.obtain_cert, "certonly": main.obtain_cert,
                       "config_changes": main.config_changes, "run": main.run,
                       "install": main.install, "plugins": main.plugins_cmd,
-                      "renew": main.renew, "revoke": main.revoke,
-                      "rollback": main.rollback, "everything": main.run}
+                      "register": main.register, "renew": main.renew,
+                      "revoke": main.revoke, "rollback": main.rollback,
+                      "everything": main.run}
 
         # List of topics for which additional help can be provided
         HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
@@ -570,7 +573,7 @@ class HelpfulArgumentParser(object):
             return dict([(t, t == chosen_topic) for t in self.help_topics])
 
 
-def prepare_and_parse_args(plugins, args, detect_defaults=False):
+def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: disable=too-many-statements
     """Returns parsed command line arguments.
 
     :param .PluginsRegistry plugins: available plugins
@@ -625,6 +628,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):
              "certificates. Updates to the Subscriber Agreement will still "
              "affect you, and will be effective 14 days after posting an "
              "update to the web site.")
+    helpful.add(
+        "register", "--update-registration", action="store_true",
+        help="With the register verb, indicates that details associated "
+             "with an existing registration, such as the e-mail address, "
+             "should be updated, rather than registering a new account.")
     helpful.add(None, "-m", "--email", help=config_help("email"))
     # positional arg shadows --domains, instead of appending, and
     # --domains is useful, because it can be stored in config

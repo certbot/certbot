@@ -366,6 +366,48 @@ def _init_le_client(config, authenticator, installer):
     return client.Client(config, acc, authenticator, installer, acme=acme)
 
 
+def register(config, unused_plugins):
+    """Create or modify accounts on the server."""
+
+    # Portion of _determine_account logic to see whether accounts already
+    # exist or not.
+    account_storage = account.AccountFileStorage(config)
+    accounts = account_storage.find_all()
+
+    # registering a new account
+    if not config.update_registration:
+        if len(accounts) > 0:
+            # TODO: add a flag to register a duplicate account (this will
+            #       also require extending _determine_account's behavior
+            #       or else extracting the registration code from there)
+            return ("There is an existing account; registration of a "
+                    "duplicate account with this command is currently "
+                    "unsupported.")
+        # _determine_account will register an account
+        _determine_account(config)
+        return
+
+    # --update-registration
+    if len(accounts) == 0:
+        return "Could not find an existing account to update."
+    if config.email is None:
+        if config.register_unsafely_without_email:
+            return ("--register-unsafely-without-email provided, however, a "
+                    "new e-mail address must\ncurrently be provided when "
+                    "updating a registration.")
+        config.namespace.email = display_ops.get_email(optional=False)
+
+    acc, acme = _determine_account(config)
+    acme_client = client.Client(config, acc, None, None, acme=acme)
+    # We rely on an exception to interrupt this process if it didn't work.
+    acc.regr = acme_client.acme.update_registration(acc.regr.update(
+        body=acc.regr.body.update(contact=('mailto:' + config.email,))))
+    account_storage.save_regr(acc)
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    msg = "Your e-mail address was updated to {0}.".format(config.email)
+    reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
+
+
 def install(config, plugins):
     """Install a previously obtained cert in a server."""
     # XXX: Update for renewer/RenewableCert
