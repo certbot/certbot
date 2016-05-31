@@ -95,8 +95,8 @@ def get_apache_configurator(
         in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
         work_dir=work_dir)
 
-    with mock.patch("certbot_apache.configurator.le_util.run_script"):
-        with mock.patch("certbot_apache.configurator.le_util."
+    with mock.patch("certbot_apache.configurator.util.run_script"):
+        with mock.patch("certbot_apache.configurator.util."
                         "exe_exists") as mock_exe_exists:
             mock_exe_exists.return_value = True
             with mock.patch("certbot_apache.parser.ApacheParser."

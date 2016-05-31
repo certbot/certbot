@@ -15,7 +15,7 @@ from acme import challenges
 
 from certbot import errors
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 
 from certbot.plugins import common
 
@@ -106,8 +106,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         add("handle-sites", default=constants.os_constant("handle_sites"),
             help="Let installer handle enabling sites for you." +
                  "(Only Ubuntu/Debian currently)")
-        le_util.add_deprecated_argument(add, argument_name="ctl", nargs=1)
-        le_util.add_deprecated_argument(
+        util.add_deprecated_argument(add, argument_name="ctl", nargs=1)
+        util.add_deprecated_argument(
             add, argument_name="init-script", nargs=1)
 
     def __init__(self, *args, **kwargs):
@@ -151,7 +151,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         # Verify Apache is installed
-        if not le_util.exe_exists(constants.os_constant("restart_cmd")[0]):
+        if not util.exe_exists(constants.os_constant("restart_cmd")[0]):
             raise errors.NoInstallationError
 
         # Make sure configuration is valid
@@ -1521,14 +1521,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Generate reversal command.
         # Try to be safe here... check that we can probably reverse before
         # applying enmod command
-        if not le_util.exe_exists(self.conf("dismod")):
+        if not util.exe_exists(self.conf("dismod")):
             raise errors.MisconfigurationError(
                 "Unable to find a2dismod, please make sure a2enmod and "
                 "a2dismod are configured correctly for certbot.")
 
         self.reverter.register_undo_command(
             temp, [self.conf("dismod"), mod_name])
-        le_util.run_script([self.conf("enmod"), mod_name])
+        util.run_script([self.conf("enmod"), mod_name])
 
     def restart(self):
         """Runs a config test and reloads the Apache server.
@@ -1547,7 +1547,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            le_util.run_script(constants.os_constant("restart_cmd"))
+            util.run_script(constants.os_constant("restart_cmd"))
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
@@ -1558,7 +1558,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            le_util.run_script(constants.os_constant("conftest_cmd"))
+            util.run_script(constants.os_constant("conftest_cmd"))
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
@@ -1574,8 +1574,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            stdout, _ = le_util.run_script(
-                constants.os_constant("version_cmd"))
+            stdout, _ = util.run_script(constants.os_constant("version_cmd"))
         except errors.SubprocessError:
             raise errors.PluginError(
                 "Unable to run %s -v" %

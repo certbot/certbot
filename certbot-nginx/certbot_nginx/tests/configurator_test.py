@@ -30,7 +30,7 @@ class NginxConfiguratorTest(util.NginxTest):
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
 
-    @mock.patch("certbot_nginx.configurator.le_util.exe_exists")
+    @mock.patch("certbot_nginx.configurator.util.exe_exists")
     def test_prepare_no_install(self, mock_exe_exists):
         mock_exe_exists.return_value = False
         self.assertRaises(
@@ -40,7 +40,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEquals((1, 6, 2), self.config.version)
         self.assertEquals(5, len(self.config.parser.parsed))
 
-    @mock.patch("certbot_nginx.configurator.le_util.exe_exists")
+    @mock.patch("certbot_nginx.configurator.util.exe_exists")
     @mock.patch("certbot_nginx.configurator.subprocess.Popen")
     def test_prepare_initializes_version(self, mock_popen, mock_exe_exists):
         mock_popen().communicate.return_value = (
@@ -362,11 +362,11 @@ class NginxConfiguratorTest(util.NginxTest):
         mock_popen.side_effect = OSError("Can't find program")
         self.assertRaises(errors.MisconfigurationError, self.config.restart)
 
-    @mock.patch("certbot.le_util.run_script")
+    @mock.patch("certbot.util.run_script")
     def test_config_test(self, _):
         self.config.config_test()
 
-    @mock.patch("certbot.le_util.run_script")
+    @mock.patch("certbot.util.run_script")
     def test_config_test_bad_process(self, mock_run_script):
         mock_run_script.side_effect = errors.SubprocessError
         self.assertRaises(errors.MisconfigurationError, self.config.config_test)
