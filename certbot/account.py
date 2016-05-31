@@ -16,7 +16,7 @@ from acme import messages
 
 from certbot import errors
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 
 
 logger = logging.getLogger(__name__)
@@ -130,7 +130,7 @@ class AccountFileStorage(interfaces.AccountStorage):
     """
     def __init__(self, config):
         self.config = config
-        le_util.make_or_verify_dir(config.accounts_dir, 0o700, os.geteuid(),
+        util.make_or_verify_dir(config.accounts_dir, 0o700, os.geteuid(),
                                    self.config.strict_permissions)
 
     def _account_dir_path(self, account_id):
@@ -198,14 +198,14 @@ class AccountFileStorage(interfaces.AccountStorage):
 
     def _save(self, account, regr_only):
         account_dir_path = self._account_dir_path(account.id)
-        le_util.make_or_verify_dir(account_dir_path, 0o700, os.geteuid(),
-                                   self.config.strict_permissions)
+        util.make_or_verify_dir(account_dir_path, 0o700, os.geteuid(),
+                                self.config.strict_permissions)
         try:
             with open(self._regr_path(account_dir_path), "w") as regr_file:
                 regr_file.write(account.regr.json_dumps())
             if not regr_only:
-                with le_util.safe_open(self._key_path(account_dir_path),
-                                       "w", chmod=0o400) as key_file:
+                with util.safe_open(self._key_path(account_dir_path),
+                                    "w", chmod=0o400) as key_file:
                     key_file.write(account.key.json_dumps())
                 with open(self._metadata_path(
                         account_dir_path), "w") as metadata_file:

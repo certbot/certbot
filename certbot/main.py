@@ -24,7 +24,7 @@ from certbot import constants
 from certbot import errors
 from certbot import hooks
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 from certbot import log
 from certbot import reporter
 from certbot import renewal
@@ -229,7 +229,7 @@ def _find_duplicative_certs(config, domains):
     cli_config = configuration.RenewerConfiguration(config)
     configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there
-    le_util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
+    util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
 
     for renewal_file in renewal.renewal_conf_files(cli_config):
         try:
@@ -292,7 +292,7 @@ def _report_new_cert(config, cert_path, fullchain_path):
     msg = ('Congratulations! Your certificate {0} been saved at {1}.'
            ' Your cert will expire on {2}. To obtain a new or tweaked version of this '
            'certificate in the future, simply run {3} again{4}. '
-           'To non-interactively renew *all* of your ceriticates, run "{3} renew"'
+           'To non-interactively renew *all* of your certificates, run "{3} renew"'
            .format(and_chain, path, expiry, cli.cli_command, verbswitch))
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
@@ -698,12 +698,12 @@ def main(cli_args=sys.argv[1:]):
     # Setup logging ASAP, otherwise "No handlers could be found for
     # logger ..." TODO: this should be done before plugins discovery
     for directory in config.config_dir, config.work_dir:
-        le_util.make_or_verify_dir(
+        util.make_or_verify_dir(
             directory, constants.CONFIG_DIRS_MODE, os.geteuid(),
             "--strict-permissions" in cli_args)
     # TODO: logs might contain sensitive data such as contents of the
     # private key! #525
-    le_util.make_or_verify_dir(
+    util.make_or_verify_dir(
         config.logs_dir, 0o700, os.geteuid(), "--strict-permissions" in cli_args)
     setup_logging(config, _cli_log_handler, logfile='letsencrypt.log')
     cli.possible_deprecation_warning(config)

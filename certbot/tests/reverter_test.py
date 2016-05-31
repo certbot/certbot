@@ -164,7 +164,7 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
                 errors.ReverterError, self.reverter.register_undo_command,
                 True, ["command"])
 
-    @mock.patch("certbot.le_util.run_script")
+    @mock.patch("certbot.util.run_script")
     def test_run_undo_commands(self, mock_run):
         mock_run.side_effect = ["", errors.SubprocessError]
         coms = [

@@ -22,7 +22,7 @@ from certbot import configuration
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
-from certbot import le_util
+from certbot import util
 from certbot import main
 from certbot import renewal
 from certbot import storage
@@ -171,13 +171,13 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
         with mock.patch('certbot.main.client.acme_client.ClientNetwork') as acme_net:
             self._call_no_clientmock(args)
-            os_ver = " ".join(le_util.get_os_info())
+            os_ver = util.get_os_info_ua()
             ua = acme_net.call_args[1]["user_agent"]
             self.assertTrue(os_ver in ua)
             import platform
             plat = platform.platform()
             if "linux" in plat.lower():
-                self.assertTrue(platform.linux_distribution()[0] in ua)
+                self.assertTrue(util.get_os_info_ua() in ua)
 
         with mock.patch('certbot.main.client.acme_client.ClientNetwork') as acme_net:
             ua = "bandersnatch"
@@ -209,7 +209,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                     '--key-path', 'key', '--chain-path', 'chain'])
         self.assertEqual(mock_pick_installer.call_count, 1)
 
-    @mock.patch('certbot.le_util.exe_exists')
+    @mock.patch('certbot.util.exe_exists')
     def test_configurator_selection(self, mock_exe_exists):
         mock_exe_exists.return_value = True
         real_plugins = disco.PluginsRegistry.find_all()
@@ -1063,7 +1063,7 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
-    @mock.patch('certbot.le_util.make_or_verify_dir')
+    @mock.patch('certbot.util.make_or_verify_dir')
     def test_find_duplicative_names(self, unused_makedir):
         from certbot.main import _find_duplicative_certs
         test_cert = test_util.load_vector('cert-san.pem')

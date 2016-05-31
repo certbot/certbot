@@ -47,10 +47,10 @@ class Proxy(configurators_common.Proxy):
             "certbot_apache.parser.subprocess",
             mock_subprocess).start()
         mock.patch(
-            "certbot.le_util.subprocess",
+            "certbot.util.subprocess",
             mock_subprocess).start()
         mock.patch(
-            "certbot_apache.configurator.le_util.exe_exists",
+            "certbot_apache.configurator.util.exe_exists",
             _is_apache_command).start()
 
         patch = mock.patch(
