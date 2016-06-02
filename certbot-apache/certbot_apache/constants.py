@@ -81,6 +81,7 @@ CLI_DEFAULTS = {
     "rhel": CLI_DEFAULTS_CENTOS,
     "amazon": CLI_DEFAULTS_CENTOS,
     "gentoo": CLI_DEFAULTS_GENTOO,
+    "gentoo base system": CLI_DEFAULTS_GENTOO,
     "darwin": CLI_DEFAULTS_DARWIN,
 }
 """CLI defaults."""
