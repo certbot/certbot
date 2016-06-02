@@ -10,6 +10,7 @@ cert. Major SUBCOMMANDS are:
   install              Install a previously obtained cert in a server
   renew                Renew previously obtained certs that are near expiry
   revoke               Revoke a previously obtained certificate
+  register             Perform tasks related to registering with the CA
   rollback             Rollback server configuration changes made during install
   config_changes       Show changes made to server config during installation
   plugins              Display information about installed plugins
@@ -53,6 +54,11 @@ optional arguments:
                         to the Subscriber Agreement will still affect you, and
                         will be effective 14 days after posting an update to
                         the web site. (default: False)
+  --update-registration
+                        With the register verb, indicates that details
+                        associated with an existing registration, such as the
+                        e-mail address, should be updated, rather than
+                        registering a new account. (default: False)
   -m EMAIL, --email EMAIL
                         Email used for registration and recovery contact.
                         (default: None)
