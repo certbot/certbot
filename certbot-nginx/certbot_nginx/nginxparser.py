@@ -1,4 +1,5 @@
 """Very low-level nginx config parser based on pyparsing."""
+import copy
 import string
 
 from pyparsing import (
@@ -26,8 +27,8 @@ class RawNginxParser(object):
     modifier = Literal("=") | Literal("~*") | Literal("~") | Literal("^~")
 
     # rules
-    comment = Literal('#') + restOfLine()
-    assignment = (key + Optional(space + value, default=None) + semicolon)
+    comment = White() + Literal('#') + restOfLine()
+    assignment = White() + key + Optional(space + value, default=None) + semicolon
     location_statement = Optional(space + modifier) + Optional(space + location)
     if_statement = Literal("if") + space + Regex(r"\(.+\)") + space
     map_statement = Literal("map") + space + Regex(r"\S+") + space + Regex(r"\$\S+") + space
@@ -136,3 +137,66 @@ def dump(blocks, _file, indentation=4):
 
     """
     return _file.write(dumps(blocks, indentation))
+
+
+
+spacey = lambda x: isinstance(x, str) and x.isspace()
+
+class UnspacedList(list):
+    """Wrap a list [of lists], making any whitespace entries magically invisible"""
+
+    def __init__(self, list_source):
+        self.spaced = copy.deepcopy(list(list_source))
+
+        # Turn self into a version of the source list that has spaces removed
+        # and all sub-lists also UnspaceList()ed
+        list.__init__(self, list_source)
+        for i, entry in reversed(list(enumerate(self))):
+            if isinstance(entry, list):
+                list.__setitem__(self, i, UnspacedList(entry))
+            elif spacey(entry):
+                list.__delitem__(self, i)
+    
+    def insert(self, i, x):
+        self.spaced.insert(i + self._spaces_before(i), x)
+        list.insert(self, i, x)
+
+    def append(self, x):
+        self.spaced.append(x)
+        list.append(self, x)
+
+    def extend(self, x):
+        self.spaced.extend(x)
+        list.extend(self, x)
+
+    def __add__(self, other):
+        if hasattr(other, "spaced"):
+            # If the thing added to us is an UnspacedList, use its spaced form
+            self.spaced.__add__(other.spaced)
+        else:
+            self.spaced.__add__(other)
+        list.__add__(self, other)
+    
+    def __setitem__(self, i, value):
+        self.spaced.__setitem__(i + self._spaces_before(i), value)
+        list.__setitem__(self, i, value)
+
+    def __delitem__(self, i):
+        self.spaced.__delitem__(i + self._spaces_before(i))
+        list.__delitem__(self, i)
+
+    def _spaces_before(self, idx):
+        "Count the number of spaces in the spaced list before pos idx in the spaceless one"
+        spaces = 0
+        pos = 0
+        while idx != -1:
+            if spacey(self.spaced[pos]):
+                spaces += 1
+            else:
+                idx -= 1
+            pos += 1
+        return spaces
+
+    def with_spaces(self):
+        return self.spaced
+
