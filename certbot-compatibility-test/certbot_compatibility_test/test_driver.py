@@ -25,8 +25,8 @@ from certbot_compatibility_test.configurators.apache import apache24
 
 
 DESCRIPTION = """
-Tests Certbot plugins against different server configuratons. It is
-assumed that Docker is already installed. If no test types is specified, all
+Tests Certbot plugins against different server configurations. It is
+assumed that Docker is already installed. If no test type is specified, all
 tests that the plugin supports are performed.
 
 """
