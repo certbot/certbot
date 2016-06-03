@@ -9,6 +9,7 @@ import zope.interface
 from certbot import configuration
 from certbot import errors as le_errors
 from certbot_apache import configurator
+from certbot_apache import constants
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import interfaces
 from certbot_compatibility_test import util
@@ -31,6 +32,11 @@ class Proxy(configurators_common.Proxy):
 
         self.modules = self.server_root = self.test_conf = self.version = None
         self._apache_configurator = self._all_names = self._test_names = None
+        patch = mock.patch(
+            "certbot_apache.configurator.display_ops.select_vhost")
+        mock_display = patch.start()
+        mock_display.side_effect = le_errors.PluginError(
+            "Unable to determine vhost")
 
     def __getattr__(self, name):
         """Wraps the Apache Configurator methods"""
@@ -50,12 +56,11 @@ class Proxy(configurators_common.Proxy):
         with open(os.path.join(config, "config_file")) as f:
             config_file = os.path.join(server_root, f.readline().rstrip())
 
-        self.preprocess_config(server_root)
         self._prepare_configurator(server_root, config_file)
 
         try:
             subprocess.check_call("apachectl -d {0} -f {1} -k start".format(
-                server_root, config_file))
+                server_root, config_file).split())
         except errors.Error:
             raise errors.Error(
                 "Apache failed to load {0} before tests started".format(
@@ -65,7 +70,12 @@ class Proxy(configurators_common.Proxy):
 
     def _prepare_configurator(self, server_root, config_file):
         """Prepares the Apache plugin for testing"""
+        for k in constants.CLI_DEFAULTS_DEBIAN.keys():
+            setattr(self.le_config, "apache_" + k, constants.os_constant(k))
         self.le_config.apache_server_root = server_root
+
+        # An alias
+        self.le_config.apache_handle_modules = self.le_config.apache_handle_mods
 
         self._apache_configurator = configurator.ApacheConfigurator(
             config=configuration.NamespaceConfig(self.le_config),
@@ -75,6 +85,7 @@ class Proxy(configurators_common.Proxy):
     def cleanup_from_tests(self):
         """Performs any necessary cleanup from running plugin tests"""
         super(Proxy, self).cleanup_from_tests()
+        mock.patch.stopall()
 
     def get_all_names_answer(self):
         """Returns the set of domain names that the plugin should find"""

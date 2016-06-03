@@ -21,7 +21,7 @@ from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
 from certbot_compatibility_test import validator
 
-from certbot_compatibility_test.configurators.apache import apache24
+from certbot_compatibility_test.configurators.apache import common
 
 
 DESCRIPTION = """
@@ -31,7 +31,7 @@ tests that the plugin supports are performed.
 
 """
 
-PLUGINS = {"apache": apache24.Proxy}
+PLUGINS = {"apache": common.Proxy}
 
 
 logger = logging.getLogger(__name__)
@@ -47,6 +47,8 @@ def test_authenticator(plugin, config, temp_dir):
                      "challenge types")
         return False
 
+    import ipdb
+    ipdb.set_trace()
     try:
         responses = plugin.perform(achalls)
     except le_errors.Error as error:
@@ -341,7 +343,6 @@ def main():
     temp_dir = tempfile.mkdtemp()
     plugin = PLUGINS[args.plugin](args)
     try:
-        plugin.execute_in_docker("mkdir -p /var/log/apache2")
         while plugin.has_more_configs():
             success = True
 
