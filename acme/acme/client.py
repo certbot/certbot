@@ -609,6 +609,10 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
                       method, url, args, kwargs)
         kwargs['verify'] = self.verify_ssl
         kwargs.setdefault('headers', {})
+        """
+          PULL REQUEST: fix bug where newline creeps in.
+        """
+        self.user_agent = self.user_agent.replace( '\n', '' )
         kwargs['headers'].setdefault('User-Agent', self.user_agent)
         response = self.session.request(method, url, *args, **kwargs)
         logging.debug('Received %s. Headers: %s. Content: %r',
