@@ -57,6 +57,11 @@ def _determine_user_agent(config):
                        config.authenticator, config.installer)
     else:
         ua = config.user_agent
+    """
+      PULL REQUEST: Fix an error where somehow a newline crept in
+      resulting in an exception being thrown as the request is sent.
+    """
+    ua = ua.replace( '\n', '' )
     return ua
 
 
