@@ -527,10 +527,11 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `.JWS`
 
         """
-        jobj = obj.json_dumps().encode()
-        logger.debug('Serialized JSON: %s', jobj)
+        jobj = obj.json_dumps(indent=2).encode()
+        logger.debug('JWS payload:\n%s', jobj)
         return jws.JWS.sign(
-            payload=jobj, key=self.key, alg=self.alg, nonce=nonce).json_dumps()
+            payload=jobj, key=self.key, alg=self.alg,
+            nonce=nonce).json_dumps(indent=2)
 
     @classmethod
     def _check_response(cls, response, content_type=None):
@@ -551,9 +552,6 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         :raises .ClientError: In case of other networking errors.
 
         """
-        logger.debug('Received response %s (headers: %s): %r',
-                     response, response.headers, response.content)
-
         response_ct = response.headers.get('Content-Type')
         try:
             # TODO: response.json() is called twice, once here, and
@@ -605,14 +603,20 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
 
         """
-        logging.debug('Sending %s request to %s. args: %r, kwargs: %r',
-                      method, url, args, kwargs)
+        if method == "POST":
+            logging.debug('Sending POST request to %s:\n%s',
+                          url, kwargs['data'])
+        else:
+            logging.debug('Sending %s request to %s.', method, url)
         kwargs['verify'] = self.verify_ssl
         kwargs.setdefault('headers', {})
         kwargs['headers'].setdefault('User-Agent', self.user_agent)
         response = self.session.request(method, url, *args, **kwargs)
-        logging.debug('Received %s. Headers: %s. Content: %r',
-                      response, response.headers, response.content)
+        logger.debug('Received response:\nHTTP %d\n%s\n\n%s',
+                     response.status_code,
+                     "\n".join(["{0}: {1}".format(k, v)
+                                for k, v in response.headers.items()]),
+                     response.content)
         return response
 
     def head(self, *args, **kwargs):
@@ -637,7 +641,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
                 decoded_nonce = jws.Header._fields['nonce'].decode(nonce)
             except jose.DeserializationError as error:
                 raise errors.BadNonce(nonce, error)
-            logger.debug('Storing nonce: %r', decoded_nonce)
+            logger.debug('Storing nonce: %s', nonce)
             self._nonces.add(decoded_nonce)
         else:
             raise errors.MissingNonce(response)

@@ -540,6 +540,16 @@ class ClientNetworkTest(unittest.TestCase):
             'HEAD', 'http://example.com/', 'foo',
             headers=mock.ANY, verify=mock.ANY, bar='baz')
 
+    def test_send_request_post(self):
+        self.net.session = mock.MagicMock()
+        self.net.session.request.return_value = self.response
+        # pylint: disable=protected-access
+        self.assertEqual(self.response, self.net._send_request(
+            'POST', 'http://example.com/', 'foo', data='qux', bar='baz'))
+        self.net.session.request.assert_called_once_with(
+            'POST', 'http://example.com/', 'foo',
+            headers=mock.ANY, verify=mock.ANY, data='qux', bar='baz')
+
     def test_send_request_verify_ssl(self):
         # pylint: disable=protected-access
         for verify in True, False:

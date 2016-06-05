@@ -30,6 +30,6 @@ certbot_test_no_force_renew () {
         --agree-tos \
         --register-unsafely-without-email \
         --debug \
-        -vvvvvvv \
+        -vv \
         "$@"
 }
