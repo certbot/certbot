@@ -55,6 +55,14 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertRaises(
             errors.NoInstallationError, self.config.prepare)
 
+    @mock.patch("certbot_apache.augeas_configurator.AugeasConfigurator.init_augeas")
+    def test_prepare_no_augeas(self, mock_init_augeas):
+        def side_effect_error(*args, **kwargs):
+            raise ImportError
+        mock_init_augeas.side_effect = side_effect_error
+        self.assertRaises(
+            errors.NoInstallationError, self.config.prepare)
+
     @mock.patch("certbot_apache.parser.ApacheParser")
     @mock.patch("certbot_apache.configurator.util.exe_exists")
     def test_prepare_version(self, mock_exe_exists, _):
