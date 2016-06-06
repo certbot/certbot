@@ -47,8 +47,6 @@ def test_authenticator(plugin, config, temp_dir):
                      "challenge types")
         return False
 
-    import ipdb
-    ipdb.set_trace()
     try:
         responses = plugin.perform(achalls)
     except le_errors.Error as error:
@@ -63,7 +61,7 @@ def test_authenticator(plugin, config, temp_dir):
                 "Plugin failed to complete %s for %s in %s",
                 type(achalls[i]), achalls[i].domain, config)
             success = False
-        elif isinstance(responses[i], challenges.TLSSNI01):
+        elif isinstance(responses[i], challenges.TLSSNI01Response):
             verify = functools.partial(responses[i].simple_verify, achalls[i],
                                        achalls[i].domain,
                                        util.JWK.public_key(),
@@ -144,7 +142,7 @@ def test_deploy_cert(plugin, temp_dir, domains):
 
     for domain in domains:
         try:
-            plugin.deploy_cert(domain, cert_path, util.KEY_PATH)
+            plugin.deploy_cert(domain, cert_path, util.KEY_PATH, cert_path)
         except le_errors.Error as error:
             logger.error("Plugin failed to deploy ceritificate for %s:", domain)
             logger.exception(error)
