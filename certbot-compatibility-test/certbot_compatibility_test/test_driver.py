@@ -7,6 +7,7 @@ import os
 import shutil
 import tempfile
 import time
+import sys
 
 import OpenSSL
 
@@ -341,6 +342,7 @@ def main():
     temp_dir = tempfile.mkdtemp()
     plugin = PLUGINS[args.plugin](args)
     try:
+        overall_success = True
         while plugin.has_more_configs():
             success = True
 
@@ -359,9 +361,17 @@ def main():
             if success:
                 logger.info("All tests on %s succeeded", config)
             else:
+                overall_success = False
                 logger.error("Tests on %s failed", config)
     finally:
         plugin.cleanup_from_tests()
+
+    if overall_success:
+        logger.warn("All compatibility tests succeeded")
+        sys.exit(0)
+    else:
+        logger.warn("One or more compatibility tests failed")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
