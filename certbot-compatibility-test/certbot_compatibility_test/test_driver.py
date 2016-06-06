@@ -62,7 +62,7 @@ def test_authenticator(plugin, config, temp_dir):
                 type(achalls[i]), achalls[i].domain, config)
             success = False
         elif isinstance(responses[i], challenges.TLSSNI01Response):
-            verify = functools.partial(responses[i].simple_verify, achalls[i],
+            verify = functools.partial(responses[i].simple_verify, achalls[i].chall,
                                        achalls[i].domain,
                                        util.JWK.public_key(),
                                        host="127.0.0.1",
