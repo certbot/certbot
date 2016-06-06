@@ -144,6 +144,7 @@ def test_deploy_cert(plugin, temp_dir, domains):
     for domain in domains:
         try:
             plugin.deploy_cert(domain, cert_path, util.KEY_PATH, cert_path)
+            plugin.save()  # Needed by the Apache plugin
         except le_errors.Error as error:
             logger.error("Plugin failed to deploy ceritificate for %s:", domain)
             logger.exception(error)
@@ -178,6 +179,7 @@ def test_enhancements(plugin, domains):
     for domain in domains:
         try:
             plugin.enhance(domain, "redirect")
+            plugin.save()  # Needed by the Apache plugin
         except le_errors.PluginError as error:
             # Don't immediately fail because a redirect may already be enabled
             logger.warning("Plugin failed to enable redirect for %s:", domain)
