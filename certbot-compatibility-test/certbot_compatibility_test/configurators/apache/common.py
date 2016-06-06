@@ -53,14 +53,15 @@ class Proxy(configurators_common.Proxy):
         self._all_names, self._test_names = _get_names(config)
 
         server_root = _get_server_root(config)
-        with open(os.path.join(config, "config_file")) as f:
-            config_file = os.path.join(server_root, f.readline().rstrip())
+        # with open(os.path.join(config, "config_file")) as f:
+        #    config_file = os.path.join(server_root, f.readline().rstrip())
+        shutil.rmtree("/etc/apache2")
+        shutil.copytree(server_root, "/etc/apache2", symlinks=True)
 
-        self._prepare_configurator(server_root, config_file)
+        self._prepare_configurator()
 
         try:
-            subprocess.check_call("apachectl -d {0} -f {1} -k start".format(
-                server_root, config_file).split())
+            subprocess.check_call("apachectl -k start".split())
         except errors.Error:
             raise errors.Error(
                 "Apache failed to load {0} before tests started".format(
@@ -68,11 +69,10 @@ class Proxy(configurators_common.Proxy):
 
         return config
 
-    def _prepare_configurator(self, server_root, config_file):
+    def _prepare_configurator(self):
         """Prepares the Apache plugin for testing"""
         for k in constants.CLI_DEFAULTS_DEBIAN.keys():
             setattr(self.le_config, "apache_" + k, constants.os_constant(k))
-        self.le_config.apache_server_root = server_root
 
         # An alias
         self.le_config.apache_handle_modules = self.le_config.apache_handle_mods
