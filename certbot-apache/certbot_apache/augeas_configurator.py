@@ -1,7 +1,6 @@
 """Class of Augeas Configurators."""
 import logging
 
-import augeas
 
 from certbot import errors
 from certbot import reverter
@@ -29,6 +28,9 @@ class AugeasConfigurator(common.Plugin):
     def __init__(self, *args, **kwargs):
         super(AugeasConfigurator, self).__init__(*args, **kwargs)
 
+    def init_augeas(self):
+        """ Initialize the actual Augeas instance """
+        import augeas
         self.aug = augeas.Augeas(
             # specify a directory to load our preferred lens from
             loadpath=constants.AUGEAS_LENS_DIR,
