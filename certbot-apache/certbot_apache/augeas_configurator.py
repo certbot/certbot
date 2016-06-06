@@ -38,7 +38,6 @@ class AugeasConfigurator(common.Plugin):
         # because this will change the underlying configuration and potential
         # vhosts
         self.reverter = reverter.Reverter(self.config)
-        self.recovery_routine()
 
     def init_augeas(self):
         """ Initialize the actual Augeas instance """
@@ -49,6 +48,7 @@ class AugeasConfigurator(common.Plugin):
             # Do not save backup (we do it ourselves), do not load
             # anything by default
             flags=(augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD))
+        self.recovery_routine()
 
     def check_parsing_errors(self, lens):
         """Verify Augeas can parse all of the lens files.
