@@ -28,6 +28,18 @@ class AugeasConfigurator(common.Plugin):
     def __init__(self, *args, **kwargs):
         super(AugeasConfigurator, self).__init__(*args, **kwargs)
 
+        # Placeholder for augeas
+        self.aug = None
+
+        self.save_notes = ""
+
+        # See if any temporary changes need to be recovered
+        # This needs to occur before VirtualHost objects are setup...
+        # because this will change the underlying configuration and potential
+        # vhosts
+        self.reverter = reverter.Reverter(self.config)
+        self.recovery_routine()
+
     def init_augeas(self):
         """ Initialize the actual Augeas instance """
         import augeas
@@ -37,14 +49,6 @@ class AugeasConfigurator(common.Plugin):
             # Do not save backup (we do it ourselves), do not load
             # anything by default
             flags=(augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD))
-        self.save_notes = ""
-
-        # See if any temporary changes need to be recovered
-        # This needs to occur before VirtualHost objects are setup...
-        # because this will change the underlying configuration and potential
-        # vhosts
-        self.reverter = reverter.Reverter(self.config)
-        self.recovery_routine()
 
     def check_parsing_errors(self, lens):
         """Verify Augeas can parse all of the lens files.
