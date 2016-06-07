@@ -80,6 +80,7 @@ CLI_DEFAULTS = {
     "red hat enterprise linux server": CLI_DEFAULTS_CENTOS,
     "rhel": CLI_DEFAULTS_CENTOS,
     "amazon": CLI_DEFAULTS_CENTOS,
+    "gentoo": CLI_DEFAULTS_GENTOO,
     "gentoo base system": CLI_DEFAULTS_GENTOO,
     "darwin": CLI_DEFAULTS_DARWIN,
 }

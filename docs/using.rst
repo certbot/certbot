@@ -440,7 +440,7 @@ Operating System Packages
 
 .. code-block:: shell
 
-   sudo pacman -S letsencrypt
+   sudo pacman -S certbot
 
 **Debian**
 
