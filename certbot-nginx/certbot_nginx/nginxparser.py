@@ -53,8 +53,44 @@ class RawNginxParser(object):
         """Returns the parsed tree as a list."""
         return self.parse().asList()
 
-
 class RawNginxDumper(object):
+    # pylint: disable=too-few-public-methods
+    """A class that dumps nginx configuration from the provided tree."""
+    def __init__(self, blocks, indentation=0):
+        self.blocks = blocks
+        self.indentation = indentation
+
+    def __iter__(self, blocks=None, current_indent=0, spacer=''):
+        """Iterates the dumped nginx content."""
+        blocks = blocks or self.blocks
+        for key, values in blocks.spaced:
+            #indentation = spacer * current_indent
+            if isinstance(key, list):
+                yield "".join(key) + ' {'
+
+                for parameter in values:
+                    dumped = self.__iter__([parameter], current_indent + self.indentation)
+                    for line in dumped:
+                        yield line
+
+                yield '}'
+            else:
+                if key == '#':
+                    yield key + values
+                else:
+                    if values is None:
+                        yield key + ';'
+                    else:
+                        yield key + values + ';'
+
+    def __str__(self):
+        """Return the parsed block as a string."""
+        return '\n'.join(self) + '\n'
+
+
+
+
+class OldRawNginxDumper(object):
     # pylint: disable=too-few-public-methods
     """A class that dumps nginx configuration from the provided tree."""
     def __init__(self, blocks, indentation=4):
@@ -102,7 +138,7 @@ def loads(source):
     :rtype: list
 
     """
-    return RawNginxParser(source).as_list()
+    return UnspacedList(RawNginxParser(source).as_list())
 
 
 def load(_file):
@@ -113,13 +149,13 @@ def load(_file):
     :rtype: list
 
     """
-    return loads(_file.read())
+    return UnspacedList(loads(_file.read()))
 
 
 def dumps(blocks, indentation=4):
     """Dump to a string.
 
-    :param list block: The parsed tree
+    :param UnspacedList block: The parsed tree
     :param int indentation: The number of spaces to indent
     :rtype: str
 
@@ -130,7 +166,7 @@ def dumps(blocks, indentation=4):
 def dump(blocks, _file, indentation=4):
     """Dump to a file.
 
-    :param list block: The parsed tree
+    :param UnspacedList block: The parsed tree
     :param file _file: The file to dump to
     :param int indentation: The number of spaces to indent
     :rtype: NoneType
@@ -149,14 +185,14 @@ class UnspacedList(list):
         self.spaced = copy.deepcopy(list(list_source))
 
         # Turn self into a version of the source list that has spaces removed
-        # and all sub-lists also UnspaceList()ed
+        # and all sub-lists also UnspacedList()ed
         list.__init__(self, list_source)
         for i, entry in reversed(list(enumerate(self))):
             if isinstance(entry, list):
                 list.__setitem__(self, i, UnspacedList(entry))
             elif spacey(entry):
                 list.__delitem__(self, i)
-    
+
     def insert(self, i, x):
         self.spaced.insert(i + self._spaces_before(i), x)
         list.insert(self, i, x)
@@ -176,7 +212,7 @@ class UnspacedList(list):
         else:
             self.spaced.__add__(other)
         list.__add__(self, other)
-    
+
     def __setitem__(self, i, value):
         self.spaced.__setitem__(i + self._spaces_before(i), value)
         list.__setitem__(self, i, value)
