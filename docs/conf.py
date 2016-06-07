@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Let's Encrypt documentation build configuration file, created by
+# Certbot documentation build configuration file, created by
 # sphinx-quickstart on Sun Nov 23 20:35:21 2014.
 #
 # This file is execfile()d with the current directory set to its
@@ -21,7 +21,7 @@ import sys
 here = os.path.abspath(os.path.dirname(__file__))
 
 # read version number (and other metadata) from package init
-init_fn = os.path.join(here, '..', 'letsencrypt', '__init__.py')
+init_fn = os.path.join(here, '..', 'certbot', '__init__.py')
 with codecs.open(init_fn, encoding='utf8') as fd:
     meta = dict(re.findall(r"""__([a-z]+)__ = '([^']+)""", fd.read()))
 
@@ -64,8 +64,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Let\'s Encrypt'
-copyright = u'2014-2015, Let\'s Encrypt Project'
+project = u'Certbot'
+copyright = u'2014-2016 - The Certbot software and documentation are licensed under the Apache 2.0 license as described at https://eff.org/cb-license '
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -225,7 +225,7 @@ html_static_path = ['_static']
 #html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'LetsEncryptdoc'
+htmlhelp_basename = 'Certbotdoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -247,8 +247,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    ('index', 'LetsEncrypt.tex', u'Let\'s Encrypt Documentation',
-     u'Let\'s Encrypt Project', 'manual'),
+    ('index', 'Certbot.tex', u'Certbot Documentation',
+     u'Certbot Project', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -277,12 +277,10 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'letsencrypt', u'Let\'s Encrypt Documentation',
+    ('index', 'certbot', u'Certbot Documentation',
      [project], 7),
-    ('man/letsencrypt', 'letsencrypt', u'letsencrypt script documentation',
+    ('man/certbot', 'certbot', u'certbot script documentation',
      [project], 1),
-    ('man/letsencrypt-renewer', 'letsencrypt-renewer',
-     u'letsencrypt-renewer script documentation', [project], 1),
 ]
 
 # If true, show URL addresses after external links.
@@ -295,8 +293,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    ('index', 'LetsEncrypt', u'Let\'s Encrypt Documentation',
-     u'Let\'s Encrypt Project', 'LetsEncrypt', 'One line description of project.',
+    ('index', 'Certbot', u'Certbot Documentation',
+     u'Certbot Project', 'Certbot', 'One line description of project.',
      'Miscellaneous'),
 ]
 

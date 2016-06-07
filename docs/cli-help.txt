@@ -1,0 +1,352 @@
+usage: 
+  certbot [SUBCOMMAND] [options] [-d domain] [-d domain] ...
+
+Certbot can obtain and install HTTPS/TLS/SSL certificates.  By default,
+it will attempt to use a webserver both for obtaining and installing the
+cert. Major SUBCOMMANDS are:
+
+  (default) run        Obtain & install a cert in your current webserver
+  certonly             Obtain cert, but do not install it (aka "auth")
+  install              Install a previously obtained cert in a server
+  renew                Renew previously obtained certs that are near expiry
+  revoke               Revoke a previously obtained certificate
+  rollback             Rollback server configuration changes made during install
+  config_changes       Show changes made to server config during installation
+  plugins              Display information about installed plugins
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c CONFIG_FILE, --config CONFIG_FILE
+                        config file path (default: None)
+  -v, --verbose         This flag can be used multiple times to incrementally
+                        increase the verbosity of output, e.g. -vvv. (default:
+                        -3)
+  -t, --text            Use the text output instead of the curses UI.
+                        (default: False)
+  -n, --non-interactive, --noninteractive
+                        Run without ever asking for user input. This may
+                        require additional command line flags; the client will
+                        try to explain which ones are required if it finds one
+                        missing (default: False)
+  --dialog              Run using dialog (default: False)
+  --dry-run             Perform a test run of the client, obtaining test
+                        (invalid) certs but not saving them to disk. This can
+                        currently only be used with the 'certonly' and 'renew'
+                        subcommands. Note: Although --dry-run tries to avoid
+                        making any persistent changes on a system, it is not
+                        completely side-effect free: if used with webserver
+                        authenticator plugins like apache and nginx, it makes
+                        and then reverts temporary config changes in order to
+                        obtain test certs, and reloads webservers to deploy
+                        and then roll back those changes. It also calls --pre-
+                        hook and --post-hook commands if they are defined
+                        because they may be necessary to accurately simulate
+                        renewal. --renew-hook commands are not called.
+                        (default: False)
+  --register-unsafely-without-email
+                        Specifying this flag enables registering an account
+                        with no email address. This is strongly discouraged,
+                        because in the event of key loss or account compromise
+                        you will irrevocably lose access to your account. You
+                        will also be unable to receive notice about impending
+                        expiration or revocation of your certificates. Updates
+                        to the Subscriber Agreement will still affect you, and
+                        will be effective 14 days after posting an update to
+                        the web site. (default: False)
+  -m EMAIL, --email EMAIL
+                        Email used for registration and recovery contact.
+                        (default: None)
+  -d DOMAIN, --domains DOMAIN, --domain DOMAIN
+                        Domain names to apply. For multiple domains you can
+                        use multiple -d flags or enter a comma separated list
+                        of domains as a parameter. (default: [])
+  --user-agent USER_AGENT
+                        Set a custom user agent string for the client. User
+                        agent strings allow the CA to collect high level
+                        statistics about success rates by OS and plugin. If
+                        you wish to hide your server OS version from the Let's
+                        Encrypt server, set this to "". (default: None)
+
+automation:
+  Arguments for automating execution & other tweaks
+
+  --keep-until-expiring, --keep, --reinstall
+                        If the requested cert matches an existing cert, always
+                        keep the existing one until it is due for renewal (for
+                        the 'run' subcommand this means reinstall the existing
+                        cert) (default: False)
+  --expand              If an existing cert covers some subset of the
+                        requested names, always expand and replace it with the
+                        additional names. (default: False)
+  --version             show program's version number and exit
+  --force-renewal, --renew-by-default
+                        If a certificate already exists for the requested
+                        domains, renew it now, regardless of whether it is
+                        near expiry. (Often --keep-until-expiring is more
+                        appropriate). Also implies --expand. (default: False)
+  --allow-subset-of-names
+                        When performing domain validation, do not consider it
+                        a failure if authorizations can not be obtained for a
+                        strict subset of the requested domains. This may be
+                        useful for allowing renewals for multiple domains to
+                        succeed even if some domains no longer point at this
+                        system. This option cannot be used with --csr.
+                        (default: False)
+  --agree-tos           Agree to the ACME Subscriber Agreement (default:
+                        False)
+  --account ACCOUNT_ID  Account ID to use (default: None)
+  --duplicate           Allow making a certificate lineage that duplicates an
+                        existing one (both can be renewed in parallel)
+                        (default: False)
+  --os-packages-only    (letsencrypt-auto only) install OS package
+                        dependencies and then stop (default: False)
+  --no-self-upgrade     (letsencrypt-auto only) prevent the letsencrypt-auto
+                        script from upgrading itself to newer released
+                        versions (default: False)
+  -q, --quiet           Silence all output except errors. Useful for
+                        automation via cron. Implies --non-interactive.
+                        (default: False)
+
+testing:
+  The following flags are meant for testing purposes only! Do NOT change
+  them, unless you really know what you're doing!
+
+  --debug               Show tracebacks in case of errors, and allow
+                        letsencrypt-auto execution on experimental platforms
+                        (default: False)
+  --no-verify-ssl       Disable SSL certificate verification. (default: False)
+  --tls-sni-01-port TLS_SNI_01_PORT
+                        Port number to perform tls-sni-01 challenge. Boulder
+                        in testing mode defaults to 5001. (default: 443)
+  --http-01-port HTTP01_PORT
+                        Port used in the SimpleHttp challenge. (default: 80)
+  --break-my-certs      Be willing to replace or renew valid certs with
+                        invalid (testing/staging) certs (default: False)
+  --test-cert, --staging
+                        Use the staging server to obtain test (invalid) certs;
+                        equivalent to --server https://acme-
+                        staging.api.letsencrypt.org/directory (default: False)
+
+security:
+  Security parameters & server settings
+
+  --rsa-key-size N      Size of the RSA key. (default: 2048)
+  --must-staple         Adds the OCSP Must Staple extension to the
+                        certificate. Autoconfigures OCSP Stapling for
+                        supported setups (Apache version >= 2.3.3 ). (default:
+                        False)
+  --redirect            Automatically redirect all HTTP traffic to HTTPS for
+                        the newly authenticated vhost. (default: None)
+  --no-redirect         Do not automatically redirect all HTTP traffic to
+                        HTTPS for the newly authenticated vhost. (default:
+                        None)
+  --hsts                Add the Strict-Transport-Security header to every HTTP
+                        response. Forcing browser to use always use SSL for
+                        the domain. Defends against SSL Stripping. (default:
+                        False)
+  --no-hsts             Do not automatically add the Strict-Transport-Security
+                        header to every HTTP response. (default: False)
+  --uir                 Add the "Content-Security-Policy: upgrade-insecure-
+                        requests" header to every HTTP response. Forcing the
+                        browser to use https:// for every http:// resource.
+                        (default: None)
+  --no-uir              Do not automatically set the "Content-Security-Policy:
+                        upgrade-insecure-requests" header to every HTTP
+                        response. (default: None)
+  --staple-ocsp         Enables OCSP Stapling. A valid OCSP response is
+                        stapled to the certificate that the server offers
+                        during TLS. (default: None)
+  --no-staple-ocsp      Do not automatically enable OCSP Stapling. (default:
+                        None)
+  --strict-permissions  Require that all configuration files are owned by the
+                        current user; only needed if your config is somewhere
+                        unsafe like /tmp/ (default: False)
+
+renew:
+  The 'renew' subcommand will attempt to renew all certificates (or more
+  precisely, certificate lineages) you have previously obtained if they are
+  close to expiry, and print a summary of the results. By default, 'renew'
+  will reuse the options used to create obtain or most recently successfully
+  renew each certificate lineage. You can try it with `--dry-run` first. For
+  more fine-grained control, you can renew individual lineages with the
+  `certonly` subcommand. Hooks are available to run commands before and
+  after renewal; see https://certbot.eff.org/docs/using.html#renewal for
+  more information on these.
+
+  --pre-hook PRE_HOOK   Command to be run in a shell before obtaining any
+                        certificates. Intended primarily for renewal, where it
+                        can be used to temporarily shut down a webserver that
+                        might conflict with the standalone plugin. This will
+                        only be called if a certificate is actually to be
+                        obtained/renewed. (default: None)
+  --post-hook POST_HOOK
+                        Command to be run in a shell after attempting to
+                        obtain/renew certificates. Can be used to deploy
+                        renewed certificates, or to restart any servers that
+                        were stopped by --pre-hook. This is only run if an
+                        attempt was made to obtain/renew a certificate.
+                        (default: None)
+  --renew-hook RENEW_HOOK
+                        Command to be run in a shell once for each
+                        successfully renewed certificate.For this command, the
+                        shell variable $RENEWED_LINEAGE will point to
+                        theconfig live subdirectory containing the new certs
+                        and keys; the shell variable $RENEWED_DOMAINS will
+                        contain a space-delimited list of renewed cert domains
+                        (default: None)
+
+certonly:
+  Options for modifying how a cert is obtained
+
+  --csr CSR             Path to a Certificate Signing Request (CSR) in DER
+                        format; note that the .csr file *must* contain a
+                        Subject Alternative Name field for each domain you
+                        want certified. Currently --csr only works with the
+                        'certonly' subcommand' (default: None)
+
+install:
+  Options for modifying how a cert is deployed
+
+revoke:
+  Options for revocation of certs
+
+rollback:
+  Options for reverting config changes
+
+  --checkpoints N       Revert configuration N number of checkpoints.
+                        (default: 1)
+
+plugins:
+  Plugin options
+
+  --init                Initialize plugins. (default: False)
+  --prepare             Initialize and prepare plugins. (default: False)
+  --authenticators      Limit to authenticator plugins only. (default: None)
+  --installers          Limit to installer plugins only. (default: None)
+
+config_changes:
+  Options for showing a history of config changes
+
+  --num NUM             How many past revisions you want to be displayed
+                        (default: None)
+
+paths:
+  Arguments changing execution paths & servers
+
+  --cert-path CERT_PATH
+                        Path to where cert is saved (with auth --csr),
+                        installed from or revoked. (default: None)
+  --key-path KEY_PATH   Path to private key for cert installation or
+                        revocation (if account key is missing) (default: None)
+  --fullchain-path FULLCHAIN_PATH
+                        Accompanying path to a full certificate chain (cert
+                        plus chain). (default: None)
+  --chain-path CHAIN_PATH
+                        Accompanying path to a certificate chain. (default:
+                        None)
+  --config-dir CONFIG_DIR
+                        Configuration directory. (default: /etc/letsencrypt)
+  --work-dir WORK_DIR   Working directory. (default: /var/lib/letsencrypt)
+  --logs-dir LOGS_DIR   Logs directory. (default: /var/log/letsencrypt)
+  --server SERVER       ACME Directory Resource URI. (default:
+                        https://acme-v01.api.letsencrypt.org/directory)
+
+plugins:
+  Certbot client supports an extensible plugins architecture. See 'certbot
+  plugins' for a list of all installed plugins and their names. You can
+  force a particular plugin by setting options provided below. Running
+  --help <plugin_name> will list flags specific to that plugin.
+
+  -a AUTHENTICATOR, --authenticator AUTHENTICATOR
+                        Authenticator plugin name. (default: None)
+  -i INSTALLER, --installer INSTALLER
+                        Installer plugin name (also used to find domains).
+                        (default: None)
+  --configurator CONFIGURATOR
+                        Name of the plugin that is both an authenticator and
+                        an installer. Should not be used together with
+                        --authenticator or --installer. (default: None)
+  --apache              Obtain and install certs using Apache (default: False)
+  --nginx               Obtain and install certs using Nginx (default: False)
+  --standalone          Obtain certs using a "standalone" webserver. (default:
+                        False)
+  --manual              Provide laborious manual instructions for obtaining a
+                        cert (default: False)
+  --webroot             Obtain certs by placing files in a webroot directory.
+                        (default: False)
+
+standalone:
+  Automatically use a temporary webserver
+
+  --standalone-supported-challenges STANDALONE_SUPPORTED_CHALLENGES
+                        Supported challenges. Preferred in the order they are
+                        listed. (default: tls-sni-01,http-01)
+
+manual:
+  Manually configure an HTTP server
+
+  --manual-test-mode    Test mode. Executes the manual command in subprocess.
+                        (default: False)
+  --manual-public-ip-logging-ok
+                        Automatically allows public IP logging. (default:
+                        False)
+
+nginx:
+  Nginx Web Server - currently doesn't work
+
+  --nginx-server-root NGINX_SERVER_ROOT
+                        Nginx server root directory. (default: /etc/nginx)
+  --nginx-ctl NGINX_CTL
+                        Path to the 'nginx' binary, used for 'configtest' and
+                        retrieving nginx version number. (default: nginx)
+
+webroot:
+  Place files in webroot directory
+
+  --webroot-path WEBROOT_PATH, -w WEBROOT_PATH
+                        public_html / webroot path. This can be specified
+                        multiple times to handle different domains; each
+                        domain will have the webroot path that preceded it.
+                        For instance: `-w /var/www/example -d example.com -d
+                        www.example.com -w /var/www/thing -d thing.net -d
+                        m.thing.net` (default: [])
+  --webroot-map WEBROOT_MAP
+                        JSON dictionary mapping domains to webroot paths; this
+                        implies -d for each entry. You may need to escape this
+                        from your shell. E.g.: --webroot-map
+                        '{"eg1.is,m.eg1.is":"/www/eg1/", "eg2.is":"/www/eg2"}'
+                        This option is merged with, but takes precedence over,
+                        -w / -d entries. At present, if you put webroot-map in
+                        a config file, it needs to be on a single line, like:
+                        webroot-map = {"example.com":"/var/www"}. (default:
+                        {})
+
+apache:
+  Apache Web Server - Alpha
+
+  --apache-enmod APACHE_ENMOD
+                        Path to the Apache 'a2enmod' binary. (default:
+                        a2enmod)
+  --apache-dismod APACHE_DISMOD
+                        Path to the Apache 'a2dismod' binary. (default:
+                        a2dismod)
+  --apache-le-vhost-ext APACHE_LE_VHOST_EXT
+                        SSL vhost configuration extension. (default: -le-
+                        ssl.conf)
+  --apache-server-root APACHE_SERVER_ROOT
+                        Apache server root directory. (default: /etc/apache2)
+  --apache-vhost-root APACHE_VHOST_ROOT
+                        Apache server VirtualHost configuration root (default:
+                        /etc/apache2/sites-available)
+  --apache-challenge-location APACHE_CHALLENGE_LOCATION
+                        Directory path for challenge configuration. (default:
+                        /etc/apache2)
+  --apache-handle-modules APACHE_HANDLE_MODULES
+                        Let installer handle enabling required modules for
+                        you.(Only Ubuntu/Debian currently) (default: True)
+  --apache-handle-sites APACHE_HANDLE_SITES
+                        Let installer handle enabling sites for you.(Only
+                        Ubuntu/Debian currently) (default: True)
+
+null:
+  Null Installer

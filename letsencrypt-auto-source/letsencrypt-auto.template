@@ -1,0 +1,327 @@
+#!/bin/sh
+#
+# Download and run the latest release version of the Certbot client.
+#
+# NOTE: THIS SCRIPT IS AUTO-GENERATED AND SELF-UPDATING
+#
+# IF YOU WANT TO EDIT IT LOCALLY, *ALWAYS* RUN YOUR COPY WITH THE
+# "--no-self-upgrade" FLAG
+#
+# IF YOU WANT TO SEND PULL REQUESTS, THE REAL SOURCE FOR THIS FILE IS
+# letsencrypt-auto-source/letsencrypt-auto.template AND
+# letsencrypt-auto-source/pieces/bootstrappers/*
+
+set -e  # Work even if somebody does "sh thisscript.sh".
+
+# Note: you can set XDG_DATA_HOME or VENV_PATH before running this script,
+# if you want to change where the virtual environment will be installed
+XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
+VENV_NAME="letsencrypt"
+VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
+VENV_BIN="$VENV_PATH/bin"
+LE_AUTO_VERSION="{{ LE_AUTO_VERSION }}"
+BASENAME=$(basename $0)
+USAGE="Usage: $BASENAME [OPTIONS]
+A self-updating wrapper script for the Certbot ACME client. When run, updates
+to both this script and certbot will be downloaded and installed. After
+ensuring you have the latest versions installed, certbot will be invoked with
+all arguments you have provided.
+
+Help for certbot itself cannot be provided until it is installed.
+
+  --debug                                   attempt experimental installation
+  -h, --help                                print this help
+  -n, --non-interactive, --noninteractive   run without asking for user input
+  --no-self-upgrade                         do not download updates
+  --os-packages-only                        install OS dependencies and exit
+  -v, --verbose                             provide more output
+
+All arguments are accepted and forwarded to the Certbot client when run."
+
+for arg in "$@" ; do
+  case "$arg" in
+    --debug)
+      DEBUG=1;;
+    --os-packages-only)
+      OS_PACKAGES_ONLY=1;;
+    --no-self-upgrade)
+      # Do not upgrade this script (also prevents client upgrades, because each
+      # copy of the script pins a hash of the python client)
+      NO_SELF_UPGRADE=1;;
+    --help)
+      HELP=1;;
+    --noninteractive|--non-interactive)
+      ASSUME_YES=1;;
+    --verbose)
+      VERBOSE=1;;
+    -[!-]*)
+      while getopts ":hnv" short_arg $arg; do
+        case "$short_arg" in
+          h)
+            HELP=1;;
+          n)
+            ASSUME_YES=1;;
+          v)
+            VERBOSE=1;;
+        esac
+      done;;
+  esac
+done
+
+if [ $BASENAME = "letsencrypt-auto" ]; then
+  # letsencrypt-auto does not respect --help or --yes for backwards compatibility
+  ASSUME_YES=1
+  HELP=0
+fi
+
+# certbot-auto needs root access to bootstrap OS dependencies, and
+# certbot itself needs root access for almost all modes of operation
+# The "normal" case is that sudo is used for the steps that need root, but
+# this script *can* be run as root (not recommended), or fall back to using
+# `su`
+SUDO_ENV=""
+export CERTBOT_AUTO="$0"
+if test "`id -u`" -ne "0" ; then
+  if command -v sudo 1>/dev/null 2>&1; then
+    SUDO=sudo
+    SUDO_ENV="CERTBOT_AUTO=$0"
+  else
+    echo \"sudo\" is not available, will use \"su\" for installation steps...
+    # Because the parameters in `su -c` has to be a string,
+    # we need properly escape it
+    su_sudo() {
+      args=""
+      # This `while` loop iterates over all parameters given to this function.
+      # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
+      # will be wrapped in a pair of `'`, then appended to `$args` string
+      # For example, `echo "It's only 1\$\!"` will be escaped to:
+      #   'echo' 'It'"'"'s only 1$!'
+      #     │       │└┼┘│
+      #     │       │ │ └── `'s only 1$!'` the literal string
+      #     │       │ └── `\"'\"` is a single quote (as a string)
+      #     │       └── `'It'`, to be concatenated with the strings following it
+      #     └── `echo` wrapped in a pair of `'`, it's totally fine for the shell command itself
+      while [ $# -ne 0 ]; do
+        args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
+        shift
+      done
+      su root -c "$args"
+    }
+    SUDO=su_sudo
+  fi
+else
+  SUDO=
+fi
+
+ExperimentalBootstrap() {
+  # Arguments: Platform name, bootstrap function name
+  if [ "$DEBUG" = 1 ]; then
+    if [ "$2" != "" ]; then
+      echo "Bootstrapping dependencies via $1..."
+      $2
+    fi
+  else
+    echo "WARNING: $1 support is very experimental at present..."
+    echo "if you would like to work on improving it, please ensure you have backups"
+    echo "and then run this script again with the --debug flag!"
+    exit 1
+  fi
+}
+
+DeterminePythonVersion() {
+  for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
+    # Break (while keeping the LE_PYTHON value) if found.
+    command -v "$LE_PYTHON" > /dev/null && break
+  done
+  if [ "$?" != "0" ]; then
+    echo "Cannot find any Pythons; please install one!"
+    exit 1
+  fi
+  export LE_PYTHON
+
+  PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
+  if [ "$PYVER" -lt 26 ]; then
+    echo "You have an ancient version of Python entombed in your operating system..."
+    echo "This isn't going to work; you'll need at least version 2.6."
+    exit 1
+  fi
+}
+
+{{ bootstrappers/deb_common.sh }}
+{{ bootstrappers/rpm_common.sh }}
+{{ bootstrappers/suse_common.sh }}
+{{ bootstrappers/arch_common.sh }}
+{{ bootstrappers/gentoo_common.sh }}
+{{ bootstrappers/free_bsd.sh }}
+{{ bootstrappers/mac.sh }}
+{{ bootstrappers/smartos.sh }}
+
+# Install required OS packages:
+Bootstrap() {
+  if [ -f /etc/debian_version ]; then
+    echo "Bootstrapping dependencies for Debian-based OSes..."
+    BootstrapDebCommon
+  elif [ -f /etc/redhat-release ]; then
+    echo "Bootstrapping dependencies for RedHat-based OSes..."
+    BootstrapRpmCommon
+  elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
+    echo "Bootstrapping dependencies for openSUSE-based OSes..."
+    BootstrapSuseCommon
+  elif [ -f /etc/arch-release ]; then
+    if [ "$DEBUG" = 1 ]; then
+      echo "Bootstrapping dependencies for Archlinux..."
+      BootstrapArchCommon
+    else
+      echo "Please use pacman to install letsencrypt packages:"
+      echo "# pacman -S letsencrypt letsencrypt-apache"
+      echo
+      echo "If you would like to use the virtualenv way, please run the script again with the"
+      echo "--debug flag."
+      exit 1
+    fi
+  elif [ -f /etc/manjaro-release ]; then
+    ExperimentalBootstrap "Manjaro Linux" BootstrapArchCommon
+  elif [ -f /etc/gentoo-release ]; then
+    ExperimentalBootstrap "Gentoo" BootstrapGentooCommon
+  elif uname | grep -iq FreeBSD ; then
+    ExperimentalBootstrap "FreeBSD" BootstrapFreeBsd
+  elif uname | grep -iq Darwin ; then
+    ExperimentalBootstrap "Mac OS X" BootstrapMac
+  elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
+    ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
+  elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
+    ExperimentalBootstrap "Joyent SmartOS Zone" BootstrapSmartOS
+  else
+    echo "Sorry, I don't know how to bootstrap Certbot on your operating system!"
+    echo
+    echo "You will need to bootstrap, configure virtualenv, and run pip install manually."
+    echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
+    echo "for more info."
+  fi
+}
+
+TempDir() {
+  mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || OS X
+}
+
+
+
+if [ "$1" = "--le-auto-phase2" ]; then
+  # Phase 2: Create venv, install LE, and run.
+
+  shift 1  # the --le-auto-phase2 arg
+  if [ -f "$VENV_BIN/letsencrypt" ]; then
+    # --version output ran through grep due to python-cryptography DeprecationWarnings
+    # grep for both certbot and letsencrypt until certbot and shim packages have been released
+    INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | grep "^certbot\|^letsencrypt" | cut -d " " -f 2)
+  else
+    INSTALLED_VERSION="none"
+  fi
+  if [ "$LE_AUTO_VERSION" != "$INSTALLED_VERSION" ]; then
+    echo "Creating virtual environment..."
+    DeterminePythonVersion
+    rm -rf "$VENV_PATH"
+    if [ "$VERBOSE" = 1 ]; then
+      virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH"
+    else
+      virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" > /dev/null
+    fi
+
+    echo "Installing Python packages..."
+    TEMP_DIR=$(TempDir)
+    trap 'rm -rf "$TEMP_DIR"' EXIT
+    # There is no $ interpolation due to quotes on starting heredoc delimiter.
+    # -------------------------------------------------------------------------
+    cat << "UNLIKELY_EOF" > "$TEMP_DIR/letsencrypt-auto-requirements.txt"
+{{ letsencrypt-auto-requirements.txt }}
+UNLIKELY_EOF
+    # -------------------------------------------------------------------------
+    cat << "UNLIKELY_EOF" > "$TEMP_DIR/pipstrap.py"
+{{ pipstrap.py }}
+UNLIKELY_EOF
+    # -------------------------------------------------------------------------
+    # Set PATH so pipstrap upgrades the right (v)env:
+    PATH="$VENV_BIN:$PATH" "$VENV_BIN/python" "$TEMP_DIR/pipstrap.py"
+    set +e
+    PIP_OUT=`"$VENV_BIN/pip" install --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt" 2>&1`
+    PIP_STATUS=$?
+    set -e
+    if [ "$PIP_STATUS" != 0 ]; then
+      # Report error. (Otherwise, be quiet.)
+      echo "Had a problem while installing Python packages:"
+      echo "$PIP_OUT"
+      rm -rf "$VENV_PATH"
+      exit 1
+    fi
+    echo "Installation succeeded."
+  fi
+  if [ -n "$SUDO" ]; then
+    # SUDO is su wrapper or sudo
+    echo "Requesting root privileges to run certbot..."
+    echo "  $VENV_BIN/letsencrypt" "$@"
+  fi
+  if [ -z "$SUDO_ENV" ] ; then
+    # SUDO is su wrapper / noop
+    $SUDO "$VENV_BIN/letsencrypt" "$@"
+  else
+    # sudo
+    $SUDO "$SUDO_ENV" "$VENV_BIN/letsencrypt" "$@"
+  fi
+
+else
+  # Phase 1: Upgrade certbot-auto if neceesary, then self-invoke.
+  #
+  # Each phase checks the version of only the thing it is responsible for
+  # upgrading. Phase 1 checks the version of the latest release of
+  # certbot-auto (which is always the same as that of the certbot
+  # package). Phase 2 checks the version of the locally installed certbot.
+
+  if [ ! -f "$VENV_BIN/letsencrypt" ]; then
+    if [ "$HELP" = 1 ]; then
+      echo "$USAGE"
+      exit 0
+    fi
+    # If it looks like we've never bootstrapped before, bootstrap:
+    Bootstrap
+  fi
+  if [ "$OS_PACKAGES_ONLY" = 1 ]; then
+    echo "OS packages installed."
+    exit 0
+  fi
+
+  if [ "$NO_SELF_UPGRADE" != 1 ]; then
+    TEMP_DIR=$(TempDir)
+    trap 'rm -rf "$TEMP_DIR"' EXIT
+    # ---------------------------------------------------------------------------
+    cat << "UNLIKELY_EOF" > "$TEMP_DIR/fetch.py"
+{{ fetch.py }}
+UNLIKELY_EOF
+    # ---------------------------------------------------------------------------
+    DeterminePythonVersion
+    if ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then
+      echo "WARNING: unable to check for updates."
+    elif [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
+      echo "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
+
+      # Now we drop into Python so we don't have to install even more
+      # dependencies (curl, etc.), for better flow control, and for the option of
+      # future Windows compatibility.
+      "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
+
+      # Install new copy of certbot-auto.
+      # TODO: Deal with quotes in pathnames.
+      echo "Replacing certbot-auto..."
+      # Clone permissions with cp. chmod and chown don't have a --reference
+      # option on OS X or BSD, and stat -c on Linux is stat -f on OS X and BSD:
+      $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      # Using mv rather than cp leaves the old file descriptor pointing to the
+      # original copy so the shell can continue to read it unmolested. mv across
+      # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
+      # cp is unlikely to fail (esp. under sudo) if the rm doesn't.
+      $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
+    fi  # A newer version is available.
+  fi  # Self-upgrading is allowed.
+
+  "$0" --le-auto-phase2 "$@"
+fi

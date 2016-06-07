@@ -1,34 +1,40 @@
+import codecs
+import os
 import sys
 
 from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.2.0.dev0'
+def read_file(filename, encoding='utf8'):
+    """Read unicode from given file."""
+    with codecs.open(filename, encoding=encoding) as fd:
+        return fd.read()
 
-install_requires = [
-    'setuptools',  # pkg_resources
-]
-if sys.version_info < (2, 7):
-    install_requires.append('mock<1.1.0')
-else:
-    install_requires.append('mock')
 
-docs_extras = [
-    'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
-    'sphinx_rtd_theme',
-]
+here = os.path.abspath(os.path.dirname(__file__))
+readme = read_file(os.path.join(here, 'README.rst'))
+
+
+version = '0.7.0.dev0'
+
+
+# This package is a simple shim around letshelp-certbot
+install_requires = ['letshelp-certbot']
+
 
 setup(
     name='letshelp-letsencrypt',
     version=version,
     description="Let's help Let's Encrypt client",
+    long_description=readme,
     url='https://github.com/letsencrypt/letsencrypt',
-    author="Let's Encrypt Project",
+    author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
     classifiers=[
         'Development Status :: 3 - Alpha',
+        'Environment :: Plugins',
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: POSIX :: Linux',
@@ -47,12 +53,9 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=install_requires,
-    extras_require={
-        'docs': docs_extras,
-    },
     entry_points={
         'console_scripts': [
-            'letshelp-letsencrypt-apache = letshelp_letsencrypt.apache:main',
+            'letshelp-letsencrypt-apache = letshelp_certbot.apache:main',
         ],
     },
 )

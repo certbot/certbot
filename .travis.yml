@@ -1,28 +1,66 @@
 language: python
 
-services:
-  - rabbitmq
-  - mariadb
+cache:
+    directories:
+        - $HOME/.cache/pip
 
-# http://docs.travis-ci.com/user/ci-environment/#CI-environment-OS
-# gimme has to be kept in sync with Boulder's Go version setting in .travis.yml
+# This makes sure we get a host with docker-compose present.
+dist: trusty
+
 before_install:
   - 'dpkg -s libaugeas0'
-  - '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || eval "$(gimme 1.5.1)"'
 
 # using separate envs with different TOXENVs creates 4x1 Travis build
 # matrix, which allows us to clearly distinguish which component under
 # test has failed
 env:
   global:
-    - GOPATH=/tmp/go
-    - PATH=$GOPATH/bin:$PATH
-  matrix:
-    - TOXENV=py26 BOULDER_INTEGRATION=1
-    - TOXENV=py27 BOULDER_INTEGRATION=1
-    - TOXENV=lint
-    - TOXENV=cover
+    - BOULDERPATH=$PWD/boulder/
 
+matrix:
+  include:
+    - python: "2.6"
+      env: TOXENV=py26 BOULDER_INTEGRATION=1
+      sudo: true
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
+    - python: "2.6"
+      env: TOXENV=py26-oldest BOULDER_INTEGRATION=1
+      sudo: true
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
+    - python: "2.7"
+      env: TOXENV=apacheconftest
+      sudo: required
+    - python: "2.7"
+      env: TOXENV=py27 BOULDER_INTEGRATION=1
+      sudo: true
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
+    - python: "2.7"
+      env: TOXENV=py27-oldest BOULDER_INTEGRATION=1
+      sudo: true
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
+    - python: "2.7"
+      env: TOXENV=lint
+    - sudo: required
+      env: TOXENV=le_auto
+      services: docker
+      before_install:
+      addons:
+    - python: "2.7"
+      env: TOXENV=cover
+    - python: "3.3"
+      env: TOXENV=py33
+    - python: "3.4"
+      env: TOXENV=py34
+    - python: "3.5"
+      env: TOXENV=py35
 
 # Only build pushes to the master branch, PRs, and branches beginning with
 # `test-`. This reduces the number of simultaneous Travis runs, which speeds
@@ -36,15 +74,21 @@ branches:
 sudo: false
 
 addons:
-  # make sure simplehttp simple verification works (custom /etc/hosts)
+  # Custom /etc/hosts required for simple verification of http-01
+  # and tls-sni-01, and for certbot_test_nginx
   hosts:
     - le.wtf
-  mariadb: "10.0"
+    - le1.wtf
+    - le2.wtf
+    - le3.wtf
+    - nginx.wtf
+    - boulder
+    - boulder-mysql
+    - boulder-rabbitmq
   apt:
     sources:
     - augeas
-    packages:  # keep in sync with bootstrap/ubuntu.sh and Boulder
-    - python
+    packages:  # Keep in sync with letsencrypt-auto-source/pieces/bootstrappers/deb_common.sh and Boulder.
     - python-dev
     - python-virtualenv
     - gcc
@@ -53,11 +97,14 @@ addons:
     - libssl-dev
     - libffi-dev
     - ca-certificates
-    # For letsencrypt-nginx integration testing
+    # For certbot-nginx integration testing
     - nginx-light
     - openssl
-    # For Boulder integration testing
-    - rsyslog
+    # for apacheconftest
+    - apache2
+    - libapache2-mod-wsgi
+    - libapache2-mod-macro
+    - sudo
 
 install: "travis_retry pip install tox coveralls"
 script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/travis-integration.sh)'

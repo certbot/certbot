@@ -28,8 +28,7 @@ acme = client.Client(DIRECTORY_URL, key)
 
 regr = acme.register()
 logging.info('Auto-accepting TOS: %s', regr.terms_of_service)
-acme.update_registration(regr.update(
-    body=regr.body.update(agreement=regr.terms_of_service)))
+acme.agree_to_tos(regr)
 logging.debug(regr)
 
 authzr = acme.request_challenges(
@@ -43,7 +42,7 @@ csr = OpenSSL.crypto.load_certificate_request(
     OpenSSL.crypto.FILETYPE_ASN1, pkg_resources.resource_string(
         'acme', os.path.join('testdata', 'csr.der')))
 try:
-    acme.request_issuance(csr, (authzr,))
+    acme.request_issuance(jose.util.ComparableX509(csr), (authzr,))
 except messages.Error as error:
     print ("This script is doomed to fail as no authorization "
            "challenges are ever solved. Error from server: {0}".format(error))

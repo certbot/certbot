@@ -226,7 +226,7 @@ class JSONObjectWithFields(util.ImmutableMap, interfaces.JSONDeSerializable):
 
         :param str name: Name of the field to be encoded.
 
-        :raises erors.SerializationError: if field cannot be serialized
+        :raises errors.SerializationError: if field cannot be serialized
         :raises errors.Error: if field could not be found
 
         """
@@ -373,7 +373,7 @@ def encode_cert(cert):
 
     """
     return encode_b64jose(OpenSSL.crypto.dump_certificate(
-        OpenSSL.crypto.FILETYPE_ASN1, cert))
+        OpenSSL.crypto.FILETYPE_ASN1, cert.wrapped))
 
 
 def decode_cert(b64der):
@@ -398,7 +398,7 @@ def encode_csr(csr):
 
     """
     return encode_b64jose(OpenSSL.crypto.dump_certificate_request(
-        OpenSSL.crypto.FILETYPE_ASN1, csr))
+        OpenSSL.crypto.FILETYPE_ASN1, csr.wrapped))
 
 
 def decode_csr(b64der):
