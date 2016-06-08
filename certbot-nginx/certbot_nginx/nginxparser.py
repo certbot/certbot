@@ -31,7 +31,7 @@ class RawNginxParser(object):
     # rules
     comment = Literal('#') + restOfLine()
 
-    assignment = keepSpace + key + Optional(space + value, default=None) + semicolon
+    assignment = keepSpace + key + Optional(White() + value, default=None) + semicolon
     location_statement = Optional(space + modifier) + Optional(space + location)
     if_statement = Literal("if") + space + Regex(r"\(.+\)") + space
     map_statement = Literal("map") + space + Regex(r"\S+") + space + Regex(r"\$\S+") + space
@@ -119,14 +119,13 @@ class RawNginxDumper(object):
             elif len(b) == 3:
                 indentation, key, values = b
                 assert indentation.isspace(), indentation + " is not space"
-                yield indentation
+                indentation = indentation.replace("\n", "", 1)
             else:
                 print "Cannot process", b
                 sys.exit(1)
             #indentation = spacer * current_indent
             if isinstance(key, list):
-                yield spacer.join(key) + ' {'
-
+                yield indentation + spacer.join(key) + ' {'
                 for parameter in values:
                     dumped = self.__iter__([parameter], current_indent + self.indentation)
                     for line in dumped:
@@ -135,15 +134,16 @@ class RawNginxDumper(object):
                 yield '}'
             else:
                 if isinstance(key, str) and key.strip() == '#':
-                    yield key + values
+                    yield indentation + key + values
                 else:
                     if values is None:
-                        yield key + ';'
+                        yield indentation + key + ';'
                     else:
-                        yield key + spacer + values + ';'
+                        yield indentation + key + spacer + values + ';'
 
     def __str__(self):
         """Return the parsed block as a string."""
+        print "Merging:\n", '\n'.join(self)
         return '\n'.join(self) + '\n'
 
 
