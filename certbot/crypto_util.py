@@ -318,13 +318,8 @@ def get_names_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
     :rtype: list
 
     """
-    loaded_csr = _load_cert_or_req(
+    return _get_names_from_cert_or_req(
         csr, OpenSSL.crypto.load_certificate_request, typ)
-    # Use a set to avoid duplication with CN and Subject Alt Names
-    domains = set(d for d in (loaded_csr.get_subject().CN,) if d is not None)
-    # pylint: disable=protected-access
-    domains.update(acme_crypto_util._pyopenssl_cert_or_req_san(loaded_csr))
-    return list(domains)
 
 
 def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
