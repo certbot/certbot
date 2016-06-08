@@ -308,6 +308,20 @@ def _get_names_from_cert_or_req(cert_or_req, load_func, typ):
         return [subject] + [d for d in sans if d != subject]
 
 
+def get_names_from_cert(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
+    """Get a list of domains from a cert, including the CN if it is set.
+
+    :param str cert: Certificate (encoded).
+    :param typ: `OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`
+
+    :returns: A list of domain names.
+    :rtype: list
+
+    """
+    return _get_names_from_cert_or_req(
+        csr, OpenSSL.crypto.load_certificate, typ)
+
+
 def get_names_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
     """Get a list of domains from a CSR, including the CN if it is set.
 
