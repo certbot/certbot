@@ -359,7 +359,8 @@ class HelpfulArgumentParser(object):
                         " {0} conflicts with dialog_mode").format(arg)
                     )
 
-        hooks.validate_hooks(parsed_args)
+        if parsed_args.validate_hooks:
+            hooks.validate_hooks(parsed_args)
 
         return parsed_args
 
@@ -800,6 +801,14 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "For this command, the shell variable $RENEWED_LINEAGE will point to the"
         "config live subdirectory containing the new certs and keys; the shell variable "
         "$RENEWED_DOMAINS will contain a space-delimited list of renewed cert domains")
+    helpful.add(
+        "renew", "--disable-hook-validation",
+        action='store_false', dest='validate_hooks', default=True,
+        help="Ordinarily the commands specified for --pre-hook/--post-hook/--renew-hook"
+        " will be checked for validity, to see if the programs being run are in the $PATH,"
+        " so that mistakes can be caught early, even when the hooks aren't being run just yet."
+        " The validation is rather simplistic and fails if you use more advanced"
+        " shell constructs, so you can use this switch to disable it.")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
 
