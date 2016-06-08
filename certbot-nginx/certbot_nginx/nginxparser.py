@@ -1,6 +1,7 @@
 """Very low-level nginx config parser based on pyparsing."""
 import copy
 import string
+import sys
 
 from pyparsing import (
     Literal, White, Word, alphanums, CharsNotIn, Forward, Group,
@@ -18,6 +19,7 @@ class RawNginxParser(object):
     right_bracket = Literal("}").suppress()
     semicolon = Literal(";").suppress()
     space = White().suppress()
+    keepSpace = Optional(White())
     key = Word(alphanums + "_/+-.")
     # Matches anything that is not a special character AND any chars in single
     # or double quotes
@@ -27,8 +29,9 @@ class RawNginxParser(object):
     modifier = Literal("=") | Literal("~*") | Literal("~") | Literal("^~")
 
     # rules
-    comment = White() + Literal('#') + restOfLine()
-    assignment = White() + key + Optional(space + value, default=None) + semicolon
+    comment = Literal('#') + restOfLine()
+
+    assignment = keepSpace + key + Optional(space + value, default=None) + semicolon
     location_statement = Optional(space + modifier) + Optional(space + location)
     if_statement = Literal("if") + space + Regex(r"\(.+\)") + space
     map_statement = Literal("map") + space + Regex(r"\S+") + space + Regex(r"\$\S+") + space
@@ -53,6 +56,51 @@ class RawNginxParser(object):
         """Returns the parsed tree as a list."""
         return self.parse().asList()
 
+class OldRawNginxParser(object):
+    # pylint: disable=expression-not-assigned
+    """A class that parses nginx configuration with pyparsing."""
+
+    # constants
+    left_bracket = Literal("{").suppress()
+    right_bracket = Literal("}").suppress()
+    semicolon = Literal(";").suppress()
+    space = White().suppress()
+    key = Word(alphanums + "_/+-.")
+    # Matches anything that is not a special character AND any chars in single
+    # or double quotes
+    value = Regex(r"((\".*\")?(\'.*\')?[^\{\};,]?)+")
+    location = CharsNotIn("{};," + string.whitespace)
+    # modifier for location uri [ = | ~ | ~* | ^~ ]
+    modifier = Literal("=") | Literal("~*") | Literal("~") | Literal("^~")
+
+    # rules
+    comment = Literal("#") + restOfLine()
+    assignment = (key + Optional(space + value, default=None) + semicolon)
+    location_statement = Optional(space + modifier) + Optional(space + location)
+    if_statement = Literal("if") + space + Regex(r"\(.+\)") + space
+    map_statement = Literal("map") + space + Regex(r"\S+") + space + Regex(r"\$\S+") + space
+    block = Forward()
+
+    block << Group(
+        (Group(key + location_statement) ^ Group(if_statement) ^ Group(map_statement)) +
+        left_bracket +
+        Group(ZeroOrMore(Group(comment | assignment) | block)) +
+        right_bracket)
+
+    script = OneOrMore(Group(comment | assignment) ^ block) + stringEnd
+
+    def __init__(self, source):
+        self.source = source
+
+    def parse(self):
+        """Returns the parsed tree."""
+        return self.script.parseString(self.source)
+
+    def as_list(self):
+        """Returns the parsed tree as a list."""
+        return self.parse().asList()
+
+
 class RawNginxDumper(object):
     # pylint: disable=too-few-public-methods
     """A class that dumps nginx configuration from the provided tree."""
@@ -60,13 +108,24 @@ class RawNginxDumper(object):
         self.blocks = blocks
         self.indentation = indentation
 
-    def __iter__(self, blocks=None, current_indent=0, spacer=''):
+    def __iter__(self, blocks=None, current_indent=0, spacer=' '):
         """Iterates the dumped nginx content."""
         blocks = blocks or self.blocks
-        for key, values in blocks.spaced:
+        print "iterating", blocks
+        for b in blocks:
+            if len(b) == 2:
+                key, values = b
+                indentation = ""
+            elif len(b) == 3:
+                indentation, key, values = b
+                assert indentation.isspace(), indentation + " is not space"
+                yield indentation
+            else:
+                print "Cannot process", b
+                sys.exit(1)
             #indentation = spacer * current_indent
             if isinstance(key, list):
-                yield "".join(key) + ' {'
+                yield spacer.join(key) + ' {'
 
                 for parameter in values:
                     dumped = self.__iter__([parameter], current_indent + self.indentation)
@@ -75,13 +134,13 @@ class RawNginxDumper(object):
 
                 yield '}'
             else:
-                if key == '#':
+                if isinstance(key, str) and key.strip() == '#':
                     yield key + values
                 else:
                     if values is None:
                         yield key + ';'
                     else:
-                        yield key + values + ';'
+                        yield key + spacer + values + ';'
 
     def __str__(self):
         """Return the parsed block as a string."""
@@ -138,7 +197,28 @@ def loads(source):
     :rtype: list
 
     """
-    return UnspacedList(RawNginxParser(source).as_list())
+    old = OldRawNginxParser(source).as_list()
+    print "Old:"
+    for entry in old:
+        print len(entry), " ",
+    new = UnspacedList(RawNginxParser(source).as_list())
+    print "\nNew:"
+    print new
+    for entry in new:
+        print len(entry), " ",
+    print "\nNewspaced:"
+    for entry in new.spaced:
+        print str(len(entry))+ " ",
+    print "\ngo"
+    if old != new:
+        print "NON-MATCH"
+        for a, b in zip(old, new):
+            if a != b:
+                print "Entry", a, "!=", b
+        import sys
+    else:
+        print "Parallel"
+    return new
 
 
 def load(_file):
@@ -149,7 +229,7 @@ def load(_file):
     :rtype: list
 
     """
-    return UnspacedList(loads(_file.read()))
+    return loads(_file.read())
 
 
 def dumps(blocks, indentation=4):
@@ -173,7 +253,6 @@ def dump(blocks, _file, indentation=4):
 
     """
     return _file.write(dumps(blocks, indentation))
-
 
 
 spacey = lambda x: isinstance(x, str) and x.isspace()

@@ -209,7 +209,7 @@ class NginxParser(object):
 
         """
         for filename in self.parsed:
-            tree = self.parsed[filename]
+            tree = self.parsed[filename].spaced
             if ext:
                 filename = filename + os.path.extsep + ext
             try:
