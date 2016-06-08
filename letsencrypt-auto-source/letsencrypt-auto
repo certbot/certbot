@@ -458,12 +458,39 @@ BootstrapSmartOS() {
   pkgin -y install 'gcc49' 'py27-augeas' 'py27-virtualenv'
 }
 
+BootstrapMageiaCommon() {
+    if ! $SUDO urpmi --force  \
+           python \
+           libpython-devel \
+           python-virtualenv
+    then
+      echo "Could not install Python dependencies. Aborting bootstrap!"
+      exit 1
+    fi
+
+    if ! $SUDO urpmi --force \
+           git \
+           gcc \
+           cdialog \
+           python-augeas \
+           libopenssl-devel \
+           libffi-devel \
+           rootcerts
+    then
+        echo "Could not install additional dependencies. Aborting bootstrap!"
+        exit 1
+    fi
+}
+
 
 # Install required OS packages:
 Bootstrap() {
   if [ -f /etc/debian_version ]; then
     echo "Bootstrapping dependencies for Debian-based OSes..."
     BootstrapDebCommon
+  elif [ -f /etc/mageia-release ] ; then
+    # Mageia has both /etc/mageia-release and /etc/redhat-release
+    ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
   elif [ -f /etc/redhat-release ]; then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
     BootstrapRpmCommon
