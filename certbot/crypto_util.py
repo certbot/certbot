@@ -296,6 +296,18 @@ def get_sans_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
         csr, OpenSSL.crypto.load_certificate_request, typ)
 
 
+def _get_names_from_cert_or_req(cert_or_req, load_func, typ):
+    loaded_cert_or_req = _load_cert_or_req(cert_or_req, load_func, typ)
+    subject = loaded_cert_or_req.get_subject().CN
+    # pylint: disable=protected-access
+    sans = acme_crypto_util._pyopenssl_cert_or_req_san(loaded_cert_or_req)
+
+    if subject is None:
+        return sans
+    else:
+        return [subject] + [d for d in sans if d != subject]
+
+
 def get_names_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
     """Get a list of domains from a CSR, including the CN if it is set.
 
