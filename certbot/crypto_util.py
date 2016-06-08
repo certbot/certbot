@@ -298,14 +298,14 @@ def get_sans_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
 
 def _get_names_from_cert_or_req(cert_or_req, load_func, typ):
     loaded_cert_or_req = _load_cert_or_req(cert_or_req, load_func, typ)
-    subject = loaded_cert_or_req.get_subject().CN
+    common_name = loaded_cert_or_req.get_subject().CN
     # pylint: disable=protected-access
     sans = acme_crypto_util._pyopenssl_cert_or_req_san(loaded_cert_or_req)
 
-    if subject is None:
+    if common_name is None:
         return sans
     else:
-        return [subject] + [d for d in sans if d != subject]
+        return [common_name] + [d for d in sans if d != common_name]
 
 
 def get_names_from_cert(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
