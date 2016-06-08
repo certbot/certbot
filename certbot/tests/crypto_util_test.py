@@ -273,6 +273,25 @@ class GetSANsFromCSRTest(unittest.TestCase):
             [], self._call(test_util.load_vector('csr-nosans.pem')))
 
 
+class GetNamesFromCertTest(unittest.TestCase):
+    """Tests for certbot.crypto_util.get_names_from_cert."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.crypto_util import get_names_from_cert
+        return get_names_from_cert(*args, **kwargs)
+
+    def test_single(self):
+        self.assertEqual(
+            ['example.com'],
+            self._call(test_util.load_vector('cert.pem')))
+
+    def test_san(self):
+        self.assertEqual(
+            ['example.com', 'www.example.com'],
+            self._call(test_util.load_vector('cert-san.pem')))
+
+
 class GetNamesFromCSRTest(unittest.TestCase):
     """Tests for certbot.crypto_util.get_names_from_csr."""
     @classmethod
