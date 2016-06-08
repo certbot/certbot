@@ -1,11 +1,9 @@
 """Utility functions for Certbot plugin tests."""
 import argparse
 import copy
-import contextlib
 import os
 import re
 import shutil
-import socket
 import tarfile
 
 from acme import jose
