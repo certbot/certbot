@@ -31,7 +31,7 @@ class RawNginxParser(object):
     # rules
     comment = Literal('#') + restOfLine()
 
-    assignment = keepSpace + key + Optional(White() + value, default=None) + semicolon
+    assignment = keepSpace + key + Optional(space + value, default=None) + semicolon
     location_statement = Optional(space + modifier) + Optional(space + location)
     if_statement = Literal("if") + space + Regex(r"\(.+\)") + space
     map_statement = Literal("map") + space + Regex(r"\S+") + space + Regex(r"\$\S+") + space
@@ -108,31 +108,28 @@ class RawNginxDumper(object):
         self.blocks = blocks
         self.indentation = indentation
 
-    def __iter__(self, blocks=None, current_indent=0, spacer=' '):
+    def __iter__(self, blocks=None, spacer=' '):
         """Iterates the dumped nginx content."""
         blocks = blocks or self.blocks
         print "iterating", blocks
         for b in blocks:
-            if len(b) == 2:
-                key, values = b
-                indentation = ""
-            elif len(b) == 3:
-                indentation, key, values = b
-                assert indentation.isspace(), indentation + " is not space"
+            indentation = ""
+            if spacey(b[0]):
+                indentation = b.pop(0)
                 indentation = indentation.replace("\n", "", 1)
-            else:
-                print "Cannot process", b
-                sys.exit(1)
-            #indentation = spacer * current_indent
+            key = b.pop(0)
+
+            values = b
             if isinstance(key, list):
                 yield indentation + spacer.join(key) + ' {'
                 for parameter in values:
-                    dumped = self.__iter__([parameter], current_indent + self.indentation)
+                    dumped = self.__iter__([parameter])
                     for line in dumped:
                         yield line
 
                 yield '}'
             else:
+                #yield b
                 if isinstance(key, str) and key.strip() == '#':
                     yield indentation + key + values
                 else:
