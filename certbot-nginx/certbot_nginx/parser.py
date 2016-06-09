@@ -4,6 +4,7 @@ import logging
 import os
 import pyparsing
 import re
+import sys
 
 from certbot import errors
 
@@ -213,9 +214,26 @@ class NginxParser(object):
             if ext:
                 filename = filename + os.path.extsep + ext
             try:
-                logger.debug('Dumping to %s:\n%s', filename, nginxparser.dumps(tree))
+                out = nginxparser.dumps(tree)
+                logger.debug('Dumping to %s:\n%s', filename, out)
                 with open(filename, 'w') as _file:
-                    nginxparser.dump(tree, _file)
+                    _file.write(out)
+
+                if "owncloud" in filename:
+                    print "Outputting", filename
+                    print out
+                    a = open("/tmp/nginx/sites-enabled/owncloud.conf").read()
+                    b = open(filename).read()
+                    for linea, lineb in zip(a.split('\n'), b.split('\n')):
+                        if linea != lineb:
+                            print "a", repr(linea)
+                            print "b", repr(lineb)
+                    if a != b:
+                        print "Mismatch!"
+                        if a != out:
+                            print "Double mismatch", len(a), len(out)
+                    else:
+                        print "Match!"
             except IOError:
                 logger.error("Could not open file for writing: %s", filename)
 

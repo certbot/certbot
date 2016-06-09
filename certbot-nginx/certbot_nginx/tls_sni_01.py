@@ -3,6 +3,7 @@
 import itertools
 import logging
 import os
+import sys
 
 from certbot import errors
 from certbot.plugins import common
@@ -123,7 +124,13 @@ class NginxTlsSni01(common.TLSSNI01):
             True, self.challenge_conf)
 
         with open(self.challenge_conf, "w") as new_conf:
-            nginxparser.dump(config, new_conf)
+            if "mime" in self.challenge_conf:
+                print "Weird"
+                out = nginxparser.dumps(config)
+                print out
+                #sys.exit(1)
+            #nginxparser.dump(config, new_conf)
+            new_conf.write(out)
 
     def _make_server_block(self, achall, addrs):
         """Creates a server block for a challenge.
