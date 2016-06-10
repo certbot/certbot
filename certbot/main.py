@@ -615,11 +615,12 @@ def _cli_log_handler(config, level, fmt):
 
 def setup_logging(config, cli_handler_factory, logfile):
     """Setup logging."""
-    fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+    file_fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+    cli_fmt = "%(message)s"
     level = -config.verbose_count * 10
     file_handler, log_file_path = setup_log_file_handler(
-        config, logfile=logfile, fmt=fmt)
-    cli_handler = cli_handler_factory(config, level, fmt)
+        config, logfile=logfile, fmt=file_fmt)
+    cli_handler = cli_handler_factory(config, level, cli_fmt)
 
     # TODO: use fileConfig?
 
