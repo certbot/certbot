@@ -525,7 +525,7 @@ def _csr_obtain_cert(config, le_client):
     csr, typ = config.actual_csr
     certr, chain = le_client.obtain_certificate_from_csr(config.domains, csr, typ)
     if config.dry_run:
-        logger.info(
+        logger.debug(
             "Dry run: skipping saving certificate to %s", config.cert_path)
     else:
         cert_path, _, cert_fullchain = le_client.save_certificate(

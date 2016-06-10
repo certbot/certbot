@@ -107,7 +107,7 @@ def _restore_webroot_config(config, renewalparams):
         if not cli.set_by_cli("webroot_map"):
             config.namespace.webroot_map = renewalparams["webroot_map"]
     elif "webroot_path" in renewalparams:
-        logger.info("Ancient renewal conf file without webroot-map, restoring webroot-path")
+        logger.debug("Ancient renewal conf file without webroot-map, restoring webroot-path")
         wp = renewalparams["webroot_path"]
         if isinstance(wp, str):  # prior to 0.1.0, webroot_path was a string
             wp = [wp]
@@ -193,7 +193,7 @@ def _restore_required_config_elements(config, renewalparams):
 def should_renew(config, lineage):
     "Return true if any of the circumstances for automatic renewal apply."
     if config.renew_by_default:
-        logger.info("Auto-renewal forced with --force-renewal...")
+        logger.debug("Auto-renewal forced with --force-renewal...")
         return True
     if lineage.should_autorenew(interactive=True):
         logger.info("Cert is due for renewal, auto-renewing...")
@@ -235,7 +235,7 @@ def renew_cert(config, domains, le_client, lineage):
     _avoid_invalidating_lineage(config, lineage, original_server)
     new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
     if config.dry_run:
-        logger.info("Dry run: skipping updating lineage at %s",
+        logger.debug("Dry run: skipping updating lineage at %s",
                     os.path.dirname(lineage.cert))
     else:
         prior_version = lineage.latest_common_version()
