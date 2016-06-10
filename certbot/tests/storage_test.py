@@ -353,6 +353,13 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertEqual(self.test_rc.names(12),
                          ["example.com", "www.example.com"])
 
+        # Testing common name is listed first
+        self._write_out_kind(
+            "cert", 12, test_util.load_vector("cert-5sans.pem"))
+        self.assertEqual(
+            self.test_rc.names(12),
+            ["example.com"] + ["{0}.example.com".format(c) for c in "abcd"])
+
         # Trying missing cert
         os.unlink(self.test_rc.cert)
         self.assertRaises(errors.CertStorageError, self.test_rc.names)
