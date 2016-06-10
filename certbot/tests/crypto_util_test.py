@@ -291,6 +291,13 @@ class GetNamesFromCertTest(unittest.TestCase):
             ['example.com', 'www.example.com'],
             self._call(test_util.load_vector('cert-san.pem')))
 
+    def test_common_name_sans_order(self):
+        # Tests that the common name comes first
+        # followed by the SANS in alphabetical order
+        self.assertEqual(
+            ['example.com'] + ['{0}.example.com'.format(c) for c in 'abcd'],
+            self._call(test_util.load_vector('cert-5sans.pem')))
+
 
 class GetNamesFromCSRTest(unittest.TestCase):
     """Tests for certbot.crypto_util.get_names_from_csr."""
