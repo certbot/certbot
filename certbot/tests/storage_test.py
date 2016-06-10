@@ -84,6 +84,16 @@ class BaseRenewableCertTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
+    def _write_out_kind(self, kind, ver, value=None):
+        link = getattr(self.test_rc, kind)
+        if os.path.lexists(link):
+            os.unlink(link)
+        os.symlink(os.path.join(os.path.pardir, os.path.pardir, "archive",
+                                "example.org", "{0}{1}.pem".format(kind, ver)),
+                   link)
+        with open(link, "w") as f:
+            f.write(kind if value is None else value)
+
     def _write_out_ex_kinds(self):
         for kind in ALL_FOUR:
             where = getattr(self.test_rc, kind)
