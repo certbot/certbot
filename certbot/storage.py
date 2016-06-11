@@ -616,7 +616,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         if target is None:
             raise errors.CertStorageError("could not find cert file")
         with open(target) as f:
-            return crypto_util.get_sans_from_cert(f.read())
+            return crypto_util.get_names_from_cert(f.read())
 
     def autodeployment_is_enabled(self):
         """Is automatic deployment enabled for this cert?
