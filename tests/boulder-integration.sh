@@ -84,6 +84,36 @@ if [ "$size1" -lt 3000 ] || [ "$size2" -lt 3000 ] || [ "$size3" -gt 1800 ] ; the
     exit 1
 fi
 
+# ECDSA
+openssl ecparam -genkey -name secp384r1 -out "${root}/privkey-p384.pem"
+SAN="DNS:ecdsa.le.wtf" openssl req -new -sha256 \
+    -config "${OPENSSL_CNF:-openssl.cnf}" \
+    -key "${root}/privkey-p384.pem" \
+    -subj "/" \
+    -reqexts san \
+    -outform der \
+    -out "${root}/csr-p384.der"
+common auth --csr "${root}/csr-p384.der" \
+    --cert-path "${root}/csr/cert-p384.pem" \
+    --chain-path "${root}/csr/chain-p384.pem"
+openssl x509 -in "${root}/csr/cert-p384.pem" -text
+openssl x509 -in "${root}/csr/chain-p384.pem" -text
+
+# OCSP Must Staple
+openssl genrsa -out "${root}/privkey-must-staple.pem" 2048
+SAN="DNS:must-staple.le.wtf" openssl req -new -sha256 \
+    -config examples/openssl-must-staple.cnf \
+    -key "${root}/privkey-must-staple.pem" \
+    -subj "/" \
+    -reqexts san \
+    -out "${root}/csr-must-staple.pem"
+common auth --must-staple \
+    --csr "${root}/csr-must-staple.pem" \
+    --cert-path "${root}/csr/cert-must-staple.pem" \
+    --chain-path "${root}/csr/chain-must-staple.pem"
+openssl x509 -in "${root}/csr/cert-must-staple.pem" -text | grep '1.3.6.1.5.5.7.1.24'
+openssl x509 -in "${root}/csr/chain-must-staple.pem" -text
+
 # revoke by account key
 common revoke --cert-path "$root/conf/live/le.wtf/cert.pem"
 # revoke renewed
