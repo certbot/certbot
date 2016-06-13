@@ -162,30 +162,16 @@ def relevant_values(all_values):
 
     from certbot import cli
 
-    def _is_cli_default(option, value):
-        # Look through the CLI parser defaults and see if this option is
-        # both present and equal to the specified value. If not, return
-        # False.
-        # pylint: disable=protected-access
-        for x in cli.helpful_parser.parser._actions:
-            if x.dest == option:
-                if x.default == value:
-                    return True
-                else:
-                    break
-        return False
-
     values = dict()
     for option, value in all_values.iteritems():
         # Try to find reasons to store this item in the
         # renewal config.  It can be stored if it is relevant and
-        # (it is set_by_cli() or flag_default() is different
-        # from the value or flag_default() doesn't exist).
+        # (it is set_by_cli(), we don't know the default value, or
+        # the current value differs from the default value).
         if _relevant(option):
-            if (cli.set_by_cli(option)
-                or not _is_cli_default(option, value)):
-#                or option not in constants.CLI_DEFAULTS
-#                or constants.CLI_DEFAULTS[option] != value):
+            if (cli.set_by_cli(option) or
+                    option not in cli.DEFAULTS or
+                    cli.DEFAULTS[option] != value):
                 values[option] = value
     return values
 
