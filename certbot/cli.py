@@ -104,6 +104,11 @@ ZERO_ARG_ACTIONS = set(("store_const", "store_true",
                         "store_false", "append_const", "count",))
 
 
+# Maps a config option to its default value. This is set during the
+# parse_args method of HelpfulArgumentParser.
+DEFAULTS = None
+
+
 # Maps a config option to a set of config options that may have modified it.
 # This dictionary is used recursively, so if A modifies B and B modifies C,
 # it is determined that C was modified by the user if A was modified.
