@@ -7,8 +7,10 @@ import re
 import configobj
 import parsedatetime
 import pytz
+import six
 
 import certbot
+from certbot import cli
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
@@ -158,22 +160,13 @@ def relevant_values(all_values):
     :param dict all_values: The original values.
 
     :returns: A new dictionary containing items that can be used in renewal.
-    :rtype dict:"""
+    :rtype dict:
 
-    from certbot import cli
-
-    values = dict()
-    for option, value in all_values.iteritems():
-        # Try to find reasons to store this item in the
-        # renewal config.  It can be stored if it is relevant and
-        # (it is set_by_cli(), we don't know the default value, or
-        # the current value differs from the default value).
-        if _relevant(option):
-            if (cli.set_by_cli(option) or
-                    option not in cli.DEFAULTS or
-                    cli.DEFAULTS[option] != value):
-                values[option] = value
-    return values
+    """
+    return dict(
+        (option, value)
+        for option, value in six.iteritems(all_values)
+        if _relevant(option) and cli.option_was_set(option, value))
 
 
 class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
