@@ -1,6 +1,7 @@
 """Certbot command line argument & config processing."""
 from __future__ import print_function
 import argparse
+import copy
 import glob
 import logging
 import logging.handlers
@@ -339,6 +340,10 @@ class HelpfulArgumentParser(object):
 
         if self.detect_defaults:
             return parsed_args
+
+        global DEFAULTS  # pylint: disable=global-statement
+        DEFAULTS = dict((key, copy.deepcopy(self.parser.get_default(key)))
+                        for key in vars(parsed_args))
 
         # Do any post-parsing homework here
 
