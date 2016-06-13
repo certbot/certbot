@@ -60,7 +60,8 @@ def _reconstitute(config, full_path):
     try:
         renewal_candidate = storage.RenewableCert(
             full_path, configuration.RenewerConfiguration(config))
-    except (errors.CertStorageError, IOError):
+    except (errors.CertStorageError, IOError) as exc:
+        logger.warning(exc)
         logger.warning("Renewal configuration file %s is broken. Skipping.", full_path)
         logger.debug("Traceback was:\n%s", traceback.format_exc())
         return None
