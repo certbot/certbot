@@ -96,23 +96,11 @@ SAN="DNS:ecdsa.le.wtf" openssl req -new -sha256 \
 common auth --csr "${root}/csr-p384.der" \
     --cert-path "${root}/csr/cert-p384.pem" \
     --chain-path "${root}/csr/chain-p384.pem"
-openssl x509 -in "${root}/csr/cert-p384.pem" -text
-openssl x509 -in "${root}/csr/chain-p384.pem" -text
+openssl x509 -in "${root}/csr/cert-p384.pem" -text | grep 'ASN1 OID: secp384r1'
 
 # OCSP Must Staple
-openssl genrsa -out "${root}/privkey-must-staple.pem" 2048
-SAN="DNS:must-staple.le.wtf" openssl req -new -sha256 \
-    -config examples/openssl-must-staple.cnf \
-    -key "${root}/privkey-must-staple.pem" \
-    -subj "/" \
-    -reqexts san \
-    -out "${root}/csr-must-staple.pem"
-common auth --must-staple \
-    --csr "${root}/csr-must-staple.pem" \
-    --cert-path "${root}/csr/cert-must-staple.pem" \
-    --chain-path "${root}/csr/chain-must-staple.pem"
-openssl x509 -in "${root}/csr/cert-must-staple.pem" -text | grep '1.3.6.1.5.5.7.1.24'
-openssl x509 -in "${root}/csr/chain-must-staple.pem" -text
+common auth --must-staple --domains "must-staple.le.wtf"
+openssl x509 -in "${root}/conf/live/must-staple.le.wtf/cert.pem" -text | grep '1.3.6.1.5.5.7.1.24'
 
 # revoke by account key
 common revoke --cert-path "$root/conf/live/le.wtf/cert.pem"
