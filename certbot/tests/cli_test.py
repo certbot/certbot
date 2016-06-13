@@ -490,6 +490,12 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         conflicts += ['--staging']
         self._check_server_conflict_message(short_args, conflicts)
 
+    def test_defaults_global(self):
+        namespace = self._get_argument_parser()([])
+        namespace.webroot_map['example.com'] = '/var/www/html'
+
+        self.assertTrue(cli.DEFAULTS != namespace.webroot_map)
+
     def _certonly_new_request_common(self, mock_client, args=None):
         with mock.patch('certbot.main._treat_as_renewal') as mock_renewal:
             mock_renewal.return_value = ("newcert", None)
