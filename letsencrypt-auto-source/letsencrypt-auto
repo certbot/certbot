@@ -527,6 +527,7 @@ Bootstrap() {
     echo "You will need to bootstrap, configure virtualenv, and run pip install manually."
     echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
     echo "for more info."
+    exit 1
   fi
 }
 
