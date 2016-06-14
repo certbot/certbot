@@ -533,10 +533,9 @@ class RenewableCertTests(BaseRenewableCertTest):
         """Test that relevant_values() can reject a default value."""
         # pylint: disable=protected-access
         from certbot import storage
-        mock_parser.verb = "certonly"
         mock_parser.args = ["--standalone"]
-        mock_action = mock.Mock(dest="rsa_key_size", default=2048)
-        mock_parser.parser._actions = [mock_action]
+        mock_parser.defaults = {"rsa_key_size": 2048}
+        mock_parser.verb = "certonly"
         self.assertEqual(storage.relevant_values({"rsa_key_size": 2048}), {})
 
     @mock.patch("certbot.cli.helpful_parser")

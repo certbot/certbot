@@ -105,11 +105,6 @@ ZERO_ARG_ACTIONS = set(("store_const", "store_true",
                         "store_false", "append_const", "count",))
 
 
-# Maps a config option to its default value. This is set during the
-# parse_args method of HelpfulArgumentParser.
-DEFAULTS = None
-
-
 # Maps a config option to a set of config options that may have modified it.
 # This dictionary is used recursively, so if A modifies B and B modifies C,
 # it is determined that C was modified by the user if A was modified.
@@ -229,7 +224,8 @@ def has_default_value(option, value):
     :rtype: bool
 
     """
-    return option in DEFAULTS and DEFAULTS[option] == value
+    return (option in helpful_parser.defaults and
+            helpful_parser.defaults[option] == value)
 
 
 def option_was_set(option, value):
@@ -354,6 +350,7 @@ class HelpfulArgumentParser(object):
             sys.exit(0)
         self.visible_topics = self.determine_help_topics(self.help_arg)
         self.groups = {}       # elements are added by .add_group()
+        self.defaults = {}  # elements are added by .parse_args()
 
     def parse_args(self):
         """Parses command line arguments and returns the result.
@@ -369,9 +366,8 @@ class HelpfulArgumentParser(object):
         if self.detect_defaults:
             return parsed_args
 
-        global DEFAULTS  # pylint: disable=global-statement
-        DEFAULTS = dict((key, copy.deepcopy(self.parser.get_default(key)))
-                        for key in vars(parsed_args))
+        self.defaults = dict((key, copy.deepcopy(self.parser.get_default(key)))
+                             for key in vars(parsed_args))
 
         # Do any post-parsing homework here
 
