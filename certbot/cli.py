@@ -217,6 +217,21 @@ def set_by_cli(var):
 set_by_cli.detector = None
 
 
+def has_default_value(option, value):
+    """Does option have the default value?
+
+    If the default value of option is not known, False is returned.
+
+    :param str option: configuration variable being considered
+    :param value: value of the configuration variable named option
+
+    :returns: True if option has the default value, otherwise, False
+    :rtype: bool
+
+    """
+    return option in DEFAULTS and DEFAULTS[option] == value
+
+
 def option_was_set(option, value):
     """Was option set by the user or does it differ from the default?
 
@@ -227,9 +242,7 @@ def option_was_set(option, value):
     :rtype: bool
 
     """
-    return (set_by_cli(option) or
-            option not in DEFAULTS or
-            DEFAULTS[option] != value)
+    return set_by_cli(option) or not has_default_value(option, value)
 
 
 def argparse_type(variable):
