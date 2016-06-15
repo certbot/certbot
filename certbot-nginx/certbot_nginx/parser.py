@@ -219,7 +219,7 @@ class NginxParser(object):
                 with open(filename, 'w') as _file:
                     _file.write(out)
 
-                if "owncloud" in filename:
+                if True or "owncloud" in filename:
                     print "Outputting", filename
                     print out
                     a = open("/tmp/nginx/sites-enabled/owncloud.conf").read()

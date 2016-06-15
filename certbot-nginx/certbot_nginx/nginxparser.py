@@ -15,12 +15,12 @@ class RawNginxParser(object):
     """A class that parses nginx configuration with pyparsing."""
 
     # constants
-    left_bracket = Literal("{").suppress()
-    right_bracket = Literal("}").suppress()
-    semicolon = Literal(";").suppress()
-    key = Word(alphanums + "_/+-.")
     space = Optional(White())
     nspace = Optional(Regex(r"[ \t]+"))
+    left_bracket = Literal("{").suppress()
+    right_bracket = space.leaveWhitespace() + Literal("}").suppress()
+    semicolon = Literal(";").suppress()
+    key = Word(alphanums + "_/+-.")
     blankLine = ZeroOrMore(Regex(r"^\S$"))
     # Matches anything that is not a special character AND any chars in single
     # or double quotes
@@ -45,8 +45,8 @@ class RawNginxParser(object):
         (Group(space + key + location_statement) ^ Group(if_statement) ^
         Group(map_statement)).leaveWhitespace() +
         left_bracket +
-        Group(ZeroOrMore(Group(comment | assignment) | block)) +
-        space + right_bracket)
+        Group(ZeroOrMore(Group(comment | assignment) | block) + space).leaveWhitespace() +
+        right_bracket)
 
     script = OneOrMore(Group(comment | assignment) ^ block) + stringEnd
     script.parseWithTabs()
@@ -76,11 +76,22 @@ class RawNginxDumper(object):
             b0 = b
             b = copy.deepcopy(b)
             indentation = ""
+            if isinstance(b, str):
+                yield b
+                continue
             if spacey(b[0]):
-                indentation = b.pop(0)
+                try:
+                    indentation = b.pop(0)
+                except:
+                    import ipdb
+                    ipdb.set_trace()
+
                 #indentation = indentation.replace("\n", "", 1)
             key = b.pop(0)
             values = b.pop(0)
+            if "worker_processes" in str(b0) and False:
+                import ipdb
+                ipdb.set_trace()
 
             if isinstance(key, list):
                 yield indentation + "".join(key) + '{'
@@ -106,7 +117,8 @@ class RawNginxDumper(object):
 
     def __str__(self):
         """Return the parsed block as a string."""
-        print "Merging:\n", '\n'.join(self)
+        x = ''.join(self)
+        print "Merging:\n", repr(x)
         return ''.join(self) + '\n'
 
 
