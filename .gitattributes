@@ -5,3 +5,4 @@
 *.jpeg binary
 *.jpg binary
 *.png binary
+*.gz binary

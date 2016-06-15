@@ -7,6 +7,7 @@ import os
 import shutil
 import tempfile
 import time
+import sys
 
 import OpenSSL
 
@@ -21,17 +22,17 @@ from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
 from certbot_compatibility_test import validator
 
-from certbot_compatibility_test.configurators.apache import apache24
+from certbot_compatibility_test.configurators.apache import common
 
 
 DESCRIPTION = """
-Tests Certbot plugins against different server configuratons. It is
-assumed that Docker is already installed. If no test types is specified, all
+Tests Certbot plugins against different server configurations. It is
+assumed that Docker is already installed. If no test type is specified, all
 tests that the plugin supports are performed.
 
 """
 
-PLUGINS = {"apache": apache24.Proxy}
+PLUGINS = {"apache": common.Proxy}
 
 
 logger = logging.getLogger(__name__)
@@ -61,8 +62,8 @@ def test_authenticator(plugin, config, temp_dir):
                 "Plugin failed to complete %s for %s in %s",
                 type(achalls[i]), achalls[i].domain, config)
             success = False
-        elif isinstance(responses[i], challenges.TLSSNI01):
-            verify = functools.partial(responses[i].simple_verify, achalls[i],
+        elif isinstance(responses[i], challenges.TLSSNI01Response):
+            verify = functools.partial(responses[i].simple_verify, achalls[i].chall,
                                        achalls[i].domain,
                                        util.JWK.public_key(),
                                        host="127.0.0.1",
@@ -142,7 +143,8 @@ def test_deploy_cert(plugin, temp_dir, domains):
 
     for domain in domains:
         try:
-            plugin.deploy_cert(domain, cert_path, util.KEY_PATH)
+            plugin.deploy_cert(domain, cert_path, util.KEY_PATH, cert_path)
+            plugin.save()  # Needed by the Apache plugin
         except le_errors.Error as error:
             logger.error("Plugin failed to deploy ceritificate for %s:", domain)
             logger.exception(error)
@@ -177,6 +179,7 @@ def test_enhancements(plugin, domains):
     for domain in domains:
         try:
             plugin.enhance(domain, "redirect")
+            plugin.save()  # Needed by the Apache plugin
         except le_errors.PluginError as error:
             # Don't immediately fail because a redirect may already be enabled
             logger.warning("Plugin failed to enable redirect for %s:", domain)
@@ -341,7 +344,7 @@ def main():
     temp_dir = tempfile.mkdtemp()
     plugin = PLUGINS[args.plugin](args)
     try:
-        plugin.execute_in_docker("mkdir -p /var/log/apache2")
+        overall_success = True
         while plugin.has_more_configs():
             success = True
 
@@ -360,9 +363,17 @@ def main():
             if success:
                 logger.info("All tests on %s succeeded", config)
             else:
+                overall_success = False
                 logger.error("Tests on %s failed", config)
     finally:
         plugin.cleanup_from_tests()
+
+    if overall_success:
+        logger.warn("All compatibility tests succeeded")
+        sys.exit(0)
+    else:
+        logger.warn("One or more compatibility tests failed")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

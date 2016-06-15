@@ -1,6 +1,7 @@
 """Certbot main entry point."""
 from __future__ import print_function
 import atexit
+import errno
 import functools
 import logging.handlers
 import os
@@ -588,8 +589,16 @@ def renew(config, unused_plugins):
 def setup_log_file_handler(config, logfile, fmt):
     """Setup file debug logging."""
     log_file_path = os.path.join(config.logs_dir, logfile)
-    handler = logging.handlers.RotatingFileHandler(
-        log_file_path, maxBytes=2 ** 20, backupCount=10)
+    try:
+        handler = logging.handlers.RotatingFileHandler(
+            log_file_path, maxBytes=2 ** 20, backupCount=10)
+    except IOError as e:
+        if e.errno == errno.EACCES:
+            msg = ("Access denied writing to {0}. To run as non-root, set " +
+                "--logs-dir, --config-dir, --work-dir to writable paths.")
+            raise errors.Error(msg.format(log_file_path))
+        else:
+            raise
     # rotate on each invocation, rollover only possible when maxBytes
     # is nonzero and backupCount is nonzero, so we set maxBytes as big
     # as possible not to overrun in single CLI invocation (1MB).

@@ -1,6 +1,7 @@
 """Certbot command line argument & config processing."""
 from __future__ import print_function
 import argparse
+import copy
 import glob
 import logging
 import logging.handlers
@@ -211,6 +212,35 @@ def set_by_cli(var):
 set_by_cli.detector = None
 
 
+def has_default_value(option, value):
+    """Does option have the default value?
+
+    If the default value of option is not known, False is returned.
+
+    :param str option: configuration variable being considered
+    :param value: value of the configuration variable named option
+
+    :returns: True if option has the default value, otherwise, False
+    :rtype: bool
+
+    """
+    return (option in helpful_parser.defaults and
+            helpful_parser.defaults[option] == value)
+
+
+def option_was_set(option, value):
+    """Was option set by the user or does it differ from the default?
+
+    :param str option: configuration variable being considered
+    :param value: value of the configuration variable named option
+
+    :returns: True if the option was set, otherwise, False
+    :rtype: bool
+
+    """
+    return set_by_cli(option) or not has_default_value(option, value)
+
+
 def argparse_type(variable):
     "Return our argparse type function for a config variable (default: str)"
     # pylint: disable=protected-access
@@ -320,6 +350,7 @@ class HelpfulArgumentParser(object):
             sys.exit(0)
         self.visible_topics = self.determine_help_topics(self.help_arg)
         self.groups = {}       # elements are added by .add_group()
+        self.defaults = {}  # elements are added by .parse_args()
 
     def parse_args(self):
         """Parses command line arguments and returns the result.
@@ -334,6 +365,9 @@ class HelpfulArgumentParser(object):
 
         if self.detect_defaults:
             return parsed_args
+
+        self.defaults = dict((key, copy.deepcopy(self.parser.get_default(key)))
+                             for key in vars(parsed_args))
 
         # Do any post-parsing homework here
 
@@ -359,7 +393,8 @@ class HelpfulArgumentParser(object):
                         " {0} conflicts with dialog_mode").format(arg)
                     )
 
-        hooks.validate_hooks(parsed_args)
+        if parsed_args.validate_hooks:
+            hooks.validate_hooks(parsed_args)
 
         return parsed_args
 
@@ -800,6 +835,14 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "For this command, the shell variable $RENEWED_LINEAGE will point to the"
         "config live subdirectory containing the new certs and keys; the shell variable "
         "$RENEWED_DOMAINS will contain a space-delimited list of renewed cert domains")
+    helpful.add(
+        "renew", "--disable-hook-validation",
+        action='store_false', dest='validate_hooks', default=True,
+        help="Ordinarily the commands specified for --pre-hook/--post-hook/--renew-hook"
+        " will be checked for validity, to see if the programs being run are in the $PATH,"
+        " so that mistakes can be caught early, even when the hooks aren't being run just yet."
+        " The validation is rather simplistic and fails if you use more advanced"
+        " shell constructs, so you can use this switch to disable it.")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
 

@@ -447,6 +447,19 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         short_args += '--server example.com'.split()
         self._check_server_conflict_message(short_args, '--staging')
 
+    def test_option_was_set(self):
+        key_size_option = 'rsa_key_size'
+        key_size_value = cli.flag_default(key_size_option)
+        self._get_argument_parser()(
+            '--rsa-key-size {0}'.format(key_size_value).split())
+
+        self.assertTrue(cli.option_was_set(key_size_option, key_size_value))
+        self.assertTrue(cli.option_was_set('no_verify_ssl', True))
+
+        config_dir_option = 'config_dir'
+        self.assertFalse(cli.option_was_set(
+            config_dir_option, cli.flag_default(config_dir_option)))
+
     def _assert_dry_run_flag_worked(self, namespace, existing_account):
         self.assertTrue(namespace.dry_run)
         self.assertTrue(namespace.break_my_certs)
@@ -651,6 +664,18 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         out = stdout.getvalue()
         self.assertEqual("", out)
 
+    def test_renew_hook_validation(self):
+        self._make_test_renewal_conf('sample-renewal.conf')
+        args = ["renew", "--dry-run", "--post-hook=no-such-command"]
+        self._test_renewal_common(True, [], args=args, should_renew=False,
+                                  error_expected=True)
+
+    def test_renew_no_hook_validation(self):
+        self._make_test_renewal_conf('sample-renewal.conf')
+        args = ["renew", "--dry-run", "--post-hook=no-such-command",
+                "--disable-hook-validation"]
+        self._test_renewal_common(True, [], args=args, should_renew=True,
+                                  error_expected=False)
 
     @mock.patch("certbot.cli.set_by_cli")
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
