@@ -82,7 +82,7 @@ class NcursesDisplay(object):
 
     def __init__(self, width=WIDTH, height=HEIGHT):
         super(NcursesDisplay, self).__init__()
-        self.dialog = dialog.Dialog()
+        self.dialog = dialog.Dialog(autowidgetsize=True)
         assert OK == self.dialog.DIALOG_OK, "What kind of absurdity is this?"
         self.width = width
         self.height = height
@@ -101,7 +101,7 @@ class NcursesDisplay(object):
         :param bool pause: Not applicable to NcursesDisplay
 
         """
-        self.dialog.msgbox(message, height, width=self.width)
+        self.dialog.msgbox(message)
 
     def menu(self, message, choices, ok_label="OK", cancel_label="Cancel",
              help_label="", **unused_kwargs):
@@ -170,11 +170,7 @@ class NcursesDisplay(object):
             `string` - input entered by the user
 
         """
-        sections = message.split("\n")
-        # each section takes at least one line, plus extras if it's longer than self.width
-        wordlines = [1 + (len(section) / self.width) for section in sections]
-        height = 6 + sum(wordlines) + len(sections)
-        return _clean(self.dialog.inputbox(message, width=self.width, height=height))
+        return self.dialog.inputbox(message)
 
     def yesno(self, message, yes_label="Yes", no_label="No", **unused_kwargs):
         """Display a Yes/No dialog box.
@@ -191,8 +187,7 @@ class NcursesDisplay(object):
 
         """
         return self.dialog.DIALOG_OK == self.dialog.yesno(
-            message, self.height, self.width,
-            yes_label=yes_label, no_label=no_label)
+            message, yes_label=yes_label, no_label=no_label)
 
     def checklist(self, message, tags, default_status=True, **unused_kwargs):
         """Displays a checklist.
@@ -210,8 +205,7 @@ class NcursesDisplay(object):
 
         """
         choices = [(tag, "", default_status) for tag in tags]
-        return _clean(self.dialog.checklist(
-            message, width=self.width, height=self.height, choices=choices))
+        return self.dialog.checklist(message, choices=choices)
 
     def directory_select(self, message, **unused_kwargs):
         """Display a directory selection screen.
@@ -224,9 +218,8 @@ class NcursesDisplay(object):
 
         """
         root_directory = os.path.abspath(os.sep)
-        return _clean(self.dialog.dselect(
-            filepath=root_directory, width=self.width,
-            height=self.height, help_button=True, title=message))
+        return self.dialog.dselect(
+            filepath=root_directory, help_button=True, title=message)
 
 
 @zope.interface.implementer(interfaces.IDisplay)
