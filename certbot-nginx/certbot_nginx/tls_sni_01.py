@@ -124,9 +124,9 @@ class NginxTlsSni01(common.TLSSNI01):
             True, self.challenge_conf)
 
         with open(self.challenge_conf, "w") as new_conf:
+            out = nginxparser.dumps(config)
             if "mime" in self.challenge_conf:
                 print "Weird"
-                out = nginxparser.dumps(config)
                 print out
                 #sys.exit(1)
             #nginxparser.dump(config, new_conf)

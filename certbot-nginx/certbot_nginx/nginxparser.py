@@ -18,8 +18,10 @@ class RawNginxParser(object):
     left_bracket = Literal("{").suppress()
     right_bracket = Literal("}").suppress()
     semicolon = Literal(";").suppress()
-    space = Optional(White())
     key = Word(alphanums + "_/+-.")
+    space = Optional(White())
+    nspace = Optional(Regex(r"[ \t]+"))
+    blankLine = ZeroOrMore(Regex(r"^\S$"))
     # Matches anything that is not a special character AND any chars in single
     # or double quotes
     value = Regex(r"((\".*\")?(\'.*\')?[^\{\};,]?)+")
@@ -31,23 +33,25 @@ class RawNginxParser(object):
     comment = space + Literal('#') + restOfLine()
 
     assignment = space + key + Optional(space + value, default=None) + semicolon
-    location_statement = space + Optional(modifier) + Optional(space + location)
+    location_statement = space + Optional(modifier) + Optional(space + location + space)
     if_statement = space + Literal("if") + space + Regex(r"\(.+\)") + space
     map_statement = space + Literal("map") + space + Regex(r"\S+") + space + Regex(r"\$\S+") + space
     block = Forward()
 
     block << Group(
         # XXX could this "key" be Literal("location")?
-        (Group(key + location_statement) ^ Group(if_statement) ^ Group(map_statement)) +
+        # WIP: in order to allow this leaveWhitespace(), we're going to need an explicit
+        # "whitespaceline" construction...
+        (Group(space + key + location_statement) ^ Group(if_statement) ^
+        Group(map_statement)).leaveWhitespace() +
         left_bracket +
         Group(ZeroOrMore(Group(comment | assignment) | block)) +
-        right_bracket)
+        space + right_bracket)
 
     script = OneOrMore(Group(comment | assignment) ^ block) + stringEnd
     script.parseWithTabs()
 
-    def __init__(self, source):
-        self.source = source
+    def __init__(self, source): self.source = source
 
     def parse(self):
         """Returns the parsed tree."""
@@ -74,7 +78,7 @@ class RawNginxDumper(object):
             indentation = ""
             if spacey(b[0]):
                 indentation = b.pop(0)
-                indentation = indentation.replace("\n", "", 1)
+                #indentation = indentation.replace("\n", "", 1)
             key = b.pop(0)
             values = b.pop(0)
 
@@ -103,7 +107,7 @@ class RawNginxDumper(object):
     def __str__(self):
         """Return the parsed block as a string."""
         print "Merging:\n", '\n'.join(self)
-        return '\n'.join(self) + '\n'
+        return ''.join(self) + '\n'
 
 
 
