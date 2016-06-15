@@ -150,6 +150,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :raises .errors.PluginError: If there is any other error
 
         """
+        # Perform the actual Augeas initialization to be able to react
+        try:
+            self.init_augeas()
+        except ImportError:
+            raise errors.NoInstallationError("Problem in Augeas installation")
+
         # Verify Apache is installed
         if not util.exe_exists(constants.os_constant("restart_cmd")[0]):
             raise errors.NoInstallationError

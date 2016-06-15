@@ -1,7 +1,6 @@
 """Class of Augeas Configurators."""
 import logging
 
-import augeas
 
 from certbot import errors
 from certbot import reverter
@@ -29,12 +28,9 @@ class AugeasConfigurator(common.Plugin):
     def __init__(self, *args, **kwargs):
         super(AugeasConfigurator, self).__init__(*args, **kwargs)
 
-        self.aug = augeas.Augeas(
-            # specify a directory to load our preferred lens from
-            loadpath=constants.AUGEAS_LENS_DIR,
-            # Do not save backup (we do it ourselves), do not load
-            # anything by default
-            flags=(augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD))
+        # Placeholder for augeas
+        self.aug = None
+
         self.save_notes = ""
 
         # See if any temporary changes need to be recovered
@@ -42,6 +38,16 @@ class AugeasConfigurator(common.Plugin):
         # because this will change the underlying configuration and potential
         # vhosts
         self.reverter = reverter.Reverter(self.config)
+
+    def init_augeas(self):
+        """ Initialize the actual Augeas instance """
+        import augeas
+        self.aug = augeas.Augeas(
+            # specify a directory to load our preferred lens from
+            loadpath=constants.AUGEAS_LENS_DIR,
+            # Do not save backup (we do it ourselves), do not load
+            # anything by default
+            flags=(augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD))
         self.recovery_routine()
 
     def check_parsing_errors(self, lens):
