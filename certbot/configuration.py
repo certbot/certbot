@@ -8,7 +8,7 @@ import zope.interface
 from certbot import constants
 from certbot import errors
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 
 
 @zope.interface.implementer(interfaces.IConfig)
@@ -132,4 +132,4 @@ def check_config_sanity(config):
     if config.namespace.domains is not None:
         for domain in config.namespace.domains:
             # This may be redundant, but let's be paranoid
-            le_util.enforce_domain_sanity(domain)
+            util.enforce_domain_sanity(domain)

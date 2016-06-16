@@ -6,6 +6,7 @@
 """
 import logging
 import os
+import traceback
 
 import OpenSSL
 import pyrfc3339
@@ -16,7 +17,7 @@ from acme import jose
 
 from certbot import errors
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -39,35 +40,34 @@ def save_key(key_pem, key_dir, keyname="key-certbot.pem"):
     :param str keyname: Filename of key
 
     :returns: Key
-    :rtype: :class:`certbot.le_util.Key`
+    :rtype: :class:`certbot.util.Key`
 
     """
 
     config = zope.component.getUtility(interfaces.IConfig)
     # Save file
-    le_util.make_or_verify_dir(key_dir, 0o700, os.geteuid(),
-                               config.strict_permissions)
-    key_f, key_path = le_util.unique_file(
-        os.path.join(key_dir, keyname), 0o600)
+    util.make_or_verify_dir(key_dir, 0o700, os.geteuid(),
+                            config.strict_permissions)
+    key_f, key_path = util.unique_file(os.path.join(key_dir, keyname), 0o600)
     with key_f:
-        logger.info("Saving private key to: %s", key_path)
+        logger.info("Generating key (%d bits): %s", key_size, key_path)
         key_f.write(key_pem)
 
-    return le_util.Key(key_path, key_pem)
+    return util.Key(key_path, key_pem)
 
 
 def init_save_csr(privkey, names, path, csrname="csr-certbot.pem"):
     """Initialize a CSR with the given private key.
 
     :param privkey: Key to include in the CSR
-    :type privkey: :class:`certbot.le_util.Key`
+    :type privkey: :class:`certbot.util.Key`
 
     :param set names: `str` names to include in the CSR
 
     :param str path: Certificate save directory.
 
     :returns: CSR
-    :rtype: :class:`certbot.le_util.CSR`
+    :rtype: :class:`certbot.util.CSR`
 
     """
     config = zope.component.getUtility(interfaces.IConfig)
@@ -76,16 +76,16 @@ def init_save_csr(privkey, names, path, csrname="csr-certbot.pem"):
         must_staple=config.must_staple)
 
     # Save CSR
-    le_util.make_or_verify_dir(path, 0o755, os.geteuid(),
+    util.make_or_verify_dir(path, 0o755, os.geteuid(),
                                config.strict_permissions)
-    csr_f, csr_filename = le_util.unique_file(
+    csr_f, csr_filename = util.unique_file(
         os.path.join(path, csrname), 0o644)
     csr_f.write(csr_pem)
     csr_f.close()
 
     logger.info("Creating CSR: %s", csr_filename)
 
-    return le_util.CSR(csr_filename, csr_der, "der")
+    return util.CSR(csr_filename, csr_der, "der")
 
 
 # Lower level functions
@@ -174,6 +174,30 @@ def csr_matches_pubkey(csr, privkey):
         return False
 
 
+def import_csr_file(csrfile, data):
+    """Import a CSR file, which can be either PEM or DER.
+
+    :param str csrfile: CSR filename
+    :param str data: contents of the CSR file
+
+    :returns: (`OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`,
+               util.CSR object representing the CSR,
+               list of domains requested in the CSR)
+    :rtype: tuple
+
+    """
+    for form, typ in (("der", OpenSSL.crypto.FILETYPE_ASN1,),
+                      ("pem", OpenSSL.crypto.FILETYPE_PEM,),):
+        try:
+            domains = get_names_from_csr(data, typ)
+        except OpenSSL.crypto.Error:
+            logger.debug("CSR parse error (form=%s, typ=%s):", form, typ)
+            logger.debug(traceback.format_exc())
+            continue
+        return typ, util.CSR(file=csrfile, data=data, form=form), domains
+    raise errors.Error("Failed to parse CSR file: {0}".format(csrfile))
+
+
 def make_key_rsa(bits):
     """Generate PEM encoded RSA key.
 
@@ -247,15 +271,20 @@ def pyopenssl_load_certificate(data):
         str(error) for error in openssl_errors)))
 
 
-def _get_sans_from_cert_or_req(cert_or_req_str, load_func,
-                               typ=OpenSSL.crypto.FILETYPE_PEM):
+def _load_cert_or_req(cert_or_req_str, load_func,
+                      typ=OpenSSL.crypto.FILETYPE_PEM):
     try:
-        cert_or_req = load_func(typ, cert_or_req_str)
+        return load_func(typ, cert_or_req_str)
     except OpenSSL.crypto.Error as error:
         logger.exception(error)
         raise
+
+
+def _get_sans_from_cert_or_req(cert_or_req_str, load_func,
+                               typ=OpenSSL.crypto.FILETYPE_PEM):
     # pylint: disable=protected-access
-    return acme_crypto_util._pyopenssl_cert_or_req_san(cert_or_req)
+    return acme_crypto_util._pyopenssl_cert_or_req_san(_load_cert_or_req(
+        cert_or_req_str, load_func, typ))
 
 
 def get_sans_from_cert(cert, typ=OpenSSL.crypto.FILETYPE_PEM):
@@ -283,6 +312,46 @@ def get_sans_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
 
     """
     return _get_sans_from_cert_or_req(
+        csr, OpenSSL.crypto.load_certificate_request, typ)
+
+
+def _get_names_from_cert_or_req(cert_or_req, load_func, typ):
+    loaded_cert_or_req = _load_cert_or_req(cert_or_req, load_func, typ)
+    common_name = loaded_cert_or_req.get_subject().CN
+    # pylint: disable=protected-access
+    sans = acme_crypto_util._pyopenssl_cert_or_req_san(loaded_cert_or_req)
+
+    if common_name is None:
+        return sans
+    else:
+        return [common_name] + [d for d in sans if d != common_name]
+
+
+def get_names_from_cert(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
+    """Get a list of domains from a cert, including the CN if it is set.
+
+    :param str cert: Certificate (encoded).
+    :param typ: `OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`
+
+    :returns: A list of domain names.
+    :rtype: list
+
+    """
+    return _get_names_from_cert_or_req(
+        csr, OpenSSL.crypto.load_certificate, typ)
+
+
+def get_names_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
+    """Get a list of domains from a CSR, including the CN if it is set.
+
+    :param str csr: CSR (encoded).
+    :param typ: `OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`
+
+    :returns: A list of domain names.
+    :rtype: list
+
+    """
+    return _get_names_from_cert_or_req(
         csr, OpenSSL.crypto.load_certificate_request, typ)
 
 

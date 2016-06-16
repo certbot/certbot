@@ -11,7 +11,7 @@ from shutil import copy, rmtree
 import socket
 import ssl
 from stat import S_IRUSR, S_IXUSR
-from subprocess import CalledProcessError, check_output, Popen, PIPE
+from subprocess import CalledProcessError, Popen, PIPE
 import sys
 from tempfile import mkdtemp
 from threading import Thread
@@ -146,7 +146,9 @@ def out_and_err(command, input=None, shell=False, env=None):
     out, err = process.communicate(input=input)
     status = process.poll()  # same as in check_output(), though wait() sounds better
     if status:
-        raise CalledProcessError(status, command, output=out)
+        error = CalledProcessError(status, command)
+        error.output = out
+        raise error
     return out, err
 
 
@@ -183,7 +185,7 @@ def run_le_auto(venv_dir, base_url, **kwargs):
     d = dict(XDG_DATA_HOME=venv_dir,
              # URL to PyPI-style JSON that tell us the latest released version
              # of LE:
-             LE_AUTO_JSON_URL=base_url + 'letsencrypt/json',
+             LE_AUTO_JSON_URL=base_url + 'certbot/json',
              # URL to dir containing letsencrypt-auto and letsencrypt-auto.sig:
              LE_AUTO_DIR_TEMPLATE=base_url + '%s/',
              # The public key corresponding to signing.key:
@@ -258,7 +260,7 @@ class AutoTests(TestCase):
         with ephemeral_dir() as venv_dir:
             # This serves a PyPI page with a higher version, a GitHub-alike
             # with a corresponding le-auto script, and a matching signature.
-            resources = {'letsencrypt/json': dumps({'releases': {'99.9.9': None}}),
+            resources = {'certbot/json': dumps({'releases': {'99.9.9': None}}),
                          'v99.9.9/letsencrypt-auto': NEW_LE_AUTO,
                          'v99.9.9/letsencrypt-auto.sig': NEW_LE_AUTO_SIG}
             with serving(resources) as base_url:
@@ -301,8 +303,8 @@ class AutoTests(TestCase):
         with ephemeral_dir() as venv_dir:
             # Serve an unrelated hash signed with the good key (easier than
             # making a bad key, and a mismatch is a mismatch):
-            resources = {'': '<a href="letsencrypt/">letsencrypt/</a>',
-                         'letsencrypt/json': dumps({'releases': {'99.9.9': None}}),
+            resources = {'': '<a href="certbot/">certbot/</a>',
+                         'certbot/json': dumps({'releases': {'99.9.9': None}}),
                          'v99.9.9/letsencrypt-auto': build_le_auto(version='99.9.9'),
                          'v99.9.9/letsencrypt-auto.sig': signed('something else')}
             with serving(resources) as base_url:
@@ -320,8 +322,8 @@ class AutoTests(TestCase):
     def test_pip_failure(self):
         """Make sure pip stops us if there is a hash mismatch."""
         with ephemeral_dir() as venv_dir:
-            resources = {'': '<a href="letsencrypt/">letsencrypt/</a>',
-                         'letsencrypt/json': dumps({'releases': {'99.9.9': None}})}
+            resources = {'': '<a href="certbot/">certbot/</a>',
+                         'certbot/json': dumps({'releases': {'99.9.9': None}})}
             with serving(resources) as base_url:
                 # Build a le-auto script embedding a bad requirements file:
                 install_le_auto(

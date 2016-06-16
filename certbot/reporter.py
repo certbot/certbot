@@ -11,10 +11,15 @@ from six.moves import queue  # pylint: disable=import-error
 import zope.interface
 
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 
 
 logger = logging.getLogger(__name__)
+
+# Store the pid of the process that first imported this module so that
+# atexit_print_messages side-effects such as error reporting can be limited to
+# this process and not any fork()'d children.
+INITIAL_PID = os.getpid()
 
 
 @zope.interface.implementer(interfaces.IReporter)
@@ -55,12 +60,14 @@ class Reporter(object):
         self.messages.put(self._msg_type(priority, msg, on_crash))
         logger.info("Reporting to user: %s", msg)
 
-    def atexit_print_messages(self, pid=os.getpid()):
+    def atexit_print_messages(self, pid=None):
         """Function to be registered with atexit to print messages.
 
         :param int pid: Process ID
 
         """
+        if pid is None:
+            pid = INITIAL_PID
         # This ensures that messages are only printed from the process that
         # created the Reporter.
         if pid == os.getpid():
@@ -79,13 +86,18 @@ class Reporter(object):
             bold_on = sys.stdout.isatty()
             if not self.config.quiet:
                 if bold_on:
-                    print(le_util.ANSI_SGR_BOLD)
+                    print(util.ANSI_SGR_BOLD)
                 print('IMPORTANT NOTES:')
             first_wrapper = textwrap.TextWrapper(
-                initial_indent=' - ', subsequent_indent=(' ' * 3))
+                initial_indent=' - ',
+                subsequent_indent=(' ' * 3),
+                break_long_words=False,
+                break_on_hyphens=False)
             next_wrapper = textwrap.TextWrapper(
                 initial_indent=first_wrapper.subsequent_indent,
-                subsequent_indent=first_wrapper.subsequent_indent)
+                subsequent_indent=first_wrapper.subsequent_indent,
+                break_long_words=False,
+                break_on_hyphens=False)
         while not self.messages.empty():
             msg = self.messages.get()
             if self.config.quiet:
@@ -96,7 +108,7 @@ class Reporter(object):
             if no_exception or msg.on_crash:
                 if bold_on and msg.priority > self.HIGH_PRIORITY:
                     if not self.config.quiet:
-                        sys.stdout.write(le_util.ANSI_SGR_RESET)
+                        sys.stdout.write(util.ANSI_SGR_RESET)
                         bold_on = False
                 lines = msg.text.splitlines()
                 print(first_wrapper.fill(lines[0]))
@@ -104,4 +116,4 @@ class Reporter(object):
                     print("\n".join(
                         next_wrapper.fill(line) for line in lines[1:]))
         if bold_on and not self.config.quiet:
-            sys.stdout.write(le_util.ANSI_SGR_RESET)
+            sys.stdout.write(util.ANSI_SGR_RESET)

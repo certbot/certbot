@@ -18,7 +18,7 @@ from certbot import constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 from certbot import hooks
 from certbot import storage
 from certbot.plugins import disco as plugins_disco
@@ -62,7 +62,8 @@ def _reconstitute(config, full_path):
     try:
         renewal_candidate = storage.RenewableCert(
             full_path, configuration.RenewerConfiguration(config))
-    except (errors.CertStorageError, IOError):
+    except (errors.CertStorageError, IOError) as exc:
+        logger.warning(exc)
         logger.warning("Renewal configuration file %s is broken. Skipping.", full_path)
         logger.debug("Traceback was:\n%s", traceback.format_exc())
         return None
@@ -88,7 +89,7 @@ def _reconstitute(config, full_path):
         return None
 
     try:
-        config.domains = [le_util.enforce_domain_sanity(d)
+        config.domains = [util.enforce_domain_sanity(d)
                           for d in renewal_candidate.names()]
     except errors.ConfigurationError as error:
         logger.warning("Renewal configuration file %s references a cert "

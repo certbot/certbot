@@ -1,4 +1,4 @@
-"""Tests for certbot.le_util."""
+"""Tests for certbot.util."""
 import argparse
 import errno
 import os
@@ -11,16 +11,17 @@ import mock
 import six
 
 from certbot import errors
+from certbot.tests import test_util
 
 
 class RunScriptTest(unittest.TestCase):
-    """Tests for certbot.le_util.run_script."""
+    """Tests for certbot.util.run_script."""
     @classmethod
     def _call(cls, params):
-        from certbot.le_util import run_script
+        from certbot.util import run_script
         return run_script(params)
 
-    @mock.patch("certbot.le_util.subprocess.Popen")
+    @mock.patch("certbot.util.subprocess.Popen")
     def test_default(self, mock_popen):
         """These will be changed soon enough with reload."""
         mock_popen().returncode = 0
@@ -30,13 +31,13 @@ class RunScriptTest(unittest.TestCase):
         self.assertEqual(out, "stdout")
         self.assertEqual(err, "stderr")
 
-    @mock.patch("certbot.le_util.subprocess.Popen")
+    @mock.patch("certbot.util.subprocess.Popen")
     def test_bad_process(self, mock_popen):
         mock_popen.side_effect = OSError
 
         self.assertRaises(errors.SubprocessError, self._call, ["test"])
 
-    @mock.patch("certbot.le_util.subprocess.Popen")
+    @mock.patch("certbot.util.subprocess.Popen")
     def test_failure(self, mock_popen):
         mock_popen().communicate.return_value = ("", "")
         mock_popen().returncode = 1
@@ -45,29 +46,29 @@ class RunScriptTest(unittest.TestCase):
 
 
 class ExeExistsTest(unittest.TestCase):
-    """Tests for certbot.le_util.exe_exists."""
+    """Tests for certbot.util.exe_exists."""
 
     @classmethod
     def _call(cls, exe):
-        from certbot.le_util import exe_exists
+        from certbot.util import exe_exists
         return exe_exists(exe)
 
-    @mock.patch("certbot.le_util.os.path.isfile")
-    @mock.patch("certbot.le_util.os.access")
+    @mock.patch("certbot.util.os.path.isfile")
+    @mock.patch("certbot.util.os.access")
     def test_full_path(self, mock_access, mock_isfile):
         mock_access.return_value = True
         mock_isfile.return_value = True
         self.assertTrue(self._call("/path/to/exe"))
 
-    @mock.patch("certbot.le_util.os.path.isfile")
-    @mock.patch("certbot.le_util.os.access")
+    @mock.patch("certbot.util.os.path.isfile")
+    @mock.patch("certbot.util.os.access")
     def test_on_path(self, mock_access, mock_isfile):
         mock_access.return_value = True
         mock_isfile.return_value = True
         self.assertTrue(self._call("exe"))
 
-    @mock.patch("certbot.le_util.os.path.isfile")
-    @mock.patch("certbot.le_util.os.access")
+    @mock.patch("certbot.util.os.path.isfile")
+    @mock.patch("certbot.util.os.access")
     def test_not_found(self, mock_access, mock_isfile):
         mock_access.return_value = False
         mock_isfile.return_value = True
@@ -75,7 +76,7 @@ class ExeExistsTest(unittest.TestCase):
 
 
 class MakeOrVerifyDirTest(unittest.TestCase):
-    """Tests for certbot.le_util.make_or_verify_dir.
+    """Tests for certbot.util.make_or_verify_dir.
 
     Note that it is not possible to test for a wrong directory owner,
     as this testing script would have to be run as root.
@@ -93,7 +94,7 @@ class MakeOrVerifyDirTest(unittest.TestCase):
         shutil.rmtree(self.root_path, ignore_errors=True)
 
     def _call(self, directory, mode):
-        from certbot.le_util import make_or_verify_dir
+        from certbot.util import make_or_verify_dir
         return make_or_verify_dir(directory, mode, self.uid, strict=True)
 
     def test_creates_dir_when_missing(self):
@@ -116,7 +117,7 @@ class MakeOrVerifyDirTest(unittest.TestCase):
 
 
 class CheckPermissionsTest(unittest.TestCase):
-    """Tests for certbot.le_util.check_permissions.
+    """Tests for certbot.util.check_permissions.
 
     Note that it is not possible to test for a wrong file owner,
     as this testing script would have to be run as root.
@@ -131,7 +132,7 @@ class CheckPermissionsTest(unittest.TestCase):
         os.remove(self.path)
 
     def _call(self, mode):
-        from certbot.le_util import check_permissions
+        from certbot.util import check_permissions
         return check_permissions(self.path, mode, self.uid)
 
     def test_ok_mode(self):
@@ -144,7 +145,7 @@ class CheckPermissionsTest(unittest.TestCase):
 
 
 class UniqueFileTest(unittest.TestCase):
-    """Tests for certbot.le_util.unique_file."""
+    """Tests for certbot.util.unique_file."""
 
     def setUp(self):
         self.root_path = tempfile.mkdtemp()
@@ -154,7 +155,7 @@ class UniqueFileTest(unittest.TestCase):
         shutil.rmtree(self.root_path, ignore_errors=True)
 
     def _call(self, mode=0o600):
-        from certbot.le_util import unique_file
+        from certbot.util import unique_file
         return unique_file(self.default_name, mode)
 
     def test_returns_fd_for_writing(self):
@@ -189,7 +190,7 @@ class UniqueFileTest(unittest.TestCase):
 
 
 class UniqueLineageNameTest(unittest.TestCase):
-    """Tests for certbot.le_util.unique_lineage_name."""
+    """Tests for certbot.util.unique_lineage_name."""
 
     def setUp(self):
         self.root_path = tempfile.mkdtemp()
@@ -198,7 +199,7 @@ class UniqueLineageNameTest(unittest.TestCase):
         shutil.rmtree(self.root_path, ignore_errors=True)
 
     def _call(self, filename, mode=0o777):
-        from certbot.le_util import unique_lineage_name
+        from certbot.util import unique_lineage_name
         return unique_lineage_name(self.root_path, filename, mode)
 
     def test_basic(self):
@@ -213,14 +214,14 @@ class UniqueLineageNameTest(unittest.TestCase):
         self.assertTrue(isinstance(name, str))
         self.assertTrue("wow-0009.conf" in name)
 
-    @mock.patch("certbot.le_util.os.fdopen")
+    @mock.patch("certbot.util.os.fdopen")
     def test_failure(self, mock_fdopen):
         err = OSError("whoops")
         err.errno = errno.EIO
         mock_fdopen.side_effect = err
         self.assertRaises(OSError, self._call, "wow")
 
-    @mock.patch("certbot.le_util.os.fdopen")
+    @mock.patch("certbot.util.os.fdopen")
     def test_subsequent_failure(self, mock_fdopen):
         self._call("wow")
         err = OSError("whoops")
@@ -230,7 +231,7 @@ class UniqueLineageNameTest(unittest.TestCase):
 
 
 class SafelyRemoveTest(unittest.TestCase):
-    """Tests for certbot.le_util.safely_remove."""
+    """Tests for certbot.util.safely_remove."""
 
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
@@ -240,7 +241,7 @@ class SafelyRemoveTest(unittest.TestCase):
         shutil.rmtree(self.tmp)
 
     def _call(self):
-        from certbot.le_util import safely_remove
+        from certbot.util import safely_remove
         return safely_remove(self.path)
 
     def test_exists(self):
@@ -254,7 +255,7 @@ class SafelyRemoveTest(unittest.TestCase):
         # no error, yay!
         self.assertFalse(os.path.exists(self.path))
 
-    @mock.patch("certbot.le_util.os.remove")
+    @mock.patch("certbot.util.os.remove")
     def test_other_error_passthrough(self, mock_remove):
         mock_remove.side_effect = OSError
         self.assertRaises(OSError, self._call)
@@ -264,7 +265,7 @@ class SafeEmailTest(unittest.TestCase):
     """Test safe_email."""
     @classmethod
     def _call(cls, addr):
-        from certbot.le_util import safe_email
+        from certbot.util import safe_email
         return safe_email(addr)
 
     def test_valid_emails(self):
@@ -292,7 +293,7 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
         self.parser = argparse.ArgumentParser()
 
     def _call(self, argument_name, nargs):
-        from certbot.le_util import add_deprecated_argument
+        from certbot.util import add_deprecated_argument
 
         add_deprecated_argument(self.parser.add_argument, argument_name, nargs)
 
@@ -308,14 +309,14 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
 
     def _get_argparse_warnings(self, args):
         stderr = six.StringIO()
-        with mock.patch("certbot.le_util.sys.stderr", new=stderr):
+        with mock.patch("certbot.util.sys.stderr", new=stderr):
             self.parser.parse_args(args)
         return stderr.getvalue()
 
     def test_help(self):
         self._call("--old-option", 2)
         stdout = six.StringIO()
-        with mock.patch("certbot.le_util.sys.stdout", new=stdout):
+        with mock.patch("certbot.util.sys.stdout", new=stdout):
             try:
                 self.parser.parse_args(["-h"])
             except SystemExit:
@@ -327,7 +328,7 @@ class EnforceDomainSanityTest(unittest.TestCase):
     """Test enforce_domain_sanity."""
 
     def _call(self, domain):
-        from certbot.le_util import enforce_domain_sanity
+        from certbot.util import enforce_domain_sanity
         return enforce_domain_sanity(domain)
 
     def test_nonascii_str(self):
@@ -337,6 +338,68 @@ class EnforceDomainSanityTest(unittest.TestCase):
     def test_nonascii_unicode(self):
         self.assertRaises(errors.ConfigurationError, self._call,
                           u"eichh\u00f6rnchen.example.com")
+
+
+class OsInfoTest(unittest.TestCase):
+    """Test OS / distribution detection"""
+
+    def test_systemd_os_release(self):
+        from certbot.util import (get_os_info, get_systemd_os_info,
+                                     get_os_info_ua)
+
+        with mock.patch('os.path.isfile', return_value=True):
+            self.assertEqual(get_os_info(
+                test_util.vector_path("os-release"))[0], 'systemdos')
+            self.assertEqual(get_os_info(
+                test_util.vector_path("os-release"))[1], '42')
+            self.assertEqual(get_systemd_os_info("/dev/null"), ("", ""))
+            self.assertEqual(get_os_info_ua(
+                test_util.vector_path("os-release")),
+                "SystemdOS")
+        with mock.patch('os.path.isfile', return_value=False):
+            self.assertEqual(get_systemd_os_info(), ("", ""))
+
+    @mock.patch("certbot.util.subprocess.Popen")
+    def test_non_systemd_os_info(self, popen_mock):
+        from certbot.util import (get_os_info, get_python_os_info,
+                                     get_os_info_ua)
+        with mock.patch('os.path.isfile', return_value=False):
+            with mock.patch('platform.system_alias',
+                            return_value=('NonSystemD', '42', '42')):
+                self.assertEqual(get_os_info()[0], 'nonsystemd')
+                self.assertEqual(get_os_info_ua(),
+                                 " ".join(get_python_os_info()))
+
+            with mock.patch('platform.system_alias',
+                            return_value=('darwin', '', '')):
+                comm_mock = mock.Mock()
+                comm_attrs = {'communicate.return_value':
+                              ('42.42.42', 'error')}
+                comm_mock.configure_mock(**comm_attrs)  # pylint: disable=star-args
+                popen_mock.return_value = comm_mock
+                self.assertEqual(get_os_info()[0], 'darwin')
+                self.assertEqual(get_os_info()[1], '42.42.42')
+
+            with mock.patch('platform.system_alias',
+                            return_value=('linux', '', '')):
+                with mock.patch('platform.linux_distribution',
+                                return_value=('', '', '')):
+                    self.assertEqual(get_python_os_info(), ("linux", ""))
+
+                with mock.patch('platform.linux_distribution',
+                                return_value=('testdist', '42', '')):
+                    self.assertEqual(get_python_os_info(), ("testdist", "42"))
+
+            with mock.patch('platform.system_alias',
+                            return_value=('freebsd', '9.3-RC3-p1', '')):
+                self.assertEqual(get_python_os_info(), ("freebsd", "9"))
+
+            with mock.patch('platform.system_alias',
+                            return_value=('windows', '', '')):
+                with mock.patch('platform.win32_ver',
+                                return_value=('4242', '95', '2', '')):
+                    self.assertEqual(get_python_os_info(),
+                                     ("windows", "95"))
 
 
 if __name__ == "__main__":

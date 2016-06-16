@@ -17,7 +17,7 @@ from certbot import constants as core_constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 from certbot import reverter
 
 from certbot.plugins import common
@@ -111,7 +111,7 @@ class NginxConfigurator(common.Plugin):
         :raises .errors.MisconfigurationError: If Nginx is misconfigured
         """
         # Verify Nginx is installed
-        if not le_util.exe_exists(self.conf('ctl')):
+        if not util.exe_exists(self.conf('ctl')):
             raise errors.NoInstallationError
 
         # Make sure configuration is valid
@@ -319,7 +319,7 @@ class NginxConfigurator(common.Plugin):
         cert = acme_crypto_util.gen_ss_cert(key, domains=[socket.gethostname()])
         cert_pem = OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, cert)
-        cert_file, cert_path = le_util.unique_file(os.path.join(tmp_dir, "cert.pem"))
+        cert_file, cert_path = util.unique_file(os.path.join(tmp_dir, "cert.pem"))
         with cert_file:
             cert_file.write(cert_pem)
         return cert_path, le_key.file
@@ -427,7 +427,7 @@ class NginxConfigurator(common.Plugin):
 
         """
         try:
-            le_util.run_script([self.conf('ctl'), "-c", self.nginx_conf, "-t"])
+            util.run_script([self.conf('ctl'), "-c", self.nginx_conf, "-t"])
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
@@ -440,11 +440,11 @@ class NginxConfigurator(common.Plugin):
 
         """
         uid = os.geteuid()
-        le_util.make_or_verify_dir(
+        util.make_or_verify_dir(
             self.config.work_dir, core_constants.CONFIG_DIRS_MODE, uid)
-        le_util.make_or_verify_dir(
+        util.make_or_verify_dir(
             self.config.backup_dir, core_constants.CONFIG_DIRS_MODE, uid)
-        le_util.make_or_verify_dir(
+        util.make_or_verify_dir(
             self.config.config_dir, core_constants.CONFIG_DIRS_MODE, uid)
 
     def get_version(self):

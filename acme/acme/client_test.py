@@ -572,7 +572,7 @@ class ClientNetworkTest(unittest.TestCase):
         sess = mock.MagicMock()
         self.net.session = sess
         del self.net
-        sess.close.assert_called_once()
+        sess.close.assert_called_once_with()
 
     @mock.patch('acme.client.requests')
     def test_requests_error_passthrough(self, mock_requests):

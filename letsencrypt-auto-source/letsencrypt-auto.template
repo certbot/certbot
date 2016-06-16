@@ -155,12 +155,16 @@ DeterminePythonVersion() {
 {{ bootstrappers/free_bsd.sh }}
 {{ bootstrappers/mac.sh }}
 {{ bootstrappers/smartos.sh }}
+{{ bootstrappers/mageia_common.sh }}
 
 # Install required OS packages:
 Bootstrap() {
   if [ -f /etc/debian_version ]; then
     echo "Bootstrapping dependencies for Debian-based OSes..."
     BootstrapDebCommon
+  elif [ -f /etc/mageia-release ] ; then
+    # Mageia has both /etc/mageia-release and /etc/redhat-release
+    ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
   elif [ -f /etc/redhat-release ]; then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
     BootstrapRpmCommon
@@ -173,7 +177,7 @@ Bootstrap() {
       BootstrapArchCommon
     else
       echo "Please use pacman to install letsencrypt packages:"
-      echo "# pacman -S letsencrypt letsencrypt-apache"
+      echo "# pacman -S certbot certbot-apache"
       echo
       echo "If you would like to use the virtualenv way, please run the script again with the"
       echo "--debug flag."
@@ -197,6 +201,7 @@ Bootstrap() {
     echo "You will need to bootstrap, configure virtualenv, and run pip install manually."
     echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
     echo "for more info."
+    exit 1
   fi
 }
 
@@ -229,6 +234,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
 
     echo "Installing Python packages..."
     TEMP_DIR=$(TempDir)
+    trap 'rm -rf "$TEMP_DIR"' EXIT
     # There is no $ interpolation due to quotes on starting heredoc delimiter.
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/letsencrypt-auto-requirements.txt"
@@ -245,7 +251,6 @@ UNLIKELY_EOF
     PIP_OUT=`"$VENV_BIN/pip" install --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt" 2>&1`
     PIP_STATUS=$?
     set -e
-    rm -rf "$TEMP_DIR"
     if [ "$PIP_STATUS" != 0 ]; then
       # Report error. (Otherwise, be quiet.)
       echo "Had a problem while installing Python packages:"
@@ -291,6 +296,7 @@ else
 
   if [ "$NO_SELF_UPGRADE" != 1 ]; then
     TEMP_DIR=$(TempDir)
+    trap 'rm -rf "$TEMP_DIR"' EXIT
     # ---------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/fetch.py"
 {{ fetch.py }}
@@ -319,8 +325,6 @@ UNLIKELY_EOF
       # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
       # cp is unlikely to fail (esp. under sudo) if the rm doesn't.
       $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
-      # TODO: Clean up temp dir safely, even if it has quotes in its path.
-      rm -rf "$TEMP_DIR"
     fi  # A newer version is available.
   fi  # Self-upgrading is allowed.
 

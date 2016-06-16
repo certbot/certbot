@@ -11,7 +11,7 @@ from acme import messages
 
 from certbot import achallenges
 from certbot import errors
-from certbot import le_util
+from certbot import util
 
 from certbot.tests import acme_util
 
@@ -69,7 +69,7 @@ class GetAuthorizationsTest(unittest.TestCase):
 
         self.mock_auth.perform.side_effect = gen_auth_resp
 
-        self.mock_account = mock.Mock(key=le_util.Key("file_path", "PEM"))
+        self.mock_account = mock.Mock(key=util.Key("file_path", "PEM"))
         self.mock_net = mock.MagicMock(spec=acme_client.Client)
 
         self.handler = AuthHandler(

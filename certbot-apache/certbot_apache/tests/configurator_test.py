@@ -49,14 +49,24 @@ class MultipleVhostsTest(util.ApacheTest):
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
 
-    @mock.patch("certbot_apache.configurator.le_util.exe_exists")
+    @mock.patch("certbot_apache.configurator.util.exe_exists")
     def test_prepare_no_install(self, mock_exe_exists):
         mock_exe_exists.return_value = False
         self.assertRaises(
             errors.NoInstallationError, self.config.prepare)
 
+    @mock.patch("certbot_apache.augeas_configurator.AugeasConfigurator.init_augeas")
+    def test_prepare_no_augeas(self, mock_init_augeas):
+        """ Test augeas initialization ImportError """
+        def side_effect_error():
+            """ Side effect error for the test """
+            raise ImportError
+        mock_init_augeas.side_effect = side_effect_error
+        self.assertRaises(
+            errors.NoInstallationError, self.config.prepare)
+
     @mock.patch("certbot_apache.parser.ApacheParser")
-    @mock.patch("certbot_apache.configurator.le_util.exe_exists")
+    @mock.patch("certbot_apache.configurator.util.exe_exists")
     def test_prepare_version(self, mock_exe_exists, _):
         mock_exe_exists.return_value = True
         self.config.version = None
@@ -67,7 +77,7 @@ class MultipleVhostsTest(util.ApacheTest):
             errors.NotSupportedError, self.config.prepare)
 
     @mock.patch("certbot_apache.parser.ApacheParser")
-    @mock.patch("certbot_apache.configurator.le_util.exe_exists")
+    @mock.patch("certbot_apache.configurator.util.exe_exists")
     def test_prepare_old_aug(self, mock_exe_exists, _):
         mock_exe_exists.return_value = True
         self.config.config_test = mock.Mock()
@@ -268,8 +278,8 @@ class MultipleVhostsTest(util.ApacheTest):
                               self.config.is_site_enabled,
                               "irrelevant")
 
-    @mock.patch("certbot.le_util.run_script")
-    @mock.patch("certbot.le_util.exe_exists")
+    @mock.patch("certbot.util.run_script")
+    @mock.patch("certbot.util.exe_exists")
     @mock.patch("certbot_apache.parser.subprocess.Popen")
     def test_enable_mod(self, mock_popen, mock_exe_exists, mock_run_script):
         mock_popen().communicate.return_value = ("Define: DUMP_RUN_CFG", "")
@@ -287,7 +297,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertRaises(
             errors.NotSupportedError, self.config.enable_mod, "ssl")
 
-    @mock.patch("certbot.le_util.exe_exists")
+    @mock.patch("certbot.util.exe_exists")
     def test_enable_mod_no_disable(self, mock_exe_exists):
         mock_exe_exists.return_value = False
         self.assertRaises(
@@ -695,7 +705,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.cleanup([achall1, achall2])
         self.assertTrue(mock_restart.called)
 
-    @mock.patch("certbot.le_util.run_script")
+    @mock.patch("certbot.util.run_script")
     def test_get_version(self, mock_script):
         mock_script.return_value = (
             "Server Version: Apache/2.4.2 (Debian)", "")
@@ -717,21 +727,21 @@ class MultipleVhostsTest(util.ApacheTest):
         mock_script.side_effect = errors.SubprocessError("Can't find program")
         self.assertRaises(errors.PluginError, self.config.get_version)
 
-    @mock.patch("certbot_apache.configurator.le_util.run_script")
+    @mock.patch("certbot_apache.configurator.util.run_script")
     def test_restart(self, _):
         self.config.restart()
 
-    @mock.patch("certbot_apache.configurator.le_util.run_script")
+    @mock.patch("certbot_apache.configurator.util.run_script")
     def test_restart_bad_process(self, mock_run_script):
         mock_run_script.side_effect = [None, errors.SubprocessError]
 
         self.assertRaises(errors.MisconfigurationError, self.config.restart)
 
-    @mock.patch("certbot.le_util.run_script")
+    @mock.patch("certbot.util.run_script")
     def test_config_test(self, _):
         self.config.config_test()
 
-    @mock.patch("certbot.le_util.run_script")
+    @mock.patch("certbot.util.run_script")
     def test_config_test_bad_process(self, mock_run_script):
         mock_run_script.side_effect = errors.SubprocessError
 
@@ -771,7 +781,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator._get_http_vhost")
     @mock.patch("certbot_apache.display_ops.select_vhost")
-    @mock.patch("certbot.le_util.exe_exists")
+    @mock.patch("certbot.util.exe_exists")
     def test_enhance_unknown_vhost(self, mock_exe, mock_sel_vhost, mock_get):
         self.config.parser.modules.add("rewrite_module")
         mock_exe.return_value = True
@@ -792,8 +802,8 @@ class MultipleVhostsTest(util.ApacheTest):
             errors.PluginError,
             self.config.enhance, "certbot.demo", "unknown_enhancement")
 
-    @mock.patch("certbot.le_util.run_script")
-    @mock.patch("certbot.le_util.exe_exists")
+    @mock.patch("certbot.util.run_script")
+    @mock.patch("certbot.util.exe_exists")
     def test_ocsp_stapling(self, mock_exe, mock_run_script):
         self.config.parser.update_runtime_variables = mock.Mock()
         self.config.parser.modules.add("mod_ssl.c")
@@ -821,7 +831,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
         self.assertEqual(len(stapling_cache_aug_path), 1)
 
-    @mock.patch("certbot.le_util.exe_exists")
+    @mock.patch("certbot.util.exe_exists")
     def test_ocsp_stapling_twice(self, mock_exe):
         self.config.parser.update_runtime_variables = mock.Mock()
         self.config.parser.modules.add("mod_ssl.c")
@@ -848,7 +858,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(len(stapling_cache_aug_path), 1)
 
 
-    @mock.patch("certbot.le_util.exe_exists")
+    @mock.patch("certbot.util.exe_exists")
     def test_ocsp_unsupported_apache_version(self, mock_exe):
         mock_exe.return_value = True
         self.config.parser.update_runtime_variables = mock.Mock()
@@ -871,8 +881,8 @@ class MultipleVhostsTest(util.ApacheTest):
         http_vh = self.config._get_http_vhost(ssl_vh)
         self.assertTrue(http_vh.ssl == False)
 
-    @mock.patch("certbot.le_util.run_script")
-    @mock.patch("certbot.le_util.exe_exists")
+    @mock.patch("certbot.util.run_script")
+    @mock.patch("certbot.util.exe_exists")
     def test_http_header_hsts(self, mock_exe, _):
         self.config.parser.update_runtime_variables = mock.Mock()
         self.config.parser.modules.add("mod_ssl.c")
@@ -909,8 +919,8 @@ class MultipleVhostsTest(util.ApacheTest):
             self.config.enhance, "encryption-example.demo",
             "ensure-http-header", "Strict-Transport-Security")
 
-    @mock.patch("certbot.le_util.run_script")
-    @mock.patch("certbot.le_util.exe_exists")
+    @mock.patch("certbot.util.run_script")
+    @mock.patch("certbot.util.exe_exists")
     def test_http_header_uir(self, mock_exe, _):
         self.config.parser.update_runtime_variables = mock.Mock()
         self.config.parser.modules.add("mod_ssl.c")
@@ -947,8 +957,8 @@ class MultipleVhostsTest(util.ApacheTest):
             self.config.enhance, "encryption-example.demo",
             "ensure-http-header", "Upgrade-Insecure-Requests")
 
-    @mock.patch("certbot.le_util.run_script")
-    @mock.patch("certbot.le_util.exe_exists")
+    @mock.patch("certbot.util.run_script")
+    @mock.patch("certbot.util.exe_exists")
     def test_redirect_well_formed_http(self, mock_exe, _):
         self.config.parser.update_runtime_variables = mock.Mock()
         mock_exe.return_value = True
@@ -991,8 +1001,8 @@ class MultipleVhostsTest(util.ApacheTest):
         # pylint: disable=protected-access
         self.assertTrue(self.config._is_rewrite_engine_on(self.vh_truth[3]))
 
-    @mock.patch("certbot.le_util.run_script")
-    @mock.patch("certbot.le_util.exe_exists")
+    @mock.patch("certbot.util.run_script")
+    @mock.patch("certbot.util.exe_exists")
     def test_redirect_with_existing_rewrite(self, mock_exe, _):
         self.config.parser.update_runtime_variables = mock.Mock()
         mock_exe.return_value = True

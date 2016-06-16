@@ -10,6 +10,7 @@ import zope.component
 
 from certbot import errors
 from certbot import interfaces
+from certbot import util
 from certbot.tests import test_util
 
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')
@@ -54,7 +55,7 @@ class InitSaveCSRTest(unittest.TestCase):
         shutil.rmtree(self.csr_dir)
 
     @mock.patch('certbot.crypto_util.make_csr')
-    @mock.patch('certbot.crypto_util.le_util.make_or_verify_dir')
+    @mock.patch('certbot.crypto_util.util.make_or_verify_dir')
     def test_it(self, unused_mock_verify, mock_csr):
         from certbot.crypto_util import init_save_csr
 
@@ -151,6 +152,44 @@ class CSRMatchesPubkeyTest(unittest.TestCase):
             test_util.load_vector('csr.pem'), RSA256_KEY))
 
 
+class ImportCSRFileTest(unittest.TestCase):
+    """Tests for certbot.certbot_util.import_csr_file."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.crypto_util import import_csr_file
+        return import_csr_file(*args, **kwargs)
+
+    def test_der_csr(self):
+        csrfile = test_util.vector_path('csr.der')
+        data = test_util.load_vector('csr.der')
+
+        self.assertEqual(
+            (OpenSSL.crypto.FILETYPE_ASN1,
+             util.CSR(file=csrfile,
+                      data=data,
+                      form="der"),
+             ["example.com"],),
+            self._call(csrfile, data))
+
+    def test_pem_csr(self):
+        csrfile = test_util.vector_path('csr.pem')
+        data = test_util.load_vector('csr.pem')
+
+        self.assertEqual(
+            (OpenSSL.crypto.FILETYPE_PEM,
+             util.CSR(file=csrfile,
+                      data=data,
+                      form="pem"),
+             ["example.com"],),
+            self._call(csrfile, data))
+
+    def test_bad_csr(self):
+        self.assertRaises(errors.Error, self._call,
+                          test_util.vector_path('cert.pem'),
+                          test_util.load_vector('cert.pem'))
+
+
 class MakeKeyRSATest(unittest.TestCase):  # pylint: disable=too-few-public-methods
     """Tests for certbot.crypto_util.make_key_rsa."""
 
@@ -241,6 +280,62 @@ class GetSANsFromCSRTest(unittest.TestCase):
     def test_parse_no_sans(self):
         self.assertEqual(
             [], self._call(test_util.load_vector('csr-nosans.pem')))
+
+
+class GetNamesFromCertTest(unittest.TestCase):
+    """Tests for certbot.crypto_util.get_names_from_cert."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.crypto_util import get_names_from_cert
+        return get_names_from_cert(*args, **kwargs)
+
+    def test_single(self):
+        self.assertEqual(
+            ['example.com'],
+            self._call(test_util.load_vector('cert.pem')))
+
+    def test_san(self):
+        self.assertEqual(
+            ['example.com', 'www.example.com'],
+            self._call(test_util.load_vector('cert-san.pem')))
+
+    def test_common_name_sans_order(self):
+        # Tests that the common name comes first
+        # followed by the SANS in alphabetical order
+        self.assertEqual(
+            ['example.com'] + ['{0}.example.com'.format(c) for c in 'abcd'],
+            self._call(test_util.load_vector('cert-5sans.pem')))
+
+
+class GetNamesFromCSRTest(unittest.TestCase):
+    """Tests for certbot.crypto_util.get_names_from_csr."""
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.crypto_util import get_names_from_csr
+        return get_names_from_csr(*args, **kwargs)
+
+    def test_extract_one_san(self):
+        self.assertEqual(['example.com'], self._call(
+            test_util.load_vector('csr.pem')))
+
+    def test_extract_two_sans(self):
+        self.assertEqual(set(('example.com', 'www.example.com',)), set(
+            self._call(test_util.load_vector('csr-san.pem'))))
+
+    def test_extract_six_sans(self):
+        self.assertEqual(
+            set(self._call(test_util.load_vector('csr-6sans.pem'))),
+            set(("example.com", "example.org", "example.net",
+                 "example.info", "subdomain.example.com",
+                 "other.subdomain.example.com",)))
+
+    def test_parse_non_csr(self):
+        self.assertRaises(OpenSSL.crypto.Error, self._call, "hello there")
+
+    def test_parse_no_sans(self):
+        self.assertEqual(["example.org"],
+                         self._call(test_util.load_vector('csr-nosans.pem')))
 
 
 class CertLoaderTest(unittest.TestCase):
