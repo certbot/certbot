@@ -44,7 +44,7 @@ class RawNginxParser(object):
         Group(ZeroOrMore(Group(comment | assignment) | block) + space).leaveWhitespace() +
         right_bracket)
 
-    script = OneOrMore(Group(comment | assignment) ^ block) + stringEnd
+    script = OneOrMore(Group(comment | assignment) ^ block) + space + stringEnd
     script.parseWithTabs()
 
     def __init__(self, source):
@@ -103,7 +103,7 @@ class RawNginxDumper(object):
 
     def __str__(self):
         """Return the parsed block as a string."""
-        return ''.join(self) + '\n'
+        return ''.join(self)
 
 
 # Shortcut functions to respect Python's serialization interface
