@@ -50,7 +50,7 @@ def save_key(key_pem, key_dir, keyname="key-certbot.pem"):
                             config.strict_permissions)
     key_f, key_path = util.unique_file(os.path.join(key_dir, keyname), 0o600)
     with key_f:
-        logger.info("Generating key (%d bits): %s", key_size, key_path)
+        logger.info("Saving key to: %s", key_path)
         key_f.write(key_pem)
 
     return util.Key(key_path, key_pem)

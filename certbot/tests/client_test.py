@@ -176,7 +176,7 @@ class ClientTest(unittest.TestCase):
     def test_obtain_certificate_rsa(self, mock_crypto_util):
         self._mock_obtain_certificate()
 
-        csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
+        csr = util.CSR(form="der", file=None, data=CSR_SAN)
         mock_crypto_util.init_save_csr.return_value = csr
         mock_crypto_util.save_key.return_value = mock.sentinel.key
         domains = ["example.com", "www.example.com"]
@@ -212,7 +212,7 @@ class ClientTest(unittest.TestCase):
 
         self.config.key_types = "ecdsa"
         self.config.ecdsa_curve = "p-256"
-        csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
+        csr = util.CSR(form="der", file=None, data=CSR_SAN)
         mock_crypto_util.init_save_csr.return_value = csr
         mock_crypto_util.save_key.return_value = mock.sentinel.key
         domains = ["example.com", "www.example.com"]
@@ -284,7 +284,7 @@ class ClientTest(unittest.TestCase):
         self._mock_obtain_certificate()
 
         self.config.key_types = "ecdsa rsa"
-        csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
+        csr = util.CSR(form="der", file=None, data=CSR_SAN)
         mock_crypto_util.init_save_csr.return_value = csr
         mock_crypto_util.save_key.return_value = mock.sentinel.key
         domains = ["example.com", "www.example.com"]
@@ -312,7 +312,7 @@ class ClientTest(unittest.TestCase):
         self._mock_obtain_certificate()
 
         self.config.key_types = "nonexistingalgo"
-        csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
+        csr = util.CSR(form="der", file=None, data=CSR_SAN)
         mock_crypto_util.init_save_csr.return_value = csr
         mock_crypto_util.save_key.return_value = mock.sentinel.key
         domains = ["example.com", "www.example.com"]
