@@ -22,7 +22,7 @@ class RawNginxParser(object):
     key = Word(alphanums + "_/+-.")
     # Matches anything that is not a special character AND any chars in single
     # or double quotes
-    value = Regex(r"((\".*\")?(\'.*\')?[^\{\};,]?)+")
+    value = Regex(r"((\".*\")?(\'.*\')?[^\{\};, ]?)+")
     location = CharsNotIn("{};," + string.whitespace)
     # modifier for location uri [ = | ~ | ~* | ^~ ]
     modifier = Literal("=") | Literal("~*") | Literal("~") | Literal("^~")
@@ -30,7 +30,7 @@ class RawNginxParser(object):
     # rules
     comment = space + Literal('#') + restOfLine()
 
-    assignment = space + key + Optional(space + value, default=None) + semicolon
+    assignment = space + key + Optional(space + value, default=None) + space + semicolon
     location_statement = space + Optional(modifier) + Optional(space + location + space)
     if_statement = space + Literal("if") + space + Regex(r"\(.+\)") + space
     map_statement = space + Literal("map") + space + Regex(r"\S+") + space + Regex(r"\$\S+") + space
