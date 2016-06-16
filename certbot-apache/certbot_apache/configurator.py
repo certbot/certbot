@@ -563,8 +563,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                      os.path.basename(path) == "VirtualHost"]
             for path in paths:
                 new_vhost = self._create_vhost(path)
+                if not new_vhost:
+                    continue
                 realpath = os.path.realpath(new_vhost.filep)
-                if realpath and realpath not in vhost_paths.keys():
+                if realpath not in vhost_paths.keys():
                     vhs.append(new_vhost)
                     vhost_paths[realpath] = new_vhost.filep
                 elif realpath == new_vhost.filep:
