@@ -139,7 +139,7 @@ def dumps(blocks):
     :rtype: str
 
     """
-    return str(RawNginxDumper(blocks))
+    return str(RawNginxDumper(blocks.spaced))
 
 
 def dump(blocks, _file):
