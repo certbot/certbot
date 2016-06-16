@@ -5,7 +5,7 @@ import unittest
 from pyparsing import ParseException
 
 from certbot_nginx.nginxparser import (
-    RawNginxParser, loads, load, dumps, dump)
+    RawNginxParser, loads, load, dumps, dump, UnspacedList)
 from certbot_nginx.tests import util
 
 
@@ -18,9 +18,8 @@ class TestRawNginxParser(unittest.TestCase):
     def test_assignments(self):
         parsed = RawNginxParser.assignment.parseString('root /test;').asList()
         self.assertEqual(parsed, ['root', ' ', '/test'])
-        parsed = RawNginxParser.assignment.parseString('root /test;'
-                                                       'foo bar;').asList()
-        self.assertEqual(parsed, ['root', '/test'], ['foo', 'bar'])
+        parsed = RawNginxParser.assignment.parseString('root /test;foo bar;').asList()
+        self.assertEqual(parsed, ['root', ' ', '/test'], ['foo', ' ', 'bar'])
 
     def test_blocks(self):
         parsed = RawNginxParser.block.parseString('foo {}').asList()
@@ -28,7 +27,7 @@ class TestRawNginxParser(unittest.TestCase):
         parsed = RawNginxParser.block.parseString('location /foo{}').asList()
         self.assertEqual(parsed, [[['location', ' ', '/foo'], []]])
         parsed = RawNginxParser.block.parseString('foo { bar foo ; }').asList()
-        self.assertEqual(parsed, [[['foo', ' '], [[' ', 'bar', ' ', 'foo', ' '], ' ']]])
+        self.assertEqual(parsed, [[['foo', ' '], [[' ', 'bar', ' ', 'foo '], ' ']]])
 
     def test_nested_blocks(self):
         parsed = RawNginxParser.block.parseString('foo { bar {} }').asList()
@@ -116,7 +115,13 @@ class TestRawNginxParser(unittest.TestCase):
 
     def test_dump_as_file(self):
         with open(util.get_data_filename('nginx.conf')) as handle:
-            parsed = util.filter_comments(load(handle))
+            try:
+                parsed = load(handle)
+            except:
+                handle.seek(0)
+                print "Failed on", handle.read()
+                raise
+            #parsed = util.filter_comments(parsed)
         parsed[-1][-1].append([['server'],
                                [['listen', '443 ssl'],
                                 ['server_name', 'localhost'],
@@ -128,12 +133,15 @@ class TestRawNginxParser(unittest.TestCase):
                                 [['location', '/'],
                                  [['root', 'html'],
                                   ['index', 'index.html index.htm']]]]])
+        
 
         with open(util.get_data_filename('nginx.new.conf'), 'w') as handle:
             dump(parsed, handle)
         with open(util.get_data_filename('nginx.new.conf')) as handle:
-            parsed_new = util.filter_comments(load(handle))
-        self.assertEquals(parsed, parsed_new)
+            parsed_new = load(handle)
+        self.maxDiff = None
+        self.assertEquals(parsed[0], parsed_new[0])
+        self.assertEquals(parsed[1:], parsed_new[1:])
 
     def test_comments(self):
         with open(util.get_data_filename('minimalistic_comments.conf')) as handle:
