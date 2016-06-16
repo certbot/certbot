@@ -511,7 +511,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         addrs = set()
-        args = self.aug.match(path + "/arg")
+        try:
+            args = self.aug.match(path + "/arg")
+        except RuntimeError:
+            logger.warn("It looks like one of your paths has a character that your version of augeas can't parse")
         for arg in args:
             addrs.add(obj.Addr.fromstring(self.parser.get_arg(arg)))
         is_ssl = False
