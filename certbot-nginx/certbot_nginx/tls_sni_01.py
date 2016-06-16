@@ -125,11 +125,6 @@ class NginxTlsSni01(common.TLSSNI01):
 
         with open(self.challenge_conf, "w") as new_conf:
             out = nginxparser.dumps(config)
-            if "mime" in self.challenge_conf:
-                print "Weird"
-                print out
-                #sys.exit(1)
-            #nginxparser.dump(config, new_conf)
             new_conf.write(out)
 
     def _make_server_block(self, achall, addrs):
