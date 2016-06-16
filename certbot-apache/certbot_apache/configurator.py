@@ -515,6 +515,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             args = self.aug.match(path + "/arg")
         except RuntimeError:
             logger.warn("It looks like one of your paths has a character that your version of augeas can't parse")
+            return None
         for arg in args:
             addrs.add(obj.Addr.fromstring(self.parser.get_arg(arg)))
         is_ssl = False
@@ -563,7 +564,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             for path in paths:
                 new_vhost = self._create_vhost(path)
                 realpath = os.path.realpath(new_vhost.filep)
-                if realpath not in vhost_paths.keys():
+                if realpath and realpath not in vhost_paths.keys():
                     vhs.append(new_vhost)
                     vhost_paths[realpath] = new_vhost.filep
                 elif realpath == new_vhost.filep:
