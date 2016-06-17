@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import argparse
+import dialog
 import functools
 import itertools
 import os
@@ -923,8 +924,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             traceback.format_exception_only(KeyboardInterrupt, interrupt)))
 
         # Test dialog errors
-
-        import dialog
         exception = dialog.error(message="test message")
         main._handle_exception(
                 dialog.DialogError, exc_value=exception, trace=None, config=None)
