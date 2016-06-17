@@ -431,7 +431,7 @@ def enforce_domain_sanity(domain):
     for l in labels:
         if not 0 < len(l) < 64:
             raise errors.ConfigurationError(msg + "label {0} is too long.".format(l))
-    if len(domain) > 256:
+    if len(domain) > 255:
         raise errors.ConfigurationError(msg + "it is too long.")
 
     return domain
