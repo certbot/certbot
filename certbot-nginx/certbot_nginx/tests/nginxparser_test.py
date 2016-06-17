@@ -1,5 +1,6 @@
 """Test for certbot_nginx.nginxparser."""
 import operator
+import os
 import unittest
 
 from pyparsing import ParseException

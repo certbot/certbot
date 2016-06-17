@@ -3,7 +3,6 @@
 import itertools
 import logging
 import os
-import sys
 
 from certbot import errors
 from certbot.plugins import common
@@ -124,8 +123,7 @@ class NginxTlsSni01(common.TLSSNI01):
             True, self.challenge_conf)
 
         with open(self.challenge_conf, "w") as new_conf:
-            out = nginxparser.dumps(config)
-            new_conf.write(out)
+            nginxparser.dump(config, new_conf)
 
     def _make_server_block(self, achall, addrs):
         """Creates a server block for a challenge.

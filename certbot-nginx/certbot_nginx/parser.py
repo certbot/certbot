@@ -4,7 +4,6 @@ import logging
 import os
 import pyparsing
 import re
-import sys
 
 from certbot import errors
 

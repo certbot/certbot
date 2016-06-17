@@ -1,5 +1,6 @@
 """Very low-level nginx config parser based on pyparsing."""
 import copy
+import logging
 import string
 
 from pyparsing import (
@@ -8,6 +9,7 @@ from pyparsing import (
 from pyparsing import stringEnd
 from pyparsing import restOfLine
 
+logger = logging.getLogger(__name__)
 
 class RawNginxParser(object):
     # pylint: disable=expression-not-assigned
@@ -97,11 +99,7 @@ class RawNginxDumper(object):
                     # if so rotate it into gap
                     if values and spacey(values):
                         gap = values
-                        try:
-                            values = b.pop(0)
-                        except:
-                            import ipdb
-                            ipdb.set_trace()
+                        values = b.pop(0)
                     #if values is None:
                     #    yield indentation + key + gap + ';'
                     #else:
@@ -200,7 +198,7 @@ class UnspacedList(list):
             self.spaced.extend(x.spaced)
         else:
             self.spaced.extend(x)
-            self.logger.debug("Weird, extending regular list %r to Unspaced %r", x, self)
+            logger.debug("Weird, extending regular list %r to Unspaced %r", x, self)
         list.extend(self, x)
 
     def __add__(self, other):
