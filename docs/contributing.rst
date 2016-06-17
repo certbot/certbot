@@ -266,8 +266,7 @@ with the core upstream source code. An example is provided in
    it with any necessary API changes.
 
 .. _`setuptools entry points`:
-  https://pythonhosted.org/setuptools/setuptools.html#dynamic-discovery-of-services-and-plugins
-
+    http://setuptools.readthedocs.io/en/latest/pkg_resources.html#entry-points
 
 .. _coding-style:
 

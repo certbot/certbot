@@ -19,7 +19,7 @@ XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN="$VENV_PATH/bin"
-LE_AUTO_VERSION="0.6.0"
+LE_AUTO_VERSION="0.8.1"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -38,17 +38,6 @@ Help for certbot itself cannot be provided until it is installed.
 
 All arguments are accepted and forwarded to the Certbot client when run."
 
-while getopts ":hnv" arg; do
-    case $arg in
-        h)
-            HELP=1;;
-        n)
-            ASSUME_YES=1;;
-        v)
-            VERBOSE=1;;
-    esac
-done
-
 for arg in "$@" ; do
   case "$arg" in
     --debug)
@@ -65,8 +54,25 @@ for arg in "$@" ; do
       ASSUME_YES=1;;
     --verbose)
       VERBOSE=1;;
+    -[!-]*)
+      while getopts ":hnv" short_arg $arg; do
+        case "$short_arg" in
+          h)
+            HELP=1;;
+          n)
+            ASSUME_YES=1;;
+          v)
+            VERBOSE=1;;
+        esac
+      done;;
   esac
 done
+
+if [ $BASENAME = "letsencrypt-auto" ]; then
+  # letsencrypt-auto does not respect --help or --yes for backwards compatibility
+  ASSUME_YES=1
+  HELP=0
+fi
 
 # certbot-auto needs root access to bootstrap OS dependencies, and
 # certbot itself needs root access for almost all modes of operation
@@ -105,12 +111,6 @@ if test "`id -u`" -ne "0" ; then
   fi
 else
   SUDO=
-fi
-
-if [ $BASENAME = "letsencrypt-auto" ]; then
-  # letsencrypt-auto does not respect --help or --yes for backwards compatibility
-  ASSUME_YES=1
-  HELP=0
 fi
 
 ExperimentalBootstrap() {
@@ -172,7 +172,7 @@ BootstrapDebCommon() {
   # distro version (#346)
 
   virtualenv=
-  if apt-cache show virtualenv > /dev/null 2>&1; then
+  if apt-cache show virtualenv > /dev/null 2>&1 && ! apt-cache --quiet=0 show virtualenv 2>&1 | grep -q 'No packages found'; then
     virtualenv="virtualenv"
   fi
 
@@ -425,7 +425,8 @@ BootstrapMac() {
 
   $pkgcmd augeas
   $pkgcmd dialog
-  if [ "$(which python)" = "/System/Library/Frameworks/Python.framework/Versions/2.7/bin/python" ]; then
+  if [ "$(which python)" = "/System/Library/Frameworks/Python.framework/Versions/2.7/bin/python" \
+      -o "$(which python)" = "/usr/bin/python" ]; then
     # We want to avoid using the system Python because it requires root to use pip.
     # python.org, MacPorts or HomeBrew Python installations should all be OK.
     echo "Installing python..."
@@ -435,7 +436,8 @@ BootstrapMac() {
   # Workaround for _dlopen not finding augeas on OS X
   if [ "$pkgman" = "port" ] && ! [ -e "/usr/local/lib/libaugeas.dylib" ] && [ -e "/opt/local/lib/libaugeas.dylib" ]; then
     echo "Applying augeas workaround"
-    $SUDO ln -s /opt/local/lib/libaugeas.dylib /usr/local/lib
+    $SUDO mkdir -p /usr/local/lib/
+    $SUDO ln -s /opt/local/lib/libaugeas.dylib /usr/local/lib/
   fi
 
   if ! hash pip 2>/dev/null; then
@@ -451,12 +453,44 @@ BootstrapMac() {
   fi
 }
 
+BootstrapSmartOS() {
+  pkgin update
+  pkgin -y install 'gcc49' 'py27-augeas' 'py27-virtualenv'
+}
+
+BootstrapMageiaCommon() {
+    if ! $SUDO urpmi --force  \
+           python \
+           libpython-devel \
+           python-virtualenv
+    then
+      echo "Could not install Python dependencies. Aborting bootstrap!"
+      exit 1
+    fi
+
+    if ! $SUDO urpmi --force \
+           git \
+           gcc \
+           cdialog \
+           python-augeas \
+           libopenssl-devel \
+           libffi-devel \
+           rootcerts
+    then
+        echo "Could not install additional dependencies. Aborting bootstrap!"
+        exit 1
+    fi
+}
+
 
 # Install required OS packages:
 Bootstrap() {
   if [ -f /etc/debian_version ]; then
     echo "Bootstrapping dependencies for Debian-based OSes..."
     BootstrapDebCommon
+  elif [ -f /etc/mageia-release ] ; then
+    # Mageia has both /etc/mageia-release and /etc/redhat-release
+    ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
   elif [ -f /etc/redhat-release ]; then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
     BootstrapRpmCommon
@@ -469,7 +503,7 @@ Bootstrap() {
       BootstrapArchCommon
     else
       echo "Please use pacman to install letsencrypt packages:"
-      echo "# pacman -S letsencrypt letsencrypt-apache"
+      echo "# pacman -S certbot certbot-apache"
       echo
       echo "If you would like to use the virtualenv way, please run the script again with the"
       echo "--debug flag."
@@ -483,14 +517,17 @@ Bootstrap() {
     ExperimentalBootstrap "FreeBSD" BootstrapFreeBsd
   elif uname | grep -iq Darwin ; then
     ExperimentalBootstrap "Mac OS X" BootstrapMac
-  elif grep -iq "Amazon Linux" /etc/issue ; then
+  elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
     ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
+  elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
+    ExperimentalBootstrap "Joyent SmartOS Zone" BootstrapSmartOS
   else
     echo "Sorry, I don't know how to bootstrap Certbot on your operating system!"
     echo
     echo "You will need to bootstrap, configure virtualenv, and run pip install manually."
     echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
     echo "for more info."
+    exit 1
   fi
 }
 
@@ -523,6 +560,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
 
     echo "Installing Python packages..."
     TEMP_DIR=$(TempDir)
+    trap 'rm -rf "$TEMP_DIR"' EXIT
     # There is no $ interpolation due to quotes on starting heredoc delimiter.
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/letsencrypt-auto-requirements.txt"
@@ -703,24 +741,21 @@ zope.interface==4.1.3 \
 mock==1.0.1 \
     --hash=sha256:b839dd2d9c117c701430c149956918a423a9863b48b09c90e30a6013e7d2f44f \
     --hash=sha256:8f83080daa249d036cbccfb8ae5cc6ff007b88d6d937521371afabe7b19badbc
+letsencrypt==0.7.0 \
+    --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
+    --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
 # THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT; ADD ALL DEPENDENCIES ABOVE.
 
-acme==0.6.0 \
-    --hash=sha256:cbe4e7a340a19725a8740ed86e30abdbe18fc22c4c6022b7a8e56642d502bcc3 \
-    --hash=sha256:ec4e6009dfbd629b58473eb06bbebfd9fb2a79fc8831c149e9205bc38a98ecc6
-certbot==0.6.0 \
-    --hash=sha256:a893632d228864b0a751db9f3fdd93439ed34b988ea21b64fb0f0fa2ceded6a2 \
-    --hash=sha256:80b0b7dc5afeec2816ef638a61e7c628d73cd72666eebf4984be426d1c2b492d
-certbot-apache==0.6.0 \
-    --hash=sha256:0ab077f0913b81ed5c1b141c3a7c4c0228ef3738d8d61a93db794d9a80718d43 \
-    --hash=sha256:1cfbe751209079a803758f472200816fac559f2a36fdd582d25e3ba5601423a1
-letsencrypt==0.6.0 \
-    --hash=sha256:93196c7dcd57272a753e525d145c5a9987c8968c22ec954bcf83dcc9d2499a76 \
-    --hash=sha256:a16d6c395f1bf5fd61a28ef83dc78f42dbecbad9d00be6236f2ad8915645c154
-letsencrypt-apache==0.6.0 \
-    --hash=sha256:02fadc52a0796e53978c508beec9c53e1fc047660240832b9bde5d53ab3a1379 \
-    --hash=sha256:1c5522d94d7750bdb9bfa6201d2c263e914f662c9d0079e673167233cf4364f1
+acme==0.8.1 \
+    --hash=sha256:ccd7883772efbf933f91713b8241455993834f3620c8fbd459d9ed5e50bbaaca \
+    --hash=sha256:d3ea4acf280bf6253ad7d641cb0970f230a19805acfed809e7a8ddcf62157d9f
+certbot==0.8.1 \
+    --hash=sha256:89805d9f70249ae859ec4d7a99c00b4bb7083ca90cd12d4d202b76dfc284f7c5 \
+    --hash=sha256:6ca8df3d310ced6687d38aac17c0fb8c1b2ec7a3bea156a254e4cc2a1c132771
+certbot-apache==0.8.1 \
+    --hash=sha256:c9e3fdc15e65589c2e39eb0e6b1f61f0c0a1db3c17b00bb337f0ff636cc61cb3 \
+    --hash=sha256:0faf2879884d3b7a58b071902fba37d4b8b58a50e2c3b8ac262c0a74134045ed
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -880,7 +915,6 @@ UNLIKELY_EOF
     PIP_OUT=`"$VENV_BIN/pip" install --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt" 2>&1`
     PIP_STATUS=$?
     set -e
-    rm -rf "$TEMP_DIR"
     if [ "$PIP_STATUS" != 0 ]; then
       # Report error. (Otherwise, be quiet.)
       echo "Had a problem while installing Python packages:"
@@ -890,14 +924,16 @@ UNLIKELY_EOF
     fi
     echo "Installation succeeded."
   fi
-  echo "Requesting root privileges to run certbot..."
+  if [ -n "$SUDO" ]; then
+    # SUDO is su wrapper or sudo
+    echo "Requesting root privileges to run certbot..."
+    echo "  $VENV_BIN/letsencrypt" "$@"
+  fi
   if [ -z "$SUDO_ENV" ] ; then
     # SUDO is su wrapper / noop
-    echo "  " $SUDO "$VENV_BIN/letsencrypt" "$@"
     $SUDO "$VENV_BIN/letsencrypt" "$@"
   else
     # sudo
-    echo "  " $SUDO "$SUDO_ENV" "$VENV_BIN/letsencrypt" "$@"
     $SUDO "$SUDO_ENV" "$VENV_BIN/letsencrypt" "$@"
   fi
 
@@ -923,8 +959,8 @@ else
   fi
 
   if [ "$NO_SELF_UPGRADE" != 1 ]; then
-    echo "Checking for new version..."
     TEMP_DIR=$(TempDir)
+    trap 'rm -rf "$TEMP_DIR"' EXIT
     # ---------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/fetch.py"
 """Do downloading and JSON parsing without additional dependencies. ::
@@ -997,7 +1033,7 @@ def latest_stable_version(get):
     """Return the latest stable release of letsencrypt."""
     metadata = loads(get(
         environ.get('LE_AUTO_JSON_URL',
-                    'https://pypi.python.org/pypi/letsencrypt/json')))
+                    'https://pypi.python.org/pypi/certbot/json')))
     # metadata['info']['version'] actually returns the latest of any kind of
     # release release, contrary to https://wiki.python.org/moin/PyPIJSON.
     # The regex is a sufficient regex for picking out prereleases for most
@@ -1016,7 +1052,7 @@ def verified_new_le_auto(get, tag, temp_dir):
     """
     le_auto_dir = environ.get(
         'LE_AUTO_DIR_TEMPLATE',
-        'https://raw.githubusercontent.com/letsencrypt/letsencrypt/%s/'
+        'https://raw.githubusercontent.com/certbot/certbot/%s/'
         'letsencrypt-auto-source/') % tag
     write(get(le_auto_dir + 'letsencrypt-auto'), temp_dir, 'letsencrypt-auto')
     write(get(le_auto_dir + 'letsencrypt-auto.sig'), temp_dir, 'letsencrypt-auto.sig')
@@ -1079,8 +1115,6 @@ UNLIKELY_EOF
       # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
       # cp is unlikely to fail (esp. under sudo) if the rm doesn't.
       $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
-      # TODO: Clean up temp dir safely, even if it has quotes in its path.
-      rm -rf "$TEMP_DIR"
     fi  # A newer version is available.
   fi  # Self-upgrading is allowed.
 

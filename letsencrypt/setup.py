@@ -20,7 +20,7 @@ readme = read_file(os.path.join(here, 'README.rst'))
 install_requires = ['certbot']
 
 
-version = '0.7.0.dev0'
+version = '0.8.0.dev0'
 
 
 setup(

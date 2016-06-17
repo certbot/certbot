@@ -1,1 +1,1 @@
-.. literalinclude:: cli-help.txt
+.. literalinclude:: ../cli-help.txt

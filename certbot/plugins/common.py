@@ -12,7 +12,7 @@ from acme.jose import util as jose_util
 
 from certbot import constants
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 
 
 def option_namespace(name):
@@ -255,7 +255,7 @@ class TLSSNI01(object):
         # Write out challenge cert and key
         with open(cert_path, "wb") as cert_chall_fd:
             cert_chall_fd.write(cert_pem)
-        with le_util.safe_open(key_path, 'wb', chmod=0o400) as key_file:
+        with util.safe_open(key_path, 'wb', chmod=0o400) as key_file:
             key_file.write(key_pem)
 
         return response

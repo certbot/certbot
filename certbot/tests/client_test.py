@@ -11,7 +11,7 @@ from acme import jose
 
 from certbot import account
 from certbot import errors
-from certbot import le_util
+from certbot import util
 
 from certbot.tests import test_util
 
@@ -137,7 +137,7 @@ class ClientTest(unittest.TestCase):
     @mock.patch("certbot.client.logger")
     def test_obtain_certificate_from_csr(self, mock_logger):
         self._mock_obtain_certificate()
-        test_csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
+        test_csr = util.CSR(form="der", file=None, data=CSR_SAN)
         auth_handler = self.client.auth_handler
 
         authzr = auth_handler.get_authorizations(self.eg_domains, False)
@@ -172,7 +172,7 @@ class ClientTest(unittest.TestCase):
     def test_obtain_certificate(self, mock_crypto_util):
         self._mock_obtain_certificate()
 
-        csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
+        csr = util.CSR(form="der", file=None, data=CSR_SAN)
         mock_crypto_util.init_save_csr.return_value = csr
         mock_crypto_util.init_save_key.return_value = mock.sentinel.key
         domains = ["example.com", "www.example.com"]

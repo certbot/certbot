@@ -10,7 +10,7 @@ import zope.component
 
 from certbot import errors
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 from certbot.tests import test_util
 
 
@@ -63,7 +63,7 @@ class InitSaveCSRTest(unittest.TestCase):
         shutil.rmtree(self.csr_dir)
 
     @mock.patch('certbot.crypto_util.make_csr')
-    @mock.patch('certbot.crypto_util.le_util.make_or_verify_dir')
+    @mock.patch('certbot.crypto_util.util.make_or_verify_dir')
     def test_it(self, unused_mock_verify, mock_csr):
         from certbot.crypto_util import init_save_csr
 
@@ -174,9 +174,9 @@ class ImportCSRFileTest(unittest.TestCase):
 
         self.assertEqual(
             (OpenSSL.crypto.FILETYPE_ASN1,
-             le_util.CSR(file=csrfile,
-                         data=data,
-                         form="der"),
+             util.CSR(file=csrfile,
+                      data=data,
+                      form="der"),
              ["example.com"],),
             self._call(csrfile, data))
 
@@ -186,9 +186,9 @@ class ImportCSRFileTest(unittest.TestCase):
 
         self.assertEqual(
             (OpenSSL.crypto.FILETYPE_PEM,
-             le_util.CSR(file=csrfile,
-                         data=data,
-                         form="pem"),
+             util.CSR(file=csrfile,
+                      data=data,
+                      form="pem"),
              ["example.com"],),
             self._call(csrfile, data))
 
@@ -271,6 +271,32 @@ class GetSANsFromCSRTest(unittest.TestCase):
     def test_parse_no_sans(self):
         self.assertEqual(
             [], self._call(test_util.load_vector('csr-nosans.pem')))
+
+
+class GetNamesFromCertTest(unittest.TestCase):
+    """Tests for certbot.crypto_util.get_names_from_cert."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.crypto_util import get_names_from_cert
+        return get_names_from_cert(*args, **kwargs)
+
+    def test_single(self):
+        self.assertEqual(
+            ['example.com'],
+            self._call(test_util.load_vector('cert.pem')))
+
+    def test_san(self):
+        self.assertEqual(
+            ['example.com', 'www.example.com'],
+            self._call(test_util.load_vector('cert-san.pem')))
+
+    def test_common_name_sans_order(self):
+        # Tests that the common name comes first
+        # followed by the SANS in alphabetical order
+        self.assertEqual(
+            ['example.com'] + ['{0}.example.com'.format(c) for c in 'abcd'],
+            self._call(test_util.load_vector('cert-5sans.pem')))
 
 
 class GetNamesFromCSRTest(unittest.TestCase):

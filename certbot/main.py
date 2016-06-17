@@ -2,6 +2,7 @@
 from __future__ import print_function
 import atexit
 import dialog
+import errno
 import functools
 import logging.handlers
 import os
@@ -25,7 +26,7 @@ from certbot import constants
 from certbot import errors
 from certbot import hooks
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 from certbot import log
 from certbot import reporter
 from certbot import renewal
@@ -230,7 +231,7 @@ def _find_duplicative_certs(config, domains):
     cli_config = configuration.RenewerConfiguration(config)
     configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there
-    le_util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
+    util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
 
     for renewal_file in renewal.renewal_conf_files(cli_config):
         try:
@@ -293,7 +294,7 @@ def _report_new_cert(config, cert_path, fullchain_path):
     msg = ('Congratulations! Your certificate {0} been saved at {1}.'
            ' Your cert will expire on {2}. To obtain a new or tweaked version of this '
            'certificate in the future, simply run {3} again{4}. '
-           'To non-interactively renew *all* of your ceriticates, run "{3} renew"'
+           'To non-interactively renew *all* of your certificates, run "{3} renew"'
            .format(and_chain, path, expiry, cli.cli_command, verbswitch))
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
@@ -365,6 +366,48 @@ def _init_le_client(config, authenticator, installer):
         acc, acme = None, None
 
     return client.Client(config, acc, authenticator, installer, acme=acme)
+
+
+def register(config, unused_plugins):
+    """Create or modify accounts on the server."""
+
+    # Portion of _determine_account logic to see whether accounts already
+    # exist or not.
+    account_storage = account.AccountFileStorage(config)
+    accounts = account_storage.find_all()
+
+    # registering a new account
+    if not config.update_registration:
+        if len(accounts) > 0:
+            # TODO: add a flag to register a duplicate account (this will
+            #       also require extending _determine_account's behavior
+            #       or else extracting the registration code from there)
+            return ("There is an existing account; registration of a "
+                    "duplicate account with this command is currently "
+                    "unsupported.")
+        # _determine_account will register an account
+        _determine_account(config)
+        return
+
+    # --update-registration
+    if len(accounts) == 0:
+        return "Could not find an existing account to update."
+    if config.email is None:
+        if config.register_unsafely_without_email:
+            return ("--register-unsafely-without-email provided, however, a "
+                    "new e-mail address must\ncurrently be provided when "
+                    "updating a registration.")
+        config.namespace.email = display_ops.get_email(optional=False)
+
+    acc, acme = _determine_account(config)
+    acme_client = client.Client(config, acc, None, None, acme=acme)
+    # We rely on an exception to interrupt this process if it didn't work.
+    acc.regr = acme_client.acme.update_registration(acc.regr.update(
+        body=acc.regr.body.update(contact=('mailto:' + config.email,))))
+    account_storage.save_regr(acc)
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    msg = "Your e-mail address was updated to {0}.".format(config.email)
+    reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
 
 def install(config, plugins):
@@ -547,8 +590,16 @@ def renew(config, unused_plugins):
 def setup_log_file_handler(config, logfile, fmt):
     """Setup file debug logging."""
     log_file_path = os.path.join(config.logs_dir, logfile)
-    handler = logging.handlers.RotatingFileHandler(
-        log_file_path, maxBytes=2 ** 20, backupCount=10)
+    try:
+        handler = logging.handlers.RotatingFileHandler(
+            log_file_path, maxBytes=2 ** 20, backupCount=10)
+    except IOError as e:
+        if e.errno == errno.EACCES:
+            msg = ("Access denied writing to {0}. To run as non-root, set " +
+                "--logs-dir, --config-dir, --work-dir to writable paths.")
+            raise errors.Error(msg.format(log_file_path))
+        else:
+            raise
     # rotate on each invocation, rollover only possible when maxBytes
     # is nonzero and backupCount is nonzero, so we set maxBytes as big
     # as possible not to overrun in single CLI invocation (1MB).
@@ -660,12 +711,12 @@ def main(cli_args=sys.argv[1:]):
     # Setup logging ASAP, otherwise "No handlers could be found for
     # logger ..." TODO: this should be done before plugins discovery
     for directory in config.config_dir, config.work_dir:
-        le_util.make_or_verify_dir(
+        util.make_or_verify_dir(
             directory, constants.CONFIG_DIRS_MODE, os.geteuid(),
             "--strict-permissions" in cli_args)
     # TODO: logs might contain sensitive data such as contents of the
     # private key! #525
-    le_util.make_or_verify_dir(
+    util.make_or_verify_dir(
         config.logs_dir, 0o700, os.geteuid(), "--strict-permissions" in cli_args)
     setup_logging(config, _cli_log_handler, logfile='letsencrypt.log')
     cli.possible_deprecation_warning(config)

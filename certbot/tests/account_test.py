@@ -137,6 +137,16 @@ class AccountFileStorageTest(unittest.TestCase):
         # restore
         self.assertEqual(self.acc, self.storage.load(self.acc.id))
 
+    def test_save_regr(self):
+        self.storage.save_regr(self.acc)
+        account_path = os.path.join(self.config.accounts_dir, self.acc.id)
+        self.assertTrue(os.path.exists(account_path))
+        self.assertTrue(os.path.exists(os.path.join(
+            account_path, "regr.json")))
+        for file_name in "meta.json", "private_key.json":
+            self.assertFalse(os.path.exists(
+                os.path.join(account_path, file_name)))
+
     def test_find_all(self):
         self.storage.save(self.acc)
         self.assertEqual([self.acc], self.storage.find_all())

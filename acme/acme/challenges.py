@@ -500,7 +500,7 @@ class DNS(_TokenChallenge):
 
         """
         return DNSResponse(validation=self.gen_validation(
-            self, account_key, **kwargs))
+            account_key, **kwargs))
 
     def validation_domain_name(self, name):
         """Domain name for TXT validation record.

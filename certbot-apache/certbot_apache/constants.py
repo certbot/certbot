@@ -1,6 +1,6 @@
 """Apache plugin constants."""
 import pkg_resources
-from certbot import le_util
+from certbot import util
 
 
 CLI_DEFAULTS_DEBIAN = dict(
@@ -78,6 +78,9 @@ CLI_DEFAULTS = {
     "centos linux": CLI_DEFAULTS_CENTOS,
     "fedora": CLI_DEFAULTS_CENTOS,
     "red hat enterprise linux server": CLI_DEFAULTS_CENTOS,
+    "rhel": CLI_DEFAULTS_CENTOS,
+    "amazon": CLI_DEFAULTS_CENTOS,
+    "gentoo": CLI_DEFAULTS_GENTOO,
     "gentoo base system": CLI_DEFAULTS_GENTOO,
     "darwin": CLI_DEFAULTS_DARWIN,
 }
@@ -116,7 +119,7 @@ def os_constant(key):
     :param key: name of cli constant
     :return: value of constant for active os
     """
-    os_info = le_util.get_os_info()
+    os_info = util.get_os_info()
     try:
         constants = CLI_DEFAULTS[os_info[0].lower()]
     except KeyError:

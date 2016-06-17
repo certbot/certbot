@@ -175,21 +175,18 @@ zope.interface==4.1.3 \
 mock==1.0.1 \
     --hash=sha256:b839dd2d9c117c701430c149956918a423a9863b48b09c90e30a6013e7d2f44f \
     --hash=sha256:8f83080daa249d036cbccfb8ae5cc6ff007b88d6d937521371afabe7b19badbc
+letsencrypt==0.7.0 \
+    --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
+    --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
 # THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT; ADD ALL DEPENDENCIES ABOVE.
 
-acme==0.6.0 \
-    --hash=sha256:cbe4e7a340a19725a8740ed86e30abdbe18fc22c4c6022b7a8e56642d502bcc3 \
-    --hash=sha256:ec4e6009dfbd629b58473eb06bbebfd9fb2a79fc8831c149e9205bc38a98ecc6
-certbot==0.6.0 \
-    --hash=sha256:a893632d228864b0a751db9f3fdd93439ed34b988ea21b64fb0f0fa2ceded6a2 \
-    --hash=sha256:80b0b7dc5afeec2816ef638a61e7c628d73cd72666eebf4984be426d1c2b492d
-certbot-apache==0.6.0 \
-    --hash=sha256:0ab077f0913b81ed5c1b141c3a7c4c0228ef3738d8d61a93db794d9a80718d43 \
-    --hash=sha256:1cfbe751209079a803758f472200816fac559f2a36fdd582d25e3ba5601423a1
-letsencrypt==0.6.0 \
-    --hash=sha256:93196c7dcd57272a753e525d145c5a9987c8968c22ec954bcf83dcc9d2499a76 \
-    --hash=sha256:a16d6c395f1bf5fd61a28ef83dc78f42dbecbad9d00be6236f2ad8915645c154
-letsencrypt-apache==0.6.0 \
-    --hash=sha256:02fadc52a0796e53978c508beec9c53e1fc047660240832b9bde5d53ab3a1379 \
-    --hash=sha256:1c5522d94d7750bdb9bfa6201d2c263e914f662c9d0079e673167233cf4364f1
+acme==0.8.1 \
+    --hash=sha256:ccd7883772efbf933f91713b8241455993834f3620c8fbd459d9ed5e50bbaaca \
+    --hash=sha256:d3ea4acf280bf6253ad7d641cb0970f230a19805acfed809e7a8ddcf62157d9f
+certbot==0.8.1 \
+    --hash=sha256:89805d9f70249ae859ec4d7a99c00b4bb7083ca90cd12d4d202b76dfc284f7c5 \
+    --hash=sha256:6ca8df3d310ced6687d38aac17c0fb8c1b2ec7a3bea156a254e4cc2a1c132771
+certbot-apache==0.8.1 \
+    --hash=sha256:c9e3fdc15e65589c2e39eb0e6b1f61f0c0a1db3c17b00bb337f0ff636cc61cb3 \
+    --hash=sha256:0faf2879884d3b7a58b071902fba37d4b8b58a50e2c3b8ac262c0a74134045ed

@@ -4,12 +4,11 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.7.0.dev0'
+version = '0.9.0.dev0'
 
 install_requires = [
-    'certbot=={0}'.format(version),
-    'certbot-apache=={0}'.format(version),
-    'docker-py',
+    'certbot',
+    'certbot-apache',
     'requests',
     'zope.interface',
 ]

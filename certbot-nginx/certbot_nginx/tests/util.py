@@ -51,7 +51,7 @@ def get_nginx_configurator(
 
     with mock.patch("certbot_nginx.configurator.NginxConfigurator."
                     "config_test"):
-        with mock.patch("certbot_nginx.configurator.le_util."
+        with mock.patch("certbot_nginx.configurator.util."
                         "exe_exists") as mock_exe_exists:
             mock_exe_exists.return_value = True
             config = configurator.NginxConfigurator(

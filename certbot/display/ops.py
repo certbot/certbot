@@ -6,7 +6,7 @@ import zope.component
 
 from certbot import errors
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
@@ -15,41 +15,56 @@ logger = logging.getLogger(__name__)
 z_util = zope.component.getUtility
 
 
-def get_email(more=False, invalid=False):
+def get_email(invalid=False, optional=True):
     """Prompt for valid email address.
 
-    :param bool more: explain why the email is strongly advisable, but how to
-        skip it
-    :param bool invalid: true if the user just typed something, but it wasn't
-        a valid-looking email
+    :param bool invalid: True if an invalid address was provided by the user
+    :param bool optional: True if the user can use
+        --register-unsafely-without-email to avoid providing an e-mail
 
-    :returns: Email or ``None`` if cancelled by user.
+    :returns: e-mail address
     :rtype: str
 
-    """
-    msg = "Enter email address (used for urgent notices and lost key recovery)"
-    if invalid:
-        msg = "There seem to be problems with that address. " + msg
-    if more:
-        msg += ('\n\nIf you really want to skip this, you can run the client with '
-                '--register-unsafely-without-email but make sure you backup your '
-                'account key from /etc/letsencrypt/accounts\n\n')
-    try:
-        code, email = zope.component.getUtility(interfaces.IDisplay).input(msg)
-    except errors.MissingCommandlineFlag:
-        msg = ("You should register before running non-interactively, or provide --agree-tos"
-               " and --email <email_address> flags")
-        raise errors.MissingCommandlineFlag(msg)
+    :raises errors.Error: if the user cancels
 
-    if code == display_util.OK:
-        if le_util.safe_email(email):
-            return email
+    """
+    invalid_prefix = "There seem to be problems with that address. "
+    msg = "Enter email address (used for urgent notices and lost key recovery)"
+    unsafe_suggestion = ("\n\nIf you really want to skip this, you can run "
+                         "the client with --register-unsafely-without-email "
+                         "but make sure you then backup your account key from "
+                         "/etc/letsencrypt/accounts\n\n")
+    if optional:
+        if invalid:
+            msg += unsafe_suggestion
         else:
-            # TODO catch the server's ACME invalid email address error, and
-            # make a similar call when that happens
-            return get_email(more=True, invalid=(email != ""))
+            suggest_unsafe = True
     else:
-        return None
+        suggest_unsafe = False
+
+    while True:
+        try:
+            code, email = z_util(interfaces.IDisplay).input(
+                invalid_prefix + msg if invalid else msg)
+        except errors.MissingCommandlineFlag:
+            msg = ("You should register before running non-interactively, "
+                   "or provide --agree-tos and --email <email_address> flags")
+            raise errors.MissingCommandlineFlag(msg)
+
+        if code != display_util.OK:
+            if optional:
+                raise errors.Error(
+                    "An e-mail address or "
+                    "--register-unsafely-without-email must be provided.")
+            else:
+                raise errors.Error("An e-mail address must be provided.")
+        elif util.safe_email(email):
+            return email
+        elif suggest_unsafe:
+            msg += unsafe_suggestion
+            suggest_unsafe = False  # add this message at most once
+
+        invalid = bool(email)
 
 
 def choose_account(accounts):
@@ -119,7 +134,7 @@ def get_valid_domains(domains):
     valid_domains = []
     for domain in domains:
         try:
-            valid_domains.append(le_util.enforce_domain_sanity(domain))
+            valid_domains.append(util.enforce_domain_sanity(domain))
         except errors.ConfigurationError:
             continue
     return valid_domains
@@ -163,7 +178,7 @@ def _choose_names_manually():
 
         for i, domain in enumerate(domain_list):
             try:
-                domain_list[i] = le_util.enforce_domain_sanity(domain)
+                domain_list[i] = util.enforce_domain_sanity(domain)
             except errors.ConfigurationError as e:
                 invalid_domains[domain] = e.message
 
