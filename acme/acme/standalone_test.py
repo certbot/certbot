@@ -137,7 +137,6 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
         )
         self.old_cwd = os.getcwd()
         os.chdir(self.test_cwd)
-        self.thread.start()
 
     def tearDown(self):
         os.chdir(self.old_cwd)
@@ -146,6 +145,8 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
 
     def test_it(self):
         max_attempts = 5
+        started = False
+
         while max_attempts:
             max_attempts -= 1
             try:
@@ -153,7 +154,12 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
                     b'localhost', b'0.0.0.0', self.port)
             except errors.Error:
                 self.assertTrue(max_attempts > 0, "Timeout!")
-                time.sleep(1)  # wait until thread starts
+                if started:
+                    # Wait until thread starts
+                    time.sleep(1)
+                else:
+                    self.thread.start()
+                    started = True
             else:
                 self.assertEqual(jose.ComparableX509(cert),
                                  test_util.load_comparable_cert(
