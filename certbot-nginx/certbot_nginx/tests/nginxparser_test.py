@@ -136,9 +136,12 @@ class TestRawNginxParser(unittest.TestCase):
             dump(parsed, handle)
         with open(util.get_data_filename('nginx.new.conf')) as handle:
             parsed_new = load(handle)
-        self.maxDiff = None
-        self.assertEquals(parsed[0], parsed_new[0])
-        self.assertEquals(parsed[1:], parsed_new[1:])
+        try:
+            self.maxDiff = None
+            self.assertEquals(parsed[0], parsed_new[0])
+            self.assertEquals(parsed[1:], parsed_new[1:])
+        finally:
+            os.unlink(util.get_data_filename('nginx.new.conf'))
 
     def test_comments(self):
         with open(util.get_data_filename('minimalistic_comments.conf')) as handle:
@@ -150,20 +153,23 @@ class TestRawNginxParser(unittest.TestCase):
         with open(util.get_data_filename('minimalistic_comments.new.conf')) as handle:
             parsed_new = load(handle)
 
-        self.assertEquals(parsed, parsed_new)
+        try:
+            self.assertEquals(parsed, parsed_new)
 
-        self.assertEqual(parsed_new, [
-            ['#', " Use bar.conf when it's a full moon!"],
-            ['include', 'foo.conf'],
-            ['#', ' Kilroy was here'],
-            ['check_status'],
-            [['server'],
-             [['#'],
-              ['#', " Don't forget to open up your firewall!"],
-              ['#'],
-              ['listen', '1234'],
-              ['#', ' listen 80;']]],
-        ])
+            self.assertEqual(parsed_new, [
+                ['#', " Use bar.conf when it's a full moon!"],
+                ['include', 'foo.conf'],
+                ['#', ' Kilroy was here'],
+                ['check_status'],
+                [['server'],
+                 [['#'],
+                  ['#', " Don't forget to open up your firewall!"],
+                  ['#'],
+                  ['listen', '1234'],
+                  ['#', ' listen 80;']]],
+            ])
+        finally:
+            os.unlink(util.get_data_filename('minimalistic_comments.new.conf'))
 
     def test_issue_518(self):
         parsed = loads('if ($http_accept ~* "webp") { set $webp "true"; }')
