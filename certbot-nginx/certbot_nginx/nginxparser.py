@@ -164,16 +164,15 @@ spacey = lambda x: (isinstance(x, str) and x.isspace()) or x == ''
 class UnspacedList(list):
     """Wrap a list [of lists], making any whitespace entries magically invisible"""
 
-    def __init__(self, list_source, top=False):
+    def __init__(self, list_source):
         self.spaced = copy.deepcopy(list(list_source))
 
         # Turn self into a version of the source list that has spaces removed
         # and all sub-lists also UnspacedList()ed
         list.__init__(self, list_source)
-        self.top = top if top else self
         for i, entry in reversed(list(enumerate(self))):
             if isinstance(entry, list):
-                sublist = UnspacedList(entry, top=self.top)
+                sublist = UnspacedList(entry)
                 list.__setitem__(self, i, sublist)
                 self.spaced[i] = sublist.spaced
             elif spacey(entry):
@@ -202,12 +201,9 @@ class UnspacedList(list):
         list.extend(self, x)
 
     def __add__(self, other):
-        if hasattr(other, "spaced"):
-            # If the thing added to us is an UnspacedList, use its spaced form
-            self.spaced.__add__(other.spaced)
-        else:
-            self.spaced.__add__(other)
-        list.__add__(self, other)
+        l = copy.deepcopy(self)
+        l.extend(other)
+        return l
 
     def __setitem__(self, i, value):
         if hasattr(value, "spaced"):
@@ -219,6 +215,12 @@ class UnspacedList(list):
     def __delitem__(self, i):
         self.spaced.__delitem__(i + self._spaces_before(i))
         list.__delitem__(self, i)
+
+    def __deepcopy__(self, memo):
+        l = UnspacedList(self[:])
+        l.spaced = copy.deepcopy(self.spaced)
+        return l
+
 
     def _spaces_before(self, idx):
         "Count the number of spaces in the spaced list before pos idx in the spaceless one"

@@ -1,4 +1,5 @@
 """Test for certbot_nginx.nginxparser."""
+import copy
 import operator
 import os
 import unittest
@@ -179,6 +180,59 @@ class TestRawNginxParser(unittest.TestCase):
             [['if', '($http_accept ~* "webp")'],
              [['set', '$webp "true"']]]
         ])
+
+class TestUnspacedList(unittest.TestCase):
+    """Test the raw low-level Nginx config parser."""
+    def setUp(self):
+        self.a = ["\n    ", "things", " ", "quirk"]
+        self.b = ["y", " "]
+        self.l = self.a[:]
+        self.l2 = self.b[:]
+        self.ul = UnspacedList(self.l)
+        self.ul2 = UnspacedList(self.l2)
+
+    def test_construction(self):
+        self.assertEqual(self.ul, ["things", "quirk"])
+        self.assertEqual(self.ul2, ["y"])
+
+    def test_append(self):
+        ul3 = copy.deepcopy(self.ul)
+        ul3.append("wise")
+        self.assertEqual(ul3, ["things", "quirk", "wise"])
+        self.assertEqual(ul3.spaced, self.a + ["wise"])
+
+    def test_add(self):
+        ul3 = self.ul + self.ul2
+        self.assertEqual(ul3, ["things", "quirk", "y"])
+        self.assertEqual(ul3.spaced, self.a + self.b)
+        self.assertEqual(self.ul.spaced, self.a)
+        ul3 = self.ul + self.l2
+        self.assertEqual(ul3, ["things", "quirk", "y", " "])
+        self.assertEqual(ul3.spaced, self.a + self.b)
+
+    def test_extend(self):
+        ul3 = copy.deepcopy(self.ul)
+        ul3.extend(self.ul2)
+        self.assertEqual(ul3, ["things", "quirk", "y"])
+        self.assertEqual(ul3.spaced, self.a + self.b)
+        self.assertEqual(self.ul.spaced, self.a)
+
+    def test_set(self):
+        ul3 = copy.deepcopy(self.ul)
+        ul3[0] = "zither"
+        l = ["\n ", "zather", "zest"]
+        ul3[1] = UnspacedList(l)
+        self.assertEqual(ul3, ["zither", ["zather", "zest"]])
+        self.assertEqual(ul3.spaced, [self.a[0], "zither", " ", l])
+
+    def test_rawlists(self):
+        ul3 = copy.deepcopy(self.ul)
+        ul3.insert(0, "some")
+        ul3.append("why")
+        ul3.extend(["did", "whether"])
+        del ul3[2]
+        self.assertEqual(ul3, ["some", "things", "why", "did", "whether"])
+
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
