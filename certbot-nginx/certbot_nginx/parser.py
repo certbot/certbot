@@ -215,7 +215,7 @@ class NginxParser(object):
                 filename = filename + os.path.extsep + ext
             try:
                 out = nginxparser.dumps(tree)
-                #logger.debug('Writing nginx conf tree to %s:\n%s', filename, out)
+                logger.debug('Writing nginx conf tree to %s:\n%s', filename, out)
                 with open(filename, 'w') as _file:
                     _file.write(out)
 
@@ -506,6 +506,12 @@ def _add_directive(block, directive, replace):
     See _add_directives for more documentation.
 
     """
+    directive = nginxparser.UnspacedList(directive)
+    print "Unspacified", directive.spaced, directive
+    if len(directive) == 0:
+        # whitespace
+        block.append(directive)
+        return
     location = -1
     # Find the index of a config line where the name of the directive matches
     # the name of the directive we want to add.

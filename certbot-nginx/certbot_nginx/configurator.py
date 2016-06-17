@@ -152,17 +152,17 @@ class NginxConfigurator(common.Plugin):
                 "install a cert.")
 
         vhost = self.choose_vhost(domain)
-        cert_directives = [['ssl_certificate', fullchain_path],
-                           ['ssl_certificate_key', key_path]]
+        cert_directives = [['\n', 'ssl_certificate', ' ', fullchain_path],
+                           ['\n', 'ssl_certificate_key', ' ', key_path]]
 
         # OCSP stapling was introduced in Nginx 1.3.7. If we have that version
         # or greater, add config settings for it.
         stapling_directives = []
         if self.version >= (1, 3, 7):
             stapling_directives = [
-                ['ssl_trusted_certificate', chain_path],
-                ['ssl_stapling', 'on'],
-                ['ssl_stapling_verify', 'on']]
+                ['\n', 'ssl_trusted_certificate', ' ', chain_path],
+                ['\n', 'ssl_stapling', ' ', 'on'],
+                ['\n', 'ssl_stapling_verify', ' ', 'on'], ['\n']]
 
         if len(stapling_directives) != 0 and not chain_path:
             raise errors.PluginError(
@@ -337,10 +337,10 @@ class NginxConfigurator(common.Plugin):
 
         """
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
-        ssl_block = [['listen', '{0} ssl'.format(self.config.tls_sni_01_port)],
-                     ['ssl_certificate', snakeoil_cert],
-                     ['ssl_certificate_key', snakeoil_key],
-                     ['include', self.parser.loc["ssl_options"]]]
+        ssl_block = [['\n', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
+                     ['\n', 'ssl_certificate', ' ', snakeoil_cert],
+                     ['\n', 'ssl_certificate_key', ' ', snakeoil_key],
+                     ['\n', 'include', ' ', self.parser.loc["ssl_options"]]]
         self.parser.add_server_directives(
             vhost.filep, vhost.names, ssl_block, replace=False)
         vhost.ssl = True

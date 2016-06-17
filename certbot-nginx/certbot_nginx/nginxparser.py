@@ -76,6 +76,9 @@ class RawNginxDumper(object):
             indentation = ""
             if spacey(b[0]):
                 indentation = b.pop(0)
+                if not b:
+                    yield indentation
+                    continue
             key = b.pop(0)
             values = b.pop(0)
 
@@ -154,36 +157,58 @@ def dump(blocks, _file):
     return _file.write(dumps(blocks))
 
 
-spacey = lambda x: isinstance(x, str) and x.isspace()
+spacey = lambda x: (isinstance(x, str) and x.isspace()) or x == ''
 
 class UnspacedList(list):
     """Wrap a list [of lists], making any whitespace entries magically invisible"""
 
-    def __init__(self, list_source):
+    def __init__(self, list_source, top=False):
         self.spaced = copy.deepcopy(list(list_source))
 
         # Turn self into a version of the source list that has spaces removed
         # and all sub-lists also UnspacedList()ed
         list.__init__(self, list_source)
+        self.top = self
         for i, entry in reversed(list(enumerate(self))):
             if isinstance(entry, list):
-                list.__setitem__(self, i, UnspacedList(entry))
+                sublist = UnspacedList(entry, top=self.top)
+                list.__setitem__(self, i, sublist)
+                assert type(self.spaced) == list, "Type madness %r" % type(self.spaced)
+                self.spaced[i] = sublist.spaced
             elif spacey(entry):
                 list.__delitem__(self, i)
 
     def insert(self, i, x):
-        self.spaced.insert(i + self._spaces_before(i), x)
+        if hasattr(x, "spaced"):
+            self.spaced.insert(i + self._spaces_before(i), x.spaced)
+        else:
+            self.spaced.insert(i + self._spaces_before(i), x)
         list.insert(self, i, x)
 
     def append(self, x):
-        self.spaced.append(x)
+        print "Unspaced append", x, self
+        if hasattr(x, "spaced"):
+            self.spaced.append(x.spaced)
+        else:
+            self.spaced.append(x)
         list.append(self, x)
+        print "After: aaaaaaaaaaaaaaaaa"
+        print self.top
+        print "Aftertop: bbbbbbbbbbbbbbbbb"
+        print self.top.spaced
+        #import ipdb
+        #ipdb.set_trace()
 
     def extend(self, x):
-        self.spaced.extend(x)
+        if hasattr(x, "spaced"):
+            self.spaced.extend(x.spaced)
+        else:
+            self.spaced.extend(x)
+            self.logger.debug("Weird, extending regular list %r to Unspaced %r", x, self)
         list.extend(self, x)
 
     def __add__(self, other):
+        print "Unspaced add", self, other
         if hasattr(other, "spaced"):
             # If the thing added to us is an UnspacedList, use its spaced form
             self.spaced.__add__(other.spaced)
@@ -192,7 +217,10 @@ class UnspacedList(list):
         list.__add__(self, other)
 
     def __setitem__(self, i, value):
-        self.spaced.__setitem__(i + self._spaces_before(i), value)
+        if hasattr(value, "spaced"):
+            self.spaced.__setitem__(i + self._spaces_before(i), value.spaced)
+        else:
+            self.spaced.__setitem__(i + self._spaces_before(i), value)
         list.__setitem__(self, i, value)
 
     def __delitem__(self, i):
