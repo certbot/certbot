@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import argparse
+import dialog
 import functools
 import itertools
 import os
@@ -921,6 +922,13 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             KeyboardInterrupt, exc_value=interrupt, trace=None, config=None)
         mock_sys.exit.assert_called_with(''.join(
             traceback.format_exception_only(KeyboardInterrupt, interrupt)))
+
+        # Test dialog errors
+        exception = dialog.error(message="test message")
+        main._handle_exception(
+                dialog.DialogError, exc_value=exception, trace=None, config=None)
+        error_msg = mock_sys.exit.call_args_list[-1][0][0]
+        self.assertTrue("test message" in error_msg)
 
     def test_read_file(self):
         rel_test_path = os.path.relpath(os.path.join(self.tmp_dir, 'foo'))

@@ -1,6 +1,7 @@
 """Certbot main entry point."""
 from __future__ import print_function
 import atexit
+import dialog
 import errno
 import functools
 import logging.handlers
@@ -674,7 +675,10 @@ def _handle_exception(exc_type, exc_value, trace, config):
             # Here we're passing a client or ACME error out to the client at the shell
             # Tell the user a bit about what happened, without overwhelming
             # them with a full traceback
-            err = traceback.format_exception_only(exc_type, exc_value)[0]
+            if issubclass(exc_type, dialog.error):
+                err = exc_value.complete_message()
+            else:
+                err = traceback.format_exception_only(exc_type, exc_value)[0]
             # Typical error from the ACME module:
             # acme.messages.Error: urn:acme:error:malformed :: The request message was
             # malformed :: Error creating new registration :: Validation of contact
