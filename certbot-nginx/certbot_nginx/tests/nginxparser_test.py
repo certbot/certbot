@@ -36,19 +36,20 @@ class TestRawNginxParser(unittest.TestCase):
         self.assertEqual(FIRST(block), 'foo')
 
     def test_dump_as_string(self):
-        dumped = dumps([
-            ['user', 'www-data'],
-            [['server'], [
-                ['listen', '80'],
-                ['server_name', 'foo.com'],
-                ['root', '/home/ubuntu/sites/foo/'],
-                [['location', '/status'], [
-                    ['check_status', None],
-                    [['types'], [['image/jpeg', 'jpg']]],
+        dumped = dumps(UnspacedList([
+            ['user', ' ', 'www-data'],
+            [['\n', 'server', ' '], [
+                ['\n    ', 'listen', ' ', '80'],
+                ['\n    ', 'server_name', ' ', 'foo.com'],
+                ['\n    ', 'root', ' ', '/home/ubuntu/sites/foo/'],
+                [['\n\n    ', 'location', ' ', '/status', ' '], [
+                    ['\n        ', 'check_status', ''],
+                    [['\n\n        ', 'types', ' '],
+                    [['\n            ', 'image/jpeg', ' ', 'jpg']]],
                 ]]
-            ]]])
+            ]]]))
 
-        self.assertEqual(dumped,
+        self.assertEqual(dumped.split('\n'),
                          'user www-data;\n'
                          'server {\n'
                          '    listen 80;\n'
@@ -59,10 +60,7 @@ class TestRawNginxParser(unittest.TestCase):
                          '        check_status;\n'
                          '\n'
                          '        types {\n'
-                         '            image/jpeg jpg;\n'
-                         '        }\n'
-                         '    }\n'
-                         '}\n')
+                         '            image/jpeg jpg;}}}'.split('\n'))
 
     def test_parse_from_file(self):
         with open(util.get_data_filename('foo.conf')) as handle:
@@ -122,18 +120,17 @@ class TestRawNginxParser(unittest.TestCase):
                 print "Failed on", handle.read()
                 raise
             #parsed = util.filter_comments(parsed)
-        parsed[-1][-1].append([['server'],
-                               [['listen', '443 ssl'],
-                                ['server_name', 'localhost'],
-                                ['ssl_certificate', 'cert.pem'],
-                                ['ssl_certificate_key', 'cert.key'],
-                                ['ssl_session_cache', 'shared:SSL:1m'],
-                                ['ssl_session_timeout', '5m'],
-                                ['ssl_ciphers', 'HIGH:!aNULL:!MD5'],
-                                [['location', '/'],
-                                 [['root', 'html'],
-                                  ['index', 'index.html index.htm']]]]])
-        
+        parsed[-1][-1].append(UnspacedList([['server'],
+                               [['listen', ' ', '443 ssl'],
+                                ['server_name', ' ', 'localhost'],
+                                ['ssl_certificate', ' ', 'cert.pem'],
+                                ['ssl_certificate_key', ' ', 'cert.key'],
+                                ['ssl_session_cache', ' ', 'shared:SSL:1m'],
+                                ['ssl_session_timeout', ' ', '5m'],
+                                ['ssl_ciphers', ' ', 'HIGH:!aNULL:!MD5'],
+                                [['location', ' ', '/'],
+                                 [['root', ' ', 'html'],
+                                  ['index', ' ', 'index.html index.htm']]]]]))
 
         with open(util.get_data_filename('nginx.new.conf'), 'w') as handle:
             dump(parsed, handle)
@@ -159,11 +156,11 @@ class TestRawNginxParser(unittest.TestCase):
             ['#', " Use bar.conf when it's a full moon!"],
             ['include', 'foo.conf'],
             ['#', ' Kilroy was here'],
-            ['check_status', None],
+            ['check_status'],
             [['server'],
-             [['#', ''],
+             [['#'],
               ['#', " Don't forget to open up your firewall!"],
-              ['#', ''],
+              ['#'],
               ['listen', '1234'],
               ['#', ' listen 80;']]],
         ])

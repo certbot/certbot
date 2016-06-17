@@ -1,7 +1,6 @@
 """Very low-level nginx config parser based on pyparsing."""
 import copy
 import string
-import sys
 
 from pyparsing import (
     Literal, White, Word, alphanums, CharsNotIn, Forward, Group,
@@ -68,11 +67,11 @@ class RawNginxDumper(object):
     def __iter__(self, blocks=None):
         """Iterates the dumped nginx content."""
         blocks = blocks or self.blocks
-        for b in blocks:
-            if isinstance(b, str):
-                yield b
+        for b0 in blocks:
+            if isinstance(b0, str):
+                yield b0
                 continue
-            b = copy.deepcopy(b)
+            b = copy.deepcopy(b0)
             indentation = ""
             if spacey(b[0]):
                 indentation = b.pop(0)
@@ -96,13 +95,18 @@ class RawNginxDumper(object):
                     gap = ""
                     # Sometimes the parser has stuck some gap whitespace in here;
                     # if so rotate it into gap
-                    if spacey(values):
+                    if values and spacey(values):
                         gap = values
-                        values = b.pop(0)
-                    if values is None:
-                        yield indentation + key + gap + ';'
-                    else:
-                        yield indentation + key + gap + values + ';'
+                        try:
+                            values = b.pop(0)
+                        except:
+                            import ipdb
+                            ipdb.set_trace()
+                    #if values is None:
+                    #    yield indentation + key + gap + ';'
+                    #else:
+                    #    yield indentation + key + gap + values + ';'
+                    yield indentation + key + gap + values + ';'
 
     def __str__(self):
         """Return the parsed block as a string."""
@@ -168,12 +172,11 @@ class UnspacedList(list):
         # Turn self into a version of the source list that has spaces removed
         # and all sub-lists also UnspacedList()ed
         list.__init__(self, list_source)
-        self.top = self
+        self.top = top if top else self
         for i, entry in reversed(list(enumerate(self))):
             if isinstance(entry, list):
                 sublist = UnspacedList(entry, top=self.top)
                 list.__setitem__(self, i, sublist)
-                assert type(self.spaced) == list, "Type madness %r" % type(self.spaced)
                 self.spaced[i] = sublist.spaced
             elif spacey(entry):
                 list.__delitem__(self, i)
@@ -186,18 +189,11 @@ class UnspacedList(list):
         list.insert(self, i, x)
 
     def append(self, x):
-        print "Unspaced append", x, self
         if hasattr(x, "spaced"):
             self.spaced.append(x.spaced)
         else:
             self.spaced.append(x)
         list.append(self, x)
-        print "After: aaaaaaaaaaaaaaaaa"
-        print self.top
-        print "Aftertop: bbbbbbbbbbbbbbbbb"
-        print self.top.spaced
-        #import ipdb
-        #ipdb.set_trace()
 
     def extend(self, x):
         if hasattr(x, "spaced"):
@@ -208,7 +204,6 @@ class UnspacedList(list):
         list.extend(self, x)
 
     def __add__(self, other):
-        print "Unspaced add", self, other
         if hasattr(other, "spaced"):
             # If the thing added to us is an UnspacedList, use its spaced form
             self.spaced.__add__(other.spaced)
