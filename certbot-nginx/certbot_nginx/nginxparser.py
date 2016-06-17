@@ -216,7 +216,7 @@ class UnspacedList(list):
         self.spaced.__delitem__(i + self._spaces_before(i))
         list.__delitem__(self, i)
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, unused_memo):
         l = UnspacedList(self[:])
         l.spaced = copy.deepcopy(self.spaced)
         return l
