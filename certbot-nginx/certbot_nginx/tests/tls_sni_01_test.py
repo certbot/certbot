@@ -12,6 +12,7 @@ from certbot import errors
 from certbot.plugins import common_test
 from certbot.tests import acme_util
 
+from certbot_nginx import nginxparser
 from certbot_nginx import obj
 from certbot_nginx.tests import util
 
@@ -132,16 +133,21 @@ class TlsSniPerformTest(util.NginxTest):
 
         http = self.sni.configurator.parser.parsed[
             self.sni.configurator.parser.loc["root"]][-1]
+        print "http", http
+        #print "SPACED\n", http.spaced
         self.assertTrue(['include', self.sni.challenge_conf] in http[1])
 
         vhosts = self.sni.configurator.parser.get_vhosts()
+        print "Got", vhosts
         vhs = [vh for vh in vhosts if vh.filep == self.sni.challenge_conf]
+        print "And now", vhs
 
         for vhost in vhs:
             if vhost.addrs == set(v_addr1):
                 response = self.achalls[0].response(self.account_key)
             else:
                 response = self.achalls[2].response(self.account_key)
+                print vhost.addrs, set(v_addr2)
                 self.assertEqual(vhost.addrs, set(v_addr2))
             self.assertEqual(vhost.names, set([response.z_domain]))
 
