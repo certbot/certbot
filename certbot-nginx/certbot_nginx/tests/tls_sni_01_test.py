@@ -12,7 +12,6 @@ from certbot import errors
 from certbot.plugins import common_test
 from certbot.tests import acme_util
 
-from certbot_nginx import nginxparser
 from certbot_nginx import obj
 from certbot_nginx.tests import util
 
