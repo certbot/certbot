@@ -624,11 +624,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Note: This could be made to also look for ip:443 combo
         listens = [self.parser.get_arg(x).split()[0] for
                    x in self.parser.find_dir("Listen")]
+
         # In case no Listens are set (which really is a broken apache config)
         if not listens:
             listens = ["80"]
-        if port in listens:
+
+        # Listen already in place
+        if self._has_port_already(listens, port):
             return
+
         for listen in listens:
             # For any listen statement, check if the machine also listens on
             # Port 443. If not, add such a listen statement.
@@ -663,6 +667,23 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                                         "%s\n") % (ip, port,
                                                    self.parser.loc["listen"])
                     listens.append("%s:%s" % (ip, port))
+
+    def _has_port_already(self, listens, port):
+        """Helper method for prepare_server_https to find out if user
+        already has an active Listen statement for the port we need
+
+        :param list listens: List of listen variables
+        :param string port: Port in question
+        """
+
+        if port in listens:
+            return True
+        # Check if Apache is already listening on a specific IP
+        for listen in listens:
+            if len(listen.split(":")) > 1:
+                # Ugly but takes care of protocol def, eg: 1.1.1.1:443 https
+                if listen.split(":")[-1].split(" ")[0] == port:
+                    return True
 
     def prepare_https_modules(self, temp):
         """Helper method for prepare_server_https, taking care of enabling
