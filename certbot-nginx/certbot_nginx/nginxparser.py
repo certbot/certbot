@@ -186,29 +186,37 @@ class UnspacedList(list):
                 if "#" not in self[:i]:
                     list.__delitem__(self, i)
 
-    def insert(self, i, x):
-        if not isinstance(x, list):                      # str or None
-            self.spaced.insert(i + self._spaces_before(i), x)
+    def _coerce(self, inbound):
+        """
+        Coerce some inbound object to be appropriately usable in this object
+
+        :param inbound: string or None or list or UnspacedList
+        :returns: (coerced UnspacedList or string or None, spaced equivalent)
+        :rtype: tuple
+
+        """
+        if not isinstance(inbound, list):                      # str or None
+            return (inbound, inbound)
         else:
             if not hasattr(x, "spaced"):
-                x = UnspacedList(x)
-            self.spaced.insert(i + self._spaces_before(i), x.spaced)
-        list.insert(self, i, x)
+                inbound = UnspacedList(inbound)
+            return (inbound, inbound.spaced)
+
+
+    def insert(self, i, x):
+        item, spaced_item = self._coerce(x)
+        self.spaced.insert(i + self._spaces_before(i), spaced_item)
+        list.insert(self, i, item)
 
     def append(self, x):
-        if hasattr(x, "spaced"):
-            self.spaced.append(x.spaced)
-        else:
-            self.spaced.append(x)
-        list.append(self, x)
+        item, spaced_item = self._coerce(x)
+        self.spaced.append(spaced_item)
+        list.append(self, item)
 
     def extend(self, x):
-        if hasattr(x, "spaced"):
-            self.spaced.extend(x.spaced)
-        else:
-            self.spaced.extend(x)
-            logger.debug("Weird, extending regular list %r to Unspaced %r", x, self)
-        list.extend(self, x)
+        item, spaced_item = self._coerce(x)
+        self.spaced.extend(spaced_item)
+        list.extend(self, item)
 
     def __add__(self, other):
         l = copy.deepcopy(self)
@@ -216,10 +224,8 @@ class UnspacedList(list):
         return l
 
     def __setitem__(self, i, value):
-        if hasattr(value, "spaced"):
-            self.spaced.__setitem__(i + self._spaces_before(i), value.spaced)
-        else:
-            self.spaced.__setitem__(i + self._spaces_before(i), value)
+        item, spaced_item = self._coerce(x)
+        self.spaced.__setitem__(i + self._spaces_before(i), value)
         list.__setitem__(self, i, value)
 
     def __delitem__(self, i):
