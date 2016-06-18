@@ -11,6 +11,7 @@ import mock
 import pytz
 
 import certbot
+from certbot import cli
 from certbot import configuration
 from certbot import errors
 from certbot.storage import ALL_FOUR
@@ -84,18 +85,20 @@ class BaseRenewableCertTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
+    def _write_out_kind(self, kind, ver, value=None):
+        link = getattr(self.test_rc, kind)
+        if os.path.lexists(link):
+            os.unlink(link)
+        os.symlink(os.path.join(os.path.pardir, os.path.pardir, "archive",
+                                "example.org", "{0}{1}.pem".format(kind, ver)),
+                   link)
+        with open(link, "w") as f:
+            f.write(kind if value is None else value)
+
     def _write_out_ex_kinds(self):
         for kind in ALL_FOUR:
-            where = getattr(self.test_rc, kind)
-            os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                    "{0}12.pem".format(kind)), where)
-            with open(where, "w") as f:
-                f.write(kind)
-            os.unlink(where)
-            os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                    "{0}11.pem".format(kind)), where)
-            with open(where, "w") as f:
-                f.write(kind)
+            self._write_out_kind(kind, 12)
+            self._write_out_kind(kind, 11)
 
 
 class RenewableCertTests(BaseRenewableCertTest):
@@ -204,10 +207,7 @@ class RenewableCertTests(BaseRenewableCertTest):
 
     def test_current_target(self):
         # Relative path logic
-        os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                "cert17.pem"), self.test_rc.cert)
-        with open(self.test_rc.cert, "w") as f:
-            f.write("cert")
+        self._write_out_kind("cert", 17)
         self.assertTrue(os.path.samefile(self.test_rc.current_target("cert"),
                                          os.path.join(self.tempdir, "archive",
                                                       "example.org",
@@ -225,12 +225,8 @@ class RenewableCertTests(BaseRenewableCertTest):
 
     def test_current_version(self):
         for ver in (1, 5, 10, 20):
-            os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                    "cert{0}.pem".format(ver)),
-                       self.test_rc.cert)
-            with open(self.test_rc.cert, "w") as f:
-                f.write("cert")
-            os.unlink(self.test_rc.cert)
+            self._write_out_kind("cert", ver)
+        os.unlink(self.test_rc.cert)
         os.symlink(os.path.join("..", "..", "archive", "example.org",
                                 "cert10.pem"), self.test_rc.cert)
         self.assertEqual(self.test_rc.current_version("cert"), 10)
@@ -241,61 +237,30 @@ class RenewableCertTests(BaseRenewableCertTest):
     def test_latest_and_next_versions(self):
         for ver in xrange(1, 6):
             for kind in ALL_FOUR:
-                where = getattr(self.test_rc, kind)
-                if os.path.islink(where):
-                    os.unlink(where)
-                os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                        "{0}{1}.pem".format(kind, ver)), where)
-                with open(where, "w") as f:
-                    f.write(kind)
+                self._write_out_kind(kind, ver)
         self.assertEqual(self.test_rc.latest_common_version(), 5)
         self.assertEqual(self.test_rc.next_free_version(), 6)
         # Having one kind of file of a later version doesn't change the
         # result
-        os.unlink(self.test_rc.privkey)
-        os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                "privkey7.pem"), self.test_rc.privkey)
-        with open(self.test_rc.privkey, "w") as f:
-            f.write("privkey")
+        self._write_out_kind("privkey", 7)
         self.assertEqual(self.test_rc.latest_common_version(), 5)
         # ... although it does change the next free version
         self.assertEqual(self.test_rc.next_free_version(), 8)
         # Nor does having three out of four change the result
-        os.unlink(self.test_rc.cert)
-        os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                "cert7.pem"), self.test_rc.cert)
-        with open(self.test_rc.cert, "w") as f:
-            f.write("cert")
-        os.unlink(self.test_rc.fullchain)
-        os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                "fullchain7.pem"), self.test_rc.fullchain)
-        with open(self.test_rc.fullchain, "w") as f:
-            f.write("fullchain")
+        self._write_out_kind("cert", 7)
+        self._write_out_kind("fullchain", 7)
         self.assertEqual(self.test_rc.latest_common_version(), 5)
         # If we have everything from a much later version, it does change
         # the result
-        ver = 17
         for kind in ALL_FOUR:
-            where = getattr(self.test_rc, kind)
-            if os.path.islink(where):
-                os.unlink(where)
-            os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                    "{0}{1}.pem".format(kind, ver)), where)
-            with open(where, "w") as f:
-                f.write(kind)
+            self._write_out_kind(kind, 17)
         self.assertEqual(self.test_rc.latest_common_version(), 17)
         self.assertEqual(self.test_rc.next_free_version(), 18)
 
     def test_update_link_to(self):
         for ver in xrange(1, 6):
             for kind in ALL_FOUR:
-                where = getattr(self.test_rc, kind)
-                if os.path.islink(where):
-                    os.unlink(where)
-                os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                        "{0}{1}.pem".format(kind, ver)), where)
-                with open(where, "w") as f:
-                    f.write(kind)
+                self._write_out_kind(kind, ver)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
         # pylint: disable=protected-access
         self.test_rc._update_link_to("cert", 3)
@@ -312,10 +277,7 @@ class RenewableCertTests(BaseRenewableCertTest):
                          "chain3000.pem")
 
     def test_version(self):
-        os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                "cert12.pem"), self.test_rc.cert)
-        with open(self.test_rc.cert, "w") as f:
-            f.write("cert")
+        self._write_out_kind("cert", 12)
         # TODO: We should probably test that the directory is still the
         #       same, but it's tricky because we can get an absolute
         #       path out when we put a relative path in.
@@ -325,13 +287,7 @@ class RenewableCertTests(BaseRenewableCertTest):
     def test_update_all_links_to_success(self):
         for ver in xrange(1, 6):
             for kind in ALL_FOUR:
-                where = getattr(self.test_rc, kind)
-                if os.path.islink(where):
-                    os.unlink(where)
-                os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                        "{0}{1}.pem".format(kind, ver)), where)
-                with open(where, "w") as f:
-                    f.write(kind)
+                self._write_out_kind(kind, ver)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
         self.assertEqual(self.test_rc.latest_common_version(), 5)
         for ver in xrange(1, 6):
@@ -376,13 +332,7 @@ class RenewableCertTests(BaseRenewableCertTest):
     def test_has_pending_deployment(self):
         for ver in xrange(1, 6):
             for kind in ALL_FOUR:
-                where = getattr(self.test_rc, kind)
-                if os.path.islink(where):
-                    os.unlink(where)
-                os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                        "{0}{1}.pem".format(kind, ver)), where)
-                with open(where, "w") as f:
-                    f.write(kind)
+                self._write_out_kind(kind, ver)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
         for ver in xrange(1, 6):
             self.test_rc.update_all_links_to(ver)
@@ -395,23 +345,21 @@ class RenewableCertTests(BaseRenewableCertTest):
 
     def test_names(self):
         # Trying the current version
-        test_cert = test_util.load_vector("cert-san.pem")
-        os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                "cert12.pem"), self.test_rc.cert)
-        with open(self.test_rc.cert, "w") as f:
-            f.write(test_cert)
+        self._write_out_kind("cert", 12, test_util.load_vector("cert-san.pem"))
         self.assertEqual(self.test_rc.names(),
                          ["example.com", "www.example.com"])
 
         # Trying a non-current version
-        test_cert = test_util.load_vector("cert.pem")
-        os.unlink(self.test_rc.cert)
-        os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                "cert15.pem"), self.test_rc.cert)
-        with open(self.test_rc.cert, "w") as f:
-            f.write(test_cert)
+        self._write_out_kind("cert", 15, test_util.load_vector("cert.pem"))
         self.assertEqual(self.test_rc.names(12),
                          ["example.com", "www.example.com"])
+
+        # Testing common name is listed first
+        self._write_out_kind(
+            "cert", 12, test_util.load_vector("cert-5sans.pem"))
+        self.assertEqual(
+            self.test_rc.names(12),
+            ["example.com"] + ["{0}.example.com".format(c) for c in "abcd"])
 
         # Trying missing cert
         os.unlink(self.test_rc.cert)
@@ -480,13 +428,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         # No pending deployment
         for ver in xrange(1, 6):
             for kind in ALL_FOUR:
-                where = getattr(self.test_rc, kind)
-                if os.path.islink(where):
-                    os.unlink(where)
-                os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                        "{0}{1}.pem".format(kind, ver)), where)
-                with open(where, "w") as f:
-                    f.write(kind)
+                self._write_out_kind(kind, ver)
         self.assertFalse(self.test_rc.should_autodeploy())
 
     def test_autorenewal_is_enabled(self):
@@ -507,11 +449,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertFalse(self.test_rc.should_autorenew())
         self.test_rc.configuration["autorenew"] = "1"
         for kind in ALL_FOUR:
-            where = getattr(self.test_rc, kind)
-            os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                    "{0}12.pem".format(kind)), where)
-            with open(where, "w") as f:
-                f.write(kind)
+            self._write_out_kind(kind, 12)
         # Mandatory renewal on the basis of OCSP revocation
         mock_ocsp.return_value = True
         self.assertTrue(self.test_rc.should_autorenew())
@@ -525,13 +463,7 @@ class RenewableCertTests(BaseRenewableCertTest):
 
         for ver in xrange(1, 6):
             for kind in ALL_FOUR:
-                where = getattr(self.test_rc, kind)
-                if os.path.islink(where):
-                    os.unlink(where)
-                os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                        "{0}{1}.pem".format(kind, ver)), where)
-                with open(where, "w") as f:
-                    f.write(kind)
+                self._write_out_kind(kind, ver)
         self.test_rc.update_all_links_to(3)
         self.assertEqual(
             6, self.test_rc.save_successor(3, "new cert", None,
@@ -586,39 +518,33 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertFalse(os.path.islink(self.test_rc.version("privkey", 10)))
         self.assertFalse(os.path.exists(temp_config_file))
 
-    @mock.patch("certbot.cli.helpful_parser")
-    def test_relevant_values(self, mock_parser):
+    def _test_relevant_values_common(self, values):
+        option = "rsa_key_size"
+        mock_parser = mock.Mock(args=["--standalone"], verb="certonly",
+                                defaults={option: cli.flag_default(option)})
+
+        from certbot.storage import relevant_values
+        with mock.patch("certbot.cli.helpful_parser", mock_parser):
+            return relevant_values(values)
+
+    def test_relevant_values(self):
         """Test that relevant_values() can reject an irrelevant value."""
-        # pylint: disable=protected-access
-        from certbot import storage
-        mock_parser.verb = "certonly"
-        mock_parser.args = ["--standalone"]
-        mock_action = mock.Mock(dest="rsa_key_size", default=2048)
-        mock_parser.parser._actions = [mock_action]
-        self.assertEqual(storage.relevant_values({"hello": "there"}), {})
+        self.assertEqual(
+            self._test_relevant_values_common({"hello": "there"}), {})
 
-    @mock.patch("certbot.cli.helpful_parser")
-    def test_relevant_values_default(self, mock_parser):
+    def test_relevant_values_default(self):
         """Test that relevant_values() can reject a default value."""
-        # pylint: disable=protected-access
-        from certbot import storage
-        mock_parser.verb = "certonly"
-        mock_parser.args = ["--standalone"]
-        mock_action = mock.Mock(dest="rsa_key_size", default=2048)
-        mock_parser.parser._actions = [mock_action]
-        self.assertEqual(storage.relevant_values({"rsa_key_size": 2048}), {})
+        option = "rsa_key_size"
+        values = {option: cli.flag_default(option)}
+        self.assertEqual(self._test_relevant_values_common(values), {})
 
-    @mock.patch("certbot.cli.helpful_parser")
-    def test_relevant_values_nondefault(self, mock_parser):
+    def test_relevant_values_nondefault(self):
         """Test that relevant_values() can retain a non-default value."""
-        # pylint: disable=protected-access
-        from certbot import storage
-        mock_parser.verb = "certonly"
-        mock_parser.args = ["--standalone"]
-        mock_action = mock.Mock(dest="rsa_key_size", default=2048)
-        mock_parser.parser._actions = [mock_action]
-        self.assertEqual(storage.relevant_values({"rsa_key_size": 12}),
-                         {"rsa_key_size": 12})
+        values = {"rsa_key_size": 12}
+        # A copy is given to _test_relevant_values_common
+        # to make sure values isn't modified by the method
+        self.assertEqual(
+            self._test_relevant_values_common(values.copy()), values)
 
     @mock.patch("certbot.storage.relevant_values")
     def test_new_lineage(self, mock_rv):

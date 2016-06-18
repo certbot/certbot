@@ -1,6 +1,8 @@
 """Certbot main entry point."""
 from __future__ import print_function
 import atexit
+import dialog
+import errno
 import functools
 import logging.handlers
 import os
@@ -588,8 +590,16 @@ def renew(config, unused_plugins):
 def setup_log_file_handler(config, logfile, fmt):
     """Setup file debug logging."""
     log_file_path = os.path.join(config.logs_dir, logfile)
-    handler = logging.handlers.RotatingFileHandler(
-        log_file_path, maxBytes=2 ** 20, backupCount=10)
+    try:
+        handler = logging.handlers.RotatingFileHandler(
+            log_file_path, maxBytes=2 ** 20, backupCount=10)
+    except IOError as e:
+        if e.errno == errno.EACCES:
+            msg = ("Access denied writing to {0}. To run as non-root, set " +
+                "--logs-dir, --config-dir, --work-dir to writable paths.")
+            raise errors.Error(msg.format(log_file_path))
+        else:
+            raise
     # rotate on each invocation, rollover only possible when maxBytes
     # is nonzero and backupCount is nonzero, so we set maxBytes as big
     # as possible not to overrun in single CLI invocation (1MB).
@@ -665,7 +675,10 @@ def _handle_exception(exc_type, exc_value, trace, config):
             # Here we're passing a client or ACME error out to the client at the shell
             # Tell the user a bit about what happened, without overwhelming
             # them with a full traceback
-            err = traceback.format_exception_only(exc_type, exc_value)[0]
+            if issubclass(exc_type, dialog.error):
+                err = exc_value.complete_message()
+            else:
+                err = traceback.format_exception_only(exc_type, exc_value)[0]
             # Typical error from the ACME module:
             # acme.messages.Error: urn:acme:error:malformed :: The request message was
             # malformed :: Error creating new registration :: Validation of contact
