@@ -83,7 +83,7 @@ class NginxConfiguratorTest(util.NginxTest):
         filep = self.config.parser.abs_path('sites-enabled/example.com')
         self.config.parser.add_server_directives(
             filep, set(['.example.com', 'example.*']),
-            [['listen', '5001 ssl']],
+            [['listen', ' ', '5001 ssl']],
             replace=False)
         self.config.save()
 

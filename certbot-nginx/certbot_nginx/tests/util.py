@@ -1,4 +1,5 @@
 """Common utilities for certbot_nginx."""
+import copy
 import os
 import pkg_resources
 import unittest
@@ -16,6 +17,7 @@ from certbot.plugins import common
 
 from certbot_nginx import constants
 from certbot_nginx import configurator
+from certbot_nginx import nginxparser
 
 
 class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
@@ -82,12 +84,15 @@ def filter_comments(tree):
 
     def traverse(tree):
         """Generator dropping comment nodes"""
-        for key, values in tree:
+        for entry in tree:
+            key, values = entry
             if isinstance(key, list):
-                yield [key, filter_comments(values)]
+                new = copy.deepcopy(entry)
+                new[1] = filter_comments(values)
+                yield new
             else:
                 if key != '#':
-                    yield [key, values]
+                    yield entry
 
     return list(traverse(tree))
 

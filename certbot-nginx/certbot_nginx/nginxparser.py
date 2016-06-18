@@ -165,6 +165,7 @@ class UnspacedList(list):
     """Wrap a list [of lists], making any whitespace entries magically invisible"""
 
     def __init__(self, list_source):
+        # ensure our argument is not a generator, and duplicate any sublists
         self.spaced = copy.deepcopy(list(list_source))
 
         # Turn self into a version of the source list that has spaces removed
@@ -173,16 +174,25 @@ class UnspacedList(list):
         for i, entry in reversed(list(enumerate(self))):
             if isinstance(entry, list):
                 sublist = UnspacedList(entry)
-                list.__setitem__(self, i, sublist)
+                if sublist != [] or sublist.spaced == []:
+                    list.__setitem__(self, i, sublist)
+                else:
+                    # if a sublist is exclusively spacey entries, it might
+                    # choke the high level parser, so make it disappear
+                    list.__delitem__(self, i)
                 self.spaced[i] = sublist.spaced
             elif spacey(entry):
-                list.__delitem__(self, i)
+                # don't delete comments
+                if "#" not in self[:i]:
+                    list.__delitem__(self, i)
 
     def insert(self, i, x):
-        if hasattr(x, "spaced"):
-            self.spaced.insert(i + self._spaces_before(i), x.spaced)
-        else:
+        if not isinstance(x, list):                      # str or None
             self.spaced.insert(i + self._spaces_before(i), x)
+        else:
+            if not hasattr(x, "spaced"):
+                x = UnspacedList(x)
+            self.spaced.insert(i + self._spaces_before(i), x.spaced)
         list.insert(self, i, x)
 
     def append(self, x):

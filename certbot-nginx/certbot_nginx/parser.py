@@ -1,4 +1,5 @@
 """NginxParser is a member object of the NginxConfigurator class."""
+import copy
 import glob
 import logging
 import os
@@ -113,6 +114,7 @@ class NginxParser(object):
         for filename in servers:
             for server in servers[filename]:
                 # Parse the server block into a VirtualHost object
+
                 parsed_server = parse_server(server)
                 vhost = obj.VirtualHost(filename,
                                         parsed_server['addrs'],
@@ -132,7 +134,7 @@ class NginxParser(object):
         :rtype: list
 
         """
-        result = list(block)  # Copy the list to keep self.parsed idempotent
+        result = copy.deepcopy(block)  # Copy the list to keep self.parsed idempotent
         for directive in block:
             if _is_include_directive(directive):
                 included_files = glob.glob(
@@ -465,6 +467,8 @@ def parse_server(server):
                      'names': set()}
 
     for directive in server:
+        if not directive:
+            continue
         if directive[0] == 'listen':
             addr = obj.Addr.fromstring(directive[1])
             parsed_server['addrs'].add(addr)
@@ -506,7 +510,6 @@ def _add_directive(block, directive, replace):
 
     """
     directive = nginxparser.UnspacedList(directive)
-    print "Unspacified", directive.spaced, directive
     if len(directive) == 0:
         # whitespace
         block.append(directive)

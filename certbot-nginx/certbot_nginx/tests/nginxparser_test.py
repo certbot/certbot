@@ -164,9 +164,9 @@ class TestRawNginxParser(unittest.TestCase):
                 ['#', ' Kilroy was here'],
                 ['check_status'],
                 [['server'],
-                 [['#'],
+                 [['#', ''],
                   ['#', " Don't forget to open up your firewall!"],
-                  ['#'],
+                  ['#', ''],
                   ['listen', '1234'],
                   ['#', ' listen 80;']]],
             ])

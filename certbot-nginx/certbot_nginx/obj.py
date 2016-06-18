@@ -130,7 +130,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
                                  self.names, self.ssl, self.enabled))
 
     def __repr__(self):
-        return "VirtualHost(" + self.__str__().replace("\n",",") + ")\n"
+        return "VirtualHost(" + self.__str__().replace("\n",", ") + ")\n"
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
