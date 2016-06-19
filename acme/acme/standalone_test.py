@@ -154,12 +154,12 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
                     b'localhost', b'0.0.0.0', self.port)
             except errors.Error:
                 self.assertTrue(max_attempts > 0, "Timeout!")
-                if started:
-                    # Wait until thread starts
-                    time.sleep(1)
-                else:
+                if not started:
                     self.thread.start()
                     started = True
+                # Wait until thread starts. This line should remain outside
+                # the if condition to avoid coverage missing line false positive
+                time.sleep(1)
             else:
                 self.assertEqual(jose.ComparableX509(cert),
                                  test_util.load_comparable_cert(
