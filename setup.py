@@ -69,7 +69,6 @@ dev_extras = [
     'astroid==1.3.5',
     'coverage',
     'nose',
-    'nosexcover',
     'pep8',
     'pylint==1.4.2',  # upstream #248
     'tox',
