@@ -198,7 +198,7 @@ class UnspacedList(list):
         if not isinstance(inbound, list):                      # str or None
             return (inbound, inbound)
         else:
-            if not hasattr(x, "spaced"):
+            if not hasattr(inbound, "spaced"):
                 inbound = UnspacedList(inbound)
             return (inbound, inbound.spaced)
 
@@ -224,9 +224,9 @@ class UnspacedList(list):
         return l
 
     def __setitem__(self, i, value):
-        item, spaced_item = self._coerce(x)
-        self.spaced.__setitem__(i + self._spaces_before(i), value)
-        list.__setitem__(self, i, value)
+        item, spaced_item = self._coerce(value)
+        self.spaced.__setitem__(i + self._spaces_before(i), spaced_item)
+        list.__setitem__(self, i, item)
 
     def __delitem__(self, i):
         self.spaced.__delitem__(i + self._spaces_before(i))
