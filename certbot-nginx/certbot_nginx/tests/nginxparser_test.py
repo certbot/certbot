@@ -115,13 +115,7 @@ class TestRawNginxParser(unittest.TestCase):
 
     def test_dump_as_file(self):
         with open(util.get_data_filename('nginx.conf')) as handle:
-            try:
-                parsed = load(handle)
-            except:
-                handle.seek(0)
-                print "Failed on", handle.read()
-                raise
-            #parsed = util.filter_comments(parsed)
+            parsed = load(handle)
         parsed[-1][-1].append(UnspacedList([['server'],
                                [['listen', ' ', '443 ssl'],
                                 ['server_name', ' ', 'localhost'],
