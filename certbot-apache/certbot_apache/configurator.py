@@ -625,6 +625,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
 
+        # If nonstandard port, add service definition for matching
+        if port != "443":
+            port_service = "%s %s" % (port, "https")
+        else:
+            port_service = port
+
         self.prepare_https_modules(temp)
         # Check for Listen <port>
         # Note: This could be made to also look for ip:443 combo
@@ -639,40 +645,56 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if self._has_port_already(listens, port):
             return
 
+        listen_dirs = set(listens)
+
         for listen in listens:
             # For any listen statement, check if the machine also listens on
             # Port 443. If not, add such a listen statement.
             if len(listen.split(":")) == 1:
                 # Its listening to all interfaces
-                if port not in listens:
-                    if port == "443":
-                        args = [port]
-                    else:
-                        # Non-standard ports should specify https protocol
-                        args = [port, "https"]
-                    self.parser.add_dir_to_ifmodssl(
-                        parser.get_aug_path(
-                            self.parser.loc["listen"]), "Listen", args)
-                    self.save_notes += "Added Listen %s directive to %s\n" % (
-                        port, self.parser.loc["listen"])
-                    listens.append(port)
+                if port not in listen_dirs and port_service not in listen_dirs:
+                    listen_dirs.add(port_service)
             else:
                 # The Listen statement specifies an ip
                 _, ip = listen[::-1].split(":", 1)
                 ip = ip[::-1]
-                if "%s:%s" % (ip, port) not in listens:
-                    if port == "443":
-                        args = ["%s:%s" % (ip, port)]
-                    else:
-                        # Non-standard ports should specify https protocol
-                        args = ["%s:%s" % (ip, port), "https"]
-                    self.parser.add_dir_to_ifmodssl(
-                        parser.get_aug_path(
-                            self.parser.loc["listen"]), "Listen", args)
-                    self.save_notes += ("Added Listen %s:%s directive to "
-                                        "%s\n") % (ip, port,
-                                                   self.parser.loc["listen"])
-                    listens.append("%s:%s" % (ip, port))
+                if "%s:%s" % (ip, port_service) not in listen_dirs and (
+                   "%s:%s" % (ip, port_service) not in listen_dirs):
+                    listen_dirs.add("%s:%s" % (ip, port_service))
+        self._add_listens(listen_dirs, listens, port)
+
+    def _add_listens(self, listens, listens_orig, port):
+        """Helper method for prepare_server_https to figure out which new
+        listen statements need adding
+
+        :param set listens: Set of all needed Listen statements
+        :param list listens_orig: List of existing listen statements
+        :param string port: Port number we're adding
+        """
+
+        # Add service definition for non-standard ports
+        if port != "443":
+            port_service = "%s %s" % (port, "https")
+        else:
+            port_service = port
+
+        new_listens = listens.difference(listens_orig)
+
+        if port in new_listens or port_service in new_listens:
+            # We have wildcard, skip the rest
+            self.parser.add_dir_to_ifmodssl(
+                parser.get_aug_path(self.parser.loc["listen"]),
+                "Listen", port_service.split(" "))
+            self.save_notes += "Added Listen %s directive to %s\n" % (
+                port_service, self.parser.loc["listen"])
+        else:
+            for listen in new_listens:
+                self.parser.add_dir_to_ifmodssl(
+                    parser.get_aug_path(self.parser.loc["listen"]),
+                    "Listen", listen.split(" "))
+                self.save_notes += ("Added Listen %s directive to "
+                                    "%s\n") % (listen,
+                                               self.parser.loc["listen"])
 
     def _has_port_already(self, listens, port):
         """Helper method for prepare_server_https to find out if user
