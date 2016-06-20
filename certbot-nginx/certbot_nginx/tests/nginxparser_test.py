@@ -207,7 +207,7 @@ class TestUnspacedList(unittest.TestCase):
         self.assertEqual(ul3.spaced, self.a + self.b)
         self.assertEqual(self.ul.spaced, self.a)
         ul3 = self.ul + self.l2
-        self.assertEqual(ul3, ["things", "quirk", "y", " "])
+        self.assertEqual(ul3, ["things", "quirk", "y"])
         self.assertEqual(ul3.spaced, self.a + self.b)
 
     def test_extend(self):
