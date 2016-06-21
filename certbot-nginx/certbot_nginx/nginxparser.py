@@ -62,9 +62,8 @@ class RawNginxParser(object):
 class RawNginxDumper(object):
     # pylint: disable=too-few-public-methods
     """A class that dumps nginx configuration from the provided tree."""
-    def __init__(self, blocks, indentation=0):
+    def __init__(self, blocks):
         self.blocks = blocks
-        self.indentation = indentation
 
     def __iter__(self, blocks=None):
         """Iterates the dumped nginx content."""
@@ -100,10 +99,6 @@ class RawNginxDumper(object):
                     if values and spacey(values):
                         gap = values
                         values = b.pop(0)
-                    #if values is None:
-                    #    yield indentation + key + gap + ';'
-                    #else:
-                    #    yield indentation + key + gap + values + ';'
                     yield indentation + key + gap + values + ';'
 
     def __str__(self):
