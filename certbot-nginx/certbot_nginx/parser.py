@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class NginxParser(object):
     """Class handles the fine details of parsing the Nginx Configuration.
 
-    :ivar str root: Normalized abosulte path to the server root
+    :ivar str root: Normalized absolute path to the server root
         directory. Without trailing slash.
     :ivar dict parsed: Mapping of file paths to parsed trees
 
