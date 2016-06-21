@@ -155,7 +155,9 @@ class NginxParser(object):
         :rtype: list
 
         """
-        files = glob.glob(filepath)
+        files = glob.glob(filepath) # nginx on unix calls glob(3) for this
+                                    # XXX Windows nginx uses FindFirstFile, and
+                                    # should have a narrower call here
         trees = []
         for item in files:
             if item in self.parsed and not override:
@@ -210,6 +212,8 @@ class NginxParser(object):
             empty, this overrides the existing conf files.
 
         """
+        # XXX probably this should be modified to perform atomic write
+        # operations and/or to defer control-c until completed
         for filename in self.parsed:
             tree = self.parsed[filename]
             if ext:
