@@ -225,7 +225,7 @@ class NginxConfigurator(common.Plugin):
         if not matches:
             # No matches. Create a new vhost with this name in nginx.conf.
             filep = self.parser.loc["root"]
-            new_block = [['server'], [['server_name', target_name]]]
+            new_block = [['server'], [['\n', 'server_name', ' ', target_name]]]
             self.parser.add_http_directives(filep, new_block)
             vhost = obj.VirtualHost(filep, set([]), False, True,
                                     set([target_name]), list(new_block[1]))
