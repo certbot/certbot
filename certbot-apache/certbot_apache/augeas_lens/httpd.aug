@@ -52,10 +52,13 @@ let sep_eq              = del /[ \t]*=[ \t]*/ "="
 let nmtoken             = /[a-zA-Z:_][a-zA-Z0-9:_.-]*/
 let word                = /[a-z][a-z0-9._-]*/i
 
-let comment             = Util.comment
 let eol                 = Util.doseol
 let empty               = Util.empty_dos
 let indent              = Util.indent
+
+let comment_val_re      = /([^ \t\r\n](.|\\\\\r?\n)*[^ \\\t\r\n]|[^ \t\r\n])/
+let comment             = [ label "#comment" . del /[ \t]*#[ \t]*/ "# "
+                          . store comment_val_re . eol ]
 
 (* borrowed from shellvars.aug *)
 let char_arg_dir  = /([^\\ '"{\t\r\n]|[^ '"{\t\r\n]+[^\\ \t\r\n])|\\\\"|\\\\'|\\\\ /
