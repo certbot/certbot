@@ -4,39 +4,48 @@ cache:
     directories:
         - $HOME/.cache/pip
 
-services:
-  - rabbitmq
-  - mariadb
-  # apacheconftest
-  #- apache2
+# This makes sure we get a host with docker-compose present.
+dist: trusty
 
-# http://docs.travis-ci.com/user/ci-environment/#CI-environment-OS
-# gimme has to be kept in sync with Boulder's Go version setting in .travis.yml
 before_install:
   - 'dpkg -s libaugeas0'
-  - '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || eval "$(gimme 1.5.1)"'
 
 # using separate envs with different TOXENVs creates 4x1 Travis build
 # matrix, which allows us to clearly distinguish which component under
 # test has failed
 env:
   global:
-    - GOPATH=/tmp/go
-    - PATH=$GOPATH/bin:$PATH
+    - BOULDERPATH=$PWD/boulder/
 
 matrix:
   include:
     - python: "2.6"
       env: TOXENV=py26 BOULDER_INTEGRATION=1
+      sudo: true
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
     - python: "2.6"
       env: TOXENV=py26-oldest BOULDER_INTEGRATION=1
+      sudo: true
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
     - python: "2.7"
       env: TOXENV=apacheconftest
       sudo: required
     - python: "2.7"
       env: TOXENV=py27 BOULDER_INTEGRATION=1
+      sudo: true
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
     - python: "2.7"
       env: TOXENV=py27-oldest BOULDER_INTEGRATION=1
+      sudo: true
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
     - python: "2.7"
       env: TOXENV=lint
     - sudo: required
@@ -66,16 +75,16 @@ sudo: false
 
 addons:
   # Custom /etc/hosts required for simple verification of http-01
-  # and tls-sni-01, and for letsencrypt_test_nginx
+  # and tls-sni-01, and for certbot_test_nginx
   hosts:
     - le.wtf
     - le1.wtf
     - le2.wtf
     - le3.wtf
     - nginx.wtf
+    - boulder
     - boulder-mysql
     - boulder-rabbitmq
-  mariadb: "10.0"
   apt:
     sources:
     - augeas
@@ -88,17 +97,14 @@ addons:
     - libssl-dev
     - libffi-dev
     - ca-certificates
-    # For letsencrypt-nginx integration testing
+    # For certbot-nginx integration testing
     - nginx-light
     - openssl
-    # For Boulder integration testing
-    - rsyslog
     # for apacheconftest
-    #- realpath
-    #- apache2
-    #- libapache2-mod-wsgi
-    #- libapache2-mod-macro
-    #- sudo
+    - apache2
+    - libapache2-mod-wsgi
+    - libapache2-mod-macro
+    - sudo
 
 install: "travis_retry pip install tox coveralls"
 script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/travis-integration.sh)'

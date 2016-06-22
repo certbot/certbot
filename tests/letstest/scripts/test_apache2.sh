@@ -22,8 +22,8 @@ then
     sudo chmod -R oug+rwx /var/www
     sudo chmod -R oug+rw /etc/httpd
     sudo echo '<html><head><title>foo</title></head><body>bar</body></html>' > /var/www/$PUBLIC_HOSTNAME/public_html/index.html
-    sudo mkdir /etc/httpd/sites-available #letsencrypt requires this...
-    sudo mkdir /etc/httpd/sites-enabled #letsencrypt requires this...
+    sudo mkdir /etc/httpd/sites-available #certbot requires this...
+    sudo mkdir /etc/httpd/sites-enabled #certbot requires this...
     #sudo echo "IncludeOptional sites-enabled/*.conf" >> /etc/httpd/conf/httpd.conf
     sudo echo """
 <VirtualHost *:80>
@@ -35,7 +35,7 @@ then
     #sudo cp /etc/httpd/sites-available/$PUBLIC_HOSTNAME.conf /etc/httpd/sites-enabled/
 fi
 
-# Run letsencrypt-apache2.
+# Run certbot-apache2.
 cd letsencrypt
 
 echo "Bootstrapping dependencies..."
@@ -45,7 +45,7 @@ if [ $? -ne 0 ] ; then
 fi
 
 tools/venv.sh
-sudo venv/bin/letsencrypt -v --debug --text --agree-dev-preview --agree-tos \
+sudo venv/bin/certbot -v --debug --text --agree-dev-preview --agree-tos \
                    --renew-by-default --redirect --register-unsafely-without-email \
                    --domain $PUBLIC_HOSTNAME --server $BOULDER_URL
 if [ $? -ne 0 ] ; then
