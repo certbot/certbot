@@ -689,11 +689,6 @@ def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx.conf"):
 
 def temp_install(options_ssl):
     """Temporary install for convenience."""
-    # WARNING: THIS IS A POTENTIAL SECURITY VULNERABILITY
-    # THIS SHOULD BE HANDLED BY THE PACKAGE MANAGER
-    # AND TAKEN OUT BEFORE RELEASE, INSTEAD
-    # SHOWING A NICE ERROR MESSAGE ABOUT THE PROBLEM.
-
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):
         shutil.copyfile(constants.MOD_SSL_CONF_SRC, options_ssl)
