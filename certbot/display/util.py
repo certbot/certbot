@@ -29,7 +29,6 @@ CANCEL = "cancel"
 HELP = "help"
 """Display exit code when for when the user requests more help."""
 
-
 def _wrap_lines(msg):
     """Format lines nicely to 80 chars.
 
@@ -50,6 +49,21 @@ def _wrap_lines(msg):
             break_on_hyphens=False))
 
     return os.linesep.join(fixed_l)
+
+
+def _clean(dialog_result):
+    """Work around inconsistent return codes from python-dialog.
+
+    :param tuple dialog_result: (code, result)
+    :returns: the argument but with unknown codes set to -1 (Error)
+    :rtype: tuple
+    """
+    code, result = dialog_result
+    if code in (OK, HELP):
+        return dialog_result
+    else:
+        return (CANCEL, result)
+
 
 @zope.interface.implementer(interfaces.IDisplay)
 class NcursesDisplay(object):
@@ -92,7 +106,7 @@ class NcursesDisplay(object):
         :param dict unused_kwargs: absorbs default / cli_args
 
         :returns: tuple of the form (`code`, `index`) where
-            `code` - int display exit code
+            `code` - display exit code
             `int` - index of the selected item
         :rtype: tuple
 
@@ -111,7 +125,7 @@ class NcursesDisplay(object):
         # Can accept either tuples or just the actual choices
         if choices and isinstance(choices[0], tuple):
             # pylint: disable=star-args
-            code, selection = self.dialog.menu(message, **menu_options)
+            code, selection = _clean(self.dialog.menu(message, **menu_options))
 
             # Return the selection index
             for i, choice in enumerate(choices):
@@ -126,7 +140,7 @@ class NcursesDisplay(object):
                 (str(i), choice) for i, choice in enumerate(choices, 1)
             ]
             # pylint: disable=star-args
-            code, index = self.dialog.menu(message, **menu_options)
+            code, index = _clean(self.dialog.menu(message, **menu_options))
 
             if code == CANCEL or index == "":
                 return code, -1
@@ -140,7 +154,7 @@ class NcursesDisplay(object):
         :param dict _kwargs: absorbs default / cli_args
 
         :returns: tuple of the form (`code`, `string`) where
-            `code` - int display exit code
+            `code` - display exit code
             `string` - input entered by the user
 
         """
@@ -148,7 +162,7 @@ class NcursesDisplay(object):
         # each section takes at least one line, plus extras if it's longer than self.width
         wordlines = [1 + (len(section) / self.width) for section in sections]
         height = 6 + sum(wordlines) + len(sections)
-        return self.dialog.inputbox(message, width=self.width, height=height)
+        return _clean(self.dialog.inputbox(message, width=self.width, height=height))
 
     def yesno(self, message, yes_label="Yes", no_label="No", **unused_kwargs):
         """Display a Yes/No dialog box.
@@ -164,6 +178,7 @@ class NcursesDisplay(object):
         :rtype: bool
 
         """
+        assert OK == self.dialog.DIALOG_OK, "What kind of absurdity is this?"
         return self.dialog.DIALOG_OK == self.dialog.yesno(
             message, self.height, self.width,
             yes_label=yes_label, no_label=no_label)
@@ -179,7 +194,7 @@ class NcursesDisplay(object):
 
 
         :returns: tuple of the form (`code`, `list_tags`) where
-            `code` - int display exit code
+            `code` - display exit code
             `list_tags` - list of str tags selected by the user
 
         """
@@ -193,7 +208,7 @@ class NcursesDisplay(object):
         :param str message: prompt to give the user
 
         :returns: tuple of the form (`code`, `string`) where
-            `code` - int display exit code
+            `code` - display exit code
             `string` - input entered by the user
 
         """
@@ -355,7 +370,7 @@ class FileDisplay(object):
         :param str message: prompt to give the user
 
         :returns: tuple of the form (`code`, `string`) where
-            `code` - int display exit code
+            `code` - display exit code
             `string` - input entered by the user
 
         """

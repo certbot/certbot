@@ -96,6 +96,7 @@ class NcursesDisplayTest(unittest.TestCase):
     @mock.patch("certbot.display.util."
                 "dialog.Dialog.inputbox")
     def test_input(self, mock_input):
+        mock_input.return_value = (mock.MagicMock(), mock.MagicMock())
         self.displayer.input("message")
         self.assertEqual(mock_input.call_count, 1)
 
