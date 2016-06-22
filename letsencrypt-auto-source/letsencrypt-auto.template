@@ -34,6 +34,7 @@ Help for certbot itself cannot be provided until it is installed.
   -n, --non-interactive, --noninteractive   run without asking for user input
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
+  -q, --quiet                               provide only update/error output
   -v, --verbose                             provide more output
 
 All arguments are accepted and forwarded to the Certbot client when run."
@@ -52,15 +53,19 @@ for arg in "$@" ; do
       HELP=1;;
     --noninteractive|--non-interactive)
       ASSUME_YES=1;;
+    --quiet)
+      QUIET=1;;
     --verbose)
       VERBOSE=1;;
     -[!-]*)
-      while getopts ":hnv" short_arg $arg; do
+      while getopts ":hnvq" short_arg $arg; do
         case "$short_arg" in
           h)
             HELP=1;;
           n)
             ASSUME_YES=1;;
+          q)
+            QUIET=1;;
           v)
             VERBOSE=1;;
         esac
@@ -155,12 +160,16 @@ DeterminePythonVersion() {
 {{ bootstrappers/free_bsd.sh }}
 {{ bootstrappers/mac.sh }}
 {{ bootstrappers/smartos.sh }}
+{{ bootstrappers/mageia_common.sh }}
 
 # Install required OS packages:
 Bootstrap() {
   if [ -f /etc/debian_version ]; then
     echo "Bootstrapping dependencies for Debian-based OSes..."
     BootstrapDebCommon
+  elif [ -f /etc/mageia-release ] ; then
+    # Mageia has both /etc/mageia-release and /etc/redhat-release
+    ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
   elif [ -f /etc/redhat-release ]; then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
     BootstrapRpmCommon
@@ -197,6 +206,7 @@ Bootstrap() {
     echo "You will need to bootstrap, configure virtualenv, and run pip install manually."
     echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
     echo "for more info."
+    exit 1
   fi
 }
 
@@ -257,8 +267,10 @@ UNLIKELY_EOF
   fi
   if [ -n "$SUDO" ]; then
     # SUDO is su wrapper or sudo
-    echo "Requesting root privileges to run certbot..."
-    echo "  $VENV_BIN/letsencrypt" "$@"
+    if [  "$QUIET" != 1 ]; then
+      echo "Requesting root privileges to run certbot..."
+      echo "  $VENV_BIN/letsencrypt" "$@"
+    fi
   fi
   if [ -z "$SUDO_ENV" ] ; then
     # SUDO is su wrapper / noop

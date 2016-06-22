@@ -1,6 +1,8 @@
 """Certbot main entry point."""
 from __future__ import print_function
 import atexit
+import dialog
+import errno
 import functools
 import logging.handlers
 import os
@@ -525,7 +527,7 @@ def _csr_obtain_cert(config, le_client):
     csr, typ = config.actual_csr
     certr, chain = le_client.obtain_certificate_from_csr(config.domains, csr, typ)
     if config.dry_run:
-        logger.info(
+        logger.debug(
             "Dry run: skipping saving certificate to %s", config.cert_path)
     else:
         cert_path, _, cert_fullchain = le_client.save_certificate(
@@ -588,8 +590,16 @@ def renew(config, unused_plugins):
 def setup_log_file_handler(config, logfile, fmt):
     """Setup file debug logging."""
     log_file_path = os.path.join(config.logs_dir, logfile)
-    handler = logging.handlers.RotatingFileHandler(
-        log_file_path, maxBytes=2 ** 20, backupCount=10)
+    try:
+        handler = logging.handlers.RotatingFileHandler(
+            log_file_path, maxBytes=2 ** 20, backupCount=10)
+    except IOError as e:
+        if e.errno == errno.EACCES:
+            msg = ("Access denied writing to {0}. To run as non-root, set " +
+                "--logs-dir, --config-dir, --work-dir to writable paths.")
+            raise errors.Error(msg.format(log_file_path))
+        else:
+            raise
     # rotate on each invocation, rollover only possible when maxBytes
     # is nonzero and backupCount is nonzero, so we set maxBytes as big
     # as possible not to overrun in single CLI invocation (1MB).
@@ -615,11 +625,12 @@ def _cli_log_handler(config, level, fmt):
 
 def setup_logging(config, cli_handler_factory, logfile):
     """Setup logging."""
-    fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+    file_fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+    cli_fmt = "%(message)s"
     level = -config.verbose_count * 10
     file_handler, log_file_path = setup_log_file_handler(
-        config, logfile=logfile, fmt=fmt)
-    cli_handler = cli_handler_factory(config, level, fmt)
+        config, logfile=logfile, fmt=file_fmt)
+    cli_handler = cli_handler_factory(config, level, cli_fmt)
 
     # TODO: use fileConfig?
 
@@ -665,7 +676,10 @@ def _handle_exception(exc_type, exc_value, trace, config):
             # Here we're passing a client or ACME error out to the client at the shell
             # Tell the user a bit about what happened, without overwhelming
             # them with a full traceback
-            err = traceback.format_exception_only(exc_type, exc_value)[0]
+            if issubclass(exc_type, dialog.error):
+                err = exc_value.complete_message()
+            else:
+                err = traceback.format_exception_only(exc_type, exc_value)[0]
             # Typical error from the ACME module:
             # acme.messages.Error: urn:acme:error:malformed :: The request message was
             # malformed :: Error creating new registration :: Validation of contact

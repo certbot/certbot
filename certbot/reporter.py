@@ -58,7 +58,7 @@ class Reporter(object):
         """
         assert self.HIGH_PRIORITY <= priority <= self.LOW_PRIORITY
         self.messages.put(self._msg_type(priority, msg, on_crash))
-        logger.info("Reporting to user: %s", msg)
+        logger.debug("Reporting to user: %s", msg)
 
     def atexit_print_messages(self, pid=None):
         """Function to be registered with atexit to print messages.

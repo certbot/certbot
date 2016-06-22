@@ -19,7 +19,7 @@ XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN="$VENV_PATH/bin"
-LE_AUTO_VERSION="0.8.0"
+LE_AUTO_VERSION="0.8.1"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -172,7 +172,7 @@ BootstrapDebCommon() {
   # distro version (#346)
 
   virtualenv=
-  if apt-cache show virtualenv > /dev/null 2>&1; then
+  if apt-cache show virtualenv > /dev/null 2>&1 && ! apt-cache --quiet=0 show virtualenv 2>&1 | grep -q 'No packages found'; then
     virtualenv="virtualenv"
   fi
 
@@ -458,12 +458,39 @@ BootstrapSmartOS() {
   pkgin -y install 'gcc49' 'py27-augeas' 'py27-virtualenv'
 }
 
+BootstrapMageiaCommon() {
+    if ! $SUDO urpmi --force  \
+           python \
+           libpython-devel \
+           python-virtualenv
+    then
+      echo "Could not install Python dependencies. Aborting bootstrap!"
+      exit 1
+    fi
+
+    if ! $SUDO urpmi --force \
+           git \
+           gcc \
+           cdialog \
+           python-augeas \
+           libopenssl-devel \
+           libffi-devel \
+           rootcerts
+    then
+        echo "Could not install additional dependencies. Aborting bootstrap!"
+        exit 1
+    fi
+}
+
 
 # Install required OS packages:
 Bootstrap() {
   if [ -f /etc/debian_version ]; then
     echo "Bootstrapping dependencies for Debian-based OSes..."
     BootstrapDebCommon
+  elif [ -f /etc/mageia-release ] ; then
+    # Mageia has both /etc/mageia-release and /etc/redhat-release
+    ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
   elif [ -f /etc/redhat-release ]; then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
     BootstrapRpmCommon
@@ -476,7 +503,7 @@ Bootstrap() {
       BootstrapArchCommon
     else
       echo "Please use pacman to install letsencrypt packages:"
-      echo "# pacman -S letsencrypt letsencrypt-apache"
+      echo "# pacman -S certbot certbot-apache"
       echo
       echo "If you would like to use the virtualenv way, please run the script again with the"
       echo "--debug flag."
@@ -500,6 +527,7 @@ Bootstrap() {
     echo "You will need to bootstrap, configure virtualenv, and run pip install manually."
     echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
     echo "for more info."
+    exit 1
   fi
 }
 
@@ -719,15 +747,15 @@ letsencrypt==0.7.0 \
 
 # THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT; ADD ALL DEPENDENCIES ABOVE.
 
-acme==0.8.0 \
-    --hash=sha256:8561d590e496afb41a8ff2dac389199661d9cd785b1636ae08325771511189af \
-    --hash=sha256:dfa86b547628b231f275c7e0efc7a09bec5dfaec866f89f5c5b59b78c14564da
-certbot==0.8.0 \
-    --hash=sha256:395c5840ff6b75aa51ee6449c86d016c14c5f65a71281e7bcef5feecac6a3293 \
-    --hash=sha256:3c3c70b484fb3243a166515adc81ae0401c5d687a2763c75b40df9d8241a4314
-certbot-apache==0.8.0 \
-    --hash=sha256:f4d4fc962ecc19646f6745d49c62a265d26e5b2df3acf34ef4865351594156e3 \
-    --hash=sha256:cfb211debbcb0d0645c88d7e8bb38c591fca263bfdb5337242c023956055e268
+acme==0.8.1 \
+    --hash=sha256:ccd7883772efbf933f91713b8241455993834f3620c8fbd459d9ed5e50bbaaca \
+    --hash=sha256:d3ea4acf280bf6253ad7d641cb0970f230a19805acfed809e7a8ddcf62157d9f
+certbot==0.8.1 \
+    --hash=sha256:89805d9f70249ae859ec4d7a99c00b4bb7083ca90cd12d4d202b76dfc284f7c5 \
+    --hash=sha256:6ca8df3d310ced6687d38aac17c0fb8c1b2ec7a3bea156a254e4cc2a1c132771
+certbot-apache==0.8.1 \
+    --hash=sha256:c9e3fdc15e65589c2e39eb0e6b1f61f0c0a1db3c17b00bb337f0ff636cc61cb3 \
+    --hash=sha256:0faf2879884d3b7a58b071902fba37d4b8b58a50e2c3b8ac262c0a74134045ed
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------

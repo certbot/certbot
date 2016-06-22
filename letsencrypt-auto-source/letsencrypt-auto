@@ -34,6 +34,7 @@ Help for certbot itself cannot be provided until it is installed.
   -n, --non-interactive, --noninteractive   run without asking for user input
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
+  -q, --quiet                               provide only update/error output
   -v, --verbose                             provide more output
 
 All arguments are accepted and forwarded to the Certbot client when run."
@@ -52,15 +53,19 @@ for arg in "$@" ; do
       HELP=1;;
     --noninteractive|--non-interactive)
       ASSUME_YES=1;;
+    --quiet)
+      QUIET=1;;
     --verbose)
       VERBOSE=1;;
     -[!-]*)
-      while getopts ":hnv" short_arg $arg; do
+      while getopts ":hnvq" short_arg $arg; do
         case "$short_arg" in
           h)
             HELP=1;;
           n)
             ASSUME_YES=1;;
+          q)
+            QUIET=1;;
           v)
             VERBOSE=1;;
         esac
@@ -172,7 +177,7 @@ BootstrapDebCommon() {
   # distro version (#346)
 
   virtualenv=
-  if apt-cache show virtualenv > /dev/null 2>&1; then
+  if apt-cache show virtualenv > /dev/null 2>&1 && ! apt-cache --quiet=0 show virtualenv 2>&1 | grep -q 'No packages found'; then
     virtualenv="virtualenv"
   fi
 
@@ -458,12 +463,39 @@ BootstrapSmartOS() {
   pkgin -y install 'gcc49' 'py27-augeas' 'py27-virtualenv'
 }
 
+BootstrapMageiaCommon() {
+    if ! $SUDO urpmi --force  \
+           python \
+           libpython-devel \
+           python-virtualenv
+    then
+      echo "Could not install Python dependencies. Aborting bootstrap!"
+      exit 1
+    fi
+
+    if ! $SUDO urpmi --force \
+           git \
+           gcc \
+           cdialog \
+           python-augeas \
+           libopenssl-devel \
+           libffi-devel \
+           rootcerts
+    then
+        echo "Could not install additional dependencies. Aborting bootstrap!"
+        exit 1
+    fi
+}
+
 
 # Install required OS packages:
 Bootstrap() {
   if [ -f /etc/debian_version ]; then
     echo "Bootstrapping dependencies for Debian-based OSes..."
     BootstrapDebCommon
+  elif [ -f /etc/mageia-release ] ; then
+    # Mageia has both /etc/mageia-release and /etc/redhat-release
+    ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
   elif [ -f /etc/redhat-release ]; then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
     BootstrapRpmCommon
@@ -500,6 +532,7 @@ Bootstrap() {
     echo "You will need to bootstrap, configure virtualenv, and run pip install manually."
     echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
     echo "for more info."
+    exit 1
   fi
 }
 
@@ -570,28 +603,29 @@ ConfigArgParse==0.10.0 \
     --hash=sha256:3b50a83dd58149dfcee98cb6565265d10b53e9c0a2bca7eeef7fb5f5524890a7
 configobj==5.0.6 \
     --hash=sha256:a2f5650770e1c87fb335af19a9b7eb73fc05ccf22144eb68db7d00cd2bcb0902
-cryptography==1.2.3 \
-    --hash=sha256:031938f73a5c5eb3e809e18ff7caeb6865351871417be6050cb8c86a9a202b9a \
-    --hash=sha256:a179a38d50f8d68b491d7a313db78f8cabe290842cecddddc7b34d408e59db0a \
-    --hash=sha256:906c88b2aadcf99cfabb24098263d1bf65ab0c8688acde10dae1f09d865920f1 \
-    --hash=sha256:6e706c5c6088770b1d1b634e959e21963e315b0255f5f4777125ad3d54082977 \
-    --hash=sha256:f5ebf8e31c48f8707921dca0e994de77813a9c9b9bf03c119c5ddf97bdcffe73 \
-    --hash=sha256:c7b89e42288cc7fbee3812e99ef5c744f22452e11d6822f6807afc6d6b3be83e \
-    --hash=sha256:8408d29865947109d8b68f1837a7cde1aa4dc86e0f79ca3ba58c0c44e443d6a5 \
-    --hash=sha256:c7e76cf3c3d925dd31fa238cfb806cffba718c0f08707d77a538768477969956 \
-    --hash=sha256:7d8de35380f31702758b7753bb5c40723832c73006dedb2f9099bf61a37f7287 \
-    --hash=sha256:5edbee71fae5469ee83fe0a37866b9398c8ce3a46325c24fcedfbf097bb48a19 \
-    --hash=sha256:594edafe4801c13bdc1cc305e7704a90c19617e95936f6ab457ee4ffe000ba50 \
-    --hash=sha256:b7fdb16a0a7f481be42da744bfe1ea2163025de21f90f2c688a316f3c354da9c \
-    --hash=sha256:207b8bf0fe0907336df38b733b487521cf9e138189aba9234ad54fe545dd0db8 \
-    --hash=sha256:509a2f05386270cf783993c90d49ffefb3dd62aee45bf1ea8ce3d2cde7271c21 \
-    --hash=sha256:ac69b65dd1af0179ede40c9f15788c88f73e628ea6c0519de3838e279bb388c6 \
-    --hash=sha256:8df6fad6c6ae12fd7004ea29357f0a2b4d3774eaeca7656530d08d2d90cd41aa \
-    --hash=sha256:0b8b96dd81cc1533a04f30382c0fe21c1972e189f794d0c4261a18cec08fd9b5 \
-    --hash=sha256:cae8fca1883f23c50ea78d89de6fe4fefdb4cea83177760f47177559414ded93 \
-    --hash=sha256:1a471ca576a9cdce1b1cd9f3a22b1d09ee44d46862037557de17919c0db44425 \
-    --hash=sha256:8ec4e8e3d453b3a1b63b5f57737a434dcf1ee4a2f26f6ff7c5a37c3f679104d2 \
-    --hash=sha256:8eb11c77dd8e73f48df6b2f7a7e16173fe0fe8fdfe266232832e88477e08454e
+cryptography==1.3.4 \
+    --hash=sha256:bede00edd11a2a62c8c98c271cc103fa3a3d72acf64f6e5e4eaf251128897b17 \
+    --hash=sha256:53b39e687b744bb548a98f40736cc529d9f60959b4e6cc551322cf9505d35eb3 \
+    --hash=sha256:474b73ad1139b4e423e46bbd818efd0d5c0df1c65d9f7c957d64c9215d77afde \
+    --hash=sha256:aaddf9592d5b99e32dd518bb4a25b147c124f9d6b4ad64b94f01b15d1666b8c8 \
+    --hash=sha256:6dcad2f407db8c3cd6ecd78361439c449a4f94786b46c54507e7e68f51e1709d \
+    --hash=sha256:475c153fc622e656f1f10a9c9941d0ac7ab18df7c38d35d563a437c1c0e34f24 \
+    --hash=sha256:86dd61df581cba04e89e45081efbc531faff1c9d99c77b1ce97f87216c356353 \
+    --hash=sha256:75cc697e4ef5fdd0102ca749114c6370dbd11db0c9132a18834858c2566247e3 \
+    --hash=sha256:ea03ad5b9df6d79fc9fc1ab23729e01e1c920d2974c5e3c634ccf45a5c378452 \
+    --hash=sha256:c8872b8fe4f3416d6338ab99612f49ab314f7856cb43bffab2a32d28a6267be8 \
+    --hash=sha256:468fc6e16eaec6ceaa6bc341273e6e9912d01b42b740f8cf896ace7fcd6a321d \
+    --hash=sha256:d6fea3c6502735011c5d61a62aef1c1d770fc6a2def45d9e6c0d94c9651e3317 \
+    --hash=sha256:3cf95f179f4bead3d5649b91860ef4cf60ad4244209190fc405908272576d961 \
+    --hash=sha256:141f77e60a5b9158309b2b60288c7f81d37faa15c22a69b94c190ceefaaa6236 \
+    --hash=sha256:87b7a1fe703c6424451f3372d1879dae91c7fe5e13375441a72833db76fee30e \
+    --hash=sha256:f5ee3cb0cf1a6550bf483ccffa6608db267a377b45f7e3a8201a86d1d8feb19f \
+    --hash=sha256:4e097286651ea318300af3251375d48b71b8228481c56cd617ddd4459a1ff261 \
+    --hash=sha256:1e3d3ae3f22f22d50d340f47f25227511326f3f1396c6d2446a5b45b516c4313 \
+    --hash=sha256:6a057941cb64d79834ea3cf99093fcc4787c2a5d44f686c4f297361ddc419bcd \
+    --hash=sha256:68b3d5390b92559ddd3353c73ab2dfcff758f9c4ec4f5d5226ccede0e5d779f4 \
+    --hash=sha256:545dc003b4b6081f9c3e452da15d819b04b696f49484aff64c0a2aedf766bef8 \
+    --hash=sha256:423ff890c01be7c70dbfeaa967eeef5146f1a43a5f810ffdc07b178e48a105a9
 enum34==1.1.2 \
     --hash=sha256:2475d7fcddf5951e92ff546972758802de5260bf409319a9f1934e6bbc8b1dc7 \
     --hash=sha256:35907defb0f992b75ab7788f65fedc1cf20ffa22688e0e6f6f12afc06b3ea501
@@ -651,9 +685,9 @@ pyasn1==0.1.9 \
     --hash=sha256:5191ff6b9126d2c039dd87f8ff025bed274baf07fa78afa46f556b1ad7265d6e \
     --hash=sha256:8323e03637b2d072cc7041300bac6ec448c3c28950ab40376036788e9a1af629 \
     --hash=sha256:853cacd96d1f701ddd67aa03ecc05f51890135b7262e922710112f12a2ed2a7f
-pyOpenSSL==0.15.1 \
-    --hash=sha256:88e45e6bb25dfed272a1ef2e728461d44b634c2cd689e989b6e56a349c5a3ae5 \
-    --hash=sha256:f0a26070d6db0881de8bcc7846934b7c3c930d8f9c79d45883ee48984bc0d672
+pyopenssl==16.0.0 \
+    --hash=sha256:5add70cf00273bf957ca31fdb0df9b0ae4639e081897d5f86a0ae1f104901230 \
+    --hash=sha256:363d10ee43d062285facf4e465f4f5163f9f702f9134f0a5896f134cbb92d17d
 pyRFC3339==1.0 \
     --hash=sha256:eea31835c56e2096af4363a5745a784878a61d043e247d3a6d6a0a32a9741f56 \
     --hash=sha256:8dfbc6c458b8daba1c0f3620a8c78008b323a268b27b7359e92a4ae41325f535
@@ -719,15 +753,15 @@ letsencrypt==0.7.0 \
 
 # THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT; ADD ALL DEPENDENCIES ABOVE.
 
-acme==0.8.0 \
-    --hash=sha256:8561d590e496afb41a8ff2dac389199661d9cd785b1636ae08325771511189af \
-    --hash=sha256:dfa86b547628b231f275c7e0efc7a09bec5dfaec866f89f5c5b59b78c14564da
-certbot==0.8.0 \
-    --hash=sha256:395c5840ff6b75aa51ee6449c86d016c14c5f65a71281e7bcef5feecac6a3293 \
-    --hash=sha256:3c3c70b484fb3243a166515adc81ae0401c5d687a2763c75b40df9d8241a4314
-certbot-apache==0.8.0 \
-    --hash=sha256:f4d4fc962ecc19646f6745d49c62a265d26e5b2df3acf34ef4865351594156e3 \
-    --hash=sha256:cfb211debbcb0d0645c88d7e8bb38c591fca263bfdb5337242c023956055e268
+acme==0.8.1 \
+    --hash=sha256:ccd7883772efbf933f91713b8241455993834f3620c8fbd459d9ed5e50bbaaca \
+    --hash=sha256:d3ea4acf280bf6253ad7d641cb0970f230a19805acfed809e7a8ddcf62157d9f
+certbot==0.8.1 \
+    --hash=sha256:89805d9f70249ae859ec4d7a99c00b4bb7083ca90cd12d4d202b76dfc284f7c5 \
+    --hash=sha256:6ca8df3d310ced6687d38aac17c0fb8c1b2ec7a3bea156a254e4cc2a1c132771
+certbot-apache==0.8.1 \
+    --hash=sha256:c9e3fdc15e65589c2e39eb0e6b1f61f0c0a1db3c17b00bb337f0ff636cc61cb3 \
+    --hash=sha256:0faf2879884d3b7a58b071902fba37d4b8b58a50e2c3b8ac262c0a74134045ed
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -898,8 +932,10 @@ UNLIKELY_EOF
   fi
   if [ -n "$SUDO" ]; then
     # SUDO is su wrapper or sudo
-    echo "Requesting root privileges to run certbot..."
-    echo "  $VENV_BIN/letsencrypt" "$@"
+    if [  "$QUIET" != 1 ]; then
+      echo "Requesting root privileges to run certbot..."
+      echo "  $VENV_BIN/letsencrypt" "$@"
+    fi
   fi
   if [ -z "$SUDO_ENV" ] ; then
     # SUDO is su wrapper / noop
