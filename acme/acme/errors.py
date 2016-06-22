@@ -49,7 +49,7 @@ class MissingNonce(NonceError):
 
     def __str__(self):
         return ('Server {0} response did not include a replay '
-                'nonce, headers: {1}\n(This may be a service outage)'.format(
+                'nonce, headers: {1} (This may be a service outage)'.format(
                     self.response.request.method, self.response.headers))
 
 
