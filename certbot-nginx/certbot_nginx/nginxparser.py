@@ -172,12 +172,7 @@ class UnspacedList(list):
         for i, entry in reversed(list(enumerate(self))):
             if isinstance(entry, list):
                 sublist = UnspacedList(entry)
-                if sublist != [] or sublist.spaced == []:
-                    list.__setitem__(self, i, sublist)
-                else:
-                    # if a sublist is exclusively spacey entries, it might
-                    # choke the high level parser, so make it disappear
-                    list.__delitem__(self, i)
+                list.__setitem__(self, i, sublist)
                 self.spaced[i] = sublist.spaced
             elif spacey(entry):
                 # don't delete comments
