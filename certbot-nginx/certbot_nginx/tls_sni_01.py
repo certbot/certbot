@@ -46,8 +46,6 @@ class NginxTlsSni01(common.TLSSNI01):
         if not self.achalls:
             return []
 
-        self.configurator.save()
-
         addresses = []
         default_addr = "{0} default_server ssl".format(
             self.configurator.config.tls_sni_01_port)
