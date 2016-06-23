@@ -84,14 +84,17 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
     if action == "reinstall":
         # The lineage already exists; allow the caller to try installing
         # it without getting a new certificate at all.
+        logger.info("Keeping the existing certificate")
         return lineage, "reinstall"
 
     hooks.pre_hook(config)
     try:
         if action == "renew":
+            logger.info("Renewing an existing certificate")
             renewal.renew_cert(config, domains, le_client, lineage)
         elif action == "newcert":
             # TREAT AS NEW REQUEST
+            logger.info("Obtaining a new certificate")
             lineage = le_client.obtain_and_enroll_certificate(domains)
             if lineage is False:
                 raise errors.Error("Certificate could not be obtained")
