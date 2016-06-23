@@ -4,7 +4,7 @@ import logging
 import string
 
 from pyparsing import (
-    Literal, White, Word, alphanums, CharsNotIn, Forward, Group,
+    Literal, White, Word, alphanums, CharsNotIn, Combine, Forward, Group,
     Optional, OneOrMore, Regex, ZeroOrMore)
 from pyparsing import stringEnd
 from pyparsing import restOfLine
@@ -17,10 +17,13 @@ class RawNginxParser(object):
 
     # constants
     space = Optional(White())
+    nonspace = Regex(r"\S+")
     left_bracket = Literal("{").suppress()
     right_bracket = space.leaveWhitespace() + Literal("}").suppress()
     semicolon = Literal(";").suppress()
     key = Word(alphanums + "_/+-.")
+    dollar_var = Combine(Literal('$') + nonspace)
+    condition = Regex(r"\(.+\)")
     # Matches anything that is not a special character AND any chars in single
     # or double quotes
     value = Regex(r"((\".*\")?(\'.*\')?[^\{\};,]?)+")
@@ -33,8 +36,8 @@ class RawNginxParser(object):
 
     assignment = space + key + Optional(space + value, default=None) + semicolon
     location_statement = space + Optional(modifier) + Optional(space + location + space)
-    if_statement = space + Literal("if") + space + Regex(r"\(.+\)") + space
-    map_statement = space + Literal("map") + space + Regex(r"\S+") + space + Regex(r"\$\S+") + space
+    if_statement = space + Literal("if") + space + condition + space
+    map_statement = space + Literal("map") + space + nonspace + space + dollar_var + space
     block = Forward()
 
     block << Group(
