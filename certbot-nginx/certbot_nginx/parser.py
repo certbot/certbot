@@ -212,8 +212,7 @@ class NginxParser(object):
             empty, this overrides the existing conf files.
 
         """
-        # XXX probably this should be modified to perform atomic write
-        # operations and/or to defer control-c until completed
+        # Best-effort atomicity is enforced above us by reverter.py
         for filename in self.parsed:
             tree = self.parsed[filename]
             if ext:
