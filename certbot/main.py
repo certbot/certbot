@@ -83,6 +83,7 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
     if action == "reinstall":
         # The lineage already exists; allow the caller to try installing
         # it without getting a new certificate at all.
+        logger.info("Keeping the existing certificate")
         return lineage, "reinstall"
 
     hooks.pre_hook(config)
