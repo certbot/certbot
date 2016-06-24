@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 class Reverter(object):
     """Reverter Class - save and revert configuration checkpoints.
 
-    This class can be used by the plugins, especially installers, to
+    This class can be used by the plugins, especially Installers, to
     undo changes made to the user's system. Modifications to files and
     commands to do undo actions taken by the plugin should be registered
     with this class before the action is taken.
