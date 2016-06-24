@@ -241,6 +241,11 @@ class IInstaller(IPlugin):
 
     Represents any server that an X509 certificate can be placed.
 
+    It is assumed that :func:`save` is the only method that finalizes a
+    checkpoint. This is important to ensure that checkpoints are
+    restored in a consistent manner if requested by the user or in case
+    of an error.
+
     """
 
     def get_all_names():
