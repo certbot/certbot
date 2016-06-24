@@ -41,7 +41,7 @@ class RawNginxParser(object):
     block = Forward()
 
     block << Group(
-        # XXX could this "key" be Literal("location")?
+        # key could for instance be "server" or "http"
         (Group(space + key + location_statement) ^ Group(if_statement) ^
         Group(map_statement)).leaveWhitespace() +
         left_bracket +
@@ -78,15 +78,14 @@ class RawNginxDumper(object):
             b = copy.deepcopy(b0)
             indentation = ""
             if spacey(b[0]):
-                indentation = b.pop(0)
+                yield b.pop(0) # indentation
                 if not b:
-                    yield indentation
                     continue
             key = b.pop(0)
             values = b.pop(0)
 
             if isinstance(key, list):
-                yield indentation + "".join(key) + '{'
+                yield "".join(key) + '{'
                 for parameter in values:
                     dumped = self.__iter__([parameter])
                     for line in dumped:
@@ -94,7 +93,7 @@ class RawNginxDumper(object):
                 yield '}'
             else:
                 if isinstance(key, str) and key.strip() == '#':
-                    yield indentation + key + values
+                    yield key + values
                 else:
                     gap = ""
                     # Sometimes the parser has stuck some gap whitespace in here;
@@ -102,7 +101,7 @@ class RawNginxDumper(object):
                     if values and spacey(values):
                         gap = values
                         values = b.pop(0)
-                    yield indentation + key + gap + values + ';'
+                    yield key + gap + values + ';'
 
     def __str__(self):
         """Return the parsed block as a string."""
