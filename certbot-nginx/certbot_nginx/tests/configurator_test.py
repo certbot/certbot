@@ -265,7 +265,8 @@ class NginxConfiguratorTest(util.NginxTest):
 
     @mock.patch("certbot_nginx.configurator.tls_sni_01.NginxTlsSni01.perform")
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.restart")
-    def test_perform(self, mock_restart, mock_perform):
+    @mock.patch("certbot_nginx.configurator.NginxConfigurator.revert_challenge_config")
+    def test_perform_and_cleanup(self, mock_revert, mock_restart, mock_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
         achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
@@ -291,7 +292,11 @@ class NginxConfiguratorTest(util.NginxTest):
 
         self.assertEqual(mock_perform.call_count, 1)
         self.assertEqual(responses, expected)
-        self.assertEqual(mock_restart.call_count, 1)
+
+        self.config.cleanup([achall1, achall2])
+        self.assertEqual(0, self.config._chall_out) # pylint: disable=protected-access
+        self.assertEqual(mock_revert.call_count, 1)
+        self.assertEqual(mock_restart.call_count, 2)
 
     @mock.patch("certbot_nginx.configurator.subprocess.Popen")
     def test_get_version(self, mock_popen):
