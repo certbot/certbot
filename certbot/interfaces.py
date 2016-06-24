@@ -246,6 +246,9 @@ class IInstaller(IPlugin):
     restored in a consistent manner if requested by the user or in case
     of an error.
 
+    Using :class:`certbot.reverter.Reverter` to implement checkpoints,
+    rollback, and recovery can dramatically simplify plugin development.
+
     """
 
     def get_all_names():
