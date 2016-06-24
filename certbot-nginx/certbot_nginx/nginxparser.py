@@ -86,8 +86,7 @@ class RawNginxDumper(object):
             if isinstance(key, list):
                 yield "".join(key) + '{'
                 for parameter in values:
-                    dumped = self.__iter__([parameter])
-                    for line in dumped:
+                    for line in self.__iter__([parameter]): # negate "for b0 in blocks"
                         yield line
                 yield '}'
             else:
