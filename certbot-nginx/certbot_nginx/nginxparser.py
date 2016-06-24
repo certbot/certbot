@@ -235,15 +235,16 @@ class UnspacedList(list):
 
     def _spaced_position(self, idx):
         "Convert from indexes in the unspaced list to positions in the spaced one"
-        print "lookup", idx
-        spaces = 0
-        pos = 0
+        pos = spaces = 0
+        # Normalize indexes like list[-1] etc, and save the result
         if idx < 0:
             idx = len(self) + idx
+        idx0 = idx
+        # Count the number of spaces in the spaced list before idx in the unspaced one
         while idx != -1:
             if spacey(self.spaced[pos]):
                 spaces += 1
             else:
                 idx -= 1
             pos += 1
-        return idx + spaces
+        return idx0 + spaces
