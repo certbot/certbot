@@ -215,21 +215,11 @@ class UnspacedList(list):
         return l
 
     def __setslice__(self, i, j, newslice):
-        for idx in reversed(range(self._spaced_position(i), self._spaced_position(j))):
-            print "delspace", idx
-            del self.spaced[idx]
-        for idx in reversed(range(i,j)):
-            print "del", idx
-            list.__delitem__(self, idx)
-        for idx, item in enumerate(newslice):
-            self.insert(i + idx, item)
+        raise NotImplementedError("Slice operations on UnspacedLists not yet implemented")
 
     def __setitem__(self, i, value):
         if isinstance(i, slice):
-            #raise NotImplementedError("Slice operations on UnspacedLists not yet implemented")
-            for pos in xrange(i.start or 0, i.stop or len(self), i.step or 1):
-                self.__setitem__(pos, value)
-            return
+            raise NotImplementedError("Slice operations on UnspacedLists not yet implemented")
         item, spaced_item = self._coerce(value)
         self.spaced.__setitem__(self._spaced_position(i), spaced_item)
         list.__setitem__(self, i, item)
