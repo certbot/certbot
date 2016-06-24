@@ -529,7 +529,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if addr.get_port() == "443":
                 is_ssl = True
 
-        filename = _unescape(get_file_path(path))
+        filename = self._unescape(get_file_path(path))
         if self.conf("handle-sites"):
             is_enabled = self.is_site_enabled(filename)
         else:
@@ -727,7 +727,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         avail_fp = nonssl_vhost.filep
-        ssl_fp = _escape(self._get_ssl_vhost_path(avail_fp))
+        ssl_fp = self._escape(self._get_ssl_vhost_path(avail_fp))
 
         self._copy_create_ssl_vhost_skeleton(avail_fp, ssl_fp)
 
@@ -901,7 +901,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.parser.add_dir(vh_path, "Include", self.mod_ssl_conf)
 
     def _add_servername_alias(self, target_name, vhost):
-        fp = _escape(vhost.filep)
+        fp = self._escape(vhost.filep)
         vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
                               (fp, parser.case_i("VirtualHost")))
         if not vh_p:
@@ -953,10 +953,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         if need_to_save:
             self.save()
-    def _unescape(fp):
+
+    def _unescape(self, fp):
         return fp.replace("\\", "")
 
-    def _escape(fp):
+    def _escape(self, fp):
         return fp.replace(",", "\\,")
 
     ######################################################################
