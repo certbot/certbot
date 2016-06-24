@@ -176,7 +176,7 @@ class TestRawNginxParser(unittest.TestCase):
         ])
 
 class TestUnspacedList(unittest.TestCase):
-    """Test the raw low-level Nginx config parser."""
+    """Test the UnspacedList data structure"""
     def setUp(self):
         self.a = ["\n    ", "things", " ", "quirk"]
         self.b = ["y", " "]
