@@ -115,6 +115,11 @@ class MakeOrVerifyDirTest(unittest.TestCase):
             makedirs.side_effect = OSError()
             self.assertRaises(OSError, self._call, "bar", 12312312)
 
+    def test_raises_root_error(self):
+        with mock.patch.object(os, "makedirs") as makedirs:
+            makedirs.side_effect = OSError(13)
+            self.assertRaises(errors.Error, self._call, "bar", 12312312)
+
 
 class CheckPermissionsTest(unittest.TestCase):
     """Tests for certbot.util.check_permissions.
