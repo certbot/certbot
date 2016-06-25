@@ -117,7 +117,7 @@ class MakeOrVerifyDirTest(unittest.TestCase):
 
     def test_raises_root_error(self):
         with mock.patch.object(os, "makedirs") as makedirs:
-            makedirs.side_effect = OSError(13)
+            makedirs.side_effect = OSError(errno.EACCES, "Permission denied")
             self.assertRaises(errors.Error, self._call, "bar", 12312312)
 
 
