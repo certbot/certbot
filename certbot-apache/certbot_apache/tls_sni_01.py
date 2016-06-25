@@ -124,7 +124,7 @@ class ApacheTlsSni01(common.TLSSNI01):
 
         try:
             vhost = self.configurator.choose_vhost(achall.domain, temp=True)
-        except (PluginError, MissingCommandlineFlag), e:
+        except (PluginError, MissingCommandlineFlag):
             # We couldn't find the virtualhost for this domain, possibly
             # because it's a new vhost that's not configured yet (GH #677),
             # or perhaps because there were multiple <VirtualHost> sections

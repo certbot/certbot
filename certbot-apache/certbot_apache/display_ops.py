@@ -86,7 +86,7 @@ def _vhost_menu(domain, vhosts):
             "like to choose?\n(note: conf files with multiple "
             "vhosts are not yet supported)".format(domain, os.linesep),
             choices, help_label="More Info", ok_label="Select")
-    except errors.MissingCommandlineFlag as e:
+    except errors.MissingCommandlineFlag:
         msg = ("Encountered vhost ambiguity but unable to ask for user guidance in "
                "non-interactive mode. Currently Certbot needs each vhost to be "
                "in its own conf file, and may need vhosts to be explicitly "
