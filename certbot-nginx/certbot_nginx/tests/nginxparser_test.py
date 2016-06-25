@@ -219,6 +219,10 @@ class TestUnspacedList(unittest.TestCase):
         self.assertEqual(ul3, ["zither", ["zather", "zest"]])
         self.assertEqual(ul3.spaced, [self.a[0], "zither", " ", l])
 
+    def test_get(self):
+        self.assertRaises(IndexError, self.ul2.__getitem__, 2)
+        self.assertRaises(IndexError, self.ul2.__getitem__, -3)
+
     def test_rawlists(self):
         ul3 = copy.deepcopy(self.ul)
         ul3.insert(0, "some")
