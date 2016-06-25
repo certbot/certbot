@@ -715,7 +715,8 @@ def main(cli_args=sys.argv[1:]):
     # Check if running as root
     if os.geteuid() != 0:
         raise errors.Error(
-            "You need to have root privileges to run certbot.\nPlease try again, this time using 'sudo'. Exiting.")
+            "You need to have root privileges to run certbot. "
+            "Please try again, this time using 'sudo'. Exiting.")
 
     # Setup logging ASAP, otherwise "No handlers could be found for
     # logger ..." TODO: this should be done before plugins discovery
