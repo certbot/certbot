@@ -87,10 +87,11 @@ def _vhost_menu(domain, vhosts):
             "vhosts are not yet supported)".format(domain, os.linesep),
             choices, help_label="More Info", ok_label="Select")
     except errors.MissingCommandlineFlag as e:
-        msg = ("Failed to run Apache plugin non-interactively{1}{0}{1}"
-               "(The best solution is to add ServerName or ServerAlias "
-               "entries to the VirtualHost directives of your apache "
-               "configuration files.)".format(e, os.linesep))
+        msg = ("Encountered vhost ambiguity but unable to ask for user guidance in "
+               "non-interactive mode. Currently Certbot needs each vhost to be "
+               "in its own conf file, and may need vhosts to be explicitly "
+               "labelled with ServerName or ServerAlias directories.")
+        logger.warn(msg)
         raise errors.MissingCommandlineFlag(msg)
 
     return code, tag
