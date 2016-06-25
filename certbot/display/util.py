@@ -1,4 +1,5 @@
 """Certbot display."""
+import logging
 import os
 import textwrap
 
@@ -8,6 +9,9 @@ import zope.interface
 from certbot import interfaces
 from certbot import errors
 from certbot.display import completer
+
+
+logger = logging.getLogger(__name__)
 
 WIDTH = 72
 HEIGHT = 20
@@ -28,6 +32,10 @@ CANCEL = "cancel"
 
 HELP = "help"
 """Display exit code when for when the user requests more help."""
+
+ESC = "esc"
+"""Display exit code when the user hits Escape"""
+
 
 def _wrap_lines(msg):
     """Format lines nicely to 80 chars.
@@ -52,7 +60,7 @@ def _wrap_lines(msg):
 
 
 def _clean(dialog_result):
-    """Work around inconsistent return codes from python-dialog.
+    """Treat sundy python-dialog return codes as CANCEL
 
     :param tuple dialog_result: (code, result)
     :returns: the argument but with unknown codes set to -1 (Error)
@@ -61,7 +69,10 @@ def _clean(dialog_result):
     code, result = dialog_result
     if code in (OK, HELP):
         return dialog_result
+    elif code in (CANCEL, ESC):
+        return (CANCEL, result)
     else:
+        logger.info("Surprising dialog return code %s", code)
         return (CANCEL, result)
 
 
@@ -199,8 +210,8 @@ class NcursesDisplay(object):
 
         """
         choices = [(tag, "", default_status) for tag in tags]
-        return self.dialog.checklist(
-            message, width=self.width, height=self.height, choices=choices)
+        return _clean(self.dialog.checklist(
+            message, width=self.width, height=self.height, choices=choices))
 
     def directory_select(self, message, **unused_kwargs):
         """Display a directory selection screen.
@@ -213,9 +224,9 @@ class NcursesDisplay(object):
 
         """
         root_directory = os.path.abspath(os.sep)
-        return self.dialog.dselect(
+        return _clean(self.dialog.dselect(
             filepath=root_directory, width=self.width,
-            height=self.height, help_button=True, title=message)
+            height=self.height, help_button=True, title=message))
 
 
 @zope.interface.implementer(interfaces.IDisplay)
