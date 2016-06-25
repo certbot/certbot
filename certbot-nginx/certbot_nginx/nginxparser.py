@@ -163,6 +163,7 @@ class UnspacedList(list):
     def __init__(self, list_source):
         # ensure our argument is not a generator, and duplicate any sublists
         self.spaced = copy.deepcopy(list(list_source))
+        self.dirty = False
 
         # Turn self into a version of the source list that has spaces removed
         # and all sub-lists also UnspacedList()ed
@@ -198,20 +199,24 @@ class UnspacedList(list):
         item, spaced_item = self._coerce(x)
         self.spaced.insert(self._spaced_position(i), spaced_item)
         list.insert(self, i, item)
+        self.dirty = True
 
     def append(self, x):
         item, spaced_item = self._coerce(x)
         self.spaced.append(spaced_item)
         list.append(self, item)
+        self.dirty = True
 
     def extend(self, x):
         item, spaced_item = self._coerce(x)
         self.spaced.extend(spaced_item)
         list.extend(self, item)
+        self.dirty = True
 
     def __add__(self, other):
         l = copy.deepcopy(self)
         l.extend(other)
+        l.dirty = True
         return l
 
     def pop(self, _i=None):
@@ -231,16 +236,24 @@ class UnspacedList(list):
         item, spaced_item = self._coerce(value)
         self.spaced.__setitem__(self._spaced_position(i), spaced_item)
         list.__setitem__(self, i, item)
+        self.dirty = True
 
     def __delitem__(self, i):
         self.spaced.__delitem__(self._spaced_position(i))
         list.__delitem__(self, i)
+        self.dirty = True
 
-    def __deepcopy__(self, unused_memo):
+    def __deepcopy__(self, memo):
         l = UnspacedList(self[:])
-        l.spaced = copy.deepcopy(self.spaced)
+        l.spaced = copy.deepcopy(self.spaced, memo=memo)
+        l.dirty = self.dirty
         return l
 
+    def is_dirty(self):
+        """Recurse through the parse tree to figure out if any sublists are dirty"""
+        if self.dirty:
+            return True
+        return any((isinstance(x, list) and x.is_dirty() for x in self))
 
     def _spaced_position(self, idx):
         "Convert from indexes in the unspaced list to positions in the spaced one"
