@@ -41,7 +41,8 @@ class RawNginxParser(object):
     block = Forward()
 
     block << Group(
-        # key could for instance be "server" or "http"
+        # key could for instance be "server" or "http", or "location" (in which case
+        # location_statement needs to have a non-empty location)
         (Group(space + key + location_statement) ^ Group(if_statement) ^
         Group(map_statement)).leaveWhitespace() +
         left_bracket +
@@ -213,7 +214,7 @@ class UnspacedList(list):
         l.extend(other)
         return l
 
-    def pop(self, _i=0):
+    def pop(self, _i=None):
         raise NotImplementedError("UnspacedList.pop() not yet implemented")
     def remove(self, _):
         raise NotImplementedError("UnspacedList.remove() not yet implemented")
