@@ -213,17 +213,15 @@ class UnspacedList(list):
         l.extend(other)
         return l
 
-    def index(self, _, _j=0, _k=0):
-        raise NotImplementedError("UnspacedList.index() not yet implemented")
-    def pop(self, _):
+    def pop(self, _i=0):
         raise NotImplementedError("UnspacedList.pop() not yet implemented")
     def remove(self, _):
         raise NotImplementedError("UnspacedList.remove() not yet implemented")
-    def reverse(self, _):
+    def reverse(self):
         raise NotImplementedError("UnspacedList.reverse() not yet implemented")
     def sort(self, _cmp=None, _key=None, _Rev=None):
         raise NotImplementedError("UnspacedList.sort() not yet implemented")
-    def __setslice__(self, i, j, newslice):
+    def __setslice__(self, _i, _j, _newslice):
         raise NotImplementedError("Slice operations on UnspacedLists not yet implemented")
 
     def __setitem__(self, i, value):
