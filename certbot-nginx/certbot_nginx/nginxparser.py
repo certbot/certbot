@@ -1,23 +1,29 @@
 """Very low-level nginx config parser based on pyparsing."""
+import copy
+import logging
 import string
 
 from pyparsing import (
-    Literal, White, Word, alphanums, CharsNotIn, Forward, Group,
+    Literal, White, Word, alphanums, CharsNotIn, Combine, Forward, Group,
     Optional, OneOrMore, Regex, ZeroOrMore)
 from pyparsing import stringEnd
 from pyparsing import restOfLine
 
+logger = logging.getLogger(__name__)
 
 class RawNginxParser(object):
     # pylint: disable=expression-not-assigned
     """A class that parses nginx configuration with pyparsing."""
 
     # constants
+    space = Optional(White())
+    nonspace = Regex(r"\S+")
     left_bracket = Literal("{").suppress()
-    right_bracket = Literal("}").suppress()
+    right_bracket = space.leaveWhitespace() + Literal("}").suppress()
     semicolon = Literal(";").suppress()
-    space = White().suppress()
     key = Word(alphanums + "_/+-.")
+    dollar_var = Combine(Literal('$') + nonspace)
+    condition = Regex(r"\(.+\)")
     # Matches anything that is not a special character AND any chars in single
     # or double quotes
     value = Regex(r"((\".*\")?(\'.*\')?[^\{\};,]?)+")
@@ -26,20 +32,25 @@ class RawNginxParser(object):
     modifier = Literal("=") | Literal("~*") | Literal("~") | Literal("^~")
 
     # rules
-    comment = Literal('#') + restOfLine()
-    assignment = (key + Optional(space + value, default=None) + semicolon)
-    location_statement = Optional(space + modifier) + Optional(space + location)
-    if_statement = Literal("if") + space + Regex(r"\(.+\)") + space
-    map_statement = Literal("map") + space + Regex(r"\S+") + space + Regex(r"\$\S+") + space
+    comment = space + Literal('#') + restOfLine()
+
+    assignment = space + key + Optional(space + value, default=None) + semicolon
+    location_statement = space + Optional(modifier) + Optional(space + location + space)
+    if_statement = space + Literal("if") + space + condition + space
+    map_statement = space + Literal("map") + space + nonspace + space + dollar_var + space
     block = Forward()
 
     block << Group(
-        (Group(key + location_statement) ^ Group(if_statement) ^ Group(map_statement)) +
+        # key could for instance be "server" or "http", or "location" (in which case
+        # location_statement needs to have a non-empty location)
+        (Group(space + key + location_statement) ^ Group(if_statement) ^
+        Group(map_statement)).leaveWhitespace() +
         left_bracket +
-        Group(ZeroOrMore(Group(comment | assignment) | block)) +
+        Group(ZeroOrMore(Group(comment | assignment) | block) + space).leaveWhitespace() +
         right_bracket)
 
-    script = OneOrMore(Group(comment | assignment) ^ block) + stringEnd
+    script = OneOrMore(Group(comment | assignment) ^ block) + space + stringEnd
+    script.parseWithTabs()
 
     def __init__(self, source):
         self.source = source
@@ -52,42 +63,48 @@ class RawNginxParser(object):
         """Returns the parsed tree as a list."""
         return self.parse().asList()
 
-
 class RawNginxDumper(object):
     # pylint: disable=too-few-public-methods
     """A class that dumps nginx configuration from the provided tree."""
-    def __init__(self, blocks, indentation=4):
+    def __init__(self, blocks):
         self.blocks = blocks
-        self.indentation = indentation
 
-    def __iter__(self, blocks=None, current_indent=0, spacer=' '):
+    def __iter__(self, blocks=None):
         """Iterates the dumped nginx content."""
         blocks = blocks or self.blocks
-        for key, values in blocks:
-            indentation = spacer * current_indent
+        for b0 in blocks:
+            if isinstance(b0, str):
+                yield b0
+                continue
+            b = copy.deepcopy(b0)
+            if spacey(b[0]):
+                yield b.pop(0) # indentation
+                if not b:
+                    continue
+            key = b.pop(0)
+            values = b.pop(0)
+
             if isinstance(key, list):
-                if current_indent:
-                    yield ''
-                yield indentation + spacer.join(key) + ' {'
-
+                yield "".join(key) + '{'
                 for parameter in values:
-                    dumped = self.__iter__([parameter], current_indent + self.indentation)
-                    for line in dumped:
+                    for line in self.__iter__([parameter]): # negate "for b0 in blocks"
                         yield line
-
-                yield indentation + '}'
+                yield '}'
             else:
-                if key == '#':
-                    yield spacer * current_indent + key + values
+                if isinstance(key, str) and key.strip() == '#':
+                    yield key + values
                 else:
-                    if values is None:
-                        yield spacer * current_indent + key + ';'
-                    else:
-                        yield spacer * current_indent + key + spacer + values + ';'
+                    gap = ""
+                    # Sometimes the parser has stuck some gap whitespace in here;
+                    # if so rotate it into gap
+                    if values and spacey(values):
+                        gap = values
+                        values = b.pop(0)
+                    yield key + gap + values + ';'
 
     def __str__(self):
         """Return the parsed block as a string."""
-        return '\n'.join(self) + '\n'
+        return ''.join(self)
 
 
 # Shortcut functions to respect Python's serialization interface
@@ -101,7 +118,7 @@ def loads(source):
     :rtype: list
 
     """
-    return RawNginxParser(source).as_list()
+    return UnspacedList(RawNginxParser(source).as_list())
 
 
 def load(_file):
@@ -115,24 +132,130 @@ def load(_file):
     return loads(_file.read())
 
 
-def dumps(blocks, indentation=4):
+def dumps(blocks):
     """Dump to a string.
 
-    :param list block: The parsed tree
+    :param UnspacedList block: The parsed tree
     :param int indentation: The number of spaces to indent
     :rtype: str
 
     """
-    return str(RawNginxDumper(blocks, indentation))
+    return str(RawNginxDumper(blocks.spaced))
 
 
-def dump(blocks, _file, indentation=4):
+def dump(blocks, _file):
     """Dump to a file.
 
-    :param list block: The parsed tree
+    :param UnspacedList block: The parsed tree
     :param file _file: The file to dump to
     :param int indentation: The number of spaces to indent
     :rtype: NoneType
 
     """
-    return _file.write(dumps(blocks, indentation))
+    return _file.write(dumps(blocks))
+
+
+spacey = lambda x: (isinstance(x, str) and x.isspace()) or x == ''
+
+class UnspacedList(list):
+    """Wrap a list [of lists], making any whitespace entries magically invisible"""
+
+    def __init__(self, list_source):
+        # ensure our argument is not a generator, and duplicate any sublists
+        self.spaced = copy.deepcopy(list(list_source))
+
+        # Turn self into a version of the source list that has spaces removed
+        # and all sub-lists also UnspacedList()ed
+        list.__init__(self, list_source)
+        for i, entry in reversed(list(enumerate(self))):
+            if isinstance(entry, list):
+                sublist = UnspacedList(entry)
+                list.__setitem__(self, i, sublist)
+                self.spaced[i] = sublist.spaced
+            elif spacey(entry):
+                # don't delete comments
+                if "#" not in self[:i]:
+                    list.__delitem__(self, i)
+
+    def _coerce(self, inbound):
+        """
+        Coerce some inbound object to be appropriately usable in this object
+
+        :param inbound: string or None or list or UnspacedList
+        :returns: (coerced UnspacedList or string or None, spaced equivalent)
+        :rtype: tuple
+
+        """
+        if not isinstance(inbound, list):                      # str or None
+            return (inbound, inbound)
+        else:
+            if not hasattr(inbound, "spaced"):
+                inbound = UnspacedList(inbound)
+            return (inbound, inbound.spaced)
+
+
+    def insert(self, i, x):
+        item, spaced_item = self._coerce(x)
+        self.spaced.insert(self._spaced_position(i), spaced_item)
+        list.insert(self, i, item)
+
+    def append(self, x):
+        item, spaced_item = self._coerce(x)
+        self.spaced.append(spaced_item)
+        list.append(self, item)
+
+    def extend(self, x):
+        item, spaced_item = self._coerce(x)
+        self.spaced.extend(spaced_item)
+        list.extend(self, item)
+
+    def __add__(self, other):
+        l = copy.deepcopy(self)
+        l.extend(other)
+        return l
+
+    def pop(self, _i=None):
+        raise NotImplementedError("UnspacedList.pop() not yet implemented")
+    def remove(self, _):
+        raise NotImplementedError("UnspacedList.remove() not yet implemented")
+    def reverse(self):
+        raise NotImplementedError("UnspacedList.reverse() not yet implemented")
+    def sort(self, _cmp=None, _key=None, _Rev=None):
+        raise NotImplementedError("UnspacedList.sort() not yet implemented")
+    def __setslice__(self, _i, _j, _newslice):
+        raise NotImplementedError("Slice operations on UnspacedLists not yet implemented")
+
+    def __setitem__(self, i, value):
+        if isinstance(i, slice):
+            raise NotImplementedError("Slice operations on UnspacedLists not yet implemented")
+        item, spaced_item = self._coerce(value)
+        self.spaced.__setitem__(self._spaced_position(i), spaced_item)
+        list.__setitem__(self, i, item)
+
+    def __delitem__(self, i):
+        self.spaced.__delitem__(self._spaced_position(i))
+        list.__delitem__(self, i)
+
+    def __deepcopy__(self, unused_memo):
+        l = UnspacedList(self[:])
+        l.spaced = copy.deepcopy(self.spaced)
+        return l
+
+
+    def _spaced_position(self, idx):
+        "Convert from indexes in the unspaced list to positions in the spaced one"
+        pos = spaces = 0
+        # Normalize indexes like list[-1] etc, and save the result
+        if idx < 0:
+            idx = len(self) + idx
+        if not 0 <= idx < len(self):
+            raise IndexError("list index out of range")
+        idx0 = idx
+        # Count the number of spaces in the spaced list before idx in the unspaced one
+        while idx != -1:
+            if spacey(self.spaced[pos]):
+                spaces += 1
+            else:
+                idx -= 1
+            pos += 1
+        return idx0 + spaces

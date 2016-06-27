@@ -126,7 +126,7 @@ class NginxParserTest(util.NginxTest):
         nparser.add_server_directives(nparser.abs_path('nginx.conf'),
                                       set(['localhost',
                                            r'~^(www\.)?(example|bar)\.']),
-                                      [['foo', 'bar'], ['ssl_certificate',
+                                      [['foo', 'bar'], ['\n ', 'ssl_certificate', ' ',
                                                         '/etc/ssl/cert.pem']],
                                       replace=False)
         ssl_re = re.compile(r'\n\s+ssl_certificate /etc/ssl/cert.pem')

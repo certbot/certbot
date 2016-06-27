@@ -85,6 +85,9 @@ class Addr(common.Addr):
 
         return parts
 
+    def __repr__(self):
+        return "Addr(" + self.__str__() + ")"
+
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return (self.tup == other.tup and
@@ -125,6 +128,9 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
                 "ssl: %s\n"
                 "enabled: %s" % (self.filep, addr_str,
                                  self.names, self.ssl, self.enabled))
+
+    def __repr__(self):
+        return "VirtualHost(" + self.__str__().replace("\n", ", ") + ")\n"
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
