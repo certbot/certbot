@@ -1,4 +1,5 @@
 """Very low-level nginx config parser based on pyparsing."""
+# Forked from https://github.com/fatiherikli/nginxparser (MIT Licensed)
 import copy
 import logging
 import string
@@ -81,8 +82,7 @@ class RawNginxDumper(object):
                 yield b.pop(0) # indentation
                 if not b:
                     continue
-            key = b.pop(0)
-            values = b.pop(0)
+            key, values = b.pop(0), b.pop(0)
 
             if isinstance(key, list):
                 yield "".join(key) + '{'
@@ -91,9 +91,9 @@ class RawNginxDumper(object):
                         yield line
                 yield '}'
             else:
-                if isinstance(key, str) and key.strip() == '#':
+                if isinstance(key, str) and key.strip() == '#':  # comment
                     yield key + values
-                else:
+                else:                                            # assignment
                     gap = ""
                     # Sometimes the parser has stuck some gap whitespace in here;
                     # if so rotate it into gap
