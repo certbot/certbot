@@ -66,7 +66,7 @@ class NginxParserTest(util.NginxTest):
 
     def test_filedump(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
-        nparser.filedump('test')
+        nparser.filedump('test', lazy=False)
         # pylint: disable=protected-access
         parsed = nparser._parse_files(nparser.abs_path(
             'sites-enabled/example.com.test'))

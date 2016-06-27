@@ -205,11 +205,12 @@ class NginxParser(object):
         raise errors.NoInstallationError(
             "Could not find configuration root")
 
-    def filedump(self, ext='tmp'):
+    def filedump(self, ext='tmp', lazy=True):
         """Dumps parsed configurations into files.
 
         :param str ext: The file extension to use for the dumped files. If
             empty, this overrides the existing conf files.
+        :param bool lazy: Only write files that have been modified
 
         """
         # Best-effort atomicity is enforced above us by reverter.py
@@ -218,6 +219,8 @@ class NginxParser(object):
             if ext:
                 filename = filename + os.path.extsep + ext
             try:
+                if lazy and not tree.is_dirty():
+                    continue
                 out = nginxparser.dumps(tree)
                 logger.debug('Writing nginx conf tree to %s:\n%s', filename, out)
                 with open(filename, 'w') as _file:

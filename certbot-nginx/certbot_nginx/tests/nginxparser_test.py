@@ -231,6 +231,17 @@ class TestUnspacedList(unittest.TestCase):
         del ul3[2]
         self.assertEqual(ul3, ["some", "things", "why", "did", "whether"])
 
+    def test_is_dirty(self):
+        self.assertEqual(False, self.ul2.is_dirty())
+        ul3 = UnspacedList([])
+        ul3.append(self.ul)
+        self.assertEqual(False, self.ul.is_dirty())
+        self.assertEqual(True, ul3.is_dirty())
+        ul4 = UnspacedList([[1], [2, 3, 4]])
+        self.assertEqual(False, ul4.is_dirty())
+        ul4[1][2] = 5
+        self.assertEqual(True, ul4.is_dirty())
+
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
