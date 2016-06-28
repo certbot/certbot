@@ -19,6 +19,14 @@ _SIGNALS = ([signal.SIGTERM] if os.name == "nt" else
              signal.SIGXCPU, signal.SIGXFSZ])
 
 
+class SignalExit(Exception):
+    """This exception is used stop of execution of the code in the body of the
+    ErrorHandler context manager.
+
+    """
+    pass
+
+
 class ErrorHandler(object):
     """Registers functions to be called if an exception or signal occurs.
 
@@ -34,16 +42,17 @@ class ErrorHandler(object):
     if a signal is encountered, cleanup_func is called followed by the
     previously registered signal handler.
 
-    Every registered function is attempted to be run to completion
-    exactly once. If a registered function raises an exception, it is
-    logged and the next function is called. If a (different) handled
-    signal occurs while calling a registered function, it is attempted
-    to be called again by the next signal handler.
+    Each registered cleanup function is called exactly once. If a registered
+    function raises an exception, it is logged and the next function is called.
+    Signals received while the registered functions are executing are
+    deferred until they finish.
 
     """
     def __init__(self, func=None, *args, **kwargs):
+        self.body_executed = False
         self.funcs = []
         self.prev_handlers = {}
+        self.received_signals = []
         if func is not None:
             self.register(func, *args, **kwargs)
 
@@ -51,12 +60,22 @@ class ErrorHandler(object):
         self.set_signal_handlers()
 
     def __exit__(self, exec_type, exec_value, trace):
+        self.body_executed = True
+        retval = False
+        if exec_type is SignalExit:
+            logger.debug("Encountered signals: %s", self.received_signals)
+            self.call_registered()
+            for signum in self.received_signals:
+                self.call_signal(signum)
+            retval = True
         # SystemExit is ignored to properly handle forks that don't exec
-        if exec_type not in (None, SystemExit):
+        elif exec_type not in (None, SystemExit):
             logger.debug("Encountered exception:\n%s", "".join(
                 traceback.format_exception(exec_type, exec_value, trace)))
             self.call_registered()
+
         self.reset_signal_handlers()
+        return retval
 
     def register(self, func, *args, **kwargs):
         """Sets func to be called with *args and **kwargs during cleanup
@@ -93,12 +112,21 @@ class ErrorHandler(object):
         self.prev_handlers.clear()
 
     def _signal_handler(self, signum, unused_frame):
-        """Calls registered functions and the previous signal handler.
+        """Stores the recieved signal.
 
         :param int signum: number of current signal
 
         """
-        logger.debug("Singal %s encountered", signum)
-        self.call_registered()
+        self.received_signals.append(signum)
+        if not self.body_executed:
+            raise SignalExit
+
+    def call_signal(self, signum):
+        """Calls the signal given by signum.
+
+        :param int signum: signal number
+
+        """
+        logger.debug("Calling signal %s", signum)
         signal.signal(signum, self.prev_handlers[signum])
         os.kill(os.getpid(), signum)
