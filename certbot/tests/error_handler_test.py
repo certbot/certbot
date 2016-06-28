@@ -11,13 +11,11 @@ import mock
 @contextmanager
 def signal_receiver(signums):
     """Context manager to catch signals"""
-    def receiver(signum, unused_frame):
-        signals.append(signum)
     signals = []
     prev_handlers = {}
     for signum in signums:
         prev_handlers[signum] = signal.getsignal(signum)
-        signal.signal(signum, receiver)
+        signal.signal(signum, lambda signum, _: signals.append(signum))
     yield signals
     for signum in signums:
         signal.signal(signum, prev_handlers[signum])
