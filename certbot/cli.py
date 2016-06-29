@@ -773,7 +773,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         "security", "--hsts", action="store_true",
         help="Add the Strict-Transport-Security header to every HTTP response."
-             " Forcing browser to use always use SSL for the domain."
+             " Forcing browser to always use SSL for the domain."
              " Defends against SSL Stripping.", dest="hsts", default=False)
     helpful.add(
         "security", "--no-hsts", action="store_false",

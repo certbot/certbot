@@ -497,13 +497,8 @@ class MultipleVhostsTest(util.ApacheTest):
 
         # Test Listen statements with specific ip listeed
         self.config.prepare_server_https("443")
-        # Should only be 2 here, as the third interface
-        # already listens to the correct port
-        self.assertEqual(mock_add_dir.call_count, 2)
-
-        # Check argument to new Listen statements
-        self.assertEqual(mock_add_dir.call_args_list[0][0][2], ["1.2.3.4:443"])
-        self.assertEqual(mock_add_dir.call_args_list[1][0][2], ["[::1]:443"])
+        # Should be 0 as one interface already listens to 443
+        self.assertEqual(mock_add_dir.call_count, 0)
 
         # Reset return lists and inputs
         mock_add_dir.reset_mock()
@@ -518,6 +513,28 @@ class MultipleVhostsTest(util.ApacheTest):
                          ["[::1]:8080", "https"])
         self.assertEqual(mock_add_dir.call_args_list[2][0][2],
                          ["1.1.1.1:8080", "https"])
+
+        # mock_get.side_effect = ["1.2.3.4:80", "[::1]:80"]
+        # mock_find.return_value = ["test1", "test2", "test3"]
+        # self.config.parser.get_arg = mock_get
+        # self.config.prepare_server_https("8080", temp=True)
+        # self.assertEqual(self.listens, 0)
+
+    def test_prepare_server_https_needed_listen(self):
+        mock_find = mock.Mock()
+        mock_find.return_value = ["test1", "test2"]
+        mock_get = mock.Mock()
+        mock_get.side_effect = ["1.2.3.4:8080", "80"]
+        mock_add_dir = mock.Mock()
+        mock_enable = mock.Mock()
+
+        self.config.parser.find_dir = mock_find
+        self.config.parser.get_arg = mock_get
+        self.config.parser.add_dir_to_ifmodssl = mock_add_dir
+        self.config.enable_mod = mock_enable
+
+        self.config.prepare_server_https("443")
+        self.assertEqual(mock_add_dir.call_count, 1)
 
     def test_prepare_server_https_mixed_listen(self):
 

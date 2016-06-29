@@ -80,7 +80,7 @@ class TlsSniPerformTest(util.NginxTest):
 
         mock_setup_cert.assert_called_once_with(self.achalls[0])
         self.assertEqual([response], responses)
-        self.assertEqual(mock_save.call_count, 2)
+        self.assertEqual(mock_save.call_count, 1)
 
         # Make sure challenge config is included in main config
         http = self.sni.configurator.parser.parsed[

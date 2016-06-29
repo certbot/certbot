@@ -152,17 +152,17 @@ class NginxConfigurator(common.Plugin):
                 "install a cert.")
 
         vhost = self.choose_vhost(domain)
-        cert_directives = [['ssl_certificate', fullchain_path],
-                           ['ssl_certificate_key', key_path]]
+        cert_directives = [['\n', 'ssl_certificate', ' ', fullchain_path],
+                           ['\n', 'ssl_certificate_key', ' ', key_path]]
 
         # OCSP stapling was introduced in Nginx 1.3.7. If we have that version
         # or greater, add config settings for it.
         stapling_directives = []
         if self.version >= (1, 3, 7):
             stapling_directives = [
-                ['ssl_trusted_certificate', chain_path],
-                ['ssl_stapling', 'on'],
-                ['ssl_stapling_verify', 'on']]
+                ['\n', 'ssl_trusted_certificate', ' ', chain_path],
+                ['\n', 'ssl_stapling', ' ', 'on'],
+                ['\n', 'ssl_stapling_verify', ' ', 'on'], ['\n']]
 
         if len(stapling_directives) != 0 and not chain_path:
             raise errors.PluginError(
@@ -225,7 +225,7 @@ class NginxConfigurator(common.Plugin):
         if not matches:
             # No matches. Create a new vhost with this name in nginx.conf.
             filep = self.parser.loc["root"]
-            new_block = [['server'], [['server_name', target_name]]]
+            new_block = [['server'], [['\n', 'server_name', ' ', target_name]]]
             self.parser.add_http_directives(filep, new_block)
             vhost = obj.VirtualHost(filep, set([]), False, True,
                                     set([target_name]), list(new_block[1]))
@@ -337,10 +337,10 @@ class NginxConfigurator(common.Plugin):
 
         """
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
-        ssl_block = [['listen', '{0} ssl'.format(self.config.tls_sni_01_port)],
-                     ['ssl_certificate', snakeoil_cert],
-                     ['ssl_certificate_key', snakeoil_key],
-                     ['include', self.parser.loc["ssl_options"]]]
+        ssl_block = [['\n', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
+                     ['\n', 'ssl_certificate', ' ', snakeoil_cert],
+                     ['\n', 'ssl_certificate_key', ' ', snakeoil_key],
+                     ['\n', 'include', ' ', self.parser.loc["ssl_options"]]]
         self.parser.add_server_directives(
             vhost.filep, vhost.names, ssl_block, replace=False)
         vhost.ssl = True
@@ -689,11 +689,6 @@ def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx.conf"):
 
 def temp_install(options_ssl):
     """Temporary install for convenience."""
-    # WARNING: THIS IS A POTENTIAL SECURITY VULNERABILITY
-    # THIS SHOULD BE HANDLED BY THE PACKAGE MANAGER
-    # AND TAKEN OUT BEFORE RELEASE, INSTEAD
-    # SHOWING A NICE ERROR MESSAGE ABOUT THE PROBLEM.
-
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):
         shutil.copyfile(constants.MOD_SSL_CONF_SRC, options_ssl)

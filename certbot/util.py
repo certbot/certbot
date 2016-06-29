@@ -423,14 +423,17 @@ def enforce_domain_sanity(domain):
         # It wasn't an IP address, so that's good
         pass
 
-    # FQDN checks from
-    # http://www.mkyong.com/regular-expressions/domain-name-regular-expression-example/
-    #  Characters used, domain parts < 63 chars, tld > 1 < 64 chars
-    #  first and last char is not "-"
-    fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,63}$")
-    if not fqdn.match(domain):
-        raise errors.ConfigurationError("Requested domain {0} is not a FQDN"
-                                        .format(domain))
+    # FQDN checks according to RFC 2181: domain name should be less than 255
+    # octets (inclusive). And each label is 1 - 63 octets (inclusive).
+    # https://tools.ietf.org/html/rfc2181#section-11
+    msg = "Requested domain {0} is not a FQDN because ".format(domain)
+    labels = domain.split('.')
+    for l in labels:
+        if not 0 < len(l) < 64:
+            raise errors.ConfigurationError(msg + "label {0} is too long.".format(l))
+    if len(domain) > 255:
+        raise errors.ConfigurationError(msg + "it is too long.")
+
     return domain
 
 
