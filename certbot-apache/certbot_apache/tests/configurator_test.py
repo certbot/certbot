@@ -1,4 +1,4 @@
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods, protected-access
 """Test for certbot_apache.configurator."""
 import os
 import shutil
@@ -1190,9 +1190,12 @@ class AugeasVhostsTest(util.ApacheTest):
     """Test vhosts with illegal names dependant on augeas version."""
 
     def setUp(self):  # pylint: disable=arguments-differ
-        super(AugeasVhostsTest, self).setUp(test_dir="debian_apache_2_4/augeas_vhosts",
-                                            config_root="debian_apache_2_4/augeas_vhosts/apache2",
-                                            vhost_root="debian_apache_2_4/augeas_vhosts/apache2/sites-available")
+        td = "debian_apache_2_4/augeas_vhosts"
+        cr = "debian_apache_2_4/augeas_vhosts/apache2"
+        vr = "debian_apache_2_4/augeas_vhosts/apache2/sites-available"
+        super(AugeasVhostsTest, self).setUp(test_dir=td,
+                                            config_root=cr,
+                                            vhost_root=vr)
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)
@@ -1207,7 +1210,8 @@ class AugeasVhostsTest(util.ApacheTest):
     def test_choosevhost_with_illegal_name(self):
         self.config.aug = mock.MagicMock()
         self.config.aug.match.side_effect = RuntimeError
-        chosen_vhost = self.config._create_vhost("debian_apache_2_4/augeas_vhosts/apache2/sites-available/old,default.conf")
+        path = "debian_apache_2_4/augeas_vhosts/apache2/sites-available/old,default.conf"
+        chosen_vhost = self.config._create_vhost(path)
         self.assertEqual(None, chosen_vhost)
 
     def test_choosevhost_works(self):
