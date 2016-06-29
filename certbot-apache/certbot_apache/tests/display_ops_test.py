@@ -38,7 +38,7 @@ class SelectVhostTest(unittest.TestCase):
         try:
             self._call(self.vhosts)
         except errors.MissingCommandlineFlag as e:
-            self.assertTrue("VirtualHost directives" in e.message)
+            self.assertTrue("vhost ambiguity" in e.message)
 
     @mock.patch("certbot_apache.display_ops.zope.component.getUtility")
     def test_more_info_cancel(self, mock_util):
