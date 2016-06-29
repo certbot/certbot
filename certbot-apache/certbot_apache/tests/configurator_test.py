@@ -1215,5 +1215,11 @@ class AugeasVhostsTest(util.ApacheTest):
         chosen_vhost = self.config._create_vhost(path)
         self.assertTrue(chosen_vhost == None or chosen_vhost.path == path)
 
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator._create_vhost")
+    def test_get_vhost_continue(self, mock_vhost):
+        mock_vhost.return_value = None
+        vhs = self.config.get_virtual_hosts()
+        self.assertEqual([], vhs)
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
