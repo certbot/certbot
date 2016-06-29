@@ -1196,20 +1196,8 @@ class AugeasVhostsTest(util.ApacheTest):
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)
-        self.config = self.mock_deploy_cert(self.config)
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/augeas_vhosts")
-
-    def mock_deploy_cert(self, config):
-        """A test for a mock deploy cert"""
-        self.config.real_deploy_cert = self.config.deploy_cert
-
-        def mocked_deploy_cert(*args, **kwargs):
-            """a helper to mock a deployed cert"""
-            with mock.patch("certbot_apache.configurator.ApacheConfigurator.enable_mod"):
-                config.real_deploy_cert(*args, **kwargs)
-        self.config.deploy_cert = mocked_deploy_cert
-        return self.config
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -1217,8 +1205,15 @@ class AugeasVhostsTest(util.ApacheTest):
         shutil.rmtree(self.work_dir)
 
     def test_choosevhost_with_illegal_name(self):
+        self.config.aug = mock.MagicMock()
+        self.config.aug.match.side_effect = RuntimeError
         chosen_vhost = self.config._create_vhost("debian_apache_2_4/augeas_vhosts/apache2/sites-available/old,default.conf")
         self.assertEqual(None, chosen_vhost)
+
+    def test_choosevhost_works(self):
+        path = "debian_apache_2_4/augeas_vhosts/apache2/sites-available/old,default.conf"
+        chosen_vhost = self.config._create_vhost(path)
+        self.assertTrue(chosen_vhost == None or chosen_vhost.path == path)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
