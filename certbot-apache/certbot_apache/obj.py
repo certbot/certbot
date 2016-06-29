@@ -19,11 +19,11 @@ class Addr(common.Addr):
                      self.is_wildcard() and other.is_wildcard()))
         return False
 
-    def __repr__(self):
-        return "certbot_apache.obj.Addr(" + repr(self.tup) + ")"
-
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __repr__(self):
+        return "certbot_apache.obj.Addr(" + repr(self.tup) + ")"
 
     def _addr_less_specific(self, addr):
         """Returns if addr.get_addr() is more specific than self.get_addr()."""

@@ -328,7 +328,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if vhost is None:
             logger.error(
                 "No vhost exists with servername or alias of: %s "
-                "(or it's in a file with multiple files, which Certbot "
+                "(or it's in a file with multiple vhosts, which Certbot "
                 "can't parse yet). "
                 "No vhost was selected. Please specify ServerName or ServerAlias "
                 "in the Apache config, or split vhosts into separate files.",
