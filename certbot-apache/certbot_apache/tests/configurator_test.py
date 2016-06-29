@@ -1169,6 +1169,39 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.aug.match.side_effect = RuntimeError
         self.assertFalse(self.config._check_aug_version())
 
+class AugeasVhostsTest(util.ApacheTest):
+    """Test vhosts with illegal names dependant on augeas version."""
+
+    def setUp(self):  # pylint: disable=arguments-differ
+        super(AugeasVhostsTest, self).setUp(test_dir="debian_apache_2_4/augeas_vhosts",
+                                            config_root="debian_apache_2_4/augeas_vhosts/apache2",
+                                            vhost_root="debian_apache_2_4/augeas_vhosts/apache2/sites-available")
+
+        self.config = util.get_apache_configurator(
+            self.config_path, self.vhost_path, self.config_dir, self.work_dir)
+        self.config = self.mock_deploy_cert(self.config)
+        self.vh_truth = util.get_vh_truth(
+            self.temp_dir, "debian_apache_2_4/augeas_vhosts")
+
+    def mock_deploy_cert(self, config):
+        """A test for a mock deploy cert"""
+        self.config.real_deploy_cert = self.config.deploy_cert
+
+        def mocked_deploy_cert(*args, **kwargs):
+            """a helper to mock a deployed cert"""
+            with mock.patch("certbot_apache.configurator.ApacheConfigurator.enable_mod"):
+                config.real_deploy_cert(*args, **kwargs)
+        self.config.deploy_cert = mocked_deploy_cert
+        return self.config
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
+        shutil.rmtree(self.config_dir)
+        shutil.rmtree(self.work_dir)
+
+    def test_choosevhost_with_illegal_name(self):
+        chosen_vhost = self.config._create_vhost("debian_apache_2_4/augeas_vhosts/apache2/sites-available/old,default.conf")
+        self.assertEqual(None, chosen_vhost)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
