@@ -38,19 +38,42 @@ class RawNginxParser(object):
     assignment = space + key + Optional(space + value, default=None) + semicolon
     location_statement = space + Optional(modifier) + Optional(space + location + space)
     if_statement = space + Literal("if") + space + condition + space
+
     map_statement = space + Literal("map") + space + nonspace + space + dollar_var + space
+
+    # This is NOT an accurate way to parse nginx map entries; it's almost
+    # certianly too permissive and may be wrong in other ways, but it should
+    # preserve things correctly in mmmmost or all cases.
+    #    - it sometimes splits the two tokens incorrectly eg
+    #      '''"~Opera Mini" 1'''   ->    ['"~Opera', ' Mini" 1']
+    #    - I can neither prove nor disprove that it is corect wrt all escaped
+    #      semicolon situations
+    # Addresses https://github.com/fatiherikli/nginxparser/issues/19
+
+    map_entry = space + nonspace + value + space + semicolon
+    map_block = Forward()
+    map_block << Group(
+        # key could for instance be "server" or "http", or "location" (in which case
+        # location_statement needs to have a non-empty location)
+        Group(map_statement).leaveWhitespace() +
+        left_bracket +
+        Group(ZeroOrMore(Group(comment | map_entry)) + space).leaveWhitespace() +
+        right_bracket)
+
+
     block = Forward()
 
     block << Group(
         # key could for instance be "server" or "http", or "location" (in which case
         # location_statement needs to have a non-empty location)
-        (Group(space + key + location_statement) ^ Group(if_statement) ^
-        Group(map_statement)).leaveWhitespace() +
+        (Group(space + key + location_statement) ^ Group(if_statement)).leaveWhitespace() +
         left_bracket +
-        Group(ZeroOrMore(Group(comment | assignment) | block) + space).leaveWhitespace() +
+        Group(ZeroOrMore(Group(comment | assignment) | block | map_block) + space).leaveWhitespace() +
         right_bracket)
 
-    script = OneOrMore(Group(comment | assignment) ^ block) + space + stringEnd
+
+
+    script = OneOrMore(Group(comment | assignment) ^ block ^ map_block) + space + stringEnd
     script.parseWithTabs()
 
     def __init__(self, source):
