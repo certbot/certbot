@@ -27,6 +27,8 @@ class RawNginxParser(object):
     condition = Regex(r"\(.+\)")
     # Matches anything that is not a special character AND any chars in single
     # or double quotes
+    # All of these COULD be upgraded to something like
+    # https://stackoverflow.com/a/16130746
     value = Regex(r"((\".*\")?(\'.*\')?[^\{\};,]?)+")
     location = CharsNotIn("{};," + string.whitespace)
     # modifier for location uri [ = | ~ | ~* | ^~ ]
@@ -43,14 +45,13 @@ class RawNginxParser(object):
     # This is NOT an accurate way to parse nginx map entries; it's almost
     # certianly too permissive and may be wrong in other ways, but it should
     # preserve things correctly in mmmmost or all cases.
-    #    - it sometimes splits the two tokens incorrectly eg
-    #      '''"~Opera Mini" 1'''   ->    ['"~Opera', ' Mini" 1']
+    #
     #    - I can neither prove nor disprove that it is corect wrt all escaped
     #      semicolon situations
     # Addresses https://github.com/fatiherikli/nginxparser/issues/19
-    map_entry = space + nonspace + value + space + semicolon
-    map_block = Forward()
-    map_block << Group(
+    map_pattern = Regex(r'".*"') | Regex(r"'.*'") | nonspace
+    map_entry = space + map_pattern + space + value + space + semicolon
+    map_block = Group(
         # key could for instance be "server" or "http", or "location" (in which case
         # location_statement needs to have a non-empty location)
         Group(map_statement).leaveWhitespace() +
