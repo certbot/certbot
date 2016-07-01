@@ -41,7 +41,7 @@ certbot.eff.org_ to find out), you can install it
 from there, and run it by typing ``certbot`` (or ``letsencrypt``).  Because
 not all operating systems have packages yet, we provide a temporary solution
 via the ``certbot-auto`` wrapper script, which obtains some dependencies from
-your OS and puts others in a python virtual environment::
+your OS and puts others in a Python virtual environment::
 
   user@webserver:~$ wget https://dl.eff.org/certbot-auto
   user@webserver:~$ chmod a+x ./certbot-auto
@@ -60,9 +60,12 @@ And for full command line help, you can type::
 
 ``certbot-auto`` updates to the latest client release automatically.  And
 since ``certbot-auto`` is a wrapper to ``certbot``, it accepts exactly
-the same command line flags and arguments.  More details about this script and
-other installation methods can be found `in the User Guide
-<https://certbot.eff.org/docs/using.html#installation>`_.
+the same command line flags and arguments.  Throughout our and others' documentation
+you should substitute the name of the command that certbot.eff.org_ told you
+to use on your system. (``certbot-auto`` should always be run from the directory
+where it has been downloaded and invoked via ``./certbot-auto``).
+More details about this script and other installation methods can be found
+`in the User Guide <https://certbot.eff.org/docs/using.html#installation>`_.
 
 How to run the client
 ---------------------
