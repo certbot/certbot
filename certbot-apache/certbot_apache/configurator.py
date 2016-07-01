@@ -874,7 +874,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                         if self._sift_line(line):
                             if not sift:
                                 new_file.write(
-                                    "# Some rewrite rules in this file were "
+                                    "# Some rewrite rules in this file "
                                     "were disabled on your HTTPS site,\n"
                                     "# because they have the potential to "
                                     "create redirection loops.\n")
