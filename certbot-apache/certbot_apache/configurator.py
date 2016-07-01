@@ -861,7 +861,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         A new file is created on the filesystem.
 
         """
-        # First register the creation so thatu it is properly removed if
+        # First register the creation so that it is properly removed if
         # configuration is rolled back
         self.reverter.register_file_creation(False, ssl_fp)
         sift = False
