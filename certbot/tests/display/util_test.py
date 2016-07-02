@@ -106,8 +106,7 @@ class NcursesDisplayTest(unittest.TestCase):
         self.assertTrue(self.displayer.yesno("message"))
 
         mock_yesno.assert_called_with(
-            "message", display_util.HEIGHT, display_util.WIDTH,
-            yes_label="Yes", no_label="No")
+            "message", yes_label="Yes", no_label="No")
 
     @mock.patch("certbot.display.util."
                 "dialog.Dialog.checklist")
@@ -119,9 +118,7 @@ class NcursesDisplayTest(unittest.TestCase):
             (TAGS[1], "", True),
             (TAGS[2], "", True),
         ]
-        mock_checklist.assert_called_with(
-            "message", width=display_util.WIDTH, height=display_util.HEIGHT,
-            choices=choices)
+        mock_checklist.assert_called_with("message", choices=choices)
 
     @mock.patch("certbot.display.util.dialog.Dialog.dselect")
     def test_directory_select(self, mock_dselect):
