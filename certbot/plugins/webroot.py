@@ -55,6 +55,12 @@ to serve all files under specified web root ({0})."""
                  "-d entries. At present, if you put webroot-map in a config "
                  "file, it needs to be on a single line, like: webroot-map = "
                  '{"example.com":"/var/www"}.')
+        add("delay-auth", "-D", action="store_true",
+            help="Wait until the user presses ENTER before the "
+                 "authentication process kicks in. This is useful when "
+                 "proposing the challenges from a foreign machine to be "
+                 "able to copy the files to the real webserver before "
+                 "the challenges are verified.")
 
     def get_chall_pref(self, domain):  # pragma: no cover
         # pylint: disable=missing-docstring,no-self-use,unused-argument
@@ -73,7 +79,12 @@ to serve all files under specified web root ({0})."""
 
         self._create_challenge_dirs()
 
-        return [self._perform_single(achall) for achall in achalls]
+        responses = [self._perform_single(achall) for achall in achalls]
+
+        if self.conf("delay-auth"):
+            six.moves.input("Press ENTER to continue authentication...")
+
+        return responses
 
     def _set_webroots(self, achalls):
         if self.conf("path"):
