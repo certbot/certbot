@@ -92,10 +92,14 @@ matrix:
     - python: "2.7"
       env: TOXENV=nginxroundtrip
     - os: osx
+      # Cryptography no longer supports OpenSSL 0.9.8, which
+      # is the versionprovided by the default OS X image
       osx_image: xcode7.3
       language: generic
       env: TOXENV=cover
-      before_install: "travis_retry brew install python augeas dialog"
+      before_install:
+        - "travis_retry brew update"
+        - "travis_retry brew install python augeas dialog"
 
 # Only build pushes to the master branch, PRs, and branches beginning with
 # `test-`. This reduces the number of simultaneous Travis runs, which speeds
