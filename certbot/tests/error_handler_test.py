@@ -66,6 +66,9 @@ class ErrorHandlerTest(unittest.TestCase):
         # assert the error handling function was just called once
         self.init_func.assert_called_once_with(*self.init_args,
                                                **self.init_kwargs)
+        for signum in self.signals:
+            sig = signal.getsignal(signum)
+            self.assertTrue((sig == signal.SIG_DFL) or (sig == signal.SIG_IGN))
 
     def test_bad_recovery(self):
         bad_func = mock.MagicMock(side_effect=[ValueError])
