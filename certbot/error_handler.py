@@ -21,19 +21,26 @@ _SIGNALS = ([signal.SIGTERM] if os.name == "nt" else
 
 
 class ErrorHandler(object):
-    """Registers functions to be called if an exception or signal occurs.
+    """Context manager for running code that must be cleaned up on failure.
 
-    This class allows you to register functions that will be called when
-    an exception (excluding SystemExit) or signal is encountered. The
-    class works best as a context manager. For example:
+    The context manager allows you to register functions that will be called
+    when an exception (excluding SystemExit) or signal is encountered. Usage:
 
-    with ErrorHandler(cleanup_func):
+    handler = ErrorHandler(cleanup1_func, *cleanup1_args, **cleanup1_kwargs)
+    handler.register(cleanup2_func, *cleanup2_args, **cleanup2_kwargs)
+
+    with handler:
         do_something()
 
-    If an exception is raised out of do_something, cleanup_func will be
-    called. The exception is not caught by the ErrorHandler. Similarly,
-    if a signal is encountered, cleanup_func is called followed by the
-    previously registered signal handler.
+    Or for one cleanup function:
+
+    with ErrorHandler(func, args, kwargs):
+        do_something()
+
+    If an exception is raised out of do_something, the cleanup functions will
+    be called in last in first out order. Then the exception is raised.
+    Similarly, if a signal is encountered, the cleanup functions are called
+    followed by the previously received signal handler.
 
     Each registered cleanup function is called exactly once. If a registered
     function raises an exception, it is logged and the next function is called.
