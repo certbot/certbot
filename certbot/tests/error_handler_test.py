@@ -1,9 +1,9 @@
 """Tests for certbot.error_handler."""
+import contextlib
 import os
 import signal
 import sys
 import unittest
-import contextlib
 
 import mock
 
