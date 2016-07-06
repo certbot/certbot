@@ -128,7 +128,7 @@ class ErrorHandler(object):
             raise errors.SignalExit
 
     def _call_signals(self):
-        """Calls the signal given by signum.
+        """Finally call the deferred signals.
 
         :param int signum: signal number
 
