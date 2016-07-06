@@ -50,6 +50,7 @@ class ErrorHandler(object):
             self.register(func, *args, **kwargs)
 
     def __enter__(self):
+        self.body_executed = False
         self.set_signal_handlers()
 
     def __exit__(self, exec_type, exec_value, trace):
