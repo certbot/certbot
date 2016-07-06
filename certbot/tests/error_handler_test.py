@@ -3,12 +3,12 @@ import os
 import signal
 import sys
 import unittest
-from contextlib import contextmanager
+import contextlib
 
 import mock
 
 
-@contextmanager
+@contextlib.contextmanager
 def signal_receiver(signums):
     """Context manager to catch signals"""
     signals = []
