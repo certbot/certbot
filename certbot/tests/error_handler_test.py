@@ -46,7 +46,9 @@ class ErrorHandlerTest(unittest.TestCase):
             with self.handler:
                 raise ValueError
         except ValueError:
-            pass
+            exception_raised = True
+
+        self.assertTrue(exception_raised)
         self.init_func.assert_called_once_with(*self.init_args,
                                                **self.init_kwargs)
 
