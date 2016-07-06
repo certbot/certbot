@@ -75,10 +75,10 @@ class ErrorHandler(object):
                     traceback.format_exception(exec_type, exec_value, trace)))
 
             self._call_registered()
-            self._call_signals()
             return retval
         finally:
-            self._reset_signal_handlers()
+            prev_handlers = self._reset_signal_handlers()
+            self._call_signals(prev_handlers)
 
     def register(self, func, *args, **kwargs):
         """Sets func to be called with *args and **kwargs during cleanup
@@ -112,7 +112,9 @@ class ErrorHandler(object):
         """Resets signal handlers for signals in _SIGNALS."""
         for signum in self.prev_handlers:
             signal.signal(signum, self.prev_handlers[signum])
+        out = dict((k, v) for k, v in self.prev_handlers.items())
         self.prev_handlers.clear()
+        return out
 
     def _signal_handler(self, signum, unused_frame):
         """Replacement function for handling recieved signals.
@@ -127,7 +129,7 @@ class ErrorHandler(object):
         if not self.body_executed:
             raise errors.SignalExit
 
-    def _call_signals(self):
+    def _call_signals(self, prev_handlers):
         """Finally call the deferred signals.
 
         :param int signum: signal number
@@ -135,5 +137,5 @@ class ErrorHandler(object):
         """
         for signum in self.received_signals:
             logger.debug("Calling signal %s", signum)
-            signal.signal(signum, self.prev_handlers[signum])
+            signal.signal(signum, prev_handlers[signum])
             os.kill(os.getpid(), signum)
