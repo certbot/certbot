@@ -29,6 +29,12 @@ class Authenticator(common.Plugin):
 
     description = "Place files in webroot directory"
 
+    MSG_AUTH_DELAYED = """\
+Authentication delayed. Deploy the {0}/.well-known directory to \
+your webroot now.
+
+Press ENTER to continue to the validation process."""
+
     MORE_INFO = """\
 Authenticator plugin that performs http-01 challenge by saving
 necessary validation resources to appropriate paths on the file
@@ -82,7 +88,9 @@ to serve all files under specified web root ({0})."""
         responses = [self._perform_single(achall) for achall in achalls]
 
         if self.conf("delay-auth"):
-            six.moves.input("Press ENTER to continue authentication...")
+            path = self.conf("path")[0]
+            display = zope.component.getUtility(interfaces.IDisplay)
+            display.notification(self.MSG_AUTH_DELAYED.format(path))
 
         return responses
 
