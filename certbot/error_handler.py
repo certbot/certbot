@@ -5,6 +5,7 @@ import os
 import signal
 import traceback
 
+from certbot import errors
 
 logger = logging.getLogger(__name__)
 
@@ -17,14 +18,6 @@ logger = logging.getLogger(__name__)
 _SIGNALS = ([signal.SIGTERM] if os.name == "nt" else
             [signal.SIGTERM, signal.SIGHUP, signal.SIGQUIT,
              signal.SIGXCPU, signal.SIGXFSZ])
-
-
-class SignalExit(Exception):
-    """This exception is used stop of execution of the code in the body of the
-    ErrorHandler context manager.
-
-    """
-    pass
 
 
 class ErrorHandler(object):
@@ -62,7 +55,7 @@ class ErrorHandler(object):
     def __exit__(self, exec_type, exec_value, trace):
         self.body_executed = True
         retval = False
-        if exec_type is SignalExit:
+        if exec_type is errors.SignalExit:
             logger.debug("Encountered signals: %s", self.received_signals)
             self.call_registered()
             for signum in self.received_signals:
@@ -120,7 +113,7 @@ class ErrorHandler(object):
         """
         self.received_signals.append(signum)
         if not self.body_executed:
-            raise SignalExit
+            raise errors.SignalExit
 
     def call_signal(self, signum):
         """Calls the signal given by signum.
