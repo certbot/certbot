@@ -70,7 +70,11 @@ class ErrorHandlerTest(unittest.TestCase):
     def test_bad_recovery(self):
         bad_func = mock.MagicMock(side_effect=[ValueError])
         self.handler.register(bad_func)
-        self.handler._call_registered()
+        try:
+            with self.handler:
+                raise ValueError
+        except ValueError:
+            pass
         self.init_func.assert_called_once_with(*self.init_args,
                                                **self.init_kwargs)
         bad_func.assert_called_once_with()
