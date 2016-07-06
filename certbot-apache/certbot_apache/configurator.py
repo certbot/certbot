@@ -159,8 +159,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Verify Apache is installed
         restart_cmd = constants.os_constant("restart_cmd")[0]
         if not util.exe_exists(restart_cmd):
+            logger.warn("Failed to find %s in PATH: %s", restart_cmd, os.environ["PATH"])
             raise errors.NoInstallationError(
-                'Cannot find Apache install ({0} not in PATH)'.format(restart_cmd))
+                'Cannot find Apache control command {0}'.format(restart_cmd))
 
         # Make sure configuration is valid
         self.config_test()
