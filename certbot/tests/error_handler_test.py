@@ -56,13 +56,13 @@ class ErrorHandlerTest(unittest.TestCase):
         with signal_receiver(self.signals) as signals_received:
             with self.handler:
                 should_be_42 = 42
-                send_signal(signal.SIGTERM)
+                send_signal(self.signals[0])
                 should_be_42 *= 10
 
         # check exectuion stoped when the signal was sent
-        assert 42 == should_be_42
+        self.assertEqual(42, should_be_42)
         # assert signals were caught
-        assert [signal.SIGTERM] == signals_received
+        self.assertEqual([self.signals[0]], signals_received)
         # assert the error handling function was just called once
         self.init_func.assert_called_once_with(*self.init_args,
                                                **self.init_kwargs)
@@ -76,13 +76,14 @@ class ErrorHandlerTest(unittest.TestCase):
         bad_func.assert_called_once_with()
 
     def test_bad_recovery_with_signal(self):
-        bad_func = mock.MagicMock(
-                side_effect=lambda: send_signal(signal.SIGHUP))
+        sig1 = self.signals[0]
+        sig2 = self.signals[-1]
+        bad_func = mock.MagicMock(side_effect=lambda: send_signal(sig1))
         self.handler.register(bad_func)
         with signal_receiver(self.signals) as signals_received:
             with self.handler:
-                send_signal(signal.SIGTERM)
-        assert [signal.SIGTERM, signal.SIGHUP] == signals_received
+                send_signal(sig2)
+        self.assertEqual([sig2, sig1], signals_received)
         self.init_func.assert_called_once_with(*self.init_args,
                                                **self.init_kwargs)
         bad_func.assert_called_once_with()
