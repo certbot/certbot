@@ -72,7 +72,7 @@ def _clean(dialog_result):
     elif code in (CANCEL, ESC):
         return (CANCEL, result)
     else:
-        logger.info("Surprising dialog return code %s", code)
+        logger.debug("Surprising dialog return code %s", code)
         return (CANCEL, result)
 
 
@@ -83,6 +83,7 @@ class NcursesDisplay(object):
     def __init__(self, width=WIDTH, height=HEIGHT):
         super(NcursesDisplay, self).__init__()
         self.dialog = dialog.Dialog()
+        assert OK == self.dialog.DIALOG_OK, "What kind of absurdity is this?"
         self.width = width
         self.height = height
 
@@ -189,7 +190,6 @@ class NcursesDisplay(object):
         :rtype: bool
 
         """
-        assert OK == self.dialog.DIALOG_OK, "What kind of absurdity is this?"
         return self.dialog.DIALOG_OK == self.dialog.yesno(
             message, self.height, self.width,
             yes_label=yes_label, no_label=no_label)
