@@ -61,22 +61,24 @@ class ErrorHandler(object):
         self._set_signal_handlers()
 
     def __exit__(self, exec_type, exec_value, trace):
-        self.body_executed = True
-        retval = False
-        if exec_type is errors.SignalExit:
-            logger.debug("Encountered signals: %s", self.received_signals)
-            self._call_registered()
-            for signum in self.received_signals:
-                self._call_signal(signum)
-            retval = True
-        # SystemExit is ignored to properly handle forks that don't exec
-        elif exec_type not in (None, SystemExit):
-            logger.debug("Encountered exception:\n%s", "".join(
-                traceback.format_exception(exec_type, exec_value, trace)))
-            self._call_registered()
+        try:
+            self.body_executed = True
+            retval = False
+            # SystemExit is ignored to properly handle forks that don't exec
+            if exec_type in (None, SystemExit):
+                return retval
+            elif exec_type is errors.SignalExit:
+                logger.debug("Encountered signals: %s", self.received_signals)
+                retval = True
+            else:
+                logger.debug("Encountered exception:\n%s", "".join(
+                    traceback.format_exception(exec_type, exec_value, trace)))
 
-        self._reset_signal_handlers()
-        return retval
+            self._call_registered()
+            self._call_signals()
+            return retval
+        finally:
+            self._reset_signal_handlers()
 
     def register(self, func, *args, **kwargs):
         """Sets func to be called with *args and **kwargs during cleanup
@@ -123,12 +125,13 @@ class ErrorHandler(object):
         if not self.body_executed:
             raise errors.SignalExit
 
-    def _call_signal(self, signum):
+    def _call_signals(self):
         """Calls the signal given by signum.
 
         :param int signum: signal number
 
         """
-        logger.debug("Calling signal %s", signum)
-        signal.signal(signum, self.prev_handlers[signum])
-        os.kill(os.getpid(), signum)
+        for signum in self.received_signals:
+            logger.debug("Calling signal %s", signum)
+            signal.signal(signum, self.prev_handlers[signum])
+            os.kill(os.getpid(), signum)
