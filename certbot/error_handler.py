@@ -51,24 +51,24 @@ class ErrorHandler(object):
 
     def __enter__(self):
         self.body_executed = False
-        self.set_signal_handlers()
+        self._set_signal_handlers()
 
     def __exit__(self, exec_type, exec_value, trace):
         self.body_executed = True
         retval = False
         if exec_type is errors.SignalExit:
             logger.debug("Encountered signals: %s", self.received_signals)
-            self.call_registered()
+            self._call_registered()
             for signum in self.received_signals:
-                self.call_signal(signum)
+                self._call_signal(signum)
             retval = True
         # SystemExit is ignored to properly handle forks that don't exec
         elif exec_type not in (None, SystemExit):
             logger.debug("Encountered exception:\n%s", "".join(
                 traceback.format_exception(exec_type, exec_value, trace)))
-            self.call_registered()
+            self._call_registered()
 
-        self.reset_signal_handlers()
+        self._reset_signal_handlers()
         return retval
 
     def register(self, func, *args, **kwargs):
@@ -79,7 +79,7 @@ class ErrorHandler(object):
         """
         self.funcs.append(functools.partial(func, *args, **kwargs))
 
-    def call_registered(self):
+    def _call_registered(self):
         """Calls all registered functions"""
         logger.debug("Calling registered functions")
         while self.funcs:
@@ -90,7 +90,7 @@ class ErrorHandler(object):
                 logger.exception(error)
             self.funcs.pop()
 
-    def set_signal_handlers(self):
+    def _set_signal_handlers(self):
         """Sets signal handlers for signals in _SIGNALS."""
         for signum in _SIGNALS:
             prev_handler = signal.getsignal(signum)
@@ -99,7 +99,7 @@ class ErrorHandler(object):
                 self.prev_handlers[signum] = prev_handler
                 signal.signal(signum, self._signal_handler)
 
-    def reset_signal_handlers(self):
+    def _reset_signal_handlers(self):
         """Resets signal handlers for signals in _SIGNALS."""
         for signum in self.prev_handlers:
             signal.signal(signum, self.prev_handlers[signum])
@@ -116,7 +116,7 @@ class ErrorHandler(object):
         if not self.body_executed:
             raise errors.SignalExit
 
-    def call_signal(self, signum):
+    def _call_signal(self, signum):
         """Calls the signal given by signum.
 
         :param int signum: signal number
