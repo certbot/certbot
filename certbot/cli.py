@@ -88,8 +88,8 @@ More detailed help:
                         the available topics are:
 
    all, automation, paths, security, testing, or any of the subcommands or
-   plugins (certonly, install, register, nginx, apache, standalone, webroot,
-   etc.)
+   plugins (certonly, renew, install, register, nginx, apache, standalone,
+   webroot, etc.)
 """
 
 
@@ -390,8 +390,7 @@ class HelpfulArgumentParser(object):
                 if getattr(parsed_args, arg):
                     raise errors.Error(
                         ("Conflicting values for displayer."
-                        " {0} conflicts with dialog_mode").format(arg)
-                    )
+                        " {0} conflicts with dialog_mode").format(arg))
 
         if parsed_args.validate_hooks:
             hooks.validate_hooks(parsed_args)
@@ -676,9 +675,18 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
               "which ones are required if it finds one missing")
     helpful.add(
         None, "--dialog", dest="dialog_mode", action="store_true",
-        help="Run using dialog")
+        help="Run using interactive dialog menus")
     helpful.add(
-        None, "--dry-run", action="store_true", dest="dry_run",
+        [None, "run", "certonly"],
+        "-d", "--domains", "--domain", dest="domains",
+        metavar="DOMAIN", action=_DomainsAction, default=[],
+        help="Domain names to apply. For multiple domains you can use "
+             "multiple -d flags or enter a comma separated list of domains "
+             "as a parameter.")
+
+    helpful.add(
+        [None, "testing", "renew", "certonly"],
+        "--dry-run", action="store_true", dest="dry_run",
         help="Perform a test run of the client, obtaining test (invalid) certs"
              " but not saving them to disk. This can currently only be used"
              " with the 'certonly' and 'renew' subcommands. \nNote: Although --dry-run"
@@ -705,17 +713,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "with an existing registration, such as the e-mail address, "
              "should be updated, rather than registering a new account.")
     helpful.add(None, "-m", "--email", help=config_help("email"))
-    # positional arg shadows --domains, instead of appending, and
-    # --domains is useful, because it can be stored in config
-    #for subparser in parser_run, parser_auth, parser_install:
-    #    subparser.add_argument("domains", nargs="*", metavar="domain")
-    helpful.add(None, "-d", "--domains", "--domain", dest="domains",
-                metavar="DOMAIN", action=_DomainsAction, default=[],
-                help="Domain names to apply. For multiple domains you can use "
-                "multiple -d flags or enter a comma separated list of domains "
-                "as a parameter.")
     helpful.add(
-        ["automation", "renew"], "--keep-until-expiring", "--keep", "--reinstall",
+        ["automation", "renew", "certonly", "run"],
+        "--keep-until-expiring", "--keep", "--reinstall",
         dest="reinstall", action="store_true",
         help="If the requested cert matches an existing cert, always keep the "
              "existing one until it is due for renewal (for the "
@@ -729,14 +729,16 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         version="%(prog)s {0}".format(certbot.__version__),
         help="show program's version number and exit")
     helpful.add(
-        "automation", "--force-renewal", "--renew-by-default",
+        ["automation", "renew"],
+        "--force-renewal", "--renew-by-default",
         action="store_true", dest="renew_by_default", help="If a certificate "
              "already exists for the requested domains, renew it now, "
              "regardless of whether it is near expiry. (Often "
              "--keep-until-expiring is more appropriate). Also implies "
              "--expand.")
     helpful.add(
-        "automation", "--allow-subset-of-names", action="store_true",
+        ["automation", "renew"],
+        "--allow-subset-of-names", action="store_true",
         help="When performing domain validation, do not consider it a failure "
              "if authorizations can not be obtained for a strict subset of "
              "the requested domains. This may be useful for allowing renewals for "
@@ -760,7 +762,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="(certbot-auto only) prevent the certbot-auto script from"
              " upgrading itself to newer released versions")
     helpful.add(
-        "automation", "-q", "--quiet", dest="quiet", action="store_true",
+        ["automation", "renew"],
+        "-q", "--quiet", dest="quiet", action="store_true",
         help="Silence all output except errors. Useful for automation via cron."
              " Implies --non-interactive.")
 
@@ -970,15 +973,17 @@ def _plugins_parsing(helpful, plugins):
         "plugins", "--configurator", help="Name of the plugin that is "
         "both an authenticator and an installer. Should not be used "
         "together with --authenticator or --installer.")
-    helpful.add("plugins", "--apache", action="store_true",
+    helpful.add(["plugins", "certonly", "run", "install"],
+                "--apache", action="store_true",
                 help="Obtain and install certs using Apache")
-    helpful.add("plugins", "--nginx", action="store_true",
+    helpful.add(["plugins", "certonly", "run", "install"],
+                "--nginx", action="store_true",
                 help="Obtain and install certs using Nginx")
-    helpful.add("plugins", "--standalone", action="store_true",
+    helpful.add(["plugins", "certonly"], "--standalone", action="store_true",
                 help='Obtain certs using a "standalone" webserver.')
-    helpful.add("plugins", "--manual", action="store_true",
+    helpful.add(["plugins", "certonly"], "--manual", action="store_true",
                 help='Provide laborious manual instructions for obtaining a cert')
-    helpful.add("plugins", "--webroot", action="store_true",
+    helpful.add(["plugins", "certonly"], "--webroot", action="store_true",
                 help='Obtain certs by placing files in a webroot directory.')
 
     # things should not be reorder past/pre this comment:
