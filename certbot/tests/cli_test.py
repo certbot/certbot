@@ -113,7 +113,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         out = self._help_output(['--help', 'plugins'])
         self.assertTrue("--manual-test-mode" not in out)
         self.assertTrue("--prepare" in out)
-        self.assertTrue("Plugin options" in out)
+        self.assertTrue('"plugins" subcommand' in out)
 
         out = self._help_output(['--help', 'install'])
         self.assertTrue("--cert-path" in out)
