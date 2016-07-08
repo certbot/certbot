@@ -95,6 +95,7 @@ def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
     :param str directory: Path to a directory.
     :param int mode: Directory mode.
     :param int uid: Directory owner.
+    :param bool strict: require directory to be owned by current user
 
     :raises .errors.Error: if a directory already exists,
         but has wrong permissions or owner
