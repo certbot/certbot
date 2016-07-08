@@ -1006,6 +1006,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         fp = fp.replace("(", "\\(")
         fp = fp.replace(")", "\\)")
         fp = fp.replace("!", "\\!")
+        return fp
 
     ######################################################################
     # Enhancements
