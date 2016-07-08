@@ -1,9 +1,7 @@
 """Tests for certbot.main."""
 import unittest
 
-
 import mock
-
 
 from certbot import cli
 from certbot import configuration
