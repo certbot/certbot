@@ -821,7 +821,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         else:
             return non_ssl_vh_fp + self.conf("le_vhost_ext")
 
-    def _sift_line(self, line):
+    def _sift_rewrite_rule(self, line):
         """Decides whether a line should be copied to a SSL vhost.
 
         A canonical example of when sifting a line is required:
@@ -872,18 +872,62 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             with open(avail_fp, "r") as orig_file:
                 with open(ssl_fp, "w") as new_file:
                     new_file.write("<IfModule mod_ssl.c>\n")
+
+                    comment = ("# Some rewrite rules in this file were "
+                              "disabled on your HTTPS site,\n"
+                              "# because they have the potential to create "
+                              "redirection loops.\n")
+
                     for line in orig_file:
-                        if self._sift_line(line):
+                        A = line.lstrip().startswith("RewriteCond")
+                        B = line.lstrip().startswith("RewriteRule")
+
+                        if not (A or B):
+                            new_file.write(line)
+                            continue
+
+                        # A RewriteRule that doesn't need filtering
+                        if B and not self._sift_rewrite_rule(line):
+                            new_file.write(line)
+                            continue
+
+                        # A RewriteRule that does need filtering
+                        if B and self._sift_rewrite_rule(line):
                             if not sift:
-                                new_file.write(
-                                    "# Some rewrite rules in this file were "
-                                    "were disabled on your HTTPS site,\n"
-                                    "# because they have the potential to "
-                                    "create redirection loops.\n")
+                                new_file.write(comment)
                                 sift = True
                             new_file.write("# " + line)
-                        else:
-                            new_file.write(line)
+                            continue
+
+                        # We save RewriteCond(s) and their corresponding
+                        # RewriteRule in 'chunk'.
+                        # We then decide whether we comment out the entire
+                        # chunk based on its RewriteRule.
+                        chunk = []
+                        if A:
+                            chunk.append(line)
+                            line = next(orig_file)
+
+                            # RewriteCond(s) must be followed by one RewriteRule
+                            while not line.lstrip().startswith("RewriteRule"):
+                                chunk.append(line)
+                                line = next(orig_file)
+
+                            # Now, current line must start with a RewriteRule
+                            chunk.append(line)
+
+                            if self._sift_rewrite_rule(line):
+                                if not sift:
+                                    new_file.write(comment)
+                                    sift = True
+
+                                new_file.write(''.join(
+                                    ['# ' + l for l in chunk]))
+                                continue
+                            else:
+                                new_file.write(''.join(chunk))
+                                continue
+
                     new_file.write("</IfModule>\n")
         except IOError:
             logger.fatal("Error writing/reading to file in make_vhost_ssl")
