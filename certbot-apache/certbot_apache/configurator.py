@@ -529,7 +529,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if addr.get_port() == "443":
                 is_ssl = True
 
-        filename = get_file_path(self.aug.get("/augeas/files%s/file" % get_file_path(path)))
+        filename = get_file_path(self.aug.get("/augeas/files%s/path" % get_file_path(path)))
         if self.conf("handle-sites"):
             is_enabled = self.is_site_enabled(filename)
         else:
