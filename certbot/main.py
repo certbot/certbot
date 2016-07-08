@@ -36,9 +36,10 @@ from certbot.plugins import disco as plugins_disco
 from certbot.plugins import selection as plug_sel
 
 
-_PERM_ERR_FMT = ("An error occurred while trying to create or modify {0}. To "
-                 "run as non-root, set --config-dir, --logs-dir, and "
-                 "--work-dir to writeable paths.")
+_PERM_ERR_FMT = os.linesep.join((
+    "The following error was encountered:", "{0}",
+    "If running as non-root, set --config-dir, "
+    "--logs-dir, and --work-dir to writeable paths."))
 
 
 logger = logging.getLogger(__name__)
@@ -601,8 +602,8 @@ def setup_log_file_handler(config, logfile, fmt):
     try:
         handler = logging.handlers.RotatingFileHandler(
             log_file_path, maxBytes=2 ** 20, backupCount=10)
-    except IOError:
-        raise errors.Error(_PERM_ERR_FMT.format(log_file_path))
+    except IOError as error:
+        raise errors.Error(_PERM_ERR_FMT.format(error))
     # rotate on each invocation, rollover only possible when maxBytes
     # is nonzero and backupCount is nonzero, so we set maxBytes as big
     # as possible not to overrun in single CLI invocation (1MB).
@@ -715,8 +716,8 @@ def make_or_verify_core_dir(directory, mode, uid, strict):
     """
     try:
         util.make_or_verify_dir(directory, mode, uid, strict)
-    except OSError:
-        raise errors.Error(_PERM_ERR_FMT.format(directory))
+    except OSError as error:
+        raise errors.Error(_PERM_ERR_FMT.format(error))
 
 
 def main(cli_args=sys.argv[1:]):
