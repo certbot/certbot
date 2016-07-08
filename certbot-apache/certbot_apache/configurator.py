@@ -83,7 +83,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     """
 
-    description = "Apache Web Server - Alpha"
+    description = "Apache Web Server plugin - Beta"
 
     @classmethod
     def add_parser_arguments(cls, add):

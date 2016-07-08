@@ -766,7 +766,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "-q", "--quiet", dest="quiet", action="store_true",
         help="Silence all output except errors. Useful for automation via cron."
              " Implies --non-interactive.")
-
+    # overwrites server, handled in HelpfulArgumentParser.parse_args()
+    helpful.add("testing", "--test-cert", "--staging", action='store_true', dest='staging',
+        help='Use the staging server to obtain test (invalid) certs; equivalent'
+             ' to --server ' + constants.STAGING_URI)
     helpful.add(
         "testing", "--debug", action="store_true",
         help="Show tracebacks in case of errors, and allow certbot-auto "
@@ -947,10 +950,6 @@ def _paths_parser(helpful):
         help="Logs directory.")
     add("paths", "--server", default=flag_default("server"),
         help=config_help("server"))
-    # overwrites server, handled in HelpfulArgumentParser.parse_args()
-    add("testing", "--test-cert", "--staging", action='store_true', dest='staging',
-        help='Use the staging server to obtain test (invalid) certs; equivalent'
-             ' to --server ' + constants.STAGING_URI)
 
 
 def _plugins_parsing(helpful, plugins):
