@@ -36,6 +36,12 @@ from certbot.display import util as display_util, ops as display_ops
 from certbot.plugins import disco as plugins_disco
 from certbot.plugins import selection as plug_sel
 
+
+_PERM_ERR_FMT = ("An error occurred while trying to create or modify {0}. To "
+                 "run as non-root, set --config-dir, --logs-dir, and "
+                 "--work-dir to writeable paths.")
+
+
 logger = logging.getLogger(__name__)
 
 
