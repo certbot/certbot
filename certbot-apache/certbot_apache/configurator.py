@@ -529,7 +529,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if addr.get_port() == "443":
                 is_ssl = True
 
-        filename = self._unescape(get_file_path(path))
+        filename = get_file_path(self.aug.get("/augeas/files%s/file" % get_file_path(path)))
         if self.conf("handle-sites"):
             is_enabled = self.is_site_enabled(filename)
         else:
@@ -770,7 +770,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         avail_fp = nonssl_vhost.filep
-        ssl_fp = self._escape(self._get_ssl_vhost_path(avail_fp))
+        ssl_fp = self._get_ssl_vhost_path(avail_fp)
 
         self._copy_create_ssl_vhost_skeleton(avail_fp, ssl_fp)
 
@@ -778,7 +778,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.aug.load()
         # Get Vhost augeas path for new vhost
         vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
-                              (ssl_fp, parser.case_i("VirtualHost")))
+                              (_escape(ssl_fp), parser.case_i("VirtualHost")))
         if len(vh_p) != 1:
             logger.error("Error: should only be one vhost in %s", avail_fp)
             raise errors.PluginError("Currently, we only support "
@@ -997,11 +997,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if need_to_save:
             self.save()
 
-    def _unescape(self, fp):
-        return fp.replace("\\", "")
-
     def _escape(self, fp):
-        return fp.replace(",", "\\,")
+        fp = fp.replace(",", "\\,")
+        fp = fp.replace("[", "\\[")
+        fp = fp.replace("]", "\\]")
+        fp = fp.replace("|", "\\|")
+        fp = fp.replace("=", "\\=")
+        fp = fp.replace("(", "\\(")
+        fp = fp.replace(")", "\\)")
+        fp = fp.replace("!", "\\!")
 
     ######################################################################
     # Enhancements
@@ -1332,7 +1336,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         self.aug.load()
         # Make a new vhost data structure and add it to the lists
-        new_vhost = self._create_vhost(parser.get_aug_path(redirect_filepath))
+        new_vhost = self._create_vhost(parser.get_aug_path(self._escape(redirect_filepath)))
         self.vhosts.append(new_vhost)
         self._enhanced_vhosts["redirect"].add(new_vhost)
 
