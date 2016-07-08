@@ -42,6 +42,7 @@ class ErrorHandlerTest(unittest.TestCase):
         self.signals = error_handler._SIGNALS
 
     def test_context_manager(self):
+        exception_raised = False
         try:
             with self.handler:
                 raise ValueError
