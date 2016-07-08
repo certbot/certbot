@@ -49,11 +49,14 @@ class MultipleVhostsTest(util.ApacheTest):
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
 
-    @mock.patch("certbot_apache.configurator.util.exe_exists")
-    def test_prepare_no_install(self, mock_exe_exists):
-        mock_exe_exists.return_value = False
-        self.assertRaises(
-            errors.NoInstallationError, self.config.prepare)
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator.init_augeas")
+    @mock.patch("certbot_apache.configurator.path_surgery")
+    def test_prepare_no_install(self, mock_surgery, _init_augeas):
+        silly_path = {"PATH": "/tmp/nothingness2342"}
+        mock_surgery.return_value = False
+        with mock.patch.dict('os.environ', silly_path):
+            self.assertRaises(errors.NoInstallationError, self.config.prepare)
+            self.assertEquals(mock_surgery.call_count, 1)
 
     @mock.patch("certbot_apache.augeas_configurator.AugeasConfigurator.init_augeas")
     def test_prepare_no_augeas(self, mock_init_augeas):
@@ -85,6 +88,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config._check_aug_version = mock.Mock(return_value=False)
         self.assertRaises(
             errors.NotSupportedError, self.config.prepare)
+
 
     def test_add_parser_arguments(self):  # pylint: disable=no-self-use
         from certbot_apache.configurator import ApacheConfigurator

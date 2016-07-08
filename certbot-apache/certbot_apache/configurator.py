@@ -18,6 +18,7 @@ from certbot import interfaces
 from certbot import util
 
 from certbot.plugins import common
+from certbot.plugins.util import path_surgery
 
 from certbot_apache import augeas_configurator
 from certbot_apache import constants
@@ -141,6 +142,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return os.path.join(self.config.config_dir,
                             constants.MOD_SSL_CONF_DEST)
 
+
     def prepare(self):
         """Prepare the authenticator/installer.
 
@@ -159,8 +161,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Verify Apache is installed
         restart_cmd = constants.os_constant("restart_cmd")[0]
         if not util.exe_exists(restart_cmd):
-            raise errors.NoInstallationError(
-                'Cannot find Apache install ({0} not in PATH)'.format(restart_cmd))
+            if not path_surgery(restart_cmd):
+                raise errors.NoInstallationError(
+                    'Cannot find Apache control command {0}'.format(restart_cmd))
 
         # Make sure configuration is valid
         self.config_test()
