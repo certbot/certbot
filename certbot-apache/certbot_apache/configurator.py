@@ -141,6 +141,20 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return os.path.join(self.config.config_dir,
                             constants.MOD_SSL_CONF_DEST)
 
+    def _path_surgery(self):
+        """Mitigate https://github.com/certbot/certbot/issues/1833"""
+        dirs = ("/usr/sbin/", "/usr/local/bin/", "/usr/local/sbin/")
+        path = os.environ["PATH"]
+        added = []
+        for d in dirs:
+            if d not in path:
+                path += os.pathsep + d
+                added.append(d)
+        if any(added):
+            logger.debug("Can't find %s, attempting PATH mitigation by adding %s"
+                         restart_cmd, os.pathsep.join(added))
+            os.environ["PATH"] = path
+
     def prepare(self):
         """Prepare the authenticator/installer.
 
@@ -159,11 +173,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Verify Apache is installed
         restart_cmd = constants.os_constant("restart_cmd")[0]
         if not util.exe_exists(restart_cmd):
-            # mitigate https://github.com/certbot/certbot/issues/1833
-            logger.debug("Can't find %s, attempting PATH mitigation by adding "
-                         "/usr/sbin/ and /usr/local/bin/", restart_cmd)
-            os.environ["PATH"] = os.pathsep.join((os.environ["PATH"], "/usr/sbin/", 
-                                                  "/usr/local/bin/"))
+            self._path_surgery()
             if not util.exe_exists(restart_cmd):
                 logger.warn("Failed to find %s in expanded PATH: %s",
                             restart_cmd, os.environ["PATH"])
