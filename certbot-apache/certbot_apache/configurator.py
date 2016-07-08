@@ -778,7 +778,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.aug.load()
         # Get Vhost augeas path for new vhost
         vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
-                              (_escape(ssl_fp), parser.case_i("VirtualHost")))
+                              (self._escape(ssl_fp), parser.case_i("VirtualHost")))
         if len(vh_p) != 1:
             logger.error("Error: should only be one vhost in %s", avail_fp)
             raise errors.PluginError("Currently, we only support "
