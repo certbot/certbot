@@ -159,9 +159,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Verify Apache is installed
         restart_cmd = constants.os_constant("restart_cmd")[0]
         if not util.exe_exists(restart_cmd):
-            logger.warn("Failed to find %s in PATH: %s", restart_cmd, os.environ["PATH"])
-            raise errors.NoInstallationError(
-                'Cannot find Apache control command {0}'.format(restart_cmd))
+            # mitigate https://github.com/certbot/certbot/issues/1833
+            logger.debug("Can't find %s, attempting PATH mitigation by adding "
+                         "/usr/sbin/ and /usr/local/bin/", restart_cmd)
+            os.environ["PATH"] = os.pathsep.join((os.environ["PATH"], "/usr/sbin/", 
+                                                  "/usr/local/bin/"))
+            if not util.exe_exists(restart_cmd):
+                logger.warn("Failed to find %s in expanded PATH: %s",
+                            restart_cmd, os.environ["PATH"])
+                raise errors.NoInstallationError(
+                    'Cannot find Apache control command {0}'.format(restart_cmd))
 
         # Make sure configuration is valid
         self.config_test()
