@@ -49,11 +49,14 @@ class MultipleVhostsTest(util.ApacheTest):
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
 
-    @mock.patch("certbot_apache.configurator.util.exe_exists")
-    def test_prepare_no_install(self, mock_exe_exists):
-        mock_exe_exists.return_value = False
-        self.assertRaises(
-            errors.NoInstallationError, self.config.prepare)
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator.init_augeas")
+    @mock.patch("certbot_apache.configurator.path_surgery")
+    def test_prepare_no_install(self, mock_surgery, _init_augeas):
+        silly_path = {"PATH": "/tmp/nothingness2342"}
+        mock_surgery.return_value = False
+        with mock.patch.dict('os.environ', silly_path):
+            self.assertRaises(errors.NoInstallationError, self.config.prepare)
+            self.assertEquals(mock_surgery.call_count, 1)
 
     @mock.patch("certbot_apache.augeas_configurator.AugeasConfigurator.init_augeas")
     def test_prepare_no_augeas(self, mock_init_augeas):
@@ -86,31 +89,6 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertRaises(
             errors.NotSupportedError, self.config.prepare)
 
-    @mock.patch("certbot_apache.configurator.logger.debug")
-    def test_path_surgery(self, mock_debug):
-        # pylint: disable=protected-access
-        all_path = {"PATH": "/usr/local/bin:/bin/:/usr/sbin/:/usr/local/sbin/"}
-        with mock.patch.dict('os.environ', all_path):
-            self.config._path_surgery("thingy")
-            self.assertEquals(mock_debug.call_count, 0)
-            self.assertEquals(os.environ["PATH"], all_path["PATH"])
-        no_path = {"PATH": "/tmp/"}
-        with mock.patch.dict('os.environ', no_path):
-            self.config._path_surgery("thingy")
-            self.assertEquals(mock_debug.call_count, 1)
-            self.assertTrue("/usr/local/bin" in os.environ["PATH"])
-            self.assertTrue("/tmp" in os.environ["PATH"])
-
-    @mock.patch("certbot_apache.configurator.ApacheConfigurator.init_augeas")
-    @mock.patch("certbot_apache.configurator.ApacheConfigurator._path_surgery")
-    @mock.patch("certbot_apache.configurator.logger.warn")
-    def test_no_install(self, mock_warn, mock_surgery, _init_augeas):
-        silly_path = {"PATH": "/tmp/nothingness2342"}
-        with mock.patch.dict('os.environ', silly_path):
-            self.assertRaises(errors.NoInstallationError, self.config.prepare)
-            self.assertEquals(mock_warn.call_count, 1)
-            self.assertEquals(mock_surgery.call_count, 1)
-            self.assertTrue("Failed to find" in mock_warn.call_args[0][0])
 
     def test_add_parser_arguments(self):  # pylint: disable=no-self-use
         from certbot_apache.configurator import ApacheConfigurator
