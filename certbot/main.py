@@ -702,6 +702,23 @@ def _handle_exception(exc_type, exc_value, trace, config):
             traceback.format_exception(exc_type, exc_value, trace)))
 
 
+def make_or_verify_core_dir(directory, mode, uid, strict):
+    """Make sure directory exists with proper permissions.
+
+    :param str directory: Path to a directory.
+    :param int mode: Directory mode.
+    :param int uid: Directory owner.
+    :param bool strict: require directory to be owned by current user
+
+    :raises .errors.Error: if the directory cannot be made or verified
+
+    """
+    try:
+        util.make_or_verify_dir(directory, mode, uid, strict)
+    except OSError:
+        raise errors.Error(_PERM_ERR_FMT.format(directory))
+
+
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     sys.excepthook = functools.partial(_handle_exception, config=None)
@@ -712,16 +729,16 @@ def main(cli_args=sys.argv[1:]):
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
 
-    # Setup logging ASAP, otherwise "No handlers could be found for
-    # logger ..." TODO: this should be done before plugins discovery
-    for directory in config.config_dir, config.work_dir:
-        util.make_or_verify_dir(
-            directory, constants.CONFIG_DIRS_MODE, os.geteuid(),
-            "--strict-permissions" in cli_args)
+    make_or_verify_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
+                            os.geteuid(), config.strict_permissions)
+    make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
+                            os.geteuid(), config.strict_permissions)
     # TODO: logs might contain sensitive data such as contents of the
     # private key! #525
-    util.make_or_verify_dir(
-        config.logs_dir, 0o700, os.geteuid(), "--strict-permissions" in cli_args)
+    make_or_verify_core_dir(config.logs_dir, 0o700,
+                            os.geteuid(), config.strict_permissions)
+    # Setup logging ASAP, otherwise "No handlers could be found for
+    # logger ..." TODO: this should be done before plugins discovery
     setup_logging(config, _cli_log_handler, logfile='letsencrypt.log')
     cli.possible_deprecation_warning(config)
 
