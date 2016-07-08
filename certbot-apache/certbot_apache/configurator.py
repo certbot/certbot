@@ -141,9 +141,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return os.path.join(self.config.config_dir,
                             constants.MOD_SSL_CONF_DEST)
 
-    def _path_surgery(self):
-        """Mitigate https://github.com/certbot/certbot/issues/1833"""
-        dirs = ("/usr/sbin/", "/usr/local/bin/", "/usr/local/sbin/")
+    def _path_surgery(self, restart_cmd):
+        """Mitigate https://github.com/certbot/certbot/issues/1833
+
+        :returns: " expanded" if an expansion of the PATH occurred;
+                  "" otherwise
+        """
+        dirs = ("/usr/sbin", "/usr/local/bin", "/usr/local/sbin")
         path = os.environ["PATH"]
         added = []
         for d in dirs:
@@ -151,9 +155,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 path += os.pathsep + d
                 added.append(d)
         if any(added):
-            logger.debug("Can't find %s, attempting PATH mitigation by adding %s"
+            logger.debug("Can't find %s, attempting PATH mitigation by adding %s",
                          restart_cmd, os.pathsep.join(added))
             os.environ["PATH"] = path
+            return " expanded"
+        return ""
 
     def prepare(self):
         """Prepare the authenticator/installer.
@@ -173,10 +179,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Verify Apache is installed
         restart_cmd = constants.os_constant("restart_cmd")[0]
         if not util.exe_exists(restart_cmd):
-            self._path_surgery()
+            expanded = self._path_surgery(restart_cmd)
             if not util.exe_exists(restart_cmd):
-                logger.warn("Failed to find %s in expanded PATH: %s",
-                            restart_cmd, os.environ["PATH"])
+                logger.warn("Failed to find %s in %s PATH: %s",
+                            restart_cmd, expanded, os.environ["PATH"])
                 raise errors.NoInstallationError(
                     'Cannot find Apache control command {0}'.format(restart_cmd))
 
