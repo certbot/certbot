@@ -23,7 +23,7 @@ class RawNginxParser(object):
     right_bracket = space.leaveWhitespace() + Literal("}").suppress()
     semicolon = Literal(";").suppress()
     key = Word(alphanums + "_/+-.")
-    dollar_var = Combine(Literal('$') + nonspace)
+    dollar_var = Combine(Literal('$') + Regex(r"[^\{\};,\s]+"))
     condition = Regex(r"\(.+\)")
     # Matches anything that is not a special character AND any chars in single
     # or double quotes
