@@ -147,7 +147,7 @@ security:
                         HTTPS for the newly authenticated vhost. (default:
                         None)
   --hsts                Add the Strict-Transport-Security header to every HTTP
-                        response. Forcing browser to use always use SSL for
+                        response. Forcing browser to always use SSL for
                         the domain. Defends against SSL Stripping. (default:
                         False)
   --no-hsts             Do not automatically add the Strict-Transport-Security
