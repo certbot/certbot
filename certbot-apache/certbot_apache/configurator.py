@@ -1080,7 +1080,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if not use_stapling_aug_path:
             self.parser.add_dir(ssl_vhost.path, "SSLUseStapling", "on")
 
-        ssl_vhost_aug_path = parser.get_aug_path(ssl_vhost.filep)
+        ssl_vhost_aug_path = self._escape(parser.get_aug_path(ssl_vhost.filep))
 
         # Check if there's an existing SSLStaplingCache directive.
         stapling_cache_aug_path = self.parser.find_dir('SSLStaplingCache',

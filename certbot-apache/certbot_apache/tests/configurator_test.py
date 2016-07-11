@@ -1,4 +1,4 @@
-# pylint: disable=too-many-public-methods, protected-access
+# pylint: disable=too-many-public-methods
 """Test for certbot_apache.configurator."""
 import os
 import shutil
@@ -1188,6 +1188,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
 class AugeasVhostsTest(util.ApacheTest):
     """Test vhosts with illegal names dependant on augeas version."""
+    # pylint: disable=protected-access
 
     def setUp(self):  # pylint: disable=arguments-differ
         td = "debian_apache_2_4/augeas_vhosts"
