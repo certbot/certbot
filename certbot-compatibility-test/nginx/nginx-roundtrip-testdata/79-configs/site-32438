@@ -1,0 +1,46 @@
+upstream django_server_random1769.example.org {
+    server unix:/srv/http/random7047/acceptance/website.sock;
+}
+
+server {
+    listen 80;
+    server_name random1769.example.org;
+
+    if ($host != 'random1769.example.org') {
+        rewrite  ^/(.*)$  http://random1769.example.org/$1  permanent;
+    }
+
+    rewrite ^/(.*) https://$host:8444/$1;
+}
+
+server {
+    listen 8444;
+    server_name random1769.example.org;
+
+    ssl on;
+    ssl_certificate       /etc/ssl/public/random6822.example.org.crt;
+    ssl_certificate_key   /etc/ssl/private/random6822.example.org.key;
+
+    location ^~ /media/ {
+        alias /srv/http/random7047/acceptance/dynamic/public/;
+        expires 7d;
+    }
+    location ^~ /static/ {
+        alias /srv/http/random7047/acceptance/static_collected/;
+        expires 7d;
+    }
+
+    location / {
+        proxy_pass http://django_server_random1769.example.org;
+        include          /etc/nginx/proxy_params;
+
+        #satisfy any;
+        #auth_basic           'acceptance for random7047';
+        #auth_basic_user_file /srv/http/random7047/acceptance/htpasswords;
+        #include              /etc/nginx/allow_ytec_ips_params;
+        #deny all;
+    }
+
+    access_log /var/log/nginx/random7047/acceptance/access.log combined_plus;
+    error_log  /var/log/nginx/random7047/acceptance/error.log;
+}

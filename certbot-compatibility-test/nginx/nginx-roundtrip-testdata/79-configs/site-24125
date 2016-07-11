@@ -1,0 +1,7 @@
+server {
+    listen 80;
+    server_name random14996.example.org;
+
+    root /srv/http/random23392/;
+    index index.html;
+}
