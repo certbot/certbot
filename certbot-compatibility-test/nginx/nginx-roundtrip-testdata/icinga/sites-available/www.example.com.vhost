@@ -1,0 +1,66 @@
+server {
+       listen 80;
+       server_name www.example.com example.com;
+       root /var/www/www.example.com/web;
+       if ($http_host != "www.example.com") {
+                 rewrite ^ http://www.example.com$request_uri permanent;
+       }
+       index index.php index.html index.htm;
+       location = /favicon.ico {
+                log_not_found off;
+                access_log off;
+                expires max;
+       }
+       location = /robots.txt {
+                allow all;
+                log_not_found off;
+                access_log off;
+       }
+       # Deny all attempts to access hidden files such as .htaccess, .htpasswd, .DS_Store (Mac).
+       location ~ /\. {
+                deny all;
+                access_log off;
+                log_not_found off;
+       }
+       location / {
+                root   /usr/share/icinga/htdocs;
+                index  index.html;
+                auth_basic              "Restricted";
+                auth_basic_user_file    /etc/icinga/htpasswd.users;
+       }
+       location /icinga/stylesheets {
+                alias /etc/icinga/stylesheets;
+       }
+       location /stylesheets {
+                alias /etc/icinga/stylesheets;
+       }
+       location /icinga/images {
+                alias /usr/share/icinga/htdocs/images;
+       }
+       location ~ \.cgi$ {
+                # define root directory for CGIs
+                root /usr/lib/cgi-bin/icinga;
+                rewrite ^/icinga/cgi-bin/(.*)\.cgi /$1.cgi break;
+                rewrite ^/cgi-bin/icinga/(.*)\.cgi /$1.cgi break;
+                include /etc/nginx/fastcgi_params;
+                fastcgi_pass  unix:/var/run/fcgiwrap.socket;
+                fastcgi_index index.php;
+                fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+                auth_basic              "Restricted";
+                auth_basic_user_file    /etc/icinga/htpasswd.users;
+                fastcgi_param  AUTH_USER          $remote_user;
+                fastcgi_param  REMOTE_USER        $remote_user;
+       }
+       location ~ ^/icinga-api/(.+\.php)$ {
+                root   /usr/share/icinga/htdocs;
+                try_files $uri =404;
+                include /etc/nginx/fastcgi_params;
+                fastcgi_pass 127.0.0.1:9000;
+                fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                fastcgi_index index.php;
+                auth_basic              "Restricted";
+                auth_basic_user_file    /etc/icinga/htpasswd.users;
+                fastcgi_param  AUTH_USER          $remote_user;
+                fastcgi_param  REMOTE_USER        $remote_user;
+       }
+}
