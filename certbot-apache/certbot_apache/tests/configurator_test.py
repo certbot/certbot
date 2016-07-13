@@ -1,4 +1,4 @@
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods,too-many-lines
 """Test for certbot_apache.configurator."""
 import os
 import shutil
@@ -49,11 +49,14 @@ class MultipleVhostsTest(util.ApacheTest):
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
 
-    @mock.patch("certbot_apache.configurator.util.exe_exists")
-    def test_prepare_no_install(self, mock_exe_exists):
-        mock_exe_exists.return_value = False
-        self.assertRaises(
-            errors.NoInstallationError, self.config.prepare)
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator.init_augeas")
+    @mock.patch("certbot_apache.configurator.path_surgery")
+    def test_prepare_no_install(self, mock_surgery, _init_augeas):
+        silly_path = {"PATH": "/tmp/nothingness2342"}
+        mock_surgery.return_value = False
+        with mock.patch.dict('os.environ', silly_path):
+            self.assertRaises(errors.NoInstallationError, self.config.prepare)
+            self.assertEquals(mock_surgery.call_count, 1)
 
     @mock.patch("certbot_apache.augeas_configurator.AugeasConfigurator.init_augeas")
     def test_prepare_no_augeas(self, mock_init_augeas):
@@ -85,6 +88,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config._check_aug_version = mock.Mock(return_value=False)
         self.assertRaises(
             errors.NotSupportedError, self.config.prepare)
+
 
     def test_add_parser_arguments(self):  # pylint: disable=no-self-use
         from certbot_apache.configurator import ApacheConfigurator
@@ -1110,16 +1114,19 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config._enable_redirect(self.vh_truth[1], "")
         self.assertEqual(len(self.config.vhosts), 9)
 
-    def test_sift_line(self):
+    def test_sift_rewrite_rule(self):
         # pylint: disable=protected-access
         small_quoted_target = "RewriteRule ^ \"http://\""
-        self.assertFalse(self.config._sift_line(small_quoted_target))
+        self.assertFalse(self.config._sift_rewrite_rule(small_quoted_target))
 
         https_target = "RewriteRule ^ https://satoshi"
-        self.assertTrue(self.config._sift_line(https_target))
+        self.assertTrue(self.config._sift_rewrite_rule(https_target))
 
         normal_target = "RewriteRule ^/(.*) http://www.a.com:1234/$1 [L,R]"
-        self.assertFalse(self.config._sift_line(normal_target))
+        self.assertFalse(self.config._sift_rewrite_rule(normal_target))
+
+        not_rewriterule = "NotRewriteRule ^ ..."
+        self.assertFalse(self.config._sift_rewrite_rule(not_rewriterule))
 
     @mock.patch("certbot_apache.configurator.zope.component.getUtility")
     def test_make_vhost_ssl_with_existing_rewrite_rule(self, mock_get_utility):
@@ -1148,7 +1155,61 @@ class MultipleVhostsTest(util.ApacheTest):
                                   "[L,QSA,R=permanent]")
         self.assertTrue(commented_rewrite_rule in conf_text)
         mock_get_utility().add_message.assert_called_once_with(mock.ANY,
+
                                                                mock.ANY)
+    @mock.patch("certbot_apache.configurator.zope.component.getUtility")
+    def test_make_vhost_ssl_with_existing_rewrite_conds(self, mock_get_utility):
+        self.config.parser.modules.add("rewrite_module")
+
+        http_vhost = self.vh_truth[0]
+
+        self.config.parser.add_dir(
+            http_vhost.path, "RewriteEngine", "on")
+
+        # Add a chunk that should not be commented out.
+        self.config.parser.add_dir(http_vhost.path,
+                "RewriteCond", ["%{DOCUMENT_ROOT}/%{REQUEST_FILENAME}", "!-f"])
+        self.config.parser.add_dir(
+            http_vhost.path, "RewriteRule",
+            ["^(.*)$", "b://u%{REQUEST_URI}", "[P,QSA,L]"])
+
+        # Add a chunk that should be commented out.
+        self.config.parser.add_dir(http_vhost.path,
+                "RewriteCond", ["%{HTTPS}", "!=on"])
+        self.config.parser.add_dir(http_vhost.path,
+                "RewriteCond", ["%{HTTPS}", "!^$"])
+        self.config.parser.add_dir(
+            http_vhost.path, "RewriteRule",
+            ["^",
+             "https://%{SERVER_NAME}%{REQUEST_URI}",
+             "[L,QSA,R=permanent]"])
+
+        self.config.save()
+
+        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
+
+        conf_line_set = set(open(ssl_vhost.filep).read().splitlines())
+
+        not_commented_cond1 = ("RewriteCond "
+                "%{DOCUMENT_ROOT}/%{REQUEST_FILENAME} !-f")
+        not_commented_rewrite_rule = ("RewriteRule "
+            "^(.*)$ b://u%{REQUEST_URI} [P,QSA,L]")
+
+        commented_cond1 = "# RewriteCond %{HTTPS} !=on"
+        commented_cond2 = "# RewriteCond %{HTTPS} !^$"
+        commented_rewrite_rule = ("# RewriteRule ^ "
+                                  "https://%{SERVER_NAME}%{REQUEST_URI} "
+                                  "[L,QSA,R=permanent]")
+
+        self.assertTrue(not_commented_cond1 in conf_line_set)
+        self.assertTrue(not_commented_rewrite_rule in conf_line_set)
+
+        self.assertTrue(commented_cond1 in conf_line_set)
+        self.assertTrue(commented_cond2 in conf_line_set)
+        self.assertTrue(commented_rewrite_rule in conf_line_set)
+        mock_get_utility().add_message.assert_called_once_with(mock.ANY,
+                                                               mock.ANY)
+
 
     def get_achalls(self):
         """Return testing achallenges."""

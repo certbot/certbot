@@ -428,8 +428,8 @@ Operating System Packages
 
 **FreeBSD**
 
-  * Port: ``cd /usr/ports/security/py-letsencrypt && make install clean``
-  * Package: ``pkg install py27-letsencrypt``
+  * Port: ``cd /usr/ports/security/py-certbot && make install clean``
+  * Package: ``pkg install py27-certbot``
 
 **OpenBSD**
 

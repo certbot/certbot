@@ -721,10 +721,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "(both can be renewed in parallel)")
     helpful.add(
         "automation", "--os-packages-only", action="store_true",
-        help="(letsencrypt-auto only) install OS package dependencies and then stop")
+        help="(certbot-auto only) install OS package dependencies and then stop")
     helpful.add(
         "automation", "--no-self-upgrade", action="store_true",
-        help="(letsencrypt-auto only) prevent the letsencrypt-auto script from"
+        help="(certbot-auto only) prevent the certbot-auto script from"
              " upgrading itself to newer released versions")
     helpful.add(
         "automation", "-q", "--quiet", dest="quiet", action="store_true",
@@ -737,7 +737,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "really know what you're doing!")
     helpful.add(
         "testing", "--debug", action="store_true",
-        help="Show tracebacks in case of errors, and allow letsencrypt-auto "
+        help="Show tracebacks in case of errors, and allow certbot-auto "
              "execution on experimental platforms")
     helpful.add(
         "testing", "--no-verify-ssl", action="store_true",
