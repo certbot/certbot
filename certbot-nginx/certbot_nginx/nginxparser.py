@@ -73,15 +73,10 @@ class RawNginxParser(object):
     block << Group(block_begin + left_bracket + block_innards + right_bracket)
 
     script = OneOrMore(Group(comment | assignment) ^ block ^ map_block) + space + stringEnd
-    script.parseWithTabs()
-    testLine = OneOrMore(Group(space + key + location_statement)).leaveWhitespace()
-    testTwo = OneOrMore(block)
+    script.parseWithTabs().leaveWhitespace()
 
     def __init__(self, source):
         self.source = source
-
-    def test(self):
-        return self.testLine.parseString(self.source)
 
     def parse(self):
         """Returns the parsed tree."""
