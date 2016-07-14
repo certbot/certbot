@@ -162,6 +162,7 @@ def possible_deprecation_warning(config):
             "not receive updates, and is less reliable than more recent versions. "
             "We recommend upgrading to the latest certbot-auto script, or using native "
             "OS packages.")
+        logger.debug("Deprecation warning circumstances: %s / %s", sys.argv[0], os.environ)
 
 
 class _Default(object):
