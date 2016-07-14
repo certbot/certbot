@@ -63,11 +63,11 @@ class RawNginxParser(object):
     # key could for instance be "server" or "http", or "location" (in which case
     # location_statement needs to have a non-empty location)
 
-    block_begin = (Group(space + key + location_statement) ^ 
+    block_begin = (Group(space + key + location_statement) ^
                    Group(if_statement) ^
                    Group(charset_map_statement)).leaveWhitespace()
 
-    block_innards = Group(ZeroOrMore(Group(comment | assignment) | block | map_block) 
+    block_innards = Group(ZeroOrMore(Group(comment | assignment) | block | map_block)
                           + space).leaveWhitespace()
 
     block << Group(block_begin + left_bracket + block_innards + right_bracket)
