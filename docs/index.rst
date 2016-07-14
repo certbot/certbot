@@ -9,6 +9,7 @@ Welcome to the Certbot documentation!
    using
    contributing
    packaging
+   resources
 
 .. toctree::
    :maxdepth: 1
