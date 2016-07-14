@@ -40,6 +40,7 @@ class RawNginxParser(object):
     assignment = space + key + Optional(space + value, default=None) + semicolon
     location_statement = space + Optional(modifier) + Optional(space + location + space)
     if_statement = space + Literal("if") + space + condition + space
+    charset_map_statement = space + Literal("charset_map") + space + value + space + value
 
     map_statement = space + Literal("map") + space + nonspace + space + dollar_var + space
     # This is NOT an accurate way to parse nginx map entries; it's almost
@@ -52,27 +53,35 @@ class RawNginxParser(object):
     map_pattern = Regex(r'".*"') | Regex(r"'.*'") | nonspace
     map_entry = space + map_pattern + space + value + space + semicolon
     map_block = Group(
-        # key could for instance be "server" or "http", or "location" (in which case
-        # location_statement needs to have a non-empty location)
         Group(map_statement).leaveWhitespace() +
         left_bracket +
         Group(ZeroOrMore(Group(comment | map_entry)) + space).leaveWhitespace() +
         right_bracket)
 
     block = Forward()
-    block << Group(
-        # key could for instance be "server" or "http", or "location" (in which case
-        # location_statement needs to have a non-empty location)
-        (Group(space + key + location_statement) ^ Group(if_statement)).leaveWhitespace() +
-        left_bracket +
-        Group(ZeroOrMore(Group(comment | assignment) | block | map_block) + space).leaveWhitespace()
-              + right_bracket)
+
+    # key could for instance be "server" or "http", or "location" (in which case
+    # location_statement needs to have a non-empty location)
+
+    block_begin = (Group(space + key + location_statement) ^ 
+                   Group(if_statement) ^
+                   Group(charset_map_statement)).leaveWhitespace()
+
+    block_innards = Group(ZeroOrMore(Group(comment | assignment) | block | map_block) 
+                          + space).leaveWhitespace()
+
+    block << Group(block_begin + left_bracket + block_innards + right_bracket)
 
     script = OneOrMore(Group(comment | assignment) ^ block ^ map_block) + space + stringEnd
     script.parseWithTabs()
+    testLine = OneOrMore(Group(space + key + location_statement)).leaveWhitespace()
+    testTwo = OneOrMore(block)
 
     def __init__(self, source):
         self.source = source
+
+    def test(self):
+        return self.testLine.parseString(self.source)
 
     def parse(self):
         """Returns the parsed tree."""
