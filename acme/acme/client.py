@@ -512,6 +512,10 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         self.verify_ssl = verify_ssl
         self._nonces = set()
         self.user_agent = user_agent
+        self.session = requests.Session()
+
+    def __del__(self):
+        self.session.close()
 
     def _wrap_in_jws(self, obj, nonce):
         """Wrap `JSONDeSerializable` object in JWS.
@@ -606,7 +610,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         kwargs['verify'] = self.verify_ssl
         kwargs.setdefault('headers', {})
         kwargs['headers'].setdefault('User-Agent', self.user_agent)
-        response = requests.request(method, url, *args, **kwargs)
+        response = self.session.request(method, url, *args, **kwargs)
         logging.debug('Received %s. Headers: %s. Content: %r',
                       response, response.headers, response.content)
         return response

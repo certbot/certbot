@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import argparse
+import dialog
 import functools
 import itertools
 import os
@@ -22,7 +23,7 @@ from certbot import configuration
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
-from certbot import le_util
+from certbot import util
 from certbot import main
 from certbot import renewal
 from certbot import storage
@@ -149,6 +150,14 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 args.extend(['--email', 'io@io.is'])
                 self._cli_missing_flag(args, "--agree-tos")
 
+    @mock.patch('certbot.main.renew')
+    def test_gui(self, renew):
+        args = ['renew', '--dialog']
+        # --text conflicts with --dialog
+        self.standard_args.remove('--text')
+        self._call(args)
+        self.assertFalse(renew.call_args[0][0].noninteractive_mode)
+
     @mock.patch('certbot.main.client.acme_client.Client')
     @mock.patch('certbot.main._determine_account')
     @mock.patch('certbot.main.client.Client.obtain_and_enroll_certificate')
@@ -163,13 +172,13 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
         with mock.patch('certbot.main.client.acme_client.ClientNetwork') as acme_net:
             self._call_no_clientmock(args)
-            os_ver = " ".join(le_util.get_os_info())
+            os_ver = util.get_os_info_ua()
             ua = acme_net.call_args[1]["user_agent"]
             self.assertTrue(os_ver in ua)
             import platform
             plat = platform.platform()
             if "linux" in plat.lower():
-                self.assertTrue(platform.linux_distribution()[0] in ua)
+                self.assertTrue(util.get_os_info_ua() in ua)
 
         with mock.patch('certbot.main.client.acme_client.ClientNetwork') as acme_net:
             ua = "bandersnatch"
@@ -201,7 +210,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                     '--key-path', 'key', '--chain-path', 'chain'])
         self.assertEqual(mock_pick_installer.call_count, 1)
 
-    @mock.patch('certbot.le_util.exe_exists')
+    @mock.patch('certbot.util.exe_exists')
     def test_configurator_selection(self, mock_exe_exists):
         mock_exe_exists.return_value = True
         real_plugins = disco.PluginsRegistry.find_all()
@@ -333,11 +342,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         # FQDN
         self.assertRaises(errors.ConfigurationError,
                           self._call,
-                          ['-d', 'comma,gotwrong.tld'])
+                          ['-d', 'a' * 64])
         # FQDN 2
         self.assertRaises(errors.ConfigurationError,
                           self._call,
-                          ['-d', 'illegal.character=.tld'])
+                          ['-d', (('a' * 50) + '.') * 10])
         # Wildcard
         self.assertRaises(errors.ConfigurationError,
                           self._call,
@@ -349,8 +358,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                           ['-d', '204.11.231.35'])
 
     def test_csr_with_besteffort(self):
-        args = ["--csr", CSR, "--allow-subset-of-names"]
-        self.assertRaises(errors.Error, self._call, args)
+        self.assertRaises(
+            errors.Error, self._call,
+            'certonly --csr {0} --allow-subset-of-names'.format(CSR).split())
 
     def test_run_with_csr(self):
         # This is an error because you can only use --csr with certonly
@@ -360,6 +370,17 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             assert "Please try the certonly" in repr(e)
             return
         assert False, "Expected supplying --csr to fail with default verb"
+
+    def test_csr_with_no_domains(self):
+        self.assertRaises(
+            errors.Error, self._call,
+            'certonly --csr {0}'.format(
+                test_util.vector_path('csr-nonames.pem')).split())
+
+    def test_csr_with_inconsistent_domains(self):
+        self.assertRaises(
+            errors.Error, self._call,
+            'certonly -d example.org --csr {0}'.format(CSR).split())
 
     def _get_argument_parser(self):
         plugins = disco.PluginsRegistry.find_all()
@@ -410,6 +431,13 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             for arg in conflicting_args:
                 self.assertTrue(arg in error.message)
 
+    def test_must_staple_flag(self):
+        parse = self._get_argument_parser()
+        short_args = ['--must-staple']
+        namespace = parse(short_args)
+        self.assertTrue(namespace.must_staple)
+        self.assertTrue(namespace.staple)
+
     def test_staging_flag(self):
         parse = self._get_argument_parser()
         short_args = ['--staging']
@@ -419,6 +447,19 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
         short_args += '--server example.com'.split()
         self._check_server_conflict_message(short_args, '--staging')
+
+    def test_option_was_set(self):
+        key_size_option = 'rsa_key_size'
+        key_size_value = cli.flag_default(key_size_option)
+        self._get_argument_parser()(
+            '--rsa-key-size {0}'.format(key_size_value).split())
+
+        self.assertTrue(cli.option_was_set(key_size_option, key_size_value))
+        self.assertTrue(cli.option_was_set('no_verify_ssl', True))
+
+        config_dir_option = 'config_dir'
+        self.assertFalse(cli.option_was_set(
+            config_dir_option, cli.flag_default(config_dir_option)))
 
     def _assert_dry_run_flag_worked(self, namespace, existing_account):
         self.assertTrue(namespace.dry_run)
@@ -624,6 +665,18 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         out = stdout.getvalue()
         self.assertEqual("", out)
 
+    def test_renew_hook_validation(self):
+        self._make_test_renewal_conf('sample-renewal.conf')
+        args = ["renew", "--dry-run", "--post-hook=no-such-command"]
+        self._test_renewal_common(True, [], args=args, should_renew=False,
+                                  error_expected=True)
+
+    def test_renew_no_hook_validation(self):
+        self._make_test_renewal_conf('sample-renewal.conf')
+        args = ["renew", "--dry-run", "--post-hook=no-such-command",
+                "--disable-hook-validation"]
+        self._test_renewal_common(True, [], args=args, should_renew=True,
+                                  error_expected=False)
 
     @mock.patch("certbot.cli.set_by_cli")
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
@@ -711,6 +764,12 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                          'webroot_imaginary_flag': '42'}
         self._test_renew_common(renewalparams=renewalparams,
                                 assert_oc_called=True)
+
+    def test_renew_with_webroot_map(self):
+        renewalparams = {'authenticator': 'webroot'}
+        self._test_renew_common(
+            renewalparams=renewalparams, assert_oc_called=True,
+            args=['renew', '--webroot-map', '{"example.com": "/tmp"}'])
 
     def test_renew_reconstitute_error(self):
         # pylint: disable=protected-access
@@ -864,6 +923,13 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         mock_sys.exit.assert_called_with(''.join(
             traceback.format_exception_only(KeyboardInterrupt, interrupt)))
 
+        # Test dialog errors
+        exception = dialog.error(message="test message")
+        main._handle_exception(
+                dialog.DialogError, exc_value=exception, trace=None, config=None)
+        error_msg = mock_sys.exit.call_args_list[-1][0][0]
+        self.assertTrue("test message" in error_msg)
+
     def test_read_file(self):
         rel_test_path = os.path.relpath(os.path.join(self.tmp_dir, 'foo'))
         self.assertRaises(
@@ -881,6 +947,78 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with mock.patch('certbot.main.run') as mocked_run:
             self._call(['-c', test_util.vector_path('cli.ini')])
         self.assertTrue(mocked_run.called)
+
+    def test_register(self):
+        with mock.patch('certbot.main.client') as mocked_client:
+            acc = mock.MagicMock()
+            acc.id = "imaginary_account"
+            mocked_client.register.return_value = (acc, "worked")
+            self._call_no_clientmock(["register", "--email", "user@example.org"])
+            # TODO: It would be more correct to explicitly check that
+            #       _determine_account() gets called in the above case,
+            #       but coverage statistics should also show that it did.
+            with mock.patch('certbot.main.account') as mocked_account:
+                mocked_storage = mock.MagicMock()
+                mocked_account.AccountFileStorage.return_value = mocked_storage
+                mocked_storage.find_all.return_value = ["an account"]
+                x = self._call_no_clientmock(["register", "--email", "user@example.org"])
+                self.assertTrue("There is an existing account" in x[0])
+
+    def test_update_registration_no_existing_accounts(self):
+        # with mock.patch('certbot.main.client') as mocked_client:
+        with mock.patch('certbot.main.account') as mocked_account:
+            mocked_storage = mock.MagicMock()
+            mocked_account.AccountFileStorage.return_value = mocked_storage
+            mocked_storage.find_all.return_value = []
+            x = self._call_no_clientmock(
+                ["register", "--update-registration", "--email",
+                 "user@example.org"])
+            self.assertTrue("Could not find an existing account" in x[0])
+
+    def test_update_registration_unsafely(self):
+        # This test will become obsolete when register --update-registration
+        # supports removing an e-mail address from the account
+        with mock.patch('certbot.main.account') as mocked_account:
+            mocked_storage = mock.MagicMock()
+            mocked_account.AccountFileStorage.return_value = mocked_storage
+            mocked_storage.find_all.return_value = ["an account"]
+            x = self._call_no_clientmock(
+                "register --update-registration "
+                "--register-unsafely-without-email".split())
+            self.assertTrue("--register-unsafely-without-email" in x[0])
+
+    @mock.patch('certbot.main.display_ops.get_email')
+    @mock.patch('certbot.main.zope.component.getUtility')
+    def test_update_registration_with_email(self, mock_utility, mock_email):
+        email = "user@example.com"
+        mock_email.return_value = email
+        with mock.patch('certbot.main.client') as mocked_client:
+            with mock.patch('certbot.main.account') as mocked_account:
+                with mock.patch('certbot.main._determine_account') as mocked_det:
+                    with mock.patch('certbot.main.client') as mocked_client:
+                        mocked_storage = mock.MagicMock()
+                        mocked_account.AccountFileStorage.return_value = mocked_storage
+                        mocked_storage.find_all.return_value = ["an account"]
+                        mocked_det.return_value = (mock.MagicMock(), "foo")
+                        acme_client = mock.MagicMock()
+                        mocked_client.Client.return_value = acme_client
+                        x = self._call_no_clientmock(
+                            ["register", "--update-registration"])
+                        # When registration change succeeds, the return value
+                        # of register() is None
+                        self.assertTrue(x[0] is None)
+                        # and we got supposedly did update the registration from
+                        # the server
+                        self.assertTrue(
+                            acme_client.acme.update_registration.called)
+                        # and we saved the updated registration on disk
+                        self.assertTrue(mocked_storage.save_regr.called)
+                        self.assertTrue(
+                            email in mock_utility().add_message.call_args[0][0])
+
+    def test_conflicting_args(self):
+        args = ['renew', '--dialog', '--text']
+        self.assertRaises(errors.Error, self._call, args)
 
 
 class DetermineAccountTest(unittest.TestCase):
@@ -958,7 +1096,7 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
-    @mock.patch('certbot.le_util.make_or_verify_dir')
+    @mock.patch('certbot.util.make_or_verify_dir')
     def test_find_duplicative_names(self, unused_makedir):
         from certbot.main import _find_duplicative_certs
         test_cert = test_util.load_vector('cert-san.pem')

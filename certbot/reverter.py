@@ -7,12 +7,13 @@ import shutil
 import time
 import traceback
 
+
 import zope.component
 
 from certbot import constants
 from certbot import errors
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 
 from certbot.display import util as display_util
 
@@ -23,6 +24,39 @@ logger = logging.getLogger(__name__)
 class Reverter(object):
     """Reverter Class - save and revert configuration checkpoints.
 
+    This class can be used by the plugins, especially Installers, to
+    undo changes made to the user's system. Modifications to files and
+    commands to do undo actions taken by the plugin should be registered
+    with this class before the action is taken.
+
+    Once a change has been registered with this class, there are three
+    states the change can be in. First, the change can be a temporary
+    change. This should be used for changes that will soon be reverted,
+    such as config changes for the purpose of solving a challenge.
+    Changes are added to this state through calls to
+    :func:`~add_to_temp_checkpoint` and reverted when
+    :func:`~revert_temporary_config` or :func:`~recovery_routine` is
+    called.
+
+    The second state a change can be in is in progress. These changes
+    are not temporary, however, they also have not been finalized in a
+    checkpoint. A change must become in progress before it can be
+    finalized. Changes are added to this state through calls to
+    :func:`~add_to_checkpoint` and reverted when
+    :func:`~recovery_routine` is called.
+
+    The last state a change can be in is finalized in a checkpoint. A
+    change is put into this state by first becoming an in progress
+    change and then calling :func:`~finalize_checkpoint`. Changes
+    in this state can be reverted through calls to
+    :func:`~rollback_checkpoints`.
+
+    As a final note, creating new files and registering undo commands
+    are handled specially and use the methods
+    :func:`~register_file_creation` and :func:`~register_undo_command`
+    respectively. Both of these methods can be used to create either
+    temporary or in progress changes.
+
     .. note:: Consider moving everything over to CSV format.
 
     :param config: Configuration.
@@ -32,7 +66,7 @@ class Reverter(object):
     def __init__(self, config):
         self.config = config
 
-        le_util.make_or_verify_dir(
+        util.make_or_verify_dir(
             config.backup_dir, constants.CONFIG_DIRS_MODE, os.geteuid(),
             self.config.strict_permissions)
 
@@ -184,7 +218,7 @@ class Reverter(object):
         :raises .ReverterError: if unable to add checkpoint
 
         """
-        le_util.make_or_verify_dir(
+        util.make_or_verify_dir(
             cp_dir, constants.CONFIG_DIRS_MODE, os.geteuid(),
             self.config.strict_permissions)
 
@@ -280,7 +314,7 @@ class Reverter(object):
             csvreader = csv.reader(csvfile)
             for command in reversed(list(csvreader)):
                 try:
-                    le_util.run_script(command)
+                    util.run_script(command)
                 except errors.SubprocessError:
                     logger.error(
                         "Unable to run undo command: %s", " ".join(command))
@@ -396,7 +430,7 @@ class Reverter(object):
         else:
             cp_dir = self.config.in_progress_dir
 
-        le_util.make_or_verify_dir(
+        util.make_or_verify_dir(
             cp_dir, constants.CONFIG_DIRS_MODE, os.geteuid(),
             self.config.strict_permissions)
 
@@ -489,7 +523,7 @@ class Reverter(object):
 
         if not os.path.exists(changes_since_path):
             logger.info("Rollback checkpoint is empty (no changes made?)")
-            with open(self.config.changes_since_path) as f:
+            with open(changes_since_path, 'w') as f:
                 f.write("No changes\n")
 
         # Add title to self.config.in_progress_dir CHANGES_SINCE

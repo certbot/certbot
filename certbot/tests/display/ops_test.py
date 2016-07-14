@@ -12,6 +12,7 @@ from acme import jose
 from acme import messages
 
 from certbot import account
+from certbot import errors
 from certbot import interfaces
 
 from certbot.display import util as display_util
@@ -37,41 +38,39 @@ class GetEmailTest(unittest.TestCase):
 
     def test_cancel_none(self):
         self.input.return_value = (display_util.CANCEL, "foo@bar.baz")
-        self.assertTrue(self._call() is None)
+        self.assertRaises(errors.Error, self._call)
+        self.assertRaises(errors.Error, self._call, optional=False)
 
     def test_ok_safe(self):
         self.input.return_value = (display_util.OK, "foo@bar.baz")
-        with mock.patch("certbot.display.ops.le_util.safe_email") as mock_safe_email:
+        with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
             mock_safe_email.return_value = True
             self.assertTrue(self._call() is "foo@bar.baz")
 
     def test_ok_not_safe(self):
         self.input.return_value = (display_util.OK, "foo@bar.baz")
-        with mock.patch("certbot.display.ops.le_util.safe_email") as mock_safe_email:
+        with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
             mock_safe_email.side_effect = [False, True]
             self.assertTrue(self._call() is "foo@bar.baz")
 
-    def test_more_and_invalid_flags(self):
-        more_txt = "--register-unsafely-without-email"
+    def test_invalid_flag(self):
         invalid_txt = "There seem to be problems"
-        base_txt = "Enter email"
         self.input.return_value = (display_util.OK, "foo@bar.baz")
-        with mock.patch("certbot.display.ops.le_util.safe_email") as mock_safe_email:
+        with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
             mock_safe_email.return_value = True
             self._call()
-            msg = self.input.call_args[0][0]
-            self.assertTrue(more_txt not in msg)
-            self.assertTrue(invalid_txt not in msg)
-            self.assertTrue(base_txt in msg)
-            self._call(more=True)
-            msg = self.input.call_args[0][0]
-            self.assertTrue(more_txt in msg)
-            self.assertTrue(invalid_txt not in msg)
-            self._call(more=True, invalid=True)
-            msg = self.input.call_args[0][0]
-            self.assertTrue(more_txt in msg)
-            self.assertTrue(invalid_txt in msg)
-            self.assertTrue(base_txt in msg)
+            self.assertTrue(invalid_txt not in self.input.call_args[0][0])
+            self._call(invalid=True)
+            self.assertTrue(invalid_txt in self.input.call_args[0][0])
+
+    def test_optional_flag(self):
+        self.input.return_value = (display_util.OK, "foo@bar.baz")
+        with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
+            mock_safe_email.side_effect = [False, True]
+            self._call(optional=False)
+            for call in self.input.call_args_list:
+                self.assertTrue(
+                    "--register-unsafely-without-email" not in call[0][0])
 
 
 class ChooseAccountTest(unittest.TestCase):
@@ -249,9 +248,9 @@ class ChooseNamesTest(unittest.TestCase):
     def test_get_valid_domains(self):
         from certbot.display.ops import get_valid_domains
         all_valid = ["example.com", "second.example.com",
-                     "also.example.com"]
-        all_invalid = ["xn--ls8h.tld", "*.wildcard.com", "notFQDN",
-                       "uniçodé.com"]
+                     "also.example.com", "under_score.example.com",
+                     "justtld"]
+        all_invalid = ["xn--ls8h.tld", "*.wildcard.com", "uniçodé.com"]
         two_valid = ["example.com", "xn--ls8h.tld", "also.example.com"]
         self.assertEqual(get_valid_domains(all_valid), all_valid)
         self.assertEqual(get_valid_domains(all_invalid), [])
@@ -277,19 +276,18 @@ class ChooseNamesTest(unittest.TestCase):
         mock_util().input.return_value = (display_util.OK,
                                           "xn--ls8h.tld")
         self.assertEqual(_choose_names_manually(), [])
-        # non-FQDN and no retry
-        mock_util().input.return_value = (display_util.OK,
-                                          "notFQDN")
-        self.assertEqual(_choose_names_manually(), [])
-        # Two valid domains
+        # Valid domains
         mock_util().input.return_value = (display_util.OK,
                                           ("example.com,"
+                                           "under_score.example.com,"
+                                           "justtld,"
                                            "valid.example.com"))
         self.assertEqual(_choose_names_manually(),
-                         ["example.com", "valid.example.com"])
+                         ["example.com", "under_score.example.com",
+                          "justtld", "valid.example.com"])
         # Three iterations
         mock_util().input.return_value = (display_util.OK,
-                                          "notFQDN")
+                                          "uniçodé.com")
         yn = mock.MagicMock()
         yn.side_effect = [True, True, False]
         mock_util().yesno = yn

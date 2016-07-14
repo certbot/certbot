@@ -15,7 +15,7 @@ from acme import challenges
 
 from certbot import errors
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 
 from certbot.plugins import common
 
@@ -106,8 +106,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         add("handle-sites", default=constants.os_constant("handle_sites"),
             help="Let installer handle enabling sites for you." +
                  "(Only Ubuntu/Debian currently)")
-        le_util.add_deprecated_argument(add, argument_name="ctl", nargs=1)
-        le_util.add_deprecated_argument(
+        util.add_deprecated_argument(add, argument_name="ctl", nargs=1)
+        util.add_deprecated_argument(
             add, argument_name="init-script", nargs=1)
 
     def __init__(self, *args, **kwargs):
@@ -124,13 +124,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.assoc = dict()
         # Outstanding challenges
         self._chall_out = set()
+        # Maps enhancements to vhosts we've enabled the enhancement for
+        self._enhanced_vhosts = defaultdict(set)
 
         # These will be set in the prepare function
         self.parser = None
         self.version = version
         self.vhosts = None
         self._enhance_func = {"redirect": self._enable_redirect,
-                              "ensure-http-header": self._set_http_header}
+                              "ensure-http-header": self._set_http_header,
+                              "staple-ocsp": self._enable_ocsp_stapling}
 
     @property
     def mod_ssl_conf(self):
@@ -147,8 +150,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :raises .errors.PluginError: If there is any other error
 
         """
+        # Perform the actual Augeas initialization to be able to react
+        try:
+            self.init_augeas()
+        except ImportError:
+            raise errors.NoInstallationError("Problem in Augeas installation")
+
         # Verify Apache is installed
-        if not le_util.exe_exists(constants.os_constant("restart_cmd")[0]):
+        if not util.exe_exists(constants.os_constant("restart_cmd")[0]):
             raise errors.NoInstallationError
 
         # Make sure configuration is valid
@@ -318,9 +327,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         vhost = display_ops.select_vhost(target_name, self.vhosts)
         if vhost is None:
             logger.error(
-                "No vhost exists with servername or alias of: %s. "
-                "No vhost was selected. Please specify servernames "
-                "in the Apache config", target_name)
+                "No vhost exists with servername or alias of: %s "
+                "(or it's in a file with multiple vhosts, which Certbot "
+                "can't parse yet). "
+                "No vhost was selected. Please specify ServerName or ServerAlias "
+                "in the Apache config, or split vhosts into separate files.",
+                target_name)
             raise errors.PluginError("No vhost selected")
         elif temp:
             return vhost
@@ -593,8 +605,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :type addr: :class:`~certbot_apache.obj.Addr`
 
         """
-        loc = parser.get_aug_path(self.parser.loc["name"])
 
+        loc = parser.get_aug_path(self.parser.loc["name"])
         if addr.get_port() == "443":
             path = self.parser.add_dir_to_ifmodssl(
                 loc, "NameVirtualHost", [str(addr)])
@@ -616,50 +628,93 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
 
+        # If nonstandard port, add service definition for matching
+        if port != "443":
+            port_service = "%s %s" % (port, "https")
+        else:
+            port_service = port
+
         self.prepare_https_modules(temp)
         # Check for Listen <port>
         # Note: This could be made to also look for ip:443 combo
         listens = [self.parser.get_arg(x).split()[0] for
                    x in self.parser.find_dir("Listen")]
+
         # In case no Listens are set (which really is a broken apache config)
         if not listens:
             listens = ["80"]
-        if port in listens:
+
+        # Listen already in place
+        if self._has_port_already(listens, port):
             return
+
+        listen_dirs = set(listens)
+
         for listen in listens:
             # For any listen statement, check if the machine also listens on
             # Port 443. If not, add such a listen statement.
             if len(listen.split(":")) == 1:
                 # Its listening to all interfaces
-                if port not in listens:
-                    if port == "443":
-                        args = [port]
-                    else:
-                        # Non-standard ports should specify https protocol
-                        args = [port, "https"]
-                    self.parser.add_dir_to_ifmodssl(
-                        parser.get_aug_path(
-                            self.parser.loc["listen"]), "Listen", args)
-                    self.save_notes += "Added Listen %s directive to %s\n" % (
-                        port, self.parser.loc["listen"])
-                    listens.append(port)
+                if port not in listen_dirs and port_service not in listen_dirs:
+                    listen_dirs.add(port_service)
             else:
                 # The Listen statement specifies an ip
                 _, ip = listen[::-1].split(":", 1)
                 ip = ip[::-1]
-                if "%s:%s" % (ip, port) not in listens:
-                    if port == "443":
-                        args = ["%s:%s" % (ip, port)]
-                    else:
-                        # Non-standard ports should specify https protocol
-                        args = ["%s:%s" % (ip, port), "https"]
-                    self.parser.add_dir_to_ifmodssl(
-                        parser.get_aug_path(
-                            self.parser.loc["listen"]), "Listen", args)
-                    self.save_notes += ("Added Listen %s:%s directive to "
-                                        "%s\n") % (ip, port,
-                                                   self.parser.loc["listen"])
-                    listens.append("%s:%s" % (ip, port))
+                if "%s:%s" % (ip, port_service) not in listen_dirs and (
+                   "%s:%s" % (ip, port_service) not in listen_dirs):
+                    listen_dirs.add("%s:%s" % (ip, port_service))
+        self._add_listens(listen_dirs, listens, port)
+
+    def _add_listens(self, listens, listens_orig, port):
+        """Helper method for prepare_server_https to figure out which new
+        listen statements need adding
+
+        :param set listens: Set of all needed Listen statements
+        :param list listens_orig: List of existing listen statements
+        :param string port: Port number we're adding
+        """
+
+        # Add service definition for non-standard ports
+        if port != "443":
+            port_service = "%s %s" % (port, "https")
+        else:
+            port_service = port
+
+        new_listens = listens.difference(listens_orig)
+
+        if port in new_listens or port_service in new_listens:
+            # We have wildcard, skip the rest
+            self.parser.add_dir_to_ifmodssl(
+                parser.get_aug_path(self.parser.loc["listen"]),
+                "Listen", port_service.split(" "))
+            self.save_notes += "Added Listen %s directive to %s\n" % (
+                port_service, self.parser.loc["listen"])
+        else:
+            for listen in new_listens:
+                self.parser.add_dir_to_ifmodssl(
+                    parser.get_aug_path(self.parser.loc["listen"]),
+                    "Listen", listen.split(" "))
+                self.save_notes += ("Added Listen %s directive to "
+                                    "%s\n") % (listen,
+                                               self.parser.loc["listen"])
+
+    def _has_port_already(self, listens, port):
+        """Helper method for prepare_server_https to find out if user
+        already has an active Listen statement for the port we need
+
+        :param list listens: List of listen variables
+        :param string port: Port in question
+        """
+
+        if port in listens:
+            return True
+        # Check if Apache is already listening on a specific IP
+        for listen in listens:
+            if len(listen.split(":")) > 1:
+                # Ugly but takes care of protocol def, eg: 1.1.1.1:443 https
+                if listen.split(":")[-1].split(" ")[0] == port:
+                    return True
 
     def prepare_https_modules(self, temp):
         """Helper method for prepare_server_https, taking care of enabling
@@ -944,7 +999,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     ######################################################################
     def supported_enhancements(self):  # pylint: disable=no-self-use
         """Returns currently supported enhancements."""
-        return ["redirect", "ensure-http-header"]
+        return ["redirect", "ensure-http-header", "staple-ocsp"]
 
     def enhance(self, domain, enhancement, options=None):
         """Enhance configuration.
@@ -970,6 +1025,68 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         except errors.PluginError:
             logger.warn("Failed %s for %s", enhancement, domain)
             raise
+
+    def _enable_ocsp_stapling(self, ssl_vhost, unused_options):
+        """Enables OCSP Stapling
+
+        In OCSP, each client (e.g. browser) would have to query the
+        OCSP Responder to validate that the site certificate was not revoked.
+
+        Enabling OCSP Stapling, would allow the web-server to query the OCSP
+        Responder, and staple its response to the offered certificate during
+        TLS. i.e. clients would not have to query the OCSP responder.
+
+        OCSP Stapling enablement on Apache implicitly depends on
+        SSLCertificateChainFile being set by other code.
+
+        .. note:: This function saves the configuration
+
+        :param ssl_vhost: Destination of traffic, an ssl enabled vhost
+        :type ssl_vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
+
+        :param unused_options: Not currently used
+        :type unused_options: Not Available
+
+        :returns: Success, general_vhost (HTTP vhost)
+        :rtype: (bool, :class:`~letsencrypt_apache.obj.VirtualHost`)
+
+        """
+        min_apache_ver = (2, 3, 3)
+        if self.get_version() < min_apache_ver:
+            raise errors.PluginError(
+                "Unable to set OCSP directives.\n"
+                "Apache version is below 2.3.3.")
+
+        if "socache_shmcb_module" not in self.parser.modules:
+            self.enable_mod("socache_shmcb")
+
+        # Check if there's an existing SSLUseStapling directive on.
+        use_stapling_aug_path = self.parser.find_dir("SSLUseStapling",
+                "on", start=ssl_vhost.path)
+        if not use_stapling_aug_path:
+            self.parser.add_dir(ssl_vhost.path, "SSLUseStapling", "on")
+
+        ssl_vhost_aug_path = parser.get_aug_path(ssl_vhost.filep)
+
+        # Check if there's an existing SSLStaplingCache directive.
+        stapling_cache_aug_path = self.parser.find_dir('SSLStaplingCache',
+                None, ssl_vhost_aug_path)
+
+        # We'll simply delete the directive, so that we'll have a
+        # consistent OCSP cache path.
+        if stapling_cache_aug_path:
+            self.aug.remove(
+                    re.sub(r"/\w*$", "", stapling_cache_aug_path[0]))
+
+        self.parser.add_dir_to_ifmodssl(ssl_vhost_aug_path,
+                "SSLStaplingCache",
+                ["shmcb:/var/run/apache2/stapling_cache(128000)"])
+
+        msg = "OCSP Stapling was enabled on SSL Vhost: %s.\n"%(
+                ssl_vhost.filep)
+        self.save_notes += msg
+        self.save()
+        logger.info(msg)
 
     def _set_http_header(self, ssl_vhost, header_substring):
         """Enables header that is identified by header_substring on ssl_vhost.
@@ -1058,9 +1175,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param unused_options: Not currently used
         :type unused_options: Not Available
 
-        :returns: Success, general_vhost (HTTP vhost)
-        :rtype: (bool, :class:`~certbot_apache.obj.VirtualHost`)
-
         :raises .errors.PluginError: If no viable HTTP host can be created or
             used for the redirect.
 
@@ -1083,6 +1197,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                         "redirection")
             self._create_redirect_vhost(ssl_vhost)
         else:
+            if general_vh in self._enhanced_vhosts["redirect"]:
+                logger.debug("Already enabled redirect for this vhost")
+                return
+
             # Check if Certbot redirection already exists
             self._verify_no_certbot_redirect(general_vh)
 
@@ -1118,6 +1236,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                                 (general_vh.filep, ssl_vhost.filep))
             self.save()
 
+            self._enhanced_vhosts["redirect"].add(general_vh)
             logger.info("Redirecting vhost in %s to ssl vhost in %s",
                         general_vh.filep, ssl_vhost.filep)
 
@@ -1177,10 +1296,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :type vhost: :class:`~certbot_apache.obj.VirtualHost`
 
         """
-        rewrite_engine_path = self.parser.find_dir("RewriteEngine", "on",
+        rewrite_engine_path_list = self.parser.find_dir("RewriteEngine", "on",
                                                    start=vhost.path)
-        if rewrite_engine_path:
-            return self.parser.get_arg(rewrite_engine_path[0])
+        if rewrite_engine_path_list:
+            for re_path in rewrite_engine_path_list:
+                # A RewriteEngine directive may also be included in per
+                # directory .htaccess files. We only care about the VirtualHost.
+                if 'VirtualHost' in re_path:
+                    return self.parser.get_arg(re_path)
         return False
 
     def _create_redirect_vhost(self, ssl_vhost):
@@ -1202,6 +1325,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Make a new vhost data structure and add it to the lists
         new_vhost = self._create_vhost(parser.get_aug_path(redirect_filepath))
         self.vhosts.append(new_vhost)
+        self._enhanced_vhosts["redirect"].add(new_vhost)
 
         # Finally create documentation for the change
         self.save_notes += ("Created a port 80 vhost, %s, for redirection to "
@@ -1449,14 +1573,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Generate reversal command.
         # Try to be safe here... check that we can probably reverse before
         # applying enmod command
-        if not le_util.exe_exists(self.conf("dismod")):
+        if not util.exe_exists(self.conf("dismod")):
             raise errors.MisconfigurationError(
                 "Unable to find a2dismod, please make sure a2enmod and "
                 "a2dismod are configured correctly for certbot.")
 
         self.reverter.register_undo_command(
             temp, [self.conf("dismod"), mod_name])
-        le_util.run_script([self.conf("enmod"), mod_name])
+        util.run_script([self.conf("enmod"), mod_name])
 
     def restart(self):
         """Runs a config test and reloads the Apache server.
@@ -1475,7 +1599,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            le_util.run_script(constants.os_constant("restart_cmd"))
+            util.run_script(constants.os_constant("restart_cmd"))
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
@@ -1486,7 +1610,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            le_util.run_script(constants.os_constant("conftest_cmd"))
+            util.run_script(constants.os_constant("conftest_cmd"))
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
@@ -1502,8 +1626,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            stdout, _ = le_util.run_script(
-                constants.os_constant("version_cmd"))
+            stdout, _ = util.run_script(constants.os_constant("version_cmd"))
         except errors.SubprocessError:
             raise errors.PluginError(
                 "Unable to run %s -v" %

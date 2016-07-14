@@ -1,11 +1,9 @@
 """Utility functions for Certbot plugin tests."""
 import argparse
 import copy
-import contextlib
 import os
 import re
 import shutil
-import socket
 import tarfile
 
 from acme import jose
@@ -52,13 +50,3 @@ def extract_configs(configs, parent_dir):
         raise errors.Error("Unknown configurations file type")
 
     return config_dir
-
-
-def get_two_free_ports():
-    """Returns two free ports to use for the tests"""
-    with contextlib.closing(socket.socket()) as sock1:
-        with contextlib.closing(socket.socket()) as sock2:
-            sock1.bind(("", 0))
-            sock2.bind(("", 0))
-
-            return sock1.getsockname()[1], sock2.getsockname()[1]

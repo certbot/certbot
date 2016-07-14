@@ -20,8 +20,8 @@ once:
 
 .. code-block:: shell
 
-   git clone https://github.com/letsencrypt/letsencrypt
-   cd letsencrypt
+   git clone https://github.com/certbot/certbot
+   cd certbot
    ./letsencrypt-auto-source/letsencrypt-auto --os-packages-only
    ./tools/venv.sh
 
@@ -57,8 +57,8 @@ your pull request must have thorough unit test coverage, pass our
 `integration`_ tests, and be compliant with the :ref:`coding style
 <coding-style>`.
 
-.. _github issue tracker: https://github.com/letsencrypt/letsencrypt/issues
-.. _Good Volunteer Task: https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aopen+is%3Aissue+label%3A%22Good+Volunteer+Task%22
+.. _github issue tracker: https://github.com/certbot/certbot/issues
+.. _Good Volunteer Task: https://github.com/certbot/certbot/issues?q=is%3Aopen+is%3Aissue+label%3A%22Good+Volunteer+Task%22
 
 Testing
 -------
@@ -70,6 +70,9 @@ The following tools are there to help you:
   parsing, so it should only be run on systems that have an
   experimental, non-production Apache2 install on them.  ``tox -e
   apacheconftest`` can be used to run those specific Apache conf tests.
+
+- ``tox --skip-missing-interpreters`` runs tox while ignoring missing versions
+  of Python needed for running the tests.
 
 - ``tox -e py27``, ``tox -e py26`` etc, run unit tests for specific Python
   versions.
@@ -175,8 +178,8 @@ Configurators may implement just one of those).
 There are also `~certbot.interfaces.IDisplay` plugins,
 which implement bindings to alternative UI libraries.
 
-.. _interfaces.py: https://github.com/letsencrypt/letsencrypt/blob/master/certbot/interfaces.py
-.. _plugins/common.py: https://github.com/letsencrypt/letsencrypt/blob/master/certbot/plugins/common.py#L34
+.. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/interfaces.py
+.. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/plugins/common.py#L34
 
 
 Authenticators
@@ -266,8 +269,7 @@ with the core upstream source code. An example is provided in
    it with any necessary API changes.
 
 .. _`setuptools entry points`:
-  https://pythonhosted.org/setuptools/setuptools.html#dynamic-discovery-of-services-and-plugins
-
+    http://setuptools.readthedocs.io/en/latest/pkg_resources.html#entry-points
 
 .. _coding-style:
 
@@ -297,7 +299,7 @@ Please:
 4. Remember to use ``pylint``.
 
 .. _Google Python Style Guide:
-  https://google-styleguide.googlecode.com/svn/trunk/pyguide.html
+  https://google.github.io/styleguide/pyguide.html
 .. _Sphinx-style: http://sphinx-doc.org/
 .. _PEP 8 - Style Guide for Python Code:
   https://www.python.org/dev/peps/pep-0008
@@ -314,7 +316,9 @@ Steps:
 3. Run ``./pep8.travis.sh`` to do a cursory check of your code style.
    Fix any errors.
 4. Run ``tox -e lint`` to check for pylint errors. Fix any errors.
-5. Run ``tox`` to run the entire test suite including coverage. Fix any errors.
+5. Run ``tox --skip-missing-interpreters`` to run the entire test suite
+   including coverage. The ``--skip-missing-interpreters`` argument ignores
+   missing versions of Python needed for running the tests. Fix any errors.
 6. If your code touches communication with an ACME server/Boulder, you
    should run the integration tests, see `integration`_. See `Known Issues`_
    for some common failures that have nothing to do with your code.
@@ -323,7 +327,7 @@ Steps:
    See `Known Issues`_. If it's not a known issue, fix any errors.
 
 .. _Known Issues:
-  https://github.com/letsencrypt/letsencrypt/wiki/Known-issues
+  https://github.com/certbot/certbot/wiki/Known-issues
 
 Updating the documentation
 ==========================
@@ -333,7 +337,7 @@ commands:
 
 .. code-block:: shell
 
-   make -C docs clean html
+   make -C docs clean html man
 
 This should generate documentation in the ``docs/_build/html``
 directory.

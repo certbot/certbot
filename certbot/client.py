@@ -21,9 +21,10 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import error_handler
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 from certbot import reverter
 from certbot import storage
+from certbot import cli
 
 from certbot.display import ops as display_ops
 from certbot.display import enhancements
@@ -52,7 +53,7 @@ def _determine_user_agent(config):
 
     if config.user_agent is None:
         ua = "CertbotACMEClient/{0} ({1}) Authenticator/{2} Installer/{3}"
-        ua = ua.format(certbot.__version__, " ".join(le_util.get_os_info()),
+        ua = ua.format(certbot.__version__, util.get_os_info_ua(),
                        config.authenticator, config.installer)
     else:
         ua = config.user_agent
@@ -149,7 +150,7 @@ def perform_registration(acme, config):
         return acme.register(messages.NewRegistration.from_data(email=config.email))
     except messages.Error as e:
         if e.typ == "urn:acme:error:invalidEmail":
-            config.namespace.email = display_ops.get_email(more=True, invalid=True)
+            config.namespace.email = display_ops.get_email(invalid=True)
             return perform_registration(acme, config)
         else:
             raise
@@ -197,7 +198,7 @@ class Client(object):
         consistent with identifiers present in the `csr`.
 
         :param list domains: Domain names.
-        :param .le_util.CSR csr: DER-encoded Certificate Signing
+        :param .util.CSR csr: DER-encoded Certificate Signing
             Request. The key used to generate this CSR can be different
             than `authkey`.
         :param list authzr: List of
@@ -236,8 +237,8 @@ class Client(object):
 
         :returns: `.CertificateResource`, certificate chain (as
             returned by `.fetch_chain`), and newly generated private key
-            (`.le_util.Key`) and DER-encoded Certificate Signing Request
-            (`.le_util.CSR`).
+            (`.util.Key`) and DER-encoded Certificate Signing Request
+            (`.util.CSR`).
         :rtype: tuple
 
         """
@@ -281,7 +282,7 @@ class Client(object):
                 "by your operating system package manager")
 
         if self.config.dry_run:
-            logger.info("Dry run: Skipping creating new lineage for %s",
+            logger.debug("Dry run: Skipping creating new lineage for %s",
                         domains[0])
             return None
         else:
@@ -311,29 +312,36 @@ class Client(object):
 
         """
         for path in cert_path, chain_path, fullchain_path:
-            le_util.make_or_verify_dir(
+            util.make_or_verify_dir(
                 os.path.dirname(path), 0o755, os.geteuid(),
                 self.config.strict_permissions)
 
         cert_pem = OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped)
-        cert_file, act_cert_path = le_util.unique_file(cert_path, 0o644)
+
+        cert_file, abs_cert_path = _open_pem_file('cert_path', cert_path)
+
         try:
             cert_file.write(cert_pem)
         finally:
             cert_file.close()
         logger.info("Server issued certificate; certificate written to %s",
-                    act_cert_path)
+                    abs_cert_path)
 
-        cert_chain_abspath = None
-        fullchain_abspath = None
-        if chain_cert:
+        if not chain_cert:
+            return abs_cert_path, None, None
+        else:
             chain_pem = crypto_util.dump_pyopenssl_chain(chain_cert)
-            cert_chain_abspath = _save_chain(chain_pem, chain_path)
-            fullchain_abspath = _save_chain(cert_pem + chain_pem,
-                                            fullchain_path)
 
-        return os.path.abspath(act_cert_path), cert_chain_abspath, fullchain_abspath
+            chain_file, abs_chain_path =\
+                    _open_pem_file('chain_path', chain_path)
+            fullchain_file, abs_fullchain_path =\
+                    _open_pem_file('fullchain_path', fullchain_path)
+
+            _save_chain(chain_pem, chain_file)
+            _save_chain(cert_pem + chain_pem, fullchain_file)
+
+            return abs_cert_path, abs_chain_path, abs_fullchain_path
 
     def deploy_certificate(self, domains, privkey_path,
                            cert_path, chain_path, fullchain_path):
@@ -396,7 +404,8 @@ class Client(object):
         supported = self.installer.supported_enhancements()
         redirect = config.redirect if "redirect" in supported else False
         hsts = config.hsts if "ensure-http-header" in supported else False
-        uir = config.uir if "ensure-http-header" in supported else False
+        uir = config.uir if "ensure-http-header"  in supported else False
+        staple = config.staple if "staple-ocsp" in supported else False
 
         if redirect is None:
             redirect = enhancements.ask("redirect")
@@ -410,9 +419,11 @@ class Client(object):
         if uir:
             self.apply_enhancement(domains, "ensure-http-header",
                     "Upgrade-Insecure-Requests")
+        if staple:
+            self.apply_enhancement(domains, "staple-ocsp")
 
         msg = ("We were unable to restart web server")
-        if redirect or hsts or uir:
+        if redirect or hsts or uir or staple:
             with error_handler.ErrorHandler(self._rollback_and_restart, msg):
                 self.installer.restart()
 
@@ -493,9 +504,9 @@ def validate_key_csr(privkey, csr=None):
     If csr is left as None, only the key will be validated.
 
     :param privkey: Key associated with CSR
-    :type privkey: :class:`certbot.le_util.Key`
+    :type privkey: :class:`certbot.util.Key`
 
-    :param .le_util.CSR csr: CSR
+    :param .util.CSR csr: CSR
 
     :raises .errors.Error: when validation fails
 
@@ -512,7 +523,7 @@ def validate_key_csr(privkey, csr=None):
         if csr.form == "der":
             csr_obj = OpenSSL.crypto.load_certificate_request(
                 OpenSSL.crypto.FILETYPE_ASN1, csr.data)
-            csr = le_util.CSR(csr.file, OpenSSL.crypto.dump_certificate(
+            csr = util.CSR(csr.file, OpenSSL.crypto.dump_certificate(
                 OpenSSL.crypto.FILETYPE_PEM, csr_obj), "pem")
 
         # If CSR is provided, it must be readable and valid.
@@ -562,24 +573,35 @@ def view_config_changes(config, num=None):
     rev.recovery_routine()
     rev.view_config_changes(num)
 
+def _open_pem_file(cli_arg_path, pem_path):
+    """Open a pem file.
 
-def _save_chain(chain_pem, chain_path):
+    If cli_arg_path was set by the client, open that.
+    Otherwise, uniquify the file path.
+
+    :param str cli_arg_path: the cli arg name, e.g. cert_path
+    :param str pem_path: the pem file path to open
+
+    :returns: a tuple of file object and its absolute file path
+
+    """
+    if cli.set_by_cli(cli_arg_path):
+        return util.safe_open(pem_path, chmod=0o644),\
+            os.path.abspath(pem_path)
+    else:
+        uniq = util.unique_file(pem_path, 0o644)
+        return uniq[0], os.path.abspath(uniq[1])
+
+def _save_chain(chain_pem, chain_file):
     """Saves chain_pem at a unique path based on chain_path.
 
     :param str chain_pem: certificate chain in PEM format
-    :param str chain_path: candidate path for the cert chain
-
-    :returns: absolute path to saved cert chain
-    :rtype: str
+    :param str chain_file: chain file object
 
     """
-    chain_file, act_chain_path = le_util.unique_file(chain_path, 0o644)
     try:
         chain_file.write(chain_pem)
     finally:
         chain_file.close()
 
-    logger.info("Cert chain written to %s", act_chain_path)
-
-    # This expects a valid chain file
-    return os.path.abspath(act_chain_path)
+    logger.info("Cert chain written to %s", chain_file.name)

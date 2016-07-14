@@ -484,9 +484,11 @@ class ClientNetworkTest(unittest.TestCase):
     def test_check_response_not_ok_jobj_no_error(self):
         self.response.ok = False
         self.response.json.return_value = {}
-        # pylint: disable=protected-access
-        self.assertRaises(
-            errors.ClientError, self.net._check_response, self.response)
+        with mock.patch('acme.client.messages.Error.from_json') as from_json:
+            from_json.side_effect = jose.DeserializationError
+            # pylint: disable=protected-access
+            self.assertRaises(
+                errors.ClientError, self.net._check_response, self.response)
 
     def test_check_response_not_ok_jobj_error(self):
         self.response.ok = False
@@ -528,40 +530,49 @@ class ClientNetworkTest(unittest.TestCase):
             self.assertEqual(
                 self.response, self.net._check_response(self.response))
 
-    @mock.patch('acme.client.requests')
-    def test_send_request(self, mock_requests):
-        mock_requests.request.return_value = self.response
+    def test_send_request(self):
+        self.net.session = mock.MagicMock()
+        self.net.session.request.return_value = self.response
         # pylint: disable=protected-access
         self.assertEqual(self.response, self.net._send_request(
-            'HEAD', 'url', 'foo', bar='baz'))
-        mock_requests.request.assert_called_once_with(
-            'HEAD', 'url', 'foo', verify=mock.ANY, bar='baz', headers=mock.ANY)
+            'HEAD', 'http://example.com/', 'foo', bar='baz'))
+        self.net.session.request.assert_called_once_with(
+            'HEAD', 'http://example.com/', 'foo',
+            headers=mock.ANY, verify=mock.ANY, bar='baz')
 
-    @mock.patch('acme.client.requests')
-    def test_send_request_verify_ssl(self, mock_requests):
+    def test_send_request_verify_ssl(self):
         # pylint: disable=protected-access
         for verify in True, False:
-            mock_requests.request.reset_mock()
-            mock_requests.request.return_value = self.response
+            self.net.session = mock.MagicMock()
+            self.net.session.request.return_value = self.response
             self.net.verify_ssl = verify
             # pylint: disable=protected-access
             self.assertEqual(
-                self.response, self.net._send_request('GET', 'url'))
-            mock_requests.request.assert_called_once_with(
-                'GET', 'url', verify=verify, headers=mock.ANY)
+                self.response,
+                self.net._send_request('GET', 'http://example.com/'))
+            self.net.session.request.assert_called_once_with(
+                'GET', 'http://example.com/', verify=verify, headers=mock.ANY)
 
-    @mock.patch('acme.client.requests')
-    def test_send_request_user_agent(self, mock_requests):
-        mock_requests.request.return_value = self.response
+    def test_send_request_user_agent(self):
+        self.net.session = mock.MagicMock()
         # pylint: disable=protected-access
-        self.net._send_request('GET', 'url', headers={'bar': 'baz'})
-        mock_requests.request.assert_called_once_with(
-            'GET', 'url', verify=mock.ANY,
+        self.net._send_request('GET', 'http://example.com/',
+                               headers={'bar': 'baz'})
+        self.net.session.request.assert_called_once_with(
+            'GET', 'http://example.com/', verify=mock.ANY,
             headers={'User-Agent': 'acme-python-test', 'bar': 'baz'})
 
-        self.net._send_request('GET', 'url', headers={'User-Agent': 'foo2'})
-        mock_requests.request.assert_called_with(
-            'GET', 'url', verify=mock.ANY, headers={'User-Agent': 'foo2'})
+        self.net._send_request('GET', 'http://example.com/',
+                               headers={'User-Agent': 'foo2'})
+        self.net.session.request.assert_called_with(
+            'GET', 'http://example.com/',
+            verify=mock.ANY, headers={'User-Agent': 'foo2'})
+
+    def test_del(self):
+        sess = mock.MagicMock()
+        self.net.session = sess
+        del self.net
+        sess.close.assert_called_once_with()
 
     @mock.patch('acme.client.requests')
     def test_requests_error_passthrough(self, mock_requests):
@@ -614,14 +625,16 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         return self.checked_response
 
     def test_head(self):
-        self.assertEqual(self.response, self.net.head('url', 'foo', bar='baz'))
+        self.assertEqual(self.response, self.net.head(
+            'http://example.com/', 'foo', bar='baz'))
         self.send_request.assert_called_once_with(
-            'HEAD', 'url', 'foo', bar='baz')
+            'HEAD', 'http://example.com/', 'foo', bar='baz')
 
     def test_get(self):
         self.assertEqual(self.checked_response, self.net.get(
-            'url', content_type=self.content_type, bar='baz'))
-        self.send_request.assert_called_once_with('GET', 'url', bar='baz')
+            'http://example.com/', content_type=self.content_type, bar='baz'))
+        self.send_request.assert_called_once_with(
+            'GET', 'http://example.com/', bar='baz')
 
     def test_post(self):
         # pylint: disable=protected-access

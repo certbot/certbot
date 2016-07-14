@@ -1,1 +1,1 @@
-.. program-output:: certbot --help all
+.. literalinclude:: ../cli-help.txt

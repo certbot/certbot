@@ -1,4 +1,5 @@
 """Common utilities for certbot_nginx."""
+import copy
 import os
 import pkg_resources
 import unittest
@@ -51,7 +52,7 @@ def get_nginx_configurator(
 
     with mock.patch("certbot_nginx.configurator.NginxConfigurator."
                     "config_test"):
-        with mock.patch("certbot_nginx.configurator.le_util."
+        with mock.patch("certbot_nginx.configurator.util."
                         "exe_exists") as mock_exe_exists:
             mock_exe_exists.return_value = True
             config = configurator.NginxConfigurator(
@@ -82,12 +83,15 @@ def filter_comments(tree):
 
     def traverse(tree):
         """Generator dropping comment nodes"""
-        for key, values in tree:
+        for entry in tree:
+            key, values = entry
             if isinstance(key, list):
-                yield [key, filter_comments(values)]
+                new = copy.deepcopy(entry)
+                new[1] = filter_comments(values)
+                yield new
             else:
                 if key != '#':
-                    yield [key, values]
+                    yield entry
 
     return list(traverse(tree))
 

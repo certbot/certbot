@@ -46,8 +46,6 @@ class NginxTlsSni01(common.TLSSNI01):
         if not self.achalls:
             return []
 
-        self.configurator.save()
-
         addresses = []
         default_addr = "{0} default_server ssl".format(
             self.configurator.config.tls_sni_01_port)
@@ -93,10 +91,10 @@ class NginxTlsSni01(common.TLSSNI01):
         # Add the 'include' statement for the challenges if it doesn't exist
         # already in the main config
         included = False
-        include_directive = ['include', self.challenge_conf]
+        include_directive = ['include', ' ', self.challenge_conf]
         root = self.configurator.parser.loc["root"]
 
-        bucket_directive = ['server_names_hash_bucket_size', '128']
+        bucket_directive = ['server_names_hash_bucket_size', ' ', '128']
 
         main = self.configurator.parser.parsed[root]
         for key, body in main:
@@ -118,6 +116,7 @@ class NginxTlsSni01(common.TLSSNI01):
 
         config = [self._make_server_block(pair[0], pair[1])
                   for pair in itertools.izip(self.achalls, ll_addrs)]
+        config = nginxparser.UnspacedList(config)
 
         self.configurator.reverter.register_file_creation(
             True, self.challenge_conf)
@@ -142,19 +141,19 @@ class NginxTlsSni01(common.TLSSNI01):
         document_root = os.path.join(
             self.configurator.config.work_dir, "tls_sni_01_page")
 
-        block = [['listen', str(addr)] for addr in addrs]
+        block = [['listen', ' ', str(addr)] for addr in addrs]
 
-        block.extend([['server_name',
+        block.extend([['server_name', ' ',
                        achall.response(achall.account_key).z_domain],
-                      ['include', self.configurator.parser.loc["ssl_options"]],
+                      ['include', ' ', self.configurator.parser.loc["ssl_options"]],
                       # access and error logs necessary for
                       # integration testing (non-root)
-                      ['access_log', os.path.join(
+                      ['access_log', ' ', os.path.join(
                           self.configurator.config.work_dir, 'access.log')],
-                      ['error_log', os.path.join(
+                      ['error_log', ' ', os.path.join(
                           self.configurator.config.work_dir, 'error.log')],
-                      ['ssl_certificate', self.get_cert_path(achall)],
-                      ['ssl_certificate_key', self.get_key_path(achall)],
-                      [['location', '/'], [['root', document_root]]]])
+                      ['ssl_certificate', ' ', self.get_cert_path(achall)],
+                      ['ssl_certificate_key', ' ', self.get_key_path(achall)],
+                      [['location', ' ', '/'], [['root', ' ', document_root]]]])
 
         return [['server'], block]

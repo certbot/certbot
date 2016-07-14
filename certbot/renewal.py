@@ -18,7 +18,7 @@ from certbot import constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
-from certbot import le_util
+from certbot import util
 from certbot import hooks
 from certbot import storage
 from certbot.plugins import disco as plugins_disco
@@ -60,7 +60,8 @@ def _reconstitute(config, full_path):
     try:
         renewal_candidate = storage.RenewableCert(
             full_path, configuration.RenewerConfiguration(config))
-    except (errors.CertStorageError, IOError):
+    except (errors.CertStorageError, IOError) as exc:
+        logger.warning(exc)
         logger.warning("Renewal configuration file %s is broken. Skipping.", full_path)
         logger.debug("Traceback was:\n%s", traceback.format_exc())
         return None
@@ -86,7 +87,7 @@ def _reconstitute(config, full_path):
         return None
 
     try:
-        config.domains = [le_util.enforce_domain_sanity(d)
+        config.domains = [util.enforce_domain_sanity(d)
                           for d in renewal_candidate.names()]
     except errors.ConfigurationError as error:
         logger.warning("Renewal configuration file %s references a cert "
@@ -107,7 +108,7 @@ def _restore_webroot_config(config, renewalparams):
         if not cli.set_by_cli("webroot_map"):
             config.namespace.webroot_map = renewalparams["webroot_map"]
     elif "webroot_path" in renewalparams:
-        logger.info("Ancient renewal conf file without webroot-map, restoring webroot-path")
+        logger.debug("Ancient renewal conf file without webroot-map, restoring webroot-path")
         wp = renewalparams["webroot_path"]
         if isinstance(wp, str):  # prior to 0.1.0, webroot_path was a string
             wp = [wp]
@@ -193,7 +194,7 @@ def _restore_required_config_elements(config, renewalparams):
 def should_renew(config, lineage):
     "Return true if any of the circumstances for automatic renewal apply."
     if config.renew_by_default:
-        logger.info("Auto-renewal forced with --force-renewal...")
+        logger.debug("Auto-renewal forced with --force-renewal...")
         return True
     if lineage.should_autorenew(interactive=True):
         logger.info("Cert is due for renewal, auto-renewing...")
@@ -235,7 +236,7 @@ def renew_cert(config, domains, le_client, lineage):
     _avoid_invalidating_lineage(config, lineage, original_server)
     new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
     if config.dry_run:
-        logger.info("Dry run: skipping updating lineage at %s",
+        logger.debug("Dry run: skipping updating lineage at %s",
                     os.path.dirname(lineage.cert))
     else:
         prior_version = lineage.latest_common_version()
@@ -301,7 +302,10 @@ def _renew_describe_results(config, renew_successes, renew_failures,
 def renew_all_lineages(config):
     """Examine each lineage; renew if due and report results"""
 
-    if config.domains != []:
+    # This is trivially False if config.domains is empty
+    if any(domain not in config.webroot_map for domain in config.domains):
+        # If more plugins start using cli.add_domains,
+        # we may want to only log a warning here
         raise errors.Error("Currently, the renew verb is only capable of "
                            "renewing all installed certificates that are due "
                            "to be renewed; individual domains cannot be "

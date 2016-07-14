@@ -7,16 +7,20 @@ import re
 import configobj
 import parsedatetime
 import pytz
+import six
 
+import certbot
+from certbot import cli
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import error_handler
-from certbot import le_util
+from certbot import util
 
 logger = logging.getLogger(__name__)
 
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
+CURRENT_VERSION = util.get_strict_version(certbot.__version__)
 
 
 def config_with_defaults(config=None):
@@ -63,6 +67,7 @@ def write_renewal_config(o_filename, n_filename, target, relevant_data):
 
     """
     config = configobj.ConfigObj(o_filename)
+    config["version"] = certbot.__version__
     for kind in ALL_FOUR:
         config[kind] = target[kind]
 
@@ -155,36 +160,13 @@ def relevant_values(all_values):
     :param dict all_values: The original values.
 
     :returns: A new dictionary containing items that can be used in renewal.
-    :rtype dict:"""
+    :rtype dict:
 
-    from certbot import cli
-
-    def _is_cli_default(option, value):
-        # Look through the CLI parser defaults and see if this option is
-        # both present and equal to the specified value. If not, return
-        # False.
-        # pylint: disable=protected-access
-        for x in cli.helpful_parser.parser._actions:
-            if x.dest == option:
-                if x.default == value:
-                    return True
-                else:
-                    break
-        return False
-
-    values = dict()
-    for option, value in all_values.iteritems():
-        # Try to find reasons to store this item in the
-        # renewal config.  It can be stored if it is relevant and
-        # (it is set_by_cli() or flag_default() is different
-        # from the value or flag_default() doesn't exist).
-        if _relevant(option):
-            if (cli.set_by_cli(option)
-                or not _is_cli_default(option, value)):
-#                or option not in constants.CLI_DEFAULTS
-#                or constants.CLI_DEFAULTS[option] != value):
-                values[option] = value
-    return values
+    """
+    return dict(
+        (option, value)
+        for option, value in six.iteritems(all_values)
+        if _relevant(option) and cli.option_was_set(option, value))
 
 
 class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
@@ -258,6 +240,14 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             raise errors.CertStorageError(
                 "renewal config file {0} is missing a required "
                 "file reference".format(self.configfile))
+
+        conf_version = self.configuration.get("version")
+        if (conf_version is not None and
+                util.get_strict_version(conf_version) > CURRENT_VERSION):
+            logger.warning(
+                "Attempting to parse the version %s renewal configuration "
+                "file found at %s with version %s of Certbot. This might not "
+                "work.", conf_version, config_filename, certbot.__version__)
 
         self.cert = self.configuration["cert"]
         self.privkey = self.configuration["privkey"]
@@ -605,7 +595,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         if target is None:
             raise errors.CertStorageError("could not find cert file")
         with open(target) as f:
-            return crypto_util.get_sans_from_cert(f.read())
+            return crypto_util.get_names_from_cert(f.read())
 
     def autodeployment_is_enabled(self):
         """Is automatic deployment enabled for this cert?
@@ -758,7 +748,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             if not os.path.exists(i):
                 os.makedirs(i, 0o700)
                 logger.debug("Creating directory %s.", i)
-        config_file, config_filename = le_util.unique_lineage_name(
+        config_file, config_filename = util.unique_lineage_name(
             cli_config.renewal_configs_dir, lineagename)
         if not config_filename.endswith(".conf"):
             raise errors.CertStorageError(

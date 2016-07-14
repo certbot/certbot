@@ -95,8 +95,8 @@ def get_apache_configurator(
         in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
         work_dir=work_dir)
 
-    with mock.patch("certbot_apache.configurator.le_util.run_script"):
-        with mock.patch("certbot_apache.configurator.le_util."
+    with mock.patch("certbot_apache.configurator.util.run_script"):
+        with mock.patch("certbot_apache.configurator.util."
                         "exe_exists") as mock_exe_exists:
             mock_exe_exists.return_value = True
             with mock.patch("certbot_apache.parser.ApacheParser."
@@ -156,8 +156,12 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(prefix, "wildcard.conf"),
                 os.path.join(aug_pre, "wildcard.conf/VirtualHost"),
                 set([obj.Addr.fromstring("*:80")]), False, False,
-                "ip-172-30-0-17", aliases=["*.blue.purple.com"])
-        ]
+                "ip-172-30-0-17", aliases=["*.blue.purple.com"]),
+            obj.VirtualHost(
+                os.path.join(prefix, "ocsp-ssl.conf"),
+                os.path.join(aug_pre, "ocsp-ssl.conf/IfModule/VirtualHost"),
+                set([obj.Addr.fromstring("10.2.3.4:443")]), True, True,
+                "ocspvhost.com")]
         return vh_truth
 
     return None  # pragma: no cover

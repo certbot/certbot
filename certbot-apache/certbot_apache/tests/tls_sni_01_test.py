@@ -38,8 +38,8 @@ class TlsSniPerformTest(util.ApacheTest):
         resp = self.sni.perform()
         self.assertEqual(len(resp), 0)
 
-    @mock.patch("certbot.le_util.exe_exists")
-    @mock.patch("certbot.le_util.run_script")
+    @mock.patch("certbot.util.exe_exists")
+    @mock.patch("certbot.util.run_script")
     def test_perform1(self, _, mock_exists):
         mock_register = mock.Mock()
         self.sni.configurator.reverter.register_undo_command = mock_register

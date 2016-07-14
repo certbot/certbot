@@ -180,6 +180,9 @@ class IAuthenticator(IPlugin):
     def cleanup(achalls):
         """Revert changes and shutdown after challenges complete.
 
+        This method should be able to revert all changes made by
+        perform, even if perform exited abnormally.
+
         :param list achalls: Non-empty (guaranteed) list of
             :class:`~certbot.achallenges.AnnotatedChallenge`
             instances, a subset of those previously passed to :func:`perform`.
@@ -200,6 +203,10 @@ class IConfig(zope.interface.Interface):
     email = zope.interface.Attribute(
         "Email used for registration and recovery contact.")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
+    must_staple = zope.interface.Attribute(
+        "Adds the OCSP Must Staple extension to the certificate. "
+        "Autoconfigures OCSP Stapling for supported setups "
+        "(Apache version >= 2.3.3 ).")
 
     config_dir = zope.interface.Attribute("Configuration directory.")
     work_dir = zope.interface.Attribute("Working directory.")
@@ -233,6 +240,14 @@ class IInstaller(IPlugin):
     """Generic Certbot Installer Interface.
 
     Represents any server that an X509 certificate can be placed.
+
+    It is assumed that :func:`save` is the only method that finalizes a
+    checkpoint. This is important to ensure that checkpoints are
+    restored in a consistent manner if requested by the user or in case
+    of an error.
+
+    Using :class:`certbot.reverter.Reverter` to implement checkpoints,
+    rollback, and recovery can dramatically simplify plugin development.
 
     """
 
@@ -300,8 +315,11 @@ class IInstaller(IPlugin):
 
         Both title and temporary are needed because a save may be
         intended to be permanent, but the save is not ready to be a full
-        checkpoint. If an exception is raised, it is assumed a new
-        checkpoint was not created.
+        checkpoint.
+
+        It is assumed that at most one checkpoint is finalized by this
+        method. Additionally, if an exception is raised, it is assumed a
+        new checkpoint was not finalized.
 
         :param str title: The title of the save. If a title is given, the
             configuration will be saved as a new checkpoint and put in a

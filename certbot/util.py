@@ -1,6 +1,9 @@
 """Utilities for all Certbot."""
 import argparse
 import collections
+# distutils.version under virtualenv confuses pylint
+# For more info, see: https://github.com/PyCQA/pylint/issues/73
+import distutils.version  # pylint: disable=import-error,no-name-in-module
 import errno
 import logging
 import os
@@ -151,7 +154,8 @@ def _unique_file(path, filename_pat, count, mode):
     while True:
         current_path = os.path.join(path, filename_pat(count))
         try:
-            return safe_open(current_path, chmod=mode), current_path
+            return safe_open(current_path, chmod=mode),\
+                os.path.abspath(current_path)
         except OSError as err:
             # "File exists," is okay, try a different name.
             if err.errno != errno.EEXIST:
@@ -209,9 +213,95 @@ def safely_remove(path):
             raise
 
 
-def get_os_info():
+def get_os_info(filepath="/etc/os-release"):
+    """
+    Get OS name and version
+
+    :param str filepath: File path of os-release file
+    :returns: (os_name, os_version)
+    :rtype: `tuple` of `str`
+    """
+
+    if os.path.isfile(filepath):
+        # Systemd os-release parsing might be viable
+        os_name, os_version = get_systemd_os_info(filepath=filepath)
+        if os_name:
+            return (os_name, os_version)
+
+    # Fallback to platform module
+    return get_python_os_info()
+
+
+def get_os_info_ua(filepath="/etc/os-release"):
+    """
+    Get OS name and version string for User Agent
+
+    :param str filepath: File path of os-release file
+    :returns: os_ua
+    :rtype: `str`
+    """
+
+    if os.path.isfile(filepath):
+        os_ua = _get_systemd_os_release_var("PRETTY_NAME", filepath=filepath)
+        if not os_ua:
+            os_ua = _get_systemd_os_release_var("NAME", filepath=filepath)
+        if os_ua:
+            return os_ua
+
+    # Fallback
+    return " ".join(get_python_os_info())
+
+
+def get_systemd_os_info(filepath="/etc/os-release"):
+    """
+    Parse systemd /etc/os-release for distribution information
+
+    :param str filepath: File path of os-release file
+    :returns: (os_name, os_version)
+    :rtype: `tuple` of `str`
+    """
+
+    os_name = _get_systemd_os_release_var("ID", filepath=filepath)
+    os_version = _get_systemd_os_release_var("VERSION_ID", filepath=filepath)
+
+    return (os_name, os_version)
+
+
+def _get_systemd_os_release_var(varname, filepath="/etc/os-release"):
+    """
+    Get single value from systemd /etc/os-release
+
+    :param str varname: Name of variable to fetch
+    :param str filepath: File path of os-release file
+    :returns: requested value
+    :rtype: `str`
+    """
+
+    var_string = varname+"="
+    if not os.path.isfile(filepath):
+        return ""
+    with open(filepath, 'r') as fh:
+        contents = fh.readlines()
+
+    for line in contents:
+        if line.strip().startswith(var_string):
+            # Return the value of var, normalized
+            return _normalize_string(line.strip()[len(var_string):])
+    return ""
+
+
+def _normalize_string(orig):
+    """
+    Helper function for _get_systemd_os_release_var() to remove quotes
+    and whitespaces
+    """
+    return orig.replace('"', '').replace("'", "").strip()
+
+
+def get_python_os_info():
     """
     Get Operating System type/distribution and major version
+    using python platform module
 
     :returns: (os_name, os_version)
     :rtype: `tuple` of `str`
@@ -235,8 +325,7 @@ def get_os_info():
         os_ver = subprocess.Popen(
             ["sw_vers", "-productVersion"],
             stdout=subprocess.PIPE
-        ).communicate()[0]
-        os_ver = os_ver.partition(".")[0]
+        ).communicate()[0].rstrip('\n')
     elif os_type.startswith('freebsd'):
         # eg "9.3-RC3-p1"
         os_ver = os_ver.partition("-")[0]
@@ -313,7 +402,7 @@ def enforce_domain_sanity(domain):
         domain = domain.encode('ascii').lower()
     except UnicodeError:
         error_fmt = (u"Internationalized domain names "
-                      "are not presently supported: {0}")
+                     "are not presently supported: {0}")
         if isinstance(domain, six.text_type):
             raise errors.ConfigurationError(error_fmt.format(domain))
         else:
@@ -334,11 +423,29 @@ def enforce_domain_sanity(domain):
         # It wasn't an IP address, so that's good
         pass
 
-    # FQDN checks from
-    # http://www.mkyong.com/regular-expressions/domain-name-regular-expression-example/
-    #  Characters used, domain parts < 63 chars, tld > 1 < 64 chars
-    #  first and last char is not "-"
-    fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,63}$")
-    if not fqdn.match(domain):
-        raise errors.ConfigurationError("Requested domain {0} is not a FQDN".format(domain))
+    # FQDN checks according to RFC 2181: domain name should be less than 255
+    # octets (inclusive). And each label is 1 - 63 octets (inclusive).
+    # https://tools.ietf.org/html/rfc2181#section-11
+    msg = "Requested domain {0} is not a FQDN because ".format(domain)
+    labels = domain.split('.')
+    for l in labels:
+        if not 0 < len(l) < 64:
+            raise errors.ConfigurationError(msg + "label {0} is too long.".format(l))
+    if len(domain) > 255:
+        raise errors.ConfigurationError(msg + "it is too long.")
+
     return domain
+
+
+def get_strict_version(normalized):
+    """Converts a normalized version to a strict version.
+
+    :param str normalized: normalized version string
+
+    :returns: An equivalent strict version
+    :rtype: distutils.version.StrictVersion
+
+    """
+    # strict version ending with "a" and a number designates a pre-release
+    # pylint: disable=no-member
+    return distutils.version.StrictVersion(normalized.replace(".dev", "a"))
