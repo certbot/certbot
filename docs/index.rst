@@ -5,6 +5,7 @@ Welcome to the Certbot documentation!
    :maxdepth: 2
 
    intro
+   install
    using
    contributing
    packaging
