@@ -30,7 +30,7 @@ Notes for package maintainers
 
 1. Do not package ``certbot-compatibility-test`` or ``letshelp-certbot`` - it's only used internally.
 
-2. If you'd like to include automated renewal in your package ``certbot renew -q`` should be added to crontab.
+2. If you'd like to include automated renewal in your package ``certbot renew -q`` should be added to crontab or systemd timer.
 
 3. ``jws`` is an internal script for ``acme`` module and it doesn't have to be packaged - it's mostly for debugging: you can use it as ``echo foo | jws sign | jws verify``.
 
@@ -43,7 +43,7 @@ Already ongoing efforts
 Arch
 ----
 
-From PyPI:
+From our official releases:
 - https://www.archlinux.org/packages/community/any/python2-acme
 - https://www.archlinux.org/packages/community/any/certbot
 - https://www.archlinux.org/packages/community/any/certbot-apache
@@ -55,7 +55,6 @@ From ``master``: https://aur.archlinux.org/packages/certbot-git
 Debian (and its derivatives, including Ubuntu)
 ------
 
-https://alioth.debian.org/projects/letsencrypt/
 https://packages.debian.org/sid/certbot
 https://packages.debian.org/sid/python-certbot
 https://packages.debian.org/sid/python-certbot-apache
@@ -72,16 +71,14 @@ In Fedora 23+.
 FreeBSD
 -------
 
-https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=203405
+https://svnweb.freebsd.org/ports/head/security/py-certbot/
 
 GNU Guix
 --------
 
-- https://www.gnu.org/software/guix/package-list.html#letsencrypt
+- https://www.gnu.org/software/guix/package-list.html#certbot
 
 OpenBSD
 -------
 
-- http://cvsweb.openbsd.org/cgi-bin/cvsweb/ports/security/letsencrypt/
-- https://github.com/letsencrypt/letsencrypt/pull/1175
-- https://github.com/letsencrypt/letsencrypt/issues/1174
+- http://cvsweb.openbsd.org/cgi-bin/cvsweb/ports/security/letsencrypt/client/
