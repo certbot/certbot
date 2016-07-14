@@ -1,6 +1,6 @@
 =====================
-README / Introduction
+Introduction
 =====================
 
-.. include:: ../README.rst
+.. include:: intro_common.rst
 .. include:: ../CHANGES.rst
