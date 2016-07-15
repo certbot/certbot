@@ -1,9 +1,21 @@
 """Tests for certbot.plugins.util."""
 import os
 import unittest
+import sys
 
 import mock
-import psutil
+
+try:
+    # Python 3.5+
+    from importlib import reload
+except ImportError:
+    try:
+        # Python 2-3.4
+        from imp import reload
+    except ImportError:
+        # The rest
+        pass
+
 
 class PathSurgeryTest(unittest.TestCase):
     """Tests for certbot.plugins.path_surgery."""
@@ -29,7 +41,50 @@ class PathSurgeryTest(unittest.TestCase):
             self.assertTrue("/usr/local/bin" in os.environ["PATH"])
             self.assertTrue("/tmp" in os.environ["PATH"])
 
-class AlreadyListeningTest(unittest.TestCase):
+
+class AlreadyListeningTestNoPsutil(unittest.TestCase):
+    """Tests for certbot.plugins.already_listening when
+    psutil is not available"""
+    def setUp(self):
+        import certbot.plugins.util
+        # Ensure we get importerror
+        if "psutil" in sys.modules:
+            self.psutil = sys.modules['psutil']
+        else:
+            self.psutil = None
+        sys.modules['psutil'] = None
+        # Reload hackery to ensure getting non-psutil version
+        # loaded to memory
+        reload(certbot.plugins.util)
+
+    def tearDown(self):
+        # Need to reload the module to ensure
+        # getting back to normal
+        import certbot.plugins.util
+        sys.modules["psutil"] = self.psutil
+        reload(certbot.plugins.util)
+
+    @mock.patch("certbot.plugins.util.zope.component.getUtility")
+    def test_ports_available(self, mock_getutil):
+        import certbot.plugins.util as plugins_util
+        # Ensure we don't get error
+        with mock.patch("socket._socketobject.bind"):
+            self.assertFalse(plugins_util.already_listening(80))
+            self.assertFalse(plugins_util.already_listening(80, True))
+
+    @mock.patch("certbot.plugins.util.zope.component.getUtility")
+    def test_ports_blocked(self, mock_getutil):
+        sys.modules["psutil"] = None
+        import certbot.plugins.util as plugins_util
+        import socket
+        with mock.patch("socket._socketobject.bind", side_effect=socket.error):
+            self.assertTrue(plugins_util.already_listening(80))
+            self.assertTrue(plugins_util.already_listening(80, True))
+        with mock.patch("socket.socket", side_effect=socket.error):
+            self.assertFalse(plugins_util.already_listening(80))
+
+
+class AlreadyListeningTestPsutil(unittest.TestCase):
     """Tests for certbot.plugins.already_listening."""
     def _call(self, *args, **kwargs):
         from certbot.plugins.util import already_listening
@@ -42,6 +97,7 @@ class AlreadyListeningTest(unittest.TestCase):
         # This tests a race condition, or permission problem, or OS
         # incompatibility in which, for some reason, no process name can be
         # found to match the identified listening PID.
+        import psutil
         from psutil._common import sconn
         conns = [
             sconn(fd=-1, family=2, type=1, laddr=("0.0.0.0", 30),
@@ -124,6 +180,7 @@ class AlreadyListeningTest(unittest.TestCase):
 
     @mock.patch("certbot.plugins.util.psutil.net_connections")
     def test_access_denied_exception(self, mock_net):
+        import psutil
         mock_net.side_effect = psutil.AccessDenied("")
         self.assertFalse(self._call(12345))
 
