@@ -251,7 +251,7 @@ class NginxParserTest(util.NginxTest):
 
     def test_ssl_options_should_be_parsed_ssl_directives(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
-        self.assertEqual(nparser.loc["ssl_options"],
+        self.assertEqual(nginxparser.UnspacedList(nparser.loc["ssl_options"]),
                          [['ssl_session_cache', 'shared:le_nginx_SSL:1m'],
                           ['ssl_session_timeout', '1440m'],
                           ['ssl_protocols', 'TLSv1 TLSv1.1 TLSv1.2'],

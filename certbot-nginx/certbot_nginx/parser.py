@@ -177,7 +177,7 @@ class NginxParser(object):
         if ssl_options is not None:
             try:
                 with open(ssl_options) as _file:
-                    return nginxparser.load(_file)
+                    return nginxparser.load(_file).spaced
             except IOError:
                 logger.debug("Could not open file: %s", ssl_options)
             except pyparsing.ParseException:
