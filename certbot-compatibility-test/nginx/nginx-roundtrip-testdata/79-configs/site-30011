@@ -1,0 +1,37 @@
+upstream django_server_random12785.example.org {
+    server unix:/srv/http/random14353/live/website.sock;
+}
+
+server {
+    listen 80;
+    server_name random12785.example.org;
+
+    location /media/ {
+        alias /srv/http/random14353/live/dynamic/public/;
+        expires 7d;
+    }
+    location /static/ {
+        alias /srv/http/random14353/live/static_collected/;
+        expires 7d;
+    }
+
+    location / {
+        proxy_pass http://django_server_random12785.example.org;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Protocol $scheme;
+
+        satisfy any;
+        include /etc/nginx/allow_ytec_ips_params;
+        deny all;
+    }    
+
+    access_log /var/log/nginx/random14353/live/access.log;
+    error_log  /var/log/nginx/random14353/live/error.log;
+}
+
+server {
+    server_name www.random12785.example.org;
+    return 301 http://random12785.example.org$request_uri;
+}

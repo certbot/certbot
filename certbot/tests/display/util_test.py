@@ -96,6 +96,7 @@ class NcursesDisplayTest(unittest.TestCase):
     @mock.patch("certbot.display.util."
                 "dialog.Dialog.inputbox")
     def test_input(self, mock_input):
+        mock_input.return_value = (mock.MagicMock(), mock.MagicMock())
         self.displayer.input("message")
         self.assertEqual(mock_input.call_count, 1)
 
@@ -112,6 +113,7 @@ class NcursesDisplayTest(unittest.TestCase):
     @mock.patch("certbot.display.util."
                 "dialog.Dialog.checklist")
     def test_checklist(self, mock_checklist):
+        mock_checklist.return_value = (mock.MagicMock(), mock.MagicMock())
         self.displayer.checklist("message", TAGS)
 
         choices = [
@@ -125,6 +127,7 @@ class NcursesDisplayTest(unittest.TestCase):
 
     @mock.patch("certbot.display.util.dialog.Dialog.dselect")
     def test_directory_select(self, mock_dselect):
+        mock_dselect.return_value = (mock.MagicMock(), mock.MagicMock())
         self.displayer.directory_select("message")
         self.assertEqual(mock_dselect.call_count, 1)
 

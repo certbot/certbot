@@ -1,12 +1,14 @@
 """Tests for certbot.main."""
+import os
+import shutil
+import tempfile
 import unittest
-
 
 import mock
 
-
 from certbot import cli
 from certbot import configuration
+from certbot import errors
 from certbot.plugins import disco as plugins_disco
 
 
@@ -42,6 +44,52 @@ class ObtainCertTest(unittest.TestCase):
     def _assert_no_pause(self, message, height=42, pause=True):
         # pylint: disable=unused-argument
         self.assertFalse(pause)
+
+
+class SetupLogFileHandlerTest(unittest.TestCase):
+    """Tests for certbot.main.setup_log_file_handler."""
+
+    def setUp(self):
+        self.config = mock.Mock(spec_set=['logs_dir'],
+                                logs_dir=tempfile.mkdtemp())
+
+    def tearDown(self):
+        shutil.rmtree(self.config.logs_dir)
+
+    def _call(self, *args, **kwargs):
+        from certbot.main import setup_log_file_handler
+        return setup_log_file_handler(*args, **kwargs)
+
+    @mock.patch('certbot.main.logging.handlers.RotatingFileHandler')
+    def test_ioerror(self, mock_handler):
+        mock_handler.side_effect = IOError
+        self.assertRaises(errors.Error, self._call,
+                          self.config, "test.log", "%s")
+
+
+class MakeOrVerifyCoreDirTest(unittest.TestCase):
+    """Tests for certbot.main.make_or_verify_core_dir."""
+
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.dir)
+
+    def _call(self, *args, **kwargs):
+        from certbot.main import make_or_verify_core_dir
+        return make_or_verify_core_dir(*args, **kwargs)
+
+    def test_success(self):
+        new_dir = os.path.join(self.dir, 'new')
+        self._call(new_dir, 0o700, os.geteuid(), False)
+        self.assertTrue(os.path.exists(new_dir))
+
+    @mock.patch('certbot.main.util.make_or_verify_dir')
+    def test_failure(self, mock_make_or_verify):
+        mock_make_or_verify.side_effect = OSError
+        self.assertRaises(errors.Error, self._call,
+                          self.dir, 0o700, os.geteuid(), False)
 
 
 if __name__ == '__main__':
