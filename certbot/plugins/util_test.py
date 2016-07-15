@@ -7,14 +7,14 @@ import mock
 
 try:
     # Python 3.5+
-    from importlib import reload
+    from importlib import reload as refresh  # pylint: disable=no-name-in-module
 except ImportError:
     try:
         # Python 2-3.4
-        from imp import reload
+        from imp import reload as refresh
     except ImportError:
         # The rest
-        pass
+        from __builtin__ import reload as refresh
 
 
 class PathSurgeryTest(unittest.TestCase):
@@ -55,14 +55,14 @@ class AlreadyListeningTestNoPsutil(unittest.TestCase):
         sys.modules['psutil'] = None
         # Reload hackery to ensure getting non-psutil version
         # loaded to memory
-        reload(certbot.plugins.util)
+        refresh(certbot.plugins.util)
 
     def tearDown(self):
         # Need to reload the module to ensure
         # getting back to normal
         import certbot.plugins.util
         sys.modules["psutil"] = self.psutil
-        reload(certbot.plugins.util)
+        refresh(certbot.plugins.util)
 
     @mock.patch("certbot.plugins.util.zope.component.getUtility")
     def test_ports_available(self, mock_getutil):
@@ -71,6 +71,7 @@ class AlreadyListeningTestNoPsutil(unittest.TestCase):
         with mock.patch("socket._socketobject.bind"):
             self.assertFalse(plugins_util.already_listening(80))
             self.assertFalse(plugins_util.already_listening(80, True))
+            self.assertEqual(mock_getutil.call_count, 0)
 
     @mock.patch("certbot.plugins.util.zope.component.getUtility")
     def test_ports_blocked(self, mock_getutil):
@@ -82,6 +83,7 @@ class AlreadyListeningTestNoPsutil(unittest.TestCase):
             self.assertTrue(plugins_util.already_listening(80, True))
         with mock.patch("socket.socket", side_effect=socket.error):
             self.assertFalse(plugins_util.already_listening(80))
+        self.assertEqual(mock_getutil.call_count, 2)
 
 
 class AlreadyListeningTestPsutil(unittest.TestCase):
