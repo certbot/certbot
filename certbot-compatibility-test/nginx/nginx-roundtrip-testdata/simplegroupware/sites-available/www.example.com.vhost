@@ -1,0 +1,78 @@
+server {
+       listen 80;
+       server_name www.example.com example.com;
+       root /var/www/www.example.com/web;
+
+       if ($http_host != "www.example.com") {
+                 rewrite ^ http://www.example.com$request_uri permanent;
+       }
+
+       location = /favicon.ico {
+                log_not_found off;
+                access_log off;
+                expires max;
+       }
+
+       location = /robots.txt {
+                allow all;
+                log_not_found off;
+                access_log off;
+       }
+
+       # Deny all attempts to access hidden files such as .htaccess, .htpasswd, .DS_Store (Mac).
+       location ~ /\. {
+                deny all;
+                access_log off;
+                log_not_found off;
+       }
+
+       client_max_body_size 1000M;
+       dav_methods PUT DELETE MKCOL COPY MOVE;
+       create_full_put_path on;
+       dav_access user:rw group:rw all:r;
+
+       # WebDAV server
+       location ~ ^/sgdav {
+                rewrite . /bin/webdav.php;
+       }
+       # CMS real URLs
+       location ~ ^/cms/ {
+                rewrite ^/cms/ext/(.*)$ /bin/ext/cms/$1 last;
+                rewrite ^/cms/thumbs/(.*)$ /bin/preview.php?filename=$1 last;
+                rewrite ^/cms/(.*?)/file/(.*)$ /bin/cms.php?page=$1&file=$2 last;
+                rewrite ^/cms/(.*)$ /bin/cms.php?page=$1 last;
+       }
+       # Root
+       location = / {
+                if ($request_method = "OPTIONS") {
+                   rewrite . /bin/webdav.php last;
+                }
+                try_files /bin/index.php /src/index.php /sgs_installer.php =404;
+
+                include /etc/nginx/fastcgi_params;
+                fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+                fastcgi_pass   127.0.0.1:9000; # use spawn-fcgi (!!)
+       }
+       # Root PHP /*.php
+       location ~ ^/([^/]+\.php)$ {
+                try_files /bin/$1 /src/$1 $uri =404;
+                include /etc/nginx/fastcgi_params;
+                fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+                fastcgi_pass   127.0.0.1:9000; # use spawn-fcgi (!!)
+       }
+       # sgs src/*.php bin/*.php
+       location ~ ^/(src|bin)/([^/]+\.php|ext/.+\.php)$ {
+                include /etc/nginx/fastcgi_params;
+                fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+                fastcgi_pass   127.0.0.1:9000; # use spawn-fcgi (!!)
+       }
+       # Redirect static files
+       location ~ ^/(src/|bin/)?(ext/.*|docs/.*)$ {
+                try_files /custom/$2 /ext/$2 /bin/$2 /src/$2 $uri =404;
+       }
+       # Drop all other stuff
+       location / {
+                if (!-f $request_filename) { return 404; }
+                #return 403;
+       }
+}

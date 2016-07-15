@@ -1,10 +1,10 @@
 """
-Letsencrypt Integration Test Tool
+Certbot Integration Test Tool
 
 - Configures (canned) boulder server
 - Launches EC2 instances with a given list of AMIs for different distros
-- Copies letsencrypt repo and puts it on the instances
-- Runs letsencrypt tests (bash scripts) on all of these
+- Copies certbot repo and puts it on the instances
+- Runs certbot tests (bash scripts) on all of these
 - Logs execution and success/fail for debugging
 
 Notes:
@@ -61,10 +61,10 @@ parser.add_argument('test_script',
 #                    required=False)
 parser.add_argument('--repo',
                     default='https://github.com/letsencrypt/letsencrypt.git',
-                    help='letsencrypt git repo to use')
+                    help='certbot git repo to use')
 parser.add_argument('--branch',
                     default='~',
-                    help='letsencrypt git branch to trial')
+                    help='certbot git branch to trial')
 parser.add_argument('--pull_request',
                     default='~',
                     help='letsencrypt/letsencrypt pull request to trial')
@@ -139,7 +139,15 @@ def make_instance(instance_name,
     time.sleep(1.0)
 
     # give instance a name
-    new_instance.create_tags(Tags=[{'Key': 'Name', 'Value': instance_name}])
+    try:
+        new_instance.create_tags(Tags=[{'Key': 'Name', 'Value': instance_name}])
+    except botocore.exceptions.ClientError as e:
+        if "InvalidInstanceID.NotFound" in str(e):
+            # This seems to be ephemeral... retry
+            time.sleep(1)
+            new_instance.create_tags(Tags=[{'Key': 'Name', 'Value': instance_name}])
+        else:
+            raise
     return new_instance
 
 def terminate_and_clean(instances):
@@ -233,23 +241,23 @@ def local_git_clone(repo_url):
     "clones master of repo_url"
     with lcd(LOGDIR):
         local('if [ -d letsencrypt ]; then rm -rf letsencrypt; fi')
-        local('git clone %s'% repo_url)
+        local('git clone %s letsencrypt'% repo_url)
         local('tar czf le.tar.gz letsencrypt')
 
 def local_git_branch(repo_url, branch_name):
     "clones branch <branch_name> of repo_url"
     with lcd(LOGDIR):
         local('if [ -d letsencrypt ]; then rm -rf letsencrypt; fi')
-        local('git clone %s --branch %s --single-branch'%(repo_url, branch_name))
+        local('git clone %s letsencrypt --branch %s --single-branch'%(repo_url, branch_name))
         local('tar czf le.tar.gz letsencrypt')
 
 def local_git_PR(repo_url, PRnumstr, merge_master=True):
     "clones specified pull request from repo_url and optionally merges into master"
     with lcd(LOGDIR):
         local('if [ -d letsencrypt ]; then rm -rf letsencrypt; fi')
-        local('git clone %s'% repo_url)
+        local('git clone %s letsencrypt'% repo_url)
         local('cd letsencrypt && git fetch origin pull/%s/head:lePRtest'%PRnumstr)
-        local('cd letsencrypt && git co lePRtest')
+        local('cd letsencrypt && git checkout lePRtest')
         if merge_master:
             local('cd letsencrypt && git remote update origin')
             local('cd letsencrypt && git merge origin/master -m "testmerge"')
@@ -283,7 +291,7 @@ def config_and_launch_boulder(instance):
     execute(deploy_script, 'scripts/boulder_config.sh')
     execute(run_boulder)
 
-def install_and_launch_letsencrypt(instance, boulder_url, target):
+def install_and_launch_certbot(instance, boulder_url, target):
     execute(local_repo_to_remote)
     with shell_env(BOULDER_URL=boulder_url,
                    PUBLIC_IP=instance.public_ip_address,
@@ -293,13 +301,13 @@ def install_and_launch_letsencrypt(instance, boulder_url, target):
                    OS_TYPE=target['type']):
         execute(deploy_script, cl_args.test_script)
 
-def grab_letsencrypt_log():
+def grab_certbot_log():
     "grabs letsencrypt.log via cat into logged stdout"
     sudo('if [ -f /var/log/letsencrypt/letsencrypt.log ]; then \
     cat /var/log/letsencrypt/letsencrypt.log; else echo "[novarlog]"; fi')
     # fallback file if /var/log is unwriteable...? correct?
-    sudo('if [ -f ./letsencrypt.log ]; then \
-    cat ./letsencrypt.log; else echo "[nolocallog]"; fi')
+    sudo('if [ -f ./certbot.log ]; then \
+    cat ./certbot.log; else echo "[nolocallog]"; fi')
 
 def create_client_instances(targetlist):
     "Create a fleet of client instances"
@@ -324,6 +332,55 @@ def create_client_instances(targetlist):
                                        userdata=userdata))
     print()
     return instances
+
+
+def test_client_process(inqueue, outqueue):
+    cur_proc = mp.current_process()
+    for inreq in iter(inqueue.get, SENTINEL):
+        ii, target = inreq
+
+        #save all stdout to log file
+        sys.stdout = open(LOGDIR+'/'+'%d_%s.log'%(ii,target['name']), 'w')
+
+        print("[%s : client %d %s %s]" % (cur_proc.name, ii, target['ami'], target['name']))
+        instances[ii] = block_until_instance_ready(instances[ii])
+        print("server %s at %s"%(instances[ii], instances[ii].public_ip_address))
+        env.host_string = "%s@%s"%(target['user'], instances[ii].public_ip_address)
+        print(env.host_string)
+
+        try:
+            install_and_launch_certbot(instances[ii], boulder_url, target)
+            outqueue.put((ii, target, 'pass'))
+            print("%s - %s SUCCESS"%(target['ami'], target['name']))
+        except:
+            outqueue.put((ii, target, 'fail'))
+            print("%s - %s FAIL"%(target['ami'], target['name']))
+            pass
+
+        # append server certbot.log to each per-machine output log
+        print("\n\ncertbot.log\n" + "-"*80 + "\n")
+        try:
+            execute(grab_certbot_log)
+        except:
+            print("log fail\n")
+            pass
+
+
+def cleanup(cl_args, instances, targetlist):
+    print('Logs in ', LOGDIR)
+    if not cl_args.saveinstances:
+        print('Terminating EC2 Instances and Cleaning Dangling EBS Volumes')
+        if cl_args.killboulder:
+            boulder_server.terminate()
+        terminate_and_clean(instances)
+    else:
+        # print login information for the boxes for debugging
+        for ii, target in enumerate(targetlist):
+            print(target['name'],
+                  target['ami'],
+                  "%s@%s"%(target['user'], instances[ii].public_ip_address))
+
+
 
 #-------------------------------------------------------------------------------
 # SCRIPT BEGINS
@@ -405,124 +462,85 @@ else:
                                    #machine_type='t2.medium',
                                    security_groups=['letsencrypt_test'])
 
-if not cl_args.boulderonly:
-    instances = create_client_instances(targetlist)
+try:
+    if not cl_args.boulderonly:
+        instances = create_client_instances(targetlist)
 
-# Configure and launch boulder server
-#-------------------------------------------------------------------------------
-print("Waiting on Boulder Server")
-boulder_server = block_until_instance_ready(boulder_server)
-print(" server %s"%boulder_server)
+    # Configure and launch boulder server
+    #-------------------------------------------------------------------------------
+    print("Waiting on Boulder Server")
+    boulder_server = block_until_instance_ready(boulder_server)
+    print(" server %s"%boulder_server)
 
 
-# env.host_string defines the ssh user and host for connection
-env.host_string = "ubuntu@%s"%boulder_server.public_ip_address
-print("Boulder Server at (SSH):", env.host_string)
-if not boulder_preexists:
-    print("Configuring and Launching Boulder")
-    config_and_launch_boulder(boulder_server)
-    # blocking often unnecessary, but cheap EC2 VMs can get very slow
-    block_until_http_ready('http://%s:4000'%boulder_server.public_ip_address,
-                           wait_time=10, timeout=500)
+    # env.host_string defines the ssh user and host for connection
+    env.host_string = "ubuntu@%s"%boulder_server.public_ip_address
+    print("Boulder Server at (SSH):", env.host_string)
+    if not boulder_preexists:
+        print("Configuring and Launching Boulder")
+        config_and_launch_boulder(boulder_server)
+        # blocking often unnecessary, but cheap EC2 VMs can get very slow
+        block_until_http_ready('http://%s:4000'%boulder_server.public_ip_address,
+                               wait_time=10, timeout=500)
 
-boulder_url = "http://%s:4000/directory"%boulder_server.private_ip_address
-print("Boulder Server at (public ip): http://%s:4000/directory"%boulder_server.public_ip_address)
-print("Boulder Server at (EC2 private ip): %s"%boulder_url)
+    boulder_url = "http://%s:4000/directory"%boulder_server.private_ip_address
+    print("Boulder Server at (public ip): http://%s:4000/directory"%boulder_server.public_ip_address)
+    print("Boulder Server at (EC2 private ip): %s"%boulder_url)
 
-if cl_args.boulderonly:
-    sys.exit(0)
+    if cl_args.boulderonly:
+        sys.exit(0)
 
-# Install and launch client scripts in parallel
-#-------------------------------------------------------------------------------
-print("Uploading and running test script in parallel: %s"%cl_args.test_script)
-print("Output routed to log files in %s"%LOGDIR)
-# (Advice: always use Manager.Queue, never regular multiprocessing.Queue
-# the latter has implementation flaws that deadlock it in some circumstances)
-manager = Manager()
-outqueue = manager.Queue()
-inqueue = manager.Queue()
-SENTINEL = None #queue kill signal
+    # Install and launch client scripts in parallel
+    #-------------------------------------------------------------------------------
+    print("Uploading and running test script in parallel: %s"%cl_args.test_script)
+    print("Output routed to log files in %s"%LOGDIR)
+    # (Advice: always use Manager.Queue, never regular multiprocessing.Queue
+    # the latter has implementation flaws that deadlock it in some circumstances)
+    manager = Manager()
+    outqueue = manager.Queue()
+    inqueue = manager.Queue()
+    SENTINEL = None #queue kill signal
 
-# launch as many processes as clients to test
-num_processes = len(targetlist)
-jobs = [] #keep a reference to current procs
+    # launch as many processes as clients to test
+    num_processes = len(targetlist)
+    jobs = [] #keep a reference to current procs
 
-def test_client_process(inqueue, outqueue):
-    cur_proc = mp.current_process()
-    for inreq in iter(inqueue.get, SENTINEL):
-        ii, target = inreq
 
-        #save all stdout to log file
-        sys.stdout = open(LOGDIR+'/'+'%d_%s.log'%(ii,target['name']), 'w')
+    # initiate process execution
+    for i in range(num_processes):
+        p = mp.Process(target=test_client_process, args=(inqueue, outqueue))
+        jobs.append(p)
+        p.daemon = True  # kills subprocesses if parent is killed
+        p.start()
 
-        print("[%s : client %d %s %s]" % (cur_proc.name, ii, target['ami'], target['name']))
-        instances[ii] = block_until_instance_ready(instances[ii])
-        print("server %s at %s"%(instances[ii], instances[ii].public_ip_address))
-        env.host_string = "%s@%s"%(target['user'], instances[ii].public_ip_address)
-        print(env.host_string)
-
-        try:
-            install_and_launch_letsencrypt(instances[ii], boulder_url, target)
-            outqueue.put((ii, target, 'pass'))
-            print("%s - %s SUCCESS"%(target['ami'], target['name']))
-        except:
-            outqueue.put((ii, target, 'fail'))
-            print("%s - %s FAIL"%(target['ami'], target['name']))
-            pass
-
-        # append server letsencrypt.log to each per-machine output log
-        print("\n\nletsencrypt.log\n" + "-"*80 + "\n")
-        try:
-            execute(grab_letsencrypt_log)
-        except:
-            print("log fail\n")
-            pass
-
-# initiate process execution
-for i in range(num_processes):
-    p = mp.Process(target=test_client_process, args=(inqueue, outqueue))
-    jobs.append(p)
-    p.daemon = True  # kills subprocesses if parent is killed
-    p.start()
-
-# fill up work queue
-for ii, target in enumerate(targetlist):
-    inqueue.put((ii, target))
-
-# add SENTINELs to end client processes
-for i in range(num_processes):
-    inqueue.put(SENTINEL)
-# wait on termination of client processes
-for p in jobs:
-    p.join()
-# add SENTINEL to output queue
-outqueue.put(SENTINEL)
-
-# clean up
-execute(local_repo_clean)
-
-# print and save summary results
-results_file = open(LOGDIR+'/results', 'w')
-outputs = [outq for outq in iter(outqueue.get, SENTINEL)]
-outputs.sort(key=lambda x: x[0])
-for outq in outputs:
-    ii, target, status = outq
-    print('%d %s %s'%(ii, target['name'], status))
-    results_file.write('%d %s %s\n'%(ii, target['name'], status))
-results_file.close()
-
-if not cl_args.saveinstances:
-    print('Logs in ', LOGDIR)
-    print('Terminating EC2 Instances and Cleaning Dangling EBS Volumes')
-    if cl_args.killboulder:
-        boulder_server.terminate()
-    terminate_and_clean(instances)
-else:
-    # print login information for the boxes for debugging
+    # fill up work queue
     for ii, target in enumerate(targetlist):
-        print(target['name'],
-              target['ami'],
-              "%s@%s"%(target['user'], instances[ii].public_ip_address))
+        inqueue.put((ii, target))
 
-# kill any connections
-fabric.network.disconnect_all()
+    # add SENTINELs to end client processes
+    for i in range(num_processes):
+        inqueue.put(SENTINEL)
+    # wait on termination of client processes
+    for p in jobs:
+        p.join()
+    # add SENTINEL to output queue
+    outqueue.put(SENTINEL)
+
+    # clean up
+    execute(local_repo_clean)
+
+    # print and save summary results
+    results_file = open(LOGDIR+'/results', 'w')
+    outputs = [outq for outq in iter(outqueue.get, SENTINEL)]
+    outputs.sort(key=lambda x: x[0])
+    for outq in outputs:
+        ii, target, status = outq
+        print('%d %s %s'%(ii, target['name'], status))
+        results_file.write('%d %s %s\n'%(ii, target['name'], status))
+    results_file.close()
+
+finally:
+    cleanup(cl_args, instances, targetlist)
+
+    # kill any connections
+    fabric.network.disconnect_all()

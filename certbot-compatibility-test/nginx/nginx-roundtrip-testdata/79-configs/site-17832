@@ -1,0 +1,32 @@
+upstream django_server_random6430.example.org {
+    server unix:/srv/http/random550/internal/website.sock;
+}
+
+server {
+    listen 80;
+    server_name random6430.example.org;
+
+    location /media/ {
+        alias /srv/http/random550/internal/dynamic/public/;
+        expires 7d;
+        include upload_folder_security_params;
+    }
+    location /static/ {
+        alias /srv/http/random550/internal/static_collected/;
+        expires 7d;
+    }
+
+    location / {
+        proxy_pass http://django_server_random6430.example.org;
+        include          /etc/nginx/django_proxy_params;
+
+    }
+
+    access_log /var/log/nginx/random550/internal/access.log combined_plus;
+    error_log  /var/log/nginx/random550/internal/error.log;
+}
+
+server {
+    server_name www.random6430.example.org;
+    return 301 http://random6430.example.org$request_uri;
+}

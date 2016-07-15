@@ -20,10 +20,10 @@ once:
 
 .. code-block:: shell
 
-   git clone https://github.com/letsencrypt/letsencrypt
-   cd letsencrypt
+   git clone https://github.com/certbot/certbot
+   cd certbot
    ./letsencrypt-auto-source/letsencrypt-auto --os-packages-only
-   ./bootstrap/dev/venv.sh
+   ./tools/venv.sh
 
 Then in each shell where you're working on the client, do:
 
@@ -36,7 +36,7 @@ client by typing:
 
 .. code-block:: shell
 
-   letsencrypt
+   certbot
 
 Activating a shell in this way makes it easier to run unit tests
 with ``tox`` and integration tests, as described below. To reverse this, you
@@ -57,8 +57,8 @@ your pull request must have thorough unit test coverage, pass our
 `integration`_ tests, and be compliant with the :ref:`coding style
 <coding-style>`.
 
-.. _github issue tracker: https://github.com/letsencrypt/letsencrypt/issues
-.. _Good Volunteer Task: https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aopen+is%3Aissue+label%3A%22Good+Volunteer+Task%22
+.. _github issue tracker: https://github.com/certbot/certbot/issues
+.. _Good Volunteer Task: https://github.com/certbot/certbot/issues?q=is%3Aopen+is%3Aissue+label%3A%22Good+Volunteer+Task%22
 
 Testing
 -------
@@ -70,6 +70,9 @@ The following tools are there to help you:
   parsing, so it should only be run on systems that have an
   experimental, non-production Apache2 install on them.  ``tox -e
   apacheconftest`` can be used to run those specific Apache conf tests.
+
+- ``tox --skip-missing-interpreters`` runs tox while ignoring missing versions
+  of Python needed for running the tests.
 
 - ``tox -e py27``, ``tox -e py26`` etc, run unit tests for specific Python
   versions.
@@ -96,25 +99,54 @@ Integration testing with the boulder CA
 Generally it is sufficient to open a pull request and let Github and Travis run
 integration tests for you.
 
-Mac OS X users: Run `./tests/mac-bootstrap.sh` instead of `boulder-start.sh` to
-install dependencies, configure the environment, and start boulder.
+However, if you prefer to run tests, you can use Vagrant, using the Vagrantfile
+in Certbot's repository. To execute the tests on a Vagrant box, the only
+command you are required to run is::
 
-Otherwise, install `Go`_ 1.5, libtool-ltdl, mariadb-server and
-rabbitmq-server and then start Boulder_, an ACME CA server::
+  ./tests/boulder-integration.sh
+
+Otherwise, please follow the following instructions.
+
+Mac OS X users: Run ``./tests/mac-bootstrap.sh`` instead of
+``boulder-start.sh`` to install dependencies, configure the
+environment, and start boulder.
+
+Otherwise, install `Go`_ 1.5, ``libtool-ltdl``, ``mariadb-server`` and
+``rabbitmq-server`` and then start Boulder_, an ACME CA server.
+
+If you can't get packages of Go 1.5 for your Linux system,
+you can execute the following commands to install it:
+
+.. code-block:: shell
+
+  wget https://storage.googleapis.com/golang/go1.5.3.linux-amd64.tar.gz -P /tmp/
+  sudo tar -C /usr/local -xzf /tmp/go1.5.3.linux-amd64.tar.gz
+  if ! grep -Fxq "export GOROOT=/usr/local/go" ~/.profile ; then echo "export GOROOT=/usr/local/go" >> ~/.profile; fi
+  if ! grep -Fxq "export PATH=\\$GOROOT/bin:\\$PATH" ~/.profile ; then echo "export PATH=\\$GOROOT/bin:\\$PATH" >> ~/.profile; fi
+
+These commands download `Go`_ 1.5.3 to ``/tmp/``, extracts to ``/usr/local``,
+and then adds the export lines required to execute ``boulder-start.sh`` to
+``~/.profile`` if they were not previously added
+
+Make sure you execute the following command after `Go`_ finishes installing::
+
+  if ! grep -Fxq "export GOPATH=\\$HOME/go" ~/.profile ; then echo "export GOPATH=\\$HOME/go" >> ~/.profile; fi
+
+Afterwards, you'd be able to start Boulder_ using the following command::
 
   ./tests/boulder-start.sh
 
 The script will download, compile and run the executable; please be
 patient - it will take some time... Once its ready, you will see
-``Server running, listening on 127.0.0.1:4000...``. Add an
-``/etc/hosts`` entry pointing ``le.wtf`` to 127.0.0.1.  You may now
-run (in a separate terminal)::
+``Server running, listening on 127.0.0.1:4000...``. Add ``/etc/hosts``
+entries pointing ``le.wtf``, ``le1.wtf``, ``le2.wtf``, ``le3.wtf``
+and ``nginx.wtf`` to 127.0.0.1.  You may now run (in a separate terminal)::
 
   ./tests/boulder-integration.sh && echo OK || echo FAIL
 
-If you would like to test `letsencrypt_nginx` plugin (highly
+If you would like to test `certbot_nginx` plugin (highly
 encouraged) make sure to install prerequisites as listed in
-``letsencrypt-nginx/tests/boulder-integration.sh`` and rerun
+``certbot-nginx/tests/boulder-integration.sh`` and rerun
 the integration tests suite.
 
 .. _Boulder: https://github.com/letsencrypt/boulder
@@ -126,27 +158,28 @@ Code components and layout
 
 acme
   contains all protocol specific code
-letsencrypt
+certbot
   all client code
 
 
 Plugin-architecture
 -------------------
 
-Let's Encrypt has a plugin architecture to facilitate support for
+Certbot has a plugin architecture to facilitate support for
 different webservers, other TLS servers, and operating systems.
 The interfaces available for plugins to implement are defined in
-`interfaces.py`_.
+`interfaces.py`_ and `plugins/common.py`_.
 
 The most common kind of plugin is a "Configurator", which is likely to
-implement the `~letsencrypt.interfaces.IAuthenticator` and
-`~letsencrypt.interfaces.IInstaller` interfaces (though some
+implement the `~certbot.interfaces.IAuthenticator` and
+`~certbot.interfaces.IInstaller` interfaces (though some
 Configurators may implement just one of those).
 
-There are also `~letsencrypt.interfaces.IDisplay` plugins,
+There are also `~certbot.interfaces.IDisplay` plugins,
 which implement bindings to alternative UI libraries.
 
-.. _interfaces.py: https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/interfaces.py
+.. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/interfaces.py
+.. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/plugins/common.py#L34
 
 
 Authenticators
@@ -202,7 +235,7 @@ Installer Development
 ---------------------
 
 There are a few existing classes that may be beneficial while
-developing a new `~letsencrypt.interfaces.IInstaller`.
+developing a new `~certbot.interfaces.IInstaller`.
 Installers aimed to reconfigure UNIX servers may use Augeas for
 configuration parsing and can inherit from `~.AugeasConfigurator` class
 to handle much of the interface. Installers that are unable to use
@@ -214,7 +247,7 @@ Display
 ~~~~~~~
 
 We currently offer a pythondialog and "text" mode for displays. Display
-plugins implement the `~letsencrypt.interfaces.IDisplay`
+plugins implement the `~certbot.interfaces.IDisplay`
 interface.
 
 .. _dev-plugin:
@@ -222,10 +255,10 @@ interface.
 Writing your own plugin
 =======================
 
-Let's Encrypt client supports dynamic discovery of plugins through the
+Certbot client supports dynamic discovery of plugins through the
 `setuptools entry points`_. This way you can, for example, create a
-custom implementation of `~letsencrypt.interfaces.IAuthenticator` or
-the `~letsencrypt.interfaces.IInstaller` without having to merge it
+custom implementation of `~certbot.interfaces.IAuthenticator` or
+the `~certbot.interfaces.IInstaller` without having to merge it
 with the core upstream source code. An example is provided in
 ``examples/plugins/`` directory.
 
@@ -236,8 +269,7 @@ with the core upstream source code. An example is provided in
    it with any necessary API changes.
 
 .. _`setuptools entry points`:
-  https://pythonhosted.org/setuptools/setuptools.html#dynamic-discovery-of-services-and-plugins
-
+    http://setuptools.readthedocs.io/en/latest/pkg_resources.html#entry-points
 
 .. _coding-style:
 
@@ -267,7 +299,7 @@ Please:
 4. Remember to use ``pylint``.
 
 .. _Google Python Style Guide:
-  https://google-styleguide.googlecode.com/svn/trunk/pyguide.html
+  https://google.github.io/styleguide/pyguide.html
 .. _Sphinx-style: http://sphinx-doc.org/
 .. _PEP 8 - Style Guide for Python Code:
   https://www.python.org/dev/peps/pep-0008
@@ -279,12 +311,14 @@ Steps:
 
 1. Write your code!
 2. Make sure your environment is set up properly and that you're in your
-   virtualenv. You can do this by running ``./bootstrap/dev/venv.sh``.
+   virtualenv. You can do this by running ``./tools/venv.sh``.
    (this is a **very important** step)
 3. Run ``./pep8.travis.sh`` to do a cursory check of your code style.
    Fix any errors.
 4. Run ``tox -e lint`` to check for pylint errors. Fix any errors.
-5. Run ``tox`` to run the entire test suite including coverage. Fix any errors.
+5. Run ``tox --skip-missing-interpreters`` to run the entire test suite
+   including coverage. The ``--skip-missing-interpreters`` argument ignores
+   missing versions of Python needed for running the tests. Fix any errors.
 6. If your code touches communication with an ACME server/Boulder, you
    should run the integration tests, see `integration`_. See `Known Issues`_
    for some common failures that have nothing to do with your code.
@@ -293,7 +327,7 @@ Steps:
    See `Known Issues`_. If it's not a known issue, fix any errors.
 
 .. _Known Issues:
-  https://github.com/letsencrypt/letsencrypt/wiki/Known-issues
+  https://github.com/certbot/certbot/wiki/Known-issues
 
 Updating the documentation
 ==========================
@@ -303,7 +337,7 @@ commands:
 
 .. code-block:: shell
 
-   make -C docs clean html
+   make -C docs clean html man
 
 This should generate documentation in the ``docs/_build/html``
 directory.
@@ -315,7 +349,7 @@ Other methods for running the client
 Vagrant
 -------
 
-If you are a Vagrant user, Let's Encrypt comes with a Vagrantfile that
+If you are a Vagrant user, Certbot comes with a Vagrantfile that
 automates setting up a development environment in an Ubuntu 14.04
 LTS VM. To set it up, simply run ``vagrant up``. The repository is
 synced to ``/vagrant``, so you can get started with:
@@ -324,7 +358,7 @@ synced to ``/vagrant``, so you can get started with:
 
   vagrant ssh
   cd /vagrant
-  sudo ./venv/bin/letsencrypt
+  sudo ./venv/bin/certbot
 
 Support for other Linux distributions coming soon.
 
@@ -343,19 +377,19 @@ Docker
 ------
 
 OSX users will probably find it easiest to set up a Docker container for
-development. Let's Encrypt comes with a Dockerfile (``Dockerfile-dev``)
+development. Certbot comes with a Dockerfile (``Dockerfile-dev``)
 for doing so. To use Docker on OSX, install and setup docker-machine using the
 instructions at https://docs.docker.com/installation/mac/.
 
 To build the development Docker image::
 
-  docker build -t letsencrypt -f Dockerfile-dev .
+  docker build -t certbot -f Dockerfile-dev .
 
 Now run tests inside the Docker image:
 
 .. code-block:: shell
 
-  docker run -it letsencrypt bash
+  docker run -it certbot bash
   cd src
   tox -e py27
 

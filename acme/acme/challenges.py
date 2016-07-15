@@ -13,7 +13,6 @@ from acme import errors
 from acme import crypto_util
 from acme import fields
 from acme import jose
-from acme import other
 
 
 logger = logging.getLogger(__name__)
@@ -34,14 +33,6 @@ class Challenge(jose.TypedJSONObjectWithFields):
         except jose.UnrecognizedTypeError as error:
             logger.debug(error)
             return UnrecognizedChallenge.from_json(jobj)
-
-
-class ContinuityChallenge(Challenge):  # pylint: disable=abstract-method
-    """Client validation challenges."""
-
-
-class DVChallenge(Challenge):  # pylint: disable=abstract-method
-    """Domain validation challenges."""
 
 
 class ChallengeResponse(jose.TypedJSONObjectWithFields):
@@ -78,8 +69,8 @@ class UnrecognizedChallenge(Challenge):
         return cls(jobj)
 
 
-class _TokenDVChallenge(DVChallenge):
-    """DV Challenge with token.
+class _TokenChallenge(Challenge):
+    """Challenge with token.
 
     :ivar bytes token:
 
@@ -149,7 +140,7 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
         return True
 
 
-class KeyAuthorizationChallenge(_TokenDVChallenge):
+class KeyAuthorizationChallenge(_TokenChallenge):
     # pylint: disable=abstract-class-little-used,too-many-ancestors
     """Challenge based on Key Authorization.
 
@@ -460,108 +451,8 @@ class TLSSNI01(KeyAuthorizationChallenge):
         return self.response(account_key).gen_cert(key=kwargs.get('cert_key'))
 
 
-@Challenge.register
-class RecoveryContact(ContinuityChallenge):
-    """ACME "recoveryContact" challenge.
-
-    :ivar unicode activation_url:
-    :ivar unicode success_url:
-    :ivar unicode contact:
-
-    """
-    typ = "recoveryContact"
-
-    activation_url = jose.Field("activationURL", omitempty=True)
-    success_url = jose.Field("successURL", omitempty=True)
-    contact = jose.Field("contact", omitempty=True)
-
-
-@ChallengeResponse.register
-class RecoveryContactResponse(ChallengeResponse):
-    """ACME "recoveryContact" challenge response.
-
-    :ivar unicode token:
-
-    """
-    typ = "recoveryContact"
-    token = jose.Field("token", omitempty=True)
-
-
-@Challenge.register
-class ProofOfPossession(ContinuityChallenge):
-    """ACME "proofOfPossession" challenge.
-
-    :ivar .JWAAlgorithm alg:
-    :ivar bytes nonce: Random data, **not** base64-encoded.
-    :ivar hints: Various clues for the client (:class:`Hints`).
-
-    """
-    typ = "proofOfPossession"
-
-    NONCE_SIZE = 16
-
-    class Hints(jose.JSONObjectWithFields):
-        """Hints for "proofOfPossession" challenge.
-
-        :ivar JWK jwk: JSON Web Key
-        :ivar tuple cert_fingerprints: `tuple` of `unicode`
-        :ivar tuple certs: Sequence of :class:`acme.jose.ComparableX509`
-            certificates.
-        :ivar tuple subject_key_identifiers: `tuple` of `unicode`
-        :ivar tuple issuers: `tuple` of `unicode`
-        :ivar tuple authorized_for: `tuple` of `unicode`
-
-        """
-        jwk = jose.Field("jwk", decoder=jose.JWK.from_json)
-        cert_fingerprints = jose.Field(
-            "certFingerprints", omitempty=True, default=())
-        certs = jose.Field("certs", omitempty=True, default=())
-        subject_key_identifiers = jose.Field(
-            "subjectKeyIdentifiers", omitempty=True, default=())
-        serial_numbers = jose.Field("serialNumbers", omitempty=True, default=())
-        issuers = jose.Field("issuers", omitempty=True, default=())
-        authorized_for = jose.Field("authorizedFor", omitempty=True, default=())
-
-        @certs.encoder
-        def certs(value):  # pylint: disable=missing-docstring,no-self-argument
-            return tuple(jose.encode_cert(cert) for cert in value)
-
-        @certs.decoder
-        def certs(value):  # pylint: disable=missing-docstring,no-self-argument
-            return tuple(jose.decode_cert(cert) for cert in value)
-
-    alg = jose.Field("alg", decoder=jose.JWASignature.from_json)
-    nonce = jose.Field(
-        "nonce", encoder=jose.encode_b64jose, decoder=functools.partial(
-            jose.decode_b64jose, size=NONCE_SIZE))
-    hints = jose.Field("hints", decoder=Hints.from_json)
-
-
-@ChallengeResponse.register
-class ProofOfPossessionResponse(ChallengeResponse):
-    """ACME "proofOfPossession" challenge response.
-
-    :ivar bytes nonce: Random data, **not** base64-encoded.
-    :ivar acme.other.Signature signature: Sugnature of this message.
-
-    """
-    typ = "proofOfPossession"
-
-    NONCE_SIZE = ProofOfPossession.NONCE_SIZE
-
-    nonce = jose.Field(
-        "nonce", encoder=jose.encode_b64jose, decoder=functools.partial(
-            jose.decode_b64jose, size=NONCE_SIZE))
-    signature = jose.Field("signature", decoder=other.Signature.from_json)
-
-    def verify(self):
-        """Verify the challenge."""
-        # self.signature is not Field | pylint: disable=no-member
-        return self.signature.verify(self.nonce)
-
-
 @Challenge.register  # pylint: disable=too-many-ancestors
-class DNS(_TokenDVChallenge):
+class DNS(_TokenChallenge):
     """ACME "dns" challenge."""
     typ = "dns"
 
@@ -609,7 +500,7 @@ class DNS(_TokenDVChallenge):
 
         """
         return DNSResponse(validation=self.gen_validation(
-            self, account_key, **kwargs))
+            account_key, **kwargs))
 
     def validation_domain_name(self, name):
         """Domain name for TXT validation record.

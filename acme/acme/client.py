@@ -1,6 +1,7 @@
 """ACME client API."""
 import collections
 import datetime
+from email.utils import parsedate_tz
 import heapq
 import logging
 import time
@@ -11,7 +12,6 @@ from six.moves import http_client  # pylint: disable=import-error
 import OpenSSL
 import requests
 import sys
-import werkzeug
 
 from acme import errors
 from acme import jose
@@ -180,40 +180,41 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
-    def request_challenges(self, identifier, new_authzr_uri):
+    def request_challenges(self, identifier, new_authzr_uri=None):
         """Request challenges.
 
-        :param identifier: Identifier to be challenged.
-        :type identifier: `.messages.Identifier`
-
-        :param str new_authzr_uri: new-authorization URI
+        :param .messages.Identifier identifier: Identifier to be challenged.
+        :param str new_authzr_uri: ``new-authorization`` URI. If omitted,
+            will default to value found in ``directory``.
 
         :returns: Authorization Resource.
         :rtype: `.AuthorizationResource`
 
         """
         new_authz = messages.NewAuthorization(identifier=identifier)
-        response = self.net.post(new_authzr_uri, new_authz)
+        response = self.net.post(self.directory.new_authz
+                                 if new_authzr_uri is None else new_authzr_uri,
+                                 new_authz)
         # TODO: handle errors
         assert response.status_code == http_client.CREATED
         return self._authzr_from_response(response, identifier)
 
-    def request_domain_challenges(self, domain, new_authz_uri):
+    def request_domain_challenges(self, domain, new_authzr_uri=None):
         """Request challenges for domain names.
 
         This is simply a convenience function that wraps around
         `request_challenges`, but works with domain names instead of
-        generic identifiers.
+        generic identifiers. See ``request_challenges`` for more
+        documentation.
 
         :param str domain: Domain name to be challenged.
-        :param str new_authzr_uri: new-authorization URI
 
         :returns: Authorization Resource.
         :rtype: `.AuthorizationResource`
 
         """
         return self.request_challenges(messages.Identifier(
-            typ=messages.IDENTIFIER_FQDN, value=domain), new_authz_uri)
+            typ=messages.IDENTIFIER_FQDN, value=domain), new_authzr_uri)
 
     def answer_challenge(self, challb, response):
         """Answer challenge.
@@ -247,6 +248,9 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
     def retry_after(cls, response, default):
         """Compute next `poll` time based on response ``Retry-After`` header.
 
+        Handles integers and various datestring formats per
+        https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.37
+
         :param requests.Response response: Response from `poll`.
         :param int default: Default value (in seconds), used when
             ``Retry-After`` header is not present or invalid.
@@ -259,12 +263,16 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         try:
             seconds = int(retry_after)
         except ValueError:
-            # pylint: disable=no-member
-            decoded = werkzeug.parse_date(retry_after)  # RFC1123
-            if decoded is None:
-                seconds = default
-            else:
-                return decoded
+            # The RFC 2822 parser handles all of RFC 2616's cases in modern
+            # environments (primarily HTTP 1.1+ but also py27+)
+            when = parsedate_tz(retry_after)
+            if when is not None:
+                try:
+                    tz_secs = datetime.timedelta(when[-1] if when[-1] else 0)
+                    return datetime.datetime(*when[:7]) - tz_secs
+                except (ValueError, OverflowError):
+                    pass
+            seconds = default
 
         return datetime.datetime.now() + datetime.timedelta(seconds=seconds)
 
@@ -356,7 +364,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         attempts = collections.defaultdict(int)
         exhausted = set()
 
-        # priority queue with datetime (based on Retry-After) as key,
+        # priority queue with datetime.datetime (based on Retry-After) as key,
         # and original Authorization Resource as value
         waiting = [(datetime.datetime.now(), authzr) for authzr in authzrs]
         # mapping between original Authorization Resource and the most
@@ -504,6 +512,10 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         self.verify_ssl = verify_ssl
         self._nonces = set()
         self.user_agent = user_agent
+        self.session = requests.Session()
+
+    def __del__(self):
+        self.session.close()
 
     def _wrap_in_jws(self, obj, nonce):
         """Wrap `JSONDeSerializable` object in JWS.
@@ -598,7 +610,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         kwargs['verify'] = self.verify_ssl
         kwargs.setdefault('headers', {})
         kwargs['headers'].setdefault('User-Agent', self.user_agent)
-        response = requests.request(method, url, *args, **kwargs)
+        response = self.session.request(method, url, *args, **kwargs)
         logging.debug('Received %s. Headers: %s. Content: %r',
                       response, response.headers, response.content)
         return response

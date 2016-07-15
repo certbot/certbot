@@ -5,10 +5,19 @@
 VAGRANTFILE_API_VERSION = "2"
 
 # Setup instructions from docs/contributing.rst
+# Script installs dependencies for tox and boulder integration
 $ubuntu_setup_script = <<SETUP_SCRIPT
 cd /vagrant
 ./letsencrypt-auto-source/letsencrypt-auto --os-packages-only
-./bootstrap/dev/venv.sh
+./tools/venv.sh
+wget https://storage.googleapis.com/golang/go1.5.3.linux-amd64.tar.gz -P /tmp/
+sudo tar -C /usr/local -xzf /tmp/go1.5.3.linux-amd64.tar.gz
+if ! grep -Fxq "export GOROOT=/usr/local/go" /home/vagrant/.profile ; then echo "export GOROOT=/usr/local/go" >> /home/vagrant/.profile; fi
+if ! grep -Fxq "export PATH=\\$GOROOT/bin:\\$PATH" /home/vagrant/.profile ; then echo "export PATH=\\$GOROOT/bin:\\$PATH" >> /home/vagrant/.profile; fi
+if ! grep -Fxq "export GOPATH=\\$HOME/go" /home/vagrant/.profile ; then echo "export GOPATH=\\$HOME/go" >> /home/vagrant/.profile; fi
+if ! grep -Fxq "cd /vagrant/; ./tests/boulder-start.sh &" /etc/rc.local ; then sed -i -e '$i \cd /vagrant/; ./tests/boulder-start.sh &\n' /etc/rc.local; fi
+export DEBIAN_FRONTEND=noninteractive
+sudo -E apt-get -q -y install git make libltdl-dev mariadb-server rabbitmq-server nginx-light
 SETUP_SCRIPT
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|

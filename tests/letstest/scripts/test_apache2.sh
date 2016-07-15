@@ -22,8 +22,8 @@ then
     sudo chmod -R oug+rwx /var/www
     sudo chmod -R oug+rw /etc/httpd
     sudo echo '<html><head><title>foo</title></head><body>bar</body></html>' > /var/www/$PUBLIC_HOSTNAME/public_html/index.html
-    sudo mkdir /etc/httpd/sites-available #letsencrypt requires this...
-    sudo mkdir /etc/httpd/sites-enabled #letsencrypt requires this...
+    sudo mkdir /etc/httpd/sites-available #certbot requires this...
+    sudo mkdir /etc/httpd/sites-enabled #certbot requires this...
     #sudo echo "IncludeOptional sites-enabled/*.conf" >> /etc/httpd/conf/httpd.conf
     sudo echo """
 <VirtualHost *:80>
@@ -35,23 +35,17 @@ then
     #sudo cp /etc/httpd/sites-available/$PUBLIC_HOSTNAME.conf /etc/httpd/sites-enabled/
 fi
 
-# run letsencrypt-apache2 via letsencrypt-auto
+# Run certbot-apache2.
 cd letsencrypt
 
-export SUDO=sudo
-if [ -f /etc/debian_version ] ; then
-  echo "Bootstrapping dependencies for Debian-based OSes..."
-  $SUDO bootstrap/_deb_common.sh
-elif [ -f /etc/redhat-release ] ; then
-  echo "Bootstrapping dependencies for RedHat-based OSes..."
-  $SUDO bootstrap/_rpm_common.sh
-else
-  echo "Dont have bootstrapping for this OS!"
-  exit 1
+echo "Bootstrapping dependencies..."
+letsencrypt-auto-source/letsencrypt-auto --os-packages-only
+if [ $? -ne 0 ] ; then
+    exit 1
 fi
 
-bootstrap/dev/venv.sh
-sudo venv/bin/letsencrypt -v --debug --text --agree-dev-preview --agree-tos \
+tools/venv.sh
+sudo venv/bin/certbot -v --debug --text --agree-dev-preview --agree-tos \
                    --renew-by-default --redirect --register-unsafely-without-email \
                    --domain $PUBLIC_HOSTNAME --server $BOULDER_URL
 if [ $? -ne 0 ] ; then

@@ -2,16 +2,16 @@ from setuptools import setup
 
 
 setup(
-    name='letsencrypt-example-plugins',
-    package='letsencrypt_example_plugins.py',
+    name='certbot-example-plugins',
+    package='certbot_example_plugins.py',
     install_requires=[
-        'letsencrypt',
+        'certbot',
         'zope.interface',
     ],
     entry_points={
-        'letsencrypt.plugins': [
-            'example_authenticator = letsencrypt_example_plugins:Authenticator',
-            'example_installer = letsencrypt_example_plugins:Installer',
+        'certbot.plugins': [
+            'example_authenticator = certbot_example_plugins:Authenticator',
+            'example_installer = certbot_example_plugins:Installer',
         ],
     },
 )
