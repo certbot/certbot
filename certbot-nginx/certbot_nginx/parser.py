@@ -566,3 +566,17 @@ def _add_directive(block, directive, replace):
                     directive, block[location]))
         else:
             block.append(directive)
+
+def _comment_spaced_block(block):
+    """Adds a "managed by Certbot" comment to every directive."""
+    comment = " # managed by Certbot"
+    indent = 80 - len(comment)
+    for i, entry in enumerate(block):
+        if isinstance(entry, list):
+            line = "".join(entry)
+            line = "".join(c for c in line if c != "\n")
+            linelength = len(line)
+            extra = indent - linelength
+            if extra < 0:
+                extra = 0
+            block[i][-1] += extra * " " + comment
