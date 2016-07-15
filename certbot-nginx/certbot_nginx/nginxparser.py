@@ -25,11 +25,19 @@ class RawNginxParser(object):
     key = Word(alphanums + "_/+-.")
     dollar_var = Combine(Literal('$') + Regex(r"[^\{\};,\s]+"))
     condition = Regex(r"\(.+\)")
-    # Matches anything that is not a special character AND any chars in single
-    # or double quotes
+    # Matches anything that is not a special character, and ${SHELL_VARS}, AND
+    # any chars in single or double quotes
     # All of these COULD be upgraded to something like
     # https://stackoverflow.com/a/16130746
-    value = Regex(r"((\".*\")?(\'.*\')?[^\{\};,]?)+")
+    dquoted = Regex(r'(\".*\")')
+    squoted = Regex(r"(\'.*\')")
+    nonspecial = Regex(r"[^\{\};,]")
+    varsub = Regex(r"(\$\{\w+\})")
+    # nonspecial nibbles one character at a time, but the other objects take
+    # precedence.  We use ZeroOrMore to allow entries like "break ;" to be
+    # parsed as assignments
+    value = Combine(ZeroOrMore(dquoted | squoted | varsub | nonspecial))
+
     location = CharsNotIn("{};," + string.whitespace)
     # modifier for location uri [ = | ~ | ~* | ^~ ]
     modifier = Literal("=") | Literal("~*") | Literal("~") | Literal("^~")
