@@ -1020,6 +1020,12 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         args = ['renew', '--dialog', '--text']
         self.assertRaises(errors.Error, self._call, args)
 
+    def test_text_mode_when_verbose(self):
+        parse = self._get_argument_parser()
+        short_args = ['-v']
+        namespace = parse(short_args)
+        self.assertTrue(namespace.text_mode)
+
 
 class DetermineAccountTest(unittest.TestCase):
     """Tests for certbot.cli._determine_account."""
