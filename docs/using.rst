@@ -423,10 +423,10 @@ to, `install Docker`_, then issue the following command:
                -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
                quay.io/letsencrypt/letsencrypt:latest certonly
 
-Certbot will obtain a certificate and place it in the directory
-``/etc/letsencrypt/live`` on your system. 
-You must use the ``certonly`` command
-to install the certificate. 
+Running Certbot with the ``certonly`` command will obtain a certificate and place it in the directory
+``/etc/letsencrypt/live`` on your system. Because Certonly cannot install the certificate from 
+within Docker, you must install the certificate manually according to the procedure
+recommended by the provider of your webserver.
 
 For more information about the layout 
 of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`. 
