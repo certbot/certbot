@@ -201,7 +201,7 @@ iQIDAQAB
              **kwargs)
     env.update(d)
     return out_and_err(
-        join(venv_dir, 'letsencrypt-auto') + ' --verbose --version',
+        join(venv_dir, 'letsencrypt-auto') + ' --version',
         shell=True,
         env=env)
 
