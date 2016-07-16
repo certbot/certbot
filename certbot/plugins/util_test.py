@@ -9,12 +9,8 @@ try:
     # Python 3.5+
     from importlib import reload as refresh  # pylint: disable=no-name-in-module
 except ImportError:
-    try:
-        # Python 2-3.4
-        from imp import reload as refresh
-    except ImportError:
-        # The rest
-        from __builtin__ import reload as refresh
+    # Python 2-3.4
+    from imp import reload as refresh
 
 
 class PathSurgeryTest(unittest.TestCase):
@@ -48,10 +44,9 @@ class AlreadyListeningTestNoPsutil(unittest.TestCase):
     def setUp(self):
         import certbot.plugins.util
         # Ensure we get importerror
+        self.psutil = None
         if "psutil" in sys.modules:
             self.psutil = sys.modules['psutil']
-        else:
-            self.psutil = None
         sys.modules['psutil'] = None
         # Reload hackery to ensure getting non-psutil version
         # loaded to memory
@@ -152,7 +147,7 @@ class AlreadyListeningTestPsutil(unittest.TestCase):
                   raddr=(), status="LISTEN", pid=4416)]
         mock_net.return_value = conns
         mock_process.name.return_value = "inetd"
-        result = self._call(17)
+        result = self._call(17, True)
         self.assertTrue(result)
         self.assertEqual(mock_get_utility.call_count, 1)
         mock_process.assert_called_once_with(4416)
