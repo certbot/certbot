@@ -518,7 +518,9 @@ def _add_directives(block, directives, replace):
     for directive in directives:
         _add_directive(block, directive, replace)
 
-repeatable_directives = set(['server_name', 'listen', 'include'])
+
+REPEATABLE_DIRECTIVES = set(['server_name', 'listen', 'include'])
+
 
 def _add_directive(block, directive, replace):
     """Adds or replaces a single directive in a config block.
@@ -527,27 +529,20 @@ def _add_directive(block, directive, replace):
 
     """
     directive = nginxparser.UnspacedList(directive)
-    if len(directive) == 0:
-        # whitespace
+    if len(directive) == 0 or directive[0] == '#':
+        # whitespace or comment
         block.append(directive)
         return
 
-    if directive[0] == '#':
-        block.append(directive)
-        return
-
-    location = -1
     # Find the index of a config line where the name of the directive matches
-    # the name of the directive we want to add.
-    for index, line in enumerate(block):
-        if len(line) > 0 and line[0] == directive[0]:
-            location = index
-            break
+    # the name of the directive we want to add. If no line exists, use None.
+    location = next((index for index, line in enumerate(block)
+                     if line and line[0] == directive[0]), None)
     if replace:
-        if location == -1:
+        if location is None:
             raise errors.MisconfigurationError(
-                'expected directive for %s in the Nginx '
-                'config but did not find it.' % directive[0])
+                'expected directive for {0} in the Nginx '
+                'config but did not find it.'.format(directive[0]))
         block[location] = directive
     else:
         # Append directive. Fail if the name is not a repeatable directive name,
@@ -555,17 +550,14 @@ def _add_directive(block, directive, replace):
         # in the config file.
         directive_name = directive[0]
         directive_value = directive[1]
-        if location != -1 and directive_name.__str__() not in repeatable_directives:
-            if block[location][1] == directive_value:
-                # There's a conflict, but the existing value matches the one we
-                # want to insert, so it's fine.
-                pass
-            else:
-                raise errors.MisconfigurationError(
-                    'tried to insert directive "%s" but found conflicting "%s".' % (
-                    directive, block[location]))
-        else:
+        if location is None or (isinstance(directive_name, str) and
+                                directive_name in REPEATABLE_DIRECTIVES):
             block.append(directive)
+        elif block[location][1] != directive_value:
+            raise errors.MisconfigurationError(
+                'tried to insert directive "{0}" but found '
+                'conflicting "{1}".'.format(directive, block[location]))
+
 
 def _comment_spaced_block(block):
     """Adds a "managed by Certbot" comment to every directive."""
