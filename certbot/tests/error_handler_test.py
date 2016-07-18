@@ -14,7 +14,8 @@ def get_signals(signums):
 
 def set_signals(sig_handler_dict):
     """Set the signal (keys) with the handler (values) from the input dict."""
-    tuple(signal.signal(s, h) for (s, h) in sig_handler_dict.items())
+    for s, h in sig_handler_dict.items():
+        signal.signal(s, h)
 
 
 @contextlib.contextmanager
@@ -25,7 +26,7 @@ def signal_receiver(signums):
     prev_handlers = get_signals(signums)
     set_signals(dict((s, lambda s, _: signals.append(s)) for s in signums))
     yield signals
-    set_signals(dict((s, prev_handlers[s]) for s in signums))
+    set_signals(prev_handlers)
 
 
 def send_signal(signum):
