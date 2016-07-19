@@ -8,7 +8,7 @@ import psutil
 class PathSurgeryTest(unittest.TestCase):
     """Tests for certbot.plugins.path_surgery."""
 
-    @mock.patch("certbot.plugins.util.logger.warn")
+    @mock.patch("certbot.plugins.util.logger.warning")
     @mock.patch("certbot.plugins.util.logger.debug")
     def test_path_surgery(self, mock_debug, mock_warn):
         from certbot.plugins.util import path_surgery

@@ -179,7 +179,7 @@ class NginxConfigurator(common.Plugin):
                         vhost.filep, vhost.names)
         except errors.MisconfigurationError as error:
             logger.debug(error)
-            logger.warn(
+            logger.warning(
                 "Cannot find a cert or key directive in %s for %s. "
                 "VirtualHost was not modified.", vhost.filep, vhost.names)
             # Presumably break here so that the virtualhost is not modified
@@ -385,7 +385,7 @@ class NginxConfigurator(common.Plugin):
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
         except errors.PluginError:
-            logger.warn("Failed %s for %s", enhancement, domain)
+            logger.warning("Failed %s for %s", enhancement, domain)
 
     def _enable_redirect(self, vhost, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.

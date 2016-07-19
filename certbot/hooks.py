@@ -53,7 +53,7 @@ def post_hook(config, final=False):
         if not pre_hook.already:
             logger.info("No renewals attempted, so not running post-hook")
             if config.verb != "renew":
-                logger.warn("Sanity failure in renewal hooks")
+                logger.warning("Sanity failure in renewal hooks")
             return
         if final or config.verb != "renew":
             logger.info("Running post-hook command: %s", config.post_hook)
