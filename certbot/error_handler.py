@@ -61,24 +61,22 @@ class ErrorHandler(object):
         self._set_signal_handlers()
 
     def __exit__(self, exec_type, exec_value, trace):
-        try:
-            self.body_executed = True
-            retval = False
-            # SystemExit is ignored to properly handle forks that don't exec
-            if exec_type in (None, SystemExit):
-                return retval
-            elif exec_type is errors.SignalExit:
-                logger.debug("Encountered signals: %s", self.received_signals)
-                retval = True
-            else:
-                logger.debug("Encountered exception:\n%s", "".join(
-                    traceback.format_exception(exec_type, exec_value, trace)))
-
-            self._call_registered()
+        self.body_executed = True
+        retval = False
+        # SystemExit is ignored to properly handle forks that don't exec
+        if exec_type in (None, SystemExit):
             return retval
-        finally:
-            self._reset_signal_handlers()
-            self._call_signals()
+        elif exec_type is errors.SignalExit:
+            logger.debug("Encountered signals: %s", self.received_signals)
+            retval = True
+        else:
+            logger.debug("Encountered exception:\n%s", "".join(
+                traceback.format_exception(exec_type, exec_value, trace)))
+
+        self._call_registered()
+        self._reset_signal_handlers()
+        self._call_signals()
+        return retval
 
     def register(self, func, *args, **kwargs):
         """Sets func to be called with *args and **kwargs during cleanup
