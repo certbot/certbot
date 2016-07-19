@@ -566,7 +566,7 @@ def _add_directive(block, directive, replace):
                 'expected directive for {0} in the Nginx '
                 'config but did not find it.'.format(directive[0]))
         block[location] = directive
-        block.insert(location + 1, COMMENT)
+        _comment_directive(block, location)
     else:
         # Append directive. Fail if the name is not a repeatable directive name,
         # and there is already a copy of that directive with a different value
@@ -576,7 +576,7 @@ def _add_directive(block, directive, replace):
         if location is None or (isinstance(directive_name, str) and
                                 directive_name in REPEATABLE_DIRECTIVES):
             block.append(directive)
-            block.append(COMMENT)
+            _comment_directive(block, len(block))
         elif block[location][1] != directive_value:
             raise errors.MisconfigurationError(
                 'tried to insert directive "{0}" but found '
