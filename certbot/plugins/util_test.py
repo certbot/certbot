@@ -16,15 +16,15 @@ class PathSurgeryTest(unittest.TestCase):
         with mock.patch.dict('os.environ', all_path):
             with mock.patch('certbot.util.exe_exists') as mock_exists:
                 mock_exists.return_value = True
-                self.assertEquals(path_surgery("eg"), True)
-                self.assertEquals(mock_debug.call_count, 0)
-                self.assertEquals(mock_warn.call_count, 0)
-                self.assertEquals(os.environ["PATH"], all_path["PATH"])
+                self.assertEqual(path_surgery("eg"), True)
+                self.assertEqual(mock_debug.call_count, 0)
+                self.assertEqual(mock_warn.call_count, 0)
+                self.assertEqual(os.environ["PATH"], all_path["PATH"])
         no_path = {"PATH": "/tmp/"}
         with mock.patch.dict('os.environ', no_path):
             path_surgery("thingy")
-            self.assertEquals(mock_debug.call_count, 1)
-            self.assertEquals(mock_warn.call_count, 1)
+            self.assertEqual(mock_debug.call_count, 1)
+            self.assertEqual(mock_warn.call_count, 1)
             self.assertTrue("Failed to find" in mock_warn.call_args[0][0])
             self.assertTrue("/usr/local/bin" in os.environ["PATH"])
             self.assertTrue("/tmp" in os.environ["PATH"])
