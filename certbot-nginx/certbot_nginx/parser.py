@@ -517,10 +517,26 @@ def _add_directives(block, directives, replace):
     """
     for directive in directives:
         _add_directive(block, directive, replace)
-
+    last = block[-1]
+    if not (isinstance(last, str) and '\n' in last):
+        block.append('\n')
+    
 
 REPEATABLE_DIRECTIVES = set(['server_name', 'listen', 'include'])
-COMMENT = [" ", "#", " managed by Certbot"]
+COMMENT_STR = ' managed by Certbot'
+COMMENT = [' ', '#', ' managed by Certbot']
+
+
+def _comment_directive(block, location):
+    """Add a comment to the end of the line at location."""
+    block.insert(location + 1, COMMENT[:])
+
+    if len(block) > location + 2:         # there is a block after us
+        next_entry = block[location + 2]
+        if isinstance(next_entry, list):
+            next_entry = next_entry.spaced[0]
+        if "\n" not in next_entry:
+            block.insert(location + 2, '\n')
 
 
 def _add_directive(block, directive, replace):
