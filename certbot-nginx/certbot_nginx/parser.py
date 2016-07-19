@@ -536,7 +536,7 @@ def _comment_directive(block, location):
         # add_directives
         next_entry = "\n"
     if isinstance(next_entry, list):
-        if COMMENT[-1] in next_entry[-1]:
+        if "Certbot" in next_entry[-1]:
             return
         next_entry = next_entry.spaced[0]
     block.insert(location + 1, COMMENT[:])
