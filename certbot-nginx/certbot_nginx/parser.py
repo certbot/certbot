@@ -529,14 +529,19 @@ COMMENT = [' ', '#', ' managed by Certbot']
 
 def _comment_directive(block, location):
     """Add a comment to the end of the line at location."""
+    if len(block) > location + 1:         # there is a block after us
+        next_entry = block[location + 1]
+    else: 
+        # we're at the end of the block, pretend there's a newline after us; it will actually be added later in
+        # add_directives
+        next_entry = "\n"
+    if isinstance(next_entry, list):
+        if COMMENT[-1] in next_entry[-1]:
+            return
+        next_entry = next_entry.spaced[0]
     block.insert(location + 1, COMMENT[:])
-
-    if len(block) > location + 2:         # there is a block after us
-        next_entry = block[location + 2]
-        if isinstance(next_entry, list):
-            next_entry = next_entry.spaced[0]
-        if "\n" not in next_entry:
-            block.insert(location + 2, '\n')
+    if "\n" not in next_entry:
+        block.insert(location + 2, '\n')
 
 
 def _add_directive(block, directive, replace):
