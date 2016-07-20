@@ -29,3 +29,5 @@ since ``certbot-auto`` is a wrapper to ``certbot``, it accepts exactly
 the same command line flags and arguments.  More details about this script and
 other installation methods can be found `in the User Guide
 <https://certbot.eff.org/docs/using.html#installation>`_.
+
+.. _certbot.eff.org: https://certbot.eff.org/

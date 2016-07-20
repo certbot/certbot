@@ -48,3 +48,7 @@ email to client-dev+subscribe@letsencrypt.org)
    https://letsencrypt.readthedocs.org/en/latest/using.html
 
 .. _watch demo video: https://www.youtube.com/watch?v=Gas_sSB-5SU
+
+.. _Freenode: https://webchat.freenode.net?channels=%23letsencrypt
+.. _OFTC: https://webchat.oftc.net?channels=%23certbot
+.. _client-dev: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev
