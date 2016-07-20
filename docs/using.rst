@@ -572,5 +572,7 @@ installing Certbot directly with pip from PyPI or downloading a ZIP
 archive from GitHub may be technically possible but are not presently
 recommended or supported.
 
-.. include:: current_features.rst
+.. include:: ../README.rst
+    :start-after: tag:features-begin
+    :end-before: tag:features-end
 .. include:: ../CHANGES.rst
