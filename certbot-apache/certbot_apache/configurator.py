@@ -519,7 +519,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         addrs = set()
-        args = self.aug.match(path + "/arg")
+        try:
+            args = self.aug.match(path + "/arg")
+        except RuntimeError:
+            logger.warn("Encountered a problem while parsing file: %s, skipping", path)
+            return None
         for arg in args:
             addrs.add(obj.Addr.fromstring(self.parser.get_arg(arg)))
         is_ssl = False
@@ -533,7 +537,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if addr.get_port() == "443":
                 is_ssl = True
 
-        filename = get_file_path(path)
+        filename = get_file_path(self.aug.get("/augeas/files%s/path" % get_file_path(path)))
         if self.conf("handle-sites"):
             is_enabled = self.is_site_enabled(filename)
         else:
@@ -567,6 +571,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                      os.path.basename(path) == "VirtualHost"]
             for path in paths:
                 new_vhost = self._create_vhost(path)
+                if not new_vhost:
+                    continue
                 realpath = os.path.realpath(new_vhost.filep)
                 if realpath not in vhost_paths.keys():
                     vhs.append(new_vhost)
@@ -780,7 +786,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.aug.load()
         # Get Vhost augeas path for new vhost
         vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
-                              (ssl_fp, parser.case_i("VirtualHost")))
+                              (self._escape(ssl_fp), parser.case_i("VirtualHost")))
         if len(vh_p) != 1:
             logger.error("Error: should only be one vhost in %s", avail_fp)
             raise errors.PluginError("Currently, we only support "
@@ -990,7 +996,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.parser.add_dir(vh_path, "Include", self.mod_ssl_conf)
 
     def _add_servername_alias(self, target_name, vhost):
-        fp = vhost.filep
+        fp = self._escape(vhost.filep)
         vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
                               (fp, parser.case_i("VirtualHost")))
         if not vh_p:
@@ -1042,6 +1048,17 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         if need_to_save:
             self.save()
+
+    def _escape(self, fp):
+        fp = fp.replace(",", "\\,")
+        fp = fp.replace("[", "\\[")
+        fp = fp.replace("]", "\\]")
+        fp = fp.replace("|", "\\|")
+        fp = fp.replace("=", "\\=")
+        fp = fp.replace("(", "\\(")
+        fp = fp.replace(")", "\\)")
+        fp = fp.replace("!", "\\!")
+        return fp
 
     ######################################################################
     # Enhancements
@@ -1115,7 +1132,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if not use_stapling_aug_path:
             self.parser.add_dir(ssl_vhost.path, "SSLUseStapling", "on")
 
-        ssl_vhost_aug_path = parser.get_aug_path(ssl_vhost.filep)
+        ssl_vhost_aug_path = self._escape(parser.get_aug_path(ssl_vhost.filep))
 
         # Check if there's an existing SSLStaplingCache directive.
         stapling_cache_aug_path = self.parser.find_dir('SSLStaplingCache',
@@ -1372,7 +1389,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         self.aug.load()
         # Make a new vhost data structure and add it to the lists
-        new_vhost = self._create_vhost(parser.get_aug_path(redirect_filepath))
+        new_vhost = self._create_vhost(parser.get_aug_path(self._escape(redirect_filepath)))
         self.vhosts.append(new_vhost)
         self._enhanced_vhosts["redirect"].add(new_vhost)
 
