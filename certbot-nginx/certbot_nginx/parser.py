@@ -520,7 +520,7 @@ def _add_directives(block, directives, replace):
     last = block[-1]
     if not (isinstance(last, str) and '\n' in last):
         block.append('\n')
-    
+
 
 REPEATABLE_DIRECTIVES = set(['server_name', 'listen', 'include'])
 COMMENT_STR = ' managed by Certbot'
@@ -531,7 +531,7 @@ def _comment_directive(block, location):
     """Add a comment to the end of the line at location."""
     if len(block) > location + 1:         # there is a block after us
         next_entry = block[location + 1]
-    else: 
+    else:
         # we're at the end of the block, pretend there's a newline after us; it will actually be added later in
         # add_directives
         next_entry = "\n"
@@ -576,7 +576,7 @@ def _add_directive(block, directive, replace):
         if location is None or (isinstance(directive_name, str) and
                                 directive_name in REPEATABLE_DIRECTIVES):
             block.append(directive)
-            _comment_directive(block, len(block))
+            _comment_directive(block, len(block) - 1)
         elif block[location][1] != directive_value:
             raise errors.MisconfigurationError(
                 'tried to insert directive "{0}" but found '
