@@ -369,10 +369,10 @@ def main():
         plugin.cleanup_from_tests()
 
     if overall_success:
-        logger.warn("All compatibility tests succeeded")
+        logger.warning("All compatibility tests succeeded")
         sys.exit(0)
     else:
-        logger.warn("One or more compatibility tests failed")
+        logger.warning("One or more compatibility tests failed")
         sys.exit(1)
 
 

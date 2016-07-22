@@ -146,7 +146,7 @@ class ApacheParser(object):
                 constants.os_constant("define_cmd"))
         # Small errors that do not impede
         if proc.returncode != 0:
-            logger.warn("Error in checking parameter list: %s", stderr)
+            logger.warning("Error in checking parameter list: %s", stderr)
             raise errors.MisconfigurationError(
                 "Apache is unable to check whether or not the module is "
                 "loaded because Apache is misconfigured.")
