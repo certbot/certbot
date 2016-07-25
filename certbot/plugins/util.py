@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 RENEWER_EXTRA_MSG = (
     " For automated renewal, you may want to use a script that stops"
     " and starts your webserver. You can find an example at"
-    " https://letsencrypt.org/howitworks/#writing-your-own-renewal-script"
-    ". Alternatively you can use the webroot plugin to renew without"
+    " https://certbot.eff.org/docs/using.html#renewal ."
+    " Alternatively you can use the webroot plugin to renew without"
     " needing to stop and start your webserver.")
 
 
