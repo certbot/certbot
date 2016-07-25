@@ -151,9 +151,7 @@ Resources for recommendations
 In the course of considering how to handle this issue, we received
 recommendations with sources of expert guidance on ciphersuites and other
 cryptographic parameters. We're grateful to everyone who contributed
-suggestions. The recommendations we received are available at
-
-https://github.com/certbot/certbot/wiki/Ciphersuite-guidance
+suggestions. The recommendations we received are available under Feedback_.
 
 Certbot users are welcome to review these authorities to
 better inform their own cryptographic parameter choices. We also
