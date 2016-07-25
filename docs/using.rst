@@ -406,7 +406,7 @@ good reason to do so.
 
 You should definitely read the :ref:`where-certs` section, in order to
 know how to manage the certs
-manually. https://github.com/certbot/certbot/wiki/Ciphersuite-guidance
+manually. `Our ciphersuites page <ciphers.html>`__
 provides some information about recommended ciphersuites. If none of
 these make much sense to you, you should definitely use the
 certbot-auto_ method, which enables you to use installer plugins
