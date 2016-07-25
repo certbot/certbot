@@ -323,11 +323,7 @@ Steps:
    should run the integration tests, see `integration`_. See `Known Issues`_
    for some common failures that have nothing to do with your code.
 7. Submit the PR.
-8. Did your tests pass on Travis? If they didn't, it might not be your fault!
-   See `Known Issues`_. If it's not a known issue, fix any errors.
-
-.. _Known Issues:
-  https://github.com/certbot/certbot/wiki/Known-issues
+8. Did your tests pass on Travis? If they didn't, fix any errors.
 
 Updating the documentation
 ==========================
