@@ -8,14 +8,17 @@ User Guide
 Getting Certbot
 ===============
 
-To get specific instructions for installing Certbot on your OS, we recommend
-visiting certbot.eff.org_. If you're offline, you can find some general
+To get specific instructions for installing Certbot on your OS,
+visit certbot.eff.org_. This is the easiest way to learn how to get
+Certbot up and running on your system. 
+
+If you're offline, you can find some general
 instructions `in the README / Introduction <intro.html#installation>`__
 
 __ installation_
 .. _certbot.eff.org: https://certbot.eff.org
 
-.. _certbot-auto:
+.. _certbot-auto: https://certbot.eff.org/docs/using.html#certbot-auto
 
 The name of the certbot command
 -------------------------------
@@ -394,7 +397,12 @@ Running with Docker
 Docker_ is an amazingly simple and quick way to obtain a
 certificate. However, this mode of operation is unable to install
 certificates or configure your webserver, because our installer
-plugins cannot reach it from inside the Docker container.
+plugins cannot reach your webserver from inside the Docker container.
+
+Most users should use the operating system packages (see instructions at 
+certbot.eff.org_) or, as a fallback, ``certbot-auto``. You should only 
+use Docker if you are sure you know what you are doing and have a
+good reason to do so.
 
 You should definitely read the :ref:`where-certs` section, in order to
 know how to manage the certs
@@ -413,11 +421,15 @@ to, `install Docker`_, then issue the following command:
    sudo docker run -it --rm -p 443:443 -p 80:80 --name certbot \
                -v "/etc/letsencrypt:/etc/letsencrypt" \
                -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
-               quay.io/letsencrypt/letsencrypt:latest auth
+               quay.io/letsencrypt/letsencrypt:latest certonly
 
-and follow the instructions (note that ``auth`` command is explicitly
-used - no installer plugins involved). Your new cert will be available
-in ``/etc/letsencrypt/live`` on the host.
+Running Certbot with the ``certonly`` command will obtain a certificate and place it in the directory
+``/etc/letsencrypt/live`` on your system. Because Certonly cannot install the certificate from 
+within Docker, you must install the certificate manually according to the procedure
+recommended by the provider of your webserver.
+
+For more information about the layout 
+of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`. 
 
 .. _Docker: https://docker.com
 .. _`install Docker`: https://docs.docker.com/userguide/
@@ -543,10 +555,10 @@ whole process is described in the :doc:`contributing`.
 Comparison of different methods
 -------------------------------
 
-Unless you have a very specific requirements, we kindly suggest that you use
-the certbot-auto_ method. It's the fastest, the most thoroughly
-tested and the most reliable way of getting our software and the free
-TLS/SSL certificates!
+Unless you have very specific requirements, we kindly suggest that you use
+the Certbot packages provided by your package manager (see certbot.eff.org_). 
+If such packages are not available, we recommend using ``certbot-auto``, which
+automates the process of installing Certbot on your system.
 
 Beyond the methods discussed here, other methods may be possible, such as
 installing Certbot directly with pip from PyPI or downloading a ZIP

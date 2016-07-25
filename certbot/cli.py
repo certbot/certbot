@@ -158,7 +158,7 @@ def possible_deprecation_warning(config):
         # need warnings
         return
     if "CERTBOT_AUTO" not in os.environ:
-        logger.warn("You are running with an old copy of letsencrypt-auto that does "
+        logger.warning("You are running with an old copy of letsencrypt-auto that does "
             "not receive updates, and is less reliable than more recent versions. "
             "We recommend upgrading to the latest certbot-auto script, or using native "
             "OS packages.")
@@ -393,6 +393,8 @@ class HelpfulArgumentParser(object):
                         ("Conflicting values for displayer."
                         " {0} conflicts with dialog_mode").format(arg)
                     )
+        elif parsed_args.verbose_count > flag_default("verbose_count"):
+            parsed_args.text_mode = True
 
         if parsed_args.validate_hooks:
             hooks.validate_hooks(parsed_args)

@@ -126,7 +126,7 @@ ExperimentalBootstrap() {
       $2
     fi
   else
-    echo "WARNING: $1 support is very experimental at present..."
+    echo "FATAL: $1 support is very experimental at present..."
     echo "if you would like to work on improving it, please ensure you have backups"
     echo "and then run this script again with the --debug flag!"
     exit 1
@@ -253,13 +253,19 @@ UNLIKELY_EOF
     # Set PATH so pipstrap upgrades the right (v)env:
     PATH="$VENV_BIN:$PATH" "$VENV_BIN/python" "$TEMP_DIR/pipstrap.py"
     set +e
-    PIP_OUT=`"$VENV_BIN/pip" install --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt" 2>&1`
+    if [ "$VERBOSE" = 1 ]; then
+      "$VENV_BIN/pip" install --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt"
+    else
+      PIP_OUT=`"$VENV_BIN/pip" install --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt" 2>&1`
+    fi
     PIP_STATUS=$?
     set -e
     if [ "$PIP_STATUS" != 0 ]; then
       # Report error. (Otherwise, be quiet.)
-      echo "Had a problem while installing Python packages:"
-      echo "$PIP_OUT"
+      echo "Had a problem while installing Python packages."
+      if [ "$VERBOSE" != 1 ]; then
+        echo "$PIP_OUT"
+      fi
       rm -rf "$VENV_PATH"
       exit 1
     fi

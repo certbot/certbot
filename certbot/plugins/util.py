@@ -50,8 +50,9 @@ def path_surgery(restart_cmd):
         return True
     else:
         expanded = " expanded" if any(added) else ""
-        logger.warn("Failed to find %s in%s PATH: %s", restart_cmd,
-                    expanded, path)
+        logger.warning("Failed to find %s in%s PATH: %s", restart_cmd, expanded, path)
+        return False
+
         return False
 
 

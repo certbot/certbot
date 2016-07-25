@@ -56,7 +56,7 @@ class MultipleVhostsTest(util.ApacheTest):
         mock_surgery.return_value = False
         with mock.patch.dict('os.environ', silly_path):
             self.assertRaises(errors.NoInstallationError, self.config.prepare)
-            self.assertEquals(mock_surgery.call_count, 1)
+            self.assertEqual(mock_surgery.call_count, 1)
 
     @mock.patch("certbot_apache.augeas_configurator.AugeasConfigurator.init_augeas")
     def test_prepare_no_augeas(self, mock_init_augeas):
@@ -1242,11 +1242,50 @@ class MultipleVhostsTest(util.ApacheTest):
         mock_match = mock.Mock(return_value=["something"])
         self.config.aug.match = mock_match
         # pylint: disable=protected-access
-        self.assertEquals(self.config._check_aug_version(),
-                          ["something"])
+        self.assertEqual(self.config._check_aug_version(),
+                         ["something"])
         self.config.aug.match.side_effect = RuntimeError
         self.assertFalse(self.config._check_aug_version())
 
+class AugeasVhostsTest(util.ApacheTest):
+    """Test vhosts with illegal names dependant on augeas version."""
+    # pylint: disable=protected-access
+
+    def setUp(self):  # pylint: disable=arguments-differ
+        td = "debian_apache_2_4/augeas_vhosts"
+        cr = "debian_apache_2_4/augeas_vhosts/apache2"
+        vr = "debian_apache_2_4/augeas_vhosts/apache2/sites-available"
+        super(AugeasVhostsTest, self).setUp(test_dir=td,
+                                            config_root=cr,
+                                            vhost_root=vr)
+
+        self.config = util.get_apache_configurator(
+            self.config_path, self.vhost_path, self.config_dir, self.work_dir)
+        self.vh_truth = util.get_vh_truth(
+            self.temp_dir, "debian_apache_2_4/augeas_vhosts")
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
+        shutil.rmtree(self.config_dir)
+        shutil.rmtree(self.work_dir)
+
+    def test_choosevhost_with_illegal_name(self):
+        self.config.aug = mock.MagicMock()
+        self.config.aug.match.side_effect = RuntimeError
+        path = "debian_apache_2_4/augeas_vhosts/apache2/sites-available/old,default.conf"
+        chosen_vhost = self.config._create_vhost(path)
+        self.assertEqual(None, chosen_vhost)
+
+    def test_choosevhost_works(self):
+        path = "debian_apache_2_4/augeas_vhosts/apache2/sites-available/old,default.conf"
+        chosen_vhost = self.config._create_vhost(path)
+        self.assertTrue(chosen_vhost == None or chosen_vhost.path == path)
+
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator._create_vhost")
+    def test_get_vhost_continue(self, mock_vhost):
+        mock_vhost.return_value = None
+        vhs = self.config.get_virtual_hosts()
+        self.assertEqual([], vhs)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
