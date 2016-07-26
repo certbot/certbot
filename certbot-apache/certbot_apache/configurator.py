@@ -244,7 +244,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         if not path["cert_path"] or not path["cert_key"]:
             # Throw some can't find all of the directives error"
-            logger.warn(
+            logger.warning(
                 "Cannot find a cert or key directive in %s. "
                 "VirtualHost was not modified", vhost.path)
             # Presumably break here so that the virtualhost is not modified
@@ -522,7 +522,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         try:
             args = self.aug.match(path + "/arg")
         except RuntimeError:
-            logger.warn("Encountered a problem while parsing file: %s, skipping", path)
+            logger.warning("Encountered a problem while parsing file: %s, skipping", path)
             return None
         for arg in args:
             addrs.add(obj.Addr.fromstring(self.parser.get_arg(arg)))
@@ -1089,7 +1089,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         try:
             func(self.choose_vhost(domain), options)
         except errors.PluginError:
-            logger.warn("Failed %s for %s", enhancement, domain)
+            logger.warning("Failed %s for %s", enhancement, domain)
             raise
 
     def _enable_ocsp_stapling(self, ssl_vhost, unused_options):
@@ -1276,9 +1276,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # but redirect loops are possible in very obscure cases; see #1620
             # for reasoning.
             if self._is_rewrite_exists(general_vh):
-                logger.warn("Added an HTTP->HTTPS rewrite in addition to "
-                            "other RewriteRules; you may wish to check for "
-                            "overall consistency.")
+                logger.warning("Added an HTTP->HTTPS rewrite in addition to "
+                               "other RewriteRules; you may wish to check for "
+                               "overall consistency.")
 
             # Add directives to server
             # Note: These are not immediately searchable in sites-enabled

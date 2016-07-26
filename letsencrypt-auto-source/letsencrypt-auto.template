@@ -126,7 +126,7 @@ ExperimentalBootstrap() {
       $2
     fi
   else
-    echo "WARNING: $1 support is very experimental at present..."
+    echo "FATAL: $1 support is very experimental at present..."
     echo "if you would like to work on improving it, please ensure you have backups"
     echo "and then run this script again with the --debug flag!"
     exit 1

@@ -104,10 +104,10 @@ def register(config, account_storage, tos_cb=None):
         if not config.register_unsafely_without_email:
             msg = ("No email was provided and "
                    "--register-unsafely-without-email was not present.")
-            logger.warn(msg)
+            logger.warning(msg)
             raise errors.Error(msg)
         if not config.dry_run:
-            logger.warn("Registering without email!")
+            logger.warning("Registering without email!")
 
     # Each new registration shall use a fresh new key
     key = jose.JWKRSA(key=jose.ComparableRSAKey(
@@ -453,10 +453,10 @@ class Client(object):
                 try:
                     self.installer.enhance(dom, enhancement, options)
                 except errors.PluginEnhancementAlreadyPresent:
-                    logger.warn("Enhancement %s was already set.",
+                    logger.warning("Enhancement %s was already set.",
                             enhancement)
                 except errors.PluginError:
-                    logger.warn("Unable to set enhancement %s for %s",
+                    logger.warning("Unable to set enhancement %s for %s",
                             enhancement, dom)
                     raise
 

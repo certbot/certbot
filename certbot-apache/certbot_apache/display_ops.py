@@ -91,7 +91,7 @@ def _vhost_menu(domain, vhosts):
                "non-interactive mode. Currently Certbot needs each vhost to be "
                "in its own conf file, and may need vhosts to be explicitly "
                "labelled with ServerName or ServerAlias directories.")
-        logger.warn(msg)
+        logger.warning(msg)
         raise errors.MissingCommandlineFlag(msg)
 
     return code, tag

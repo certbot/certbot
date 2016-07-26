@@ -349,7 +349,7 @@ def safe_email(email):
     if EMAIL_REGEX.match(email) is not None:
         return not email.startswith(".") and ".." not in email
     else:
-        logger.warn("Invalid email address: %s.", email)
+        logger.warning("Invalid email address: %s.", email)
         return False
 
 

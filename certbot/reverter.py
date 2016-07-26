@@ -552,7 +552,7 @@ class Reverter(object):
         others.sort()
         if others[-1] != timestamp:
             timetravel = str(float(others[-1]) + 1)
-            logger.warn("Current timestamp %s does not correspond to newest reverter "
+            logger.warning("Current timestamp %s does not correspond to newest reverter "
                 "checkpoint; your clock probably jumped. Time travelling to %s",
                 timestamp, timetravel)
             timestamp = timetravel

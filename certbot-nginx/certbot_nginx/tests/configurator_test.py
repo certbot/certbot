@@ -37,8 +37,8 @@ class NginxConfiguratorTest(util.NginxTest):
             errors.NoInstallationError, self.config.prepare)
 
     def test_prepare(self):
-        self.assertEquals((1, 6, 2), self.config.version)
-        self.assertEquals(5, len(self.config.parser.parsed))
+        self.assertEqual((1, 6, 2), self.config.version)
+        self.assertEqual(5, len(self.config.parser.parsed))
 
     @mock.patch("certbot_nginx.configurator.util.exe_exists")
     @mock.patch("certbot_nginx.configurator.subprocess.Popen")
@@ -56,7 +56,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.version = None
         self.config.config_test = mock.Mock()
         self.config.prepare()
-        self.assertEquals((1, 6, 2), self.config.version)
+        self.assertEqual((1, 6, 2), self.config.version)
 
     @mock.patch("certbot_nginx.configurator.socket.gethostbyaddr")
     def test_get_all_names(self, mock_gethostbyaddr):
