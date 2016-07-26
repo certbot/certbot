@@ -164,5 +164,22 @@ def get_vh_truth(temp_dir, config_name):
                 set([obj.Addr.fromstring("10.2.3.4:443")]), True, True,
                 "ocspvhost.com")]
         return vh_truth
+    if config_name == "debian_apache_2_4/multi_vhosts":
+        prefix = os.path.join(
+            temp_dir, config_name, "apache2/sites-available")
+        aug_pre = "/files" + prefix
+        vh_truth = [
+            obj.VirtualHost(
+                os.path.join(prefix, "default.conf"),
+                os.path.join(aug_pre, "default.conf/VirtualHost[1]"),
+                set([obj.Addr.fromstring("*:80")]),
+                False, True, "ip-172-30-0-17"),
+            obj.VirtualHost(
+                os.path.join(prefix, "default.conf"),
+                os.path.join(aug_pre, "default.conf/VirtualHost[2]"),
+                set([obj.Addr.fromstring("*:80")]),
+                False, True, "banana.vomit.com")]
+        return vh_truth
+
 
     return None  # pragma: no cover

@@ -138,6 +138,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._enhance_func = {"redirect": self._enable_redirect,
                               "ensure-http-header": self._set_http_header,
                               "staple-ocsp": self._enable_ocsp_stapling}
+        self._skeletons = {}
 
     @property
     def mod_ssl_conf(self):
@@ -589,6 +590,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 if realpath not in vhost_paths.keys():
                     vhs.append(new_vhost)
                     vhost_paths[realpath] = new_vhost.filep
+                elif (realpath in vhost_paths.keys()
+                          and new_vhost.path.endswith("]") and new_vhost not in vhs):
+                    vhs.append(new_vhost)
                 elif realpath == new_vhost.filep:
                     # Prefer "real" vhost paths instead of symlinked ones
                     # ex: sites-enabled/vh.conf -> sites-available/vh.conf
@@ -792,20 +796,21 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         avail_fp = nonssl_vhost.filep
         ssl_fp = self._get_ssl_vhost_path(avail_fp)
 
-        self._copy_create_ssl_vhost_skeleton(avail_fp, ssl_fp)
+        vhost_num = -1
+        if nonssl_vhost.path.endswith("]"):
+            # augeas doesn't zero index for whatever reason
+            vhost_num = int(nonssl_vhost.path[-2]) - 1
+        self._copy_create_ssl_vhost_skeleton(avail_fp, ssl_fp, vhost_num)
 
         # Reload augeas to take into account the new vhost
         self.aug.load()
         # Get Vhost augeas path for new vhost
         vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
                               (self._escape(ssl_fp), parser.case_i("VirtualHost")))
-        if len(vh_p) != 1:
-            logger.error("Error: should only be one vhost in %s", avail_fp)
-            raise errors.PluginError("Currently, we only support "
-                                     "configurations with one vhost per file")
-        else:
-            # This simplifies the process
-            vh_p = vh_p[0]
+        temp_vh = vh_p[0]
+        if self._skeletons[ssl_fp]:
+            temp_vh = vh_p[len(self._skeletons[ssl_fp]) -1]
+        vh_p = temp_vh
 
         # Update Addresses
         self._update_ssl_vhosts_addrs(vh_p)
@@ -822,6 +827,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # We know the length is one because of the assertion above
         # Create the Vhost object
         ssl_vhost = self._create_vhost(vh_p)
+        ssl_vhost.ancestor = nonssl_vhost
         self.vhosts.append(ssl_vhost)
 
         # NOTE: Searches through Augeas seem to ruin changes to directives
@@ -875,7 +881,38 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Sift line if it redirects the request to a HTTPS site
         return target.startswith("https://")
 
-    def _copy_create_ssl_vhost_skeleton(self, avail_fp, ssl_fp):
+    def _section_blocks(self, blocks):
+        """A helper function for _create_block_segments that makes
+        a list of line numbers to not include in the return.
+
+        :param list blocks: A list of indexes of where vhosts start and end.
+
+        """
+        out = []
+        while len(blocks) > 1:
+            start = blocks[0]
+            end = blocks[1] + 1
+            out += range(start, end)
+            blocks = blocks[2:]
+        return out
+
+    def _create_block_segments(self, orig_file_list, vhost_num):
+        """A helper function for  _copy_create_ssl_vhost_skeleton
+        that slices the appropriate vhost from the origin conf file.
+
+        :param list orig_file_list: the original file converted to a list of strings.
+        "param int vhost_num: Which vhost the vhost is in the origin multivhost file.
+
+        """
+        blocks = [idx for idx, line in enumerate(orig_file_list)
+                     if line.lstrip().startswith("<VirtualHost")
+                     or line.lstrip().startswith("</VirtualHost")]
+        blocks = blocks[:vhost_num*2] + blocks[(vhost_num*2)+2:]
+        out = self._section_blocks(blocks)
+        return [line for idx, line in enumerate(orig_file_list)
+                          if idx not in out]
+
+    def _copy_create_ssl_vhost_skeleton(self, avail_fp, ssl_fp, vhost_num): # pylint: disable=too-many-branches,too-many-locals,too-many-statements
         """Copies over existing Vhost with IfModule mod_ssl.c> skeleton.
 
         :param str avail_fp: Pointer to the original available non-ssl vhost
@@ -891,65 +928,77 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         try:
             with open(avail_fp, "r") as orig_file:
-                with open(ssl_fp, "w") as new_file:
-                    new_file.write("<IfModule mod_ssl.c>\n")
+                orig_file_list = [line for line in orig_file]
+                if vhost_num != -1:
+                    orig_file_list = self._create_block_segments(orig_file_list, vhost_num)
 
-                    comment = ("# Some rewrite rules in this file were "
-                              "disabled on your HTTPS site,\n"
-                              "# because they have the potential to create "
-                              "redirection loops.\n")
+            if ssl_fp in self._skeletons:
+                bit = "a"
+                self._skeletons[ssl_fp].append(avail_fp)
+            else:
+                bit = "w"
+                self._skeletons[ssl_fp] = [avail_fp]
 
-                    for line in orig_file:
-                        A = line.lstrip().startswith("RewriteCond")
-                        B = line.lstrip().startswith("RewriteRule")
+            with open(ssl_fp, bit) as new_file:
+                new_file.write("<IfModule mod_ssl.c>\n")
 
-                        if not (A or B):
-                            new_file.write(line)
-                            continue
+                comment = ("# Some rewrite rules in this file were "
+                          "disabled on your HTTPS site,\n"
+                          "# because they have the potential to create "
+                          "redirection loops.\n")
 
-                        # A RewriteRule that doesn't need filtering
-                        if B and not self._sift_rewrite_rule(line):
-                            new_file.write(line)
-                            continue
+                orig_file_list = iter(orig_file_list)
+                for line in orig_file_list:
+                    A = line.lstrip().startswith("RewriteCond")
+                    B = line.lstrip().startswith("RewriteRule")
 
-                        # A RewriteRule that does need filtering
-                        if B and self._sift_rewrite_rule(line):
+                    if not (A or B):
+                        new_file.write(line)
+                        continue
+
+                    # A RewriteRule that doesn't need filtering
+                    if B and not self._sift_rewrite_rule(line):
+                        new_file.write(line)
+                        continue
+
+                    # A RewriteRule that does need filtering
+                    if B and self._sift_rewrite_rule(line):
+                        if not sift:
+                            new_file.write(comment)
+                            sift = True
+                        new_file.write("# " + line)
+                        continue
+
+                    # We save RewriteCond(s) and their corresponding
+                    # RewriteRule in 'chunk'.
+                    # We then decide whether we comment out the entire
+                    # chunk based on its RewriteRule.
+                    chunk = []
+                    if A:
+                        chunk.append(line)
+                        line = next(orig_file_list)
+
+                        # RewriteCond(s) must be followed by one RewriteRule
+                        while not line.lstrip().startswith("RewriteRule"):
+                            chunk.append(line)
+                            line = next(orig_file_list)
+
+                        # Now, current line must start with a RewriteRule
+                        chunk.append(line)
+
+                        if self._sift_rewrite_rule(line):
                             if not sift:
                                 new_file.write(comment)
                                 sift = True
-                            new_file.write("# " + line)
+
+                            new_file.write(''.join(
+                                ['# ' + l for l in chunk]))
+                            continue
+                        else:
+                            new_file.write(''.join(chunk))
                             continue
 
-                        # We save RewriteCond(s) and their corresponding
-                        # RewriteRule in 'chunk'.
-                        # We then decide whether we comment out the entire
-                        # chunk based on its RewriteRule.
-                        chunk = []
-                        if A:
-                            chunk.append(line)
-                            line = next(orig_file)
-
-                            # RewriteCond(s) must be followed by one RewriteRule
-                            while not line.lstrip().startswith("RewriteRule"):
-                                chunk.append(line)
-                                line = next(orig_file)
-
-                            # Now, current line must start with a RewriteRule
-                            chunk.append(line)
-
-                            if self._sift_rewrite_rule(line):
-                                if not sift:
-                                    new_file.write(comment)
-                                    sift = True
-
-                                new_file.write(''.join(
-                                    ['# ' + l for l in chunk]))
-                                continue
-                            else:
-                                new_file.write(''.join(chunk))
-                                continue
-
-                    new_file.write("</IfModule>\n")
+                new_file.write("</IfModule>\n")
         except IOError:
             logger.fatal("Error writing/reading to file in make_vhost_ssl")
             raise errors.PluginError("Unable to write/read in make_vhost_ssl")
@@ -962,6 +1011,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "the potential to create redirection loops.".format(avail_fp,
                                                                     ssl_fp),
                 reporter.MEDIUM_PRIORITY)
+        self.aug.set("/augeas/files%s/mtime" %(self._escape(ssl_fp)), "0")
+        self.aug.set("/augeas/files%s/mtime" %(self._escape(avail_fp)), "0")
 
     def _update_ssl_vhosts_addrs(self, vh_path):
         ssl_addrs = set()
@@ -1008,12 +1059,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.parser.add_dir(vh_path, "Include", self.mod_ssl_conf)
 
     def _add_servername_alias(self, target_name, vhost):
-        fp = self._escape(vhost.filep)
-        vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
-                              (fp, parser.case_i("VirtualHost")))
-        if not vh_p:
-            return
-        vh_path = vh_p[0]
+        vh_path = vhost.path
         if (self.parser.find_dir("ServerName", target_name,
                                  start=vh_path, exclude=False) or
             self.parser.find_dir("ServerAlias", target_name,
@@ -1508,6 +1554,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def _get_http_vhost(self, ssl_vhost):
         """Find appropriate HTTP vhost for ssl_vhost."""
         # First candidate vhosts filter
+        if ssl_vhost.ancestor:
+            return ssl_vhost.ancestor
         candidate_http_vhs = [
             vhost for vhost in self.vhosts if not vhost.ssl
         ]

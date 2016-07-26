@@ -123,7 +123,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     strip_name = re.compile(r"^(?:.+://)?([^ :$]*)")
 
     def __init__(self, filep, path, addrs, ssl, enabled, name=None,
-                 aliases=None, modmacro=False):
+                 aliases=None, modmacro=False, ancestor=None):
 
         # pylint: disable=too-many-arguments
         """Initialize a VH."""
@@ -135,6 +135,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         self.ssl = ssl
         self.enabled = enabled
         self.modmacro = modmacro
+        self.ancestor = ancestor
 
     def get_names(self):
         """Return a set of all names."""

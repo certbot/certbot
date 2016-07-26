@@ -655,11 +655,6 @@ class MultipleVhostsTest(util.ApacheTest):
                 len(self.config.parser.find_dir(
                     directive, None, self.vh_truth[1].path, False)), 0)
 
-    def test_make_vhost_ssl_extra_vhs(self):
-        self.config.aug.match = mock.Mock(return_value=["p1", "p2"])
-        self.assertRaises(
-            errors.PluginError, self.config.make_vhost_ssl, self.vh_truth[0])
-
     def test_make_vhost_ssl_bad_write(self):
         mock_open = mock.mock_open()
         # This calls open
@@ -1344,6 +1339,65 @@ class AugeasVhostsTest(util.ApacheTest):
             for name in names:
                 self.config.choose_vhost(name)
                 self.assertEqual(mock_select.call_count, 0)
+
+class MultiVhostsTest(util.ApacheTest):
+    """Test vhosts with illegal names dependant on augeas version."""
+    # pylint: disable=protected-access
+
+    def setUp(self):  # pylint: disable=arguments-differ
+        td = "debian_apache_2_4/multi_vhosts"
+        cr = "debian_apache_2_4/multi_vhosts/apache2"
+        vr = "debian_apache_2_4/multi_vhosts/apache2/sites-available"
+        super(MultiVhostsTest, self).setUp(test_dir=td,
+                                            config_root=cr,
+                                            vhost_root=vr)
+
+        self.config = util.get_apache_configurator(
+            self.config_path, self.vhost_path, self.config_dir, self.work_dir)
+        self.vh_truth = util.get_vh_truth(
+            self.temp_dir, "debian_apache_2_4/multi_vhosts")
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
+        shutil.rmtree(self.config_dir)
+        shutil.rmtree(self.work_dir)
+
+    def test_make_vhost_ssl(self):
+        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[1])
+
+        self.assertEqual(
+            ssl_vhost.filep,
+            os.path.join(self.config_path, "sites-available",
+                         "default-le-ssl.conf"))
+
+        self.assertEqual(ssl_vhost.path,
+                         "/files" + ssl_vhost.filep + "/IfModule/VirtualHost")
+        self.assertEqual(len(ssl_vhost.addrs), 1)
+        self.assertEqual(set([obj.Addr.fromstring("*:443")]), ssl_vhost.addrs)
+        self.assertEqual(ssl_vhost.name, "banana.vomit.com")
+        self.assertTrue(ssl_vhost.ssl)
+        self.assertFalse(ssl_vhost.enabled)
+
+        self.assertTrue(self.config.parser.find_dir(
+            "SSLCertificateFile", None, ssl_vhost.path, False))
+        self.assertTrue(self.config.parser.find_dir(
+            "SSLCertificateKeyFile", None, ssl_vhost.path, False))
+
+        self.assertEqual(self.config.is_name_vhost(self.vh_truth[1]),
+                         self.config.is_name_vhost(ssl_vhost))
+
+    def test_make_2nd_vhost_ssl(self):
+        _ = self.config.make_vhost_ssl(self.vh_truth[0])
+        _ = self.config.make_vhost_ssl(self.vh_truth[1])
+        self.assertEqual(
+          len(self.config._skeletons[self.config._get_ssl_vhost_path(self.vh_truth[0].filep)]), 2)
+
+    def test_cover_is_stupid_and_I_hate_it(self):
+        http_vhost = obj.VirtualHost(None, None, None, False, False, name="Noah")
+        ssl_vhost = obj.VirtualHost(None, None, None, False, False, name="Noah")
+        self.config.vhosts.append(http_vhost)
+        self.assertEqual(self.config._get_http_vhost(ssl_vhost), http_vhost)
+
 
 
 if __name__ == "__main__":
