@@ -568,7 +568,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 ("/files%s//*[label()=~regexp('%s')]" %
                     (vhost_path, parser.case_i("VirtualHost"))))
             paths = [path for path in paths if
-                     os.path.basename(path) == "VirtualHost"]
+                     "VirtualHost" in os.path.basename(path)]
             for path in paths:
                 new_vhost = self._create_vhost(path)
                 if not new_vhost:
@@ -780,13 +780,17 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         avail_fp = nonssl_vhost.filep
         ssl_fp = self._get_ssl_vhost_path(avail_fp)
 
-        self._copy_create_ssl_vhost_skeleton(avail_fp, ssl_fp)
+        vhost_num = -1
+        if nonssl_vhost.path.endswith("]"):
+            vhost_num = int(nonssl_vhost.path[:-2])
+        self._copy_create_ssl_vhost_skeleton(avail_fp, ssl_fp, vhost_num)
 
         # Reload augeas to take into account the new vhost
         self.aug.load()
         # Get Vhost augeas path for new vhost
         vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
                               (self._escape(ssl_fp), parser.case_i("VirtualHost")))
+        #TODO fuck this
         if len(vh_p) != 1:
             logger.error("Error: should only be one vhost in %s", avail_fp)
             raise errors.PluginError("Currently, we only support "
@@ -863,7 +867,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Sift line if it redirects the request to a HTTPS site
         return target.startswith("https://")
 
-    def _copy_create_ssl_vhost_skeleton(self, avail_fp, ssl_fp):
+    def _copy_create_ssl_vhost_skeleton(self, avail_fp, ssl_fp, vhost_num):
         """Copies over existing Vhost with IfModule mod_ssl.c> skeleton.
 
         :param str avail_fp: Pointer to the original available non-ssl vhost
@@ -879,63 +883,73 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         try:
             with open(avail_fp, "r") as orig_file:
-                with open(ssl_fp, "w") as new_file:
-                    new_file.write("<IfModule mod_ssl.c>\n")
+                orig_file_list = [line for line in orig_file]
+                if vhost_num != -1:
+                    blocks = [idx for line, idx in enumerate(orig_file_list) if line.lstrip().startswith("<VirtualHost") or line.lstrip().startswith("</VirtualHost")]
+                    blocks = blocks[:vhost_num*2] + blocks[(vhost_num*2)+2:]
+                    while len(blocks) > 1:
+                        start = blocks[0]
+                        end = blocks[1]
+                        orig_file_list = orig_file_list[:start] + orig_file_list[end+1:]
+                        blocks = blocks[2:]
 
-                    comment = ("# Some rewrite rules in this file were "
-                              "disabled on your HTTPS site,\n"
-                              "# because they have the potential to create "
-                              "redirection loops.\n")
+            with open(ssl_fp, "w") as new_file:
+                new_file.write("<IfModule mod_ssl.c>\n")
 
-                    for line in orig_file:
-                        A = line.lstrip().startswith("RewriteCond")
-                        B = line.lstrip().startswith("RewriteRule")
+                comment = ("# Some rewrite rules in this file were "
+                          "disabled on your HTTPS site,\n"
+                          "# because they have the potential to create "
+                          "redirection loops.\n")
 
-                        if not (A or B):
-                            new_file.write(line)
-                            continue
+                for line in orig_file_list:
+                    A = line.lstrip().startswith("RewriteCond")
+                    B = line.lstrip().startswith("RewriteRule")
 
-                        # A RewriteRule that doesn't need filtering
-                        if B and not self._sift_rewrite_rule(line):
-                            new_file.write(line)
-                            continue
+                    if not (A or B):
+                        new_file.write(line)
+                        continue
 
-                        # A RewriteRule that does need filtering
-                        if B and self._sift_rewrite_rule(line):
+                    # A RewriteRule that doesn't need filtering
+                    if B and not self._sift_rewrite_rule(line):
+                        new_file.write(line)
+                        continue
+
+                    # A RewriteRule that does need filtering
+                    if B and self._sift_rewrite_rule(line):
+                        if not sift:
+                            new_file.write(comment)
+                            sift = True
+                        new_file.write("# " + line)
+                        continue
+
+                    # We save RewriteCond(s) and their corresponding
+                    # RewriteRule in 'chunk'.
+                    # We then decide whether we comment out the entire
+                    # chunk based on its RewriteRule.
+                    chunk = []
+                    if A:
+                        chunk.append(line)
+                        line = next(orig_file_list)
+
+                        # RewriteCond(s) must be followed by one RewriteRule
+                        while not line.lstrip().startswith("RewriteRule"):
+                            chunk.append(line)
+                            line = next(orig_file_list)
+
+                        # Now, current line must start with a RewriteRule
+                        chunk.append(line)
+
+                        if self._sift_rewrite_rule(line):
                             if not sift:
                                 new_file.write(comment)
                                 sift = True
-                            new_file.write("# " + line)
+
+                            new_file.write(''.join(
+                                ['# ' + l for l in chunk]))
                             continue
-
-                        # We save RewriteCond(s) and their corresponding
-                        # RewriteRule in 'chunk'.
-                        # We then decide whether we comment out the entire
-                        # chunk based on its RewriteRule.
-                        chunk = []
-                        if A:
-                            chunk.append(line)
-                            line = next(orig_file)
-
-                            # RewriteCond(s) must be followed by one RewriteRule
-                            while not line.lstrip().startswith("RewriteRule"):
-                                chunk.append(line)
-                                line = next(orig_file)
-
-                            # Now, current line must start with a RewriteRule
-                            chunk.append(line)
-
-                            if self._sift_rewrite_rule(line):
-                                if not sift:
-                                    new_file.write(comment)
-                                    sift = True
-
-                                new_file.write(''.join(
-                                    ['# ' + l for l in chunk]))
-                                continue
-                            else:
-                                new_file.write(''.join(chunk))
-                                continue
+                        else:
+                            new_file.write(''.join(chunk))
+                            continue
 
                     new_file.write("</IfModule>\n")
         except IOError:
