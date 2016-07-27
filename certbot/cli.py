@@ -503,7 +503,9 @@ class HelpfulArgumentParser(object):
         """Add a new command line argument.
 
         :param topics: str or [str] help topic(s) this should be listed under,
-                       or None for "always documented"
+                       or None for "always documented". The first entry
+                       determines where the flag lives in the "--help all"
+                       output (None -> "optional arguments").
         :param list *args: the names of this argument flag
         :param dict **kwargs: various argparse settings for this argument
 
@@ -671,7 +673,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         None, "-t", "--text", dest="text_mode", action="store_true",
         help="Use the text output instead of the curses UI.")
     helpful.add(
-        None, "-n", "--non-interactive", "--noninteractive",
+        [None, "automation"], "-n", "--non-interactive", "--noninteractive",
         dest="noninteractive_mode", action="store_true",
         help="Run without ever asking for user input. This may require "
               "additional command line flags; the client will try to explain "
@@ -701,7 +703,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              " if they are defined because they may be necessary to accurately simulate"
              " renewal. --renew-hook commands are not called.")
     helpful.add(
-        None, "--register-unsafely-without-email", action="store_true",
+        ["register", "automation"], "--register-unsafely-without-email", action="store_true",
         help="Specifying this flag enables registering an account with no "
              "email address. This is strongly discouraged, because in the "
              "event of key loss or account compromise you will irrevocably "
@@ -740,7 +742,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "--keep-until-expiring is more appropriate). Also implies "
              "--expand.")
     helpful.add(
-        ["automation", "renew"],
+        ["automation", "renew", "certonly"],
         "--allow-subset-of-names", action="store_true",
         help="When performing domain validation, do not consider it a failure "
              "if authorizations can not be obtained for a strict subset of "
