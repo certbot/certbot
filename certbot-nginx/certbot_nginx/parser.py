@@ -532,8 +532,8 @@ def _comment_directive(block, location):
     if len(block) > location + 1:         # there is a block after us
         next_entry = block[location + 1]
     else:
-        # we're at the end of the block, pretend there's a newline after us; it will actually be added later in
-        # add_directives
+        # we're at the end of the block, pretend there's a newline after us;
+        # it will actually be added later in add_directives
         next_entry = "\n"
     if isinstance(next_entry, list):
         if "Certbot" in next_entry[-1]:
