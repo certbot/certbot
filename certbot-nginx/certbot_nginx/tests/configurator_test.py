@@ -234,7 +234,7 @@ class NginxConfiguratorTest(util.NginxTest):
                 ['index', 'index.html index.htm']]],
               ['listen', '5001 ssl'],
               ['ssl_certificate', '/etc/nginx/fullchain.pem'],
-              ['ssl_certificate_key', '/etc/nginx/key.pem']]+
+              ['ssl_certificate_key', '/etc/nginx/key.pem']] +
              util.filter_comments(self.config.parser.loc["ssl_options"])
             ],
             2))
