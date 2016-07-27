@@ -279,9 +279,6 @@ class UnspacedList(list):
         # Normalize indexes like list[-1] etc, and save the result
         if idx < 0:
             idx = len(self) + idx
-        if idx == len(self):
-            # not an index, but the slice at the end of the list
-            return len(self.spaced)
         if not 0 <= idx < len(self):
             raise IndexError("list index out of range")
         idx0 = idx
