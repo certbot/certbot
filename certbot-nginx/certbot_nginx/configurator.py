@@ -160,9 +160,9 @@ class NginxConfigurator(common.Plugin):
         stapling_directives = []
         if self.version >= (1, 3, 7):
             stapling_directives = [
-                ['\n', 'ssl_trusted_certificate', ' ', chain_path],
-                ['\n', 'ssl_stapling', ' ', 'on'],
-                ['\n', 'ssl_stapling_verify', ' ', 'on'], ['\n']]
+                ['\n    ', 'ssl_trusted_certificate', ' ', chain_path],
+                ['\n    ', 'ssl_stapling', ' ', 'on'],
+                ['\n    ', 'ssl_stapling_verify', ' ', 'on'], ['\n']]
 
         if len(stapling_directives) != 0 and not chain_path:
             raise errors.PluginError(
@@ -337,10 +337,10 @@ class NginxConfigurator(common.Plugin):
 
         """
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
-        ssl_block = [['\n', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
-                     ['\n', 'ssl_certificate', ' ', snakeoil_cert],
-                     ['\n', 'ssl_certificate_key', ' ', snakeoil_key],
-                     ['\n', 'include', ' ', self.parser.loc["ssl_options"]]]
+        ssl_block = [['\n    ', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
+                     ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
+                     ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
+                     ['\n    ', 'include', ' ', self.parser.loc["ssl_options"]]]
         self.parser.add_server_directives(
             vhost.filep, vhost.names, ssl_block, replace=False)
         vhost.ssl = True
@@ -401,9 +401,10 @@ class NginxConfigurator(common.Plugin):
         :type unused_options: Not Available
         """
         redirect_block = [[
-            ['\n', 'if', ' ', '($scheme != "https")'],
-            [['\n    ', 'return', ' ', '301 https://$host$request_uri']]
-        ]]
+            ['\n    ', 'if', ' ', '($scheme != "https") '],
+            [['\n        ', 'return', ' ', '301 https://$host$request_uri'],
+             '\n    ']
+        ], ['\n']]
         self.parser.add_server_directives(
             vhost.filep, vhost.names, redirect_block, replace=False)
         logger.info("Redirecting all traffic to ssl in %s", vhost.filep)
