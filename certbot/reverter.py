@@ -491,7 +491,7 @@ class Reverter(object):
                     else:
                         logger.warning(
                             "File: %s - Could not be found to be deleted %s - "
-                            "LE probably shut down unexpectedly",
+                            "Certbot probably shut down unexpectedly",
                             os.linesep, path)
         except (IOError, OSError):
             logger.fatal(

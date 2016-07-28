@@ -887,7 +887,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             with open(avail_fp, "r") as orig_file:
                 orig_file_list = [line for line in orig_file]
                 if vhost_num != -1:
-                    blocks = [idx for line, idx in enumerate(orig_file_list) if line.lstrip().startswith("<VirtualHost") or line.lstrip().startswith("</VirtualHost")]
+                    blocks = [idx for idx, line in enumerate(orig_file_list) if line.lstrip().startswith("<VirtualHost") or line.lstrip().startswith("</VirtualHost")]
                     blocks = blocks[:vhost_num*2] + blocks[(vhost_num*2)+2:]
                     while len(blocks) > 1:
                         start = blocks[0]
