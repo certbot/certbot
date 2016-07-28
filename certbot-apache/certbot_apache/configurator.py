@@ -782,7 +782,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         vhost_num = -1
         if nonssl_vhost.path.endswith("]"):
-            vhost_num = int(nonssl_vhost.path[:-2])
+            vhost_num = int(nonssl_vhost.path[-2])
         self._copy_create_ssl_vhost_skeleton(avail_fp, ssl_fp, vhost_num)
 
         # Reload augeas to take into account the new vhost
