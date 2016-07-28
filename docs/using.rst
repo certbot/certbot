@@ -5,35 +5,215 @@ User Guide
 .. contents:: Table of Contents
    :local:
 
+.. _installation:
+
 Getting Certbot
 ===============
 
-To get specific instructions for installing Certbot on your OS,
-visit certbot.eff.org_. This is the easiest way to learn how to get
-Certbot up and running on your system. 
-
-If you're offline, you can find some general
-instructions `in the README / Introduction <intro.html#installation>`__
-
-__ installation_
 .. _certbot.eff.org: https://certbot.eff.org
 
 .. _certbot-auto: https://certbot.eff.org/docs/using.html#certbot-auto
 
-The name of the certbot command
--------------------------------
+Certbot is packaged for many common operating systems and web servers. Check whether
+``certbot`` (or ``letsencrypt``) is packaged for your web server's OS by visiting
+certbot.eff.org_, where you will also find the correct installation instructions for
+your system.
 
-Many platforms now have native packages that give you a ``certbot`` or (for
-older packages) ``letsencrypt`` command you can run. On others, the
-``certbot-auto`` / ``letsencrypt-auto`` installer and wrapper script is a
-stand-in. Throughout the documentation, whenever you see references to
-``certbot`` script/binary, you should substitute in the name of the command
-that certbot.eff.org_ told you to use on your system (``certbot``,
-``letsencrypt``, or ``certbot-auto``).
+.. Note:: Unless you have very specific requirements, we kindly suggest that you use the Certbot packages provided by your package manager (see certbot.eff.org_). If such packages are not available, we recommend using ``certbot-auto``, which automates the process of installing Certbot on your system.
+
+The ``certbot`` script on your web server might be named ``letsencrypt`` if your system uses an older package, or ``certbot-auto`` if you used an alternate installation method. Throughout the docs, whenever you see ``certbot``, swap in the correct name as needed.
 
 
-Plugins
-=======
+Other installation methods
+--------------------------
+If you are offline or your operating system doesn't provide a package, you can use
+an alternate method fo install ``certbot``.
+
+Certbot-Auto
+^^^^^^^^^^^^
+The ``certbot-auto`` wrapper script installs Certbot, obtaining some dependencies 
+from your web server OS and putting others in a python virtual environment. You can
+download and run it as follows::
+
+  user@webserver:~$ wget https://dl.eff.org/certbot-auto
+  user@webserver:~$ chmod a+x ./certbot-auto
+  user@webserver:~$ ./certbot-auto --help
+
+.. hint:: The certbot-auto download is protected by HTTPS, which is pretty good, but if you'd like to
+          double check the integrity of the ``certbot-auto`` script, you can use these steps for verification before running it::
+
+            user@server:~$ wget -N https://dl.eff.org/certbot-auto.asc
+            user@server:~$ gpg2 --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
+            user@server:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.asc certbot-auto
+
+The ``certbot-auto`` command updates to the latest client release automatically.
+Since ``certbot-auto`` is a wrapper to ``certbot``, it accepts exactly
+the same command line flags and arguments. For more information, see 
+`Certbot command-line options <https://certbot.eff.org/docs/using.html#command-line-options>`_.  
+
+Running with Docker
+^^^^^^^^^^^^^^^^^^^
+
+Docker_ is an amazingly simple and quick way to obtain a
+certificate. However, this mode of operation is unable to install
+certificates or configure your webserver, because our installer
+plugins cannot reach your webserver from inside the Docker container.
+
+Most users should use the operating system packages (see instructions at 
+certbot.eff.org_) or, as a fallback, ``certbot-auto``. You should only 
+use Docker if you are sure you know what you are doing and have a
+good reason to do so.
+
+You should definitely read the :ref:`where-certs` section, in order to
+know how to manage the certs
+manually. `Our ciphersuites page <ciphers.html>`__
+provides some information about recommended ciphersuites. If none of
+these make much sense to you, you should definitely use the
+certbot-auto_ method, which enables you to use installer plugins
+that cover both of those hard topics.
+
+If you're still not convinced and have decided to use this method,
+from the server that the domain you're requesting a cert for resolves
+to, `install Docker`_, then issue the following command:
+
+.. code-block:: shell
+
+   sudo docker run -it --rm -p 443:443 -p 80:80 --name certbot \
+               -v "/etc/letsencrypt:/etc/letsencrypt" \
+               -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+               quay.io/letsencrypt/letsencrypt:latest certonly
+
+Running Certbot with the ``certonly`` command will obtain a certificate and place it in the directory
+``/etc/letsencrypt/live`` on your system. Because Certonly cannot install the certificate from 
+within Docker, you must install the certificate manually according to the procedure
+recommended by the provider of your webserver.
+
+For more information about the layout 
+of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`. 
+
+.. _Docker: https://docker.com
+.. _`install Docker`: https://docs.docker.com/userguide/
+
+
+Operating System Packages
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**FreeBSD**
+
+  * Port: ``cd /usr/ports/security/py-certbot && make install clean``
+  * Package: ``pkg install py27-certbot``
+
+**OpenBSD**
+
+  * Port: ``cd /usr/ports/security/letsencrypt/client && make install clean``
+  * Package: ``pkg_add letsencrypt``
+
+**Arch Linux**
+
+.. code-block:: shell
+
+   sudo pacman -S certbot
+
+**Debian**
+
+If you run Debian Stretch or Debian Sid, you can install certbot packages.
+
+.. code-block:: shell
+
+   sudo apt-get update
+   sudo apt-get install certbot python-certbot-apache
+
+If you don't want to use the Apache plugin, you can omit the
+``python-certbot-apache`` package.
+
+Packages exist for Debian Jessie via backports. First you'll have to follow the
+instructions at http://backports.debian.org/Instructions/ to enable the Jessie backports
+repo, if you have not already done so. Then run:
+
+.. code-block:: shell
+
+   sudo apt-get install letsencrypt python-letsencrypt-apache -t jessie-backports
+
+**Fedora**
+
+.. code-block:: shell
+
+    sudo dnf install letsencrypt
+
+**Gentoo**
+
+The official Certbot client is available in Gentoo Portage. If you
+want to use the Apache plugin, it has to be installed separately:
+
+.. code-block:: shell
+
+   emerge -av app-crypt/letsencrypt
+   emerge -av app-crypt/letsencrypt-apache
+
+Currently, only the Apache plugin is included in Portage. However, if you
+Warning!
+You can use Layman to add the mrueg overlay which does include a package for the
+Certbot Nginx plugin, however, this plugin is known to be buggy and should only
+be used with caution after creating a backup up your Nginx configuration.
+We strongly recommend you use the app-crypt/letsencrypt package instead until
+the Nginx plugin is ready.
+
+.. code-block:: shell
+
+   emerge -av app-portage/layman
+   layman -S
+   layman -a mrueg
+   emerge -av app-crypt/letsencrypt-nginx
+
+When using the Apache plugin, you will run into a "cannot find a cert or key
+directive" error if you're sporting the default Gentoo ``httpd.conf``.
+You can fix this by commenting out two lines in ``/etc/apache2/httpd.conf``
+as follows:
+
+Change
+
+.. code-block:: shell
+
+   <IfDefine SSL>
+   LoadModule ssl_module modules/mod_ssl.so
+   </IfDefine>
+
+to
+
+.. code-block:: shell
+
+   #<IfDefine SSL>
+   LoadModule ssl_module modules/mod_ssl.so
+   #</IfDefine>
+
+For the time being, this is the only way for the Apache plugin to recognise
+the appropriate directives when installing the certificate.
+Note: this change is not required for the other plugins.
+
+**Other Operating Systems**
+
+OS packaging is an ongoing effort. If you'd like to package
+Certbot for your distribution of choice please have a
+look at the :doc:`packaging`.
+
+
+Installing from source
+^^^^^^^^^^^^^^^^^^^^^^
+
+Installation from source is only supported for developers and the
+whole process is described in the :doc:`contributing`.
+
+.. warning:: Please do **not** use ``python setup.py install`` or
+   ``python pip install .``. Please do **not** attempt the
+   installation commands as superuser/root and/or without virtual
+   environment, e.g. ``sudo python setup.py install``, ``sudo pip
+   install``, ``sudo ./venv/bin/...``. These modes of operation might
+   corrupt your operating system and are **not supported** by the
+   Certbot team!
+
+
+Getting certificates
+====================
 
 The Certbot client supports a number of different "plugins" that can be
 used to obtain and/or install certificates.  Plugins that can obtain a cert
@@ -57,7 +237,7 @@ manual_     Y    N    Helps you obtain a cert by giving you instructions to perf
 nginx_      Y    Y    Very experimental and not included in certbot-auto_.
 =========== ==== ==== ===============================================================
 
-There are many third-party-plugins_ available.
+There are also many third-party-plugins_ available.
 
 Apache
 ------
@@ -186,10 +366,10 @@ postfix_    N    Y    STARTTLS Everywhere is becoming a Certbot Postfix/Exim plu
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
+.. _renewal:
 
-
-Renewal
-=======
+Renewing certificates
+=====================
 
 .. note:: Let's Encrypt CA issues short-lived certificates (90
    days). Make sure you renew the certificates at least once in 3
@@ -268,8 +448,8 @@ commands into your individual environment.
 
 .. _command-line:
 
-Command line options
-====================
+Certbot command-line options
+============================
 
 Certbot supports a lot of command line options.  Here's the full list, from
 ``certbot --help all``:
@@ -388,179 +568,4 @@ give us as much information as possible:
 - your operating system, including specific version
 - specify which installation method you've chosen
 
-Other methods of installation
-=============================
 
-Running with Docker
--------------------
-
-Docker_ is an amazingly simple and quick way to obtain a
-certificate. However, this mode of operation is unable to install
-certificates or configure your webserver, because our installer
-plugins cannot reach your webserver from inside the Docker container.
-
-Most users should use the operating system packages (see instructions at 
-certbot.eff.org_) or, as a fallback, ``certbot-auto``. You should only 
-use Docker if you are sure you know what you are doing and have a
-good reason to do so.
-
-You should definitely read the :ref:`where-certs` section, in order to
-know how to manage the certs
-manually. `Our ciphersuites page <ciphers.html>`__
-provides some information about recommended ciphersuites. If none of
-these make much sense to you, you should definitely use the
-certbot-auto_ method, which enables you to use installer plugins
-that cover both of those hard topics.
-
-If you're still not convinced and have decided to use this method,
-from the server that the domain you're requesting a cert for resolves
-to, `install Docker`_, then issue the following command:
-
-.. code-block:: shell
-
-   sudo docker run -it --rm -p 443:443 -p 80:80 --name certbot \
-               -v "/etc/letsencrypt:/etc/letsencrypt" \
-               -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
-               quay.io/letsencrypt/letsencrypt:latest certonly
-
-Running Certbot with the ``certonly`` command will obtain a certificate and place it in the directory
-``/etc/letsencrypt/live`` on your system. Because Certonly cannot install the certificate from 
-within Docker, you must install the certificate manually according to the procedure
-recommended by the provider of your webserver.
-
-For more information about the layout 
-of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`. 
-
-.. _Docker: https://docker.com
-.. _`install Docker`: https://docs.docker.com/userguide/
-
-
-Operating System Packages
---------------------------
-
-**FreeBSD**
-
-  * Port: ``cd /usr/ports/security/py-certbot && make install clean``
-  * Package: ``pkg install py27-certbot``
-
-**OpenBSD**
-
-  * Port: ``cd /usr/ports/security/letsencrypt/client && make install clean``
-  * Package: ``pkg_add letsencrypt``
-
-**Arch Linux**
-
-.. code-block:: shell
-
-   sudo pacman -S certbot
-
-**Debian**
-
-If you run Debian Stretch or Debian Sid, you can install certbot packages.
-
-.. code-block:: shell
-
-   sudo apt-get update
-   sudo apt-get install certbot python-certbot-apache
-
-If you don't want to use the Apache plugin, you can omit the
-``python-certbot-apache`` package.
-
-Packages exist for Debian Jessie via backports. First you'll have to follow the
-instructions at http://backports.debian.org/Instructions/ to enable the Jessie backports
-repo, if you have not already done so. Then run:
-
-.. code-block:: shell
-
-   sudo apt-get install letsencrypt python-letsencrypt-apache -t jessie-backports
-
-**Fedora**
-
-.. code-block:: shell
-
-    sudo dnf install letsencrypt
-
-**Gentoo**
-
-The official Certbot client is available in Gentoo Portage. If you
-want to use the Apache plugin, it has to be installed separately:
-
-.. code-block:: shell
-
-   emerge -av app-crypt/letsencrypt
-   emerge -av app-crypt/letsencrypt-apache
-
-Currently, only the Apache plugin is included in Portage. However, if you
-Warning!
-You can use Layman to add the mrueg overlay which does include a package for the
-Certbot Nginx plugin, however, this plugin is known to be buggy and should only
-be used with caution after creating a backup up your Nginx configuration.
-We strongly recommend you use the app-crypt/letsencrypt package instead until
-the Nginx plugin is ready.
-
-.. code-block:: shell
-
-   emerge -av app-portage/layman
-   layman -S
-   layman -a mrueg
-   emerge -av app-crypt/letsencrypt-nginx
-
-When using the Apache plugin, you will run into a "cannot find a cert or key
-directive" error if you're sporting the default Gentoo ``httpd.conf``.
-You can fix this by commenting out two lines in ``/etc/apache2/httpd.conf``
-as follows:
-
-Change
-
-.. code-block:: shell
-
-   <IfDefine SSL>
-   LoadModule ssl_module modules/mod_ssl.so
-   </IfDefine>
-
-to
-
-.. code-block:: shell
-
-   #<IfDefine SSL>
-   LoadModule ssl_module modules/mod_ssl.so
-   #</IfDefine>
-
-For the time being, this is the only way for the Apache plugin to recognise
-the appropriate directives when installing the certificate.
-Note: this change is not required for the other plugins.
-
-**Other Operating Systems**
-
-OS packaging is an ongoing effort. If you'd like to package
-Certbot for your distribution of choice please have a
-look at the :doc:`packaging`.
-
-
-From source
------------
-
-Installation from source is only supported for developers and the
-whole process is described in the :doc:`contributing`.
-
-.. warning:: Please do **not** use ``python setup.py install`` or
-   ``python pip install .``. Please do **not** attempt the
-   installation commands as superuser/root and/or without virtual
-   environment, e.g. ``sudo python setup.py install``, ``sudo pip
-   install``, ``sudo ./venv/bin/...``. These modes of operation might
-   corrupt your operating system and are **not supported** by the
-   Certbot team!
-
-
-Comparison of different methods
--------------------------------
-
-Unless you have very specific requirements, we kindly suggest that you use
-the Certbot packages provided by your package manager (see certbot.eff.org_). 
-If such packages are not available, we recommend using ``certbot-auto``, which
-automates the process of installing Certbot on your system.
-
-Beyond the methods discussed here, other methods may be possible, such as
-installing Certbot directly with pip from PyPI or downloading a ZIP
-archive from GitHub may be technically possible but are not presently
-recommended or supported.
