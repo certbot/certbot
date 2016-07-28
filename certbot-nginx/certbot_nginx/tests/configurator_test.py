@@ -216,9 +216,9 @@ class NginxConfiguratorTest(util.NginxTest):
 
                             ['listen', '5001 ssl'],
                             ['ssl_certificate', 'example/fullchain.pem'],
-                            ['ssl_certificate_key', 'example/key.pem'],
-                            ['include', self.config.parser.loc["ssl_options"]]
-                            ]]],
+                            ['ssl_certificate_key', 'example/key.pem']] +
+                            util.filter_comments(self.config.parser.loc["ssl_options"])
+                            ]],
                          parsed_example_conf)
         self.assertEqual([['server_name', 'somename  alias  another.alias']],
                          parsed_server_conf)
@@ -234,8 +234,9 @@ class NginxConfiguratorTest(util.NginxTest):
                 ['index', 'index.html index.htm']]],
               ['listen', '5001 ssl'],
               ['ssl_certificate', '/etc/nginx/fullchain.pem'],
-              ['ssl_certificate_key', '/etc/nginx/key.pem'],
-              ['include', self.config.parser.loc["ssl_options"]]]],
+              ['ssl_certificate_key', '/etc/nginx/key.pem']]+
+             util.filter_comments(self.config.parser.loc["ssl_options"])
+            ],
             2))
 
     def test_get_all_certs_keys(self):
