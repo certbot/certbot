@@ -954,7 +954,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                             new_file.write(''.join(chunk))
                             continue
 
-                    new_file.write("</IfModule>\n")
+                new_file.write("</IfModule>\n")
         except IOError:
             logger.fatal("Error writing/reading to file in make_vhost_ssl")
             raise errors.PluginError("Unable to write/read in make_vhost_ssl")
