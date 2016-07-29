@@ -890,11 +890,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 if vhost_num != -1:
                     blocks = [idx for idx, line in enumerate(orig_file_list) if line.lstrip().startswith("<VirtualHost") or line.lstrip().startswith("</VirtualHost")]
                     blocks = blocks[:vhost_num*2] + blocks[(vhost_num*2)+2:]
+                    out = []
                     while len(blocks) > 1:
                         start = blocks[0]
-                        end = blocks[1]
-                        orig_file_list = orig_file_list[:start] + orig_file_list[end+1:]
+                        end = blocks[1] + 1
+                        out += range(start,end)
                         blocks = blocks[2:]
+                    orig_file_list = [line for idx, line in enumerate(orig_file_list) if idx not in out]
 
             with open(ssl_fp, "w") as new_file:
                 new_file.write("<IfModule mod_ssl.c>\n")
