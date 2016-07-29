@@ -218,7 +218,7 @@ def success_installation(domains, action="install"):
             _gen_https_names(domains),
             os.linesep,
             os.linesep.join(_gen_ssl_lab_urls(domains)),
-            action,)
+            action),
         height=(10 + len(domains)),
         pause=False)
 
