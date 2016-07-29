@@ -415,7 +415,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_redirect_enhance(self):
         expected = [
-            ['if', '($scheme != "https")'],
+            ['if', '($scheme != "https") '],
             [['return', '301 https://$host$request_uri']]
         ]
 
