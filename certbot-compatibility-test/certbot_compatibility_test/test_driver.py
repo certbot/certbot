@@ -22,7 +22,8 @@ from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
 from certbot_compatibility_test import validator
 
-from certbot_compatibility_test.configurators.apache import common
+from certbot_compatibility_test.configurators.apache import common as a_common
+from certbot_compatibility_test.configurators.nginx import common as n_common
 
 
 DESCRIPTION = """
@@ -32,7 +33,7 @@ tests that the plugin supports are performed.
 
 """
 
-PLUGINS = {"apache": common.Proxy}
+PLUGINS = {"apache": a_common.Proxy, "nginx": n_common.Proxy}
 
 
 logger = logging.getLogger(__name__)
