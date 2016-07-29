@@ -203,7 +203,7 @@ def _choose_names_manually():
     return []
 
 
-def success_installation(domains, action="installed"):
+def success_installation(domains, action="install"):
     """Display a box confirming the installation of HTTPS.
 
     .. todo:: This should be centered on the screen
