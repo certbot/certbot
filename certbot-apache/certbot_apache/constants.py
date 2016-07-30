@@ -87,6 +87,23 @@ CLI_DEFAULTS_DARWIN = dict(
     MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
         "certbot_apache", "options-ssl-apache.conf")
 )
+CLI_DEFAULTS_SUSE = dict(
+    server_root="/etc/apache2",
+    vhost_root="/etc/apache2/vhosts.d",
+    vhost_files="*.conf",
+    version_cmd=['apache2ctl', '-v'],
+    define_cmd=['apache2ctl', '-t', '-D', 'DUMP_RUN_CFG'],
+    restart_cmd=['apache2ctl', 'graceful'],
+    conftest_cmd=['apache2ctl', 'configtest'],
+    enmod="a2enmod",
+    dismod="a2dismod",
+    le_vhost_ext="-le-ssl.conf",
+    handle_mods=True,
+    handle_sites=False,
+    challenge_location="/etc/apache2/vhosts.d",
+    MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
+        "certbot_apache", "options-ssl-apache.conf")
+)
 CLI_DEFAULTS = {
     "default": CLI_DEFAULTS_DEFAULT,
     "debian": CLI_DEFAULTS_DEBIAN,
@@ -100,6 +117,8 @@ CLI_DEFAULTS = {
     "gentoo": CLI_DEFAULTS_GENTOO,
     "gentoo base system": CLI_DEFAULTS_GENTOO,
     "darwin": CLI_DEFAULTS_DARWIN,
+    "opensuse": CLI_DEFAULTS_SUSE,
+    "suse": CLI_DEFAULTS_SUSE,
 }
 """CLI defaults."""
 
