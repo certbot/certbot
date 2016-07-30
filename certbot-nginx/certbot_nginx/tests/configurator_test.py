@@ -94,7 +94,8 @@ class NginxConfiguratorTest(util.NginxTest):
                                         ['listen', '127.0.0.1'],
                                         ['server_name', '.example.com'],
                                         ['server_name', 'example.*'],
-                                        ['listen', '5001 ssl']
+                                        ['listen', '5001 ssl'],
+                                        ['#', ' managed by Certbot']
                                         ]]],
                          parsed[0])
 
