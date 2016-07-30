@@ -17,10 +17,6 @@ from certbot_compatibility_test import util
 from certbot_compatibility_test.configurators import common as configurators_common
 
 
-# APACHE_VERSION_REGEX = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
-# XXX APACHE_COMMANDS = ["apachectl", "a2enmod", "a2dismod"]
-
-
 @zope.interface.implementer(interfaces.IConfiguratorProxy)
 class Proxy(configurators_common.Proxy):
     # pylint: disable=too-many-instance-attributes
