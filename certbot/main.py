@@ -773,5 +773,5 @@ def main(cli_args=sys.argv[1:]):
 if __name__ == "__main__":
     err_string = main()
     if err_string:
-        logger.warn("Exiting with message %s", err_string)
+        logger.warning("Exiting with message %s", err_string)
     sys.exit(err_string)  # pragma: no cover

@@ -129,7 +129,7 @@ class ApacheTlsSni01(common.TLSSNI01):
             # because it's a new vhost that's not configured yet (GH #677),
             # or perhaps because there were multiple <VirtualHost> sections
             # in the config file (GH #1042).  See also GH #2600.
-            logger.warn("Falling back to default vhost %s...", default_addr)
+            logger.warning("Falling back to default vhost %s...", default_addr)
             addrs.add(default_addr)
             return addrs
 

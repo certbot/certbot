@@ -168,7 +168,7 @@ class NginxParser(object):
                     self.parsed[item] = parsed
                     trees.append(parsed)
             except IOError:
-                logger.warn("Could not open file: %s", item)
+                logger.warning("Could not open file: %s", item)
             except pyparsing.ParseException:
                 logger.debug("Could not parse file: %s", item)
         return trees
