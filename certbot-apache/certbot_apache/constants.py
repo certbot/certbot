@@ -2,7 +2,23 @@
 import pkg_resources
 from certbot import util
 
-
+CLI_DEFAULTS_DEFAULT = dict(
+    server_root="/etc/apache2",
+    vhost_root="/etc/apache2/sites-available",
+    vhost_files="*",
+    version_cmd=['apache2ctl', '-v'],
+    define_cmd=['apache2ctl', '-t', '-D', 'DUMP_RUN_CFG'],
+    restart_cmd=['apache2ctl', 'graceful'],
+    conftest_cmd=['apache2ctl', 'configtest'],
+    enmod="a2enmod",
+    dismod="a2dismod",
+    le_vhost_ext="-le-ssl.conf",
+    handle_mods=False,
+    handle_sites=False,
+    challenge_location="/etc/apache2",
+    MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
+        "certbot_apache", "options-ssl-apache.conf")
+)
 CLI_DEFAULTS_DEBIAN = dict(
     server_root="/etc/apache2",
     vhost_root="/etc/apache2/sites-available",
@@ -72,6 +88,7 @@ CLI_DEFAULTS_DARWIN = dict(
         "certbot_apache", "options-ssl-apache.conf")
 )
 CLI_DEFAULTS = {
+    "default": CLI_DEFAULTS_DEFAULT,
     "debian": CLI_DEFAULTS_DEBIAN,
     "ubuntu": CLI_DEFAULTS_DEBIAN,
     "centos": CLI_DEFAULTS_CENTOS,
