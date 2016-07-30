@@ -115,13 +115,36 @@ HEADER_ARGS = {"Strict-Transport-Security": HSTS_ARGS,
 
 
 def os_constant(key):
-    """Get a constant value for operating system
+    """
+    Get a constant value for operating system
+
     :param key: name of cli constant
     :return: value of constant for active os
     """
+
     os_info = util.get_os_info()
     try:
         constants = CLI_DEFAULTS[os_info[0].lower()]
     except KeyError:
-        constants = CLI_DEFAULTS["debian"]
+        constants = os_like_constants()
+        if not constants:
+            constants = CLI_DEFAULTS["default"]
     return constants[key]
+
+
+def os_like_constants():
+    """
+    Try to get constants for distribution with
+    similar layout and configuration, indicated by
+    /etc/os-release variable "LIKE"
+
+    :returns: Constants dictionary
+    :rtype: `dict`
+    """
+
+    os_like = util.get_systemd_os_like()
+    if os_like:
+        for os_name in os_like:
+            if os_name in CLI_DEFAULTS.keys():
+                return CLI_DEFAULTS[os_name]
+    return {}
