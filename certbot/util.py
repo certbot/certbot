@@ -409,6 +409,9 @@ def enforce_domain_sanity(domain):
         else:
             raise errors.ConfigurationError(str(error_fmt).format(domain))
 
+    if six.PY3:
+        domain = domain.decode('ascii')
+
     # Remove trailing dot
     domain = domain[:-1] if domain.endswith('.') else domain
 
