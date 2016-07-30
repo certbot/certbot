@@ -278,7 +278,7 @@ def get_systemd_os_like(filepath="/etc/os-release"):
     :rtype: `list` of `str`
     """
 
-    return _get_systemd_os_release_var("LIKE", filepath).split(" ")
+    return _get_systemd_os_release_var("ID_LIKE", filepath).split(" ")
 
 
 def _get_systemd_os_release_var(varname, filepath="/etc/os-release"):
