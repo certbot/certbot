@@ -35,6 +35,15 @@ if sys.version_info < (2, 7):
 else:
     install_requires.append('mock')
 
+if sys.version_info < (3, 0):
+    dns_extras = [
+        'dnspython',
+    ]
+else:
+    dns_extras = [
+        'dnspython3',
+    ]
+
 dev_extras = [
     'nose',
     'pep8',
@@ -76,6 +85,7 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     extras_require={
+        'dns': dns_extras,
         'dev': dev_extras,
         'docs': docs_extras,
     },

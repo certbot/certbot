@@ -14,7 +14,6 @@ from acme import crypto_util
 from acme import fields
 from acme import jose
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -207,6 +206,74 @@ class KeyAuthorizationChallenge(_TokenChallenge):
 
 
 @ChallengeResponse.register
+class DNS01Response(KeyAuthorizationChallengeResponse):
+    """ACME "dns-01" challenge response."""
+    typ = "dns-01"
+
+    def simple_verify(self, chall, domain, account_public_key):
+        """Simple verify.
+
+        :param challenges.DNS01 chall: Corresponding challenge.
+        :param unicode domain: Domain name being verified.
+        :param account_public_key: Public key for the key pair
+            being authorized.
+
+        :returns: ``True`` iff validation with the TXT records resolved from a
+            DNS server is successful.
+        :rtype: bool
+
+        """
+        if not self.verify(chall, account_public_key):
+            logger.debug("Verification of key authorization in response failed")
+            return False
+
+        validation_domain_name = chall.validation_domain_name(domain)
+        validation = chall.validation(account_public_key)
+        logger.debug("Verifying %s at %s...", chall.typ, validation_domain_name)
+
+        try:
+            from acme import dns_resolver
+        except ImportError:  # pragma: no cover
+            raise errors.Error("Local validation for 'dns-01' challenges "
+                               "requires 'dnspython'")
+        txt_records = dns_resolver.txt_records_for_name(validation_domain_name)
+        exists = validation in txt_records
+        if not exists:
+            logger.debug("Key authorization from response (%r) doesn't match "
+                         "any DNS response in %r", self.key_authorization,
+                         txt_records)
+        return exists
+
+
+@Challenge.register  # pylint: disable=too-many-ancestors
+class DNS01(KeyAuthorizationChallenge):
+    """ACME "dns-01" challenge."""
+    response_cls = DNS01Response
+    typ = response_cls.typ
+
+    LABEL = "_acme-challenge"
+    """Label clients prepend to the domain name being validated."""
+
+    def validation(self, account_key, **unused_kwargs):
+        """Generate validation.
+
+        :param JWK account_key:
+        :rtype: unicode
+
+        """
+        return jose.b64encode(hashlib.sha256(self.key_authorization(
+            account_key).encode("utf-8")).digest()).decode()
+
+    def validation_domain_name(self, name):
+        """Domain name for TXT validation record.
+
+        :param unicode name: Domain name being validated.
+
+        """
+        return "{0}.{1}".format(self.LABEL, name)
+
+
+@ChallengeResponse.register
 class HTTP01Response(KeyAuthorizationChallengeResponse):
     """ACME http-01 challenge response."""
     typ = "http-01"
@@ -231,8 +298,8 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
             being authorized.
         :param int port: Port used in the validation.
 
-        :returns: ``True`` iff validation is successful, ``False``
-            otherwise.
+        :returns: ``True`` iff validation of the files currently server by the
+            HTTP server is successful.
         :rtype: bool
 
         """
@@ -410,7 +477,7 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
 
 
         :returns: ``True`` iff client's control of the domain has been
-            verified, ``False`` otherwise.
+            verified.
         :rtype: bool
 
         """
