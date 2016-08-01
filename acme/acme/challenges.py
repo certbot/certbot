@@ -207,7 +207,7 @@ class KeyAuthorizationChallenge(_TokenChallenge):
 
 @ChallengeResponse.register
 class DNS01Response(KeyAuthorizationChallengeResponse):
-    """ACME "dns-01" challenge response."""
+    """ACME dns-01 challenge response."""
     typ = "dns-01"
 
     def simple_verify(self, chall, domain, account_public_key):
@@ -215,7 +215,7 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
 
         :param challenges.DNS01 chall: Corresponding challenge.
         :param unicode domain: Domain name being verified.
-        :param account_public_key: Public key for the key pair
+        :param JWK account_public_key: Public key for the key pair
             being authorized.
 
         :returns: ``True`` iff validation with the TXT records resolved from a
@@ -247,7 +247,7 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
 
 @Challenge.register  # pylint: disable=too-many-ancestors
 class DNS01(KeyAuthorizationChallenge):
-    """ACME "dns-01" challenge."""
+    """ACME dns-01 challenge."""
     response_cls = DNS01Response
     typ = response_cls.typ
 
@@ -298,7 +298,7 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
             being authorized.
         :param int port: Port used in the validation.
 
-        :returns: ``True`` iff validation of the files currently server by the
+        :returns: ``True`` iff validation with the files currently served by the
             HTTP server is successful.
         :rtype: bool
 
