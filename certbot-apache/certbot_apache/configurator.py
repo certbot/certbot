@@ -577,7 +577,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 if realpath not in vhost_paths.keys():
                     vhs.append(new_vhost)
                     vhost_paths[realpath] = new_vhost.filep
-                elif realpath in vhost_paths.keys() and new_vhost not in vhs:
+                elif (realpath in vhost_paths.keys()
+                          and new_vhost.path.endswith("]") and new_vhost not in vhs):
                     vhs.append(new_vhost)
                 elif realpath == new_vhost.filep:
                     # Prefer "real" vhost paths instead of symlinked ones
@@ -888,15 +889,18 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             with open(avail_fp, "r") as orig_file:
                 orig_file_list = [line for line in orig_file]
                 if vhost_num != -1:
-                    blocks = [idx for idx, line in enumerate(orig_file_list) if line.lstrip().startswith("<VirtualHost") or line.lstrip().startswith("</VirtualHost")]
+                    blocks = [idx for idx, line in enumerate(orig_file_list)
+                                 if line.lstrip().startswith("<VirtualHost")
+                                 or line.lstrip().startswith("</VirtualHost")]
                     blocks = blocks[:vhost_num*2] + blocks[(vhost_num*2)+2:]
                     out = []
                     while len(blocks) > 1:
                         start = blocks[0]
                         end = blocks[1] + 1
-                        out += range(start,end)
+                        out += range(start, end)
                         blocks = blocks[2:]
-                    orig_file_list = [line for idx, line in enumerate(orig_file_list) if idx not in out]
+                    orig_file_list = [line for idx, line in enumerate(orig_file_list)
+                                         if idx not in out]
 
             with open(ssl_fp, "w") as new_file:
                 new_file.write("<IfModule mod_ssl.c>\n")
