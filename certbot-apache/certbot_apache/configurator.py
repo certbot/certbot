@@ -910,7 +910,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                           "# because they have the potential to create "
                           "redirection loops.\n")
 
-                for line in orig_file_list:
+                file_iter = iter(orig_file_list)
+                for line in file_iter:
                     A = line.lstrip().startswith("RewriteCond")
                     B = line.lstrip().startswith("RewriteRule")
 
@@ -938,12 +939,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     chunk = []
                     if A:
                         chunk.append(line)
-                        line = next(orig_file_list)
+                        line = next(file_iter)
 
                         # RewriteCond(s) must be followed by one RewriteRule
                         while not line.lstrip().startswith("RewriteRule"):
                             chunk.append(line)
-                            line = next(orig_file_list)
+                            line = next(file_iter)
 
                         # Now, current line must start with a RewriteRule
                         chunk.append(line)

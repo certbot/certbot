@@ -1261,8 +1261,6 @@ class AugeasVhostsTest(util.ApacheTest):
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)
-        self.vh_truth = util.get_vh_truth(
-            self.temp_dir, "debian_apache_2_4/augeas_vhosts")
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -1286,6 +1284,53 @@ class AugeasVhostsTest(util.ApacheTest):
         mock_vhost.return_value = None
         vhs = self.config.get_virtual_hosts()
         self.assertEqual([], vhs)
+
+class MultiVhostsTest(util.ApacheTest):
+    """Test vhosts with illegal names dependant on augeas version."""
+    # pylint: disable=protected-access
+
+    def setUp(self):  # pylint: disable=arguments-differ
+        td = "debian_apache_2_4/multi_vhosts"
+        cr = "debian_apache_2_4/multi_vhosts/apache2"
+        vr = "debian_apache_2_4/multi_vhosts/apache2/sites-available"
+        super(MultiVhostsTest, self).setUp(test_dir=td,
+                                            config_root=cr,
+                                            vhost_root=vr)
+
+        self.config = util.get_apache_configurator(
+            self.config_path, self.vhost_path, self.config_dir, self.work_dir)
+        self.vh_truth = util.get_vh_truth(
+            self.temp_dir, "debian_apache_2_4/multi_vhosts")
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
+        shutil.rmtree(self.config_dir)
+        shutil.rmtree(self.work_dir)
+
+    def test_make_vhost_ssl(self):
+        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[1])
+
+        self.assertEqual(
+            ssl_vhost.filep,
+            os.path.join(self.config_path, "sites-available",
+                         "default-le-ssl.conf"))
+
+        self.assertEqual(ssl_vhost.path,
+                         "/files" + ssl_vhost.filep + "/IfModule/VirtualHost")
+        self.assertEqual(len(ssl_vhost.addrs), 1)
+        self.assertEqual(set([obj.Addr.fromstring("*:443")]), ssl_vhost.addrs)
+        self.assertEqual(ssl_vhost.name, "banana.vomit.com")
+        self.assertTrue(ssl_vhost.ssl)
+        self.assertFalse(ssl_vhost.enabled)
+
+        self.assertTrue(self.config.parser.find_dir(
+            "SSLCertificateFile", None, ssl_vhost.path, False))
+        self.assertTrue(self.config.parser.find_dir(
+            "SSLCertificateKeyFile", None, ssl_vhost.path, False))
+
+        self.assertEqual(self.config.is_name_vhost(self.vh_truth[1]),
+                         self.config.is_name_vhost(ssl_vhost))
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
