@@ -37,8 +37,8 @@ class NginxConfiguratorTest(util.NginxTest):
             errors.NoInstallationError, self.config.prepare)
 
     def test_prepare(self):
-        self.assertEquals((1, 6, 2), self.config.version)
-        self.assertEquals(5, len(self.config.parser.parsed))
+        self.assertEqual((1, 6, 2), self.config.version)
+        self.assertEqual(5, len(self.config.parser.parsed))
 
     @mock.patch("certbot_nginx.configurator.util.exe_exists")
     @mock.patch("certbot_nginx.configurator.subprocess.Popen")
@@ -56,7 +56,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.version = None
         self.config.config_test = mock.Mock()
         self.config.prepare()
-        self.assertEquals((1, 6, 2), self.config.version)
+        self.assertEqual((1, 6, 2), self.config.version)
 
     @mock.patch("certbot_nginx.configurator.socket.gethostbyaddr")
     def test_get_all_names(self, mock_gethostbyaddr):
@@ -83,7 +83,7 @@ class NginxConfiguratorTest(util.NginxTest):
         filep = self.config.parser.abs_path('sites-enabled/example.com')
         self.config.parser.add_server_directives(
             filep, set(['.example.com', 'example.*']),
-            [['listen', '5001 ssl']],
+            [['listen', ' ', '5001 ssl']],
             replace=False)
         self.config.save()
 
@@ -265,7 +265,8 @@ class NginxConfiguratorTest(util.NginxTest):
 
     @mock.patch("certbot_nginx.configurator.tls_sni_01.NginxTlsSni01.perform")
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.restart")
-    def test_perform(self, mock_restart, mock_perform):
+    @mock.patch("certbot_nginx.configurator.NginxConfigurator.revert_challenge_config")
+    def test_perform_and_cleanup(self, mock_revert, mock_restart, mock_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
         achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
@@ -291,7 +292,11 @@ class NginxConfiguratorTest(util.NginxTest):
 
         self.assertEqual(mock_perform.call_count, 1)
         self.assertEqual(responses, expected)
-        self.assertEqual(mock_restart.call_count, 1)
+
+        self.config.cleanup([achall1, achall2])
+        self.assertEqual(0, self.config._chall_out) # pylint: disable=protected-access
+        self.assertEqual(mock_revert.call_count, 1)
+        self.assertEqual(mock_restart.call_count, 2)
 
     @mock.patch("certbot_nginx.configurator.subprocess.Popen")
     def test_get_version(self, mock_popen):
@@ -410,7 +415,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_redirect_enhance(self):
         expected = [
-            ['if', '($scheme != "https")'],
+            ['if', '($scheme != "https") '],
             [['return', '301 https://$host$request_uri']]
         ]
 

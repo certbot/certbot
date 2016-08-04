@@ -1,0 +1,89 @@
+server {
+       listen 80;
+       server_name www.example.com example.com;
+       root /var/www/www.example.com/web;
+       if ($http_host != "www.example.com") {
+                 rewrite ^ http://www.example.com$request_uri permanent;
+       }
+       index index.php index.html;
+       location = /favicon.ico {
+                log_not_found off;
+                access_log off;
+                expires max;
+       }
+       location = /robots.txt {
+                allow all;
+                log_not_found off;
+                access_log off;
+       }
+       # Deny all attempts to access hidden files such as .htaccess, .htpasswd, .DS_Store (Mac).
+       location ~ /\. {
+                deny all;
+                access_log off;
+                log_not_found off;
+       }
+       location ~*  \.(jpg|jpeg|png|gif|css|js|ico)$ {
+                expires max;
+                log_not_found off;
+       }
+       location ~* \.(cur|ico|gif|png|jpe?g|css|js|swf|woff)((\?\d\d\d\d\d\d\d\d\d\d)|(\?s=\d\d\d\d\d\d\d\d\d\d))$ {
+                expires max;
+                log_not_found off;
+       }
+       location ~* \.(cur|ico|gif|png|jpe?g|css|js|swf|woff)(\?v\d\d?\.\d\d?\.\d\d?)$ {
+                expires max;
+                log_not_found off;
+       }
+       location ~* ^(/typo3/sysext|/typo3conf/ext).*\.(cur|ico|gif|png|jpe?g|css|js|swf|woff) {
+                expires max;
+                log_not_found off;
+       }
+       location = /clear.gif {
+                empty_gif;
+                expires max;
+       }
+       location ^~ /typo3/gfx {
+                expires max;
+       }
+       location ^~ /typo3temp/compressor {
+                expires max;
+       }
+       location ~* \.(sql|htaccess|htpasswd|tpl|html5|xhtml) {
+                deny all;
+       }
+       location / {
+                if ($query_string ~ ".+") {
+                        return 405;
+                }
+                # pass requests from logged-in users to PHP
+                if ($http_cookie ~ 'nc_staticfilecache|be_typo_user' ) {
+                        return 405;
+                } # pass POST requests to PHP
+                if ($request_method !~ ^(GET|HEAD)$ ) {
+                        return 405;
+                }
+                if ($http_pragma = 'no-cache') {
+                        return 405;
+                }
+                if ($http_cache_control = 'no-cache') {
+                        return 405;
+                }
+                error_page 405 = @nocache;
+                # serve requested content from the cache if available, otherwise pass the request to PHP
+                try_files /typo3temp/tx_ncstaticfilecache/$host${request_uri}index.html @nocache;
+       }
+       location @nocache {
+                try_files $uri $uri/ /index.php?$args;
+       }
+       location ^~ /typo3temp/tx_ncstaticfilecache {
+                expires 43200;
+                charset utf-8;
+       }
+       location ~ \.php$ {
+                try_files $uri =404;
+                include /etc/nginx/fastcgi_params;
+                fastcgi_pass 127.0.0.1:9000;
+                fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                fastcgi_index index.php;
+       }
+}

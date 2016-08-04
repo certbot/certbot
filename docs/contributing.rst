@@ -71,6 +71,9 @@ The following tools are there to help you:
   experimental, non-production Apache2 install on them.  ``tox -e
   apacheconftest`` can be used to run those specific Apache conf tests.
 
+- ``tox --skip-missing-interpreters`` runs tox while ignoring missing versions
+  of Python needed for running the tests.
+
 - ``tox -e py27``, ``tox -e py26`` etc, run unit tests for specific Python
   versions.
 
@@ -313,16 +316,14 @@ Steps:
 3. Run ``./pep8.travis.sh`` to do a cursory check of your code style.
    Fix any errors.
 4. Run ``tox -e lint`` to check for pylint errors. Fix any errors.
-5. Run ``tox`` to run the entire test suite including coverage. Fix any errors.
+5. Run ``tox --skip-missing-interpreters`` to run the entire test suite
+   including coverage. The ``--skip-missing-interpreters`` argument ignores
+   missing versions of Python needed for running the tests. Fix any errors.
 6. If your code touches communication with an ACME server/Boulder, you
    should run the integration tests, see `integration`_. See `Known Issues`_
    for some common failures that have nothing to do with your code.
 7. Submit the PR.
-8. Did your tests pass on Travis? If they didn't, it might not be your fault!
-   See `Known Issues`_. If it's not a known issue, fix any errors.
-
-.. _Known Issues:
-  https://github.com/certbot/certbot/wiki/Known-issues
+8. Did your tests pass on Travis? If they didn't, fix any errors.
 
 Updating the documentation
 ==========================

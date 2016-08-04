@@ -1,0 +1,19 @@
+# -*-mode: nginx; mode: flyspell-prog; mode: autopair; ispell-local-dictionary: "american" -*-
+### Block all illegal host headers. Taken from a discussion on nginx
+### forums. Cf. http://forum.nginx.org/read.php?2,3482,3518 following
+### a suggestion by Maxim Dounin. Also suggested in
+### http://nginx.org/en/docs/http/request_processing.html.
+server {
+    listen [::]:80 default_server;
+    # Uncomment the line below and comment the above if you're
+    # running a Nginx version less than 0.8.20.
+    # listen [::]:80 default;
+
+    # Accept redirects based on the value of the Host header. If
+    # there's no valid vhost configuration file with a
+    # corresponding server_name directive then signal an error and
+    # fail silently. See:
+    # http://wiki.nginx.org/NginxHttpCoreModule#server_name_in_redirect
+    server_name_in_redirect off;
+    return 444;
+}

@@ -1,4 +1,5 @@
 """NginxParser is a member object of the NginxConfigurator class."""
+import copy
 import glob
 import logging
 import os
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 class NginxParser(object):
     """Class handles the fine details of parsing the Nginx Configuration.
 
-    :ivar str root: Normalized abosulte path to the server root
+    :ivar str root: Normalized absolute path to the server root
         directory. Without trailing slash.
     :ivar dict parsed: Mapping of file paths to parsed trees
 
@@ -113,6 +114,7 @@ class NginxParser(object):
         for filename in servers:
             for server in servers[filename]:
                 # Parse the server block into a VirtualHost object
+
                 parsed_server = parse_server(server)
                 vhost = obj.VirtualHost(filename,
                                         parsed_server['addrs'],
@@ -132,7 +134,7 @@ class NginxParser(object):
         :rtype: list
 
         """
-        result = list(block)  # Copy the list to keep self.parsed idempotent
+        result = copy.deepcopy(block)  # Copy the list to keep self.parsed idempotent
         for directive in block:
             if _is_include_directive(directive):
                 included_files = glob.glob(
@@ -153,7 +155,9 @@ class NginxParser(object):
         :rtype: list
 
         """
-        files = glob.glob(filepath)
+        files = glob.glob(filepath) # nginx on unix calls glob(3) for this
+                                    # XXX Windows nginx uses FindFirstFile, and
+                                    # should have a narrower call here
         trees = []
         for item in files:
             if item in self.parsed and not override:
@@ -164,7 +168,7 @@ class NginxParser(object):
                     self.parsed[item] = parsed
                     trees.append(parsed)
             except IOError:
-                logger.warn("Could not open file: %s", item)
+                logger.warning("Could not open file: %s", item)
             except pyparsing.ParseException:
                 logger.debug("Could not parse file: %s", item)
         return trees
@@ -201,21 +205,27 @@ class NginxParser(object):
         raise errors.NoInstallationError(
             "Could not find configuration root")
 
-    def filedump(self, ext='tmp'):
+    def filedump(self, ext='tmp', lazy=True):
         """Dumps parsed configurations into files.
 
         :param str ext: The file extension to use for the dumped files. If
             empty, this overrides the existing conf files.
+        :param bool lazy: Only write files that have been modified
 
         """
+        # Best-effort atomicity is enforced above us by reverter.py
         for filename in self.parsed:
             tree = self.parsed[filename]
             if ext:
                 filename = filename + os.path.extsep + ext
             try:
-                logger.debug('Dumping to %s:\n%s', filename, nginxparser.dumps(tree))
+                if lazy and not tree.is_dirty():
+                    continue
+                out = nginxparser.dumps(tree)
+                logger.debug('Writing nginx conf tree to %s:\n%s', filename, out)
                 with open(filename, 'w') as _file:
-                    nginxparser.dump(tree, _file)
+                    _file.write(out)
+
             except IOError:
                 logger.error("Could not open file for writing: %s", filename)
 
@@ -463,6 +473,8 @@ def parse_server(server):
                      'names': set()}
 
     for directive in server:
+        if not directive:
+            continue
         if directive[0] == 'listen':
             addr = obj.Addr.fromstring(directive[1])
             parsed_server['addrs'].add(addr)
@@ -503,6 +515,11 @@ def _add_directive(block, directive, replace):
     See _add_directives for more documentation.
 
     """
+    directive = nginxparser.UnspacedList(directive)
+    if len(directive) == 0:
+        # whitespace
+        block.append(directive)
+        return
     location = -1
     # Find the index of a config line where the name of the directive matches
     # the name of the directive we want to add.

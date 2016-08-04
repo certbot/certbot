@@ -34,6 +34,7 @@ Help for certbot itself cannot be provided until it is installed.
   -n, --non-interactive, --noninteractive   run without asking for user input
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
+  -q, --quiet                               provide only update/error output
   -v, --verbose                             provide more output
 
 All arguments are accepted and forwarded to the Certbot client when run."
@@ -52,15 +53,19 @@ for arg in "$@" ; do
       HELP=1;;
     --noninteractive|--non-interactive)
       ASSUME_YES=1;;
+    --quiet)
+      QUIET=1;;
     --verbose)
       VERBOSE=1;;
     -[!-]*)
-      while getopts ":hnv" short_arg $arg; do
+      while getopts ":hnvq" short_arg $arg; do
         case "$short_arg" in
           h)
             HELP=1;;
           n)
             ASSUME_YES=1;;
+          q)
+            QUIET=1;;
           v)
             VERBOSE=1;;
         esac
@@ -121,7 +126,7 @@ ExperimentalBootstrap() {
       $2
     fi
   else
-    echo "WARNING: $1 support is very experimental at present..."
+    echo "FATAL: $1 support is very experimental at present..."
     echo "if you would like to work on improving it, please ensure you have backups"
     echo "and then run this script again with the --debug flag!"
     exit 1
@@ -248,13 +253,19 @@ UNLIKELY_EOF
     # Set PATH so pipstrap upgrades the right (v)env:
     PATH="$VENV_BIN:$PATH" "$VENV_BIN/python" "$TEMP_DIR/pipstrap.py"
     set +e
-    PIP_OUT=`"$VENV_BIN/pip" install --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt" 2>&1`
+    if [ "$VERBOSE" = 1 ]; then
+      "$VENV_BIN/pip" install --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt"
+    else
+      PIP_OUT=`"$VENV_BIN/pip" install --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt" 2>&1`
+    fi
     PIP_STATUS=$?
     set -e
     if [ "$PIP_STATUS" != 0 ]; then
       # Report error. (Otherwise, be quiet.)
-      echo "Had a problem while installing Python packages:"
-      echo "$PIP_OUT"
+      echo "Had a problem while installing Python packages."
+      if [ "$VERBOSE" != 1 ]; then
+        echo "$PIP_OUT"
+      fi
       rm -rf "$VENV_PATH"
       exit 1
     fi
@@ -262,8 +273,10 @@ UNLIKELY_EOF
   fi
   if [ -n "$SUDO" ]; then
     # SUDO is su wrapper or sudo
-    echo "Requesting root privileges to run certbot..."
-    echo "  $VENV_BIN/letsencrypt" "$@"
+    if [  "$QUIET" != 1 ]; then
+      echo "Requesting root privileges to run certbot..."
+      echo "  $VENV_BIN/letsencrypt" "$@"
+    fi
   fi
   if [ -z "$SUDO_ENV" ] ; then
     # SUDO is su wrapper / noop

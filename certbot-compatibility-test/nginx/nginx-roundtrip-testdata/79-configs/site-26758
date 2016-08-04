@@ -1,0 +1,21 @@
+server {
+	listen 80 default_server;
+	#listen [::]:80 default_server ipv6only=on;
+	root /var/www/default/;
+
+	# deny access to .htaccess files, if Apache's document root
+	# concurs with nginx's one
+	location ~ /\.ht {
+		deny all;
+	}
+
+  location /nginx_status {
+    stub_status on;
+    access_log   off;
+    allow 127.0.0.1;
+    deny all;
+  }
+
+  access_log /var/log/nginx/access.log combined_plus;
+  error_log /var/log/nginx/error.log;
+}

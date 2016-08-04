@@ -158,10 +158,11 @@ def possible_deprecation_warning(config):
         # need warnings
         return
     if "CERTBOT_AUTO" not in os.environ:
-        logger.warn("You are running with an old copy of letsencrypt-auto that does "
+        logger.warning("You are running with an old copy of letsencrypt-auto that does "
             "not receive updates, and is less reliable than more recent versions. "
             "We recommend upgrading to the latest certbot-auto script, or using native "
             "OS packages.")
+        logger.debug("Deprecation warning circumstances: %s / %s", sys.argv[0], os.environ)
 
 
 class _Default(object):
@@ -392,6 +393,8 @@ class HelpfulArgumentParser(object):
                         ("Conflicting values for displayer."
                         " {0} conflicts with dialog_mode").format(arg)
                     )
+        elif parsed_args.verbose_count > flag_default("verbose_count"):
+            parsed_args.text_mode = True
 
         if parsed_args.validate_hooks:
             hooks.validate_hooks(parsed_args)
@@ -721,10 +724,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "(both can be renewed in parallel)")
     helpful.add(
         "automation", "--os-packages-only", action="store_true",
-        help="(letsencrypt-auto only) install OS package dependencies and then stop")
+        help="(certbot-auto only) install OS package dependencies and then stop")
     helpful.add(
         "automation", "--no-self-upgrade", action="store_true",
-        help="(letsencrypt-auto only) prevent the letsencrypt-auto script from"
+        help="(certbot-auto only) prevent the certbot-auto script from"
              " upgrading itself to newer released versions")
     helpful.add(
         "automation", "-q", "--quiet", dest="quiet", action="store_true",
@@ -737,7 +740,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "really know what you're doing!")
     helpful.add(
         "testing", "--debug", action="store_true",
-        help="Show tracebacks in case of errors, and allow letsencrypt-auto "
+        help="Show tracebacks in case of errors, and allow certbot-auto "
              "execution on experimental platforms")
     helpful.add(
         "testing", "--no-verify-ssl", action="store_true",
@@ -779,7 +782,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         "security", "--hsts", action="store_true",
         help="Add the Strict-Transport-Security header to every HTTP response."
-             " Forcing browser to use always use SSL for the domain."
+             " Forcing browser to always use SSL for the domain."
              " Defends against SSL Stripping.", dest="hsts", default=False)
     helpful.add(
         "security", "--no-hsts", action="store_false",
