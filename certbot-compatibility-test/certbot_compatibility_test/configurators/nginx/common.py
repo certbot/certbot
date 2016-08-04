@@ -125,25 +125,12 @@ def _get_server_root(config):
 
 def _get_names(config):
     """Returns all and testable domain names in config"""
-    # XXX: This is still Apache-specific
     all_names = set()
-    non_ip_names = set()
-    with open(os.path.join(config, "vhosts")) as f:
-        for line in f:
-            # If parsing a specific vhost
-            if line[0].isspace():
-                words = line.split()
-                if words[0] == "alias":
-                    all_names.add(words[1])
-                    non_ip_names.add(words[1])
-                # If for port 80 and not IP vhost
-                elif words[1] == "80" and not util.IP_REGEX.match(words[3]):
-                    all_names.add(words[3])
-                    non_ip_names.add(words[3])
-            elif "NameVirtualHost" not in line:
-                words = line.split()
-                if (words[0].endswith("*") or words[0].endswith("80") and
-                        not util.IP_REGEX.match(words[1]) and
-                        words[1].find(".") != -1):
-                    all_names.add(words[1])
+    for root, _dirs, files in os.walk(config):
+        for this_file in files:
+            for line in open(os.path.join(root, this_file)):
+                if line.strip().starts_with("server_name"):
+                    names = line.partition("server_name")[2].rstrip(";")
+                    [all_names.add(n) for n in names.split()]
+    non_ip_names = set(n for n in all_names if not util.IP_REGEX.match(n))
     return all_names, non_ip_names
