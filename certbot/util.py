@@ -268,6 +268,19 @@ def get_systemd_os_info(filepath="/etc/os-release"):
     return (os_name, os_version)
 
 
+def get_systemd_os_like(filepath="/etc/os-release"):
+    """
+    Get a list of strings that indicate the distribution likeness to
+    other distributions.
+
+    :param str filepath: File path of os-release file
+    :returns: List of distribution acronyms
+    :rtype: `list` of `str`
+    """
+
+    return _get_systemd_os_release_var("ID_LIKE", filepath).split(" ")
+
+
 def _get_systemd_os_release_var(varname, filepath="/etc/os-release"):
     """
     Get single value from systemd /etc/os-release
