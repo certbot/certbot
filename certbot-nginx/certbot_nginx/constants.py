@@ -16,3 +16,10 @@ MOD_SSL_CONF_SRC = pkg_resources.resource_filename(
     "certbot_nginx", "options-ssl-nginx.conf")
 """Path to the nginx mod_ssl config file found in the Certbot
 distribution."""
+
+def os_constant(key):
+    # XXX TODO: In the future, this could return different constants
+    #           based on what OS we are running under.  To see an
+    #           approach to how to handle different OSes, see the
+    #           apache version of this file.
+    return CLI_DEFAULTS
