@@ -129,7 +129,7 @@ def _get_names(config):
     for root, _dirs, files in os.walk(config):
         for this_file in files:
             for line in open(os.path.join(root, this_file)):
-                if line.strip().starts_with("server_name"):
+                if line.strip().startswith("server_name"):
                     names = line.partition("server_name")[2].rstrip(";")
                     [all_names.add(n) for n in names.split()]
     non_ip_names = set(n for n in all_names if not util.IP_REGEX.match(n))
