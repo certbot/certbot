@@ -518,8 +518,8 @@ def _add_directives(block, directives, replace):
     for directive in directives:
         _add_directive(block, directive, replace)
     last = block[-1]
-    if not (isinstance(last, str) and '\n' in last):
-        block.append('\n')
+    if not '\n' in last:                           # could be "   \n  " or ["\n"] !
+        block.append(nginxparser.UnspacedList('\n'))
 
 
 REPEATABLE_DIRECTIVES = set(['server_name', 'listen', 'include'])
