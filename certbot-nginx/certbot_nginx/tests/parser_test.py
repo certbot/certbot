@@ -144,7 +144,10 @@ class NginxParserTest(util.NginxTest):
         self.assertEqual(nparser.parsed[server_conf],
                          [['server_name', 'somename  alias  another.alias'],
                           ['foo', 'bar'],
-                          ['ssl_certificate', '/etc/ssl/cert2.pem']
+                          ['#', ' managed by Certbot'],
+                          ['ssl_certificate', '/etc/ssl/cert2.pem'],
+                          ['#', ' managed by Certbot'],
+                          [], []
                           ])
 
     def test_add_http_directives(self):
@@ -174,8 +177,8 @@ class NginxParserTest(util.NginxTest):
             nparser.parsed[filep],
             [[['server'], [['listen', '69.50.225.155:9000'],
                            ['listen', '127.0.0.1'],
-                           ['server_name', 'foobar.com'],
-                           ['server_name', 'example.*'],
+                           ['server_name', 'foobar.com'], ['#', ' managed by Certbot'],
+                           ['server_name', 'example.*'], []
                            ]]])
         self.assertRaises(errors.MisconfigurationError,
                           nparser.add_server_directives,
@@ -256,7 +259,6 @@ class NginxParserTest(util.NginxTest):
                           ['ssl_session_timeout', '1440m'],
                           ['ssl_protocols', 'TLSv1 TLSv1.1 TLSv1.2'],
                           ['ssl_prefer_server_ciphers', 'on'],
-                          ['#', ' Using list of ciphers from "Bulletproof SSL and TLS"'],
                           ['ssl_ciphers', '"ECDHE-ECDSA-AES128-GCM-SHA256 ECDHE-ECDSA-'+
                            'AES256-GCM-SHA384 ECDHE-ECDSA-AES128-SHA ECDHE-ECDSA-AES256'+
                            '-SHA ECDHE-ECDSA-AES128-SHA256 ECDHE-ECDSA-AES256-SHA384'+
