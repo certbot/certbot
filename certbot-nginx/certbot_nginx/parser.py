@@ -329,6 +329,8 @@ class NginxParser(object):
             tup = [None, None, vhost.filep]
             if vhost.ssl:
                 for directive in vhost.raw:
+                    if not directive:
+                        continue
                     if directive[0] == 'ssl_certificate':
                         tup[0] = directive[1]
                     elif directive[0] == 'ssl_certificate_key':
