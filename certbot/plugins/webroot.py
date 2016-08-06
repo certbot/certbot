@@ -206,7 +206,7 @@ to serve all files under specified web root ({0})."""
         old_umask = os.umask(0o022)
 
         try:
-            with open(validation_path, "w") as validation_file:
+            with open(validation_path, "wb") as validation_file:
                 validation_file.write(validation.encode())
         finally:
             os.umask(old_umask)

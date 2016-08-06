@@ -90,7 +90,7 @@ def write_renewal_config(o_filename, n_filename, target, relevant_data):
     # TODO: add human-readable comments explaining other available
     #       parameters
     logger.debug("Writing new config %s.", n_filename)
-    with open(n_filename, "w") as f:
+    with open(n_filename, "wb") as f:
         config.write(outfile=f)
     return config
 
