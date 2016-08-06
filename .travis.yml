@@ -53,6 +53,11 @@ matrix:
       services: docker
       before_install:
       addons:
+    - sudo: required
+      env: TOXENV=le_auto_fedora
+      services: docker
+      before_install:
+      addons:
     - python: "2.7"
       env: TOXENV=cover
     - python: "3.3"
