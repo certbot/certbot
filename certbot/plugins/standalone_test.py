@@ -1,5 +1,4 @@
 """Tests for certbot.plugins.standalone."""
-import argparse
 import socket
 import unittest
 
@@ -62,33 +61,6 @@ class ServerManagerTest(unittest.TestCase):
             errors.StandaloneBindError, self.mgr.run, port,
             challenge_type=challenges.HTTP01)
         self.assertEqual(self.mgr.running(), {})
-
-
-class SupportedChallengesValidatorTest(unittest.TestCase):
-    """Tests for plugins.standalone.supported_challenges_validator."""
-
-    def _call(self, data):
-        from certbot.plugins.standalone import (
-            supported_challenges_validator)
-        return supported_challenges_validator(data)
-
-    def test_correct(self):
-        self.assertEqual("tls-sni-01", self._call("tls-sni-01"))
-        self.assertEqual("http-01", self._call("http-01"))
-        self.assertEqual("tls-sni-01,http-01", self._call("tls-sni-01,http-01"))
-        self.assertEqual("http-01,tls-sni-01", self._call("http-01,tls-sni-01"))
-
-    def test_unrecognized(self):
-        assert "foo" not in challenges.Challenge.TYPES
-        self.assertRaises(argparse.ArgumentTypeError, self._call, "foo")
-
-    def test_not_subset(self):
-        self.assertRaises(argparse.ArgumentTypeError, self._call, "dns")
-
-    def test_dvsni(self):
-        self.assertEqual("tls-sni-01", self._call("dvsni"))
-        self.assertEqual("http-01,tls-sni-01", self._call("http-01,dvsni"))
-        self.assertEqual("tls-sni-01,http-01", self._call("dvsni,http-01"))
 
 
 class AuthenticatorTest(unittest.TestCase):

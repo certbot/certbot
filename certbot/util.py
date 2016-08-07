@@ -14,6 +14,7 @@ import socket
 import stat
 import subprocess
 import sys
+import time
 
 import configargparse
 
@@ -474,3 +475,23 @@ def get_strict_version(normalized):
     # strict version ending with "a" and a number designates a pre-release
     # pylint: disable=no-member
     return distutils.version.StrictVersion(normalized.replace(".dev", "a"))
+
+
+def busy_wait(port, host="localhost"):
+    """Artificialy wait a fixed amount of time on a specific host and port
+
+    :param str port: port of the connection
+    :param str host: hostname of the connection, "localhost" if None
+
+    """
+    while True:
+        time.sleep(1)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            sock.connect((host, port))
+        except socket.error:  # pragma: no cover
+            pass
+        else:
+            break
+        finally:
+            sock.close()

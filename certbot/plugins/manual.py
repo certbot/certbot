@@ -4,24 +4,28 @@ import logging
 import pipes
 import shutil
 import signal
-import socket
 import subprocess
 import sys
 import tempfile
-import time
 
 import six
 import zope.component
 import zope.interface
 
+from functools import partial
+
 from acme import challenges
 
 from certbot import errors
 from certbot import interfaces
-from certbot.plugins import common
+from certbot.plugins import common, util
+from certbot.util import busy_wait
 
 
 logger = logging.getLogger(__name__)
+
+
+SUPPORTED_CHALLENGES = [challenges.HTTP01, challenges.DNS01]
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)
@@ -41,7 +45,16 @@ class Authenticator(common.Plugin):
 
     description = "Manually configure an HTTP server"
 
-    MESSAGE_TEMPLATE = """\
+    MESSAGE_TEMPLATE = {
+        "dns-01": """\
+Make sure your dns configuration content the following key before continuing:
+
+{validation}
+
+if you didn't, make sure to add the validation as TXT record into your domain
+configuration.
+""",
+        "http-01": """\
 Make sure your web server displays the following content at
 {uri} before continuing:
 
@@ -51,7 +64,7 @@ If you don't have HTTP server configured, you can run the following
 command on the target server (as root):
 
 {command}
-"""
+"""}
 
     # a disclaimer about your current IP being transmitted to Let's Encrypt's servers.
     IP_DISCLAIMER = """\
@@ -86,10 +99,23 @@ s.serve_forever()" """
 
     @classmethod
     def add_parser_arguments(cls, add):
+        validator = partial(util.supported_challenges_validator,
+                            supported=SUPPORTED_CHALLENGES)
+
         add("test-mode", action="store_true",
             help="Test mode. Executes the manual command in subprocess.")
         add("public-ip-logging-ok", action="store_true",
             help="Automatically allows public IP logging.")
+        add("supported-challenges",
+            help="Supported challenges. Preferred in the order they are listed.",
+            type=validator,
+            default="http-01")
+
+    @property
+    def supported_challenges(self):
+        """Challenges supported by this plugin."""
+        return [challenges.Challenge.TYPES[name] for name in
+                self.conf("supported-challenges").split(",")]
 
     def prepare(self):  # pylint: disable=missing-docstring,no-self-use
         if self.config.noninteractive_mode and not self.conf("test-mode"):
@@ -97,38 +123,35 @@ s.serve_forever()" """
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return ("This plugin requires user's manual intervention in setting "
-                "up an HTTP server for solving http-01 challenges and thus "
+                "up an HTTP server when solving http-01 challenges and thus "
                 "does not need to be run as a privileged process. "
                 "Alternatively shows instructions on how to use Python's "
-                "built-in HTTP server.")
+                "built-in HTTP server."
+                "When solving dns-01 challenges, it simply needs to wait for "
+                "the proper configuration of the domain's dns")
 
     def get_chall_pref(self, domain):
         # pylint: disable=missing-docstring,no-self-use,unused-argument
-        return [challenges.HTTP01]
+        return self.supported_challenges
 
-    def perform(self, achalls):  # pylint: disable=missing-docstring
+    def perform(self, achalls):
+        # pylint: disable=missing-docstring
+        mapping = {"http-01": self._perform_http01_challenge,
+                   "dns-01": self._perform_dns01_challenge}
         responses = []
         # TODO: group achalls by the same socket.gethostbyname(_ex)
         # and prompt only once per server (one "echo -n" per domain)
         for achall in achalls:
-            responses.append(self._perform_single(achall))
+            responses.append(mapping[achall.typ](achall))
         return responses
 
-    @classmethod
-    def _test_mode_busy_wait(cls, port):
-        while True:
-            time.sleep(1)
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            try:
-                sock.connect(("localhost", port))
-            except socket.error:  # pragma: no cover
-                pass
-            else:
-                break
-            finally:
-                sock.close()
+    def cleanup(self, achalls):
+        # pylint: disable=missing-docstring
+        for achall in achalls:
+            if isinstance(achall.chall, challenges.HTTP01):
+                self._cleanup_http01_challenge(achall)
 
-    def _perform_single(self, achall):
+    def _perform_http01_challenge(self, achall):
         # same path for each challenge response would be easier for
         # users, but will not work if multiple domains point at the
         # same server: default command doesn't support virtual hosts
@@ -161,7 +184,8 @@ s.serve_forever()" """
             logger.debug("Manual command running as PID %s.", self._httpd.pid)
             # give it some time to bootstrap, before we try to verify
             # (cert generation in case of simpleHttpS might take time)
-            self._test_mode_busy_wait(port)
+            busy_wait(port)
+
             if self._httpd.poll() is not None:
                 raise errors.Error("Couldn't execute manual command")
         else:
@@ -171,10 +195,14 @@ s.serve_forever()" """
                         cli_flag="--manual-public-ip-logging-ok"):
                     raise errors.PluginError("Must agree to IP logging to proceed")
 
-            self._notify_and_wait(self.MESSAGE_TEMPLATE.format(
-                validation=validation, response=response,
+            message = self._get_message(achall)
+
+            self._notify_and_wait(message.format(
+                validation=validation,
+                response=response,
                 uri=achall.chall.uri(achall.domain),
-                command=command))
+                command=command
+            ))
 
         if not response.simple_verify(
                 achall.chall, achall.domain,
@@ -183,15 +211,30 @@ s.serve_forever()" """
 
         return response
 
-    def _notify_and_wait(self, message):  # pylint: disable=no-self-use
-        # TODO: IDisplay wraps messages, breaking the command
-        #answer = zope.component.getUtility(interfaces.IDisplay).notification(
-        #    message=message, height=25, pause=True)
-        sys.stdout.write(message)
-        six.moves.input("Press ENTER to continue")
+    def _perform_dns01_challenge(self, achall):
+        response, validation = achall.response_and_validation()
+        if not self.conf("test-mode"):
+            if not self.conf("public-ip-logging-ok"):
+                if not zope.component.getUtility(interfaces.IDisplay).yesno(
+                        self.IP_DISCLAIMER, "Yes", "No",
+                        cli_flag="--manual-public-ip-logging-ok"):
+                    raise errors.PluginError("Must agree to IP logging to proceed")
 
-    def cleanup(self, achalls):
-        # pylint: disable=missing-docstring,no-self-use,unused-argument
+            message = self._get_message(achall)
+            formated_message = message.format(validation=validation,
+                                              response=response)
+
+            self._notify_and_wait(formated_message)
+
+        if not response.simple_verify(
+                achall.chall, achall.domain,
+                achall.account_key.public_key()):
+            logger.warning("Self-verify of challenge failed.")
+
+        return response
+
+    def _cleanup_http01_challenge(self, achall):
+        # pylint: disable=missing-docstring,unused-argument
         if self.conf("test-mode"):
             assert self._httpd is not None, (
                 "cleanup() must be called after perform()")
@@ -202,3 +245,14 @@ s.serve_forever()" """
                 logger.debug("Manual command process already terminated "
                              "with %s code", self._httpd.returncode)
             shutil.rmtree(self._root)
+
+    def _notify_and_wait(self, message):  # pylint: disable=no-self-use
+        # TODO: IDisplay wraps messages, breaking the command
+        #answer = zope.component.getUtility(interfaces.IDisplay).notification(
+        #    message=message, height=25, pause=True)
+        sys.stdout.write(message)
+        six.moves.input("Press ENTER to continue")
+
+    def _get_message(self, achall):
+        # pylint: disable=missing-docstring,no-self-use,unused-argument
+        return self.MESSAGE_TEMPLATE.get(achall.chall.typ, "")

@@ -1,5 +1,4 @@
 """Standalone Authenticator."""
-import argparse
 import collections
 import logging
 import socket
@@ -8,6 +7,8 @@ import threading
 import OpenSSL
 import six
 import zope.interface
+
+from functools import partial
 
 from acme import challenges
 from acme import standalone as acme_standalone
@@ -113,36 +114,6 @@ class ServerManager(object):
 SUPPORTED_CHALLENGES = [challenges.TLSSNI01, challenges.HTTP01]
 
 
-def supported_challenges_validator(data):
-    """Supported challenges validator for the `argparse`.
-
-    It should be passed as `type` argument to `add_argument`.
-
-    """
-    challs = data.split(",")
-
-    # tls-sni-01 was dvsni during private beta
-    if "dvsni" in challs:
-        logger.info("Updating legacy standalone_supported_challenges value")
-        challs = [challenges.TLSSNI01.typ if chall == "dvsni" else chall
-                  for chall in challs]
-        data = ",".join(challs)
-
-    unrecognized = [name for name in challs
-                    if name not in challenges.Challenge.TYPES]
-    if unrecognized:
-        raise argparse.ArgumentTypeError(
-            "Unrecognized challenges: {0}".format(", ".join(unrecognized)))
-
-    choices = set(chall.typ for chall in SUPPORTED_CHALLENGES)
-    if not set(challs).issubset(choices):
-        raise argparse.ArgumentTypeError(
-            "Plugin does not support the following (valid) "
-            "challenges: {0}".format(", ".join(set(challs) - choices)))
-
-    return data
-
-
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(common.Plugin):
@@ -176,9 +147,12 @@ class Authenticator(common.Plugin):
 
     @classmethod
     def add_parser_arguments(cls, add):
+        validator = partial(util.supported_challenges_validator,
+                            supported=SUPPORTED_CHALLENGES)
+
         add("supported-challenges",
             help="Supported challenges. Preferred in the order they are listed.",
-            type=supported_challenges_validator,
+            type=validator,
             default=",".join(chall.typ for chall in SUPPORTED_CHALLENGES))
 
     @property

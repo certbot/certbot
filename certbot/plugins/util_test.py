@@ -1,4 +1,5 @@
 """Tests for certbot.plugins.util."""
+import argparse
 import os
 import unittest
 import sys
@@ -180,6 +181,43 @@ class AlreadyListeningTestPsutil(unittest.TestCase):
         import psutil
         mock_net.side_effect = psutil.AccessDenied("")
         self.assertFalse(self._call(12345))
+
+
+class SupportedChallengesValidatorTest(unittest.TestCase):
+    """Tests for plugins.standalone.supported_challenges_validator."""
+
+    def _call(self, data):
+        from certbot.plugins.util import supported_challenges_validator
+        from acme import challenges
+
+        supported = [challenges.HTTP01, challenges.DNS01, challenges.TLSSNI01]
+
+        return supported_challenges_validator(data, supported=supported)
+
+    def test_correct(self):
+        self.assertEqual("tls-sni-01", self._call("tls-sni-01"))
+        self.assertEqual("http-01", self._call("http-01"))
+        self.assertEqual("tls-sni-01,http-01", self._call("tls-sni-01,http-01"))
+        self.assertEqual("http-01,tls-sni-01", self._call("http-01,tls-sni-01"))
+
+    def test_unrecognized(self):
+        from acme import challenges
+
+        assert "foo" not in challenges.Challenge.TYPES
+        self.assertRaises(argparse.ArgumentTypeError, self._call, "foo")
+
+    def test_not_subset(self):
+        self.assertRaises(argparse.ArgumentTypeError, self._call, "dns")
+
+    def test_dvsni(self):
+        self.assertEqual("tls-sni-01", self._call("dvsni"))
+        self.assertEqual("http-01,tls-sni-01", self._call("http-01,dvsni"))
+        self.assertEqual("tls-sni-01,http-01", self._call("dvsni,http-01"))
+
+    def test_dns01(self):
+        self.assertEqual("dns-01", self._call("dns-01"))
+        self.assertEqual("http-01,dns-01", self._call("http-01,dns-01"))
+        self.assertEqual("dns-01,http-01", self._call("dns-01,http-01"))
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
