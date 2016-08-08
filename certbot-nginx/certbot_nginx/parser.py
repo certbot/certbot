@@ -540,7 +540,7 @@ def _comment_directive(block, location):
     if isinstance(next_entry, list):
         if "Certbot" in next_entry[-1]:
             return
-        next_entry = next_entry.spaced[0]
+        next_entry = next_entry.spaced[0]  # pylint: disable=no-member
     block.insert(location + 1, COMMENT[:])
     if "\n" not in next_entry:
         block.insert(location + 2, '\n')
@@ -584,17 +584,3 @@ def _add_directive(block, directive, replace):
                 'tried to insert directive "{0}" but found '
                 'conflicting "{1}".'.format(directive, block[location]))
 
-
-def _comment_spaced_block(block):
-    """Adds a "managed by Certbot" comment to every directive."""
-    comment = " # managed by Certbot"
-    indent = 80 - len(comment)
-    for i, entry in enumerate(block):
-        if isinstance(entry, list):
-            line = "".join(entry)
-            line = "".join(c for c in line if c != "\n")
-            linelength = len(line)
-            extra = indent - linelength
-            if extra < 0:
-                extra = 0
-            block[i][-1] += extra * " " + comment

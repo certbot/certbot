@@ -219,6 +219,23 @@ class NginxParserTest(util.NginxTest):
             self.assertEqual(winner,
                              parser.get_best_match(target_name, names[i]))
 
+    def test_comment_directive(self):
+        # pylint: disable=protected-access
+        block = nginxparser.UnspacedList([
+            ["\n", "a", " ", "b", "\n"],
+            ["c", " ", "d"],
+            ["\n", "e", " ", "f"]])
+        from certbot_nginx.parser import _comment_directive, COMMENT
+        _comment_directive(block, 1)
+        _comment_directive(block, 0)
+        self.assertEqual(block.spaced, [
+            ["\n", "a", " ", "b", "\n"],
+            COMMENT,
+            "\n",
+            ["c", " ", "d"],
+            COMMENT,
+            ["\n", "e", " ", "f"]])
+
     def test_get_all_certs_keys(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
         filep = nparser.abs_path('sites-enabled/example.com')
