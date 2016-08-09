@@ -359,6 +359,15 @@ class OsInfoTest(unittest.TestCase):
         with mock.patch('os.path.isfile', return_value=False):
             self.assertEqual(get_systemd_os_info(), ("", ""))
 
+    def test_systemd_os_release_like(self):
+        from certbot.util import get_systemd_os_like
+
+        with mock.patch('os.path.isfile', return_value=True):
+            id_likes = get_systemd_os_like(test_util.vector_path(
+                "os-release"))
+            self.assertEqual(len(id_likes), 3)
+            self.assertTrue("debian" in id_likes)
+
     @mock.patch("certbot.util.subprocess.Popen")
     def test_non_systemd_os_info(self, popen_mock):
         from certbot.util import (get_os_info, get_python_os_info,
