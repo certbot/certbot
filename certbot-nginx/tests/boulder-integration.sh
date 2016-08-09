@@ -7,7 +7,7 @@ export PATH="/usr/sbin:$PATH"  # /usr/sbin/nginx
 nginx_root="$root/nginx"
 mkdir $nginx_root
 root="$nginx_root" ./certbot-nginx/tests/boulder-integration.conf.sh > $nginx_root/nginx.conf
-cp certbot-nginx/certbot_nginx/options-ssl-nginx.conf $nginx_root
+cp certbot-nginx/certbot_nginx/options-ssl-nginx.conf "$root"/conf
 
 killall nginx || true
 nginx -c $nginx_root/nginx.conf
