@@ -128,6 +128,7 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_get_bad_path(self):
         from certbot_apache.configurator import get_file_path
         self.assertEqual(get_file_path(None), None)
+        self.assertEqual(self.config._create_vhost("nonexistent"), None)
 
     def test_bad_servername_alias(self):
         ssl_vh1 = obj.VirtualHost(
