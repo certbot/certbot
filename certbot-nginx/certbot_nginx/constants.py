@@ -22,4 +22,4 @@ def os_constant(key):
     #           based on what OS we are running under.  To see an
     #           approach to how to handle different OSes, see the
     #           apache version of this file.
-    return CLI_DEFAULTS
+    return CLI_DEFAULTS[key]
