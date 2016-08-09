@@ -125,6 +125,10 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertTrue("google.com" in names)
         self.assertTrue("certbot.demo" in names)
 
+    def test_get_bad_path(self):
+        from certbot_apache.configurator import get_file_path
+        self.assertEqual(get_file_path(None), None)
+
     def test_bad_servername_alias(self):
         ssl_vh1 = obj.VirtualHost(
             "fp1", "ap1", set([obj.Addr(("*", "443"))]),

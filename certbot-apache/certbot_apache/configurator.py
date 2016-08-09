@@ -538,6 +538,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 is_ssl = True
 
         filename = get_file_path(self.aug.get("/augeas/files%s/path" % get_file_path(path)))
+        if filename is None:
+            return None
+
         if self.conf("handle-sites"):
             is_enabled = self.is_site_enabled(filename)
         else:
@@ -1802,7 +1805,10 @@ def get_file_path(vhost_path):
 
     """
     # Strip off /files/
-    avail_fp = vhost_path[7:].split("/")
+    try:
+        avail_fp = vhost_path[7:].split("/")
+    except TypeError:
+        return None
     last_good = ""
     # Loop through the path parts and validate after every addition
     for p in avail_fp:
