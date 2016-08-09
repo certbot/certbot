@@ -341,7 +341,7 @@ class NginxConfigurator(common.Plugin):
         options_subblock = self.parser.loc["ssl_options"]
         # the options file doesn't have a newline at the beginning, but there
         # needs to be one when it's dropped into the file
-        if "\n" not in options_subblock[0]:
+        if options_subblock and "\n" not in options_subblock[0]:
             options_subblock[0].insert(0, "\n")
         ssl_block = (
             [['\n    ', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
