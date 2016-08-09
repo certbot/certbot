@@ -75,12 +75,13 @@ class Proxy(configurators_common.Proxy):
         for k in constants.CLI_DEFAULTS.keys():
             setattr(self.le_config, "nginx_" + k, constants.os_constant(k))
 
-        # An alias
-        self.le_config.nginx_handle_modules = self.le_config.nginx_handle_mods
+        # This does not appear to exist in nginx (yet?)
+        # self.le_config.nginx_handle_modules = self.le_config.nginx_handle_mods
 
+        conf=configuration.NamespaceConfig(self.le_config)
+        zope.component.provideUtility(conf)
         self._nginx_configurator = configurator.NginxConfigurator(
-            config=configuration.NamespaceConfig(self.le_config),
-            name="nginx")
+            config=conf, name="nginx")
         self._nginx_configurator.prepare()
 
     def cleanup_from_tests(self):
@@ -118,7 +119,7 @@ def _get_server_root(config):
         if os.path.isdir(os.path.join(config, name))]
 
     if len(subdirs) != 1:
-        errors.Error("Malformed configuration directory {0}".format(config))
+        raise errors.Error("Malformed configuration directory {0}".format(config))
 
     return os.path.join(config, subdirs[0].rstrip())
 
