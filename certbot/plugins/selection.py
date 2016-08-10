@@ -84,7 +84,7 @@ def pick_plugin(config, default, plugins, question, ifaces):
         else:
             return plugin_ep.init()
     elif len(prepared) == 1:
-        plugin_ep = prepared.values()[0]
+        plugin_ep = list(prepared.values())[0]
         logger.debug("Single candidate plugin: %s", plugin_ep)
         if plugin_ep.misconfigured:
             return None

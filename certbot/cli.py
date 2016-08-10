@@ -343,8 +343,10 @@ class HelpfulArgumentParser(object):
         self.determine_verb()
         help1 = self.prescan_for_flag("-h", self.help_topics)
         help2 = self.prescan_for_flag("--help", self.help_topics)
-        assert max(True, "a") == "a", "Gravity changed direction"
-        self.help_arg = max(help1, help2)
+        if isinstance(help1, bool) and isinstance(help2, bool):
+            self.help_arg = help1 or help2
+        else:
+            self.help_arg = help1 if isinstance(help1, str) else help2
         if self.help_arg is True:
             # just --help with no topic; avoid argparse altogether
             print(usage)
