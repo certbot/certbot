@@ -1,8 +1,6 @@
 FROM debian:jessie
 MAINTAINER Brad Warren <bmw@eff.org>
 
-WORKDIR /opt/certbot
-
 # no need to mkdir anything:
 # https://docs.docker.com/reference/builder/#copy
 # If <dest> doesn't exist, it is created along with all missing
@@ -47,5 +45,7 @@ RUN virtualenv --no-site-packages -p python2 /opt/certbot/venv && \
 # "rm -rf /opt/certbot/src" (it's stays in the underlaying image);
 # this might also help in debugging: you can "docker run --entrypoint
 # bash" and investigate, apply patches, etc.
+
+WORKDIR /opt/certbot/src/certbot-compatibility-test/certbot_compatibility_test/testdata
 
 ENV PATH /opt/certbot/venv/bin:$PATH
