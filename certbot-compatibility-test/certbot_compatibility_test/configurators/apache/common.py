@@ -58,7 +58,7 @@ class Proxy(configurators_common.Proxy):
         self._prepare_configurator()
 
         try:
-            subprocess.check_call("apachectl -k start".split())
+            subprocess.check_call("apachectl -k restart".split())
         except errors.Error:
             raise errors.Error(
                 "Apache failed to load {0} before tests started".format(

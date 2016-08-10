@@ -62,7 +62,7 @@ class Proxy(configurators_common.Proxy):
         self._prepare_configurator()
 
         try:
-            subprocess.check_call("nginx".split())
+            subprocess.check_call("service nginx reload".split())
         except errors.Error:
             raise errors.Error(
                 "Nginx failed to load {0} before tests started".format(
