@@ -47,7 +47,7 @@ matrix:
         - sudo cat /var/log/mysql/error.log
         - ps aux | grep mysql
     - python: "2.7"
-      env: TOXENV=lint
+      env: TOXENV=lint,urlcheck
     - sudo: required
       env: TOXENV=le_auto
       services: docker
