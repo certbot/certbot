@@ -1806,9 +1806,14 @@ def get_file_path(vhost_path):
     """
     # Strip off /files/
     try:
-        avail_fp = vhost_path[7:].split("/")
-    except TypeError:
+        if vhost_path.startswith("/files/"):
+            avail_fp = vhost_path[7:].split("/")
+        else:
+            return None
+    except AttributeError:
+        # If we recieved a None path
         return None
+
     last_good = ""
     # Loop through the path parts and validate after every addition
     for p in avail_fp:
