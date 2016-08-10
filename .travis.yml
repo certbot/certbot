@@ -35,6 +35,8 @@ matrix:
       env: TOXENV=apacheconftest
       sudo: required
     - python: "2.7"
+      env: TOXENV=nginxroundtrip
+    - python: "2.7"
       env: TOXENV=py27 BOULDER_INTEGRATION=1
       sudo: true
       after_failure:
@@ -50,6 +52,16 @@ matrix:
       env: TOXENV=lint
     - sudo: required
       env: TOXENV=le_auto
+      services: docker
+      before_install:
+      addons:
+    - sudo: required
+      env: TOXENV=apache_compat
+      services: docker
+      before_install:
+      addons:
+    - sudo: required
+      env: TOXENV=nginx_compat
       services: docker
       before_install:
       addons:
