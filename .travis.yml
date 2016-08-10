@@ -7,6 +7,8 @@ cache:
 # This makes sure we get a host with docker-compose present.
 dist: trusty
 
+services: docker
+
 before_install:
   - 'dpkg -s libaugeas0'
 
@@ -22,14 +24,12 @@ matrix:
     - python: "2.6"
       env: TOXENV=py26 BOULDER_INTEGRATION=1
       sudo: true
-      services: docker
       after_failure:
         - sudo cat /var/log/mysql/error.log
         - ps aux | grep mysql
     - python: "2.6"
       env: TOXENV=py26-oldest BOULDER_INTEGRATION=1
       sudo: true
-      services: docker
       after_failure:
         - sudo cat /var/log/mysql/error.log
         - ps aux | grep mysql
@@ -39,14 +39,12 @@ matrix:
     - python: "2.7"
       env: TOXENV=py27 BOULDER_INTEGRATION=1
       sudo: true
-      services: docker
       after_failure:
         - sudo cat /var/log/mysql/error.log
         - ps aux | grep mysql
     - python: "2.7"
       env: TOXENV=py27-oldest BOULDER_INTEGRATION=1
       sudo: true
-      services: docker
       after_failure:
         - sudo cat /var/log/mysql/error.log
         - ps aux | grep mysql
@@ -54,7 +52,6 @@ matrix:
       env: TOXENV=lint
     - sudo: required
       env: TOXENV=le_auto
-      services: docker
       before_install:
       addons:
     - python: "2.7"
