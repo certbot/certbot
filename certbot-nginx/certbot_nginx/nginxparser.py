@@ -23,11 +23,21 @@ class RawNginxParser(object):
     right_bracket = space.leaveWhitespace() + Literal("}").suppress()
     semicolon = Literal(";").suppress()
     key = Word(alphanums + "_/+-.")
-    dollar_var = Combine(Literal('$') + nonspace)
+    dollar_var = Combine(Literal('$') + Regex(r"[^\{\};,\s]+"))
     condition = Regex(r"\(.+\)")
-    # Matches anything that is not a special character AND any chars in single
-    # or double quotes
-    value = Regex(r"((\".*\")?(\'.*\')?[^\{\};,]?)+")
+    # Matches anything that is not a special character, and ${SHELL_VARS}, AND
+    # any chars in single or double quotes
+    # All of these COULD be upgraded to something like
+    # https://stackoverflow.com/a/16130746
+    dquoted = Regex(r'(\".*\")')
+    squoted = Regex(r"(\'.*\')")
+    nonspecial = Regex(r"[^\{\};,]")
+    varsub = Regex(r"(\$\{\w+\})")
+    # nonspecial nibbles one character at a time, but the other objects take
+    # precedence.  We use ZeroOrMore to allow entries like "break ;" to be
+    # parsed as assignments
+    value = Combine(ZeroOrMore(dquoted | squoted | varsub | nonspecial))
+
     location = CharsNotIn("{};," + string.whitespace)
     # modifier for location uri [ = | ~ | ~* | ^~ ]
     modifier = Literal("=") | Literal("~*") | Literal("~") | Literal("^~")
@@ -38,20 +48,40 @@ class RawNginxParser(object):
     assignment = space + key + Optional(space + value, default=None) + semicolon
     location_statement = space + Optional(modifier) + Optional(space + location + space)
     if_statement = space + Literal("if") + space + condition + space
-    map_statement = space + Literal("map") + space + nonspace + space + dollar_var + space
-    block = Forward()
+    charset_map_statement = space + Literal("charset_map") + space + value + space + value
 
-    block << Group(
-        # key could for instance be "server" or "http", or "location" (in which case
-        # location_statement needs to have a non-empty location)
-        (Group(space + key + location_statement) ^ Group(if_statement) ^
-        Group(map_statement)).leaveWhitespace() +
+    map_statement = space + Literal("map") + space + nonspace + space + dollar_var + space
+    # This is NOT an accurate way to parse nginx map entries; it's almost
+    # certianly too permissive and may be wrong in other ways, but it should
+    # preserve things correctly in mmmmost or all cases.
+    #
+    #    - I can neither prove nor disprove that it is corect wrt all escaped
+    #      semicolon situations
+    # Addresses https://github.com/fatiherikli/nginxparser/issues/19
+    map_pattern = Regex(r'".*"') | Regex(r"'.*'") | nonspace
+    map_entry = space + map_pattern + space + value + space + semicolon
+    map_block = Group(
+        Group(map_statement).leaveWhitespace() +
         left_bracket +
-        Group(ZeroOrMore(Group(comment | assignment) | block) + space).leaveWhitespace() +
+        Group(ZeroOrMore(Group(comment | map_entry)) + space).leaveWhitespace() +
         right_bracket)
 
-    script = OneOrMore(Group(comment | assignment) ^ block) + space + stringEnd
-    script.parseWithTabs()
+    block = Forward()
+
+    # key could for instance be "server" or "http", or "location" (in which case
+    # location_statement needs to have a non-empty location)
+
+    block_begin = (Group(space + key + location_statement) ^
+                   Group(if_statement) ^
+                   Group(charset_map_statement)).leaveWhitespace()
+
+    block_innards = Group(ZeroOrMore(Group(comment | assignment) | block | map_block)
+                          + space).leaveWhitespace()
+
+    block << Group(block_begin + left_bracket + block_innards + right_bracket)
+
+    script = OneOrMore(Group(comment | assignment) ^ block ^ map_block) + space + stringEnd
+    script.parseWithTabs().leaveWhitespace()
 
     def __init__(self, source):
         self.source = source

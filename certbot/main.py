@@ -2,7 +2,6 @@
 from __future__ import print_function
 import atexit
 import dialog
-import errno
 import functools
 import logging.handlers
 import os
@@ -35,6 +34,13 @@ from certbot import storage
 from certbot.display import util as display_util, ops as display_ops
 from certbot.plugins import disco as plugins_disco
 from certbot.plugins import selection as plug_sel
+
+
+_PERM_ERR_FMT = os.linesep.join((
+    "The following error was encountered:", "{0}",
+    "If running as non-root, set --config-dir, "
+    "--logs-dir, and --work-dir to writeable paths."))
+
 
 logger = logging.getLogger(__name__)
 
@@ -596,13 +602,8 @@ def setup_log_file_handler(config, logfile, fmt):
     try:
         handler = logging.handlers.RotatingFileHandler(
             log_file_path, maxBytes=2 ** 20, backupCount=10)
-    except IOError as e:
-        if e.errno == errno.EACCES:
-            msg = ("Access denied writing to {0}. To run as non-root, set " +
-                "--logs-dir, --config-dir, --work-dir to writable paths.")
-            raise errors.Error(msg.format(log_file_path))
-        else:
-            raise
+    except IOError as error:
+        raise errors.Error(_PERM_ERR_FMT.format(error))
     # rotate on each invocation, rollover only possible when maxBytes
     # is nonzero and backupCount is nonzero, so we set maxBytes as big
     # as possible not to overrun in single CLI invocation (1MB).
@@ -702,6 +703,23 @@ def _handle_exception(exc_type, exc_value, trace, config):
             traceback.format_exception(exc_type, exc_value, trace)))
 
 
+def make_or_verify_core_dir(directory, mode, uid, strict):
+    """Make sure directory exists with proper permissions.
+
+    :param str directory: Path to a directory.
+    :param int mode: Directory mode.
+    :param int uid: Directory owner.
+    :param bool strict: require directory to be owned by current user
+
+    :raises .errors.Error: if the directory cannot be made or verified
+
+    """
+    try:
+        util.make_or_verify_dir(directory, mode, uid, strict)
+    except OSError as error:
+        raise errors.Error(_PERM_ERR_FMT.format(error))
+
+
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     sys.excepthook = functools.partial(_handle_exception, config=None)
@@ -712,16 +730,16 @@ def main(cli_args=sys.argv[1:]):
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
 
-    # Setup logging ASAP, otherwise "No handlers could be found for
-    # logger ..." TODO: this should be done before plugins discovery
-    for directory in config.config_dir, config.work_dir:
-        util.make_or_verify_dir(
-            directory, constants.CONFIG_DIRS_MODE, os.geteuid(),
-            "--strict-permissions" in cli_args)
+    make_or_verify_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
+                            os.geteuid(), config.strict_permissions)
+    make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
+                            os.geteuid(), config.strict_permissions)
     # TODO: logs might contain sensitive data such as contents of the
     # private key! #525
-    util.make_or_verify_dir(
-        config.logs_dir, 0o700, os.geteuid(), "--strict-permissions" in cli_args)
+    make_or_verify_core_dir(config.logs_dir, 0o700,
+                            os.geteuid(), config.strict_permissions)
+    # Setup logging ASAP, otherwise "No handlers could be found for
+    # logger ..." TODO: this should be done before plugins discovery
     setup_logging(config, _cli_log_handler, logfile='letsencrypt.log')
     cli.possible_deprecation_warning(config)
 
@@ -755,5 +773,5 @@ def main(cli_args=sys.argv[1:]):
 if __name__ == "__main__":
     err_string = main()
     if err_string:
-        logger.warn("Exiting with message %s", err_string)
+        logger.warning("Exiting with message %s", err_string)
     sys.exit(err_string)  # pragma: no cover

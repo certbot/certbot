@@ -1,0 +1,33 @@
+upstream django_server_random31057.example.org {
+    server unix:/srv/http/random22194/acceptance/website.sock;
+}
+
+server {
+    listen 80;
+    server_name random31057.example.org www.random31057.example.org;
+
+    if ($host != 'random31057.example.org') {
+        rewrite  ^/(.*)$  http://random31057.example.org/$1  permanent;
+    }
+    
+    location /media/ {
+        alias /srv/http/random22194/acceptance/dynamic/public/;
+        expires 7d;
+        include upload_folder_security_params;
+    }
+    location /static/ {
+        alias /srv/http/random22194/acceptance/static_collected/;
+        expires 7d;
+    }
+
+    location / {
+        proxy_pass http://django_server_random31057.example.org;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_read_timeout 120;
+    }
+
+    access_log /var/log/nginx/random22194/acceptance/access.log combined_plus;
+    error_log  /var/log/nginx/random22194/acceptance/error.log;
+}

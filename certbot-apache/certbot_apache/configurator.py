@@ -18,6 +18,7 @@ from certbot import interfaces
 from certbot import util
 
 from certbot.plugins import common
+from certbot.plugins.util import path_surgery
 
 from certbot_apache import augeas_configurator
 from certbot_apache import constants
@@ -141,6 +142,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return os.path.join(self.config.config_dir,
                             constants.MOD_SSL_CONF_DEST)
 
+
     def prepare(self):
         """Prepare the authenticator/installer.
 
@@ -157,8 +159,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise errors.NoInstallationError("Problem in Augeas installation")
 
         # Verify Apache is installed
-        if not util.exe_exists(constants.os_constant("restart_cmd")[0]):
-            raise errors.NoInstallationError
+        restart_cmd = constants.os_constant("restart_cmd")[0]
+        if not util.exe_exists(restart_cmd):
+            if not path_surgery(restart_cmd):
+                raise errors.NoInstallationError(
+                    'Cannot find Apache control command {0}'.format(restart_cmd))
 
         # Make sure configuration is valid
         self.config_test()
@@ -239,7 +244,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         if not path["cert_path"] or not path["cert_key"]:
             # Throw some can't find all of the directives error"
-            logger.warn(
+            logger.warning(
                 "Cannot find a cert or key directive in %s. "
                 "VirtualHost was not modified", vhost.path)
             # Presumably break here so that the virtualhost is not modified
@@ -514,7 +519,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         addrs = set()
-        args = self.aug.match(path + "/arg")
+        try:
+            args = self.aug.match(path + "/arg")
+        except RuntimeError:
+            logger.warning("Encountered a problem while parsing file: %s, skipping", path)
+            return None
         for arg in args:
             addrs.add(obj.Addr.fromstring(self.parser.get_arg(arg)))
         is_ssl = False
@@ -528,7 +537,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if addr.get_port() == "443":
                 is_ssl = True
 
-        filename = get_file_path(path)
+        filename = get_file_path(self.aug.get("/augeas/files%s/path" % get_file_path(path)))
         if self.conf("handle-sites"):
             is_enabled = self.is_site_enabled(filename)
         else:
@@ -562,6 +571,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                      os.path.basename(path) == "VirtualHost"]
             for path in paths:
                 new_vhost = self._create_vhost(path)
+                if not new_vhost:
+                    continue
                 realpath = os.path.realpath(new_vhost.filep)
                 if realpath not in vhost_paths.keys():
                     vhs.append(new_vhost)
@@ -775,7 +786,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.aug.load()
         # Get Vhost augeas path for new vhost
         vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
-                              (ssl_fp, parser.case_i("VirtualHost")))
+                              (self._escape(ssl_fp), parser.case_i("VirtualHost")))
         if len(vh_p) != 1:
             logger.error("Error: should only be one vhost in %s", avail_fp)
             raise errors.PluginError("Currently, we only support "
@@ -819,7 +830,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         else:
             return non_ssl_vh_fp + self.conf("le_vhost_ext")
 
-    def _sift_line(self, line):
+    def _sift_rewrite_rule(self, line):
         """Decides whether a line should be copied to a SSL vhost.
 
         A canonical example of when sifting a line is required:
@@ -870,18 +881,62 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             with open(avail_fp, "r") as orig_file:
                 with open(ssl_fp, "w") as new_file:
                     new_file.write("<IfModule mod_ssl.c>\n")
+
+                    comment = ("# Some rewrite rules in this file were "
+                              "disabled on your HTTPS site,\n"
+                              "# because they have the potential to create "
+                              "redirection loops.\n")
+
                     for line in orig_file:
-                        if self._sift_line(line):
+                        A = line.lstrip().startswith("RewriteCond")
+                        B = line.lstrip().startswith("RewriteRule")
+
+                        if not (A or B):
+                            new_file.write(line)
+                            continue
+
+                        # A RewriteRule that doesn't need filtering
+                        if B and not self._sift_rewrite_rule(line):
+                            new_file.write(line)
+                            continue
+
+                        # A RewriteRule that does need filtering
+                        if B and self._sift_rewrite_rule(line):
                             if not sift:
-                                new_file.write(
-                                    "# Some rewrite rules in this file were "
-                                    "were disabled on your HTTPS site,\n"
-                                    "# because they have the potential to "
-                                    "create redirection loops.\n")
+                                new_file.write(comment)
                                 sift = True
                             new_file.write("# " + line)
-                        else:
-                            new_file.write(line)
+                            continue
+
+                        # We save RewriteCond(s) and their corresponding
+                        # RewriteRule in 'chunk'.
+                        # We then decide whether we comment out the entire
+                        # chunk based on its RewriteRule.
+                        chunk = []
+                        if A:
+                            chunk.append(line)
+                            line = next(orig_file)
+
+                            # RewriteCond(s) must be followed by one RewriteRule
+                            while not line.lstrip().startswith("RewriteRule"):
+                                chunk.append(line)
+                                line = next(orig_file)
+
+                            # Now, current line must start with a RewriteRule
+                            chunk.append(line)
+
+                            if self._sift_rewrite_rule(line):
+                                if not sift:
+                                    new_file.write(comment)
+                                    sift = True
+
+                                new_file.write(''.join(
+                                    ['# ' + l for l in chunk]))
+                                continue
+                            else:
+                                new_file.write(''.join(chunk))
+                                continue
+
                     new_file.write("</IfModule>\n")
         except IOError:
             logger.fatal("Error writing/reading to file in make_vhost_ssl")
@@ -941,7 +996,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.parser.add_dir(vh_path, "Include", self.mod_ssl_conf)
 
     def _add_servername_alias(self, target_name, vhost):
-        fp = vhost.filep
+        fp = self._escape(vhost.filep)
         vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
                               (fp, parser.case_i("VirtualHost")))
         if not vh_p:
@@ -994,6 +1049,17 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if need_to_save:
             self.save()
 
+    def _escape(self, fp):
+        fp = fp.replace(",", "\\,")
+        fp = fp.replace("[", "\\[")
+        fp = fp.replace("]", "\\]")
+        fp = fp.replace("|", "\\|")
+        fp = fp.replace("=", "\\=")
+        fp = fp.replace("(", "\\(")
+        fp = fp.replace(")", "\\)")
+        fp = fp.replace("!", "\\!")
+        return fp
+
     ######################################################################
     # Enhancements
     ######################################################################
@@ -1023,7 +1089,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         try:
             func(self.choose_vhost(domain), options)
         except errors.PluginError:
-            logger.warn("Failed %s for %s", enhancement, domain)
+            logger.warning("Failed %s for %s", enhancement, domain)
             raise
 
     def _enable_ocsp_stapling(self, ssl_vhost, unused_options):
@@ -1066,7 +1132,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if not use_stapling_aug_path:
             self.parser.add_dir(ssl_vhost.path, "SSLUseStapling", "on")
 
-        ssl_vhost_aug_path = parser.get_aug_path(ssl_vhost.filep)
+        ssl_vhost_aug_path = self._escape(parser.get_aug_path(ssl_vhost.filep))
 
         # Check if there's an existing SSLStaplingCache directive.
         stapling_cache_aug_path = self.parser.find_dir('SSLStaplingCache',
@@ -1210,9 +1276,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # but redirect loops are possible in very obscure cases; see #1620
             # for reasoning.
             if self._is_rewrite_exists(general_vh):
-                logger.warn("Added an HTTP->HTTPS rewrite in addition to "
-                            "other RewriteRules; you may wish to check for "
-                            "overall consistency.")
+                logger.warning("Added an HTTP->HTTPS rewrite in addition to "
+                               "other RewriteRules; you may wish to check for "
+                               "overall consistency.")
 
             # Add directives to server
             # Note: These are not immediately searchable in sites-enabled
@@ -1323,7 +1389,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         self.aug.load()
         # Make a new vhost data structure and add it to the lists
-        new_vhost = self._create_vhost(parser.get_aug_path(redirect_filepath))
+        new_vhost = self._create_vhost(parser.get_aug_path(self._escape(redirect_filepath)))
         self.vhosts.append(new_vhost)
         self._enhanced_vhosts["redirect"].add(new_vhost)
 

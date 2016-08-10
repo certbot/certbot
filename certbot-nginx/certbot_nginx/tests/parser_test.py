@@ -117,9 +117,9 @@ class NginxParserTest(util.NginxTest):
         fooconf = [x for x in vhosts if 'foo.conf' in x.filep][0]
         self.assertEqual(vhost5, fooconf)
         localhost = [x for x in vhosts if 'localhost' in x.names][0]
-        self.assertEquals(vhost1, localhost)
+        self.assertEqual(vhost1, localhost)
         somename = [x for x in vhosts if 'somename' in x.names][0]
-        self.assertEquals(vhost2, somename)
+        self.assertEqual(vhost2, somename)
 
     def test_add_server_directives(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)

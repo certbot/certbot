@@ -84,7 +84,7 @@ def pick_plugin(config, default, plugins, question, ifaces):
         else:
             return plugin_ep.init()
     elif len(prepared) == 1:
-        plugin_ep = prepared.values()[0]
+        plugin_ep = list(prepared.values())[0]
         logger.debug("Single candidate plugin: %s", plugin_ep)
         if plugin_ep.misconfigured:
             return None
@@ -174,7 +174,7 @@ def choose_configurator_plugins(config, plugins, verb):
     if verb == "install":
         need_inst = True
         if config.authenticator:
-            logger.warn("Specifying an authenticator doesn't make sense in install mode")
+            logger.warning("Specifying an authenticator doesn't make sense in install mode")
 
     # Try to meet the user's request and/or ask them to pick plugins
     authenticator = installer = None
@@ -260,14 +260,9 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
                    "your existing configuration.\nThe error was: {1!r}"
                    .format(requested, plugins[requested].problem))
     elif cfg_type == "installer":
-        if os.path.exists("/etc/debian_version"):
-            # Debian... installers are at least possible
-            msg = ('No installers seem to be present and working on your system; '
-                   'fix that or try running certbot with the "certonly" command')
-        else:
-            # XXX update this logic as we make progress on #788 and nginx support
-            msg = ('No installers are available on your OS yet; try running '
-                   '"letsencrypt-auto certonly" to get a cert you can install manually')
+        msg = ('No installer plugins seem to be present and working on your system; '
+               'fix that or try running certbot with the "certonly" command to obtain'
+               ' a certificate you can install manually')
     else:
         msg = "{0} could not be determined or is not installed".format(cfg_type)
     raise errors.PluginSelectionError(msg)

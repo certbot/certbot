@@ -134,8 +134,8 @@ class TestRawNginxParser(unittest.TestCase):
             parsed_new = load(handle)
         try:
             self.maxDiff = None
-            self.assertEquals(parsed[0], parsed_new[0])
-            self.assertEquals(parsed[1:], parsed_new[1:])
+            self.assertEqual(parsed[0], parsed_new[0])
+            self.assertEqual(parsed[1:], parsed_new[1:])
         finally:
             os.unlink(util.get_data_filename('nginx.new.conf'))
 
@@ -150,7 +150,7 @@ class TestRawNginxParser(unittest.TestCase):
             parsed_new = load(handle)
 
         try:
-            self.assertEquals(parsed, parsed_new)
+            self.assertEqual(parsed, parsed_new)
 
             self.assertEqual(parsed_new, [
                 ['#', " Use bar.conf when it's a full moon!"],
