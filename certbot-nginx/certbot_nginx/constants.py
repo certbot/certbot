@@ -21,5 +21,12 @@ def os_constant(key):
     # XXX TODO: In the future, this could return different constants
     #           based on what OS we are running under.  To see an
     #           approach to how to handle different OSes, see the
-    #           apache version of this file.
+    #           apache version of this file.  Currently, we do not
+    #           actually have any OS-specific constants on Nginx.
+    """
+    Get a constant value for operating system
+
+    :param key: name of cli constant
+    :return: value of constant for active os
+    """
     return CLI_DEFAULTS[key]
