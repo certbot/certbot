@@ -27,30 +27,18 @@ class Proxy(configurators_common.Proxy):
         self.le_config.apache_le_vhost_ext = "-le-ssl.conf"
 
         self.modules = self.server_root = self.test_conf = self.version = None
-        self._apache_configurator = self._all_names = self._test_names = None
         patch = mock.patch(
             "certbot_apache.configurator.display_ops.select_vhost")
         mock_display = patch.start()
         mock_display.side_effect = le_errors.PluginError(
             "Unable to determine vhost")
 
-    def __getattr__(self, name):
-        """Wraps the Apache Configurator methods"""
-        method = getattr(self._apache_configurator, name, None)
-        if callable(method):
-            return method
-        else:
-            raise AttributeError()
-
     def load_config(self):
         """Loads the next configuration for the plugin to test"""
-
         config = super(Proxy, self).load_config()
         self._all_names, self._test_names = _get_names(config)
 
         server_root = _get_server_root(config)
-        # with open(os.path.join(config, "config_file")) as f:
-        #    config_file = os.path.join(server_root, f.readline().rstrip())
         shutil.rmtree("/etc/apache2")
         shutil.copytree(server_root, "/etc/apache2", symlinks=True)
 
@@ -73,37 +61,15 @@ class Proxy(configurators_common.Proxy):
         # An alias
         self.le_config.apache_handle_modules = self.le_config.apache_handle_mods
 
-        self._apache_configurator = configurator.ApacheConfigurator(
+        self._configurator = configurator.ApacheConfigurator(
             config=configuration.NamespaceConfig(self.le_config),
             name="apache")
-        self._apache_configurator.prepare()
+        self._configurator.prepare()
 
     def cleanup_from_tests(self):
         """Performs any necessary cleanup from running plugin tests"""
         super(Proxy, self).cleanup_from_tests()
         mock.patch.stopall()
-
-    def get_all_names_answer(self):
-        """Returns the set of domain names that the plugin should find"""
-        if self._all_names:
-            return self._all_names
-        else:
-            raise errors.Error("No configuration file loaded")
-
-    def get_testable_domain_names(self):
-        """Returns the set of domain names that can be tested against"""
-        if self._test_names:
-            return self._test_names
-        else:
-            return {"example.com"}
-
-    def deploy_cert(self, domain, cert_path, key_path, chain_path=None,
-                    fullchain_path=None):
-        """Installs cert"""
-        cert_path, key_path, chain_path = self.copy_certs_and_keys(
-            cert_path, key_path, chain_path)
-        self._apache_configurator.deploy_cert(
-            domain, cert_path, key_path, chain_path, fullchain_path)
 
 
 def _get_server_root(config):
