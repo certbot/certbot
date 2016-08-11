@@ -538,6 +538,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 is_ssl = True
 
         filename = get_file_path(self.aug.get("/augeas/files%s/path" % get_file_path(path)))
+        if filename is None:
+            return None
+
         if self.conf("handle-sites"):
             is_enabled = self.is_site_enabled(filename)
         else:
@@ -1801,25 +1804,25 @@ def get_file_path(vhost_path):
     :rtype: str
 
     """
-    # Strip off /files
-    avail_fp = vhost_path[6:]
-    # This can be optimized...
-    while True:
-        # Cast all to lowercase to be case insensitive
-        find_if = avail_fp.lower().find("/ifmodule")
-        if find_if != -1:
-            avail_fp = avail_fp[:find_if]
-            continue
-        find_vh = avail_fp.lower().find("/virtualhost")
-        if find_vh != -1:
-            avail_fp = avail_fp[:find_vh]
-            continue
-        find_macro = avail_fp.lower().find("/macro")
-        if find_macro != -1:
-            avail_fp = avail_fp[:find_macro]
-            continue
-        break
-    return avail_fp
+    # Strip off /files/
+    try:
+        if vhost_path.startswith("/files/"):
+            avail_fp = vhost_path[7:].split("/")
+        else:
+            return None
+    except AttributeError:
+        # If we recieved a None path
+        return None
+
+    last_good = ""
+    # Loop through the path parts and validate after every addition
+    for p in avail_fp:
+        cur_path = last_good+"/"+p
+        if os.path.exists(cur_path):
+            last_good = cur_path
+        else:
+            break
+    return last_good
 
 
 def install_ssl_options_conf(options_ssl):

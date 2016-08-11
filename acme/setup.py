@@ -35,6 +35,11 @@ if sys.version_info < (2, 7):
 else:
     install_requires.append('mock')
 
+# dnspython 1.12 is required to support both Python 2 and Python 3.
+dns_extras = [
+    'dnspython>=1.12',
+]
+
 dev_extras = [
     'nose',
     'pep8',
@@ -76,6 +81,7 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     extras_require={
+        'dns': dns_extras,
         'dev': dev_extras,
         'docs': docs_extras,
     },

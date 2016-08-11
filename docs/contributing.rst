@@ -6,9 +6,9 @@ Developer Guide
    :local:
 
 
-.. _hacking:
+.. _getting_started:
 
-Hacking
+Getting Started
 =======
 
 Running a local copy of the client
