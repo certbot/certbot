@@ -1,1 +1,1 @@
-"""Certbot compatibility test Apache configurators"""
+"""Certbot compatibility test Nginx configurators"""

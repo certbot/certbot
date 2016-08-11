@@ -1,5 +1,4 @@
 """Provides a common base for Apache proxies"""
-import re
 import os
 import shutil
 import subprocess

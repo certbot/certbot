@@ -1,5 +1,4 @@
-"""Provides a common base for Apache proxies"""
-import re
+"""Provides a common base for Nginx proxies"""
 import os
 import shutil
 import subprocess
@@ -78,7 +77,7 @@ class Proxy(configurators_common.Proxy):
         # This does not appear to exist in nginx (yet?)
         # self.le_config.nginx_handle_modules = self.le_config.nginx_handle_mods
 
-        conf=configuration.NamespaceConfig(self.le_config)
+        conf = configuration.NamespaceConfig(self.le_config)
         zope.component.provideUtility(conf)
         self._nginx_configurator = configurator.NginxConfigurator(
             config=conf, name="nginx")
@@ -132,6 +131,7 @@ def _get_names(config):
             for line in open(os.path.join(root, this_file)):
                 if line.strip().startswith("server_name"):
                     names = line.partition("server_name")[2].rpartition(";")[0]
-                    [all_names.add(n) for n in names.split()]
+                    for n in names.split():
+                        all_names.add(n)
     non_ip_names = set(n for n in all_names if not util.IP_REGEX.match(n))
     return all_names, non_ip_names
