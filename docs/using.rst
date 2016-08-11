@@ -491,13 +491,19 @@ repo, if you have not already done so. Then run:
 
 .. code-block:: shell
 
-   sudo apt-get install letsencrypt python-letsencrypt-apache -t jessie-backports
+   sudo apt-get install certbot python-certbot-apache -t jessie-backports
 
 **Fedora**
 
 .. code-block:: shell
 
-    sudo dnf install letsencrypt
+    sudo dnf install certbot
+
+if you want to use the Apache plugin:
+
+.. code-block:: shell
+   
+   sudo dnf install python-certbot-apache
 
 **Gentoo**
 
@@ -506,8 +512,8 @@ want to use the Apache plugin, it has to be installed separately:
 
 .. code-block:: shell
 
-   emerge -av app-crypt/letsencrypt
-   emerge -av app-crypt/letsencrypt-apache
+   emerge -av app-crypt/certbot
+   emerge -av app-crypt/certbot-apache
 
 Currently, only the Apache plugin is included in Portage. However, if you
 Warning!
@@ -522,7 +528,7 @@ the Nginx plugin is ready.
    emerge -av app-portage/layman
    layman -S
    layman -a mrueg
-   emerge -av app-crypt/letsencrypt-nginx
+   emerge -av app-crypt/certbot-nginx
 
 When using the Apache plugin, you will run into a "cannot find a cert or key
 directive" error if you're sporting the default Gentoo ``httpd.conf``.
