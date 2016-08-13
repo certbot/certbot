@@ -871,7 +871,25 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Sift line if it redirects the request to a HTTPS site
         return target.startswith("https://")
 
-    def _copy_create_ssl_vhost_skeleton(self, avail_fp, ssl_fp, vhost_num):
+    def _section_blocks(self, blocks):
+        out = []
+        while len(blocks) > 1:
+            start = blocks[0]
+            end = blocks[1] + 1
+            out += range(start, end)
+            blocks = blocks[2:]
+        return out
+
+    def _create_block_segments(self, orig_file_list, vhost_num):
+        blocks = [idx for idx, line in enumerate(orig_file_list)
+                     if line.lstrip().startswith("<VirtualHost")
+                     or line.lstrip().startswith("</VirtualHost")]
+        blocks = blocks[:vhost_num*2] + blocks[(vhost_num*2)+2:]
+        out = self._section_blocks(blocks)
+        return [line for idx, line in enumerate(orig_file_list)
+                          if idx not in out]
+
+    def _copy_create_ssl_vhost_skeleton(self, avail_fp, ssl_fp, vhost_num): # pylint: disable=too-many-branches
         """Copies over existing Vhost with IfModule mod_ssl.c> skeleton.
 
         :param str avail_fp: Pointer to the original available non-ssl vhost
@@ -889,18 +907,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             with open(avail_fp, "r") as orig_file:
                 orig_file_list = [line for line in orig_file]
                 if vhost_num != -1:
-                    blocks = [idx for idx, line in enumerate(orig_file_list)
-                                 if line.lstrip().startswith("<VirtualHost")
-                                 or line.lstrip().startswith("</VirtualHost")]
-                    blocks = blocks[:vhost_num*2] + blocks[(vhost_num*2)+2:]
-                    out = []
-                    while len(blocks) > 1:
-                        start = blocks[0]
-                        end = blocks[1] + 1
-                        out += range(start, end)
-                        blocks = blocks[2:]
-                    orig_file_list = [line for idx, line in enumerate(orig_file_list)
-                                         if idx not in out]
+                    orig_file_list = self._create_block_segments(orig_file_list, vhost_num)
 
             with open(ssl_fp, "w") as new_file:
                 new_file.write("<IfModule mod_ssl.c>\n")
@@ -910,8 +917,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                           "# because they have the potential to create "
                           "redirection loops.\n")
 
-                file_iter = iter(orig_file_list)
-                for line in file_iter:
+                orig_file_list = iter(orig_file_list)
+                for line in orig_file_list:
                     A = line.lstrip().startswith("RewriteCond")
                     B = line.lstrip().startswith("RewriteRule")
 
@@ -939,12 +946,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     chunk = []
                     if A:
                         chunk.append(line)
-                        line = next(file_iter)
+                        line = next(orig_file_list)
 
                         # RewriteCond(s) must be followed by one RewriteRule
                         while not line.lstrip().startswith("RewriteRule"):
                             chunk.append(line)
-                            line = next(file_iter)
+                            line = next(orig_file_list)
 
                         # Now, current line must start with a RewriteRule
                         chunk.append(line)
