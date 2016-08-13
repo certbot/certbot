@@ -84,7 +84,7 @@ def pick_plugin(config, default, plugins, question, ifaces):
         else:
             return plugin_ep.init()
     elif len(prepared) == 1:
-        plugin_ep = prepared.values()[0]
+        plugin_ep = list(prepared.values())[0]
         logger.debug("Single candidate plugin: %s", plugin_ep)
         if plugin_ep.misconfigured:
             return None
@@ -174,7 +174,7 @@ def choose_configurator_plugins(config, plugins, verb):
     if verb == "install":
         need_inst = True
         if config.authenticator:
-            logger.warn("Specifying an authenticator doesn't make sense in install mode")
+            logger.warning("Specifying an authenticator doesn't make sense in install mode")
 
     # Try to meet the user's request and/or ask them to pick plugins
     authenticator = installer = None

@@ -158,7 +158,7 @@ def possible_deprecation_warning(config):
         # need warnings
         return
     if "CERTBOT_AUTO" not in os.environ:
-        logger.warn("You are running with an old copy of letsencrypt-auto that does "
+        logger.warning("You are running with an old copy of letsencrypt-auto that does "
             "not receive updates, and is less reliable than more recent versions. "
             "We recommend upgrading to the latest certbot-auto script, or using native "
             "OS packages.")
@@ -343,8 +343,10 @@ class HelpfulArgumentParser(object):
         self.determine_verb()
         help1 = self.prescan_for_flag("-h", self.help_topics)
         help2 = self.prescan_for_flag("--help", self.help_topics)
-        assert max(True, "a") == "a", "Gravity changed direction"
-        self.help_arg = max(help1, help2)
+        if isinstance(help1, bool) and isinstance(help2, bool):
+            self.help_arg = help1 or help2
+        else:
+            self.help_arg = help1 if isinstance(help1, str) else help2
         if self.help_arg is True:
             # just --help with no topic; avoid argparse altogether
             print(usage)

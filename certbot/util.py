@@ -268,6 +268,19 @@ def get_systemd_os_info(filepath="/etc/os-release"):
     return (os_name, os_version)
 
 
+def get_systemd_os_like(filepath="/etc/os-release"):
+    """
+    Get a list of strings that indicate the distribution likeness to
+    other distributions.
+
+    :param str filepath: File path of os-release file
+    :returns: List of distribution acronyms
+    :rtype: `list` of `str`
+    """
+
+    return _get_systemd_os_release_var("ID_LIKE", filepath).split(" ")
+
+
 def _get_systemd_os_release_var(varname, filepath="/etc/os-release"):
     """
     Get single value from systemd /etc/os-release
@@ -349,7 +362,7 @@ def safe_email(email):
     if EMAIL_REGEX.match(email) is not None:
         return not email.startswith(".") and ".." not in email
     else:
-        logger.warn("Invalid email address: %s.", email)
+        logger.warning("Invalid email address: %s.", email)
         return False
 
 
@@ -408,6 +421,9 @@ def enforce_domain_sanity(domain):
             raise errors.ConfigurationError(error_fmt.format(domain))
         else:
             raise errors.ConfigurationError(str(error_fmt).format(domain))
+
+    if six.PY3:
+        domain = domain.decode('ascii')
 
     # Remove trailing dot
     domain = domain[:-1] if domain.endswith('.') else domain

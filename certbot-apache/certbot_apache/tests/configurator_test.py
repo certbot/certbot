@@ -56,7 +56,7 @@ class MultipleVhostsTest(util.ApacheTest):
         mock_surgery.return_value = False
         with mock.patch.dict('os.environ', silly_path):
             self.assertRaises(errors.NoInstallationError, self.config.prepare)
-            self.assertEquals(mock_surgery.call_count, 1)
+            self.assertEqual(mock_surgery.call_count, 1)
 
     @mock.patch("certbot_apache.augeas_configurator.AugeasConfigurator.init_augeas")
     def test_prepare_no_augeas(self, mock_init_augeas):
@@ -124,6 +124,12 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertTrue("zombo.com" in names)
         self.assertTrue("google.com" in names)
         self.assertTrue("certbot.demo" in names)
+
+    def test_get_bad_path(self):
+        from certbot_apache.configurator import get_file_path
+        self.assertEqual(get_file_path(None), None)
+        self.assertEqual(get_file_path("nonexistent"), None)
+        self.assertEqual(self.config._create_vhost("nonexistent"), None) # pylint: disable=protected-access
 
     def test_bad_servername_alias(self):
         ssl_vh1 = obj.VirtualHost(
@@ -1242,8 +1248,8 @@ class MultipleVhostsTest(util.ApacheTest):
         mock_match = mock.Mock(return_value=["something"])
         self.config.aug.match = mock_match
         # pylint: disable=protected-access
-        self.assertEquals(self.config._check_aug_version(),
-                          ["something"])
+        self.assertEqual(self.config._check_aug_version(),
+                         ["something"])
         self.config.aug.match.side_effect = RuntimeError
         self.assertFalse(self.config._check_aug_version())
 

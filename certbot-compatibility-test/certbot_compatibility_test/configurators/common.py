@@ -5,6 +5,7 @@ import shutil
 import tempfile
 
 from certbot import constants
+from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
 
 
@@ -31,6 +32,18 @@ class Proxy(object):
         self.args = args
         self.http_port = 80
         self.https_port = 443
+        self._configurator = self._all_names = self._test_names = None
+
+    def __getattr__(self, name):
+        """Wraps the configurator methods"""
+        if self._configurator is None:
+            raise AttributeError()
+
+        method = getattr(self._configurator, name, None)
+        if callable(method):
+            return method
+        else:
+            raise AttributeError()
 
     def has_more_configs(self):
         """Returns true if there are more configs to test"""
@@ -63,3 +76,25 @@ class Proxy(object):
             chain = None
 
         return cert, key, chain
+
+    def get_all_names_answer(self):
+        """Returns the set of domain names that the plugin should find"""
+        if self._all_names:
+            return self._all_names
+        else:
+            raise errors.Error("No configuration file loaded")
+
+    def get_testable_domain_names(self):
+        """Returns the set of domain names that can be tested against"""
+        if self._test_names:
+            return self._test_names
+        else:
+            return {"example.com"}
+
+    def deploy_cert(self, domain, cert_path, key_path, chain_path=None,
+                    fullchain_path=None):
+        """Installs cert"""
+        cert_path, key_path, chain_path = self.copy_certs_and_keys(
+            cert_path, key_path, chain_path)
+        self._configurator.deploy_cert(
+            domain, cert_path, key_path, chain_path, fullchain_path)
