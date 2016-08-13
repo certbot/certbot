@@ -4,6 +4,7 @@ import os
 import textwrap
 
 import dialog
+import six
 import zope.interface
 
 from certbot import interfaces
@@ -253,7 +254,7 @@ class FileDisplay(object):
             "{line}{frame}{line}{msg}{line}{frame}{line}".format(
                 line=os.linesep, frame=side_frame, msg=message))
         if pause:
-            raw_input("Press Enter to Continue")
+            six.moves.input("Press Enter to Continue")
 
     def menu(self, message, choices, ok_label="", cancel_label="",
              help_label="", **unused_kwargs):
@@ -295,7 +296,7 @@ class FileDisplay(object):
         :rtype: tuple
 
         """
-        ans = raw_input(
+        ans = six.moves.input(
             textwrap.fill(
                 "%s (Enter 'c' to cancel): " % message,
                 80,
@@ -330,7 +331,7 @@ class FileDisplay(object):
             os.linesep, frame=side_frame, msg=message))
 
         while True:
-            ans = raw_input("{yes}/{no}: ".format(
+            ans = six.moves.input("{yes}/{no}: ".format(
                 yes=_parens_around_char(yes_label),
                 no=_parens_around_char(no_label)))
 
@@ -468,7 +469,7 @@ class FileDisplay(object):
             input_msg = ("Press 1 [enter] to confirm the selection "
                          "(press 'c' to cancel): ")
         while selection < 1:
-            ans = raw_input(input_msg)
+            ans = six.moves.input(input_msg)
             if ans.startswith("c") or ans.startswith("C"):
                 return CANCEL, -1
             try:

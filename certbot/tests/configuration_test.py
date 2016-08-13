@@ -60,6 +60,7 @@ class NamespaceConfigTest(unittest.TestCase):
         config_base = "foo"
         work_base = "bar"
         logs_base = "baz"
+        server = "mock.server"
 
         mock_namespace = mock.MagicMock(spec=['config_dir', 'work_dir',
                                               'logs_dir', 'http01_port',
@@ -68,6 +69,7 @@ class NamespaceConfigTest(unittest.TestCase):
         mock_namespace.config_dir = config_base
         mock_namespace.work_dir = work_base
         mock_namespace.logs_dir = logs_base
+        mock_namespace.server = server
         config = NamespaceConfig(mock_namespace)
 
         self.assertTrue(os.path.isabs(config.config_dir))

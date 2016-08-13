@@ -10,6 +10,7 @@ import traceback
 
 import OpenSSL
 import pyrfc3339
+import six
 import zope.component
 
 from acme import crypto_util as acme_crypto_util
@@ -115,16 +116,16 @@ def make_csr(key_str, domains, must_staple=False):
     # TODO: put SAN if len(domains) > 1
     extensions = [
         OpenSSL.crypto.X509Extension(
-            "subjectAltName",
+            b"subjectAltName",
             critical=False,
-            value=", ".join("DNS:%s" % d for d in domains)
+            value=", ".join("DNS:%s" % d for d in domains).encode('ascii')
         )
     ]
     if must_staple:
         extensions.append(OpenSSL.crypto.X509Extension(
-            "1.3.6.1.5.5.7.1.24",
+            b"1.3.6.1.5.5.7.1.24",
             critical=False,
-            value="DER:30:03:02:01:05"))
+            value=b"DER:30:03:02:01:05"))
     req.add_extensions(extensions)
     req.set_version(2)
     req.set_pubkey(pkey)
@@ -350,7 +351,7 @@ def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
         if isinstance(cert, jose.ComparableX509):
             # pylint: disable=protected-access
             cert = cert.wrapped
-        return OpenSSL.crypto.dump_certificate(filetype, cert)
+        return OpenSSL.crypto.dump_certificate(filetype, cert).decode('ascii')
 
     # assumes that OpenSSL.crypto.dump_certificate includes ending
     # newline character
@@ -395,8 +396,14 @@ def _notAfterBefore(cert_path, method):
     with open(cert_path) as f:
         x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
                                                f.read())
+    # pyopenssl always returns bytes
     timestamp = method(x509)
-    reformatted_timestamp = [timestamp[0:4], "-", timestamp[4:6], "-",
-                             timestamp[6:8], "T", timestamp[8:10], ":",
-                             timestamp[10:12], ":", timestamp[12:]]
-    return pyrfc3339.parse("".join(reformatted_timestamp))
+    reformatted_timestamp = [timestamp[0:4], b"-", timestamp[4:6], b"-",
+                             timestamp[6:8], b"T", timestamp[8:10], b":",
+                             timestamp[10:12], b":", timestamp[12:]]
+    timestamp_str = b"".join(reformatted_timestamp)
+    # pyrfc3339 uses "native" strings. That is, bytes on Python 2 and unicode
+    # on Python 3
+    if six.PY3:
+        timestamp_str = timestamp_str.decode('ascii')
+    return pyrfc3339.parse(timestamp_str)

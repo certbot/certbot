@@ -255,4 +255,4 @@ class PluginsRegistry(collections.Mapping):
     def __str__(self):
         if not self._plugins:
             return "No plugins"
-        return "\n\n".join(str(p_ep) for p_ep in self._plugins.itervalues())
+        return "\n\n".join(str(p_ep) for p_ep in six.itervalues(self._plugins))

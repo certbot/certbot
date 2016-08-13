@@ -636,9 +636,11 @@ def _add_all_groups(helpful):
         " used to create obtain or most recently successfully renew each"
         " certificate lineage. You can try it with `--dry-run` first. For"
         " more fine-grained control, you can renew individual lineages with"
-        " the `certonly` subcommand. Hooks are available to run commands "
+        " the `certonly` subcommand. Hooks are available to run commands"
         " before and after renewal; see"
-        " https://certbot.eff.org/docs/using.html#renewal for more information on these.")
+        " https://certbot.eff.org/docs/using.html#renewal for more"
+        " information on these.")
+
     helpful.add_group("certonly", description="Options for modifying how a cert is obtained")
     helpful.add_group("install", description="Options for modifying how a cert is deployed")
     helpful.add_group("revoke", description="Options for revocation of certs")
@@ -844,29 +846,32 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "user; only needed if your config is somewhere unsafe like /tmp/")
     helpful.add(
         "renew", "--pre-hook",
-        help="Command to be run in a shell before obtaining any certificates. Intended"
-        " primarily for renewal, where it can be used to temporarily shut down a"
-        " webserver that might conflict with the standalone plugin. This will "
-        " only be called if a certificate is actually to be obtained/renewed. ")
+        help="Command to be run in a shell before obtaining any certificates."
+        " Intended primarily for renewal, where it can be used to temporarily"
+        " shut down a webserver that might conflict with the standalone"
+        " plugin. This will only be called if a certificate is actually to be"
+        " obtained/renewed.")
     helpful.add(
         "renew", "--post-hook",
-        help="Command to be run in a shell after attempting to obtain/renew "
-        " certificates. Can be used to deploy renewed certificates, or to restart"
-        " any servers that were stopped by --pre-hook. This is only run if"
-        " an attempt was made to obtain/renew a certificate.")
+        help="Command to be run in a shell after attempting to obtain/renew"
+        " certificates. Can be used to deploy renewed certificates, or to"
+        " restart any servers that were stopped by --pre-hook. This is only"
+        " run if an attempt was made to obtain/renew a certificate.")
     helpful.add(
         "renew", "--renew-hook",
-        help="Command to be run in a shell once for each successfully renewed certificate."
-        "For this command, the shell variable $RENEWED_LINEAGE will point to the"
-        "config live subdirectory containing the new certs and keys; the shell variable "
-        "$RENEWED_DOMAINS will contain a space-delimited list of renewed cert domains")
+        help="Command to be run in a shell once for each successfully renewed"
+        " certificate. For this command, the shell variable $RENEWED_LINEAGE"
+        " will point to the config live subdirectory containing the new certs"
+        " and keys; the shell variable $RENEWED_DOMAINS will contain a"
+        " space-delimited list of renewed cert domains")
     helpful.add(
         "renew", "--disable-hook-validation",
         action='store_false', dest='validate_hooks', default=True,
-        help="Ordinarily the commands specified for --pre-hook/--post-hook/--renew-hook"
-        " will be checked for validity, to see if the programs being run are in the $PATH,"
-        " so that mistakes can be caught early, even when the hooks aren't being run just yet."
-        " The validation is rather simplistic and fails if you use more advanced"
+        help="Ordinarily the commands specified for"
+        " --pre-hook/--post-hook/--renew-hook will be checked for validity, to"
+        " see if the programs being run are in the $PATH, so that mistakes can"
+        " be caught early, even when the hooks aren't being run just yet. The"
+        " validation is rather simplistic and fails if you use more advanced"
         " shell constructs, so you can use this switch to disable it.")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
