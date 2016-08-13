@@ -7,7 +7,7 @@ import shutil
 import time
 import traceback
 
-
+import six
 import zope.component
 
 from certbot import constants
@@ -310,7 +310,9 @@ class Reverter(object):
 
     def _run_undo_commands(self, filepath):  # pylint: disable=no-self-use
         """Run all commands in a file."""
-        with open(filepath, 'rb') as csvfile:
+        # NOTE: csv module uses native strings. That is, bytes on Python 2 and
+        # unicode on Python 3
+        with open(filepath, 'r') as csvfile:
             csvreader = csv.reader(csvfile)
             for command in reversed(list(csvreader)):
                 try:
@@ -408,9 +410,9 @@ class Reverter(object):
         command_file = None
         try:
             if os.path.isfile(commands_fp):
-                command_file = open(commands_fp, "ab")
+                command_file = open(commands_fp, "a")
             else:
-                command_file = open(commands_fp, "wb")
+                command_file = open(commands_fp, "w")
 
             csvwriter = csv.writer(command_file)
             csvwriter.writerow(command)
@@ -569,7 +571,7 @@ class Reverter(object):
         # It is possible save checkpoints faster than 1 per second resulting in
         # collisions in the naming convention.
 
-        for _ in xrange(2):
+        for _ in six.moves.range(2):
             timestamp = self._checkpoint_timestamp()
             final_dir = os.path.join(self.config.backup_dir, timestamp)
             try:

@@ -63,7 +63,7 @@ class AlreadyListeningTestNoPsutil(unittest.TestCase):
     def test_ports_available(self, mock_getutil):
         import certbot.plugins.util as plugins_util
         # Ensure we don't get error
-        with mock.patch("socket._socketobject.bind"):
+        with mock.patch("socket.socket.bind"):
             self.assertFalse(plugins_util.already_listening(80))
             self.assertFalse(plugins_util.already_listening(80, True))
             self.assertEqual(mock_getutil.call_count, 0)
@@ -73,7 +73,7 @@ class AlreadyListeningTestNoPsutil(unittest.TestCase):
         sys.modules["psutil"] = None
         import certbot.plugins.util as plugins_util
         import socket
-        with mock.patch("socket._socketobject.bind", side_effect=socket.error):
+        with mock.patch("socket.socket.bind", side_effect=socket.error):
             self.assertTrue(plugins_util.already_listening(80))
             self.assertTrue(plugins_util.already_listening(80, True))
         with mock.patch("socket.socket", side_effect=socket.error):

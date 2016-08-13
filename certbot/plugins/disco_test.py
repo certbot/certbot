@@ -3,6 +3,7 @@ import unittest
 
 import mock
 import pkg_resources
+import six
 import zope.interface
 
 from certbot import errors
@@ -50,7 +51,7 @@ class PluginEntryPointTest(unittest.TestCase):
             EP_SA: "sa",
         }
 
-        for entry_point, name in names.iteritems():
+        for entry_point, name in six.iteritems(names):
             self.assertEqual(
                 name, PluginEntryPoint.entry_point_to_plugin_name(entry_point))
 

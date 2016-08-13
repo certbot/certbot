@@ -4,6 +4,7 @@ import logging
 import unittest
 
 import mock
+import six
 
 from acme import challenges
 from acme import client as acme_client
@@ -93,7 +94,7 @@ class GetAuthorizationsTest(unittest.TestCase):
 
         self.assertEqual(mock_poll.call_count, 1)
         chall_update = mock_poll.call_args[0][0]
-        self.assertEqual(chall_update.keys(), ["0"])
+        self.assertEqual(list(six.iterkeys(chall_update)), ["0"])
         self.assertEqual(len(chall_update.values()), 1)
 
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
@@ -118,7 +119,7 @@ class GetAuthorizationsTest(unittest.TestCase):
 
         self.assertEqual(mock_poll.call_count, 1)
         chall_update = mock_poll.call_args[0][0]
-        self.assertEqual(chall_update.keys(), ["0"])
+        self.assertEqual(list(six.iterkeys(chall_update)), ["0"])
         self.assertEqual(len(chall_update.values()), 1)
 
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
@@ -143,12 +144,12 @@ class GetAuthorizationsTest(unittest.TestCase):
         # Check poll call
         self.assertEqual(mock_poll.call_count, 1)
         chall_update = mock_poll.call_args[0][0]
-        self.assertEqual(len(chall_update.keys()), 3)
-        self.assertTrue("0" in chall_update.keys())
+        self.assertEqual(len(list(six.iterkeys(chall_update))), 3)
+        self.assertTrue("0" in list(six.iterkeys(chall_update)))
         self.assertEqual(len(chall_update["0"]), 1)
-        self.assertTrue("1" in chall_update.keys())
+        self.assertTrue("1" in list(six.iterkeys(chall_update)))
         self.assertEqual(len(chall_update["1"]), 1)
-        self.assertTrue("2" in chall_update.keys())
+        self.assertTrue("2" in list(six.iterkeys(chall_update)))
         self.assertEqual(len(chall_update["2"]), 1)
 
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
@@ -167,7 +168,7 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.assertRaises(errors.AuthorizationError, self.handler.get_authorizations, [])
 
     def _validate_all(self, unused_1, unused_2):
-        for dom in self.handler.authzr.keys():
+        for dom in six.iterkeys(self.handler.authzr):
             azr = self.handler.authzr[dom]
             self.handler.authzr[dom] = acme_util.gen_authzr(
                 messages.STATUS_VALID,
@@ -317,7 +318,7 @@ class GenChallengePathTest(unittest.TestCase):
 
     """
     def setUp(self):
-        logging.disable(logging.fatal)
+        logging.disable(logging.FATAL)
 
     def tearDown(self):
         logging.disable(logging.NOTSET)

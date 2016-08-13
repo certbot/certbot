@@ -232,11 +232,11 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(os.path.dirname(fullchain_path),
                          os.path.dirname(candidate_fullchain_path))
 
-        with open(cert_path, "r") as cert_file:
+        with open(cert_path, "rb") as cert_file:
             cert_contents = cert_file.read()
         self.assertEqual(cert_contents, test_util.load_vector(certs[0]))
 
-        with open(chain_path, "r") as chain_file:
+        with open(chain_path, "rb") as chain_file:
             chain_contents = chain_file.read()
         self.assertEqual(chain_contents, test_util.load_vector(certs[1]) +
                          test_util.load_vector(certs[2]))

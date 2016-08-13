@@ -9,6 +9,7 @@ import unittest
 import configobj
 import mock
 import pytz
+import six
 
 import certbot
 from certbot import cli
@@ -92,8 +93,8 @@ class BaseRenewableCertTest(unittest.TestCase):
         os.symlink(os.path.join(os.path.pardir, os.path.pardir, "archive",
                                 "example.org", "{0}{1}.pem".format(kind, ver)),
                    link)
-        with open(link, "w") as f:
-            f.write(kind if value is None else value)
+        with open(link, "wb") as f:
+            f.write(kind.encode('ascii') if value is None else value)
 
     def _write_out_ex_kinds(self):
         for kind in ALL_FOUR:
@@ -235,7 +236,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertEqual(self.test_rc.current_version("cert"), None)
 
     def test_latest_and_next_versions(self):
-        for ver in xrange(1, 6):
+        for ver in six.moves.range(1, 6):
             for kind in ALL_FOUR:
                 self._write_out_kind(kind, ver)
         self.assertEqual(self.test_rc.latest_common_version(), 5)
@@ -258,7 +259,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertEqual(self.test_rc.next_free_version(), 18)
 
     def test_update_link_to(self):
-        for ver in xrange(1, 6):
+        for ver in six.moves.range(1, 6):
             for kind in ALL_FOUR:
                 self._write_out_kind(kind, ver)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
@@ -285,12 +286,12 @@ class RenewableCertTests(BaseRenewableCertTest):
                          os.path.basename(self.test_rc.version("cert", 8)))
 
     def test_update_all_links_to_success(self):
-        for ver in xrange(1, 6):
+        for ver in six.moves.range(1, 6):
             for kind in ALL_FOUR:
                 self._write_out_kind(kind, ver)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
         self.assertEqual(self.test_rc.latest_common_version(), 5)
-        for ver in xrange(1, 6):
+        for ver in six.moves.range(1, 6):
             self.test_rc.update_all_links_to(ver)
             for kind in ALL_FOUR:
                 self.assertEqual(ver, self.test_rc.current_version(kind))
@@ -330,11 +331,11 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.assertEqual(self.test_rc.current_version(kind), 11)
 
     def test_has_pending_deployment(self):
-        for ver in xrange(1, 6):
+        for ver in six.moves.range(1, 6):
             for kind in ALL_FOUR:
                 self._write_out_kind(kind, ver)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
-        for ver in xrange(1, 6):
+        for ver in six.moves.range(1, 6):
             self.test_rc.update_all_links_to(ver)
             for kind in ALL_FOUR:
                 self.assertEqual(ver, self.test_rc.current_version(kind))
@@ -373,10 +374,10 @@ class RenewableCertTests(BaseRenewableCertTest):
         self._write_out_ex_kinds()
 
         self.test_rc.update_all_links_to(12)
-        with open(self.test_rc.cert, "w") as f:
+        with open(self.test_rc.cert, "wb") as f:
             f.write(test_cert)
         self.test_rc.update_all_links_to(11)
-        with open(self.test_rc.cert, "w") as f:
+        with open(self.test_rc.cert, "wb") as f:
             f.write(test_cert)
 
         mock_datetime.timedelta = datetime.timedelta
@@ -426,7 +427,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertFalse(self.test_rc.should_autodeploy())
         self.test_rc.configuration["autodeploy"] = "1"
         # No pending deployment
-        for ver in xrange(1, 6):
+        for ver in six.moves.range(1, 6):
             for kind in ALL_FOUR:
                 self._write_out_kind(kind, ver)
         self.assertFalse(self.test_rc.should_autodeploy())
@@ -461,7 +462,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         # (to avoid instantiating parser)
         mock_rv.side_effect = lambda x: x
 
-        for ver in xrange(1, 6):
+        for ver in six.moves.range(1, 6):
             for kind in ALL_FOUR:
                 self._write_out_kind(kind, ver)
         self.test_rc.update_all_links_to(3)
@@ -492,7 +493,7 @@ class RenewableCertTests(BaseRenewableCertTest):
                 self.test_rc.version("privkey", i))))
 
         for kind in ALL_FOUR:
-            self.assertEqual(self.test_rc.available_versions(kind), range(1, 9))
+            self.assertEqual(self.test_rc.available_versions(kind), list(six.moves.range(1, 9)))
             self.assertEqual(self.test_rc.current_version(kind), 3)
         # Test updating from latest version rather than old version
         self.test_rc.update_all_links_to(8)
@@ -501,7 +502,7 @@ class RenewableCertTests(BaseRenewableCertTest):
                                            "attempt", self.cli_config))
         for kind in ALL_FOUR:
             self.assertEqual(self.test_rc.available_versions(kind),
-                             range(1, 10))
+                             list(six.moves.range(1, 10)))
             self.assertEqual(self.test_rc.current_version(kind), 8)
         with open(self.test_rc.version("fullchain", 9)) as f:
             self.assertEqual(f.read(), "last" + "attempt")
