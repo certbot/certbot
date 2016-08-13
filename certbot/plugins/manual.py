@@ -47,12 +47,11 @@ class Authenticator(common.Plugin):
 
     MESSAGE_TEMPLATE = {
         "dns-01": """\
-Make sure your dns configuration content the following key before continuing:
+To prove control of the domain {domain}, please deploy a DNS TXT record with the following value:
 
 {validation}
 
-if you didn't, make sure to add the validation as TXT record into your domain
-configuration.
+Once this is deployed,
 """,
         "http-01": """\
 Make sure your web server displays the following content at
@@ -189,20 +188,14 @@ s.serve_forever()" """
             if self._httpd.poll() is not None:
                 raise errors.Error("Couldn't execute manual command")
         else:
-            if not self.conf("public-ip-logging-ok"):
-                if not zope.component.getUtility(interfaces.IDisplay).yesno(
-                        self.IP_DISCLAIMER, "Yes", "No",
-                        cli_flag="--manual-public-ip-logging-ok"):
-                    raise errors.PluginError("Must agree to IP logging to proceed")
-
             message = self._get_message(achall)
+            uri = achall.chall.uri(achall.domain)
+            formated_message = message.format(validation=validation,
+                                              response=response,
+                                              uri=uri,
+                                              command=command)
 
-            self._notify_and_wait(message.format(
-                validation=validation,
-                response=response,
-                uri=achall.chall.uri(achall.domain),
-                command=command
-            ))
+            self._ip_logging_permission(response, formated_message)
 
         if not response.simple_verify(
                 achall.chall, achall.domain,
@@ -214,17 +207,11 @@ s.serve_forever()" """
     def _perform_dns01_challenge(self, achall):
         response, validation = achall.response_and_validation()
         if not self.conf("test-mode"):
-            if not self.conf("public-ip-logging-ok"):
-                if not zope.component.getUtility(interfaces.IDisplay).yesno(
-                        self.IP_DISCLAIMER, "Yes", "No",
-                        cli_flag="--manual-public-ip-logging-ok"):
-                    raise errors.PluginError("Must agree to IP logging to proceed")
-
             message = self._get_message(achall)
             formated_message = message.format(validation=validation,
+                                              domain=achall.domain,
                                               response=response)
-
-            self._notify_and_wait(formated_message)
+            self._ip_logging_permission(response, formated_message)
 
         if not response.simple_verify(
                 achall.chall, achall.domain,
@@ -246,12 +233,25 @@ s.serve_forever()" """
                              "with %s code", self._httpd.returncode)
             shutil.rmtree(self._root)
 
-    def _notify_and_wait(self, message):  # pylint: disable=no-self-use
+    def _notify_and_wait(self, message):
+        # pylint: disable=no-self-use
         # TODO: IDisplay wraps messages, breaking the command
         #answer = zope.component.getUtility(interfaces.IDisplay).notification(
         #    message=message, height=25, pause=True)
         sys.stdout.write(message)
         six.moves.input("Press ENTER to continue")
+
+    def _ip_logging_permission(self, response, formated_message):
+        # pylint: disable=missing-docstring
+        if not self.conf("public-ip-logging-ok"):
+            if not zope.component.getUtility(interfaces.IDisplay).yesno(
+                    self.IP_DISCLAIMER, "Yes", "No",
+                    cli_flag="--manual-public-ip-logging-ok"):
+                raise errors.PluginError("Must agree to IP logging to proceed")
+            else:
+                self.config.namespace.manual_public_ip_logging_ok = True
+
+        self._notify_and_wait(formated_message)
 
     def _get_message(self, achall):
         # pylint: disable=missing-docstring,no-self-use,unused-argument
