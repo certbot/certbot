@@ -154,7 +154,7 @@ def perform_registration(acme, config):
                 msg = ("The email you specified was unable to be verified "
                        "by acme. Please ensure it is a valid email and "
                        "attempt registration again.")
-                raise erros.MissingCommandlineFlag(msg)
+                raise errors.MissingCommandlineFlag(msg)
             else:
                 config.namespace.email = display_ops.get_email(invalid=True)
                 return perform_registration(acme, config)
