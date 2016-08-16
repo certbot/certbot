@@ -30,7 +30,7 @@ If you'd like to contribute to this project please read `Developer Guide
 Installation
 ------------
 
-The easiest way to install Certbot is by visiting certbot.eff.org_, where you can 
+The easiest way to install Certbot is by visiting https://certbot.eff.org, where you can 
 find the correct installation instructions for many web server and OS combinations.
 For more information, see the `User Guide <https://certbot.eff.org/docs/using.html#getting-certbot>`_.
 
