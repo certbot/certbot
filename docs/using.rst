@@ -503,23 +503,8 @@ The following files are available:
 
   This is what Apache needs for `SSLCertificateKeyFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatekeyfile>`_,
-  and nginx for `ssl_certificate_key
+  and Nginx for `ssl_certificate_key
   <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate_key>`_.
-
-``cert.pem``
-  Server certificate only.
-
-  This is what Apache < 2.4.8 needs for `SSLCertificateFile
-  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_.
-
-``chain.pem``
-  All certificates that need to be served by the browser **excluding**
-  server certificate, i.e. root and intermediate certificates only.
-
-  This is what Apache < 2.4.8 needs for `SSLCertificateChainFile
-  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatechainfile>`_,
-  and what nginx >= 1.3.7 needs for `ssl_trusted_certificate
-  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_trusted_certificate>`_.
 
 ``fullchain.pem``
   All certificates, **including** server certificate. This is
@@ -527,16 +512,31 @@ The following files are available:
 
   This is what Apache >= 2.4.8 needs for `SSLCertificateFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_,
-  and what nginx needs for `ssl_certificate
+  and what Nginx needs for `ssl_certificate
   <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate>`_.
 
+``cert.pem`` and ``chain.pem`` (less common)
+  ``cert.pem`` contains the server certificate by itself, and
+  ``chain.pem`` contains the additional intermediate certificate or
+  certificates that web browsers will need in order to validate the
+  server certificate. If you provide one of these files to your web
+  server, you **must** provide both of them, or browsers will show
+  "This Connection is Untrusted" errors when visiting your site.
 
-For both chain files, all certificates are ordered from root (primary
-certificate) towards leaf.
+  Apache < 2.4.8 needs these for `SSLCertificateFile
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_.
+  and `SSLCertificateChainFile
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatechainfile>`_,
+  respectively.
 
-Please note, that **you must use** either ``chain.pem`` or
-``fullchain.pem``. In case of webservers, using only ``cert.pem``,
-will cause nasty errors served through the browsers!
+  If you're using OCSP stapling with Nginx >= 1.3.7, ``chain.pem`` should be
+  provided as the `ssl_trusted_certificate
+  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_trusted_certificate>`_
+  to validate OCSP responses.
+
+For both ``fullchain.pem`` and ``chain.pem`` files, all certificates are ordered from
+root (primary certificate) towards leaf, but do not actually include the root
+certificate, which is unneeded.
 
 .. note:: All files are PEM-encoded (as the filename suffix
    suggests). If you need other format, such as DER or PFX, then you
