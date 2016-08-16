@@ -520,8 +520,7 @@ def _add_directives(block, directives, replace):
     """
     for directive in directives:
         _add_directive(block, directive, replace)
-    last = block[-1]
-    if not '\n' in last:                           # could be "   \n  " or ["\n"] !
+    if block and '\n' not in block[-1]:  # could be "   \n  " or ["\n"] !
         block.append(nginxparser.UnspacedList('\n'))
 
 
