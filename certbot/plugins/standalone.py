@@ -154,7 +154,7 @@ class Authenticator(common.Plugin):
     rely on any existing server program.
     """
 
-    description = "Automatically use a temporary webserver"
+    description = "Spin up a temporary webserver"
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)

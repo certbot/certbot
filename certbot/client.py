@@ -246,8 +246,7 @@ class Client(object):
                 domains,
                 self.config.allow_subset_of_names)
 
-        auth_domains = set(a.body.identifier.value.encode('ascii')
-                           for a in authzr)
+        auth_domains = set(a.body.identifier.value for a in authzr)
         domains = [d for d in domains if d in auth_domains]
 
         # Create CSR from names
@@ -317,7 +316,7 @@ class Client(object):
                 self.config.strict_permissions)
 
         cert_pem = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped)
+            OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped).decode('ascii')
 
         cert_file, abs_cert_path = _open_pem_file('cert_path', cert_path)
 

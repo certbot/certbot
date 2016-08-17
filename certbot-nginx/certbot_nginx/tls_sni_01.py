@@ -91,10 +91,10 @@ class NginxTlsSni01(common.TLSSNI01):
         # Add the 'include' statement for the challenges if it doesn't exist
         # already in the main config
         included = False
-        include_directive = ['include', ' ', self.challenge_conf]
+        include_directive = ['\n', 'include', ' ', self.challenge_conf]
         root = self.configurator.parser.loc["root"]
 
-        bucket_directive = ['server_names_hash_bucket_size', ' ', '128']
+        bucket_directive = ['\n', 'server_names_hash_bucket_size', ' ', '128']
 
         main = self.configurator.parser.parsed[root]
         for key, body in main:

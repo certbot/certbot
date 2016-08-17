@@ -189,6 +189,12 @@ class UniqueFileTest(unittest.TestCase):
         self.assertTrue(basename3.endswith("foo.txt"))
 
 
+try:
+    file_type = file
+except NameError:
+    import io
+    file_type = io.TextIOWrapper
+
 class UniqueLineageNameTest(unittest.TestCase):
     """Tests for certbot.util.unique_lineage_name."""
 
@@ -204,13 +210,13 @@ class UniqueLineageNameTest(unittest.TestCase):
 
     def test_basic(self):
         f, path = self._call("wow")
-        self.assertTrue(isinstance(f, file))
+        self.assertTrue(isinstance(f, file_type))
         self.assertEqual(os.path.join(self.root_path, "wow.conf"), path)
 
     def test_multiple(self):
-        for _ in xrange(10):
+        for _ in six.moves.range(10):
             f, name = self._call("wow")
-        self.assertTrue(isinstance(f, file))
+        self.assertTrue(isinstance(f, file_type))
         self.assertTrue(isinstance(name, str))
         self.assertTrue("wow-0009.conf" in name)
 

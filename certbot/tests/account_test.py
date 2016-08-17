@@ -131,8 +131,8 @@ class AccountFileStorageTest(unittest.TestCase):
         for file_name in "regr.json", "meta.json", "private_key.json":
             self.assertTrue(os.path.exists(
                 os.path.join(account_path, file_name)))
-        self.assertEqual("0400", oct(os.stat(os.path.join(
-            account_path, "private_key.json"))[stat.ST_MODE] & 0o777))
+        self.assertTrue(oct(os.stat(os.path.join(
+            account_path, "private_key.json"))[stat.ST_MODE] & 0o777) in ("0400", "0o400"))
 
         # restore
         self.assertEqual(self.acc, self.storage.load(self.acc.id))
@@ -179,14 +179,14 @@ class AccountFileStorageTest(unittest.TestCase):
         self.storage.save(self.acc)
         mock_open = mock.mock_open()
         mock_open.side_effect = IOError
-        with mock.patch("__builtin__.open", mock_open):
+        with mock.patch("six.moves.builtins.open", mock_open):
             self.assertRaises(
                 errors.AccountStorageError, self.storage.load, self.acc.id)
 
     def test_save_ioerrors(self):
         mock_open = mock.mock_open()
         mock_open.side_effect = IOError  # TODO: [None, None, IOError]
-        with mock.patch("__builtin__.open", mock_open):
+        with mock.patch("six.moves.builtins.open", mock_open):
             self.assertRaises(
                 errors.AccountStorageError, self.storage.save, self.acc)
 
