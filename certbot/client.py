@@ -151,10 +151,10 @@ def perform_registration(acme, config):
     except messages.Error as e:
         if e.typ == "urn:acme:error:invalidEmail":
             if config.noninteractive_mode:
-                msg = ("The email you specified was unable to be verified "
-                       "by acme. Please ensure it is a valid email and "
-                       "attempt registration again.")
-                raise errors.MissingCommandlineFlag(msg)
+                msg = ("The ACME server believes %s is an invalid email address. "
+                       "Please ensure it is a valid email and attempt "
+                       "registration again." % config.email)
+                raise errors.Error(msg)
             else:
                 config.namespace.email = display_ops.get_email(invalid=True)
                 return perform_registration(acme, config)
