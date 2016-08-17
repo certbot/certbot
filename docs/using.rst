@@ -262,7 +262,8 @@ Plugins that can install a cert are called "installers" and can be used with the
 serve your website over HTTPS using certificates obtained by certbot. 
 
 Plugins that do both can be used with the "certbot run" command, which is the default
-when no command is specified.
+when no command is specified. The "run" subcommand can also be used to specify
+a combination of distinct authenticator and installer plugins.
 
 =========== ==== ==== ===============================================================
 Plugin      Auth Inst Notes
@@ -437,6 +438,11 @@ do not want this behavior.
 ``--expand`` tells Certbot to update an existing certificate with a new
 certificate that contains all of the old domains and one or more additional
 new domains.
+
+``--allow-subset-of-names`` tells Certbot to continue with cert generation if
+only some of the specified domain authorazations can be obtained. This may
+be useful if some domains specified in a certificate no longer point at this
+system.
 
 Whenever you obtain a new certificate in any of these ways, the new
 certificate exists alongside any previously-obtained certificates, whether
