@@ -117,14 +117,14 @@ class NginxConfigurator(common.Plugin):
         # Make sure configuration is valid
         self.config_test()
 
+        # temp_install must be run before creating the NginxParser
+        temp_install(self.mod_ssl_conf)
         self.parser = parser.NginxParser(
             self.conf('server-root'), self.mod_ssl_conf)
 
         # Set Version
         if self.version is None:
             self.version = self.get_version()
-
-        temp_install(self.mod_ssl_conf)
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path,
