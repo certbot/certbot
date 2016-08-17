@@ -531,18 +531,17 @@ COMMENT_BLOCK = [' ', '#', COMMENT]
 
 def _comment_directive(block, location):
     """Add a comment to the end of the line at location."""
-    if len(block) > location + 1:         # there is a block after us
-        next_entry = block[location + 1]
-    else:
-        # we're at the end of the block, pretend there's a newline after us;
-        # it will actually be added later in add_directives
-        next_entry = "\n"
-    if isinstance(next_entry, list):
-        if "Certbot" in next_entry[-1]:
+    next_entry = block[location + 1] if location + 1 < len(block) else None
+    if isinstance(next_entry, list) and next_entry:
+        if COMMENT in next_entry[-1]:
             return
-        next_entry = next_entry.spaced[0]  # pylint: disable=no-member
+        elif isinstance(next_entry, nginxparser.UnspacedList):
+            next_entry = next_entry.spaced[0]
+        else:
+            next_entry = next_entry[0]
+
     block.insert(location + 1, COMMENT_BLOCK[:])
-    if "\n" not in next_entry:
+    if next_entry is not None and "\n" not in next_entry:
         block.insert(location + 2, '\n')
 
 
