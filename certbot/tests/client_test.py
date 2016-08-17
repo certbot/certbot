@@ -67,8 +67,7 @@ class RegisterTest(unittest.TestCase):
         mx_err = messages.Error(detail=msg, typ="urn:acme:error:invalidEmail")
         with mock.patch("certbot.client.acme_client.Client") as mock_client:
             mock_client().register.side_effect = [mx_err, mock.MagicMock()]
-            self._call()
-            self.assertEqual(mock_get_email.call_count, 1)
+            self.assertRaises(errors.MissingCommandlineFlag, self._call)
 
     def test_needs_email(self):
         self.config.email = None
