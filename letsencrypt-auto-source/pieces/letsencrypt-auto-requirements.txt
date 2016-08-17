@@ -1,6 +1,7 @@
 # This is the flattened list of packages certbot-auto installs. To generate
-# this, do `pip install --no-cache-dir -e acme -e . -e certbot-apache`, and
-# then use `hashin` or a more secure method to gather the hashes.
+# this, do
+# `pip install --no-cache-dir -e acme -e . -e certbot-apache -e certbot-nginx`,
+# and then use `hashin` or a more secure method to gather the hashes.
 
 argparse==1.4.0 \
     --hash=sha256:c31647edb69fd3d465a847ea3157d37bed1f95f19760b11a47aa91c04b666314 \
