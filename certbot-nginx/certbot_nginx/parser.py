@@ -525,8 +525,8 @@ def _add_directives(block, directives, replace):
 
 
 REPEATABLE_DIRECTIVES = set(['server_name', 'listen', 'include'])
-COMMENT_STR = ' managed by Certbot'
-COMMENT = [' ', '#', ' managed by Certbot']
+COMMENT = ' managed by Certbot'
+COMMENT_BLOCK = [' ', '#', COMMENT]
 
 
 def _comment_directive(block, location):
@@ -541,7 +541,7 @@ def _comment_directive(block, location):
         if "Certbot" in next_entry[-1]:
             return
         next_entry = next_entry.spaced[0]  # pylint: disable=no-member
-    block.insert(location + 1, COMMENT[:])
+    block.insert(location + 1, COMMENT_BLOCK[:])
     if "\n" not in next_entry:
         block.insert(location + 2, '\n')
 
