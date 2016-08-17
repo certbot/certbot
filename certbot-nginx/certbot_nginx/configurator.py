@@ -57,6 +57,8 @@ class NginxConfigurator(common.Plugin):
 
     description = "Nginx Web Server - currently doesn't work"
 
+    hidden = True
+
     @classmethod
     def add_parser_arguments(cls, add):
         add("server-root", default=constants.CLI_DEFAULTS["server_root"],
