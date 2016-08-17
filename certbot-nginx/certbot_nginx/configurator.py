@@ -55,7 +55,7 @@ class NginxConfigurator(common.Plugin):
 
     """
 
-    description = "Nginx Web Server - currently doesn't work"
+    description = "Nginx Web Server plugin - Alpha"
 
     hidden = True
 
