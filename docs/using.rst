@@ -286,8 +286,10 @@ the circumstances in which each plugin can be used, and how to use it.
 Apache
 ------
 
-If you're running Apache 2.4 on a Debian-based OS with version 1.0+ of
-the ``libaugeas0`` package available, you can use the Apache plugin.
+The Apache plugin currently requires OS with augeas version 1.0; currently `it
+supports
+<https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/constants.py>`_
+modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
 This automates both obtaining *and* installing certs on an Apache
 webserver. To specify this plugin on the command line, simply include
 ``--apache``.
