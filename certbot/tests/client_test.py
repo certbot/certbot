@@ -60,8 +60,7 @@ class RegisterTest(unittest.TestCase):
                 self._call()
 
     @mock.patch("certbot.account.report_new_account")
-    @mock.patch("certbot.client.display_ops.get_email")
-    def test_email_invalid_noninteractive(self, _rep, mock_get_email):
+    def test_email_invalid_noninteractive(self, _rep):
         from acme import messages
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
         mx_err = messages.Error(detail=msg, typ="urn:acme:error:invalidEmail")
