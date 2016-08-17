@@ -338,16 +338,14 @@ class NginxConfigurator(common.Plugin):
         """
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
 
-        options_subblock = self.parser.loc["ssl_options"]
         # the options file doesn't have a newline at the beginning, but there
         # needs to be one when it's dropped into the file
-        if options_subblock and "\n" not in options_subblock[0]:
-            options_subblock[0].insert(0, "\n")
         ssl_block = (
             [['\n    ', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
              ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
-             ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key]] +
-            options_subblock)
+             ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
+             ['\n']] +
+            self.parser.loc["ssl_options"])
 
         self.parser.add_server_directives(
             vhost.filep, vhost.names, ssl_block, replace=False)
