@@ -180,7 +180,7 @@ class NginxParser(object):
                     return nginxparser.load(_file).spaced
             except IOError:
                 logger.warn("Missing NGINX TLS options file: %s", ssl_options)
-            except pyparsing.ParseException:
+            except pyparsing.ParseBaseException:
                 logger.debug("Could not parse file: %s", ssl_options)
         return []
 
