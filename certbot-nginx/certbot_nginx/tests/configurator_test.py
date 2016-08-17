@@ -39,6 +39,8 @@ class NginxConfiguratorTest(util.NginxTest):
     def test_prepare(self):
         self.assertEqual((1, 6, 2), self.config.version)
         self.assertEqual(5, len(self.config.parser.parsed))
+        # ensure we successfully parsed a file for ssl_options
+        self.assertTrue(self.config.parser.loc["ssl_options"])
 
     @mock.patch("certbot_nginx.configurator.util.exe_exists")
     @mock.patch("certbot_nginx.configurator.subprocess.Popen")
