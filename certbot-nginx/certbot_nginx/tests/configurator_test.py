@@ -13,6 +13,7 @@ from acme import messages
 from certbot import achallenges
 from certbot import errors
 
+from certbot_nginx import parser
 from certbot_nginx.tests import util
 
 
@@ -91,14 +92,13 @@ class NginxConfiguratorTest(util.NginxTest):
 
         # pylint: disable=protected-access
         parsed = self.config.parser._parse_files(filep, override=True)
-        self.assertEqual([[['server'], [
-                                        ['listen', '69.50.225.155:9000'],
-                                        ['listen', '127.0.0.1'],
-                                        ['server_name', '.example.com'],
-                                        ['server_name', 'example.*'],
-                                        ['listen', '5001 ssl'],
-                                        ['#', ' managed by Certbot']
-                                        ]]],
+        self.assertEqual([[['server'],
+                           [['listen', '69.50.225.155:9000'],
+                            ['listen', '127.0.0.1'],
+                            ['server_name', '.example.com'],
+                            ['server_name', 'example.*'],
+                            ['listen', '5001 ssl'],
+                            ['#', parser.COMMENT]]]],
                          parsed[0])
 
     def test_choose_vhost(self):
