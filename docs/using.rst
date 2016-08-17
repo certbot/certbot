@@ -569,14 +569,15 @@ By default, the following locations are searched:
 Getting help
 ============
 
-If you're having problems you can chat with us on `IRC (#certbot @
-OFTC) <https://webchat.oftc.net?channels=%23certbot>`_ or at
-`IRC (#letsencrypt @ freenode) <https://webchat.freenode.net?channels=%23letsencrypt>`_
-or get support on the Let's Encrypt `forums <https://community.letsencrypt.org>`_.
+If you're having problems, we recommend posting on the Let's Encrypt
+`Community Forum <https://community.letsencrypt.org>`_.
+
+You can also chat with us on IRC: `(#certbot @
+OFTC) <https://webchat.oftc.net?channels=%23certbot>`_ or
+`(#letsencrypt @ freenode) <https://webchat.freenode.net?channels=%23letsencrypt>`_.
 
 If you find a bug in the software, please do report it in our `issue
-tracker
-<https://github.com/certbot/certbot/issues>`_. Remember to
+tracker <https://github.com/certbot/certbot/issues>`_. Remember to
 give us as much information as possible:
 
 - copy and paste exact command line used and the output (though mind
