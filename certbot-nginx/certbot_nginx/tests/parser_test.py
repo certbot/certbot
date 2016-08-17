@@ -141,12 +141,13 @@ class NginxParserTest(util.NginxTest):
                                       replace=False)
         nparser.add_server_directives(server_conf, names, [['foo', 'bar']],
                                       replace=False)
+        from certbot_nginx.parser import COMMENT
         self.assertEqual(nparser.parsed[server_conf],
                          [['server_name', 'somename  alias  another.alias'],
                           ['foo', 'bar'],
-                          ['#', ' managed by Certbot'],
+                          ['#', COMMENT],
                           ['ssl_certificate', '/etc/ssl/cert2.pem'],
-                          ['#', ' managed by Certbot'],
+                          ['#', COMMENT],
                           [], []
                           ])
 
@@ -173,11 +174,12 @@ class NginxParserTest(util.NginxTest):
         filep = nparser.abs_path('sites-enabled/example.com')
         nparser.add_server_directives(
             filep, target, [['server_name', 'foobar.com']], replace=True)
+        from certbot_nginx.parser import COMMENT
         self.assertEqual(
             nparser.parsed[filep],
             [[['server'], [['listen', '69.50.225.155:9000'],
                            ['listen', '127.0.0.1'],
-                           ['server_name', 'foobar.com'], ['#', ' managed by Certbot'],
+                           ['server_name', 'foobar.com'], ['#', COMMENT],
                            ['server_name', 'example.*'], []
                            ]]])
         self.assertRaises(errors.MisconfigurationError,
