@@ -231,6 +231,7 @@ whole process is described in the :doc:`contributing`.
    corrupt your operating system and are **not supported** by the
    Certbot team!
 
+.. _plugins:
 
 Getting certificates
 ====================
