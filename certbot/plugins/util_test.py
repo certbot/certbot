@@ -1,16 +1,15 @@
 """Tests for certbot.plugins.util."""
 import os
-import unittest
 import sys
 
 import mock
+from six.moves import reload_module  # pylint: disable=import-error
 
-try:
-    # Python 3.5+
-    from importlib import reload as refresh  # pylint: disable=no-name-in-module
-except ImportError:
-    # Python 2-3.4
-    from imp import reload as refresh
+
+if sys.version_info < (2, 7):
+    import unittest2 as unittest  # pylint: disable=import-error
+else:
+    import unittest
 
 
 class PathSurgeryTest(unittest.TestCase):
@@ -50,14 +49,14 @@ class AlreadyListeningTestNoPsutil(unittest.TestCase):
         sys.modules['psutil'] = None
         # Reload hackery to ensure getting non-psutil version
         # loaded to memory
-        refresh(certbot.plugins.util)
+        reload_module(certbot.plugins.util)
 
     def tearDown(self):
         # Need to reload the module to ensure
         # getting back to normal
         import certbot.plugins.util
         sys.modules["psutil"] = self.psutil
-        refresh(certbot.plugins.util)
+        reload_module(certbot.plugins.util)
 
     @mock.patch("certbot.plugins.util.zope.component.getUtility")
     def test_ports_available(self, mock_getutil):
@@ -81,6 +80,22 @@ class AlreadyListeningTestNoPsutil(unittest.TestCase):
         self.assertEqual(mock_getutil.call_count, 2)
 
 
+def has_psutil():
+    """Checks if the psutil module is available.
+
+    :returns: True if psutil is installed, otherwise, False
+    :rtype: bool
+
+    """
+    try:
+        import psutil  # pylint: disable=unused-variable
+        return True
+    except ImportError:
+        return False
+
+
+@unittest.skipUnless(has_psutil(),
+                     "optional psutil dependency is not available")
 class AlreadyListeningTestPsutil(unittest.TestCase):
     """Tests for certbot.plugins.already_listening."""
     def _call(self, *args, **kwargs):

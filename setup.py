@@ -64,6 +64,7 @@ if sys.version_info < (2, 7):
         # only some distros recognize stdlib argparse as already satisfying
         'argparse',
         'mock<1.1.0',
+        'unittest2',
     ])
 else:
     install_requires.append('mock')
