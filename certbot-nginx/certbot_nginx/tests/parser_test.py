@@ -226,7 +226,7 @@ class NginxParserTest(util.NginxTest):
                                        ['listen', '443 ssl']],
                                       replace=False)
         c_k = nparser.get_all_certs_keys()
-        self.assertEqual(set([('foo.pem', 'bar.key', filep)]), c_k)
+        self.assertEqual(set([('foo.pem', 'bar.key', filep)]), next(c_k))
 
     def test_parse_server_ssl(self):
         server = parser.parse_server([

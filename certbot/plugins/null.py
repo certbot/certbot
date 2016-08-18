@@ -41,7 +41,7 @@ class Installer(common.Plugin):
         return []
 
     def get_all_certs_keys(self):
-        return []
+        return iter([])
 
     def save(self, title=None, temporary=False):
         pass  # pragma: no cover

@@ -1503,7 +1503,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: list
 
         """
-        c_k = set()
 
         for vhost in self.vhosts:
             if vhost.ssl:
@@ -1517,11 +1516,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 if cert_path and key_path:
                     cert = os.path.abspath(self.parser.get_arg(cert_path[-1]))
                     key = os.path.abspath(self.parser.get_arg(key_path[-1]))
-                    c_k.add((cert, key, get_file_path(cert_path[-1])))
+                    yield (cert, key, get_file_path(cert_path[-1]))
                 else:
                     logger.warning(
                         "Invalid VirtualHost configuration - %s", vhost.filep)
-        return c_k
 
     def is_site_enabled(self, avail_fp):
         """Checks to see if the given site is enabled.

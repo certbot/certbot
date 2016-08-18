@@ -312,7 +312,6 @@ class NginxParser(object):
         :rtype: set
 
         """
-        c_k = set()
         vhosts = self.get_vhosts()
         for vhost in vhosts:
             tup = [None, None, vhost.filep]
@@ -323,8 +322,7 @@ class NginxParser(object):
                     elif directive[0] == 'ssl_certificate_key':
                         tup[1] = directive[1]
             if tup[0] is not None and tup[1] is not None:
-                c_k.add(tuple(tup))
-        return c_k
+                yield tuple(tup)
 
 
 def _do_for_subarray(entry, condition, func):
