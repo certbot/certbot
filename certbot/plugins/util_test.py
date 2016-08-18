@@ -1,10 +1,15 @@
 """Tests for certbot.plugins.util."""
 import os
-import unittest
 import sys
 
 import mock
 from six.moves import reload_module  # pylint: disable=import-error
+
+
+if sys.version_info < (2, 7):
+    import unittest2 as unittest  # pylint: disable=import-error
+else:
+    import unittest
 
 
 class PathSurgeryTest(unittest.TestCase):
@@ -75,6 +80,22 @@ class AlreadyListeningTestNoPsutil(unittest.TestCase):
         self.assertEqual(mock_getutil.call_count, 2)
 
 
+def has_psutil():
+    """Checks if the psutil module is available.
+
+    :returns: True if psutil is installed, otherwise, False
+    :rtype: bool
+
+    """
+    try:
+        import psutil  # pylint: disable=unused-variable
+        return True
+    except ImportError:
+        return False
+
+
+@unittest.skipUnless(has_psutil(),
+                     "optional psutil dependency is not available")
 class AlreadyListeningTestPsutil(unittest.TestCase):
     """Tests for certbot.plugins.already_listening."""
     def _call(self, *args, **kwargs):
