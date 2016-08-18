@@ -353,11 +353,11 @@ class NginxConfigurator(common.Plugin):
     def get_all_certs_keys(self):
         """Find all existing keys, certs from configuration.
 
-        :returns: list of tuples with form [(cert, key, path)]
+        :returns: iterator that returns tuples with form (cert, key, path)
             cert - str path to certificate file
             key - str path to associated key file
             path - File path to configuration file.
-        :rtype: set
+        :rtype: iterator
 
         """
         return self.parser.get_all_certs_keys()

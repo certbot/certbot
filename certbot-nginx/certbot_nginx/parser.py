@@ -305,11 +305,11 @@ class NginxParser(object):
     def get_all_certs_keys(self):
         """Gets all certs and keys in the nginx config.
 
-        :returns: list of tuples with form [(cert, key, path)]
+        :returns: iterator that returns tuples with form (cert, key, path)
             cert - str path to certificate file
             key - str path to associated key file
             path - File path to configuration file.
-        :rtype: set
+        :rtype: iterator
 
         """
         vhosts = self.get_vhosts()

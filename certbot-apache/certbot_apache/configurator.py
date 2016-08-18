@@ -1496,11 +1496,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         Retrieve all certs and keys set in VirtualHosts on the Apache server
 
-        :returns: list of tuples with form [(cert, key, path)]
+        :returns: iterator that returns tuples with form (cert, key, path)
             cert - str path to certificate file
             key - str path to associated key file
             path - File path to configuration file.
-        :rtype: list
+        :rtype: iterator
 
         """
 
