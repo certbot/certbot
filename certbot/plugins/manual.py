@@ -195,7 +195,7 @@ s.serve_forever()" """
                                               uri=uri,
                                               command=command)
 
-            self._ip_logging_permission(response, formated_message)
+            self._ip_logging_permission(formated_message)
 
         if not response.simple_verify(
                 achall.chall, achall.domain,
@@ -211,7 +211,7 @@ s.serve_forever()" """
             formated_message = message.format(validation=validation,
                                               domain=achall.domain,
                                               response=response)
-            self._ip_logging_permission(response, formated_message)
+            self._ip_logging_permission(formated_message)
 
         if not response.simple_verify(
                 achall.chall, achall.domain,
@@ -241,7 +241,7 @@ s.serve_forever()" """
         sys.stdout.write(message)
         six.moves.input("Press ENTER to continue")
 
-    def _ip_logging_permission(self, response, formated_message):
+    def _ip_logging_permission(self, formated_message):
         # pylint: disable=missing-docstring
         if not self.conf("public-ip-logging-ok"):
             if not zope.component.getUtility(interfaces.IDisplay).yesno(
