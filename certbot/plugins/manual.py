@@ -15,6 +15,7 @@ import zope.interface
 from functools import partial
 
 from acme import challenges
+from acme import errors as acme_errors
 
 from certbot import errors
 from certbot import interfaces
@@ -213,9 +214,15 @@ s.serve_forever()" """
                                               response=response)
             self._ip_logging_permission(formated_message)
 
-        if not response.simple_verify(
+        try:
+            verification_status = response.simple_verify(
                 achall.chall, achall.domain,
-                achall.account_key.public_key()):
+                achall.account_key.public_key())
+        except acme_errors.DependencyError:
+            verification_status = False
+            logger.warning("Dns challenge requires `dnspython`")
+
+        if not verification_status:
             logger.warning("Self-verify of challenge failed.")
 
         return response

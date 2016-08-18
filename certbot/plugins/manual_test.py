@@ -5,6 +5,7 @@ import unittest
 import mock
 
 from acme import challenges
+from acme import errors as acme_errors
 from acme import jose
 
 from certbot import achallenges
@@ -77,6 +78,19 @@ class AuthenticatorTest(unittest.TestCase):
         with mock.patch("certbot.plugins.manual.logger") as mock_logger:
             self.auth.perform(self.achalls)
             self.assertEqual(2, mock_logger.warning.call_count)
+
+    @mock.patch("certbot.plugins.manual.zope.component.getUtility")
+    @mock.patch("acme.challenges.DNS01Response.simple_verify")
+    @mock.patch("six.moves.input")
+    def test_perform_missing_dependency(self, mock_raw_input, mock_verify, mock_interaction):
+        mock_interaction().yesno.return_value = True
+        mock_verify.side_effect = acme_errors.DependencyError()
+
+        with mock.patch("certbot.plugins.manual.logger") as mock_logger:
+            self.auth.perform([self.dns01])
+            self.assertEqual(2, mock_logger.warning.call_count)
+
+        mock_raw_input.assert_called_once_with("Press ENTER to continue")
 
     @mock.patch("certbot.plugins.manual.zope.component.getUtility")
     @mock.patch("certbot.plugins.manual.Authenticator._notify_and_wait")
