@@ -533,7 +533,7 @@ def _comment_directive(block, location):
     """Add a comment to the end of the line at location."""
     next_entry = block[location + 1] if location + 1 < len(block) else None
     if isinstance(next_entry, list) and next_entry:
-        if COMMENT in next_entry[-1]:
+        if len(next_entry) >= 2 and next_entry[-2] == "#" and COMMENT in next_entry[-1]:
             return
         elif isinstance(next_entry, nginxparser.UnspacedList):
             next_entry = next_entry.spaced[0]
