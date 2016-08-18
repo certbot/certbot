@@ -55,7 +55,9 @@ class NginxConfigurator(common.Plugin):
 
     """
 
-    description = "Nginx Web Server - currently doesn't work"
+    description = "Nginx Web Server plugin - Alpha"
+
+    hidden = True
 
     @classmethod
     def add_parser_arguments(cls, add):

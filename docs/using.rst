@@ -34,6 +34,15 @@ Getting Certbot
 
 .. _certbot-auto: https://certbot.eff.org/docs/using.html#certbot-auto
 
+Commands
+========
+
+The Certbot client uses a number of different "commands" (also referred
+to, equivalently, as "subcommands") to request specific actions such as
+obtaining, renewing, or revoking certificates. Some of the most important
+and most commonly-used commands will be discussed throughout this
+document; an exhaustive list also appears near the end of the document.
+=======
 Certbot is packaged for many common operating systems and web servers. Check whether
 ``certbot`` (or ``letsencrypt``) is packaged for your web server's OS by visiting
 certbot.eff.org_, where you will also find the correct installation instructions for
@@ -231,15 +240,30 @@ whole process is described in the :doc:`contributing`.
    corrupt your operating system and are **not supported** by the
    Certbot team!
 
+.. _plugins:
 
 Getting certificates
 ====================
 
 The Certbot client supports a number of different "plugins" that can be
-used to obtain and/or install certificates.  Plugins that can obtain a cert
-are called "authenticators" and can be used with the "certonly" command.
-Plugins that can install a cert are called "installers".  Plugins that do both
-can be used with the "certbot run" command, which is the default.
+used to obtain and/or install certificates.
+
+Plugins that can obtain a cert are called "authenticators" and can be used with
+the "certonly" command. This will carry out the steps needed to validate that you
+control the domain(s) you are requesting a cert for, obtain a cert for the specified
+domain(s), and place it in the ``/etc/letsencrypt`` directory on your
+machine - without editing any of your server's configuration files to serve the 
+obtained certificate. If you specify multiple domains to authenticate, they will
+all be listed in a single certificate. To obtain multiple seperate certificates
+you will need to run Certbot multiple times.
+
+Plugins that can install a cert are called "installers" and can be used with the 
+"install" command.  These plugins can modify your webserver's configuration to
+serve your website over HTTPS using certificates obtained by certbot. 
+
+Plugins that do both can be used with the "certbot run" command, which is the default
+when no command is specified. The "run" subcommand can also be used to specify
+a combination of distinct authenticator and installer plugins.
 
 =========== ==== ==== ===============================================================
 Plugin      Auth Inst Notes
@@ -257,13 +281,16 @@ manual_     Y    N    Helps you obtain a cert by giving you instructions to perf
 nginx_      Y    Y    Very experimental and not included in certbot-auto_.
 =========== ==== ==== ===============================================================
 
-There are also many third-party-plugins_ available.
+There are also many third-party-plugins_ available. Below we describe in more detail
+the circumstances in which each plugin can be used, and how to use it.
 
 Apache
 ------
 
-If you're running Apache 2.4 on a Debian-based OS with version 1.0+ of
-the ``libaugeas0`` package available, you can use the Apache plugin.
+The Apache plugin currently requires OS with augeas version 1.0; currently `it
+supports
+<https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/constants.py>`_
+modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
 This automates both obtaining *and* installing certs on an Apache
 webserver. To specify this plugin on the command line, simply include
 ``--apache``.
@@ -386,6 +413,60 @@ postfix_    N    Y    STARTTLS Everywhere is becoming a Certbot Postfix/Exim plu
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
+Re-running Certbot
+==================
+
+Running Certbot with the ``certonly`` or ``run`` commands always requests
+the creation of a single new certificate, even if you already have an
+existing certificate with some of the same domain names. The ``--force-renewal``,
+``--duplicate``, and ``--expand`` options control Certbot's behavior in this case.
+If you don't specify a requested behavior, Certbot may ask you what you intended.
+
+``--force-renewal`` tells Certbot to request a new certificate
+with the same domains as an existing certificate. (Each and every domain
+must be explicitly specified via ``-d``.) If successful, this certificate
+will be saved alongside the earlier one and symbolic links (the "``live``"
+reference) will be updated to point to the new certificate. This is a
+valid method of explicitly requesting the renewal of a specific individual
+certificate.
+
+``--duplicate`` tells Certbot to create a separate, unrelated certificate
+with the same domains as an existing certificate. This certificate will
+be saved completely separately from the prior one. Most users probably
+do not want this behavior.
+
+``--expand`` tells Certbot to update an existing certificate with a new
+certificate that contains all of the old domains and one or more additional
+new domains.
+
+``--allow-subset-of-names`` tells Certbot to continue with cert generation if
+only some of the specified domain authorazations can be obtained. This may
+be useful if some domains specified in a certificate no longer point at this
+system.
+
+Whenever you obtain a new certificate in any of these ways, the new
+certificate exists alongside any previously-obtained certificates, whether
+or not the previous certificates have expired. The generation of a new
+certificate counts against several rate limits that are intended to prevent
+abuse of the ACME protocol, as described
+`here <https://community.letsencrypt.org/t/rate-limits-for-lets-encrypt/6769>`__.
+
+Certbot also provides a ``renew`` command. This command examines *all* existing
+certificates to determine whether or not each is near expiry. For any existing
+certificate that is near expiry, ``certbot renew`` will attempt to obtain a
+new certificate for the same domains. Unlike ``certonly``, ``renew`` acts on
+multiple certificates and always takes into account whether each one is near
+expiry. Because of this, ``renew`` is suitable (and designed) for automated use,
+to allow your system to automatically renew each certificate when appropriate.
+Since ``renew`` will only renew certificates that are near expiry it can be
+run as frequently as you want - since it will usually take no action.
+
+Typically, ``certbot renew`` runs a reduced risk of rate-limit problems
+because it renews certificates only when necessary, and because some of
+the Let's Encrypt CA's rate limit policies treat the issuance of a new
+certificate under these circumstances more generously. More details about
+the use of ``certbot renew`` are provided below.
+
 .. _renewal:
 
 Renewing certificates
@@ -407,10 +488,11 @@ at the time the certificate was originally issued will be used for the
 renewal attempt, unless you specify other plugins or options.
 
 You can also specify hooks to be run before or after a certificate is
-renewed. For example, if you want to use the standalone_ plugin to renew
-your certificates, you may want to use a command like
+renewed. For example, if you have only a single cert and you obtained it using
+the standalone_ plugin, it will be used by default when renewing. In that case
+you may want to use a command like this to renew your certificate.
 
-``certbot renew --standalone --pre-hook "service nginx stop" --post-hook "service nginx start"``
+``certbot renew --pre-hook "service nginx stop" --post-hook "service nginx start"``
 
 This will stop Nginx so standalone can bind to the necessary ports and
 then restart Nginx after the plugin is finished. The hooks will only be
@@ -426,12 +508,13 @@ can run on a regular basis, like every week or every day). In that case,
 you are likely to want to use the ``-q`` or ``--quiet`` quiet flag to
 silence all output except errors.
 
-The ``--force-renew`` flag may be helpful for automating renewal;
-it causes the expiration time of the certificate(s) to be ignored when
-considering renewal, and attempts to renew each and every installed
-certificate regardless of its age. (This form is not appropriate to run
-daily because each certificate will be renewed every day, which will
-quickly run into the certificate authority rate limit.)
+If you are manually renewing all of your certificates, the
+``--force-renewal`` flag may be helpful; it causes the expiration time of
+the certificate(s) to be ignored when considering renewal, and attempts to
+renew each and every installed certificate regardless of its age. (This
+form is not appropriate to run daily because each certificate will be
+renewed every day, which will quickly run into the certificate authority
+rate limit.)
 
 Note that options provided to ``certbot renew`` will apply to
 *every* certificate for which renewal is attempted; for example,
@@ -440,7 +523,6 @@ near-expiry certificate with an equivalent certificate using a 4096-bit
 RSA public key. If a certificate is successfully renewed using
 specified options, those options will be saved and used for future
 renewals of that certificate.
-
 
 An alternative form that provides for more fine-grained control over the
 renewal process (while renewing specified certificates one at a time),
@@ -456,8 +538,8 @@ this case in order to renew and replace the old certificate rather
 than obtaining a new one; don't forget any `www.` domains! Specifying
 a subset of the domains creates a new, separate certificate containing
 only those domains, rather than replacing the original certificate.)
-The ``certonly`` form attempts to renew one individual certificate.
-
+When run with a set of domains corresponding to an existing certificate,
+the ``certonly`` command attempts to renew that one individual certificate.
 
 Please note that the CA will send notification emails to the address
 you provide if you do not renew certificates that are about to expire.
