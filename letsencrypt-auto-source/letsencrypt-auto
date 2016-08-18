@@ -285,7 +285,7 @@ BootstrapRpmCommon() {
     yes_flag="-y"
   fi
 
-  if ! $SUDO $tool list *virtualenv > /dev/null 2>&1; then
+  if ! $SUDO $tool list *virtualenv >/dev/null 2>&1; then
     echo "To use Certbot, packages from the EPEL repository need to be installed."
     if [ "$ASSUME_YES" = 1 ]; then
         /bin/echo -n "Enabling the EPEL repository in 3 seconds..."
