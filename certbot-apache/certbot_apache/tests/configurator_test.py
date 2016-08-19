@@ -776,9 +776,9 @@ class MultipleVhostsTest(util.ApacheTest):
                           self.config.config_test)
 
     def test_get_all_certs_keys(self):
-        c_k = self.config.get_all_certs_keys()
-        self.assertEqual(len(list(c_k)), 3)
-        cert, key, path = next(c_k)
+        c_k = set(self.config.get_all_certs_keys())
+        self.assertEqual(len(c_k), 3)
+        cert, key, path = next(iter(c_k))
         self.assertTrue("cert" in cert)
         self.assertTrue("key" in key)
         self.assertTrue("default-ssl" in path or "ocsp-ssl" in path)
