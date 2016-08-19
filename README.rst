@@ -30,7 +30,7 @@ If you'd like to contribute to this project please read `Developer Guide
 Installation
 ------------
 
-The easiest way to install Certbot is by visiting https://certbot.eff.org, where you can 
+The easiest way to install Certbot is by visiting `certbot.eff.org`_, where you can
 find the correct installation instructions for many web server and OS combinations.
 For more information, see the `User Guide <https://certbot.eff.org/docs/using.html#getting-certbot>`_.
 
@@ -93,6 +93,12 @@ ACME working area in github: https://github.com/ietf-wg-acme/acme
 
 Mailing list: `client-dev`_ (to subscribe without a Google account, send an
 email to client-dev+subscribe@letsencrypt.org)
+
+.. _Freenode: https://webchat.freenode.net?channels=%23letsencrypt
+.. _OFTC: https://webchat.oftc.net?channels=%23certbot
+.. _client-dev: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev
+.. _certbot.eff.org: https://certbot.eff.org/
+
 
 |build-status| |coverage| |docs| |container|
 
