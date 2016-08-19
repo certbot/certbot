@@ -96,6 +96,7 @@ class NcursesDisplayTest(unittest.TestCase):
     @mock.patch("certbot.display.util."
                 "dialog.Dialog.inputbox")
     def test_input(self, mock_input):
+        mock_input.return_value = (mock.MagicMock(), mock.MagicMock())
         self.displayer.input("message")
         self.assertEqual(mock_input.call_count, 1)
 
@@ -106,12 +107,12 @@ class NcursesDisplayTest(unittest.TestCase):
         self.assertTrue(self.displayer.yesno("message"))
 
         mock_yesno.assert_called_with(
-            "message", display_util.HEIGHT, display_util.WIDTH,
-            yes_label="Yes", no_label="No")
+            "message", yes_label="Yes", no_label="No")
 
     @mock.patch("certbot.display.util."
                 "dialog.Dialog.checklist")
     def test_checklist(self, mock_checklist):
+        mock_checklist.return_value = (mock.MagicMock(), mock.MagicMock())
         self.displayer.checklist("message", TAGS)
 
         choices = [
@@ -119,12 +120,11 @@ class NcursesDisplayTest(unittest.TestCase):
             (TAGS[1], "", True),
             (TAGS[2], "", True),
         ]
-        mock_checklist.assert_called_with(
-            "message", width=display_util.WIDTH, height=display_util.HEIGHT,
-            choices=choices)
+        mock_checklist.assert_called_with("message", choices=choices)
 
     @mock.patch("certbot.display.util.dialog.Dialog.dselect")
     def test_directory_select(self, mock_dselect):
+        mock_dselect.return_value = (mock.MagicMock(), mock.MagicMock())
         self.displayer.directory_select("message")
         self.assertEqual(mock_dselect.call_count, 1)
 
@@ -148,7 +148,7 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.assertTrue("message" in string)
 
     def test_notification_pause(self):
-        with mock.patch("__builtin__.raw_input", return_value="enter"):
+        with mock.patch("six.moves.input", return_value="enter"):
             self.displayer.notification("message")
 
         self.assertTrue("message" in self.mock_stdout.write.call_args[0][0])
@@ -161,31 +161,31 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.assertEqual(ret, (display_util.OK, 0))
 
     def test_input_cancel(self):
-        with mock.patch("__builtin__.raw_input", return_value="c"):
+        with mock.patch("six.moves.input", return_value="c"):
             code, _ = self.displayer.input("message")
 
         self.assertTrue(code, display_util.CANCEL)
 
     def test_input_normal(self):
-        with mock.patch("__builtin__.raw_input", return_value="domain.com"):
+        with mock.patch("six.moves.input", return_value="domain.com"):
             code, input_ = self.displayer.input("message")
 
         self.assertEqual(code, display_util.OK)
         self.assertEqual(input_, "domain.com")
 
     def test_yesno(self):
-        with mock.patch("__builtin__.raw_input", return_value="Yes"):
+        with mock.patch("six.moves.input", return_value="Yes"):
             self.assertTrue(self.displayer.yesno("message"))
-        with mock.patch("__builtin__.raw_input", return_value="y"):
+        with mock.patch("six.moves.input", return_value="y"):
             self.assertTrue(self.displayer.yesno("message"))
-        with mock.patch("__builtin__.raw_input", side_effect=["maybe", "y"]):
+        with mock.patch("six.moves.input", side_effect=["maybe", "y"]):
             self.assertTrue(self.displayer.yesno("message"))
-        with mock.patch("__builtin__.raw_input", return_value="No"):
+        with mock.patch("six.moves.input", return_value="No"):
             self.assertFalse(self.displayer.yesno("message"))
-        with mock.patch("__builtin__.raw_input", side_effect=["cancel", "n"]):
+        with mock.patch("six.moves.input", side_effect=["cancel", "n"]):
             self.assertFalse(self.displayer.yesno("message"))
 
-        with mock.patch("__builtin__.raw_input", return_value="a"):
+        with mock.patch("six.moves.input", return_value="a"):
             self.assertTrue(self.displayer.yesno("msg", yes_label="Agree"))
 
     @mock.patch("certbot.display.util.FileDisplay.input")
@@ -272,11 +272,11 @@ class FileOutputDisplayTest(unittest.TestCase):
 
     def test_get_valid_int_ans_valid(self):
         # pylint: disable=protected-access
-        with mock.patch("__builtin__.raw_input", return_value="1"):
+        with mock.patch("six.moves.input", return_value="1"):
             self.assertEqual(
                 self.displayer._get_valid_int_ans(1), (display_util.OK, 1))
         ans = "2"
-        with mock.patch("__builtin__.raw_input", return_value=ans):
+        with mock.patch("six.moves.input", return_value=ans):
             self.assertEqual(
                 self.displayer._get_valid_int_ans(3),
                 (display_util.OK, int(ans)))
@@ -289,7 +289,7 @@ class FileOutputDisplayTest(unittest.TestCase):
             ["c"],
         ]
         for ans in answers:
-            with mock.patch("__builtin__.raw_input", side_effect=ans):
+            with mock.patch("six.moves.input", side_effect=ans):
                 self.assertEqual(
                     self.displayer._get_valid_int_ans(3),
                     (display_util.CANCEL, -1))

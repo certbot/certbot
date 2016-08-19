@@ -8,6 +8,7 @@ import socket
 from cryptography.hazmat.primitives import serialization
 import pyrfc3339
 import pytz
+import six
 import zope.component
 
 from acme import fields as acme_fields
@@ -108,7 +109,7 @@ class AccountMemoryStorage(interfaces.AccountStorage):
         self.accounts = initial_accounts if initial_accounts is not None else {}
 
     def find_all(self):
-        return self.accounts.values()
+        return list(six.itervalues(self.accounts))
 
     def save(self, account):
         if account.id in self.accounts:

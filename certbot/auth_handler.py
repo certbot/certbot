@@ -1,8 +1,8 @@
 """ACME AuthHandler."""
-import itertools
 import logging
 import time
 
+import six
 import zope.component
 
 from acme import challenges
@@ -141,7 +141,7 @@ class AuthHandler(object):
 
         """
         active_achalls = []
-        for achall, resp in itertools.izip(achalls, resps):
+        for achall, resp in six.moves.zip(achalls, resps):
             # This line needs to be outside of the if block below to
             # ensure failed challenges are cleaned up correctly
             active_achalls.append(achall)
@@ -472,7 +472,7 @@ def _report_failed_challs(failed_achalls):
             problems.setdefault(achall.error.typ, []).append(achall)
 
     reporter = zope.component.getUtility(interfaces.IReporter)
-    for achalls in problems.itervalues():
+    for achalls in six.itervalues(problems):
         reporter.add_message(
             _generate_failed_chall_msg(achalls), reporter.MEDIUM_PRIORITY)
 

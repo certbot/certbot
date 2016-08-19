@@ -1,6 +1,7 @@
 """Certbot command line argument & config processing."""
 from __future__ import print_function
 import argparse
+import copy
 import glob
 import logging
 import logging.handlers
@@ -87,8 +88,8 @@ More detailed help:
                         the available topics are:
 
    all, automation, paths, security, testing, or any of the subcommands or
-   plugins (certonly, install, register, nginx, apache, standalone, webroot,
-   etc.)
+   plugins (certonly, renew, install, register, nginx, apache, standalone,
+   webroot, etc.)
 """
 
 
@@ -157,10 +158,11 @@ def possible_deprecation_warning(config):
         # need warnings
         return
     if "CERTBOT_AUTO" not in os.environ:
-        logger.warn("You are running with an old copy of letsencrypt-auto that does "
+        logger.warning("You are running with an old copy of letsencrypt-auto that does "
             "not receive updates, and is less reliable than more recent versions. "
             "We recommend upgrading to the latest certbot-auto script, or using native "
             "OS packages.")
+        logger.debug("Deprecation warning circumstances: %s / %s", sys.argv[0], os.environ)
 
 
 class _Default(object):
@@ -209,6 +211,35 @@ def set_by_cli(var):
     return False
 # static housekeeping var
 set_by_cli.detector = None
+
+
+def has_default_value(option, value):
+    """Does option have the default value?
+
+    If the default value of option is not known, False is returned.
+
+    :param str option: configuration variable being considered
+    :param value: value of the configuration variable named option
+
+    :returns: True if option has the default value, otherwise, False
+    :rtype: bool
+
+    """
+    return (option in helpful_parser.defaults and
+            helpful_parser.defaults[option] == value)
+
+
+def option_was_set(option, value):
+    """Was option set by the user or does it differ from the default?
+
+    :param str option: configuration variable being considered
+    :param value: value of the configuration variable named option
+
+    :returns: True if the option was set, otherwise, False
+    :rtype: bool
+
+    """
+    return set_by_cli(option) or not has_default_value(option, value)
 
 
 def argparse_type(variable):
@@ -312,14 +343,17 @@ class HelpfulArgumentParser(object):
         self.determine_verb()
         help1 = self.prescan_for_flag("-h", self.help_topics)
         help2 = self.prescan_for_flag("--help", self.help_topics)
-        assert max(True, "a") == "a", "Gravity changed direction"
-        self.help_arg = max(help1, help2)
+        if isinstance(help1, bool) and isinstance(help2, bool):
+            self.help_arg = help1 or help2
+        else:
+            self.help_arg = help1 if isinstance(help1, str) else help2
         if self.help_arg is True:
             # just --help with no topic; avoid argparse altogether
             print(usage)
             sys.exit(0)
         self.visible_topics = self.determine_help_topics(self.help_arg)
         self.groups = {}       # elements are added by .add_group()
+        self.defaults = {}  # elements are added by .parse_args()
 
     def parse_args(self):
         """Parses command line arguments and returns the result.
@@ -334,6 +368,9 @@ class HelpfulArgumentParser(object):
 
         if self.detect_defaults:
             return parsed_args
+
+        self.defaults = dict((key, copy.deepcopy(self.parser.get_default(key)))
+                             for key in vars(parsed_args))
 
         # Do any post-parsing homework here
 
@@ -356,10 +393,12 @@ class HelpfulArgumentParser(object):
                 if getattr(parsed_args, arg):
                     raise errors.Error(
                         ("Conflicting values for displayer."
-                        " {0} conflicts with dialog_mode").format(arg)
-                    )
+                        " {0} conflicts with dialog_mode").format(arg))
+        elif parsed_args.verbose_count > flag_default("verbose_count"):
+            parsed_args.text_mode = True
 
-        hooks.validate_hooks(parsed_args)
+        if parsed_args.validate_hooks:
+            hooks.validate_hooks(parsed_args)
 
         return parsed_args
 
@@ -462,15 +501,24 @@ class HelpfulArgumentParser(object):
             pass
         return True
 
-    def add(self, topic, *args, **kwargs):
+    def add(self, topics, *args, **kwargs):
         """Add a new command line argument.
 
-        :param str: help topic this should be listed under, can be None for
-                    "always documented"
+        :param topics: str or [str] help topic(s) this should be listed under,
+                       or None for "always documented". The first entry
+                       determines where the flag lives in the "--help all"
+                       output (None -> "optional arguments").
         :param list *args: the names of this argument flag
         :param dict **kwargs: various argparse settings for this argument
 
         """
+
+        if isinstance(topics, list):
+            # if this flag can be listed in multiple sections, try to pick the one
+            # that the user has asked for help about
+            topic = self.help_arg if self.help_arg in topics else topics[0]
+        else:
+            topic = topics  # there's only one
 
         if self.detect_defaults:
             kwargs = self.modify_kwargs_for_default_detection(**kwargs)
@@ -572,6 +620,36 @@ class HelpfulArgumentParser(object):
         else:
             return dict([(t, t == chosen_topic) for t in self.help_topics])
 
+def _add_all_groups(helpful):
+    helpful.add_group("automation", description="Arguments for automating execution & other tweaks")
+    helpful.add_group("security", description="Security parameters & server settings")
+    helpful.add_group(
+        "testing", description="The following flags are meant for "
+        "testing purposes only! Do NOT change them, unless you "
+        "really know what you're doing!")
+    # VERBS
+    helpful.add_group(
+        "renew", description="The 'renew' subcommand will attempt to renew all"
+        " certificates (or more precisely, certificate lineages) you have"
+        " previously obtained if they are close to expiry, and print a"
+        " summary of the results. By default, 'renew' will reuse the options"
+        " used to create obtain or most recently successfully renew each"
+        " certificate lineage. You can try it with `--dry-run` first. For"
+        " more fine-grained control, you can renew individual lineages with"
+        " the `certonly` subcommand. Hooks are available to run commands"
+        " before and after renewal; see"
+        " https://certbot.eff.org/docs/using.html#renewal for more"
+        " information on these.")
+
+    helpful.add_group("certonly", description="Options for modifying how a cert is obtained")
+    helpful.add_group("install", description="Options for modifying how a cert is deployed")
+    helpful.add_group("revoke", description="Options for revocation of certs")
+    helpful.add_group("rollback", description="Options for reverting config changes")
+    helpful.add_group("plugins", description='Options for the "plugins" subcommand')
+    helpful.add_group("config_changes",
+                      description="Options for showing a history of config changes")
+    helpful.add_group("paths", description="Arguments changing execution paths & servers")
+
 
 def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: disable=too-many-statements
     """Returns parsed command line arguments.
@@ -587,6 +665,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     # pylint: disable=too-many-statements
 
     helpful = HelpfulArgumentParser(args, plugins, detect_defaults)
+    _add_all_groups(helpful)
 
     # --help is automatically provided by argparse
     helpful.add(
@@ -598,16 +677,25 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         None, "-t", "--text", dest="text_mode", action="store_true",
         help="Use the text output instead of the curses UI.")
     helpful.add(
-        None, "-n", "--non-interactive", "--noninteractive",
+        [None, "automation"], "-n", "--non-interactive", "--noninteractive",
         dest="noninteractive_mode", action="store_true",
         help="Run without ever asking for user input. This may require "
               "additional command line flags; the client will try to explain "
               "which ones are required if it finds one missing")
     helpful.add(
         None, "--dialog", dest="dialog_mode", action="store_true",
-        help="Run using dialog")
+        help="Run using interactive dialog menus")
     helpful.add(
-        None, "--dry-run", action="store_true", dest="dry_run",
+        [None, "run", "certonly"],
+        "-d", "--domains", "--domain", dest="domains",
+        metavar="DOMAIN", action=_DomainsAction, default=[],
+        help="Domain names to apply. For multiple domains you can use "
+             "multiple -d flags or enter a comma separated list of domains "
+             "as a parameter.")
+
+    helpful.add(
+        [None, "testing", "renew", "certonly"],
+        "--dry-run", action="store_true", dest="dry_run",
         help="Perform a test run of the client, obtaining test (invalid) certs"
              " but not saving them to disk. This can currently only be used"
              " with the 'certonly' and 'renew' subcommands. \nNote: Although --dry-run"
@@ -619,7 +707,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              " if they are defined because they may be necessary to accurately simulate"
              " renewal. --renew-hook commands are not called.")
     helpful.add(
-        None, "--register-unsafely-without-email", action="store_true",
+        ["register", "automation"], "--register-unsafely-without-email", action="store_true",
         help="Specifying this flag enables registering an account with no "
              "email address. This is strongly discouraged, because in the "
              "event of key loss or account compromise you will irrevocably "
@@ -634,20 +722,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "with an existing registration, such as the e-mail address, "
              "should be updated, rather than registering a new account.")
     helpful.add(None, "-m", "--email", help=config_help("email"))
-    # positional arg shadows --domains, instead of appending, and
-    # --domains is useful, because it can be stored in config
-    #for subparser in parser_run, parser_auth, parser_install:
-    #    subparser.add_argument("domains", nargs="*", metavar="domain")
-    helpful.add(None, "-d", "--domains", "--domain", dest="domains",
-                metavar="DOMAIN", action=_DomainsAction, default=[],
-                help="Domain names to apply. For multiple domains you can use "
-                "multiple -d flags or enter a comma separated list of domains "
-                "as a parameter.")
-    helpful.add_group(
-        "automation",
-        description="Arguments for automating execution & other tweaks")
     helpful.add(
-        "automation", "--keep-until-expiring", "--keep", "--reinstall",
+        ["automation", "renew", "certonly", "run"],
+        "--keep-until-expiring", "--keep", "--reinstall",
         dest="reinstall", action="store_true",
         help="If the requested cert matches an existing cert, always keep the "
              "existing one until it is due for renewal (for the "
@@ -661,14 +738,16 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         version="%(prog)s {0}".format(certbot.__version__),
         help="show program's version number and exit")
     helpful.add(
-        "automation", "--force-renewal", "--renew-by-default",
+        ["automation", "renew"],
+        "--force-renewal", "--renew-by-default",
         action="store_true", dest="renew_by_default", help="If a certificate "
              "already exists for the requested domains, renew it now, "
              "regardless of whether it is near expiry. (Often "
              "--keep-until-expiring is more appropriate). Also implies "
              "--expand.")
     helpful.add(
-        "automation", "--allow-subset-of-names", action="store_true",
+        ["automation", "renew", "certonly"],
+        "--allow-subset-of-names", action="store_true",
         help="When performing domain validation, do not consider it a failure "
              "if authorizations can not be obtained for a strict subset of "
              "the requested domains. This may be useful for allowing renewals for "
@@ -686,23 +765,23 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "(both can be renewed in parallel)")
     helpful.add(
         "automation", "--os-packages-only", action="store_true",
-        help="(letsencrypt-auto only) install OS package dependencies and then stop")
+        help="(certbot-auto only) install OS package dependencies and then stop")
     helpful.add(
         "automation", "--no-self-upgrade", action="store_true",
-        help="(letsencrypt-auto only) prevent the letsencrypt-auto script from"
+        help="(certbot-auto only) prevent the certbot-auto script from"
              " upgrading itself to newer released versions")
     helpful.add(
-        "automation", "-q", "--quiet", dest="quiet", action="store_true",
+        ["automation", "renew", "certonly"],
+        "-q", "--quiet", dest="quiet", action="store_true",
         help="Silence all output except errors. Useful for automation via cron."
              " Implies --non-interactive.")
-
-    helpful.add_group(
-        "testing", description="The following flags are meant for "
-        "testing purposes only! Do NOT change them, unless you "
-        "really know what you're doing!")
+    # overwrites server, handled in HelpfulArgumentParser.parse_args()
+    helpful.add("testing", "--test-cert", "--staging", action='store_true', dest='staging',
+        help='Use the staging server to obtain test (invalid) certs; equivalent'
+             ' to --server ' + constants.STAGING_URI)
     helpful.add(
         "testing", "--debug", action="store_true",
-        help="Show tracebacks in case of errors, and allow letsencrypt-auto "
+        help="Show tracebacks in case of errors, and allow certbot-auto "
              "execution on experimental platforms")
     helpful.add(
         "testing", "--no-verify-ssl", action="store_true",
@@ -719,8 +798,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "testing", "--break-my-certs", action="store_true",
         help="Be willing to replace or renew valid certs with invalid "
              "(testing/staging) certs")
-    helpful.add_group(
-        "security", description="Security parameters & server settings")
     helpful.add(
         "security", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
@@ -738,7 +815,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         "security", "--hsts", action="store_true",
         help="Add the Strict-Transport-Security header to every HTTP response."
-             " Forcing browser to use always use SSL for the domain."
+             " Forcing browser to always use SSL for the domain."
              " Defends against SSL Stripping.", dest="hsts", default=False)
     helpful.add(
         "security", "--no-hsts", action="store_false",
@@ -763,43 +840,39 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "security", "--no-staple-ocsp", action="store_false",
         help="Do not automatically enable OCSP Stapling.",
         dest="staple", default=None)
-
-
     helpful.add(
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
-
-    helpful.add_group(
-        "renew", description="The 'renew' subcommand will attempt to renew all"
-        " certificates (or more precisely, certificate lineages) you have"
-        " previously obtained if they are close to expiry, and print a"
-        " summary of the results. By default, 'renew' will reuse the options"
-        " used to create obtain or most recently successfully renew each"
-        " certificate lineage. You can try it with `--dry-run` first. For"
-        " more fine-grained control, you can renew individual lineages with"
-        " the `certonly` subcommand. Hooks are available to run commands "
-        " before and after renewal; see"
-        " https://certbot.eff.org/docs/using.html#renewal for more information on these.")
-
     helpful.add(
         "renew", "--pre-hook",
-        help="Command to be run in a shell before obtaining any certificates. Intended"
-        " primarily for renewal, where it can be used to temporarily shut down a"
-        " webserver that might conflict with the standalone plugin. This will "
-        " only be called if a certificate is actually to be obtained/renewed. ")
+        help="Command to be run in a shell before obtaining any certificates."
+        " Intended primarily for renewal, where it can be used to temporarily"
+        " shut down a webserver that might conflict with the standalone"
+        " plugin. This will only be called if a certificate is actually to be"
+        " obtained/renewed.")
     helpful.add(
         "renew", "--post-hook",
-        help="Command to be run in a shell after attempting to obtain/renew "
-        " certificates. Can be used to deploy renewed certificates, or to restart"
-        " any servers that were stopped by --pre-hook. This is only run if"
-        " an attempt was made to obtain/renew a certificate.")
+        help="Command to be run in a shell after attempting to obtain/renew"
+        " certificates. Can be used to deploy renewed certificates, or to"
+        " restart any servers that were stopped by --pre-hook. This is only"
+        " run if an attempt was made to obtain/renew a certificate.")
     helpful.add(
         "renew", "--renew-hook",
-        help="Command to be run in a shell once for each successfully renewed certificate."
-        "For this command, the shell variable $RENEWED_LINEAGE will point to the"
-        "config live subdirectory containing the new certs and keys; the shell variable "
-        "$RENEWED_DOMAINS will contain a space-delimited list of renewed cert domains")
+        help="Command to be run in a shell once for each successfully renewed"
+        " certificate. For this command, the shell variable $RENEWED_LINEAGE"
+        " will point to the config live subdirectory containing the new certs"
+        " and keys; the shell variable $RENEWED_DOMAINS will contain a"
+        " space-delimited list of renewed cert domains")
+    helpful.add(
+        "renew", "--disable-hook-validation",
+        action='store_false', dest='validate_hooks', default=True,
+        help="Ordinarily the commands specified for"
+        " --pre-hook/--post-hook/--renew-hook will be checked for validity, to"
+        " see if the programs being run are in the $PATH, so that mistakes can"
+        " be caught early, even when the hooks aren't being run just yet. The"
+        " validation is rather simplistic and fails if you use more advanced"
+        " shell constructs, so you can use this switch to disable it.")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
 
@@ -816,13 +889,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
 
 
 def _create_subparsers(helpful):
-    helpful.add_group("certonly", description="Options for modifying how a cert is obtained")
-    helpful.add_group("install", description="Options for modifying how a cert is deployed")
-    helpful.add_group("revoke", description="Options for revocation of certs")
-    helpful.add_group("rollback", description="Options for reverting config changes")
-    helpful.add_group("plugins", description="Plugin options")
-    helpful.add_group("config_changes",
-                      description="Options for showing a history of config changes")
     helpful.add("config_changes", "--num", type=int,
                 help="How many past revisions you want to be displayed")
     helpful.add(
@@ -858,8 +924,6 @@ def _paths_parser(helpful):
     verb = helpful.verb
     if verb == "help":
         verb = helpful.help_arg
-    helpful.add_group(
-        "paths", description="Arguments changing execution paths & servers")
 
     cph = "Path to where cert is saved (with auth --csr), installed from or revoked."
     section = "paths"
@@ -898,19 +962,17 @@ def _paths_parser(helpful):
         help="Logs directory.")
     add("paths", "--server", default=flag_default("server"),
         help=config_help("server"))
-    # overwrites server, handled in HelpfulArgumentParser.parse_args()
-    add("testing", "--test-cert", "--staging", action='store_true', dest='staging',
-        help='Use the staging server to obtain test (invalid) certs; equivalent'
-             ' to --server ' + constants.STAGING_URI)
 
 
 def _plugins_parsing(helpful, plugins):
+    # It's nuts, but there are two "plugins" topics.  Somehow this works
     helpful.add_group(
-        "plugins", description="Certbot client supports an "
+        "plugins", description="Plugin Selection: Certbot client supports an "
         "extensible plugins architecture. See '%(prog)s plugins' for a "
         "list of all installed plugins and their names. You can force "
         "a particular plugin by setting options provided below. Running "
         "--help <plugin_name> will list flags specific to that plugin.")
+
     helpful.add(
         "plugins", "-a", "--authenticator", help="Authenticator plugin name.")
     helpful.add(
@@ -919,15 +981,17 @@ def _plugins_parsing(helpful, plugins):
         "plugins", "--configurator", help="Name of the plugin that is "
         "both an authenticator and an installer. Should not be used "
         "together with --authenticator or --installer.")
-    helpful.add("plugins", "--apache", action="store_true",
+    helpful.add(["plugins", "certonly", "run", "install"],
+                "--apache", action="store_true",
                 help="Obtain and install certs using Apache")
-    helpful.add("plugins", "--nginx", action="store_true",
+    helpful.add(["plugins", "certonly", "run", "install"],
+                "--nginx", action="store_true",
                 help="Obtain and install certs using Nginx")
-    helpful.add("plugins", "--standalone", action="store_true",
+    helpful.add(["plugins", "certonly"], "--standalone", action="store_true",
                 help='Obtain certs using a "standalone" webserver.')
-    helpful.add("plugins", "--manual", action="store_true",
+    helpful.add(["plugins", "certonly"], "--manual", action="store_true",
                 help='Provide laborious manual instructions for obtaining a cert')
-    helpful.add("plugins", "--webroot", action="store_true",
+    helpful.add(["plugins", "certonly"], "--webroot", action="store_true",
                 help='Obtain certs by placing files in a webroot directory.')
 
     # things should not be reorder past/pre this comment:

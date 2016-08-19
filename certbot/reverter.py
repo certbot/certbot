@@ -7,7 +7,7 @@ import shutil
 import time
 import traceback
 
-
+import six
 import zope.component
 
 from certbot import constants
@@ -23,6 +23,39 @@ logger = logging.getLogger(__name__)
 
 class Reverter(object):
     """Reverter Class - save and revert configuration checkpoints.
+
+    This class can be used by the plugins, especially Installers, to
+    undo changes made to the user's system. Modifications to files and
+    commands to do undo actions taken by the plugin should be registered
+    with this class before the action is taken.
+
+    Once a change has been registered with this class, there are three
+    states the change can be in. First, the change can be a temporary
+    change. This should be used for changes that will soon be reverted,
+    such as config changes for the purpose of solving a challenge.
+    Changes are added to this state through calls to
+    :func:`~add_to_temp_checkpoint` and reverted when
+    :func:`~revert_temporary_config` or :func:`~recovery_routine` is
+    called.
+
+    The second state a change can be in is in progress. These changes
+    are not temporary, however, they also have not been finalized in a
+    checkpoint. A change must become in progress before it can be
+    finalized. Changes are added to this state through calls to
+    :func:`~add_to_checkpoint` and reverted when
+    :func:`~recovery_routine` is called.
+
+    The last state a change can be in is finalized in a checkpoint. A
+    change is put into this state by first becoming an in progress
+    change and then calling :func:`~finalize_checkpoint`. Changes
+    in this state can be reverted through calls to
+    :func:`~rollback_checkpoints`.
+
+    As a final note, creating new files and registering undo commands
+    are handled specially and use the methods
+    :func:`~register_file_creation` and :func:`~register_undo_command`
+    respectively. Both of these methods can be used to create either
+    temporary or in progress changes.
 
     .. note:: Consider moving everything over to CSV format.
 
@@ -277,7 +310,9 @@ class Reverter(object):
 
     def _run_undo_commands(self, filepath):  # pylint: disable=no-self-use
         """Run all commands in a file."""
-        with open(filepath, 'rb') as csvfile:
+        # NOTE: csv module uses native strings. That is, bytes on Python 2 and
+        # unicode on Python 3
+        with open(filepath, 'r') as csvfile:
             csvreader = csv.reader(csvfile)
             for command in reversed(list(csvreader)):
                 try:
@@ -375,9 +410,9 @@ class Reverter(object):
         command_file = None
         try:
             if os.path.isfile(commands_fp):
-                command_file = open(commands_fp, "ab")
+                command_file = open(commands_fp, "a")
             else:
-                command_file = open(commands_fp, "wb")
+                command_file = open(commands_fp, "w")
 
             csvwriter = csv.writer(command_file)
             csvwriter.writerow(command)
@@ -519,7 +554,7 @@ class Reverter(object):
         others.sort()
         if others[-1] != timestamp:
             timetravel = str(float(others[-1]) + 1)
-            logger.warn("Current timestamp %s does not correspond to newest reverter "
+            logger.warning("Current timestamp %s does not correspond to newest reverter "
                 "checkpoint; your clock probably jumped. Time travelling to %s",
                 timestamp, timetravel)
             timestamp = timetravel
@@ -536,7 +571,7 @@ class Reverter(object):
         # It is possible save checkpoints faster than 1 per second resulting in
         # collisions in the naming convention.
 
-        for _ in xrange(2):
+        for _ in six.moves.range(2):
             timestamp = self._checkpoint_timestamp()
             final_dir = os.path.join(self.config.backup_dir, timestamp)
             try:

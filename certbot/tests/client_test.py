@@ -63,12 +63,22 @@ class RegisterTest(unittest.TestCase):
     @mock.patch("certbot.client.display_ops.get_email")
     def test_email_retry(self, _rep, mock_get_email):
         from acme import messages
+        self.config.noninteractive_mode = False
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
         mx_err = messages.Error(detail=msg, typ="urn:acme:error:invalidEmail")
         with mock.patch("certbot.client.acme_client.Client") as mock_client:
             mock_client().register.side_effect = [mx_err, mock.MagicMock()]
             self._call()
             self.assertEqual(mock_get_email.call_count, 1)
+
+    @mock.patch("certbot.account.report_new_account")
+    def test_email_invalid_noninteractive(self, _rep):
+        from acme import messages
+        msg = "DNS problem: NXDOMAIN looking up MX for example.com"
+        mx_err = messages.Error(detail=msg, typ="urn:acme:error:invalidEmail")
+        with mock.patch("certbot.client.acme_client.Client") as mock_client:
+            mock_client().register.side_effect = [mx_err, mock.MagicMock()]
+            self.assertRaises(errors.Error, self._call)
 
     def test_needs_email(self):
         self.config.email = None
@@ -82,7 +92,7 @@ class RegisterTest(unittest.TestCase):
                 self.config.register_unsafely_without_email = True
                 self.config.dry_run = False
                 self._call()
-                mock_logger.warn.assert_called_once_with(mock.ANY)
+                mock_logger.warning.assert_called_once_with(mock.ANY)
 
     def test_unsupported_error(self):
         from acme import messages
@@ -232,11 +242,11 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(os.path.dirname(fullchain_path),
                          os.path.dirname(candidate_fullchain_path))
 
-        with open(cert_path, "r") as cert_file:
+        with open(cert_path, "rb") as cert_file:
             cert_contents = cert_file.read()
         self.assertEqual(cert_contents, test_util.load_vector(certs[0]))
 
-        with open(chain_path, "r") as chain_file:
+        with open(chain_path, "rb") as chain_file:
             chain_contents = chain_file.read()
         self.assertEqual(chain_contents, test_util.load_vector(certs[1]) +
                          test_util.load_vector(certs[2]))

@@ -48,7 +48,7 @@ def get_email(invalid=False, optional=True):
                 invalid_prefix + msg if invalid else msg)
         except errors.MissingCommandlineFlag:
             msg = ("You should register before running non-interactively, "
-                   "or provide --agree-tos and --email <email_address> flags")
+                   "or provide --agree-tos and --email <email_address> flags.")
             raise errors.MissingCommandlineFlag(msg)
 
         if code != display_util.OK:
@@ -180,7 +180,12 @@ def _choose_names_manually():
             try:
                 domain_list[i] = util.enforce_domain_sanity(domain)
             except errors.ConfigurationError as e:
-                invalid_domains[domain] = e.message
+                try:  # Python 2
+                    # pylint: disable=no-member
+                    err_msg = e.message.encode('utf-8')
+                except AttributeError:
+                    err_msg = str(e)
+                invalid_domains[domain] = err_msg
 
         if len(invalid_domains):
             retry_message = (

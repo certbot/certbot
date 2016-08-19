@@ -1,6 +1,7 @@
 """Certbot main entry point."""
 from __future__ import print_function
 import atexit
+import dialog
 import functools
 import logging.handlers
 import os
@@ -33,6 +34,13 @@ from certbot import storage
 from certbot.display import util as display_util, ops as display_ops
 from certbot.plugins import disco as plugins_disco
 from certbot.plugins import selection as plug_sel
+
+
+_PERM_ERR_FMT = os.linesep.join((
+    "The following error was encountered:", "{0}",
+    "If running as non-root, set --config-dir, "
+    "--logs-dir, and --work-dir to writeable paths."))
+
 
 logger = logging.getLogger(__name__)
 
@@ -82,14 +90,17 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
     if action == "reinstall":
         # The lineage already exists; allow the caller to try installing
         # it without getting a new certificate at all.
+        logger.info("Keeping the existing certificate")
         return lineage, "reinstall"
 
     hooks.pre_hook(config)
     try:
         if action == "renew":
+            logger.info("Renewing an existing certificate")
             renewal.renew_cert(config, domains, le_client, lineage)
         elif action == "newcert":
             # TREAT AS NEW REQUEST
+            logger.info("Obtaining a new certificate")
             lineage = le_client.obtain_and_enroll_certificate(domains)
             if lineage is False:
                 raise errors.Error("Certificate could not be obtained")
@@ -525,7 +536,7 @@ def _csr_obtain_cert(config, le_client):
     csr, typ = config.actual_csr
     certr, chain = le_client.obtain_certificate_from_csr(config.domains, csr, typ)
     if config.dry_run:
-        logger.info(
+        logger.debug(
             "Dry run: skipping saving certificate to %s", config.cert_path)
     else:
         cert_path, _, cert_fullchain = le_client.save_certificate(
@@ -588,8 +599,11 @@ def renew(config, unused_plugins):
 def setup_log_file_handler(config, logfile, fmt):
     """Setup file debug logging."""
     log_file_path = os.path.join(config.logs_dir, logfile)
-    handler = logging.handlers.RotatingFileHandler(
-        log_file_path, maxBytes=2 ** 20, backupCount=10)
+    try:
+        handler = logging.handlers.RotatingFileHandler(
+            log_file_path, maxBytes=2 ** 20, backupCount=10)
+    except IOError as error:
+        raise errors.Error(_PERM_ERR_FMT.format(error))
     # rotate on each invocation, rollover only possible when maxBytes
     # is nonzero and backupCount is nonzero, so we set maxBytes as big
     # as possible not to overrun in single CLI invocation (1MB).
@@ -615,11 +629,12 @@ def _cli_log_handler(config, level, fmt):
 
 def setup_logging(config, cli_handler_factory, logfile):
     """Setup logging."""
-    fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+    file_fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+    cli_fmt = "%(message)s"
     level = -config.verbose_count * 10
     file_handler, log_file_path = setup_log_file_handler(
-        config, logfile=logfile, fmt=fmt)
-    cli_handler = cli_handler_factory(config, level, fmt)
+        config, logfile=logfile, fmt=file_fmt)
+    cli_handler = cli_handler_factory(config, level, cli_fmt)
 
     # TODO: use fileConfig?
 
@@ -665,7 +680,10 @@ def _handle_exception(exc_type, exc_value, trace, config):
             # Here we're passing a client or ACME error out to the client at the shell
             # Tell the user a bit about what happened, without overwhelming
             # them with a full traceback
-            err = traceback.format_exception_only(exc_type, exc_value)[0]
+            if issubclass(exc_type, dialog.error):
+                err = exc_value.complete_message()
+            else:
+                err = traceback.format_exception_only(exc_type, exc_value)[0]
             # Typical error from the ACME module:
             # acme.messages.Error: urn:acme:error:malformed :: The request message was
             # malformed :: Error creating new registration :: Validation of contact
@@ -685,6 +703,23 @@ def _handle_exception(exc_type, exc_value, trace, config):
             traceback.format_exception(exc_type, exc_value, trace)))
 
 
+def make_or_verify_core_dir(directory, mode, uid, strict):
+    """Make sure directory exists with proper permissions.
+
+    :param str directory: Path to a directory.
+    :param int mode: Directory mode.
+    :param int uid: Directory owner.
+    :param bool strict: require directory to be owned by current user
+
+    :raises .errors.Error: if the directory cannot be made or verified
+
+    """
+    try:
+        util.make_or_verify_dir(directory, mode, uid, strict)
+    except OSError as error:
+        raise errors.Error(_PERM_ERR_FMT.format(error))
+
+
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     sys.excepthook = functools.partial(_handle_exception, config=None)
@@ -695,16 +730,16 @@ def main(cli_args=sys.argv[1:]):
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
 
-    # Setup logging ASAP, otherwise "No handlers could be found for
-    # logger ..." TODO: this should be done before plugins discovery
-    for directory in config.config_dir, config.work_dir:
-        util.make_or_verify_dir(
-            directory, constants.CONFIG_DIRS_MODE, os.geteuid(),
-            "--strict-permissions" in cli_args)
+    make_or_verify_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
+                            os.geteuid(), config.strict_permissions)
+    make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
+                            os.geteuid(), config.strict_permissions)
     # TODO: logs might contain sensitive data such as contents of the
     # private key! #525
-    util.make_or_verify_dir(
-        config.logs_dir, 0o700, os.geteuid(), "--strict-permissions" in cli_args)
+    make_or_verify_core_dir(config.logs_dir, 0o700,
+                            os.geteuid(), config.strict_permissions)
+    # Setup logging ASAP, otherwise "No handlers could be found for
+    # logger ..." TODO: this should be done before plugins discovery
     setup_logging(config, _cli_log_handler, logfile='letsencrypt.log')
     cli.possible_deprecation_warning(config)
 
@@ -738,5 +773,5 @@ def main(cli_args=sys.argv[1:]):
 if __name__ == "__main__":
     err_string = main()
     if err_string:
-        logger.warn("Exiting with message %s", err_string)
+        logger.warning("Exiting with message %s", err_string)
     sys.exit(err_string)  # pragma: no cover

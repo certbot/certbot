@@ -95,6 +95,7 @@ def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
     :param str directory: Path to a directory.
     :param int mode: Directory mode.
     :param int uid: Directory owner.
+    :param bool strict: require directory to be owned by current user
 
     :raises .errors.Error: if a directory already exists,
         but has wrong permissions or owner
@@ -267,6 +268,19 @@ def get_systemd_os_info(filepath="/etc/os-release"):
     return (os_name, os_version)
 
 
+def get_systemd_os_like(filepath="/etc/os-release"):
+    """
+    Get a list of strings that indicate the distribution likeness to
+    other distributions.
+
+    :param str filepath: File path of os-release file
+    :returns: List of distribution acronyms
+    :rtype: `list` of `str`
+    """
+
+    return _get_systemd_os_release_var("ID_LIKE", filepath).split(" ")
+
+
 def _get_systemd_os_release_var(varname, filepath="/etc/os-release"):
     """
     Get single value from systemd /etc/os-release
@@ -348,7 +362,7 @@ def safe_email(email):
     if EMAIL_REGEX.match(email) is not None:
         return not email.startswith(".") and ".." not in email
     else:
-        logger.warn("Invalid email address: %s.", email)
+        logger.warning("Invalid email address: %s.", email)
         return False
 
 
@@ -388,18 +402,27 @@ def enforce_domain_sanity(domain):
     :returns: The domain cast to `str`, with ASCII-only contents
     :rtype: str
     """
+    if isinstance(domain, six.text_type):
+        wildcard_marker = u"*."
+        punycode_marker = u"xn--"
+    else:
+        wildcard_marker = b"*."
+        punycode_marker = b"xn--"
+
     # Check if there's a wildcard domain
-    if domain.startswith("*."):
+    if domain.startswith(wildcard_marker):
         raise errors.ConfigurationError(
             "Wildcard domains are not supported: {0}".format(domain))
     # Punycode
-    if "xn--" in domain:
+    if punycode_marker in domain:
         raise errors.ConfigurationError(
             "Punycode domains are not presently supported: {0}".format(domain))
 
     # Unicode
     try:
-        domain = domain.encode('ascii').lower()
+        if isinstance(domain, six.binary_type):
+            domain = domain.decode('utf-8')
+        domain.encode('ascii')
     except UnicodeError:
         error_fmt = (u"Internationalized domain names "
                      "are not presently supported: {0}")
@@ -408,8 +431,10 @@ def enforce_domain_sanity(domain):
         else:
             raise errors.ConfigurationError(str(error_fmt).format(domain))
 
+    domain = domain.lower()
+
     # Remove trailing dot
-    domain = domain[:-1] if domain.endswith('.') else domain
+    domain = domain[:-1] if domain.endswith(u'.') else domain
 
     # Explain separately that IP addresses aren't allowed (apart from not
     # being FQDNs) because hope springs eternal concerning this point
@@ -423,14 +448,17 @@ def enforce_domain_sanity(domain):
         # It wasn't an IP address, so that's good
         pass
 
-    # FQDN checks from
-    # http://www.mkyong.com/regular-expressions/domain-name-regular-expression-example/
-    #  Characters used, domain parts < 63 chars, tld > 1 < 64 chars
-    #  first and last char is not "-"
-    fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,63}$")
-    if not fqdn.match(domain):
-        raise errors.ConfigurationError("Requested domain {0} is not a FQDN"
-                                        .format(domain))
+    # FQDN checks according to RFC 2181: domain name should be less than 255
+    # octets (inclusive). And each label is 1 - 63 octets (inclusive).
+    # https://tools.ietf.org/html/rfc2181#section-11
+    msg = "Requested domain {0} is not a FQDN because ".format(domain)
+    labels = domain.split('.')
+    for l in labels:
+        if not 0 < len(l) < 64:
+            raise errors.ConfigurationError(msg + "label {0} is too long.".format(l))
+    if len(domain) > 255:
+        raise errors.ConfigurationError(msg + "it is too long.")
+
     return domain
 
 

@@ -111,7 +111,7 @@ class MakeCSRTest(unittest.TestCase):
             # OpenSSL.crypto.X509Extension doesn't give us the extension's raw OID,
             # and the shortname field is just "UNDEF"
             must_staple_exts = [e for e in csr.get_extensions()
-                if e.get_data() == "0\x03\x02\x01\x05"]
+                if e.get_data() == b"0\x03\x02\x01\x05"]
             self.assertEqual(len(must_staple_exts), 1,
                 "Expected exactly one Must Staple extension")
 
@@ -273,6 +273,32 @@ class GetSANsFromCSRTest(unittest.TestCase):
             [], self._call(test_util.load_vector('csr-nosans.pem')))
 
 
+class GetNamesFromCertTest(unittest.TestCase):
+    """Tests for certbot.crypto_util.get_names_from_cert."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.crypto_util import get_names_from_cert
+        return get_names_from_cert(*args, **kwargs)
+
+    def test_single(self):
+        self.assertEqual(
+            ['example.com'],
+            self._call(test_util.load_vector('cert.pem')))
+
+    def test_san(self):
+        self.assertEqual(
+            ['example.com', 'www.example.com'],
+            self._call(test_util.load_vector('cert-san.pem')))
+
+    def test_common_name_sans_order(self):
+        # Tests that the common name comes first
+        # followed by the SANS in alphabetical order
+        self.assertEqual(
+            ['example.com'] + ['{0}.example.com'.format(c) for c in 'abcd'],
+            self._call(test_util.load_vector('cert-5sans.pem')))
+
+
 class GetNamesFromCSRTest(unittest.TestCase):
     """Tests for certbot.crypto_util.get_names_from_csr."""
     @classmethod
@@ -315,7 +341,7 @@ class CertLoaderTest(unittest.TestCase):
 
     def test_load_invalid_cert(self):
         from certbot.crypto_util import pyopenssl_load_certificate
-        bad_cert_data = CERT.replace("BEGIN CERTIFICATE", "ASDFASDFASDF!!!")
+        bad_cert_data = CERT.replace(b"BEGIN CERTIFICATE", b"ASDFASDFASDF!!!")
         self.assertRaises(
             errors.Error, pyopenssl_load_certificate, bad_cert_data)
 

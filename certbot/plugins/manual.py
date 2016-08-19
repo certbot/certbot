@@ -10,6 +10,7 @@ import sys
 import tempfile
 import time
 
+import six
 import zope.component
 import zope.interface
 
@@ -187,7 +188,7 @@ s.serve_forever()" """
         #answer = zope.component.getUtility(interfaces.IDisplay).notification(
         #    message=message, height=25, pause=True)
         sys.stdout.write(message)
-        raw_input("Press ENTER to continue")
+        six.moves.input("Press ENTER to continue")
 
     def cleanup(self, achalls):
         # pylint: disable=missing-docstring,no-self-use,unused-argument

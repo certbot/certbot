@@ -1,0 +1,7 @@
+# Depends: dav
+<IfModule !mod_dav_svn.c>
+    <IfModule !mod_dav.c>
+        Include mods-enabled/dav.load
+    </IfModule>
+    LoadModule dav_svn_module /usr/lib/apache2/modules/mod_dav_svn.so
+</IfModule>

@@ -1,13 +1,18 @@
 """Certbot display."""
+import logging
 import os
 import textwrap
 
 import dialog
+import six
 import zope.interface
 
 from certbot import interfaces
 from certbot import errors
 from certbot.display import completer
+
+
+logger = logging.getLogger(__name__)
 
 WIDTH = 72
 HEIGHT = 20
@@ -28,6 +33,9 @@ CANCEL = "cancel"
 
 HELP = "help"
 """Display exit code when for when the user requests more help."""
+
+ESC = "esc"
+"""Display exit code when the user hits Escape"""
 
 
 def _wrap_lines(msg):
@@ -51,13 +59,32 @@ def _wrap_lines(msg):
 
     return os.linesep.join(fixed_l)
 
+
+def _clean(dialog_result):
+    """Treat sundy python-dialog return codes as CANCEL
+
+    :param tuple dialog_result: (code, result)
+    :returns: the argument but with unknown codes set to -1 (Error)
+    :rtype: tuple
+    """
+    code, result = dialog_result
+    if code in (OK, HELP):
+        return dialog_result
+    elif code in (CANCEL, ESC):
+        return (CANCEL, result)
+    else:
+        logger.debug("Surprising dialog return code %s", code)
+        return (CANCEL, result)
+
+
 @zope.interface.implementer(interfaces.IDisplay)
 class NcursesDisplay(object):
     """Ncurses-based display."""
 
     def __init__(self, width=WIDTH, height=HEIGHT):
         super(NcursesDisplay, self).__init__()
-        self.dialog = dialog.Dialog()
+        self.dialog = dialog.Dialog(autowidgetsize=True)
+        assert OK == self.dialog.DIALOG_OK, "What kind of absurdity is this?"
         self.width = width
         self.height = height
 
@@ -75,7 +102,7 @@ class NcursesDisplay(object):
         :param bool pause: Not applicable to NcursesDisplay
 
         """
-        self.dialog.msgbox(message, height, width=self.width)
+        self.dialog.msgbox(message)
 
     def menu(self, message, choices, ok_label="OK", cancel_label="Cancel",
              help_label="", **unused_kwargs):
@@ -92,7 +119,7 @@ class NcursesDisplay(object):
         :param dict unused_kwargs: absorbs default / cli_args
 
         :returns: tuple of the form (`code`, `index`) where
-            `code` - int display exit code
+            `code` - display exit code
             `int` - index of the selected item
         :rtype: tuple
 
@@ -111,7 +138,7 @@ class NcursesDisplay(object):
         # Can accept either tuples or just the actual choices
         if choices and isinstance(choices[0], tuple):
             # pylint: disable=star-args
-            code, selection = self.dialog.menu(message, **menu_options)
+            code, selection = _clean(self.dialog.menu(message, **menu_options))
 
             # Return the selection index
             for i, choice in enumerate(choices):
@@ -126,9 +153,9 @@ class NcursesDisplay(object):
                 (str(i), choice) for i, choice in enumerate(choices, 1)
             ]
             # pylint: disable=star-args
-            code, index = self.dialog.menu(message, **menu_options)
+            code, index = _clean(self.dialog.menu(message, **menu_options))
 
-            if code == CANCEL:
+            if code == CANCEL or index == "":
                 return code, -1
 
             return code, int(index) - 1
@@ -140,15 +167,11 @@ class NcursesDisplay(object):
         :param dict _kwargs: absorbs default / cli_args
 
         :returns: tuple of the form (`code`, `string`) where
-            `code` - int display exit code
+            `code` - display exit code
             `string` - input entered by the user
 
         """
-        sections = message.split("\n")
-        # each section takes at least one line, plus extras if it's longer than self.width
-        wordlines = [1 + (len(section) / self.width) for section in sections]
-        height = 6 + sum(wordlines) + len(sections)
-        return self.dialog.inputbox(message, width=self.width, height=height)
+        return self.dialog.inputbox(message)
 
     def yesno(self, message, yes_label="Yes", no_label="No", **unused_kwargs):
         """Display a Yes/No dialog box.
@@ -165,8 +188,7 @@ class NcursesDisplay(object):
 
         """
         return self.dialog.DIALOG_OK == self.dialog.yesno(
-            message, self.height, self.width,
-            yes_label=yes_label, no_label=no_label)
+            message, yes_label=yes_label, no_label=no_label)
 
     def checklist(self, message, tags, default_status=True, **unused_kwargs):
         """Displays a checklist.
@@ -179,13 +201,12 @@ class NcursesDisplay(object):
 
 
         :returns: tuple of the form (`code`, `list_tags`) where
-            `code` - int display exit code
+            `code` - display exit code
             `list_tags` - list of str tags selected by the user
 
         """
         choices = [(tag, "", default_status) for tag in tags]
-        return self.dialog.checklist(
-            message, width=self.width, height=self.height, choices=choices)
+        return self.dialog.checklist(message, choices=choices)
 
     def directory_select(self, message, **unused_kwargs):
         """Display a directory selection screen.
@@ -193,14 +214,13 @@ class NcursesDisplay(object):
         :param str message: prompt to give the user
 
         :returns: tuple of the form (`code`, `string`) where
-            `code` - int display exit code
+            `code` - display exit code
             `string` - input entered by the user
 
         """
         root_directory = os.path.abspath(os.sep)
         return self.dialog.dselect(
-            filepath=root_directory, width=self.width,
-            height=self.height, help_button=True, title=message)
+            filepath=root_directory, help_button=True, title=message)
 
 
 @zope.interface.implementer(interfaces.IDisplay)
@@ -227,7 +247,7 @@ class FileDisplay(object):
             "{line}{frame}{line}{msg}{line}{frame}{line}".format(
                 line=os.linesep, frame=side_frame, msg=message))
         if pause:
-            raw_input("Press Enter to Continue")
+            six.moves.input("Press Enter to Continue")
 
     def menu(self, message, choices, ok_label="", cancel_label="",
              help_label="", **unused_kwargs):
@@ -269,7 +289,7 @@ class FileDisplay(object):
         :rtype: tuple
 
         """
-        ans = raw_input(
+        ans = six.moves.input(
             textwrap.fill(
                 "%s (Enter 'c' to cancel): " % message,
                 80,
@@ -304,7 +324,7 @@ class FileDisplay(object):
             os.linesep, frame=side_frame, msg=message))
 
         while True:
-            ans = raw_input("{yes}/{no}: ".format(
+            ans = six.moves.input("{yes}/{no}: ".format(
                 yes=_parens_around_char(yes_label),
                 no=_parens_around_char(no_label)))
 
@@ -355,7 +375,7 @@ class FileDisplay(object):
         :param str message: prompt to give the user
 
         :returns: tuple of the form (`code`, `string`) where
-            `code` - int display exit code
+            `code` - display exit code
             `string` - input entered by the user
 
         """
@@ -442,7 +462,7 @@ class FileDisplay(object):
             input_msg = ("Press 1 [enter] to confirm the selection "
                          "(press 'c' to cancel): ")
         while selection < 1:
-            ans = raw_input(input_msg)
+            ans = six.moves.input(input_msg)
             if ans.startswith("c") or ans.startswith("C"):
                 return CANCEL, -1
             try:
