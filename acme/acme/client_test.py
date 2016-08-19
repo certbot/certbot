@@ -102,12 +102,6 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(self.regr, self.client.register(self.new_reg))
         # TODO: test POST call arguments
 
-        # TODO: split here and separate test
-        reg_wrong_key = self.regr.body.update(key=KEY2.public_key())
-        self.response.json.return_value = reg_wrong_key.to_json()
-        self.assertRaises(
-            errors.UnexpectedUpdate, self.client.register, self.new_reg)
-
     def test_register_missing_next(self):
         self.response.status_code = http_client.CREATED
         self.assertRaises(
