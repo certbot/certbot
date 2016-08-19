@@ -16,8 +16,11 @@ class InstallerTest(unittest.TestCase):
         self.assertEqual([], self.installer.get_all_names())
         self.assertEqual([], self.installer.supported_enhancements())
         self.assertEqual(set([]), set(self.installer.get_all_certs_keys()))
-        with self.assertRaises(StopIteration):
-            next(self.installer.get_all_certs_keys())
+        self.assertRaises(
+            StopIteration,
+            next,
+            self.installer.get_all_certs_keys()
+        )
 
 
 if __name__ == "__main__":
