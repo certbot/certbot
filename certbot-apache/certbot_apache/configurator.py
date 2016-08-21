@@ -98,6 +98,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             help="Apache server root directory.")
         add("vhost-root", default=constants.os_constant("vhost_root"),
             help="Apache server VirtualHost configuration root")
+        add("logs-root", default=constants.os_constant("logs_root"),
+            help="Apache server logs directory")
         add("challenge-location",
             default=constants.os_constant("challenge_location"),
             help="Directory path for challenge configuration.")
@@ -1425,13 +1427,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "RewriteEngine On\n"
                 "RewriteRule %s\n"
                 "\n"
-                "ErrorLog /var/log/apache2/redirect.error.log\n"
+                "ErrorLog %s/redirect.error.log\n"
                 "LogLevel warn\n"
                 "</VirtualHost>\n"
                 % (" ".join(str(addr) for
                             addr in self._get_proposed_addrs(ssl_vhost)),
                    servername, serveralias,
-                   " ".join(rewrite_rule_args)))
+                   " ".join(rewrite_rule_args),
+                   self.conf("logs-root") ))
 
     def _write_out_redirect(self, ssl_vhost, text):
         # This is the default name
