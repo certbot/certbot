@@ -1434,7 +1434,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                             addr in self._get_proposed_addrs(ssl_vhost)),
                    servername, serveralias,
                    " ".join(rewrite_rule_args),
-                   self.conf("logs-root") ))
+                   self.conf("logs-root")))
 
     def _write_out_redirect(self, ssl_vhost, text):
         # This is the default name
