@@ -105,9 +105,9 @@ def skipUnless(condition, reason):
     if hasattr(unittest, "skipUnless"):
         return unittest.skipUnless(condition, reason)
     elif condition:
-        return lambda x: x
+        return lambda cls: cls
     else:
-        return lambda x: None
+        return lambda cls: None
 
 
 @skipUnless(psutil_available(), "optional dependency psutil is not available")
