@@ -75,6 +75,42 @@ class AlreadyListeningTestNoPsutil(unittest.TestCase):
         self.assertEqual(mock_getutil.call_count, 2)
 
 
+def psutil_available():
+    """Checks if psutil can be imported.
+
+    :rtype: bool
+    :returns: True iff psutil is installed and can be imported
+
+    """
+    try:
+        import psutil  # pylint: disable=unused-variable
+    except ImportError:
+        return False
+    return True
+
+
+def skipUnless(condition, reason):
+    """Skip tests unless a condition holds.
+
+    This implements the basic functionality of unittest.skipUnless
+    which is only available on Python 2.7+.
+
+    :param bool condition: skip the test iff condition is False
+    :param str reason: the reason for skipping the test
+
+    :rtype: function
+    :returns: a decorator that will hide tests unless condition is True
+
+    """
+    if hasattr(unittest, "skipUnless"):
+        return unittest.skipUnless(condition, reason)
+    elif condition:
+        return lambda x: x
+    else:
+        return lambda x: None
+
+
+@skipUnless(psutil_available(), "optional dependency psutil is not available")
 class AlreadyListeningTestPsutil(unittest.TestCase):
     """Tests for certbot.plugins.already_listening."""
     def _call(self, *args, **kwargs):
