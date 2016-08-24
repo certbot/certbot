@@ -517,7 +517,7 @@ Bootstrap() {
     ExperimentalBootstrap "FreeBSD" BootstrapFreeBsd
   elif uname | grep -iq Darwin ; then
     ExperimentalBootstrap "Mac OS X" BootstrapMac
-  elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
+  elif [ -f /etc/system-release ] && grep -iq "Amazon Linux" /etc/system-release ; then
     ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
   elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
     ExperimentalBootstrap "Joyent SmartOS Zone" BootstrapSmartOS
