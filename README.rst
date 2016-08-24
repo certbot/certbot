@@ -76,6 +76,8 @@ the User Guide.
 Links
 =====
 
+.. Do not modify this comment unless you know what you're doing. tag:links-begin
+
 Documentation: https://certbot.eff.org/docs
 
 Software project: https://github.com/certbot/certbot
@@ -124,6 +126,8 @@ email to client-dev+subscribe@letsencrypt.org)
    https://letsencrypt.readthedocs.org/en/latest/using.html#getting-certbot
 
 .. _watch demo video: https://www.youtube.com/watch?v=Gas_sSB-5SU
+
+.. Do not modify this comment unless you know what you're doing. tag:links-end
 
 System Requirements
 ===================
