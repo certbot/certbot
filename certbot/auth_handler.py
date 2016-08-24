@@ -33,14 +33,16 @@ class AuthHandler(object):
         and values are :class:`acme.messages.AuthorizationResource`
     :ivar list achalls: DV challenges in the form of
         :class:`certbot.achallenges.AnnotatedChallenge`
+    :ivar list pref_challs: A list of user specified preferred challenges
 
     """
-    def __init__(self, auth, acme, account):
+    def __init__(self, auth, acme, account, pref_challs):
         self.auth = auth
         self.acme = acme
 
         self.account = account
         self.authzr = dict()
+        self.pref_challs = pref_challs
 
         # List must be used to keep responses straight.
         self.achalls = []
@@ -246,6 +248,14 @@ class AuthHandler(object):
         """
         # Make sure to make a copy...
         chall_prefs = []
+        plugin_pref = self.auth.get_chall_pref(domain)
+        if self.pref_challs:
+            out = [pref for pref in self.pref_challs if pref in plugin_pref]
+            if out:
+                return out
+            else:
+                raise errors.AuthorizationError(
+                        "None of the selected challenges are supported by the selected plugins")
         chall_prefs.extend(self.auth.get_chall_pref(domain))
         return chall_prefs
 

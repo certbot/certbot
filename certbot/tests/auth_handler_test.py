@@ -24,7 +24,7 @@ class ChallengeFactoryTest(unittest.TestCase):
         from certbot.auth_handler import AuthHandler
 
         # Account is mocked...
-        self.handler = AuthHandler(None, None, mock.Mock(key="mock_key"))
+        self.handler = AuthHandler(None, None, mock.Mock(key="mock_key"), [])
 
         self.dom = "test"
         self.handler.authzr[self.dom] = acme_util.gen_authzr(
@@ -74,7 +74,7 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.mock_net = mock.MagicMock(spec=acme_client.Client)
 
         self.handler = AuthHandler(
-            self.mock_auth, self.mock_net, self.mock_account)
+            self.mock_auth, self.mock_net, self.mock_account, [])
 
         logging.disable(logging.CRITICAL)
 
@@ -189,7 +189,7 @@ class PollChallengesTest(unittest.TestCase):
         # Account and network are mocked...
         self.mock_net = mock.MagicMock()
         self.handler = AuthHandler(
-            None, self.mock_net, mock.Mock(key="mock_key"))
+            None, self.mock_net, mock.Mock(key="mock_key"), [])
 
         self.doms = ["0", "1", "2"]
         self.handler.authzr[self.doms[0]] = acme_util.gen_authzr(

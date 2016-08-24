@@ -13,6 +13,8 @@ import six
 
 import certbot
 
+from acme import challenges
+
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
@@ -845,6 +847,13 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
     helpful.add(
+        "security", "--preferred-challenges", dest="pref_chall",
+        action=_PrefChallAction, default=[],
+        help="Specify which challenges you'd prefer to use. If any of those "
+             "challenges are valid for your authenticator they will be used. "
+             "Otherwise Certbot will not attempt authorization. The first "
+             "challenge listed that is supported by the plugin will be used.")
+    helpful.add(
         "renew", "--pre-hook",
         help="Command to be run in a shell before obtaining any certificates."
         " Intended primarily for renewal, where it can be used to temporarily"
@@ -1032,3 +1041,34 @@ def add_domains(args_or_config, domains):
             args_or_config.domains.append(domain)
 
     return validated_domains
+
+class _PrefChallAction(argparse.Action):
+    """Action class for parsing preferred challenges."""
+
+    def __call__(self, parser, namespace, pref_chall, option_string=None):
+        """Just wrap add_pref_challs in argparseese."""
+        _ = add_pref_challs(namespace, pref_chall)
+
+def add_pref_challs(namespace, pref_challs):
+    """Parses and validates user specified challenge types.
+
+    Adds challenges (in order) to the configuration object.
+
+    :param namespace: parsed command line arguments
+    :type namespace: argparse.Namespace or
+        configuration.NamespaceConfig
+    :param str pref_challs: one or more comma separated challenge types
+
+    :returns: Challenge objects which match the validated string inputs
+    :rtype: `list`
+    """
+    challs = pref_challs.split(",")
+    unrecognized = [name for name in challs if name not in challenges.Challenge.TYPES]
+    if unrecognized:
+        raise argparse.ArgumentTypeError(
+                "Unrecognized challenges: {0}".format(", ".join(unrecognized)))
+
+    out = [challenges.Challenge.TYPES[name] for name in challs]
+    print(namespace)
+    namespace.pref_chall.extend(out)
+    return out

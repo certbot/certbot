@@ -67,29 +67,17 @@ class ServerManagerTest(unittest.TestCase):
 class SupportedChallengesValidatorTest(unittest.TestCase):
     """Tests for plugins.standalone.supported_challenges_validator."""
 
-    def _call(self, data):
-        from certbot.plugins.standalone import (
-            supported_challenges_validator)
-        return supported_challenges_validator(data)
+    def setUp(self):
+        self.parser = argparse.ArgumentParser()
+        from certbot.plugins import standalone
+        standalone.Authenticator.add_parser_arguments(self.parser.add_argument)
 
-    def test_correct(self):
-        self.assertEqual("tls-sni-01", self._call("tls-sni-01"))
-        self.assertEqual("http-01", self._call("http-01"))
-        self.assertEqual("tls-sni-01,http-01", self._call("tls-sni-01,http-01"))
-        self.assertEqual("http-01,tls-sni-01", self._call("http-01,tls-sni-01"))
-
-    def test_unrecognized(self):
-        assert "foo" not in challenges.Challenge.TYPES
-        self.assertRaises(argparse.ArgumentTypeError, self._call, "foo")
-
-    def test_not_subset(self):
-        self.assertRaises(argparse.ArgumentTypeError, self._call, "dns")
-
-    def test_dvsni(self):
-        self.assertEqual("tls-sni-01", self._call("dvsni"))
-        self.assertEqual("http-01,tls-sni-01", self._call("http-01,dvsni"))
-        self.assertEqual("tls-sni-01,http-01", self._call("dvsni,http-01"))
-
+    def test_standalone_flag(self):
+        config = self.parser.parse_args(["--supported_challenges", "http-01"])
+        http = challenges.Challenge.TYPES["http-01"]
+        tls = challenges.Challenge.TYPES["tls-sni-01"]
+        print config
+        self.assertEqual(config.pref_chall, [tls, http])
 
 class AuthenticatorTest(unittest.TestCase):
     """Tests for certbot.plugins.standalone.Authenticator."""
