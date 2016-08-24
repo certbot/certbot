@@ -14,6 +14,8 @@ from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
 
+from certbot.plugins import disco
+
 from certbot.tests import acme_util
 from certbot.tests import test_util
 
@@ -69,14 +71,15 @@ class SupportedChallengesValidatorTest(unittest.TestCase):
 
     def setUp(self):
         self.parser = argparse.ArgumentParser()
-        from certbot.plugins import standalone
-        standalone.Authenticator.add_parser_arguments(self.parser.add_argument)
+        name = "standalone"
+        disco.PluginsRegistry.find_all()[name].plugin_cls.inject_parser_options(
+            self.parser, name)
 
     def test_standalone_flag(self):
-        config = self.parser.parse_args(["--supported_challenges", "http-01"])
+        config = self.parser.parse_args(["--standalone-supported-challenges",
+                                         "tls-sni-01,http-01"])
         http = challenges.Challenge.TYPES["http-01"]
         tls = challenges.Challenge.TYPES["tls-sni-01"]
-        print config
         self.assertEqual(config.pref_chall, [tls, http])
 
 class AuthenticatorTest(unittest.TestCase):

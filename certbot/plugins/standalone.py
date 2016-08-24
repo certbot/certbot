@@ -159,7 +159,7 @@ class Authenticator(common.Plugin):
     def add_parser_arguments(cls, add):
         add("supported-challenges",
             help="Supported challenges. Preferred in the order they are listed.",
-            action=supported_challenges_wrapper, dest="pref_chall")
+            action=supported_challenges_wrapper, default= [], dest="pref_chall")
 
     @property
     def supported_challenges(self):
