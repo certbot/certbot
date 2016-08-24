@@ -79,7 +79,7 @@ def psutil_available():
     """Checks if psutil can be imported.
 
     :rtype: bool
-    :returns: True if psutil can be imported, otherwise, False
+    :returns: ``True`` if psutil can be imported, otherwise, ``False``
 
     """
     try:
@@ -95,11 +95,11 @@ def skipUnless(condition, reason):
     This implements the basic functionality of unittest.skipUnless
     which is only available on Python 2.7+.
 
-    :param bool condition: If False, the test will be skipped
+    :param bool condition: If ``False``, the test will be skipped
     :param str reason: the reason for skipping the test
 
-    :rtype: function
-    :returns: a decorator that will hide tests unless condition is True
+    :rtype: callable
+    :returns: decorator that hides tests unless condition is ``True``
 
     """
     if hasattr(unittest, "skipUnless"):
