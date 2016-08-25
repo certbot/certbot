@@ -3,7 +3,6 @@ import argparse
 import collections
 import logging
 import socket
-import sys
 import threading
 
 import OpenSSL
@@ -13,7 +12,6 @@ import zope.interface
 from acme import challenges
 from acme import standalone as acme_standalone
 
-from certbot import cli
 from certbot import errors
 from certbot import interfaces
 
@@ -112,17 +110,38 @@ class ServerManager(object):
                     in six.iteritems(self._instances))
 
 
+SUPPORTED_CHALLENGES = [challenges.TLSSNI01, challenges.HTTP01]
 
 
-class supported_challenges_wrapper(argparse.Action):
-    """Wrapper for the depricated supported challenges flag"""
+def supported_challenges_validator(data):
+    """Supported challenges validator for the `argparse`.
 
-    def __call__(self, parser, namespace, pref_chall, option_string=None):
-        # print deprecation warning
-        sys.stderr.write("WARNING: The standalone specific supported challenges flag is depricated")
-        sys.stderr.write("\nPlease use the --preferred-challenges flag instead.\n")
-        #call cli version - move namespace back into it
-        _ = cli.add_pref_challs(namespace, pref_chall)
+    It should be passed as `type` argument to `add_argument`.
+
+    """
+    challs = data.split(",")
+
+    # tls-sni-01 was dvsni during private beta
+    if "dvsni" in challs:
+        logger.info("Updating legacy standalone_supported_challenges value")
+        challs = [challenges.TLSSNI01.typ if chall == "dvsni" else chall
+                  for chall in challs]
+        data = ",".join(challs)
+
+    unrecognized = [name for name in challs
+                    if name not in challenges.Challenge.TYPES]
+    if unrecognized:
+        raise argparse.ArgumentTypeError(
+            "Unrecognized challenges: {0}".format(", ".join(unrecognized)))
+
+    choices = set(chall.typ for chall in SUPPORTED_CHALLENGES)
+    if not set(challs).issubset(choices):
+        raise argparse.ArgumentTypeError(
+            "Plugin does not support the following (valid) "
+            "challenges: {0}".format(", ".join(set(challs) - choices)))
+
+    return data
+
 
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -159,12 +178,14 @@ class Authenticator(common.Plugin):
     def add_parser_arguments(cls, add):
         add("supported-challenges",
             help="Supported challenges. Preferred in the order they are listed.",
-            action=supported_challenges_wrapper, default= [], dest="pref_chall")
+            type=supported_challenges_validator,
+            default=",".join(chall.typ for chall in SUPPORTED_CHALLENGES))
 
     @property
     def supported_challenges(self):
         """Challenges supported by this plugin."""
-        return self.config.pref_chall
+        return [challenges.Challenge.TYPES[name] for name in
+                self.conf("supported-challenges").split(",")]
 
     @property
     def _necessary_ports(self):
@@ -187,7 +208,7 @@ class Authenticator(common.Plugin):
 
     def get_chall_pref(self, domain):
         # pylint: disable=unused-argument,missing-docstring
-        return [challenges.TLSSNI01, challenges.HTTP01]
+        return self.supported_challenges
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
         renewer = self.config.verb == "renew"

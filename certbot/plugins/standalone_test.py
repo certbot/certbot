@@ -14,8 +14,6 @@ from certbot import achallenges
 from certbot import errors
 from certbot import interfaces
 
-from certbot.plugins import disco
-
 from certbot.tests import acme_util
 from certbot.tests import test_util
 
@@ -69,18 +67,29 @@ class ServerManagerTest(unittest.TestCase):
 class SupportedChallengesValidatorTest(unittest.TestCase):
     """Tests for plugins.standalone.supported_challenges_validator."""
 
-    def setUp(self):
-        self.parser = argparse.ArgumentParser()
-        name = "standalone"
-        disco.PluginsRegistry.find_all()[name].plugin_cls.inject_parser_options(
-            self.parser, name)
+    def _call(self, data):
+        from certbot.plugins.standalone import (
+            supported_challenges_validator)
+        return supported_challenges_validator(data)
 
-    def test_standalone_flag(self):
-        config = self.parser.parse_args(["--standalone-supported-challenges",
-                                         "tls-sni-01,http-01"])
-        http = challenges.Challenge.TYPES["http-01"]
-        tls = challenges.Challenge.TYPES["tls-sni-01"]
-        self.assertEqual(config.pref_chall, [tls, http])
+    def test_correct(self):
+        self.assertEqual("tls-sni-01", self._call("tls-sni-01"))
+        self.assertEqual("http-01", self._call("http-01"))
+        self.assertEqual("tls-sni-01,http-01", self._call("tls-sni-01,http-01"))
+        self.assertEqual("http-01,tls-sni-01", self._call("http-01,tls-sni-01"))
+
+    def test_unrecognized(self):
+        assert "foo" not in challenges.Challenge.TYPES
+        self.assertRaises(argparse.ArgumentTypeError, self._call, "foo")
+
+    def test_not_subset(self):
+        self.assertRaises(argparse.ArgumentTypeError, self._call, "dns")
+
+    def test_dvsni(self):
+        self.assertEqual("tls-sni-01", self._call("dvsni"))
+        self.assertEqual("http-01,tls-sni-01", self._call("http-01,dvsni"))
+        self.assertEqual("tls-sni-01,http-01", self._call("dvsni,http-01"))
+
 
 class AuthenticatorTest(unittest.TestCase):
     """Tests for certbot.plugins.standalone.Authenticator."""

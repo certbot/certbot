@@ -1036,23 +1036,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue(namespace.text_mode)
 
     #TODO massage this to work in cli
-    def test_correct(self):
-        self.assertEqual("tls-sni-01", self._call("tls-sni-01"))
-        self.assertEqual("http-01", self._call("http-01"))
-        self.assertEqual("tls-sni-01,http-01", self._call("tls-sni-01,http-01"))
-        self.assertEqual("http-01,tls-sni-01", self._call("http-01,tls-sni-01"))
-
-    def test_unrecognized(self):
-        assert "foo" not in challenges.Challenge.TYPES
-        self.assertRaises(argparse.ArgumentTypeError, self._call, "foo")
-
-    def test_not_subset(self):
-        self.assertRaises(argparse.ArgumentTypeError, self._call, "dns")
-
-    def test_dvsni(self):
-        self.assertEqual("tls-sni-01", self._call("dvsni"))
-        self.assertEqual("http-01,tls-sni-01", self._call("http-01,dvsni"))
-        self.assertEqual("tls-sni-01,http-01", self._call("dvsni,http-01"))
 
 class DetermineAccountTest(unittest.TestCase):
     """Tests for certbot.cli._determine_account."""
