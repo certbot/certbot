@@ -24,6 +24,10 @@ ACME working area in github: https://github.com/ietf-wg-acme/acme
 Mailing list: `client-dev`_ (to subscribe without a Google account, send an
 email to client-dev+subscribe@letsencrypt.org)
 
+.. _Freenode: https://webchat.freenode.net?channels=%23letsencrypt
+.. _OFTC: https://webchat.oftc.net?channels=%23certbot
+.. _client-dev: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev
+
 |build-status| |coverage| |docs| |container|
 
 
@@ -45,10 +49,6 @@ email to client-dev+subscribe@letsencrypt.org)
    :alt: Docker Repository on Quay.io
 
 .. _`installation instructions`:
-   https://letsencrypt.readthedocs.org/en/latest/using.html
+   https://letsencrypt.readthedocs.org/en/latest/using.html#getting-certbot
 
 .. _watch demo video: https://www.youtube.com/watch?v=Gas_sSB-5SU
-
-.. _Freenode: https://webchat.freenode.net?channels=%23letsencrypt
-.. _OFTC: https://webchat.oftc.net?channels=%23certbot
-.. _client-dev: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev

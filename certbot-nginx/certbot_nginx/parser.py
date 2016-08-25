@@ -173,6 +173,17 @@ class NginxParser(object):
                 logger.debug("Could not parse file: %s", item)
         return trees
 
+    def _parse_ssl_options(self, ssl_options):
+        if ssl_options is not None:
+            try:
+                with open(ssl_options) as _file:
+                    return nginxparser.load(_file).spaced
+            except IOError:
+                logger.warn("Missing NGINX TLS options file: %s", ssl_options)
+            except pyparsing.ParseBaseException:
+                logger.debug("Could not parse file: %s", ssl_options)
+        return []
+
     def _set_locations(self, ssl_options):
         """Set default location for directives.
 
@@ -192,7 +203,7 @@ class NginxParser(object):
             name = default
 
         return {"root": root, "default": default, "listen": listen,
-                "name": name, "ssl_options": ssl_options}
+                "name": name, "ssl_options": self._parse_ssl_options(ssl_options)}
 
     def _find_config_root(self):
         """Find the Nginx Configuration Root file."""
@@ -318,6 +329,9 @@ class NginxParser(object):
             tup = [None, None, vhost.filep]
             if vhost.ssl:
                 for directive in vhost.raw:
+                    # A directive can be an empty list to preserve whitespace
+                    if not directive:
+                        continue
                     if directive[0] == 'ssl_certificate':
                         tup[0] = directive[1]
                     elif directive[0] == 'ssl_certificate_key':
@@ -506,8 +520,30 @@ def _add_directives(block, directives, replace):
     """
     for directive in directives:
         _add_directive(block, directive, replace)
+    if block and '\n' not in block[-1]:  # could be "   \n  " or ["\n"] !
+        block.append(nginxparser.UnspacedList('\n'))
 
-repeatable_directives = set(['server_name', 'listen', 'include'])
+
+REPEATABLE_DIRECTIVES = set(['server_name', 'listen', 'include'])
+COMMENT = ' managed by Certbot'
+COMMENT_BLOCK = [' ', '#', COMMENT]
+
+
+def _comment_directive(block, location):
+    """Add a comment to the end of the line at location."""
+    next_entry = block[location + 1] if location + 1 < len(block) else None
+    if isinstance(next_entry, list) and next_entry:
+        if len(next_entry) >= 2 and next_entry[-2] == "#" and COMMENT in next_entry[-1]:
+            return
+        elif isinstance(next_entry, nginxparser.UnspacedList):
+            next_entry = next_entry.spaced[0]
+        else:
+            next_entry = next_entry[0]
+
+    block.insert(location + 1, COMMENT_BLOCK[:])
+    if next_entry is not None and "\n" not in next_entry:
+        block.insert(location + 2, '\n')
+
 
 def _add_directive(block, directive, replace):
     """Adds or replaces a single directive in a config block.
@@ -516,37 +552,34 @@ def _add_directive(block, directive, replace):
 
     """
     directive = nginxparser.UnspacedList(directive)
-    if len(directive) == 0:
-        # whitespace
+    if len(directive) == 0 or directive[0] == '#':
+        # whitespace or comment
         block.append(directive)
         return
-    location = -1
+
     # Find the index of a config line where the name of the directive matches
-    # the name of the directive we want to add.
-    for index, line in enumerate(block):
-        if len(line) > 0 and line[0] == directive[0]:
-            location = index
-            break
+    # the name of the directive we want to add. If no line exists, use None.
+    location = next((index for index, line in enumerate(block)
+                     if line and line[0] == directive[0]), None)
     if replace:
-        if location == -1:
+        if location is None:
             raise errors.MisconfigurationError(
-                'expected directive for %s in the Nginx '
-                'config but did not find it.' % directive[0])
+                'expected directive for {0} in the Nginx '
+                'config but did not find it.'.format(directive[0]))
         block[location] = directive
+        _comment_directive(block, location)
     else:
         # Append directive. Fail if the name is not a repeatable directive name,
         # and there is already a copy of that directive with a different value
         # in the config file.
         directive_name = directive[0]
         directive_value = directive[1]
-        if location != -1 and directive_name.__str__() not in repeatable_directives:
-            if block[location][1] == directive_value:
-                # There's a conflict, but the existing value matches the one we
-                # want to insert, so it's fine.
-                pass
-            else:
-                raise errors.MisconfigurationError(
-                    'tried to insert directive "%s" but found conflicting "%s".' % (
-                    directive, block[location]))
-        else:
+        if location is None or (isinstance(directive_name, str) and
+                                directive_name in REPEATABLE_DIRECTIVES):
             block.append(directive)
+            _comment_directive(block, len(block) - 1)
+        elif block[location][1] != directive_value:
+            raise errors.MisconfigurationError(
+                'tried to insert directive "{0}" but found '
+                'conflicting "{1}".'.format(directive, block[location]))
+

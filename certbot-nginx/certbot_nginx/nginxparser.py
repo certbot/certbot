@@ -227,7 +227,8 @@ class UnspacedList(list):
 
     def insert(self, i, x):
         item, spaced_item = self._coerce(x)
-        self.spaced.insert(self._spaced_position(i), spaced_item)
+        slicepos = self._spaced_position(i) if i < len(self) else len(self.spaced)
+        self.spaced.insert(slicepos, spaced_item)
         list.insert(self, i, item)
         self.dirty = True
 

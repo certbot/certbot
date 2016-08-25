@@ -4,13 +4,7 @@ import unittest
 import sys
 
 import mock
-
-try:
-    # Python 3.5+
-    from importlib import reload as refresh  # pylint: disable=no-name-in-module
-except ImportError:
-    # Python 2-3.4
-    from imp import reload as refresh
+from six.moves import reload_module  # pylint: disable=import-error
 
 
 class PathSurgeryTest(unittest.TestCase):
@@ -50,14 +44,14 @@ class AlreadyListeningTestNoPsutil(unittest.TestCase):
         sys.modules['psutil'] = None
         # Reload hackery to ensure getting non-psutil version
         # loaded to memory
-        refresh(certbot.plugins.util)
+        reload_module(certbot.plugins.util)
 
     def tearDown(self):
         # Need to reload the module to ensure
         # getting back to normal
         import certbot.plugins.util
         sys.modules["psutil"] = self.psutil
-        refresh(certbot.plugins.util)
+        reload_module(certbot.plugins.util)
 
     @mock.patch("certbot.plugins.util.zope.component.getUtility")
     def test_ports_available(self, mock_getutil):
@@ -81,6 +75,42 @@ class AlreadyListeningTestNoPsutil(unittest.TestCase):
         self.assertEqual(mock_getutil.call_count, 2)
 
 
+def psutil_available():
+    """Checks if psutil can be imported.
+
+    :rtype: bool
+    :returns: ``True`` if psutil can be imported, otherwise, ``False``
+
+    """
+    try:
+        import psutil  # pylint: disable=unused-variable
+    except ImportError:
+        return False
+    return True
+
+
+def skipUnless(condition, reason):
+    """Skip tests unless a condition holds.
+
+    This implements the basic functionality of unittest.skipUnless
+    which is only available on Python 2.7+.
+
+    :param bool condition: If ``False``, the test will be skipped
+    :param str reason: the reason for skipping the test
+
+    :rtype: callable
+    :returns: decorator that hides tests unless condition is ``True``
+
+    """
+    if hasattr(unittest, "skipUnless"):
+        return unittest.skipUnless(condition, reason)
+    elif condition:
+        return lambda cls: cls
+    else:
+        return lambda cls: None
+
+
+@skipUnless(psutil_available(), "optional dependency psutil is not available")
 class AlreadyListeningTestPsutil(unittest.TestCase):
     """Tests for certbot.plugins.already_listening."""
     def _call(self, *args, **kwargs):

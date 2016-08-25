@@ -48,7 +48,7 @@ def get_email(invalid=False, optional=True):
                 invalid_prefix + msg if invalid else msg)
         except errors.MissingCommandlineFlag:
             msg = ("You should register before running non-interactively, "
-                   "or provide --agree-tos and --email <email_address> flags")
+                   "or provide --agree-tos and --email <email_address> flags.")
             raise errors.MissingCommandlineFlag(msg)
 
         if code != display_util.OK:

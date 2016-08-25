@@ -89,8 +89,6 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :returns: Registration Resource.
         :rtype: `.RegistrationResource`
 
-        :raises .UnexpectedUpdate:
-
         """
         new_reg = messages.NewRegistration() if new_reg is None else new_reg
         assert isinstance(new_reg, messages.NewRegistration)
@@ -101,12 +99,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         # "Instance of 'Field' has no key/contact member" bug:
         # pylint: disable=no-member
-        regr = self._regr_from_response(response)
-        if (regr.body.key != self.key.public_key() or
-                regr.body.contact != new_reg.contact):
-            raise errors.UnexpectedUpdate(regr)
-
-        return regr
+        return self._regr_from_response(response)
 
     def _send_recv_regr(self, regr, body):
         response = self.net.post(regr.uri, body)

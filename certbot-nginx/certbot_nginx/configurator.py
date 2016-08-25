@@ -55,7 +55,9 @@ class NginxConfigurator(common.Plugin):
 
     """
 
-    description = "Nginx Web Server - currently doesn't work"
+    description = "Nginx Web Server plugin - Alpha"
+
+    hidden = True
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -117,14 +119,14 @@ class NginxConfigurator(common.Plugin):
         # Make sure configuration is valid
         self.config_test()
 
+        # temp_install must be run before creating the NginxParser
+        temp_install(self.mod_ssl_conf)
         self.parser = parser.NginxParser(
             self.conf('server-root'), self.mod_ssl_conf)
 
         # Set Version
         if self.version is None:
             self.version = self.get_version()
-
-        temp_install(self.mod_ssl_conf)
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path,
@@ -337,10 +339,16 @@ class NginxConfigurator(common.Plugin):
 
         """
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
-        ssl_block = [['\n    ', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
-                     ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
-                     ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
-                     ['\n    ', 'include', ' ', self.parser.loc["ssl_options"]]]
+
+        # the options file doesn't have a newline at the beginning, but there
+        # needs to be one when it's dropped into the file
+        ssl_block = (
+            [['\n    ', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
+             ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
+             ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
+             ['\n']] +
+            self.parser.loc["ssl_options"])
+
         self.parser.add_server_directives(
             vhost.filep, vhost.names, ssl_block, replace=False)
         vhost.ssl = True
