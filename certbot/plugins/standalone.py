@@ -3,6 +3,7 @@ import argparse
 import collections
 import logging
 import socket
+import sys
 import threading
 
 import OpenSSL
@@ -119,6 +120,8 @@ def supported_challenges_validator(data):
     It should be passed as `type` argument to `add_argument`.
 
     """
+    sys.stderr.write("WARNING: The standalone specific supported challenges flag is depricated")
+    sys.stderr.write("\nPlease use the --preferred-challenges flag instead.\n")
     challs = data.split(",")
 
     # tls-sni-01 was dvsni during private beta
@@ -177,7 +180,7 @@ class Authenticator(common.Plugin):
     @classmethod
     def add_parser_arguments(cls, add):
         add("supported-challenges",
-            help="Supported challenges. Preferred in the order they are listed.",
+            help=argparse.SUPPRESS,
             type=supported_challenges_validator,
             default=",".join(chall.typ for chall in SUPPORTED_CHALLENGES))
 
