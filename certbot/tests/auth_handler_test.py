@@ -175,7 +175,7 @@ class GetAuthorizationsTest(unittest.TestCase):
         mock_poll.side_effect = self._validate_all
         self.mock_auth.get_chall_pref.return_value.append(challenges.HTTP01)
 
-        self.handler.pref_challs.extend((challenges.HTTP01, challenges.DNS,))
+        self.handler.pref_challs.extend((challenges.HTTP01, challenges.DNS01,))
 
         self.handler.get_authorizations(["0"])
 
