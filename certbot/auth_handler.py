@@ -248,17 +248,18 @@ class AuthHandler(object):
         :param str domain: domain for which you are requesting preferences
 
         """
-        # Make sure to make a copy...
         chall_prefs = []
+        # Make sure to make a copy...
         plugin_pref = self.auth.get_chall_pref(domain)
         if self.pref_challs:
-            out = [pref for pref in self.pref_challs if pref in plugin_pref]
-            if out:
-                return out
-            else:
-                raise errors.AuthorizationError(
-                        "None of the selected challenges are supported by the selected plugins")
-        chall_prefs.extend(self.auth.get_chall_pref(domain))
+            chall_prefs.extend(pref for pref in self.pref_challs
+                               if pref in plugin_pref)
+            if chall_prefs:
+                return chall_prefs
+            raise errors.AuthorizationError(
+                "None of the preferred challenges "
+                "are supported by the selected plugin")
+        chall_prefs.extend(plugin_pref)
         return chall_prefs
 
     def _cleanup_challenges(self, achall_list=None):
