@@ -25,8 +25,7 @@ class AuthenticatorTest(unittest.TestCase):
         from certbot.plugins.manual import Authenticator
         self.config = mock.MagicMock(
             http01_port=8080, manual_test_mode=False,
-            manual_public_ip_logging_ok=False, noninteractive_mode=True,
-            standalone_supported_challenges="dns-01,http-01")
+            manual_public_ip_logging_ok=False, noninteractive_mode=True)
         self.auth = Authenticator(config=self.config, name="manual")
 
         self.http01 = achallenges.KeyAuthorizationAnnotatedChallenge(
