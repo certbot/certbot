@@ -90,7 +90,7 @@ class AuthenticatorTest(unittest.TestCase):
 
         with mock.patch("certbot.plugins.manual.logger") as mock_logger:
             self.auth.perform([self.dns01])
-            self.assertEqual(2, mock_logger.warning.call_count)
+            self.assertEqual(1, mock_logger.warning.call_count)
 
         mock_raw_input.assert_called_once_with("Press ENTER to continue")
 

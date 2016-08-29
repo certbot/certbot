@@ -217,11 +217,11 @@ s.serve_forever()" """
                 achall.chall, achall.domain,
                 achall.account_key.public_key())
         except acme_errors.DependencyError:
-            verification_status = False
-            logger.warning("Dns challenge requires `dnspython`")
-
-        if not verification_status:
-            logger.warning("Self-verify of challenge failed.")
+            logger.warning("Self verification requires optional "
+                           "dependency `dnspython` to be installed.")
+        else:
+            if not verification_status:
+                logger.warning("Self-verify of challenge failed.")
 
         return response
 
