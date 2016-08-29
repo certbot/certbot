@@ -52,7 +52,9 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertTrue(all(issubclass(pref, challenges.Challenge)
                             for pref in self.auth.get_chall_pref("foo.com")))
 
-    def test_perform_empty(self):
+    @mock.patch("certbot.plugins.manual.zope.component.getUtility")
+    def test_perform_empty(self, mock_interaction):
+        mock_interaction().yesno.return_value = True
         self.assertEqual([], self.auth.perform([]))
 
     @mock.patch("certbot.plugins.manual.zope.component.getUtility")
