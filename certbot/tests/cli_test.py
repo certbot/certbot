@@ -1035,6 +1035,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         namespace = parse(short_args)
         self.assertTrue(namespace.text_mode)
 
+
 class DetermineAccountTest(unittest.TestCase):
     """Tests for certbot.cli._determine_account."""
 
