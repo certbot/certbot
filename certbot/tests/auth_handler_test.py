@@ -167,6 +167,13 @@ class GetAuthorizationsTest(unittest.TestCase):
     def test_no_domains(self):
         self.assertRaises(errors.AuthorizationError, self.handler.get_authorizations, [])
 
+    def test_preferred_challenges_not_supported(self):
+        self.mock_net.request_domain_challenges.side_effect = functools.partial(
+            gen_dom_authzr, challs=acme_util.CHALLENGES)
+        self.handler.pref_challs.append(challenges.HTTP01)
+        self.assertRaises(
+            errors.AuthorizationError, self.handler.get_authorizations, ["0"])
+
     def _validate_all(self, unused_1, unused_2):
         for dom in six.iterkeys(self.handler.authzr):
             azr = self.handler.authzr[dom]
