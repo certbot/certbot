@@ -121,6 +121,7 @@ s.serve_forever()" """
 
     def perform(self, achalls):
         # pylint: disable=missing-docstring
+        self._get_ip_logging_permission()
         mapping = {"http-01": self._perform_http01_challenge,
                    "dns-01": self._perform_dns01_challenge}
         responses = []
@@ -188,14 +189,12 @@ s.serve_forever()" """
             if self._httpd.poll() is not None:
                 raise errors.Error("Couldn't execute manual command")
         else:
-            message = self._get_message(achall)
-            uri = achall.chall.uri(achall.domain)
-            formated_message = message.format(validation=validation,
-                                              response=response,
-                                              uri=uri,
-                                              command=command)
-
-            self._ip_logging_permission(formated_message)
+            self._notify_and_wait(
+                self._get_message(achall).format(
+                    validation=validation,
+                    response=response,
+                    uri=achall.chall.uri(achall.domain),
+                    command=command))
 
         if not response.simple_verify(
                 achall.chall, achall.domain,
@@ -207,11 +206,11 @@ s.serve_forever()" """
     def _perform_dns01_challenge(self, achall):
         response, validation = achall.response_and_validation()
         if not self.conf("test-mode"):
-            message = self._get_message(achall)
-            formated_message = message.format(validation=validation,
-                                              domain=achall.domain,
-                                              response=response)
-            self._ip_logging_permission(formated_message)
+            self._notify_and_wait(
+                self._get_message(achall).format(
+                    validation=validation,
+                    domain=achall.domain,
+                    response=response))
 
         try:
             verification_status = response.simple_verify(
@@ -247,7 +246,7 @@ s.serve_forever()" """
         sys.stdout.write(message)
         six.moves.input("Press ENTER to continue")
 
-    def _ip_logging_permission(self, formated_message):
+    def _get_ip_logging_permission(self):
         # pylint: disable=missing-docstring
         if not self.conf("public-ip-logging-ok"):
             if not zope.component.getUtility(interfaces.IDisplay).yesno(
@@ -256,8 +255,6 @@ s.serve_forever()" """
                 raise errors.PluginError("Must agree to IP logging to proceed")
             else:
                 self.config.namespace.manual_public_ip_logging_ok = True
-
-        self._notify_and_wait(formated_message)
 
     def _get_message(self, achall):
         # pylint: disable=missing-docstring,no-self-use,unused-argument
