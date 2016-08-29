@@ -27,6 +27,8 @@ class Error(jose.JSONObjectWithFields, errors.Error):
             ('dnssec', 'The server could not validate a DNSSEC signed domain'),
             ('invalidEmail',
              'The provided email for a registration was invalid'),
+            ('invalidContact',
+             'The provided contact URI was invalid'),
             ('malformed', 'The request message was malformed'),
             ('rateLimited', 'There were too many requests of a given type'),
             ('serverInternal', 'The server experienced an internal error'),
