@@ -32,7 +32,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.http01 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.HTTP01_P, domain="foo.com", account_key=KEY)
         self.dns01 = achallenges.KeyAuthorizationAnnotatedChallenge(
-                challb=acme_util.DNS01_P, domain="foo.com", account_key=KEY)
+            challb=acme_util.DNS01_P, domain="foo.com", account_key=KEY)
 
         self.achalls = [self.http01, self.dns01]
 
@@ -106,8 +106,8 @@ class AuthenticatorTest(unittest.TestCase):
         mock_popen.side_effect = OSError
         self.assertEqual([False], self.auth_test_mode.perform([self.http01]))
 
-    @mock.patch("certbot.util.socket.socket")
-    @mock.patch("certbot.util.time.sleep", autospec=True)
+    @mock.patch("certbot.plugins.manual.socket.socket")
+    @mock.patch("certbot.plugins.manual.time.sleep", autospec=True)
     @mock.patch("certbot.plugins.manual.subprocess.Popen", autospec=True)
     def test_perform_test_command_run_failure(
             self, mock_popen, unused_mock_sleep, unused_mock_socket):

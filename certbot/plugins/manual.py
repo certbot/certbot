@@ -4,29 +4,25 @@ import logging
 import pipes
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import tempfile
+import time
 
 import six
 import zope.component
 import zope.interface
-
-from functools import partial
 
 from acme import challenges
 from acme import errors as acme_errors
 
 from certbot import errors
 from certbot import interfaces
-from certbot.plugins import common, util
-from certbot.util import busy_wait
+from certbot.plugins import common
 
 
 logger = logging.getLogger(__name__)
-
-
-SUPPORTED_CHALLENGES = [challenges.HTTP01, challenges.DNS01]
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)
@@ -99,23 +95,10 @@ s.serve_forever()" """
 
     @classmethod
     def add_parser_arguments(cls, add):
-        validator = partial(util.supported_challenges_validator,
-                            supported=SUPPORTED_CHALLENGES)
-
         add("test-mode", action="store_true",
             help="Test mode. Executes the manual command in subprocess.")
         add("public-ip-logging-ok", action="store_true",
             help="Automatically allows public IP logging.")
-        add("supported-challenges",
-            help="Supported challenges. Preferred in the order they are listed.",
-            type=validator,
-            default="http-01")
-
-    @property
-    def supported_challenges(self):
-        """Challenges supported by this plugin."""
-        return [challenges.Challenge.TYPES[name] for name in
-                self.conf("supported-challenges").split(",")]
 
     def prepare(self):  # pylint: disable=missing-docstring,no-self-use
         if self.config.noninteractive_mode and not self.conf("test-mode"):
@@ -132,7 +115,7 @@ s.serve_forever()" """
 
     def get_chall_pref(self, domain):
         # pylint: disable=missing-docstring,no-self-use,unused-argument
-        return self.supported_challenges
+        return [challenges.HTTP01, challenges.DNS01]
 
     def perform(self, achalls):
         # pylint: disable=missing-docstring
@@ -144,6 +127,20 @@ s.serve_forever()" """
         for achall in achalls:
             responses.append(mapping[achall.typ](achall))
         return responses
+
+    @classmethod
+    def _test_mode_busy_wait(cls, port):
+        while True:
+            time.sleep(1)
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            try:
+                sock.connect(("localhost", port))
+            except socket.error:  # pragma: no cover
+                pass
+            else:
+                break
+            finally:
+                sock.close()
 
     def cleanup(self, achalls):
         # pylint: disable=missing-docstring
@@ -184,7 +181,7 @@ s.serve_forever()" """
             logger.debug("Manual command running as PID %s.", self._httpd.pid)
             # give it some time to bootstrap, before we try to verify
             # (cert generation in case of simpleHttpS might take time)
-            busy_wait(port)
+            self._test_mode_busy_wait(port)
 
             if self._httpd.poll() is not None:
                 raise errors.Error("Couldn't execute manual command")
