@@ -106,12 +106,14 @@ s.serve_forever()" """
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return ("This plugin requires user's manual intervention in setting "
-                "up an HTTP server when solving http-01 challenges and thus "
-                "does not need to be run as a privileged process. "
-                "Alternatively shows instructions on how to use Python's "
-                "built-in HTTP server."
-                "When solving dns-01 challenges, it simply needs to wait for "
-                "the proper configuration of the domain's dns")
+                "up challenges to prove control of a domain and does not need "
+                "to be run as a privileged process. When solving "
+                "http-01 challenges, the user is responsible for setting up "
+                "an HTTP server. Alternatively, instructions are shown on how "
+                "to use Python's built-in HTTP server. The user is "
+                "responsible for configuration of a domain's DNS when solving "
+                "dns-01 challenges. The type of challenges used can be "
+                "controlled through the --preferred-challenges flag.")
 
     def get_chall_pref(self, domain):
         # pylint: disable=missing-docstring,no-self-use,unused-argument
