@@ -44,7 +44,8 @@ class Authenticator(common.Plugin):
 
     MESSAGE_TEMPLATE = {
         "dns-01": """\
-To prove control of the domain {domain}, please deploy a DNS TXT record with the following value:
+Please deploy a DNS TXT record under the name
+{domain} with the following value:
 
 {validation}
 
@@ -209,7 +210,7 @@ s.serve_forever()" """
             self._notify_and_wait(
                 self._get_message(achall).format(
                     validation=validation,
-                    domain=achall.domain,
+                    domain=achall.validation_domain_name(achall.domain),
                     response=response))
 
         try:
