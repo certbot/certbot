@@ -6,6 +6,10 @@ class Error(Exception):
     """Generic ACME error."""
 
 
+class DependencyError(Error):
+    """Dependency error"""
+
+
 class SchemaValidationError(jose_errors.DeserializationError):
     """JSON schema ACME object validation error."""
 

@@ -1,9 +1,12 @@
 """Plugin utilities."""
+import argparse
 import logging
 import os
 import socket
 
 import zope.component
+
+from acme import challenges
 
 from certbot import interfaces
 from certbot import util
@@ -154,3 +157,36 @@ def already_listening_psutil(port, renewer=False):
         # name (AccessDenied).
         pass
     return False
+
+
+def supported_challenges_validator(data, supported=None):
+    """Supported challenges validator for the `argparse`.
+
+    It should be passed as `type` argument to `add_argument`.
+
+    :param str data: input value representing the supported_challenges
+    :returns: original value if valid
+    """
+    challs = data.split(",")
+    supported = supported or []
+
+    # tls-sni-01 was dvsni during private beta
+    if "dvsni" in challs:
+        logger.info("Updating legacy standalone_supported_challenges value")
+        challs = [challenges.TLSSNI01.typ if chall == "dvsni" else chall
+                  for chall in challs]
+        data = ",".join(challs)
+
+    unrecognized = [name for name in challs
+                    if name not in challenges.Challenge.TYPES]
+    if unrecognized:
+        raise argparse.ArgumentTypeError(
+            "Unrecognized challenges: {0}".format(", ".join(unrecognized)))
+
+    choices = set(chall.typ for chall in supported)
+    if not set(challs).issubset(choices):
+        raise argparse.ArgumentTypeError(
+            "Plugin does not support the following (valid) "
+            "challenges: {0}".format(", ".join(set(challs) - choices)))
+
+    return data
