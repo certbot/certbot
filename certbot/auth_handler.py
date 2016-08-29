@@ -33,7 +33,9 @@ class AuthHandler(object):
         and values are :class:`acme.messages.AuthorizationResource`
     :ivar list achalls: DV challenges in the form of
         :class:`certbot.achallenges.AnnotatedChallenge`
-    :ivar list pref_challs: A list of user specified preferred challenges
+    :ivar list pref_challs: sorted user specified preferred challenges
+        in the form of subclasses of :class:`acme.challenges.Challenge`
+        with the most preferred challenge listed first
 
     """
     def __init__(self, auth, acme, account, pref_challs):
