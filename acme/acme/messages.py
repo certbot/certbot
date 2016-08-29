@@ -28,7 +28,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
             ('invalidEmail',
              'The provided email for a registration was invalid'),
             ('invalidContact',
-             'The provided email for a registration was invalid'),
+             'The provided contact URI was invalid'),
             ('malformed', 'The request message was malformed'),
             ('rateLimited', 'There were too many requests of a given type'),
             ('serverInternal', 'The server experienced an internal error'),
