@@ -167,6 +167,22 @@ class GetAuthorizationsTest(unittest.TestCase):
     def test_no_domains(self):
         self.assertRaises(errors.AuthorizationError, self.handler.get_authorizations, [])
 
+    @mock.patch("certbot.auth_handler.AuthHandler._poll_challenges")
+    def test_preferred_challenge_choice(self, mock_poll):
+        self.mock_net.request_domain_challenges.side_effect = functools.partial(
+            gen_dom_authzr, challs=acme_util.CHALLENGES)
+
+        mock_poll.side_effect = self._validate_all
+        self.mock_auth.get_chall_pref.return_value.append(challenges.HTTP01)
+
+        self.handler.pref_challs.extend((challenges.HTTP01, challenges.DNS,))
+
+        self.handler.get_authorizations(["0"])
+
+        self.assertEqual(self.mock_auth.cleanup.call_count, 1)
+        self.assertEqual(
+            self.mock_auth.cleanup.call_args[0][0][0].typ, "http-01")
+
     def test_preferred_challenges_not_supported(self):
         self.mock_net.request_domain_challenges.side_effect = functools.partial(
             gen_dom_authzr, challs=acme_util.CHALLENGES)
