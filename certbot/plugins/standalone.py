@@ -13,6 +13,7 @@ import zope.interface
 from acme import challenges
 from acme import standalone as acme_standalone
 
+from certbot import cli
 from certbot import errors
 from certbot import interfaces
 
@@ -120,10 +121,11 @@ def supported_challenges_validator(data):
     It should be passed as `type` argument to `add_argument`.
 
     """
-    sys.stderr.write(
-        "WARNING: The standalone specific "
-        "supported challenges flag is deprecated\n")
-    sys.stderr.write("Please use the --preferred-challenges flag instead.\n")
+    if cli.set_by_cli("standalone_supported_challenges"):
+        sys.stderr.write(
+            "WARNING: The standalone specific "
+            "supported challenges flag is deprecated.\n"
+            "Please use the --preferred-challenges flag instead.\n")
     challs = data.split(",")
 
     # tls-sni-01 was dvsni during private beta
