@@ -120,8 +120,10 @@ def supported_challenges_validator(data):
     It should be passed as `type` argument to `add_argument`.
 
     """
-    sys.stderr.write("WARNING: The standalone specific supported challenges flag is depricated")
-    sys.stderr.write("\nPlease use the --preferred-challenges flag instead.\n")
+    sys.stderr.write(
+        "WARNING: The standalone specific "
+        "supported challenges flag is deprecated\n")
+    sys.stderr.write("Please use the --preferred-challenges flag instead.\n")
     challs = data.split(",")
 
     # tls-sni-01 was dvsni during private beta
