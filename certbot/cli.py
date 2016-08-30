@@ -790,11 +790,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help=config_help("no_verify_ssl"),
         default=flag_default("no_verify_ssl"))
     helpful.add(
-        "testing", "--tls-sni-01-port", type=int,
+        ["certonly", "renew", "run"], "--tls-sni-01-port", type=int,
         default=flag_default("tls_sni_01_port"),
         help=config_help("tls_sni_01_port"))
     helpful.add(
-        "testing", "--http-01-port", type=int, dest="http01_port",
+        ["certonly", "renew", "run"], "--http-01-port", type=int,
+        dest="http01_port",
         default=flag_default("http01_port"), help=config_help("http01_port"))
     helpful.add(
         "testing", "--break-my-certs", action="store_true",
