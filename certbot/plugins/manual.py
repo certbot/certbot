@@ -249,7 +249,7 @@ s.serve_forever()" """
 
     def _get_ip_logging_permission(self):
         # pylint: disable=missing-docstring
-        if not self.conf("public-ip-logging-ok"):
+        if not (self.conf("test-mode") or self.conf("public-ip-logging-ok")):
             if not zope.component.getUtility(interfaces.IDisplay).yesno(
                     self.IP_DISCLAIMER, "Yes", "No",
                     cli_flag="--manual-public-ip-logging-ok"):
