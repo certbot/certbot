@@ -363,7 +363,7 @@ class ReportFailedChallsTest(unittest.TestCase):
             "chall": acme_util.HTTP01,
             "uri": "uri",
             "status": messages.STATUS_INVALID,
-            "error": messages.Error(typ="urn:acme:error:tls", detail="detail"),
+            "error": messages.Error.with_code("tls", detail="detail"),
         }
 
         # Prevent future regressions if the error type changes
