@@ -17,13 +17,13 @@ class ErrorTest(unittest.TestCase):
     """Tests for acme.messages.Error."""
 
     def setUp(self):
-        from acme.messages import Error
+        from acme.messages import Error, ERROR_PREFIX
         self.error = Error(
-            detail='foo', typ='urn:ietf:params:acme:error:malformed', title='title')
+            detail='foo', typ=ERROR_PREFIX + 'malformed', title='title')
         self.jobj = {
             'detail': 'foo',
             'title': 'some title',
-            'type': 'urn:ietf:params:acme:error:malformed',
+            'type': ERROR_PREFIX + 'malformed',
         }
         self.error_custom = Error(typ='custom', detail='bar')
         self.jobj_cusom = {'type': 'custom', 'detail': 'bar'}
@@ -66,8 +66,7 @@ class ErrorTest(unittest.TestCase):
     def test_with_code(self):
         from acme.messages import Error, is_acme_error
         self.assertTrue(is_acme_error(Error.with_code('badCSR')))
-        with self.assertRaises(ValueError):
-            Error.with_code('not an ACME error code')
+        self.assertRaises(ValueError, Error.with_code, 'not an ACME error code')
 
 
 class ConstantTest(unittest.TestCase):

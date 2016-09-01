@@ -149,7 +149,7 @@ def perform_registration(acme, config):
     try:
         return acme.register(messages.NewRegistration.from_data(email=config.email))
     except messages.Error as e:
-        if (e.code == "invalidEmail" or e.code == "invalidContact"):
+        if e.code == "invalidEmail" or e.code == "invalidContact":
             if config.noninteractive_mode:
                 msg = ("The ACME server believes %s is an invalid email address. "
                        "Please ensure it is a valid email and attempt "

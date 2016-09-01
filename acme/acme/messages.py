@@ -13,9 +13,11 @@ ERROR_PREFIX = "urn:ietf:params:acme:error:"
 ERROR_CODES = {
     'badCSR': 'The CSR is unacceptable (e.g., due to a short key)',
     'badNonce': 'The client sent an unacceptable anti-replay nonce',
-    'connection': 'The server could not connect to the client to verify the domain',
+    'connection': ('The server could not connect to the client to verify the'
+                   ' domain'),
     'dnssec': 'The server could not validate a DNSSEC signed domain',
-    'invalidEmail': 'The provided email for a registration was invalid',  # deprecate me
+    # deprecate invalidEmail
+    'invalidEmail': 'The provided email for a registration was invalid',
     'invalidContact': 'The provided contact URI was invalid',
     'malformed': 'The request message was malformed',
     'rateLimited': 'There were too many requests of a given type',
@@ -33,6 +35,7 @@ ERROR_TYPE_DESCRIPTIONS.update(dict(  # add errors with old prefix, depricate me
 
 
 def is_acme_error(err):
+    """Check if argument is an ACME error."""
     return (ERROR_PREFIX in str(err)) or (OLD_ERROR_PREFIX in str(err))
 
 
@@ -54,9 +57,13 @@ class Error(jose.JSONObjectWithFields, errors.Error):
     def with_code(cls, code, **kwargs):
         """Create an Error instance with an ACME Error code.
 
+        :??? unicode code:
+        :??? kwargs:
+
         """
         if code not in ERROR_CODES:
-            raise ValueError("The supplied code: %s is not an ACME error code" % code)
+            raise ValueError("The supplied code: %s is not an ACME error"
+                             " code" % code)
         typ = ERROR_PREFIX + code
         return cls(typ=typ, **kwargs)
 
@@ -74,13 +81,13 @@ class Error(jose.JSONObjectWithFields, errors.Error):
     def code(self):
         """ACME error code.
 
-        Basically self.typ with out the urn:... prefix.
+        Basically self.typ without the ERROR_PREFIX.
 
         :returns: error code if standard ACME code or ``None``.
         :rtype: unicode
 
         """
-        code = self.typ.split(':')[-1]
+        code = str(self.typ).split(':')[-1]
         if code in ERROR_CODES:
             return code
 
