@@ -77,8 +77,24 @@ download and run it as follows::
 
 The ``certbot-auto`` command updates to the latest client release automatically.
 Since ``certbot-auto`` is a wrapper to ``certbot``, it accepts exactly
-the same command line flags and arguments. For more information, see 
-`Certbot command-line options <https://certbot.eff.org/docs/using.html#command-line-options>`_.  
+the same command line flags and arguments. For more information, see
+`Certbot command-line options <https://certbot.eff.org/docs/using.html#command-line-options>`_.
+
+Problems with Python virtual environment
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+On a low memory system such as VPS with only 256MB of RAM, the required dependency of Certbot will failed to build. This can be identified if the pip outputs contains something like `internal compiler error: Killed (program cc1)`. You can workaround this restriction by creating a temporary
+swapfile::
+
+  user@webserver:~$ sudo fallocate -l 1G /tmp/swapfile
+  user@webserver:~$ sudo chmod 600 /tmp/swapfile
+  user@webserver:~$ sudo mkswap /tmp/swapfile
+  user@webserver:~$ sudo swapon /tmp/swapfile
+
+Disable and remove the swapfile once the virtual enviroment is constructed::
+
+  user@webserver:~$ sudo swapoff /tmp/swapfile
+  user@webserver:~$ sudo rm /tmp/swapfile
 
 Running with Docker
 ^^^^^^^^^^^^^^^^^^^
