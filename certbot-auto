@@ -55,6 +55,7 @@ for arg in "$@" ; do
     --verbose)
       VERBOSE=1;;
     -[!-]*)
+      OPTIND=1
       while getopts ":hnv" short_arg $arg; do
         case "$short_arg" in
           h)
