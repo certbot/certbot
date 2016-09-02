@@ -83,8 +83,9 @@ the same command line flags and arguments. For more information, see
 Problems with Python virtual environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-On a low memory system such as VPS with only 256MB of RAM, the required dependency of Certbot will failed to build. This can be identified if the pip outputs contains something like `internal compiler error: Killed (program cc1)`. You can workaround this restriction by creating a temporary
-swapfile::
+On a low memory system such as VPS with only 256MB of RAM, the required dependencies of Certbot will failed to build.
+This can be identified if the pip outputs contains something like ``internal compiler error: Killed (program cc1)``.
+You can workaround this restriction by creating a temporary swapfile::
 
   user@webserver:~$ sudo fallocate -l 1G /tmp/swapfile
   user@webserver:~$ sudo chmod 600 /tmp/swapfile
