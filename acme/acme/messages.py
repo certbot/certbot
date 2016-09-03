@@ -57,8 +57,8 @@ class Error(jose.JSONObjectWithFields, errors.Error):
     def with_code(cls, code, **kwargs):
         """Create an Error instance with an ACME Error code.
 
-        :??? unicode code:
-        :??? kwargs:
+        :unicode code: An ACME error code, like 'dnssec'.
+        :kwargs: kwargs to pass to Error.
 
         """
         if code not in ERROR_CODES:
