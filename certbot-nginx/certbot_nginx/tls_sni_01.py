@@ -101,7 +101,7 @@ class NginxTlsSni01(common.TLSSNI01):
             if key == ['http']:
                 found_bucket = False
                 for k, _ in body:
-                    if k == bucket_directive[0]:
+                    if k == bucket_directive[1]:
                         found_bucket = True
                 if not found_bucket:
                     body.insert(0, bucket_directive)
