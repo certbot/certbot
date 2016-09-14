@@ -1012,6 +1012,19 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.parser.find_dir("ServerAlias", target_name,
                                  start=vh_path, exclude=False)):
             return
+        # TODO find all wildcards
+        names = self.parser.find_dir("ServerName|ServerAlias", start=vh_path, exclude=False)
+        potential_wildcards = [server for server in names if server.startswith("*")]
+        # TODO reverse search through them to see if the target name is covered
+        target_split = target_name.split(".")[::-1]
+        matches = []
+        for wildcard in potential_wildcards:
+            for idx, part in enumerate(wildcard.split(".")[:1:-1]):
+                if target_split[idx] != part:
+                    break
+            matches.append(wildcard)
+        if wildcard:
+            return
         if not self.parser.find_dir("ServerName", None,
                                     start=vh_path, exclude=False):
             self.parser.add_dir(vh_path, "ServerName", target_name)
