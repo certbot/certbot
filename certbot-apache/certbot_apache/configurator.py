@@ -1013,11 +1013,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                                  start=vh_path, exclude=False)):
             return
         # TODO find all wildcards
-        names = self.parser.find_dir("ServerName", start=vh_path, exclude=False)
-        aliases = self.parser.find_dir("ServerAlias", start=vh_path, exclude=False)
+        names = [self.aug.get(card) for card in self.parser.find_dir("ServerName", start=vh_path, exclude=False)]
+        aliases = [self.aug.get(card) for card in self.parser.find_dir("ServerAlias", start=vh_path, exclude=False)]
         potential_wildcards = [server for server in names if server.startswith("*")]
         potential_wildcards.extend([server for server in aliases if server.startswith("*")])
-        potential_wildcards = [self.aug.get(card) for card in potential_wildcards]
         # TODO reverse search through them to see if the target name is covered
         target_split = target_name.split(".")[::-1]
         matches = []
