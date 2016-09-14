@@ -1021,11 +1021,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         target_split = target_name.split(".")[::-1]
         matches = []
         for wildcard in potential_wildcards:
-            for idx, part in enumerate(wildcard.split(".")[:1:-1]):
+            for idx, part in enumerate(wildcard.split(".")[:0:-1]):
                 if target_split[idx] != part:
                     break
             matches.append(wildcard)
-        if wildcard:
+        if matches:
             return
         if not self.parser.find_dir("ServerName", None,
                                     start=vh_path, exclude=False):
