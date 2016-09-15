@@ -1,6 +1,7 @@
 # This is the flattened list of packages certbot-auto installs. To generate
-# this, do `pip install --no-cache-dir -e acme -e . -e certbot-apache`, and
-# then use `hashin` or a more secure method to gather the hashes.
+# this, do
+# `pip install --no-cache-dir -e acme -e . -e certbot-apache -e certbot-nginx`,
+# and then use `hashin` or a more secure method to gather the hashes.
 
 argparse==1.4.0 \
     --hash=sha256:c31647edb69fd3d465a847ea3157d37bed1f95f19760b11a47aa91c04b666314 \
@@ -117,6 +118,15 @@ pyasn1==0.1.9 \
 pyopenssl==16.0.0 \
     --hash=sha256:5add70cf00273bf957ca31fdb0df9b0ae4639e081897d5f86a0ae1f104901230 \
     --hash=sha256:363d10ee43d062285facf4e465f4f5163f9f702f9134f0a5896f134cbb92d17d
+pyparsing==2.1.8 \
+    --hash=sha256:2f0f5ceb14eccd5aef809d6382e87df22ca1da583c79f6db01675ce7d7f49c18 \
+    --hash=sha256:03a4869b9f3493807ee1f1cb405e6d576a1a2ca4d81a982677c0c1ad6177c56b \
+    --hash=sha256:ab09aee814c0241ff0c503cff30018219fe1fc14501d89f406f4664a0ec9fbcd \
+    --hash=sha256:6e9a7f052f8e26bcf749e4033e3115b6dc7e3c85aafcb794b9a88c9d9ef13c97 \
+    --hash=sha256:9f463a6bcc4eeb6c08f1ed84439b17818e2085937c0dee0d7674ac127c67c12b \
+    --hash=sha256:3626b4d81cfb300dad57f52f2f791caaf7b06c09b368c0aa7b868e53a5775424 \
+    --hash=sha256:367b90cc877b46af56d4580cd0ae278062903f02b8204ab631f5a2c0f50adfd0 \
+    --hash=sha256:9f1ea360086cd68681e7f4ca8f1f38df47bf81942a0d76a9673c2d23eff35b13
 pyRFC3339==1.0 \
     --hash=sha256:eea31835c56e2096af4363a5745a784878a61d043e247d3a6d6a0a32a9741f56 \
     --hash=sha256:8dfbc6c458b8daba1c0f3620a8c78008b323a268b27b7359e92a4ae41325f535

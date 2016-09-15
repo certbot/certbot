@@ -84,7 +84,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     """
 
-    description = "Apache Web Server - Alpha"
+    description = "Apache Web Server plugin - Beta"
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -98,6 +98,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             help="Apache server root directory.")
         add("vhost-root", default=constants.os_constant("vhost_root"),
             help="Apache server VirtualHost configuration root")
+        add("logs-root", default=constants.os_constant("logs_root"),
+            help="Apache server logs directory")
         add("challenge-location",
             default=constants.os_constant("challenge_location"),
             help="Directory path for challenge configuration.")
@@ -244,7 +246,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         if not path["cert_path"] or not path["cert_key"]:
             # Throw some can't find all of the directives error"
-            logger.warn(
+            logger.warning(
                 "Cannot find a cert or key directive in %s. "
                 "VirtualHost was not modified", vhost.path)
             # Presumably break here so that the virtualhost is not modified
@@ -522,7 +524,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         try:
             args = self.aug.match(path + "/arg")
         except RuntimeError:
-            logger.warn("Encountered a problem while parsing file: %s, skipping", path)
+            logger.warning("Encountered a problem while parsing file: %s, skipping", path)
             return None
         for arg in args:
             addrs.add(obj.Addr.fromstring(self.parser.get_arg(arg)))
@@ -538,6 +540,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 is_ssl = True
 
         filename = get_file_path(self.aug.get("/augeas/files%s/path" % get_file_path(path)))
+        if filename is None:
+            return None
+
         if self.conf("handle-sites"):
             is_enabled = self.is_site_enabled(filename)
         else:
@@ -1120,7 +1125,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         try:
             func(self.choose_vhost(domain), options)
         except errors.PluginError:
-            logger.warn("Failed %s for %s", enhancement, domain)
+            logger.warning("Failed %s for %s", enhancement, domain)
             raise
 
     def _enable_ocsp_stapling(self, ssl_vhost, unused_options):
@@ -1307,9 +1312,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # but redirect loops are possible in very obscure cases; see #1620
             # for reasoning.
             if self._is_rewrite_exists(general_vh):
-                logger.warn("Added an HTTP->HTTPS rewrite in addition to "
-                            "other RewriteRules; you may wish to check for "
-                            "overall consistency.")
+                logger.warning("Added an HTTP->HTTPS rewrite in addition to "
+                               "other RewriteRules; you may wish to check for "
+                               "overall consistency.")
 
             # Add directives to server
             # Note: These are not immediately searchable in sites-enabled
@@ -1453,13 +1458,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "RewriteEngine On\n"
                 "RewriteRule %s\n"
                 "\n"
-                "ErrorLog /var/log/apache2/redirect.error.log\n"
+                "ErrorLog %s/redirect.error.log\n"
                 "LogLevel warn\n"
                 "</VirtualHost>\n"
                 % (" ".join(str(addr) for
                             addr in self._get_proposed_addrs(ssl_vhost)),
                    servername, serveralias,
-                   " ".join(rewrite_rule_args)))
+                   " ".join(rewrite_rule_args),
+                   self.conf("logs-root")))
 
     def _write_out_redirect(self, ssl_vhost, text):
         # This is the default name
@@ -1832,25 +1838,25 @@ def get_file_path(vhost_path):
     :rtype: str
 
     """
-    # Strip off /files
-    avail_fp = vhost_path[6:]
-    # This can be optimized...
-    while True:
-        # Cast all to lowercase to be case insensitive
-        find_if = avail_fp.lower().find("/ifmodule")
-        if find_if != -1:
-            avail_fp = avail_fp[:find_if]
-            continue
-        find_vh = avail_fp.lower().find("/virtualhost")
-        if find_vh != -1:
-            avail_fp = avail_fp[:find_vh]
-            continue
-        find_macro = avail_fp.lower().find("/macro")
-        if find_macro != -1:
-            avail_fp = avail_fp[:find_macro]
-            continue
-        break
-    return avail_fp
+    # Strip off /files/
+    try:
+        if vhost_path.startswith("/files/"):
+            avail_fp = vhost_path[7:].split("/")
+        else:
+            return None
+    except AttributeError:
+        # If we recieved a None path
+        return None
+
+    last_good = ""
+    # Loop through the path parts and validate after every addition
+    for p in avail_fp:
+        cur_path = last_good+"/"+p
+        if os.path.exists(cur_path):
+            last_good = cur_path
+        else:
+            break
+    return last_good
 
 
 def install_ssl_options_conf(options_ssl):

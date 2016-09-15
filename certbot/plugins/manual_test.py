@@ -51,7 +51,7 @@ class AuthenticatorTest(unittest.TestCase):
     @mock.patch("certbot.plugins.manual.zope.component.getUtility")
     @mock.patch("certbot.plugins.manual.sys.stdout")
     @mock.patch("acme.challenges.HTTP01Response.simple_verify")
-    @mock.patch("__builtin__.raw_input")
+    @mock.patch("six.moves.input")
     def test_perform(self, mock_raw_input, mock_verify, mock_stdout, mock_interaction):
         mock_verify.return_value = True
         mock_interaction().yesno.return_value = True

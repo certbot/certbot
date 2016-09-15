@@ -117,9 +117,9 @@ class NginxParserTest(util.NginxTest):
         fooconf = [x for x in vhosts if 'foo.conf' in x.filep][0]
         self.assertEqual(vhost5, fooconf)
         localhost = [x for x in vhosts if 'localhost' in x.names][0]
-        self.assertEquals(vhost1, localhost)
+        self.assertEqual(vhost1, localhost)
         somename = [x for x in vhosts if 'somename' in x.names][0]
-        self.assertEquals(vhost2, somename)
+        self.assertEqual(vhost2, somename)
 
     def test_add_server_directives(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
@@ -141,10 +141,14 @@ class NginxParserTest(util.NginxTest):
                                       replace=False)
         nparser.add_server_directives(server_conf, names, [['foo', 'bar']],
                                       replace=False)
+        from certbot_nginx.parser import COMMENT
         self.assertEqual(nparser.parsed[server_conf],
                          [['server_name', 'somename  alias  another.alias'],
                           ['foo', 'bar'],
-                          ['ssl_certificate', '/etc/ssl/cert2.pem']
+                          ['#', COMMENT],
+                          ['ssl_certificate', '/etc/ssl/cert2.pem'],
+                          ['#', COMMENT],
+                          [], []
                           ])
 
     def test_add_http_directives(self):
@@ -170,12 +174,13 @@ class NginxParserTest(util.NginxTest):
         filep = nparser.abs_path('sites-enabled/example.com')
         nparser.add_server_directives(
             filep, target, [['server_name', 'foobar.com']], replace=True)
+        from certbot_nginx.parser import COMMENT
         self.assertEqual(
             nparser.parsed[filep],
             [[['server'], [['listen', '69.50.225.155:9000'],
                            ['listen', '127.0.0.1'],
-                           ['server_name', 'foobar.com'],
-                           ['server_name', 'example.*'],
+                           ['server_name', 'foobar.com'], ['#', COMMENT],
+                           ['server_name', 'example.*'], []
                            ]]])
         self.assertRaises(errors.MisconfigurationError,
                           nparser.add_server_directives,
@@ -216,6 +221,23 @@ class NginxParserTest(util.NginxTest):
             self.assertEqual(winner,
                              parser.get_best_match(target_name, names[i]))
 
+    def test_comment_directive(self):
+        # pylint: disable=protected-access
+        block = nginxparser.UnspacedList([
+            ["\n", "a", " ", "b", "\n"],
+            ["c", " ", "d"],
+            ["\n", "e", " ", "f"]])
+        from certbot_nginx.parser import _comment_directive, COMMENT_BLOCK
+        _comment_directive(block, 1)
+        _comment_directive(block, 0)
+        self.assertEqual(block.spaced, [
+            ["\n", "a", " ", "b", "\n"],
+            COMMENT_BLOCK,
+            "\n",
+            ["c", " ", "d"],
+            COMMENT_BLOCK,
+            ["\n", "e", " ", "f"]])
+
     def test_get_all_certs_keys(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
         filep = nparser.abs_path('sites-enabled/example.com')
@@ -248,6 +270,23 @@ class NginxParserTest(util.NginxTest):
             ['listen', '443'], ['ssl', 'on']
         ])
         self.assertTrue(server['ssl'])
+
+    def test_ssl_options_should_be_parsed_ssl_directives(self):
+        nparser = parser.NginxParser(self.config_path, self.ssl_options)
+        self.assertEqual(nginxparser.UnspacedList(nparser.loc["ssl_options"]),
+                         [['ssl_session_cache', 'shared:le_nginx_SSL:1m'],
+                          ['ssl_session_timeout', '1440m'],
+                          ['ssl_protocols', 'TLSv1 TLSv1.1 TLSv1.2'],
+                          ['ssl_prefer_server_ciphers', 'on'],
+                          ['ssl_ciphers', '"ECDHE-ECDSA-AES128-GCM-SHA256 ECDHE-ECDSA-'+
+                           'AES256-GCM-SHA384 ECDHE-ECDSA-AES128-SHA ECDHE-ECDSA-AES256'+
+                           '-SHA ECDHE-ECDSA-AES128-SHA256 ECDHE-ECDSA-AES256-SHA384'+
+                           ' ECDHE-RSA-AES128-GCM-SHA256 ECDHE-RSA-AES256-GCM-SHA384'+
+                           ' ECDHE-RSA-AES128-SHA ECDHE-RSA-AES128-SHA256 ECDHE-RSA-'+
+                           'AES256-SHA384 DHE-RSA-AES128-GCM-SHA256 DHE-RSA-AES256-GCM'+
+                           '-SHA384 DHE-RSA-AES128-SHA DHE-RSA-AES256-SHA DHE-RSA-'+
+                           'AES128-SHA256 DHE-RSA-AES256-SHA256 EDH-RSA-DES-CBC3-SHA"']
+                         ])
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

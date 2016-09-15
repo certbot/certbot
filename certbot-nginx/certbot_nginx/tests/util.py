@@ -17,6 +17,7 @@ from certbot.plugins import common
 
 from certbot_nginx import constants
 from certbot_nginx import configurator
+from certbot_nginx import nginxparser
 
 
 class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
@@ -84,14 +85,20 @@ def filter_comments(tree):
     def traverse(tree):
         """Generator dropping comment nodes"""
         for entry in tree:
-            key, values = entry
+            # key, values = entry
+            spaceless = [e for e in entry if not nginxparser.spacey(e)]
+            if spaceless:
+                key = spaceless[0]
+                values = spaceless[1] if len(spaceless) > 1 else None
+            else:
+                key = values = ""
             if isinstance(key, list):
                 new = copy.deepcopy(entry)
                 new[1] = filter_comments(values)
                 yield new
             else:
-                if key != '#':
-                    yield entry
+                if key != '#' and spaceless:
+                    yield spaceless
 
     return list(traverse(tree))
 

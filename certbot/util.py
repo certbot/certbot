@@ -268,6 +268,19 @@ def get_systemd_os_info(filepath="/etc/os-release"):
     return (os_name, os_version)
 
 
+def get_systemd_os_like(filepath="/etc/os-release"):
+    """
+    Get a list of strings that indicate the distribution likeness to
+    other distributions.
+
+    :param str filepath: File path of os-release file
+    :returns: List of distribution acronyms
+    :rtype: `list` of `str`
+    """
+
+    return _get_systemd_os_release_var("ID_LIKE", filepath).split(" ")
+
+
 def _get_systemd_os_release_var(varname, filepath="/etc/os-release"):
     """
     Get single value from systemd /etc/os-release
@@ -349,7 +362,7 @@ def safe_email(email):
     if EMAIL_REGEX.match(email) is not None:
         return not email.startswith(".") and ".." not in email
     else:
-        logger.warn("Invalid email address: %s.", email)
+        logger.warning("Invalid email address: %s.", email)
         return False
 
 
@@ -389,18 +402,27 @@ def enforce_domain_sanity(domain):
     :returns: The domain cast to `str`, with ASCII-only contents
     :rtype: str
     """
+    if isinstance(domain, six.text_type):
+        wildcard_marker = u"*."
+        punycode_marker = u"xn--"
+    else:
+        wildcard_marker = b"*."
+        punycode_marker = b"xn--"
+
     # Check if there's a wildcard domain
-    if domain.startswith("*."):
+    if domain.startswith(wildcard_marker):
         raise errors.ConfigurationError(
             "Wildcard domains are not supported: {0}".format(domain))
     # Punycode
-    if "xn--" in domain:
+    if punycode_marker in domain:
         raise errors.ConfigurationError(
             "Punycode domains are not presently supported: {0}".format(domain))
 
     # Unicode
     try:
-        domain = domain.encode('ascii').lower()
+        if isinstance(domain, six.binary_type):
+            domain = domain.decode('utf-8')
+        domain.encode('ascii')
     except UnicodeError:
         error_fmt = (u"Internationalized domain names "
                      "are not presently supported: {0}")
@@ -409,8 +431,10 @@ def enforce_domain_sanity(domain):
         else:
             raise errors.ConfigurationError(str(error_fmt).format(domain))
 
+    domain = domain.lower()
+
     # Remove trailing dot
-    domain = domain[:-1] if domain.endswith('.') else domain
+    domain = domain[:-1] if domain.endswith(u'.') else domain
 
     # Explain separately that IP addresses aren't allowed (apart from not
     # being FQDNs) because hope springs eternal concerning this point

@@ -91,10 +91,10 @@ class NginxTlsSni01(common.TLSSNI01):
         # Add the 'include' statement for the challenges if it doesn't exist
         # already in the main config
         included = False
-        include_directive = ['include', ' ', self.challenge_conf]
+        include_directive = ['\n', 'include', ' ', self.challenge_conf]
         root = self.configurator.parser.loc["root"]
 
-        bucket_directive = ['server_names_hash_bucket_size', ' ', '128']
+        bucket_directive = ['\n', 'server_names_hash_bucket_size', ' ', '128']
 
         main = self.configurator.parser.parsed[root]
         for key, body in main:
@@ -145,7 +145,6 @@ class NginxTlsSni01(common.TLSSNI01):
 
         block.extend([['server_name', ' ',
                        achall.response(achall.account_key).z_domain],
-                      ['include', ' ', self.configurator.parser.loc["ssl_options"]],
                       # access and error logs necessary for
                       # integration testing (non-root)
                       ['access_log', ' ', os.path.join(
@@ -154,6 +153,7 @@ class NginxTlsSni01(common.TLSSNI01):
                           self.configurator.config.work_dir, 'error.log')],
                       ['ssl_certificate', ' ', self.get_cert_path(achall)],
                       ['ssl_certificate_key', ' ', self.get_key_path(achall)],
-                      [['location', ' ', '/'], [['root', ' ', document_root]]]])
+                      [['location', ' ', '/'], [['root', ' ', document_root]]]] +
+                     self.configurator.parser.loc["ssl_options"])
 
         return [['server'], block]

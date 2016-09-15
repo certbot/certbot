@@ -55,7 +55,9 @@ class NginxConfigurator(common.Plugin):
 
     """
 
-    description = "Nginx Web Server - currently doesn't work"
+    description = "Nginx Web Server plugin - Alpha"
+
+    hidden = True
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -117,14 +119,14 @@ class NginxConfigurator(common.Plugin):
         # Make sure configuration is valid
         self.config_test()
 
+        # temp_install must be run before creating the NginxParser
+        temp_install(self.mod_ssl_conf)
         self.parser = parser.NginxParser(
             self.conf('server-root'), self.mod_ssl_conf)
 
         # Set Version
         if self.version is None:
             self.version = self.get_version()
-
-        temp_install(self.mod_ssl_conf)
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path,
@@ -160,9 +162,9 @@ class NginxConfigurator(common.Plugin):
         stapling_directives = []
         if self.version >= (1, 3, 7):
             stapling_directives = [
-                ['\n', 'ssl_trusted_certificate', ' ', chain_path],
-                ['\n', 'ssl_stapling', ' ', 'on'],
-                ['\n', 'ssl_stapling_verify', ' ', 'on'], ['\n']]
+                ['\n    ', 'ssl_trusted_certificate', ' ', chain_path],
+                ['\n    ', 'ssl_stapling', ' ', 'on'],
+                ['\n    ', 'ssl_stapling_verify', ' ', 'on'], ['\n']]
 
         if len(stapling_directives) != 0 and not chain_path:
             raise errors.PluginError(
@@ -179,7 +181,7 @@ class NginxConfigurator(common.Plugin):
                         vhost.filep, vhost.names)
         except errors.MisconfigurationError as error:
             logger.debug(error)
-            logger.warn(
+            logger.warning(
                 "Cannot find a cert or key directive in %s for %s. "
                 "VirtualHost was not modified.", vhost.filep, vhost.names)
             # Presumably break here so that the virtualhost is not modified
@@ -337,10 +339,16 @@ class NginxConfigurator(common.Plugin):
 
         """
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
-        ssl_block = [['\n', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
-                     ['\n', 'ssl_certificate', ' ', snakeoil_cert],
-                     ['\n', 'ssl_certificate_key', ' ', snakeoil_key],
-                     ['\n', 'include', ' ', self.parser.loc["ssl_options"]]]
+
+        # the options file doesn't have a newline at the beginning, but there
+        # needs to be one when it's dropped into the file
+        ssl_block = (
+            [['\n    ', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
+             ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
+             ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
+             ['\n']] +
+            self.parser.loc["ssl_options"])
+
         self.parser.add_server_directives(
             vhost.filep, vhost.names, ssl_block, replace=False)
         vhost.ssl = True
@@ -385,7 +393,7 @@ class NginxConfigurator(common.Plugin):
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
         except errors.PluginError:
-            logger.warn("Failed %s for %s", enhancement, domain)
+            logger.warning("Failed %s for %s", enhancement, domain)
 
     def _enable_redirect(self, vhost, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
@@ -401,9 +409,10 @@ class NginxConfigurator(common.Plugin):
         :type unused_options: Not Available
         """
         redirect_block = [[
-            ['if', '($scheme != "https")'],
-            [['return', '301 https://$host$request_uri']]
-        ]]
+            ['\n    ', 'if', ' ', '($scheme != "https") '],
+            [['\n        ', 'return', ' ', '301 https://$host$request_uri'],
+             '\n    ']
+        ], ['\n']]
         self.parser.add_server_directives(
             vhost.filep, vhost.names, redirect_block, replace=False)
         logger.info("Redirecting all traffic to ssl in %s", vhost.filep)

@@ -134,8 +134,8 @@ class TestRawNginxParser(unittest.TestCase):
             parsed_new = load(handle)
         try:
             self.maxDiff = None
-            self.assertEquals(parsed[0], parsed_new[0])
-            self.assertEquals(parsed[1:], parsed_new[1:])
+            self.assertEqual(parsed[0], parsed_new[0])
+            self.assertEqual(parsed[1:], parsed_new[1:])
         finally:
             os.unlink(util.get_data_filename('nginx.new.conf'))
 
@@ -150,7 +150,7 @@ class TestRawNginxParser(unittest.TestCase):
             parsed_new = load(handle)
 
         try:
-            self.assertEquals(parsed, parsed_new)
+            self.assertEqual(parsed, parsed_new)
 
             self.assertEqual(parsed_new, [
                 ['#', " Use bar.conf when it's a full moon!"],
@@ -222,6 +222,26 @@ class TestUnspacedList(unittest.TestCase):
     def test_get(self):
         self.assertRaises(IndexError, self.ul2.__getitem__, 2)
         self.assertRaises(IndexError, self.ul2.__getitem__, -3)
+
+    def test_insert(self):
+        x = UnspacedList(
+                [['\n    ', 'listen', '       ', '69.50.225.155:9000'],
+                ['\n    ', 'listen', '       ', '127.0.0.1'],
+                ['\n    ', 'server_name', ' ', '.example.com'],
+                ['\n    ', 'server_name', ' ', 'example.*'], '\n',
+                ['listen', ' ', '5001 ssl']])
+        x.insert(5, "FROGZ")
+        self.assertEqual(x,
+            [['listen', '69.50.225.155:9000'], ['listen', '127.0.0.1'],
+            ['server_name', '.example.com'], ['server_name', 'example.*'],
+            ['listen', '5001 ssl'], 'FROGZ'])
+        self.assertEqual(x.spaced,
+            [['\n    ', 'listen', '       ', '69.50.225.155:9000'],
+            ['\n    ', 'listen', '       ', '127.0.0.1'],
+            ['\n    ', 'server_name', ' ', '.example.com'],
+            ['\n    ', 'server_name', ' ', 'example.*'], '\n',
+            ['listen', ' ', '5001 ssl'],
+            'FROGZ'])
 
     def test_rawlists(self):
         ul3 = copy.deepcopy(self.ul)

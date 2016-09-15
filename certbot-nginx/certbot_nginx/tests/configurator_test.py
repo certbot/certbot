@@ -13,6 +13,7 @@ from acme import messages
 from certbot import achallenges
 from certbot import errors
 
+from certbot_nginx import parser
 from certbot_nginx.tests import util
 
 
@@ -37,8 +38,10 @@ class NginxConfiguratorTest(util.NginxTest):
             errors.NoInstallationError, self.config.prepare)
 
     def test_prepare(self):
-        self.assertEquals((1, 6, 2), self.config.version)
-        self.assertEquals(5, len(self.config.parser.parsed))
+        self.assertEqual((1, 6, 2), self.config.version)
+        self.assertEqual(5, len(self.config.parser.parsed))
+        # ensure we successfully parsed a file for ssl_options
+        self.assertTrue(self.config.parser.loc["ssl_options"])
 
     @mock.patch("certbot_nginx.configurator.util.exe_exists")
     @mock.patch("certbot_nginx.configurator.subprocess.Popen")
@@ -56,7 +59,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.version = None
         self.config.config_test = mock.Mock()
         self.config.prepare()
-        self.assertEquals((1, 6, 2), self.config.version)
+        self.assertEqual((1, 6, 2), self.config.version)
 
     @mock.patch("certbot_nginx.configurator.socket.gethostbyaddr")
     def test_get_all_names(self, mock_gethostbyaddr):
@@ -89,13 +92,13 @@ class NginxConfiguratorTest(util.NginxTest):
 
         # pylint: disable=protected-access
         parsed = self.config.parser._parse_files(filep, override=True)
-        self.assertEqual([[['server'], [
-                                        ['listen', '69.50.225.155:9000'],
-                                        ['listen', '127.0.0.1'],
-                                        ['server_name', '.example.com'],
-                                        ['server_name', 'example.*'],
-                                        ['listen', '5001 ssl']
-                                        ]]],
+        self.assertEqual([[['server'],
+                           [['listen', '69.50.225.155:9000'],
+                            ['listen', '127.0.0.1'],
+                            ['server_name', '.example.com'],
+                            ['server_name', 'example.*'],
+                            ['listen', '5001 ssl'],
+                            ['#', parser.COMMENT]]]],
                          parsed[0])
 
     def test_choose_vhost(self):
@@ -216,9 +219,9 @@ class NginxConfiguratorTest(util.NginxTest):
 
                             ['listen', '5001 ssl'],
                             ['ssl_certificate', 'example/fullchain.pem'],
-                            ['ssl_certificate_key', 'example/key.pem'],
-                            ['include', self.config.parser.loc["ssl_options"]]
-                            ]]],
+                            ['ssl_certificate_key', 'example/key.pem']] +
+                            util.filter_comments(self.config.parser.loc["ssl_options"])
+                            ]],
                          parsed_example_conf)
         self.assertEqual([['server_name', 'somename  alias  another.alias']],
                          parsed_server_conf)
@@ -234,8 +237,9 @@ class NginxConfiguratorTest(util.NginxTest):
                 ['index', 'index.html index.htm']]],
               ['listen', '5001 ssl'],
               ['ssl_certificate', '/etc/nginx/fullchain.pem'],
-              ['ssl_certificate_key', '/etc/nginx/key.pem'],
-              ['include', self.config.parser.loc["ssl_options"]]]],
+              ['ssl_certificate_key', '/etc/nginx/key.pem']] +
+             util.filter_comments(self.config.parser.loc["ssl_options"])
+            ],
             2))
 
     def test_get_all_certs_keys(self):
@@ -415,7 +419,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_redirect_enhance(self):
         expected = [
-            ['if', '($scheme != "https")'],
+            ['if', '($scheme != "https") '],
             [['return', '301 https://$host$request_uri']]
         ]
 

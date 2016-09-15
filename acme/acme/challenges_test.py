@@ -77,6 +77,93 @@ class KeyAuthorizationChallengeResponseTest(unittest.TestCase):
         self.assertFalse(response.verify(self.chall, KEY.public_key()))
 
 
+class DNS01ResponseTest(unittest.TestCase):
+    # pylint: disable=too-many-instance-attributes
+
+    def setUp(self):
+        from acme.challenges import DNS01Response
+        self.msg = DNS01Response(key_authorization=u'foo')
+        self.jmsg = {
+            'resource': 'challenge',
+            'type': 'dns-01',
+            'keyAuthorization': u'foo',
+        }
+
+        from acme.challenges import DNS01
+        self.chall = DNS01(token=(b'x' * 16))
+        self.response = self.chall.response(KEY)
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+
+    def test_from_json(self):
+        from acme.challenges import DNS01Response
+        self.assertEqual(self.msg, DNS01Response.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from acme.challenges import DNS01Response
+        hash(DNS01Response.from_json(self.jmsg))
+
+    def test_simple_verify_bad_key_authorization(self):
+        key2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
+        self.response.simple_verify(self.chall, "local", key2.public_key())
+
+    @mock.patch("acme.dns_resolver.txt_records_for_name")
+    def test_simple_verify_good_validation(self, mock_resolver):
+        mock_resolver.return_value = [self.chall.validation(KEY.public_key())]
+        self.assertTrue(self.response.simple_verify(
+            self.chall, "local", KEY.public_key()))
+        mock_resolver.assert_called_once_with(
+            self.chall.validation_domain_name("local"))
+
+    @mock.patch("acme.dns_resolver.txt_records_for_name")
+    def test_simple_verify_good_validation_multiple_txts(self, mock_resolver):
+        mock_resolver.return_value = [
+            "!", self.chall.validation(KEY.public_key())]
+        self.assertTrue(self.response.simple_verify(
+            self.chall, "local", KEY.public_key()))
+        mock_resolver.assert_called_once_with(
+            self.chall.validation_domain_name("local"))
+
+    @mock.patch("acme.dns_resolver.txt_records_for_name")
+    def test_simple_verify_bad_validation(self, mock_dns):
+        mock_dns.return_value = ["!"]
+        self.assertFalse(self.response.simple_verify(
+            self.chall, "local", KEY.public_key()))
+
+
+class DNS01Test(unittest.TestCase):
+
+    def setUp(self):
+        from acme.challenges import DNS01
+        self.msg = DNS01(token=jose.decode_b64jose(
+            'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA'))
+        self.jmsg = {
+            'type': 'dns-01',
+            'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA',
+        }
+
+    def test_validation_domain_name(self):
+        self.assertEqual('_acme-challenge.www.example.com',
+                         self.msg.validation_domain_name('www.example.com'))
+
+    def test_validation(self):
+        self.assertEqual(
+            "rAa7iIg4K2y63fvUhCfy8dP1Xl7wEhmQq0oChTcE3Zk",
+            self.msg.validation(KEY))
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+
+    def test_from_json(self):
+        from acme.challenges import DNS01
+        self.assertEqual(self.msg, DNS01.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from acme.challenges import DNS01
+        hash(DNS01.from_json(self.jmsg))
+
+
 class HTTP01ResponseTest(unittest.TestCase):
     # pylint: disable=too-many-instance-attributes
 

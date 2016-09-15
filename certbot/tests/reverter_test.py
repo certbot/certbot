@@ -1,6 +1,5 @@
 """Test certbot.reverter."""
 import csv
-import itertools
 import logging
 import os
 import shutil
@@ -8,6 +7,7 @@ import tempfile
 import unittest
 
 import mock
+import six
 
 from certbot import errors
 
@@ -153,7 +153,7 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
 
         act_coms = get_undo_commands(self.config.temp_checkpoint_dir)
 
-        for a_com, com in itertools.izip(act_coms, coms):
+        for a_com, com in six.moves.zip(act_coms, coms):
             self.assertEqual(a_com, com)
 
     def test_bad_register_undo_command(self):
@@ -362,8 +362,8 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         self.assertEqual(mock_logger.warning.call_count, 1)
 
         # Test Generic warning
-        mock_logger.warning.call_count = 0
         self._setup_three_checkpoints()
+        mock_logger.warning.call_count = 0
         self.reverter.rollback_checkpoints(4)
         self.assertEqual(mock_logger.warning.call_count, 1)
 

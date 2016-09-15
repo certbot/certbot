@@ -3,14 +3,26 @@ import logging
 import os
 import socket
 
-import psutil
 import zope.component
 
 from certbot import interfaces
 from certbot import util
 
+try:
+    import psutil
+    USE_PSUTIL = True
+except ImportError:
+    USE_PSUTIL = False
 
 logger = logging.getLogger(__name__)
+
+RENEWER_EXTRA_MSG = (
+    " For automated renewal, you may want to use a script that stops"
+    " and starts your webserver. You can find an example at"
+    " https://certbot.eff.org/docs/using.html#renewal ."
+    " Alternatively you can use the webroot plugin to renew without"
+    " needing to stop and start your webserver.")
+
 
 def path_surgery(restart_cmd):
     """Attempt to perform PATH surgery to find restart_cmd
@@ -38,8 +50,10 @@ def path_surgery(restart_cmd):
         return True
     else:
         expanded = " expanded" if any(added) else ""
-        logger.warn("Failed to find %s in%s PATH: %s", restart_cmd, expanded, path)
+        logger.warning("Failed to find %s in%s PATH: %s", restart_cmd,
+                       expanded, path)
         return False
+
 
 def already_listening(port, renewer=False):
     """Check if a process is already listening on the port.
@@ -49,6 +63,50 @@ def already_listening(port, renewer=False):
     .. warning::
         On some operating systems, this function can only usefully be
         run as root.
+
+    :param int port: The TCP port in question.
+    :returns: True or False.
+
+    """
+
+    if USE_PSUTIL:
+        return already_listening_psutil(port, renewer=renewer)
+    else:
+        logger.debug("Psutil not found, using simple socket check.")
+        return already_listening_socket(port, renewer=renewer)
+
+
+def already_listening_socket(port, renewer=False):
+    """Simple socket based check to find out if port is already in use
+
+    :param int port: The TCP port in question.
+    :returns: True or False
+    """
+
+    try:
+        testsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+        try:
+            testsocket.bind(("", port))
+        except socket.error:
+            display = zope.component.getUtility(interfaces.IDisplay)
+            extra = ""
+            if renewer:
+                extra = RENEWER_EXTRA_MSG
+            display.notification(
+                "Port {0} is already in use by another process. This will "
+                "prevent us from binding to that port. Please stop the "
+                "process that is populating the port in question and try "
+                "again. {1}".format(port, extra), height=13)
+            return True
+        finally:
+            testsocket.close()
+    except socket.error:
+        pass
+    return False
+
+
+def already_listening_psutil(port, renewer=False):
+    """Psutil variant of the open port check
 
     :param int port: The TCP port in question.
     :returns: True or False.
@@ -81,12 +139,7 @@ def already_listening(port, renewer=False):
             display = zope.component.getUtility(interfaces.IDisplay)
             extra = ""
             if renewer:
-                extra = (
-                    " For automated renewal, you may want to use a script that stops"
-                    " and starts your webserver. You can find an example at"
-                    " https://letsencrypt.org/howitworks/#writing-your-own-renewal-script"
-                    ". Alternatively you can use the webroot plugin to renew without"
-                    " needing to stop and start your webserver.")
+                extra = RENEWER_EXTRA_MSG
             display.notification(
                 "The program {0} (process ID {1}) is already listening "
                 "on TCP port {2}. This will prevent us from binding to "

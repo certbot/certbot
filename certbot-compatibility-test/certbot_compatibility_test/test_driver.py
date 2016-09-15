@@ -22,7 +22,8 @@ from certbot_compatibility_test import errors
 from certbot_compatibility_test import util
 from certbot_compatibility_test import validator
 
-from certbot_compatibility_test.configurators.apache import common
+from certbot_compatibility_test.configurators.apache import common as a_common
+from certbot_compatibility_test.configurators.nginx import common as n_common
 
 
 DESCRIPTION = """
@@ -32,7 +33,7 @@ tests that the plugin supports are performed.
 
 """
 
-PLUGINS = {"apache": common.Proxy}
+PLUGINS = {"apache": a_common.Proxy, "nginx": n_common.Proxy}
 
 
 logger = logging.getLogger(__name__)
@@ -143,7 +144,7 @@ def test_deploy_cert(plugin, temp_dir, domains):
 
     for domain in domains:
         try:
-            plugin.deploy_cert(domain, cert_path, util.KEY_PATH, cert_path)
+            plugin.deploy_cert(domain, cert_path, util.KEY_PATH, cert_path, cert_path)
             plugin.save()  # Needed by the Apache plugin
         except le_errors.Error as error:
             logger.error("Plugin failed to deploy ceritificate for %s:", domain)
@@ -369,10 +370,10 @@ def main():
         plugin.cleanup_from_tests()
 
     if overall_success:
-        logger.warn("All compatibility tests succeeded")
+        logger.warning("All compatibility tests succeeded")
         sys.exit(0)
     else:
-        logger.warn("One or more compatibility tests failed")
+        logger.warning("One or more compatibility tests failed")
         sys.exit(1)
 
 
