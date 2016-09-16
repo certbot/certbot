@@ -406,7 +406,12 @@ def enforce_le_validity(domain):
         raise errors.ConfigurationError(
             "{0} contains an invalid character. "
             "Valid characters are A-Z, a-z, 0-9, ., and -.".format(domain))
-    for label in domain.split("."):
+
+    labels = domain.split(".")
+    if len(labels) < 2:
+        raise errors.ConfigurationError(
+            "{0} needs at least two labels".format(domain))
+    for label in labels:
         if label.startswith("-"):
             raise errors.ConfigurationError(
                 'label "{0}" in domain "{1}" cannot start with "-"'.format(

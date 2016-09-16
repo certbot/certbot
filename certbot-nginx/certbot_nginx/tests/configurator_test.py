@@ -66,8 +66,8 @@ class NginxConfiguratorTest(util.NginxTest):
         mock_gethostbyaddr.return_value = ('155.225.50.69.nephoscale.net', [], [])
         names = self.config.get_all_names()
         self.assertEqual(names, set(
-            ["somename", "another.alias", "alias", "localhost",
-             "155.225.50.69.nephoscale.net", "www.example.org", "myhost"]))
+            ["155.225.50.69.nephoscale.net",
+             "www.example.org", "another.alias"]))
 
     def test_supported_enhancements(self):
         self.assertEqual(['redirect'], self.config.supported_enhancements())

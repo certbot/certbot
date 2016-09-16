@@ -351,6 +351,9 @@ class EnforceLeValidity(unittest.TestCase):
         self.assertRaises(
             errors.ConfigurationError, self._call, u"a-.example.com")
 
+    def test_one_label(self):
+        self.assertRaises(errors.ConfigurationError, self._call, u"com")
+
     def test_valid_domain(self):
         self.assertEqual(self._call(u"example.com"), u"example.com")
 
