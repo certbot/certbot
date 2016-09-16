@@ -395,7 +395,7 @@ def enforce_domain_sanity(domain):
     the requirements are not met.
 
     :param domain: Domain to check
-    :type domains: `str` or `unicode`
+    :type domain: `str` or `unicode`
     :raises ConfigurationError: for invalid domains and cases where Let's
                                 Encrypt currently will not issue certificates
 
