@@ -1,4 +1,4 @@
-usage: 
+usage:
   certbot [SUBCOMMAND] [options] [-d domain] [-d domain] ...
 
 Certbot can obtain and install HTTPS/TLS/SSL certificates.  By default,
@@ -84,7 +84,9 @@ automation:
   --expand              If an existing cert covers some subset of the
                         requested names, always expand and replace it with the
                         additional names. (default: False)
-  --version             show program's version number and exit
+  --version             Show program's version number and exit; optionally,
+                        set up the Python virtual environment for the first
+                        time.
   --force-renewal, --renew-by-default
                         If a certificate already exists for the requested
                         domains, renew it now, regardless of whether it is
