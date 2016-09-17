@@ -137,6 +137,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._enhance_func = {"redirect": self._enable_redirect,
                               "ensure-http-header": self._set_http_header,
                               "staple-ocsp": self._enable_ocsp_stapling}
+        self._skeletons = {}
 
     @property
     def mod_ssl_conf(self):
@@ -323,6 +324,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if not vhost.ssl:
                 vhost = self.make_vhost_ssl(vhost)
 
+            #TODO figure out what this does
             self._add_servername_alias(target_name, vhost)
             self.assoc[target_name] = vhost
             return vhost
@@ -797,6 +799,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Reload augeas to take into account the new vhost
         self.aug.load()
         # Get Vhost augeas path for new vhost
+        #TODO update this to accurately find it in the new multi-vhost
         vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
                               (self._escape(ssl_fp), parser.case_i("VirtualHost")))
         #TODO fuck this
@@ -809,9 +812,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             vh_p = vh_p[0]
 
         # Update Addresses
+        #TODO check what this does
         self._update_ssl_vhosts_addrs(vh_p)
 
         # Add directives
+        #TODO check what this does
         self._add_dummy_ssl_directives(vh_p)
         self.save()
 
@@ -822,7 +827,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # We know the length is one because of the assertion above
         # Create the Vhost object
+        #TODO check what this does
         ssl_vhost = self._create_vhost(vh_p)
+        #TODO see what this vhosts list is used for later
         self.vhosts.append(ssl_vhost)
 
         # NOTE: Searches through Augeas seem to ruin changes to directives
@@ -914,7 +921,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 if vhost_num != -1:
                     orig_file_list = self._create_block_segments(orig_file_list, vhost_num)
 
-            with open(ssl_fp, "w") as new_file:
+            if ssl_fp in self._skeletons:
+                bit = "a"
+                self._skeletons[ssl_fp].append(avail_fp)
+            else:
+                bit = "w"
+                self._skeletons[ssl_fp] = [avail_fp]
+
+            with open(ssl_fp, bit) as new_file:
                 new_file.write("<IfModule mod_ssl.c>\n")
 
                 comment = ("# Some rewrite rules in this file were "
