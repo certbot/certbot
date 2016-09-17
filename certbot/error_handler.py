@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # immediately.
 _SIGNALS = [signal.SIGTERM]
 if os.name != "nt":
-    for signal_code in [signal.SIGTERM, signal.SIGHUP, signal.SIGQUIT,
+    for signal_code in [signal.SIGHUP, signal.SIGQUIT,
                         signal.SIGXCPU, signal.SIGXFSZ]:
         # Adding only those signals that their default action is not Ignore.
         # This is platform-dependent, so we check it dynamically.
