@@ -261,9 +261,12 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
                    "your existing configuration.\nThe error was: {1!r}"
                    .format(requested, plugins[requested].problem))
     elif cfg_type == "installer":
-        msg = ('No installer plugins seem to be present and working on your system; '
-               'fix that or try running certbot with the "certonly" command to obtain'
-               ' a certificate you can install manually')
+        from certbot.cli import cli_command
+        msg = ('Certbot doesn\'t know how to automatically configure the web '
+          'server on this system. However, it can still get a certificate for '
+          'you. Please run "{0} certonly" to do so. You\'ll need to '
+          'manually configure your web server to use the resulting '
+          'certificate.').format(cli_command)
     else:
         msg = "{0} could not be determined or is not installed".format(cfg_type)
     raise errors.PluginSelectionError(msg)
