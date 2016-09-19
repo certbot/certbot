@@ -332,31 +332,41 @@ class ClientTest(unittest.TestCase):
 
     @mock.patch("certbot.client.enhancements")
     def test_enhance_config_no_ask(self, mock_enhancements):
-        config = ConfigHelper(redirect=True, hsts=False, uir=False)
+        config = ConfigHelper(redirect=True, hsts=False,
+                              uir=False, staple=False)
         self.assertRaises(errors.Error, self.client.enhance_config,
                           ["foo.bar"], config, None)
 
         mock_enhancements.ask.return_value = True
         installer = mock.MagicMock()
         self.client.installer = installer
-        installer.supported_enhancements.return_value = ["redirect", "ensure-http-header"]
+        installer.supported_enhancements.return_value = [
+            "redirect", "ensure-http-header", "staple-ocsp"]
 
-        config = ConfigHelper(redirect=True, hsts=False, uir=False)
+        config = ConfigHelper(redirect=True, hsts=False,
+                              uir=False, staple=False)
         self.client.enhance_config(["foo.bar"], config, None)
         installer.enhance.assert_called_with("foo.bar", "redirect", None)
 
-        config = ConfigHelper(redirect=False, hsts=True, uir=False)
+        config = ConfigHelper(redirect=False, hsts=True,
+                              uir=False, staple=False)
         self.client.enhance_config(["foo.bar"], config, None)
         installer.enhance.assert_called_with("foo.bar", "ensure-http-header",
                 "Strict-Transport-Security")
 
-        config = ConfigHelper(redirect=False, hsts=False, uir=True)
+        config = ConfigHelper(redirect=False, hsts=False,
+                              uir=True, staple=False)
         self.client.enhance_config(["foo.bar"], config, None)
         installer.enhance.assert_called_with("foo.bar", "ensure-http-header",
                 "Upgrade-Insecure-Requests")
 
-        self.assertEqual(installer.save.call_count, 3)
-        self.assertEqual(installer.restart.call_count, 3)
+        config = ConfigHelper(redirect=False, hsts=False,
+                              uir=False, staple=True)
+        self.client.enhance_config(["foo.bar"], config, None)
+        installer.enhance.assert_called_with("foo.bar", "staple-ocsp", None)
+
+        self.assertEqual(installer.save.call_count, 4)
+        self.assertEqual(installer.restart.call_count, 4)
 
     @mock.patch("certbot.client.enhancements")
     def test_enhance_config_unsupported(self, mock_enhancements):
