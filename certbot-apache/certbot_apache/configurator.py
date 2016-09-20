@@ -800,10 +800,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Get Vhost augeas path for new vhost
         vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
                               (self._escape(ssl_fp), parser.case_i("VirtualHost")))
+        temp_vh = vh_p[0]
         if self._skeletons[ssl_fp]:
-            vh_p = vh_p[len(self._skeletons[ssl_fp]) -1 ]
-        else:
-            vh_p = vh_p[0]
+            temp_vh = vh_p[len(self._skeletons[ssl_fp]) -1]
+        vh_p = temp_vh
 
         # Update Addresses
         self._update_ssl_vhosts_addrs(vh_p)
@@ -892,7 +892,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return [line for idx, line in enumerate(orig_file_list)
                           if idx not in out]
 
-    def _copy_create_ssl_vhost_skeleton(self, avail_fp, ssl_fp, vhost_num): # pylint: disable=too-many-branches
+    def _copy_create_ssl_vhost_skeleton(self, avail_fp, ssl_fp, vhost_num): # pylint: disable=too-many-branches,too-many-locals,too-many-statements
         """Copies over existing Vhost with IfModule mod_ssl.c> skeleton.
 
         :param str avail_fp: Pointer to the original available non-ssl vhost

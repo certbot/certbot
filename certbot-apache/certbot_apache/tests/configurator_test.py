@@ -1332,6 +1332,19 @@ class MultiVhostsTest(util.ApacheTest):
         self.assertEqual(self.config.is_name_vhost(self.vh_truth[1]),
                          self.config.is_name_vhost(ssl_vhost))
 
+    def test_make_2nd_vhost_ssl(self):
+        _ = self.config.make_vhost_ssl(self.vh_truth[0])
+        _ = self.config.make_vhost_ssl(self.vh_truth[1])
+        self.assertEqual(
+          len(self.config._skeletons[self.config._get_ssl_vhost_path(self.vh_truth[0].filep)]), 2)
+
+    def test_cover_is_stupid_and_I_hate_it(self):
+        http_vhost = obj.VirtualHost(None, None, None, False, False, name="Noah")
+        ssl_vhost = obj.VirtualHost(None, None, None, False, False, name="Noah")
+        self.config.vhosts.append(http_vhost)
+        self.assertEqual(self.config._get_http_vhost(ssl_vhost), http_vhost)
+
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
