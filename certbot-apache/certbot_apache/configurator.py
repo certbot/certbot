@@ -802,13 +802,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         #TODO update this to accurately find it in the new multi-vhost
         vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
                               (self._escape(ssl_fp), parser.case_i("VirtualHost")))
-        #TODO fuck this
-        if len(vh_p) != 1:
-            logger.error("Error: should only be one vhost in %s", avail_fp)
-            raise errors.PluginError("Currently, we only support "
-                                     "configurations with one vhost per file")
+        #TODO fix this
+        if self._skeletons[ssl_fp]:
+            vh_p = vh_p[len(self._skeletons[ssl_fp]) -1 ]
         else:
-            # This simplifies the process
             vh_p = vh_p[0]
 
         # Update Addresses
