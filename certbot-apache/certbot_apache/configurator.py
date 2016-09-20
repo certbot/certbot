@@ -324,7 +324,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if not vhost.ssl:
                 vhost = self.make_vhost_ssl(vhost)
 
-            #TODO figure out what this does
             self._add_servername_alias(target_name, vhost)
             self.assoc[target_name] = vhost
             return vhost
@@ -799,21 +798,17 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Reload augeas to take into account the new vhost
         self.aug.load()
         # Get Vhost augeas path for new vhost
-        #TODO update this to accurately find it in the new multi-vhost
         vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
                               (self._escape(ssl_fp), parser.case_i("VirtualHost")))
-        #TODO fix this
         if self._skeletons[ssl_fp]:
             vh_p = vh_p[len(self._skeletons[ssl_fp]) -1 ]
         else:
             vh_p = vh_p[0]
 
         # Update Addresses
-        #TODO check what this does
         self._update_ssl_vhosts_addrs(vh_p)
 
         # Add directives
-        #TODO check what this does
         self._add_dummy_ssl_directives(vh_p)
         self.save()
 
@@ -824,9 +819,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # We know the length is one because of the assertion above
         # Create the Vhost object
-        #TODO check what this does
         ssl_vhost = self._create_vhost(vh_p)
-        #TODO see what this vhosts list is used for later
+        ssl_vhost.ancestor = nonssl_vhost
         self.vhosts.append(ssl_vhost)
 
         # NOTE: Searches through Augeas seem to ruin changes to directives
@@ -1503,6 +1497,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def _get_http_vhost(self, ssl_vhost):
         """Find appropriate HTTP vhost for ssl_vhost."""
         # First candidate vhosts filter
+        if ssl_vhost.ancestor:
+            return ssl_vhost.ancestor
         candidate_http_vhs = [
             vhost for vhost in self.vhosts if not vhost.ssl
         ]
