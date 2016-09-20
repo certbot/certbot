@@ -997,6 +997,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "the potential to create redirection loops.".format(avail_fp,
                                                                     ssl_fp),
                 reporter.MEDIUM_PRIORITY)
+        self.aug.set("/augeas/files%s/mtime" %(self._escape(ssl_fp)), "0")
+        self.aug.set("/augeas/files%s/mtime" %(self._escape(avail_fp)), "0")
 
     def _update_ssl_vhosts_addrs(self, vh_path):
         ssl_addrs = set()
