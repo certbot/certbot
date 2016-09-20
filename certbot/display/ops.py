@@ -152,7 +152,8 @@ def _filter_names(names):
 
     """
     code, names = z_util(interfaces.IDisplay).checklist(
-        "Which names would you like to activate HTTPS for?",
+        "Which names would you like to activate HTTPS for? "
+        "(Use spacebar to select/deselect options)",
         tags=names, cli_flag="--domains")
     return code, [str(s) for s in names]
 
