@@ -652,11 +652,6 @@ class MultipleVhostsTest(util.ApacheTest):
                 len(self.config.parser.find_dir(
                     directive, None, self.vh_truth[1].path, False)), 0)
 
-    def test_make_vhost_ssl_extra_vhs(self):
-        self.config.aug.match = mock.Mock(return_value=["p1", "p2"])
-        self.assertRaises(
-            errors.PluginError, self.config.make_vhost_ssl, self.vh_truth[0])
-
     def test_make_vhost_ssl_bad_write(self):
         mock_open = mock.mock_open()
         # This calls open
