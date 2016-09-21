@@ -1048,7 +1048,7 @@ class _PrefChallAction(argparse.Action):
     """Action class for parsing preferred challenges."""
 
     def __call__(self, parser, namespace, pref_challs, option_string=None):
-        challs = pref_challs.split(",")
+        challs = [c.strip() for c in pref_challs.split(",")]
         unrecognized = ", ".join(name for name in challs
                                  if name not in challenges.Challenge.TYPES)
         if unrecognized:
