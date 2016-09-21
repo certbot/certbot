@@ -268,28 +268,32 @@ a combination of distinct authenticator and installer plugins.
 =========== ==== ==== =============================================================== =============================
 Plugin      Auth Inst Notes                                                           Challenge types (and port)
 =========== ==== ==== =============================================================== =============================
-apache_     Y    Y    Automates obtaining and installing a cert with Apache 2.4 on    ``tls-sni-01`` (443)
-                      Debian-based distributions with ``libaugeas0`` 1.0+.
-webroot_    Y    N    Obtains a cert by writing to the webroot directory of an        ``http-01`` (80)
-                      already running webserver.
-standalone_ Y    N    Uses a "standalone" webserver to obtain a cert. Requires        ``http-01`` (80) or
-                      port 80 or 443 to be available. This is useful on systems       ``tls-sni-01`` (443)
-                      with no webserver, or when direct integration with the local
-                      webserver is not supported or not desired.
-manual_     Y    N    Helps you obtain a cert by giving you instructions to perform   ``http-01`` (80) or
-                      domain validation yourself.                                     ``dns-01`` (53)
-nginx_      Y    Y    Very experimental and not included in certbot-auto_.            ``tls-sni-01`` (443)
+apache_     Y    Y    | Automates obtaining and installing a cert with Apache 2.4 on  tls-sni-01_ (443)
+                      | Debian-based distributions with ``libaugeas0`` 1.0+.
+webroot_    Y    N    | Obtains a cert by writing to the webroot directory of an      http-01_ (80)
+                      | already running webserver.
+standalone_ Y    N    | Uses a "standalone" webserver to obtain a cert. Requires      http-01_ (80) or
+                      | port 80 or 443 to be available. This is useful on systems     tls-sni-01_ (443)
+                      | with no webserver, or when direct integration with the local
+                      | webserver is not supported or not desired.
+manual_     Y    N    | Helps you obtain a cert by giving you instructions to perform http-01_ (80) or
+                      | domain validation yourself.                                   dns-01_ (53)
+nginx_      Y    Y    | Very experimental and not included in certbot-auto_.          tls-sni-01_ (443)
 =========== ==== ==== =============================================================== =============================
 
 Under the hood, plugins use one of several "Challenge Types" to prove you control a domain.
-The options are ``http-01`` (which uses port 80), ``tls-sni-01`` (port 443) and ``dns-01``
+The options are http-01_ (which uses port 80), tls-sni-01_ (port 443) and dns-01_
 (requring configuration of a DNS server on port 53, thought that's often not
 the same machine as your webserver). A few plugins support more than one
-challenge type, in which case you can choose it with
+challenge type, in which case you can choose one with
 ``--preferred-challenges``.
 
 There are also many third-party-plugins_ available. Below we describe in more detail
 the circumstances in which each plugin can be used, and how to use it.
+
+.. _tls-sni-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7.3
+.. _http-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#page-40
+.. _dns-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7.4
 
 Apache
 ------
