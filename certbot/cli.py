@@ -852,9 +852,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         dest="pref_challs", action=_PrefChallAction, default=[],
         help="A sorted, comma delimited list of the preferred challenge to "
              "use during authorization with the most preferred challenge "
-             'listed first. Eg, "dns-01" or "tls-sni-01,http-01,dns-01").'
+             'listed first. Eg, "dns" or "tls-sni-01,http,dns").'
              ' Not all plugins support all challenges. See '
-             'https://certbot.eff.org/docs/using.html#plugins for details.')
+             'https://certbot.eff.org/docs/using.html#plugins for details.'
+             ' Challenges are versioned, but if you pick "http" rather than'
+             ' "http-01", Certbot will select the latest version automatically.' )
     helpful.add(
         "renew", "--pre-hook",
         help="Command to be run in a shell before obtaining any certificates."
@@ -1048,7 +1050,9 @@ class _PrefChallAction(argparse.Action):
     """Action class for parsing preferred challenges."""
 
     def __call__(self, parser, namespace, pref_challs, option_string=None):
+        aliases = {"dns": "dns-01", "http": "http-01", "tls-sni": "tls-sni-01"}
         challs = [c.strip() for c in pref_challs.split(",")]
+        challs = [aliases[c] if c in aliases else c for c in challs]
         unrecognized = ", ".join(name for name in challs
                                  if name not in challenges.Challenge.TYPES)
         if unrecognized:

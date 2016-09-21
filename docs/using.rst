@@ -281,16 +281,17 @@ manual_     Y    N    | Helps you obtain a cert by giving you instructions to pe
 nginx_      Y    Y    | Very experimental and not included in certbot-auto_.          tls-sni-01_ (443)
 =========== ==== ==== =============================================================== =============================
 
-Under the hood, plugins use one of several "Challenge Types" to prove you control a domain.
-The options are http-01_ (which uses port 80), tls-sni-01_ (port 443) and dns-01_
-(requring configuration of a DNS server on port 53, thought that's often not
-the same machine as your webserver). A few plugins support more than one
-challenge type, in which case you can choose one with
-``--preferred-challenges``.
+Under the hood, plugins use one of several ACME protocol "Challenges_" to
+prove you control a domain.  The options are http-01_ (which uses port 80),
+tls-sni-01_ (port 443) and dns-01_ (requring configuration of a DNS server on
+port 53, thought that's often not the same machine as your webserver). A few
+plugins support more than one challenge type, in which case you can choose one
+with ``--preferred-challenges``.
 
 There are also many third-party-plugins_ available. Below we describe in more detail
 the circumstances in which each plugin can be used, and how to use it.
 
+.. _Challenges: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7
 .. _tls-sni-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7.3
 .. _http-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7.2
 .. _dns-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7.4
