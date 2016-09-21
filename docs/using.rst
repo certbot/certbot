@@ -292,7 +292,7 @@ There are also many third-party-plugins_ available. Below we describe in more de
 the circumstances in which each plugin can be used, and how to use it.
 
 .. _tls-sni-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7.3
-.. _http-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#page-40
+.. _http-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7.2
 .. _dns-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7.4
 
 Apache
