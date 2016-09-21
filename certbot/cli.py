@@ -77,6 +77,7 @@ USAGE = SHORT_USAGE + """Choice of server plugins for obtaining and installing c
   --standalone      Run a standalone webserver for authentication
   %s
   --webroot         Place files in a server's webroot folder for authentication
+  --script          User provided shell scripts for authentication
 
 OR use different plugins to obtain (authenticate) the cert and then install it:
 
@@ -89,7 +90,7 @@ More detailed help:
 
    all, automation, paths, security, testing, or any of the subcommands or
    plugins (certonly, renew, install, register, nginx, apache, standalone,
-   webroot, etc.)
+   webroot, script, etc.)
 """
 
 
@@ -989,6 +990,8 @@ def _plugins_parsing(helpful, plugins):
                 help="Obtain and install certs using Nginx")
     helpful.add(["plugins", "certonly"], "--standalone", action="store_true",
                 help='Obtain certs using a "standalone" webserver.')
+    helpful.add(["plugins", "certonly"], "--script", action="store_true",
+                help='Obtain certs using shell script(s)')
     helpful.add(["plugins", "certonly"], "--manual", action="store_true",
                 help='Provide laborious manual instructions for obtaining a cert')
     helpful.add(["plugins", "certonly"], "--webroot", action="store_true",

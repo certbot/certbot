@@ -138,6 +138,7 @@ setup(
             'null = certbot.plugins.null:Installer',
             'standalone = certbot.plugins.standalone:Authenticator',
             'webroot = certbot.plugins.webroot:Authenticator',
+            'script = certbot.plugins.script:Authenticator',
         ],
     },
 )
