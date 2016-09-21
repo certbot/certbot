@@ -158,23 +158,6 @@ class NginxParserTest(util.NginxTest):
                           [], []
                           ])
 
-    def test_add_http_directives(self):
-        nparser = parser.NginxParser(self.config_path, self.ssl_options)
-        filep = nparser.abs_path('nginx.conf')
-        block = [['server'],
-                 [['listen', '80'],
-                  ['server_name', 'localhost']]]
-        nparser.add_http_directives(filep, block)
-        root = nparser.parsed[filep]
-        self.assertTrue(util.contains_at_depth(root, ['http'], 1))
-        self.assertTrue(util.contains_at_depth(root, block, 2))
-
-        # Check that our server block got inserted first among all server
-        # blocks.
-        http_block = [x for x in root if x[0] == ['http']][0][1]
-        server_blocks = [x for x in http_block if x[0] == ['server']]
-        self.assertEqual(server_blocks[0], block)
-
     def test_replace_server_directives(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
         target = set(['.example.com', 'example.*'])

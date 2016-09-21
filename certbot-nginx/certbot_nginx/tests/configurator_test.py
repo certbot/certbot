@@ -141,7 +141,8 @@ class NginxConfiguratorTest(util.NginxTest):
             self.assertEqual(conf_path[name], path)
 
         for name in bad_results:
-            self.assertEqual(set([name]), self.config.choose_vhost(name).names)
+            self.assertRaises(errors.MisconfigurationError,
+                              self.config.choose_vhost, name)
 
     def test_more_info(self):
         self.assertTrue('nginx.conf' in self.config.more_info())
