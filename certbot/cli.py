@@ -855,8 +855,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              'listed first. Eg, "dns" or "tls-sni-01,http,dns").'
              ' Not all plugins support all challenges. See '
              'https://certbot.eff.org/docs/using.html#plugins for details.'
-             ' Challenges are versioned, but if you pick "http" rather than'
-             ' "http-01", Certbot will select the latest version automatically.' )
+             ' ACME Challenges are versioned, but if you pick "http" rather than'
+             ' "http-01", Certbot will select the latest version automatically.')
     helpful.add(
         "renew", "--pre-hook",
         help="Command to be run in a shell before obtaining any certificates."
