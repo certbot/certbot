@@ -123,9 +123,12 @@ class NginxParserTest(util.NginxTest):
 
     def test_add_server_directives(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
-        nparser.add_server_directives(nparser.abs_path('nginx.conf'),
-                                      set(['localhost',
+        mock_vhost = obj.VirtualHost(nparser.abs_path('nginx.conf'),
+                                     None, None, None,
+                                     set(['localhost',
                                            r'~^(www\.)?(example|bar)\.']),
+                                     None)
+        nparser.add_server_directives(mock_vhost,
                                       [['foo', 'bar'], ['\n ', 'ssl_certificate', ' ',
                                                         '/etc/ssl/cert.pem']],
                                       replace=False)
@@ -135,11 +138,13 @@ class NginxParserTest(util.NginxTest):
 
         server_conf = nparser.abs_path('server.conf')
         names = set(['alias', 'another.alias', 'somename'])
-        nparser.add_server_directives(server_conf, names,
+        mock_vhost.filep = server_conf
+        mock_vhost.names = names
+        nparser.add_server_directives(mock_vhost,
                                       [['foo', 'bar'], ['ssl_certificate',
                                                         '/etc/ssl/cert2.pem']],
                                       replace=False)
-        nparser.add_server_directives(server_conf, names, [['foo', 'bar']],
+        nparser.add_server_directives(mock_vhost, [['foo', 'bar']],
                                       replace=False)
         from certbot_nginx.parser import COMMENT
         self.assertEqual(nparser.parsed[server_conf],
@@ -172,8 +177,9 @@ class NginxParserTest(util.NginxTest):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
         target = set(['.example.com', 'example.*'])
         filep = nparser.abs_path('sites-enabled/example.com')
+        mock_vhost = obj.VirtualHost(filep, None, None, None, target, None)
         nparser.add_server_directives(
-            filep, target, [['server_name', 'foobar.com']], replace=True)
+            mock_vhost, [['server_name', 'foobar.com']], replace=True)
         from certbot_nginx.parser import COMMENT
         self.assertEqual(
             nparser.parsed[filep],
@@ -182,9 +188,10 @@ class NginxParserTest(util.NginxTest):
                            ['server_name', 'foobar.com'], ['#', COMMENT],
                            ['server_name', 'example.*'], []
                            ]]])
+        mock_vhost.names = set(['foobar.com', 'example.*'])
         self.assertRaises(errors.MisconfigurationError,
                           nparser.add_server_directives,
-                          filep, set(['foobar.com', 'example.*']),
+                          mock_vhost,
                           [['ssl_certificate', 'cert.pem']],
                           replace=True)
 
@@ -241,8 +248,11 @@ class NginxParserTest(util.NginxTest):
     def test_get_all_certs_keys(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
         filep = nparser.abs_path('sites-enabled/example.com')
-        nparser.add_server_directives(filep,
-                                      set(['.example.com', 'example.*']),
+        mock_vhost = obj.VirtualHost(filep,
+                                     None, None, None,
+                                     set(['.example.com', 'example.*']),
+                                     None)
+        nparser.add_server_directives(mock_vhost,
                                       [['ssl_certificate', 'foo.pem'],
                                        ['ssl_certificate_key', 'bar.key'],
                                        ['listen', '443 ssl']],
