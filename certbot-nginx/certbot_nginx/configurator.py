@@ -346,7 +346,7 @@ class NginxConfigurator(common.Plugin):
     ##################################
     def supported_enhancements(self):  # pylint: disable=no-self-use
         """Returns currently supported enhancements."""
-        return ['redirect']
+        return ['redirect', 'staple-ocsp']
 
     def enhance(self, domain, enhancement, options=None):
         """Enhance configuration.

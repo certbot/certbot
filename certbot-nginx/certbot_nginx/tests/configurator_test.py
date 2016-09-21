@@ -72,7 +72,8 @@ class NginxConfiguratorTest(util.NginxTest):
              "example.*", "www.example.org", "myhost"]))
 
     def test_supported_enhancements(self):
-        self.assertEqual(['redirect'], self.config.supported_enhancements())
+        self.assertEqual(['redirect', 'staple-ocsp'],
+                         self.config.supported_enhancements())
 
     def test_enhance(self):
         self.assertRaises(
