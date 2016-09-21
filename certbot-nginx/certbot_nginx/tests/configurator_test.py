@@ -13,6 +13,7 @@ from acme import messages
 from certbot import achallenges
 from certbot import errors
 
+from certbot_nginx import obj
 from certbot_nginx import parser
 from certbot_nginx.tests import util
 
@@ -84,8 +85,12 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_save(self):
         filep = self.config.parser.abs_path('sites-enabled/example.com')
+        mock_vhost = obj.VirtualHost(filep,
+                                     None, None, None,
+                                     set(['.example.com', 'example.*']),
+                                     None)
         self.config.parser.add_server_directives(
-            filep, set(['.example.com', 'example.*']),
+            mock_vhost,
             [['listen', ' ', '5001 ssl']],
             replace=False)
         self.config.save()

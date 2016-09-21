@@ -273,7 +273,7 @@ class NginxParser(object):
 
         return server_names == names
 
-    def add_server_directives(self, filename, names, directives,
+    def add_server_directives(self, vhost, directives,
                               replace):
         """Add or replace directives in the first server block with names.
 
@@ -291,6 +291,8 @@ class NginxParser(object):
         :param bool replace: Whether to only replace existing directives
 
         """
+        filename = vhost.filep
+        names = vhost.names
         try:
             _do_for_subarray(self.parsed[filename],
                              lambda x: self._has_server_names(x, names),

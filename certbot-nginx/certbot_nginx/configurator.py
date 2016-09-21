@@ -173,9 +173,9 @@ class NginxConfigurator(common.Plugin):
                 "on nginx >= 1.3.7.")
 
         try:
-            self.parser.add_server_directives(vhost.filep, vhost.names,
+            self.parser.add_server_directives(vhost,
                                               cert_directives, replace=True)
-            self.parser.add_server_directives(vhost.filep, vhost.names,
+            self.parser.add_server_directives(vhost,
                                               stapling_directives, replace=False)
             logger.info("Deployed Certificate to VirtualHost %s for %s",
                         vhost.filep, vhost.names)
@@ -350,7 +350,7 @@ class NginxConfigurator(common.Plugin):
             self.parser.loc["ssl_options"])
 
         self.parser.add_server_directives(
-            vhost.filep, vhost.names, ssl_block, replace=False)
+            vhost, ssl_block, replace=False)
         vhost.ssl = True
         vhost.raw.extend(ssl_block)
         vhost.addrs.add(obj.Addr(
@@ -414,7 +414,7 @@ class NginxConfigurator(common.Plugin):
              '\n    ']
         ], ['\n']]
         self.parser.add_server_directives(
-            vhost.filep, vhost.names, redirect_block, replace=False)
+            vhost, redirect_block, replace=False)
         logger.info("Redirecting all traffic to ssl in %s", vhost.filep)
 
     ######################################
