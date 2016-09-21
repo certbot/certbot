@@ -794,7 +794,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         default=flag_default("tls_sni_01_port"),
         help=config_help("tls_sni_01_port"))
     helpful.add(
-        ["certonly", "renew", "run"], "--http-01-port", type=int,
+        ["certonly", "renew", "run", "manual"], "--http-01-port", type=int,
         dest="http01_port",
         default=flag_default("http01_port"), help=config_help("http01_port"))
     helpful.add(
@@ -848,13 +848,13 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
     helpful.add(
-        ["certonly", "renew", "run"], "--preferred-challenges",
+        ["manual", "certonly", "renew", "run"], "--preferred-challenges",
         dest="pref_challs", action=_PrefChallAction, default=[],
         help="A sorted, comma delimited list of the preferred challenge to "
              "use during authorization with the most preferred challenge "
-             "listed first (e.g. tls-sni-01,http-01). If none of the "
-             "preferred challenges can be used by the selected plugin to "
-             "satisfy the CA, authorization is not attempted.")
+             'listed first. Eg, "dns-01" or "tls-sni-01,http-01,dns-01").'
+             ' Not all plugins support all challenges. See '
+             'https://certbot.eff.org/docs/using.html#plugins for details.')
     helpful.add(
         "renew", "--pre-hook",
         help="Command to be run in a shell before obtaining any certificates."
