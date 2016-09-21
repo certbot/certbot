@@ -88,7 +88,7 @@ class NginxConfiguratorTest(util.NginxTest):
         mock_vhost = obj.VirtualHost(filep,
                                      None, None, None,
                                      set(['.example.com', 'example.*']),
-                                     None)
+                                     None, None)
         self.config.parser.add_server_directives(
             mock_vhost,
             [['listen', ' ', '5001 ssl']],

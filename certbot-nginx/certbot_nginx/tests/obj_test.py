@@ -80,7 +80,7 @@ class VirtualHostTest(unittest.TestCase):
         self.vhost1 = VirtualHost(
             "filep",
             set([Addr.fromstring("localhost")]), False, False,
-            set(['localhost']), [])
+            set(['localhost']), [], [])
 
     def test_eq(self):
         from certbot_nginx.obj import Addr
@@ -88,7 +88,7 @@ class VirtualHostTest(unittest.TestCase):
         vhost1b = VirtualHost(
             "filep",
             set([Addr.fromstring("localhost blah")]), False, False,
-            set(['localhost']), [])
+            set(['localhost']), [], [])
 
         self.assertEqual(vhost1b, self.vhost1)
         self.assertEqual(str(vhost1b), str(self.vhost1))

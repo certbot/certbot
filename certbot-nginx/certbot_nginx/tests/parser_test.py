@@ -88,26 +88,28 @@ class NginxParserTest(util.NginxTest):
                                  False, True,
                                  set(['localhost',
                                       r'~^(www\.)?(example|bar)\.']),
-                                 [])
+                                 [], [9, 1, 9])
         vhost2 = obj.VirtualHost(nparser.abs_path('nginx.conf'),
                                  [obj.Addr('somename', '8080', False, False),
                                   obj.Addr('', '8000', False, False)],
                                  False, True,
                                  set(['somename', 'another.alias', 'alias']),
-                                 [])
+                                 [], [9, 1, 12])
         vhost3 = obj.VirtualHost(nparser.abs_path('sites-enabled/example.com'),
                                  [obj.Addr('69.50.225.155', '9000',
                                            False, False),
                                   obj.Addr('127.0.0.1', '', False, False)],
                                  False, True,
-                                 set(['.example.com', 'example.*']), [])
+                                 set(['.example.com', 'example.*']), [], [0])
         vhost4 = obj.VirtualHost(nparser.abs_path('sites-enabled/default'),
                                  [obj.Addr('myhost', '', False, True)],
-                                 False, True, set(['www.example.org']), [])
+                                 False, True, set(['www.example.org']),
+                                 [], [0])
         vhost5 = obj.VirtualHost(nparser.abs_path('foo.conf'),
                                  [obj.Addr('*', '80', True, True)],
                                  True, True, set(['*.www.foo.com',
-                                                  '*.www.example.com']), [])
+                                                  '*.www.example.com']),
+                                 [], [2, 1, 0])
 
         self.assertEqual(5, len(vhosts))
         example_com = [x for x in vhosts if 'example.com' in x.filep][0]
@@ -127,7 +129,7 @@ class NginxParserTest(util.NginxTest):
                                      None, None, None,
                                      set(['localhost',
                                            r'~^(www\.)?(example|bar)\.']),
-                                     None)
+                                     None, None)
         nparser.add_server_directives(mock_vhost,
                                       [['foo', 'bar'], ['\n ', 'ssl_certificate', ' ',
                                                         '/etc/ssl/cert.pem']],
@@ -177,7 +179,7 @@ class NginxParserTest(util.NginxTest):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
         target = set(['.example.com', 'example.*'])
         filep = nparser.abs_path('sites-enabled/example.com')
-        mock_vhost = obj.VirtualHost(filep, None, None, None, target, None)
+        mock_vhost = obj.VirtualHost(filep, None, None, None, target, None, None)
         nparser.add_server_directives(
             mock_vhost, [['server_name', 'foobar.com']], replace=True)
         from certbot_nginx.parser import COMMENT
@@ -251,7 +253,7 @@ class NginxParserTest(util.NginxTest):
         mock_vhost = obj.VirtualHost(filep,
                                      None, None, None,
                                      set(['.example.com', 'example.*']),
-                                     None)
+                                     None, None)
         nparser.add_server_directives(mock_vhost,
                                       [['ssl_certificate', 'foo.pem'],
                                        ['ssl_certificate_key', 'bar.key'],

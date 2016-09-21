@@ -104,15 +104,15 @@ class NginxParser(object):
 
             # Find all the server blocks
             _do_for_subarray(tree, lambda x: x[0] == ['server'],
-                             lambda x: srv.append(x[1]))
+                             lambda x, y: srv.append((x[1], y)))
 
             # Find 'include' statements in server blocks and append their trees
-            for i, server in enumerate(servers[filename]):
+            for i, (server, path) in enumerate(servers[filename]):
                 new_server = self._get_included_directives(server)
-                servers[filename][i] = new_server
+                servers[filename][i] = (new_server, path)
 
         for filename in servers:
-            for server in servers[filename]:
+            for server, path in servers[filename]:
                 # Parse the server block into a VirtualHost object
 
                 parsed_server = parse_server(server)
@@ -121,7 +121,8 @@ class NginxParser(object):
                                         parsed_server['ssl'],
                                         enabled,
                                         parsed_server['names'],
-                                        server)
+                                        server,
+                                        path)
                 vhosts.append(vhost)
 
         return vhosts
@@ -296,7 +297,7 @@ class NginxParser(object):
         try:
             _do_for_subarray(self.parsed[filename],
                              lambda x: self._has_server_names(x, names),
-                             lambda x: _add_directives(x, directives, replace))
+                             lambda x,y: _add_directives(x, directives, replace))
         except errors.MisconfigurationError as err:
             raise errors.MisconfigurationError("Problem in %s: %s" % (filename, err.message))
 
@@ -313,7 +314,7 @@ class NginxParser(object):
         """
         _do_for_subarray(self.parsed[filename],
                          lambda x: x[0] == ['http'],
-                         lambda x: x[1].insert(0, directives))
+                         lambda x,y: x[1].insert(0, directives))
 
     def get_all_certs_keys(self):
         """Gets all certs and keys in the nginx config.
@@ -343,7 +344,7 @@ class NginxParser(object):
         return c_k
 
 
-def _do_for_subarray(entry, condition, func):
+def _do_for_subarray(entry, condition, func, path=[]):
     """Executes a function for a subarray of a nested array if it matches
     the given condition.
 
@@ -354,10 +355,10 @@ def _do_for_subarray(entry, condition, func):
     """
     if isinstance(entry, list):
         if condition(entry):
-            func(entry)
+            func(entry, path)
         else:
-            for item in entry:
-                _do_for_subarray(item, condition, func)
+            for index, item in enumerate(entry):
+                _do_for_subarray(item, condition, func, path + [index])
 
 
 def get_best_match(target_name, names):

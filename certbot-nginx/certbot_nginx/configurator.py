@@ -230,7 +230,7 @@ class NginxConfigurator(common.Plugin):
             new_block = [['server'], [['\n', 'server_name', ' ', target_name]]]
             self.parser.add_http_directives(filep, new_block)
             vhost = obj.VirtualHost(filep, set([]), False, True,
-                                    set([target_name]), list(new_block[1]))
+                                    set([target_name]), list(new_block[1]), None)
         elif matches[0]['rank'] in xrange(2, 6):
             # Wildcard match - need to find the longest one
             rank = matches[0]['rank']
