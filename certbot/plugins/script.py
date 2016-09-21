@@ -84,7 +84,7 @@ class Authenticator(common.Plugin):
         authenticate = bundle_path+"/"+self.auth_name
         if os.path.isfile(authenticate):
             if os.access(authenticate, os.X_OK):
-                self.bundle['authenticate'] = bundle_path+"/"+self.auth_name
+                self.bundle['authenticate'] = authenticate
             else:
                 logger.debug("Script bundle authenticator exists, but isn't executable")
         posthook = bundle_path+"/"+self.posthook_name
@@ -145,12 +145,15 @@ class Authenticator(common.Plugin):
         for achall in achalls:
             if self.bundle["prepare"]:
                 self.setup_env_prepare(achall)
-                self.execute(self.bundle["prepare"])
+                if self.bundle["prepare"]:
+                    self.execute(self.bundle["prepare"])
             response, validation = achall.response_and_validation()
             # TODO: check which challenge is used and prepare environment
             # accordingly
             self.setup_env_http(achall, validation)
-            self.execute(self.bundle["authenticate"])
+            if self.bundle["authenticate"]:
+                # Should always exist though
+                self.execute(self.bundle["authenticate"])
             responses.append(False)
 
         # renewer = self.config.verb == "renew"
