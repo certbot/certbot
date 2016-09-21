@@ -110,7 +110,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
     """
 
-    def __init__(self, filep, addrs, ssl, enabled, names, raw):
+    def __init__(self, filep, addrs, ssl, enabled, names, raw, path):
         # pylint: disable=too-many-arguments
         """Initialize a VH."""
         self.filep = filep
@@ -119,6 +119,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         self.ssl = ssl
         self.enabled = enabled
         self.raw = raw
+        self.path = path
 
     def __str__(self):
         addr_str = ", ".join(str(addr) for addr in self.addrs)
@@ -137,6 +138,8 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
             return (self.filep == other.filep and
                     list(self.addrs) == list(other.addrs) and
                     self.names == other.names and
-                    self.ssl == other.ssl and self.enabled == other.enabled)
+                    self.ssl == other.ssl and
+                    self.enabled == other.enabled and
+                    self.path == other.path)
 
         return False
