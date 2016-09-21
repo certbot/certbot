@@ -76,13 +76,17 @@ the User Guide.
 Links
 =====
 
+.. Do not modify this comment unless you know what you're doing. tag:links-begin
+
 Documentation: https://certbot.eff.org/docs
 
 Software project: https://github.com/certbot/certbot
 
 Notes for developers: https://certbot.eff.org/docs/contributing.html
 
-Main Website: https://letsencrypt.org/
+Main Website: https://certbot.eff.org
+
+Let's Encrypt Website: https://letsencrypt.org
 
 IRC Channel: #letsencrypt on `Freenode`_ or #certbot on `OFTC`_
 
@@ -96,13 +100,13 @@ ACME working area in github: https://github.com/ietf-wg-acme/acme
 Mailing list: `client-dev`_ (to subscribe without a Google account, send an
 email to client-dev+subscribe@letsencrypt.org)
 
-.. _Freenode: https://webchat.freenode.net?channels=%23letsencrypt
-.. _OFTC: https://webchat.oftc.net?channels=%23certbot
-.. _client-dev: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev
-
 |build-status| |coverage| |docs| |container|
 
+.. _Freenode: https://webchat.freenode.net?channels=%23letsencrypt
 
+.. _OFTC: https://webchat.oftc.net?channels=%23certbot
+
+.. _client-dev: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev
 
 .. |build-status| image:: https://travis-ci.org/certbot/certbot.svg?branch=master
    :target: https://travis-ci.org/certbot/certbot
@@ -120,10 +124,7 @@ email to client-dev+subscribe@letsencrypt.org)
    :target: https://quay.io/repository/letsencrypt/letsencrypt
    :alt: Docker Repository on Quay.io
 
-.. _`installation instructions`:
-   https://letsencrypt.readthedocs.org/en/latest/using.html#getting-certbot
-
-.. _watch demo video: https://www.youtube.com/watch?v=Gas_sSB-5SU
+.. Do not modify this comment unless you know what you're doing. tag:links-end
 
 System Requirements
 ===================
