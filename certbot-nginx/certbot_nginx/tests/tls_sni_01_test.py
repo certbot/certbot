@@ -31,7 +31,7 @@ class TlsSniPerformTest(util.NginxTest):
                     token="\xba\xa9\xda?<m\xaewmx\xea\xad\xadv\xf4\x02\xc9y"
                           "\x80\xe2_X\t\xe7\xc7\xa4\t\xca\xf7&\x945"
                 ), "pending"),
-            domain="blah", account_key=account_key),
+            domain="another.alias", account_key=account_key),
         achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
                 challenges.TLSSNI01(
@@ -109,8 +109,8 @@ class TlsSniPerformTest(util.NginxTest):
         http = self.sni.configurator.parser.parsed[
             self.sni.configurator.parser.loc["root"]][-1]
         self.assertTrue(['include', self.sni.challenge_conf] in http[1])
-        self.assertTrue(
-            util.contains_at_depth(http, ['server_name', 'blah'], 3))
+        self.assertFalse(
+            util.contains_at_depth(http, ['server_name', 'another.alias'], 3))
 
         self.assertEqual(len(sni_responses), 3)
         for i in xrange(3):

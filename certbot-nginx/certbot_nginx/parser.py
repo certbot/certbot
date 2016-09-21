@@ -301,21 +301,6 @@ class NginxParser(object):
         except errors.MisconfigurationError as err:
             raise errors.MisconfigurationError("Problem in %s: %s" % (filename, err.message))
 
-    def add_http_directives(self, filename, directives):
-        """Adds directives to the first encountered HTTP block in filename.
-
-        We insert new directives at the top of the block to work around
-        https://trac.nginx.org/nginx/ticket/810: If the first server block
-        doesn't enable OCSP stapling, stapling is broken for all blocks.
-
-        :param str filename: The absolute filename of the config file
-        :param list directives: The directives to add
-
-        """
-        _do_for_subarray(self.parsed[filename],
-                         lambda x: x[0] == ['http'],
-                         lambda x, y: x[1].insert(0, directives))
-
     def get_all_certs_keys(self):
         """Gets all certs and keys in the nginx config.
 
@@ -344,7 +329,7 @@ class NginxParser(object):
         return c_k
 
 
-def _do_for_subarray(entry, condition, func, path=[]):
+def _do_for_subarray(entry, condition, func, path=None):
     """Executes a function for a subarray of a nested array if it matches
     the given condition.
 
@@ -353,6 +338,8 @@ def _do_for_subarray(entry, condition, func, path=[]):
     :param function func: The function to call for each matching item
 
     """
+    if path is None:
+        path = []
     if isinstance(entry, list):
         if condition(entry):
             func(entry, path)
