@@ -254,8 +254,8 @@ class NginxParser(object):
         ..todo :: Doesn't match server blocks whose server_name directives are
             split across multiple conf files.
 
-        :param str filename: The absolute filename of the config file
-        :param set names: The server_name to match
+        :param :class:`~certbot_nginx.obj.VirtualHost` vhost: The vhost
+            whose information we use to match on
         :param list directives: The directives to add
         :param bool replace: Whether to only replace existing directives
 
