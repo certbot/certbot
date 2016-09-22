@@ -129,7 +129,7 @@ class NginxParserTest(util.NginxTest):
                                      None, None, None,
                                      set(['localhost',
                                            r'~^(www\.)?(example|bar)\.']),
-                                     None, None)
+                                     None, [9, 1, 9])
         nparser.add_server_directives(mock_vhost,
                                       [['foo', 'bar'], ['\n ', 'ssl_certificate', ' ',
                                                         '/etc/ssl/cert.pem']],
@@ -138,10 +138,11 @@ class NginxParserTest(util.NginxTest):
         dump = nginxparser.dumps(nparser.parsed[nparser.abs_path('nginx.conf')])
         self.assertEqual(1, len(re.findall(ssl_re, dump)))
 
-        server_conf = nparser.abs_path('server.conf')
-        names = set(['alias', 'another.alias', 'somename'])
-        mock_vhost.filep = server_conf
+        example_com = nparser.abs_path('sites-enabled/example.com')
+        names = set(['.example.com', 'example.*'])
+        mock_vhost.filep = example_com
         mock_vhost.names = names
+        mock_vhost.path = [0]
         nparser.add_server_directives(mock_vhost,
                                       [['foo', 'bar'], ['ssl_certificate',
                                                         '/etc/ssl/cert2.pem']],
@@ -149,20 +150,34 @@ class NginxParserTest(util.NginxTest):
         nparser.add_server_directives(mock_vhost, [['foo', 'bar']],
                                       replace=False)
         from certbot_nginx.parser import COMMENT
-        self.assertEqual(nparser.parsed[server_conf],
-                         [['server_name', 'somename  alias  another.alias'],
-                          ['foo', 'bar'],
-                          ['#', COMMENT],
-                          ['ssl_certificate', '/etc/ssl/cert2.pem'],
-                          ['#', COMMENT],
-                          [], []
-                          ])
+        self.assertEqual(nparser.parsed[example_com],
+            [[['server'], [['listen', '69.50.225.155:9000'],
+                           ['listen', '127.0.0.1'],
+                           ['server_name', '.example.com'],
+                           ['server_name', 'example.*'],
+                           ['foo', 'bar'],
+                           ['#', COMMENT],
+                           ['ssl_certificate', '/etc/ssl/cert2.pem'],
+                           ['#', COMMENT], [], []
+                           ]]])
+
+        server_conf = nparser.abs_path('server.conf')
+        names = set(['alias', 'another.alias', 'somename'])
+        mock_vhost.filep = server_conf
+        mock_vhost.names = names
+        mock_vhost.path = []
+        self.assertRaises(errors.MisconfigurationError,
+                          nparser.add_server_directives,
+                          mock_vhost,
+                          [['foo', 'bar'],
+                           ['ssl_certificate', '/etc/ssl/cert2.pem']],
+                          replace=False)
 
     def test_replace_server_directives(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
         target = set(['.example.com', 'example.*'])
         filep = nparser.abs_path('sites-enabled/example.com')
-        mock_vhost = obj.VirtualHost(filep, None, None, None, target, None, None)
+        mock_vhost = obj.VirtualHost(filep, None, None, None, target, None, [0])
         nparser.add_server_directives(
             mock_vhost, [['server_name', 'foobar.com']], replace=True)
         from certbot_nginx.parser import COMMENT
@@ -236,7 +251,7 @@ class NginxParserTest(util.NginxTest):
         mock_vhost = obj.VirtualHost(filep,
                                      None, None, None,
                                      set(['.example.com', 'example.*']),
-                                     None, None)
+                                     None, [0])
         nparser.add_server_directives(mock_vhost,
                                       [['ssl_certificate', 'foo.pem'],
                                        ['ssl_certificate_key', 'bar.key'],
