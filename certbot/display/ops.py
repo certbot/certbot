@@ -103,18 +103,7 @@ def choose_names(installer):
     names = get_valid_domains(domains)
 
     if not names:
-        manual = z_util(interfaces.IDisplay).yesno(
-            "No names were found in your configuration files.{0}You should "
-            "specify ServerNames in your config files in order to allow for "
-            "accurate installation of your certificate.{0}"
-            "If you do use the default vhost, you may specify the name "
-            "manually. Would you like to continue?{0}".format(os.linesep),
-            default=True)
-
-        if manual:
-            return _choose_names_manually()
-        else:
-            return []
+        return _choose_names_manually()
 
     code, names = _filter_names(names)
     if code == display_util.OK and names:
