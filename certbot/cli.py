@@ -848,15 +848,16 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
     helpful.add(
-        ["manual", "certonly", "renew", "run"], "--preferred-challenges",
-        dest="pref_challs", action=_PrefChallAction, default=[],
-        help="A sorted, comma delimited list of the preferred challenge to "
-             "use during authorization with the most preferred challenge "
-             'listed first. Eg, "dns" or "tls-sni-01,http,dns").'
-             ' Not all plugins support all challenges. See '
+        ["manual", "standalone", "certonly", "renew", "run"],
+        "--preferred-challenges", dest="pref_challs",
+        action=_PrefChallAction, default=[],
+        help='A sorted, comma delimited list of the preferred challenge to '
+             'use during authorization with the most preferred challenge '
+             'listed first (Eg, "dns" or "tls-sni-01,http,dns").'
+             'Not all plugins support all challenges. See '
              'https://certbot.eff.org/docs/using.html#plugins for details.'
-             ' ACME Challenges are versioned, but if you pick "http" rather than'
-             ' "http-01", Certbot will select the latest version automatically.')
+             'ACME Challenges are versioned, but if you pick "http" rather than'
+             '"http-01", Certbot will select the latest version automatically.')
     helpful.add(
         "renew", "--pre-hook",
         help="Command to be run in a shell before obtaining any certificates."
