@@ -241,39 +241,6 @@ class NginxParser(object):
             except IOError:
                 logger.error("Could not open file for writing: %s", filename)
 
-    def _has_server_names(self, entry, names):
-        """Checks if a server block has the given set of server_names. This
-        is the primary way of identifying server blocks in the configurator.
-        Returns false if 'entry' doesn't look like a server block at all.
-
-        ..todo :: Doesn't match server blocks whose server_name directives are
-        split across multiple conf files.
-
-        :param list entry: The block to search
-        :param set names: The names to match
-        :rtype: bool
-
-        """
-        if len(names) == 0:
-            # Nothing to identify blocks with
-            return False
-
-        if not isinstance(entry, list):
-            # Can't be a server block
-            return False
-
-        new_entry = self._get_included_directives(entry)
-        server_names = set()
-        for item in new_entry:
-            if not isinstance(item, list):
-                # Can't be a server block
-                return False
-
-            if len(item) > 0 and item[0] == 'server_name':
-                server_names.update(_get_servernames(item[1]))
-
-        return server_names == names
-
     def add_server_directives(self, vhost, directives,
                               replace):
         """Add or replace directives in the first server block with names.
@@ -293,11 +260,14 @@ class NginxParser(object):
 
         """
         filename = vhost.filep
-        names = vhost.names
         try:
-            _do_for_subarray(self.parsed[filename],
-                             lambda x: self._has_server_names(x, names),
-                             lambda x, y: _add_directives(x, directives, replace))
+            result = self.parsed[filename]
+            for index in vhost.path:
+                result = result[index]
+            if not isinstance(result, list) or len(result) != 2:
+                raise errors.MisconfigurationError("Not a server block.")
+            result = result[1]
+            _add_directives(result, directives, replace)
         except errors.MisconfigurationError as err:
             raise errors.MisconfigurationError("Problem in %s: %s" % (filename, err.message))
 
