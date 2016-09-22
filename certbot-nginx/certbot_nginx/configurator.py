@@ -24,7 +24,6 @@ from certbot.plugins import common
 
 from certbot_nginx import constants
 from certbot_nginx import tls_sni_01
-from certbot_nginx import obj
 from certbot_nginx import parser
 
 
@@ -339,10 +338,6 @@ class NginxConfigurator(common.Plugin):
 
         self.parser.add_server_directives(
             vhost, ssl_block, replace=False)
-        vhost.ssl = True
-        vhost.raw.extend(ssl_block)
-        vhost.addrs.add(obj.Addr(
-            '', str(self.config.tls_sni_01_port), True, False))
 
     def get_all_certs_keys(self):
         """Find all existing keys, certs from configuration.
