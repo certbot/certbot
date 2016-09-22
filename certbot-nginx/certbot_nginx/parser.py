@@ -243,7 +243,8 @@ class NginxParser(object):
 
     def add_server_directives(self, vhost, directives,
                               replace):
-        """Add or replace directives in the first server block with names.
+        """Add or replace directives in the first server block with names,
+           and update vhost with the new directives.
 
         ..note :: If replace is True, this raises a misconfiguration error
         if the directive does not already exist.
@@ -269,6 +270,14 @@ class NginxParser(object):
                 raise errors.MisconfigurationError("Not a server block.")
             result = result[1]
             _add_directives(result, directives, replace)
+
+            # update vhost based on new directives
+            new_server = self._get_included_directives(result)
+            parsed_server = parse_server(new_server)
+            vhost.addrs = parsed_server['addrs']
+            vhost.ssl = parsed_server['ssl']
+            vhost.names = parsed_server['names']
+            vhost.raw = new_server
         except errors.MisconfigurationError as err:
             raise errors.MisconfigurationError("Problem in %s: %s" % (filename, err.message))
 
