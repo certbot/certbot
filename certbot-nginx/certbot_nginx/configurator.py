@@ -94,7 +94,8 @@ class NginxConfigurator(common.Plugin):
         # These will be set in the prepare function
         self.parser = None
         self.version = version
-        self._enhance_func = {"redirect": self._enable_redirect}
+        self._enhance_func = {"redirect": self._enable_redirect,
+                              "staple-ocsp": self._enable_ocsp_stapling}
 
         # Set up reverter
         self.reverter = reverter.Reverter(self.config)
@@ -137,11 +138,6 @@ class NginxConfigurator(common.Plugin):
         .. note:: Aborts if the vhost is missing ssl_certificate or
             ssl_certificate_key.
 
-        .. note:: Nginx doesn't have a cert chain directive.
-            It expects the cert file to have the concatenated chain.
-            However, we use the chain file as input to the
-            ssl_trusted_certificate directive, used for verify OCSP responses.
-
         .. note:: This doesn't save the config files!
 
         :raises errors.PluginError: When unable to deploy certificate due to
@@ -157,26 +153,9 @@ class NginxConfigurator(common.Plugin):
         cert_directives = [['\n', 'ssl_certificate', ' ', fullchain_path],
                            ['\n', 'ssl_certificate_key', ' ', key_path]]
 
-        # OCSP stapling was introduced in Nginx 1.3.7. If we have that version
-        # or greater, add config settings for it.
-        stapling_directives = []
-        if self.version >= (1, 3, 7):
-            stapling_directives = [
-                ['\n    ', 'ssl_trusted_certificate', ' ', chain_path],
-                ['\n    ', 'ssl_stapling', ' ', 'on'],
-                ['\n    ', 'ssl_stapling_verify', ' ', 'on'], ['\n']]
-
-        if len(stapling_directives) != 0 and not chain_path:
-            raise errors.PluginError(
-                "--chain-path is required to enable "
-                "Online Certificate Status Protocol (OCSP) stapling "
-                "on nginx >= 1.3.7.")
-
         try:
             self.parser.add_server_directives(vhost.filep, vhost.names,
                                               cert_directives, replace=True)
-            self.parser.add_server_directives(vhost.filep, vhost.names,
-                                              stapling_directives, replace=False)
             logger.info("Deployed Certificate to VirtualHost %s for %s",
                         vhost.filep, vhost.names)
         except errors.MisconfigurationError as error:
@@ -192,12 +171,6 @@ class NginxConfigurator(common.Plugin):
                              ", ".join(str(addr) for addr in vhost.addrs)))
         self.save_notes += "\tssl_certificate %s\n" % fullchain_path
         self.save_notes += "\tssl_certificate_key %s\n" % key_path
-        if len(stapling_directives) > 0:
-            self.save_notes += "\tssl_trusted_certificate %s\n" % chain_path
-            self.save_notes += "\tssl_stapling on\n"
-            self.save_notes += "\tssl_stapling_verify on\n"
-
-
 
     #######################
     # Vhost parsing methods
@@ -373,7 +346,7 @@ class NginxConfigurator(common.Plugin):
     ##################################
     def supported_enhancements(self):  # pylint: disable=no-self-use
         """Returns currently supported enhancements."""
-        return ['redirect']
+        return ['redirect', 'staple-ocsp']
 
     def enhance(self, domain, enhancement, options=None):
         """Enhance configuration.
@@ -394,6 +367,7 @@ class NginxConfigurator(common.Plugin):
                 "Unsupported enhancement: {0}".format(enhancement))
         except errors.PluginError:
             logger.warning("Failed %s for %s", enhancement, domain)
+            raise
 
     def _enable_redirect(self, vhost, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
@@ -416,6 +390,45 @@ class NginxConfigurator(common.Plugin):
         self.parser.add_server_directives(
             vhost.filep, vhost.names, redirect_block, replace=False)
         logger.info("Redirecting all traffic to ssl in %s", vhost.filep)
+
+    def _enable_ocsp_stapling(self, vhost, chain_path):
+        """Include OCSP response in TLS handshake
+
+        :param vhost: Destination of traffic, an ssl enabled vhost
+        :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
+
+        :param chain_path: chain file path
+        :type chain_path: `str` or `None`
+
+        """
+        if self.version < (1, 3, 7):
+            raise errors.PluginError("Version 1.3.7 or greater of nginx "
+                                     "is needed to enable OCSP stapling")
+
+        if chain_path is None:
+            raise errors.PluginError(
+                "--chain-path is required to enable "
+                "Online Certificate Status Protocol (OCSP) stapling "
+                "on nginx >= 1.3.7.")
+
+        stapling_directives = [
+            ['\n    ', 'ssl_trusted_certificate', ' ', chain_path],
+            ['\n    ', 'ssl_stapling', ' ', 'on'],
+            ['\n    ', 'ssl_stapling_verify', ' ', 'on'], ['\n']]
+
+        try:
+            self.parser.add_server_directives(vhost.filep, vhost.names,
+                                              stapling_directives, replace=False)
+        except errors.MisconfigurationError as error:
+            logger.debug(error)
+            raise errors.PluginError("An error occurred while enabling OCSP "
+                                     "stapling for {0}.".format(vhost.names))
+
+        self.save_notes += ("OCSP Stapling was enabled "
+                            "on SSL Vhost: {0}.\n".format(vhost.filep))
+        self.save_notes += "\tssl_trusted_certificate {0}\n".format(chain_path)
+        self.save_notes += "\tssl_stapling on\n"
+        self.save_notes += "\tssl_stapling_verify on\n"
 
     ######################################
     # Nginx server management (IInstaller)

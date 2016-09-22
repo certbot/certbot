@@ -54,7 +54,7 @@ enhancements.
 List of expected options parameters:
 - redirect: None
 - http-header: TODO
-- ocsp-stapling: TODO
+- ocsp-stapling: certificate chain file path
 - spdy: TODO
 
 """

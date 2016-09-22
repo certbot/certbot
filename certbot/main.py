@@ -436,7 +436,7 @@ def install(config, plugins):
     le_client.deploy_certificate(
         domains, config.key_path, config.cert_path, config.chain_path,
         config.fullchain_path)
-    le_client.enhance_config(domains, config)
+    le_client.enhance_config(domains, config, config.chain_path)
 
 
 def plugins_cmd(config, plugins):  # TODO: Use IDisplay rather than print
@@ -516,7 +516,7 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
         domains, lineage.privkey, lineage.cert,
         lineage.chain, lineage.fullchain)
 
-    le_client.enhance_config(domains, config)
+    le_client.enhance_config(domains, config, lineage.chain)
 
     if len(lineage.available_versions("cert")) == 1:
         display_ops.success_installation(domains)
