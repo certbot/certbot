@@ -33,14 +33,18 @@ class AuthHandler(object):
         and values are :class:`acme.messages.AuthorizationResource`
     :ivar list achalls: DV challenges in the form of
         :class:`certbot.achallenges.AnnotatedChallenge`
+    :ivar list pref_challs: sorted user specified preferred challenges
+        in the form of subclasses of :class:`acme.challenges.Challenge`
+        with the most preferred challenge listed first
 
     """
-    def __init__(self, auth, acme, account):
+    def __init__(self, auth, acme, account, pref_challs):
         self.auth = auth
         self.acme = acme
 
         self.account = account
         self.authzr = dict()
+        self.pref_challs = pref_challs
 
         # List must be used to keep responses straight.
         self.achalls = []
@@ -244,9 +248,18 @@ class AuthHandler(object):
         :param str domain: domain for which you are requesting preferences
 
         """
-        # Make sure to make a copy...
         chall_prefs = []
-        chall_prefs.extend(self.auth.get_chall_pref(domain))
+        # Make sure to make a copy...
+        plugin_pref = self.auth.get_chall_pref(domain)
+        if self.pref_challs:
+            chall_prefs.extend(pref for pref in self.pref_challs
+                               if pref in plugin_pref)
+            if chall_prefs:
+                return chall_prefs
+            raise errors.AuthorizationError(
+                "None of the preferred challenges "
+                "are supported by the selected plugin")
+        chall_prefs.extend(plugin_pref)
         return chall_prefs
 
     def _cleanup_challenges(self, achall_list=None):

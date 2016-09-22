@@ -11,6 +11,8 @@ import sys
 import configargparse
 import six
 
+from acme import challenges
+
 import certbot
 
 from certbot import constants
@@ -788,11 +790,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help=config_help("no_verify_ssl"),
         default=flag_default("no_verify_ssl"))
     helpful.add(
-        "testing", "--tls-sni-01-port", type=int,
+        ["certonly", "renew", "run"], "--tls-sni-01-port", type=int,
         default=flag_default("tls_sni_01_port"),
         help=config_help("tls_sni_01_port"))
     helpful.add(
-        "testing", "--http-01-port", type=int, dest="http01_port",
+        ["certonly", "renew", "run", "manual"], "--http-01-port", type=int,
+        dest="http01_port",
         default=flag_default("http01_port"), help=config_help("http01_port"))
     helpful.add(
         "testing", "--break-my-certs", action="store_true",
@@ -844,6 +847,18 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
+    helpful.add(
+        ["manual", "standalone", "certonly", "renew", "run"],
+        "--preferred-challenges", dest="pref_challs",
+        action=_PrefChallAction, default=[],
+        help='A sorted, comma delimited list of the preferred challenge to '
+             'use during authorization with the most preferred challenge '
+             'listed first (Eg, "dns" or "tls-sni-01,http,dns"). '
+             'Not all plugins support all challenges. See '
+             'https://certbot.eff.org/docs/using.html#plugins for details. '
+             'ACME Challenges are versioned, but if you pick "http" rather '
+             'than "http-01", Certbot will select the latest version '
+             'automatically.')
     helpful.add(
         "renew", "--pre-hook",
         help="Command to be run in a shell before obtaining any certificates."
@@ -1032,3 +1047,18 @@ def add_domains(args_or_config, domains):
             args_or_config.domains.append(domain)
 
     return validated_domains
+
+class _PrefChallAction(argparse.Action):
+    """Action class for parsing preferred challenges."""
+
+    def __call__(self, parser, namespace, pref_challs, option_string=None):
+        aliases = {"dns": "dns-01", "http": "http-01", "tls-sni": "tls-sni-01"}
+        challs = [c.strip() for c in pref_challs.split(",")]
+        challs = [aliases[c] if c in aliases else c for c in challs]
+        unrecognized = ", ".join(name for name in challs
+                                 if name not in challenges.Challenge.TYPES)
+        if unrecognized:
+            raise argparse.ArgumentTypeError(
+                "Unrecognized challenges: {0}".format(unrecognized))
+        namespace.pref_challs.extend(challenges.Challenge.TYPES[name]
+                                     for name in challs)

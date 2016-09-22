@@ -192,7 +192,7 @@ class Client(object):
 
         if auth is not None:
             self.auth_handler = auth_handler.AuthHandler(
-                auth, self.acme, self.account)
+                auth, self.acme, self.account, self.config.pref_challs)
         else:
             self.auth_handler = None
 

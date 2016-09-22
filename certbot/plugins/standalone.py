@@ -3,6 +3,7 @@ import argparse
 import collections
 import logging
 import socket
+import sys
 import threading
 
 import OpenSSL
@@ -12,6 +13,7 @@ import zope.interface
 from acme import challenges
 from acme import standalone as acme_standalone
 
+from certbot import cli
 from certbot import errors
 from certbot import interfaces
 
@@ -119,6 +121,11 @@ def supported_challenges_validator(data):
     It should be passed as `type` argument to `add_argument`.
 
     """
+    if cli.set_by_cli("standalone_supported_challenges"):
+        sys.stderr.write(
+            "WARNING: The standalone specific "
+            "supported challenges flag is deprecated.\n"
+            "Please use the --preferred-challenges flag instead.\n")
     challs = data.split(",")
 
     # tls-sni-01 was dvsni during private beta
@@ -177,7 +184,7 @@ class Authenticator(common.Plugin):
     @classmethod
     def add_parser_arguments(cls, add):
         add("supported-challenges",
-            help="Supported challenges. Preferred in the order they are listed.",
+            help=argparse.SUPPRESS,
             type=supported_challenges_validator,
             default=",".join(chall.typ for chall in SUPPORTED_CHALLENGES))
 

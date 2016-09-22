@@ -60,7 +60,7 @@ an alternate method fo install ``certbot``.
 
 Certbot-Auto
 ^^^^^^^^^^^^
-The ``certbot-auto`` wrapper script installs Certbot, obtaining some dependencies 
+The ``certbot-auto`` wrapper script installs Certbot, obtaining some dependencies
 from your web server OS and putting others in a python virtual environment. You can
 download and run it as follows::
 
@@ -77,8 +77,8 @@ download and run it as follows::
 
 The ``certbot-auto`` command updates to the latest client release automatically.
 Since ``certbot-auto`` is a wrapper to ``certbot``, it accepts exactly
-the same command line flags and arguments. For more information, see 
-`Certbot command-line options <https://certbot.eff.org/docs/using.html#command-line-options>`_.  
+the same command line flags and arguments. For more information, see
+`Certbot command-line options <https://certbot.eff.org/docs/using.html#command-line-options>`_.
 
 Running with Docker
 ^^^^^^^^^^^^^^^^^^^
@@ -88,8 +88,8 @@ certificate. However, this mode of operation is unable to install
 certificates or configure your webserver, because our installer
 plugins cannot reach your webserver from inside the Docker container.
 
-Most users should use the operating system packages (see instructions at 
-certbot.eff.org_) or, as a fallback, ``certbot-auto``. You should only 
+Most users should use the operating system packages (see instructions at
+certbot.eff.org_) or, as a fallback, ``certbot-auto``. You should only
 use Docker if you are sure you know what you are doing and have a
 good reason to do so.
 
@@ -113,12 +113,12 @@ to, `install Docker`_, then issue the following command:
                quay.io/letsencrypt/letsencrypt:latest certonly
 
 Running Certbot with the ``certonly`` command will obtain a certificate and place it in the directory
-``/etc/letsencrypt/live`` on your system. Because Certonly cannot install the certificate from 
+``/etc/letsencrypt/live`` on your system. Because Certonly cannot install the certificate from
 within Docker, you must install the certificate manually according to the procedure
 recommended by the provider of your webserver.
 
-For more information about the layout 
-of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`. 
+For more information about the layout
+of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`.
 
 .. _Docker: https://docker.com
 .. _`install Docker`: https://docs.docker.com/userguide/
@@ -242,8 +242,8 @@ whole process is described in the :doc:`contributing`.
 
 .. _plugins:
 
-Getting certificates
-====================
+Getting certificates (and chosing plugins)
+==========================================
 
 The Certbot client supports a number of different "plugins" that can be
 used to obtain and/or install certificates.
@@ -252,37 +252,49 @@ Plugins that can obtain a cert are called "authenticators" and can be used with
 the "certonly" command. This will carry out the steps needed to validate that you
 control the domain(s) you are requesting a cert for, obtain a cert for the specified
 domain(s), and place it in the ``/etc/letsencrypt`` directory on your
-machine - without editing any of your server's configuration files to serve the 
+machine - without editing any of your server's configuration files to serve the
 obtained certificate. If you specify multiple domains to authenticate, they will
 all be listed in a single certificate. To obtain multiple seperate certificates
 you will need to run Certbot multiple times.
 
-Plugins that can install a cert are called "installers" and can be used with the 
+Plugins that can install a cert are called "installers" and can be used with the
 "install" command.  These plugins can modify your webserver's configuration to
-serve your website over HTTPS using certificates obtained by certbot. 
+serve your website over HTTPS using certificates obtained by certbot.
 
 Plugins that do both can be used with the "certbot run" command, which is the default
 when no command is specified. The "run" subcommand can also be used to specify
 a combination of distinct authenticator and installer plugins.
 
-=========== ==== ==== ===============================================================
-Plugin      Auth Inst Notes
-=========== ==== ==== ===============================================================
-apache_     Y    Y    Automates obtaining and installing a cert with Apache 2.4 on
-                      Debian-based distributions with ``libaugeas0`` 1.0+.
-webroot_    Y    N    Obtains a cert by writing to the webroot directory of an
-                      already running webserver.
-standalone_ Y    N    Uses a "standalone" webserver to obtain a cert. Requires
-                      port 80 or 443 to be available. This is useful on systems
-                      with no webserver, or when direct integration with the local
-                      webserver is not supported or not desired.
-manual_     Y    N    Helps you obtain a cert by giving you instructions to perform
-                      domain validation yourself.
-nginx_      Y    Y    Very experimental and not included in certbot-auto_.
-=========== ==== ==== ===============================================================
+=========== ==== ==== =============================================================== =============================
+Plugin      Auth Inst Notes                                                           Challenge types (and port)
+=========== ==== ==== =============================================================== =============================
+apache_     Y    Y    | Automates obtaining and installing a cert with Apache 2.4 on  tls-sni-01_ (443)
+                      | Debian-based distributions with ``libaugeas0`` 1.0+.
+webroot_    Y    N    | Obtains a cert by writing to the webroot directory of an      http-01_ (80)
+                      | already running webserver.
+standalone_ Y    N    | Uses a "standalone" webserver to obtain a cert. Requires      http-01_ (80) or
+                      | port 80 or 443 to be available. This is useful on systems     tls-sni-01_ (443)
+                      | with no webserver, or when direct integration with the local
+                      | webserver is not supported or not desired.
+manual_     Y    N    | Helps you obtain a cert by giving you instructions to perform http-01_ (80) or
+                      | domain validation yourself.                                   dns-01_ (53)
+nginx_      Y    Y    | Very experimental and not included in certbot-auto_.          tls-sni-01_ (443)
+=========== ==== ==== =============================================================== =============================
+
+Under the hood, plugins use one of several ACME protocol "Challenges_" to
+prove you control a domain.  The options are http-01_ (which uses port 80),
+tls-sni-01_ (port 443) and dns-01_ (requring configuration of a DNS server on
+port 53, thought that's often not the same machine as your webserver). A few
+plugins support more than one challenge type, in which case you can choose one
+with ``--preferred-challenges``.
 
 There are also many third-party-plugins_ available. Below we describe in more detail
 the circumstances in which each plugin can be used, and how to use it.
+
+.. _Challenges: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7
+.. _tls-sni-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7.3
+.. _http-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7.2
+.. _dns-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7.4
 
 Apache
 ------
