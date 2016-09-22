@@ -154,7 +154,7 @@ class Authenticator(common.Plugin):
             if self.bundle["authenticate"]:
                 # Should always exist though
                 self.execute(self.bundle["authenticate"])
-            responses.append(False)
+            responses.append(response)
 
         # renewer = self.config.verb == "renew"
         return responses
