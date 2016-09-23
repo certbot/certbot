@@ -18,12 +18,13 @@ class MainTest(unittest.TestCase):
         pass
 
     @mock.patch("certbot.main.logger")
-    def test_handle_identical_cert_request_pending(self, mock_logger):
+    def test_handle_identical_cert_request_pending(self, _mock_logger):
         # For now, just test has_pending_deployment_branch; other
         # coverage is in cli_test.py...
         from certbot import main
         mock_lineage = mock.Mock()
         mock_lineage.has_pending_deployment.return_value = True
+        # pylint: disable=protected-access
         ret = main._handle_identical_cert_request(mock.Mock(), mock_lineage)
         self.assertEqual(ret, ("reinstall", mock_lineage))
         self.assertEqual(mock_lineage.update_all_links_to.call_count, 1)
