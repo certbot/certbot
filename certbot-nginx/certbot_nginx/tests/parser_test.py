@@ -79,6 +79,30 @@ class NginxParserTest(util.NginxTest):
                                         ['server_name', 'example.*']]]],
                          parsed[0])
 
+    def test__do_for_subarray(self):
+        # pylint: disable=protected-access
+        mylists = [([[2], [3], [2]], [[0], [2]]),
+                   ([[2], [3], [4]], [[0]]),
+                   ([[4], [3], [2]], [[2]]),
+                   ([], []),
+                   (2, []),
+                   ([[[2], [3], [2]], [[2], [3], [2]]],
+                        [[0, 0], [0, 2], [1, 0], [1, 2]]),
+                   ([[[0], [3], [2]], [[2], [3], [2]]], [[0, 2], [1, 0], [1, 2]]),
+                   ([[[0], [3], [4]], [[2], [3], [2]]], [[1, 0], [1, 2]]),
+                   ([[[0], [3], [4]], [[5], [3], [2]]], [[1, 2]]),
+                   ([[[0], [3], [4]], [[5], [3], [0]]], [])]
+
+        for mylist, result in mylists:
+            paths = []
+            parser._do_for_subarray(mylist,
+                                    lambda x: isinstance(x, list) and
+                                    len(x) >= 1 and
+                                    x[0] == 2,
+                                    lambda x, y, pts=paths: pts.append(y))
+            self.assertEqual(paths, result)
+
+
     def test_get_vhosts(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
         vhosts = nparser.get_vhosts()
