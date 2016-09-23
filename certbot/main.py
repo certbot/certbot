@@ -155,34 +155,39 @@ def _handle_subset_cert_request(config, domains, cert):
             "reinvoke the client.")
 
 
-def _handle_identical_cert_request(config, cert):
-    """Figure out what to do if a cert has the same names as a previously obtained one
+def _handle_identical_cert_request(config, lineage):
+    """Figure out what to do if a lineage has the same names as a previously obtained one
 
-    :param storage.RenewableCert cert:
+    :param storage.RenewableCert lineage:
 
     :returns: Tuple of (str action, cert_or_None) as per _treat_as_renewal
               action can be: "newcert" | "renew" | "reinstall"
     :rtype: tuple
 
     """
-    if renewal.should_renew(config, cert):
-        return "renew", cert
+    if lineage.has_pending_deployment():
+        lineage.update_all_links_to(lineage.latest_common_version())
+        logger.warn("Found a new cert /archive/ that was not linked to in /live/; "
+                    "fixing and reinstalling..")
+        return "reinstall", lineage
+    if renewal.should_renew(config, lineage):
+        return "renew", lineage
     if config.reinstall:
         # Set with --reinstall, force an identical certificate to be
         # reinstalled without further prompting.
-        return "reinstall", cert
+        return "reinstall", lineage
     question = (
         "You have an existing certificate that contains exactly the same "
         "domains you requested and isn't close to expiry."
         "{br}(ref: {0}){br}{br}What would you like to do?"
-    ).format(cert.configfile.filename, br=os.linesep)
+    ).format(lineage.configfile.filename, br=os.linesep)
 
     if config.verb == "run":
         keep_opt = "Attempt to reinstall this existing certificate"
     elif config.verb == "certonly":
         keep_opt = "Keep the existing certificate for now"
     choices = [keep_opt,
-               "Renew & replace the cert (limit ~5 per 7 days)"]
+               "Renew & replace the lineage (limit ~5 per 7 days)"]
 
     display = zope.component.getUtility(interfaces.IDisplay)
     response = display.menu(question, choices, "OK", "Cancel", default=0)
@@ -193,9 +198,9 @@ def _handle_identical_cert_request(config, cert):
             "User chose to cancel the operation and may "
             "reinvoke the client.")
     elif response[1] == 0:
-        return "reinstall", cert
+        return "reinstall", lineage
     elif response[1] == 1:
-        return "renew", cert
+        return "renew", lineage
     else:
         assert False, "This is impossible"
 
