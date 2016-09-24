@@ -378,6 +378,16 @@ the UI, you can use the plugin to obtain a cert by specifying
 to copy and paste commands into another terminal session, which may
 be on a different computer.
 
+Amazon S3 CloudFront
+-------
+To use ``letsencrypt`` with AWS S3 you must manaully validate the site:
+
+``letsencrypt certonly --manual -d example.org``
+
+and to install the certificate: 
+
+https://docs.aws.amazon.com/cli/latest/reference/iam/upload-server-certificate.html
+
 Nginx
 -----
 
