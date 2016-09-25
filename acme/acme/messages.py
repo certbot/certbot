@@ -30,7 +30,7 @@ ERROR_CODES = {
 ERROR_TYPE_DESCRIPTIONS = dict(
     (ERROR_PREFIX + name, desc) for name, desc in ERROR_CODES.items())
 
-ERROR_TYPE_DESCRIPTIONS.update(dict(  # add errors with old prefix, depricate me
+ERROR_TYPE_DESCRIPTIONS.update(dict(  # add errors with old prefix, deprecate me
     (OLD_ERROR_PREFIX + name, desc) for name, desc in ERROR_CODES.items()))
 
 
@@ -62,7 +62,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
 
         """
         if code not in ERROR_CODES:
-            raise ValueError("The supplied code: %s is not an ACME error"
+            raise ValueError("The supplied code: %s is not a known ACME error"
                              " code" % code)
         typ = ERROR_PREFIX + code
         return cls(typ=typ, **kwargs)
