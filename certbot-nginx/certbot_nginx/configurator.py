@@ -376,8 +376,7 @@ class NginxConfigurator(common.Plugin):
 
         """
         try:
-            return self._enhance_func[enhancement](
-                self.choose_vhost(domain), options)
+            return self._enhance_func[enhancement](domain, options)
         except (KeyError, ValueError):
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
@@ -385,19 +384,18 @@ class NginxConfigurator(common.Plugin):
             logger.warning("Failed %s for %s", enhancement, domain)
             raise
 
-    def _enable_redirect(self, vhost, unused_options):
+    def _enable_redirect(self, domain, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
 
         Add rewrite directive to non https traffic
 
         .. note:: This function saves the configuration
 
-        :param vhost: Destination of traffic, an ssl enabled vhost
-        :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
-
+        :param str domain: domain to enable redirect for
         :param unused_options: Not currently used
         :type unused_options: Not Available
         """
+        vhost = self.choose_vhost(domain)
         redirect_block = [[
             ['\n    ', 'if', ' ', '($scheme != "https") '],
             [['\n        ', 'return', ' ', '301 https://$host$request_uri'],
@@ -407,16 +405,15 @@ class NginxConfigurator(common.Plugin):
             vhost, redirect_block, replace=False)
         logger.info("Redirecting all traffic to ssl in %s", vhost.filep)
 
-    def _enable_ocsp_stapling(self, vhost, chain_path):
+    def _enable_ocsp_stapling(self, domain, chain_path):
         """Include OCSP response in TLS handshake
 
-        :param vhost: Destination of traffic, an ssl enabled vhost
-        :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
-
+        :param str domain: domain to enable OCSP response for
         :param chain_path: chain file path
         :type chain_path: `str` or `None`
 
         """
+        vhost = self.choose_vhost(domain)
         if self.version < (1, 3, 7):
             raise errors.PluginError("Version 1.3.7 or greater of nginx "
                                      "is needed to enable OCSP stapling")
