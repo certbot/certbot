@@ -579,6 +579,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path)
         mock_lineage.should_autorenew.return_value = due_for_renewal
+        mock_lineage.has_pending_deployment.return_value = False
         mock_certr = mock.MagicMock()
         mock_key = mock.MagicMock(pem='pem_key')
         mock_client = mock.MagicMock()

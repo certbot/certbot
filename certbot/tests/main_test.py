@@ -11,6 +11,23 @@ from certbot import configuration
 from certbot import errors
 from certbot.plugins import disco as plugins_disco
 
+class MainTest(unittest.TestCase):
+    def setUp(self):
+        pass
+    def tearDown(self):
+        pass
+
+    @mock.patch("certbot.main.logger")
+    def test_handle_identical_cert_request_pending(self, _mock_logger):
+        # For now, just test has_pending_deployment_branch; other
+        # coverage is in cli_test.py...
+        from certbot import main
+        mock_lineage = mock.Mock()
+        mock_lineage.has_pending_deployment.return_value = True
+        # pylint: disable=protected-access
+        ret = main._handle_identical_cert_request(mock.Mock(), mock_lineage)
+        self.assertEqual(ret, ("reinstall", mock_lineage))
+        self.assertEqual(mock_lineage.update_all_links_to.call_count, 1)
 
 class ObtainCertTest(unittest.TestCase):
     """Tests for certbot.main.obtain_cert."""
