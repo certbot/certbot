@@ -24,7 +24,6 @@ from certbot.plugins import common
 
 from certbot_nginx import constants
 from certbot_nginx import tls_sni_01
-from certbot_nginx import obj
 from certbot_nginx import parser
 
 
@@ -154,7 +153,7 @@ class NginxConfigurator(common.Plugin):
                            ['\n', 'ssl_certificate_key', ' ', key_path]]
 
         try:
-            self.parser.add_server_directives(vhost.filep, vhost.names,
+            self.parser.add_server_directives(vhost,
                                               cert_directives, replace=True)
             logger.info("Deployed Certificate to VirtualHost %s for %s",
                         vhost.filep, vhost.names)
@@ -198,12 +197,9 @@ class NginxConfigurator(common.Plugin):
 
         matches = self._get_ranked_matches(target_name)
         if not matches:
-            # No matches. Create a new vhost with this name in nginx.conf.
-            filep = self.parser.loc["root"]
-            new_block = [['server'], [['\n', 'server_name', ' ', target_name]]]
-            self.parser.add_http_directives(filep, new_block)
-            vhost = obj.VirtualHost(filep, set([]), False, True,
-                                    set([target_name]), list(new_block[1]))
+            # No matches. Raise a misconfiguration error.
+            raise errors.MisconfigurationError(
+                        "Cannot find a VirtualHost matching domain %s." % (target_name))
         elif matches[0]['rank'] in xrange(2, 6):
             # Wildcard match - need to find the longest one
             rank = matches[0]['rank']
@@ -341,11 +337,7 @@ class NginxConfigurator(common.Plugin):
             self.parser.loc["ssl_options"])
 
         self.parser.add_server_directives(
-            vhost.filep, vhost.names, ssl_block, replace=False)
-        vhost.ssl = True
-        vhost.raw.extend(ssl_block)
-        vhost.addrs.add(obj.Addr(
-            '', str(self.config.tls_sni_01_port), True, False))
+            vhost, ssl_block, replace=False)
 
     def get_all_certs_keys(self):
         """Find all existing keys, certs from configuration.
@@ -406,7 +398,7 @@ class NginxConfigurator(common.Plugin):
              '\n    ']
         ], ['\n']]
         self.parser.add_server_directives(
-            vhost.filep, vhost.names, redirect_block, replace=False)
+            vhost, redirect_block, replace=False)
         logger.info("Redirecting all traffic to ssl in %s", vhost.filep)
 
     def _enable_ocsp_stapling(self, vhost, chain_path):
@@ -435,7 +427,7 @@ class NginxConfigurator(common.Plugin):
             ['\n    ', 'ssl_stapling_verify', ' ', 'on'], ['\n']]
 
         try:
-            self.parser.add_server_directives(vhost.filep, vhost.names,
+            self.parser.add_server_directives(vhost,
                                               stapling_directives, replace=False)
         except errors.MisconfigurationError as error:
             logger.debug(error)
