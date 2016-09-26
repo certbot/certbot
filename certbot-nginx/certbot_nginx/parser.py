@@ -241,10 +241,10 @@ class NginxParser(object):
             except IOError:
                 logger.error("Could not open file for writing: %s", filename)
 
-    def add_server_directives(self, vhost, directives,
-                              replace):
-        """Add or replace directives in the first server block with names,
-           and update vhost with the new directives.
+    def add_server_directives(self, vhost, directives, replace):
+        """Add or replace directives in the server block identified by vhost.
+
+        This method modifies vhost to be fully consistent with the new directives.
 
         ..note :: If replace is True, this raises a misconfiguration error
         if the directive does not already exist.

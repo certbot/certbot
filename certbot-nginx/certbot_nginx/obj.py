@@ -107,6 +107,8 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
     :ivar bool ssl: SSLEngine on in vhost
     :ivar bool enabled: Virtual host is enabled
+    :ivar list path: The indices into the parsed file used to access
+        the server block defining the vhost
 
     """
 
