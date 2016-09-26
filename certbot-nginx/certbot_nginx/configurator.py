@@ -100,6 +100,9 @@ class NginxConfigurator(common.Plugin):
         self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()
 
+        # We'll want to cache the vhost for some enhancements
+        self.vhost = None
+
     @property
     def mod_ssl_conf(self):
         """Full absolute path to SSL configuration file."""
@@ -193,6 +196,8 @@ class NginxConfigurator(common.Plugin):
         :rtype: :class:`~certbot_nginx.obj.VirtualHost`
 
         """
+        if self.vhost is not None:
+            return self.vhost
         vhost = None
 
         matches = self._get_ranked_matches(target_name)
@@ -212,6 +217,7 @@ class NginxConfigurator(common.Plugin):
             if not vhost.ssl:
                 self._make_server_ssl(vhost)
 
+        self.vhost = None
         return vhost
 
     def _get_ranked_matches(self, target_name):
