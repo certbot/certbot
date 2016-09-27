@@ -145,7 +145,7 @@ class Authenticator(common.Plugin):
 
     def get_chall_pref(self, domain):
         # pylint: disable=unused-argument,missing-docstring
-        return [self.challenge]
+        return [CHALLENGES[self.challenge]]
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
         mapping = {"http-01": self._setup_env_http,
