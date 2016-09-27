@@ -58,6 +58,8 @@ class NginxConfigurator(common.Plugin):
 
     hidden = True
 
+    DEFAULT_PORT = '80'
+
     @classmethod
     def add_parser_arguments(cls, add):
         add("server-root", default=constants.CLI_DEFAULTS["server_root"],
@@ -256,6 +258,121 @@ class NginxConfigurator(common.Plugin):
                                 'rank': 6 if vhost.ssl else 7})
         return sorted(matches, key=lambda x: x['rank'])
 
+    def all_vhost_ports(self, domain):
+        """Get all ports that all vhosts are listening on, that match domain.
+
+        :param str domain: domain to find ports of
+        :returns: set of strings representing the port numbers
+        :rtype: set
+        """
+        matching_vhosts = [item['vhost'] for item in self._get_ranked_matches(domain)]
+        out = set([addr.get_port() for vhost in matching_vhosts for addr in vhost.addrs])
+        # also check the default port, 80
+        out.add(self.DEFAULT_PORT)
+        if "" in out:
+            out.remove("")
+        if r"*" in out:
+            out.remove(r"*")
+        return out
+
+    def choose_redirect_vhost(self, target_name, port):
+        r"""Chooses a virtual host for redirect enhancement.
+
+        Filter all hosts for those that include listen port but do not include
+        ssl on. Of these, find the most matching one based on target_name.
+
+        .. todo:: This should maybe return list if no obvious answer
+            is presented.
+
+        .. todo:: The special name "$hostname" corresponds to the machine's
+            hostname. Currently we just ignore this.
+
+        :param str target_name: domain name
+        :param str port: port number or "\*" or ""
+        :returns: vhost associated with name
+        :rtype: :class:`~certbot_nginx.obj.VirtualHost`
+
+        """
+        vhost = None
+
+        matches = self._get_redirect_ranked_matches(target_name, port)
+        if not matches:
+            # No matches for this port. That's fine.
+            return None
+        elif matches[0]['rank'] in xrange(2, 6):
+            # Wildcard match - need to find the longest one
+            rank = matches[0]['rank']
+            wildcards = [x for x in matches if x['rank'] == rank]
+            vhost = max(wildcards, key=lambda x: len(x['name']))['vhost']
+        else:
+            vhost = matches[0]['vhost']
+
+        return vhost
+
+    def _get_redirect_ranked_matches(self, target_name, port):
+        r"""Gets a ranked list of plaintextish port-listening vhosts matching target_name
+
+        Filter all hosts for those that include listen port but do not include
+        ssl on. Rank by how well these match target_name.
+
+        :param str target_name: The name to match
+        :param str port: port number or "\*" or ""
+        :returns: list of dicts containing the vhost, the matching name, and
+            the numerical rank
+        :rtype: list
+
+        """
+        # Nginx chooses a matching server name for a request with precedence:
+        # 1. exact name match
+        # 2. longest wildcard name starting with *
+        # 3. longest wildcard name ending with *
+        # 4. first matching regex in order of appearance in the file
+        matches = []
+        all_vhosts = self.parser.get_vhosts()
+        def _port_matches(test_port, matching_port):
+            # test_port is a number, matching is a number or * or ""
+            if matching_port == r"\*":
+                return True
+            if matching_port == "":
+                return test_port == self.DEFAULT_PORT
+            return test_port == matching_port
+
+        def _vhost_matches(vhost, port):
+            found_matching_port = False
+            for addr in vhost.addrs:
+                if _port_matches(port, addr.get_port()) and addr.ssl == False:
+                    found_matching_port = True
+            # if port is DEFAULT_PORT, check to see if there are no listen directives at all
+            if port == self.DEFAULT_PORT and len(vhost.addrs) == 0:
+                found_matching_port = True
+
+            if found_matching_port:
+                # make sure we don't have an 'ssl on' directive
+                return not self.parser.has_ssl_on_directive(vhost)
+            else:
+                return False
+        matching_vhosts = [vhost for vhost in all_vhosts if _vhost_matches(vhost, port)]
+
+        for vhost in matching_vhosts:
+            name_type, name = parser.get_best_match(target_name, vhost.names)
+            if name_type == 'exact':
+                matches.append({'vhost': vhost,
+                                'name': name,
+                                'rank': 0})
+            elif name_type == 'wildcard_start':
+                matches.append({'vhost': vhost,
+                                'name': name,
+                                'rank': 2})
+            elif name_type == 'wildcard_end':
+                matches.append({'vhost': vhost,
+                                'name': name,
+                                'rank': 4})
+            elif name_type == 'regex':
+                matches.append({'vhost': vhost,
+                                'name': name,
+                                'rank': 6})
+        return sorted(matches, key=lambda x: x['rank'])
+
     def get_all_names(self):
         """Returns all names found in the Nginx Configuration.
 
@@ -395,15 +512,31 @@ class NginxConfigurator(common.Plugin):
         :param unused_options: Not currently used
         :type unused_options: Not Available
         """
-        vhost = self.choose_vhost(domain)
+
+        all_ports = self.all_vhost_ports(domain)
+        matching_vhosts = []
+        for port in all_ports:
+            # If there are blocks that listen on port in a nonsslish way
+            # (listen port statement, no ssl on in the block),
+            # find the most matching one.
+            vhost = None
+            vhost = self.choose_redirect_vhost(domain, port)
+            if vhost is not None:
+                matching_vhosts.append(vhost)
+
         redirect_block = [[
             ['\n    ', 'if', ' ', '($scheme != "https") '],
             [['\n        ', 'return', ' ', '301 https://$host$request_uri'],
              '\n    ']
         ], ['\n']]
-        self.parser.add_server_directives(
-            vhost, redirect_block, replace=False)
-        logger.info("Redirecting all traffic to ssl in %s", vhost.filep)
+
+        # Redirect all matching nonsslish hosts to https
+        for vhost in matching_vhosts:
+            self.parser.add_server_directives(
+                vhost, redirect_block, replace=False)
+            logger.info("Redirecting all traffic to ssl in %s", vhost.filep)
+        if len(matching_vhosts) == 0:
+            logger.info("No matching insecure server blocks found.")
 
     def _enable_ocsp_stapling(self, domain, chain_path):
         """Include OCSP response in TLS handshake

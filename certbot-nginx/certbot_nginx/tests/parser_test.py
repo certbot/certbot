@@ -147,6 +147,26 @@ class NginxParserTest(util.NginxTest):
         somename = [x for x in vhosts if 'somename' in x.names][0]
         self.assertEqual(vhost2, somename)
 
+    def test_has_ssl_on_directive(self):
+        nparser = parser.NginxParser(self.config_path, self.ssl_options)
+        mock_vhost = obj.VirtualHost(None, None, None, None, None,
+              [['listen', 'myhost default_server'],
+               ['server_name', 'www.example.org'],
+               [['location', '/'], [['root', 'html'], ['index', 'index.html index.htm']]]
+               ], None)
+        self.assertFalse(nparser.has_ssl_on_directive(mock_vhost))
+        mock_vhost.raw = [['listen', '*:80 default_server ssl'],
+                          ['server_name', '*.www.foo.com *.www.example.com'],
+                          ['root', '/home/ubuntu/sites/foo/']]
+        self.assertFalse(nparser.has_ssl_on_directive(mock_vhost))
+        mock_vhost.raw = [['listen', '80 ssl'],
+                          ['server_name', '*.www.foo.com *.www.example.com']]
+        self.assertFalse(nparser.has_ssl_on_directive(mock_vhost))
+        mock_vhost.raw = [['listen', '80'],
+                          ['ssl', 'on'],
+                          ['server_name', '*.www.foo.com *.www.example.com']]
+        self.assertTrue(nparser.has_ssl_on_directive(mock_vhost))
+
     def test_add_server_directives(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
         mock_vhost = obj.VirtualHost(nparser.abs_path('nginx.conf'),
