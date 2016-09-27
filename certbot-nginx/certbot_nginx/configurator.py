@@ -216,6 +216,7 @@ class NginxConfigurator(common.Plugin):
             vhost = matches[0]['vhost']
 
         if vhost is not None:
+            # Note: if we are enhancing with ocsp, vhost should already be ssl.
             if not vhost.ssl:
                 self._make_server_ssl(vhost)
 
