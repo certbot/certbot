@@ -16,12 +16,12 @@ class FaiiledChallengesTest(unittest.TestCase):
         from certbot.errors import FailedChallenges
         self.error = FailedChallenges(set([achallenges.DNS(
             domain="example.com", challb=messages.ChallengeBody(
-                chall=acme_util.DNS, uri=None,
+                chall=acme_util.DNS01, uri=None,
                 error=messages.Error(typ="tls", detail="detail")))]))
 
     def test_str(self):
         self.assertTrue(str(self.error).startswith(
-            "Failed authorization procedure. example.com (dns): tls"))
+            "Failed authorization procedure. example.com (dns-01): tls"))
 
 
 class StandaloneBindErrorTest(unittest.TestCase):

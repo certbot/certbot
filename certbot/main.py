@@ -155,27 +155,32 @@ def _handle_subset_cert_request(config, domains, cert):
             "reinvoke the client.")
 
 
-def _handle_identical_cert_request(config, cert):
-    """Figure out what to do if a cert has the same names as a previously obtained one
+def _handle_identical_cert_request(config, lineage):
+    """Figure out what to do if a lineage has the same names as a previously obtained one
 
-    :param storage.RenewableCert cert:
+    :param storage.RenewableCert lineage:
 
     :returns: Tuple of (str action, cert_or_None) as per _treat_as_renewal
               action can be: "newcert" | "renew" | "reinstall"
     :rtype: tuple
 
     """
-    if renewal.should_renew(config, cert):
-        return "renew", cert
+    if lineage.has_pending_deployment():
+        logger.warn("Found a new cert /archive/ that was not linked to in /live/; "
+                    "fixing and reinstalling..")
+        lineage.update_all_links_to(lineage.latest_common_version())
+        return "reinstall", lineage
+    if renewal.should_renew(config, lineage):
+        return "renew", lineage
     if config.reinstall:
         # Set with --reinstall, force an identical certificate to be
         # reinstalled without further prompting.
-        return "reinstall", cert
+        return "reinstall", lineage
     question = (
         "You have an existing certificate that contains exactly the same "
         "domains you requested and isn't close to expiry."
         "{br}(ref: {0}){br}{br}What would you like to do?"
-    ).format(cert.configfile.filename, br=os.linesep)
+    ).format(lineage.configfile.filename, br=os.linesep)
 
     if config.verb == "run":
         keep_opt = "Attempt to reinstall this existing certificate"
@@ -193,9 +198,9 @@ def _handle_identical_cert_request(config, cert):
             "User chose to cancel the operation and may "
             "reinvoke the client.")
     elif response[1] == 0:
-        return "reinstall", cert
+        return "reinstall", lineage
     elif response[1] == 1:
-        return "renew", cert
+        return "renew", lineage
     else:
         assert False, "This is impossible"
 
@@ -436,7 +441,7 @@ def install(config, plugins):
     le_client.deploy_certificate(
         domains, config.key_path, config.cert_path, config.chain_path,
         config.fullchain_path)
-    le_client.enhance_config(domains, config)
+    le_client.enhance_config(domains, config, config.chain_path)
 
 
 def plugins_cmd(config, plugins):  # TODO: Use IDisplay rather than print
@@ -516,7 +521,7 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
         domains, lineage.privkey, lineage.cert,
         lineage.chain, lineage.fullchain)
 
-    le_client.enhance_config(domains, config)
+    le_client.enhance_config(domains, config, lineage.chain)
 
     if len(lineage.available_versions("cert")) == 1:
         display_ops.success_installation(domains)

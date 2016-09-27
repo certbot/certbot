@@ -192,7 +192,7 @@ class Client(object):
 
         if auth is not None:
             self.auth_handler = auth_handler.AuthHandler(
-                auth, self.acme, self.account)
+                auth, self.acme, self.account, self.config.pref_challs)
         else:
             self.auth_handler = None
 
@@ -382,7 +382,8 @@ class Client(object):
         with error_handler.ErrorHandler(self._rollback_and_restart, msg):
             # sites may have been enabled / final cleanup
             self.installer.restart()
-    def enhance_config(self, domains, config):
+
+    def enhance_config(self, domains, config, chain_path):
         """Enhance the configuration.
 
         :param list domains: list of domains to configure
@@ -391,6 +392,9 @@ class Client(object):
             :meth:`argparse.ArgumentParser.parse_args`.
             it must have the redirect, hsts and uir attributes.
         :type namespace: :class:`argparse.Namespace`
+
+        :param chain_path: chain file path
+        :type chain_path: `str` or `None`
 
         :raises .errors.Error: if no installer is specified in the
             client.
@@ -425,7 +429,7 @@ class Client(object):
             self.apply_enhancement(domains, "ensure-http-header",
                     "Upgrade-Insecure-Requests")
         if staple:
-            self.apply_enhancement(domains, "staple-ocsp")
+            self.apply_enhancement(domains, "staple-ocsp", chain_path)
 
         msg = ("We were unable to restart web server")
         if redirect or hsts or uir or staple:
