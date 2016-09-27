@@ -93,6 +93,9 @@ class Authenticator(common.Plugin):
         return False
 
     def register_pieces(self, bundle_name):
+        """Check which individual pieces the bundle has
+        and register them."""
+
         bundle_path = self.bundle_root + bundle_name
         authenticate = bundle_path+"/"+self.auth_name
         if self._valid_script(authenticate):
@@ -134,6 +137,12 @@ class Authenticator(common.Plugin):
         return bundle_config
 
     def get_config_value(self, key):
+        """Get single value from config script
+        Expects the format:
+
+        KEY="value"
+        """
+
         key = key+"="
         if self.bundle['config']:
             with open(self.bundle['config'], 'r') as fh:
@@ -143,8 +152,8 @@ class Authenticator(common.Plugin):
                     val = line.strip()[len(key):]
                     return val.replace('"', '').replace("'", "").strip()
 
-    def prepare(self):  # pylint: disable=missing-docstring
-        """Prepare script plugins"""
+    def prepare(self):
+        """Prepare script plugin"""
         bundle_name = self.config.namespace.script_bundle_name
         if self.check_path_validity(bundle_name):
             self.bundle_name = bundle_name
