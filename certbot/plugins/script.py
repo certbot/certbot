@@ -64,49 +64,62 @@ class Authenticator(common.Plugin):
         """Checks that the bundle path exists and is readable
 
         :param str bundle_name: Name of bundle to check
-        :raises errors.PluginError: If path is not valid"""
+        :raises errors.PluginError: If path is not valid
+        :returns `boolean`: If path is valid"""
 
         fullpath = self.bundle_root+bundle_name
         if not os.path.exists(fullpath) and os.access(fullpath, os.R_OK):
             raise errors.PluginError("Bundle path {} doesn't exist or " +
                                      "it isn't readable by Certbot".format(
                                          self.bundle_root+bundle_name))
+            return False
 
         # Make sure that we're not executing outside of our directory
         if not os.path.realpath(fullpath).startswith(self.bundle_root):
             raise errors.PluginError(
                 "Script bundle must reside under {}".format(self.bundle_root))
+            return False
         return True
+
+    def _valid_script(self, script_path):
+        """Checks that the script exists, and is executable
+
+        :param str script_path: Path to the script
+        :returns `boolean`: If script is valid"""
+
+        if os.path.isfile(script_path):
+            if os.access(script_path, os.X_OK):
+                return True
+        return False
 
     def register_pieces(self, bundle_name):
         bundle_path = self.bundle_root + bundle_name
         authenticate = bundle_path+"/"+self.auth_name
-        if os.path.isfile(authenticate):
-            if os.access(authenticate, os.X_OK):
-                self.bundle['authenticate'] = authenticate
-            else:
-                logger.debug("Script bundle authenticator exists, but isn't executable")
+        if self._valid_script(authenticate):
+            self.bundle['authenticate'] = authenticate
+        else:
+            logger.debug("Script bundle authenticator exists, " +
+                         "but isn't executable")
         cleanup = bundle_path+"/"+self.cleanup_name
-        if os.path.isfile(cleanup):
-            if os.access(cleanup, os.X_OK):
-                self.bundle['cleanup'] = cleanup
-            else:
-                logger.debug("Script bundle cleanup.sh exists, but isn't executable")
+        if self._valic_script(cleanup):
+            self.bundle['cleanup'] = cleanup
+        else:
+            logger.debug("Script bundle cleanup.sh exists, " +
+                         "but isn't executable")
         if os.path.isfile(bundle_path+"/"+self.config_name):
             self.bundle['config'] = bundle_path+"/"+self.config_name
             self.bundle_config = self.parse_config()
         try:
             if self.bundle_config and self.bundle_config["challenge"]:
                 try:
-                    #self.challenge = challenges.Challenge.TYPES[self.bundle_config["challenge"]]
                     self.challenge = self.bundle_config["challenge"]
                 except KeyError:
                     raise errors.PluginError(
                         "Unknown challenge type: {}".format(
                             self.bundle_config["challenge"]))
         except KeyError:
-            raise errors.PluginError("Script bundle must specify one challenge")
-
+            raise errors.PluginError("Script bundle must specify one " +
+                                     "challenge")
 
     def more_info(self):  # pylint: disable=missing-docstring
         return("This authenticator enables user to perform authentication " +
