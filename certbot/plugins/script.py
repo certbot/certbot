@@ -36,12 +36,10 @@ class Authenticator(common.Plugin):
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
         self.bundle_root = CLI_DEFAULTS["config_dir"]+"/script.d/"
-        self.prehook_name = "pre.sh"
-        self.posthook_name = "post.sh"
+        self.cleanup_name = "cleanup.sh"
         self.auth_name = "authenticator.sh"
         self.config_name = "config.sh"
         self.bundle = dict({
-            "prepare": None,
             "authenticate": None,
             "cleanup": None,
             "config": None})
@@ -52,9 +50,10 @@ class Authenticator(common.Plugin):
     def add_parser_arguments(cls, add):
         add("bundle-name", "-b", default=None, required=True,
             help="script bundle name. Bundle needs to have " +
-                 "authenticator.sh but can also have prehook.sh and " +
-                 "posthook.sh. Certbot looks for script bundles from " +
-                 "under directory /etc/letsencrypt/hooks.d ")
+                 "authenticator.sh but can also have cleanup.sh. " +
+                 "Certbot looks for script bundles from under " +
+                 "directory script.d/ in certbot configuration "
+                 "directory.")
 
     @property
     def supported_challenges(self):
@@ -81,24 +80,18 @@ class Authenticator(common.Plugin):
 
     def register_pieces(self, bundle_name):
         bundle_path = self.bundle_root + bundle_name
-        prehook = bundle_path+"/"+self.prehook_name
-        if os.path.isfile(prehook):
-            if os.access(prehook, os.X_OK):
-                self.bundle['prepare'] = prehook
-            else:
-                logger.debug("Script bundle prehook exists, but isn't executable.")
         authenticate = bundle_path+"/"+self.auth_name
         if os.path.isfile(authenticate):
             if os.access(authenticate, os.X_OK):
                 self.bundle['authenticate'] = authenticate
             else:
                 logger.debug("Script bundle authenticator exists, but isn't executable")
-        posthook = bundle_path+"/"+self.posthook_name
-        if os.path.isfile(posthook):
-            if os.access(posthook, os.X_OK):
-                self.bundle['cleanup'] = posthook
+        cleanup = bundle_path+"/"+self.cleanup_name
+        if os.path.isfile(cleanup):
+            if os.access(cleanup, os.X_OK):
+                self.bundle['cleanup'] = cleanup
             else:
-                logger.debug("Script bundle posthook exists, but isn't executable")
+                logger.debug("Script bundle cleanup.sh exists, but isn't executable")
         if os.path.isfile(bundle_path+"/"+self.config_name):
             self.bundle['config'] = bundle_path+"/"+self.config_name
             self.bundle_config = self.parse_config()
@@ -138,28 +131,24 @@ class Authenticator(common.Plugin):
                     return val.replace('"', '').replace("'", "").strip()
 
     def prepare(self):  # pylint: disable=missing-docstring
-        """Run bundle prehook.sh if it exists"""
+        """Prepare script plugins"""
         bundle_name = self.config.namespace.script_bundle_name
         if self.check_path_validity(bundle_name):
             self.bundle_name = bundle_name
         self.register_pieces(bundle_name)
 
     def get_chall_pref(self, domain):
-        # pylint: disable=unused-argument,missing-docstring
+        """Return challenge(s) that the current script
+        or script bundle answers to. """
+        # pylint: disable=unused-argument
         return [CHALLENGES[self.challenge]]
 
-    def perform(self, achalls):  # pylint: disable=missing-docstring
+    def perform(self, achalls):
+        """Perform the authentication per challenge"""
         mapping = {"http-01": self._setup_env_http,
                    "dns-01": self._setup_env_dns}
         responses = []
         for achall in achalls:
-            # Handle prepare script
-            # TODO: exit if erroring out
-            if self.bundle["prepare"]:
-                self._setup_env_prepare(achall)
-                if self.bundle["prepare"]:
-                    self.execute(self.bundle["prepare"])
-
             response, validation = achall.response_and_validation()
             # Setup env vars
             mapping[achall.typ](achall, validation)
@@ -168,12 +157,6 @@ class Authenticator(common.Plugin):
                 self.execute(self.bundle["authenticate"])
             responses.append(response)
         return responses
-
-    def _setup_env_prepare(self, achall):
-        """Write environment variables for preparation phase"""
-        ev = dict()
-        ev["CERTBOT_DOMAIN"] = achall.domain
-        self._write_env(ev)
 
     def _setup_env_http(self, achall, validation):
         """Write environment variables for http challenge"""
@@ -185,6 +168,7 @@ class Authenticator(common.Plugin):
 
     def _setup_env_dns(self, achall, validation):
         """Write environment variables for dns challenge"""
+
         ev = dict()
         ev["CERTBOT_VALIDATION"] = validation
         ev["CERTBOT_DOMAIN"] = achall.domain
@@ -212,6 +196,6 @@ class Authenticator(common.Plugin):
         return (cmd.returncode, err)
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
-        """Run post.sh """
+        """Run cleanup.sh """
         if self.bundle['cleanup']:
             self.execute(self.bundle['cleanup'])
