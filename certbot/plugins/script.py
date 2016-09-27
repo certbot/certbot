@@ -10,6 +10,7 @@ from acme import challenges
 
 from certbot import errors
 from certbot import interfaces
+from certbot.constants import CLI_DEFAULTS
 
 from certbot.plugins import common
 
@@ -34,7 +35,7 @@ class Authenticator(common.Plugin):
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        self.bundle_root = "/etc/letsencrypt/script.d/"
+        self.bundle_root = CLI_DEFAULTS["config_dir"]+"/script.d/"
         self.prehook_name = "pre.sh"
         self.posthook_name = "post.sh"
         self.auth_name = "authenticator.sh"
