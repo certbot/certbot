@@ -16,6 +16,11 @@ from certbot.plugins import common
 logger = logging.getLogger(__name__)
 
 
+# Supported challenges
+CHALLENGES = {"http-01": challenges.Challenge.TYPES["http-01"],
+              "dns-01": challenges.Challenge.TYPES["dns-01"]}
+
+
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(common.Plugin):
@@ -53,7 +58,7 @@ class Authenticator(common.Plugin):
     @property
     def supported_challenges(self):
         """Challenges supported by this plugin."""
-        return [self.challenge]
+        return CHALLENGES[self.challenge]
 
     def check_path_validity(self, bundle_name):
         """Checks that the bundle path exists and is readable
@@ -99,9 +104,12 @@ class Authenticator(common.Plugin):
         try:
             if self.bundle_config and self.bundle_config["challenge"]:
                 try:
-                    self.challenge = challenges.Challenge.TYPES[self.bundle_config["challenge"]]
+                    #self.challenge = challenges.Challenge.TYPES[self.bundle_config["challenge"]]
+                    self.challenge = self.bundle_config["challenge"]
                 except KeyError:
-                    raise errors.PluginError("Unknown challenge type: {}".format(self.bundle_config["challenge"]))
+                    raise errors.PluginError(
+                        "Unknown challenge type: {}".format(
+                            self.bundle_config["challenge"]))
         except KeyError:
             raise errors.PluginError("Script bundle must specify one challenge")
 
@@ -135,40 +143,48 @@ class Authenticator(common.Plugin):
             self.bundle_name = bundle_name
         self.register_pieces(bundle_name)
 
-
     def get_chall_pref(self, domain):
         # pylint: disable=unused-argument,missing-docstring
         return [self.challenge]
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
+        mapping = {"http-01": self._setup_env_http,
+                   "dns-01": self._setup_env_dns}
         responses = []
         for achall in achalls:
+            # Handle prepare script
+            # TODO: exit if erroring out
             if self.bundle["prepare"]:
-                self.setup_env_prepare(achall)
+                self._setup_env_prepare(achall)
                 if self.bundle["prepare"]:
                     self.execute(self.bundle["prepare"])
+
             response, validation = achall.response_and_validation()
-            # TODO: check which challenge is used and prepare environment
-            # accordingly
-            self.setup_env_http(achall, validation)
+            # Setup env vars
+            mapping[achall.typ](achall, validation)
             if self.bundle["authenticate"]:
                 # Should always exist though
                 self.execute(self.bundle["authenticate"])
             responses.append(response)
-
-        # renewer = self.config.verb == "renew"
         return responses
 
-    def setup_env_prepare(self, achall):
+    def _setup_env_prepare(self, achall):
         """Write environment variables for preparation phase"""
         ev = dict()
         ev["CERTBOT_DOMAIN"] = achall.domain
         self._write_env(ev)
 
-    def setup_env_http(self, achall, validation):
-        """Write environment variables for the challenge"""
+    def _setup_env_http(self, achall, validation):
+        """Write environment variables for http challenge"""
         ev = dict()
         ev["CERTBOT_TOKEN"] = achall.chall.encode("token")
+        ev["CERTBOT_VALIDATION"] = validation
+        ev["CERTBOT_DOMAIN"] = achall.domain
+        self._write_env(ev)
+
+    def _setup_env_dns(self, achall, validation):
+        """Write environment variables for dns challenge"""
+        ev = dict()
         ev["CERTBOT_VALIDATION"] = validation
         ev["CERTBOT_DOMAIN"] = achall.domain
         self._write_env(ev)
