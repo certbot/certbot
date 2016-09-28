@@ -103,7 +103,8 @@ def choose_names(installer):
     names = get_valid_domains(domains)
 
     if not names:
-        return _choose_names_manually()
+        return _choose_names_manually(
+            "No names were found in your configuration files. ")
 
     code, names = _filter_names(names)
     if code == display_util.OK and names:
@@ -146,10 +147,17 @@ def _filter_names(names):
     return code, [str(s) for s in names]
 
 
-def _choose_names_manually():
-    """Manually input names for those without an installer."""
+def _choose_names_manually(prompt_prefix=""):
+    """Manually input names for those without an installer.
 
+    :param str prompt_prefix: string to prepend to prompt for domains
+
+    :returns: list of provided names
+    :rtype: `list` of `str`
+
+    """
     code, input_ = z_util(interfaces.IDisplay).input(
+        prompt_prefix +
         "Please enter in your domain name(s) (comma and/or space separated) ",
         cli_flag="--domains")
 
