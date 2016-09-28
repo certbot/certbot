@@ -103,12 +103,8 @@ def choose_names(installer):
     names = get_valid_domains(domains)
 
     if not names:
-        server = ""
-        if hasattr(installer, "name") and installer.name:
-            server = "{0} ".format(installer.name)
-            server = server[0].upper() + server[1:] # capitalise server name
         return _choose_names_manually(
-            "No names were found in your {0}configuration files. ".format(server))
+            "No names were found in your configuration files. ")
 
     code, names = _filter_names(names)
     if code == display_util.OK and names:
