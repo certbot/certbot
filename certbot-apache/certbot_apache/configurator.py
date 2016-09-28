@@ -959,7 +959,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                         line = next(orig_file_list)
 
                         # RewriteCond(s) must be followed by one RewriteRule
-                        while not line.lower().lstrip().startswith("RewriteRule"):
+                        while not line.lower().lstrip().startswith("rewriterule"):
                             chunk.append(line)
                             line = next(orig_file_list)
 
