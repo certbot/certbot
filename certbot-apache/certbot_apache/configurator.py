@@ -138,7 +138,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._enhance_func = {"redirect": self._enable_redirect,
                               "ensure-http-header": self._set_http_header,
                               "staple-ocsp": self._enable_ocsp_stapling}
-        self._skeletons = {}
 
     @property
     def mod_ssl_conf(self):
@@ -495,6 +494,32 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return ""
 
+    def _get_vhost_names(self, path):
+        """Helper method for getting the ServerName and
+        ServerAlias values from vhost in path
+
+        :param path: Path to read ServerName and ServerAliases from
+
+        :returns: Tuple including ServerName and `list` of ServerAlias strings
+        """
+
+        servername_match = self.parser.find_dir(
+            "ServerName", None, start=path, exclude=False)
+        serveralias_match = self.parser.find_dir(
+            "ServerAlias", None, start=path, exclude=False)
+
+        serveraliases = []
+        for alias in serveralias_match:
+            serveralias = self.parser.get_arg(alias)
+            serveraliases.append(serveralias)
+
+        servername = None
+        if servername_match:
+            # Get last ServerName as each overwrites the previous
+            servername = self.parser.get_arg(servername_match[-1])
+
+        return (servername, serveraliases)
+
     def _add_servernames(self, host):
         """Helper function for get_virtual_hosts().
 
@@ -502,22 +527,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :type host: :class:`~certbot_apache.obj.VirtualHost`
 
         """
-        # Take the final ServerName as each overrides the previous
-        servername_match = self.parser.find_dir(
-            "ServerName", None, start=host.path, exclude=False)
-        serveralias_match = self.parser.find_dir(
-            "ServerAlias", None, start=host.path, exclude=False)
 
-        for alias in serveralias_match:
-            serveralias = self.parser.get_arg(alias)
-            if not host.modmacro:
-                host.aliases.add(serveralias)
+        servername, serveraliases = self._get_vhost_names(host.path)
 
-        if servername_match:
-            # Get last ServerName as each overwrites the previous
-            servername = self.parser.get_arg(servername_match[-1])
+        for alias in serveraliases:
             if not host.modmacro:
-                host.name = servername
+                host.aliases.add(alias)
+
+        if not host.modmacro:
+            host.name = servername
 
     def _create_vhost(self, path):
         """Used by get_virtual_hosts to create vhost objects
@@ -582,7 +600,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 ("/files%s//*[label()=~regexp('%s')]" %
                     (vhost_path, parser.case_i("VirtualHost"))))
             paths = [path for path in paths if
-                     os.path.basename(path.lower()) == "virtualhost"]
+                     "virtualhost" in os.path.basename(path).lower()]
             for path in paths:
                 new_vhost = self._create_vhost(path)
                 if not new_vhost:
@@ -809,23 +827,27 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         avail_fp = nonssl_vhost.filep
         ssl_fp = self._get_ssl_vhost_path(avail_fp)
 
-        vhost_num = -1
-        if nonssl_vhost.path.endswith("]"):
-            # augeas doesn't zero index for whatever reason
-            vhost_num = int(nonssl_vhost.path[-2]) - 1
-        self._copy_create_ssl_vhost_skeleton(avail_fp, ssl_fp, vhost_num)
+        orig_matches = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
+                                      (self._escape(ssl_fp),
+                                       parser.case_i("VirtualHost")))
+
+        self._copy_create_ssl_vhost_skeleton(nonssl_vhost, ssl_fp)
 
         # Reload augeas to take into account the new vhost
         self.aug.load()
         # Get Vhost augeas path for new vhost
-        matches = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
-                                (self._escape(ssl_fp), parser.case_i("VirtualHost")))
-        skels = self._skeletons[ssl_fp]
-        vh_p = matches[len(skels) - 1] if skels else matches[0]
+        new_matches = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
+                                     (self._escape(ssl_fp),
+                                      parser.case_i("VirtualHost")))
+
+        vh_p = self._get_new_vh_path(orig_matches, new_matches)
+
+        if not vh_p:
+            raise errors.PluginError(
+                "Could not reverse map the HTTPS VirtualHost to the original")
 
         # Update Addresses
         self._update_ssl_vhosts_addrs(vh_p)
-
         # Add directives
         self._add_dummy_ssl_directives(vh_p)
         self.save()
@@ -851,6 +873,20 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._add_name_vhost_if_necessary(ssl_vhost)
 
         return ssl_vhost
+
+    def _get_new_vh_path(self, orig_matches, new_matches):
+        """ Helper method for make_vhost_ssl for matching augeas paths. Returns
+        VirtualHost path from new_matches that's not present in orig_matches.
+
+        Paths are normalized, because augeas leaves indices out for paths
+        with only single directive with a similar key """
+
+        orig_matches = [i.replace("[1]", "") for i in orig_matches]
+        for match in new_matches:
+            if match.replace("[1]", "") not in orig_matches:
+                # Return the unmodified path
+                return match
+        return None
 
     def _get_ssl_vhost_path(self, non_ssl_vh_fp):
         # Get filepath of new ssl_vhost
@@ -892,43 +928,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Sift line if it redirects the request to a HTTPS site
         return target.startswith("https://")
 
-    def _section_blocks(self, blocks):
-        """A helper function for _create_block_segments that makes
-        a list of line numbers to not include in the return.
-
-        :param list blocks: A list of indexes of where vhosts start and end.
-
-        For instance, turns [2,5,13,15] into [[2,3,4,5], [13,14,15]].
-
-        """
-        out = []
-        while len(blocks) > 1:
-            start = blocks[0]
-            end = blocks[1] + 1
-            out += range(start, end)
-            blocks = blocks[2:]
-        return out
-
-    def _create_block_segments(self, orig_file_list, vhost_num):
-        """A helper function for  _copy_create_ssl_vhost_skeleton
-        that slices the appropriate vhost from the origin conf file.
-
-        :param list orig_file_list: the original file converted to a list of strings.
-        "param int vhost_num: Which vhost the vhost is in the origin multivhost file.
-
-        """
-        blocks = [idx for idx, line in enumerate(orig_file_list)
-                     if line.lstrip().startswith("<VirtualHost")
-                     or line.lstrip().startswith("</VirtualHost")]
-        blocks = blocks[:vhost_num*2] + blocks[(vhost_num*2)+2:]
-        out = self._section_blocks(blocks)
-        return [line for idx, line in enumerate(orig_file_list)
-                          if idx not in out]
-
-    def _copy_create_ssl_vhost_skeleton(self, avail_fp, ssl_fp, vhost_num): # pylint: disable=too-many-branches,too-many-locals,too-many-statements
+    def _copy_create_ssl_vhost_skeleton(self, vhost, ssl_fp):
         """Copies over existing Vhost with IfModule mod_ssl.c> skeleton.
 
-        :param str avail_fp: Pointer to the original available non-ssl vhost
+        :param obj.VirtualHost vhost: Original VirtualHost object
         :param str ssl_fp: Full path where the new ssl_vhost will reside.
 
         A new file is created on the filesystem.
@@ -936,81 +939,24 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         # First register the creation so that it is properly removed if
         # configuration is rolled back
-        self.reverter.register_file_creation(False, ssl_fp)
+        if os.path.exists(ssl_fp):
+            notes = "Appended new VirtualHost directive to file %s" % ssl_fp
+            files = set()
+            files.add(ssl_fp)
+            self.reverter.add_to_checkpoint(files, notes)
+        else:
+            self.reverter.register_file_creation(False, ssl_fp)
         sift = False
 
         try:
-            with open(avail_fp, "r") as orig_file:
-                orig_file_list = [line for line in orig_file]
-                if vhost_num != -1:
-                    orig_file_list = self._create_block_segments(orig_file_list, vhost_num)
+            orig_contents = self._get_vhost_block(vhost)
+            ssl_vh_contents, sift = self._sift_rewrite_rules(orig_contents)
 
-            if ssl_fp in self._skeletons:
-                bit = "a"
-                self._skeletons[ssl_fp].append(avail_fp)
-            else:
-                bit = "w"
-                self._skeletons[ssl_fp] = [avail_fp]
-
-            with open(ssl_fp, bit) as new_file:
+            with open(ssl_fp, "a") as new_file:
                 new_file.write("<IfModule mod_ssl.c>\n")
-
-                comment = ("# Some rewrite rules in this file were "
-                          "disabled on your HTTPS site,\n"
-                          "# because they have the potential to create "
-                          "redirection loops.\n")
-
-                orig_file_list = iter(orig_file_list)
-                for line in orig_file_list:
-                    A = line.lower().lstrip().startswith("rewritecond")
-                    B = line.lower().lstrip().startswith("rewriterule")
-
-                    if not (A or B):
-                        new_file.write(line)
-                        continue
-
-                    # A RewriteRule that doesn't need filtering
-                    if B and not self._sift_rewrite_rule(line):
-                        new_file.write(line)
-                        continue
-
-                    # A RewriteRule that does need filtering
-                    if B and self._sift_rewrite_rule(line):
-                        if not sift:
-                            new_file.write(comment)
-                            sift = True
-                        new_file.write("# " + line)
-                        continue
-
-                    # We save RewriteCond(s) and their corresponding
-                    # RewriteRule in 'chunk'.
-                    # We then decide whether we comment out the entire
-                    # chunk based on its RewriteRule.
-                    chunk = []
-                    if A:
-                        chunk.append(line)
-                        line = next(orig_file_list)
-
-                        # RewriteCond(s) must be followed by one RewriteRule
-                        while not line.lower().lstrip().startswith("rewriterule"):
-                            chunk.append(line)
-                            line = next(orig_file_list)
-
-                        # Now, current line must start with a RewriteRule
-                        chunk.append(line)
-
-                        if self._sift_rewrite_rule(line):
-                            if not sift:
-                                new_file.write(comment)
-                                sift = True
-
-                            new_file.write(''.join(
-                                ['# ' + l for l in chunk]))
-                            continue
-                        else:
-                            new_file.write(''.join(chunk))
-                            continue
-
+                new_file.write("\n".join(ssl_vh_contents))
+                # The content does not include the closing tag, so add it
+                new_file.write("</VirtualHost>\n")
                 new_file.write("</IfModule>\n")
         except IOError:
             logger.fatal("Error writing/reading to file in make_vhost_ssl")
@@ -1021,11 +967,96 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             reporter.add_message(
                 "Some rewrite rules copied from {0} were disabled in the "
                 "vhost for your HTTPS site located at {1} because they have "
-                "the potential to create redirection loops.".format(avail_fp,
-                                                                    ssl_fp),
-                reporter.MEDIUM_PRIORITY)
-        self.aug.set("/augeas/files%s/mtime" %(self._escape(ssl_fp)), "0")
-        self.aug.set("/augeas/files%s/mtime" %(self._escape(avail_fp)), "0")
+                "the potential to create redirection loops.".format(
+                    vhost.filep, ssl_fp), reporter.MEDIUM_PRIORITY)
+        self.aug.set("/augeas/files%s/mtime" % (self._escape(ssl_fp)), "0")
+        self.aug.set("/augeas/files%s/mtime" % (self._escape(vhost.filep)), "0")
+
+    def _sift_rewrite_rules(self, contents):
+        """ Helper function for _copy_create_ssl_vhost_skeleton to prepare the
+        new HTTPS VirtualHost contents. Currently disabling the rewrites """
+
+        result = []
+        sift = False
+        contents = iter(contents)
+
+        comment = ("# Some rewrite rules in this file were "
+                   "disabled on your HTTPS site,\n"
+                   "# because they have the potential to create "
+                   "redirection loops.\n")
+
+        for line in contents:
+            A = line.lower().lstrip().startswith("rewritecond")
+            B = line.lower().lstrip().startswith("rewriterule")
+
+            if not (A or B):
+                result.append(line)
+                continue
+
+            # A RewriteRule that doesn't need filtering
+            if B and not self._sift_rewrite_rule(line):
+                result.append(line)
+                continue
+
+            # A RewriteRule that does need filtering
+            if B and self._sift_rewrite_rule(line):
+                if not sift:
+                    result.append(comment)
+                    sift = True
+                result.append("# " + line)
+                continue
+
+            # We save RewriteCond(s) and their corresponding
+            # RewriteRule in 'chunk'.
+            # We then decide whether we comment out the entire
+            # chunk based on its RewriteRule.
+            chunk = []
+            if A:
+                chunk.append(line)
+                line = next(contents)
+
+                # RewriteCond(s) must be followed by one RewriteRule
+                while not line.lower().lstrip().startswith("rewriterule"):
+                    chunk.append(line)
+                    line = next(contents)
+
+                # Now, current line must start with a RewriteRule
+                chunk.append(line)
+
+                if self._sift_rewrite_rule(line):
+                    if not sift:
+                        result.append(comment)
+                        sift = True
+
+                    result.append('\n'.join(
+                        ['# ' + l for l in chunk]))
+                    continue
+                else:
+                    result.append('\n'.join(chunk))
+                    continue
+        return result, sift
+
+    def _get_vhost_block(self, vhost):
+        """ Helper method to get VirtualHost contents from the original file.
+        This is done with help of augeas span, which returns the span start and
+        end positions
+
+        :returns: `list` of VirtualHost block content lines without closing tag
+        """
+
+        try:
+            span_val = self.aug.span(vhost.path)
+        except ValueError:
+            logger.fatal("Error while reading the VirtualHost %s from "
+                         "file %s", vhost.name, vhost.filep, exc_info=True)
+            raise errors.PluginError("Unable to read VirtualHost from file")
+        span_filep = span_val[0]
+        span_start = span_val[5]
+        span_end = span_val[6]
+        with open(span_filep, 'r') as fh:
+            fh.seek(span_start)
+            vh_contents = fh.read(span_end-span_start)
+        return vh_contents.split("\n")
 
     def _update_ssl_vhosts_addrs(self, vh_path):
         ssl_addrs = set()
@@ -1073,10 +1104,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def _add_servername_alias(self, target_name, vhost):
         vh_path = vhost.path
-        if (self.parser.find_dir("ServerName", target_name,
-                                 start=vh_path, exclude=False) or
-            self.parser.find_dir("ServerAlias", target_name,
-                                 start=vh_path, exclude=False)):
+        sname, saliases = self._get_vhost_names(vh_path)
+        if target_name == sname or target_name in saliases:
             return
         if self._has_matching_wildcard(vh_path, target_name):
             return
@@ -1476,7 +1505,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             for re_path in rewrite_engine_path_list:
                 # A RewriteEngine directive may also be included in per
                 # directory .htaccess files. We only care about the VirtualHost.
-                if 'VirtualHost' in re_path:
+                if 'virtualhost' in re_path.lower():
                     return self.parser.get_arg(re_path)
         return False
 
@@ -1880,7 +1909,7 @@ def get_file_path(vhost_path):
     :rtype: str
 
     """
-    if vhost_path is None or not vhost_path.startswith("/files/"):
+    if not vhost_path or not vhost_path.startswith("/files/"):
         return None
 
     return _split_aug_path(vhost_path)[0]

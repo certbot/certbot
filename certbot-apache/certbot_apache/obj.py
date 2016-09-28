@@ -112,6 +112,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     :ivar bool ssl: SSLEngine on in vhost
     :ivar bool enabled: Virtual host is enabled
     :ivar bool modmacro: VirtualHost is using mod_macro
+    :ivar VirtualHost ancestor: A non-SSL VirtualHost this is based on
 
     https://httpd.apache.org/docs/2.4/vhosts/details.html
 
