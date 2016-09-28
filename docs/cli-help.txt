@@ -65,7 +65,9 @@ optional arguments:
   -d DOMAIN, --domains DOMAIN, --domain DOMAIN
                         Domain names to apply. For multiple domains you can
                         use multiple -d flags or enter a comma separated list
-                        of domains as a parameter. (default: [])
+                        of domains as a parameter. The first domain in the list
+                        will be used to decide where to store the new certificate,
+                        unless otherwise specified. (default: [])
   --user-agent USER_AGENT
                         Set a custom user agent string for the client. User
                         agent strings allow the CA to collect high level
