@@ -805,12 +805,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Reload augeas to take into account the new vhost
         self.aug.load()
         # Get Vhost augeas path for new vhost
-        vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
-                              (self._escape(ssl_fp), parser.case_i("VirtualHost")))
-        temp_vh = vh_p[0]
-        if self._skeletons[ssl_fp]:
-            temp_vh = vh_p[len(self._skeletons[ssl_fp]) -1]
-        vh_p = temp_vh
+        matches = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
+                                (self._escape(ssl_fp), parser.case_i("VirtualHost")))
+        skels = self._skeletons[ssl_fp]
+        vh_p = matches[len(skels) - 1] if skels else matches[0]
 
         # Update Addresses
         self._update_ssl_vhosts_addrs(vh_p)
@@ -865,7 +863,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: bool
 
         """
-        if not line.lstrip().startswith("RewriteRule"):
+        if not line.lower().lstrip().startswith("rewriterule"):
             return False
 
         # According to: http://httpd.apache.org/docs/2.4/rewrite/flags.html
@@ -886,6 +884,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         a list of line numbers to not include in the return.
 
         :param list blocks: A list of indexes of where vhosts start and end.
+
+        For instance, turns [2,5,13,15] into [[2,3,4,5], [13,14,15]].
 
         """
         out = []
@@ -949,8 +949,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
                 orig_file_list = iter(orig_file_list)
                 for line in orig_file_list:
-                    A = line.lstrip().startswith("RewriteCond")
-                    B = line.lstrip().startswith("RewriteRule")
+                    A = line.lower().lstrip().startswith("rewritecond")
+                    B = line.lower().lstrip().startswith("rewriterule")
 
                     if not (A or B):
                         new_file.write(line)
@@ -979,7 +979,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                         line = next(orig_file_list)
 
                         # RewriteCond(s) must be followed by one RewriteRule
-                        while not line.lstrip().startswith("RewriteRule"):
+                        while not line.lower().lstrip().startswith("rewriterule"):
                             chunk.append(line)
                             line = next(orig_file_list)
 
