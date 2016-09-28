@@ -303,13 +303,13 @@ class IInstaller(IPlugin):
     def get_all_certs_keys():
         """Retrieve all certs and keys set in configuration.
 
-        :returns: tuples with form `[(cert, key, path)]`, where:
-
+        :returns: An iterator that returns `(cert, key, path)` for every
+            iteration, where:
             - `cert` - str path to certificate file
             - `key` - str path to associated key file
             - `path` - file path to configuration file
 
-        :rtype: list
+        :rtype: iterator
 
         """
 

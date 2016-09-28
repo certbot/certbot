@@ -776,7 +776,7 @@ class MultipleVhostsTest(util.ApacheTest):
                           self.config.config_test)
 
     def test_get_all_certs_keys(self):
-        c_k = self.config.get_all_certs_keys()
+        c_k = set(self.config.get_all_certs_keys())
         self.assertEqual(len(c_k), 3)
         cert, key, path = next(iter(c_k))
         self.assertTrue("cert" in cert)
@@ -786,9 +786,9 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_get_all_certs_keys_malformed_conf(self):
         self.config.parser.find_dir = mock.Mock(
             side_effect=[["path"], [], ["path"], [], ["path"], []])
-        c_k = self.config.get_all_certs_keys()
+        c_k = set(self.config.get_all_certs_keys())
 
-        self.assertFalse(c_k)
+        self.assertEqual(set(c_k), set([]))
 
     def test_more_info(self):
         self.assertTrue(self.config.more_info())

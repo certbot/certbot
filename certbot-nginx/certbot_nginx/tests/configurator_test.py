@@ -237,7 +237,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEqual(set([
             ('example/fullchain.pem', 'example/key.pem', example_conf),
             ('/etc/nginx/fullchain.pem', '/etc/nginx/key.pem', nginx_conf),
-        ]), self.config.get_all_certs_keys())
+        ]), set(self.config.get_all_certs_keys()))
 
     @mock.patch("certbot_nginx.configurator.tls_sni_01.NginxTlsSni01.perform")
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.restart")

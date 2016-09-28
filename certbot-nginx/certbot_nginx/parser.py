@@ -283,14 +283,13 @@ class NginxParser(object):
     def get_all_certs_keys(self):
         """Gets all certs and keys in the nginx config.
 
-        :returns: list of tuples with form [(cert, key, path)]
+        :returns: iterator that returns tuples with form (cert, key, path)
             cert - str path to certificate file
             key - str path to associated key file
             path - File path to configuration file.
-        :rtype: set
+        :rtype: iterator
 
         """
-        c_k = set()
         vhosts = self.get_vhosts()
         for vhost in vhosts:
             tup = [None, None, vhost.filep]
@@ -304,8 +303,7 @@ class NginxParser(object):
                     elif directive[0] == 'ssl_certificate_key':
                         tup[1] = directive[1]
             if tup[0] is not None and tup[1] is not None:
-                c_k.add(tuple(tup))
-        return c_k
+                yield tuple(tup)
 
 
 def _do_for_subarray(entry, condition, func, path=None):
