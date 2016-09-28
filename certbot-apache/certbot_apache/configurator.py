@@ -858,7 +858,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: bool
 
         """
-        if not line.lstrip().startswith("RewriteRule"):
+        if not line.lower().lstrip().startswith("rewriterule"):
             return False
 
         # According to: http://httpd.apache.org/docs/2.4/rewrite/flags.html
@@ -929,8 +929,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
                 orig_file_list = iter(orig_file_list)
                 for line in orig_file_list:
-                    A = line.lstrip().startswith("RewriteCond")
-                    B = line.lstrip().startswith("RewriteRule")
+                    A = line.lower().lstrip().startswith("rewritecond")
+                    B = line.lower().lstrip().startswith("rewriterule")
 
                     if not (A or B):
                         new_file.write(line)
@@ -959,7 +959,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                         line = next(orig_file_list)
 
                         # RewriteCond(s) must be followed by one RewriteRule
-                        while not line.lstrip().startswith("RewriteRule"):
+                        while not line.lower().lstrip().startswith("RewriteRule"):
                             chunk.append(line)
                             line = next(orig_file_list)
 
