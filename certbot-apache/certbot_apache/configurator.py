@@ -574,7 +574,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 ("/files%s//*[label()=~regexp('%s')]" %
                     (vhost_path, parser.case_i("VirtualHost"))))
             paths = [path for path in paths if
-                     "VirtualHost" in os.path.basename(path)]
+                     "virtualhost" in os.path.basename(path).lower()]
             for path in paths:
                 new_vhost = self._create_vhost(path)
                 if not new_vhost:
@@ -885,8 +885,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def _create_block_segments(self, orig_file_list, vhost_num):
         blocks = [idx for idx, line in enumerate(orig_file_list)
-                     if line.lstrip().startswith("<VirtualHost")
-                     or line.lstrip().startswith("</VirtualHost")]
+                     if line.lower().lstrip().startswith("<virtualhost")
+                     or line.lower().lstrip().startswith("</virtualhost")]
         blocks = blocks[:vhost_num*2] + blocks[(vhost_num*2)+2:]
         out = self._section_blocks(blocks)
         return [line for idx, line in enumerate(orig_file_list)
@@ -1406,7 +1406,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             for re_path in rewrite_engine_path_list:
                 # A RewriteEngine directive may also be included in per
                 # directory .htaccess files. We only care about the VirtualHost.
-                if 'VirtualHost' in re_path:
+                if 'virtualhost' in re_path.lower():
                     return self.parser.get_arg(re_path)
         return False
 
