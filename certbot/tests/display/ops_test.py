@@ -212,6 +212,8 @@ class ChooseNamesTest(unittest.TestCase):
         actual_doms = self._call(self.mock_install)
         self.assertEqual(mock_util().input.call_count, 1)
         self.assertEqual(actual_doms, [domain])
+        self.assertTrue(
+            "configuration files" in mock_util().input.call_args[0][0])
 
     @mock.patch("certbot.display.ops.z_util")
     def test_filter_names_valid_return(self, mock_util):
