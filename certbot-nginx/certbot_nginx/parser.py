@@ -241,6 +241,24 @@ class NginxParser(object):
             except IOError:
                 logger.error("Could not open file for writing: %s", filename)
 
+    def has_ssl_on_directive(self, vhost):
+        """Does vhost have ssl on for all ports?
+
+        :param :class:`~certbot_nginx.obj.VirtualHost` vhost: The vhost in question
+
+        :returns: True if 'ssl on' directive is included
+        :rtype: bool
+
+        """
+        server = vhost.raw
+        for directive in server:
+            if not directive or len(directive) < 2:
+                continue
+            elif directive[0] == 'ssl' and directive[1] == 'on':
+                return True
+
+        return False
+
     def add_server_directives(self, vhost, directives, replace):
         """Add or replace directives in the server block identified by vhost.
 
