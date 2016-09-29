@@ -252,7 +252,7 @@ class NginxParser(object):
         """
         server = vhost.raw
         for directive in server:
-            if not directive:
+            if not directive or len(directive) < 2:
                 continue
             elif directive[0] == 'ssl' and directive[1] == 'on':
                 return True
