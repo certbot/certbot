@@ -87,6 +87,12 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
         # interested in
         action = "renew"
 
+    if action == "renew" and lineage.has_pending_deployment():
+        logger.warn("Found a new cert /archive/ that was not linked to in /live/; "
+                    "fixing and reinstalling..")
+        lineage.update_all_links_to(lineage.latest_common_version())
+        return lineage, "reinstall"
+
     if action == "reinstall":
         # The lineage already exists; allow the caller to try installing
         # it without getting a new certificate at all.
@@ -165,11 +171,6 @@ def _handle_identical_cert_request(config, lineage):
     :rtype: tuple
 
     """
-    if lineage.has_pending_deployment():
-        logger.warn("Found a new cert /archive/ that was not linked to in /live/; "
-                    "fixing and reinstalling..")
-        lineage.update_all_links_to(lineage.latest_common_version())
-        return "reinstall", lineage
     if renewal.should_renew(config, lineage):
         return "renew", lineage
     if config.reinstall:
