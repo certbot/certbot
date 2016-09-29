@@ -1,5 +1,6 @@
 # pylint: disable=too-many-public-methods
 """Test for certbot_nginx.configurator."""
+import logging
 import os
 import shutil
 import unittest
@@ -16,6 +17,8 @@ from certbot import errors
 from certbot_nginx import obj
 from certbot_nginx import parser
 from certbot_nginx.tests import util
+
+from testfixtures import LogCapture
 
 
 class NginxConfiguratorTest(util.NginxTest):
@@ -420,9 +423,11 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
 
     def test_redirect_dont_enhance(self):
-        # Test that we don't accidentally add redirect to ssl-only block
-        self.assertRaises(errors.MisconfigurationError,
-            self.config.enhance("geese.com", "redirect"))
+        with LogCapture() as l:
+            # Test that we don't accidentally add redirect to ssl-only block
+            self.config.enhance("geese.com", "redirect")
+            l.check(('certbot_nginx.configurator', 'INFO',
+                'No matching insecure server blocks listening on port 80 found.'))
 
     def test_staple_ocsp_bad_version(self):
         self.config.version = (1, 3, 1)
