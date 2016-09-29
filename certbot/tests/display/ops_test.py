@@ -206,20 +206,14 @@ class ChooseNamesTest(unittest.TestCase):
     @mock.patch("certbot.display.ops.z_util")
     def test_no_names_choose(self, mock_util):
         self.mock_install().get_all_names.return_value = set()
-        mock_util().yesno.return_value = True
         domain = "example.com"
         mock_util().input.return_value = (display_util.OK, domain)
 
         actual_doms = self._call(self.mock_install)
         self.assertEqual(mock_util().input.call_count, 1)
         self.assertEqual(actual_doms, [domain])
-
-    @mock.patch("certbot.display.ops.z_util")
-    def test_no_names_quit(self, mock_util):
-        self.mock_install().get_all_names.return_value = set()
-        mock_util().yesno.return_value = False
-
-        self.assertEqual(self._call(self.mock_install), [])
+        self.assertTrue(
+            "configuration files" in mock_util().input.call_args[0][0])
 
     @mock.patch("certbot.display.ops.z_util")
     def test_filter_names_valid_return(self, mock_util):
