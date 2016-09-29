@@ -798,12 +798,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Reload augeas to take into account the new vhost
         self.aug.load()
         # Get Vhost augeas path for new vhost
-        vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
-                              (self._escape(ssl_fp), parser.case_i("VirtualHost")))
-        temp_vh = vh_p[0]
-        if self._skeletons[ssl_fp]:
-            temp_vh = vh_p[len(self._skeletons[ssl_fp]) -1]
-        vh_p = temp_vh
+        matches = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
+                                (self._escape(ssl_fp), parser.case_i("VirtualHost")))
+        skels = self._skeletons[ssl_fp]
+        vh_p = matches[len(skels) - 1] if skels else matches[0]
 
         # Update Addresses
         self._update_ssl_vhosts_addrs(vh_p)
