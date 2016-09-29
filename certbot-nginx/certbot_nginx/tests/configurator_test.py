@@ -1,6 +1,5 @@
 # pylint: disable=too-many-public-methods
 """Test for certbot_nginx.configurator."""
-import logging
 import os
 import shutil
 import unittest
@@ -232,7 +231,7 @@ class NginxConfiguratorTest(util.NginxTest):
                           [
                            ['server_name', 'migration.com'],
                            ['server_name', 'summer.com'],
-                           
+
                            ['listen', '80'],
                            ['listen', '5001 ssl'],
                            ['ssl_certificate', 'summer/fullchain.pem'],
