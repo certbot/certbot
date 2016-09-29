@@ -19,6 +19,20 @@ env:
 
 matrix:
   include:
+    - python: "2.7"
+      env: TOXENV=cover BOULDER_INTEGRATION=1
+      sudo: true
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
+    - python: "2.7"
+      env: TOXENV=lint
+    - python: "2.7"
+      env: TOXENV=py27-oldest BOULDER_INTEGRATION=1
+      sudo: true
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
     - python: "2.6"
       env: TOXENV=py26 BOULDER_INTEGRATION=1
       sudo: true
@@ -31,25 +45,11 @@ matrix:
       after_failure:
         - sudo cat /var/log/mysql/error.log
         - ps aux | grep mysql
-    - python: "2.7"
-      env: TOXENV=cover BOULDER_INTEGRATION=1
-      sudo: true
-      after_failure:
-        - sudo cat /var/log/mysql/error.log
-        - ps aux | grep mysql
-    - python: "2.7"
-      env: TOXENV=py27-oldest BOULDER_INTEGRATION=1
-      sudo: true
-      after_failure:
-        - sudo cat /var/log/mysql/error.log
-        - ps aux | grep mysql
     - sudo: required
       env: TOXENV=nginx_compat
       services: docker
       before_install:
       addons:
-    - python: "2.7"
-      env: TOXENV=lint
     - sudo: required
       env: TOXENV=le_auto
       services: docker
