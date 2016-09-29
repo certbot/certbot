@@ -423,6 +423,12 @@ class NginxConfigurator(common.Plugin):
         :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
 
         """
+        # If the vhost was implicitly listening on the default Nginx port,
+        # have it continue to do so.
+        if len(vhost.addrs) == 0:
+            listen_block = [['\n    ', 'listen', ' ', self.DEFAULT_LISTEN_PORT]]
+            self.parser.add_server_directives(vhost, listen_block, replace=False)
+
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
 
         # the options file doesn't have a newline at the beginning, but there

@@ -70,8 +70,8 @@ class NginxConfiguratorTest(util.NginxTest):
         mock_gethostbyaddr.return_value = ('155.225.50.69.nephoscale.net', [], [])
         names = self.config.get_all_names()
         self.assertEqual(names, set(
-            ["155.225.50.69.nephoscale.net",
-             "www.example.org", "another.alias", "migration.com", "geese.com"]))
+            ["155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
+             "migration.com", "summer.com", "geese.com"]))
 
     def test_supported_enhancements(self):
         self.assertEqual(['redirect', 'staple-ocsp'],
@@ -216,6 +216,30 @@ class NginxConfiguratorTest(util.NginxTest):
              util.filter_comments(self.config.parser.loc["ssl_options"])
             ],
             2))
+
+    def test_deploy_cert_add_explicit_listen(self):
+        migration_conf = self.config.parser.abs_path('sites-enabled/migration.com')
+        self.config.deploy_cert(
+            "summer.com",
+            "summer/cert.pem",
+            "summer/key.pem",
+            "summer/chain.pem",
+            "summer/fullchain.pem")
+        self.config.save()
+        self.config.parser.load()
+        parsed_migration_conf = util.filter_comments(self.config.parser.parsed[migration_conf])
+        self.assertEqual([['server'],
+                          [
+                           ['server_name', 'migration.com'],
+                           ['server_name', 'summer.com'],
+                           
+                           ['listen', '80'],
+                           ['listen', '5001 ssl'],
+                           ['ssl_certificate', 'summer/fullchain.pem'],
+                           ['ssl_certificate_key', 'summer/key.pem']] +
+                           util.filter_comments(self.config.parser.loc["ssl_options"])
+                           ],
+                         parsed_migration_conf[0])
 
     def test_get_all_certs_keys(self):
         nginx_conf = self.config.parser.abs_path('nginx.conf')

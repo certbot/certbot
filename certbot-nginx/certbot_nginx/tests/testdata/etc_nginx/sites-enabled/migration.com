@@ -1,5 +1,6 @@
 server {
     server_name migration.com;
+    server_name summer.com;
 }
    
 server {
