@@ -875,6 +875,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return target.startswith("https://")
 
     def _section_blocks(self, blocks):
+        """A helper function for _create_block_segments that makes
+        a list of line numbers to not include in the return.
+
+        :param list blocks: A list of indexes of where vhosts start and end.
+
+        """
         out = []
         while len(blocks) > 1:
             start = blocks[0]
@@ -884,6 +890,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return out
 
     def _create_block_segments(self, orig_file_list, vhost_num):
+        """A helper function for  _copy_create_ssl_vhost_skeleton
+        that slices the appropriate vhost from the origin conf file.
+
+        :param list orig_file_list: the original file converted to a list of strings.
+        "param int vhost_num: Which vhost the vhost is in the origin multivhost file.
+
+        """
         blocks = [idx for idx, line in enumerate(orig_file_list)
                      if line.lower().lstrip().startswith("<virtualhost")
                      or line.lower().lstrip().startswith("</virtualhost")]
