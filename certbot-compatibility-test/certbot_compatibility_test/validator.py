@@ -40,6 +40,9 @@ class Validator(object):
             return False
 
         redirect_location = response.headers.get("location", "")
+        # We're checking that the redirect we added behaves correctly.
+        # It's okay for some server configuration to redirect to an
+        # http URL, as long as it's on some other domain.
         if not redirect_location.startswith("https://"):
             if not redirect_location.startswith("http://"):
                 return False
