@@ -177,7 +177,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         args = ["--standalone", "certonly", "-m", "none@none.com",
                 "-d", "example.com", '--agree-tos'] + self.standard_args
         det.return_value = mock.MagicMock(), None
-        afd.return_value = mock.MagicMock(), "newcert"
+        afd.return_value = "newcert", mock.MagicMock()
 
         with mock.patch('certbot.main.client.acme_client.ClientNetwork') as acme_net:
             self._call_no_clientmock(args)

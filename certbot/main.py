@@ -67,16 +67,12 @@ def _report_successful_dry_run(config):
                                   reporter_util.HIGH_PRIORITY, on_crash=False)
 
 
-
 def _auth_from_domains(le_client, config, domains, lineage=None):
-    """Authenticate and enroll certificate."""
-    # Note: This can raise errors... caught above us though. This is now
-    # a three-way case: reinstall (which results in a no-op here because
-    # although there is a relevant lineage, we don't do anything to it
-    # inside this function -- we don't obtain a new certificate), renew
-    # (which results in treating the request as a renewal), or newcert
-    # (which results in treating the request as a new certificate request).
+    """Authenticate and enroll certificate.
 
+    :returns: Tuple of (str action, cert_or_None) as per _treat_as_renewal
+              action can be: "newcert" | "renew" | "reinstall"
+    """
     # If lineage is specified, use that one instead of looking around for
     # a matching one.
     if lineage is None:
@@ -91,13 +87,13 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
         logger.warn("Found a new cert /archive/ that was not linked to in /live/; "
                     "fixing and reinstalling..")
         lineage.update_all_links_to(lineage.latest_common_version())
-        return lineage, "reinstall"
+        return "reinstall", lineage
 
     if action == "reinstall":
         # The lineage already exists; allow the caller to try installing
         # it without getting a new certificate at all.
         logger.info("Keeping the existing certificate")
-        return lineage, "reinstall"
+        return "reinstall", lineage
 
     hooks.pre_hook(config)
     try:
@@ -116,7 +112,7 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
     if not config.dry_run and not config.verb == "renew":
         _report_new_cert(config, lineage.cert, lineage.fullchain)
 
-    return lineage, action
+    return action, lineage
 
 
 def _handle_subset_cert_request(config, domains, cert):
@@ -516,7 +512,7 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(config, authenticator, installer)
 
-    lineage, action = _auth_from_domains(le_client, config, domains)
+    action, lineage = _auth_from_domains(le_client, config, domains)
 
     le_client.deploy_certificate(
         domains, lineage.privkey, lineage.cert,
@@ -568,7 +564,7 @@ def obtain_cert(config, plugins, lineage=None):
     # SHOWTIME: Possibly obtain/renew a cert, and set action to renew | newcert | reinstall
     if config.csr is None: # the common case
         domains = _find_domains(config, installer)
-        _, action = _auth_from_domains(le_client, config, domains, lineage)
+        action, _ = _auth_from_domains(le_client, config, domains, lineage)
     else:
         assert lineage is None, "Did not expect a CSR with a RenewableCert"
         _csr_obtain_cert(config, le_client)
