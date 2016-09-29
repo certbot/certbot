@@ -74,7 +74,7 @@ def test_authenticator(plugin, config, temp_dir):
                     "tls-sni-01 verification for %s succeeded", achalls[i].domain)
             else:
                 logger.error(
-                    "tls-sni-01 verification for %s in %s failed",
+                    "**** tls-sni-01 verification for %s in %s failed",
                     achalls[i].domain, config)
                 success = False
 
@@ -122,7 +122,7 @@ def test_installer(args, plugin, config, temp_dir):
     if names_match:
         logger.info("get_all_names test succeeded")
     else:
-        logger.error("get_all_names test failed for config %s", config)
+        logger.error("**** get_all_names test failed for config %s", config)
 
     domains = list(plugin.get_testable_domain_names())
     success = test_deploy_cert(plugin, temp_dir, domains)
@@ -147,7 +147,7 @@ def test_deploy_cert(plugin, temp_dir, domains):
             plugin.deploy_cert(domain, cert_path, util.KEY_PATH, cert_path, cert_path)
             plugin.save()  # Needed by the Apache plugin
         except le_errors.Error as error:
-            logger.error("Plugin failed to deploy certificate for %s:", domain)
+            logger.error("**** Plugin failed to deploy certificate for %s:", domain)
             logger.exception(error)
             return False
 
@@ -159,7 +159,7 @@ def test_deploy_cert(plugin, temp_dir, domains):
         verify = functools.partial(validator.Validator().certificate, cert,
                                    domain, "127.0.0.1", plugin.https_port)
         if not _try_until_true(verify):
-            logger.error("Could not verify certificate for domain %s", domain)
+            logger.error("**** Could not verify certificate for domain %s", domain)
             success = False
 
     if success:
@@ -183,10 +183,10 @@ def test_enhancements(plugin, domains):
             plugin.save()  # Needed by the Apache plugin
         except le_errors.PluginError as error:
             # Don't immediately fail because a redirect may already be enabled
-            logger.warning("Plugin failed to enable redirect for %s:", domain)
+            logger.warning("*** Plugin failed to enable redirect for %s:", domain)
             logger.warning("%s", error)
         except le_errors.Error as error:
-            logger.error("An error occurred while enabling redirect for %s:",
+            logger.error("*** An error occurred while enabling redirect for %s:",
                          domain)
             logger.exception(error)
 
@@ -198,7 +198,7 @@ def test_enhancements(plugin, domains):
         verify = functools.partial(validator.Validator().redirect, "localhost",
                                    plugin.http_port, headers={"Host": domain})
         if not _try_until_true(verify):
-            logger.error("Improper redirect for domain %s", domain)
+            logger.error("*** Improper redirect for domain %s", domain)
             success = False
 
     if success:
@@ -225,7 +225,7 @@ def _save_and_restart(plugin, title=None):
         plugin.restart()
         return True
     except le_errors.Error as error:
-        logger.error("Plugin failed to save and restart server:")
+        logger.error("*** Plugin failed to save and restart server:")
         logger.exception(error)
         return False
 
@@ -235,12 +235,12 @@ def test_rollback(plugin, config, backup):
     try:
         plugin.rollback_checkpoints(1337)
     except le_errors.Error as error:
-        logger.error("Plugin raised an exception during rollback:")
+        logger.error("*** Plugin raised an exception during rollback:")
         logger.exception(error)
         return False
 
     if _dirs_are_unequal(config, backup):
-        logger.error("Rollback failed for config `%s`", config)
+        logger.error("*** Rollback failed for config `%s`", config)
         return False
     else:
         logger.info("Rollback succeeded")
