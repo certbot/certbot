@@ -41,7 +41,11 @@ class Validator(object):
 
         redirect_location = response.headers.get("location", "")
         if not redirect_location.startswith("https://"):
-            return False
+            if not redirect_location.startswith("http://"):
+                return False
+            else:
+                if redirect_location[len("http://"):] == name:
+                    return False
 
         if response.status_code != 301:
             logger.error("Server did not redirect with permanent code")
