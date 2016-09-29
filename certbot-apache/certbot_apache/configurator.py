@@ -880,6 +880,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         :param list blocks: A list of indexes of where vhosts start and end.
 
+        For instance, turns [2,5,13,15] into [[2,3,4,5], [13,14,15]].
+
         """
         out = []
         while len(blocks) > 1:
