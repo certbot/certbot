@@ -17,8 +17,6 @@ from certbot_nginx import obj
 from certbot_nginx import parser
 from certbot_nginx.tests import util
 
-from testfixtures import LogCapture
-
 
 class NginxConfiguratorTest(util.NginxTest):
     """Test a semi complex vhost configuration."""
@@ -446,11 +444,11 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
 
     def test_redirect_dont_enhance(self):
-        with LogCapture() as l:
-            # Test that we don't accidentally add redirect to ssl-only block
+        # Test that we don't accidentally add redirect to ssl-only block
+        with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
             self.config.enhance("geese.com", "redirect")
-            l.check(('certbot_nginx.configurator', 'INFO',
-                'No matching insecure server blocks listening on port 80 found.'))
+        self.assertEqual(mock_logger.info.call_args[0][0],
+                'No matching insecure server blocks listening on port %s found.')
 
     def test_staple_ocsp_bad_version(self):
         self.config.version = (1, 3, 1)

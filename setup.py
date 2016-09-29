@@ -76,7 +76,6 @@ dev_extras = [
     'pep8',
     'psutil>=2.2.1',  # for tests, optional
     'pylint==1.4.2',  # upstream #248
-    'testfixtures',
     'tox',
     'twine',
     'wheel',
