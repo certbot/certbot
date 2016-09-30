@@ -177,8 +177,15 @@ def test_enhancements(plugin, domains):
                      "enhancements")
         return False
 
-    for domain in domains:
+    domains_and_info = [(domain, []) for domain in domains]
+
+    for domain, info in domains_and_info:
         try:
+            verify = functools.partial(validator.Validator().any_redirect,
+                                       "localhost", plugin.http_port,
+                                       headers={"Host": domain})
+            previous_redirect = _try_until_true(verify)
+            info.append(previous_redirect)
             plugin.enhance(domain, "redirect")
             plugin.save()  # Needed by the Apache plugin
         except le_errors.PluginError as error:
@@ -194,12 +201,14 @@ def test_enhancements(plugin, domains):
         return False
 
     success = True
-    for domain in domains:
-        verify = functools.partial(validator.Validator().redirect, "localhost",
-                                   plugin.http_port, headers={"Host": domain})
-        if not _try_until_true(verify):
-            logger.error("*** Improper redirect for domain %s", domain)
-            success = False
+    for domain, info in domains_and_info:
+        previous_redirect = info[0]
+        if not previous_redirect:
+            verify = functools.partial(validator.Validator().redirect, "localhost",
+                                       plugin.http_port, headers={"Host": domain})
+            if not _try_until_true(verify):
+                logger.error("*** Improper redirect for domain %s", domain)
+                success = False
 
     if success:
         logger.info("Enhancements test succeeded")
