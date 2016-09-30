@@ -138,6 +138,17 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(get_file_path("nonexistent"), None)
         self.assertEqual(self.config._create_vhost("nonexistent"), None) # pylint: disable=protected-access
 
+    def test_get_aug_internal_path(self):
+        from certbot_apache.configurator import get_internal_aug_path
+        internal_paths = [
+            "VirtualHost", "IfModule/VirtualHost", "VirtualHost", "VirtualHost",
+            "Macro/VirtualHost", "IfModule/VirtualHost", "VirtualHost",
+            "IfModule/VirtualHost"]
+
+        for i, internal_path in enumerate(internal_paths):
+            self.assertEqual(
+                get_internal_aug_path(self.vh_truth[i].path), internal_path)
+
     def test_bad_servername_alias(self):
         ssl_vh1 = obj.VirtualHost(
             "fp1", "ap1", set([obj.Addr(("*", "443"))]),
@@ -1397,7 +1408,6 @@ class MultiVhostsTest(util.ApacheTest):
         ssl_vhost = obj.VirtualHost(None, None, None, False, False, name="Noah")
         self.config.vhosts.append(http_vhost)
         self.assertEqual(self.config._get_http_vhost(ssl_vhost), http_vhost)
-
 
 
 if __name__ == "__main__":

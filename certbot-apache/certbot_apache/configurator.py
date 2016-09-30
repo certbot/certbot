@@ -574,8 +574,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         # Search base config, and all included paths for VirtualHosts
+        file_paths = {}
+        internal_paths = defaultdict(set)
         vhs = []
-        vhost_paths = {}
         for vhost_path in self.parser.parser_paths.keys():
             paths = self.aug.match(
                 ("/files%s//*[label()=~regexp('%s')]" %
@@ -586,21 +587,33 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 new_vhost = self._create_vhost(path)
                 if not new_vhost:
                     continue
+                internal_path = get_internal_aug_path(new_vhost.path)
                 realpath = os.path.realpath(new_vhost.filep)
-                if realpath not in vhost_paths.keys():
+                if realpath not in file_paths:
+                    file_paths[realpath] = new_vhost.filep
+                    internal_paths[realpath].add(internal_path)
                     vhs.append(new_vhost)
-                    vhost_paths[realpath] = new_vhost.filep
-                elif (realpath in vhost_paths.keys()
-                          and new_vhost.path.endswith("]") and new_vhost not in vhs):
-                    vhs.append(new_vhost)
-                elif realpath == new_vhost.filep:
+                elif (realpath == new_vhost.filep and
+                      realpath != file_paths[realpath]):
                     # Prefer "real" vhost paths instead of symlinked ones
                     # ex: sites-enabled/vh.conf -> sites-available/vh.conf
 
                     # remove old (most likely) symlinked one
-                    vhs = [v for v in vhs if v.filep != vhost_paths[realpath]]
+                    new_vhs = []
+                    for v in vhs:
+                        if v.filep == file_paths[realpath]:
+                            internal_paths[realpath].remove(
+                                get_internal_aug_path(v.path))
+                        else:
+                            new_vhs.append(v)
+                    vhs = new_vhs
+
+                    file_paths[realpath] = realpath
+                    internal_paths[realpath].add(internal_path)
                     vhs.append(new_vhost)
-                    vhost_paths[realpath] = realpath
+                elif internal_path not in internal_paths[realpath]:
+                    internal_paths[realpath].add(internal_path)
+                    vhs.append(new_vhost)
 
         return vhs
 
@@ -1867,25 +1880,46 @@ def get_file_path(vhost_path):
     :rtype: str
 
     """
-    # Strip off /files/
-    try:
-        if vhost_path.startswith("/files/"):
-            avail_fp = vhost_path[7:].split("/")
-        else:
-            return None
-    except AttributeError:
-        # If we received a None path
+    if vhost_path is None or not vhost_path.startswith("/files/"):
         return None
 
-    last_good = ""
-    # Loop through the path parts and validate after every addition
-    for p in avail_fp:
-        cur_path = last_good+"/"+p
-        if os.path.exists(cur_path):
-            last_good = cur_path
-        else:
-            break
-    return last_good
+    return _split_aug_path(vhost_path)[0]
+
+
+def get_internal_aug_path(vhost_path):
+    """Get the Augeas path for a vhost with the file path removed.
+
+    :param str vhost_path: Augeas virtual host path
+
+    :returns: Augeas path to vhost relative to the containing file
+    :rtype: str
+
+    """
+    return _split_aug_path(vhost_path)[1]
+
+
+def _split_aug_path(vhost_path):
+    """Splits an Augeas path into a file path and an internal path.
+
+    After removing "/files", this function splits vhost_path into the
+    file path and the remaining Augeas path.
+
+    :param str vhost_path: Augeas virtual host path
+
+    :returns: file path and internal Augeas path
+    :rtype: `tuple` of `str`
+
+    """
+    # Strip off /files
+    file_path = vhost_path[6:]
+    internal_path = []
+
+    # Remove components from the end of file_path until it becomes valid
+    while not os.path.exists(file_path):
+        file_path, _, internal_path_part = file_path.rpartition("/")
+        internal_path.append(internal_path_part)
+
+    return file_path, "/".join(reversed(internal_path))
 
 
 def install_ssl_options_conf(options_ssl):
