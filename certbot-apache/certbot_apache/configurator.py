@@ -567,8 +567,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         # Search base config, and all included paths for VirtualHosts
+        file_paths = {}
+        internal_paths = defaultdict(set)
         vhs = []
-        vhost_paths = {}
         for vhost_path in self.parser.parser_paths.keys():
             paths = self.aug.match(
                 ("/files%s//*[label()=~regexp('%s')]" %
@@ -579,20 +580,32 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 new_vhost = self._create_vhost(path)
                 if not new_vhost:
                     continue
+                internal_path = get_internal_aug_path(new_vhost.path)
                 realpath = os.path.realpath(new_vhost.filep)
-                if realpath not in vhost_paths.keys():
+                if realpath not in file_paths:
+                    file_paths[realpath] = new_vhost.filep
+                    internal_paths[realpath].add(internal_path)
                     vhs.append(new_vhost)
-                    vhost_paths[realpath] = new_vhost.filep
                 elif (realpath == new_vhost.filep and
-                      realpath != vhost_paths[realpath]):
+                      realpath != file_paths[realpath]):
                     # Prefer "real" vhost paths instead of symlinked ones
                     # ex: sites-enabled/vh.conf -> sites-available/vh.conf
 
                     # remove old (most likely) symlinked one
-                    vhs = [v for v in vhs if v.filep != vhost_paths[realpath]]
+                    new_vhs = []
+                    for v in vhs:
+                        if v.filep == file_paths[realpath]:
+                            internal_paths[realpath].remove(
+                                get_internal_aug_path(v.path))
+                        else:
+                            new_vhs.append(v)
+                    vhs = new_vhs
+
+                    file_paths[realpath] = realpath
+                    internal_paths[realpath].add(internal_path)
                     vhs.append(new_vhost)
-                    vhost_paths[realpath] = realpath
-                elif new_vhost.path.endswith("]") and new_vhost not in vhs:
+                elif internal_path not in internal_paths[realpath]:
+                    internal_paths[realpath].add(internal_path)
                     vhs.append(new_vhost)
 
         return vhs
