@@ -1855,25 +1855,46 @@ def get_file_path(vhost_path):
     :rtype: str
 
     """
-    # Strip off /files/
-    try:
-        if vhost_path.startswith("/files/"):
-            avail_fp = vhost_path[7:].split("/")
-        else:
-            return None
-    except AttributeError:
-        # If we recieved a None path
+    if vhost_path is None or not vhost_path.startswith("/files/"):
         return None
 
-    last_good = ""
-    # Loop through the path parts and validate after every addition
-    for p in avail_fp:
-        cur_path = last_good+"/"+p
-        if os.path.exists(cur_path):
-            last_good = cur_path
-        else:
-            break
-    return last_good
+    return _split_aug_path(vhost_path)[0]
+
+
+def get_internal_aug_path(vhost_path):
+    """Get the Augeas path for a vhost with the file path removed.
+
+    :param str vhost_path: Augeas virtual host path
+
+    :returns: Augeas path to vhost relative to the containing file
+    :rtype: str
+
+    """
+    return _split_aug_path(vhost_path)[1]
+
+
+def _split_aug_path(vhost_path):
+    """Splits an Augeas path into a file path and an internal path.
+
+    After removing "/files", this function splits vhost_path into the
+    file path and the remaining Augeas path.
+
+    :param str vhost_path: Augeas virtual host path
+
+    :returns: file path and internal Augeas path
+    :rtype: `tuple` of `str`
+
+    """
+    # Strip off /files
+    file_path = vhost_path[6:]
+    internal_path = []
+
+    # Remove components from the end of file_path until it becomes valid
+    while not os.path.exists(file_path):
+        file_path, _, internal_path_part = file_path.rpartition("/")
+        internal_path.append(internal_path_part)
+
+    return file_path, "/".join(reversed(internal_path))
 
 
 def install_ssl_options_conf(options_ssl):
