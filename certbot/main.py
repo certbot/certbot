@@ -413,6 +413,19 @@ def register(config, unused_plugins):
     # exist or not.
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+
+    if config.deactivate:
+        if len(accounts) == 0:
+            return "Could not find existing account to deactivate."
+        else:
+            acc, acme = _determine_account(config)
+            acme_client = client.Client(config, acc, None, None, acme=acme)
+            acme_client.acme.deactivate(acc.regr)
+            msg = "account deactivated"
+            reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
+            return
+
 
     # registering a new account
     if not config.update_registration:
@@ -443,7 +456,6 @@ def register(config, unused_plugins):
     acc.regr = acme_client.acme.update_registration(acc.regr.update(
         body=acc.regr.body.update(contact=('mailto:' + config.email,))))
     account_storage.save_regr(acc)
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
     msg = "Your e-mail address was updated to {0}.".format(config.email)
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
