@@ -308,6 +308,7 @@ class UpdateRegistration(Registration):
     """Update registration."""
     resource_type = 'reg'
     resource = fields.Resource(resource_type)
+    status = jose.Field('status', omitempty=True)
 
 
 class RegistrationResource(ResourceWithURI):
