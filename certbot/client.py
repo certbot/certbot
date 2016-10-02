@@ -172,7 +172,7 @@ def perform_registration(acme, config):
 
 
 class Client(object):
-    """ACME protocol client.
+    """Certbot's client.
 
     :ivar .IConfig config: Client configuration.
     :ivar .Account account: Account registered with `register`.
