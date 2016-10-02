@@ -869,6 +869,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "should be updated, rather than registering a new account.")
     helpful.add(["register", "automation"], "-m", "--email", help=config_help("email"))
     helpful.add(
+        "register", "--deactivate", action="store_true",
+        help="Irrecvocably deactivate your account")
+    helpful.add(
         ["automation", "certonly", "run"],
         "--keep-until-expiring", "--keep", "--reinstall",
         dest="reinstall", action="store_true",
