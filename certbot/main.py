@@ -414,18 +414,28 @@ def register(config, unused_plugins):
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
     reporter_util = zope.component.getUtility(interfaces.IReporter)
+    add_msg = lambda m: reporter_util.add_message(m, reporter_util.MEDIUM_PRIORITY)
 
     if config.deactivate:
         if len(accounts) == 0:
             return "Could not find existing account to deactivate."
         else:
-            acc, acme = _determine_account(config)
-            acme_client = client.Client(config, acc, None, None, acme=acme)
-            acme_client.acme.deactivate(acc.regr)
-            msg = "account deactivated"
-            reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
-            return
-
+            yesno = zope.component.getUtility(interfaces.IDisplay).yesno
+            prompt = ("Are you SURE you would like to irrevocably deactivate "
+                      "your account? You will lose access to the domains "
+                      "associated with it.")
+            wants_deactivate = yesno(prompt, yes_label='Deactivate',
+                                     no_label='Abort', cli_flag='--deactivate',
+                                     default=False)
+            if wants_deactivate:
+                acc, acme = _determine_account(config)
+                acme_client = client.Client(config, acc, None, None, acme=acme)
+                acme_client.acme.deactivate(acc.regr)
+                add_msg("Account deactivated.")
+                return
+            else:
+                add_msg("Deactivation aborted.")
+                return
 
     # registering a new account
     if not config.update_registration:
@@ -456,8 +466,7 @@ def register(config, unused_plugins):
     acc.regr = acme_client.acme.update_registration(acc.regr.update(
         body=acc.regr.body.update(contact=('mailto:' + config.email,))))
     account_storage.save_regr(acc)
-    msg = "Your e-mail address was updated to {0}.".format(config.email)
-    reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
+    add_msg("Your e-mail address was updated to {0}.".format(config.email))
 
 
 def install(config, plugins):
