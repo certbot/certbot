@@ -124,6 +124,11 @@ class ClientTest(unittest.TestCase):
         self.assertRaises(
             errors.UnexpectedUpdate, self.client.update_registration, self.regr)
 
+    def test_deactivate_account(self):
+        self.response.headers['Location'] = self.regr.uri
+        self.response.json.return_value = self.regr.body.to_json()
+        self.assertEqual(self.regr, self.client.deactivate(self.regr))
+
     def test_query_registration(self):
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr, self.client.query_registration(self.regr))
