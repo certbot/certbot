@@ -7,29 +7,33 @@ It's expected that the root hosted zone for the domain in question already exist
 
 ### Setup
 
-1. Install the letsencrypt client [https://letsencrypt.readthedocs.org/en/latest/using.html#installation](https://letsencrypt.readthedocs.org/en/latest/using.html#installation)
+1. Create a virtual environment
 
-  ```
-  pip install letsencrypt
-  ```
+2. Make sure you have libssl-dev (or your regional equivalent) installed.
 
-1. Install the letsencrypt-route53 plugin
+3. Install by adding these to your requirements.txt file:
 
-  ```
-  pip install letsencrypt-route53
-  ```
+```
+--no-binary pycparser
+-e git+https://github.com/certbot/certbot.git#egg=certbot
+-e git+https://github.com/certbot/certbot.git#egg=acme&subdirectory=acme
+hpeixoto-letsencrypt-route53
+```
+
+We need DNS01 support in certbot, which is only available in master for now.
+Additionally, pycparser suffers from
+https://github.com/eliben/pycparser/issues/148, which is why we need to
+recompile it, which depends on `libssl-dev`.
 
 ### How to use it
 
-To generate a certificate and install it in a CloudFront distribution:
-```
-AWS_ACCESS_KEY_ID="your_key" \
-AWS_SECRET_ACCESS_KEY="your_secret" \
-letsencrypt --agree-tos -a letsencrypt-route53:auth \
--d the_domain
-```
+Make sure you have access to AWS's Route53 service, either through IAM roles or
+via `.aws/credentials`.
 
-Follow the screen prompts and you should end up with the certificate in your
-distribution. It may take a couple minutes to update.
-
-To automate the renewal process without prompts (for example, with a monthly cron), you can add the letsencrypt parameters --renew-by-default --text
+To generate a certificate:
+```
+letsencrypt certonly \
+  -n --agree-tos --email DEVOPS@COMPANY.COM \
+  -a hpeixoto-letsencrypt-route53:auth \
+  -d MY.DOMAIN.NAME
+```
