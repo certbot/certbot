@@ -6,8 +6,8 @@ from setuptools import find_packages
 version = '0.1.3'
 
 install_requires = [
-    'acme>=0.1.1',
-    'letsencrypt>=0.1.1',
+    'acme>=0.9.0.dev0',
+    'letsencrypt>=0.9.0.dev0',
     'PyOpenSSL',
     'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
     'setuptools',  # pkg_resources
