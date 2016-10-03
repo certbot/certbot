@@ -630,6 +630,10 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.send_request.assert_called_once_with(
             'GET', 'http://example.com/', bar='baz')
 
+    def test_post_no_content_type(self):
+        self.content_type = self.net.JOSE_CONTENT_TYPE
+        self.assertEqual(self.checked_response, self.net.post('uri', self.obj))
+
     def test_post(self):
         # pylint: disable=protected-access
         self.assertEqual(self.checked_response, self.net.post(
