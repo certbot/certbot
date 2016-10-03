@@ -26,10 +26,10 @@ docs_extras = [
 ]
 
 setup(
-    name='letsencrypt-route53',
+    name='hpeixoto-letsencrypt-route53',
     version=version,
     description="Route53 plugin for Let's Encrypt client",
-    url='https://github.com/mindstorms6/letsencrypt-route53',
+    url='https://github.com/lifeonmarspt/letsencrypt-route53',
     author="Breland Miley",
     author_email='breland@bdawg.org',
     license='Apache2.0',
