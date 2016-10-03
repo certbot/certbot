@@ -341,6 +341,10 @@ def renew_all_lineages(config):
             else:
                 # XXX: ensure that each call here replaces the previous one
                 zope.component.provideUtility(lineage_config)
+                if lineage.config.has_pending_deployment():
+                    logger.warn("Found a new cert /archive/ that was not linked to in "
+                                "/live/; fixing and reinstalling..")
+                    lineage.update_all_links_to(lineage.latest_common_version())
                 if should_renew(lineage_config, renewal_candidate):
                     plugins = plugins_disco.PluginsRegistry.find_all()
                     from certbot import main
