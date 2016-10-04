@@ -76,7 +76,7 @@ def load_pyopenssl_private_key(*names):
     return OpenSSL.crypto.load_privatekey(loader, load_vector(*names))
 
 
-def skipUnless(condition, reason):
+def skip_unless(condition, reason):  # pragma: no cover
     """Skip tests unless a condition holds.
 
     This implements the basic functionality of unittest.skipUnless

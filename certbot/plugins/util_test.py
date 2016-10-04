@@ -91,8 +91,8 @@ def psutil_available():
     return True
 
 
-@test_util.skipUnless(psutil_available(),
-                      "optional dependency psutil is not available")
+@test_util.skip_unless(psutil_available(),
+                       "optional dependency psutil is not available")
 class AlreadyListeningTestPsutil(unittest.TestCase):
     """Tests for certbot.plugins.already_listening."""
     def _call(self, *args, **kwargs):

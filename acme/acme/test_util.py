@@ -5,6 +5,7 @@
 """
 import os
 import pkg_resources
+import unittest
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -73,3 +74,24 @@ def load_pyopenssl_private_key(*names):
     loader = _guess_loader(
         names[-1], OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1)
     return OpenSSL.crypto.load_privatekey(loader, load_vector(*names))
+
+
+def skip_unless(condition, reason):  # pragma: no cover
+    """Skip tests unless a condition holds.
+
+    This implements the basic functionality of unittest.skipUnless
+    which is only available on Python 2.7+.
+
+    :param bool condition: If ``False``, the test will be skipped
+    :param str reason: the reason for skipping the test
+
+    :rtype: callable
+    :returns: decorator that hides tests unless condition is ``True``
+
+    """
+    if hasattr(unittest, "skipUnless"):
+        return unittest.skipUnless(condition, reason)
+    elif condition:
+        return lambda cls: cls
+    else:
+        return lambda cls: None
