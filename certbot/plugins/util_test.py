@@ -6,6 +6,8 @@ import sys
 import mock
 from six.moves import reload_module  # pylint: disable=import-error
 
+from certbot.tests import test_util
+
 
 class PathSurgeryTest(unittest.TestCase):
     """Tests for certbot.plugins.path_surgery."""
@@ -89,28 +91,8 @@ def psutil_available():
     return True
 
 
-def skipUnless(condition, reason):
-    """Skip tests unless a condition holds.
-
-    This implements the basic functionality of unittest.skipUnless
-    which is only available on Python 2.7+.
-
-    :param bool condition: If ``False``, the test will be skipped
-    :param str reason: the reason for skipping the test
-
-    :rtype: callable
-    :returns: decorator that hides tests unless condition is ``True``
-
-    """
-    if hasattr(unittest, "skipUnless"):
-        return unittest.skipUnless(condition, reason)
-    elif condition:
-        return lambda cls: cls
-    else:
-        return lambda cls: None
-
-
-@skipUnless(psutil_available(), "optional dependency psutil is not available")
+@test_util.skip_unless(psutil_available(),
+                       "optional dependency psutil is not available")
 class AlreadyListeningTestPsutil(unittest.TestCase):
     """Tests for certbot.plugins.already_listening."""
     def _call(self, *args, **kwargs):
