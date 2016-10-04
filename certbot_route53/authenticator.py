@@ -8,8 +8,8 @@ import boto3
 
 from acme import challenges
 
-from letsencrypt import interfaces
-from letsencrypt.plugins import common
+from certbot import interfaces
+from certbot.plugins import common
 
 
 logger = logging.getLogger(__name__)
@@ -56,7 +56,6 @@ class Authenticator(common.Plugin):
         # provision the TXT record, using the domain name given. Assumes the hosted zone exits, else fails the challenge
         r53 = boto3.client('route53')
         logger.info("Doing validation for " + achall.domain)
-        listResponse = r53.list_hosted_zones_by_name(DNSName=achall.domain)
 
         try:
             zone = self._find_zone(r53, achall.domain)

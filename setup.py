@@ -7,12 +7,13 @@ version = '0.1.4'
 
 install_requires = [
     'acme>=0.9.0.dev0',
-    'letsencrypt>=0.9.0.dev0',
+    'certbot>=0.9.0.dev0',
     'PyOpenSSL',
     'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
     'setuptools',  # pkg_resources
     'zope.interface',
-    'boto3'
+    'boto3',
+    'dnspython',
 ]
 
 if sys.version_info < (2, 7):
@@ -26,12 +27,12 @@ docs_extras = [
 ]
 
 setup(
-    name='hpeixoto-letsencrypt-route53',
+    name='certbot-route53',
     version=version,
-    description="Route53 plugin for Let's Encrypt client",
-    url='https://github.com/lifeonmarspt/letsencrypt-route53',
-    author="Breland Miley",
-    author_email='breland@bdawg.org',
+    description="Route53 plugin for certbot",
+    url='https://github.com/lifeonmarspt/certbot-route53',
+    author="Hugo Peixoto",
+    author_email='hugo@lifeonmars.pt',
     license='Apache2.0',
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -41,7 +42,6 @@ setup(
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
@@ -53,10 +53,10 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=install_requires,
-    keywords = ['letsencrypt', 'route53', 'aws'],
+    keywords=['certbot', 'route53', 'aws'],
     entry_points={
-        'letsencrypt.plugins': [
-            'auth = letsencrypt_route53.authenticator:Authenticator'
+        'certbot.plugins': [
+            'auth = certbot_route53.authenticator:Authenticator'
         ],
     },
 )

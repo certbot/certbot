@@ -10,6 +10,9 @@ It's expected that the root hosted zone for the domain in question already exist
 1. Create a virtual environment
 
 2. Make sure you have libssl-dev (or your regional equivalent) installed.
+`pycparser` suffers from
+https://github.com/eliben/pycparser/issues/148, which is why we need to
+recompile it, which depends on `libssl-dev`.
 
 3. Install by adding these to your requirements.txt file:
 
@@ -17,13 +20,10 @@ It's expected that the root hosted zone for the domain in question already exist
 --no-binary pycparser
 -e git+https://github.com/certbot/certbot.git#egg=certbot
 -e git+https://github.com/certbot/certbot.git#egg=acme&subdirectory=acme
-hpeixoto-letsencrypt-route53
+certbot-route53
 ```
-
 We need DNS01 support in certbot, which is only available in master for now.
-Additionally, pycparser suffers from
-https://github.com/eliben/pycparser/issues/148, which is why we need to
-recompile it, which depends on `libssl-dev`.
+
 
 ### How to use it
 
@@ -32,8 +32,8 @@ via `.aws/credentials`.
 
 To generate a certificate:
 ```
-letsencrypt certonly \
+certbot certonly \
   -n --agree-tos --email DEVOPS@COMPANY.COM \
-  -a hpeixoto-letsencrypt-route53:auth \
+  -a certbot-route53:auth \
   -d MY.DOMAIN.NAME
 ```

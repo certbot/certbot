@@ -1,4 +1,4 @@
 include LICENSE.txt
 include README.md
 recursive-include docs *
-recursive-include letsencrypt_route53/tests/testdata *
+recursive-include certbot_route53/tests/testdata *
