@@ -520,6 +520,22 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # for the others.
         return max(self.newest_available_version(x) for x in ALL_FOUR) + 1
 
+    def ensure_deployed(self):
+        """Make sure we've deployed the latest version.
+
+        :returns: False if a change was needed, True otherwise
+        :rtype: bool
+
+        May need to recover from rare interrupted / crashed states."""
+
+        if self.has_pending_deployment():
+            logger.warn("Found a new cert /archive/ that was not linked to in /live/; "
+                        "fixing...")
+            self.update_all_links_to(self.latest_common_version())
+            return False
+        return True
+
+
     def has_pending_deployment(self):
         """Is there a later version of all of the managed items?
 

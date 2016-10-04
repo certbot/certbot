@@ -341,6 +341,7 @@ def renew_all_lineages(config):
             else:
                 # XXX: ensure that each call here replaces the previous one
                 zope.component.provideUtility(lineage_config)
+                renewal_candidate.ensure_deployed()
                 if should_renew(lineage_config, renewal_candidate):
                     plugins = plugins_disco.PluginsRegistry.find_all()
                     from certbot import main

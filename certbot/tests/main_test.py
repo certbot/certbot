@@ -17,17 +17,13 @@ class MainTest(unittest.TestCase):
     def tearDown(self):
         pass
 
-    @mock.patch("certbot.main.logger")
-    def test_handle_identical_cert_request_pending(self, _mock_logger):
-        # For now, just test has_pending_deployment_branch; other
-        # coverage is in cli_test.py...
+    def test_handle_identical_cert_request_pending(self):
         from certbot import main
         mock_lineage = mock.Mock()
-        mock_lineage.has_pending_deployment.return_value = True
+        mock_lineage.ensure_deployed.return_value = False
         # pylint: disable=protected-access
         ret = main._handle_identical_cert_request(mock.Mock(), mock_lineage)
         self.assertEqual(ret, ("reinstall", mock_lineage))
-        self.assertEqual(mock_lineage.update_all_links_to.call_count, 1)
 
 class ObtainCertTest(unittest.TestCase):
     """Tests for certbot.main.obtain_cert."""
@@ -55,7 +51,7 @@ class ObtainCertTest(unittest.TestCase):
     def test_no_reinstall_text_pause(self, mock_auth):
         mock_notification = self.mock_get_utility().notification
         mock_notification.side_effect = self._assert_no_pause
-        mock_auth.return_value = (mock.ANY, 'reinstall')
+        mock_auth.return_value = ('reinstall', mock.ANY)
         self._call('certonly --webroot -d example.com -t'.split())
 
     def _assert_no_pause(self, message, height=42, pause=True):
