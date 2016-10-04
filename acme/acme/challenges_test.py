@@ -11,7 +11,6 @@ from acme import errors
 from acme import jose
 from acme import test_util
 
-
 CERT = test_util.load_comparable_cert('cert.pem')
 KEY = jose.JWKRSA(key=test_util.load_rsa_private_key('rsa512_key.pem'))
 
@@ -77,6 +76,20 @@ class KeyAuthorizationChallengeResponseTest(unittest.TestCase):
         self.assertFalse(response.verify(self.chall, KEY.public_key()))
 
 
+def dns_available():
+    """Checks if dns can be imported.
+
+    :rtype: bool
+    :returns: ``True`` if dns can be imported, otherwise, ``False``
+
+    """
+    try:
+        import dns  # pylint: disable=unused-variable
+    except ImportError:  # pragma: no cover
+        return False
+    return True  # pragma: no cover
+
+
 class DNS01ResponseTest(unittest.TestCase):
     # pylint: disable=too-many-instance-attributes
 
@@ -92,6 +105,7 @@ class DNS01ResponseTest(unittest.TestCase):
         from acme.challenges import DNS01
         self.chall = DNS01(token=(b'x' * 16))
         self.response = self.chall.response(KEY)
+        self.records_for_name_path = "acme.dns_resolver.txt_records_for_name"
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
@@ -108,28 +122,35 @@ class DNS01ResponseTest(unittest.TestCase):
         key2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
         self.response.simple_verify(self.chall, "local", key2.public_key())
 
-    @mock.patch("acme.dns_resolver.txt_records_for_name")
-    def test_simple_verify_good_validation(self, mock_resolver):
-        mock_resolver.return_value = [self.chall.validation(KEY.public_key())]
-        self.assertTrue(self.response.simple_verify(
-            self.chall, "local", KEY.public_key()))
-        mock_resolver.assert_called_once_with(
-            self.chall.validation_domain_name("local"))
+    @test_util.skip_unless(dns_available(),
+                           "optional dependency dnspython is not available")
+    def test_simple_verify_good_validation(self):  # pragma: no cover
+        with mock.patch(self.records_for_name_path) as mock_resolver:
+            mock_resolver.return_value = [
+                self.chall.validation(KEY.public_key())]
+            self.assertTrue(self.response.simple_verify(
+                self.chall, "local", KEY.public_key()))
+            mock_resolver.assert_called_once_with(
+                self.chall.validation_domain_name("local"))
 
-    @mock.patch("acme.dns_resolver.txt_records_for_name")
-    def test_simple_verify_good_validation_multiple_txts(self, mock_resolver):
-        mock_resolver.return_value = [
-            "!", self.chall.validation(KEY.public_key())]
-        self.assertTrue(self.response.simple_verify(
-            self.chall, "local", KEY.public_key()))
-        mock_resolver.assert_called_once_with(
-            self.chall.validation_domain_name("local"))
+    @test_util.skip_unless(dns_available(),
+                           "optional dependency dnspython is not available")
+    def test_simple_verify_good_validation_multitxts(self):  # pragma: no cover
+        with mock.patch(self.records_for_name_path) as mock_resolver:
+            mock_resolver.return_value = [
+                "!", self.chall.validation(KEY.public_key())]
+            self.assertTrue(self.response.simple_verify(
+                self.chall, "local", KEY.public_key()))
+            mock_resolver.assert_called_once_with(
+                self.chall.validation_domain_name("local"))
 
-    @mock.patch("acme.dns_resolver.txt_records_for_name")
-    def test_simple_verify_bad_validation(self, mock_dns):
-        mock_dns.return_value = ["!"]
-        self.assertFalse(self.response.simple_verify(
-            self.chall, "local", KEY.public_key()))
+    @test_util.skip_unless(dns_available(),
+                           "optional dependency dnspython is not available")
+    def test_simple_verify_bad_validation(self):  # pragma: no cover
+        with mock.patch(self.records_for_name_path) as mock_resolver:
+            mock_resolver.return_value = ["!"]
+            self.assertFalse(self.response.simple_verify(
+                self.chall, "local", KEY.public_key()))
 
 
 class DNS01Test(unittest.TestCase):
