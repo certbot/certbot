@@ -161,10 +161,7 @@ def _handle_identical_cert_request(config, lineage):
     :rtype: tuple
 
     """
-    if lineage.has_pending_deployment():
-        logger.warn("Found a new cert /archive/ that was not linked to in /live/; "
-                    "fixing and reinstalling..")
-        lineage.update_all_links_to(lineage.latest_common_version())
+    if not lineage.ensure_deployed():
         return "reinstall", lineage
     if renewal.should_renew(config, lineage):
         return "renew", lineage
