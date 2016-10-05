@@ -19,7 +19,7 @@ XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN="$VENV_PATH/bin"
-LE_AUTO_VERSION="0.9.0.dev0"
+LE_AUTO_VERSION="0.9.0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -761,15 +761,18 @@ letsencrypt==0.7.0 \
 
 # THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT; ADD ALL DEPENDENCIES ABOVE.
 
-acme==0.8.1 \
-    --hash=sha256:ccd7883772efbf933f91713b8241455993834f3620c8fbd459d9ed5e50bbaaca \
-    --hash=sha256:d3ea4acf280bf6253ad7d641cb0970f230a19805acfed809e7a8ddcf62157d9f
-certbot==0.8.1 \
-    --hash=sha256:89805d9f70249ae859ec4d7a99c00b4bb7083ca90cd12d4d202b76dfc284f7c5 \
-    --hash=sha256:6ca8df3d310ced6687d38aac17c0fb8c1b2ec7a3bea156a254e4cc2a1c132771
-certbot-apache==0.8.1 \
-    --hash=sha256:c9e3fdc15e65589c2e39eb0e6b1f61f0c0a1db3c17b00bb337f0ff636cc61cb3 \
-    --hash=sha256:0faf2879884d3b7a58b071902fba37d4b8b58a50e2c3b8ac262c0a74134045ed
+acme==0.9.0 \
+    --hash=sha256:6d98bdec5fd9171e368a39cb2458d2d62599e52e2899650684379dba03f09d96 \
+    --hash=sha256:fca3e57e5155ee0e80852e1b13a9d76a302728b78a9a1c2c38cb77d699aab7c5
+certbot==0.9.0 \
+    --hash=sha256:08652503bb94f0863c2c2d53d37fc48966b080a70f578f980b05eee11bea7eaf \
+    --hash=sha256:8dd4d3e2de2b2392fd8f41e73434dae737653bc41a54ce4a273768519a5ab61e
+certbot-apache==0.9.0 \
+    --hash=sha256:10e3096ff27adf6e75aff7722ada963f1337ef455f203495c025e883d8f816e2 \
+    --hash=sha256:fd8bb3e7d36c64a5841083bed447250e110d458323b51d8a210b8f0b18e28c9a
+certbot-nginx==0.9.0 \
+    --hash=sha256:edbb7c1164225af770af6aea42496b575b5c115afa4d9ab7b1e587b3e6d0c92b \
+    --hash=sha256:2f18504832b13f11e07dc87df758a7c5c68e24341628eb334ff7a5976a384717
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
