@@ -152,7 +152,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             m = "Server returen bad registration object"
             raise errors.DeactivationError(m)
 
-        return self.update_registration(regr, update=update)
+        return new_regr
 
     def query_registration(self, regr):
         """Query server about registration.
