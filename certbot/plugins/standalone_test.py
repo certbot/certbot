@@ -106,13 +106,21 @@ class SupportedChallengesValidatorTest(unittest.TestCase):
         self.assertEqual("tls-sni-01,http-01", self._call("dvsni,http-01"))
 
 
+def get_open_port():
+    open_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+    open_socket.bind(("", 0))
+    port = open_socket.getsockname()[1]
+    open_socket.close()
+    return port
+
 class AuthenticatorTest(unittest.TestCase):
     """Tests for certbot.plugins.standalone.Authenticator."""
 
     def setUp(self):
         from certbot.plugins.standalone import Authenticator
+
         self.config = mock.MagicMock(
-            tls_sni_01_port=1234, http01_port=4321,
+            tls_sni_01_port=get_open_port(), http01_port=get_open_port(),
             standalone_supported_challenges="tls-sni-01,http-01")
         self.auth = Authenticator(self.config, name="standalone")
 
@@ -139,8 +147,8 @@ class AuthenticatorTest(unittest.TestCase):
 
     @mock.patch("certbot.plugins.standalone.util")
     def test_perform_already_listening(self, mock_util):
-        for chall, port in ((challenges.TLSSNI01.typ, 1234),
-                            (challenges.HTTP01.typ, 4321)):
+        for chall, port in ((challenges.TLSSNI01.typ, self.config.tls_sni_01_port),
+                            (challenges.HTTP01.typ, self.config.http01_port)):
             mock_util.already_listening.return_value = True
             self.config.standalone_supported_challenges = chall
             self.assertRaises(
@@ -157,15 +165,16 @@ class AuthenticatorTest(unittest.TestCase):
 
     @mock.patch("certbot.plugins.standalone.zope.component.getUtility")
     def _test_perform_bind_errors(self, errno, achalls, mock_get_utility):
+        port = get_open_port()
         def _perform2(unused_achalls):
-            raise errors.StandaloneBindError(mock.Mock(errno=errno), 1234)
+            raise errors.StandaloneBindError(mock.Mock(errno=errno), port)
 
         self.auth.perform2 = mock.MagicMock(side_effect=_perform2)
         self.auth.perform(achalls)
         mock_get_utility.assert_called_once_with(interfaces.IDisplay)
         notification = mock_get_utility.return_value.notification
         self.assertEqual(1, notification.call_count)
-        self.assertTrue("1234" in notification.call_args[0][0])
+        self.assertTrue(str(port) in notification.call_args[0][0])
 
     def test_perform_eacces(self):
         # pylint: disable=no-value-for-parameter
@@ -202,12 +211,12 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertTrue(isinstance(responses[1], challenges.TLSSNI01Response))
 
         self.assertEqual(self.auth.servers.run.mock_calls, [
-            mock.call(4321, challenges.HTTP01),
-            mock.call(1234, challenges.TLSSNI01),
+            mock.call(self.config.http01_port, challenges.HTTP01),
+            mock.call(self.config.tls_sni_01_port, challenges.TLSSNI01),
         ])
         self.assertEqual(self.auth.served, {
-            "server1234": set([tls_sni_01]),
-            "server4321": set([http_01]),
+            "server" + str(self.config.tls_sni_01_port): set([tls_sni_01]),
+            "server" + str(self.config.http01_port): set([http_01]),
         })
         self.assertEqual(1, len(self.auth.http_01_resources))
         self.assertEqual(1, len(self.auth.certs))

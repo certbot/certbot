@@ -123,7 +123,8 @@ def already_listening_psutil(port, renewer=False):
         return False
 
     listeners = [conn.pid for conn in net_connections
-                 if conn.status == 'LISTEN' and
+                 if (conn.status == 'LISTEN' or
+                 conn.status == 'TIME_WAIT') and
                  conn.type == socket.SOCK_STREAM and
                  conn.laddr[1] == port]
     try:
