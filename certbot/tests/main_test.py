@@ -7,8 +7,11 @@ import unittest
 import mock
 
 from certbot import cli
+from certbot import colored_logging
+from certbot import constants
 from certbot import configuration
 from certbot import errors
+from certbot import log
 from certbot.plugins import disco as plugins_disco
 
 class MainTest(unittest.TestCase):
@@ -78,6 +81,43 @@ class SetupLogFileHandlerTest(unittest.TestCase):
         mock_handler.side_effect = IOError
         self.assertRaises(errors.Error, self._call,
                           self.config, "test.log", "%s")
+
+
+class SetupLoggingTest(unittest.TestCase):
+    """Tests for certbot.main.setup_logging."""
+
+    def setUp(self):
+        self.config = mock.Mock(
+            logs_dir=tempfile.mkdtemp(),
+            noninteractive_mode=False, quiet=False, text_mode=False,
+            verbose_count=constants.CLI_DEFAULTS['verbose_count'])
+
+    def tearDown(self):
+        shutil.rmtree(self.config.logs_dir)
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.main import setup_logging
+        return setup_logging(*args, **kwargs)
+
+    @mock.patch('certbot.main.logging.getLogger')
+    def test_defaults(self, mock_get_logger):
+        self._call(self.config)
+
+        cli_handler = mock_get_logger().addHandler.call_args_list[0][0][0]
+        self.assertEqual(cli_handler.level, -self.config.verbose_count * 10)
+        self.assertTrue(
+            isinstance(cli_handler, log.DialogHandler))
+
+    @mock.patch('certbot.main.logging.getLogger')
+    def test_quiet_mode(self, mock_get_logger):
+        self.config.quiet = self.config.noninteractive_mode = True
+        self._call(self.config)
+
+        cli_handler = mock_get_logger().addHandler.call_args_list[0][0][0]
+        self.assertEqual(cli_handler.level, constants.QUIET_LOGGING_LEVEL)
+        self.assertTrue(
+            isinstance(cli_handler, colored_logging.StreamHandler))
 
 
 class MakeOrVerifyCoreDirTest(unittest.TestCase):
