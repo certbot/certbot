@@ -335,6 +335,19 @@ your webserver configuration, you might need to modify the configuration
 to ensure that files inside ``/.well-known/acme-challenge`` are served by
 the webserver.
 
+Nginx
+-----
+
+The Nginx plugin has been distributed with Cerbot since version 0.9.0 and should
+work for most configurations. Because it is alpha code, we recommend backing up Nginx
+configurations before using it (though you can also revert changes to
+configurations with ``certbot --nginx rollback``). You can use it by providing
+the ``--nginx`` flag on the commandline.
+
+::
+
+   certbot --nginx
+
 Standalone
 ----------
 
@@ -363,19 +376,6 @@ the UI, you can use the plugin to obtain a cert by specifying
 ``certonly`` and ``--manual`` on the command line. This requires you
 to copy and paste commands into another terminal session, which may
 be on a different computer.
-
-Nginx
------
-
-The Nginx plugin has been distributed with Cerbot since version 0.9.0 and should
-work for most configurations. Because it is alpha code, we recommend backing up Nginx
-configurations before using it (though you can also revert changes to
-configurations with ``certbot --nginx rollback``). You can use it by providing
-the ``--nginx`` flag on the commandline.
-
-::
-
-   certbot --nginx
 
 .. _third-party-plugins:
 
