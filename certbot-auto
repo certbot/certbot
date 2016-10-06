@@ -19,7 +19,7 @@ XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN="$VENV_PATH/bin"
-LE_AUTO_VERSION="0.9.0"
+LE_AUTO_VERSION="0.9.1"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -761,18 +761,18 @@ letsencrypt==0.7.0 \
 
 # THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT; ADD ALL DEPENDENCIES ABOVE.
 
-acme==0.9.0 \
-    --hash=sha256:6d98bdec5fd9171e368a39cb2458d2d62599e52e2899650684379dba03f09d96 \
-    --hash=sha256:fca3e57e5155ee0e80852e1b13a9d76a302728b78a9a1c2c38cb77d699aab7c5
-certbot==0.9.0 \
-    --hash=sha256:08652503bb94f0863c2c2d53d37fc48966b080a70f578f980b05eee11bea7eaf \
-    --hash=sha256:8dd4d3e2de2b2392fd8f41e73434dae737653bc41a54ce4a273768519a5ab61e
-certbot-apache==0.9.0 \
-    --hash=sha256:10e3096ff27adf6e75aff7722ada963f1337ef455f203495c025e883d8f816e2 \
-    --hash=sha256:fd8bb3e7d36c64a5841083bed447250e110d458323b51d8a210b8f0b18e28c9a
-certbot-nginx==0.9.0 \
-    --hash=sha256:edbb7c1164225af770af6aea42496b575b5c115afa4d9ab7b1e587b3e6d0c92b \
-    --hash=sha256:2f18504832b13f11e07dc87df758a7c5c68e24341628eb334ff7a5976a384717
+acme==0.9.1 \
+    --hash=sha256:83e6188d5f149678b77ff3c8f8f94983f3c448490ffa634c7e9f2e93e7351fb0 \
+    --hash=sha256:0effd08d144eedbfeb7dd784e9c8673ef3138cf48d35c8c33a1dd5bee9fd8207
+certbot==0.9.1 \
+    --hash=sha256:88237a4f6d337d40185a644407f9c7adb6eab87c43b8bf56c1edc02ce82a9d81 \
+    --hash=sha256:180354a3e95610ff8ba7f344011f2fcba1186d8efb7b25867266f47048e1e2f7
+certbot-apache==0.9.1 \
+    --hash=sha256:cb9931294d44a1d6d44eaa2e92cb30daf6f2e0f29f6e7f00849709f0dd408b40 \
+    --hash=sha256:1c09a6b4d087748f2aa143b0a7ced321458c3dd7ca70a80674f867b8b0e3cd6c
+certbot-nginx==0.9.1 \
+    --hash=sha256:3bd59a4f63a989eb31c04775107139bf45c2373a6f0b7bea4a3a1362da5c2ae7 \
+    --hash=sha256:22f277846ccf5c8787cac2b35a7897780f05f4022de02d8b4b731c2cd957354c
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
