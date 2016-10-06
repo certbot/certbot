@@ -625,17 +625,22 @@ def _cli_log_handler(config, level, fmt):
     return handler
 
 
-def setup_logging(config, cli_handler_factory, logfile):
-    """Setup logging."""
-    file_fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+def setup_logging(config):
+    """Sets up logging to logfiles and the terminal.
+
+    :param certbot.interface.IConfig config: Configuration object
+
+    """
     cli_fmt = "%(message)s"
+    file_fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+    logfile = "letsencrypt.log"
     if config.quiet:
         level = constants.QUIET_LOGGING_LEVEL
     else:
         level = -config.verbose_count * 10
     file_handler, log_file_path = setup_log_file_handler(
         config, logfile=logfile, fmt=file_fmt)
-    cli_handler = cli_handler_factory(config, level, cli_fmt)
+    cli_handler = _cli_log_handler(config, level, cli_fmt)
 
     # TODO: use fileConfig?
 
@@ -741,7 +746,7 @@ def main(cli_args=sys.argv[1:]):
                             os.geteuid(), config.strict_permissions)
     # Setup logging ASAP, otherwise "No handlers could be found for
     # logger ..." TODO: this should be done before plugins discovery
-    setup_logging(config, _cli_log_handler, logfile='letsencrypt.log')
+    setup_logging(config)
     cli.possible_deprecation_warning(config)
 
     logger.debug("certbot version: %s", certbot.__version__)
