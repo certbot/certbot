@@ -129,6 +129,21 @@ class ClientTest(unittest.TestCase):
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr, self.client.deactivate(self.regr))
 
+    def test_deactivate_account_bad_status(self):
+        self.response.headers['Location'] = self.regr.uri
+        self.response.json.return_value = self.regr.body.to_json()
+        self.response.status_code = 202
+        self.assertRaises(
+            errors.DeactivationError,
+            lambda: self.client.deactivate(self.regr))
+
+    def test_deactivate_account_bad_registration_returned(self):
+        self.response.headers['Location'] = self.regr.uri
+        self.response.json.return_value = "some wrong registration thing"
+        self.assertRaises(
+            errors.DeactivationError,
+            lambda: self.client.deactivate(self.regr))
+
     def test_query_registration(self):
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr, self.client.query_registration(self.regr))
