@@ -378,7 +378,7 @@ be on a different computer.
 Nginx
 -----
 
-The Nginx plugin is included in Certbot 0.9.0. It should
+The Nginx plugin has been distributed with Cerbot since version 0.9.0 and should
 work for most configurations. Because it is alpha code, we recommend backing up Nginx
 configurations before using it (though you can also revert changes to
 configurations with ``certbot --nginx rollback``). You can use it by providing
