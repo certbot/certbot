@@ -258,7 +258,7 @@ apache_     Y    Y    | Automates obtaining and installing a cert with Apache 2.
 webroot_    Y    N    | Obtains a cert by writing to the webroot directory of an      http-01_ (80)
                       | already running webserver.
 nginx_      Y    Y    | Automates obtaining and installing a cert with Nginx. Alpha   tls-sni-01_ (443)
-                      | release included with Certbot 0.9.0.
+                      | release shipped with Certbot 0.9.0.
 standalone_ Y    N    | Uses a "standalone" webserver to obtain a cert. Requires      http-01_ (80) or
                       | port 80 or 443 to be available. This is useful on systems     tls-sni-01_ (443)
                       | with no webserver, or when direct integration with the local
