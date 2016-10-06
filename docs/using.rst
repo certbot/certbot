@@ -506,23 +506,23 @@ want to use the Apache plugin, it has to be installed separately:
 
 .. code-block:: shell
 
-   emerge -av app-crypt/letsencrypt
-   emerge -av app-crypt/letsencrypt-apache
+   emerge -av app-crypt/certbot
+   emerge -av app-crypt/certbot-apache
 
 Currently, only the Apache plugin is included in Portage. However, if you
 Warning!
-You can use Layman to add the mrueg overlay which does include a package for the
-Certbot Nginx plugin, however, this plugin is known to be buggy and should only
+You can use Layman to add the ``mrueg`` overlay which does include a package for the
+certbot nginx plugin, however, this plugin is known to be buggy and should only
 be used with caution after creating a backup up your Nginx configuration.
-We strongly recommend you use the app-crypt/letsencrypt package instead until
-the Nginx plugin is ready.
+We strongly recommend you use the ``app-crypt/certbot`` package instead until
+the nginx plugin is ready.
 
 .. code-block:: shell
 
    emerge -av app-portage/layman
    layman -S
    layman -a mrueg
-   emerge -av app-crypt/letsencrypt-nginx
+   emerge -av app-crypt/certbot-nginx
 
 When using the Apache plugin, you will run into a "cannot find a cert or key
 directive" error if you're sporting the default Gentoo ``httpd.conf``.
