@@ -107,6 +107,7 @@ class SupportedChallengesValidatorTest(unittest.TestCase):
 
 
 def get_open_port():
+    """Gets an open port number from the OS."""
     open_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
     open_socket.bind(("", 0))
     port = open_socket.getsockname()[1]
