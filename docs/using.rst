@@ -179,21 +179,6 @@ want to use the Apache plugin, it has to be installed separately:
    emerge -av app-crypt/letsencrypt
    emerge -av app-crypt/letsencrypt-apache
 
-Currently, only the Apache plugin is included in Portage. However, if you
-Warning!
-You can use Layman to add the mrueg overlay which does include a package for the
-Certbot Nginx plugin, however, this plugin is known to be buggy and should only
-be used with caution after creating a backup up your Nginx configuration.
-We strongly recommend you use the app-crypt/letsencrypt package instead until
-the Nginx plugin is ready.
-
-.. code-block:: shell
-
-   emerge -av app-portage/layman
-   layman -S
-   layman -a mrueg
-   emerge -av app-crypt/letsencrypt-nginx
-
 When using the Apache plugin, you will run into a "cannot find a cert or key
 directive" error if you're sporting the default Gentoo ``httpd.conf``.
 You can fix this by commenting out two lines in ``/etc/apache2/httpd.conf``
@@ -272,13 +257,14 @@ apache_     Y    Y    | Automates obtaining and installing a cert with Apache 2.
                       | Debian-based distributions with ``libaugeas0`` 1.0+.
 webroot_    Y    N    | Obtains a cert by writing to the webroot directory of an      http-01_ (80)
                       | already running webserver.
+nginx_      Y    Y    | Automates obtaining and installing a cert with Nginx. Alpha   tls-sni-01_ (443)
+                      | release shipped with Certbot 0.9.0.
 standalone_ Y    N    | Uses a "standalone" webserver to obtain a cert. Requires      http-01_ (80) or
                       | port 80 or 443 to be available. This is useful on systems     tls-sni-01_ (443)
                       | with no webserver, or when direct integration with the local
                       | webserver is not supported or not desired.
 manual_     Y    N    | Helps you obtain a cert by giving you instructions to perform http-01_ (80) or
                       | domain validation yourself.                                   dns-01_ (53)
-nginx_      Y    Y    | Very experimental and not included in certbot-auto_.          tls-sni-01_ (443)
 =========== ==== ==== =============================================================== =============================
 
 Under the hood, plugins use one of several ACME protocol "Challenges_" to
@@ -349,6 +335,19 @@ your webserver configuration, you might need to modify the configuration
 to ensure that files inside ``/.well-known/acme-challenge`` are served by
 the webserver.
 
+Nginx
+-----
+
+The Nginx plugin has been distributed with Cerbot since version 0.9.0 and should
+work for most configurations. Because it is alpha code, we recommend backing up Nginx
+configurations before using it (though you can also revert changes to
+configurations with ``certbot --nginx rollback``). You can use it by providing
+the ``--nginx`` flag on the commandline.
+
+::
+
+   certbot --nginx
+
 Standalone
 ----------
 
@@ -377,15 +376,6 @@ the UI, you can use the plugin to obtain a cert by specifying
 ``certonly`` and ``--manual`` on the command line. This requires you
 to copy and paste commands into another terminal session, which may
 be on a different computer.
-
-Nginx
------
-
-In the future, if you're running Nginx you will hopefully be able to use this
-plugin to automatically obtain and install your certificate. The Nginx plugin is
-still experimental, however, and is not installed with certbot-auto_. If
-installed, you can select this plugin on the command line by including
-``--nginx``.
 
 .. _third-party-plugins:
 
