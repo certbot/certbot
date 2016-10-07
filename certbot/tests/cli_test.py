@@ -578,7 +578,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
                              args=None, should_renew=True, error_expected=False):
         # pylint: disable=too-many-locals,too-many-arguments
-        cert_path = 'certbot/tests/testdata/cert.pem'
+        cert_path = test_util.vector_path('cert.pem')
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path)
         mock_lineage.should_autorenew.return_value = due_for_renewal
