@@ -511,7 +511,7 @@ want to use the Apache plugin, it has to be installed separately:
 
 Currently, only the Apache plugin is included in Portage. However, you can use 
 Layman to add the ``mrueg`` overlay which does include a package for the 
-certbot nginx plugin. (Please not: this plugin is in alpha stage, so should 
+certbot nginx plugin. (Please note: this plugin is in alpha stage, so should 
 be used with caution, after creating a backup up of your Nginx configuration.
 We strongly recommend you use the ``app-crypt/certbot`` package instead until
 the nginx plugin is ready.
