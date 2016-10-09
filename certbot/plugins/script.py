@@ -10,7 +10,6 @@ from acme import challenges
 
 from certbot import errors
 from certbot import interfaces
-from certbot.constants import CLI_DEFAULTS
 
 from certbot.plugins import common
 
@@ -27,141 +26,75 @@ CHALLENGES = {"http-01": challenges.Challenge.TYPES["http-01"],
 class Authenticator(common.Plugin):
     """Script authenticator
 
-    calls user defined script to perform authentication.
+    calls user defined script to perform authentication and
+    optionally cleanup.
 
     """
 
-    description = "Authenticate using user provided script"
+    description = "Authenticate using user provided script(s)"
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        self.bundle_root = CLI_DEFAULTS["config_dir"]+"/script.d/"
-        self.cleanup_name = "cleanup.sh"
-        self.auth_name = "authenticator.sh"
-        self.config_name = "config.sh"
-        self.bundle = dict({
-            "authenticate": None,
-            "cleanup": None,
-            "config": None})
-        self.bundle_config = dict()
-        self.challenge = None
+        self.cleanup_script = None
+        self.auth_script = None
+        self.challenge = CHALLENGES["http-01"]
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add("bundle-name", "-b", default=None, required=True,
-            help="script bundle name. Bundle needs to have " +
-                 "authenticator.sh but can also have cleanup.sh. " +
-                 "Certbot looks for script bundles from under " +
-                 "directory script.d/ in certbot configuration "
-                 "directory.")
+        add("auth-script", "-auth", default=None, required=True,
+            help="path to the authentication script")
+        add("cleanup-script", "-cleanup", default=None, required=False,
+            help="path to the cleanup script")
+        add("challenge", "-c", default="http-01", required=False,
+            help="challenge to use")
 
     @property
     def supported_challenges(self):
         """Challenges supported by this plugin."""
         return CHALLENGES[self.challenge]
 
-    def check_path_validity(self, bundle_name):
-        """Checks that the bundle path exists and is readable
+    def check_script_validity(self, script_path):
+        """Checks that the script exists and is executable
 
-        :param str bundle_name: Name of bundle to check
-        :raises errors.PluginError: If path is not valid
-        :returns `boolean`: If path is valid"""
-
-        fullpath = self.bundle_root+bundle_name
-        if not os.path.exists(fullpath) and os.access(fullpath, os.R_OK):
-            raise errors.PluginError("Bundle path {} doesn't exist or " +
-                                     "it isn't readable by Certbot".format(
-                                         self.bundle_root+bundle_name))
-            return False
-
-        # Make sure that we're not executing outside of our directory
-        if not os.path.realpath(fullpath).startswith(self.bundle_root):
-            raise errors.PluginError(
-                "Script bundle must reside under {}".format(self.bundle_root))
-            return False
-        return True
-
-    def _valid_script(self, script_path):
-        """Checks that the script exists, and is executable
-
-        :param str script_path: Path to the script
+        :param str script_path: Path of script to check
+        :raises errors.PluginError: If script is not valid
         :returns `boolean`: If script is valid"""
 
-        if os.path.isfile(script_path):
+        if os.path.exists(script_path) and os.path.isfile(script_path):
             if os.access(script_path, os.X_OK):
                 return True
+            else:
+                raise errors.PluginError(
+                    "Script {} isn't readable by Certbot".format(script_path))
+        else:
+            raise errors.PluginError(
+                "Script {} does not exist".format(script_path))
+
         return False
-
-    def register_pieces(self, bundle_name):
-        """Check which individual pieces the bundle has
-        and register them."""
-
-        bundle_path = self.bundle_root + bundle_name
-        authenticate = bundle_path+"/"+self.auth_name
-        if self._valid_script(authenticate):
-            self.bundle['authenticate'] = authenticate
-        else:
-            logger.debug("Script bundle authenticator exists, " +
-                         "but isn't executable")
-        cleanup = bundle_path+"/"+self.cleanup_name
-        if self._valic_script(cleanup):
-            self.bundle['cleanup'] = cleanup
-        else:
-            logger.debug("Script bundle cleanup.sh exists, " +
-                         "but isn't executable")
-        if os.path.isfile(bundle_path+"/"+self.config_name):
-            self.bundle['config'] = bundle_path+"/"+self.config_name
-            self.bundle_config = self.parse_config()
-        try:
-            if self.bundle_config and self.bundle_config["challenge"]:
-                try:
-                    self.challenge = self.bundle_config["challenge"]
-                except KeyError:
-                    raise errors.PluginError(
-                        "Unknown challenge type: {}".format(
-                            self.bundle_config["challenge"]))
-        except KeyError:
-            raise errors.PluginError("Script bundle must specify one " +
-                                     "challenge")
 
     def more_info(self):  # pylint: disable=missing-docstring
         return("This authenticator enables user to perform authentication " +
-               "using shell script.")
-
-    def parse_config(self):
-        """Parse script bundle config"""
-        bundle_config_values = ["challenge"]
-        bundle_config = dict()
-        for i in bundle_config_values:
-            bundle_config[i] = self.get_config_value(i)
-        return bundle_config
-
-    def get_config_value(self, key):
-        """Get single value from config script
-        Expects the format:
-
-        KEY="value"
-        """
-
-        key = key+"="
-        if self.bundle['config']:
-            with open(self.bundle['config'], 'r') as fh:
-                contents = fh.readlines()
-            for line in contents:
-                if line.lower().strip().startswith(key.lower()):
-                    val = line.strip()[len(key):]
-                    return val.replace('"', '').replace("'", "").strip()
+               "using shell script(s).")
 
     def prepare(self):
-        """Prepare script plugin"""
-        bundle_name = self.config.namespace.script_bundle_name
-        if self.check_path_validity(bundle_name):
-            self.bundle_name = bundle_name
-        self.register_pieces(bundle_name)
+        """Prepare script plugin, check challenge, scripts and register them"""
+
+        if self.config.namespace.challenge in CHALLENGES.keys():
+            self.challenge = CHALLENGES[self.config.namespace.challenge]
+        else:
+            raise errors.PluginError(
+                "Challenge {} not supported by script plugin".format(
+                    self.config.namespace.challenge))
+
+        script_path = self.config.namespace.auth_script
+        cleanup_path = self.config.namespace.cleanup_script
+        if self.check_script_validity(script_path):
+            self.auth_script = script_path
+        if cleanup_path and self.check_script_validity(cleanup_path):
+            self.cleanup_script = cleanup_path
 
     def get_chall_pref(self, domain):
-        """Return challenge(s) that the current script
-        or script bundle answers to. """
+        """Return challenge(s) we're answering to """
         # pylint: disable=unused-argument
         return [CHALLENGES[self.challenge]]
 
@@ -174,9 +107,7 @@ class Authenticator(common.Plugin):
             response, validation = achall.response_and_validation()
             # Setup env vars
             mapping[achall.typ](achall, validation)
-            if self.bundle["authenticate"]:
-                # Should always exist though
-                self.execute(self.bundle["authenticate"])
+            self.execute(self.auth_script)
             responses.append(response)
         return responses
 
@@ -219,5 +150,5 @@ class Authenticator(common.Plugin):
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         """Run cleanup.sh """
-        if self.bundle['cleanup']:
+        if self.cleanup_script:
             self.execute(self.bundle['cleanup'])
