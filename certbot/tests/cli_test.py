@@ -1,6 +1,6 @@
 """Tests for certbot.cli."""
-# Many tests in this file should be moved
-# into main_test.py and renewal_test.py.
+# Many tests in this file should be moved into
+# main_test.py and renewal_test.py. See #2716.
 # pylint: disable=too-many-lines
 from __future__ import print_function
 
