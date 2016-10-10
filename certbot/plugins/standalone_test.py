@@ -148,6 +148,18 @@ class AuthenticatorTest(unittest.TestCase):
 
         return [http_01, tls_sni_01]
 
+    @mock.patch("certbot.plugins.standalone.util")
+    def test_perform_already_listening(self, mock_util):
+        http_01, tls_sni_01 = self._get_achalls()
+
+        for achall, port in ((http_01, self.config.http01_port,),
+                             (tls_sni_01, self.config.tls_sni_01_port)):
+            mock_util.already_listening.return_value = True
+            self.assertRaises(
+                errors.MisconfigurationError, self.auth.perform, [achall])
+            mock_util.already_listening.assert_called_once_with(port, False)
+            mock_util.already_listening.reset_mock()
+
     @mock.patch("certbot.plugins.standalone.zope.component.getUtility")
     def test_perform(self, unused_mock_get_utility):
         achalls = self._get_achalls()
