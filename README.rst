@@ -152,11 +152,12 @@ Current Features
 
 * Supports multiple web servers:
 
-  - apache/2.x (working on Debian 8+ and Ubuntu 12.04+)
-  - standalone (runs its own simple webserver to prove you control a domain)
+  - apache/2.x
+  - nginx/0.8.48+
   - webroot (adds files to webroot directories in order to prove control of
     domains and obtain certs)
-  - nginx/0.8.48+ (highly experimental, not included in certbot-auto)
+  - standalone (runs its own simple webserver to prove you control a domain)
+  - other server software via ([https://certbot.eff.org/docs/using.html#third-party-plugins](third party plugins))
 
 * The private key is generated locally on your system.
 * Can talk to the Let's Encrypt CA or optionally to other ACME
