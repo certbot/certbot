@@ -137,15 +137,20 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(self.auth.get_chall_pref(domain=None),
                          [challenges.TLSSNI01])
 
-    @mock.patch("certbot.plugins.standalone.zope.component.getUtility")
-    def test_perform(self, unused_mock_get_utility):
+    @classmethod
+    def _get_achalls(cls):
         domain = b'localhost'
         key = jose.JWK.load(test_util.load_vector('rsa512_key.pem'))
         http_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.HTTP01_P, domain=domain, account_key=key)
         tls_sni_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.TLSSNI01_P, domain=domain, account_key=key)
-        achalls = [http_01, tls_sni_01]
+
+        return [http_01, tls_sni_01]
+
+    @mock.patch("certbot.plugins.standalone.zope.component.getUtility")
+    def test_perform(self, unused_mock_get_utility):
+        achalls = self._get_achalls()
 
         self.auth.perform2 = mock.Mock(return_value=mock.sentinel.responses)
         self.assertEqual(mock.sentinel.responses, self.auth.perform(achalls))
@@ -177,12 +182,7 @@ class AuthenticatorTest(unittest.TestCase):
             socket.errno.ENOTCONN, [])
 
     def test_perform2(self):
-        domain = b'localhost'
-        key = jose.JWK.load(test_util.load_vector('rsa512_key.pem'))
-        http_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=acme_util.HTTP01_P, domain=domain, account_key=key)
-        tls_sni_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=acme_util.TLSSNI01_P, domain=domain, account_key=key)
+        http_01, tls_sni_01 = self._get_achalls()
 
         self.auth.servers = mock.MagicMock()
 
