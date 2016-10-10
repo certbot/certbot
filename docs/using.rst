@@ -507,8 +507,9 @@ The following files are available:
   <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate_key>`_.
 
 ``fullchain.pem``
-  All certificates, **including** server certificate. This is
-  concatenation of ``cert.pem`` and ``chain.pem``.
+  All certificates, **including** server certificate (aka leaf certificate or
+  end-entity certificate). The server certificate is the first one in this file,
+  followed by any intermediates.
 
   This is what Apache >= 2.4.8 needs for `SSLCertificateFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_,
@@ -535,12 +536,8 @@ The following files are available:
   <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_trusted_certificate>`_
   to validate OCSP responses.
 
-For both ``fullchain.pem`` and ``chain.pem`` files, all certificates are ordered from
-root (primary certificate) towards leaf, but do not actually include the root
-certificate, which is unneeded.
-
-.. note:: All files are PEM-encoded (as the filename suffix
-   suggests). If you need other format, such as DER or PFX, then you
+.. note:: All files are PEM-encoded.
+   If you need other format, such as DER or PFX, then you
    could convert using ``openssl``. You can automate that with
    ``--renew-hook`` if you're using automatic renewal_.
 
