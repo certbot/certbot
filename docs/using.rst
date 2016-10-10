@@ -520,8 +520,9 @@ The following files are available:
   ``chain.pem`` contains the additional intermediate certificate or
   certificates that web browsers will need in order to validate the
   server certificate. If you provide one of these files to your web
-  server, you **must** provide both of them, or browsers will show
-  "This Connection is Untrusted" errors when visiting your site.
+  server, you **must** provide both of them, or some browsers will show
+  "This Connection is Untrusted" errors for your site, `some of the time
+  <https://whatsmychaincert.com/>`_.
 
   Apache < 2.4.8 needs these for `SSLCertificateFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_.
