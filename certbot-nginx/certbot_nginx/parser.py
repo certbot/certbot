@@ -473,6 +473,8 @@ def parse_server(server):
                      'ssl': False,
                      'names': set()}
 
+    apply_ssl_to_all_addrs = False
+
     for directive in server:
         if not directive:
             continue
@@ -486,6 +488,11 @@ def parse_server(server):
                 _get_servernames(directive[1]))
         elif directive[0] == 'ssl' and directive[1] == 'on':
             parsed_server['ssl'] = True
+            apply_ssl_to_all_addrs = True
+
+    if apply_ssl_to_all_addrs:
+        for addr in parsed_server['addrs']:
+            addr.ssl = True
 
     return parsed_server
 
