@@ -194,15 +194,6 @@ class Authenticator(common.Plugin):
         return [challenges.Challenge.TYPES[name] for name in
                 self.conf("supported-challenges").split(",")]
 
-    @property
-    def _necessary_ports(self):
-        necessary_ports = set()
-        if challenges.HTTP01 in self.supported_challenges:
-            necessary_ports.add(self.config.http01_port)
-        if challenges.TLSSNI01 in self.supported_challenges:
-            necessary_ports.add(self.config.tls_sni_01_port)
-        return necessary_ports
-
     def more_info(self):  # pylint: disable=missing-docstring
         return("This authenticator creates its own ephemeral TCP listener "
                "on the necessary port in order to respond to incoming "
@@ -217,12 +208,30 @@ class Authenticator(common.Plugin):
         # pylint: disable=unused-argument,missing-docstring
         return self.supported_challenges
 
-    def perform(self, achalls):  # pylint: disable=missing-docstring
-        renewer = self.config.verb == "renew"
-        if any(util.already_listening(port, renewer) for port in self._necessary_ports):
+    def _verify_ports_are_available(self, achalls):
+        """Confirm the ports are available to solve all achalls.
+
+        :param list achalls: list of
+            :class:`~certbot.achallenges.AnnotatedChallenge`
+
+        :raises .errors.MisconfigurationError: if required port is
+            unavailable
+
+        """
+        ports = []
+        if any(isinstance(ac.chall, challenges.HTTP01) for ac in achalls):
+            ports.append(self.config.http01_port)
+        if any(isinstance(ac.chall, challenges.TLSSNI01) for ac in achalls):
+            ports.append(self.config.tls_sni_01_port)
+
+        renewer = (self.config.verb == "renew")
+
+        if any(util.already_listening(port, renewer) for port in ports):
             raise errors.MisconfigurationError(
-                "At least one of the (possibly) required ports is "
-                "already taken.")
+                "At least one of the required ports is already taken.")
+
+    def perform(self, achalls):  # pylint: disable=missing-docstring
+        self._verify_ports_are_available(achalls)
 
         try:
             return self.perform2(achalls)

@@ -137,20 +137,33 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(self.auth.get_chall_pref(domain=None),
                          [challenges.TLSSNI01])
 
+    @classmethod
+    def _get_achalls(cls):
+        domain = b'localhost'
+        key = jose.JWK.load(test_util.load_vector('rsa512_key.pem'))
+        http_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.HTTP01_P, domain=domain, account_key=key)
+        tls_sni_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.TLSSNI01_P, domain=domain, account_key=key)
+
+        return [http_01, tls_sni_01]
+
     @mock.patch("certbot.plugins.standalone.util")
     def test_perform_already_listening(self, mock_util):
-        for chall, port in ((challenges.TLSSNI01.typ, 1234),
-                            (challenges.HTTP01.typ, 4321)):
+        http_01, tls_sni_01 = self._get_achalls()
+
+        for achall, port in ((http_01, self.config.http01_port,),
+                             (tls_sni_01, self.config.tls_sni_01_port)):
             mock_util.already_listening.return_value = True
-            self.config.standalone_supported_challenges = chall
             self.assertRaises(
-                errors.MisconfigurationError, self.auth.perform, [])
+                errors.MisconfigurationError, self.auth.perform, [achall])
             mock_util.already_listening.assert_called_once_with(port, False)
             mock_util.already_listening.reset_mock()
 
     @mock.patch("certbot.plugins.standalone.zope.component.getUtility")
     def test_perform(self, unused_mock_get_utility):
-        achalls = [1, 2, 3]
+        achalls = self._get_achalls()
+
         self.auth.perform2 = mock.Mock(return_value=mock.sentinel.responses)
         self.assertEqual(mock.sentinel.responses, self.auth.perform(achalls))
         self.auth.perform2.assert_called_once_with(achalls)
@@ -181,12 +194,7 @@ class AuthenticatorTest(unittest.TestCase):
             socket.errno.ENOTCONN, [])
 
     def test_perform2(self):
-        domain = b'localhost'
-        key = jose.JWK.load(test_util.load_vector('rsa512_key.pem'))
-        http_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=acme_util.HTTP01_P, domain=domain, account_key=key)
-        tls_sni_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=acme_util.TLSSNI01_P, domain=domain, account_key=key)
+        http_01, tls_sni_01 = self._get_achalls()
 
         self.auth.servers = mock.MagicMock()
 
