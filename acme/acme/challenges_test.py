@@ -10,6 +10,7 @@ from six.moves.urllib import parse as urllib_parse  # pylint: disable=import-err
 from acme import errors
 from acme import jose
 from acme import test_util
+from acme import util
 
 CERT = test_util.load_comparable_cert('cert.pem')
 KEY = jose.JWKRSA(key=test_util.load_rsa_private_key('rsa512_key.pem'))
@@ -84,8 +85,8 @@ def dns_available():
 
     """
     try:
-        import dns  # pylint: disable=unused-variable
-    except ImportError:  # pragma: no cover
+        util.activate('dnspython>=1.12')
+    except errors.DependencyError:  # pragma: no cover
         return False
     return True  # pragma: no cover
 
