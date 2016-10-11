@@ -3,8 +3,15 @@ Required only for local validation of 'dns-01' challenges.
 """
 import logging
 
-import dns.resolver
-import dns.exception
+from acme import util
+
+# This will raise a DependencyError if dnspython is unavailable
+util.activate('dnspython>=1.12')
+
+# noqa disables pep8 checking on this lines which is needed because
+# pep8 complains about the imports not being at the top of the file
+import dns.resolver  # noqa
+import dns.exception  # noqa
 
 logger = logging.getLogger(__name__)
 
