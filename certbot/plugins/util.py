@@ -5,15 +5,19 @@ import socket
 
 import zope.component
 
+from acme import errors as acme_errors
+from acme import util as acme_util
+
 from certbot import interfaces
 from certbot import util
 
 PSUTIL_REQUIREMENT = "psutil>=2.2.1"
 
 try:
-    import psutil
+    acme_util.activate(PSUTIL_REQUIREMENT)
+    import psutil  # pragma: no cover
     USE_PSUTIL = True
-except ImportError:
+except acme_errors.DependencyError:  # pragma: no cover
     USE_PSUTIL = False
 
 logger = logging.getLogger(__name__)
