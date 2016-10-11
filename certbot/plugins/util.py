@@ -8,6 +8,8 @@ import zope.component
 from certbot import interfaces
 from certbot import util
 
+PSUTIL_REQUIREMENT = "psutil>=2.2.1"
+
 try:
     import psutil
     USE_PSUTIL = True
