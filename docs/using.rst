@@ -587,43 +587,41 @@ The following files are available:
 
   This is what Apache needs for `SSLCertificateKeyFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatekeyfile>`_,
-  and nginx for `ssl_certificate_key
+  and Nginx for `ssl_certificate_key
   <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate_key>`_.
 
-``cert.pem``
-  Server certificate only.
-
-  This is what Apache < 2.4.8 needs for `SSLCertificateFile
-  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_.
-
-``chain.pem``
-  All certificates that need to be served by the browser **excluding**
-  server certificate, i.e. root and intermediate certificates only.
-
-  This is what Apache < 2.4.8 needs for `SSLCertificateChainFile
-  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatechainfile>`_,
-  and what nginx >= 1.3.7 needs for `ssl_trusted_certificate
-  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_trusted_certificate>`_.
-
 ``fullchain.pem``
-  All certificates, **including** server certificate. This is
-  concatenation of ``cert.pem`` and ``chain.pem``.
+  All certificates, **including** server certificate (aka leaf certificate or
+  end-entity certificate). The server certificate is the first one in this file,
+  followed by any intermediates.
 
   This is what Apache >= 2.4.8 needs for `SSLCertificateFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_,
-  and what nginx needs for `ssl_certificate
+  and what Nginx needs for `ssl_certificate
   <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate>`_.
 
+``cert.pem`` and ``chain.pem`` (less common)
+  ``cert.pem`` contains the server certificate by itself, and
+  ``chain.pem`` contains the additional intermediate certificate or
+  certificates that web browsers will need in order to validate the
+  server certificate. If you provide one of these files to your web
+  server, you **must** provide both of them, or some browsers will show
+  "This Connection is Untrusted" errors for your site, `some of the time
+  <https://whatsmychaincert.com/>`_.
 
-For both chain files, all certificates are ordered from root (primary
-certificate) towards leaf.
+  Apache < 2.4.8 needs these for `SSLCertificateFile
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_.
+  and `SSLCertificateChainFile
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatechainfile>`_,
+  respectively.
 
-Please note, that **you must use** either ``chain.pem`` or
-``fullchain.pem``. In case of webservers, using only ``cert.pem``,
-will cause nasty errors served through the browsers!
+  If you're using OCSP stapling with Nginx >= 1.3.7, ``chain.pem`` should be
+  provided as the `ssl_trusted_certificate
+  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_trusted_certificate>`_
+  to validate OCSP responses.
 
-.. note:: All files are PEM-encoded (as the filename suffix
-   suggests). If you need other format, such as DER or PFX, then you
+.. note:: All files are PEM-encoded.
+   If you need other format, such as DER or PFX, then you
    could convert using ``openssl``. You can automate that with
    ``--renew-hook`` if you're using automatic renewal_.
 
@@ -653,14 +651,15 @@ By default, the following locations are searched:
 Getting help
 ============
 
-If you're having problems you can chat with us on `IRC (#certbot @
-OFTC) <https://webchat.oftc.net?channels=%23certbot>`_ or at
-`IRC (#letsencrypt @ freenode) <https://webchat.freenode.net?channels=%23letsencrypt>`_
-or get support on the Let's Encrypt `forums <https://community.letsencrypt.org>`_.
+If you're having problems, we recommend posting on the Let's Encrypt
+`Community Forum <https://community.letsencrypt.org>`_.
+
+You can also chat with us on IRC: `(#certbot @
+OFTC) <https://webchat.oftc.net?channels=%23certbot>`_ or
+`(#letsencrypt @ freenode) <https://webchat.freenode.net?channels=%23letsencrypt>`_.
 
 If you find a bug in the software, please do report it in our `issue
-tracker
-<https://github.com/certbot/certbot/issues>`_. Remember to
+tracker <https://github.com/certbot/certbot/issues>`_. Remember to
 give us as much information as possible:
 
 - copy and paste exact command line used and the output (though mind
