@@ -4,13 +4,17 @@ import unittest
 
 import mock
 
+from acme import errors
 from acme import test_util
+from acme import util
 
 
 try:
+    util.activate('dnspython>=1.12')
+    # pragma: no cover
     import dns
-    DNS_AVAILABLE = True  # pragma: no cover
-except ImportError:  # pragma: no cover
+    DNS_AVAILABLE = True
+except errors.DependencyError:  # pragma: no cover
     DNS_AVAILABLE = False
 
 
