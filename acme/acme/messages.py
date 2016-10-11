@@ -20,10 +20,15 @@ class Error(jose.JSONObjectWithFields, errors.Error):
     """
     ERROR_TYPE_DESCRIPTIONS = dict(
         ('urn:acme:error:' + name, description) for name, description in (
+            # Descriptions are copied verbatim from the ACME spec:
+            # https://github.com/ietf-wg-acme/acme/blob/master/draft-ietf-acme-acme.md#errors
+            # and should be kept in sync. If you need a better error
+            # description in your client code, please overwrite in
+            # your handling logic, rather than changing the code
+            # below.
             ('badCSR', 'The CSR is unacceptable (e.g., due to a short key)'),
             ('badNonce', 'The client sent an unacceptable anti-replay nonce'),
-            ('connection', 'The server could not connect to the client to '
-             'verify the domain'),
+            ('connection', 'The server could not connect to the client for DV'),
             ('dnssec', 'The server could not validate a DNSSEC signed domain'),
             ('invalidEmail',
              'The provided email for a registration was invalid'),
@@ -32,8 +37,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
             ('malformed', 'The request message was malformed'),
             ('rateLimited', 'There were too many requests of a given type'),
             ('serverInternal', 'The server experienced an internal error'),
-            ('tls', 'The server experienced a TLS error during domain '
-             'verification'),
+            ('tls', 'The server experienced a TLS error during DV'),
             ('unauthorized', 'The client lacks sufficient authorization'),
             ('unknownHost', 'The server could not resolve a domain name'),
         )
