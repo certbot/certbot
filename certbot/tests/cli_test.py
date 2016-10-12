@@ -350,7 +350,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         # Punycode is now legal, so no longer an error; instead check
         # that it's _not_ an error
         with mock.patch('certbot.main.obtain_cert') as mock_obtaincert:
-            self._call('certonly', '-d', 'this.is.xn--ls8h.tld'])
+            self._call('certonly', '-d', 'this.is.xn--ls8h.tld')
 
     def test_check_config_sanity_domain(self):
         # FQDN
