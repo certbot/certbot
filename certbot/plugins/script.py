@@ -75,7 +75,7 @@ class Authenticator(common.Plugin):
     def prepare(self):
         """Prepare script plugin, check challenge, scripts and register them"""
         try:
-            pref_challenges = self.config.namespace.pref_challs
+            pref_challenges = self.config.pref_challs
             for c in pref_challenges:
                 if c.typ in CHALLENGES:
                     self.challenges.append(c)
@@ -92,8 +92,8 @@ class Authenticator(common.Plugin):
         if not self.config.namespace.script_auth:
             raise errors.PluginError("Parameter --script-auth is required " +
                                      "for script plugin")
-        script_path = self.config.namespace.script_auth
-        cleanup_path = self.config.namespace.script_cleanup
+        script_path = self.conf("auth")
+        cleanup_path = self.conf("cleanup")
         if self.check_script_validity(script_path):
             self.auth_script = script_path
         if cleanup_path and self.check_script_validity(cleanup_path):
