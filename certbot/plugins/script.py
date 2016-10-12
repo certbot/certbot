@@ -6,6 +6,8 @@ import zope.interface
 
 from subprocess import Popen, PIPE
 
+from acme import challenges
+
 from certbot import errors
 from certbot import interfaces
 
@@ -37,7 +39,7 @@ class Authenticator(common.Plugin):
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add("auth", default=None, required=True,
+        add("auth", default=None, required=False,
             help="path to the authentication script")
         add("cleanup", default=None, required=False,
             help="path to the cleanup script")
@@ -73,11 +75,11 @@ class Authenticator(common.Plugin):
     def prepare(self):
         """Prepare script plugin, check challenge, scripts and register them"""
         try:
-            challenges = self.config.namespace.pref_challs
-            for c in challenges:
+            pref_challenges = self.config.namespace.pref_challs
+            for c in pref_challenges:
                 if c.typ in CHALLENGES:
                     self.challenges.append(c)
-            if not self.challenges and len(challenges):
+            if not self.challenges and len(pref_challenges):
                 # Challenges requested, but not supported
                 raise errors.PluginError(
                     "Unfortunately script plugin doesn't yet support " +
@@ -85,7 +87,7 @@ class Authenticator(common.Plugin):
 
         except AttributeError:
             # Challenge not defined on cli, we have default set in __init__
-            pass
+            self.challenges.append(challenges.Challenge.TYPES["http-01"])
 
         script_path = self.config.namespace.script_auth
         cleanup_path = self.config.namespace.script_cleanup
