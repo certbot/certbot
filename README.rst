@@ -157,7 +157,7 @@ Current Features
   - webroot (adds files to webroot directories in order to prove control of
     domains and obtain certs)
   - standalone (runs its own simple webserver to prove you control a domain)
-  - other server software via ([https://certbot.eff.org/docs/using.html#third-party-plugins](third party plugins))
+  - other server software via `third party plugins <https://certbot.eff.org/docs/using.html#third-party-plugins>`_
 
 * The private key is generated locally on your system.
 * Can talk to the Let's Encrypt CA or optionally to other ACME
