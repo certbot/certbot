@@ -446,10 +446,10 @@ def enforce_domain_sanity(domain):
     if domain.startswith(wildcard_marker):
         raise errors.ConfigurationError(
             "Wildcard domains are not supported: {0}".format(domain))
-    # Punycode
-    if punycode_marker in domain:
-        raise errors.ConfigurationError(
-            "Punycode domains are not presently supported: {0}".format(domain))
+    # Punycode will be supported during October 2016
+    # if punycode_marker in domain:
+    #    raise errors.ConfigurationError(
+    #        "Punycode domains are not presently supported: {0}".format(domain))
 
     # Unicode
     try:
