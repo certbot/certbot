@@ -89,6 +89,9 @@ class Authenticator(common.Plugin):
             # Challenge not defined on cli, we have default set in __init__
             self.challenges.append(challenges.Challenge.TYPES["http-01"])
 
+        if not self.config.namespace.script_auth:
+            raise errors.PluginError("Parameter --script-auth is required " +
+                                     "for script plugin")
         script_path = self.config.namespace.script_auth
         cleanup_path = self.config.namespace.script_cleanup
         if self.check_script_validity(script_path):
