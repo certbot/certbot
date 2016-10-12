@@ -9,6 +9,7 @@ from cryptography.hazmat.primitives import hashes
 import OpenSSL
 import requests
 
+from acme import dns_resolver
 from acme import errors
 from acme import crypto_util
 from acme import fields
@@ -232,11 +233,11 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
         logger.debug("Verifying %s at %s...", chall.typ, validation_domain_name)
 
         try:
-            from acme import dns_resolver
-        except ImportError:  # pragma: no cover
+            txt_records = dns_resolver.txt_records_for_name(
+                validation_domain_name)
+        except errors.DependencyError:
             raise errors.DependencyError("Local validation for 'dns-01' "
                                          "challenges requires 'dnspython'")
-        txt_records = dns_resolver.txt_records_for_name(validation_domain_name)
         exists = validation in txt_records
         if not exists:
             logger.debug("Key authorization from response (%r) doesn't match "
