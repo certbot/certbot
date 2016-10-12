@@ -3,15 +3,20 @@ Required only for local validation of 'dns-01' challenges.
 """
 import logging
 
+from acme import errors
 from acme import util
 
-# This will raise a DependencyError if dnspython is unavailable
-util.activate('dnspython>=1.12')
+DNS_REQUIREMENT = 'dnspython>=1.12'
 
-# noqa disables pep8 checking on this lines which is needed because
-# pep8 complains about the imports not being at the top of the file
-import dns.resolver  # noqa
-import dns.exception  # noqa
+try:
+    util.activate(DNS_REQUIREMENT)
+    # pragma: no cover
+    import dns.exception
+    import dns.resolver
+    DNS_AVAILABLE = True
+except errors.DependencyError:  # pragma: no cover
+    DNS_AVAILABLE = False
+
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +30,9 @@ def txt_records_for_name(name):
     :rtype: list of unicode
 
     """
+    if not DNS_AVAILABLE:
+        raise errors.DependencyError(
+            '{0} is required to use this function'.format(DNS_REQUIREMENT))
     try:
         dns_response = dns.resolver.query(name, 'TXT')
     except dns.resolver.NXDOMAIN as error:

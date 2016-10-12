@@ -10,7 +10,7 @@ from six.moves.urllib import parse as urllib_parse  # pylint: disable=import-err
 from acme import errors
 from acme import jose
 from acme import test_util
-from acme import util
+from acme.dns_resolver import DNS_REQUIREMENT
 
 CERT = test_util.load_comparable_cert('cert.pem')
 KEY = jose.JWKRSA(key=test_util.load_rsa_private_key('rsa512_key.pem'))
@@ -77,20 +77,6 @@ class KeyAuthorizationChallengeResponseTest(unittest.TestCase):
         self.assertFalse(response.verify(self.chall, KEY.public_key()))
 
 
-def dns_available():
-    """Checks if dns can be imported.
-
-    :rtype: bool
-    :returns: ``True`` if dns can be imported, otherwise, ``False``
-
-    """
-    try:
-        util.activate('dnspython>=1.12')
-    except errors.DependencyError:  # pragma: no cover
-        return False
-    return True  # pragma: no cover
-
-
 class DNS01ResponseTest(unittest.TestCase):
     # pylint: disable=too-many-instance-attributes
 
@@ -123,7 +109,13 @@ class DNS01ResponseTest(unittest.TestCase):
         key2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
         self.response.simple_verify(self.chall, "local", key2.public_key())
 
-    @test_util.skip_unless(dns_available(),
+    @mock.patch('acme.dns_resolver.DNS_AVAILABLE', False)
+    def test_simple_verify_without_dns(self):
+        self.assertRaises(
+            errors.DependencyError, self.response.simple_verify,
+            self.chall, 'local', KEY.public_key())
+
+    @test_util.skip_unless(test_util.requirement_available(DNS_REQUIREMENT),
                            "optional dependency dnspython is not available")
     def test_simple_verify_good_validation(self):  # pragma: no cover
         with mock.patch(self.records_for_name_path) as mock_resolver:
@@ -134,7 +126,7 @@ class DNS01ResponseTest(unittest.TestCase):
             mock_resolver.assert_called_once_with(
                 self.chall.validation_domain_name("local"))
 
-    @test_util.skip_unless(dns_available(),
+    @test_util.skip_unless(test_util.requirement_available(DNS_REQUIREMENT),
                            "optional dependency dnspython is not available")
     def test_simple_verify_good_validation_multitxts(self):  # pragma: no cover
         with mock.patch(self.records_for_name_path) as mock_resolver:
@@ -145,7 +137,7 @@ class DNS01ResponseTest(unittest.TestCase):
             mock_resolver.assert_called_once_with(
                 self.chall.validation_domain_name("local"))
 
-    @test_util.skip_unless(dns_available(),
+    @test_util.skip_unless(test_util.requirement_available(DNS_REQUIREMENT),
                            "optional dependency dnspython is not available")
     def test_simple_verify_bad_validation(self):  # pragma: no cover
         with mock.patch(self.records_for_name_path) as mock_resolver:

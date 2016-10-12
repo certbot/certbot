@@ -6,8 +6,7 @@ import unittest
 import mock
 from six.moves import reload_module  # pylint: disable=import-error
 
-from acme import errors as acme_errors
-from acme import util as acme_util
+from certbot.plugins.util import PSUTIL_REQUIREMENT
 from certbot.tests import test_util
 
 
@@ -72,22 +71,7 @@ class AlreadyListeningTestNoPsutil(unittest.TestCase):
         self.assertEqual(mock_getutil.call_count, 2)
 
 
-def psutil_available():
-    """Checks if psutil can be imported.
-
-    :rtype: bool
-    :returns: ``True`` if psutil can be imported, otherwise, ``False``
-
-    """
-    try:
-        from certbot.plugins.util import PSUTIL_REQUIREMENT
-        acme_util.activate(PSUTIL_REQUIREMENT)
-    except acme_errors.DependencyError:  # pragma: no cover
-        return False
-    return True  # pragma: no cover
-
-
-@test_util.skip_unless(psutil_available(),
+@test_util.skip_unless(test_util.requirement_available(PSUTIL_REQUIREMENT),
                        "optional dependency psutil is not available")
 class AlreadyListeningTestPsutil(unittest.TestCase):
     """Tests for certbot.plugins.already_listening."""
