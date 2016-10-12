@@ -148,20 +148,22 @@ cd ~-
 # get a snapshot of the CLI help for the docs
 certbot --help all > docs/cli-help.txt
 
+cd ..
 # freeze before installing anything else, so that we know end-user KGS
 # make sure "twine upload" doesn't catch "kgs"
-if [ -d ../kgs ] ; then
+if [ -d kgs ] ; then
     echo Deleting old kgs...
-    rm -rf ../kgs
+    rm -rf kgs
 fi
-mkdir ../kgs
-kgs="../kgs/$version"
+mkdir kgs
+kgs="kgs/$version"
 pip freeze | tee $kgs
 pip install nose
 for module in certbot $subpkgs_modules ; do
     echo testing $module
     nosetests $module
 done
+cd ~-
 
 # pin pip hashes of the things we just built
 for pkg in acme certbot certbot-apache certbot-nginx ; do
@@ -215,7 +217,6 @@ echo gpg -U $RELEASE_GPG_KEY --detach-sign --armor $name.$rev.tar.xz
 cd ~-
 
 echo "New root: $root"
-echo "KGS is at $root/kgs"
 echo "Test commands (in the letstest repo):"
 echo 'python multitester.py targets.yaml $AWS_KEY $USERNAME scripts/test_leauto_upgrades.sh --alt_pip $YOUR_PIP_REPO --branch public-beta'
 echo 'python multitester.py  targets.yaml $AWK_KEY $USERNAME scripts/test_letsencrypt_auto_certonly_standalone.sh --branch candidate-0.1.1'
