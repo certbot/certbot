@@ -19,7 +19,7 @@ XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN="$VENV_PATH/bin"
-LE_AUTO_VERSION="0.9.0.dev0"
+LE_AUTO_VERSION="0.10.0.dev0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -590,8 +590,9 @@ if [ "$1" = "--le-auto-phase2" ]; then
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/letsencrypt-auto-requirements.txt"
 # This is the flattened list of packages certbot-auto installs. To generate
-# this, do `pip install --no-cache-dir -e acme -e . -e certbot-apache`, and
-# then use `hashin` or a more secure method to gather the hashes.
+# this, do
+# `pip install --no-cache-dir -e acme -e . -e certbot-apache -e certbot-nginx`,
+# and then use `hashin` or a more secure method to gather the hashes.
 
 argparse==1.4.0 \
     --hash=sha256:c31647edb69fd3d465a847ea3157d37bed1f95f19760b11a47aa91c04b666314 \
@@ -671,28 +672,6 @@ parsedatetime==2.1 \
 pbr==1.8.1 \
     --hash=sha256:46c8db75ae75a056bd1cc07fa21734fe2e603d11a07833ecc1eeb74c35c72e0c \
     --hash=sha256:e2127626a91e6c885db89668976db31020f0af2da728924b56480fc7ccf09649
-psutil==3.3.0 \
-    --hash=sha256:584f0b29fcc5d523b433cb8918b2fc74d67e30ee0b44a95baf031528f424619f \
-    --hash=sha256:28ca0b6e9d99aa8dc286e8747a4471362b69812a25291de29b6a8d70a1545a0d \
-    --hash=sha256:167ad5fff52a672c4ddc1c1a0b25146d6813ebb08a9aab0a3ac45f8a5b669c3b \
-    --hash=sha256:e6dea6173a988727bb223d3497349ad5cdef5c0b282eff2d83e5f9065c53f85f \
-    --hash=sha256:2af5e0a4aad66049955d0734aa4e3dc8caa17a9eaf8b4c1a27a5f1ee6e40f6fc \
-    --hash=sha256:d9884dc0dc2e55e2448e495778dc9899c1c8bf37aeb2f434c1bea74af93c2683 \
-    --hash=sha256:e27c2fe6dfcc8738be3d2c5a022f785eb72971057e1a9e1e34fba73bce8a71a6 \
-    --hash=sha256:65afd6fecc8f3aed09ee4be63583bc8eb472f06ceaa4fe24c4d1d5a1a3c0e13f \
-    --hash=sha256:ba1c558fbfcdf94515c2394b1155c1dc56e2bc2a9c17d30349827c9ed8a67e46 \
-    --hash=sha256:ba95ea0022dcb64d36f0c1335c0605fae35bdf3e0fea8d92f5d0f6456a35e55b \
-    --hash=sha256:421b6591d16b509aaa8d8c15821d66bb94cb4a8dc4385cad5c51b85d4a096d85 \
-    --hash=sha256:326b305cbdb6f94dafbfe2c26b11da88b0ab07b8a07f8188ab9d75ff0c6e841a \
-    --hash=sha256:9aede5b2b6fe46b3748ea8e5214443890d1634027bef3d33b7dad16556830278 \
-    --hash=sha256:73bed1db894d1aa9c3c7e611d302cdeab7ae8a0dc0eeaf76727878db1ac5cd87 \
-    --hash=sha256:935b5dd6d558af512f42501a7c08f41d7aff139af1bb3959daa3abb859234d6c \
-    --hash=sha256:4ca0111cf157dcc0f2f69a323c5b5478718d68d45fc9435d84be0ec0f186215b \
-    --hash=sha256:b6f13c95398a3fcf0226c4dcfa448560ba5865259cd96ec2810658651e932189 \
-    --hash=sha256:ee6be30d1635bbdea4c4325d507dc8a0dbbde7e1c198bd62ddb9f43198b9e214 \
-    --hash=sha256:dfa786858c268d7fbbe1b6175e001ec02738d7cfae0a7ce77bf9b651af676729 \
-    --hash=sha256:aa77f9de72af9c16cc288cd4a24cf58824388f57d7a81e400c4616457629870e \
-    --hash=sha256:f500093357d04da8140d87932cac2e54ef592a54ca8a743abb2850f60c2c22eb
 pyasn1==0.1.9 \
     --hash=sha256:61f9d99e3cef65feb1bfe3a2eef7a93eb93819d345bf54bcd42f4e63d5204dae \
     --hash=sha256:1802a6dd32045e472a419db1441aecab469d33e0d2749e192abdec52101724af \
@@ -708,6 +687,15 @@ pyasn1==0.1.9 \
 pyopenssl==16.0.0 \
     --hash=sha256:5add70cf00273bf957ca31fdb0df9b0ae4639e081897d5f86a0ae1f104901230 \
     --hash=sha256:363d10ee43d062285facf4e465f4f5163f9f702f9134f0a5896f134cbb92d17d
+pyparsing==2.1.8 \
+    --hash=sha256:2f0f5ceb14eccd5aef809d6382e87df22ca1da583c79f6db01675ce7d7f49c18 \
+    --hash=sha256:03a4869b9f3493807ee1f1cb405e6d576a1a2ca4d81a982677c0c1ad6177c56b \
+    --hash=sha256:ab09aee814c0241ff0c503cff30018219fe1fc14501d89f406f4664a0ec9fbcd \
+    --hash=sha256:6e9a7f052f8e26bcf749e4033e3115b6dc7e3c85aafcb794b9a88c9d9ef13c97 \
+    --hash=sha256:9f463a6bcc4eeb6c08f1ed84439b17818e2085937c0dee0d7674ac127c67c12b \
+    --hash=sha256:3626b4d81cfb300dad57f52f2f791caaf7b06c09b368c0aa7b868e53a5775424 \
+    --hash=sha256:367b90cc877b46af56d4580cd0ae278062903f02b8204ab631f5a2c0f50adfd0 \
+    --hash=sha256:9f1ea360086cd68681e7f4ca8f1f38df47bf81942a0d76a9673c2d23eff35b13
 pyRFC3339==1.0 \
     --hash=sha256:eea31835c56e2096af4363a5745a784878a61d043e247d3a6d6a0a32a9741f56 \
     --hash=sha256:8dfbc6c458b8daba1c0f3620a8c78008b323a268b27b7359e92a4ae41325f535
@@ -773,15 +761,18 @@ letsencrypt==0.7.0 \
 
 # THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT; ADD ALL DEPENDENCIES ABOVE.
 
-acme==0.8.1 \
-    --hash=sha256:ccd7883772efbf933f91713b8241455993834f3620c8fbd459d9ed5e50bbaaca \
-    --hash=sha256:d3ea4acf280bf6253ad7d641cb0970f230a19805acfed809e7a8ddcf62157d9f
-certbot==0.8.1 \
-    --hash=sha256:89805d9f70249ae859ec4d7a99c00b4bb7083ca90cd12d4d202b76dfc284f7c5 \
-    --hash=sha256:6ca8df3d310ced6687d38aac17c0fb8c1b2ec7a3bea156a254e4cc2a1c132771
-certbot-apache==0.8.1 \
-    --hash=sha256:c9e3fdc15e65589c2e39eb0e6b1f61f0c0a1db3c17b00bb337f0ff636cc61cb3 \
-    --hash=sha256:0faf2879884d3b7a58b071902fba37d4b8b58a50e2c3b8ac262c0a74134045ed
+acme==0.9.1 \
+    --hash=sha256:83e6188d5f149678b77ff3c8f8f94983f3c448490ffa634c7e9f2e93e7351fb0 \
+    --hash=sha256:0effd08d144eedbfeb7dd784e9c8673ef3138cf48d35c8c33a1dd5bee9fd8207
+certbot==0.9.1 \
+    --hash=sha256:88237a4f6d337d40185a644407f9c7adb6eab87c43b8bf56c1edc02ce82a9d81 \
+    --hash=sha256:180354a3e95610ff8ba7f344011f2fcba1186d8efb7b25867266f47048e1e2f7
+certbot-apache==0.9.1 \
+    --hash=sha256:cb9931294d44a1d6d44eaa2e92cb30daf6f2e0f29f6e7f00849709f0dd408b40 \
+    --hash=sha256:1c09a6b4d087748f2aa143b0a7ced321458c3dd7ca70a80674f867b8b0e3cd6c
+certbot-nginx==0.9.1 \
+    --hash=sha256:3bd59a4f63a989eb31c04775107139bf45c2373a6f0b7bea4a3a1362da5c2ae7 \
+    --hash=sha256:22f277846ccf5c8787cac2b35a7897780f05f4022de02d8b4b731c2cd957354c
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1001,7 +992,7 @@ else
 
     # Print latest released version of LE to stdout:
     python fetch.py --latest-version
-    
+
     # Download letsencrypt-auto script from git tag v1.2.3 into the folder I'm
     # in, and make sure its signature verifies:
     python fetch.py --le-auto-script v1.2.3

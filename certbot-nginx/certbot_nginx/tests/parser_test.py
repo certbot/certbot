@@ -47,7 +47,8 @@ class NginxParserTest(util.NginxTest):
         self.assertEqual(set([nparser.abs_path(x) for x in
                               ['foo.conf', 'nginx.conf', 'server.conf',
                                'sites-enabled/default',
-                               'sites-enabled/example.com']]),
+                               'sites-enabled/example.com',
+                               'sites-enabled/migration.com']]),
                          set(nparser.parsed.keys()))
         self.assertEqual([['server_name', 'somename  alias  another.alias']],
                          nparser.parsed[nparser.abs_path('server.conf')])
@@ -71,7 +72,7 @@ class NginxParserTest(util.NginxTest):
         parsed = nparser._parse_files(nparser.abs_path(
             'sites-enabled/example.com.test'))
         self.assertEqual(3, len(glob.glob(nparser.abs_path('*.test'))))
-        self.assertEqual(2, len(
+        self.assertEqual(3, len(
             glob.glob(nparser.abs_path('sites-enabled/*.test'))))
         self.assertEqual([[['server'], [['listen', '69.50.225.155:9000'],
                                         ['listen', '127.0.0.1'],
@@ -135,7 +136,7 @@ class NginxParserTest(util.NginxTest):
                                                   '*.www.example.com']),
                                  [], [2, 1, 0])
 
-        self.assertEqual(5, len(vhosts))
+        self.assertEqual(7, len(vhosts))
         example_com = [x for x in vhosts if 'example.com' in x.filep][0]
         self.assertEqual(vhost3, example_com)
         default = [x for x in vhosts if 'default' in x.filep][0]
@@ -146,6 +147,26 @@ class NginxParserTest(util.NginxTest):
         self.assertEqual(vhost1, localhost)
         somename = [x for x in vhosts if 'somename' in x.names][0]
         self.assertEqual(vhost2, somename)
+
+    def test_has_ssl_on_directive(self):
+        nparser = parser.NginxParser(self.config_path, self.ssl_options)
+        mock_vhost = obj.VirtualHost(None, None, None, None, None,
+              [['listen', 'myhost default_server'],
+               ['server_name', 'www.example.org'],
+               [['location', '/'], [['root', 'html'], ['index', 'index.html index.htm']]]
+               ], None)
+        self.assertFalse(nparser.has_ssl_on_directive(mock_vhost))
+        mock_vhost.raw = [['listen', '*:80 default_server ssl'],
+                          ['server_name', '*.www.foo.com *.www.example.com'],
+                          ['root', '/home/ubuntu/sites/foo/']]
+        self.assertFalse(nparser.has_ssl_on_directive(mock_vhost))
+        mock_vhost.raw = [['listen', '80 ssl'],
+                          ['server_name', '*.www.foo.com *.www.example.com']]
+        self.assertFalse(nparser.has_ssl_on_directive(mock_vhost))
+        mock_vhost.raw = [['listen', '80'],
+                          ['ssl', 'on'],
+                          ['server_name', '*.www.foo.com *.www.example.com']]
+        self.assertTrue(nparser.has_ssl_on_directive(mock_vhost))
 
     def test_add_server_directives(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
@@ -282,7 +303,10 @@ class NginxParserTest(util.NginxTest):
                                        ['listen', '443 ssl']],
                                       replace=False)
         c_k = nparser.get_all_certs_keys()
-        self.assertEqual(set([('foo.pem', 'bar.key', filep)]), c_k)
+        migration_file = nparser.abs_path('sites-enabled/migration.com')
+        self.assertEqual(set([('foo.pem', 'bar.key', filep),
+                              ('cert.pem', 'cert.key', migration_file)
+                             ]), c_k)
 
     def test_parse_server_ssl(self):
         server = parser.parse_server([

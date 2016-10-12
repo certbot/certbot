@@ -67,16 +67,12 @@ def _report_successful_dry_run(config):
                                   reporter_util.HIGH_PRIORITY, on_crash=False)
 
 
-
 def _auth_from_domains(le_client, config, domains, lineage=None):
-    """Authenticate and enroll certificate."""
-    # Note: This can raise errors... caught above us though. This is now
-    # a three-way case: reinstall (which results in a no-op here because
-    # although there is a relevant lineage, we don't do anything to it
-    # inside this function -- we don't obtain a new certificate), renew
-    # (which results in treating the request as a renewal), or newcert
-    # (which results in treating the request as a new certificate request).
+    """Authenticate and enroll certificate.
 
+    :returns: Tuple of (str action, cert_or_None) as per _treat_as_renewal
+              action can be: "newcert" | "renew" | "reinstall"
+    """
     # If lineage is specified, use that one instead of looking around for
     # a matching one.
     if lineage is None:
@@ -91,7 +87,7 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
         # The lineage already exists; allow the caller to try installing
         # it without getting a new certificate at all.
         logger.info("Keeping the existing certificate")
-        return lineage, "reinstall"
+        return "reinstall", lineage
 
     hooks.pre_hook(config)
     try:
@@ -110,7 +106,7 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
     if not config.dry_run and not config.verb == "renew":
         _report_new_cert(config, lineage.cert, lineage.fullchain)
 
-    return lineage, action
+    return action, lineage
 
 
 def _handle_subset_cert_request(config, domains, cert):
@@ -165,10 +161,7 @@ def _handle_identical_cert_request(config, lineage):
     :rtype: tuple
 
     """
-    if lineage.has_pending_deployment():
-        logger.warn("Found a new cert /archive/ that was not linked to in /live/; "
-                    "fixing and reinstalling..")
-        lineage.update_all_links_to(lineage.latest_common_version())
+    if not lineage.ensure_deployed():
         return "reinstall", lineage
     if renewal.should_renew(config, lineage):
         return "renew", lineage
@@ -515,7 +508,7 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(config, authenticator, installer)
 
-    lineage, action = _auth_from_domains(le_client, config, domains)
+    action, lineage = _auth_from_domains(le_client, config, domains)
 
     le_client.deploy_certificate(
         domains, lineage.privkey, lineage.cert,
@@ -567,7 +560,7 @@ def obtain_cert(config, plugins, lineage=None):
     # SHOWTIME: Possibly obtain/renew a cert, and set action to renew | newcert | reinstall
     if config.csr is None: # the common case
         domains = _find_domains(config, installer)
-        _, action = _auth_from_domains(le_client, config, domains, lineage)
+        action, _ = _auth_from_domains(le_client, config, domains, lineage)
     else:
         assert lineage is None, "Did not expect a CSR with a RenewableCert"
         _csr_obtain_cert(config, le_client)
@@ -632,14 +625,22 @@ def _cli_log_handler(config, level, fmt):
     return handler
 
 
-def setup_logging(config, cli_handler_factory, logfile):
-    """Setup logging."""
-    file_fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+def setup_logging(config):
+    """Sets up logging to logfiles and the terminal.
+
+    :param certbot.interface.IConfig config: Configuration object
+
+    """
     cli_fmt = "%(message)s"
-    level = -config.verbose_count * 10
+    file_fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+    logfile = "letsencrypt.log"
+    if config.quiet:
+        level = constants.QUIET_LOGGING_LEVEL
+    else:
+        level = -config.verbose_count * 10
     file_handler, log_file_path = setup_log_file_handler(
         config, logfile=logfile, fmt=file_fmt)
-    cli_handler = cli_handler_factory(config, level, cli_fmt)
+    cli_handler = _cli_log_handler(config, level, cli_fmt)
 
     # TODO: use fileConfig?
 
@@ -745,7 +746,7 @@ def main(cli_args=sys.argv[1:]):
                             os.geteuid(), config.strict_permissions)
     # Setup logging ASAP, otherwise "No handlers could be found for
     # logger ..." TODO: this should be done before plugins discovery
-    setup_logging(config, _cli_log_handler, logfile='letsencrypt.log')
+    setup_logging(config)
     cli.possible_deprecation_warning(config)
 
     logger.debug("certbot version: %s", certbot.__version__)

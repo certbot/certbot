@@ -7,8 +7,11 @@ import unittest
 import mock
 
 from certbot import cli
+from certbot import colored_logging
+from certbot import constants
 from certbot import configuration
 from certbot import errors
+from certbot import log
 from certbot.plugins import disco as plugins_disco
 
 class MainTest(unittest.TestCase):
@@ -17,17 +20,13 @@ class MainTest(unittest.TestCase):
     def tearDown(self):
         pass
 
-    @mock.patch("certbot.main.logger")
-    def test_handle_identical_cert_request_pending(self, _mock_logger):
-        # For now, just test has_pending_deployment_branch; other
-        # coverage is in cli_test.py...
+    def test_handle_identical_cert_request_pending(self):
         from certbot import main
         mock_lineage = mock.Mock()
-        mock_lineage.has_pending_deployment.return_value = True
+        mock_lineage.ensure_deployed.return_value = False
         # pylint: disable=protected-access
         ret = main._handle_identical_cert_request(mock.Mock(), mock_lineage)
         self.assertEqual(ret, ("reinstall", mock_lineage))
-        self.assertEqual(mock_lineage.update_all_links_to.call_count, 1)
 
 class ObtainCertTest(unittest.TestCase):
     """Tests for certbot.main.obtain_cert."""
@@ -55,7 +54,7 @@ class ObtainCertTest(unittest.TestCase):
     def test_no_reinstall_text_pause(self, mock_auth):
         mock_notification = self.mock_get_utility().notification
         mock_notification.side_effect = self._assert_no_pause
-        mock_auth.return_value = (mock.ANY, 'reinstall')
+        mock_auth.return_value = ('reinstall', mock.ANY)
         self._call('certonly --webroot -d example.com -t'.split())
 
     def _assert_no_pause(self, message, height=42, pause=True):
@@ -82,6 +81,43 @@ class SetupLogFileHandlerTest(unittest.TestCase):
         mock_handler.side_effect = IOError
         self.assertRaises(errors.Error, self._call,
                           self.config, "test.log", "%s")
+
+
+class SetupLoggingTest(unittest.TestCase):
+    """Tests for certbot.main.setup_logging."""
+
+    def setUp(self):
+        self.config = mock.Mock(
+            logs_dir=tempfile.mkdtemp(),
+            noninteractive_mode=False, quiet=False, text_mode=False,
+            verbose_count=constants.CLI_DEFAULTS['verbose_count'])
+
+    def tearDown(self):
+        shutil.rmtree(self.config.logs_dir)
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.main import setup_logging
+        return setup_logging(*args, **kwargs)
+
+    @mock.patch('certbot.main.logging.getLogger')
+    def test_defaults(self, mock_get_logger):
+        self._call(self.config)
+
+        cli_handler = mock_get_logger().addHandler.call_args_list[0][0][0]
+        self.assertEqual(cli_handler.level, -self.config.verbose_count * 10)
+        self.assertTrue(
+            isinstance(cli_handler, log.DialogHandler))
+
+    @mock.patch('certbot.main.logging.getLogger')
+    def test_quiet_mode(self, mock_get_logger):
+        self.config.quiet = self.config.noninteractive_mode = True
+        self._call(self.config)
+
+        cli_handler = mock_get_logger().addHandler.call_args_list[0][0][0]
+        self.assertEqual(cli_handler.level, constants.QUIET_LOGGING_LEVEL)
+        self.assertTrue(
+            isinstance(cli_handler, colored_logging.StreamHandler))
 
 
 class MakeOrVerifyCoreDirTest(unittest.TestCase):

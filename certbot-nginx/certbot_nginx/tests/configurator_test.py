@@ -40,7 +40,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_prepare(self):
         self.assertEqual((1, 6, 2), self.config.version)
-        self.assertEqual(5, len(self.config.parser.parsed))
+        self.assertEqual(6, len(self.config.parser.parsed))
         # ensure we successfully parsed a file for ssl_options
         self.assertTrue(self.config.parser.loc["ssl_options"])
 
@@ -67,8 +67,8 @@ class NginxConfiguratorTest(util.NginxTest):
         mock_gethostbyaddr.return_value = ('155.225.50.69.nephoscale.net', [], [])
         names = self.config.get_all_names()
         self.assertEqual(names, set(
-            ["155.225.50.69.nephoscale.net",
-             "www.example.org", "another.alias"]))
+            ["155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
+             "migration.com", "summer.com", "geese.com"]))
 
     def test_supported_enhancements(self):
         self.assertEqual(['redirect', 'staple-ocsp'],
@@ -214,9 +214,34 @@ class NginxConfiguratorTest(util.NginxTest):
             ],
             2))
 
+    def test_deploy_cert_add_explicit_listen(self):
+        migration_conf = self.config.parser.abs_path('sites-enabled/migration.com')
+        self.config.deploy_cert(
+            "summer.com",
+            "summer/cert.pem",
+            "summer/key.pem",
+            "summer/chain.pem",
+            "summer/fullchain.pem")
+        self.config.save()
+        self.config.parser.load()
+        parsed_migration_conf = util.filter_comments(self.config.parser.parsed[migration_conf])
+        self.assertEqual([['server'],
+                          [
+                           ['server_name', 'migration.com'],
+                           ['server_name', 'summer.com'],
+
+                           ['listen', '80'],
+                           ['listen', '5001 ssl'],
+                           ['ssl_certificate', 'summer/fullchain.pem'],
+                           ['ssl_certificate_key', 'summer/key.pem']] +
+                           util.filter_comments(self.config.parser.loc["ssl_options"])
+                           ],
+                         parsed_migration_conf[0])
+
     def test_get_all_certs_keys(self):
         nginx_conf = self.config.parser.abs_path('nginx.conf')
         example_conf = self.config.parser.abs_path('sites-enabled/example.com')
+        migration_conf = self.config.parser.abs_path('sites-enabled/migration.com')
 
         # Get the default SSL vhost
         self.config.deploy_cert(
@@ -231,12 +256,19 @@ class NginxConfiguratorTest(util.NginxTest):
             "/etc/nginx/key.pem",
             "/etc/nginx/chain.pem",
             "/etc/nginx/fullchain.pem")
+        self.config.deploy_cert(
+            "migration.com",
+            "migration/cert.pem",
+            "migration/key.pem",
+            "migration/chain.pem",
+            "migration/fullchain.pem")
         self.config.save()
 
         self.config.parser.load()
         self.assertEqual(set([
             ('example/fullchain.pem', 'example/key.pem', example_conf),
             ('/etc/nginx/fullchain.pem', '/etc/nginx/key.pem', nginx_conf),
+            ('migration/fullchain.pem', 'migration/key.pem', migration_conf),
         ]), self.config.get_all_certs_keys())
 
     @mock.patch("certbot_nginx.configurator.tls_sni_01.NginxTlsSni01.perform")
@@ -390,6 +422,8 @@ class NginxConfiguratorTest(util.NginxTest):
                 OpenSSL.crypto.FILETYPE_PEM, key_file.read())
 
     def test_redirect_enhance(self):
+        # Test that we successfully add a redirect when there is
+        # a listen directive
         expected = [
             ['if', '($scheme != "https") '],
             [['return', '301 https://$host$request_uri']]
@@ -400,6 +434,21 @@ class NginxConfiguratorTest(util.NginxTest):
 
         generated_conf = self.config.parser.parsed[example_conf]
         self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
+
+        # Test that we successfully add a redirect when there is
+        # no listen directive
+        migration_conf = self.config.parser.abs_path('sites-enabled/migration.com')
+        self.config.enhance("migration.com", "redirect")
+
+        generated_conf = self.config.parser.parsed[migration_conf]
+        self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
+
+    def test_redirect_dont_enhance(self):
+        # Test that we don't accidentally add redirect to ssl-only block
+        with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
+            self.config.enhance("geese.com", "redirect")
+        self.assertEqual(mock_logger.info.call_args[0][0],
+                'No matching insecure server blocks listening on port %s found.')
 
     def test_staple_ocsp_bad_version(self):
         self.config.version = (1, 3, 1)

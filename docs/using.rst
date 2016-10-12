@@ -179,21 +179,6 @@ want to use the Apache plugin, it has to be installed separately:
    emerge -av app-crypt/letsencrypt
    emerge -av app-crypt/letsencrypt-apache
 
-Currently, only the Apache plugin is included in Portage. However, if you
-Warning!
-You can use Layman to add the mrueg overlay which does include a package for the
-Certbot Nginx plugin, however, this plugin is known to be buggy and should only
-be used with caution after creating a backup up your Nginx configuration.
-We strongly recommend you use the app-crypt/letsencrypt package instead until
-the Nginx plugin is ready.
-
-.. code-block:: shell
-
-   emerge -av app-portage/layman
-   layman -S
-   layman -a mrueg
-   emerge -av app-crypt/letsencrypt-nginx
-
 When using the Apache plugin, you will run into a "cannot find a cert or key
 directive" error if you're sporting the default Gentoo ``httpd.conf``.
 You can fix this by commenting out two lines in ``/etc/apache2/httpd.conf``
@@ -272,13 +257,14 @@ apache_     Y    Y    | Automates obtaining and installing a cert with Apache 2.
                       | Debian-based distributions with ``libaugeas0`` 1.0+.
 webroot_    Y    N    | Obtains a cert by writing to the webroot directory of an      http-01_ (80)
                       | already running webserver.
+nginx_      Y    Y    | Automates obtaining and installing a cert with Nginx. Alpha   tls-sni-01_ (443)
+                      | release shipped with Certbot 0.9.0.
 standalone_ Y    N    | Uses a "standalone" webserver to obtain a cert. Requires      http-01_ (80) or
                       | port 80 or 443 to be available. This is useful on systems     tls-sni-01_ (443)
                       | with no webserver, or when direct integration with the local
                       | webserver is not supported or not desired.
 manual_     Y    N    | Helps you obtain a cert by giving you instructions to perform http-01_ (80) or
                       | domain validation yourself.                                   dns-01_ (53)
-nginx_      Y    Y    | Very experimental and not included in certbot-auto_.          tls-sni-01_ (443)
 =========== ==== ==== =============================================================== =============================
 
 Under the hood, plugins use one of several ACME protocol "Challenges_" to
@@ -349,6 +335,19 @@ your webserver configuration, you might need to modify the configuration
 to ensure that files inside ``/.well-known/acme-challenge`` are served by
 the webserver.
 
+Nginx
+-----
+
+The Nginx plugin has been distributed with Cerbot since version 0.9.0 and should
+work for most configurations. Because it is alpha code, we recommend backing up Nginx
+configurations before using it (though you can also revert changes to
+configurations with ``certbot --nginx rollback``). You can use it by providing
+the ``--nginx`` flag on the commandline.
+
+::
+
+   certbot --nginx
+
 Standalone
 ----------
 
@@ -377,15 +376,6 @@ the UI, you can use the plugin to obtain a cert by specifying
 ``certonly`` and ``--manual`` on the command line. This requires you
 to copy and paste commands into another terminal session, which may
 be on a different computer.
-
-Nginx
------
-
-In the future, if you're running Nginx you will hopefully be able to use this
-plugin to automatically obtain and install your certificate. The Nginx plugin is
-still experimental, however, and is not installed with certbot-auto_. If
-installed, you can select this plugin on the command line by including
-``--nginx``.
 
 .. _third-party-plugins:
 
@@ -597,43 +587,41 @@ The following files are available:
 
   This is what Apache needs for `SSLCertificateKeyFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatekeyfile>`_,
-  and nginx for `ssl_certificate_key
+  and Nginx for `ssl_certificate_key
   <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate_key>`_.
 
-``cert.pem``
-  Server certificate only.
-
-  This is what Apache < 2.4.8 needs for `SSLCertificateFile
-  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_.
-
-``chain.pem``
-  All certificates that need to be served by the browser **excluding**
-  server certificate, i.e. root and intermediate certificates only.
-
-  This is what Apache < 2.4.8 needs for `SSLCertificateChainFile
-  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatechainfile>`_,
-  and what nginx >= 1.3.7 needs for `ssl_trusted_certificate
-  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_trusted_certificate>`_.
-
 ``fullchain.pem``
-  All certificates, **including** server certificate. This is
-  concatenation of ``cert.pem`` and ``chain.pem``.
+  All certificates, **including** server certificate (aka leaf certificate or
+  end-entity certificate). The server certificate is the first one in this file,
+  followed by any intermediates.
 
   This is what Apache >= 2.4.8 needs for `SSLCertificateFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_,
-  and what nginx needs for `ssl_certificate
+  and what Nginx needs for `ssl_certificate
   <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate>`_.
 
+``cert.pem`` and ``chain.pem`` (less common)
+  ``cert.pem`` contains the server certificate by itself, and
+  ``chain.pem`` contains the additional intermediate certificate or
+  certificates that web browsers will need in order to validate the
+  server certificate. If you provide one of these files to your web
+  server, you **must** provide both of them, or some browsers will show
+  "This Connection is Untrusted" errors for your site, `some of the time
+  <https://whatsmychaincert.com/>`_.
 
-For both chain files, all certificates are ordered from root (primary
-certificate) towards leaf.
+  Apache < 2.4.8 needs these for `SSLCertificateFile
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_.
+  and `SSLCertificateChainFile
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatechainfile>`_,
+  respectively.
 
-Please note, that **you must use** either ``chain.pem`` or
-``fullchain.pem``. In case of webservers, using only ``cert.pem``,
-will cause nasty errors served through the browsers!
+  If you're using OCSP stapling with Nginx >= 1.3.7, ``chain.pem`` should be
+  provided as the `ssl_trusted_certificate
+  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_trusted_certificate>`_
+  to validate OCSP responses.
 
-.. note:: All files are PEM-encoded (as the filename suffix
-   suggests). If you need other format, such as DER or PFX, then you
+.. note:: All files are PEM-encoded.
+   If you need other format, such as DER or PFX, then you
    could convert using ``openssl``. You can automate that with
    ``--renew-hook`` if you're using automatic renewal_.
 
@@ -663,14 +651,15 @@ By default, the following locations are searched:
 Getting help
 ============
 
-If you're having problems you can chat with us on `IRC (#certbot @
-OFTC) <https://webchat.oftc.net?channels=%23certbot>`_ or at
-`IRC (#letsencrypt @ freenode) <https://webchat.freenode.net?channels=%23letsencrypt>`_
-or get support on the Let's Encrypt `forums <https://community.letsencrypt.org>`_.
+If you're having problems, we recommend posting on the Let's Encrypt
+`Community Forum <https://community.letsencrypt.org>`_.
+
+You can also chat with us on IRC: `(#certbot @
+OFTC) <https://webchat.oftc.net?channels=%23certbot>`_ or
+`(#letsencrypt @ freenode) <https://webchat.freenode.net?channels=%23letsencrypt>`_.
 
 If you find a bug in the software, please do report it in our `issue
-tracker
-<https://github.com/certbot/certbot/issues>`_. Remember to
+tracker <https://github.com/certbot/certbot/issues>`_. Remember to
 give us as much information as possible:
 
 - copy and paste exact command line used and the output (though mind

@@ -21,7 +21,7 @@ optional arguments:
                         config file path (default: None)
   -v, --verbose         This flag can be used multiple times to incrementally
                         increase the verbosity of output, e.g. -vvv. (default:
-                        -3)
+                        -2)
   -t, --text            Use the text output instead of the curses UI.
                         (default: False)
   -n, --non-interactive, --noninteractive
@@ -29,7 +29,11 @@ optional arguments:
                         require additional command line flags; the client will
                         try to explain which ones are required if it finds one
                         missing (default: False)
-  --dialog              Run using dialog (default: False)
+  --dialog              Run using interactive dialog menus (default: False)
+  -d DOMAIN, --domains DOMAIN, --domain DOMAIN
+                        Domain names to apply. For multiple domains you can
+                        use multiple -d flags or enter a comma separated list
+                        of domains as a parameter. (default: [])
   --dry-run             Perform a test run of the client, obtaining test
                         (invalid) certs but not saving them to disk. This can
                         currently only be used with the 'certonly' and 'renew'
@@ -62,10 +66,16 @@ optional arguments:
   -m EMAIL, --email EMAIL
                         Email used for registration and recovery contact.
                         (default: None)
-  -d DOMAIN, --domains DOMAIN, --domain DOMAIN
-                        Domain names to apply. For multiple domains you can
-                        use multiple -d flags or enter a comma separated list
-                        of domains as a parameter. (default: [])
+  --preferred-challenges PREF_CHALLS
+                        A sorted, comma delimited list of the preferred
+                        challenge to use during authorization with the most
+                        preferred challenge listed first (Eg, "dns" or "tls-
+                        sni-01,http,dns"). Not all plugins support all
+                        challenges. See
+                        https://certbot.eff.org/docs/using.html#plugins for
+                        details. ACME Challenges are versioned, but if you
+                        pick "http" rather than "http-01", Certbot will select
+                        the latest version automatically. (default: [])
   --user-agent USER_AGENT
                         Set a custom user agent string for the client. User
                         agent strings allow the CA to collect high level
@@ -104,34 +114,14 @@ automation:
   --duplicate           Allow making a certificate lineage that duplicates an
                         existing one (both can be renewed in parallel)
                         (default: False)
-  --os-packages-only    (letsencrypt-auto only) install OS package
-                        dependencies and then stop (default: False)
-  --no-self-upgrade     (letsencrypt-auto only) prevent the letsencrypt-auto
-                        script from upgrading itself to newer released
-                        versions (default: False)
+  --os-packages-only    (certbot-auto only) install OS package dependencies
+                        and then stop (default: False)
+  --no-self-upgrade     (certbot-auto only) prevent the certbot-auto script
+                        from upgrading itself to newer released versions
+                        (default: False)
   -q, --quiet           Silence all output except errors. Useful for
                         automation via cron. Implies --non-interactive.
                         (default: False)
-
-testing:
-  The following flags are meant for testing purposes only! Do NOT change
-  them, unless you really know what you're doing!
-
-  --debug               Show tracebacks in case of errors, and allow
-                        letsencrypt-auto execution on experimental platforms
-                        (default: False)
-  --no-verify-ssl       Disable SSL certificate verification. (default: False)
-  --tls-sni-01-port TLS_SNI_01_PORT
-                        Port number to perform tls-sni-01 challenge. Boulder
-                        in testing mode defaults to 5001. (default: 443)
-  --http-01-port HTTP01_PORT
-                        Port used in the SimpleHttp challenge. (default: 80)
-  --break-my-certs      Be willing to replace or renew valid certs with
-                        invalid (testing/staging) certs (default: False)
-  --test-cert, --staging
-                        Use the staging server to obtain test (invalid) certs;
-                        equivalent to --server https://acme-
-                        staging.api.letsencrypt.org/directory (default: False)
 
 security:
   Security parameters & server settings
@@ -147,8 +137,8 @@ security:
                         HTTPS for the newly authenticated vhost. (default:
                         None)
   --hsts                Add the Strict-Transport-Security header to every HTTP
-                        response. Forcing browser to always use SSL for
-                        the domain. Defends against SSL Stripping. (default:
+                        response. Forcing browser to always use SSL for the
+                        domain. Defends against SSL Stripping. (default:
                         False)
   --no-hsts             Do not automatically add the Strict-Transport-Security
                         header to every HTTP response. (default: False)
@@ -167,6 +157,22 @@ security:
   --strict-permissions  Require that all configuration files are owned by the
                         current user; only needed if your config is somewhere
                         unsafe like /tmp/ (default: False)
+
+testing:
+  The following flags are meant for testing purposes only! Do NOT change
+  them, unless you really know what you're doing!
+
+  --test-cert, --staging
+                        Use the staging server to obtain test (invalid) certs;
+                        equivalent to --server https://acme-
+                        staging.api.letsencrypt.org/directory (default: False)
+  --debug               Show tracebacks in case of errors, and allow certbot-
+                        auto execution on experimental platforms (default:
+                        False)
+  --no-verify-ssl       Disable verification of the ACME server's certificate.
+                        (default: False)
+  --break-my-certs      Be willing to replace or renew valid certs with
+                        invalid (testing/staging) certs (default: False)
 
 renew:
   The 'renew' subcommand will attempt to renew all certificates (or more
@@ -194,11 +200,11 @@ renew:
                         (default: None)
   --renew-hook RENEW_HOOK
                         Command to be run in a shell once for each
-                        successfully renewed certificate.For this command, the
-                        shell variable $RENEWED_LINEAGE will point to
-                        theconfig live subdirectory containing the new certs
-                        and keys; the shell variable $RENEWED_DOMAINS will
-                        contain a space-delimited list of renewed cert domains
+                        successfully renewed certificate. For this command,
+                        the shell variable $RENEWED_LINEAGE will point to the
+                        config live subdirectory containing the new certs and
+                        keys; the shell variable $RENEWED_DOMAINS will contain
+                        a space-delimited list of renewed cert domains
                         (default: None)
   --disable-hook-validation
                         Ordinarily the commands specified for --pre-hook
@@ -213,6 +219,16 @@ renew:
 certonly:
   Options for modifying how a cert is obtained
 
+  --tls-sni-01-port TLS_SNI_01_PORT
+                        Port used during tls-sni-01 challenge. This only
+                        affects the port Certbot listens on. A conforming ACME
+                        server will still attempt to connect on port 443.
+                        (default: 443)
+  --http-01-port HTTP01_PORT
+                        Port used in the http-01 challenge.This only affects
+                        the port Certbot listens on. A conforming ACME server
+                        will still attempt to connect on port 80. (default:
+                        80)
   --csr CSR             Path to a Certificate Signing Request (CSR) in DER
                         format; note that the .csr file *must* contain a
                         Subject Alternative Name field for each domain you
@@ -232,7 +248,7 @@ rollback:
                         (default: 1)
 
 plugins:
-  Plugin options
+  Options for the "plugins" subcommand
 
   --init                Initialize plugins. (default: False)
   --prepare             Initialize and prepare plugins. (default: False)
@@ -267,10 +283,11 @@ paths:
                         https://acme-v01.api.letsencrypt.org/directory)
 
 plugins:
-  Certbot client supports an extensible plugins architecture. See 'certbot
-  plugins' for a list of all installed plugins and their names. You can
-  force a particular plugin by setting options provided below. Running
-  --help <plugin_name> will list flags specific to that plugin.
+  Plugin Selection: Certbot client supports an extensible plugins
+  architecture. See 'certbot plugins' for a list of all installed plugins
+  and their names. You can force a particular plugin by setting options
+  provided below. Running --help <plugin_name> will list flags specific to
+  that plugin.
 
   -a AUTHENTICATOR, --authenticator AUTHENTICATOR
                         Authenticator plugin name. (default: None)
@@ -291,11 +308,7 @@ plugins:
                         (default: False)
 
 standalone:
-  Automatically use a temporary webserver
-
-  --standalone-supported-challenges STANDALONE_SUPPORTED_CHALLENGES
-                        Supported challenges. Preferred in the order they are
-                        listed. (default: tls-sni-01,http-01)
+  Spin up a temporary webserver
 
 manual:
   Manually configure an HTTP server
@@ -307,7 +320,7 @@ manual:
                         False)
 
 nginx:
-  Nginx Web Server - currently doesn't work
+  Nginx Web Server plugin - Alpha
 
   --nginx-server-root NGINX_SERVER_ROOT
                         Nginx server root directory. (default: /etc/nginx)
@@ -337,7 +350,7 @@ webroot:
                         {})
 
 apache:
-  Apache Web Server - Alpha
+  Apache Web Server plugin - Beta
 
   --apache-enmod APACHE_ENMOD
                         Path to the Apache 'a2enmod' binary. (default:
@@ -353,6 +366,9 @@ apache:
   --apache-vhost-root APACHE_VHOST_ROOT
                         Apache server VirtualHost configuration root (default:
                         /etc/apache2/sites-available)
+  --apache-logs-root APACHE_LOGS_ROOT
+                        Apache server logs directory (default:
+                        /var/log/apache2)
   --apache-challenge-location APACHE_CHALLENGE_LOCATION
                         Directory path for challenge configuration. (default:
                         /etc/apache2)

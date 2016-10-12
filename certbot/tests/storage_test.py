@@ -258,6 +258,23 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertEqual(self.test_rc.latest_common_version(), 17)
         self.assertEqual(self.test_rc.next_free_version(), 18)
 
+    @mock.patch("certbot.storage.logger")
+    def test_ensure_deployed(self, mock_logger):
+        mock_update = self.test_rc.update_all_links_to = mock.Mock()
+        mock_has_pending = self.test_rc.has_pending_deployment = mock.Mock()
+        self.test_rc.latest_common_version = mock.Mock()
+
+        mock_has_pending.return_value = False
+        self.assertEqual(self.test_rc.ensure_deployed(), True)
+        self.assertEqual(mock_update.call_count, 0)
+        self.assertEqual(mock_logger.warn.call_count, 0)
+
+        mock_has_pending.return_value = True
+        self.assertEqual(self.test_rc.ensure_deployed(), False)
+        self.assertEqual(mock_update.call_count, 1)
+        self.assertEqual(mock_logger.warn.call_count, 1)
+
+
     def test_update_link_to(self):
         for ver in six.moves.range(1, 6):
             for kind in ALL_FOUR:

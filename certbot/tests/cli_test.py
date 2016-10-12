@@ -1,4 +1,7 @@
 """Tests for certbot.cli."""
+# Many tests in this file should be moved into
+# main_test.py and renewal_test.py. See #2716.
+# pylint: disable=too-many-lines
 from __future__ import print_function
 
 import argparse
@@ -177,7 +180,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         args = ["--standalone", "certonly", "-m", "none@none.com",
                 "-d", "example.com", '--agree-tos'] + self.standard_args
         det.return_value = mock.MagicMock(), None
-        afd.return_value = mock.MagicMock(), "newcert"
+        afd.return_value = "newcert", mock.MagicMock()
 
         with mock.patch('certbot.main.client.acme_client.ClientNetwork') as acme_net:
             self._call_no_clientmock(args)
@@ -575,7 +578,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
                              args=None, should_renew=True, error_expected=False):
         # pylint: disable=too-many-locals,too-many-arguments
-        cert_path = 'certbot/tests/testdata/cert.pem'
+        cert_path = test_util.vector_path('cert.pem')
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path)
         mock_lineage.should_autorenew.return_value = due_for_renewal
@@ -651,32 +654,60 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._test_renewal_common(False, ['-tvv', '--debug', '--keep'],
                                   log_out="not yet due", should_renew=False)
 
-
     def _dump_log(self):
         with open(os.path.join(self.logs_dir, "letsencrypt.log")) as lf:
             print("Logs:")
             print(lf.read())
 
+    def _make_lineage(self, testfile):
+        """Creates a lineage defined by testfile.
 
-    def _make_test_renewal_conf(self, testfile):
+        This creates the archive, live, and renewal directories if
+        necessary and creates a simple lineage.
+
+        :param str testfile: configuration file to base the lineage on
+
+        :returns: path to the renewal conf file for the created lineage
+        :rtype: str
+
+        """
+        lineage_name = testfile[:-len('.conf')]
+
+        conf_dir = os.path.join(
+            self.config_dir, constants.RENEWAL_CONFIGS_DIR)
+        archive_dir = os.path.join(
+            self.config_dir, constants.ARCHIVE_DIR, lineage_name)
+        live_dir = os.path.join(
+            self.config_dir, constants.LIVE_DIR, lineage_name)
+
+        for directory in (archive_dir, conf_dir, live_dir,):
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+
+        sample_archive = test_util.vector_path('sample-archive')
+        for kind in os.listdir(sample_archive):
+            shutil.copyfile(os.path.join(sample_archive, kind),
+                            os.path.join(archive_dir, kind))
+
+        for kind in storage.ALL_FOUR:
+            os.symlink(os.path.join(archive_dir, '{0}1.pem'.format(kind)),
+                       os.path.join(live_dir, '{0}.pem'.format(kind)))
+
+        conf_path = os.path.join(self.config_dir, conf_dir, testfile)
         with open(test_util.vector_path(testfile)) as src:
-            # put the correct path for cert.pem, chain.pem etc in the renewal conf
-            renewal_conf = src.read().replace("MAGICDIR", test_util.vector_path())
-        rd = os.path.join(self.config_dir, "renewal")
-        if not os.path.exists(rd):
-            os.makedirs(rd)
-        rc = os.path.join(rd, "sample-renewal.conf")
-        with open(rc, "w") as dest:
-            dest.write(renewal_conf)
-        return rc
+            with open(conf_path, 'w') as dst:
+                dst.writelines(
+                    line.replace('MAGICDIR', self.config_dir) for line in src)
+
+        return conf_path
 
     def test_renew_verb(self):
-        self._make_test_renewal_conf('sample-renewal.conf')
+        self._make_lineage('sample-renewal.conf')
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, should_renew=True)
 
     def test_quiet_renew(self):
-        self._make_test_renewal_conf('sample-renewal.conf')
+        self._make_lineage('sample-renewal.conf')
         args = ["renew", "--dry-run"]
         _, _, stdout = self._test_renewal_common(True, [], args=args, should_renew=True)
         out = stdout.getvalue()
@@ -688,13 +719,13 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual("", out)
 
     def test_renew_hook_validation(self):
-        self._make_test_renewal_conf('sample-renewal.conf')
+        self._make_lineage('sample-renewal.conf')
         args = ["renew", "--dry-run", "--post-hook=no-such-command"]
         self._test_renewal_common(True, [], args=args, should_renew=False,
                                   error_expected=True)
 
     def test_renew_no_hook_validation(self):
-        self._make_test_renewal_conf('sample-renewal.conf')
+        self._make_lineage('sample-renewal.conf')
         args = ["renew", "--dry-run", "--post-hook=no-such-command",
                 "--disable-hook-validation"]
         self._test_renewal_common(True, [], args=args, should_renew=True,
@@ -703,7 +734,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     @mock.patch("certbot.cli.set_by_cli")
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
-        rc_path = self._make_test_renewal_conf('sample-renewal-ancient.conf')
+        rc_path = self._make_lineage('sample-renewal-ancient.conf')
         args = mock.MagicMock(account=None, email=None, webroot_path=None)
         config = configuration.NamespaceConfig(args)
         lineage = storage.RenewableCert(rc_path,
