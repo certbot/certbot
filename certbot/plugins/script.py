@@ -6,8 +6,6 @@ import zope.interface
 
 from subprocess import Popen, PIPE
 
-from acme import challenges
-
 from certbot import errors
 from certbot import interfaces
 
@@ -16,11 +14,7 @@ from certbot.plugins import common
 logger = logging.getLogger(__name__)
 
 
-# Supported challenges
-CHALLENGES = {"http-01": challenges.Challenge.TYPES["http-01"],
-              "http": challenges.Challenge.TYPES["http-01"],
-              "dns-01": challenges.Challenge.TYPES["dns-01"],
-              "dns": challenges.Challenge.TYPES["dns-01"]}
+CHALLENGES = ["http-01", "dns-01"]
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)
@@ -39,7 +33,7 @@ class Authenticator(common.Plugin):
         super(Authenticator, self).__init__(*args, **kwargs)
         self.cleanup_script = None
         self.auth_script = None
-        self.challenge = CHALLENGES["http-01"]
+        self.challenges = []
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -47,13 +41,11 @@ class Authenticator(common.Plugin):
             help="path to the authentication script")
         add("cleanup", default=None, required=False,
             help="path to the cleanup script")
-        add("challenge", "-challenge", default="http-01", required=False,
-            help="challenge to use")
 
     @property
     def supported_challenges(self):
         """Challenges supported by this plugin."""
-        return CHALLENGES[self.challenge]
+        return self.challenges
 
     def check_script_validity(self, script_path):
         """Checks that the script exists and is executable
@@ -80,15 +72,17 @@ class Authenticator(common.Plugin):
 
     def prepare(self):
         """Prepare script plugin, check challenge, scripts and register them"""
-
         try:
-            challenge = self.config.namespace.script_challenge
-            if challenge in CHALLENGES.keys():
-                self.challenge = CHALLENGES[challenge]
-            else:
+            challenges = self.config.namespace.pref_challs
+            for c in challenges:
+                if c.typ in CHALLENGES:
+                    self.challenges.append(c)
+            if not self.challenges and len(challenges):
+                # Challenges requested, but not supported
                 raise errors.PluginError(
-                    "Challenge {} not supported by script plugin".format(
-                        challenge))
+                    "Unfortunately script plugin doesn't yet support " +
+                    "the requested challenges")
+
         except AttributeError:
             # Challenge not defined on cli, we have default set in __init__
             pass
@@ -103,7 +97,7 @@ class Authenticator(common.Plugin):
     def get_chall_pref(self, domain):
         """Return challenge(s) we're answering to """
         # pylint: disable=unused-argument
-        return [self.challenge]
+        return self.challenges
 
     def perform(self, achalls):
         """Perform the authentication per challenge"""
