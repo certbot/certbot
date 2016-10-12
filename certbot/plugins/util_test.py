@@ -35,7 +35,15 @@ class PathSurgeryTest(unittest.TestCase):
             self.assertTrue("/tmp" in os.environ["PATH"])
 
 
-class AlreadyListeningTestNoPsutil(unittest.TestCase):
+class AlreadyListeningTest(unittest.TestCase):
+    """Tests for certbot.plugins.already_listening."""
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.plugins.util import already_listening
+        return already_listening(*args, **kwargs)
+
+
+class AlreadyListeningTestNoPsutil(AlreadyListeningTest):
     """Tests for certbot.plugins.already_listening when
     psutil is not available"""
     def setUp(self):
@@ -45,11 +53,6 @@ class AlreadyListeningTestNoPsutil(unittest.TestCase):
     def tearDown(self):
         import certbot.plugins.util
         reload_module(certbot.plugins.util)
-
-    @classmethod
-    def _call(cls, *args, **kwargs):
-        from certbot.plugins.util import already_listening
-        return already_listening(*args, **kwargs)
 
     @mock.patch("certbot.plugins.util.zope.component.getUtility")
     def test_ports_available(self, mock_getutil):
@@ -73,12 +76,8 @@ class AlreadyListeningTestNoPsutil(unittest.TestCase):
 
 @test_util.skip_unless(test_util.requirement_available(PSUTIL_REQUIREMENT),
                        "optional dependency psutil is not available")
-class AlreadyListeningTestPsutil(unittest.TestCase):
+class AlreadyListeningTestPsutil(AlreadyListeningTest):
     """Tests for certbot.plugins.already_listening."""
-    def _call(self, *args, **kwargs):
-        from certbot.plugins.util import already_listening
-        return already_listening(*args, **kwargs)
-
     @mock.patch("certbot.plugins.util.psutil.net_connections")
     @mock.patch("certbot.plugins.util.psutil.Process")
     @mock.patch("certbot.plugins.util.zope.component.getUtility")
