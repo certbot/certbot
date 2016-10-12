@@ -18,7 +18,9 @@ logger = logging.getLogger(__name__)
 
 # Supported challenges
 CHALLENGES = {"http-01": challenges.Challenge.TYPES["http-01"],
-              "dns-01": challenges.Challenge.TYPES["dns-01"]}
+              "http": challenges.Challenge.TYPES["http-01"],
+              "dns-01": challenges.Challenge.TYPES["dns-01"],
+              "dns": challenges.Challenge.TYPES["dns-01"]}
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)
@@ -41,11 +43,11 @@ class Authenticator(common.Plugin):
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add("auth-script", "-auth", default=None, required=True,
+        add("auth", default=None, required=True,
             help="path to the authentication script")
-        add("cleanup-script", "-cleanup", default=None, required=False,
+        add("cleanup", default=None, required=False,
             help="path to the cleanup script")
-        add("challenge", "-c", default="http-01", required=False,
+        add("challenge", "-challenge", default="http-01", required=False,
             help="challenge to use")
 
     @property
@@ -79,15 +81,20 @@ class Authenticator(common.Plugin):
     def prepare(self):
         """Prepare script plugin, check challenge, scripts and register them"""
 
-        if self.config.namespace.challenge in CHALLENGES.keys():
-            self.challenge = CHALLENGES[self.config.namespace.challenge]
-        else:
-            raise errors.PluginError(
-                "Challenge {} not supported by script plugin".format(
-                    self.config.namespace.challenge))
+        try:
+            challenge = self.config.namespace.script_challenge
+            if challenge in CHALLENGES.keys():
+                self.challenge = CHALLENGES[challenge]
+            else:
+                raise errors.PluginError(
+                    "Challenge {} not supported by script plugin".format(
+                        challenge))
+        except AttributeError:
+            # Challenge not defined on cli, we have default set in __init__
+            pass
 
-        script_path = self.config.namespace.auth_script
-        cleanup_path = self.config.namespace.cleanup_script
+        script_path = self.config.namespace.script_auth
+        cleanup_path = self.config.namespace.script_cleanup
         if self.check_script_validity(script_path):
             self.auth_script = script_path
         if cleanup_path and self.check_script_validity(cleanup_path):
@@ -96,7 +103,7 @@ class Authenticator(common.Plugin):
     def get_chall_pref(self, domain):
         """Return challenge(s) we're answering to """
         # pylint: disable=unused-argument
-        return [CHALLENGES[self.challenge]]
+        return [self.challenge]
 
     def perform(self, achalls):
         """Perform the authentication per challenge"""
@@ -133,7 +140,7 @@ class Authenticator(common.Plugin):
             os.environ[k] = env_vars[k]
 
     def execute(self, shell_cmd):
-        """Run a script bundle part.
+        """Run a script.
 
         :param str shell_cmd: Command to run
         :returns: `tuple` (`int` returncode, `str` stderr"""
@@ -151,4 +158,4 @@ class Authenticator(common.Plugin):
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         """Run cleanup.sh """
         if self.cleanup_script:
-            self.execute(self.bundle['cleanup'])
+            self.execute(self.cleanup_script)
