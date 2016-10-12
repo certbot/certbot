@@ -65,7 +65,7 @@ class RegisterTest(unittest.TestCase):
         from acme import messages
         self.config.noninteractive_mode = False
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
-        mx_err = messages.Error(detail=msg, typ="urn:acme:error:invalidContact")
+        mx_err = messages.Error.with_code('invalidContact', detail=msg)
         with mock.patch("certbot.client.acme_client.Client") as mock_client:
             mock_client().register.side_effect = [mx_err, mock.MagicMock()]
             self._call()
@@ -75,7 +75,7 @@ class RegisterTest(unittest.TestCase):
     def test_email_invalid_noninteractive(self, _rep):
         from acme import messages
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
-        mx_err = messages.Error(detail=msg, typ="urn:acme:error:invalidContact")
+        mx_err = messages.Error.with_code('invalidContact', detail=msg)
         with mock.patch("certbot.client.acme_client.Client") as mock_client:
             mock_client().register.side_effect = [mx_err, mock.MagicMock()]
             self.assertRaises(errors.Error, self._call)
