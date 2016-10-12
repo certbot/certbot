@@ -4,7 +4,6 @@ import socket
 import unittest
 
 import mock
-from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot.plugins.util import PSUTIL_REQUIREMENT
 from certbot.tests import test_util
@@ -46,13 +45,11 @@ class AlreadyListeningTest(unittest.TestCase):
 class AlreadyListeningTestNoPsutil(AlreadyListeningTest):
     """Tests for certbot.plugins.already_listening when
     psutil is not available"""
-    def setUp(self):
-        from certbot.plugins import util
-        util.USE_PSUTIL = False
-
-    def tearDown(self):
-        import certbot.plugins.util
-        reload_module(certbot.plugins.util)
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        with mock.patch("certbot.plugins.util.USE_PSUTIL", False):
+            return super(
+                AlreadyListeningTestNoPsutil, cls)._call(*args, **kwargs)
 
     @mock.patch("certbot.plugins.util.zope.component.getUtility")
     def test_ports_available(self, mock_getutil):
