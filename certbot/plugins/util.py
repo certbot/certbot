@@ -91,6 +91,7 @@ def already_listening_socket(port, renewer=False):
 
     try:
         testsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+        testsocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             testsocket.bind(("", port))
         except socket.error:
@@ -129,8 +130,7 @@ def already_listening_psutil(port, renewer=False):
         return False
 
     listeners = [conn.pid for conn in net_connections
-                 if (conn.status == 'LISTEN' or
-                 conn.status == 'TIME_WAIT') and
+                 if conn.status == 'LISTEN' and
                  conn.type == socket.SOCK_STREAM and
                  conn.laddr[1] == port]
     try:
