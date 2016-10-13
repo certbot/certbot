@@ -66,30 +66,27 @@ class Authenticator(common.Plugin):
             raise errors.PluginError(
                 "Script {} does not exist".format(script_path))
 
-        return False
-
     def more_info(self):  # pylint: disable=missing-docstring
         return("This authenticator enables user to perform authentication " +
                "using shell script(s).")
 
     def prepare(self):
         """Prepare script plugin, check challenge, scripts and register them"""
-        try:
-            pref_challenges = self.config.pref_challs
-            for c in pref_challenges:
-                if c.typ in CHALLENGES:
-                    self.challenges.append(c)
-            if not self.challenges and len(pref_challenges):
-                # Challenges requested, but not supported
-                raise errors.PluginError(
-                    "Unfortunately script plugin doesn't yet support " +
-                    "the requested challenges")
+        pref_challenges = self.config.pref_challs
+        for c in pref_challenges:
+            if c.typ in CHALLENGES:
+                self.challenges.append(c)
+        if not self.challenges and len(pref_challenges):
+            # Challenges requested, but not supported
+            raise errors.PluginError(
+                "Unfortunately script plugin doesn't yet support " +
+                "the requested challenges")
 
-        except AttributeError:
-            # Challenge not defined on cli, we have default set in __init__
+        # Challenge not defined on cli, set default
+        if not self.challenges:
             self.challenges.append(challenges.Challenge.TYPES["http-01"])
 
-        if not self.config.namespace.script_auth:
+        if not self.conf("auth"):
             raise errors.PluginError("Parameter --script-auth is required " +
                                      "for script plugin")
         script_path = self.conf("auth")
@@ -127,7 +124,6 @@ class Authenticator(common.Plugin):
 
     def _setup_env_dns(self, achall, validation):
         """Write environment variables for dns challenge"""
-
         ev = dict()
         ev["CERTBOT_VALIDATION"] = validation
         ev["CERTBOT_DOMAIN"] = achall.domain
@@ -154,7 +150,7 @@ class Authenticator(common.Plugin):
 
         return (cmd.returncode, err)
 
-    def cleanup(self, achalls):  # pylint: disable=missing-docstring
+    def cleanup(self, achalls):  # pylint: disable=unused-argument
         """Run cleanup.sh """
         if self.cleanup_script:
             self.execute(self.cleanup_script)
