@@ -42,3 +42,7 @@ class ConstantsTest(unittest.TestCase):
             d_em = constants.os_constant("enmod")
             self.assertFalse(d_em)
             self.assertEqual(d_vr, "/etc/apache2/other")
+
+
+if __name__ == "__main__":
+    unittest.main()  # pragma: no cover
