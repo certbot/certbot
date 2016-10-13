@@ -786,13 +786,12 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         os.mkdir(live_dir)
         logger.debug("Archive directory %s and live "
                      "directory %s created.", archive, live_dir)
-        relative_archive = os.path.join("..", "..", "archive", lineagename)
 
         # Put the data into the appropriate files on disk
         target = dict([(kind, os.path.join(live_dir, kind + ".pem"))
                        for kind in ALL_FOUR])
         for kind in ALL_FOUR:
-            os.symlink(os.path.join(relative_archive, kind + "1.pem"),
+            os.symlink(os.path.join(archive, kind + "1.pem"),
                        target[kind])
         with open(target["cert"], "w") as f:
             logger.debug("Writing certificate to %s.", target["cert"])
