@@ -12,6 +12,7 @@ import traceback
 import zope.component
 
 from acme import jose
+from acme import messages
 
 import certbot
 
@@ -691,11 +692,12 @@ def _handle_exception(exc_type, exc_value, trace, config):
             else:
                 err = traceback.format_exception_only(exc_type, exc_value)[0]
             # Typical error from the ACME module:
-            # acme.messages.Error: urn:acme:error:malformed :: The request message was
-            # malformed :: Error creating new registration :: Validation of contact
-            # mailto:none@longrandomstring.biz failed: Server failure at resolver
-            if (("urn:acme" in err and ":: " in err and
-                 config.verbose_count <= cli.flag_default("verbose_count"))):
+            # acme.messages.Error: urn:ietf:params:acme:error:malformed :: The
+            # request message was malformed :: Error creating new registration
+            # :: Validation of contact mailto:none@longrandomstring.biz failed:
+            # Server failure at resolver
+            if (messages.is_acme_error(err) and ":: " in err and
+                 config.verbose_count <= cli.flag_default("verbose_count")):
                 # prune ACME error code, we have a human description
                 _code, _sep, err = err.partition(":: ")
             msg = "An unexpected error occurred:\n" + err + "Please see the "
