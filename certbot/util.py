@@ -437,10 +437,10 @@ def enforce_domain_sanity(domain):
     """
     if isinstance(domain, six.text_type):
         wildcard_marker = u"*."
-        punycode_marker = u"xn--"
+        # punycode_marker = u"xn--"
     else:
         wildcard_marker = b"*."
-        punycode_marker = b"xn--"
+        # punycode_marker = b"xn--"
 
     # Check if there's a wildcard domain
     if domain.startswith(wildcard_marker):
