@@ -7,6 +7,8 @@ cache:
 # This makes sure we get a host with docker-compose present.
 dist: trusty
 
+services: docker
+
 before_install:
   - 'dpkg -s libaugeas0'
 
@@ -52,7 +54,6 @@ matrix:
       addons:
     - sudo: required
       env: TOXENV=le_auto
-      services: docker
       before_install:
       addons:
     - sudo: required
