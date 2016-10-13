@@ -952,8 +952,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mock_sys.exit.assert_any_call(''.join(
                 traceback.format_exception_only(errors.Error, error)))
 
-        exception = messages.Error(detail='alpha', typ='urn:acme:error:triffid',
-                                   title='beta')
+        bad_typ = messages.ERROR_PREFIX + 'triffid'
+        exception = messages.Error(detail='alpha', typ=bad_typ, title='beta')
         config = mock.MagicMock(debug=False, verbose_count=-3)
         main._handle_exception(
             messages.Error, exc_value=exception, trace=None, config=config)
