@@ -61,10 +61,10 @@ class Authenticator(common.Plugin):
                 return True
             else:
                 raise errors.PluginError(
-                    "Script {} isn't readable by Certbot".format(script_path))
+                    "Script {0} isn't readable by Certbot".format(script_path))
         else:
             raise errors.PluginError(
-                "Script {} does not exist".format(script_path))
+                "Script {0} does not exist".format(script_path))
 
     def more_info(self):  # pylint: disable=missing-docstring
         return("This authenticator enables user to perform authentication " +
