@@ -307,6 +307,15 @@ plugins:
   --webroot             Obtain certs by placing files in a webroot directory.
                         (default: False)
 
+nginx:
+  Nginx Web Server plugin - Alpha
+
+  --nginx-server-root NGINX_SERVER_ROOT
+                        Nginx server root directory. (default: /etc/nginx)
+  --nginx-ctl NGINX_CTL
+                        Path to the 'nginx' binary, used for 'configtest' and
+                        retrieving nginx version number. (default: nginx)
+
 standalone:
   Spin up a temporary webserver
 
@@ -318,15 +327,6 @@ manual:
   --manual-public-ip-logging-ok
                         Automatically allows public IP logging. (default:
                         False)
-
-nginx:
-  Nginx Web Server plugin - Alpha
-
-  --nginx-server-root NGINX_SERVER_ROOT
-                        Nginx server root directory. (default: /etc/nginx)
-  --nginx-ctl NGINX_CTL
-                        Path to the 'nginx' binary, used for 'configtest' and
-                        retrieving nginx version number. (default: nginx)
 
 webroot:
   Place files in webroot directory
