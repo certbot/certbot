@@ -23,8 +23,10 @@ class AuthenticatorTest(unittest.TestCase):
 
     def setUp(self):
         from certbot.plugins.script import Authenticator
+        self.auth_return_value = "return from auth\n"
         self.script_nonexec = create_script("# empty")
-        self.script_exec = create_script_exec("# empty")
+        self.script_exec = create_script_exec(
+            "echo '{0}'".format(self.auth_return_value))
         self.config = mock.MagicMock(
             script_auth=self.script_exec,
             script_cleanup=self.script_exec,
@@ -110,26 +112,48 @@ class AuthenticatorTest(unittest.TestCase):
         # Check for the env vars prior to the run
         self.assertFalse("CERTBOT_VALIDATION" in os.environ.keys())
         self.assertFalse("CERTBOT_DOMAIN" in os.environ.keys())
+        self.assertFalse("CERTBOT_AUTH_OUTPUT" in os.environ.keys())
 
         pref_resp = self.default.perform(self.achalls)
         self.assertEqual([resp_http, resp_dns], pref_resp)
         # Check for the env vars post run
         self.assertTrue("CERTBOT_VALIDATION" in os.environ.keys())
         self.assertTrue("CERTBOT_DOMAIN" in os.environ.keys())
+        self.assertTrue("CERTBOT_AUTH_OUTPUT" in os.environ.keys())
+        self.assertEqual(os.environ["CERTBOT_AUTH_OUTPUT"],
+                         self.auth_return_value.strip())
 
     @mock.patch('certbot.plugins.script.Authenticator.execute')
     def test_cleanup(self, mock_exec):
+        mock_exec.return_value = (0, None, None)
         self.default.prepare()
         self.default.cleanup(self.achalls)
         self.assertEqual(mock_exec.call_count, 1)
 
+    @mock.patch('certbot.plugins.script.Popen')
+    def test_execute(self, mock_popen):
+        proc = mock.Mock()
+        # tuple values: stdout, stderr, errorcode, num_of_logger_calls
+        for t in [("", "", 0, 0),
+                  (self.auth_return_value, "", 0, 0),
+                  ("", "stderr_output", 0, 1),
+                  ("whatever", "stderr_output", 1, 2)]:
+            proc = mock.Mock()
+            attrs = {'communicate.return_value': (t[0], t[1]),
+                     'returncode': t[2]}
+            proc.configure_mock(**attrs)
+            mock_popen.return_value = proc
+            with mock.patch('certbot.plugins.script.logger.error') as mock_log:
+                self.default.execute(self.script_exec)
+                self.assertEqual(mock_log.call_count, t[3])
+
 
 def create_script(contents):
     """ Helper to create temporary file """
-    _, fname = tempfile.mkstemp('.sh')
-    with open(fname, "w") as fh:
-        fh.write(contents)
-    return fname
+    f = tempfile.NamedTemporaryFile(delete=False, prefix='.sh')
+    f.write(contents)
+    f.close()
+    return f.name
 
 
 def create_script_exec(contents):

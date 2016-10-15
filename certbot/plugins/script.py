@@ -110,7 +110,9 @@ class Authenticator(common.Plugin):
             response, validation = achall.response_and_validation()
             # Setup env vars
             mapping[achall.typ](achall, validation)
-            self.execute(self.auth_script)
+            output = self.execute(self.auth_script)
+            if output:
+                self._write_auth_output(output)
             responses.append(response)
         return responses
 
@@ -129,6 +131,11 @@ class Authenticator(common.Plugin):
         ev["CERTBOT_DOMAIN"] = achall.domain
         self._write_env(ev)
 
+    def _write_auth_output(self, out):
+        """Write output from auth script to env var for
+        cleanup to act upon"""
+        self._write_env({"CERTBOT_AUTH_OUTPUT": out.strip()})
+
     def _write_env(self, env_vars):
         """Write environment variables"""
         for k in env_vars.keys():
@@ -139,16 +146,15 @@ class Authenticator(common.Plugin):
 
         :param str shell_cmd: Command to run
         :returns: `tuple` (`int` returncode, `str` stderr"""
-        cmd = Popen(shell_cmd, shell=True, stdout=PIPE, stderr=PIPE,
-                    stdin=PIPE)
-        _out, err = cmd.communicate()
+        cmd = Popen(shell_cmd, shell=True, stdout=PIPE, stderr=PIPE)
+        out, err = cmd.communicate()
         if cmd.returncode != 0:
             logger.error('Command "%s" returned error code %d',
                          shell_cmd, cmd.returncode)
-        if err:
+        if len(err) > 0:
             logger.error('Error output from %s:\n%s', shell_cmd, err)
 
-        return (cmd.returncode, err)
+        return out
 
     def cleanup(self, achalls):  # pylint: disable=unused-argument
         """Run cleanup.sh """
