@@ -146,7 +146,7 @@ class AuthenticatorTest(unittest.TestCase):
             with mock.patch('certbot.plugins.script.logger.error') as mock_log:
                 output = self.default.execute(self.script_exec)
                 self.assertEqual(mock_log.call_count, t[3])
-                self.assertIsInstance(output, str)
+                self.assertTrue(isinstance(output, str))
 
 
 def create_script(contents):
