@@ -8,6 +8,7 @@ import zope.interface
 
 from certbot import configuration
 from certbot import errors as le_errors
+from certbot import util as certbot_util
 from certbot_apache import configurator
 from certbot_apache import constants
 from certbot_compatibility_test import errors
@@ -106,4 +107,7 @@ def _get_names(config):
                         not util.IP_REGEX.match(words[1]) and
                         words[1].find(".") != -1):
                     all_names.add(words[1])
-    return all_names, non_ip_names
+    return (
+        certbot_util.get_filtered_names(all_names),
+        certbot_util.get_filtered_names(non_ip_names)
+    )
