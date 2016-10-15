@@ -1,6 +1,7 @@
 """Standalone Authenticator."""
 import logging
 import os
+import sys
 
 import zope.interface
 
@@ -136,6 +137,15 @@ class Authenticator(common.Plugin):
         cleanup to act upon"""
         self._write_env({"CERTBOT_AUTH_OUTPUT": out.strip()})
 
+    def _normalize_string(self, value):
+        """Return string instead of bytestring for Python3.
+        Helper function for _write_env, as os.environ needs
+        str"""
+
+        if isinstance(value, bytes):
+            value = value.decode(sys.getdefaultencoding())
+        return str(value)
+
     def _write_env(self, env_vars):
         """Write environment variables"""
         for k in env_vars.keys():
@@ -154,7 +164,7 @@ class Authenticator(common.Plugin):
         if len(err) > 0:
             logger.error('Error output from %s:\n%s', shell_cmd, err)
 
-        return out
+        return self._normalize_string(out)
 
     def cleanup(self, achalls):  # pylint: disable=unused-argument
         """Run cleanup.sh """

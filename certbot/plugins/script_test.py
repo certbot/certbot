@@ -24,9 +24,8 @@ class AuthenticatorTest(unittest.TestCase):
     def setUp(self):
         from certbot.plugins.script import Authenticator
         self.auth_return_value = "return from auth\n"
-        self.script_nonexec = create_script("# empty")
-        self.script_exec = create_script_exec(
-            "echo '{0}'".format(self.auth_return_value))
+        self.script_nonexec = create_script(b'# empty')
+        self.script_exec = create_script_exec(b'echo "return from auth\n"')
         self.config = mock.MagicMock(
             script_auth=self.script_exec,
             script_cleanup=self.script_exec,
@@ -136,16 +135,18 @@ class AuthenticatorTest(unittest.TestCase):
         # tuple values: stdout, stderr, errorcode, num_of_logger_calls
         for t in [("", "", 0, 0),
                   (self.auth_return_value, "", 0, 0),
-                  ("", "stderr_output", 0, 1),
-                  ("whatever", "stderr_output", 1, 2)]:
+                  (None, "stderr_output", 0, 1),
+                  ("whatever", "stderr_output", 1, 2),
+                  (b'bytestring outval', "", 0, 0)]:
             proc = mock.Mock()
             attrs = {'communicate.return_value': (t[0], t[1]),
                      'returncode': t[2]}
-            proc.configure_mock(**attrs)
+            proc.configure_mock(**attrs)  # pylint: disable=star-args
             mock_popen.return_value = proc
             with mock.patch('certbot.plugins.script.logger.error') as mock_log:
-                self.default.execute(self.script_exec)
+                output = self.default.execute(self.script_exec)
                 self.assertEqual(mock_log.call_count, t[3])
+                self.assertIsInstance(output, str)
 
 
 def create_script(contents):
