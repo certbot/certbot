@@ -2,9 +2,11 @@
 import binascii
 import contextlib
 import logging
+import os
 import re
 import socket
 import sys
+import tempfile
 
 import OpenSSL
 
@@ -231,3 +233,25 @@ def gen_ss_cert(key, domains, not_before=None,
     cert.set_pubkey(key)
     cert.sign(key, "sha256")
     return cert
+
+
+def temp_ss_cert():
+    """Write a self signed certificate to a temporary location and return the
+    file path.
+    """
+    # create a self signed certificate with a bogus common name (CN)
+    key = OpenSSL.crypto.PKey()
+    key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
+    cert = gen_ss_cert(key, ["self-signed"])
+
+    # Write the private key and certificate to one file in a temporary location.
+    # We use low level os functions here because `mkstemp` returns a file
+    # descriptor and not a file object.
+    descriptor, path = tempfile.mkstemp()
+    os.write(descriptor,
+             OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key))
+    os.write(descriptor,
+             OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert))
+    os.close(descriptor)
+
+    return path

@@ -23,9 +23,11 @@ class ServerManagerTest(unittest.TestCase):
 
     def setUp(self):
         from certbot.plugins.standalone import ServerManager
+        from certbot.configuration import NamespaceConfig
         self.certs = {}
         self.http_01_resources = {}
-        self.mgr = ServerManager(self.certs, self.http_01_resources)
+        self.mgr = ServerManager(self.certs, self.http_01_resources,
+                                 NamespaceConfig(mock.MagicMock()))
 
     def test_init(self):
         self.assertTrue(self.mgr.certs is self.certs)
