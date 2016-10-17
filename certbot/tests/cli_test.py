@@ -348,8 +348,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def test_punycode_ok(self):
         # Punycode is now legal, so no longer an error; instead check
-        # that it's _not_ an error
-        self._call(['certonly', '-d', 'this.is.xn--ls8h.tld'])
+        # that it's _not_ an error (at the initial parsing/sanity check stage)
+        self._call(['-d', 'this.is.xn--ls8h.tld'])
 
     def test_check_config_sanity_domain(self):
         # FQDN
