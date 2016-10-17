@@ -119,7 +119,7 @@ For more information about the layout
 of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`.
 
 .. _Docker: https://docker.com
-.. _`install Docker`: https://docs.docker.com/engine/userguide/intro/
+.. _`install Docker`: https://docs.docker.com/engine/installation/
 
 
 Operating System Packages
