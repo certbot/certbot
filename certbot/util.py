@@ -437,19 +437,13 @@ def enforce_domain_sanity(domain):
     """
     if isinstance(domain, six.text_type):
         wildcard_marker = u"*."
-        # punycode_marker = u"xn--"
     else:
         wildcard_marker = b"*."
-        # punycode_marker = b"xn--"
 
     # Check if there's a wildcard domain
     if domain.startswith(wildcard_marker):
         raise errors.ConfigurationError(
             "Wildcard domains are not supported: {0}".format(domain))
-    # Punycode will be supported during October 2016
-    # if punycode_marker in domain:
-    #    raise errors.ConfigurationError(
-    #        "Punycode domains are not presently supported: {0}".format(domain))
 
     # Unicode
     try:
