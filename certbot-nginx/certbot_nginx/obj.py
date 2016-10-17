@@ -69,7 +69,7 @@ class Addr(common.Addr):
 
         return cls(host, port, ssl, default)
 
-    def __str__(self, include_default=True):
+    def __str__(self):
         parts = ''
         if self.tup[0] and self.tup[1]:
             parts = "%s:%s" % self.tup
@@ -78,7 +78,7 @@ class Addr(common.Addr):
         else:
             parts = self.tup[1]
 
-        if self.default and include_default:
+        if self.default:
             parts += ' default_server'
         if self.ssl:
             parts += ' ssl'

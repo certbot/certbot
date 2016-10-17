@@ -1,5 +1,6 @@
 """A class that performs TLS-SNI-01 challenges for Nginx"""
 
+import copy
 import itertools
 import logging
 import os
@@ -141,7 +142,11 @@ class NginxTlsSni01(common.TLSSNI01):
         document_root = os.path.join(
             self.configurator.config.work_dir, "tls_sni_01_page")
 
-        block = [['listen', ' ', addr.__str__(include_default=False)] for addr in addrs]
+        no_default_addrs = [copy.deepcopy(addr) for addr in addrs]
+        for addr in no_default_addrs:
+            addr.default = False
+
+        block = [['listen', ' ', str(addr)] for addr in no_default_addrs]
 
         block.extend([['server_name', ' ',
                        achall.response(achall.account_key).z_domain],
