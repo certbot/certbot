@@ -141,7 +141,7 @@ class NginxTlsSni01(common.TLSSNI01):
         document_root = os.path.join(
             self.configurator.config.work_dir, "tls_sni_01_page")
 
-        block = [['listen', ' ', str(addr)] for addr in addrs]
+        block = [['listen', ' ', addr.__str__(include_default=False)] for addr in addrs]
 
         block.extend([['server_name', ' ',
                        achall.response(achall.account_key).z_domain],
@@ -155,5 +155,4 @@ class NginxTlsSni01(common.TLSSNI01):
                       ['ssl_certificate_key', ' ', self.get_key_path(achall)],
                       [['location', ' ', '/'], [['root', ' ', document_root]]]] +
                      self.configurator.parser.loc["ssl_options"])
-
         return [['server'], block]
