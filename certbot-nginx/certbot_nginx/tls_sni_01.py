@@ -48,7 +48,7 @@ class NginxTlsSni01(common.TLSSNI01):
             return []
 
         addresses = []
-        default_addr = "{0} default_server ssl".format(
+        default_addr = "{0} ssl".format(
             self.configurator.config.tls_sni_01_port)
 
         for achall in self.achalls:
@@ -60,12 +60,10 @@ class NginxTlsSni01(common.TLSSNI01):
                     achall.domain)
                 return None
 
-            for addr in vhost.addrs:
-                if addr.default:
-                    addresses.append([obj.Addr.fromstring(default_addr)])
-                    break
-            else:
+            if vhost.addrs:
                 addresses.append(list(vhost.addrs))
+            else:
+                addresses.append([obj.Addr.fromstring(default_addr)])
 
         # Create challenge certs
         responses = [self._setup_challenge_cert(x) for x in self.achalls]
