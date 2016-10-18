@@ -346,11 +346,12 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         except errors.PluginSelectionError as e:
             self.assertTrue('The requested bad_auth plugin does not appear' in str(e))
 
+    def test_punycode_ok(self):
+        # Punycode is now legal, so no longer an error; instead check
+        # that it's _not_ an error (at the initial sanity check stage)
+        util.enforce_domain_sanity('this.is.xn--ls8h.tld')
+
     def test_check_config_sanity_domain(self):
-        # Punycode
-        self.assertRaises(errors.ConfigurationError,
-                          self._call,
-                          ['-d', 'this.is.xn--ls8h.tld'])
         # FQDN
         self.assertRaises(errors.ConfigurationError,
                           self._call,

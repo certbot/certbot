@@ -244,8 +244,8 @@ class ChooseNamesTest(unittest.TestCase):
         all_valid = ["example.com", "second.example.com",
                      "also.example.com", "under_score.example.com",
                      "justtld"]
-        all_invalid = ["xn--ls8h.tld", "*.wildcard.com", "uniçodé.com"]
-        two_valid = ["example.com", "xn--ls8h.tld", "also.example.com"]
+        all_invalid = ["öóòps.net", "*.wildcard.com", "uniçodé.com"]
+        two_valid = ["example.com", "úniçøde.com", "also.example.com"]
         self.assertEqual(get_valid_domains(all_valid), all_valid)
         self.assertEqual(get_valid_domains(all_invalid), [])
         self.assertEqual(len(get_valid_domains(two_valid)), 2)
@@ -266,10 +266,6 @@ class ChooseNamesTest(unittest.TestCase):
             unicode_error = UnicodeEncodeError('mock', u'', 0, 1, 'mock')
             mock_sli.side_effect = unicode_error
             self.assertEqual(_choose_names_manually(), [])
-        # Punycode and no retry
-        mock_util().input.return_value = (display_util.OK,
-                                          "xn--ls8h.tld")
-        self.assertEqual(_choose_names_manually(), [])
         # Valid domains
         mock_util().input.return_value = (display_util.OK,
                                           ("example.com,"
