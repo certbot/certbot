@@ -265,6 +265,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
     @property
     def archive_dir(self):
+        """Returns the default or specified archive directory"""
         if "archive_dir" in self.configuration:
             return self.configuration["archive_dir"]
         else:
