@@ -39,6 +39,10 @@ class TlsSniPerformTest(util.NginxTest):
                           "\xeb9\xf1\xf5\xb9\xefVM\xc9w\xa4u\x9c\xe1\x87\xb4"
                 ), "pending"),
             domain="www.example.org", account_key=account_key),
+        achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.chall_to_challb(
+                challenges.TLSSNI01(token="kNdwjxOeX0I_A8DXt9Msmg"), "pending"),
+            domain="sslon.com", account_key=account_key),
     ]
 
     def setUp(self):
@@ -100,7 +104,7 @@ class TlsSniPerformTest(util.NginxTest):
 
         sni_responses = self.sni.perform()
 
-        self.assertEqual(mock_setup_cert.call_count, 3)
+        self.assertEqual(mock_setup_cert.call_count, 4)
 
         for index, achall in enumerate(self.achalls):
             self.assertEqual(
@@ -112,8 +116,8 @@ class TlsSniPerformTest(util.NginxTest):
         self.assertFalse(
             util.contains_at_depth(http, ['server_name', 'another.alias'], 3))
 
-        self.assertEqual(len(sni_responses), 3)
-        for i in xrange(3):
+        self.assertEqual(len(sni_responses), 4)
+        for i in xrange(4):
             self.assertEqual(sni_responses[i], acme_responses[i])
 
     def test_mod_config(self):
