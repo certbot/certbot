@@ -721,9 +721,10 @@ class RenewableCertTests(BaseRenewableCertTest):
         target = {}
         for x in ALL_FOUR:
             target[x] = "somewhere"
+        archive_dir = "the_archive"
         relevant_data = {"useful": "new_value"}
         from certbot import storage
-        storage.write_renewal_config(temp, temp2, target, relevant_data)
+        storage.write_renewal_config(temp, temp2, archive_dir, target, relevant_data)
         with open(temp2, "r") as f:
             content = f.read()
         # useful value was updated

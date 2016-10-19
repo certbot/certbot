@@ -54,11 +54,12 @@ def add_time_interval(base_time, interval, textparser=parsedatetime.Calendar()):
     return textparser.parseDT(interval, base_time, tzinfo=tzinfo)[0]
 
 
-def write_renewal_config(o_filename, n_filename, target, relevant_data):
+def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_data):
     """Writes a renewal config file with the specified name and values.
 
     :param str o_filename: Absolute path to the previous version of config file
     :param str n_filename: Absolute path to the new destination of config file
+    :param str archive_dir: Absolute path to the archive directory
     :param dict target: Maps ALL_FOUR to their symlink paths
     :param dict relevant_data: Renewal configuration options to save
 
@@ -68,6 +69,7 @@ def write_renewal_config(o_filename, n_filename, target, relevant_data):
     """
     config = configobj.ConfigObj(o_filename)
     config["version"] = certbot.__version__
+    config["archive_dir"] = archive_dir
     for kind in ALL_FOUR:
         config[kind] = target[kind]
 
@@ -95,10 +97,11 @@ def write_renewal_config(o_filename, n_filename, target, relevant_data):
     return config
 
 
-def update_configuration(lineagename, target, cli_config):
+def update_configuration(lineagename, archive_dir, target, cli_config):
     """Modifies lineagename's config to contain the specified values.
 
     :param str lineagename: Name of the lineage being modified
+    :param str archive_dir: Absolute path to the archive directory
     :param dict target: Maps ALL_FOUR to their symlink paths
     :param .RenewerConfiguration cli_config: parsed command line
         arguments
@@ -117,7 +120,7 @@ def update_configuration(lineagename, target, cli_config):
 
     # Save only the config items that are relevant to renewal
     values = relevant_values(vars(cli_config.namespace))
-    write_renewal_config(config_filename, temp_filename, target, values)
+    write_renewal_config(config_filename, temp_filename, archive_dir, target, values)
     os.rename(temp_filename, config_filename)
 
     return configobj.ConfigObj(config_filename)
@@ -204,7 +207,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         renewal configuration file and/or systemwide defaults.
 
     """
-    def __init__(self, config_filename, cli_config):
+    def __init__(self, config_filename, cli_config, update_symlinks=False):
         """Instantiate a RenewableCert object from an existing lineage.
 
         :param str config_filename: the path to the renewal config file
@@ -256,6 +259,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         self.live_dir = os.path.dirname(self.cert)
 
         self._fix_symlinks()
+        if update_symlinks:
+            self._update_symlinks()
         self._check_symlinks()
 
     def _check_symlinks(self):
@@ -269,6 +274,21 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             if not os.path.exists(target):
                 raise errors.CertStorageError("target {0} of symlink {1} does "
                                               "not exist".format(target, link))
+
+    def _update_symlinks(self):
+        """Updates symlinks to use archive_dir"""
+        if "archive_dir" in self.configuration:
+            archive_dir = self.configuration["archive_dir"]
+        else:
+            archive_dir = os.path.join(
+                self.cli_config.archive_dir, self.lineagename)
+        for kind in ALL_FOUR:
+            link = getattr(self, kind)
+            previous_link = get_link_target(link)
+            new_link = os.path.join(archive_dir, os.path.basename(previous_link))
+
+            os.unlink(link)
+            os.symlink(new_link, link)
 
     def _consistent(self):
         """Are the files associated with this lineage self-consistent?
@@ -815,7 +835,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # Save only the config items that are relevant to renewal
         values = relevant_values(vars(cli_config.namespace))
 
-        new_config = write_renewal_config(config_filename, config_filename, target, values)
+        new_config = write_renewal_config(config_filename, config_filename, archive,
+            target, values)
         return cls(new_config.filename, cli_config)
 
     def save_successor(self, prior_version, new_cert,
@@ -893,7 +914,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         symlinks = dict((kind, self.configuration[kind]) for kind in ALL_FOUR)
         # Update renewal config file
         self.configfile = update_configuration(
-            self.lineagename, symlinks, cli_config)
+            self.lineagename, prefix, symlinks, cli_config)
         self.configuration = config_with_defaults(self.configfile)
 
         return target_version

@@ -67,6 +67,7 @@ cert. Major SUBCOMMANDS are:
   register             Perform tasks related to registering with the CA
   rollback             Rollback server configuration changes made during install
   config_changes       Show changes made to server config during installation
+  update_symlinks      Update cert symlinks based on renewal config file
   plugins              Display information about installed plugins
 
 """.format(cli_command)
@@ -322,7 +323,7 @@ class HelpfulArgumentParser(object):
                       "install": main.install, "plugins": main.plugins_cmd,
                       "register": main.register, "renew": main.renew,
                       "revoke": main.revoke, "rollback": main.rollback,
-                      "everything": main.run}
+                      "everything": main.run, "update_symlinks": main.update_symlinks}
 
         # List of topics for which additional help can be provided
         HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
@@ -694,7 +695,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Domain names to apply. For multiple domains you can use "
              "multiple -d flags or enter a comma separated list of domains "
              "as a parameter.")
-
     helpful.add(
         [None, "testing", "renew", "certonly"],
         "--dry-run", action="store_true", dest="dry_run",
