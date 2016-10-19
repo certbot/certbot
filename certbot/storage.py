@@ -281,7 +281,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             archive_dir = self.configuration["archive_dir"]
         else:
             archive_dir = os.path.join(
-                self.cli_config.archive_dir, self.lineagename)
+                self.cli_config.default_archive_dir, self.lineagename)
         for kind in ALL_FOUR:
             link = getattr(self, kind)
             previous_link = get_link_target(link)
@@ -318,7 +318,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             # Each element's link must point within the cert lineage's
             # directory within the official archive directory
             desired_directory = os.path.join(
-                self.cli_config.archive_dir, self.lineagename)
+                self.cli_config.default_archive_dir, self.lineagename)
             if not os.path.samefile(os.path.dirname(target),
                                     desired_directory):
                 logger.debug("Element's link does not point within the "
@@ -779,7 +779,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         """
 
         # Examine the configuration and find the new lineage's name
-        for i in (cli_config.renewal_configs_dir, cli_config.archive_dir,
+        for i in (cli_config.renewal_configs_dir, cli_config.default_archive_dir,
                   cli_config.live_dir):
             if not os.path.exists(i):
                 os.makedirs(i, 0o700)
@@ -794,7 +794,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # lineagename will now potentially be modified based on which
         # renewal configuration file could actually be created
         lineagename = os.path.basename(config_filename)[:-len(".conf")]
-        archive = os.path.join(cli_config.archive_dir, lineagename)
+        archive = os.path.join(cli_config.default_archive_dir, lineagename)
         live_dir = os.path.join(cli_config.live_dir, lineagename)
         if os.path.exists(archive):
             raise errors.CertStorageError(
@@ -871,7 +871,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         self.cli_config = cli_config
         target_version = self.next_free_version()
-        archive = self.cli_config.archive_dir
+        archive = self.cli_config.default_archive_dir
         # XXX if anyone ever moves a renewal configuration file, this will
         # break... perhaps prefix should be the dirname of the previous
         # cert.pem?

@@ -593,7 +593,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertRaises(errors.CertStorageError,
                           storage.RenewableCert.new_lineage, "the-lineage.com",
                           "cert3", "privkey3", "chain3", self.cli_config)
-        os.mkdir(os.path.join(self.cli_config.archive_dir, "other-example.com"))
+        os.mkdir(os.path.join(self.cli_config.default_archive_dir, "other-example.com"))
         self.assertRaises(errors.CertStorageError,
                           storage.RenewableCert.new_lineage,
                           "other-example.com", "cert4",
@@ -613,7 +613,7 @@ class RenewableCertTests(BaseRenewableCertTest):
 
         from certbot import storage
         shutil.rmtree(self.cli_config.renewal_configs_dir)
-        shutil.rmtree(self.cli_config.archive_dir)
+        shutil.rmtree(self.cli_config.default_archive_dir)
         shutil.rmtree(self.cli_config.live_dir)
 
         storage.RenewableCert.new_lineage(
@@ -624,7 +624,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(os.path.exists(os.path.join(
             self.cli_config.live_dir, "the-lineage.com", "privkey.pem")))
         self.assertTrue(os.path.exists(os.path.join(
-            self.cli_config.archive_dir, "the-lineage.com", "privkey1.pem")))
+            self.cli_config.default_archive_dir, "the-lineage.com", "privkey1.pem")))
 
     @mock.patch("certbot.storage.util.unique_lineage_name")
     def test_invalid_config_filename(self, mock_uln):
