@@ -263,6 +263,14 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             self._update_symlinks()
         self._check_symlinks()
 
+    @property
+    def archive_dir(self):
+        if "archive_dir" in self.configuration:
+            return self.configuration["archive_dir"]
+        else:
+            return os.path.join(
+                self.cli_config.default_archive_dir, self.lineagename)
+
     def _check_symlinks(self):
         """Raises an exception if a symlink doesn't exist"""
         for kind in ALL_FOUR:
@@ -277,15 +285,10 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
     def _update_symlinks(self):
         """Updates symlinks to use archive_dir"""
-        if "archive_dir" in self.configuration:
-            archive_dir = self.configuration["archive_dir"]
-        else:
-            archive_dir = os.path.join(
-                self.cli_config.default_archive_dir, self.lineagename)
         for kind in ALL_FOUR:
             link = getattr(self, kind)
             previous_link = get_link_target(link)
-            new_link = os.path.join(archive_dir, os.path.basename(previous_link))
+            new_link = os.path.join(self.archive_dir, os.path.basename(previous_link))
 
             os.unlink(link)
             os.symlink(new_link, link)
@@ -317,16 +320,13 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
             # Each element's link must point within the cert lineage's
             # directory within the official archive directory
-            desired_directory = os.path.join(
-                self.cli_config.default_archive_dir, self.lineagename)
-            if not os.path.samefile(os.path.dirname(target),
-                                    desired_directory):
+            if not os.path.samefile(os.path.dirname(target), self.archive_dir):
                 logger.debug("Element's link does not point within the "
                              "cert lineage's directory within the "
                              "official archive directory. Link: %s, "
                              "target directory: %s, "
                              "archive directory: %s.",
-                             link, os.path.dirname(target), desired_directory)
+                             link, os.path.dirname(target), self.archive_dir)
                 return False
 
             # The link must point to a file that exists
@@ -871,14 +871,9 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         self.cli_config = cli_config
         target_version = self.next_free_version()
-        archive = self.cli_config.default_archive_dir
-        # XXX if anyone ever moves a renewal configuration file, this will
-        # break... perhaps prefix should be the dirname of the previous
-        # cert.pem?
-        prefix = os.path.join(archive, self.lineagename)
         target = dict(
             [(kind,
-              os.path.join(prefix, "{0}{1}.pem".format(kind, target_version)))
+              os.path.join(self.archive_dir, "{0}{1}.pem".format(kind, target_version)))
              for kind in ALL_FOUR])
 
         # Distinguish the cases where the privkey has changed and where it
@@ -888,7 +883,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             # The behavior below keeps the prior key by creating a new
             # symlink to the old key or the target of the old key symlink.
             old_privkey = os.path.join(
-                prefix, "privkey{0}.pem".format(prior_version))
+                self.archive_dir, "privkey{0}.pem".format(prior_version))
             if os.path.islink(old_privkey):
                 old_privkey = os.readlink(old_privkey)
             else:
@@ -914,7 +909,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         symlinks = dict((kind, self.configuration[kind]) for kind in ALL_FOUR)
         # Update renewal config file
         self.configfile = update_configuration(
-            self.lineagename, prefix, symlinks, cli_config)
+            self.lineagename, self.archive_dir, symlinks, cli_config)
         self.configuration = config_with_defaults(self.configfile)
 
         return target_version
