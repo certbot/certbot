@@ -29,7 +29,12 @@ modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
 
 Getting Certbot
 ===============
+Certbot is packaged for many common operating systems and web servers. Check whether
+``certbot`` (or ``letsencrypt``) is packaged for your web server's OS by visiting
+certbot.eff.org_, where you will also find the correct installation instructions for
+your system.
 
+.. Note:: Unless you have very specific requirements, we kindly suggest that you use the Certbot packages provided by your package manager (see certbot.eff.org_). If such packages are not available, we recommend using ``certbot-auto``, which automates the process of installing Certbot on your system.
 .. _certbot.eff.org: https://certbot.eff.org
 
 .. _certbot-auto: https://certbot.eff.org/docs/using.html#certbot-auto
@@ -42,13 +47,6 @@ to, equivalently, as "subcommands") to request specific actions such as
 obtaining, renewing, or revoking certificates. Some of the most important
 and most commonly-used commands will be discussed throughout this
 document; an exhaustive list also appears near the end of the document.
-=======
-Certbot is packaged for many common operating systems and web servers. Check whether
-``certbot`` (or ``letsencrypt``) is packaged for your web server's OS by visiting
-certbot.eff.org_, where you will also find the correct installation instructions for
-your system.
-
-.. Note:: Unless you have very specific requirements, we kindly suggest that you use the Certbot packages provided by your package manager (see certbot.eff.org_). If such packages are not available, we recommend using ``certbot-auto``, which automates the process of installing Certbot on your system.
 
 The ``certbot`` script on your web server might be named ``letsencrypt`` if your system uses an older package, or ``certbot-auto`` if you used an alternate installation method. Throughout the docs, whenever you see ``certbot``, swap in the correct name as needed.
 
