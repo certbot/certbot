@@ -325,7 +325,10 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                              "cert lineage's directory within the "
                              "official archive directory. Link: %s, "
                              "target directory: %s, "
-                             "archive directory: %s.",
+                             "archive directory: %s. If you've specified "
+                             "the archive directory in the renewal configuration "
+                             "file, you may need to update links by running "
+                             "certbot update_symlinks.",
                              link, os.path.dirname(target), self.archive_dir)
                 return False
 
