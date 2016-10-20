@@ -19,7 +19,7 @@ XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN="$VENV_PATH/bin"
-LE_AUTO_VERSION="0.10.0.dev0"
+LE_AUTO_VERSION="0.9.3"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -248,6 +248,7 @@ BootstrapDebCommon() {
     python-dev \
     $virtualenv \
     gcc \
+    dialog \
     $augeas_pkg \
     libssl-dev \
     libffi-dev \
@@ -306,6 +307,7 @@ BootstrapRpmCommon() {
 
   pkgs="
     gcc
+    dialog
     augeas-libs
     openssl
     openssl-devel
@@ -359,6 +361,7 @@ BootstrapSuseCommon() {
     python-devel \
     python-virtualenv \
     gcc \
+    dialog \
     augeas-lenses \
     libopenssl-devel \
     libffi-devel \
@@ -377,6 +380,7 @@ BootstrapArchCommon() {
     python2
     python-virtualenv
     gcc
+    dialog
     augeas
     openssl
     libffi
@@ -400,6 +404,7 @@ BootstrapGentooCommon() {
   PACKAGES="
     dev-lang/python:2.7
     dev-python/virtualenv
+    dev-util/dialog
     app-admin/augeas
     dev-libs/openssl
     dev-libs/libffi
@@ -444,6 +449,7 @@ BootstrapMac() {
   fi
 
   $pkgcmd augeas
+  $pkgcmd dialog
   if [ "$(which python)" = "/System/Library/Frameworks/Python.framework/Versions/2.7/bin/python" \
       -o "$(which python)" = "/usr/bin/python" ]; then
     # We want to avoid using the system Python because it requires root to use pip.
@@ -490,6 +496,7 @@ BootstrapMageiaCommon() {
     if ! $SUDO urpmi --force \
            git \
            gcc \
+           cdialog \
            python-augeas \
            libopenssl-devel \
            libffi-devel \
@@ -694,6 +701,9 @@ pyRFC3339==1.0 \
     --hash=sha256:8dfbc6c458b8daba1c0f3620a8c78008b323a268b27b7359e92a4ae41325f535
 python-augeas==0.5.0 \
     --hash=sha256:67d59d66cdba8d624e0389b87b2a83a176f21f16a87553b50f5703b23f29bac2
+python2-pythondialog==3.3.0 \
+    --hash=sha256:04e93f24995c43dd90f338d5d865ca72ce3fb5a5358d4daa4965571db35fc3ec \
+    --hash=sha256:3e6f593fead98f8a526bc3e306933533236e33729f552f52896ea504f55313fa
 pytz==2015.7 \
     --hash=sha256:3abe6a6d3fc2fbbe4c60144211f45da2edbe3182a6f6511af6bbba0598b1f992 \
     --hash=sha256:939ef9c1e1224d980405689a97ffcf7828c56d1517b31d73464356c1f2b7769e \

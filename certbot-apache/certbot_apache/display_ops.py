@@ -100,5 +100,4 @@ def _vhost_menu(domain, vhosts):
 def _more_info_vhost(vhost):
     zope.component.getUtility(interfaces.IDisplay).notification(
         "Virtual Host Information:{0}{1}{0}{2}".format(
-            os.linesep, "-" * (display_util.WIDTH - 4), str(vhost)),
-        height=display_util.HEIGHT)
+            os.linesep, "-" * (display_util.WIDTH - 4), str(vhost)))

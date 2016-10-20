@@ -11,7 +11,6 @@ from certbot import colored_logging
 from certbot import constants
 from certbot import configuration
 from certbot import errors
-from certbot import log
 from certbot.plugins import disco as plugins_disco
 
 class MainTest(unittest.TestCase):
@@ -55,9 +54,9 @@ class ObtainCertTest(unittest.TestCase):
         mock_notification = self.mock_get_utility().notification
         mock_notification.side_effect = self._assert_no_pause
         mock_auth.return_value = ('reinstall', mock.ANY)
-        self._call('certonly --webroot -d example.com -t'.split())
+        self._call('certonly --webroot -d example.com'.split())
 
-    def _assert_no_pause(self, message, height=42, pause=True):
+    def _assert_no_pause(self, message, pause=True):
         # pylint: disable=unused-argument
         self.assertFalse(pause)
 
@@ -89,7 +88,7 @@ class SetupLoggingTest(unittest.TestCase):
     def setUp(self):
         self.config = mock.Mock(
             logs_dir=tempfile.mkdtemp(),
-            noninteractive_mode=False, quiet=False, text_mode=False,
+            noninteractive_mode=False, quiet=False,
             verbose_count=constants.CLI_DEFAULTS['verbose_count'])
 
     def tearDown(self):
@@ -107,7 +106,7 @@ class SetupLoggingTest(unittest.TestCase):
         cli_handler = mock_get_logger().addHandler.call_args_list[0][0][0]
         self.assertEqual(cli_handler.level, -self.config.verbose_count * 10)
         self.assertTrue(
-            isinstance(cli_handler, log.DialogHandler))
+            isinstance(cli_handler, colored_logging.StreamHandler))
 
     @mock.patch('certbot.main.logging.getLogger')
     def test_quiet_mode(self, mock_get_logger):
