@@ -10,6 +10,7 @@ BootstrapArchCommon() {
     python2
     python-virtualenv
     gcc
+    dialog
     augeas
     openssl
     libffi
