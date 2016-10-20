@@ -103,7 +103,6 @@ addons:
     - python-dev
     - python-virtualenv
     - gcc
-    - dialog
     - libaugeas0
     - libssl-dev
     - libffi-dev

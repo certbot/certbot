@@ -378,11 +378,10 @@ class IInstaller(IPlugin):
 class IDisplay(zope.interface.Interface):
     """Generic display."""
 
-    def notification(message, height, pause):
+    def notification(message, pause):
         """Displays a string message
 
         :param str message: Message to display
-        :param int height: Height of dialog box if applicable
         :param bool pause: Whether or not the application should pause for
             confirmation (if available)
 
