@@ -736,6 +736,22 @@ class RenewableCertTests(BaseRenewableCertTest):
         # check version was stored
         self.assertTrue("version = {0}".format(certbot.__version__) in content)
 
+    def test_update_symlinks(self):
+        from certbot import storage
+        live_dir_path = os.path.join(self.tempdir, "live", "example.org")
+        archive_dir_path = os.path.join(self.tempdir, "archive", "example.org")
+        for kind in ALL_FOUR:
+            live_path = self.config[kind]
+            basename = kind + "1.pem"
+            archive_path = os.path.join(archive_dir_path, basename)
+            open(archive_path, 'a').close()
+            os.symlink(os.path.join(self.tempdir, basename), live_path)
+        self.assertRaises(errors.CertStorageError,
+                          storage.RenewableCert, self.config.filename,
+                          self.cli_config)
+        storage.RenewableCert(self.config.filename, self.cli_config,
+            update_symlinks=True)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
