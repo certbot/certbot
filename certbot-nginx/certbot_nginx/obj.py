@@ -69,7 +69,8 @@ class Addr(common.Addr):
 
         return cls(host, port, ssl, default)
 
-    def __str__(self):
+    def to_string(self, include_default=True):
+        """Return string representation of Addr"""
         parts = ''
         if self.tup[0] and self.tup[1]:
             parts = "%s:%s" % self.tup
@@ -78,12 +79,15 @@ class Addr(common.Addr):
         else:
             parts = self.tup[1]
 
-        if self.default:
+        if self.default and include_default:
             parts += ' default_server'
         if self.ssl:
             parts += ' ssl'
 
         return parts
+
+    def __str__(self):
+        return self.to_string()
 
     def __repr__(self):
         return "Addr(" + self.__str__() + ")"
