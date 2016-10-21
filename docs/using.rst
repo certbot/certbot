@@ -54,7 +54,7 @@ The ``certbot`` script on your web server might be named ``letsencrypt`` if your
 Other installation methods
 --------------------------
 If you are offline or your operating system doesn't provide a package, you can use
-an alternate method fo install ``certbot``.
+an alternate method for installing ``certbot``.
 
 Certbot-Auto
 ^^^^^^^^^^^^
