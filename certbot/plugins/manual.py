@@ -243,7 +243,7 @@ s.serve_forever()" """
         # pylint: disable=no-self-use
         # TODO: IDisplay wraps messages, breaking the command
         #answer = zope.component.getUtility(interfaces.IDisplay).notification(
-        #    message=message, height=25, pause=True)
+        #    message=message, pause=True)
         sys.stdout.write(message)
         six.moves.input("Press ENTER to continue")
 

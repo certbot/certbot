@@ -2,7 +2,6 @@ BootstrapGentooCommon() {
   PACKAGES="
     dev-lang/python:2.7
     dev-python/virtualenv
-    dev-util/dialog
     app-admin/augeas
     dev-libs/openssl
     dev-libs/libffi
