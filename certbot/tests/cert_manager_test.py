@@ -19,15 +19,11 @@ class CertManagerTest(unittest.TestCase):
 
         os.makedirs(os.path.join(self.tempdir, "renewal"))
 
-        mock_namespace = mock.MagicMock(
+        self.cli_config = mock.MagicMock(
             config_dir=self.tempdir,
             work_dir=self.tempdir,
             logs_dir=self.tempdir,
             quiet=False,
-        )
-
-        self.cli_config = configuration.RenewerConfiguration(
-            namespace=mock_namespace
         )
 
         self.domains = {
@@ -115,6 +111,7 @@ class CertManagerTest(unittest.TestCase):
             cert_manager.list_certs(self.cli_config)
             self.assertFalse(mock_logger.warning.called)
         self.assertTrue(mock_utility.called)
+        self.assertTrue(mock_renewable_cert.called)
 
     @mock.patch('zope.component.getUtility')
     def test_list_certs_no_files(self, mock_utility):
@@ -122,14 +119,13 @@ class CertManagerTest(unittest.TestCase):
 
         tempdir = tempfile.mkdtemp()
 
-        cli_config = configuration.RenewerConfiguration(
-            namespace=mock.MagicMock(
+        cli_config = mock.MagicMock(
                 config_dir=tempdir,
                 work_dir=tempdir,
                 logs_dir=tempdir,
                 quiet=False,
-            )
         )
+
         os.makedirs(os.path.join(tempdir, "renewal"))
         with mock.patch("certbot.cert_manager.logger") as mock_logger:
             cert_manager.list_certs(cli_config)
