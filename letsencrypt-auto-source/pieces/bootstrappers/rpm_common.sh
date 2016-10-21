@@ -43,7 +43,6 @@ BootstrapRpmCommon() {
 
   pkgs="
     gcc
-    dialog
     augeas-libs
     openssl
     openssl-devel
