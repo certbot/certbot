@@ -70,6 +70,7 @@ class Addr(common.Addr):
         return cls(host, port, ssl, default)
 
     def to_string(self, include_default=True):
+        """Return string representation of Addr"""
         parts = ''
         if self.tup[0] and self.tup[1]:
             parts = "%s:%s" % self.tup

@@ -1,6 +1,5 @@
 """A class that performs TLS-SNI-01 challenges for Nginx"""
 
-import copy
 import itertools
 import logging
 import os
