@@ -33,9 +33,8 @@ class CertManagerTest(unittest.TestCase):
             "example.org": None,
             "other.com": os.path.join(self.tempdir, "specialarchive")
         }
-        self.configs = {
-            domain: self._set_up_config(domain, self.domains[domain]) for domain in self.domains
-        }
+        self.configs = dict((domain, self._set_up_config(domain, self.domains[domain]))
+            for domain in self.domains)
 
         # We also create a file that isn't a renewal config in the same
         # location to test that logic that reads in all-and-only renewal
