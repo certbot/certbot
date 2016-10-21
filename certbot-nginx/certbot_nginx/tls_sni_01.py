@@ -140,11 +140,7 @@ class NginxTlsSni01(common.TLSSNI01):
         document_root = os.path.join(
             self.configurator.config.work_dir, "tls_sni_01_page")
 
-        no_default_addrs = [copy.deepcopy(addr) for addr in addrs]
-        for addr in no_default_addrs:
-            addr.default = False
-
-        block = [['listen', ' ', str(addr)] for addr in no_default_addrs]
+        block = [['listen', ' ', addr.to_string(include_default=False)] for addr in addrs]
 
         block.extend([['server_name', ' ',
                        achall.response(achall.account_key).z_domain],
