@@ -246,8 +246,9 @@ configuration checkpoints and rollback.
 Display
 ~~~~~~~
 
-We currently only offer a "text" mode for displays. Display plugins
-implement the `~certbot.interfaces.IDisplay` interface.
+We currently offer a pythondialog and "text" mode for displays. Display
+plugins implement the `~certbot.interfaces.IDisplay`
+interface.
 
 .. _dev-plugin:
 
