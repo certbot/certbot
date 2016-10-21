@@ -22,7 +22,8 @@ class CertManagerTest(unittest.TestCase):
         mock_namespace = mock.MagicMock(
             config_dir=self.tempdir,
             work_dir=self.tempdir,
-            logs_dir=self.tempdir
+            logs_dir=self.tempdir,
+            quiet=False,
         )
 
         self.cli_config = configuration.RenewerConfiguration(
@@ -34,8 +35,7 @@ class CertManagerTest(unittest.TestCase):
             "other.com": os.path.join(self.tempdir, "specialarchive")
         }
         self.configs = {
-            domain: self._set_up_config(domain, self.domains[domain]) \
-            for domain in self.domains
+            domain: self._set_up_config(domain, self.domains[domain]) for domain in self.domains
         }
 
         # We also create a file that isn't a renewal config in the same
@@ -98,6 +98,46 @@ class CertManagerTest(unittest.TestCase):
             for kind in ALL_FOUR:
                 self.assertEqual(os.readlink(self.configs[domain][kind]),
                     archive_paths[domain][kind])
+
+    @mock.patch('zope.component.getUtility')
+    def test_list_certs_parse_fail(self, mock_utility):
+        from certbot import cert_manager
+
+        with mock.patch("certbot.cert_manager.logger") as mock_logger:
+            cert_manager.list_certs(self.cli_config)
+            self.assertTrue(mock_logger.warning.called)
+        self.assertTrue(mock_utility.called)
+
+    @mock.patch('zope.component.getUtility')
+    @mock.patch("certbot.storage.RenewableCert")
+    def test_list_certs_parse_success(self, mock_utility, mock_renewable_cert):
+        from certbot import cert_manager
+        with mock.patch("certbot.cert_manager.logger") as mock_logger:
+            cert_manager.list_certs(self.cli_config)
+            self.assertFalse(mock_logger.warning.called)
+        self.assertTrue(mock_utility.called)
+
+    @mock.patch('zope.component.getUtility')
+    def test_list_certs_no_files(self, mock_utility):
+        from certbot import cert_manager
+
+        tempdir = tempfile.mkdtemp()
+
+        cli_config = configuration.RenewerConfiguration(
+            namespace=mock.MagicMock(
+                config_dir=tempdir,
+                work_dir=tempdir,
+                logs_dir=tempdir,
+                quiet=False,
+            )
+        )
+        os.makedirs(os.path.join(tempdir, "renewal"))
+        with mock.patch("certbot.cert_manager.logger") as mock_logger:
+            cert_manager.list_certs(cli_config)
+            self.assertFalse(mock_logger.warning.called)
+        self.assertTrue(mock_utility.called)
+        shutil.rmtree(tempdir)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
