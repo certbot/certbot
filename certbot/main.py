@@ -517,10 +517,13 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
 
     le_client.enhance_config(domains, config, lineage.chain)
 
-    if len(lineage.available_versions("cert")) == 1:
-        display_ops.success_installation(domains)
+    if action == "reinstall":
+        display_ops.success_installation(domains, action)
     else:
-        display_ops.success_renewal(domains, action)
+        if len(lineage.available_versions("cert")) == 1:
+            display_ops.success_installation(domains)
+        else:
+            display_ops.success_renewal(domains, action)
 
     _suggest_donation_if_appropriate(config, action)
 
