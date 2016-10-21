@@ -1,6 +1,5 @@
 """Tests for certbot.cert_manager."""
 # pylint disable=protected-access
-import datetime
 import os
 import shutil
 import tempfile
@@ -8,34 +7,9 @@ import unittest
 
 import configobj
 import mock
-import pytz
-import six
 
-import certbot
-from certbot import cli
 from certbot import configuration
-from certbot import errors
-from certbot import storage
 from certbot.storage import ALL_FOUR
-
-from certbot.tests import test_util
-
-
-CERT = test_util.load_cert('cert.pem')
-
-
-def unlink_all(rc_object):
-    """Unlink all four items associated with this RenewableCert."""
-    for kind in ALL_FOUR:
-        os.unlink(getattr(rc_object, kind))
-
-
-def fill_with_sample_data(rc_object):
-    """Put dummy data into all four files of this RenewableCert."""
-    for kind in ALL_FOUR:
-        with open(getattr(rc_object, kind), "w") as f:
-            f.write(kind)
-
 
 class CertManagerTest(unittest.TestCase):
     """Tests for certbot.cert_manager
