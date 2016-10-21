@@ -158,6 +158,11 @@ class HTTP01TLSServerTest(HTTP01ServerTest):
         self.server.shutdown()  # pylint: disable=no-member
         self.thread.join()
 
+    def test__del__(self):
+        certificate_file = self.server.certificate_file
+        self.server.__del__()
+        self.assertFalse(os.path.exists(certificate_file))
+
 
 class TestSimpleTLSSNI01Server(unittest.TestCase):
     """Tests for acme.standalone.simple_tls_sni_01_server."""
