@@ -40,7 +40,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_prepare(self):
         self.assertEqual((1, 6, 2), self.config.version)
-        self.assertEqual(6, len(self.config.parser.parsed))
+        self.assertEqual(7, len(self.config.parser.parsed))
         # ensure we successfully parsed a file for ssl_options
         self.assertTrue(self.config.parser.loc["ssl_options"])
 
@@ -68,7 +68,7 @@ class NginxConfiguratorTest(util.NginxTest):
         names = self.config.get_all_names()
         self.assertEqual(names, set(
             ["155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
-             "migration.com", "summer.com", "geese.com"]))
+             "migration.com", "summer.com", "geese.com", "sslon.com"]))
 
     def test_supported_enhancements(self):
         self.assertEqual(['redirect', 'staple-ocsp'],
@@ -242,6 +242,7 @@ class NginxConfiguratorTest(util.NginxTest):
         nginx_conf = self.config.parser.abs_path('nginx.conf')
         example_conf = self.config.parser.abs_path('sites-enabled/example.com')
         migration_conf = self.config.parser.abs_path('sites-enabled/migration.com')
+        sslon_conf = self.config.parser.abs_path('sites-enabled/sslon.com')
 
         # Get the default SSL vhost
         self.config.deploy_cert(
@@ -269,6 +270,7 @@ class NginxConfiguratorTest(util.NginxTest):
             ('example/fullchain.pem', 'example/key.pem', example_conf),
             ('/etc/nginx/fullchain.pem', '/etc/nginx/key.pem', nginx_conf),
             ('migration/fullchain.pem', 'migration/key.pem', migration_conf),
+            ('snakeoil.cert', 'snakeoil.key', sslon_conf),
         ]), self.config.get_all_certs_keys())
 
     @mock.patch("certbot_nginx.configurator.tls_sni_01.NginxTlsSni01.perform")
