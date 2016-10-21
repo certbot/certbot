@@ -738,7 +738,6 @@ class RenewableCertTests(BaseRenewableCertTest):
 
     def test_update_symlinks(self):
         from certbot import storage
-        live_dir_path = os.path.join(self.tempdir, "live", "example.org")
         archive_dir_path = os.path.join(self.tempdir, "archive", "example.org")
         for kind in ALL_FOUR:
             live_path = self.config[kind]

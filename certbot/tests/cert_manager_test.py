@@ -15,24 +15,26 @@ class CertManagerTest(unittest.TestCase):
     """Tests for certbot.cert_manager
     """
     def setUp(self):
-        from certbot import cert_manager
         self.tempdir = tempfile.mkdtemp()
 
-        self.cli_config = configuration.RenewerConfiguration(
-            namespace=mock.MagicMock(
-                config_dir=self.tempdir,
-                work_dir=self.tempdir,
-                logs_dir=self.tempdir,
-            )
+        os.makedirs(os.path.join(self.tempdir, "renewal"))
+
+        mock_namespace = mock.MagicMock(
+            config_dir=self.tempdir,
+            work_dir=self.tempdir,
+            logs_dir=self.tempdir
         )
 
-        os.makedirs(os.path.join(self.tempdir, "renewal"))
+        self.cli_config = configuration.RenewerConfiguration(
+            namespace=mock_namespace
+        )
+
         self.domains = {
             "example.org": None,
             "other.com": os.path.join(self.tempdir, "specialarchive")
         }
         self.configs = {
-            domain: self._set_up_config(domain, self.domains[domain])
+            domain: self._set_up_config(domain, self.domains[domain]) \
             for domain in self.domains
         }
 
@@ -74,7 +76,6 @@ class CertManagerTest(unittest.TestCase):
         from certbot import cert_manager
         archive_paths = {}
         for domain in self.domains:
-            live_dir_path = os.path.join(self.tempdir, "live", domain)
             custom_archive = self.domains[domain]
             if custom_archive is not None:
                 archive_dir_path = custom_archive
