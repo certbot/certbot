@@ -8,7 +8,6 @@ import unittest
 import configobj
 import mock
 
-from certbot import configuration
 from certbot.storage import ALL_FOUR
 
 class CertManagerTest(unittest.TestCase):
