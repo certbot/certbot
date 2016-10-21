@@ -666,17 +666,13 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "e.g. -vvv.")
     helpful.add(
         None, "-t", "--text", dest="text_mode", action="store_true",
-        help="Use the text output. This is currently the only output, so "
-        "this flag has no effect.")
+        help=argparse.SUPPRESS)
     helpful.add(
         [None, "automation"], "-n", "--non-interactive", "--noninteractive",
         dest="noninteractive_mode", action="store_true",
         help="Run without ever asking for user input. This may require "
               "additional command line flags; the client will try to explain "
               "which ones are required if it finds one missing")
-    helpful.add(
-        None, "--dialog", dest="dialog_mode", action="store_true",
-        help="Deprecated - this has no effect")
     helpful.add(
         [None, "run", "certonly"],
         "-d", "--domains", "--domain", dest="domains",
@@ -880,6 +876,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " shell constructs, so you can use this switch to disable it.")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
+    helpful.add_deprecated_argument("--dialog", 0)
 
     _create_subparsers(helpful)
     _paths_parser(helpful)

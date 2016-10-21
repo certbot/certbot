@@ -98,6 +98,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue("--configurator" in out)
         self.assertTrue("how a cert is deployed" in out)
         self.assertTrue("--manual-test-mode" in out)
+        self.assertTrue("--text" not in out)
+        self.assertTrue("--dialog" not in out)
 
         out = self._help_output(['-h', 'nginx'])
         if "nginx" in plugins:
