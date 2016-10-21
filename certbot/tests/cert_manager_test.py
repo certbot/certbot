@@ -79,8 +79,8 @@ class CertManagerTest(unittest.TestCase):
                 archive_dir_path = custom_archive
             else:
                 archive_dir_path = os.path.join(self.tempdir, "archive", domain)
-            archive_paths[domain] = {kind: os.path.join(archive_dir_path, kind + "1.pem")
-                for kind in ALL_FOUR}
+            archive_paths[domain] = dict((kind,
+                os.path.join(archive_dir_path, kind + "1.pem")) for kind in ALL_FOUR)
             for kind in ALL_FOUR:
                 live_path = self.configs[domain][kind]
                 archive_path = archive_paths[domain][kind]
