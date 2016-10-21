@@ -486,6 +486,11 @@ def update_symlinks(config, unused_plugins):
     """
     cert_manager.update_live_symlinks(config)
 
+def list_certs(config, unused_plugins):
+    """Display information about the certificates that Certbot knows about
+    """
+    cert_manager.list_certs(config)
+
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
     """Revoke a previously obtained certificate."""
     # For user-agent construction

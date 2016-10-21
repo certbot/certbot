@@ -69,6 +69,7 @@ cert. Major SUBCOMMANDS are:
   config_changes       Show changes made to server config during installation
   update_symlinks      Update cert symlinks based on renewal config file
   plugins              Display information about installed plugins
+  list_certs           Display information about certificates that Certbot knows about
 
 """.format(cli_command)
 
@@ -323,7 +324,8 @@ class HelpfulArgumentParser(object):
                       "install": main.install, "plugins": main.plugins_cmd,
                       "register": main.register, "renew": main.renew,
                       "revoke": main.revoke, "rollback": main.rollback,
-                      "everything": main.run, "update_symlinks": main.update_symlinks}
+                      "everything": main.run, "update_symlinks": main.update_symlinks,
+                      "list_certs": main.list_certs}
 
         # List of topics for which additional help can be provided
         HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)

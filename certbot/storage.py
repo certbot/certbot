@@ -263,6 +263,13 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             self._update_symlinks()
         self._check_symlinks()
 
+    def __str__(self):
+        """Returns a string representation of the object."""
+        # import ipdb; ipdb.set_trace()
+        outdict = {"Lineage": self.lineagename,
+                   "Domains": " ".join(self.names())}
+        return "RenewableCert(%s)" % str(outdict)
+
     @property
     def archive_dir(self):
         """Returns the default or specified archive directory"""
