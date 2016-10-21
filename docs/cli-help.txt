@@ -22,11 +22,14 @@ optional arguments:
   -v, --verbose         This flag can be used multiple times to incrementally
                         increase the verbosity of output, e.g. -vvv. (default:
                         -2)
+  -t, --text            Use the text output instead of the curses UI.
+                        (default: False)
   -n, --non-interactive, --noninteractive
                         Run without ever asking for user input. This may
                         require additional command line flags; the client will
                         try to explain which ones are required if it finds one
                         missing (default: False)
+  --dialog              Run using interactive dialog menus (default: False)
   -d DOMAIN, --domains DOMAIN, --domain DOMAIN
                         Domain names to apply. For multiple domains you can
                         use multiple -d flags or enter a comma separated list
