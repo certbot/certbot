@@ -666,7 +666,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "e.g. -vvv.")
     helpful.add(
         None, "-t", "--text", dest="text_mode", action="store_true",
-        help="Use the text output.")
+        help="Use the text output. This is currently the only output, so "
+        "this flag has no effect.")
     helpful.add(
         [None, "automation"], "-n", "--non-interactive", "--noninteractive",
         dest="noninteractive_mode", action="store_true",
