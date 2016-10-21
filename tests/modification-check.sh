@@ -5,7 +5,7 @@ temp_dir=`mktemp -d`
 # Script should be run from Certbot's root directory
 
 SCRIPT_PATH=`dirname $0`
-SCRIPT_PATH=`realpath $SCRIPT_PATH`
+SCRIPT_PATH=`readlink -f $SCRIPT_PATH`
 FLAG=false
 
 # Compare root letsencrypt-auto and certbot-auto with published versions
