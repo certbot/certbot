@@ -94,7 +94,8 @@ class HTTP01TLSServer(socketserver.TCPServer, ACMEServerMixin):
             self.socket, certfile=self.certificate_file, server_side=True)
 
     def __del__(self):
-        if os.path.exists(self.certificate_file):
+        if hasattr(self, "certificate_file") and \
+                os.path.exists(self.certificate_file):
             os.remove(self.certificate_file)
 
 
