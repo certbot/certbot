@@ -901,10 +901,8 @@ def _create_subparsers(helpful):
              'Encrypt server, set this to "".')
     helpful.add("certonly",
                 "--csr", type=read_file,
-                help="Path to a Certificate Signing Request (CSR) in DER"
-                " format; note that the .csr file *must* contain a Subject"
-                " Alternative Name field for each domain you want certified."
-                " Currently --csr only works with the 'certonly' subcommand'")
+                help="Path to a Certificate Signing Request (CSR) in DER or PEM format."
+                " Currently --csr only works with the 'certonly' subcommand.")
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",
                 default=flag_default("rollback_checkpoints"),
