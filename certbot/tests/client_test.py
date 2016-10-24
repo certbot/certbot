@@ -120,6 +120,17 @@ class ClientTest(unittest.TestCase):
                 config=self.config, account_=self.account,
                 auth=None, installer=None)
 
+    def test__init___warn_unsupported_config_options(self):
+        config = ConfigHelper(redirect=True, hsts=True)
+        installer = mock.MagicMock()
+        installer.supported_enhancements.return_value = ["redirect"]
+
+        with mock.patch('certbot.client.logger') as mock_logger:
+            from certbot.client import Client
+            Client(config=config, account_=self.account, auth=None,
+                   installer=installer, acme=self.acme)
+            mock_logger.warning.assert_called_once_with(mock.ANY)
+
     def test_init_acme_verify_ssl(self):
         net = self.acme_client.call_args[1]["net"]
         self.assertTrue(net.verify_ssl)
