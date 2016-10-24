@@ -90,6 +90,12 @@ The following tools are there to help you:
   code. Alternatively, you can use Python's standard library `pdb`,
   but you won't get TAB completion...
 
+.. important::
+   To run Certbot's automated Python tests via ``tox`` you must be able to
+   install ``cryptography`` via ``pip``. See `Cryptography's documentation`_
+   for more information on its requirements for installation.
+
+.. _Cryptography's documentation: https://cryptography.io/en/latest/installation/#installation
 
 .. _integration:
 
