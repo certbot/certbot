@@ -31,6 +31,7 @@ if sys.version_info < (2, 7, 9):  # pragma: no cover
 
 DER_CONTENT_TYPE = 'application/pkix-cert'
 
+
 class Client(object):  # pylint: disable=too-many-instance-attributes
     """ACME client.
 
@@ -609,7 +610,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         response = self.session.request(method, url, *args, **kwargs)
         # If content is DER, log the base64 of it instead of raw bytes, to keep
         # binary data out of the logs.
-        if response.headers["Content-Type"] == DER_CONTENT_TYPE:
+        if response.headers.get("Content-Type") == DER_CONTENT_TYPE:
             debug_content = base64.b64encode(response.content)
         else:
             debug_content = response.content
