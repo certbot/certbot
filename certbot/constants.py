@@ -18,7 +18,7 @@ CLI_DEFAULTS = dict(
         os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"),
                      "letsencrypt", "cli.ini"),
     ],
-    verbose_count=-(logging.WARNING / 10),
+    verbose_count=-int(logging.INFO / 10),
     server="https://acme-v01.api.letsencrypt.org/directory",
     rsa_key_size=2048,
     rollback_checkpoints=1,
@@ -37,6 +37,9 @@ STAGING_URI = "https://acme-staging.api.letsencrypt.org/directory"
 
 """Defaults for CLI flags and `.IConfig` attributes."""
 
+QUIET_LOGGING_LEVEL = logging.WARNING
+"""Logging level to use in quiet mode."""
+
 RENEWER_DEFAULTS = dict(
     renewer_enabled="yes",
     renew_before_expiry="30 days",
@@ -54,7 +57,7 @@ enhancements.
 List of expected options parameters:
 - redirect: None
 - http-header: TODO
-- ocsp-stapling: TODO
+- ocsp-stapling: certificate chain file path
 - spdy: TODO
 
 """

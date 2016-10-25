@@ -40,10 +40,8 @@ install_requires = [
     'configobj',
     'cryptography>=0.7',  # load_pem_x509_certificate
     'parsedatetime>=1.3',  # Calendar.parseDT
-    'psutil>=2.2.1',  # 2.1.0 for net_connections and 2.2.1 resolves #1080
     'PyOpenSSL',
     'pyrfc3339',
-    'python2-pythondialog>=3.2.2rc1',  # Debian squeeze support, cf. #280
     'pytz',
     # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
     # will tolerate; see #2599:
@@ -69,8 +67,8 @@ dev_extras = [
     'astroid==1.3.5',
     'coverage',
     'nose',
-    'nosexcover',
     'pep8',
+    'psutil>=2.2.1',  # for tests, optional
     'pylint==1.4.2',  # upstream #248
     'tox',
     'twine',

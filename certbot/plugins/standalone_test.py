@@ -67,10 +67,25 @@ class ServerManagerTest(unittest.TestCase):
 class SupportedChallengesValidatorTest(unittest.TestCase):
     """Tests for plugins.standalone.supported_challenges_validator."""
 
+    def setUp(self):
+        self.set_by_cli_patch = mock.patch(
+            "certbot.plugins.standalone.cli.set_by_cli")
+        self.stderr_patch = mock.patch("certbot.plugins.standalone.sys.stderr")
+
+        self.set_by_cli_patch.start().return_value = True
+        self.stderr = self.stderr_patch.start()
+
+    def tearDown(self):
+        self.set_by_cli_patch.stop()
+        self.stderr_patch.stop()
+
     def _call(self, data):
         from certbot.plugins.standalone import (
             supported_challenges_validator)
-        return supported_challenges_validator(data)
+        return_value = supported_challenges_validator(data)
+        self.assertTrue(self.stderr.write.called)  # pylint: disable=no-member
+        self.stderr.write.reset_mock()  # pylint: disable=no-member
+        return return_value
 
     def test_correct(self):
         self.assertEqual("tls-sni-01", self._call("tls-sni-01"))
@@ -91,13 +106,22 @@ class SupportedChallengesValidatorTest(unittest.TestCase):
         self.assertEqual("tls-sni-01,http-01", self._call("dvsni,http-01"))
 
 
+def get_open_port():
+    """Gets an open port number from the OS."""
+    open_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+    open_socket.bind(("", 0))
+    port = open_socket.getsockname()[1]
+    open_socket.close()
+    return port
+
 class AuthenticatorTest(unittest.TestCase):
     """Tests for certbot.plugins.standalone.Authenticator."""
 
     def setUp(self):
         from certbot.plugins.standalone import Authenticator
+
         self.config = mock.MagicMock(
-            tls_sni_01_port=1234, http01_port=4321,
+            tls_sni_01_port=get_open_port(), http01_port=get_open_port(),
             standalone_supported_challenges="tls-sni-01,http-01")
         self.auth = Authenticator(self.config, name="standalone")
 
@@ -122,35 +146,49 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(self.auth.get_chall_pref(domain=None),
                          [challenges.TLSSNI01])
 
+    @classmethod
+    def _get_achalls(cls):
+        domain = b'localhost'
+        key = jose.JWK.load(test_util.load_vector('rsa512_key.pem'))
+        http_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.HTTP01_P, domain=domain, account_key=key)
+        tls_sni_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.TLSSNI01_P, domain=domain, account_key=key)
+
+        return [http_01, tls_sni_01]
+
     @mock.patch("certbot.plugins.standalone.util")
     def test_perform_already_listening(self, mock_util):
-        for chall, port in ((challenges.TLSSNI01.typ, 1234),
-                            (challenges.HTTP01.typ, 4321)):
+        http_01, tls_sni_01 = self._get_achalls()
+
+        for achall, port in ((http_01, self.config.http01_port,),
+                             (tls_sni_01, self.config.tls_sni_01_port)):
             mock_util.already_listening.return_value = True
-            self.config.standalone_supported_challenges = chall
             self.assertRaises(
-                errors.MisconfigurationError, self.auth.perform, [])
+                errors.MisconfigurationError, self.auth.perform, [achall])
             mock_util.already_listening.assert_called_once_with(port, False)
             mock_util.already_listening.reset_mock()
 
     @mock.patch("certbot.plugins.standalone.zope.component.getUtility")
     def test_perform(self, unused_mock_get_utility):
-        achalls = [1, 2, 3]
+        achalls = self._get_achalls()
+
         self.auth.perform2 = mock.Mock(return_value=mock.sentinel.responses)
         self.assertEqual(mock.sentinel.responses, self.auth.perform(achalls))
         self.auth.perform2.assert_called_once_with(achalls)
 
     @mock.patch("certbot.plugins.standalone.zope.component.getUtility")
     def _test_perform_bind_errors(self, errno, achalls, mock_get_utility):
+        port = get_open_port()
         def _perform2(unused_achalls):
-            raise errors.StandaloneBindError(mock.Mock(errno=errno), 1234)
+            raise errors.StandaloneBindError(mock.Mock(errno=errno), port)
 
         self.auth.perform2 = mock.MagicMock(side_effect=_perform2)
         self.auth.perform(achalls)
         mock_get_utility.assert_called_once_with(interfaces.IDisplay)
         notification = mock_get_utility.return_value.notification
         self.assertEqual(1, notification.call_count)
-        self.assertTrue("1234" in notification.call_args[0][0])
+        self.assertTrue(str(port) in notification.call_args[0][0])
 
     def test_perform_eacces(self):
         # pylint: disable=no-value-for-parameter
@@ -166,12 +204,7 @@ class AuthenticatorTest(unittest.TestCase):
             socket.errno.ENOTCONN, [])
 
     def test_perform2(self):
-        domain = b'localhost'
-        key = jose.JWK.load(test_util.load_vector('rsa512_key.pem'))
-        http_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=acme_util.HTTP01_P, domain=domain, account_key=key)
-        tls_sni_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=acme_util.TLSSNI01_P, domain=domain, account_key=key)
+        http_01, tls_sni_01 = self._get_achalls()
 
         self.auth.servers = mock.MagicMock()
 
@@ -187,12 +220,12 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertTrue(isinstance(responses[1], challenges.TLSSNI01Response))
 
         self.assertEqual(self.auth.servers.run.mock_calls, [
-            mock.call(4321, challenges.HTTP01),
-            mock.call(1234, challenges.TLSSNI01),
+            mock.call(self.config.http01_port, challenges.HTTP01),
+            mock.call(self.config.tls_sni_01_port, challenges.TLSSNI01),
         ])
         self.assertEqual(self.auth.served, {
-            "server1234": set([tls_sni_01]),
-            "server4321": set([http_01]),
+            "server" + str(self.config.tls_sni_01_port): set([tls_sni_01]),
+            "server" + str(self.config.http01_port): set([http_01]),
         })
         self.assertEqual(1, len(self.auth.http_01_resources))
         self.assertEqual(1, len(self.auth.certs))

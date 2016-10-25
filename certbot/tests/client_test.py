@@ -63,12 +63,22 @@ class RegisterTest(unittest.TestCase):
     @mock.patch("certbot.client.display_ops.get_email")
     def test_email_retry(self, _rep, mock_get_email):
         from acme import messages
+        self.config.noninteractive_mode = False
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
-        mx_err = messages.Error(detail=msg, typ="urn:acme:error:invalidEmail")
+        mx_err = messages.Error.with_code('invalidContact', detail=msg)
         with mock.patch("certbot.client.acme_client.Client") as mock_client:
             mock_client().register.side_effect = [mx_err, mock.MagicMock()]
             self._call()
             self.assertEqual(mock_get_email.call_count, 1)
+
+    @mock.patch("certbot.account.report_new_account")
+    def test_email_invalid_noninteractive(self, _rep):
+        from acme import messages
+        msg = "DNS problem: NXDOMAIN looking up MX for example.com"
+        mx_err = messages.Error.with_code('invalidContact', detail=msg)
+        with mock.patch("certbot.client.acme_client.Client") as mock_client:
+            mock_client().register.side_effect = [mx_err, mock.MagicMock()]
+            self.assertRaises(errors.Error, self._call)
 
     def test_needs_email(self):
         self.config.email = None
@@ -82,7 +92,7 @@ class RegisterTest(unittest.TestCase):
                 self.config.register_unsafely_without_email = True
                 self.config.dry_run = False
                 self._call()
-                mock_logger.warn.assert_called_once_with(mock.ANY)
+                mock_logger.warning.assert_called_once_with(mock.ANY)
 
     def test_unsupported_error(self):
         from acme import messages
@@ -232,11 +242,11 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(os.path.dirname(fullchain_path),
                          os.path.dirname(candidate_fullchain_path))
 
-        with open(cert_path, "r") as cert_file:
+        with open(cert_path, "rb") as cert_file:
             cert_contents = cert_file.read()
         self.assertEqual(cert_contents, test_util.load_vector(certs[0]))
 
-        with open(chain_path, "r") as chain_file:
+        with open(chain_path, "rb") as chain_file:
             chain_contents = chain_file.read()
         self.assertEqual(chain_contents, test_util.load_vector(certs[1]) +
                          test_util.load_vector(certs[2]))
@@ -307,46 +317,56 @@ class ClientTest(unittest.TestCase):
     @mock.patch("certbot.client.enhancements")
     def test_enhance_config(self, mock_enhancements):
         config = ConfigHelper(redirect=True, hsts=False, uir=False)
-        self.assertRaises(errors.Error,
-                          self.client.enhance_config, ["foo.bar"], config)
+        self.assertRaises(errors.Error, self.client.enhance_config,
+                          ["foo.bar"], config, None)
 
         mock_enhancements.ask.return_value = True
         installer = mock.MagicMock()
         self.client.installer = installer
         installer.supported_enhancements.return_value = ["redirect"]
 
-        self.client.enhance_config(["foo.bar"], config)
+        self.client.enhance_config(["foo.bar"], config, None)
         installer.enhance.assert_called_once_with("foo.bar", "redirect", None)
         self.assertEqual(installer.save.call_count, 1)
         installer.restart.assert_called_once_with()
 
     @mock.patch("certbot.client.enhancements")
     def test_enhance_config_no_ask(self, mock_enhancements):
-        config = ConfigHelper(redirect=True, hsts=False, uir=False)
-        self.assertRaises(errors.Error,
-                          self.client.enhance_config, ["foo.bar"], config)
+        config = ConfigHelper(redirect=True, hsts=False,
+                              uir=False, staple=False)
+        self.assertRaises(errors.Error, self.client.enhance_config,
+                          ["foo.bar"], config, None)
 
         mock_enhancements.ask.return_value = True
         installer = mock.MagicMock()
         self.client.installer = installer
-        installer.supported_enhancements.return_value = ["redirect", "ensure-http-header"]
+        installer.supported_enhancements.return_value = [
+            "redirect", "ensure-http-header", "staple-ocsp"]
 
-        config = ConfigHelper(redirect=True, hsts=False, uir=False)
-        self.client.enhance_config(["foo.bar"], config)
+        config = ConfigHelper(redirect=True, hsts=False,
+                              uir=False, staple=False)
+        self.client.enhance_config(["foo.bar"], config, None)
         installer.enhance.assert_called_with("foo.bar", "redirect", None)
 
-        config = ConfigHelper(redirect=False, hsts=True, uir=False)
-        self.client.enhance_config(["foo.bar"], config)
+        config = ConfigHelper(redirect=False, hsts=True,
+                              uir=False, staple=False)
+        self.client.enhance_config(["foo.bar"], config, None)
         installer.enhance.assert_called_with("foo.bar", "ensure-http-header",
                 "Strict-Transport-Security")
 
-        config = ConfigHelper(redirect=False, hsts=False, uir=True)
-        self.client.enhance_config(["foo.bar"], config)
+        config = ConfigHelper(redirect=False, hsts=False,
+                              uir=True, staple=False)
+        self.client.enhance_config(["foo.bar"], config, None)
         installer.enhance.assert_called_with("foo.bar", "ensure-http-header",
                 "Upgrade-Insecure-Requests")
 
-        self.assertEqual(installer.save.call_count, 3)
-        self.assertEqual(installer.restart.call_count, 3)
+        config = ConfigHelper(redirect=False, hsts=False,
+                              uir=False, staple=True)
+        self.client.enhance_config(["foo.bar"], config, None)
+        installer.enhance.assert_called_with("foo.bar", "staple-ocsp", None)
+
+        self.assertEqual(installer.save.call_count, 4)
+        self.assertEqual(installer.restart.call_count, 4)
 
     @mock.patch("certbot.client.enhancements")
     def test_enhance_config_unsupported(self, mock_enhancements):
@@ -355,14 +375,14 @@ class ClientTest(unittest.TestCase):
         installer.supported_enhancements.return_value = []
 
         config = ConfigHelper(redirect=None, hsts=True, uir=True)
-        self.client.enhance_config(["foo.bar"], config)
+        self.client.enhance_config(["foo.bar"], config, None)
         installer.enhance.assert_not_called()
         mock_enhancements.ask.assert_not_called()
 
     def test_enhance_config_no_installer(self):
         config = ConfigHelper(redirect=True, hsts=False, uir=False)
-        self.assertRaises(errors.Error,
-                          self.client.enhance_config, ["foo.bar"], config)
+        self.assertRaises(errors.Error, self.client.enhance_config,
+                          ["foo.bar"], config, None)
 
     @mock.patch("certbot.client.zope.component.getUtility")
     @mock.patch("certbot.client.enhancements")
@@ -376,8 +396,8 @@ class ClientTest(unittest.TestCase):
 
         config = ConfigHelper(redirect=True, hsts=False, uir=False)
 
-        self.assertRaises(errors.PluginError,
-                          self.client.enhance_config, ["foo.bar"], config)
+        self.assertRaises(errors.PluginError, self.client.enhance_config,
+                          ["foo.bar"], config, None)
         installer.recovery_routine.assert_called_once_with()
         self.assertEqual(mock_get_utility().add_message.call_count, 1)
 
@@ -393,8 +413,8 @@ class ClientTest(unittest.TestCase):
 
         config = ConfigHelper(redirect=True, hsts=False, uir=False)
 
-        self.assertRaises(errors.PluginError,
-                          self.client.enhance_config, ["foo.bar"], config)
+        self.assertRaises(errors.PluginError, self.client.enhance_config,
+                          ["foo.bar"], config, None)
         installer.recovery_routine.assert_called_once_with()
         self.assertEqual(mock_get_utility().add_message.call_count, 1)
 
@@ -410,8 +430,8 @@ class ClientTest(unittest.TestCase):
 
         config = ConfigHelper(redirect=True, hsts=False, uir=False)
 
-        self.assertRaises(errors.PluginError,
-                          self.client.enhance_config, ["foo.bar"], config)
+        self.assertRaises(errors.PluginError, self.client.enhance_config,
+                          ["foo.bar"], config, None)
 
         self.assertEqual(mock_get_utility().add_message.call_count, 1)
         installer.rollback_checkpoints.assert_called_once_with()
@@ -430,8 +450,8 @@ class ClientTest(unittest.TestCase):
 
         config = ConfigHelper(redirect=True, hsts=False, uir=False)
 
-        self.assertRaises(errors.PluginError,
-                          self.client.enhance_config, ["foo.bar"], config)
+        self.assertRaises(errors.PluginError, self.client.enhance_config,
+                          ["foo.bar"], config, None)
         self.assertEqual(mock_get_utility().add_message.call_count, 1)
         installer.rollback_checkpoints.assert_called_once_with()
         self.assertEqual(installer.restart.call_count, 1)

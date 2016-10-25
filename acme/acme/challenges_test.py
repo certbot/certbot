@@ -10,7 +10,7 @@ from six.moves.urllib import parse as urllib_parse  # pylint: disable=import-err
 from acme import errors
 from acme import jose
 from acme import test_util
-
+from acme.dns_resolver import DNS_REQUIREMENT
 
 CERT = test_util.load_comparable_cert('cert.pem')
 KEY = jose.JWKRSA(key=test_util.load_rsa_private_key('rsa512_key.pem'))
@@ -75,6 +75,107 @@ class KeyAuthorizationChallengeResponseTest(unittest.TestCase):
             key_authorization='.foo.oKGqedy-b-acd5eoybm2f-'
             'NVFxvyOoET5CNy3xnv8WY')
         self.assertFalse(response.verify(self.chall, KEY.public_key()))
+
+
+class DNS01ResponseTest(unittest.TestCase):
+    # pylint: disable=too-many-instance-attributes
+
+    def setUp(self):
+        from acme.challenges import DNS01Response
+        self.msg = DNS01Response(key_authorization=u'foo')
+        self.jmsg = {
+            'resource': 'challenge',
+            'type': 'dns-01',
+            'keyAuthorization': u'foo',
+        }
+
+        from acme.challenges import DNS01
+        self.chall = DNS01(token=(b'x' * 16))
+        self.response = self.chall.response(KEY)
+        self.records_for_name_path = "acme.dns_resolver.txt_records_for_name"
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+
+    def test_from_json(self):
+        from acme.challenges import DNS01Response
+        self.assertEqual(self.msg, DNS01Response.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from acme.challenges import DNS01Response
+        hash(DNS01Response.from_json(self.jmsg))
+
+    def test_simple_verify_bad_key_authorization(self):
+        key2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
+        self.response.simple_verify(self.chall, "local", key2.public_key())
+
+    @mock.patch('acme.dns_resolver.DNS_AVAILABLE', False)
+    def test_simple_verify_without_dns(self):
+        self.assertRaises(
+            errors.DependencyError, self.response.simple_verify,
+            self.chall, 'local', KEY.public_key())
+
+    @test_util.skip_unless(test_util.requirement_available(DNS_REQUIREMENT),
+                           "optional dependency dnspython is not available")
+    def test_simple_verify_good_validation(self):  # pragma: no cover
+        with mock.patch(self.records_for_name_path) as mock_resolver:
+            mock_resolver.return_value = [
+                self.chall.validation(KEY.public_key())]
+            self.assertTrue(self.response.simple_verify(
+                self.chall, "local", KEY.public_key()))
+            mock_resolver.assert_called_once_with(
+                self.chall.validation_domain_name("local"))
+
+    @test_util.skip_unless(test_util.requirement_available(DNS_REQUIREMENT),
+                           "optional dependency dnspython is not available")
+    def test_simple_verify_good_validation_multitxts(self):  # pragma: no cover
+        with mock.patch(self.records_for_name_path) as mock_resolver:
+            mock_resolver.return_value = [
+                "!", self.chall.validation(KEY.public_key())]
+            self.assertTrue(self.response.simple_verify(
+                self.chall, "local", KEY.public_key()))
+            mock_resolver.assert_called_once_with(
+                self.chall.validation_domain_name("local"))
+
+    @test_util.skip_unless(test_util.requirement_available(DNS_REQUIREMENT),
+                           "optional dependency dnspython is not available")
+    def test_simple_verify_bad_validation(self):  # pragma: no cover
+        with mock.patch(self.records_for_name_path) as mock_resolver:
+            mock_resolver.return_value = ["!"]
+            self.assertFalse(self.response.simple_verify(
+                self.chall, "local", KEY.public_key()))
+
+
+class DNS01Test(unittest.TestCase):
+
+    def setUp(self):
+        from acme.challenges import DNS01
+        self.msg = DNS01(token=jose.decode_b64jose(
+            'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA'))
+        self.jmsg = {
+            'type': 'dns-01',
+            'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA',
+        }
+
+    def test_validation_domain_name(self):
+        self.assertEqual('_acme-challenge.www.example.com',
+                         self.msg.validation_domain_name('www.example.com'))
+
+    def test_validation(self):
+        self.assertEqual(
+            "rAa7iIg4K2y63fvUhCfy8dP1Xl7wEhmQq0oChTcE3Zk",
+            self.msg.validation(KEY))
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+
+    def test_from_json(self):
+        from acme.challenges import DNS01
+        self.assertEqual(self.msg, DNS01.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from acme.challenges import DNS01
+        hash(DNS01.from_json(self.jmsg))
 
 
 class HTTP01ResponseTest(unittest.TestCase):

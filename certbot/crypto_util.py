@@ -10,6 +10,7 @@ import traceback
 
 import OpenSSL
 import pyrfc3339
+import six
 import zope.component
 
 from acme import crypto_util as acme_crypto_util
@@ -115,16 +116,16 @@ def make_csr(key_str, domains, must_staple=False):
     # TODO: put SAN if len(domains) > 1
     extensions = [
         OpenSSL.crypto.X509Extension(
-            "subjectAltName",
+            b"subjectAltName",
             critical=False,
-            value=", ".join("DNS:%s" % d for d in domains)
+            value=", ".join("DNS:%s" % d for d in domains).encode('ascii')
         )
     ]
     if must_staple:
         extensions.append(OpenSSL.crypto.X509Extension(
-            "1.3.6.1.5.5.7.1.24",
+            b"1.3.6.1.5.5.7.1.24",
             critical=False,
-            value="DER:30:03:02:01:05"))
+            value=b"DER:30:03:02:01:05"))
     req.add_extensions(extensions)
     req.set_version(2)
     req.set_pubkey(pkey)
@@ -296,6 +297,32 @@ def get_sans_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
         csr, OpenSSL.crypto.load_certificate_request, typ)
 
 
+def _get_names_from_cert_or_req(cert_or_req, load_func, typ):
+    loaded_cert_or_req = _load_cert_or_req(cert_or_req, load_func, typ)
+    common_name = loaded_cert_or_req.get_subject().CN
+    # pylint: disable=protected-access
+    sans = acme_crypto_util._pyopenssl_cert_or_req_san(loaded_cert_or_req)
+
+    if common_name is None:
+        return sans
+    else:
+        return [common_name] + [d for d in sans if d != common_name]
+
+
+def get_names_from_cert(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
+    """Get a list of domains from a cert, including the CN if it is set.
+
+    :param str cert: Certificate (encoded).
+    :param typ: `OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`
+
+    :returns: A list of domain names.
+    :rtype: list
+
+    """
+    return _get_names_from_cert_or_req(
+        csr, OpenSSL.crypto.load_certificate, typ)
+
+
 def get_names_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
     """Get a list of domains from a CSR, including the CN if it is set.
 
@@ -306,13 +333,8 @@ def get_names_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
     :rtype: list
 
     """
-    loaded_csr = _load_cert_or_req(
+    return _get_names_from_cert_or_req(
         csr, OpenSSL.crypto.load_certificate_request, typ)
-    # Use a set to avoid duplication with CN and Subject Alt Names
-    domains = set(d for d in (loaded_csr.get_subject().CN,) if d is not None)
-    # pylint: disable=protected-access
-    domains.update(acme_crypto_util._pyopenssl_cert_or_req_san(loaded_csr))
-    return list(domains)
 
 
 def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
@@ -329,7 +351,7 @@ def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
         if isinstance(cert, jose.ComparableX509):
             # pylint: disable=protected-access
             cert = cert.wrapped
-        return OpenSSL.crypto.dump_certificate(filetype, cert)
+        return OpenSSL.crypto.dump_certificate(filetype, cert).decode('ascii')
 
     # assumes that OpenSSL.crypto.dump_certificate includes ending
     # newline character
@@ -374,8 +396,14 @@ def _notAfterBefore(cert_path, method):
     with open(cert_path) as f:
         x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
                                                f.read())
+    # pyopenssl always returns bytes
     timestamp = method(x509)
-    reformatted_timestamp = [timestamp[0:4], "-", timestamp[4:6], "-",
-                             timestamp[6:8], "T", timestamp[8:10], ":",
-                             timestamp[10:12], ":", timestamp[12:]]
-    return pyrfc3339.parse("".join(reformatted_timestamp))
+    reformatted_timestamp = [timestamp[0:4], b"-", timestamp[4:6], b"-",
+                             timestamp[6:8], b"T", timestamp[8:10], b":",
+                             timestamp[10:12], b":", timestamp[12:]]
+    timestamp_str = b"".join(reformatted_timestamp)
+    # pyrfc3339 uses "native" strings. That is, bytes on Python 2 and unicode
+    # on Python 3
+    if six.PY3:
+        timestamp_str = timestamp_str.decode('ascii')
+    return pyrfc3339.parse(timestamp_str)

@@ -180,6 +180,9 @@ class IAuthenticator(IPlugin):
     def cleanup(achalls):
         """Revert changes and shutdown after challenges complete.
 
+        This method should be able to revert all changes made by
+        perform, even if perform exited abnormally.
+
         :param list achalls: Non-empty (guaranteed) list of
             :class:`~certbot.achallenges.AnnotatedChallenge`
             instances, a subset of those previously passed to :func:`perform`.
@@ -224,19 +227,30 @@ class IConfig(zope.interface.Interface):
         "Location of renewal configuration file.")
 
     no_verify_ssl = zope.interface.Attribute(
-        "Disable SSL certificate verification.")
+        "Disable verification of the ACME server's certificate.")
     tls_sni_01_port = zope.interface.Attribute(
-        "Port number to perform tls-sni-01 challenge. "
-        "Boulder in testing mode defaults to 5001.")
+        "Port used during tls-sni-01 challenge. "
+        "This only affects the port Certbot listens on. "
+        "A conforming ACME server will still attempt to connect on port 443.")
 
     http01_port = zope.interface.Attribute(
-        "Port used in the SimpleHttp challenge.")
+        "Port used in the http-01 challenge."
+        "This only affects the port Certbot listens on. "
+        "A conforming ACME server will still attempt to connect on port 80.")
 
 
 class IInstaller(IPlugin):
     """Generic Certbot Installer Interface.
 
     Represents any server that an X509 certificate can be placed.
+
+    It is assumed that :func:`save` is the only method that finalizes a
+    checkpoint. This is important to ensure that checkpoints are
+    restored in a consistent manner if requested by the user or in case
+    of an error.
+
+    Using :class:`certbot.reverter.Reverter` to implement checkpoints,
+    rollback, and recovery can dramatically simplify plugin development.
 
     """
 
@@ -304,8 +318,11 @@ class IInstaller(IPlugin):
 
         Both title and temporary are needed because a save may be
         intended to be permanent, but the save is not ready to be a full
-        checkpoint. If an exception is raised, it is assumed a new
-        checkpoint was not created.
+        checkpoint.
+
+        It is assumed that at most one checkpoint is finalized by this
+        method. Additionally, if an exception is raised, it is assumed a
+        new checkpoint was not finalized.
 
         :param str title: The title of the save. If a title is given, the
             configuration will be saved as a new checkpoint and put in a
@@ -361,11 +378,10 @@ class IInstaller(IPlugin):
 class IDisplay(zope.interface.Interface):
     """Generic display."""
 
-    def notification(message, height, pause):
+    def notification(message, pause):
         """Displays a string message
 
         :param str message: Message to display
-        :param int height: Height of dialog box if applicable
         :param bool pause: Whether or not the application should pause for
             confirmation (if available)
 

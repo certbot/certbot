@@ -2,22 +2,15 @@
 import os
 import textwrap
 
-import dialog
+import six
 import zope.interface
 
 from certbot import interfaces
 from certbot import errors
 from certbot.display import completer
 
-WIDTH = 72
-HEIGHT = 20
 
-DSELECT_HELP = (
-    "Use the arrow keys or Tab to move between window elements. Space can be "
-    "used to complete the input path with the selected element in the "
-    "directory window. Pressing enter will select the currently highlighted "
-    "button.")
-"""Help text on how to use dialog's dselect."""
+WIDTH = 72
 
 # Display exit codes
 OK = "ok"
@@ -28,6 +21,9 @@ CANCEL = "cancel"
 
 HELP = "help"
 """Display exit code when for when the user requests more help."""
+
+ESC = "esc"
+"""Display exit code when the user hits Escape"""
 
 
 def _wrap_lines(msg):
@@ -52,158 +48,6 @@ def _wrap_lines(msg):
     return os.linesep.join(fixed_l)
 
 @zope.interface.implementer(interfaces.IDisplay)
-class NcursesDisplay(object):
-    """Ncurses-based display."""
-
-    def __init__(self, width=WIDTH, height=HEIGHT):
-        super(NcursesDisplay, self).__init__()
-        self.dialog = dialog.Dialog()
-        self.width = width
-        self.height = height
-
-    def notification(self, message, height=10, pause=False):
-        # pylint: disable=unused-argument
-        """Display a notification to the user and wait for user acceptance.
-
-        .. todo:: It probably makes sense to use one of the transient message
-            types for pause. It isn't straightforward how best to approach
-            the matter though given the context of our messages.
-            http://pythondialog.sourceforge.net/doc/widgets.html#displaying-transient-messages
-
-        :param str message: Message to display
-        :param int height: Height of the dialog box
-        :param bool pause: Not applicable to NcursesDisplay
-
-        """
-        self.dialog.msgbox(message, height, width=self.width)
-
-    def menu(self, message, choices, ok_label="OK", cancel_label="Cancel",
-             help_label="", **unused_kwargs):
-        """Display a menu.
-
-        :param str message: title of menu
-
-        :param choices: menu lines, len must be > 0
-        :type choices: list of tuples (`tag`, `item`) tags must be unique or
-            list of items (tags will be enumerated)
-
-        :param str ok_label: label of the OK button
-        :param str help_label: label of the help button
-        :param dict unused_kwargs: absorbs default / cli_args
-
-        :returns: tuple of the form (`code`, `index`) where
-            `code` - int display exit code
-            `int` - index of the selected item
-        :rtype: tuple
-
-        """
-        menu_options = {
-            "choices": choices,
-            "ok_label": ok_label,
-            "cancel_label": cancel_label,
-            "help_button": bool(help_label),
-            "help_label": help_label,
-            "width": self.width,
-            "height": self.height,
-            "menu_height": self.height - 6,
-        }
-
-        # Can accept either tuples or just the actual choices
-        if choices and isinstance(choices[0], tuple):
-            # pylint: disable=star-args
-            code, selection = self.dialog.menu(message, **menu_options)
-
-            # Return the selection index
-            for i, choice in enumerate(choices):
-                if choice[0] == selection:
-                    return code, i
-
-            return code, -1
-
-        else:
-            # "choices" is not formatted the way the dialog.menu expects...
-            menu_options["choices"] = [
-                (str(i), choice) for i, choice in enumerate(choices, 1)
-            ]
-            # pylint: disable=star-args
-            code, index = self.dialog.menu(message, **menu_options)
-
-            if code == CANCEL:
-                return code, -1
-
-            return code, int(index) - 1
-
-    def input(self, message, **unused_kwargs):
-        """Display an input box to the user.
-
-        :param str message: Message to display that asks for input.
-        :param dict _kwargs: absorbs default / cli_args
-
-        :returns: tuple of the form (`code`, `string`) where
-            `code` - int display exit code
-            `string` - input entered by the user
-
-        """
-        sections = message.split("\n")
-        # each section takes at least one line, plus extras if it's longer than self.width
-        wordlines = [1 + (len(section) / self.width) for section in sections]
-        height = 6 + sum(wordlines) + len(sections)
-        return self.dialog.inputbox(message, width=self.width, height=height)
-
-    def yesno(self, message, yes_label="Yes", no_label="No", **unused_kwargs):
-        """Display a Yes/No dialog box.
-
-        Yes and No label must begin with different letters.
-
-        :param str message: message to display to user
-        :param str yes_label: label on the "yes" button
-        :param str no_label: label on the "no" button
-        :param dict _kwargs: absorbs default / cli_args
-
-        :returns: if yes_label was selected
-        :rtype: bool
-
-        """
-        return self.dialog.DIALOG_OK == self.dialog.yesno(
-            message, self.height, self.width,
-            yes_label=yes_label, no_label=no_label)
-
-    def checklist(self, message, tags, default_status=True, **unused_kwargs):
-        """Displays a checklist.
-
-        :param message: Message to display before choices
-        :param list tags: where each is of type :class:`str` len(tags) > 0
-        :param bool default_status: If True, items are in a selected state by
-            default.
-        :param dict _kwargs: absorbs default / cli_args
-
-
-        :returns: tuple of the form (`code`, `list_tags`) where
-            `code` - int display exit code
-            `list_tags` - list of str tags selected by the user
-
-        """
-        choices = [(tag, "", default_status) for tag in tags]
-        return self.dialog.checklist(
-            message, width=self.width, height=self.height, choices=choices)
-
-    def directory_select(self, message, **unused_kwargs):
-        """Display a directory selection screen.
-
-        :param str message: prompt to give the user
-
-        :returns: tuple of the form (`code`, `string`) where
-            `code` - int display exit code
-            `string` - input entered by the user
-
-        """
-        root_directory = os.path.abspath(os.sep)
-        return self.dialog.dselect(
-            filepath=root_directory, width=self.width,
-            height=self.height, help_button=True, title=message)
-
-
-@zope.interface.implementer(interfaces.IDisplay)
 class FileDisplay(object):
     """File-based display."""
 
@@ -211,12 +55,11 @@ class FileDisplay(object):
         super(FileDisplay, self).__init__()
         self.outfile = outfile
 
-    def notification(self, message, height=10, pause=True):
+    def notification(self, message, pause=True):
         # pylint: disable=unused-argument
         """Displays a notification and waits for user acceptance.
 
         :param str message: Message to display
-        :param int height: No effect for FileDisplay
         :param bool pause: Whether or not the program should pause for the
             user's confirmation
 
@@ -227,7 +70,7 @@ class FileDisplay(object):
             "{line}{frame}{line}{msg}{line}{frame}{line}".format(
                 line=os.linesep, frame=side_frame, msg=message))
         if pause:
-            raw_input("Press Enter to Continue")
+            six.moves.input("Press Enter to Continue")
 
     def menu(self, message, choices, ok_label="", cancel_label="",
              help_label="", **unused_kwargs):
@@ -269,7 +112,7 @@ class FileDisplay(object):
         :rtype: tuple
 
         """
-        ans = raw_input(
+        ans = six.moves.input(
             textwrap.fill(
                 "%s (Enter 'c' to cancel): " % message,
                 80,
@@ -304,7 +147,7 @@ class FileDisplay(object):
             os.linesep, frame=side_frame, msg=message))
 
         while True:
-            ans = raw_input("{yes}/{no}: ".format(
+            ans = six.moves.input("{yes}/{no}: ".format(
                 yes=_parens_around_char(yes_label),
                 no=_parens_around_char(no_label)))
 
@@ -355,7 +198,7 @@ class FileDisplay(object):
         :param str message: prompt to give the user
 
         :returns: tuple of the form (`code`, `string`) where
-            `code` - int display exit code
+            `code` - display exit code
             `string` - input entered by the user
 
         """
@@ -442,7 +285,7 @@ class FileDisplay(object):
             input_msg = ("Press 1 [enter] to confirm the selection "
                          "(press 'c' to cancel): ")
         while selection < 1:
-            ans = raw_input(input_msg)
+            ans = six.moves.input(input_msg)
             if ans.startswith("c") or ans.startswith("C"):
                 return CANCEL, -1
             try:
@@ -476,12 +319,11 @@ class NoninteractiveDisplay(object):
             msg += "\n\n(You can set this with the {0} flag)".format(cli_flag)
         raise errors.MissingCommandlineFlag(msg)
 
-    def notification(self, message, height=10, pause=False):
+    def notification(self, message, pause=False):
         # pylint: disable=unused-argument
         """Displays a notification without waiting for user acceptance.
 
         :param str message: Message to display to stdout
-        :param int height: No effect for NoninteractiveDisplay
         :param bool pause: The NoninteractiveDisplay waits for no keyboard
 
         """

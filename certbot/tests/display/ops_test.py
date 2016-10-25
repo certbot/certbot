@@ -72,6 +72,14 @@ class GetEmailTest(unittest.TestCase):
                 self.assertTrue(
                     "--register-unsafely-without-email" not in call[0][0])
 
+    def test_optional_invalid_unsafe(self):
+        invalid_txt = "There seem to be problems"
+        self.input.return_value = (display_util.OK, "foo@bar.baz")
+        with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
+            mock_safe_email.side_effect = [False, True]
+            self._call(invalid=True)
+            self.assertTrue(invalid_txt in self.input.call_args[0][0])
+
 
 class ChooseAccountTest(unittest.TestCase):
     """Tests for certbot.display.ops.choose_account."""
@@ -206,20 +214,14 @@ class ChooseNamesTest(unittest.TestCase):
     @mock.patch("certbot.display.ops.z_util")
     def test_no_names_choose(self, mock_util):
         self.mock_install().get_all_names.return_value = set()
-        mock_util().yesno.return_value = True
         domain = "example.com"
         mock_util().input.return_value = (display_util.OK, domain)
 
         actual_doms = self._call(self.mock_install)
         self.assertEqual(mock_util().input.call_count, 1)
         self.assertEqual(actual_doms, [domain])
-
-    @mock.patch("certbot.display.ops.z_util")
-    def test_no_names_quit(self, mock_util):
-        self.mock_install().get_all_names.return_value = set()
-        mock_util().yesno.return_value = False
-
-        self.assertEqual(self._call(self.mock_install), [])
+        self.assertTrue(
+            "configuration files" in mock_util().input.call_args[0][0])
 
     @mock.patch("certbot.display.ops.z_util")
     def test_filter_names_valid_return(self, mock_util):
@@ -248,10 +250,10 @@ class ChooseNamesTest(unittest.TestCase):
     def test_get_valid_domains(self):
         from certbot.display.ops import get_valid_domains
         all_valid = ["example.com", "second.example.com",
-                     "also.example.com"]
-        all_invalid = ["xn--ls8h.tld", "*.wildcard.com", "notFQDN",
-                       "uniçodé.com"]
-        two_valid = ["example.com", "xn--ls8h.tld", "also.example.com"]
+                     "also.example.com", "under_score.example.com",
+                     "justtld"]
+        all_invalid = ["öóòps.net", "*.wildcard.com", "uniçodé.com"]
+        two_valid = ["example.com", "úniçøde.com", "also.example.com"]
         self.assertEqual(get_valid_domains(all_valid), all_valid)
         self.assertEqual(get_valid_domains(all_invalid), [])
         self.assertEqual(len(get_valid_domains(two_valid)), 2)
@@ -272,23 +274,18 @@ class ChooseNamesTest(unittest.TestCase):
             unicode_error = UnicodeEncodeError('mock', u'', 0, 1, 'mock')
             mock_sli.side_effect = unicode_error
             self.assertEqual(_choose_names_manually(), [])
-        # Punycode and no retry
-        mock_util().input.return_value = (display_util.OK,
-                                          "xn--ls8h.tld")
-        self.assertEqual(_choose_names_manually(), [])
-        # non-FQDN and no retry
-        mock_util().input.return_value = (display_util.OK,
-                                          "notFQDN")
-        self.assertEqual(_choose_names_manually(), [])
-        # Two valid domains
+        # Valid domains
         mock_util().input.return_value = (display_util.OK,
                                           ("example.com,"
+                                           "under_score.example.com,"
+                                           "justtld,"
                                            "valid.example.com"))
         self.assertEqual(_choose_names_manually(),
-                         ["example.com", "valid.example.com"])
+                         ["example.com", "under_score.example.com",
+                          "justtld", "valid.example.com"])
         # Three iterations
         mock_util().input.return_value = (display_util.OK,
-                                          "notFQDN")
+                                          "uniçodé.com")
         yn = mock.MagicMock()
         yn.side_effect = [True, True, False]
         mock_util().yesno = yn

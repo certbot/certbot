@@ -55,6 +55,16 @@ class AddrTest(unittest.TestCase):
         self.assertEqual(str(self.addr5), "myhost")
         self.assertEqual(str(self.addr6), "80 default_server")
 
+    def test_to_string(self):
+        self.assertEqual(self.addr1.to_string(), "192.168.1.1")
+        self.assertEqual(self.addr2.to_string(), "192.168.1.1:* ssl")
+        self.assertEqual(self.addr3.to_string(), "192.168.1.1:80")
+        self.assertEqual(self.addr4.to_string(), "*:80 default_server ssl")
+        self.assertEqual(self.addr4.to_string(include_default=False), "*:80 ssl")
+        self.assertEqual(self.addr5.to_string(), "myhost")
+        self.assertEqual(self.addr6.to_string(), "80 default_server")
+        self.assertEqual(self.addr6.to_string(include_default=False), "80")
+
     def test_eq(self):
         from certbot_nginx.obj import Addr
         new_addr1 = Addr.fromstring("192.168.1.1 spdy")
@@ -80,7 +90,7 @@ class VirtualHostTest(unittest.TestCase):
         self.vhost1 = VirtualHost(
             "filep",
             set([Addr.fromstring("localhost")]), False, False,
-            set(['localhost']), [])
+            set(['localhost']), [], [])
 
     def test_eq(self):
         from certbot_nginx.obj import Addr
@@ -88,7 +98,7 @@ class VirtualHostTest(unittest.TestCase):
         vhost1b = VirtualHost(
             "filep",
             set([Addr.fromstring("localhost blah")]), False, False,
-            set(['localhost']), [])
+            set(['localhost']), [], [])
 
         self.assertEqual(vhost1b, self.vhost1)
         self.assertEqual(str(vhost1b), str(self.vhost1))

@@ -102,12 +102,6 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(self.regr, self.client.register(self.new_reg))
         # TODO: test POST call arguments
 
-        # TODO: split here and separate test
-        reg_wrong_key = self.regr.body.update(key=KEY2.public_key())
-        self.response.json.return_value = reg_wrong_key.to_json()
-        self.assertRaises(
-            errors.UnexpectedUpdate, self.client.register, self.new_reg)
-
     def test_register_missing_next(self):
         self.response.status_code = http_client.CREATED
         self.assertRaises(
@@ -645,6 +639,10 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
             'http://example.com/', content_type=self.content_type, bar='baz'))
         self.send_request.assert_called_once_with(
             'GET', 'http://example.com/', bar='baz')
+
+    def test_post_no_content_type(self):
+        self.content_type = self.net.JOSE_CONTENT_TYPE
+        self.assertEqual(self.checked_response, self.net.post('uri', self.obj))
 
     def test_post(self):
         # pylint: disable=protected-access

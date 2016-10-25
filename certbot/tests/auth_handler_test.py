@@ -4,6 +4,7 @@ import logging
 import unittest
 
 import mock
+import six
 
 from acme import challenges
 from acme import client as acme_client
@@ -23,7 +24,7 @@ class ChallengeFactoryTest(unittest.TestCase):
         from certbot.auth_handler import AuthHandler
 
         # Account is mocked...
-        self.handler = AuthHandler(None, None, mock.Mock(key="mock_key"))
+        self.handler = AuthHandler(None, None, mock.Mock(key="mock_key"), [])
 
         self.dom = "test"
         self.handler.authzr[self.dom] = acme_util.gen_authzr(
@@ -73,7 +74,7 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.mock_net = mock.MagicMock(spec=acme_client.Client)
 
         self.handler = AuthHandler(
-            self.mock_auth, self.mock_net, self.mock_account)
+            self.mock_auth, self.mock_net, self.mock_account, [])
 
         logging.disable(logging.CRITICAL)
 
@@ -93,7 +94,7 @@ class GetAuthorizationsTest(unittest.TestCase):
 
         self.assertEqual(mock_poll.call_count, 1)
         chall_update = mock_poll.call_args[0][0]
-        self.assertEqual(chall_update.keys(), ["0"])
+        self.assertEqual(list(six.iterkeys(chall_update)), ["0"])
         self.assertEqual(len(chall_update.values()), 1)
 
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
@@ -110,7 +111,7 @@ class GetAuthorizationsTest(unittest.TestCase):
 
         mock_poll.side_effect = self._validate_all
         self.mock_auth.get_chall_pref.return_value.append(challenges.HTTP01)
-        self.mock_auth.get_chall_pref.return_value.append(challenges.DNS)
+        self.mock_auth.get_chall_pref.return_value.append(challenges.DNS01)
 
         authzr = self.handler.get_authorizations(["0"])
 
@@ -118,13 +119,13 @@ class GetAuthorizationsTest(unittest.TestCase):
 
         self.assertEqual(mock_poll.call_count, 1)
         chall_update = mock_poll.call_args[0][0]
-        self.assertEqual(chall_update.keys(), ["0"])
+        self.assertEqual(list(six.iterkeys(chall_update)), ["0"])
         self.assertEqual(len(chall_update.values()), 1)
 
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
         # Test if list first element is TLSSNI01, use typ because it is an achall
         for achall in self.mock_auth.cleanup.call_args[0][0]:
-            self.assertTrue(achall.typ in ["tls-sni-01", "http-01", "dns"])
+            self.assertTrue(achall.typ in ["tls-sni-01", "http-01", "dns-01"])
 
         # Length of authorizations list
         self.assertEqual(len(authzr), 1)
@@ -143,12 +144,12 @@ class GetAuthorizationsTest(unittest.TestCase):
         # Check poll call
         self.assertEqual(mock_poll.call_count, 1)
         chall_update = mock_poll.call_args[0][0]
-        self.assertEqual(len(chall_update.keys()), 3)
-        self.assertTrue("0" in chall_update.keys())
+        self.assertEqual(len(list(six.iterkeys(chall_update))), 3)
+        self.assertTrue("0" in list(six.iterkeys(chall_update)))
         self.assertEqual(len(chall_update["0"]), 1)
-        self.assertTrue("1" in chall_update.keys())
+        self.assertTrue("1" in list(six.iterkeys(chall_update)))
         self.assertEqual(len(chall_update["1"]), 1)
-        self.assertTrue("2" in chall_update.keys())
+        self.assertTrue("2" in list(six.iterkeys(chall_update)))
         self.assertEqual(len(chall_update["2"]), 1)
 
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
@@ -166,8 +167,31 @@ class GetAuthorizationsTest(unittest.TestCase):
     def test_no_domains(self):
         self.assertRaises(errors.AuthorizationError, self.handler.get_authorizations, [])
 
+    @mock.patch("certbot.auth_handler.AuthHandler._poll_challenges")
+    def test_preferred_challenge_choice(self, mock_poll):
+        self.mock_net.request_domain_challenges.side_effect = functools.partial(
+            gen_dom_authzr, challs=acme_util.CHALLENGES)
+
+        mock_poll.side_effect = self._validate_all
+        self.mock_auth.get_chall_pref.return_value.append(challenges.HTTP01)
+
+        self.handler.pref_challs.extend((challenges.HTTP01, challenges.DNS01,))
+
+        self.handler.get_authorizations(["0"])
+
+        self.assertEqual(self.mock_auth.cleanup.call_count, 1)
+        self.assertEqual(
+            self.mock_auth.cleanup.call_args[0][0][0].typ, "http-01")
+
+    def test_preferred_challenges_not_supported(self):
+        self.mock_net.request_domain_challenges.side_effect = functools.partial(
+            gen_dom_authzr, challs=acme_util.CHALLENGES)
+        self.handler.pref_challs.append(challenges.HTTP01)
+        self.assertRaises(
+            errors.AuthorizationError, self.handler.get_authorizations, ["0"])
+
     def _validate_all(self, unused_1, unused_2):
-        for dom in self.handler.authzr.keys():
+        for dom in six.iterkeys(self.handler.authzr):
             azr = self.handler.authzr[dom]
             self.handler.authzr[dom] = acme_util.gen_authzr(
                 messages.STATUS_VALID,
@@ -188,7 +212,7 @@ class PollChallengesTest(unittest.TestCase):
         # Account and network are mocked...
         self.mock_net = mock.MagicMock()
         self.handler = AuthHandler(
-            None, self.mock_net, mock.Mock(key="mock_key"))
+            None, self.mock_net, mock.Mock(key="mock_key"), [])
 
         self.doms = ["0", "1", "2"]
         self.handler.authzr[self.doms[0]] = acme_util.gen_authzr(
@@ -239,7 +263,7 @@ class PollChallengesTest(unittest.TestCase):
         from certbot.auth_handler import challb_to_achall
         self.mock_net.poll.side_effect = self._mock_poll_solve_one_valid
         self.chall_update[self.doms[0]].append(
-            challb_to_achall(acme_util.DNS_P, "key", self.doms[0]))
+            challb_to_achall(acme_util.DNS01_P, "key", self.doms[0]))
         self.assertRaises(
             errors.AuthorizationError, self.handler._poll_challenges,
             self.chall_update, False)
@@ -317,7 +341,7 @@ class GenChallengePathTest(unittest.TestCase):
 
     """
     def setUp(self):
-        logging.disable(logging.fatal)
+        logging.disable(logging.FATAL)
 
     def tearDown(self):
         logging.disable(logging.NOTSET)
@@ -341,7 +365,7 @@ class GenChallengePathTest(unittest.TestCase):
         self.assertTrue(self._call(challbs[::-1], prefs, None))
 
     def test_not_supported(self):
-        challbs = (acme_util.DNS_P, acme_util.TLSSNI01_P)
+        challbs = (acme_util.DNS01_P, acme_util.TLSSNI01_P)
         prefs = [challenges.TLSSNI01]
         combos = ((0, 1),)
 
@@ -362,7 +386,7 @@ class ReportFailedChallsTest(unittest.TestCase):
             "chall": acme_util.HTTP01,
             "uri": "uri",
             "status": messages.STATUS_INVALID,
-            "error": messages.Error(typ="urn:acme:error:tls", detail="detail"),
+            "error": messages.Error.with_code("tls", detail="detail"),
         }
 
         # Prevent future regressions if the error type changes

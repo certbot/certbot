@@ -13,122 +13,6 @@ CHOICES = [("First", "Description1"), ("Second", "Description2")]
 TAGS = ["tag1", "tag2", "tag3"]
 TAGS_CHOICES = [("1", "tag1"), ("2", "tag2"), ("3", "tag3")]
 
-
-class NcursesDisplayTest(unittest.TestCase):
-    """Test ncurses display.
-
-    Since this is mostly a wrapper, it might be more helpful to test the
-    actual dialog boxes. The test file located in ./tests/display.py
-    (relative to the root of the repository) will actually display the
-    various boxes but requires the user to do the verification. If
-    something seems amiss please use that test script to debug it, the
-    automatic tests rely on too much mocking.
-
-    """
-    def setUp(self):
-        super(NcursesDisplayTest, self).setUp()
-        self.displayer = display_util.NcursesDisplay()
-
-        self.default_menu_options = {
-            "choices": CHOICES,
-            "ok_label": "OK",
-            "cancel_label": "Cancel",
-            "help_button": False,
-            "help_label": "",
-            "width": display_util.WIDTH,
-            "height": display_util.HEIGHT,
-            "menu_height": display_util.HEIGHT - 6,
-        }
-
-    @mock.patch("certbot.display.util.dialog.Dialog.msgbox")
-    def test_notification(self, mock_msgbox):
-        """Kind of worthless... one liner."""
-        self.displayer.notification("message")
-        self.assertEqual(mock_msgbox.call_count, 1)
-
-    @mock.patch("certbot.display.util.dialog.Dialog.menu")
-    def test_menu_tag_and_desc(self, mock_menu):
-        mock_menu.return_value = (display_util.OK, "First")
-
-        ret = self.displayer.menu("Message", CHOICES)
-        mock_menu.assert_called_with("Message", **self.default_menu_options)
-
-        self.assertEqual(ret, (display_util.OK, 0))
-
-    @mock.patch("certbot.display.util.dialog.Dialog.menu")
-    def test_menu_tag_and_desc_cancel(self, mock_menu):
-        mock_menu.return_value = (display_util.CANCEL, "")
-
-        ret = self.displayer.menu("Message", CHOICES)
-
-        mock_menu.assert_called_with("Message", **self.default_menu_options)
-
-        self.assertEqual(ret, (display_util.CANCEL, -1))
-
-    @mock.patch("certbot.display.util.dialog.Dialog.menu")
-    def test_menu_desc_only(self, mock_menu):
-        mock_menu.return_value = (display_util.OK, "1")
-
-        ret = self.displayer.menu("Message", TAGS, help_label="More Info")
-
-        self.default_menu_options.update(
-            choices=TAGS_CHOICES, help_button=True, help_label="More Info")
-        mock_menu.assert_called_with("Message", **self.default_menu_options)
-
-        self.assertEqual(ret, (display_util.OK, 0))
-
-    @mock.patch("certbot.display.util.dialog.Dialog.menu")
-    def test_menu_desc_only_help(self, mock_menu):
-        mock_menu.return_value = (display_util.HELP, "2")
-
-        ret = self.displayer.menu("Message", TAGS, help_label="More Info")
-
-        self.assertEqual(ret, (display_util.HELP, 1))
-
-    @mock.patch("certbot.display.util.dialog.Dialog.menu")
-    def test_menu_desc_only_cancel(self, mock_menu):
-        mock_menu.return_value = (display_util.CANCEL, "")
-
-        ret = self.displayer.menu("Message", TAGS, help_label="More Info")
-
-        self.assertEqual(ret, (display_util.CANCEL, -1))
-
-    @mock.patch("certbot.display.util."
-                "dialog.Dialog.inputbox")
-    def test_input(self, mock_input):
-        self.displayer.input("message")
-        self.assertEqual(mock_input.call_count, 1)
-
-    @mock.patch("certbot.display.util.dialog.Dialog.yesno")
-    def test_yesno(self, mock_yesno):
-        mock_yesno.return_value = display_util.OK
-
-        self.assertTrue(self.displayer.yesno("message"))
-
-        mock_yesno.assert_called_with(
-            "message", display_util.HEIGHT, display_util.WIDTH,
-            yes_label="Yes", no_label="No")
-
-    @mock.patch("certbot.display.util."
-                "dialog.Dialog.checklist")
-    def test_checklist(self, mock_checklist):
-        self.displayer.checklist("message", TAGS)
-
-        choices = [
-            (TAGS[0], "", True),
-            (TAGS[1], "", True),
-            (TAGS[2], "", True),
-        ]
-        mock_checklist.assert_called_with(
-            "message", width=display_util.WIDTH, height=display_util.HEIGHT,
-            choices=choices)
-
-    @mock.patch("certbot.display.util.dialog.Dialog.dselect")
-    def test_directory_select(self, mock_dselect):
-        self.displayer.directory_select("message")
-        self.assertEqual(mock_dselect.call_count, 1)
-
-
 class FileOutputDisplayTest(unittest.TestCase):
     """Test stdout display.
 
@@ -142,13 +26,13 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.displayer = display_util.FileDisplay(self.mock_stdout)
 
     def test_notification_no_pause(self):
-        self.displayer.notification("message", 10, False)
+        self.displayer.notification("message", False)
         string = self.mock_stdout.write.call_args[0][0]
 
         self.assertTrue("message" in string)
 
     def test_notification_pause(self):
-        with mock.patch("__builtin__.raw_input", return_value="enter"):
+        with mock.patch("six.moves.input", return_value="enter"):
             self.displayer.notification("message")
 
         self.assertTrue("message" in self.mock_stdout.write.call_args[0][0])
@@ -161,31 +45,31 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.assertEqual(ret, (display_util.OK, 0))
 
     def test_input_cancel(self):
-        with mock.patch("__builtin__.raw_input", return_value="c"):
+        with mock.patch("six.moves.input", return_value="c"):
             code, _ = self.displayer.input("message")
 
         self.assertTrue(code, display_util.CANCEL)
 
     def test_input_normal(self):
-        with mock.patch("__builtin__.raw_input", return_value="domain.com"):
+        with mock.patch("six.moves.input", return_value="domain.com"):
             code, input_ = self.displayer.input("message")
 
         self.assertEqual(code, display_util.OK)
         self.assertEqual(input_, "domain.com")
 
     def test_yesno(self):
-        with mock.patch("__builtin__.raw_input", return_value="Yes"):
+        with mock.patch("six.moves.input", return_value="Yes"):
             self.assertTrue(self.displayer.yesno("message"))
-        with mock.patch("__builtin__.raw_input", return_value="y"):
+        with mock.patch("six.moves.input", return_value="y"):
             self.assertTrue(self.displayer.yesno("message"))
-        with mock.patch("__builtin__.raw_input", side_effect=["maybe", "y"]):
+        with mock.patch("six.moves.input", side_effect=["maybe", "y"]):
             self.assertTrue(self.displayer.yesno("message"))
-        with mock.patch("__builtin__.raw_input", return_value="No"):
+        with mock.patch("six.moves.input", return_value="No"):
             self.assertFalse(self.displayer.yesno("message"))
-        with mock.patch("__builtin__.raw_input", side_effect=["cancel", "n"]):
+        with mock.patch("six.moves.input", side_effect=["cancel", "n"]):
             self.assertFalse(self.displayer.yesno("message"))
 
-        with mock.patch("__builtin__.raw_input", return_value="a"):
+        with mock.patch("six.moves.input", return_value="a"):
             self.assertTrue(self.displayer.yesno("msg", yes_label="Agree"))
 
     @mock.patch("certbot.display.util.FileDisplay.input")
@@ -272,11 +156,11 @@ class FileOutputDisplayTest(unittest.TestCase):
 
     def test_get_valid_int_ans_valid(self):
         # pylint: disable=protected-access
-        with mock.patch("__builtin__.raw_input", return_value="1"):
+        with mock.patch("six.moves.input", return_value="1"):
             self.assertEqual(
                 self.displayer._get_valid_int_ans(1), (display_util.OK, 1))
         ans = "2"
-        with mock.patch("__builtin__.raw_input", return_value=ans):
+        with mock.patch("six.moves.input", return_value=ans):
             self.assertEqual(
                 self.displayer._get_valid_int_ans(3),
                 (display_util.OK, int(ans)))
@@ -289,7 +173,7 @@ class FileOutputDisplayTest(unittest.TestCase):
             ["c"],
         ]
         for ans in answers:
-            with mock.patch("__builtin__.raw_input", side_effect=ans):
+            with mock.patch("six.moves.input", side_effect=ans):
                 self.assertEqual(
                     self.displayer._get_valid_int_ans(3),
                     (display_util.CANCEL, -1))

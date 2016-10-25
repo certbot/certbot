@@ -6,6 +6,10 @@ class Error(Exception):
     """Generic ACME error."""
 
 
+class DependencyError(Error):
+    """Dependency error"""
+
+
 class SchemaValidationError(jose_errors.DeserializationError):
     """JSON schema ACME object validation error."""
 
@@ -49,7 +53,7 @@ class MissingNonce(NonceError):
 
     def __str__(self):
         return ('Server {0} response did not include a replay '
-                'nonce, headers: {1}'.format(
+                'nonce, headers: {1} (This may be a service outage)'.format(
                     self.response.request.method, self.response.headers))
 
 

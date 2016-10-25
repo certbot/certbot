@@ -7,8 +7,10 @@ import re
 import configobj
 import parsedatetime
 import pytz
+import six
 
 import certbot
+from certbot import cli
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
@@ -88,7 +90,7 @@ def write_renewal_config(o_filename, n_filename, target, relevant_data):
     # TODO: add human-readable comments explaining other available
     #       parameters
     logger.debug("Writing new config %s.", n_filename)
-    with open(n_filename, "w") as f:
+    with open(n_filename, "wb") as f:
         config.write(outfile=f)
     return config
 
@@ -158,36 +160,13 @@ def relevant_values(all_values):
     :param dict all_values: The original values.
 
     :returns: A new dictionary containing items that can be used in renewal.
-    :rtype dict:"""
+    :rtype dict:
 
-    from certbot import cli
-
-    def _is_cli_default(option, value):
-        # Look through the CLI parser defaults and see if this option is
-        # both present and equal to the specified value. If not, return
-        # False.
-        # pylint: disable=protected-access
-        for x in cli.helpful_parser.parser._actions:
-            if x.dest == option:
-                if x.default == value:
-                    return True
-                else:
-                    break
-        return False
-
-    values = dict()
-    for option, value in all_values.iteritems():
-        # Try to find reasons to store this item in the
-        # renewal config.  It can be stored if it is relevant and
-        # (it is set_by_cli() or flag_default() is different
-        # from the value or flag_default() doesn't exist).
-        if _relevant(option):
-            if (cli.set_by_cli(option)
-                or not _is_cli_default(option, value)):
-#                or option not in constants.CLI_DEFAULTS
-#                or constants.CLI_DEFAULTS[option] != value):
-                values[option] = value
-    return values
+    """
+    return dict(
+        (option, value)
+        for option, value in six.iteritems(all_values)
+        if _relevant(option) and cli.option_was_set(option, value))
 
 
 class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
@@ -541,6 +520,22 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # for the others.
         return max(self.newest_available_version(x) for x in ALL_FOUR) + 1
 
+    def ensure_deployed(self):
+        """Make sure we've deployed the latest version.
+
+        :returns: False if a change was needed, True otherwise
+        :rtype: bool
+
+        May need to recover from rare interrupted / crashed states."""
+
+        if self.has_pending_deployment():
+            logger.warn("Found a new cert /archive/ that was not linked to in /live/; "
+                        "fixing...")
+            self.update_all_links_to(self.latest_common_version())
+            return False
+        return True
+
+
     def has_pending_deployment(self):
         """Is there a later version of all of the managed items?
 
@@ -616,7 +611,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         if target is None:
             raise errors.CertStorageError("could not find cert file")
         with open(target) as f:
-            return crypto_util.get_sans_from_cert(f.read())
+            return crypto_util.get_names_from_cert(f.read())
 
     def autodeployment_is_enabled(self):
         """Is automatic deployment enabled for this cert?

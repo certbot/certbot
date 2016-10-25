@@ -3,6 +3,7 @@ import collections
 import itertools
 import logging
 import pkg_resources
+import six
 
 import zope.interface
 import zope.interface.verify
@@ -194,12 +195,12 @@ class PluginsRegistry(collections.Mapping):
     def init(self, config):
         """Initialize all plugins in the registry."""
         return [plugin_ep.init(config) for plugin_ep
-                in self._plugins.itervalues()]
+                in six.itervalues(self._plugins)]
 
     def filter(self, pred):
         """Filter plugins based on predicate."""
         return type(self)(dict((name, plugin_ep) for name, plugin_ep
-                               in self._plugins.iteritems() if pred(plugin_ep)))
+                               in six.iteritems(self._plugins) if pred(plugin_ep)))
 
     def visible(self):
         """Filter plugins based on visibility."""
@@ -216,7 +217,7 @@ class PluginsRegistry(collections.Mapping):
 
     def prepare(self):
         """Prepare all plugins in the registry."""
-        return [plugin_ep.prepare() for plugin_ep in self._plugins.itervalues()]
+        return [plugin_ep.prepare() for plugin_ep in six.itervalues(self._plugins)]
 
     def available(self):
         """Filter plugins based on availability."""
@@ -238,7 +239,7 @@ class PluginsRegistry(collections.Mapping):
 
         """
         # use list instead of set because PluginEntryPoint is not hashable
-        candidates = [plugin_ep for plugin_ep in self._plugins.itervalues()
+        candidates = [plugin_ep for plugin_ep in six.itervalues(self._plugins)
                       if plugin_ep.initialized and plugin_ep.init() is plugin]
         assert len(candidates) <= 1
         if candidates:
@@ -249,9 +250,9 @@ class PluginsRegistry(collections.Mapping):
     def __repr__(self):
         return "{0}({1})".format(
             self.__class__.__name__, ','.join(
-                repr(p_ep) for p_ep in self._plugins.itervalues()))
+                repr(p_ep) for p_ep in six.itervalues(self._plugins)))
 
     def __str__(self):
         if not self._plugins:
             return "No plugins"
-        return "\n\n".join(str(p_ep) for p_ep in self._plugins.itervalues())
+        return "\n\n".join(str(p_ep) for p_ep in six.itervalues(self._plugins))

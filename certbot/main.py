@@ -11,6 +11,7 @@ import traceback
 import zope.component
 
 from acme import jose
+from acme import messages
 
 import certbot
 
@@ -25,7 +26,6 @@ from certbot import errors
 from certbot import hooks
 from certbot import interfaces
 from certbot import util
-from certbot import log
 from certbot import reporter
 from certbot import renewal
 from certbot import storage
@@ -33,6 +33,13 @@ from certbot import storage
 from certbot.display import util as display_util, ops as display_ops
 from certbot.plugins import disco as plugins_disco
 from certbot.plugins import selection as plug_sel
+
+
+_PERM_ERR_FMT = os.linesep.join((
+    "The following error was encountered:", "{0}",
+    "If running as non-root, set --config-dir, "
+    "--logs-dir, and --work-dir to writeable paths."))
+
 
 logger = logging.getLogger(__name__)
 
@@ -59,16 +66,12 @@ def _report_successful_dry_run(config):
                                   reporter_util.HIGH_PRIORITY, on_crash=False)
 
 
-
 def _auth_from_domains(le_client, config, domains, lineage=None):
-    """Authenticate and enroll certificate."""
-    # Note: This can raise errors... caught above us though. This is now
-    # a three-way case: reinstall (which results in a no-op here because
-    # although there is a relevant lineage, we don't do anything to it
-    # inside this function -- we don't obtain a new certificate), renew
-    # (which results in treating the request as a renewal), or newcert
-    # (which results in treating the request as a new certificate request).
+    """Authenticate and enroll certificate.
 
+    :returns: Tuple of (str action, cert_or_None) as per _treat_as_renewal
+              action can be: "newcert" | "renew" | "reinstall"
+    """
     # If lineage is specified, use that one instead of looking around for
     # a matching one.
     if lineage is None:
@@ -82,14 +85,17 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
     if action == "reinstall":
         # The lineage already exists; allow the caller to try installing
         # it without getting a new certificate at all.
-        return lineage, "reinstall"
+        logger.info("Keeping the existing certificate")
+        return "reinstall", lineage
 
     hooks.pre_hook(config)
     try:
         if action == "renew":
+            logger.info("Renewing an existing certificate")
             renewal.renew_cert(config, domains, le_client, lineage)
         elif action == "newcert":
             # TREAT AS NEW REQUEST
+            logger.info("Obtaining a new certificate")
             lineage = le_client.obtain_and_enroll_certificate(domains)
             if lineage is False:
                 raise errors.Error("Certificate could not be obtained")
@@ -99,7 +105,7 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
     if not config.dry_run and not config.verb == "renew":
         _report_new_cert(config, lineage.cert, lineage.fullchain)
 
-    return lineage, action
+    return action, lineage
 
 
 def _handle_subset_cert_request(config, domains, cert):
@@ -144,27 +150,29 @@ def _handle_subset_cert_request(config, domains, cert):
             "reinvoke the client.")
 
 
-def _handle_identical_cert_request(config, cert):
-    """Figure out what to do if a cert has the same names as a previously obtained one
+def _handle_identical_cert_request(config, lineage):
+    """Figure out what to do if a lineage has the same names as a previously obtained one
 
-    :param storage.RenewableCert cert:
+    :param storage.RenewableCert lineage:
 
     :returns: Tuple of (str action, cert_or_None) as per _treat_as_renewal
               action can be: "newcert" | "renew" | "reinstall"
     :rtype: tuple
 
     """
-    if renewal.should_renew(config, cert):
-        return "renew", cert
+    if not lineage.ensure_deployed():
+        return "reinstall", lineage
+    if renewal.should_renew(config, lineage):
+        return "renew", lineage
     if config.reinstall:
         # Set with --reinstall, force an identical certificate to be
         # reinstalled without further prompting.
-        return "reinstall", cert
+        return "reinstall", lineage
     question = (
         "You have an existing certificate that contains exactly the same "
         "domains you requested and isn't close to expiry."
         "{br}(ref: {0}){br}{br}What would you like to do?"
-    ).format(cert.configfile.filename, br=os.linesep)
+    ).format(lineage.configfile.filename, br=os.linesep)
 
     if config.verb == "run":
         keep_opt = "Attempt to reinstall this existing certificate"
@@ -182,9 +190,9 @@ def _handle_identical_cert_request(config, cert):
             "User chose to cancel the operation and may "
             "reinvoke the client.")
     elif response[1] == 0:
-        return "reinstall", cert
+        return "reinstall", lineage
     elif response[1] == 1:
-        return "renew", cert
+        return "renew", lineage
     else:
         assert False, "This is impossible"
 
@@ -425,7 +433,7 @@ def install(config, plugins):
     le_client.deploy_certificate(
         domains, config.key_path, config.cert_path, config.chain_path,
         config.fullchain_path)
-    le_client.enhance_config(domains, config)
+    le_client.enhance_config(domains, config, config.chain_path)
 
 
 def plugins_cmd(config, plugins):  # TODO: Use IDisplay rather than print
@@ -499,13 +507,13 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(config, authenticator, installer)
 
-    lineage, action = _auth_from_domains(le_client, config, domains)
+    action, lineage = _auth_from_domains(le_client, config, domains)
 
     le_client.deploy_certificate(
         domains, lineage.privkey, lineage.cert,
         lineage.chain, lineage.fullchain)
 
-    le_client.enhance_config(domains, config)
+    le_client.enhance_config(domains, config, lineage.chain)
 
     if len(lineage.available_versions("cert")) == 1:
         display_ops.success_installation(domains)
@@ -525,7 +533,7 @@ def _csr_obtain_cert(config, le_client):
     csr, typ = config.actual_csr
     certr, chain = le_client.obtain_certificate_from_csr(config.domains, csr, typ)
     if config.dry_run:
-        logger.info(
+        logger.debug(
             "Dry run: skipping saving certificate to %s", config.cert_path)
     else:
         cert_path, _, cert_fullchain = le_client.save_certificate(
@@ -551,7 +559,7 @@ def obtain_cert(config, plugins, lineage=None):
     # SHOWTIME: Possibly obtain/renew a cert, and set action to renew | newcert | reinstall
     if config.csr is None: # the common case
         domains = _find_domains(config, installer)
-        _, action = _auth_from_domains(le_client, config, domains, lineage)
+        action, _ = _auth_from_domains(le_client, config, domains, lineage)
     else:
         assert lineage is None, "Did not expect a CSR with a RenewableCert"
         _csr_obtain_cert(config, le_client)
@@ -588,8 +596,11 @@ def renew(config, unused_plugins):
 def setup_log_file_handler(config, logfile, fmt):
     """Setup file debug logging."""
     log_file_path = os.path.join(config.logs_dir, logfile)
-    handler = logging.handlers.RotatingFileHandler(
-        log_file_path, maxBytes=2 ** 20, backupCount=10)
+    try:
+        handler = logging.handlers.RotatingFileHandler(
+            log_file_path, maxBytes=2 ** 20, backupCount=1000)
+    except IOError as error:
+        raise errors.Error(_PERM_ERR_FMT.format(error))
     # rotate on each invocation, rollover only possible when maxBytes
     # is nonzero and backupCount is nonzero, so we set maxBytes as big
     # as possible not to overrun in single CLI invocation (1MB).
@@ -601,25 +612,29 @@ def setup_log_file_handler(config, logfile, fmt):
     return handler, log_file_path
 
 
-def _cli_log_handler(config, level, fmt):
-    if config.text_mode or config.noninteractive_mode or config.verb == "renew":
-        handler = colored_logging.StreamHandler()
-        handler.setFormatter(logging.Formatter(fmt))
-    else:
-        handler = log.DialogHandler()
-        # dialog box is small, display as less as possible
-        handler.setFormatter(logging.Formatter("%(message)s"))
+def _cli_log_handler(level, fmt):
+    handler = colored_logging.StreamHandler()
+    handler.setFormatter(logging.Formatter(fmt))
     handler.setLevel(level)
     return handler
 
 
-def setup_logging(config, cli_handler_factory, logfile):
-    """Setup logging."""
-    fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
-    level = -config.verbose_count * 10
+def setup_logging(config):
+    """Sets up logging to logfiles and the terminal.
+
+    :param certbot.interface.IConfig config: Configuration object
+
+    """
+    cli_fmt = "%(message)s"
+    file_fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+    logfile = "letsencrypt.log"
+    if config.quiet:
+        level = constants.QUIET_LOGGING_LEVEL
+    else:
+        level = -config.verbose_count * 10
     file_handler, log_file_path = setup_log_file_handler(
-        config, logfile=logfile, fmt=fmt)
-    cli_handler = cli_handler_factory(config, level, fmt)
+        config, logfile=logfile, fmt=file_fmt)
+    cli_handler = _cli_log_handler(level, cli_fmt)
 
     # TODO: use fileConfig?
 
@@ -667,11 +682,12 @@ def _handle_exception(exc_type, exc_value, trace, config):
             # them with a full traceback
             err = traceback.format_exception_only(exc_type, exc_value)[0]
             # Typical error from the ACME module:
-            # acme.messages.Error: urn:acme:error:malformed :: The request message was
-            # malformed :: Error creating new registration :: Validation of contact
-            # mailto:none@longrandomstring.biz failed: Server failure at resolver
-            if (("urn:acme" in err and ":: " in err and
-                 config.verbose_count <= cli.flag_default("verbose_count"))):
+            # acme.messages.Error: urn:ietf:params:acme:error:malformed :: The
+            # request message was malformed :: Error creating new registration
+            # :: Validation of contact mailto:none@longrandomstring.biz failed:
+            # Server failure at resolver
+            if (messages.is_acme_error(err) and ":: " in err and
+                 config.verbose_count <= cli.flag_default("verbose_count")):
                 # prune ACME error code, we have a human description
                 _code, _sep, err = err.partition(":: ")
             msg = "An unexpected error occurred:\n" + err + "Please see the "
@@ -685,6 +701,23 @@ def _handle_exception(exc_type, exc_value, trace, config):
             traceback.format_exception(exc_type, exc_value, trace)))
 
 
+def make_or_verify_core_dir(directory, mode, uid, strict):
+    """Make sure directory exists with proper permissions.
+
+    :param str directory: Path to a directory.
+    :param int mode: Directory mode.
+    :param int uid: Directory owner.
+    :param bool strict: require directory to be owned by current user
+
+    :raises .errors.Error: if the directory cannot be made or verified
+
+    """
+    try:
+        util.make_or_verify_dir(directory, mode, uid, strict)
+    except OSError as error:
+        raise errors.Error(_PERM_ERR_FMT.format(error))
+
+
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     sys.excepthook = functools.partial(_handle_exception, config=None)
@@ -695,17 +728,17 @@ def main(cli_args=sys.argv[1:]):
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
 
-    # Setup logging ASAP, otherwise "No handlers could be found for
-    # logger ..." TODO: this should be done before plugins discovery
-    for directory in config.config_dir, config.work_dir:
-        util.make_or_verify_dir(
-            directory, constants.CONFIG_DIRS_MODE, os.geteuid(),
-            "--strict-permissions" in cli_args)
+    make_or_verify_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
+                            os.geteuid(), config.strict_permissions)
+    make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
+                            os.geteuid(), config.strict_permissions)
     # TODO: logs might contain sensitive data such as contents of the
     # private key! #525
-    util.make_or_verify_dir(
-        config.logs_dir, 0o700, os.geteuid(), "--strict-permissions" in cli_args)
-    setup_logging(config, _cli_log_handler, logfile='letsencrypt.log')
+    make_or_verify_core_dir(config.logs_dir, 0o700,
+                            os.geteuid(), config.strict_permissions)
+    # Setup logging ASAP, otherwise "No handlers could be found for
+    # logger ..." TODO: this should be done before plugins discovery
+    setup_logging(config)
     cli.possible_deprecation_warning(config)
 
     logger.debug("certbot version: %s", certbot.__version__)
@@ -721,10 +754,8 @@ def main(cli_args=sys.argv[1:]):
         displayer = display_util.NoninteractiveDisplay(open(os.devnull, "w"))
     elif config.noninteractive_mode:
         displayer = display_util.NoninteractiveDisplay(sys.stdout)
-    elif config.text_mode:
-        displayer = display_util.FileDisplay(sys.stdout)
     else:
-        displayer = display_util.NcursesDisplay()
+        displayer = display_util.FileDisplay(sys.stdout)
     zope.component.provideUtility(displayer)
 
     # Reporter
@@ -738,5 +769,5 @@ def main(cli_args=sys.argv[1:]):
 if __name__ == "__main__":
     err_string = main()
     if err_string:
-        logger.warn("Exiting with message %s", err_string)
+        logger.warning("Exiting with message %s", err_string)
     sys.exit(err_string)  # pragma: no cover

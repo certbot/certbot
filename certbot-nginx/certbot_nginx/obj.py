@@ -69,7 +69,8 @@ class Addr(common.Addr):
 
         return cls(host, port, ssl, default)
 
-    def __str__(self):
+    def to_string(self, include_default=True):
+        """Return string representation of Addr"""
         parts = ''
         if self.tup[0] and self.tup[1]:
             parts = "%s:%s" % self.tup
@@ -78,12 +79,18 @@ class Addr(common.Addr):
         else:
             parts = self.tup[1]
 
-        if self.default:
+        if self.default and include_default:
             parts += ' default_server'
         if self.ssl:
             parts += ' ssl'
 
         return parts
+
+    def __str__(self):
+        return self.to_string()
+
+    def __repr__(self):
+        return "Addr(" + self.__str__() + ")"
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -104,10 +111,12 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
     :ivar bool ssl: SSLEngine on in vhost
     :ivar bool enabled: Virtual host is enabled
+    :ivar list path: The indices into the parsed file used to access
+        the server block defining the vhost
 
     """
 
-    def __init__(self, filep, addrs, ssl, enabled, names, raw):
+    def __init__(self, filep, addrs, ssl, enabled, names, raw, path):
         # pylint: disable=too-many-arguments
         """Initialize a VH."""
         self.filep = filep
@@ -116,6 +125,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         self.ssl = ssl
         self.enabled = enabled
         self.raw = raw
+        self.path = path
 
     def __str__(self):
         addr_str = ", ".join(str(addr) for addr in self.addrs)
@@ -126,11 +136,16 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
                 "enabled: %s" % (self.filep, addr_str,
                                  self.names, self.ssl, self.enabled))
 
+    def __repr__(self):
+        return "VirtualHost(" + self.__str__().replace("\n", ", ") + ")\n"
+
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return (self.filep == other.filep and
                     list(self.addrs) == list(other.addrs) and
                     self.names == other.names and
-                    self.ssl == other.ssl and self.enabled == other.enabled)
+                    self.ssl == other.ssl and
+                    self.enabled == other.enabled and
+                    self.path == other.path)
 
         return False

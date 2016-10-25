@@ -13,6 +13,8 @@ from acme import messages
 from certbot import achallenges
 from certbot import errors
 
+from certbot_nginx import obj
+from certbot_nginx import parser
 from certbot_nginx.tests import util
 
 
@@ -37,8 +39,10 @@ class NginxConfiguratorTest(util.NginxTest):
             errors.NoInstallationError, self.config.prepare)
 
     def test_prepare(self):
-        self.assertEquals((1, 6, 2), self.config.version)
-        self.assertEquals(5, len(self.config.parser.parsed))
+        self.assertEqual((1, 6, 2), self.config.version)
+        self.assertEqual(7, len(self.config.parser.parsed))
+        # ensure we successfully parsed a file for ssl_options
+        self.assertTrue(self.config.parser.loc["ssl_options"])
 
     @mock.patch("certbot_nginx.configurator.util.exe_exists")
     @mock.patch("certbot_nginx.configurator.subprocess.Popen")
@@ -56,20 +60,19 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.version = None
         self.config.config_test = mock.Mock()
         self.config.prepare()
-        self.assertEquals((1, 6, 2), self.config.version)
+        self.assertEqual((1, 6, 2), self.config.version)
 
     @mock.patch("certbot_nginx.configurator.socket.gethostbyaddr")
     def test_get_all_names(self, mock_gethostbyaddr):
         mock_gethostbyaddr.return_value = ('155.225.50.69.nephoscale.net', [], [])
         names = self.config.get_all_names()
         self.assertEqual(names, set(
-            ["*.www.foo.com", "somename", "another.alias",
-             "alias", "localhost", ".example.com", r"~^(www\.)?(example|bar)\.",
-             "155.225.50.69.nephoscale.net", "*.www.example.com",
-             "example.*", "www.example.org", "myhost"]))
+            ["155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
+             "migration.com", "summer.com", "geese.com", "sslon.com"]))
 
     def test_supported_enhancements(self):
-        self.assertEqual(['redirect'], self.config.supported_enhancements())
+        self.assertEqual(['redirect', 'staple-ocsp'],
+                         self.config.supported_enhancements())
 
     def test_enhance(self):
         self.assertRaises(
@@ -81,21 +84,25 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_save(self):
         filep = self.config.parser.abs_path('sites-enabled/example.com')
+        mock_vhost = obj.VirtualHost(filep,
+                                     None, None, None,
+                                     set(['.example.com', 'example.*']),
+                                     None, [0])
         self.config.parser.add_server_directives(
-            filep, set(['.example.com', 'example.*']),
-            [['listen', '5001 ssl']],
+            mock_vhost,
+            [['listen', ' ', '5001 ssl']],
             replace=False)
         self.config.save()
 
         # pylint: disable=protected-access
         parsed = self.config.parser._parse_files(filep, override=True)
-        self.assertEqual([[['server'], [
-                                        ['listen', '69.50.225.155:9000'],
-                                        ['listen', '127.0.0.1'],
-                                        ['server_name', '.example.com'],
-                                        ['server_name', 'example.*'],
-                                        ['listen', '5001 ssl']
-                                        ]]],
+        self.assertEqual([[['server'],
+                           [['listen', '69.50.225.155:9000'],
+                            ['listen', '127.0.0.1'],
+                            ['server_name', '.example.com'],
+                            ['server_name', 'example.*'],
+                            ['listen', '5001 ssl'],
+                            ['#', parser.COMMENT]]]],
                          parsed[0])
 
     def test_choose_vhost(self):
@@ -133,41 +140,11 @@ class NginxConfiguratorTest(util.NginxTest):
             self.assertEqual(conf_path[name], path)
 
         for name in bad_results:
-            self.assertEqual(set([name]), self.config.choose_vhost(name).names)
+            self.assertRaises(errors.MisconfigurationError,
+                              self.config.choose_vhost, name)
 
     def test_more_info(self):
         self.assertTrue('nginx.conf' in self.config.more_info())
-
-    def test_deploy_cert_stapling(self):
-        # Choose a version of Nginx greater than 1.3.7 so stapling code gets
-        # invoked.
-        self.config.version = (1, 9, 6)
-        example_conf = self.config.parser.abs_path('sites-enabled/example.com')
-        self.config.deploy_cert(
-            "www.example.com",
-            "example/cert.pem",
-            "example/key.pem",
-            "example/chain.pem",
-            "example/fullchain.pem")
-        self.config.save()
-        self.config.parser.load()
-        generated_conf = self.config.parser.parsed[example_conf]
-
-        self.assertTrue(util.contains_at_depth(generated_conf,
-                                               ['ssl_stapling', 'on'], 2))
-        self.assertTrue(util.contains_at_depth(generated_conf,
-                                               ['ssl_stapling_verify', 'on'], 2))
-        self.assertTrue(util.contains_at_depth(generated_conf,
-                                               ['ssl_trusted_certificate', 'example/chain.pem'], 2))
-
-    def test_deploy_cert_stapling_requires_chain_path(self):
-        self.config.version = (1, 3, 7)
-        self.assertRaises(errors.PluginError, self.config.deploy_cert,
-            "www.example.com",
-            "example/cert.pem",
-            "example/key.pem",
-            None,
-            "example/fullchain.pem")
 
     def test_deploy_cert_requires_fullchain_path(self):
         self.config.version = (1, 3, 1)
@@ -182,8 +159,6 @@ class NginxConfiguratorTest(util.NginxTest):
         server_conf = self.config.parser.abs_path('server.conf')
         nginx_conf = self.config.parser.abs_path('nginx.conf')
         example_conf = self.config.parser.abs_path('sites-enabled/example.com')
-        # Choose a version of Nginx less than 1.3.7 so stapling code doesn't get
-        # invoked.
         self.config.version = (1, 3, 1)
 
         # Get the default SSL vhost
@@ -216,9 +191,9 @@ class NginxConfiguratorTest(util.NginxTest):
 
                             ['listen', '5001 ssl'],
                             ['ssl_certificate', 'example/fullchain.pem'],
-                            ['ssl_certificate_key', 'example/key.pem'],
-                            ['include', self.config.parser.loc["ssl_options"]]
-                            ]]],
+                            ['ssl_certificate_key', 'example/key.pem']] +
+                            util.filter_comments(self.config.parser.loc["ssl_options"])
+                            ]],
                          parsed_example_conf)
         self.assertEqual([['server_name', 'somename  alias  another.alias']],
                          parsed_server_conf)
@@ -234,13 +209,40 @@ class NginxConfiguratorTest(util.NginxTest):
                 ['index', 'index.html index.htm']]],
               ['listen', '5001 ssl'],
               ['ssl_certificate', '/etc/nginx/fullchain.pem'],
-              ['ssl_certificate_key', '/etc/nginx/key.pem'],
-              ['include', self.config.parser.loc["ssl_options"]]]],
+              ['ssl_certificate_key', '/etc/nginx/key.pem']] +
+             util.filter_comments(self.config.parser.loc["ssl_options"])
+            ],
             2))
+
+    def test_deploy_cert_add_explicit_listen(self):
+        migration_conf = self.config.parser.abs_path('sites-enabled/migration.com')
+        self.config.deploy_cert(
+            "summer.com",
+            "summer/cert.pem",
+            "summer/key.pem",
+            "summer/chain.pem",
+            "summer/fullchain.pem")
+        self.config.save()
+        self.config.parser.load()
+        parsed_migration_conf = util.filter_comments(self.config.parser.parsed[migration_conf])
+        self.assertEqual([['server'],
+                          [
+                           ['server_name', 'migration.com'],
+                           ['server_name', 'summer.com'],
+
+                           ['listen', '80'],
+                           ['listen', '5001 ssl'],
+                           ['ssl_certificate', 'summer/fullchain.pem'],
+                           ['ssl_certificate_key', 'summer/key.pem']] +
+                           util.filter_comments(self.config.parser.loc["ssl_options"])
+                           ],
+                         parsed_migration_conf[0])
 
     def test_get_all_certs_keys(self):
         nginx_conf = self.config.parser.abs_path('nginx.conf')
         example_conf = self.config.parser.abs_path('sites-enabled/example.com')
+        migration_conf = self.config.parser.abs_path('sites-enabled/migration.com')
+        sslon_conf = self.config.parser.abs_path('sites-enabled/sslon.com')
 
         # Get the default SSL vhost
         self.config.deploy_cert(
@@ -255,17 +257,26 @@ class NginxConfiguratorTest(util.NginxTest):
             "/etc/nginx/key.pem",
             "/etc/nginx/chain.pem",
             "/etc/nginx/fullchain.pem")
+        self.config.deploy_cert(
+            "migration.com",
+            "migration/cert.pem",
+            "migration/key.pem",
+            "migration/chain.pem",
+            "migration/fullchain.pem")
         self.config.save()
 
         self.config.parser.load()
         self.assertEqual(set([
             ('example/fullchain.pem', 'example/key.pem', example_conf),
             ('/etc/nginx/fullchain.pem', '/etc/nginx/key.pem', nginx_conf),
+            ('migration/fullchain.pem', 'migration/key.pem', migration_conf),
+            ('snakeoil.cert', 'snakeoil.key', sslon_conf),
         ]), self.config.get_all_certs_keys())
 
     @mock.patch("certbot_nginx.configurator.tls_sni_01.NginxTlsSni01.perform")
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.restart")
-    def test_perform(self, mock_restart, mock_perform):
+    @mock.patch("certbot_nginx.configurator.NginxConfigurator.revert_challenge_config")
+    def test_perform_and_cleanup(self, mock_revert, mock_restart, mock_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
         achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
@@ -291,7 +302,11 @@ class NginxConfiguratorTest(util.NginxTest):
 
         self.assertEqual(mock_perform.call_count, 1)
         self.assertEqual(responses, expected)
-        self.assertEqual(mock_restart.call_count, 1)
+
+        self.config.cleanup([achall1, achall2])
+        self.assertEqual(0, self.config._chall_out) # pylint: disable=protected-access
+        self.assertEqual(mock_revert.call_count, 1)
+        self.assertEqual(mock_restart.call_count, 2)
 
     @mock.patch("certbot_nginx.configurator.subprocess.Popen")
     def test_get_version(self, mock_popen):
@@ -409,8 +424,10 @@ class NginxConfiguratorTest(util.NginxTest):
                 OpenSSL.crypto.FILETYPE_PEM, key_file.read())
 
     def test_redirect_enhance(self):
+        # Test that we successfully add a redirect when there is
+        # a listen directive
         expected = [
-            ['if', '($scheme != "https")'],
+            ['if', '($scheme != "https") '],
             [['return', '301 https://$host$request_uri']]
         ]
 
@@ -419,6 +436,52 @@ class NginxConfiguratorTest(util.NginxTest):
 
         generated_conf = self.config.parser.parsed[example_conf]
         self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
+
+        # Test that we successfully add a redirect when there is
+        # no listen directive
+        migration_conf = self.config.parser.abs_path('sites-enabled/migration.com')
+        self.config.enhance("migration.com", "redirect")
+
+        generated_conf = self.config.parser.parsed[migration_conf]
+        self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
+
+    def test_redirect_dont_enhance(self):
+        # Test that we don't accidentally add redirect to ssl-only block
+        with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
+            self.config.enhance("geese.com", "redirect")
+        self.assertEqual(mock_logger.info.call_args[0][0],
+                'No matching insecure server blocks listening on port %s found.')
+
+    def test_staple_ocsp_bad_version(self):
+        self.config.version = (1, 3, 1)
+        self.assertRaises(errors.PluginError, self.config.enhance,
+                          "www.example.com", "staple-ocsp", "chain_path")
+
+    def test_staple_ocsp_no_chain_path(self):
+        self.assertRaises(errors.PluginError, self.config.enhance,
+                          "www.example.com", "staple-ocsp", None)
+
+    def test_staple_ocsp_internal_error(self):
+        self.config.enhance("www.example.com", "staple-ocsp", "chain_path")
+        # error is raised because the server block has conflicting directives
+        self.assertRaises(errors.PluginError, self.config.enhance,
+                          "www.example.com", "staple-ocsp", "different_path")
+
+    def test_staple_ocsp(self):
+        chain_path = "example/chain.pem"
+        self.config.enhance("www.example.com", "staple-ocsp", chain_path)
+
+        example_conf = self.config.parser.abs_path('sites-enabled/example.com')
+        generated_conf = self.config.parser.parsed[example_conf]
+
+        self.assertTrue(util.contains_at_depth(
+            generated_conf,
+            ['ssl_trusted_certificate', 'example/chain.pem'], 2))
+        self.assertTrue(util.contains_at_depth(
+            generated_conf, ['ssl_stapling', 'on'], 2))
+        self.assertTrue(util.contains_at_depth(
+            generated_conf, ['ssl_stapling_verify', 'on'], 2))
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

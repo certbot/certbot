@@ -33,8 +33,17 @@ common() {
         "$@"
 }
 
-common --domains le1.wtf --standalone-supported-challenges tls-sni-01 auth
-common --domains le2.wtf --standalone-supported-challenges http-01 run
+# We start a server listening on the port for the
+# unrequested challenge to prevent regressions in #3601.
+python -m SimpleHTTPServer $http_01_port &
+python_server_pid=$!
+common --domains le1.wtf --preferred-challenges tls-sni-01 auth
+kill $python_server_pid
+python -m SimpleHTTPServer $tls_sni_01_port &
+python_server_pid=$!
+common --domains le2.wtf --preferred-challenges http-01 run
+kill $python_server_pid
+
 common -a manual -d le.wtf auth --rsa-key-size 4096
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
@@ -83,6 +92,24 @@ if [ "$size1" -lt 3000 ] || [ "$size2" -lt 3000 ] || [ "$size3" -gt 1800 ] ; the
     ls -l "${root}/conf/archive/le.wtf/privkey"*
     exit 1
 fi
+
+# ECDSA
+openssl ecparam -genkey -name secp384r1 -out "${root}/privkey-p384.pem"
+SAN="DNS:ecdsa.le.wtf" openssl req -new -sha256 \
+    -config "${OPENSSL_CNF:-openssl.cnf}" \
+    -key "${root}/privkey-p384.pem" \
+    -subj "/" \
+    -reqexts san \
+    -outform der \
+    -out "${root}/csr-p384.der"
+common auth --csr "${root}/csr-p384.der" \
+    --cert-path "${root}/csr/cert-p384.pem" \
+    --chain-path "${root}/csr/chain-p384.pem"
+openssl x509 -in "${root}/csr/cert-p384.pem" -text | grep 'ASN1 OID: secp384r1'
+
+# OCSP Must Staple
+common auth --must-staple --domains "must-staple.le.wtf"
+openssl x509 -in "${root}/conf/live/must-staple.le.wtf/cert.pem" -text | grep '1.3.6.1.5.5.7.1.24'
 
 # revoke by account key
 common revoke --cert-path "$root/conf/live/le.wtf/cert.pem"

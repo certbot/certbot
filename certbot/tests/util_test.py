@@ -189,6 +189,12 @@ class UniqueFileTest(unittest.TestCase):
         self.assertTrue(basename3.endswith("foo.txt"))
 
 
+try:
+    file_type = file
+except NameError:
+    import io
+    file_type = io.TextIOWrapper
+
 class UniqueLineageNameTest(unittest.TestCase):
     """Tests for certbot.util.unique_lineage_name."""
 
@@ -204,13 +210,13 @@ class UniqueLineageNameTest(unittest.TestCase):
 
     def test_basic(self):
         f, path = self._call("wow")
-        self.assertTrue(isinstance(f, file))
+        self.assertTrue(isinstance(f, file_type))
         self.assertEqual(os.path.join(self.root_path, "wow.conf"), path)
 
     def test_multiple(self):
-        for _ in xrange(10):
+        for _ in six.moves.range(10):
             f, name = self._call("wow")
-        self.assertTrue(isinstance(f, file))
+        self.assertTrue(isinstance(f, file_type))
         self.assertTrue(isinstance(name, str))
         self.assertTrue("wow-0009.conf" in name)
 
@@ -324,6 +330,34 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
         self.assertTrue("--old-option" not in stdout.getvalue())
 
 
+class EnforceLeValidity(unittest.TestCase):
+    """Test enforce_le_validity."""
+    def _call(self, domain):
+        from certbot.util import enforce_le_validity
+        return enforce_le_validity(domain)
+
+    def test_sanity(self):
+        self.assertRaises(errors.ConfigurationError, self._call, u"..")
+
+    def test_invalid_chars(self):
+        self.assertRaises(
+            errors.ConfigurationError, self._call, u"hello_world.example.com")
+
+    def test_leading_hyphen(self):
+        self.assertRaises(
+            errors.ConfigurationError, self._call, u"-a.example.com")
+
+    def test_trailing_hyphen(self):
+        self.assertRaises(
+            errors.ConfigurationError, self._call, u"a-.example.com")
+
+    def test_one_label(self):
+        self.assertRaises(errors.ConfigurationError, self._call, u"com")
+
+    def test_valid_domain(self):
+        self.assertEqual(self._call(u"example.com"), u"example.com")
+
+
 class EnforceDomainSanityTest(unittest.TestCase):
     """Test enforce_domain_sanity."""
 
@@ -358,6 +392,15 @@ class OsInfoTest(unittest.TestCase):
                 "SystemdOS")
         with mock.patch('os.path.isfile', return_value=False):
             self.assertEqual(get_systemd_os_info(), ("", ""))
+
+    def test_systemd_os_release_like(self):
+        from certbot.util import get_systemd_os_like
+
+        with mock.patch('os.path.isfile', return_value=True):
+            id_likes = get_systemd_os_like(test_util.vector_path(
+                "os-release"))
+            self.assertEqual(len(id_likes), 3)
+            self.assertTrue("debian" in id_likes)
 
     @mock.patch("certbot.util.subprocess.Popen")
     def test_non_systemd_os_info(self, popen_mock):

@@ -6,6 +6,7 @@ from certbot.plugins import common
 
 class Addr(common.Addr):
     """Represents an Apache address."""
+
     def __eq__(self, other):
         """This is defined as equalivalent within Apache.
 
@@ -20,6 +21,9 @@ class Addr(common.Addr):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __repr__(self):
+        return "certbot_apache.obj.Addr(" + repr(self.tup) + ")"
 
     def _addr_less_specific(self, addr):
         """Returns if addr.get_addr() is more specific than self.get_addr()."""

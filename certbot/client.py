@@ -104,10 +104,10 @@ def register(config, account_storage, tos_cb=None):
         if not config.register_unsafely_without_email:
             msg = ("No email was provided and "
                    "--register-unsafely-without-email was not present.")
-            logger.warn(msg)
+            logger.warning(msg)
             raise errors.Error(msg)
         if not config.dry_run:
-            logger.warn("Registering without email!")
+            logger.warning("Registering without email!")
 
     # Each new registration shall use a fresh new key
     key = jose.JWKRSA(key=jose.ComparableRSAKey(
@@ -149,9 +149,15 @@ def perform_registration(acme, config):
     try:
         return acme.register(messages.NewRegistration.from_data(email=config.email))
     except messages.Error as e:
-        if e.typ == "urn:acme:error:invalidEmail":
-            config.namespace.email = display_ops.get_email(invalid=True)
-            return perform_registration(acme, config)
+        if e.code == "invalidEmail" or e.code == "invalidContact":
+            if config.noninteractive_mode:
+                msg = ("The ACME server believes %s is an invalid email address. "
+                       "Please ensure it is a valid email and attempt "
+                       "registration again." % config.email)
+                raise errors.Error(msg)
+            else:
+                config.namespace.email = display_ops.get_email(invalid=True)
+                return perform_registration(acme, config)
         else:
             raise
 
@@ -186,7 +192,7 @@ class Client(object):
 
         if auth is not None:
             self.auth_handler = auth_handler.AuthHandler(
-                auth, self.acme, self.account)
+                auth, self.acme, self.account, self.config.pref_challs)
         else:
             self.auth_handler = None
 
@@ -246,8 +252,7 @@ class Client(object):
                 domains,
                 self.config.allow_subset_of_names)
 
-        auth_domains = set(a.body.identifier.value.encode('ascii')
-                           for a in authzr)
+        auth_domains = set(a.body.identifier.value for a in authzr)
         domains = [d for d in domains if d in auth_domains]
 
         # Create CSR from names
@@ -282,7 +287,7 @@ class Client(object):
                 "by your operating system package manager")
 
         if self.config.dry_run:
-            logger.info("Dry run: Skipping creating new lineage for %s",
+            logger.debug("Dry run: Skipping creating new lineage for %s",
                         domains[0])
             return None
         else:
@@ -317,7 +322,7 @@ class Client(object):
                 self.config.strict_permissions)
 
         cert_pem = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped)
+            OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped).decode('ascii')
 
         cert_file, abs_cert_path = _open_pem_file('cert_path', cert_path)
 
@@ -377,7 +382,8 @@ class Client(object):
         with error_handler.ErrorHandler(self._rollback_and_restart, msg):
             # sites may have been enabled / final cleanup
             self.installer.restart()
-    def enhance_config(self, domains, config):
+
+    def enhance_config(self, domains, config, chain_path):
         """Enhance the configuration.
 
         :param list domains: list of domains to configure
@@ -386,6 +392,9 @@ class Client(object):
             :meth:`argparse.ArgumentParser.parse_args`.
             it must have the redirect, hsts and uir attributes.
         :type namespace: :class:`argparse.Namespace`
+
+        :param chain_path: chain file path
+        :type chain_path: `str` or `None`
 
         :raises .errors.Error: if no installer is specified in the
             client.
@@ -420,7 +429,7 @@ class Client(object):
             self.apply_enhancement(domains, "ensure-http-header",
                     "Upgrade-Insecure-Requests")
         if staple:
-            self.apply_enhancement(domains, "staple-ocsp")
+            self.apply_enhancement(domains, "staple-ocsp", chain_path)
 
         msg = ("We were unable to restart web server")
         if redirect or hsts or uir or staple:
@@ -453,10 +462,10 @@ class Client(object):
                 try:
                     self.installer.enhance(dom, enhancement, options)
                 except errors.PluginEnhancementAlreadyPresent:
-                    logger.warn("Enhancement %s was already set.",
+                    logger.warning("Enhancement %s was already set.",
                             enhancement)
                 except errors.PluginError:
-                    logger.warn("Unable to set enhancement %s for %s",
+                    logger.warning("Unable to set enhancement %s for %s",
                             enhancement, dom)
                     raise
 
