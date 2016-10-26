@@ -37,6 +37,7 @@ def get_email(invalid=False, optional=True):
     if optional:
         if invalid:
             msg += unsafe_suggestion
+            suggest_unsafe = False
         else:
             suggest_unsafe = True
     else:
