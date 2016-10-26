@@ -545,7 +545,7 @@ class ClientNetworkTest(unittest.TestCase):
         self.net._send_request('HEAD', 'http://example.com/', 'foo', bar='baz')
         mock_logger.debug.assert_called_once_with(
             'Received response:\nHTTP %d\n%s\n\n%s', 200,
-            'Content-Type: application/pkix-cert', 'aGk=')
+            'Content-Type: application/pkix-cert', b'aGk=')
 
     def test_send_request_post(self):
         self.net.session = mock.MagicMock()
