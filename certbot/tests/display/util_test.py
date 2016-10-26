@@ -80,6 +80,13 @@ class FileOutputDisplayTest(unittest.TestCase):
             (code, set(tag_list)), (display_util.OK, set(["tag1", "tag2"])))
 
     @mock.patch("certbot.display.util.FileDisplay.input")
+    def test_checklist_empty(self, mock_input):
+        mock_input.return_value = (display_util.OK, "")
+        code, tag_list = self.displayer.checklist("msg", TAGS)
+        self.assertEqual(
+            (code, set(tag_list)), (display_util.OK, set(["tag1", "tag2", "tag3"])))
+
+    @mock.patch("certbot.display.util.FileDisplay.input")
     def test_checklist_miss_valid(self, mock_input):
         mock_input.side_effect = [
             (display_util.OK, "10"),
