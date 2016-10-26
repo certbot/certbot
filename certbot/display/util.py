@@ -179,9 +179,12 @@ class FileDisplay(object):
             self._print_menu(message, tags)
 
             code, ans = self.input("Select the appropriate numbers separated "
-                                   "by commas and/or spaces")
+                                   "by commas and/or spaces, or leave input "
+                                   "blank to select all options shown")
 
             if code == OK:
+                if len(ans.strip()) == 0:
+                    ans = " ".join(str(x) for x in range(1, len(tags)+1))
                 indices = separate_list_input(ans)
                 selected_tags = self._scrub_checklist_input(indices, tags)
                 if selected_tags:
