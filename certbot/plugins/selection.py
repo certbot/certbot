@@ -119,8 +119,7 @@ def choose_plugin(prepared, question):
                 z_util(interfaces.IDisplay).notification(
                     "The selected plugin encountered an error while parsing "
                     "your server configuration and cannot be used. The error "
-                    "was:\n\n{0}".format(plugin_ep.prepare()),
-                    height=display_util.HEIGHT, pause=False)
+                    "was:\n\n{0}".format(plugin_ep.prepare()), pause=False)
             else:
                 return plugin_ep
         elif code == display_util.HELP:
@@ -128,8 +127,7 @@ def choose_plugin(prepared, question):
                 msg = "Reported Error: %s" % prepared[index].prepare()
             else:
                 msg = prepared[index].init().more_info()
-            z_util(interfaces.IDisplay).notification(
-                msg, height=display_util.HEIGHT)
+            z_util(interfaces.IDisplay).notification(msg)
         else:
             return None
 
@@ -261,9 +259,12 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
                    "your existing configuration.\nThe error was: {1!r}"
                    .format(requested, plugins[requested].problem))
     elif cfg_type == "installer":
-        msg = ('No installer plugins seem to be present and working on your system; '
-               'fix that or try running certbot with the "certonly" command to obtain'
-               ' a certificate you can install manually')
+        from certbot.cli import cli_command
+        msg = ('Certbot doesn\'t know how to automatically configure the web '
+          'server on this system. However, it can still get a certificate for '
+          'you. Please run "{0} certonly" to do so. You\'ll need to '
+          'manually configure your web server to use the resulting '
+          'certificate.').format(cli_command)
     else:
         msg = "{0} could not be determined or is not installed".format(cfg_type)
     raise errors.PluginSelectionError(msg)

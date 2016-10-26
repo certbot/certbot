@@ -47,7 +47,7 @@ class NginxTlsSni01(common.TLSSNI01):
             return []
 
         addresses = []
-        default_addr = "{0} default_server ssl".format(
+        default_addr = "{0} ssl".format(
             self.configurator.config.tls_sni_01_port)
 
         for achall in self.achalls:
@@ -59,12 +59,10 @@ class NginxTlsSni01(common.TLSSNI01):
                     achall.domain)
                 return None
 
-            for addr in vhost.addrs:
-                if addr.default:
-                    addresses.append([obj.Addr.fromstring(default_addr)])
-                    break
-            else:
+            if vhost.addrs:
                 addresses.append(list(vhost.addrs))
+            else:
+                addresses.append([obj.Addr.fromstring(default_addr)])
 
         # Create challenge certs
         responses = [self._setup_challenge_cert(x) for x in self.achalls]
@@ -101,7 +99,7 @@ class NginxTlsSni01(common.TLSSNI01):
             if key == ['http']:
                 found_bucket = False
                 for k, _ in body:
-                    if k == bucket_directive[0]:
+                    if k == bucket_directive[1]:
                         found_bucket = True
                 if not found_bucket:
                     body.insert(0, bucket_directive)
@@ -141,7 +139,7 @@ class NginxTlsSni01(common.TLSSNI01):
         document_root = os.path.join(
             self.configurator.config.work_dir, "tls_sni_01_page")
 
-        block = [['listen', ' ', str(addr)] for addr in addrs]
+        block = [['listen', ' ', addr.to_string(include_default=False)] for addr in addrs]
 
         block.extend([['server_name', ' ',
                        achall.response(achall.account_key).z_domain],
@@ -155,5 +153,4 @@ class NginxTlsSni01(common.TLSSNI01):
                       ['ssl_certificate_key', ' ', self.get_key_path(achall)],
                       [['location', ' ', '/'], [['root', ' ', document_root]]]] +
                      self.configurator.parser.loc["ssl_options"])
-
         return [['server'], block]

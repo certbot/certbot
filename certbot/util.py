@@ -390,12 +390,45 @@ def add_deprecated_argument(add_argument, argument_name, nargs):
                  help=argparse.SUPPRESS, nargs=nargs)
 
 
+def enforce_le_validity(domain):
+    """Checks that Let's Encrypt will consider domain to be valid.
+
+    :param str domain: FQDN to check
+    :type domain: `str` or `unicode`
+    :returns: The domain cast to `str`, with ASCII-only contents
+    :rtype: str
+    :raises ConfigurationError: for invalid domains and cases where Let's
+                                Encrypt currently will not issue certificates
+
+    """
+    domain = enforce_domain_sanity(domain)
+    if not re.match("^[A-Za-z0-9.-]*$", domain):
+        raise errors.ConfigurationError(
+            "{0} contains an invalid character. "
+            "Valid characters are A-Z, a-z, 0-9, ., and -.".format(domain))
+
+    labels = domain.split(".")
+    if len(labels) < 2:
+        raise errors.ConfigurationError(
+            "{0} needs at least two labels".format(domain))
+    for label in labels:
+        if label.startswith("-"):
+            raise errors.ConfigurationError(
+                'label "{0}" in domain "{1}" cannot start with "-"'.format(
+                    label, domain))
+        if label.endswith("-"):
+            raise errors.ConfigurationError(
+                'label "{0}" in domain "{1}" cannot end with "-"'.format(
+                    label, domain))
+    return domain
+
+
 def enforce_domain_sanity(domain):
     """Method which validates domain value and errors out if
     the requirements are not met.
 
     :param domain: Domain to check
-    :type domains: `str` or `unicode`
+    :type domain: `str` or `unicode`
     :raises ConfigurationError: for invalid domains and cases where Let's
                                 Encrypt currently will not issue certificates
 
@@ -404,19 +437,13 @@ def enforce_domain_sanity(domain):
     """
     if isinstance(domain, six.text_type):
         wildcard_marker = u"*."
-        punycode_marker = u"xn--"
     else:
         wildcard_marker = b"*."
-        punycode_marker = b"xn--"
 
     # Check if there's a wildcard domain
     if domain.startswith(wildcard_marker):
         raise errors.ConfigurationError(
             "Wildcard domains are not supported: {0}".format(domain))
-    # Punycode
-    if punycode_marker in domain:
-        raise errors.ConfigurationError(
-            "Punycode domains are not presently supported: {0}".format(domain))
 
     # Unicode
     try:

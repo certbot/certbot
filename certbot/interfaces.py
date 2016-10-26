@@ -229,11 +229,14 @@ class IConfig(zope.interface.Interface):
     no_verify_ssl = zope.interface.Attribute(
         "Disable verification of the ACME server's certificate.")
     tls_sni_01_port = zope.interface.Attribute(
-        "Port number to perform tls-sni-01 challenge. "
-        "Boulder in testing mode defaults to 5001.")
+        "Port used during tls-sni-01 challenge. "
+        "This only affects the port Certbot listens on. "
+        "A conforming ACME server will still attempt to connect on port 443.")
 
     http01_port = zope.interface.Attribute(
-        "Port used in the SimpleHttp challenge.")
+        "Port used in the http-01 challenge."
+        "This only affects the port Certbot listens on. "
+        "A conforming ACME server will still attempt to connect on port 80.")
 
 
 class IInstaller(IPlugin):
@@ -375,11 +378,10 @@ class IInstaller(IPlugin):
 class IDisplay(zope.interface.Interface):
     """Generic display."""
 
-    def notification(message, height, pause):
+    def notification(message, pause):
         """Displays a string message
 
         :param str message: Message to display
-        :param int height: Height of dialog box if applicable
         :param bool pause: Whether or not the application should pause for
             confirmation (if available)
 

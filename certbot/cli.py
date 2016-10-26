@@ -11,6 +11,8 @@ import sys
 import configargparse
 import six
 
+from acme import challenges
+
 import certbot
 
 from certbot import constants
@@ -374,7 +376,7 @@ class HelpfulArgumentParser(object):
 
         # Do any post-parsing homework here
 
-        if self.verb == "renew" and not parsed_args.dialog_mode:
+        if self.verb == "renew":
             parsed_args.noninteractive_mode = True
 
         if parsed_args.staging or parsed_args.dry_run:
@@ -385,17 +387,6 @@ class HelpfulArgumentParser(object):
 
         if parsed_args.must_staple:
             parsed_args.staple = True
-
-        # Avoid conflicting args
-        conficting_args = ["quiet", "noninteractive_mode", "text_mode"]
-        if parsed_args.dialog_mode:
-            for arg in conficting_args:
-                if getattr(parsed_args, arg):
-                    raise errors.Error(
-                        ("Conflicting values for displayer."
-                        " {0} conflicts with dialog_mode").format(arg))
-        elif parsed_args.verbose_count > flag_default("verbose_count"):
-            parsed_args.text_mode = True
 
         if parsed_args.validate_hooks:
             hooks.validate_hooks(parsed_args)
@@ -675,16 +666,13 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "e.g. -vvv.")
     helpful.add(
         None, "-t", "--text", dest="text_mode", action="store_true",
-        help="Use the text output instead of the curses UI.")
+        help=argparse.SUPPRESS)
     helpful.add(
         [None, "automation"], "-n", "--non-interactive", "--noninteractive",
         dest="noninteractive_mode", action="store_true",
         help="Run without ever asking for user input. This may require "
               "additional command line flags; the client will try to explain "
               "which ones are required if it finds one missing")
-    helpful.add(
-        None, "--dialog", dest="dialog_mode", action="store_true",
-        help="Run using interactive dialog menus")
     helpful.add(
         [None, "run", "certonly"],
         "-d", "--domains", "--domain", dest="domains",
@@ -788,11 +776,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help=config_help("no_verify_ssl"),
         default=flag_default("no_verify_ssl"))
     helpful.add(
-        "testing", "--tls-sni-01-port", type=int,
+        ["certonly", "renew", "run"], "--tls-sni-01-port", type=int,
         default=flag_default("tls_sni_01_port"),
         help=config_help("tls_sni_01_port"))
     helpful.add(
-        "testing", "--http-01-port", type=int, dest="http01_port",
+        ["certonly", "renew", "run", "manual"], "--http-01-port", type=int,
+        dest="http01_port",
         default=flag_default("http01_port"), help=config_help("http01_port"))
     helpful.add(
         "testing", "--break-my-certs", action="store_true",
@@ -845,6 +834,18 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
     helpful.add(
+        ["manual", "standalone", "certonly", "renew", "run"],
+        "--preferred-challenges", dest="pref_challs",
+        action=_PrefChallAction, default=[],
+        help='A sorted, comma delimited list of the preferred challenge to '
+             'use during authorization with the most preferred challenge '
+             'listed first (Eg, "dns" or "tls-sni-01,http,dns"). '
+             'Not all plugins support all challenges. See '
+             'https://certbot.eff.org/docs/using.html#plugins for details. '
+             'ACME Challenges are versioned, but if you pick "http" rather '
+             'than "http-01", Certbot will select the latest version '
+             'automatically.')
+    helpful.add(
         "renew", "--pre-hook",
         help="Command to be run in a shell before obtaining any certificates."
         " Intended primarily for renewal, where it can be used to temporarily"
@@ -875,6 +876,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " shell constructs, so you can use this switch to disable it.")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
+    helpful.add_deprecated_argument("--dialog", 0)
 
     _create_subparsers(helpful)
     _paths_parser(helpful)
@@ -899,10 +901,8 @@ def _create_subparsers(helpful):
              'Encrypt server, set this to "".')
     helpful.add("certonly",
                 "--csr", type=read_file,
-                help="Path to a Certificate Signing Request (CSR) in DER"
-                " format; note that the .csr file *must* contain a Subject"
-                " Alternative Name field for each domain you want certified."
-                " Currently --csr only works with the 'certonly' subcommand'")
+                help="Path to a Certificate Signing Request (CSR) in DER or PEM format."
+                " Currently --csr only works with the 'certonly' subcommand.")
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",
                 default=flag_default("rollback_checkpoints"),
@@ -1032,3 +1032,18 @@ def add_domains(args_or_config, domains):
             args_or_config.domains.append(domain)
 
     return validated_domains
+
+class _PrefChallAction(argparse.Action):
+    """Action class for parsing preferred challenges."""
+
+    def __call__(self, parser, namespace, pref_challs, option_string=None):
+        aliases = {"dns": "dns-01", "http": "http-01", "tls-sni": "tls-sni-01"}
+        challs = [c.strip() for c in pref_challs.split(",")]
+        challs = [aliases[c] if c in aliases else c for c in challs]
+        unrecognized = ", ".join(name for name in challs
+                                 if name not in challenges.Challenge.TYPES)
+        if unrecognized:
+            raise argparse.ArgumentTypeError(
+                "Unrecognized challenges: {0}".format(unrecognized))
+        namespace.pref_challs.extend(challenges.Challenge.TYPES[name]
+                                     for name in challs)

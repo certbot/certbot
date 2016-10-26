@@ -17,9 +17,9 @@ HTTP01 = challenges.HTTP01(
     token=b"evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA")
 TLSSNI01 = challenges.TLSSNI01(
     token=jose.b64decode(b"evaGxfADs6pSRb2LAv9IZf17Dt3juxGJyPCt92wrDoA"))
-DNS = challenges.DNS(token=b"17817c66b60ce2e4012dfad92657527a")
+DNS01 = challenges.DNS01(token=b"17817c66b60ce2e4012dfad92657527a")
 
-CHALLENGES = [HTTP01, TLSSNI01, DNS]
+CHALLENGES = [HTTP01, TLSSNI01, DNS01]
 
 
 def gen_combos(challbs):
@@ -45,9 +45,9 @@ def chall_to_challb(chall, status):  # pylint: disable=redefined-outer-name
 # Pending ChallengeBody objects
 TLSSNI01_P = chall_to_challb(TLSSNI01, messages.STATUS_PENDING)
 HTTP01_P = chall_to_challb(HTTP01, messages.STATUS_PENDING)
-DNS_P = chall_to_challb(DNS, messages.STATUS_PENDING)
+DNS01_P = chall_to_challb(DNS01, messages.STATUS_PENDING)
 
-CHALLENGES_P = [HTTP01_P, TLSSNI01_P, DNS_P]
+CHALLENGES_P = [HTTP01_P, TLSSNI01_P, DNS01_P]
 
 
 def gen_authzr(authz_status, domain, challs, statuses, combos=True):
