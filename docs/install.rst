@@ -2,7 +2,12 @@
 Get Certbot
 =====================
 
-.. _installation:
+.. contents:: Table of Contents
+   :local:
+
+
+About Certbot
+=============
 
 Certbot is packaged for many common operating systems and web servers. Check whether
 ``certbot`` (or ``letsencrypt``) is packaged for your web server's OS by visiting
@@ -13,7 +18,6 @@ your system.
 
 .. _certbot.eff.org: https://certbot.eff.org
 
-.. _certbot-auto: https://certbot.eff.org/docs/install.html#certbot-auto
 
 System Requirements
 ===================

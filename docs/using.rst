@@ -5,10 +5,10 @@ User Guide
 .. contents:: Table of Contents
    :local:
 
-The Certbot Client
-==================
+Certbot Commands
+================
 
-The Certbot client uses a number of different "commands" (also referred
+Certbot uses a number of different "commands" (also referred
 to, equivalently, as "subcommands") to request specific actions such as
 obtaining, renewing, or revoking certificates. Some of the most important
 and most commonly-used commands will be discussed throughout this
@@ -19,7 +19,7 @@ The ``certbot`` script on your web server might be named ``letsencrypt`` if your
 .. _plugins:
 
 Getting certificates (and choosing plugins)
-==========================================
+===========================================
 
 The Certbot client supports a number of different "plugins" that can be
 used to obtain and/or install certificates.
