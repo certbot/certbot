@@ -236,7 +236,9 @@ def gen_ss_cert(key, domains, not_before=None,
 
 
 def key_gen(key_size=2048):
-    return OpenSSL.crypto.PKey().generate_key(OpenSSL.crypto.TYPE_RSA, key_size)
+    key = OpenSSL.crypto.PKey()
+    key.generate_key(OpenSSL.crypto.TYPE_RSA, key_size)
+    return key
 
 
 def dump_key(key):
