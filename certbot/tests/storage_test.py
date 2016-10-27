@@ -751,14 +751,5 @@ class RenewableCertTests(BaseRenewableCertTest):
         storage.RenewableCert(self.config.filename, self.cli_config,
             update_symlinks=True)
 
-    @mock.patch('certbot.storage.RenewableCert.names')
-    def test___str__(self, mock_names):
-        mock_names.return_value = ["name1", "name2"]
-        test_rc_str = str(self.test_rc)
-        self.assertTrue(test_rc_str.startswith("RenewableCert({"))
-        self.assertTrue("'Lineage': 'example.org'" in test_rc_str)
-        self.assertTrue("'Domains': 'name1 name2'" in test_rc_str)
-        self.assertTrue(test_rc_str.endswith("})"))
-
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
