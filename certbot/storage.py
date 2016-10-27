@@ -3,7 +3,6 @@ import datetime
 import logging
 import os
 import re
-import time
 
 import configobj
 import parsedatetime
