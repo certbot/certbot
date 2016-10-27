@@ -3,6 +3,7 @@ import datetime
 import logging
 import os
 import re
+import time
 
 import configobj
 import parsedatetime
@@ -263,12 +264,10 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             self._update_symlinks()
         self._check_symlinks()
 
-    def __str__(self):
-        """Returns a string representation of the object."""
-        # import ipdb; ipdb.set_trace()
-        outdict = {"Lineage": self.lineagename,
-                   "Domains": " ".join(self.names())}
-        return "RenewableCert(%s)" % str(outdict)
+    @property
+    def target_expiry(self):
+        """Returns at datetime object representation of the expiry of the current target cert"""
+        return crypto_util.notAfter(self.current_target("cert"))
 
     @property
     def archive_dir(self):
@@ -678,9 +677,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             if self.has_pending_deployment():
                 interval = self.configuration.get("deploy_before_expiry",
                                                   "5 days")
-                expiry = crypto_util.notAfter(self.current_target("cert"))
                 now = pytz.UTC.fromutc(datetime.datetime.utcnow())
-                if expiry < add_time_interval(now, interval):
+                if self.target_expiry < add_time_interval(now, interval):
                     return True
         return False
 

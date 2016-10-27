@@ -1,6 +1,8 @@
 """Tools for managing certificates."""
 import copy
+import datetime
 import logging
+import pytz
 import traceback
 import zope.component
 
@@ -29,10 +31,31 @@ def update_live_symlinks(config):
             configuration.RenewerConfiguration(renewer_config),
             update_symlinks=True)
 
-def _report(msgs):
-    "Format a results report for a category of renewal outcomes"
+def _report_lines(msgs):
+    """Format a results report for a category of single-line renewal outcomes"""
     certinfo = [str(msg) for msg in msgs]
     return "  " + "\n  ".join(certinfo)
+
+def _report_human_readable(parsed_certs):
+    """Format a results report for a parsed cert"""
+    certinfo = []
+    for cert in parsed_certs:
+        now = pytz.UTC.fromutc(datetime.datetime.utcnow())
+        if cert.target_expiry <= now:
+            expiration_text = "EXPIRED"
+        else:
+            diff = cert.target_expiry - now
+            if diff.days == 1:
+                expiration_text = "1 day"
+            elif diff.days < 1:
+                expiration_text = "under 1 day"
+            else:
+                expiration_text = "{0} days".format(diff.days)
+        valid_string = "{0} ({1})".format(cert.target_expiry, expiration_text)
+        out = "  Lineage: {0}\n    Domains: {1}\n    Valid Until: {2}".format(
+            cert.lineagename, " ".join(cert.names()), valid_string)
+        certinfo.append(out)
+    return "\n".join(certinfo)
 
 def _describe_certs(config, parsed_certs, parse_failures):
     """Print information about the certs we know about"""
@@ -45,11 +68,11 @@ def _describe_certs(config, parsed_certs, parse_failures):
     else:
         if parsed_certs:
             notify("Found the following certs:")
-            notify(_report(parsed_certs))
+            notify(_report_human_readable(parsed_certs))
         if parse_failures:
             notify("\nThe following renewal configuration files "
                "were invalid:")
-            notify(_report(parse_failures))
+            notify(_report_lines(parse_failures))
 
     if config.quiet:
         return

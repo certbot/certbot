@@ -103,14 +103,32 @@ class CertManagerTest(unittest.TestCase):
         self.assertTrue(mock_utility.called)
 
     @mock.patch('zope.component.getUtility')
+    def test_list_certs_quiet(self, mock_utility):
+        from certbot import cert_manager
+
+        self.cli_config.quiet = True
+        with mock.patch("certbot.cert_manager.logger") as mock_logger:
+            cert_manager.list_certs(self.cli_config)
+            self.assertFalse(mock_utility.notification.called)
+
+    @mock.patch('zope.component.getUtility')
     @mock.patch("certbot.storage.RenewableCert")
-    def test_list_certs_parse_success(self, mock_utility, mock_renewable_cert):
+    def test_list_certs_parse_success(self, mock_renewable_cert, mock_utility):
         from certbot import cert_manager
         with mock.patch("certbot.cert_manager.logger") as mock_logger:
             cert_manager.list_certs(self.cli_config)
             self.assertFalse(mock_logger.warning.called)
         self.assertTrue(mock_utility.called)
         self.assertTrue(mock_renewable_cert.called)
+
+    @mock.patch('zope.component.getUtility')
+    @mock.patch("certbot.storage.RenewableCert")
+    def test_bad_renewable_cert(self, mock_renewable_cert, mock_utility):
+        from certbot import cert_manager
+        with mock.patch("certbot.cert_manager.logger") as mock_logger:
+            mock_renewable_cert.return_value = None
+            cert_manager.list_certs(self.cli_config)
+        self.assertTrue(mock_utility.called)
 
     @mock.patch('zope.component.getUtility')
     def test_list_certs_no_files(self, mock_utility):
@@ -131,6 +149,31 @@ class CertManagerTest(unittest.TestCase):
             self.assertFalse(mock_logger.warning.called)
         self.assertTrue(mock_utility.called)
         shutil.rmtree(tempdir)
+
+    def test_report_human_readable(self):
+        from certbot import cert_manager
+        import datetime, pytz
+        expiry = pytz.UTC.fromutc(datetime.datetime.utcnow())
+        
+        cert = mock.MagicMock(target_expiry=expiry, lineagename="nameone")
+        cert.names.return_value = ["nameone", "nametwo"]
+        parsed_certs = [cert]
+        out = cert_manager._report_human_readable(parsed_certs)
+        self.assertTrue('EXPIRED' in out)
+
+        cert.target_expiry += datetime.timedelta(hours=2)
+        out = cert_manager._report_human_readable(parsed_certs)
+        self.assertTrue('under 1 day' in out)
+
+        cert.target_expiry += datetime.timedelta(days=1)
+        out = cert_manager._report_human_readable(parsed_certs)
+        self.assertTrue('1 day' in out)
+        self.assertFalse('under' in out)
+
+        cert.target_expiry += datetime.timedelta(days=2)
+        out = cert_manager._report_human_readable(parsed_certs)
+        self.assertTrue('3 days' in out)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
