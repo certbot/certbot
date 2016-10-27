@@ -235,23 +235,33 @@ def gen_ss_cert(key, domains, not_before=None,
     return cert
 
 
-def temp_ss_cert():
+def key_gen(key_size=2048):
+    return OpenSSL.crypto.PKey().generate_key(OpenSSL.crypto.TYPE_RSA, key_size)
+
+
+def dump_key(key):
+    return OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
+
+
+def dump_cert(cert):
+    return OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert)
+
+
+def create_bogus_certificate():
     """Write a self signed certificate to a temporary location and return the
-    file path.
+    file path and file descriptor.
+
+    :returns file descriptor
+    :returns file path
     """
-    # create a self signed certificate with a bogus common name (CN)
-    key = OpenSSL.crypto.PKey()
-    key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
-    cert = gen_ss_cert(key, ["self-signed"])
+    # create a self signed certificate with a bogus common name "self-signed"
+    key = key_gen()
+    cert = gen_ss_cert(key_gen(), ["self-signed"])
 
     # Write the private key and certificate to one file in a temporary location.
     # We use low level os functions here because `mkstemp` returns a file
     # descriptor and not a file object.
     descriptor, path = tempfile.mkstemp()
-    os.write(descriptor,
-             OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key))
-    os.write(descriptor,
-             OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert))
-    os.close(descriptor)
+    os.write(descriptor, dump_key(key) + dump_cert(cert))
 
-    return path
+    return descriptor, path

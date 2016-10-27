@@ -84,19 +84,23 @@ class HTTP01TLSServer(socketserver.TCPServer, ACMEServerMixin):
     """HTTP01 TLS challenge handler."""
 
     def __init__(self, server_address, resources):
+        self.cert_path = self.cert_descriptor = None
+
         socketserver.TCPServer.__init__(self, server_address,
                                         HTTP01RequestHandler.partial_init(
                                             simple_http_resources=resources))
 
-        self.certificate_file = crypto_util.temp_ss_cert()
+        self.cert_path, self.cert_descriptor = (
+            crypto_util.create_bogus_certificate())
 
         self.socket = ssl.wrap_socket(  # create the tls socket
             self.socket, certfile=self.certificate_file, server_side=True)
 
     def __del__(self):
-        if hasattr(self, "certificate_file") and \
-                os.path.exists(self.certificate_file):
-            os.remove(self.certificate_file)
+        if self.cert_descriptor is not None:
+            os.close(self.cert_descriptor)
+        if self.cert_path is not None:
+            os.remove(self.cert_path)
 
 
 class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
