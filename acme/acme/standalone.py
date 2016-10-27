@@ -94,7 +94,7 @@ class HTTP01TLSServer(socketserver.TCPServer, ACMEServerMixin):
             crypto_util.create_bogus_certificate())
 
         self.socket = ssl.wrap_socket(  # create the tls socket
-            self.socket, certfile=self.certificate_file, server_side=True)
+            self.socket, certfile=self.cert_path, server_side=True)
 
     def __del__(self):
         if self.cert_descriptor is not None:
