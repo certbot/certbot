@@ -90,7 +90,7 @@ class HTTP01TLSServer(socketserver.TCPServer, ACMEServerMixin):
                                         HTTP01RequestHandler.partial_init(
                                             simple_http_resources=resources))
 
-        self.cert_path, self.cert_descriptor = (
+        self.cert_descriptor, self.cert_path = (
             crypto_util.create_bogus_certificate())
 
         self.socket = ssl.wrap_socket(  # create the tls socket
