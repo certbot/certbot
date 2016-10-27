@@ -36,6 +36,7 @@ Help for certbot itself cannot be provided until it is installed.
   --os-packages-only                        install OS dependencies and exit
   -q, --quiet                               provide only update/error output
   -v, --verbose                             provide more output
+  --version                                 install certbot and print version
 
 All arguments are accepted and forwarded to the Certbot client when run."
 
