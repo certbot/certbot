@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+#!/usr/bin/env bash
 BootstrapDebCommon() {
   # Current version tested with:
   #
@@ -18,11 +20,18 @@ BootstrapDebCommon() {
   # - Debian 6.0.10 "squeeze" (x64)
 
   $SUDO apt-get update || echo apt-get update hit problems but continuing anyway...
+  
+  # checking if certbot/letsencrypt is already packaged with OS
+  if [ "$QUIET" != 1 ]; then
+      if dpkg --get-selections | grep -v letsencrypt.sh | grep -c letsencrypt -gt 0; then
+        echo "Certbot is already packaged with your OS."
+        dpkg --get-selections | grep -v letsencrypt.sh | grep letsencrypt
+      fi
+  fi
 
   # virtualenv binary can be found in different packages depending on
   # distro version (#346)
-
-  virtualenv=
+    virtualenv=
   if apt-cache show virtualenv > /dev/null 2>&1 && ! apt-cache --quiet=0 show virtualenv 2>&1 | grep -q 'No packages found'; then
     virtualenv="virtualenv"
   fi
