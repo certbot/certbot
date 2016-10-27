@@ -114,11 +114,14 @@ class CertManagerTest(unittest.TestCase):
 
     @mock.patch('zope.component.getUtility')
     @mock.patch("certbot.storage.RenewableCert")
-    def test_list_certs_parse_success(self, mock_renewable_cert, mock_utility):
+    @mock.patch('certbot.cert_manager._report_human_readable')
+    def test_list_certs_parse_success(self, mock_report, mock_renewable_cert, mock_utility):
         from certbot import cert_manager
+        mock_report.return_value = ""
         with mock.patch("certbot.cert_manager.logger") as mock_logger:
             cert_manager.list_certs(self.cli_config)
             self.assertFalse(mock_logger.warning.called)
+        self.assertTrue(mock_report.called)
         self.assertTrue(mock_utility.called)
         self.assertTrue(mock_renewable_cert.called)
 
@@ -158,25 +161,25 @@ class CertManagerTest(unittest.TestCase):
         expiry = pytz.UTC.fromutc(datetime.datetime.utcnow())
 
         cert = mock.MagicMock(lineagename="nameone")
-        type(cert).target_expiry = expiry
+        cert.target_expiry = expiry
         cert.names.return_value = ["nameone", "nametwo"]
         parsed_certs = [cert]
         # pylint: disable=protected-access
         out = cert_manager._report_human_readable(parsed_certs)
         self.assertTrue('EXPIRED' in out)
 
-        type(cert).target_expiry += datetime.timedelta(hours=2)
+        cert.target_expiry += datetime.timedelta(hours=2)
         # pylint: disable=protected-access
         out = cert_manager._report_human_readable(parsed_certs)
         self.assertTrue('under 1 day' in out)
 
-        type(cert).target_expiry += datetime.timedelta(days=1)
+        cert.target_expiry += datetime.timedelta(days=1)
         # pylint: disable=protected-access
         out = cert_manager._report_human_readable(parsed_certs)
         self.assertTrue('1 day' in out)
         self.assertFalse('under' in out)
 
-        type(cert).target_expiry += datetime.timedelta(days=2)
+        cert.target_expiry += datetime.timedelta(days=2)
         # pylint: disable=protected-access
         out = cert_manager._report_human_readable(parsed_certs)
         self.assertTrue('3 days' in out)
