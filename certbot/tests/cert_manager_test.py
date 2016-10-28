@@ -184,6 +184,5 @@ class CertManagerTest(unittest.TestCase):
         out = cert_manager._report_human_readable(parsed_certs)
         self.assertTrue('3 days' in out)
 
-
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
