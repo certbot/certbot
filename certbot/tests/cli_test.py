@@ -272,6 +272,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         _, _, _, client = self._call(['config_changes'])
         self.assertEqual(1, client.view_config_changes.call_count)
 
+    @mock.patch('certbot.cert_manager.update_live_symlinks')
+    def test_update_symlinks(self, mock_cert_manager):
+        self._call_no_clientmock(['update_symlinks'])
+        self.assertEqual(1, mock_cert_manager.call_count)
+
     def test_plugins(self):
         flags = ['--init', '--prepare', '--authenticators', '--installers']
         for args in itertools.chain(
