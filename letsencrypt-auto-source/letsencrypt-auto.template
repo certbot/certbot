@@ -87,7 +87,7 @@ fi
 # `su`
 
 # Because the parameters in `su -c` has to be a string,
-# we need properly escape it
+# we need to properly escape it.
 su_sudo() {
   args=""
   # This `while` loop iterates over all parameters given to this function.
