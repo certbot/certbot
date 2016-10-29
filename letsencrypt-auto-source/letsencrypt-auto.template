@@ -85,6 +85,28 @@ fi
 # The "normal" case is that sudo is used for the steps that need root, but
 # this script *can* be run as root (not recommended), or fall back to using
 # `su`
+
+# Because the parameters in `su -c` has to be a string,
+# we need properly escape it
+su_sudo() {
+  args=""
+  # This `while` loop iterates over all parameters given to this function.
+  # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
+  # will be wrapped in a pair of `'`, then appended to `$args` string
+  # For example, `echo "It's only 1\$\!"` will be escaped to:
+  #   'echo' 'It'"'"'s only 1$!'
+  #     │       │└┼┘│
+  #     │       │ │ └── `'s only 1$!'` the literal string
+  #     │       │ └── `\"'\"` is a single quote (as a string)
+  #     │       └── `'It'`, to be concatenated with the strings following it
+  #     └── `echo` wrapped in a pair of `'`, it's totally fine for the shell command itself
+  while [ $# -ne 0 ]; do
+    args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
+    shift
+  done
+  su root -c "$args"
+}
+
 SUDO_ENV=""
 export CERTBOT_AUTO="$0"
 if test "`id -u`" -ne "0" ; then
@@ -93,26 +115,6 @@ if test "`id -u`" -ne "0" ; then
     SUDO_ENV="CERTBOT_AUTO=$0"
   else
     echo \"sudo\" is not available, will use \"su\" for installation steps...
-    # Because the parameters in `su -c` has to be a string,
-    # we need properly escape it
-    su_sudo() {
-      args=""
-      # This `while` loop iterates over all parameters given to this function.
-      # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
-      # will be wrapped in a pair of `'`, then appended to `$args` string
-      # For example, `echo "It's only 1\$\!"` will be escaped to:
-      #   'echo' 'It'"'"'s only 1$!'
-      #     │       │└┼┘│
-      #     │       │ │ └── `'s only 1$!'` the literal string
-      #     │       │ └── `\"'\"` is a single quote (as a string)
-      #     │       └── `'It'`, to be concatenated with the strings following it
-      #     └── `echo` wrapped in a pair of `'`, it's totally fine for the shell command itself
-      while [ $# -ne 0 ]; do
-        args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
-        shift
-      done
-      su root -c "$args"
-    }
     SUDO=su_sudo
   fi
 else
