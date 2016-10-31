@@ -445,49 +445,13 @@ def enforce_domain_sanity(domain):
         raise errors.ConfigurationError(
             "Wildcard domains are not supported: {0}".format(domain))
 
-    # Unicode
-    try:
-        if isinstance(domain, six.binary_type):
-            domain = domain.decode('utf-8')
-        domain.encode('ascii')
-    except UnicodeError:
-        error_fmt = (u"Internationalized domain names "
-                     "are not presently supported: {0}")
-        if isinstance(domain, six.text_type):
-            raise errors.ConfigurationError(error_fmt.format(domain))
-        else:
-            raise errors.ConfigurationError(str(error_fmt).format(domain))
-
+    if isinstance(domain, six.binary_type):
+        domain = domain.decode('utf-8')
     domain = domain.lower()
 
     # Remove trailing dot
     domain = domain[:-1] if domain.endswith(u'.') else domain
-
-    # Explain separately that IP addresses aren't allowed (apart from not
-    # being FQDNs) because hope springs eternal concerning this point
-    try:
-        socket.inet_aton(domain)
-        raise errors.ConfigurationError(
-            "Requested name {0} is an IP address. The Let's Encrypt "
-            "certificate authority will not issue certificates for a "
-            "bare IP address.".format(domain))
-    except socket.error:
-        # It wasn't an IP address, so that's good
-        pass
-
-    # FQDN checks according to RFC 2181: domain name should be less than 255
-    # octets (inclusive). And each label is 1 - 63 octets (inclusive).
-    # https://tools.ietf.org/html/rfc2181#section-11
-    msg = "Requested domain {0} is not a FQDN because ".format(domain)
-    labels = domain.split('.')
-    for l in labels:
-        if not 0 < len(l) < 64:
-            raise errors.ConfigurationError(msg + "label {0} is too long.".format(l))
-    if len(domain) > 255:
-        raise errors.ConfigurationError(msg + "it is too long.")
-
     return domain
-
 
 def get_strict_version(normalized):
     """Converts a normalized version to a strict version.
