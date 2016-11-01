@@ -447,7 +447,10 @@ def enforce_domain_sanity(domain):
 
     # Unicode
     try:
-        domain.decode('utf-8').encode('ascii')
+        if isinstance(domain, six.binary_type):
+            domain.encode('ascii')
+        else:
+            domain.decode('utf-8').encode('ascii')
     except UnicodeError:
         raise errors.ConfigurationError("Non-ASCII domain names not supported. "
             "To issue for an Internationalized Domain Name, use Punycode.")
