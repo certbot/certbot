@@ -10,7 +10,6 @@ import os
 import platform
 import re
 import six
-import socket
 import stat
 import subprocess
 import sys
@@ -445,12 +444,7 @@ def enforce_domain_sanity(domain):
         raise errors.ConfigurationError(
             "Wildcard domains are not supported: {0}".format(domain))
 
-    if isinstance(domain, six.binary_type):
-        domain = domain.decode('utf-8')
     domain = domain.lower()
-
-    # Remove trailing dot
-    domain = domain[:-1] if domain.endswith(u'.') else domain
     return domain
 
 def get_strict_version(normalized):

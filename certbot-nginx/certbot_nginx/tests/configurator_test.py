@@ -68,7 +68,7 @@ class NginxConfiguratorTest(util.NginxTest):
         names = self.config.get_all_names()
         self.assertEqual(names, set(
             ["155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
-             "migration.com", "summer.com", "geese.com", "sslon.com"]))
+             ".example.com", "migration.com", "summer.com", "geese.com", "sslon.com"]))
 
     def test_supported_enhancements(self):
         self.assertEqual(['redirect', 'staple-ocsp'],

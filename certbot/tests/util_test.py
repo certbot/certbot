@@ -336,9 +336,6 @@ class EnforceLeValidity(unittest.TestCase):
         from certbot.util import enforce_le_validity
         return enforce_le_validity(domain)
 
-    def test_sanity(self):
-        self.assertRaises(errors.ConfigurationError, self._call, u"..")
-
     def test_invalid_chars(self):
         self.assertRaises(
             errors.ConfigurationError, self._call, u"hello_world.example.com")
@@ -356,22 +353,6 @@ class EnforceLeValidity(unittest.TestCase):
 
     def test_valid_domain(self):
         self.assertEqual(self._call(u"example.com"), u"example.com")
-
-
-class EnforceDomainSanityTest(unittest.TestCase):
-    """Test enforce_domain_sanity."""
-
-    def _call(self, domain):
-        from certbot.util import enforce_domain_sanity
-        return enforce_domain_sanity(domain)
-
-    def test_nonascii_str(self):
-        self.assertRaises(errors.ConfigurationError, self._call,
-                          u"eichh\u00f6rnchen.example.com".encode("utf-8"))
-
-    def test_nonascii_unicode(self):
-        self.assertRaises(errors.ConfigurationError, self._call,
-                          u"eichh\u00f6rnchen.example.com")
 
 
 class OsInfoTest(unittest.TestCase):
