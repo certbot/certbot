@@ -50,9 +50,16 @@ def _report_human_readable(parsed_certs):
             else:
                 expiration_text = "{0} days".format(diff.days)
         valid_string = "{0} ({1})".format(cert.target_expiry, expiration_text)
-        out = "  Lineage: {0}\n    Domains: {1}\n    Valid Until: {2}".format(
-            cert.lineagename, " ".join(cert.names()), valid_string)
-        certinfo.append(out)
+        certinfo.append("  Certificate Name: {0}\n"
+                        "    Domains: {1}\n"
+                        "    Valid Until: {2}\n"
+                        "    Certificate Path: {3}\n"
+                        "    Private Key Path: {4}".format(
+                            cert.lineagename,
+                            " ".join(cert.names()),
+                            valid_string,
+                            cert.fullchain,
+                            cert.privkey))
     return "\n".join(certinfo)
 
 def _describe_certs(parsed_certs, parse_failures):
