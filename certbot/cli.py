@@ -67,6 +67,7 @@ cert. Major SUBCOMMANDS are:
   register             Perform tasks related to registering with the CA
   rollback             Rollback server configuration changes made during install
   config_changes       Show changes made to server config during installation
+  update_symlinks      Update cert symlinks based on renewal config file
   plugins              Display information about installed plugins
 
 """.format(cli_command)
@@ -322,7 +323,7 @@ class HelpfulArgumentParser(object):
                       "install": main.install, "plugins": main.plugins_cmd,
                       "register": main.register, "renew": main.renew,
                       "revoke": main.revoke, "rollback": main.rollback,
-                      "everything": main.run}
+                      "everything": main.run, "update_symlinks": main.update_symlinks}
 
         # List of topics for which additional help can be provided
         HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
@@ -376,7 +377,7 @@ class HelpfulArgumentParser(object):
 
         # Do any post-parsing homework here
 
-        if self.verb == "renew" and not parsed_args.dialog_mode:
+        if self.verb == "renew":
             parsed_args.noninteractive_mode = True
 
         if parsed_args.staging or parsed_args.dry_run:
@@ -387,17 +388,6 @@ class HelpfulArgumentParser(object):
 
         if parsed_args.must_staple:
             parsed_args.staple = True
-
-        # Avoid conflicting args
-        conficting_args = ["quiet", "noninteractive_mode", "text_mode"]
-        if parsed_args.dialog_mode:
-            for arg in conficting_args:
-                if getattr(parsed_args, arg):
-                    raise errors.Error(
-                        ("Conflicting values for displayer."
-                        " {0} conflicts with dialog_mode").format(arg))
-        elif parsed_args.verbose_count > flag_default("verbose_count"):
-            parsed_args.text_mode = True
 
         if parsed_args.validate_hooks:
             hooks.validate_hooks(parsed_args)
@@ -677,7 +667,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "e.g. -vvv.")
     helpful.add(
         None, "-t", "--text", dest="text_mode", action="store_true",
-        help="Use the text output instead of the curses UI.")
+        help=argparse.SUPPRESS)
     helpful.add(
         [None, "automation"], "-n", "--non-interactive", "--noninteractive",
         dest="noninteractive_mode", action="store_true",
@@ -685,16 +675,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
               "additional command line flags; the client will try to explain "
               "which ones are required if it finds one missing")
     helpful.add(
-        None, "--dialog", dest="dialog_mode", action="store_true",
-        help="Run using interactive dialog menus")
-    helpful.add(
         [None, "run", "certonly"],
         "-d", "--domains", "--domain", dest="domains",
         metavar="DOMAIN", action=_DomainsAction, default=[],
         help="Domain names to apply. For multiple domains you can use "
              "multiple -d flags or enter a comma separated list of domains "
              "as a parameter.")
-
     helpful.add(
         [None, "testing", "renew", "certonly"],
         "--dry-run", action="store_true", dest="dry_run",
@@ -890,6 +876,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " shell constructs, so you can use this switch to disable it.")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
+    helpful.add_deprecated_argument("--dialog", 0)
 
     _create_subparsers(helpful)
     _paths_parser(helpful)
@@ -914,10 +901,8 @@ def _create_subparsers(helpful):
              'Encrypt server, set this to "".')
     helpful.add("certonly",
                 "--csr", type=read_file,
-                help="Path to a Certificate Signing Request (CSR) in DER"
-                " format; note that the .csr file *must* contain a Subject"
-                " Alternative Name field for each domain you want certified."
-                " Currently --csr only works with the 'certonly' subcommand'")
+                help="Path to a Certificate Signing Request (CSR) in DER or PEM format."
+                " Currently --csr only works with the 'certonly' subcommand.")
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",
                 default=flag_default("rollback_checkpoints"),

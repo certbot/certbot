@@ -13,122 +13,6 @@ CHOICES = [("First", "Description1"), ("Second", "Description2")]
 TAGS = ["tag1", "tag2", "tag3"]
 TAGS_CHOICES = [("1", "tag1"), ("2", "tag2"), ("3", "tag3")]
 
-
-class NcursesDisplayTest(unittest.TestCase):
-    """Test ncurses display.
-
-    Since this is mostly a wrapper, it might be more helpful to test the
-    actual dialog boxes. The test file located in ./tests/display.py
-    (relative to the root of the repository) will actually display the
-    various boxes but requires the user to do the verification. If
-    something seems amiss please use that test script to debug it, the
-    automatic tests rely on too much mocking.
-
-    """
-    def setUp(self):
-        super(NcursesDisplayTest, self).setUp()
-        self.displayer = display_util.NcursesDisplay()
-
-        self.default_menu_options = {
-            "choices": CHOICES,
-            "ok_label": "OK",
-            "cancel_label": "Cancel",
-            "help_button": False,
-            "help_label": "",
-            "width": display_util.WIDTH,
-            "height": display_util.HEIGHT,
-            "menu_height": display_util.HEIGHT - 6,
-        }
-
-    @mock.patch("certbot.display.util.dialog.Dialog.msgbox")
-    def test_notification(self, mock_msgbox):
-        """Kind of worthless... one liner."""
-        self.displayer.notification("message")
-        self.assertEqual(mock_msgbox.call_count, 1)
-
-    @mock.patch("certbot.display.util.dialog.Dialog.menu")
-    def test_menu_tag_and_desc(self, mock_menu):
-        mock_menu.return_value = (display_util.OK, "First")
-
-        ret = self.displayer.menu("Message", CHOICES)
-        mock_menu.assert_called_with("Message", **self.default_menu_options)
-
-        self.assertEqual(ret, (display_util.OK, 0))
-
-    @mock.patch("certbot.display.util.dialog.Dialog.menu")
-    def test_menu_tag_and_desc_cancel(self, mock_menu):
-        mock_menu.return_value = (display_util.CANCEL, "")
-
-        ret = self.displayer.menu("Message", CHOICES)
-
-        mock_menu.assert_called_with("Message", **self.default_menu_options)
-
-        self.assertEqual(ret, (display_util.CANCEL, -1))
-
-    @mock.patch("certbot.display.util.dialog.Dialog.menu")
-    def test_menu_desc_only(self, mock_menu):
-        mock_menu.return_value = (display_util.OK, "1")
-
-        ret = self.displayer.menu("Message", TAGS, help_label="More Info")
-
-        self.default_menu_options.update(
-            choices=TAGS_CHOICES, help_button=True, help_label="More Info")
-        mock_menu.assert_called_with("Message", **self.default_menu_options)
-
-        self.assertEqual(ret, (display_util.OK, 0))
-
-    @mock.patch("certbot.display.util.dialog.Dialog.menu")
-    def test_menu_desc_only_help(self, mock_menu):
-        mock_menu.return_value = (display_util.HELP, "2")
-
-        ret = self.displayer.menu("Message", TAGS, help_label="More Info")
-
-        self.assertEqual(ret, (display_util.HELP, 1))
-
-    @mock.patch("certbot.display.util.dialog.Dialog.menu")
-    def test_menu_desc_only_cancel(self, mock_menu):
-        mock_menu.return_value = (display_util.CANCEL, "")
-
-        ret = self.displayer.menu("Message", TAGS, help_label="More Info")
-
-        self.assertEqual(ret, (display_util.CANCEL, -1))
-
-    @mock.patch("certbot.display.util."
-                "dialog.Dialog.inputbox")
-    def test_input(self, mock_input):
-        mock_input.return_value = (mock.MagicMock(), mock.MagicMock())
-        self.displayer.input("message")
-        self.assertEqual(mock_input.call_count, 1)
-
-    @mock.patch("certbot.display.util.dialog.Dialog.yesno")
-    def test_yesno(self, mock_yesno):
-        mock_yesno.return_value = display_util.OK
-
-        self.assertTrue(self.displayer.yesno("message"))
-
-        mock_yesno.assert_called_with(
-            "message", yes_label="Yes", no_label="No")
-
-    @mock.patch("certbot.display.util."
-                "dialog.Dialog.checklist")
-    def test_checklist(self, mock_checklist):
-        mock_checklist.return_value = (mock.MagicMock(), mock.MagicMock())
-        self.displayer.checklist("message", TAGS)
-
-        choices = [
-            (TAGS[0], "", True),
-            (TAGS[1], "", True),
-            (TAGS[2], "", True),
-        ]
-        mock_checklist.assert_called_with("message", choices=choices)
-
-    @mock.patch("certbot.display.util.dialog.Dialog.dselect")
-    def test_directory_select(self, mock_dselect):
-        mock_dselect.return_value = (mock.MagicMock(), mock.MagicMock())
-        self.displayer.directory_select("message")
-        self.assertEqual(mock_dselect.call_count, 1)
-
-
 class FileOutputDisplayTest(unittest.TestCase):
     """Test stdout display.
 
@@ -142,7 +26,7 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.displayer = display_util.FileDisplay(self.mock_stdout)
 
     def test_notification_no_pause(self):
-        self.displayer.notification("message", 10, False)
+        self.displayer.notification("message", False)
         string = self.mock_stdout.write.call_args[0][0]
 
         self.assertTrue("message" in string)
@@ -194,6 +78,13 @@ class FileOutputDisplayTest(unittest.TestCase):
         code, tag_list = self.displayer.checklist("msg", TAGS)
         self.assertEqual(
             (code, set(tag_list)), (display_util.OK, set(["tag1", "tag2"])))
+
+    @mock.patch("certbot.display.util.FileDisplay.input")
+    def test_checklist_empty(self, mock_input):
+        mock_input.return_value = (display_util.OK, "")
+        code, tag_list = self.displayer.checklist("msg", TAGS)
+        self.assertEqual(
+            (code, set(tag_list)), (display_util.OK, set(["tag1", "tag2", "tag3"])))
 
     @mock.patch("certbot.display.util.FileDisplay.input")
     def test_checklist_miss_valid(self, mock_input):

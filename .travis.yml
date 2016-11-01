@@ -103,7 +103,6 @@ addons:
     - python-dev
     - python-virtualenv
     - gcc
-    - dialog
     - libaugeas0
     - libssl-dev
     - libffi-dev
@@ -115,7 +114,6 @@ addons:
     - apache2
     - libapache2-mod-wsgi
     - libapache2-mod-macro
-    - sudo
 
 install: "travis_retry pip install tox coveralls"
 script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/travis-integration.sh)'

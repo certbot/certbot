@@ -111,8 +111,7 @@ class AuthenticatorTest(unittest.TestCase):
 
         self.assertTrue(mock_display.notification.called)
         for call in mock_display.notification.call_args_list:
-            self.assertTrue(imaginary_dir in call[0][0] or
-                            display_util.DSELECT_HELP == call[0][0])
+            self.assertTrue(imaginary_dir in call[0][0])
 
         self.assertTrue(mock_display.directory_select.called)
         for call in mock_display.directory_select.call_args_list:

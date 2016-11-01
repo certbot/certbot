@@ -72,6 +72,14 @@ class GetEmailTest(unittest.TestCase):
                 self.assertTrue(
                     "--register-unsafely-without-email" not in call[0][0])
 
+    def test_optional_invalid_unsafe(self):
+        invalid_txt = "There seem to be problems"
+        self.input.return_value = (display_util.OK, "foo@bar.baz")
+        with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
+            mock_safe_email.side_effect = [False, True]
+            self._call(invalid=True)
+            self.assertTrue(invalid_txt in self.input.call_args[0][0])
+
 
 class ChooseAccountTest(unittest.TestCase):
     """Tests for certbot.display.ops.choose_account."""

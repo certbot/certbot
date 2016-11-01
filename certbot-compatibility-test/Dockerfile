@@ -38,8 +38,7 @@ RUN virtualenv --no-site-packages -p python2 /opt/certbot/venv && \
     -e /opt/certbot/src \
     -e /opt/certbot/src/certbot-apache \
     -e /opt/certbot/src/certbot-nginx \
-    -e /opt/certbot/src/certbot-compatibility-test \
-    -e /opt/certbot/src[dev,docs]
+    -e /opt/certbot/src/certbot-compatibility-test
 
 # install in editable mode (-e) to save space: it's not possible to
 # "rm -rf /opt/certbot/src" (it's stays in the underlaying image);

@@ -37,6 +37,7 @@ def get_email(invalid=False, optional=True):
     if optional:
         if invalid:
             msg += unsafe_suggestion
+            suggest_unsafe = False
         else:
             suggest_unsafe = True
     else:
@@ -219,7 +220,6 @@ def success_installation(domains):
             _gen_https_names(domains),
             os.linesep,
             os.linesep.join(_gen_ssl_lab_urls(domains))),
-        height=(10 + len(domains)),
         pause=False)
 
 
@@ -241,7 +241,6 @@ def success_renewal(domains, action):
             os.linesep,
             os.linesep.join(_gen_ssl_lab_urls(domains)),
             action),
-        height=(14 + len(domains)),
         pause=False)
 
 
