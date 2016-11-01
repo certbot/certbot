@@ -251,46 +251,25 @@ class ChooseNamesTest(unittest.TestCase):
         from certbot.display.ops import get_valid_domains
         all_valid = ["example.com", "second.example.com",
                      "also.example.com", "under_score.example.com",
-                     "justtld"]
-        all_invalid = ["öóòps.net", "*.wildcard.com", "uniçodé.com"]
-        two_valid = ["example.com", "úniçøde.com", "also.example.com"]
+                     "justtld", "öóòps.net", "uniçodé.com"]
+        all_invalid = ["*.wildcard.com"]
         self.assertEqual(get_valid_domains(all_valid), all_valid)
         self.assertEqual(get_valid_domains(all_invalid), [])
-        self.assertEqual(len(get_valid_domains(two_valid)), 2)
 
     @mock.patch("certbot.display.ops.z_util")
     def test_choose_manually(self, mock_util):
         from certbot.display.ops import _choose_names_manually
-        # No retry
-        mock_util().yesno.return_value = False
-        # IDN and no retry
-        mock_util().input.return_value = (display_util.OK,
-                                          "uniçodé.com")
-        self.assertEqual(_choose_names_manually(), [])
-        # IDN exception with previous mocks
-        with mock.patch(
-                "certbot.display.ops.display_util.separate_list_input"
-        ) as mock_sli:
-            unicode_error = UnicodeEncodeError('mock', u'', 0, 1, 'mock')
-            mock_sli.side_effect = unicode_error
-            self.assertEqual(_choose_names_manually(), [])
         # Valid domains
         mock_util().input.return_value = (display_util.OK,
                                           ("example.com,"
                                            "under_score.example.com,"
                                            "justtld,"
-                                           "valid.example.com"))
+                                           "valid.example.com,"
+                                           "uniçodé.com"))
         self.assertEqual(_choose_names_manually(),
                          ["example.com", "under_score.example.com",
-                          "justtld", "valid.example.com"])
-        # Three iterations
-        mock_util().input.return_value = (display_util.OK,
-                                          "uniçodé.com")
-        yn = mock.MagicMock()
-        yn.side_effect = [True, True, False]
-        mock_util().yesno = yn
-        _choose_names_manually()
-        self.assertEqual(mock_util().yesno.call_count, 3)
+                          "justtld", "valid.example.com",
+                          "uniçodé.com"])
 
 
 class SuccessInstallationTest(unittest.TestCase):

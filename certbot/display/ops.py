@@ -165,14 +165,7 @@ def _choose_names_manually(prompt_prefix=""):
     if code == display_util.OK:
         invalid_domains = dict()
         retry_message = ""
-        try:
-            domain_list = display_util.separate_list_input(input_)
-        except UnicodeEncodeError:
-            domain_list = []
-            retry_message = (
-                "Internationalized domain names are not presently "
-                "supported.{0}{0}Would you like to re-enter the "
-                "names?{0}").format(os.linesep)
+        domain_list = display_util.separate_list_input(input_)
 
         for i, domain in enumerate(domain_list):
             try:

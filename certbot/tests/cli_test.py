@@ -357,25 +357,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         # that it's _not_ an error (at the initial sanity check stage)
         util.enforce_domain_sanity('this.is.xn--ls8h.tld')
 
-    def test_check_config_sanity_domain(self):
-        # FQDN
-        self.assertRaises(errors.ConfigurationError,
-                          self._call,
-                          ['-d', 'a' * 64])
-        # FQDN 2
-        self.assertRaises(errors.ConfigurationError,
-                          self._call,
-                          ['-d', (('a' * 50) + '.') * 10])
-        # Wildcard
-        self.assertRaises(errors.ConfigurationError,
-                          self._call,
-                          ['-d', '*.wildcard.tld'])
-
-        # Bare IP address (this is actually a different error message now)
-        self.assertRaises(errors.ConfigurationError,
-                          self._call,
-                          ['-d', '204.11.231.35'])
-
     def test_csr_with_besteffort(self):
         self.assertRaises(
             errors.Error, self._call,
@@ -412,10 +393,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         namespace = parse(short_args)
         self.assertEqual(namespace.domains, ['example.com'])
 
-        short_args = ['-d', 'trailing.period.com.']
-        namespace = parse(short_args)
-        self.assertEqual(namespace.domains, ['trailing.period.com'])
-
         short_args = ['-d', 'example.com,another.net,third.org,example.com']
         namespace = parse(short_args)
         self.assertEqual(namespace.domains, ['example.com', 'another.net',
@@ -424,10 +401,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         long_args = ['--domains', 'example.com']
         namespace = parse(long_args)
         self.assertEqual(namespace.domains, ['example.com'])
-
-        long_args = ['--domains', 'trailing.period.com.']
-        namespace = parse(long_args)
-        self.assertEqual(namespace.domains, ['trailing.period.com'])
 
         long_args = ['--domains', 'example.com,another.net,example.com']
         namespace = parse(long_args)
