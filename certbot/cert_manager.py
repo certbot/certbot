@@ -1,5 +1,4 @@
 """Tools for managing certificates."""
-import copy
 import datetime
 import logging
 import pytz
@@ -33,8 +32,7 @@ def update_live_symlinks(config):
 
 def _report_lines(msgs):
     """Format a results report for a category of single-line renewal outcomes"""
-    certinfo = [str(msg) for msg in msgs]
-    return "  " + "\n  ".join(certinfo)
+    return "  " + "\n  ".join(str(msg) for msg in msgs)
 
 def _report_human_readable(parsed_certs):
     """Format a results report for a parsed cert"""
@@ -57,7 +55,7 @@ def _report_human_readable(parsed_certs):
         certinfo.append(out)
     return "\n".join(certinfo)
 
-def _describe_certs(config, parsed_certs, parse_failures):
+def _describe_certs(parsed_certs, parse_failures):
     """Print information about the certs we know about"""
     out = []
 
@@ -74,13 +72,11 @@ def _describe_certs(config, parsed_certs, parse_failures):
                "were invalid:")
             notify(_report_lines(parse_failures))
 
-    if config.quiet:
-        return
     disp = zope.component.getUtility(interfaces.IDisplay)
     disp.notification("\n".join(out), pause=False)
 
-def list_certs(config):
-    """Display information about the certificates that Certbot knows about
+def certificates(config):
+    """Display information about certs configured with Certbot
 
     :param config: Configuration.
     :type config: :class:`certbot.interfaces.IConfig`
@@ -89,24 +85,15 @@ def list_certs(config):
     parsed_certs = []
     parse_failures = []
     for renewal_file in renewal.renewal_conf_files(renewer_config):
-        lineage_config = copy.deepcopy(config)
-
-        # Note that this modifies config (to add back the configuration
-        # elements from within the renewal configuration file).
         try:
             renewal_candidate = storage.RenewableCert(renewal_file,
-                configuration.RenewerConfiguration(lineage_config))
+                configuration.RenewerConfiguration(config))
+            parsed_certs.append(renewal_candidate)
         except Exception as e:  # pylint: disable=broad-except
             logger.warning("Renewal configuration file %s produced an "
                            "unexpected error: %s. Skipping.", renewal_file, e)
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             parse_failures.append(renewal_file)
-            continue
-
-        if renewal_candidate is None:
-            parse_failures.append(renewal_file)
-        else:
-            parsed_certs.append(renewal_candidate)
 
     # Describe all the certs
-    _describe_certs(config, parsed_certs, parse_failures)
+    _describe_certs(parsed_certs, parse_failures)

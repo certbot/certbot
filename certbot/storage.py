@@ -265,7 +265,11 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
     @property
     def target_expiry(self):
-        """Returns at datetime object representation of the expiry of the current target cert"""
+        """The current target certificate's expiration datetime
+
+        :returns: Expiration datetime of the current target certificate
+        :rtype: :class:`datetime.datetime`
+        """
         return crypto_util.notAfter(self.current_target("cert"))
 
     @property

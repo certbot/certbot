@@ -10,8 +10,8 @@ import mock
 
 from certbot.storage import ALL_FOUR
 
-class CertManagerTest(unittest.TestCase):
-    """Tests for certbot.cert_manager
+class BaseCertManagerTest(unittest.TestCase):
+    """Base class for setting up Cert Manager tests.
     """
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
@@ -63,6 +63,9 @@ class CertManagerTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
+class UpdateLiveSymlinksTest(BaseCertManagerTest):
+    """Tests for certbot.cert_manager.update_live_symlinks
+    """
     def test_update_live_symlinks(self):
         """Test update_live_symlinks"""
         # pylint: disable=too-many-statements
@@ -93,52 +96,46 @@ class CertManagerTest(unittest.TestCase):
                 self.assertEqual(os.readlink(self.configs[domain][kind]),
                     archive_paths[domain][kind])
 
-    @mock.patch('zope.component.getUtility')
-    def test_list_certs_parse_fail(self, mock_utility):
-        from certbot import cert_manager
+class CertificatesTest(BaseCertManagerTest):
+    """Tests for certbot.cert_manager.certificates
+    """
+    def setUp(self):
+        super(CertificatesTest, self).setUp()
 
-        with mock.patch("certbot.cert_manager.logger") as mock_logger:
-            cert_manager.list_certs(self.cli_config)
-            self.assertTrue(mock_logger.warning.called)
+        patcher = mock.patch('certbot.cert_manager.logger')
+        self.addCleanup(patcher.stop)
+        self.mock_logger = patcher.start()
+
+    def _certificates(self, *args, **kwargs):
+        from certbot.cert_manager import certificates
+        return certificates(*args, **kwargs)
+
+    @mock.patch('zope.component.getUtility')
+    def test_certificates_parse_fail(self, mock_utility):
+        self._certificates(self.cli_config)
+        self.assertTrue(self.mock_logger.warning.called) #pylint: disable=no-member
         self.assertTrue(mock_utility.called)
 
     @mock.patch('zope.component.getUtility')
-    def test_list_certs_quiet(self, mock_utility):
-        from certbot import cert_manager
-
+    def test_certificates_quiet(self, mock_utility):
         self.cli_config.quiet = True
-        with mock.patch("certbot.cert_manager.logger") as mock_logger:
-            cert_manager.list_certs(self.cli_config)
-            self.assertFalse(mock_utility.notification.called)
-            self.assertTrue(mock_logger.warning.called)
+        self._certificates(self.cli_config)
+        self.assertFalse(mock_utility.notification.called)
+        self.assertTrue(self.mock_logger.warning.called) #pylint: disable=no-member
 
     @mock.patch('zope.component.getUtility')
     @mock.patch("certbot.storage.RenewableCert")
     @mock.patch('certbot.cert_manager._report_human_readable')
-    def test_list_certs_parse_success(self, mock_report, mock_renewable_cert, mock_utility):
-        from certbot import cert_manager
+    def test_certificates_parse_success(self, mock_report, mock_renewable_cert, mock_utility):
         mock_report.return_value = ""
-        with mock.patch("certbot.cert_manager.logger") as mock_logger:
-            cert_manager.list_certs(self.cli_config)
-            self.assertFalse(mock_logger.warning.called)
+        self._certificates(self.cli_config)
+        self.assertFalse(self.mock_logger.warning.called) #pylint: disable=no-member
         self.assertTrue(mock_report.called)
         self.assertTrue(mock_utility.called)
         self.assertTrue(mock_renewable_cert.called)
 
     @mock.patch('zope.component.getUtility')
-    @mock.patch("certbot.storage.RenewableCert")
-    def test_bad_renewable_cert(self, mock_renewable_cert, mock_utility):
-        from certbot import cert_manager
-        with mock.patch("certbot.cert_manager.logger") as mock_logger:
-            mock_renewable_cert.return_value = None
-            cert_manager.list_certs(self.cli_config)
-            self.assertFalse(mock_logger.warning.called)
-        self.assertTrue(mock_utility.called)
-
-    @mock.patch('zope.component.getUtility')
-    def test_list_certs_no_files(self, mock_utility):
-        from certbot import cert_manager
-
+    def test_certificates_no_files(self, mock_utility):
         tempdir = tempfile.mkdtemp()
 
         cli_config = mock.MagicMock(
@@ -149,9 +146,8 @@ class CertManagerTest(unittest.TestCase):
         )
 
         os.makedirs(os.path.join(tempdir, "renewal"))
-        with mock.patch("certbot.cert_manager.logger") as mock_logger:
-            cert_manager.list_certs(cli_config)
-            self.assertFalse(mock_logger.warning.called)
+        self._certificates(cli_config)
+        self.assertFalse(self.mock_logger.warning.called) #pylint: disable=no-member
         self.assertTrue(mock_utility.called)
         shutil.rmtree(tempdir)
 
