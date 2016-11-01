@@ -447,6 +447,7 @@ def enforce_domain_sanity(domain):
     domain = domain.lower()
     return domain
 
+
 def get_strict_version(normalized):
     """Converts a normalized version to a strict version.
 
