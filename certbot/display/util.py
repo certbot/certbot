@@ -442,7 +442,7 @@ def separate_list_input(input_):
     :rtype: list
 
     """
-    no_commas = input_.replace(",", " ")
+    return input_.replace(",", " ").split()
 
 
 def _parens_around_char(label):
