@@ -159,7 +159,7 @@ repo, if you have not already done so. Then run:
 
 .. code-block:: shell
 
-   sudo apt-get install letsencrypt python-letsencrypt-apache -t jessie-backports
+   sudo apt-get install letsencrypt python-certbot-apache -t jessie-backports
 
 **Fedora**
 
