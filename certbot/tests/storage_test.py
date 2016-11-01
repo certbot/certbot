@@ -597,7 +597,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertRaises(errors.CertStorageError,
                           storage.RenewableCert.new_lineage, "the-lineage.com",
                           "cert3", "privkey3", "chain3", self.cli_config)
-        os.mkdir(os.path.join(self.cli_config.archive_dir, "other-example.com"))
+        os.mkdir(os.path.join(self.cli_config.default_archive_dir, "other-example.com"))
         self.assertRaises(errors.CertStorageError,
                           storage.RenewableCert.new_lineage,
                           "other-example.com", "cert4",
@@ -617,7 +617,7 @@ class RenewableCertTests(BaseRenewableCertTest):
 
         from certbot import storage
         shutil.rmtree(self.cli_config.renewal_configs_dir)
-        shutil.rmtree(self.cli_config.archive_dir)
+        shutil.rmtree(self.cli_config.default_archive_dir)
         shutil.rmtree(self.cli_config.live_dir)
 
         storage.RenewableCert.new_lineage(
@@ -628,7 +628,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(os.path.exists(os.path.join(
             self.cli_config.live_dir, "the-lineage.com", "privkey.pem")))
         self.assertTrue(os.path.exists(os.path.join(
-            self.cli_config.archive_dir, "the-lineage.com", "privkey1.pem")))
+            self.cli_config.default_archive_dir, "the-lineage.com", "privkey1.pem")))
 
     @mock.patch("certbot.storage.util.unique_lineage_name")
     def test_invalid_config_filename(self, mock_uln):
@@ -725,9 +725,10 @@ class RenewableCertTests(BaseRenewableCertTest):
         target = {}
         for x in ALL_FOUR:
             target[x] = "somewhere"
+        archive_dir = "the_archive"
         relevant_data = {"useful": "new_value"}
         from certbot import storage
-        storage.write_renewal_config(temp, temp2, target, relevant_data)
+        storage.write_renewal_config(temp, temp2, archive_dir, target, relevant_data)
         with open(temp2, "r") as f:
             content = f.read()
         # useful value was updated
@@ -738,6 +739,21 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue("useless" not in content)
         # check version was stored
         self.assertTrue("version = {0}".format(certbot.__version__) in content)
+
+    def test_update_symlinks(self):
+        from certbot import storage
+        archive_dir_path = os.path.join(self.tempdir, "archive", "example.org")
+        for kind in ALL_FOUR:
+            live_path = self.config[kind]
+            basename = kind + "1.pem"
+            archive_path = os.path.join(archive_dir_path, basename)
+            open(archive_path, 'a').close()
+            os.symlink(os.path.join(self.tempdir, basename), live_path)
+        self.assertRaises(errors.CertStorageError,
+                          storage.RenewableCert, self.config.filename,
+                          self.cli_config)
+        storage.RenewableCert(self.config.filename, self.cli_config,
+            update_symlinks=True)
 
 
 if __name__ == "__main__":

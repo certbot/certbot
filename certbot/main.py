@@ -16,6 +16,7 @@ from acme import messages
 import certbot
 
 from certbot import account
+from certbot import cert_manager
 from certbot import client
 from certbot import cli
 from certbot import crypto_util
@@ -475,6 +476,13 @@ def config_changes(config, unused_plugins):
     """
     client.view_config_changes(config, num=config.num)
 
+def update_symlinks(config, unused_plugins):
+    """Update the certificate file family symlinks
+
+    Use the information in the config file to make symlinks point to
+    the correct archive directory.
+    """
+    cert_manager.update_live_symlinks(config)
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
     """Revoke a previously obtained certificate."""
@@ -539,7 +547,6 @@ def _csr_obtain_cert(config, le_client):
         cert_path, _, cert_fullchain = le_client.save_certificate(
             certr, chain, config.cert_path, config.chain_path, config.fullchain_path)
         _report_new_cert(config, cert_path, cert_fullchain)
-
 
 def obtain_cert(config, plugins, lineage=None):
     """Authenticate & obtain cert, but do not install it.
