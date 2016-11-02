@@ -99,43 +99,41 @@ class UpdateLiveSymlinksTest(BaseCertManagerTest):
 class CertificatesTest(BaseCertManagerTest):
     """Tests for certbot.cert_manager.certificates
     """
-    def setUp(self):
-        super(CertificatesTest, self).setUp()
-
-        patcher = mock.patch('certbot.cert_manager.logger')
-        self.addCleanup(patcher.stop)
-        self.mock_logger = patcher.start()
-
     def _certificates(self, *args, **kwargs):
         from certbot.cert_manager import certificates
         return certificates(*args, **kwargs)
 
+    @mock.patch('certbot.cert_manager.logger')
     @mock.patch('zope.component.getUtility')
-    def test_certificates_parse_fail(self, mock_utility):
+    def test_certificates_parse_fail(self, mock_utility, mock_logger):
         self._certificates(self.cli_config)
-        self.assertTrue(self.mock_logger.warning.called) #pylint: disable=no-member
+        self.assertTrue(mock_logger.warning.called) #pylint: disable=no-member
         self.assertTrue(mock_utility.called)
 
+    @mock.patch('certbot.cert_manager.logger')
     @mock.patch('zope.component.getUtility')
-    def test_certificates_quiet(self, mock_utility):
+    def test_certificates_quiet(self, mock_utility, mock_logger):
         self.cli_config.quiet = True
         self._certificates(self.cli_config)
         self.assertFalse(mock_utility.notification.called)
-        self.assertTrue(self.mock_logger.warning.called) #pylint: disable=no-member
+        self.assertTrue(mock_logger.warning.called) #pylint: disable=no-member
 
+    @mock.patch('certbot.cert_manager.logger')
     @mock.patch('zope.component.getUtility')
     @mock.patch("certbot.storage.RenewableCert")
     @mock.patch('certbot.cert_manager._report_human_readable')
-    def test_certificates_parse_success(self, mock_report, mock_renewable_cert, mock_utility):
+    def test_certificates_parse_success(self, mock_report, mock_renewable_cert,
+        mock_utility, mock_logger):
         mock_report.return_value = ""
         self._certificates(self.cli_config)
-        self.assertFalse(self.mock_logger.warning.called) #pylint: disable=no-member
+        self.assertFalse(mock_logger.warning.called) #pylint: disable=no-member
         self.assertTrue(mock_report.called)
         self.assertTrue(mock_utility.called)
         self.assertTrue(mock_renewable_cert.called)
 
+    @mock.patch('certbot.cert_manager.logger')
     @mock.patch('zope.component.getUtility')
-    def test_certificates_no_files(self, mock_utility):
+    def test_certificates_no_files(self, mock_utility, mock_logger):
         tempdir = tempfile.mkdtemp()
 
         cli_config = mock.MagicMock(
@@ -147,7 +145,7 @@ class CertificatesTest(BaseCertManagerTest):
 
         os.makedirs(os.path.join(tempdir, "renewal"))
         self._certificates(cli_config)
-        self.assertFalse(self.mock_logger.warning.called) #pylint: disable=no-member
+        self.assertFalse(mock_logger.warning.called) #pylint: disable=no-member
         self.assertTrue(mock_utility.called)
         shutil.rmtree(tempdir)
 

@@ -11,7 +11,7 @@ import os
 import shutil
 import traceback
 import tempfile
-import unittest2
+import unittest
 
 import mock
 import six
