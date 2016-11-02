@@ -837,12 +837,11 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         readme_path = os.path.join(live_dir, "README")
         with open(readme_path, "w") as f:
             logger.debug("Writing README to %s.", readme_path)
-            f.write("The files in this directory are symlinks to the latest "
-                    "versions of your keys and certificates.\n\n"
+            f.write("This directory contains your keys and certificates.\n\n"
                     "`privkey.pem` is the private key for your certificate.\n"
-                    "`fullchain.pem` contains all the information your certificate needs, and "
-                    "is likely the certificate file you will need.\n"
+                    "`fullchain.pem` is the certificate file used in modern server software.\n"
                     "`chain.pem` is used for OCSP stapling in Nginx >=1.3.7.\n\n"
+                    "We recommend not moving these files. "
                     "For more information, see the Certbot User Guide "
                     "at https://certbot.eff.org/docs/using.html.\n")
 
