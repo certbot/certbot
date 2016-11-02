@@ -61,22 +61,17 @@ matrix:
       before_install:
       addons:
     - sudo: required
-      env: TOXENV=apache_compat
+      env: TOXENV=nginx_compat
       services: docker
       before_install:
       addons:
     - sudo: required
-      env: TOXENV=le_auto_wily
+      env: TOXENV=le_auto_precise
       services: docker
       before_install:
       addons:
     - sudo: required
       env: TOXENV=le_auto_trusty
-      services: docker
-      before_install:
-      addons:
-    - sudo: required
-      env: TOXENV=le_auto_wily
       services: docker
       before_install:
       addons:
