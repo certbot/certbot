@@ -378,12 +378,13 @@ class IInstaller(IPlugin):
 class IDisplay(zope.interface.Interface):
     """Generic display."""
 
-    def notification(message, pause):
+    def notification(message, pause, wrap=True):
         """Displays a string message
 
         :param str message: Message to display
         :param bool pause: Whether or not the application should pause for
             confirmation (if available)
+        :param bool wrap: Whether or not the application should wrap text
 
         """
 
