@@ -4,9 +4,6 @@ cache:
     directories:
         - $HOME/.cache/pip
 
-# This makes sure we get a host with docker-compose present.
-dist: trusty
-
 before_install:
   - 'dpkg -s libaugeas0'
 
