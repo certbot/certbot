@@ -233,7 +233,7 @@ s.serve_forever()" """
                 "cleanup() must be called after perform()")
             if self._httpd.poll() is None:
                 logger.debug("Terminating manual command process")
-                os.killpg(self._httpd.pid, signal.SIGTERM)
+                os.kill(self._httpd.pid, signal.SIGTERM)
             else:
                 logger.debug("Manual command process already terminated "
                              "with %s code", self._httpd.returncode)
