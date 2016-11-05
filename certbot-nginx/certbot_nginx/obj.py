@@ -161,23 +161,17 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         return False
 
     def contains_list(self, test):
-        """Determine if raw server block contains test list
+        """Determine if raw server block contains test list at top level
         """
-        return _has_block(self.raw, test)
+        return _raw_server_contains_directives(self.raw, test)
 
-def _has_block(haystack, needle):
+def _raw_server_contains_directives(haystack, needle):
     """Determine if needle appears in haystack
     """
     if len(haystack) == 0 or isinstance(haystack, str):
         return False
-    if haystack == needle:
-        return True
     for i in xrange(0, len(haystack) - len(needle)):
         if haystack[i:i + len(needle)] == needle:
-            return True
-    for sub in haystack:
-        found = _has_block(sub, needle)
-        if found:
             return True
     return False
 
