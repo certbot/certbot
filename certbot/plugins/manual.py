@@ -3,7 +3,6 @@ import os
 import logging
 import pipes
 import shutil
-import signal
 import socket
 import subprocess
 import sys
@@ -233,7 +232,7 @@ s.serve_forever()" """
                 "cleanup() must be called after perform()")
             if self._httpd.poll() is None:
                 logger.debug("Terminating manual command process")
-                os.killpg(self._httpd.pid, signal.SIGTERM)
+                self._httpd.terminate()
             else:
                 logger.debug("Manual command process already terminated "
                              "with %s code", self._httpd.returncode)
