@@ -445,6 +445,38 @@ class NginxConfiguratorTest(util.NginxTest):
         generated_conf = self.config.parser.parsed[migration_conf]
         self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
 
+    @mock.patch('certbot_nginx.obj.VirtualHost.contains_list')
+    @mock.patch('certbot_nginx.obj.VirtualHost.has_redirect')
+    def test_redirect_exists(self, mock_has_redirect, mock_contains_list):
+        # Test that we add a redirect as a comment if there is already a
+        # redirect-class statement in the block that isn't managed by certbot,
+        # and that we add no redirect statement if there is
+        example_conf = self.config.parser.abs_path('sites-enabled/example.com')
+
+        mock_has_redirect.return_value = True
+        mock_contains_list.return_value = True
+        with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
+            self.config.enhance("www.example.com", "redirect")
+            self.assertEqual(mock_logger.info.call_args[0][0],
+                "Traffic on port %s already redirecting to ssl in %s")
+
+        mock_contains_list.return_value = False
+        with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
+            self.config.enhance("www.example.com", "redirect")
+            self.assertEqual(mock_logger.info.call_args[0][0],
+                "The appropriate server block is already redirecting "
+                "traffic. To enable redirect anyway, uncomment the "
+                "redirect lines in %s.")
+            generated_conf = self.config.parser.parsed[example_conf]
+            expected = [
+                ['#', ' Redirect non-https traffic to https'],
+                ['#', ' if ($scheme != "https") {'],
+                ['#', '     return 301 https://$host$request_uri;'],
+                ['#', ' } # managed by Certbot']
+            ]
+            for line in expected:
+                self.assertTrue(util.contains_at_depth(generated_conf, line, 2))
+
     def test_redirect_dont_enhance(self):
         # Test that we don't accidentally add redirect to ssl-only block
         with mock.patch("certbot_nginx.configurator.logger") as mock_logger:

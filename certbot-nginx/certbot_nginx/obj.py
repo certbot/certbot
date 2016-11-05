@@ -3,6 +3,7 @@ import re
 
 from certbot.plugins import common
 
+REDIRECT_DIRECTIVES = ['return', 'rewrite']
 
 class Addr(common.Addr):
     r"""Represents an Nginx address, i.e. what comes after the 'listen'
@@ -149,3 +150,50 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
                     self.path == other.path)
 
         return False
+
+    def has_redirect(self):
+        """Determine if this vhost has a redirecting statement
+        """
+        for directive_name in REDIRECT_DIRECTIVES:
+            found = _find_directive(self.raw, directive_name)
+            if found is not None:
+                return True
+        return False
+
+    def contains_list(self, test):
+        """Determine if raw server block contains test list
+        """
+        return _has_block(self.raw, test)
+
+def _has_block(haystack, needle):
+    """Determine if needle appears in haystack
+    """
+    if len(haystack) == 0 or isinstance(haystack, str):
+        return False
+    if haystack == needle:
+        return True
+    for i in xrange(0, len(haystack) - len(needle)):
+        if haystack[i:i + len(needle)] == needle:
+            return True
+    for sub in haystack:
+        found = _has_block(sub, needle)
+        if found:
+            return True
+    return False
+
+
+def _find_directive(directives, directive_name):
+    """Find a directive of type directive_name in directives
+    """
+    if len(directive_name) == 0 or not directives or \
+        isinstance(directives, str) or len(directives) == 0:
+        return None
+    else:
+        if directives[0] == directive_name:
+            return directives
+        else:
+            for line in directives:
+                found = _find_directive(line, directive_name)
+                if found is not None:
+                    return found
+            return None
