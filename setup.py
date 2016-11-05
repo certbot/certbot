@@ -3,7 +3,7 @@ import sys
 from distutils.core import setup
 from setuptools import find_packages
 
-version = '0.1.4'
+version = '0.1.5'
 
 install_requires = [
     'acme>=0.9.0.dev0',

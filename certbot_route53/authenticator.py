@@ -46,7 +46,7 @@ class Authenticator(common.Plugin):
         return max(
             (
                 zone for zone in r53.list_hosted_zones()["HostedZones"]
-                if (domain+".").endswith("."+zone["Name"])
+                if (domain+".").endswith("."+zone["Name"]) or (domain+".") == (zone["Name"])
             ),
             key=lambda zone: len(zone["Name"]),
         )
