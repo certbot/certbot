@@ -163,18 +163,10 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     def contains_list(self, test):
         """Determine if raw server block contains test list at top level
         """
-        return _raw_server_contains_directives(self.raw, test)
-
-def _raw_server_contains_directives(haystack, needle):
-    """Determine if needle appears in haystack
-    """
-    if len(haystack) == 0 or isinstance(haystack, str):
+        for i in xrange(0, len(self.raw) - len(test)):
+            if self.raw[i:i + len(test)] == test:
+                return True
         return False
-    for i in xrange(0, len(haystack) - len(needle)):
-        if haystack[i:i + len(needle)] == needle:
-            return True
-    return False
-
 
 def _find_directive(directives, directive_name):
     """Find a directive of type directive_name in directives
