@@ -20,6 +20,9 @@ BootstrapRpmCommon() {
   if [ "$ASSUME_YES" = 1 ]; then
     yes_flag="-y"
   fi
+  if [ "$QUIET" == 1 ]; then
+    $QUIET_FLAG='--quiet'
+  fi
 
   if ! $SUDO $tool list *virtualenv >/dev/null 2>&1; then
     echo "To use Certbot, packages from the EPEL repository need to be installed."
