@@ -124,33 +124,27 @@ class Authenticator(common.Plugin):
         ev["CERTBOT_TOKEN"] = achall.chall.encode("token")
         ev["CERTBOT_VALIDATION"] = validation
         ev["CERTBOT_DOMAIN"] = achall.domain
-        self._write_env(ev)
+        os.environ.update(ev)
 
     def _setup_env_dns(self, achall, validation):
         """Write environment variables for dns challenge"""
         ev = dict()
         ev["CERTBOT_VALIDATION"] = validation
         ev["CERTBOT_DOMAIN"] = achall.domain
-        self._write_env(ev)
+        os.environ.update(ev)
 
     def _write_auth_output(self, out):
         """Write output from auth script to env var for
         cleanup to act upon"""
-        self._write_env({"CERTBOT_AUTH_OUTPUT": out.strip()})
+        os.environ.update({"CERTBOT_AUTH_OUTPUT": out.strip()})
 
     def _normalize_string(self, value):
         """Return string instead of bytestring for Python3.
-        Helper function for _write_env, as os.environ needs
-        str"""
+        Helper function for writing env vars, as os.environ needs str"""
 
         if isinstance(value, bytes):
             value = value.decode(sys.getdefaultencoding())
         return str(value)
-
-    def _write_env(self, env_vars):
-        """Write environment variables"""
-        for k in env_vars.keys():
-            os.environ[k] = env_vars[k]
 
     def execute(self, shell_cmd):
         """Run a script.
