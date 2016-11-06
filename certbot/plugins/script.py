@@ -5,8 +5,6 @@ import sys
 
 import zope.interface
 
-from subprocess import Popen, PIPE
-
 from acme import challenges
 
 from certbot import errors
@@ -60,23 +58,6 @@ class Authenticator(common.Plugin):
         """Challenges supported by this plugin."""
         return self.challenges
 
-    def check_script_validity(self, script_path):
-        """Checks that the script exists and is executable
-
-        :param str script_path: Path of script to check
-        :raises errors.PluginError: If script is not valid
-        :returns `boolean`: If script is valid"""
-
-        if os.path.exists(script_path) and os.path.isfile(script_path):
-            if os.access(script_path, os.X_OK):
-                return True
-            else:
-                raise errors.PluginError(
-                    "Script {0} isn't readable by Certbot".format(script_path))
-        else:
-            raise errors.PluginError(
-                "Script {0} does not exist".format(script_path))
-
     def more_info(self):  # pylint: disable=missing-docstring
         return("This authenticator enables user to perform authentication " +
                "using shell script(s).")
@@ -100,11 +81,18 @@ class Authenticator(common.Plugin):
         if not self.conf("auth"):
             raise errors.PluginError("Parameter --script-auth is required " +
                                      "for script plugin")
+        self._prepare_scripts()
+
+    def _prepare_scripts(self):
+        """Helper method for prepare, to take care of validating scripts"""
         script_path = self.conf("auth")
         cleanup_path = self.conf("cleanup")
-        if self.check_script_validity(script_path):
-            self.auth_script = script_path
-        if cleanup_path and self.check_script_validity(cleanup_path):
+        if self.config.validate_hooks:
+            hooks.validate_hook(script_path, "script_auth")
+        self.auth_script = script_path
+        if cleanup_path:
+            if self.config.validate_hooks:
+                hooks.validate_hook(cleanup_path, "script_cleanup")
             self.cleanup_script = cleanup_path
 
     def get_chall_pref(self, domain):

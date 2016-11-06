@@ -63,19 +63,25 @@ class AuthenticatorTest(unittest.TestCase):
     def test_prepare_normal(self):
         """Test prepare with typical configuration"""
         from certbot.plugins.script import Authenticator
-        # Erroring combinations in from of (auth_script, cleanup_script)
-        for v in [("/NONEXISTENT/script.sh", "/NONEXISTENT/script.sh"),
-                  (self.script_nonexec, "/NONEXISTENT/script.sh"),
-                  (self.script_exec, "/NONEXISTENT/script.sh"),
-                  ("/NONEXISTENT/script.sh", self.script_nonexec),
-                  ("/NONEXISTENT/script.sh", self.script_exec),
-                  (None, self.script_exec)]:
+        # Erroring combinations in from of (auth_script, cleanup_script, error)
+        for v in [("/NONEXISTENT/script.sh", "/NONEXISTENT/script.sh",
+                   errors.HookCommandNotFound),
+                  (self.script_nonexec, "/NONEXISTENT/script.sh",
+                   errors.HookCommandNotFound),
+                  (self.script_exec, "/NONEXISTENT/script.sh",
+                   errors.HookCommandNotFound),
+                  ("/NONEXISTENT/script.sh", self.script_nonexec,
+                   errors.HookCommandNotFound),
+                  ("/NONEXISTENT/script.sh", self.script_exec,
+                   errors.HookCommandNotFound),
+                  (None, self.script_exec,
+                   errors.PluginError)]:
             testconf = mock.MagicMock(
                 script_auth=v[0],
                 script_cleanup=v[1],
                 pref_challs=[challenges.Challenge.TYPES["http-01"]])
             testauth = Authenticator(config=testconf, name="script")
-            self.assertRaises(errors.PluginError, testauth.prepare)
+            self.assertRaises(v[2], testauth.prepare)
 
         # This should not error
         self.default.prepare()
