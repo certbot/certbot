@@ -129,7 +129,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.default.cleanup(self.achalls)
         self.assertEqual(mock_exec.call_count, 1)
 
-    @mock.patch('certbot.plugins.script.Popen')
+    @mock.patch('certbot.hooks.Popen')
     def test_execute(self, mock_popen):
         proc = mock.Mock()
         # tuple values: stdout, stderr, errorcode, num_of_logger_calls
@@ -143,7 +143,7 @@ class AuthenticatorTest(unittest.TestCase):
                      'returncode': t[2]}
             proc.configure_mock(**attrs)  # pylint: disable=star-args
             mock_popen.return_value = proc
-            with mock.patch('certbot.plugins.script.logger.error') as mock_log:
+            with mock.patch('certbot.hooks.logger.error') as mock_log:
                 output = self.default.execute(self.script_exec)
                 self.assertEqual(mock_log.call_count, t[3])
                 self.assertTrue(isinstance(output, str))

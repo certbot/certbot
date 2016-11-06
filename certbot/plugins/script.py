@@ -11,6 +11,7 @@ from acme import challenges
 
 from certbot import errors
 from certbot import interfaces
+from certbot import hooks
 
 from certbot.plugins import common
 
@@ -164,15 +165,9 @@ class Authenticator(common.Plugin):
         """Run a script.
 
         :param str shell_cmd: Command to run
-        :returns: `tuple` (`int` returncode, `str` stderr)"""
-        cmd = Popen(shell_cmd, shell=True, stdout=PIPE, stderr=PIPE)
-        out, err = cmd.communicate()
-        if cmd.returncode != 0:
-            logger.error('Command "%s" returned error code %d',
-                         shell_cmd, cmd.returncode)
-        if len(err) > 0:
-            logger.error('Error output from %s:\n%s', shell_cmd, err)
+        :returns: `str` stdout output"""
 
+        _, out = hooks.execute(shell_cmd)
         return self._normalize_string(out)
 
     def cleanup(self, achalls):  # pylint: disable=unused-argument
