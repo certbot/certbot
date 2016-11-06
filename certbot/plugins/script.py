@@ -29,16 +29,19 @@ class Authenticator(common.Plugin):
 
     """
 
-    description = ("Authenticate using user provided script(s). " +
-                   "Authenticator script has the following environment " +
-                   "variables available for it:\n" +
-                   "CERTBOT_DOMAIN - The domain being authenticated\n" +
-                   "CERTBOT_VALIDATION - The validation string\n" +
-                   "CERTBOT_TOKEN - Resource name part of HTTP-01 " +
-                   "challenge (HTTP-01 only).\n" +
-                   "Cleanup script has all the above, and additional var:\n " +
-                   "CERTBOT_AUTH_OUTPUT - stdout output from the authenticator"
-                   )
+    description = "Authenticate using user provided script(s)"
+
+    long_description = ("Authenticate using user provided script(s). " +
+                        "Authenticator script has the following environment " +
+                        "variables available for it: " +
+                        "CERTBOT_DOMAIN - The domain being authenticated " +
+                        "CERTBOT_VALIDATION - The validation string " +
+                        "CERTBOT_TOKEN - Resource name part of HTTP-01 " +
+                        "challenge (HTTP-01 only). " +
+                        "Cleanup script has all the above, and additional " +
+                        "var: CERTBOT_AUTH_OUTPUT - stdout output from the " +
+                        "authenticator"
+                    )
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)

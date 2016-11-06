@@ -588,7 +588,8 @@ class HelpfulArgumentParser(object):
 
         """
         for name, plugin_ep in six.iteritems(plugins):
-            parser_or_group = self.add_group(name, description=plugin_ep.description)
+            parser_or_group = self.add_group(name,
+                                             description=plugin_ep.long_description)
             plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)
 
     def determine_help_topics(self, chosen_topic):
