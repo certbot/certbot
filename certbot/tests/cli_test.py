@@ -276,6 +276,46 @@ class ParseTest(unittest.TestCase):
             errors.Error, self.parse, "-n --force-interactive".split())
 
 
+
+    @mock.patch('certbot.main._determine_account')
+    @mock.patch('certbot.main.account')
+    @mock.patch('certbot.main.client')
+    @mock.patch('certbot.main.zope.component.getUtility')
+    def test_registration_deactivate(self, mock_utility, mocked_client,
+                                     mocked_account, mocked_det):
+        mocked_storage = mock.MagicMock()
+        mocked_account.AccountFileStorage.return_value = mocked_storage
+        mocked_storage.find_all.return_value = ["an account"]
+        mocked_det.return_value = (mock.MagicMock(), "foo")
+        acme_client = mock.MagicMock()
+        mocked_client.Client.return_value = acme_client
+
+        x = self._call_no_clientmock(["register", "--deactivate"])
+        self.assertTrue(x[0] is None)
+        self.assertTrue(acme_client.acme.deactivate.called)
+        m = "Account deactivated."
+        self.assertTrue(m in mock_utility().add_message.call_args[0][0])
+
+    @mock.patch('certbot.main._determine_account')
+    @mock.patch('certbot.main.account')
+    @mock.patch('certbot.main.client')
+    @mock.patch('certbot.main.zope.component.getUtility')
+    def test_registration_deactivate_no_account(self, mock_utility,
+                                                mocked_client, mocked_account,
+                                                mocked_det):
+        mocked_storage = mock.MagicMock()
+        mocked_account.AccountFileStorage.return_value = mocked_storage
+        mocked_det.return_value = (mock.MagicMock(), "foo")
+        acme_client = mock.MagicMock()
+        mocked_client.Client.return_value = acme_client
+
+        x = self._call_no_clientmock(["register", "--deactivate"])
+        self.assertTrue(x[0] is None)
+        self.assertFalse(acme_client.acme.deactivate.called)
+        m = "Could not find existing account to deactivate"
+        self.assertTrue(m in mock_utility().add_message.call_args[0][0])
+
+
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""
 
