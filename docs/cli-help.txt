@@ -229,11 +229,9 @@ certonly:
                         the port Certbot listens on. A conforming ACME server
                         will still attempt to connect on port 80. (default:
                         80)
-  --csr CSR             Path to a Certificate Signing Request (CSR) in DER
-                        format; note that the .csr file *must* contain a
-                        Subject Alternative Name field for each domain you
-                        want certified. Currently --csr only works with the
-                        'certonly' subcommand' (default: None)
+  --csr CSR             Path to a Certificate Signing Request (CSR) in DER or
+                        PEM format. Currently --csr only works with the
+                        'certonly' subcommand. (default: None)
 
 install:
   Options for modifying how a cert is deployed
@@ -307,6 +305,15 @@ plugins:
   --webroot             Obtain certs by placing files in a webroot directory.
                         (default: False)
 
+nginx:
+  Nginx Web Server plugin - Alpha
+
+  --nginx-server-root NGINX_SERVER_ROOT
+                        Nginx server root directory. (default: /etc/nginx)
+  --nginx-ctl NGINX_CTL
+                        Path to the 'nginx' binary, used for 'configtest' and
+                        retrieving nginx version number. (default: nginx)
+
 standalone:
   Spin up a temporary webserver
 
@@ -318,15 +325,6 @@ manual:
   --manual-public-ip-logging-ok
                         Automatically allows public IP logging. (default:
                         False)
-
-nginx:
-  Nginx Web Server plugin - Alpha
-
-  --nginx-server-root NGINX_SERVER_ROOT
-                        Nginx server root directory. (default: /etc/nginx)
-  --nginx-ctl NGINX_CTL
-                        Path to the 'nginx' binary, used for 'configtest' and
-                        retrieving nginx version number. (default: nginx)
 
 webroot:
   Place files in webroot directory

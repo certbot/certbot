@@ -58,6 +58,7 @@ for arg in "$@" ; do
     --verbose)
       VERBOSE=1;;
     -[!-]*)
+      OPTIND=1
       while getopts ":hnvq" short_arg $arg; do
         case "$short_arg" in
           h)
@@ -83,39 +84,59 @@ fi
 # certbot itself needs root access for almost all modes of operation
 # The "normal" case is that sudo is used for the steps that need root, but
 # this script *can* be run as root (not recommended), or fall back to using
-# `su`
+# `su`. Auto-detection can be overrided by explicitly setting the
+# environment variable LE_AUTO_SUDO to 'sudo', 'sudo_su' or '' as used below.
+
+# Because the parameters in `su -c` has to be a string,
+# we need to properly escape it.
+su_sudo() {
+  args=""
+  # This `while` loop iterates over all parameters given to this function.
+  # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
+  # will be wrapped in a pair of `'`, then appended to `$args` string
+  # For example, `echo "It's only 1\$\!"` will be escaped to:
+  #   'echo' 'It'"'"'s only 1$!'
+  #     │       │└┼┘│
+  #     │       │ │ └── `'s only 1$!'` the literal string
+  #     │       │ └── `\"'\"` is a single quote (as a string)
+  #     │       └── `'It'`, to be concatenated with the strings following it
+  #     └── `echo` wrapped in a pair of `'`, it's totally fine for the shell command itself
+  while [ $# -ne 0 ]; do
+    args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
+    shift
+  done
+  su root -c "$args"
+}
+
 SUDO_ENV=""
 export CERTBOT_AUTO="$0"
-if test "`id -u`" -ne "0" ; then
-  if command -v sudo 1>/dev/null 2>&1; then
-    SUDO=sudo
-    SUDO_ENV="CERTBOT_AUTO=$0"
-  else
-    echo \"sudo\" is not available, will use \"su\" for installation steps...
-    # Because the parameters in `su -c` has to be a string,
-    # we need properly escape it
-    su_sudo() {
-      args=""
-      # This `while` loop iterates over all parameters given to this function.
-      # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
-      # will be wrapped in a pair of `'`, then appended to `$args` string
-      # For example, `echo "It's only 1\$\!"` will be escaped to:
-      #   'echo' 'It'"'"'s only 1$!'
-      #     │       │└┼┘│
-      #     │       │ │ └── `'s only 1$!'` the literal string
-      #     │       │ └── `\"'\"` is a single quote (as a string)
-      #     │       └── `'It'`, to be concatenated with the strings following it
-      #     └── `echo` wrapped in a pair of `'`, it's totally fine for the shell command itself
-      while [ $# -ne 0 ]; do
-        args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
-        shift
-      done
-      su root -c "$args"
-    }
-    SUDO=su_sudo
-  fi
+if [ -n "${LE_AUTO_SUDO:+x}" ]; then
+  case "$LE_AUTO_SUDO" in
+    su_sudo|su)
+      SUDO=su_sudo
+      ;;
+    sudo)
+      SUDO=sudo
+      SUDO_ENV="CERTBOT_AUTO=$0"
+      ;;
+    '') ;; # Nothing to do for plain root method.
+    *)
+      echo "Error: unknown root authorization mechanism '$LE_AUTO_SUDO'."
+      exit 1
+  esac
+  echo "Using preset root authorization mechanism '$LE_AUTO_SUDO'."
 else
-  SUDO=
+  if test "`id -u`" -ne "0" ; then
+    if command -v sudo 1>/dev/null 2>&1; then
+      SUDO=sudo
+      SUDO_ENV="CERTBOT_AUTO=$0"
+    else
+      echo \"sudo\" is not available, will use \"su\" for installation steps...
+      SUDO=su_sudo
+    fi
+  else
+    SUDO=
+  fi
 fi
 
 ExperimentalBootstrap() {
@@ -248,7 +269,6 @@ BootstrapDebCommon() {
     python-dev \
     $virtualenv \
     gcc \
-    dialog \
     $augeas_pkg \
     libssl-dev \
     libffi-dev \
@@ -307,7 +327,6 @@ BootstrapRpmCommon() {
 
   pkgs="
     gcc
-    dialog
     augeas-libs
     openssl
     openssl-devel
@@ -361,7 +380,6 @@ BootstrapSuseCommon() {
     python-devel \
     python-virtualenv \
     gcc \
-    dialog \
     augeas-lenses \
     libopenssl-devel \
     libffi-devel \
@@ -380,7 +398,6 @@ BootstrapArchCommon() {
     python2
     python-virtualenv
     gcc
-    dialog
     augeas
     openssl
     libffi
@@ -404,7 +421,6 @@ BootstrapGentooCommon() {
   PACKAGES="
     dev-lang/python:2.7
     dev-python/virtualenv
-    dev-util/dialog
     app-admin/augeas
     dev-libs/openssl
     dev-libs/libffi
@@ -449,7 +465,6 @@ BootstrapMac() {
   fi
 
   $pkgcmd augeas
-  $pkgcmd dialog
   if [ "$(which python)" = "/System/Library/Frameworks/Python.framework/Versions/2.7/bin/python" \
       -o "$(which python)" = "/usr/bin/python" ]; then
     # We want to avoid using the system Python because it requires root to use pip.
@@ -496,7 +511,6 @@ BootstrapMageiaCommon() {
     if ! $SUDO urpmi --force \
            git \
            gcc \
-           cdialog \
            python-augeas \
            libopenssl-devel \
            libffi-devel \
@@ -594,6 +608,11 @@ if [ "$1" = "--le-auto-phase2" ]; then
 # `pip install --no-cache-dir -e acme -e . -e certbot-apache -e certbot-nginx`,
 # and then use `hashin` or a more secure method to gather the hashes.
 
+# Hashin example:
+# pip install hashin
+# hashin -r letsencrypt-auto-requirements.txt cryptography==1.5.2
+# sets the new certbot-auto pinned version of cryptography to 1.5.2
+
 argparse==1.4.0 \
     --hash=sha256:c31647edb69fd3d465a847ea3157d37bed1f95f19760b11a47aa91c04b666314 \
     --hash=sha256:62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4
@@ -624,29 +643,29 @@ ConfigArgParse==0.10.0 \
     --hash=sha256:3b50a83dd58149dfcee98cb6565265d10b53e9c0a2bca7eeef7fb5f5524890a7
 configobj==5.0.6 \
     --hash=sha256:a2f5650770e1c87fb335af19a9b7eb73fc05ccf22144eb68db7d00cd2bcb0902
-cryptography==1.3.4 \
-    --hash=sha256:bede00edd11a2a62c8c98c271cc103fa3a3d72acf64f6e5e4eaf251128897b17 \
-    --hash=sha256:53b39e687b744bb548a98f40736cc529d9f60959b4e6cc551322cf9505d35eb3 \
-    --hash=sha256:474b73ad1139b4e423e46bbd818efd0d5c0df1c65d9f7c957d64c9215d77afde \
-    --hash=sha256:aaddf9592d5b99e32dd518bb4a25b147c124f9d6b4ad64b94f01b15d1666b8c8 \
-    --hash=sha256:6dcad2f407db8c3cd6ecd78361439c449a4f94786b46c54507e7e68f51e1709d \
-    --hash=sha256:475c153fc622e656f1f10a9c9941d0ac7ab18df7c38d35d563a437c1c0e34f24 \
-    --hash=sha256:86dd61df581cba04e89e45081efbc531faff1c9d99c77b1ce97f87216c356353 \
-    --hash=sha256:75cc697e4ef5fdd0102ca749114c6370dbd11db0c9132a18834858c2566247e3 \
-    --hash=sha256:ea03ad5b9df6d79fc9fc1ab23729e01e1c920d2974c5e3c634ccf45a5c378452 \
-    --hash=sha256:c8872b8fe4f3416d6338ab99612f49ab314f7856cb43bffab2a32d28a6267be8 \
-    --hash=sha256:468fc6e16eaec6ceaa6bc341273e6e9912d01b42b740f8cf896ace7fcd6a321d \
-    --hash=sha256:d6fea3c6502735011c5d61a62aef1c1d770fc6a2def45d9e6c0d94c9651e3317 \
-    --hash=sha256:3cf95f179f4bead3d5649b91860ef4cf60ad4244209190fc405908272576d961 \
-    --hash=sha256:141f77e60a5b9158309b2b60288c7f81d37faa15c22a69b94c190ceefaaa6236 \
-    --hash=sha256:87b7a1fe703c6424451f3372d1879dae91c7fe5e13375441a72833db76fee30e \
-    --hash=sha256:f5ee3cb0cf1a6550bf483ccffa6608db267a377b45f7e3a8201a86d1d8feb19f \
-    --hash=sha256:4e097286651ea318300af3251375d48b71b8228481c56cd617ddd4459a1ff261 \
-    --hash=sha256:1e3d3ae3f22f22d50d340f47f25227511326f3f1396c6d2446a5b45b516c4313 \
-    --hash=sha256:6a057941cb64d79834ea3cf99093fcc4787c2a5d44f686c4f297361ddc419bcd \
-    --hash=sha256:68b3d5390b92559ddd3353c73ab2dfcff758f9c4ec4f5d5226ccede0e5d779f4 \
-    --hash=sha256:545dc003b4b6081f9c3e452da15d819b04b696f49484aff64c0a2aedf766bef8 \
-    --hash=sha256:423ff890c01be7c70dbfeaa967eeef5146f1a43a5f810ffdc07b178e48a105a9
+cryptography==1.5.2 \
+    --hash=sha256:9e65f4c0ddcd4a7da3cfc1d87a0c3cf735a859c78f5f11d2346f7dfbc31df51b \
+    --hash=sha256:a7e4a0f46ad767d4083faf31f4304301437f3919017203260620efbfeb72792b \
+    --hash=sha256:0445831e72e38719e59b1f67b3361a0b43a52cb73ed10be757f6855310c75cb0 \
+    --hash=sha256:4871e41cb3345c26b4596739a10c2dafa0a1207cef14ac9cdb923a55d0aa418b \
+    --hash=sha256:eefe2e7f31833569d3ac9a4b796298f8d6deb0211c9c89e9f9ae7c774a6e982f \
+    --hash=sha256:181f4f9943d95c144aad19264b31a3b7fa3a88a6d6a905fdfdfe985bf1ea0745 \
+    --hash=sha256:3c73d538cb494924929a61376ecd7f802b28b12139546b9775d66ce8071efaf9 \
+    --hash=sha256:713a68355550423dfb9167ed2365c1ad3aab1644cd7dcaf42afecc1e1d460dc5 \
+    --hash=sha256:bf90be94e599ab3097f261ca606bad8c75b54eaeaaacfd0818fe6f2616ef9521 \
+    --hash=sha256:446e9a139c87c09a07c9b252a2336bedffe99821f37332d4fc820d3da90d1738 \
+    --hash=sha256:f04c00e81d42ec86e0b31a1d91783c3666691a85239f6daecfcda2cbe6c15f28 \
+    --hash=sha256:5a7b9d10ef04e9cbbf0d9ba6a3502a1cc9176510e89522575d3e338f188eccfe \
+    --hash=sha256:f2c35caf388e1f503b10c78ced239441f383c2b3d96e1b1c6fe04d56335af84e \
+    --hash=sha256:f2b89bca3cd0efc7feb9aad0c8662508b4de3f26118808881868395ae32be337 \
+    --hash=sha256:0194794e6bfc87a0fdb6e197a80ac5ea676e71bc2824281f9ccefb2be56ca2fb \
+    --hash=sha256:44a968a20951481c9d8ffec4ba55326aa6d903c065568d0523600179ffd3976d \
+    --hash=sha256:cd9a1734b0818ff57728affeb2444a2465a006e8a1eeee9d59ee4b5727a67ee7 \
+    --hash=sha256:eb7f016eca0188bd310e2bd05b379ba378cd83b8962899e58f0f91feca607e47 \
+    --hash=sha256:050caca01c8a67b4f1b10f2eca085c00154d1553a983d4ff7dfe2add9a270eaa \
+    --hash=sha256:ef5692b5e44587e92b1231154bec5c7d0a262c75c4be754a6e605de8614145c6 \
+    --hash=sha256:b634baf73c2b2f0e9c338434531aca3adffef47e78cba909da0ddcc9448f1c84 \
+    --hash=sha256:eb8875736734e8e870b09be43b17f40472dc189b1c422a952fa8580768204832
 enum34==1.1.2 \
     --hash=sha256:2475d7fcddf5951e92ff546972758802de5260bf409319a9f1934e6bbc8b1dc7 \
     --hash=sha256:35907defb0f992b75ab7788f65fedc1cf20ffa22688e0e6f6f12afc06b3ea501
@@ -701,9 +720,6 @@ pyRFC3339==1.0 \
     --hash=sha256:8dfbc6c458b8daba1c0f3620a8c78008b323a268b27b7359e92a4ae41325f535
 python-augeas==0.5.0 \
     --hash=sha256:67d59d66cdba8d624e0389b87b2a83a176f21f16a87553b50f5703b23f29bac2
-python2-pythondialog==3.3.0 \
-    --hash=sha256:04e93f24995c43dd90f338d5d865ca72ce3fb5a5358d4daa4965571db35fc3ec \
-    --hash=sha256:3e6f593fead98f8a526bc3e306933533236e33729f552f52896ea504f55313fa
 pytz==2015.7 \
     --hash=sha256:3abe6a6d3fc2fbbe4c60144211f45da2edbe3182a6f6511af6bbba0598b1f992 \
     --hash=sha256:939ef9c1e1224d980405689a97ffcf7828c56d1517b31d73464356c1f2b7769e \
@@ -761,18 +777,18 @@ letsencrypt==0.7.0 \
 
 # THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT; ADD ALL DEPENDENCIES ABOVE.
 
-acme==0.9.2 \
-    --hash=sha256:730412573abf1ee64930d4e1233f02c12d9f7718bc43f127d7f16601ca134f45 \
-    --hash=sha256:263d019b6bedd630d669442fad79bc62b4699b69fdb95a49a812fcf8e5bc82b4
-certbot==0.9.2 \
-    --hash=sha256:ea096d3eb208798c04a3172fc8025fd4e4203940eac3d765c13546adc10ca28f \
-    --hash=sha256:b2576bfe1295b2daab3d589ab9fcbd4d7a6928e85cea31a5e6b008e4d9a16869
-certbot-apache==0.9.2 \
-    --hash=sha256:9a20fdbfd76bba5d8219c75c597eb1f576a1629f32fc201c77877871b7164c68 \
-    --hash=sha256:92e504c5881b06e0abdc36020cfe57b3f7230e199c03e7da6728380af64e6c67
-certbot-nginx==0.9.2 \
-    --hash=sha256:7883391110f05f9884cf62eb641bf1ae38cda07d91e631f9b44397a0d466304d \
-    --hash=sha256:d6f7e66543a20991ef8ce11a37f926d00a9bbf5de61fe36bd6566e90c8b33b2f
+acme==0.9.3 \
+    --hash=sha256:d18ce17a75ad24d27981dfaef0524aa905eab757b267e027162b56a8967ab8fb \
+    --hash=sha256:a6eff1f955eb2e4316abd9aa2fedb6d9345e6b5b8a2d64ea0ad35e05d6124099
+certbot==0.9.3 \
+    --hash=sha256:a87ef4c53c018df4e52ee2f2e906ad16bbb37789f29e6f284c495a2eb4d9b243 \
+    --hash=sha256:68149cb8392b29f5d5246e7226d25f913f2b10482bf3bc7368e8c8821d25f3b0
+certbot-apache==0.9.3 \
+    --hash=sha256:f379b1053e10709692654d7a6fcea9eaed19b66c49a753b61e31bd06a04b0aac \
+    --hash=sha256:a5d98cf972072de08f984db4e6a7f20269f3f023c43f6d4e781fe43be7c10086
+certbot-nginx==0.9.3 \
+    --hash=sha256:3c26f18f0b57550f069263bd9b2984ef33eab6693e7796611c1b2cc16574069c \
+    --hash=sha256:7337a2e90e0b28a1ab09e31d9fb81c6d78e6453500c824c0f18bab5d31b63058
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------

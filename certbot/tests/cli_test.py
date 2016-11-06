@@ -5,7 +5,6 @@
 from __future__ import print_function
 
 import argparse
-import dialog
 import functools
 import itertools
 import os
@@ -51,6 +50,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.config_dir = os.path.join(self.tmp_dir, 'config')
         self.work_dir = os.path.join(self.tmp_dir, 'work')
         self.logs_dir = os.path.join(self.tmp_dir, 'logs')
+        os.mkdir(self.logs_dir)
         self.standard_args = ['--config-dir', self.config_dir,
                               '--work-dir', self.work_dir,
                               '--logs-dir', self.logs_dir, '--text']
@@ -98,6 +98,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue("--configurator" in out)
         self.assertTrue("how a cert is deployed" in out)
         self.assertTrue("--manual-test-mode" in out)
+        self.assertTrue("--text" not in out)
+        self.assertTrue("--dialog" not in out)
 
         out = self._help_output(['-h', 'nginx'])
         if "nginx" in plugins:
@@ -163,12 +165,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 self._cli_missing_flag(args, "--agree-tos")
 
     @mock.patch('certbot.main.renew')
-    def test_gui(self, renew):
+    def test_no_gui(self, renew):
         args = ['renew', '--dialog']
-        # --text conflicts with --dialog
-        self.standard_args.remove('--text')
+        # --dialog should have no effect
         self._call(args)
-        self.assertFalse(renew.call_args[0][0].noninteractive_mode)
+        self.assertTrue(renew.call_args[0][0].noninteractive_mode)
 
     @mock.patch('certbot.main.client.acme_client.Client')
     @mock.patch('certbot.main._determine_account')
@@ -271,6 +272,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         _, _, _, client = self._call(['config_changes'])
         self.assertEqual(1, client.view_config_changes.call_count)
 
+    @mock.patch('certbot.cert_manager.update_live_symlinks')
+    def test_update_symlinks(self, mock_cert_manager):
+        self._call_no_clientmock(['update_symlinks'])
+        self.assertEqual(1, mock_cert_manager.call_count)
+
     def test_plugins(self):
         flags = ['--init', '--prepare', '--authenticators', '--installers']
         for args in itertools.chain(
@@ -346,11 +352,12 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         except errors.PluginSelectionError as e:
             self.assertTrue('The requested bad_auth plugin does not appear' in str(e))
 
+    def test_punycode_ok(self):
+        # Punycode is now legal, so no longer an error; instead check
+        # that it's _not_ an error (at the initial sanity check stage)
+        util.enforce_domain_sanity('this.is.xn--ls8h.tld')
+
     def test_check_config_sanity_domain(self):
-        # Punycode
-        self.assertRaises(errors.ConfigurationError,
-                          self._call,
-                          ['-d', 'this.is.xn--ls8h.tld'])
         # FQDN
         self.assertRaises(errors.ConfigurationError,
                           self._call,
@@ -655,9 +662,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                                   log_out="not yet due", should_renew=False)
 
     def _dump_log(self):
-        with open(os.path.join(self.logs_dir, "letsencrypt.log")) as lf:
-            print("Logs:")
-            print(lf.read())
+        print("Logs:")
+        log_path = os.path.join(self.logs_dir, "letsencrypt.log")
+        if os.path.exists(log_path):
+            with open(log_path) as lf:
+                print(lf.read())
 
     def _make_lineage(self, testfile):
         """Creates a lineage defined by testfile.
@@ -976,13 +985,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         mock_sys.exit.assert_called_with(''.join(
             traceback.format_exception_only(KeyboardInterrupt, interrupt)))
 
-        # Test dialog errors
-        exception = dialog.error(message="test message")
-        main._handle_exception(
-                dialog.DialogError, exc_value=exception, trace=None, config=None)
-        error_msg = mock_sys.exit.call_args_list[-1][0][0]
-        self.assertTrue("test message" in error_msg)
-
     def test_read_file(self):
         rel_test_path = os.path.relpath(os.path.join(self.tmp_dir, 'foo'))
         self.assertRaises(
@@ -1068,17 +1070,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                         self.assertTrue(mocked_storage.save_regr.called)
                         self.assertTrue(
                             email in mock_utility().add_message.call_args[0][0])
-
-    def test_conflicting_args(self):
-        args = ['renew', '--dialog', '--text']
-        self.assertRaises(errors.Error, self._call, args)
-
-    def test_text_mode_when_verbose(self):
-        parse = self._get_argument_parser()
-        short_args = ['-v']
-        namespace = parse(short_args)
-        self.assertTrue(namespace.text_mode)
-
 
 class DetermineAccountTest(unittest.TestCase):
     """Tests for certbot.cli._determine_account."""

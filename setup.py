@@ -51,12 +51,6 @@ install_requires = [
     'zope.interface',
 ]
 
-# Debian squeeze support, cf. #280
-if sys.version_info[0] == 2:
-    install_requires.append('python2-pythondialog>=3.2.2rc1')
-else:
-    install_requires.append('pythondialog>=3.2.2rc1')
-
 # env markers in extras_require cause problems with older pip: #517
 # Keep in sync with conditional_requirements.py.
 if sys.version_info < (2, 7):

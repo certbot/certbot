@@ -1,5 +1,4 @@
 """Tests for certbot.plugins.manual."""
-import signal
 import unittest
 
 import mock
@@ -123,13 +122,12 @@ class AuthenticatorTest(unittest.TestCase):
         httpd.poll.return_value = 0
         self.auth_test_mode.cleanup(self.achalls)
 
-    @mock.patch("certbot.plugins.manual.os.killpg", autospec=True)
-    def test_cleanup_test_mode_kills_still_running(self, mock_killpg):
+    def test_cleanup_test_mode_kills_still_running(self):
         # pylint: disable=protected-access
         self.auth_test_mode._httpd = httpd = mock.Mock(pid=1234)
         httpd.poll.return_value = None
         self.auth_test_mode.cleanup(self.achalls)
-        mock_killpg.assert_called_once_with(1234, signal.SIGTERM)
+        httpd.terminate.assert_called_once_with()
 
 
 if __name__ == "__main__":

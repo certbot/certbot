@@ -119,8 +119,7 @@ def choose_plugin(prepared, question):
                 z_util(interfaces.IDisplay).notification(
                     "The selected plugin encountered an error while parsing "
                     "your server configuration and cannot be used. The error "
-                    "was:\n\n{0}".format(plugin_ep.prepare()),
-                    height=display_util.HEIGHT, pause=False)
+                    "was:\n\n{0}".format(plugin_ep.prepare()), pause=False)
             else:
                 return plugin_ep
         elif code == display_util.HELP:
@@ -128,8 +127,7 @@ def choose_plugin(prepared, question):
                 msg = "Reported Error: %s" % prepared[index].prepare()
             else:
                 msg = prepared[index].init().more_info()
-            z_util(interfaces.IDisplay).notification(
-                msg, height=display_util.HEIGHT)
+            z_util(interfaces.IDisplay).notification(msg)
         else:
             return None
 
