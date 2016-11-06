@@ -1,4 +1,4 @@
-"""Standalone Authenticator."""
+"""Script-based Authenticator."""
 import logging
 import os
 import sys
@@ -30,7 +30,16 @@ class Authenticator(common.Plugin):
 
     """
 
-    description = "Authenticate using user provided script(s)"
+    description = ("Authenticate using user provided script(s). " +
+                   "Authenticator script has the following environment " +
+                   "variables available for it:\n" +
+                   "CERTBOT_DOMAIN - The domain being authenticated\n" +
+                   "CERTBOT_VALIDATION - The validation string\n" +
+                   "CERTBOT_TOKEN - Resource name part of HTTP-01 " +
+                   "challenge (HTTP-01 only).\n" +
+                   "Cleanup script has all the above, and additional var:\n " +
+                   "CERTBOT_AUTH_OUTPUT - stdout output from the authenticator"
+                   )
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
@@ -41,9 +50,9 @@ class Authenticator(common.Plugin):
     @classmethod
     def add_parser_arguments(cls, add):
         add("auth", default=None, required=False,
-            help="path to the authentication script")
+            help="path or command for the authentication script")
         add("cleanup", default=None, required=False,
-            help="path to the cleanup script")
+            help="path or command for the cleanup script")
 
     @property
     def supported_challenges(self):
@@ -155,7 +164,7 @@ class Authenticator(common.Plugin):
         """Run a script.
 
         :param str shell_cmd: Command to run
-        :returns: `tuple` (`int` returncode, `str` stderr"""
+        :returns: `tuple` (`int` returncode, `str` stderr)"""
         cmd = Popen(shell_cmd, shell=True, stdout=PIPE, stderr=PIPE)
         out, err = cmd.communicate()
         if cmd.returncode != 0:
