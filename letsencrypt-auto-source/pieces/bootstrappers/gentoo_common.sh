@@ -9,7 +9,7 @@ BootstrapGentooCommon() {
     app-misc/ca-certificates
     virtual/pkgconfig"
 
-  local ASK_OPTION="--ask"
+  ASK_OPTION="--ask"
   if [ "$ASSUME_YES" = 1 ]; then
     ASK_OPTION=""
   fi
