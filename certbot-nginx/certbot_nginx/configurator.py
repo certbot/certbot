@@ -406,7 +406,7 @@ class NginxConfigurator(common.Plugin):
         cert_pem = OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, cert)
         cert_file, cert_path = util.unique_file(
-            os.path.join(tmp_dir, "cert.pem"), "wb")
+            os.path.join(tmp_dir, "cert.pem"), mode="wb")
         with cert_file:
             cert_file.write(cert_pem)
         return cert_path, le_key.file
