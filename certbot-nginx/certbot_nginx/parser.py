@@ -496,7 +496,6 @@ def parse_server(server):
 
     return parsed_server
 
-
 def _add_directives(block, directives, replace):
     """Adds or replaces directives in a config block.
 
