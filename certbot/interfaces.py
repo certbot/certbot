@@ -300,19 +300,6 @@ class IInstaller(IPlugin):
 
         """
 
-    def get_all_certs_keys():
-        """Retrieve all certs and keys set in configuration.
-
-        :returns: tuples with form `[(cert, key, path)]`, where:
-
-            - `cert` - str path to certificate file
-            - `key` - str path to associated key file
-            - `path` - file path to configuration file
-
-        :rtype: list
-
-        """
-
     def save(title=None, temporary=False):
         """Saves all changes to the configuration files.
 
