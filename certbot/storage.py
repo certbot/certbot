@@ -843,7 +843,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                     "`chain.pem` is used for OCSP stapling in Nginx >=1.3.7.\n\n"
                     "We recommend not moving these files. "
                     "For more information, see the Certbot User Guide "
-                    "at https://certbot.eff.org/docs/using.html.\n")
+                    "at https://certbot.eff.org/docs/using.html#where-are-my-certificates.\n")
 
         # Document what we've done in a new renewal config file
         config_file.close()
