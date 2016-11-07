@@ -322,7 +322,7 @@ class Client(object):
                 self.config.strict_permissions)
 
         cert_pem = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped).decode('ascii')
+            OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped)
 
         cert_file, abs_cert_path = _open_pem_file('cert_path', cert_path)
 
@@ -595,10 +595,10 @@ def _open_pem_file(cli_arg_path, pem_path):
 
     """
     if cli.set_by_cli(cli_arg_path):
-        return util.safe_open(pem_path, chmod=0o644),\
+        return util.safe_open(pem_path, chmod=0o644, mode="wb"),\
             os.path.abspath(pem_path)
     else:
-        uniq = util.unique_file(pem_path, 0o644)
+        uniq = util.unique_file(pem_path, 0o644, "wb")
         return uniq[0], os.path.abspath(uniq[1])
 
 def _save_chain(chain_pem, chain_file):
