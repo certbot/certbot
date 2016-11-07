@@ -573,7 +573,7 @@ class RenewableCertTests(BaseRenewableCertTest):
 
         from certbot import storage
         result = storage.RenewableCert.new_lineage(
-            "the-lineage.com", "cert", "privkey", "chain", self.cli_config)
+            "the-lineage.com", b"cert", b"privkey", b"chain", self.cli_config)
         # This consistency check tests most relevant properties about the
         # newly created cert lineage.
         # pylint: disable=protected-access
@@ -582,11 +582,11 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.cli_config.renewal_configs_dir, "the-lineage.com.conf")))
         self.assertTrue(os.path.exists(os.path.join(
             self.cli_config.live_dir, "the-lineage.com", "README")))
-        with open(result.fullchain) as f:
-            self.assertEqual(f.read(), "cert" + "chain")
+        with open(result.fullchain, "rb") as f:
+            self.assertEqual(f.read(), b"cert" + b"chain")
         # Let's do it again and make sure it makes a different lineage
         result = storage.RenewableCert.new_lineage(
-            "the-lineage.com", "cert2", "privkey2", "chain2", self.cli_config)
+            "the-lineage.com", b"cert2", b"privkey2", b"chain2", self.cli_config)
         self.assertTrue(os.path.exists(os.path.join(
             self.cli_config.renewal_configs_dir, "the-lineage.com-0001.conf")))
         self.assertTrue(os.path.exists(os.path.join(
@@ -596,15 +596,15 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.cli_config.live_dir, "the-lineage.com-0002"))
         self.assertRaises(errors.CertStorageError,
                           storage.RenewableCert.new_lineage, "the-lineage.com",
-                          "cert3", "privkey3", "chain3", self.cli_config)
+                          b"cert3", b"privkey3", b"chain3", self.cli_config)
         os.mkdir(os.path.join(self.cli_config.default_archive_dir, "other-example.com"))
         self.assertRaises(errors.CertStorageError,
                           storage.RenewableCert.new_lineage,
-                          "other-example.com", "cert4",
-                          "privkey4", "chain4", self.cli_config)
+                          "other-example.com", b"cert4",
+                          b"privkey4", b"chain4", self.cli_config)
         # Make sure it can accept renewal parameters
         result = storage.RenewableCert.new_lineage(
-            "the-lineage.com", "cert2", "privkey2", "chain2", self.cli_config)
+            "the-lineage.com", b"cert2", b"privkey2", b"chain2", self.cli_config)
         # TODO: Conceivably we could test that the renewal parameters actually
         #       got saved
 
@@ -621,7 +621,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         shutil.rmtree(self.cli_config.live_dir)
 
         storage.RenewableCert.new_lineage(
-            "the-lineage.com", "cert2", "privkey2", "chain2", self.cli_config)
+            "the-lineage.com", b"cert2", b"privkey2", b"chain2", self.cli_config)
         self.assertTrue(os.path.exists(
             os.path.join(
                 self.cli_config.renewal_configs_dir, "the-lineage.com.conf")))

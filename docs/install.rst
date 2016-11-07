@@ -153,13 +153,13 @@ repo, if you have not already done so. Then run:
 
 .. code-block:: shell
 
-   sudo apt-get install letsencrypt python-letsencrypt-apache -t jessie-backports
+   sudo apt-get install certbot python-certbot-apache -t jessie-backports
 
 **Fedora**
 
 .. code-block:: shell
 
-    sudo dnf install letsencrypt
+    sudo dnf install certbot python2-certbot-apache
 
 **Gentoo**
 
@@ -168,8 +168,8 @@ want to use the Apache plugin, it has to be installed separately:
 
 .. code-block:: shell
 
-   emerge -av app-crypt/letsencrypt
-   emerge -av app-crypt/letsencrypt-apache
+   emerge -av app-crypt/certbot
+   emerge -av app-crypt/certbot-apache
 
 When using the Apache plugin, you will run into a "cannot find a cert or key
 directive" error if you're sporting the default Gentoo ``httpd.conf``.

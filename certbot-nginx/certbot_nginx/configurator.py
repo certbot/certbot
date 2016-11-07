@@ -405,7 +405,8 @@ class NginxConfigurator(common.Plugin):
         cert = acme_crypto_util.gen_ss_cert(key, domains=[socket.gethostname()])
         cert_pem = OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, cert)
-        cert_file, cert_path = util.unique_file(os.path.join(tmp_dir, "cert.pem"))
+        cert_file, cert_path = util.unique_file(
+            os.path.join(tmp_dir, "cert.pem"), mode="wb")
         with cert_file:
             cert_file.write(cert_pem)
         return cert_path, le_key.file
