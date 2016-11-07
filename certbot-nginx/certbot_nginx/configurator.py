@@ -45,6 +45,21 @@ TEST_REDIRECT_BLOCK = [
     ['#', ' managed by Certbot']
 ]
 
+REDIRECT_COMMENT_BLOCK = [
+    ['\n    ', '#', ' Redirect non-https traffic to https'],
+    ['\n    ', '#', ' if ($scheme != "https") {'],
+    ['\n    ', '#', "     return 301 https://$host$request_uri;"],
+    ['\n    ', '#', " } # managed by Certbot"],
+    ['\n']
+]
+
+TEST_REDIRECT_COMMENT_BLOCK = [
+    ['#', ' Redirect non-https traffic to https'],
+    ['#', ' if ($scheme != "https") {'],
+    ['#', "     return 301 https://$host$request_uri;"],
+    ['#', " } # managed by Certbot"],
+]
+
 @zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
 class NginxConfigurator(common.Plugin):
@@ -500,19 +515,16 @@ class NginxConfigurator(common.Plugin):
     def _has_certbot_redirect(self, vhost):
         return vhost.contains_list(TEST_REDIRECT_BLOCK)
 
+    def _has_certbot_redirect_comment(self, vhost):
+        return vhost.contains_list(TEST_REDIRECT_COMMENT_BLOCK)
+
     def _add_redirect_block(self, vhost, active=True):
         """Add redirect directive to vhost
         """
         if active:
             redirect_block = REDIRECT_BLOCK
         else:
-            redirect_block = [
-                ['\n    ', '#', ' Redirect non-https traffic to https'],
-                ['\n    ', '#', ' if ($scheme != "https") {'],
-                ['\n    ', '#', "     return 301 https://$host$request_uri;"],
-                ['\n    ', '#', " } # managed by Certbot"],
-                ['\n']
-            ]
+            redirect_block = REDIRECT_COMMENT_BLOCK
 
         self.parser.add_server_directives(
             vhost, redirect_block, replace=False)
@@ -543,7 +555,8 @@ class NginxConfigurator(common.Plugin):
                 logger.info("Traffic on port %s already redirecting to ssl in %s",
                     self.DEFAULT_LISTEN_PORT, vhost.filep)
             elif vhost.has_redirect():
-                self._add_redirect_block(vhost, active=False)
+                if not self._has_certbot_redirect_comment(vhost):
+                    self._add_redirect_block(vhost, active=False)
                 logger.info("The appropriate server block is already redirecting "
                             "traffic. To enable redirect anyway, uncomment the "
                             "redirect lines in %s.", vhost.filep)

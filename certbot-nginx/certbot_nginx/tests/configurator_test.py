@@ -447,12 +447,10 @@ class NginxConfiguratorTest(util.NginxTest):
 
     @mock.patch('certbot_nginx.obj.VirtualHost.contains_list')
     @mock.patch('certbot_nginx.obj.VirtualHost.has_redirect')
-    def test_redirect_exists(self, mock_has_redirect, mock_contains_list):
-        # Test that we add a redirect as a comment if there is already a
-        # redirect-class statement in the block that isn't managed by certbot,
-        # and that we add no redirect statement if there is
-        example_conf = self.config.parser.abs_path('sites-enabled/example.com')
-
+    def test_certbot_redirect_exists(self, mock_has_redirect, mock_contains_list):
+        # Test that we add no redirect statement if there is already a
+        # redirect in the block that is managed by certbot
+        # Has a certbot redirect
         mock_has_redirect.return_value = True
         mock_contains_list.return_value = True
         with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
@@ -460,7 +458,16 @@ class NginxConfiguratorTest(util.NginxTest):
             self.assertEqual(mock_logger.info.call_args[0][0],
                 "Traffic on port %s already redirecting to ssl in %s")
 
+    @mock.patch('certbot_nginx.obj.VirtualHost.contains_list')
+    @mock.patch('certbot_nginx.obj.VirtualHost.has_redirect')
+    def test_non_certbot_redirect_exists(self, mock_has_redirect, mock_contains_list):
+        # Test that we add a redirect as a comment if there is already a
+        # redirect-class statement in the block that isn't managed by certbot
+        example_conf = self.config.parser.abs_path('sites-enabled/example.com')
+
+        # Has a non-Certbot redirect, and has no existing comment
         mock_contains_list.return_value = False
+        mock_has_redirect.return_value = True
         with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
             self.config.enhance("www.example.com", "redirect")
             self.assertEqual(mock_logger.info.call_args[0][0],
@@ -476,6 +483,25 @@ class NginxConfiguratorTest(util.NginxTest):
             ]
             for line in expected:
                 self.assertTrue(util.contains_at_depth(generated_conf, line, 2))
+
+    @mock.patch('certbot_nginx.obj.VirtualHost.contains_list')
+    @mock.patch('certbot_nginx.obj.VirtualHost.has_redirect')
+    @mock.patch('certbot_nginx.configurator.NginxConfigurator._has_certbot_redirect_comment')
+    @mock.patch('certbot_nginx.configurator.NginxConfigurator._add_redirect_block')
+    def test_redirect_comment_exists(self, mock_add_redirect_block,
+        mock_has_cb_redirect_comment, mock_has_redirect, mock_contains_list):
+        # Test that we add nothing if there is a non-Certbot redirect and a
+        # preexisting comment
+        # Has a non-Certbot redirect and a comment
+        mock_has_redirect.return_value = True
+        mock_contains_list.return_value = False # self._has_certbot_redirect(vhost):
+        mock_has_cb_redirect_comment.return_value = True
+
+        # assert _add_redirect_block not called
+        with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
+            self.config.enhance("www.example.com", "redirect")
+            self.assertFalse(mock_add_redirect_block.called)
+            self.assertTrue(mock_logger.info.called)
 
     def test_redirect_dont_enhance(self):
         # Test that we don't accidentally add redirect to ssl-only block

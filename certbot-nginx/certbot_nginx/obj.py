@@ -171,15 +171,11 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 def _find_directive(directives, directive_name):
     """Find a directive of type directive_name in directives
     """
-    if len(directive_name) == 0 or not directives or \
-        isinstance(directives, str) or len(directives) == 0:
+    if not directives or isinstance(directives, str) or len(directives) == 0:
         return None
-    else:
-        if directives[0] == directive_name:
-            return directives
-        else:
-            for line in directives:
-                found = _find_directive(line, directive_name)
-                if found is not None:
-                    return found
-            return None
+
+    if directives[0] == directive_name:
+        return directives
+
+    matches = (_find_directive(line, directive_name) for line in directives)
+    return next((m for m in matches if m is not None), None)
