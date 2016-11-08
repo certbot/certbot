@@ -129,7 +129,7 @@ the webserver.
 Nginx
 -----
 
-The Nginx plugin has been distributed with Cerbot since version 0.9.0 and should
+The Nginx plugin has been distributed with Certbot since version 0.9.0 and should
 work for most configurations. Because it is alpha code, we recommend backing up Nginx
 configurations before using it (though you can also revert changes to
 configurations with ``certbot --nginx rollback``). You can use it by providing
