@@ -300,19 +300,6 @@ class IInstaller(IPlugin):
 
         """
 
-    def get_all_certs_keys():
-        """Retrieve all certs and keys set in configuration.
-
-        :returns: tuples with form `[(cert, key, path)]`, where:
-
-            - `cert` - str path to certificate file
-            - `key` - str path to associated key file
-            - `path` - file path to configuration file
-
-        :rtype: list
-
-        """
-
     def save(title=None, temporary=False):
         """Saves all changes to the configuration files.
 
@@ -378,12 +365,13 @@ class IInstaller(IPlugin):
 class IDisplay(zope.interface.Interface):
     """Generic display."""
 
-    def notification(message, pause):
+    def notification(message, pause, wrap=True):
         """Displays a string message
 
         :param str message: Message to display
         :param bool pause: Whether or not the application should pause for
             confirmation (if available)
+        :param bool wrap: Whether or not the application should wrap text
 
         """
 

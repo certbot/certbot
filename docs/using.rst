@@ -461,5 +461,3 @@ give us as much information as possible:
 - copy and paste ``certbot --version`` output
 - your operating system, including specific version
 - specify which installation method you've chosen
-
-
