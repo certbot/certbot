@@ -298,33 +298,6 @@ class NginxParser(object):
         except errors.MisconfigurationError as err:
             raise errors.MisconfigurationError("Problem in %s: %s" % (filename, err.message))
 
-    def get_all_certs_keys(self):
-        """Gets all certs and keys in the nginx config.
-
-        :returns: list of tuples with form [(cert, key, path)]
-            cert - str path to certificate file
-            key - str path to associated key file
-            path - File path to configuration file.
-        :rtype: set
-
-        """
-        c_k = set()
-        vhosts = self.get_vhosts()
-        for vhost in vhosts:
-            tup = [None, None, vhost.filep]
-            if vhost.ssl:
-                for directive in vhost.raw:
-                    # A directive can be an empty list to preserve whitespace
-                    if not directive:
-                        continue
-                    if directive[0] == 'ssl_certificate':
-                        tup[0] = directive[1]
-                    elif directive[0] == 'ssl_certificate_key':
-                        tup[1] = directive[1]
-            if tup[0] is not None and tup[1] is not None:
-                c_k.add(tuple(tup))
-        return c_k
-
 
 def _do_for_subarray(entry, condition, func, path=None):
     """Executes a function for a subarray of a nested array if it matches

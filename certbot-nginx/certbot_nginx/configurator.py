@@ -474,18 +474,6 @@ class NginxConfigurator(common.Plugin):
         self.parser.add_server_directives(
             vhost, ssl_block, replace=False)
 
-    def get_all_certs_keys(self):
-        """Find all existing keys, certs from configuration.
-
-        :returns: list of tuples with form [(cert, key, path)]
-            cert - str path to certificate file
-            key - str path to associated key file
-            path - File path to configuration file.
-        :rtype: set
-
-        """
-        return self.parser.get_all_certs_keys()
-
     ##################################
     # enhancement methods (IInstaller)
     ##################################
