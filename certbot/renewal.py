@@ -44,7 +44,7 @@ def _reconstitute(config, full_path):
     """Try to instantiate a RenewableCert, updating config with relevant items.
 
     This is specifically for use in renewal and enforces several checks
-    and policies to ensure that we can try to proceed with the renwal
+    and policies to ensure that we can try to proceed with the renewal
     request. The config argument is modified by including relevant options
     read from the renewal configuration file.
 

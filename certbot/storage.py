@@ -264,6 +264,15 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         self._check_symlinks()
 
     @property
+    def target_expiry(self):
+        """The current target certificate's expiration datetime
+
+        :returns: Expiration datetime of the current target certificate
+        :rtype: :class:`datetime.datetime`
+        """
+        return crypto_util.notAfter(self.current_target("cert"))
+
+    @property
     def archive_dir(self):
         """Returns the default or specified archive directory"""
         if "archive_dir" in self.configuration:
@@ -671,9 +680,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             if self.has_pending_deployment():
                 interval = self.configuration.get("deploy_before_expiry",
                                                   "5 days")
-                expiry = crypto_util.notAfter(self.current_target("cert"))
                 now = pytz.UTC.fromutc(datetime.datetime.utcnow())
-                if expiry < add_time_interval(now, interval):
+                if self.target_expiry < add_time_interval(now, interval):
                     return True
         return False
 
