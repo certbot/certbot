@@ -80,7 +80,7 @@ def _describe_certs(parsed_certs, parse_failures):
             notify(_report_lines(parse_failures))
 
     disp = zope.component.getUtility(interfaces.IDisplay)
-    disp.notification("\n".join(out), pause=False)
+    disp.notification("\n".join(out), pause=False, wrap=False)
 
 def certificates(config):
     """Display information about certs configured with Certbot
