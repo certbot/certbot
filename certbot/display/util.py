@@ -55,17 +55,19 @@ class FileDisplay(object):
         super(FileDisplay, self).__init__()
         self.outfile = outfile
 
-    def notification(self, message, pause=True):
+    def notification(self, message, pause=True, wrap=True):
         # pylint: disable=unused-argument
         """Displays a notification and waits for user acceptance.
 
         :param str message: Message to display
         :param bool pause: Whether or not the program should pause for the
             user's confirmation
+        :param bool wrap: Whether or not the application should wrap text
 
         """
         side_frame = "-" * 79
-        message = _wrap_lines(message)
+        if wrap:
+            message = _wrap_lines(message)
         self.outfile.write(
             "{line}{frame}{line}{msg}{line}{frame}{line}".format(
                 line=os.linesep, frame=side_frame, msg=message))
@@ -322,16 +324,18 @@ class NoninteractiveDisplay(object):
             msg += "\n\n(You can set this with the {0} flag)".format(cli_flag)
         raise errors.MissingCommandlineFlag(msg)
 
-    def notification(self, message, pause=False):
+    def notification(self, message, pause=False, wrap=True):
         # pylint: disable=unused-argument
         """Displays a notification without waiting for user acceptance.
 
         :param str message: Message to display to stdout
         :param bool pause: The NoninteractiveDisplay waits for no keyboard
+        :param bool wrap: Whether or not the application should wrap text
 
         """
         side_frame = "-" * 79
-        message = _wrap_lines(message)
+        if wrap:
+            message = _wrap_lines(message)
         self.outfile.write(
             "{line}{frame}{line}{msg}{line}{frame}{line}".format(
                 line=os.linesep, frame=side_frame, msg=message))
