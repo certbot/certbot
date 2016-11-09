@@ -580,6 +580,8 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(result._consistent())
         self.assertTrue(os.path.exists(os.path.join(
             self.cli_config.renewal_configs_dir, "the-lineage.com.conf")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.cli_config.live_dir, "the-lineage.com", "README")))
         with open(result.fullchain, "rb") as f:
             self.assertEqual(f.read(), b"cert" + b"chain")
         # Let's do it again and make sure it makes a different lineage
@@ -587,6 +589,8 @@ class RenewableCertTests(BaseRenewableCertTest):
             "the-lineage.com", b"cert2", b"privkey2", b"chain2", self.cli_config)
         self.assertTrue(os.path.exists(os.path.join(
             self.cli_config.renewal_configs_dir, "the-lineage.com-0001.conf")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.cli_config.live_dir, "the-lineage.com-0001", "README")))
         # Now trigger the detection of already existing files
         os.mkdir(os.path.join(
             self.cli_config.live_dir, "the-lineage.com-0002"))
