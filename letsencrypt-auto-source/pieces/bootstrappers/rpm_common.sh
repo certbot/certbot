@@ -21,7 +21,7 @@ BootstrapRpmCommon() {
     yes_flag="-y"
   fi
   if [ "$QUIET" == 1 ]; then
-    $QUIET_FLAG='--quiet'
+    QUIET_FLAG='--quiet'
   fi
 
   if ! $SUDO $tool list *virtualenv >/dev/null 2>&1; then
@@ -80,7 +80,7 @@ BootstrapRpmCommon() {
     "
   fi
 
-  if ! $SUDO $tool install $yes_flag $pkgs; then
+  if ! $SUDO $tool install $yes_flag $QUIET_FLAG $pkgs; then
     echo "Could not install OS dependencies. Aborting bootstrap!"
     exit 1
   fi
