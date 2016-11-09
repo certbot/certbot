@@ -49,7 +49,7 @@ class ObtainCertTest(unittest.TestCase):
 
         return mock_init()  # returns the client
 
-    @mock.patch('certbot.main._auth_from_domains')
+    @mock.patch('certbot.main._auth_from_available')
     def test_no_reinstall_text_pause(self, mock_auth):
         mock_notification = self.mock_get_utility().notification
         mock_notification.side_effect = self._assert_no_pause

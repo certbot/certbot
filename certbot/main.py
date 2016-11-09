@@ -67,7 +67,7 @@ def _report_successful_dry_run(config):
                                   reporter_util.HIGH_PRIORITY, on_crash=False)
 
 
-def _auth_from_domains(le_client, config, domains, lineage=None):
+def _auth_from_available(le_client, config, domains=None, certname=None, lineage=None):
     """Authenticate and enroll certificate.
 
     :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains
@@ -263,17 +263,18 @@ def _find_duplicative_certs(config, domains):
     return identical_names_cert, subset_names_cert
 
 
-def _find_domains(config, installer):
+def _find_domains_or_certname(config, installer):
     if config.domains:
         domains = config.domains
-    else:
+    elif not config.certname:
         domains = display_ops.choose_names(installer)
 
-    if not domains:
+    if not domains and not config.certname:
         raise errors.Error("Please specify --domains, or --installer that "
-                           "will help in domain names autodiscovery")
+                           "will help in domain names autodiscovery, or "
+                           "--cert-name for an existing certificate name.")
 
-    return domains
+    return domains, config.certname
 
 
 def _report_new_cert(config, cert_path, fullchain_path):
@@ -428,7 +429,7 @@ def install(config, plugins):
     except errors.PluginSelectionError as e:
         return e.message
 
-    domains = _find_domains(config, installer)
+    domains, _ = _find_domains_or_certname(config, installer)
     le_client = _init_le_client(config, authenticator=None, installer=installer)
     assert config.cert_path is not None  # required=True in the subparser
     le_client.deploy_certificate(
@@ -515,12 +516,12 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     except errors.PluginSelectionError as e:
         return e.message
 
-    domains = _find_domains(config, installer)
+    domains, certname = _find_domains_or_certname(config, installer)
 
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(config, authenticator, installer)
 
-    action, lineage = _auth_from_domains(le_client, config, domains)
+    action, lineage = _auth_from_available(le_client, config, domains, certname)
 
     le_client.deploy_certificate(
         domains, lineage.privkey, lineage.cert,
@@ -570,8 +571,8 @@ def obtain_cert(config, plugins, lineage=None):
 
     # SHOWTIME: Possibly obtain/renew a cert, and set action to renew | newcert | reinstall
     if config.csr is None: # the common case
-        domains = _find_domains(config, installer)
-        action, _ = _auth_from_domains(le_client, config, domains, lineage)
+        domains, certname = _find_domains_or_certname(config, installer)
+        action, _ = _auth_from_available(le_client, config, domains, certname, lineage)
     else:
         assert lineage is None, "Did not expect a CSR with a RenewableCert"
         _csr_obtain_cert(config, le_client)

@@ -159,7 +159,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._cli_missing_flag(args, "specify a plugin")
         args.extend(['--standalone', '-d', 'eg.is'])
         self._cli_missing_flag(args, "register before running")
-        with mock.patch('certbot.main._auth_from_domains'):
+        with mock.patch('certbot.main._auth_from_available'):
             with mock.patch('certbot.main.client.acme_from_config_key'):
                 args.extend(['--email', 'io@io.is'])
                 self._cli_missing_flag(args, "--agree-tos")
@@ -174,14 +174,14 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     @mock.patch('certbot.main.client.acme_client.Client')
     @mock.patch('certbot.main._determine_account')
     @mock.patch('certbot.main.client.Client.obtain_and_enroll_certificate')
-    @mock.patch('certbot.main._auth_from_domains')
-    def test_user_agent(self, afd, _obt, det, _client):
+    @mock.patch('certbot.main._auth_from_available')
+    def test_user_agent(self, afa, _obt, det, _client):
         # Normally the client is totally mocked out, but here we need more
         # arguments to automate it...
         args = ["--standalone", "certonly", "-m", "none@none.com",
                 "-d", "example.com", '--agree-tos'] + self.standard_args
         det.return_value = mock.MagicMock(), None
-        afd.return_value = "newcert", mock.MagicMock()
+        afa.return_value = "newcert", mock.MagicMock()
 
         with mock.patch('certbot.main.client.acme_client.ClientNetwork') as acme_net:
             self._call_no_clientmock(args)
@@ -250,8 +250,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._cli_missing_flag(["--standalone"], "With the standalone plugin, you probably")
 
         with mock.patch("certbot.main._init_le_client") as mock_init:
-            with mock.patch("certbot.main._auth_from_domains") as mock_afd:
-                mock_afd.return_value = (mock.MagicMock(), mock.MagicMock())
+            with mock.patch("certbot.main._auth_from_available") as mock_afa:
+                mock_afa.return_value = (mock.MagicMock(), mock.MagicMock())
                 self._call(["certonly", "--manual", "-d", "foo.bar"])
                 unused_config, auth, unused_installer = mock_init.call_args[0]
                 self.assertTrue(isinstance(auth, manual.Authenticator))

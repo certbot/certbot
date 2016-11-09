@@ -424,7 +424,6 @@ def enforce_le_validity(domain):
                     label, domain))
     return domain
 
-
 def enforce_domain_sanity(domain):
     """Method which validates domain value and errors out if
     the requirements are not met.

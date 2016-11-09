@@ -304,12 +304,12 @@ def renew_all_lineages(config):
     """Examine each lineage; renew if due and report results"""
 
     # This is trivially False if config.domains is empty
-    if any(domain not in config.webroot_map for domain in config.domains):
+    if any(domain not in config.webroot_map for domain in config.domains) or config.certname:
         # If more plugins start using cli.add_domains,
         # we may want to only log a warning here
         raise errors.Error("Currently, the renew verb is only capable of "
                            "renewing all installed certificates that are due "
-                           "to be renewed; individual domains cannot be "
+                           "to be renewed; individual domains or lineages cannot be "
                            "specified with this action. If you would like to "
                            "renew specific certificates, use the certonly "
                            "command. The renew verb may provide other options "
