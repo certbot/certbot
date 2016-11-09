@@ -70,14 +70,14 @@ def _report_successful_dry_run(config):
 def _auth_from_domains(le_client, config, domains, lineage=None):
     """Authenticate and enroll certificate.
 
-    :returns: Tuple of (str action, cert_or_None) as per _treat_as_renewal
+    :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains
               action can be: "newcert" | "renew" | "reinstall"
     """
     # If lineage is specified, use that one instead of looking around for
     # a matching one.
     if lineage is None:
         # This will find a relevant matching lineage that exists
-        action, lineage = _treat_as_renewal(config, domains)
+        action, lineage = _find_lineage_for_domains(config, domains)
     else:
         # Renewal, where we already know the specific lineage we're
         # interested in
@@ -93,7 +93,7 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
     try:
         if action == "renew":
             logger.info("Renewing an existing certificate")
-            renewal.renew_cert(config, domains, le_client, lineage)
+            renewal.renew_cert(config, le_client, lineage)
         elif action == "newcert":
             # TREAT AS NEW REQUEST
             logger.info("Obtaining a new certificate")
@@ -114,7 +114,7 @@ def _handle_subset_cert_request(config, domains, cert):
 
     :param storage.RenewableCert cert:
 
-    :returns: Tuple of (str action, cert_or_None) as per _treat_as_renewal
+    :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains
               action can be: "newcert" | "renew" | "reinstall"
     :rtype: tuple
 
@@ -156,7 +156,7 @@ def _handle_identical_cert_request(config, lineage):
 
     :param storage.RenewableCert lineage:
 
-    :returns: Tuple of (str action, cert_or_None) as per _treat_as_renewal
+    :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains
               action can be: "newcert" | "renew" | "reinstall"
     :rtype: tuple
 
@@ -198,7 +198,7 @@ def _handle_identical_cert_request(config, lineage):
         assert False, "This is impossible"
 
 
-def _treat_as_renewal(config, domains):
+def _find_lineage_for_domains(config, domains):
     """Determine whether there are duplicated names and how to handle
     them (renew, reinstall, newcert, or raising an error to stop
     the client run if the user chooses to cancel the operation when

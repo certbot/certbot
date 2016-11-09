@@ -541,7 +541,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._check_server_conflict_message(short_args, conflicts)
 
     def _certonly_new_request_common(self, mock_client, args=None):
-        with mock.patch('certbot.main._treat_as_renewal') as mock_renewal:
+        with mock.patch('certbot.main._find_lineage_for_domains') as mock_renewal:
             mock_renewal.return_value = ("newcert", None)
             with mock.patch('certbot.main._init_le_client') as mock_init:
                 mock_init.return_value = mock_client
@@ -595,6 +595,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path)
         mock_lineage.should_autorenew.return_value = due_for_renewal
         mock_lineage.has_pending_deployment.return_value = False
+        mock_lineage.names.return_value = ['isnot.org']
         mock_certr = mock.MagicMock()
         mock_key = mock.MagicMock(pem='pem_key')
         mock_client = mock.MagicMock()
@@ -864,7 +865,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                                   should_renew=False, error_expected=True)
 
     @mock.patch('certbot.main.zope.component.getUtility')
-    @mock.patch('certbot.main._treat_as_renewal')
+    @mock.patch('certbot.main._find_lineage_for_domains')
     @mock.patch('certbot.main._init_le_client')
     def test_certonly_reinstall(self, mock_init, mock_renewal, mock_get_utility):
         mock_renewal.return_value = ('reinstall', mock.MagicMock())
