@@ -841,6 +841,21 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             logger.debug("Writing full chain to %s.", target["fullchain"])
             f.write(cert + chain)
 
+        # Write a README file to the live directory
+        readme_path = os.path.join(live_dir, "README")
+        with open(readme_path, "w") as f:
+            logger.debug("Writing README to %s.", readme_path)
+            f.write("This directory contains your keys and certificates.\n\n"
+                    "`privkey.pem`  : the private key for your certificate.\n"
+                    "`fullchain.pem`: the certificate file used in most server software.\n"
+                    "`chain.pem`    : used for OCSP stapling in Nginx >=1.3.7.\n"
+                    "`cert.pem`     : will break many server configurations, and "
+                                        "should not be used\n"
+                    "                 without reading further documentation (see link below).\n\n"
+                    "We recommend not moving these files. For more information, see the Certbot\n"
+                    "User Guide at https://certbot.eff.org/docs/using.html#where-are-my-"
+                                        "certificates.\n")
+
         # Document what we've done in a new renewal config file
         config_file.close()
 
