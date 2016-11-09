@@ -238,41 +238,6 @@ class NginxConfiguratorTest(util.NginxTest):
                            ],
                          parsed_migration_conf[0])
 
-    def test_get_all_certs_keys(self):
-        nginx_conf = self.config.parser.abs_path('nginx.conf')
-        example_conf = self.config.parser.abs_path('sites-enabled/example.com')
-        migration_conf = self.config.parser.abs_path('sites-enabled/migration.com')
-        sslon_conf = self.config.parser.abs_path('sites-enabled/sslon.com')
-
-        # Get the default SSL vhost
-        self.config.deploy_cert(
-            "www.example.com",
-            "example/cert.pem",
-            "example/key.pem",
-            "example/chain.pem",
-            "example/fullchain.pem")
-        self.config.deploy_cert(
-            "another.alias",
-            "/etc/nginx/cert.pem",
-            "/etc/nginx/key.pem",
-            "/etc/nginx/chain.pem",
-            "/etc/nginx/fullchain.pem")
-        self.config.deploy_cert(
-            "migration.com",
-            "migration/cert.pem",
-            "migration/key.pem",
-            "migration/chain.pem",
-            "migration/fullchain.pem")
-        self.config.save()
-
-        self.config.parser.load()
-        self.assertEqual(set([
-            ('example/fullchain.pem', 'example/key.pem', example_conf),
-            ('/etc/nginx/fullchain.pem', '/etc/nginx/key.pem', nginx_conf),
-            ('migration/fullchain.pem', 'migration/key.pem', migration_conf),
-            ('snakeoil.cert', 'snakeoil.key', sslon_conf),
-        ]), self.config.get_all_certs_keys())
-
     @mock.patch("certbot_nginx.configurator.tls_sni_01.NginxTlsSni01.perform")
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.restart")
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.revert_challenge_config")

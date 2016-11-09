@@ -1494,38 +1494,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return redirects
 
-    def get_all_certs_keys(self):
-        """Find all existing keys, certs from configuration.
-
-        Retrieve all certs and keys set in VirtualHosts on the Apache server
-
-        :returns: list of tuples with form [(cert, key, path)]
-            cert - str path to certificate file
-            key - str path to associated key file
-            path - File path to configuration file.
-        :rtype: list
-
-        """
-        c_k = set()
-
-        for vhost in self.vhosts:
-            if vhost.ssl:
-                cert_path = self.parser.find_dir(
-                    "SSLCertificateFile", None,
-                    start=vhost.path, exclude=False)
-                key_path = self.parser.find_dir(
-                    "SSLCertificateKeyFile", None,
-                    start=vhost.path, exclude=False)
-
-                if cert_path and key_path:
-                    cert = os.path.abspath(self.parser.get_arg(cert_path[-1]))
-                    key = os.path.abspath(self.parser.get_arg(key_path[-1]))
-                    c_k.add((cert, key, get_file_path(cert_path[-1])))
-                else:
-                    logger.warning(
-                        "Invalid VirtualHost configuration - %s", vhost.filep)
-        return c_k
-
     def is_site_enabled(self, avail_fp):
         """Checks to see if the given site is enabled.
 

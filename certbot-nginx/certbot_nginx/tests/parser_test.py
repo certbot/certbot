@@ -291,26 +291,6 @@ class NginxParserTest(util.NginxTest):
             COMMENT_BLOCK,
             ["\n", "e", " ", "f"]])
 
-    def test_get_all_certs_keys(self):
-        nparser = parser.NginxParser(self.config_path, self.ssl_options)
-        filep = nparser.abs_path('sites-enabled/example.com')
-        mock_vhost = obj.VirtualHost(filep,
-                                     None, None, None,
-                                     set(['.example.com', 'example.*']),
-                                     None, [0])
-        nparser.add_server_directives(mock_vhost,
-                                      [['ssl_certificate', 'foo.pem'],
-                                       ['ssl_certificate_key', 'bar.key'],
-                                       ['listen', '443 ssl']],
-                                      replace=False)
-        c_k = nparser.get_all_certs_keys()
-        migration_file = nparser.abs_path('sites-enabled/migration.com')
-        sslon_file = nparser.abs_path('sites-enabled/sslon.com')
-        self.assertEqual(set([('foo.pem', 'bar.key', filep),
-                              ('cert.pem', 'cert.key', migration_file),
-                              ('snakeoil.cert', 'snakeoil.key', sslon_file)
-                             ]), c_k)
-
     def test_parse_server_ssl(self):
         server = parser.parse_server([
             ['listen', '443']
