@@ -264,6 +264,15 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         self._check_symlinks()
 
     @property
+    def target_expiry(self):
+        """The current target certificate's expiration datetime
+
+        :returns: Expiration datetime of the current target certificate
+        :rtype: :class:`datetime.datetime`
+        """
+        return crypto_util.notAfter(self.current_target("cert"))
+
+    @property
     def archive_dir(self):
         """Returns the default or specified archive directory"""
         if "archive_dir" in self.configuration:
@@ -671,9 +680,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             if self.has_pending_deployment():
                 interval = self.configuration.get("deploy_before_expiry",
                                                   "5 days")
-                expiry = crypto_util.notAfter(self.current_target("cert"))
                 now = pytz.UTC.fromutc(datetime.datetime.utcnow())
-                if expiry < add_time_interval(now, interval):
+                if self.target_expiry < add_time_interval(now, interval):
                     return True
         return False
 
@@ -817,17 +825,17 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         for kind in ALL_FOUR:
             os.symlink(os.path.join(archive, kind + "1.pem"),
                        target[kind])
-        with open(target["cert"], "w") as f:
+        with open(target["cert"], "wb") as f:
             logger.debug("Writing certificate to %s.", target["cert"])
             f.write(cert)
-        with open(target["privkey"], "w") as f:
+        with open(target["privkey"], "wb") as f:
             logger.debug("Writing private key to %s.", target["privkey"])
             f.write(privkey)
             # XXX: Let's make sure to get the file permissions right here
-        with open(target["chain"], "w") as f:
+        with open(target["chain"], "wb") as f:
             logger.debug("Writing chain to %s.", target["chain"])
             f.write(chain)
-        with open(target["fullchain"], "w") as f:
+        with open(target["fullchain"], "wb") as f:
             # assumes that OpenSSL.crypto.dump_certificate includes
             # ending newline character
             logger.debug("Writing full chain to %s.", target["fullchain"])

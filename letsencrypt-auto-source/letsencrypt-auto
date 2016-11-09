@@ -84,39 +84,59 @@ fi
 # certbot itself needs root access for almost all modes of operation
 # The "normal" case is that sudo is used for the steps that need root, but
 # this script *can* be run as root (not recommended), or fall back to using
-# `su`
+# `su`. Auto-detection can be overrided by explicitly setting the
+# environment variable LE_AUTO_SUDO to 'sudo', 'sudo_su' or '' as used below.
+
+# Because the parameters in `su -c` has to be a string,
+# we need to properly escape it.
+su_sudo() {
+  args=""
+  # This `while` loop iterates over all parameters given to this function.
+  # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
+  # will be wrapped in a pair of `'`, then appended to `$args` string
+  # For example, `echo "It's only 1\$\!"` will be escaped to:
+  #   'echo' 'It'"'"'s only 1$!'
+  #     │       │└┼┘│
+  #     │       │ │ └── `'s only 1$!'` the literal string
+  #     │       │ └── `\"'\"` is a single quote (as a string)
+  #     │       └── `'It'`, to be concatenated with the strings following it
+  #     └── `echo` wrapped in a pair of `'`, it's totally fine for the shell command itself
+  while [ $# -ne 0 ]; do
+    args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
+    shift
+  done
+  su root -c "$args"
+}
+
 SUDO_ENV=""
 export CERTBOT_AUTO="$0"
-if test "`id -u`" -ne "0" ; then
-  if command -v sudo 1>/dev/null 2>&1; then
-    SUDO=sudo
-    SUDO_ENV="CERTBOT_AUTO=$0"
-  else
-    echo \"sudo\" is not available, will use \"su\" for installation steps...
-    # Because the parameters in `su -c` has to be a string,
-    # we need properly escape it
-    su_sudo() {
-      args=""
-      # This `while` loop iterates over all parameters given to this function.
-      # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
-      # will be wrapped in a pair of `'`, then appended to `$args` string
-      # For example, `echo "It's only 1\$\!"` will be escaped to:
-      #   'echo' 'It'"'"'s only 1$!'
-      #     │       │└┼┘│
-      #     │       │ │ └── `'s only 1$!'` the literal string
-      #     │       │ └── `\"'\"` is a single quote (as a string)
-      #     │       └── `'It'`, to be concatenated with the strings following it
-      #     └── `echo` wrapped in a pair of `'`, it's totally fine for the shell command itself
-      while [ $# -ne 0 ]; do
-        args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
-        shift
-      done
-      su root -c "$args"
-    }
-    SUDO=su_sudo
-  fi
+if [ -n "${LE_AUTO_SUDO:+x}" ]; then
+  case "$LE_AUTO_SUDO" in
+    su_sudo|su)
+      SUDO=su_sudo
+      ;;
+    sudo)
+      SUDO=sudo
+      SUDO_ENV="CERTBOT_AUTO=$0"
+      ;;
+    '') ;; # Nothing to do for plain root method.
+    *)
+      echo "Error: unknown root authorization mechanism '$LE_AUTO_SUDO'."
+      exit 1
+  esac
+  echo "Using preset root authorization mechanism '$LE_AUTO_SUDO'."
 else
-  SUDO=
+  if test "`id -u`" -ne "0" ; then
+    if command -v sudo 1>/dev/null 2>&1; then
+      SUDO=sudo
+      SUDO_ENV="CERTBOT_AUTO=$0"
+    else
+      echo \"sudo\" is not available, will use \"su\" for installation steps...
+      SUDO=su_sudo
+    fi
+  else
+    SUDO=
+  fi
 fi
 
 ExperimentalBootstrap() {
@@ -407,15 +427,20 @@ BootstrapGentooCommon() {
     app-misc/ca-certificates
     virtual/pkgconfig"
 
+  ASK_OPTION="--ask"
+  if [ "$ASSUME_YES" = 1 ]; then
+    ASK_OPTION=""
+  fi
+
   case "$PACKAGE_MANAGER" in
     (paludis)
       $SUDO cave resolve --preserve-world --keep-targets if-possible $PACKAGES -x
       ;;
     (pkgcore)
-      $SUDO pmerge --noreplace --oneshot $PACKAGES
+      $SUDO pmerge --noreplace --oneshot $ASK_OPTION $PACKAGES
       ;;
     (portage|*)
-      $SUDO emerge --noreplace --oneshot $PACKAGES
+      $SUDO emerge --noreplace --oneshot $ASK_OPTION $PACKAGES
       ;;
   esac
 }

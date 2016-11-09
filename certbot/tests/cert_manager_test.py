@@ -8,25 +8,21 @@ import unittest
 import configobj
 import mock
 
-from certbot import configuration
 from certbot.storage import ALL_FOUR
 
-class CertManagerTest(unittest.TestCase):
-    """Tests for certbot.cert_manager
+class BaseCertManagerTest(unittest.TestCase):
+    """Base class for setting up Cert Manager tests.
     """
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
 
         os.makedirs(os.path.join(self.tempdir, "renewal"))
 
-        mock_namespace = mock.MagicMock(
+        self.cli_config = mock.MagicMock(
             config_dir=self.tempdir,
             work_dir=self.tempdir,
             logs_dir=self.tempdir,
-        )
-
-        self.cli_config = configuration.RenewerConfiguration(
-            namespace=mock_namespace
+            quiet=False,
         )
 
         self.domains = {
@@ -67,6 +63,9 @@ class CertManagerTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
+class UpdateLiveSymlinksTest(BaseCertManagerTest):
+    """Tests for certbot.cert_manager.update_live_symlinks
+    """
     def test_update_live_symlinks(self):
         """Test update_live_symlinks"""
         # pylint: disable=too-many-statements
@@ -96,6 +95,88 @@ class CertManagerTest(unittest.TestCase):
             for kind in ALL_FOUR:
                 self.assertEqual(os.readlink(self.configs[domain][kind]),
                     archive_paths[domain][kind])
+
+class CertificatesTest(BaseCertManagerTest):
+    """Tests for certbot.cert_manager.certificates
+    """
+    def _certificates(self, *args, **kwargs):
+        from certbot.cert_manager import certificates
+        return certificates(*args, **kwargs)
+
+    @mock.patch('certbot.cert_manager.logger')
+    @mock.patch('zope.component.getUtility')
+    def test_certificates_parse_fail(self, mock_utility, mock_logger):
+        self._certificates(self.cli_config)
+        self.assertTrue(mock_logger.warning.called) #pylint: disable=no-member
+        self.assertTrue(mock_utility.called)
+
+    @mock.patch('certbot.cert_manager.logger')
+    @mock.patch('zope.component.getUtility')
+    def test_certificates_quiet(self, mock_utility, mock_logger):
+        self.cli_config.quiet = True
+        self._certificates(self.cli_config)
+        self.assertFalse(mock_utility.notification.called)
+        self.assertTrue(mock_logger.warning.called) #pylint: disable=no-member
+
+    @mock.patch('certbot.cert_manager.logger')
+    @mock.patch('zope.component.getUtility')
+    @mock.patch("certbot.storage.RenewableCert")
+    @mock.patch('certbot.cert_manager._report_human_readable')
+    def test_certificates_parse_success(self, mock_report, mock_renewable_cert,
+        mock_utility, mock_logger):
+        mock_report.return_value = ""
+        self._certificates(self.cli_config)
+        self.assertFalse(mock_logger.warning.called) #pylint: disable=no-member
+        self.assertTrue(mock_report.called)
+        self.assertTrue(mock_utility.called)
+        self.assertTrue(mock_renewable_cert.called)
+
+    @mock.patch('certbot.cert_manager.logger')
+    @mock.patch('zope.component.getUtility')
+    def test_certificates_no_files(self, mock_utility, mock_logger):
+        tempdir = tempfile.mkdtemp()
+
+        cli_config = mock.MagicMock(
+                config_dir=tempdir,
+                work_dir=tempdir,
+                logs_dir=tempdir,
+                quiet=False,
+        )
+
+        os.makedirs(os.path.join(tempdir, "renewal"))
+        self._certificates(cli_config)
+        self.assertFalse(mock_logger.warning.called) #pylint: disable=no-member
+        self.assertTrue(mock_utility.called)
+        shutil.rmtree(tempdir)
+
+    def test_report_human_readable(self):
+        from certbot import cert_manager
+        import datetime, pytz
+        expiry = pytz.UTC.fromutc(datetime.datetime.utcnow())
+
+        cert = mock.MagicMock(lineagename="nameone")
+        cert.target_expiry = expiry
+        cert.names.return_value = ["nameone", "nametwo"]
+        parsed_certs = [cert]
+        # pylint: disable=protected-access
+        out = cert_manager._report_human_readable(parsed_certs)
+        self.assertTrue('EXPIRED' in out)
+
+        cert.target_expiry += datetime.timedelta(hours=2)
+        # pylint: disable=protected-access
+        out = cert_manager._report_human_readable(parsed_certs)
+        self.assertTrue('under 1 day' in out)
+
+        cert.target_expiry += datetime.timedelta(days=1)
+        # pylint: disable=protected-access
+        out = cert_manager._report_human_readable(parsed_certs)
+        self.assertTrue('1 day' in out)
+        self.assertFalse('under' in out)
+
+        cert.target_expiry += datetime.timedelta(days=2)
+        # pylint: disable=protected-access
+        out = cert_manager._report_human_readable(parsed_certs)
+        self.assertTrue('3 days' in out)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

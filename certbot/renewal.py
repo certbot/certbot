@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 # the renewal configuration process loses this information.
 STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
-                    "standalone_supported_challenges"]
+                    "standalone_supported_challenges", "renew_hook"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
 
 
@@ -44,7 +44,7 @@ def _reconstitute(config, full_path):
     """Try to instantiate a RenewableCert, updating config with relevant items.
 
     This is specifically for use in renewal and enforces several checks
-    and policies to ensure that we can try to proceed with the renwal
+    and policies to ensure that we can try to proceed with the renewal
     request. The config argument is modified by including relevant options
     read from the renewal configuration file.
 
