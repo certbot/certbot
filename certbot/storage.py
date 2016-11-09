@@ -841,10 +841,12 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                     "`privkey.pem`  : the private key for your certificate.\n"
                     "`fullchain.pem`: the certificate file used in most server software.\n"
                     "`chain.pem`    : used for OCSP stapling in Nginx >=1.3.7.\n"
-                    "`cert.pem`     : will break many server configurations, and should not be used\n"
+                    "`cert.pem`     : will break many server configurations, and "
+                                        "should not be used\n"
                     "                 without reading further documentation (see link below).\n\n"
                     "We recommend not moving these files. For more information, see the Certbot\n"
-                    "User Guide at https://certbot.eff.org/docs/using.html#where-are-my-certificates.\n")
+                    "User Guide at https://certbot.eff.org/docs/using.html#where-are-my-"
+                                        "certificates.\n")
 
         # Document what we've done in a new renewal config file
         config_file.close()
