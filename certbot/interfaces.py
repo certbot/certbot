@@ -138,15 +138,15 @@ class IAuthenticator(IPlugin):
     """
 
     def get_chall_pref(domain):
-        """Return list of challenge preferences.
+        """Return `collections.Iterable` of challenge preferences.
 
         :param str domain: Domain for which challenge preferences are sought.
 
-        :returns: List of challenge types (subclasses of
+        :returns: `collections.Iterable` of challenge types (subclasses of
             :class:`acme.challenges.Challenge`) with the most
             preferred challenges first. If a type is not specified, it means the
             Authenticator cannot perform the challenge.
-        :rtype: list
+        :rtype: `collections.Iterable`
 
         """
 
@@ -158,7 +158,7 @@ class IAuthenticator(IPlugin):
             instances, such that it contains types found within
             :func:`get_chall_pref` only.
 
-        :returns: List of ACME
+        :returns: `collections.Iterable` of ACME
             :class:`~acme.challenges.ChallengeResponse` instances
             or if the :class:`~acme.challenges.Challenge` cannot
             be fulfilled then:
@@ -168,7 +168,7 @@ class IAuthenticator(IPlugin):
             ``False``
               Authenticator will never be able to perform (error).
 
-        :rtype: :class:`list` of
+        :rtype: :class:`collections.Iterable` of
             :class:`acme.challenges.ChallengeResponse`,
             where responses are required to be returned in
             the same order as corresponding input challenges
@@ -257,7 +257,7 @@ class IInstaller(IPlugin):
     def get_all_names():
         """Returns all names that may be authenticated.
 
-        :rtype: `list` of `str`
+        :rtype: `collections.Iterable` of `str`
 
         """
 
@@ -292,11 +292,11 @@ class IInstaller(IPlugin):
         """
 
     def supported_enhancements():
-        """Returns a list of supported enhancements.
+        """Returns a `collections.Iterable` of supported enhancements.
 
         :returns: supported enhancements which should be a subset of
             :const:`~certbot.constants.ENHANCEMENTS`
-        :rtype: :class:`list` of :class:`str`
+        :rtype: :class:`collections.Iterable` of :class:`str`
 
         """
 
