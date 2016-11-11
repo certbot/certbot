@@ -140,9 +140,8 @@ to serve all files under specified web root ({0})."""
             code, webroot = display.directory_select(
                 "Input the webroot for {0}:".format(domain))
             if code == display_util.HELP:
-                # Help can currently only be selected
-                # when using the ncurses interface
-                display.notification(display_util.DSELECT_HELP)
+                # Displaying help is not currently implemented
+                return None
             elif code == display_util.CANCEL:
                 return None
             else:  # code == display_util.OK
@@ -206,7 +205,7 @@ to serve all files under specified web root ({0})."""
         old_umask = os.umask(0o022)
 
         try:
-            with open(validation_path, "w") as validation_file:
+            with open(validation_path, "wb") as validation_file:
                 validation_file.write(validation.encode())
         finally:
             os.umask(old_umask)

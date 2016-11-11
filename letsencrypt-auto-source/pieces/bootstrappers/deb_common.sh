@@ -94,7 +94,6 @@ BootstrapDebCommon() {
     python-dev \
     $virtualenv \
     gcc \
-    dialog \
     $augeas_pkg \
     libssl-dev \
     libffi-dev \

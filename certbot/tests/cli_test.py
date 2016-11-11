@@ -1,8 +1,10 @@
 """Tests for certbot.cli."""
+# Many tests in this file should be moved into
+# main_test.py and renewal_test.py. See #2716.
+# pylint: disable=too-many-lines
 from __future__ import print_function
 
 import argparse
-import dialog
 import functools
 import itertools
 import os
@@ -48,6 +50,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.config_dir = os.path.join(self.tmp_dir, 'config')
         self.work_dir = os.path.join(self.tmp_dir, 'work')
         self.logs_dir = os.path.join(self.tmp_dir, 'logs')
+        os.mkdir(self.logs_dir)
         self.standard_args = ['--config-dir', self.config_dir,
                               '--work-dir', self.work_dir,
                               '--logs-dir', self.logs_dir, '--text']
@@ -95,6 +98,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue("--configurator" in out)
         self.assertTrue("how a cert is deployed" in out)
         self.assertTrue("--manual-test-mode" in out)
+        self.assertTrue("--text" not in out)
+        self.assertTrue("--dialog" not in out)
 
         out = self._help_output(['-h', 'nginx'])
         if "nginx" in plugins:
@@ -113,7 +118,15 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         out = self._help_output(['--help', 'plugins'])
         self.assertTrue("--manual-test-mode" not in out)
         self.assertTrue("--prepare" in out)
-        self.assertTrue("Plugin options" in out)
+        self.assertTrue('"plugins" subcommand' in out)
+
+        # test multiple topics
+        out = self._help_output(['-h', 'renew'])
+        self.assertTrue("--keep" in out)
+        out = self._help_output(['-h', 'automation'])
+        self.assertTrue("--keep" in out)
+        out = self._help_output(['-h', 'revoke'])
+        self.assertTrue("--keep" not in out)
 
         out = self._help_output(['--help', 'install'])
         self.assertTrue("--cert-path" in out)
@@ -136,7 +149,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         try:
             with mock.patch('certbot.main.sys.stderr'):
                 main.main(self.standard_args + args[:])  # NOTE: parser can alter its args!
-        except errors.MissingCommandlineFlag as exc:
+        except errors.MissingCommandlineFlag as exc_:
+            exc = exc_
             self.assertTrue(message in str(exc))
         self.assertTrue(exc is not None)
 
@@ -151,12 +165,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 self._cli_missing_flag(args, "--agree-tos")
 
     @mock.patch('certbot.main.renew')
-    def test_gui(self, renew):
+    def test_no_gui(self, renew):
         args = ['renew', '--dialog']
-        # --text conflicts with --dialog
-        self.standard_args.remove('--text')
+        # --dialog should have no effect
         self._call(args)
-        self.assertFalse(renew.call_args[0][0].noninteractive_mode)
+        self.assertTrue(renew.call_args[0][0].noninteractive_mode)
 
     @mock.patch('certbot.main.client.acme_client.Client')
     @mock.patch('certbot.main._determine_account')
@@ -168,7 +181,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         args = ["--standalone", "certonly", "-m", "none@none.com",
                 "-d", "example.com", '--agree-tos'] + self.standard_args
         det.return_value = mock.MagicMock(), None
-        afd.return_value = mock.MagicMock(), "newcert"
+        afd.return_value = "newcert", mock.MagicMock()
 
         with mock.patch('certbot.main.client.acme_client.ClientNetwork') as acme_net:
             self._call_no_clientmock(args)
@@ -259,11 +272,21 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         _, _, _, client = self._call(['config_changes'])
         self.assertEqual(1, client.view_config_changes.call_count)
 
+    @mock.patch('certbot.cert_manager.update_live_symlinks')
+    def test_update_symlinks(self, mock_cert_manager):
+        self._call_no_clientmock(['update_symlinks'])
+        self.assertEqual(1, mock_cert_manager.call_count)
+
+    @mock.patch('certbot.cert_manager.certificates')
+    def test_certificates(self, mock_cert_manager):
+        self._call_no_clientmock(['certificates'])
+        self.assertEqual(1, mock_cert_manager.call_count)
+
     def test_plugins(self):
         flags = ['--init', '--prepare', '--authenticators', '--installers']
         for args in itertools.chain(
                 *(itertools.combinations(flags, r)
-                  for r in xrange(len(flags)))):
+                  for r in six.moves.range(len(flags)))):
             self._call(['plugins'] + list(args))
 
     @mock.patch('certbot.main.plugins_disco')
@@ -332,13 +355,14 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self._call(['-a', 'bad_auth', 'certonly'])
             assert False, "Exception should have been raised"
         except errors.PluginSelectionError as e:
-            self.assertTrue('The requested bad_auth plugin does not appear' in e.message)
+            self.assertTrue('The requested bad_auth plugin does not appear' in str(e))
+
+    def test_punycode_ok(self):
+        # Punycode is now legal, so no longer an error; instead check
+        # that it's _not_ an error (at the initial sanity check stage)
+        util.enforce_domain_sanity('this.is.xn--ls8h.tld')
 
     def test_check_config_sanity_domain(self):
-        # Punycode
-        self.assertRaises(errors.ConfigurationError,
-                          self._call,
-                          ['-d', 'this.is.xn--ls8h.tld'])
         # FQDN
         self.assertRaises(errors.ConfigurationError,
                           self._call,
@@ -414,6 +438,18 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         namespace = parse(long_args)
         self.assertEqual(namespace.domains, ['example.com', 'another.net'])
 
+    def test_preferred_challenges(self):
+        from acme.challenges import HTTP01, TLSSNI01, DNS01
+        parse = self._get_argument_parser()
+
+        short_args = ['--preferred-challenges', 'http, tls-sni-01, dns']
+        namespace = parse(short_args)
+
+        self.assertEqual(namespace.pref_challs, [HTTP01, TLSSNI01, DNS01])
+
+        short_args = ['--preferred-challenges', 'jumping-over-the-moon']
+        self.assertRaises(argparse.ArgumentTypeError, parse, short_args)
+
     def test_server_flag(self):
         parse = self._get_argument_parser()
         namespace = parse('--server example.com'.split())
@@ -427,9 +463,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 "The following flags didn't conflict with "
                 '--server: {0}'.format(', '.join(conflicting_args)))
         except errors.Error as error:
-            self.assertTrue('--server' in error.message)
+            self.assertTrue('--server' in str(error))
             for arg in conflicting_args:
-                self.assertTrue(arg in error.message)
+                self.assertTrue(arg in str(error))
 
     def test_must_staple_flag(self):
         parse = self._get_argument_parser()
@@ -554,10 +590,11 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
                              args=None, should_renew=True, error_expected=False):
         # pylint: disable=too-many-locals,too-many-arguments
-        cert_path = 'certbot/tests/testdata/cert.pem'
+        cert_path = test_util.vector_path('cert.pem')
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path)
         mock_lineage.should_autorenew.return_value = due_for_renewal
+        mock_lineage.has_pending_deployment.return_value = False
         mock_certr = mock.MagicMock()
         mock_key = mock.MagicMock(pem='pem_key')
         mock_client = mock.MagicMock()
@@ -629,32 +666,62 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._test_renewal_common(False, ['-tvv', '--debug', '--keep'],
                                   log_out="not yet due", should_renew=False)
 
-
     def _dump_log(self):
-        with open(os.path.join(self.logs_dir, "letsencrypt.log")) as lf:
-            print("Logs:")
-            print(lf.read())
+        print("Logs:")
+        log_path = os.path.join(self.logs_dir, "letsencrypt.log")
+        if os.path.exists(log_path):
+            with open(log_path) as lf:
+                print(lf.read())
 
+    def _make_lineage(self, testfile):
+        """Creates a lineage defined by testfile.
 
-    def _make_test_renewal_conf(self, testfile):
+        This creates the archive, live, and renewal directories if
+        necessary and creates a simple lineage.
+
+        :param str testfile: configuration file to base the lineage on
+
+        :returns: path to the renewal conf file for the created lineage
+        :rtype: str
+
+        """
+        lineage_name = testfile[:-len('.conf')]
+
+        conf_dir = os.path.join(
+            self.config_dir, constants.RENEWAL_CONFIGS_DIR)
+        archive_dir = os.path.join(
+            self.config_dir, constants.ARCHIVE_DIR, lineage_name)
+        live_dir = os.path.join(
+            self.config_dir, constants.LIVE_DIR, lineage_name)
+
+        for directory in (archive_dir, conf_dir, live_dir,):
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+
+        sample_archive = test_util.vector_path('sample-archive')
+        for kind in os.listdir(sample_archive):
+            shutil.copyfile(os.path.join(sample_archive, kind),
+                            os.path.join(archive_dir, kind))
+
+        for kind in storage.ALL_FOUR:
+            os.symlink(os.path.join(archive_dir, '{0}1.pem'.format(kind)),
+                       os.path.join(live_dir, '{0}.pem'.format(kind)))
+
+        conf_path = os.path.join(self.config_dir, conf_dir, testfile)
         with open(test_util.vector_path(testfile)) as src:
-            # put the correct path for cert.pem, chain.pem etc in the renewal conf
-            renewal_conf = src.read().replace("MAGICDIR", test_util.vector_path())
-        rd = os.path.join(self.config_dir, "renewal")
-        if not os.path.exists(rd):
-            os.makedirs(rd)
-        rc = os.path.join(rd, "sample-renewal.conf")
-        with open(rc, "w") as dest:
-            dest.write(renewal_conf)
-        return rc
+            with open(conf_path, 'w') as dst:
+                dst.writelines(
+                    line.replace('MAGICDIR', self.config_dir) for line in src)
+
+        return conf_path
 
     def test_renew_verb(self):
-        self._make_test_renewal_conf('sample-renewal.conf')
+        self._make_lineage('sample-renewal.conf')
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, should_renew=True)
 
     def test_quiet_renew(self):
-        self._make_test_renewal_conf('sample-renewal.conf')
+        self._make_lineage('sample-renewal.conf')
         args = ["renew", "--dry-run"]
         _, _, stdout = self._test_renewal_common(True, [], args=args, should_renew=True)
         out = stdout.getvalue()
@@ -666,13 +733,13 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual("", out)
 
     def test_renew_hook_validation(self):
-        self._make_test_renewal_conf('sample-renewal.conf')
+        self._make_lineage('sample-renewal.conf')
         args = ["renew", "--dry-run", "--post-hook=no-such-command"]
         self._test_renewal_common(True, [], args=args, should_renew=False,
                                   error_expected=True)
 
     def test_renew_no_hook_validation(self):
-        self._make_test_renewal_conf('sample-renewal.conf')
+        self._make_lineage('sample-renewal.conf')
         args = ["renew", "--dry-run", "--post-hook=no-such-command",
                 "--disable-hook-validation"]
         self._test_renewal_common(True, [], args=args, should_renew=True,
@@ -681,7 +748,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     @mock.patch("certbot.cli.set_by_cli")
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
-        rc_path = self._make_test_renewal_conf('sample-renewal-ancient.conf')
+        rc_path = self._make_lineage('sample-renewal-ancient.conf')
         args = mock.MagicMock(account=None, email=None, webroot_path=None)
         config = configuration.NamespaceConfig(args)
         lineage = storage.RenewableCert(rc_path,
@@ -855,10 +922,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         server = 'foo.bar'
         self._call_no_clientmock(['--cert-path', CERT, '--key-path', KEY,
                                  '--server', server, 'revoke'])
-        with open(KEY) as f:
+        with open(KEY, 'rb') as f:
             mock_acme_client.Client.assert_called_once_with(
                 server, key=jose.JWK.load(f.read()), net=mock.ANY)
-        with open(CERT) as f:
+        with open(CERT, 'rb') as f:
             cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
             mock_revoke = mock_acme_client.Client().revoke
             mock_revoke.assert_called_once_with(jose.ComparableX509(cert))
@@ -885,7 +952,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             config.verbose_count = 1
             main._handle_exception(
                 Exception, exc_value=exception, trace=None, config=None)
-            mock_open().write.assert_called_once_with(''.join(
+            mock_open().write.assert_any_call(''.join(
                 traceback.format_exception_only(Exception, exception)))
             error_msg = mock_sys.exit.call_args_list[0][0][0]
             self.assertTrue('unexpected error' in error_msg)
@@ -899,8 +966,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mock_sys.exit.assert_any_call(''.join(
                 traceback.format_exception_only(errors.Error, error)))
 
-        exception = messages.Error(detail='alpha', typ='urn:acme:error:triffid',
-                                   title='beta')
+        bad_typ = messages.ERROR_PREFIX + 'triffid'
+        exception = messages.Error(detail='alpha', typ=bad_typ, title='beta')
         config = mock.MagicMock(debug=False, verbose_count=-3)
         main._handle_exception(
             messages.Error, exc_value=exception, trace=None, config=config)
@@ -923,20 +990,13 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         mock_sys.exit.assert_called_with(''.join(
             traceback.format_exception_only(KeyboardInterrupt, interrupt)))
 
-        # Test dialog errors
-        exception = dialog.error(message="test message")
-        main._handle_exception(
-                dialog.DialogError, exc_value=exception, trace=None, config=None)
-        error_msg = mock_sys.exit.call_args_list[-1][0][0]
-        self.assertTrue("test message" in error_msg)
-
     def test_read_file(self):
         rel_test_path = os.path.relpath(os.path.join(self.tmp_dir, 'foo'))
         self.assertRaises(
             argparse.ArgumentTypeError, cli.read_file, rel_test_path)
 
-        test_contents = 'bar\n'
-        with open(rel_test_path, 'w') as f:
+        test_contents = b'bar\n'
+        with open(rel_test_path, 'wb') as f:
             f.write(test_contents)
 
         path, contents = cli.read_file(rel_test_path)
@@ -1015,17 +1075,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                         self.assertTrue(mocked_storage.save_regr.called)
                         self.assertTrue(
                             email in mock_utility().add_message.call_args[0][0])
-
-    def test_conflicting_args(self):
-        args = ['renew', '--dialog', '--text']
-        self.assertRaises(errors.Error, self._call, args)
-
-    def test_text_mode_when_verbose(self):
-        parse = self._get_argument_parser()
-        short_args = ['-v']
-        namespace = parse(short_args)
-        self.assertTrue(namespace.text_mode)
-
 
 class DetermineAccountTest(unittest.TestCase):
     """Tests for certbot.cli._determine_account."""
@@ -1106,7 +1155,7 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
     def test_find_duplicative_names(self, unused_makedir):
         from certbot.main import _find_duplicative_certs
         test_cert = test_util.load_vector('cert-san.pem')
-        with open(self.test_rc.cert, 'w') as f:
+        with open(self.test_rc.cert, 'wb') as f:
             f.write(test_cert)
 
         # No overlap at all

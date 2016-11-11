@@ -4,7 +4,7 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.9.0.dev0'
+version = '0.10.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
@@ -34,6 +34,11 @@ if sys.version_info < (2, 7):
     ])
 else:
     install_requires.append('mock')
+
+# dnspython 1.12 is required to support both Python 2 and Python 3.
+dns_extras = [
+    'dnspython>=1.12',
+]
 
 dev_extras = [
     'nose',
@@ -76,6 +81,7 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     extras_require={
+        'dns': dns_extras,
         'dev': dev_extras,
         'docs': docs_extras,
     },

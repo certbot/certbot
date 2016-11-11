@@ -102,12 +102,6 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(self.regr, self.client.register(self.new_reg))
         # TODO: test POST call arguments
 
-        # TODO: split here and separate test
-        reg_wrong_key = self.regr.body.update(key=KEY2.public_key())
-        self.response.json.return_value = reg_wrong_key.to_json()
-        self.assertRaises(
-            errors.UnexpectedUpdate, self.client.register, self.new_reg)
-
     def test_register_missing_next(self):
         self.response.status_code = http_client.CREATED
         self.assertRaises(
@@ -540,6 +534,29 @@ class ClientNetworkTest(unittest.TestCase):
             'HEAD', 'http://example.com/', 'foo',
             headers=mock.ANY, verify=mock.ANY, bar='baz')
 
+    @mock.patch('acme.client.logger')
+    def test_send_request_get_der(self, mock_logger):
+        self.net.session = mock.MagicMock()
+        self.net.session.request.return_value = mock.MagicMock(
+            ok=True, status_code=http_client.OK,
+            headers={"Content-Type": "application/pkix-cert"},
+            content=b"hi")
+        # pylint: disable=protected-access
+        self.net._send_request('HEAD', 'http://example.com/', 'foo', bar='baz')
+        mock_logger.debug.assert_called_once_with(
+            'Received response:\nHTTP %d\n%s\n\n%s', 200,
+            'Content-Type: application/pkix-cert', b'aGk=')
+
+    def test_send_request_post(self):
+        self.net.session = mock.MagicMock()
+        self.net.session.request.return_value = self.response
+        # pylint: disable=protected-access
+        self.assertEqual(self.response, self.net._send_request(
+            'POST', 'http://example.com/', 'foo', data='qux', bar='baz'))
+        self.net.session.request.assert_called_once_with(
+            'POST', 'http://example.com/', 'foo',
+            headers=mock.ANY, verify=mock.ANY, data='qux', bar='baz')
+
     def test_send_request_verify_ssl(self):
         # pylint: disable=protected-access
         for verify in True, False:
@@ -635,6 +652,10 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
             'http://example.com/', content_type=self.content_type, bar='baz'))
         self.send_request.assert_called_once_with(
             'GET', 'http://example.com/', bar='baz')
+
+    def test_post_no_content_type(self):
+        self.content_type = self.net.JOSE_CONTENT_TYPE
+        self.assertEqual(self.checked_response, self.net.post('uri', self.obj))
 
     def test_post(self):
         # pylint: disable=protected-access

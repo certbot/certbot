@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 # the renewal configuration process loses this information.
 STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
-                    "standalone_supported_challenges"]
+                    "standalone_supported_challenges", "renew_hook"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
 
 
@@ -44,7 +44,7 @@ def _reconstitute(config, full_path):
     """Try to instantiate a RenewableCert, updating config with relevant items.
 
     This is specifically for use in renewal and enforces several checks
-    and policies to ensure that we can try to proceed with the renwal
+    and policies to ensure that we can try to proceed with the renewal
     request. The config argument is modified by including relevant options
     read from the renewal configuration file.
 
@@ -143,6 +143,7 @@ def _restore_plugin_configs(config, renewalparams):
     if renewalparams.get("installer", None) is not None:
         plugin_prefixes.append(renewalparams["installer"])
     for plugin_prefix in set(plugin_prefixes):
+        plugin_prefix = plugin_prefix.replace('-', '_')
         for config_item, config_value in six.iteritems(renewalparams):
             if config_item.startswith(plugin_prefix + "_") and not cli.set_by_cli(config_item):
                 # Values None, True, and False need to be treated specially,
@@ -340,6 +341,7 @@ def renew_all_lineages(config):
             else:
                 # XXX: ensure that each call here replaces the previous one
                 zope.component.provideUtility(lineage_config)
+                renewal_candidate.ensure_deployed()
                 if should_renew(lineage_config, renewal_candidate):
                     plugins = plugins_disco.PluginsRegistry.find_all()
                     from certbot import main

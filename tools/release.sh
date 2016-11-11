@@ -148,35 +148,37 @@ cd ~-
 # get a snapshot of the CLI help for the docs
 certbot --help all > docs/cli-help.txt
 
+cd ..
 # freeze before installing anything else, so that we know end-user KGS
 # make sure "twine upload" doesn't catch "kgs"
-if [ -d ../kgs ] ; then
+if [ -d kgs ] ; then
     echo Deleting old kgs...
-    rm -rf ../kgs
+    rm -rf kgs
 fi
-mkdir ../kgs
-kgs="../kgs/$version"
+mkdir kgs
+kgs="kgs/$version"
 pip freeze | tee $kgs
 pip install nose
 for module in certbot $subpkgs_modules ; do
     echo testing $module
     nosetests $module
 done
+cd ~-
 
 # pin pip hashes of the things we just built
-for pkg in acme certbot certbot-apache ; do
+for pkg in acme certbot certbot-apache certbot-nginx ; do
     echo $pkg==$version \\
     pip hash dist."$version/$pkg"/*.{whl,gz} | grep "^--hash" | python2 -c 'from sys import stdin; input = stdin.read(); print "   ", input.replace("\n--hash", " \\\n    --hash"),'
 done > /tmp/hashes.$$
 deactivate
 
-if ! wc -l /tmp/hashes.$$ | grep -qE "^\s*9 " ; then
+if ! wc -l /tmp/hashes.$$ | grep -qE "^\s*12 " ; then
     echo Unexpected pip hash output
     exit 1
 fi
 
 # perform hideous surgery on requirements.txt...
-head -n -9 letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt > /tmp/req.$$
+head -n -12 letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt > /tmp/req.$$
 cat /tmp/hashes.$$ >> /tmp/req.$$
 cp /tmp/req.$$ letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt
 
@@ -193,7 +195,7 @@ done
 # This signature is not quite as strong, but easier for people to verify out of band
 gpg -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign letsencrypt-auto-source/letsencrypt-auto
 # We can't rename the openssl letsencrypt-auto.sig for compatibility reasons,
-# but we can use the right name for cerbot-auto.asc from day one
+# but we can use the right name for certbot-auto.asc from day one
 mv letsencrypt-auto-source/letsencrypt-auto.asc letsencrypt-auto-source/certbot-auto.asc
 
 # copy leauto to the root, overwriting the previous release version
@@ -215,7 +217,6 @@ echo gpg -U $RELEASE_GPG_KEY --detach-sign --armor $name.$rev.tar.xz
 cd ~-
 
 echo "New root: $root"
-echo "KGS is at $root/kgs"
 echo "Test commands (in the letstest repo):"
 echo 'python multitester.py targets.yaml $AWS_KEY $USERNAME scripts/test_leauto_upgrades.sh --alt_pip $YOUR_PIP_REPO --branch public-beta'
 echo 'python multitester.py  targets.yaml $AWK_KEY $USERNAME scripts/test_letsencrypt_auto_certonly_standalone.sh --branch candidate-0.1.1'

@@ -96,7 +96,7 @@ class RenewerConfiguration(object):
         return getattr(self.namespace, name)
 
     @property
-    def archive_dir(self):  # pylint: disable=missing-docstring
+    def default_archive_dir(self):  # pylint: disable=missing-docstring
         return os.path.join(self.namespace.config_dir, constants.ARCHIVE_DIR)
 
     @property

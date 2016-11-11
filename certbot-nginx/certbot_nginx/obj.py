@@ -3,6 +3,7 @@ import re
 
 from certbot.plugins import common
 
+REDIRECT_DIRECTIVES = ['return', 'rewrite']
 
 class Addr(common.Addr):
     r"""Represents an Nginx address, i.e. what comes after the 'listen'
@@ -69,7 +70,8 @@ class Addr(common.Addr):
 
         return cls(host, port, ssl, default)
 
-    def __str__(self):
+    def to_string(self, include_default=True):
+        """Return string representation of Addr"""
         parts = ''
         if self.tup[0] and self.tup[1]:
             parts = "%s:%s" % self.tup
@@ -78,12 +80,15 @@ class Addr(common.Addr):
         else:
             parts = self.tup[1]
 
-        if self.default:
+        if self.default and include_default:
             parts += ' default_server'
         if self.ssl:
             parts += ' ssl'
 
         return parts
+
+    def __str__(self):
+        return self.to_string()
 
     def __repr__(self):
         return "Addr(" + self.__str__() + ")"
@@ -107,10 +112,12 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
     :ivar bool ssl: SSLEngine on in vhost
     :ivar bool enabled: Virtual host is enabled
+    :ivar list path: The indices into the parsed file used to access
+        the server block defining the vhost
 
     """
 
-    def __init__(self, filep, addrs, ssl, enabled, names, raw):
+    def __init__(self, filep, addrs, ssl, enabled, names, raw, path):
         # pylint: disable=too-many-arguments
         """Initialize a VH."""
         self.filep = filep
@@ -119,6 +126,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         self.ssl = ssl
         self.enabled = enabled
         self.raw = raw
+        self.path = path
 
     def __str__(self):
         addr_str = ", ".join(str(addr) for addr in self.addrs)
@@ -137,6 +145,37 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
             return (self.filep == other.filep and
                     list(self.addrs) == list(other.addrs) and
                     self.names == other.names and
-                    self.ssl == other.ssl and self.enabled == other.enabled)
+                    self.ssl == other.ssl and
+                    self.enabled == other.enabled and
+                    self.path == other.path)
 
         return False
+
+    def has_redirect(self):
+        """Determine if this vhost has a redirecting statement
+        """
+        for directive_name in REDIRECT_DIRECTIVES:
+            found = _find_directive(self.raw, directive_name)
+            if found is not None:
+                return True
+        return False
+
+    def contains_list(self, test):
+        """Determine if raw server block contains test list at top level
+        """
+        for i in xrange(0, len(self.raw) - len(test)):
+            if self.raw[i:i + len(test)] == test:
+                return True
+        return False
+
+def _find_directive(directives, directive_name):
+    """Find a directive of type directive_name in directives
+    """
+    if not directives or isinstance(directives, str) or len(directives) == 0:
+        return None
+
+    if directives[0] == directive_name:
+        return directives
+
+    matches = (_find_directive(line, directive_name) for line in directives)
+    return next((m for m in matches if m is not None), None)

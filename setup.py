@@ -42,7 +42,6 @@ install_requires = [
     'parsedatetime>=1.3',  # Calendar.parseDT
     'PyOpenSSL',
     'pyrfc3339',
-    'python2-pythondialog>=3.2.2rc1',  # Debian squeeze support, cf. #280
     'pytz',
     # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
     # will tolerate; see #2599:
@@ -133,6 +132,7 @@ setup(
             'null = certbot.plugins.null:Installer',
             'standalone = certbot.plugins.standalone:Authenticator',
             'webroot = certbot.plugins.webroot:Authenticator',
+            'script = certbot.plugins.script:Authenticator',
         ],
     },
 )

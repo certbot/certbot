@@ -15,4 +15,21 @@ to the Sphinx generated docs is provided below.
 
 -->
 
-https://certbot.eff.org/docs/contributing.html
+# Certbot Contributing Guide
+
+Hi! Welcome to the Certbot project. We look forward to collaborating with you.
+
+If you're reporting a bug in Certbot, please make sure to include:
+ - The version of Certbot you're running.
+ - The operating system you're running it on.
+ - The commands you ran.
+ - What you expected to happen, and
+ - What actually happened.
+
+If you're a developer, we have some helpful information in our
+[Developer's Guide](https://certbot.eff.org/docs/contributing.html) to get you
+started. In particular, we recommend you read these sections 
+
+ - [Finding issues to work on](https://certbot.eff.org/docs/contributing.html#find-issues-to-work-on)
+ - [Coding style](https://certbot.eff.org/docs/contributing.html#coding-style)
+ - [Submitting a pull request](https://certbot.eff.org/docs/contributing.html#submitting-a-pull-request)

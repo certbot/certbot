@@ -223,6 +223,26 @@ class TestUnspacedList(unittest.TestCase):
         self.assertRaises(IndexError, self.ul2.__getitem__, 2)
         self.assertRaises(IndexError, self.ul2.__getitem__, -3)
 
+    def test_insert(self):
+        x = UnspacedList(
+                [['\n    ', 'listen', '       ', '69.50.225.155:9000'],
+                ['\n    ', 'listen', '       ', '127.0.0.1'],
+                ['\n    ', 'server_name', ' ', '.example.com'],
+                ['\n    ', 'server_name', ' ', 'example.*'], '\n',
+                ['listen', ' ', '5001 ssl']])
+        x.insert(5, "FROGZ")
+        self.assertEqual(x,
+            [['listen', '69.50.225.155:9000'], ['listen', '127.0.0.1'],
+            ['server_name', '.example.com'], ['server_name', 'example.*'],
+            ['listen', '5001 ssl'], 'FROGZ'])
+        self.assertEqual(x.spaced,
+            [['\n    ', 'listen', '       ', '69.50.225.155:9000'],
+            ['\n    ', 'listen', '       ', '127.0.0.1'],
+            ['\n    ', 'server_name', ' ', '.example.com'],
+            ['\n    ', 'server_name', ' ', 'example.*'], '\n',
+            ['listen', ' ', '5001 ssl'],
+            'FROGZ'])
+
     def test_rawlists(self):
         ul3 = copy.deepcopy(self.ul)
         ul3.insert(0, "some")

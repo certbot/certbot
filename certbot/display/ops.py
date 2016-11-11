@@ -29,7 +29,7 @@ def get_email(invalid=False, optional=True):
 
     """
     invalid_prefix = "There seem to be problems with that address. "
-    msg = "Enter email address (used for urgent notices and lost key recovery)"
+    msg = "Enter email address (used for urgent renewal and security notices)"
     unsafe_suggestion = ("\n\nIf you really want to skip this, you can run "
                          "the client with --register-unsafely-without-email "
                          "but make sure you then backup your account key from "
@@ -37,6 +37,7 @@ def get_email(invalid=False, optional=True):
     if optional:
         if invalid:
             msg += unsafe_suggestion
+            suggest_unsafe = False
         else:
             suggest_unsafe = True
     else:
@@ -48,7 +49,7 @@ def get_email(invalid=False, optional=True):
                 invalid_prefix + msg if invalid else msg)
         except errors.MissingCommandlineFlag:
             msg = ("You should register before running non-interactively, "
-                   "or provide --agree-tos and --email <email_address> flags")
+                   "or provide --agree-tos and --email <email_address> flags.")
             raise errors.MissingCommandlineFlag(msg)
 
         if code != display_util.OK:
@@ -103,18 +104,8 @@ def choose_names(installer):
     names = get_valid_domains(domains)
 
     if not names:
-        manual = z_util(interfaces.IDisplay).yesno(
-            "No names were found in your configuration files.{0}You should "
-            "specify ServerNames in your config files in order to allow for "
-            "accurate installation of your certificate.{0}"
-            "If you do use the default vhost, you may specify the name "
-            "manually. Would you like to continue?{0}".format(os.linesep),
-            default=True)
-
-        if manual:
-            return _choose_names_manually()
-        else:
-            return []
+        return _choose_names_manually(
+            "No names were found in your configuration files. ")
 
     code, names = _filter_names(names)
     if code == display_util.OK and names:
@@ -157,10 +148,17 @@ def _filter_names(names):
     return code, [str(s) for s in names]
 
 
-def _choose_names_manually():
-    """Manually input names for those without an installer."""
+def _choose_names_manually(prompt_prefix=""):
+    """Manually input names for those without an installer.
 
+    :param str prompt_prefix: string to prepend to prompt for domains
+
+    :returns: list of provided names
+    :rtype: `list` of `str`
+
+    """
     code, input_ = z_util(interfaces.IDisplay).input(
+        prompt_prefix +
         "Please enter in your domain name(s) (comma and/or space separated) ",
         cli_flag="--domains")
 
@@ -180,7 +178,12 @@ def _choose_names_manually():
             try:
                 domain_list[i] = util.enforce_domain_sanity(domain)
             except errors.ConfigurationError as e:
-                invalid_domains[domain] = e.message
+                try:  # Python 2
+                    # pylint: disable=no-member
+                    err_msg = e.message.encode('utf-8')
+                except AttributeError:
+                    err_msg = str(e)
+                invalid_domains[domain] = err_msg
 
         if len(invalid_domains):
             retry_message = (
@@ -219,7 +222,6 @@ def success_installation(domains, action="install"):
             os.linesep,
             os.linesep.join(_gen_ssl_lab_urls(domains)),
             action),
-        height=(10 + len(domains)),
         pause=False)
 
 
@@ -241,7 +243,6 @@ def success_renewal(domains, action):
             os.linesep,
             os.linesep.join(_gen_ssl_lab_urls(domains)),
             action),
-        height=(14 + len(domains)),
         pause=False)
 
 

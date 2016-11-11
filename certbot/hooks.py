@@ -12,16 +12,16 @@ logger = logging.getLogger(__name__)
 
 def validate_hooks(config):
     """Check hook commands are executable."""
-    _validate_hook(config.pre_hook, "pre")
-    _validate_hook(config.post_hook, "post")
-    _validate_hook(config.renew_hook, "renew")
+    validate_hook(config.pre_hook, "pre")
+    validate_hook(config.post_hook, "post")
+    validate_hook(config.renew_hook, "renew")
 
 def _prog(shell_cmd):
     """Extract the program run by a shell command"""
     cmd = _which(shell_cmd)
     return os.path.basename(cmd) if cmd else None
 
-def _validate_hook(shell_cmd, hook_name):
+def validate_hook(shell_cmd, hook_name):
     """Check that a command provided as a hook is plausibly executable.
 
     :raises .errors.HookCommandNotFound: if the command is not found
@@ -69,17 +69,30 @@ def renew_hook(config, domains, lineage_path):
         else:
             logger.warning("Dry run: skipping renewal hook command: %s", config.renew_hook)
 
+
 def _run_hook(shell_cmd):
     """Run a hook command.
 
     :returns: stderr if there was any"""
 
-    cmd = Popen(shell_cmd, shell=True, stdout=PIPE, stderr=PIPE, stdin=PIPE)
-    _out, err = cmd.communicate()
+    err, _ = execute(shell_cmd)
+    return err
+
+
+def execute(shell_cmd):
+    """Run a command.
+
+    :returns: `tuple` (`str` stderr, `str` stdout)"""
+
+    cmd = Popen(shell_cmd, shell=True, stdout=PIPE, stderr=PIPE)
+    out, err = cmd.communicate()
     if cmd.returncode != 0:
-        logger.error('Hook command "%s" returned error code %d', shell_cmd, cmd.returncode)
+        logger.error('Hook command "%s" returned error code %d',
+                     shell_cmd, cmd.returncode)
     if err:
         logger.error('Error output from %s:\n%s', _prog(shell_cmd), err)
+    return (err, out)
+
 
 def _is_exe(fpath):
     return os.path.isfile(fpath) and os.access(fpath, os.X_OK)

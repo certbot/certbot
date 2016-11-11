@@ -17,11 +17,14 @@ letsencrypt-auto-source/letsencrypt-auto.sig.lzma.base64
 
 /.vagrant
 
+tags
+
 # editor temporary files
 *~
-*.swp
+*.sw?
 \#*#
 .idea
+.ropeproject
 
 # auth --cert-path --chain-path
 /*.pem

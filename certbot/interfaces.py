@@ -227,13 +227,16 @@ class IConfig(zope.interface.Interface):
         "Location of renewal configuration file.")
 
     no_verify_ssl = zope.interface.Attribute(
-        "Disable SSL certificate verification.")
+        "Disable verification of the ACME server's certificate.")
     tls_sni_01_port = zope.interface.Attribute(
-        "Port number to perform tls-sni-01 challenge. "
-        "Boulder in testing mode defaults to 5001.")
+        "Port used during tls-sni-01 challenge. "
+        "This only affects the port Certbot listens on. "
+        "A conforming ACME server will still attempt to connect on port 443.")
 
     http01_port = zope.interface.Attribute(
-        "Port used in the SimpleHttp challenge.")
+        "Port used in the http-01 challenge."
+        "This only affects the port Certbot listens on. "
+        "A conforming ACME server will still attempt to connect on port 80.")
 
 
 class IInstaller(IPlugin):
@@ -294,19 +297,6 @@ class IInstaller(IPlugin):
         :returns: supported enhancements which should be a subset of
             :const:`~certbot.constants.ENHANCEMENTS`
         :rtype: :class:`list` of :class:`str`
-
-        """
-
-    def get_all_certs_keys():
-        """Retrieve all certs and keys set in configuration.
-
-        :returns: tuples with form `[(cert, key, path)]`, where:
-
-            - `cert` - str path to certificate file
-            - `key` - str path to associated key file
-            - `path` - file path to configuration file
-
-        :rtype: list
 
         """
 
@@ -375,13 +365,13 @@ class IInstaller(IPlugin):
 class IDisplay(zope.interface.Interface):
     """Generic display."""
 
-    def notification(message, height, pause):
+    def notification(message, pause, wrap=True):
         """Displays a string message
 
         :param str message: Message to display
-        :param int height: Height of dialog box if applicable
         :param bool pause: Whether or not the application should pause for
             confirmation (if available)
+        :param bool wrap: Whether or not the application should wrap text
 
         """
 

@@ -10,6 +10,7 @@ import traceback
 
 import OpenSSL
 import pyrfc3339
+import six
 import zope.component
 
 from acme import crypto_util as acme_crypto_util
@@ -52,7 +53,8 @@ def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
     # Save file
     util.make_or_verify_dir(key_dir, 0o700, os.geteuid(),
                             config.strict_permissions)
-    key_f, key_path = util.unique_file(os.path.join(key_dir, keyname), 0o600)
+    key_f, key_path = util.unique_file(
+        os.path.join(key_dir, keyname), 0o600, "wb")
     with key_f:
         key_f.write(key_pem)
 
@@ -84,7 +86,7 @@ def init_save_csr(privkey, names, path, csrname="csr-certbot.pem"):
     util.make_or_verify_dir(path, 0o755, os.geteuid(),
                                config.strict_permissions)
     csr_f, csr_filename = util.unique_file(
-        os.path.join(path, csrname), 0o644)
+        os.path.join(path, csrname), 0o644, "wb")
     csr_f.write(csr_pem)
     csr_f.close()
 
@@ -115,16 +117,16 @@ def make_csr(key_str, domains, must_staple=False):
     # TODO: put SAN if len(domains) > 1
     extensions = [
         OpenSSL.crypto.X509Extension(
-            "subjectAltName",
+            b"subjectAltName",
             critical=False,
-            value=", ".join("DNS:%s" % d for d in domains)
+            value=", ".join("DNS:%s" % d for d in domains).encode('ascii')
         )
     ]
     if must_staple:
         extensions.append(OpenSSL.crypto.X509Extension(
-            "1.3.6.1.5.5.7.1.24",
+            b"1.3.6.1.5.5.7.1.24",
             critical=False,
-            value="DER:30:03:02:01:05"))
+            value=b"DER:30:03:02:01:05"))
     req.add_extensions(extensions)
     req.set_version(2)
     req.set_pubkey(pkey)
@@ -354,7 +356,7 @@ def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
 
     # assumes that OpenSSL.crypto.dump_certificate includes ending
     # newline character
-    return "".join(_dump_cert(cert) for cert in chain)
+    return b"".join(_dump_cert(cert) for cert in chain)
 
 
 def notBefore(cert_path):
@@ -395,8 +397,14 @@ def _notAfterBefore(cert_path, method):
     with open(cert_path) as f:
         x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
                                                f.read())
+    # pyopenssl always returns bytes
     timestamp = method(x509)
-    reformatted_timestamp = [timestamp[0:4], "-", timestamp[4:6], "-",
-                             timestamp[6:8], "T", timestamp[8:10], ":",
-                             timestamp[10:12], ":", timestamp[12:]]
-    return pyrfc3339.parse("".join(reformatted_timestamp))
+    reformatted_timestamp = [timestamp[0:4], b"-", timestamp[4:6], b"-",
+                             timestamp[6:8], b"T", timestamp[8:10], b":",
+                             timestamp[10:12], b":", timestamp[12:]]
+    timestamp_str = b"".join(reformatted_timestamp)
+    # pyrfc3339 uses "native" strings. That is, bytes on Python 2 and unicode
+    # on Python 3
+    if six.PY3:
+        timestamp_str = timestamp_str.decode('ascii')
+    return pyrfc3339.parse(timestamp_str)
