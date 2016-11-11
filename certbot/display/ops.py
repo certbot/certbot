@@ -209,8 +209,6 @@ def _choose_names_manually(prompt_prefix=""):
 def success_installation(domains):
     """Display a box confirming the installation of HTTPS.
 
-    .. todo:: This should be centered on the screen
-
     :param list domains: domain names which were enabled
 
     """
@@ -225,8 +223,6 @@ def success_installation(domains):
 
 def success_renewal(domains, action):
     """Display a box confirming the renewal of an existing certificate.
-
-    .. todo:: This should be centered on the screen
 
     :param list domains: domain names which were renewed
     :param str action: can be "reinstall" or "renew"
