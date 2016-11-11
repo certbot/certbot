@@ -41,6 +41,9 @@ _PERM_ERR_FMT = os.linesep.join((
     "If running as non-root, set --config-dir, "
     "--logs-dir, and --work-dir to writeable paths."))
 
+USER_CANCELLED = ("User chose to cancel the operation and may "
+                  "reinvoke the client.")
+
 
 logger = logging.getLogger(__name__)
 
@@ -70,14 +73,14 @@ def _report_successful_dry_run(config):
 def _auth_from_available(le_client, config, domains=None, certname=None, lineage=None):
     """Authenticate and enroll certificate.
 
-    :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains
+    :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains_and_certname
               action can be: "newcert" | "renew" | "reinstall"
     """
     # If lineage is specified, use that one instead of looking around for
     # a matching one.
     if lineage is None:
         # This will find a relevant matching lineage that exists
-        action, lineage = _find_lineage_for_domains(config, domains)
+        action, lineage = _find_lineage_for_domains_and_certname(config, domains, certname)
     else:
         # Renewal, where we already know the specific lineage we're
         # interested in
@@ -114,7 +117,7 @@ def _handle_subset_cert_request(config, domains, cert):
 
     :param storage.RenewableCert cert:
 
-    :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains
+    :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains_and_certname
               action can be: "newcert" | "renew" | "reinstall"
     :rtype: tuple
 
@@ -146,9 +149,7 @@ def _handle_subset_cert_request(config, domains, cert):
                 br=os.linesep
             ),
             reporter_util.HIGH_PRIORITY)
-        raise errors.Error(
-            "User chose to cancel the operation and may "
-            "reinvoke the client.")
+        raise errors.Error(USER_CANCELLED)
 
 
 def _handle_identical_cert_request(config, lineage):
@@ -156,7 +157,7 @@ def _handle_identical_cert_request(config, lineage):
 
     :param storage.RenewableCert lineage:
 
-    :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains
+    :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains_and_certname
               action can be: "newcert" | "renew" | "reinstall"
     :rtype: tuple
 
@@ -171,7 +172,7 @@ def _handle_identical_cert_request(config, lineage):
         return "reinstall", lineage
     question = (
         "You have an existing certificate that contains exactly the same "
-        "domains you requested and isn't close to expiry."
+        "domains or certificate name you requested and isn't close to expiry."
         "{br}(ref: {0}){br}{br}What would you like to do?"
     ).format(lineage.configfile.filename, br=os.linesep)
 
@@ -198,7 +199,7 @@ def _handle_identical_cert_request(config, lineage):
         assert False, "This is impossible"
 
 
-def _find_lineage_for_domains(config, domains):
+def _find_lineage_for_domains_and_certname(config, domains, certname):
     """Determine whether there are duplicated names and how to handle
     them (renew, reinstall, newcert, or raising an error to stop
     the client run if the user chooses to cancel the operation when
@@ -211,35 +212,69 @@ def _find_lineage_for_domains(config, domains):
     :raises .Error: If the user would like to rerun the client again.
 
     """
-    # Considering the possibility that the requested certificate is
-    # related to an existing certificate.  (config.duplicate, which
-    # is set with --duplicate, skips all of this logic and forces any
-    # kind of certificate to be obtained with renewal = False.)
-    if config.duplicate:
-        return "newcert", None
-    # TODO: Also address superset case
-    ident_names_cert, subset_names_cert = _find_duplicative_certs(config, domains)
-    # XXX ^ schoen is not sure whether that correctly reads the systemwide
-    # configuration file.
-    if ident_names_cert is None and subset_names_cert is None:
-        return "newcert", None
+    if not certname:
+        # Considering the possibility that the requested certificate is
+        # related to an existing certificate.  (config.duplicate, which
+        # is set with --duplicate, skips all of this logic and forces any
+        # kind of certificate to be obtained with renewal = False.)
+        if config.duplicate:
+            return "newcert", None
+        # TODO: Also address superset case
+        ident_names_cert, subset_names_cert = _find_duplicative_certs(config, domains)
+        # XXX ^ schoen is not sure whether that correctly reads the systemwide
+        # configuration file.
+        if ident_names_cert is None and subset_names_cert is None:
+            return "newcert", None
 
-    if ident_names_cert is not None:
-        return _handle_identical_cert_request(config, ident_names_cert)
-    elif subset_names_cert is not None:
-        return _handle_subset_cert_request(config, domains, subset_names_cert)
+        if ident_names_cert is not None:
+            return _handle_identical_cert_request(config, ident_names_cert)
+        elif subset_names_cert is not None:
+            return _handle_subset_cert_request(config, domains, subset_names_cert)
+    else:
+        lineage = _lineage_for_certname(config, certname)
+        if lineage:
+            if domains:
+                if set(_domains_for_certname(config, certname)) != set(domains):
+                    _ask_user_to_confirm_new_names(config, domains,
+                        certname, lineage.names()) # raises if no
+                    return "renew", lineage
+            return _handle_identical_cert_request(config, lineage)
+        else:
+            if not domains:
+                raise errors.ConfigurationError("No certificate with name {0} found. "
+                    "Use -d to specify domains, or run certbot --certificates to see "
+                    "possible certificate names.".format(certname))
+            else:
+                _ask_user_to_confirm_new_cert_with_domains(config, certname, domains) # raises if no
+                return "newcert", None
 
+def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
+    msg = ("Confirm that you intend to update certificate {0} "
+           "to include domains {1}. Note that it previously "
+           "contained domains {2}.".format(
+               certname,
+               new_domains,
+               old_domains))
+    obj = zope.component.getUtility(interfaces.IDisplay)
+    if not obj.yesno(msg, "Update cert", "Cancel"):
+        raise Errors.ConfigurationError("Specified mismatched cert name and domains.")
 
-def _find_duplicative_certs(config, domains):
-    """Find existing certs that duplicate the request."""
+def _ask_user_to_confirm_new_cert_with_domains(config, certname, domains):
+    msg = ("Confirm that you intend to create a new certificate with name {0} "
+           "for domains {1}.".format(
+               certname,
+               domains))
+    obj = zope.component.getUtility(interfaces.IDisplay)
+    if not obj.yesno(msg, "Create cert", "Cancel"):
+        raise Errors.Error(USER_CANCELLED)
 
-    identical_names_cert, subset_names_cert = None, None
-
+def _search_lineages(config, func):
     cli_config = configuration.RenewerConfiguration(config)
     configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there
     util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
 
+    rv = None
     for renewal_file in renewal.renewal_conf_files(cli_config):
         try:
             candidate_lineage = storage.RenewableCert(renewal_file, cli_config)
@@ -247,8 +282,34 @@ def _find_duplicative_certs(config, domains):
             logger.warning("Renewal conf file %s is broken. Skipping.", renewal_file)
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             continue
+        rv = func(candidate_lineage, rv)
+    return rv
+
+def _lineage_for_certname(config, certname):
+    def func(candidate_lineage, rv):
+        matching_lineage_name_cert = rv
+        if candidate_lineage.lineagename == certname:
+            matching_lineage_name_cert = candidate_lineage
+        return matching_lineage_name_cert
+    return _search_lineages(config, func)
+
+def _domains_for_certname(config, certname):
+    def func(candidate_lineage, rv):
+        matching_domains = rv
+        if candidate_lineage.lineagename == certname:
+            matching_domains = candidate_lineage.names()
+        return matching_domains
+    return _search_lineages(config, func)
+
+def _find_duplicative_certs(config, domains):
+    """Find existing certs that duplicate the request."""
+    def func(candidate_lineage, rv):
         # TODO: Handle these differently depending on whether they are
         #       expired or still valid?
+        if rv is not None:
+            (identical_names_cert, subset_names_cert) = rv
+        else:
+            identical_names_cert, subset_names_cert = None, None
         candidate_names = set(candidate_lineage.names())
         if candidate_names == set(domains):
             identical_names_cert = candidate_lineage
@@ -259,7 +320,12 @@ def _find_duplicative_certs(config, domains):
                 subset_names_cert = candidate_lineage
             elif len(candidate_names) > len(subset_names_cert.names()):
                 subset_names_cert = candidate_lineage
+        return (identical_names_cert, subset_names_cert)
 
+    rv = _search_lineages(config, func)
+    if rv is None:
+        return None, None
+    identical_names_cert, subset_names_cert = rv
     return identical_names_cert, subset_names_cert
 
 
