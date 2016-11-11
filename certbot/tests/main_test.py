@@ -13,9 +13,11 @@ from certbot import configuration
 from certbot import errors
 from certbot.plugins import disco as plugins_disco
 
+
 class MainTest(unittest.TestCase):
     def setUp(self):
         pass
+
     def tearDown(self):
         pass
 
@@ -26,6 +28,51 @@ class MainTest(unittest.TestCase):
         # pylint: disable=protected-access
         ret = main._handle_identical_cert_request(mock.Mock(), mock_lineage)
         self.assertEqual(ret, ("reinstall", mock_lineage))
+
+
+class RunTest(unittest.TestCase):
+    """Tests for certbot.main.run."""
+
+    def setUp(self):
+        self.success_installation_patch = mock.patch(
+            'certbot.main.display_ops.success_installation')
+        self.success_renewal_patch = mock.patch(
+            'certbot.main.display_ops.success_renewal')
+        self.suggest_donation_patch = mock.patch(
+            'certbot.main._suggest_donation_if_appropriate')
+
+        self.mock_success_installation = self.success_installation_patch.start()
+        self.mock_success_renewal = self.success_renewal_patch.start()
+        self.mock_suggest_donation = self.suggest_donation_patch.start()
+
+    def tearDown(self):
+        self.success_installation_patch.stop()
+        self.success_renewal_patch.stop()
+        self.suggest_donation_patch.stop()
+
+    def _call(self, args):
+        plugins = plugins_disco.PluginsRegistry.find_all()
+        config = configuration.NamespaceConfig(
+            cli.prepare_and_parse_args(plugins, args))
+
+        with mock.patch('certbot.main._init_le_client') as mock_init:
+            from certbot.main import run
+            run(config, plugins)
+
+        return mock_init()  # returns the client
+
+    @mock.patch('certbot.main._auth_from_domains')
+    def test_reinstall_success(self, mock_auth):
+        # Make len(lineage.available_versions("cert")) return a list != 1
+        mock_lineage = mock.Mock()
+        mock_lineage.available_versions.return_value = [1, 2]
+
+        mock_auth.return_value = ('reinstall', mock_lineage)
+        domain = 'example.org'
+        self._call('-a webroot -i null -d {0}'.format(domain).split())
+
+        self.mock_success_installation.assert_called_once_with([domain])
+
 
 class ObtainCertTest(unittest.TestCase):
     """Tests for certbot.main.obtain_cert."""
