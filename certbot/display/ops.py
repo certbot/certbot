@@ -206,7 +206,7 @@ def _choose_names_manually(prompt_prefix=""):
     return []
 
 
-def success_installation(domains, action="install"):
+def success_installation(domains):
     """Display a box confirming the installation of HTTPS.
 
     .. todo:: This should be centered on the screen
@@ -215,13 +215,11 @@ def success_installation(domains, action="install"):
 
     """
     z_util(interfaces.IDisplay).notification(
-        "Congratulations! You have successfully {3}ed a certificate for{1}"
-        "{0}{1}{1}"
+        "Congratulations! You have successfully enabled {0}{1}{1}"
         "You should test your configuration at:{1}{2}".format(
             _gen_https_names(domains),
             os.linesep,
-            os.linesep.join(_gen_ssl_lab_urls(domains)),
-            action),
+            os.linesep.join(_gen_ssl_lab_urls(domains))),
         pause=False)
 
 
