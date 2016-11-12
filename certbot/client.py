@@ -287,12 +287,12 @@ class Client(object):
                 "Non-standard path(s), might not work with crontab installed "
                 "by your operating system package manager")
 
+        new_name = certname if certname else domains[0]
         if self.config.dry_run:
             logger.debug("Dry run: Skipping creating new lineage for %s",
-                        domains[0])
+                        new_name)
             return None
         else:
-            new_name = certname if certname else domains[0]
             return storage.RenewableCert.new_lineage(
                 new_name, OpenSSL.crypto.dump_certificate(
                     OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped),

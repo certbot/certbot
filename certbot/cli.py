@@ -688,7 +688,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         [None, "run", "certonly"],
         "--cert-name", dest="certname",
-        metavar="CERTNAME", action=_CertNameAction, default=None,
+        metavar="CERTNAME", default=None,
         help="Certificate name to apply. Only one certificate name can be used "
              "per Certbot run. Show certificate names by running certificates command.")
     helpful.add(
@@ -1020,13 +1020,6 @@ class _DomainsAction(argparse.Action):
         """Just wrap add_domains in argparseese."""
         add_domains(namespace, domain)
 
-class _CertNameAction(argparse.Action):
-    """Action class for parsing certificate name."""
-
-    def __call__(self, parser, namespace, certname, option_string=None):
-        """Just wrap use_certname in argparseese."""
-        use_certname(namespace, certname)
-
 def add_domains(args_or_config, domains):
     """Registers new domains to be used during the current client run.
 
@@ -1050,21 +1043,6 @@ def add_domains(args_or_config, domains):
             args_or_config.domains.append(domain)
 
     return validated_domains
-
-def use_certname(args_or_config, certname):
-    """Registers cert name (lineage) to be used during the current client run.
-
-    :param args_or_config: parsed command line arguments
-    :type args_or_config: argparse.Namespace or
-        configuration.NamespaceConfig
-    :param str certname: one cert name
-
-    :returns: domains after they have been normalized and validated
-    :rtype: `list` of `str`
-
-    """
-    args_or_config.certname = certname
-    return certname
 
 class _PrefChallAction(argparse.Action):
     """Action class for parsing preferred challenges."""
