@@ -15,10 +15,14 @@ set -e  # Work even if somebody does "sh thisscript.sh".
 
 # Note: you can set XDG_DATA_HOME or VENV_PATH before running this script,
 # if you want to change where the virtual environment will be installed
-XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
+if [ -z "${XDG_DATA_HOME}" ]; then
+  XDG_DATA_HOME="~/.local/share"
+fi
 VENV_NAME="letsencrypt"
-VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
-VENV_BIN="$VENV_PATH/bin"
+if [ -z "${VENV_PATH}" ]; then
+  VENV_PATH="${XDG_DATA_HOME}/${VENV_NAME}"
+fi
+VENV_BIN="${VENV_PATH}/bin"
 LE_AUTO_VERSION="{{ LE_AUTO_VERSION }}"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
