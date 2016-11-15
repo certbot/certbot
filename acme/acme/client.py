@@ -138,7 +138,16 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             raise errors.UnexpectedUpdate(regr)
         return updated_regr
 
-    def deactivate(self, regr):
+    def deactivate_registration(self, regr):
+        """Deactivate registration.
+
+        :param messages.RegistrationResource regr: The Registration Resource
+            to be deactivated.
+
+        :returns: The Registration resource that was deactivated.
+        :rtype: `.RegistrationResource`
+
+        """
         update = {'status': 'deactivated'}
         body = messages.UpdateRegistration(**dict(update))
         response = self.net.post(regr.uri, body)
