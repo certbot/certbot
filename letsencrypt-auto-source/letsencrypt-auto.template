@@ -84,6 +84,17 @@ if [ $BASENAME = "letsencrypt-auto" ]; then
   HELP=0
 fi
 
+# Support for busybox and others where there is no "command",
+# but "which" instead
+if command -v command > /dev/null 2>&1 ; then
+  export WHERE_IS="command -v"
+elif which which > /dev/null 2>&1 ; then
+  export WHERE_IS="which"
+else
+  echo "Cannot find command nor which... please install one!"
+  exit 1
+fi
+
 # certbot-auto needs root access to bootstrap OS dependencies, and
 # certbot itself needs root access for almost all modes of operation
 # The "normal" case is that sudo is used for the steps that need root, but
@@ -131,7 +142,7 @@ if [ -n "${LE_AUTO_SUDO:+x}" ]; then
   echo "Using preset root authorization mechanism '$LE_AUTO_SUDO'."
 else
   if test "`id -u`" -ne "0" ; then
-    if command -v sudo 1>/dev/null 2>&1; then
+    if ${WHERE_IS} sudo 1>/dev/null 2>&1; then
       SUDO=sudo
       SUDO_ENV="CERTBOT_AUTO=$0"
     else
@@ -161,7 +172,7 @@ ExperimentalBootstrap() {
 DeterminePythonVersion() {
   for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
     # Break (while keeping the LE_PYTHON value) if found.
-    command -v "$LE_PYTHON" > /dev/null && break
+    ${WHERE_IS} "$LE_PYTHON" > /dev/null && break
   done
   if [ "$?" != "0" ]; then
     echo "Cannot find any Pythons; please install one!"
