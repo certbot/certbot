@@ -406,6 +406,26 @@ def _init_le_client(config, authenticator, installer):
     return client.Client(config, acc, authenticator, installer, acme=acme)
 
 
+def _deactivate(config, accounts, messenger):
+    if len(accounts) == 0:
+        return "Could not find existing account to deactivate."
+    yesno = zope.component.getUtility(interfaces.IDisplay).yesno
+    prompt = ("Are you sure you would like to irrevocably deactivate "
+              "your account?")
+    wants_deactivate = yesno(prompt, yes_label='Deactivate',
+                             no_label='Abort', cli_flag='--deactivate',
+                             default=True)
+
+    if not wants_deactivate:
+        return "Deactivation aborted."
+
+    acc, acme = _determine_account(config)
+    acme_client = client.Client(config, acc, None, None, acme=acme)
+    acme_client.acme.deactivate(acc.regr)
+    messenger("Account deactivated.")
+
+
+
 def register(config, unused_plugins):
     """Create or modify accounts on the server."""
 
@@ -417,24 +437,7 @@ def register(config, unused_plugins):
     add_msg = lambda m: reporter_util.add_message(m, reporter_util.MEDIUM_PRIORITY)
 
     if config.deactivate:
-        if len(accounts) == 0:
-            return "Could not find existing account to deactivate."
-        yesno = zope.component.getUtility(interfaces.IDisplay).yesno
-        prompt = ("Are you SURE you would like to irrevocably deactivate "
-                  "your account? You will lose access to the domains "
-                  "associated with it.")
-        wants_deactivate = yesno(prompt, yes_label='Deactivate',
-                                 no_label='Abort', cli_flag='--deactivate',
-                                 default=True)
-
-        if not wants_deactivate:
-            return "Deactivation aborted."
-
-        acc, acme = _determine_account(config)
-        acme_client = client.Client(config, acc, None, None, acme=acme)
-        acme_client.acme.deactivate(acc.regr)
-        add_msg("Account deactivated.")
-        return
+        return _deactivate(config, accounts, add_msg)
 
     # registering a new account
     if not config.update_registration:
