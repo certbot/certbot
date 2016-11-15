@@ -13,9 +13,11 @@ from certbot import configuration
 from certbot import errors
 from certbot.plugins import disco as plugins_disco
 
+
 class MainTest(unittest.TestCase):
     def setUp(self):
         pass
+
     def tearDown(self):
         pass
 
@@ -26,6 +28,54 @@ class MainTest(unittest.TestCase):
         # pylint: disable=protected-access
         ret = main._handle_identical_cert_request(mock.Mock(), mock_lineage)
         self.assertEqual(ret, ("reinstall", mock_lineage))
+
+
+class RunTest(unittest.TestCase):
+    """Tests for certbot.main.run."""
+
+    def setUp(self):
+        self.domain = 'example.org'
+        self.patches = [
+            mock.patch('certbot.main._auth_from_domains'),
+            mock.patch('certbot.main.display_ops.success_installation'),
+            mock.patch('certbot.main.display_ops.success_renewal'),
+            mock.patch('certbot.main._init_le_client'),
+            mock.patch('certbot.main._suggest_donation_if_appropriate')]
+
+        self.mock_auth = self.patches[0].start()
+        self.mock_success_installation = self.patches[1].start()
+        self.mock_success_renewal = self.patches[2].start()
+        self.mock_init = self.patches[3].start()
+        self.mock_suggest_donation = self.patches[4].start()
+
+    def tearDown(self):
+        for patch in self.patches:
+            patch.stop()
+
+    def _call(self):
+        args = '-a webroot -i null -d {0}'.format(self.domain).split()
+        plugins = plugins_disco.PluginsRegistry.find_all()
+        config = configuration.NamespaceConfig(
+            cli.prepare_and_parse_args(plugins, args))
+
+        from certbot.main import run
+        run(config, plugins)
+
+    def test_newcert_success(self):
+        self.mock_auth.return_value = ('newcert', mock.Mock())
+        self._call()
+        self.mock_success_installation.assert_called_once_with([self.domain])
+
+    def test_reinstall_success(self):
+        self.mock_auth.return_value = ('reinstall', mock.Mock())
+        self._call()
+        self.mock_success_installation.assert_called_once_with([self.domain])
+
+    def test_renewal_success(self):
+        self.mock_auth.return_value = ('renewal', mock.Mock())
+        self._call()
+        self.mock_success_renewal.assert_called_once_with([self.domain])
+
 
 class ObtainCertTest(unittest.TestCase):
     """Tests for certbot.main.obtain_cert."""
