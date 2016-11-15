@@ -625,7 +625,8 @@ argparse==1.4.0 \
 # This comes before cffi because cffi will otherwise install an unchecked
 # version via setup_requires.
 pycparser==2.14 \
-    --hash=sha256:7959b4a74abdc27b312fed1c21e6caf9309ce0b29ea86b591fd2e99ecdf27f73
+    --hash=sha256:7959b4a74abdc27b312fed1c21e6caf9309ce0b29ea86b591fd2e99ecdf27f73 \
+    --no-binary pycparser
 
 cffi==1.4.2 \
     --hash=sha256:53c1c9ddb30431513eb7f3cdef0a3e06b0f1252188aaa7744af0f5a4cd45dbaf \
