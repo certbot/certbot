@@ -425,7 +425,7 @@ def register(config, unused_plugins):
                   "associated with it.")
         wants_deactivate = yesno(prompt, yes_label='Deactivate',
                                  no_label='Abort', cli_flag='--deactivate',
-                                 default=False)
+                                 default=True)
 
         if not wants_deactivate:
             return "Deactivation aborted."
