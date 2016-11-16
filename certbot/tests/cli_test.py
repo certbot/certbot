@@ -9,6 +9,7 @@ import functools
 import itertools
 import os
 import shutil
+import sys
 import traceback
 import tempfile
 import unittest
@@ -144,16 +145,20 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue(cli.usage_strings(plugins)[0] in out)
 
     def test_version_string_program_name(self):
-        toy_stderr = six.StringIO()
-        with mock.patch('certbot.main.sys.stderr', new=toy_stderr):
+        toy_output = six.StringIO()
+        if sys.version_info[0] >= 3 and sys.version_info[1] > 3:
+            output_handle = 'certbot.main.sys.stdout'
+        else:
+            output_handle = 'certbot.main.sys.stderr'
+        with mock.patch(output_handle, new=toy_output):
             try:
                 main.main(["--version"])
-            except:
+            except SystemExit:
                 pass
             finally:
-                output = toy_stderr.getvalue()
+                output = toy_output.getvalue()
                 self.assertTrue("certbot" in output, "Output is: {}".format(output))
-        toy_stderr.close()
+        toy_output.close()
 
     def _cli_missing_flag(self, args, message):
         "Ensure that a particular error raises a missing cli flag error containing message"
