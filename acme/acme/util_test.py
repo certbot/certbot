@@ -26,8 +26,8 @@ class ActivateTest(unittest.TestCase):
         self.assertRaises(errors.DependencyError, self._call, 'acme>99.0.0')
 
     def test_success(self):
-        self._call('acme')
-        import acme as unused_acme
+        self._call('pkg_resources')
+        import pkg_resources as unused_pkg_resources
 
 
 if __name__ == '__main__':
