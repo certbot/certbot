@@ -26,8 +26,8 @@ class ActivateTest(unittest.TestCase):
         self.assertRaises(errors.DependencyError, self._call, 'acme>99.0.0')
 
     def test_success(self):
-        self._call('six')
-        import six as unused_six
+        self._call('acme')
+        import acme as unused_acme
 
 
 if __name__ == '__main__':
