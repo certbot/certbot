@@ -321,7 +321,7 @@ class SuccessRenewalTest(unittest.TestCase):
     @classmethod
     def _call(cls, names):
         from certbot.display.ops import success_renewal
-        success_renewal(names, "renew")
+        success_renewal(names)
 
     @mock.patch("certbot.display.ops.z_util")
     def test_success_renewal(self, mock_util):
