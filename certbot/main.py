@@ -423,7 +423,7 @@ def _deactivate(config, accounts, messenger):
     acme_client = client.Client(config, acc, None, None, acme=acme)
 
     # delete on boulder
-    acme_client.acme.deactivate(acc.regr)
+    acme_client.acme.deactivate_registration(acc.regr)
     account_files = account.AccountFileStorage(config)
     # delete local account files
     account_files.delete(config.account)

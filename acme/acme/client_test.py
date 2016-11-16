@@ -127,7 +127,8 @@ class ClientTest(unittest.TestCase):
     def test_deactivate_account(self):
         self.response.headers['Location'] = self.regr.uri
         self.response.json.return_value = self.regr.body.to_json()
-        self.assertEqual(self.regr, self.client.deactivate_registration(self.regr))
+        self.assertEqual(self.regr,
+                         self.client.deactivate_registration(self.regr))
 
     def test_deactivate_account_bad_status(self):
         self.response.headers['Location'] = self.regr.uri
