@@ -143,6 +143,18 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         out = self._help_output(['-h'])
         self.assertTrue(cli.usage_strings(plugins)[0] in out)
 
+    def test_version_string_program_name(self):
+        toy_stderr = six.StringIO()
+        with mock.patch('certbot.main.sys.stderr', new=toy_stderr):
+            try:
+                main.main(["--version"])
+            except:
+                pass
+            finally:
+                output = toy_stderr.getvalue()
+                self.assertTrue("certbot" in output, "Output is: {}".format(output))
+        toy_stderr.close()
+
     def _cli_missing_flag(self, args, message):
         "Ensure that a particular error raises a missing cli flag error containing message"
         exc = None
