@@ -7,6 +7,10 @@ import unittest
 import os
 import tempfile
 
+import six
+import mock
+from six.moves import reload_module  # pylint: disable=import-error
+
 from certbot import cli
 from certbot import constants
 from certbot import errors
@@ -25,14 +29,80 @@ class TestUtil(unittest.TestCase):
 class ParseTest(unittest.TestCase):
     '''Test the cli args entrypoint'''
 
+    def setUp(self):
+        self.tmp_dir = tempfile.mkdtemp()
+        self.config_dir = os.path.join(self.tmp_dir, 'config')
+        self.work_dir = os.path.join(self.tmp_dir, 'work')
+        self.logs_dir = os.path.join(self.tmp_dir, 'logs')
+        os.mkdir(self.logs_dir)
+        self.standard_args = ['--config-dir', self.config_dir,
+                              '--work-dir', self.work_dir,
+                              '--logs-dir', self.logs_dir, '--text']
+
     @classmethod
     def setUpClass(cls):
         cls.plugins = disco.PluginsRegistry.find_all()
         cls.parse = functools.partial(cli.prepare_and_parse_args, cls.plugins)
 
+    def _help_output(self, args):
+        "Run a command, and return the ouput string for scrutiny"
+
+        output = six.StringIO()
+        with mock.patch('certbot.main.sys.stdout', new=output):
+            with mock.patch('certbot.main.sys.stderr'):
+                self.assertRaises(SystemExit, self.parse, args, output)
+        return output.getvalue()
+
     def test_help(self):
-        self.assertRaises(SystemExit, self.parse, ['--help'])
-        self.assertRaises(SystemExit, self.parse, ['--help', 'all'])
+        self._help_output(['--help'])  # assert SystemExit is raised here
+        out = self._help_output(['--help', 'all'])
+        self.assertTrue("--configurator" in out)
+        self.assertTrue("how a cert is deployed" in out)
+        self.assertTrue("--manual-test-mode" in out)
+        self.assertTrue("--text" not in out)
+        self.assertTrue("--dialog" not in out)
+
+        out = self._help_output(['-h', 'nginx'])
+        if "nginx" in self.plugins:
+            # may be false while building distributions without plugins
+            self.assertTrue("--nginx-ctl" in out)
+        self.assertTrue("--manual-test-mode" not in out)
+        self.assertTrue("--checkpoints" not in out)
+
+        out = self._help_output(['-h'])
+        self.assertTrue("letsencrypt-auto" not in out)  # test cli.cli_command
+        if "nginx" in self.plugins:
+            self.assertTrue("Use the Nginx plugin" in out)
+        else:
+            self.assertTrue("(nginx support is experimental" in out)
+
+        out = self._help_output(['--help', 'plugins'])
+        self.assertTrue("--manual-test-mode" not in out)
+        self.assertTrue("--prepare" in out)
+        self.assertTrue('"plugins" subcommand' in out)
+
+        # test multiple topics
+        out = self._help_output(['-h', 'renew'])
+        self.assertTrue("--keep" in out)
+        out = self._help_output(['-h', 'automation'])
+        self.assertTrue("--keep" in out)
+        out = self._help_output(['-h', 'revoke'])
+        self.assertTrue("--keep" not in out)
+
+        out = self._help_output(['--help', 'install'])
+        self.assertTrue("--cert-path" in out)
+        self.assertTrue("--key-path" in out)
+
+        out = self._help_output(['--help', 'revoke'])
+        self.assertTrue("--cert-path" in out)
+        self.assertTrue("--key-path" in out)
+
+        out = self._help_output(['-h', 'config_changes'])
+        self.assertTrue("--cert-path" not in out)
+        self.assertTrue("--key-path" not in out)
+
+        out = self._help_output(['-h'])
+        self.assertTrue(cli.usage_strings(self.plugins)[0] in out)
 
     def test_parse_domains(self):
         short_args = ['-d', 'example.com']
@@ -142,3 +212,77 @@ class ParseTest(unittest.TestCase):
         short_args += ['--staging']
         conflicts += ['--staging']
         self._check_server_conflict_message(short_args, conflicts)
+
+
+class DefaultTest(unittest.TestCase):
+    """Tests for certbot.cli._Default."""
+
+    def setUp(self):
+        # pylint: disable=protected-access
+        self.default1 = cli._Default()
+        self.default2 = cli._Default()
+
+    def test_boolean(self):
+        self.assertFalse(self.default1)
+        self.assertFalse(self.default2)
+
+    def test_equality(self):
+        self.assertEqual(self.default1, self.default2)
+
+    def test_hash(self):
+        self.assertEqual(hash(self.default1), hash(self.default2))
+
+
+class SetByCliTest(unittest.TestCase):
+    """Tests for certbot.set_by_cli and related functions."""
+
+    def setUp(self):
+        reload_module(cli)
+
+    def test_webroot_map(self):
+        args = '-w /var/www/html -d example.com'.split()
+        verb = 'renew'
+        self.assertTrue(_call_set_by_cli('webroot_map', args, verb))
+
+    def test_report_config_interaction_str(self):
+        cli.report_config_interaction('manual_public_ip_logging_ok',
+                                      'manual_test_mode')
+        cli.report_config_interaction('manual_test_mode', 'manual')
+
+        self._test_report_config_interaction_common()
+
+    def test_report_config_interaction_iterable(self):
+        cli.report_config_interaction(('manual_public_ip_logging_ok',),
+                                      ('manual_test_mode',))
+        cli.report_config_interaction(('manual_test_mode',), ('manual',))
+
+        self._test_report_config_interaction_common()
+
+    def _test_report_config_interaction_common(self):
+        """Tests implied interaction between manual flags.
+
+        --manual implies --manual-test-mode which implies
+        --manual-public-ip-logging-ok. These interactions don't actually
+        exist in the client, but are used here for testing purposes.
+
+        """
+
+        args = ['--manual']
+        verb = 'renew'
+        for v in ('manual', 'manual_test_mode', 'manual_public_ip_logging_ok'):
+            self.assertTrue(_call_set_by_cli(v, args, verb))
+
+        cli.set_by_cli.detector = None
+
+        args = ['--manual-test-mode']
+        for v in ('manual_test_mode', 'manual_public_ip_logging_ok'):
+            self.assertTrue(_call_set_by_cli(v, args, verb))
+
+        self.assertFalse(_call_set_by_cli('manual', args, verb))
+
+
+def _call_set_by_cli(var, args, verb):
+    with mock.patch('certbot.cli.helpful_parser') as mock_parser:
+        mock_parser.args = args
+        mock_parser.verb = verb
+        return cli.set_by_cli(var)
