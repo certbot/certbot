@@ -154,7 +154,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                     pass
                 finally:
                     output = toy_out.getvalue() or toy_err.getvalue()
-                    self.assertTrue("certbot" in output, "Output is: {}".format(output))
+                    self.assertTrue("certbot" in output, "Output is: {0}".format(output))
         toy_out.close()
         toy_err.close()
 
