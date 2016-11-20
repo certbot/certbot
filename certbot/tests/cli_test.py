@@ -772,19 +772,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mock_revoke = client.acme_from_config_key().revoke
             mock_revoke.assert_called_once_with(jose.ComparableX509(cert))
 
-    def test_read_file(self):
-        rel_test_path = os.path.relpath(os.path.join(self.tmp_dir, 'foo'))
-        self.assertRaises(
-            argparse.ArgumentTypeError, cli.read_file, rel_test_path)
-
-        test_contents = b'bar\n'
-        with open(rel_test_path, 'wb') as f:
-            f.write(test_contents)
-
-        path, contents = cli.read_file(rel_test_path)
-        self.assertEqual(path, os.path.abspath(path))
-        self.assertEqual(contents, test_contents)
-
     def test_agree_dev_preview_config(self):
         with mock.patch('certbot.main.run') as mocked_run:
             self._call(['-c', test_util.vector_path('cli.ini')])

@@ -18,6 +18,22 @@ from certbot import util
 from certbot.plugins import disco
 
 
+class TestWhat(unittest.TestCase):
+    def test_read_file(self):
+        tmp_dir = tempfile.mkdtemp()
+        rel_test_path = os.path.relpath(os.path.join(tmp_dir, 'foo'))
+        self.assertRaises(
+            argparse.ArgumentTypeError, cli.read_file, rel_test_path)
+
+        test_contents = b'bar\n'
+        with open(rel_test_path, 'wb') as f:
+            f.write(test_contents)
+
+        path, contents = cli.read_file(rel_test_path)
+        self.assertEqual(path, os.path.abspath(path))
+        self.assertEqual(contents, test_contents)
+
+
 class TestUtil(unittest.TestCase):
     '''Why was this in there? lolz'''
     def test_punycode_ok(self):
