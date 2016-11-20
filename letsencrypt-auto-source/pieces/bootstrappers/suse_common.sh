@@ -6,7 +6,11 @@ BootstrapSuseCommon() {
     install_flags="-l"
   fi
 
-  $SUDO zypper $zypper_flags in $install_flags \
+  if [ "$QUIET" == 1 ]; then
+      QUIET_FLAG='-qq'
+  fi
+
+  $SUDO zypper $QUIET_FLAG $zypper_flags in $install_flags \
     python \
     python-devel \
     python-virtualenv \
