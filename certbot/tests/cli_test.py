@@ -142,23 +142,6 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self._call_no_clientmock(args)
             acme_net.assert_called_once_with(mock.ANY, verify_ssl=True, user_agent=ua)
 
-    def test_install_abspath(self):
-        cert = 'cert'
-        key = 'key'
-        chain = 'chain'
-        fullchain = 'fullchain'
-
-        with mock.patch('certbot.main.install') as mock_install:
-            self._call(['install', '--cert-path', cert, '--key-path', 'key',
-                        '--chain-path', 'chain',
-                        '--fullchain-path', 'fullchain'])
-
-        args = mock_install.call_args[0][0]
-        self.assertEqual(args.cert_path, os.path.abspath(cert))
-        self.assertEqual(args.key_path, os.path.abspath(key))
-        self.assertEqual(args.chain_path, os.path.abspath(chain))
-        self.assertEqual(args.fullchain_path, os.path.abspath(fullchain))
-
     @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
     @mock.patch('certbot.main.plug_sel.pick_installer')
     def test_installer_selection(self, mock_pick_installer, _rec):

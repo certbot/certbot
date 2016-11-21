@@ -68,6 +68,22 @@ class ParseTest(unittest.TestCase):
                 self.assertRaises(SystemExit, self.parse, args, output)
         return output.getvalue()
 
+    def test_install_abspath(self):
+        cert = 'cert'
+        key = 'key'
+        chain = 'chain'
+        fullchain = 'fullchain'
+
+        with mock.patch('certbot.main.install') as mock_install:
+            namespace = self.parse(['install', '--cert-path', cert,
+                                    '--key-path', 'key', '--chain-path',
+                                    'chain', '--fullchain-path', 'fullchain'])
+
+        self.assertEqual(namespace.cert_path, os.path.abspath(cert))
+        self.assertEqual(namespace.key_path, os.path.abspath(key))
+        self.assertEqual(namespace.chain_path, os.path.abspath(chain))
+        self.assertEqual(namespace.fullchain_path, os.path.abspath(fullchain))
+
     def test_help(self):
         self._help_output(['--help'])  # assert SystemExit is raised here
         out = self._help_output(['--help', 'all'])
