@@ -4,7 +4,6 @@
 # pylint: disable=too-many-lines
 from __future__ import print_function
 
-import argparse
 import functools
 import itertools
 import os
@@ -15,11 +14,9 @@ import unittest
 
 import mock
 import six
-from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import jose
 
-from certbot import account
 from certbot import cli
 from certbot import configuration
 from certbot import constants
@@ -33,16 +30,14 @@ from certbot import storage
 from certbot.plugins import disco
 from certbot.plugins import manual
 
-from certbot.tests import storage_test
 from certbot.tests import test_util
-
 
 CERT = test_util.vector_path('cert.pem')
 CSR = test_util.vector_path('csr.der')
 KEY = test_util.vector_path('rsa256_key.pem')
 
 
-class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
+class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     """Tests for different commands."""
 
     def setUp(self):
@@ -118,12 +113,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 args.extend(['--email', 'io@io.is'])
                 self._cli_missing_flag(args, "--agree-tos")
 
-    @mock.patch('certbot.main.renew')
-    def test_no_gui(self, renew):
-        args = ['renew', '--dialog']
-        # --dialog should have no effect
-        self._call(args)
-        self.assertTrue(renew.call_args[0][0].noninteractive_mode)
 
     @mock.patch('certbot.main.client.acme_client.Client')
     @mock.patch('certbot.main._determine_account')

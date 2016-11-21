@@ -1,6 +1,5 @@
 # moving tests out of cli_test.py
 # stopped at 822, test handle exception.
-from ipdb import set_trace
 import argparse
 import functools
 import unittest
@@ -166,6 +165,15 @@ class ParseTest(unittest.TestCase):
         namespace = self.parse(short_args)
         self.assertTrue(namespace.must_staple)
         self.assertTrue(namespace.staple)
+
+    def test_no_gui(self):
+        args = ['renew', '--dialog']
+        stderr = six.StringIO()
+        with mock.patch('certbot.main.sys.stderr', new=stderr):
+            namespace = self.parse(args)
+
+        self.assertTrue(namespace.noninteractive_mode)
+        self.assertTrue("--dialog is deprecated" in stderr.getvalue())
 
     def _check_server_conflict_message(self, parser_args, conflicting_args):
         try:

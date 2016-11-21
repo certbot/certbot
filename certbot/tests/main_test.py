@@ -17,18 +17,14 @@ from certbot import errors
 from certbot.plugins import disco as plugins_disco
 
 from certbot.tests import test_util
+from certbot.tests import storage_test
 from acme import jose
 
 CERT_PATH = test_util.vector_path('cert.pem')
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key_2.pem"))
 
+
 class MainTest(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
     def test_handle_identical_cert_request_pending(self):
         from certbot import main
         mock_lineage = mock.Mock()
