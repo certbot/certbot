@@ -130,19 +130,11 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(self.regr,
                          self.client.deactivate_registration(self.regr))
 
-    def test_deactivate_account_bad_status(self):
-        self.response.headers['Location'] = self.regr.uri
-        self.response.json.return_value = self.regr.body.to_json()
-        self.response.status_code = 500  # something that isn't 200 or 202
-        self.assertRaises(errors.DeactivationError,
-                          self.client.deactivate_registration,
-                          self.regr)
-
     def test_deactivate_account_bad_registration_returned(self):
         self.response.headers['Location'] = self.regr.uri
         self.response.json.return_value = "some wrong registration thing"
         self.assertRaises(
-            errors.DeactivationError,
+            errors.UnexpectedUpdate,
             self.client.deactivate_registration,
             self.regr)
 

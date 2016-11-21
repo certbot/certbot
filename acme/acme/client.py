@@ -148,20 +148,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `.RegistrationResource`
 
         """
-        update = {'status': 'deactivated'}
-        body = messages.UpdateRegistration(**dict(update))
-        response = self.net.post(regr.uri, body)
-        new_regr = self._regr_from_response(
-            response, uri=regr.uri, new_authzr_uri=regr.new_authzr_uri,
-            terms_of_service=regr.terms_of_service)
-        if response.status_code != 200:
-            msg = "Server returned bad status code: %s"
-            raise errors.DeactivationError(msg % (response.status_code,))
-        elif new_regr != regr:
-            m = "Server returen bad registration object"
-            raise errors.DeactivationError(m)
-
-        return new_regr
+        return self.update_registration(regr, update={'status': 'deactivated'})
 
     def query_registration(self, regr):
         """Query server about registration.
