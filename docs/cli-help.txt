@@ -225,7 +225,7 @@ certonly:
                         server will still attempt to connect on port 443.
                         (default: 443)
   --http-01-port HTTP01_PORT
-                        Port used in the http-01 challenge.This only affects
+                        Port used in the http-01 challenge. This only affects
                         the port Certbot listens on. A conforming ACME server
                         will still attempt to connect on port 80. (default:
                         80)
