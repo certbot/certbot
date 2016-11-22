@@ -36,7 +36,7 @@ class RunTest(unittest.TestCase):
     def setUp(self):
         self.domain = 'example.org'
         self.patches = [
-            mock.patch('certbot.main._auth_from_domains'),
+            mock.patch('certbot.main._auth_from_available'),
             mock.patch('certbot.main.display_ops.success_installation'),
             mock.patch('certbot.main.display_ops.success_renewal'),
             mock.patch('certbot.main._init_le_client'),
