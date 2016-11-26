@@ -3,6 +3,8 @@ import os
 import shutil
 import tempfile
 import unittest
+import datetime
+import pytz
 
 import mock
 
@@ -13,6 +15,11 @@ from certbot import configuration
 from certbot import errors
 from certbot.plugins import disco as plugins_disco
 
+from certbot.tests import test_util
+from acme import jose
+
+CERT_PATH = test_util.vector_path('cert.pem')
+KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key_2.pem"))
 
 class MainTest(unittest.TestCase):
     def setUp(self):
@@ -110,6 +117,46 @@ class ObtainCertTest(unittest.TestCase):
         # pylint: disable=unused-argument
         self.assertFalse(pause)
 
+class RevokeTest(unittest.TestCase):
+    """Tests for certbot.main.revoke."""
+
+    def setUp(self):
+        self.tempdir_path = tempfile.mkdtemp()
+        shutil.copy(CERT_PATH, self.tempdir_path)
+        self.tmp_cert_path = os.path.abspath(os.path.join(self.tempdir_path, 
+            'cert.pem'))
+        self.patches = [
+            mock.patch('certbot.main.display_ops.success_revocation')
+        ]
+        self.mock_success_revoke = self.patches[0].start()
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir_path)
+
+    def _call(self):
+        args = 'revoke --cert-path={0}'.format(self.tmp_cert_path).split()
+        plugins = plugins_disco.PluginsRegistry.find_all()
+        config = configuration.NamespaceConfig(
+            cli.prepare_and_parse_args(plugins, args))
+
+        from certbot.main import revoke
+        revoke(config, plugins)
+
+    def test_revocation_success(self):
+        with mock.patch('acme.client.Client') as acme:
+            with mock.patch('certbot.client.Client') as client:
+                with mock.patch('certbot.main._determine_account') as _determine_account:
+                    from certbot.account import Account
+                    self.regr = mock.MagicMock()
+                    self.meta = Account.Meta(
+                        creation_host="test.certbot.org",
+                        creation_dt=datetime.datetime(
+                            2015, 7, 4, 14, 4, 10, tzinfo=pytz.UTC))
+                    self.acc = Account(self.regr, KEY, self.meta)
+
+                    _determine_account.return_value = (self.acc, None)
+                    self._call()
+                    self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
 
 class SetupLogFileHandlerTest(unittest.TestCase):
     """Tests for certbot.main.setup_log_file_handler."""
