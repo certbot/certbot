@@ -170,8 +170,7 @@ class RevokeTest(unittest.TestCase):
     def test_revocation_error(self):
         from acme import errors as acme_errors
         self.mock_acme_client.side_effect = acme_errors.ClientError()
-        with self.assertRaises(acme_errors.ClientError):
-            self._call()
+        self.assertRaises(acme_errors.ClientError, self._call)
         self.mock_success_revoke.assert_not_called()
 
 class SetupLogFileHandlerTest(unittest.TestCase):
