@@ -507,8 +507,8 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
         acme.revoke(jose.ComparableX509(cert))
     except errors.ClientError as e:
         return e.message
-    finally:
-        display_ops.success_revocation(config.cert_path[0])
+
+    display_ops.success_revocation(config.cert_path[0])
 
 
 def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
