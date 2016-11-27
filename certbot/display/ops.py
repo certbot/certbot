@@ -244,7 +244,7 @@ def success_revocation(cert_path):
 
     """
     z_util(interfaces.IDisplay).notification(
-        "Congratulations! You have successfully revoked the certifacte "
+        "Congratulations! You have successfully revoked the certificate "
         "that was located at {0}{1}{1}".format(
             cert_path,
             os.linesep),
