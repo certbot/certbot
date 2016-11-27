@@ -123,7 +123,7 @@ class RevokeTest(unittest.TestCase):
     def setUp(self):
         self.tempdir_path = tempfile.mkdtemp()
         shutil.copy(CERT_PATH, self.tempdir_path)
-        self.tmp_cert_path = os.path.abspath(os.path.join(self.tempdir_path, 
+        self.tmp_cert_path = os.path.abspath(os.path.join(self.tempdir_path,
             'cert.pem'))
 
         self.patches = [
@@ -168,9 +168,9 @@ class RevokeTest(unittest.TestCase):
         self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
 
     def test_revocation_error(self):
-        from acme import errors
-        self.mock_acme_client.side_effect = errors.ClientError() 
-        with self.assertRaises(errors.ClientError):
+        from acme import errors as acme_errors
+        self.mock_acme_client.side_effect = acme_errors.ClientError()
+        with self.assertRaises(acme_errors.ClientError):
             self._call()
         self.mock_success_revoke.assert_not_called()
 
