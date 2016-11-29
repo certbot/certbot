@@ -110,6 +110,159 @@ class ObtainCertTest(unittest.TestCase):
         # pylint: disable=unused-argument
         self.assertFalse(pause)
 
+    @mock.patch('certbot.main._lineage_for_certname')
+    @mock.patch('certbot.main._domains_for_certname')
+    @mock.patch('certbot.renewal.renew_cert')
+    @mock.patch('certbot.main._report_new_cert')
+    def test_find_lineage_for_domains_and_certname(self, mock_report_cert,
+        mock_renew_cert, mock_domains, mock_lineage):
+        domains = ['example.com', 'test.org']
+        mock_domains.return_value = domains
+        mock_lineage.names.return_value = domains
+        self._call(('certonly --webroot -d example.com -d test.org '
+            '--cert-name example.com').split())
+        self.assertTrue(mock_lineage.call_count == 1)
+        self.assertTrue(mock_domains.call_count == 1)
+        self.assertTrue(mock_renew_cert.call_count == 1)
+        self.assertTrue(mock_report_cert.call_count == 1)
+
+        # user confirms updating lineage with new domains
+        self._call(('certonly --webroot -d example.com -d test.com '
+            '--cert-name example.com').split())
+        self.assertTrue(mock_lineage.call_count == 2)
+        self.assertTrue(mock_domains.call_count == 2)
+        self.assertTrue(mock_renew_cert.call_count == 2)
+        self.assertTrue(mock_report_cert.call_count == 2)
+
+        # error in _ask_user_to_confirm_new_names
+        util_mock = mock.Mock()
+        util_mock.yesno.return_value = False
+        self.mock_get_utility.return_value = util_mock
+        self.assertRaises(errors.ConfigurationError, self._call,
+            ('certonly --webroot -d example.com -d test.com --cert-name example.com').split())
+
+    @mock.patch('certbot.main._lineage_for_certname')
+    @mock.patch('certbot.main._report_new_cert')
+    def test_find_lineage_for_domains_new_certname(self, mock_report_cert,
+        mock_lineage):
+        mock_lineage.return_value = None
+
+        # user says yes to new cert with domains
+        self._call(('certonly --webroot -d example.com -d test.com '
+            '--cert-name example.com').split())
+        self.assertTrue(mock_lineage.call_count == 1)
+        self.assertTrue(mock_report_cert.call_count == 1)
+
+        # no lineage with this name and we didn't give domains
+        self.assertRaises(errors.ConfigurationError, self._call,
+            ('certonly --webroot --cert-name example.com').split())
+
+        # user says no to creating new cert with domains
+        util_mock = mock.Mock()
+        util_mock.yesno.return_value = False
+        self.mock_get_utility.return_value = util_mock
+        self.assertRaises(errors.Error, self._call, ('certonly --webroot -d example.com'
+            ' -d test.com --cert-name example.com').split())
+
+class SearchLineagesTest(unittest.TestCase):
+    """Tests for certbot.main._search_lineages."""
+
+    @mock.patch('certbot.configuration.RenewerConfiguration')
+    @mock.patch('certbot.util.make_or_verify_dir')
+    @mock.patch('certbot.renewal.renewal_conf_files')
+    @mock.patch('certbot.storage.RenewableCert')
+    def test_cert_storage_error(self, mock_renewable_cert, mock_renewal_conf_files,
+        mock_make_or_verify_dir, mock_renewer_config):
+        mock_renewal_conf_files.return_value = ["badfile"]
+        mock_renewable_cert.side_effect = errors.CertStorageError
+        from certbot import main
+        self.assertEqual(main._search_lineages(None, lambda x: x, "check"), "check")
+        self.assertTrue(mock_make_or_verify_dir.called)
+        self.assertTrue(mock_renewer_config)
+
+class LineageForCertnameTest(unittest.TestCase):
+    """Tests for certbot.main._lineage_for_certname"""
+
+    @mock.patch('certbot.configuration.RenewerConfiguration')
+    @mock.patch('certbot.util.make_or_verify_dir')
+    @mock.patch('certbot.renewal.renewal_conf_files')
+    @mock.patch('certbot.storage.RenewableCert')
+    def test_found_match(self, mock_renewable_cert, mock_renewal_conf_files,
+        mock_make_or_verify_dir, mock_renewer_config):
+        mock_renewal_conf_files.return_value = ["somefile.conf"]
+        mock_match = mock.Mock(lineagename="example.com")
+        mock_renewable_cert.return_value = mock_match
+        from certbot import main
+        self.assertEqual(main._lineage_for_certname(None, "example.com"), mock_match)
+        self.assertTrue(mock_make_or_verify_dir.called)
+        self.assertTrue(mock_renewer_config)
+
+    @mock.patch('certbot.configuration.RenewerConfiguration')
+    @mock.patch('certbot.util.make_or_verify_dir')
+    @mock.patch('certbot.renewal.renewal_conf_files')
+    @mock.patch('certbot.storage.RenewableCert')
+    def test_no_match(self, mock_renewable_cert, mock_renewal_conf_files,
+        mock_make_or_verify_dir, mock_renewer_config):
+        mock_renewal_conf_files.return_value = ["somefile.conf"]
+        mock_match = mock.Mock(lineagename="other.com")
+        mock_renewable_cert.return_value = mock_match
+        from certbot import main
+        self.assertEqual(main._lineage_for_certname(None, "example.com"), None)
+        self.assertTrue(mock_make_or_verify_dir.called)
+        self.assertTrue(mock_renewer_config)
+
+class DomainsForCertnameTest(unittest.TestCase):
+    """Tests for certbot.main._domains_for_certname"""
+
+    @mock.patch('certbot.configuration.RenewerConfiguration')
+    @mock.patch('certbot.util.make_or_verify_dir')
+    @mock.patch('certbot.renewal.renewal_conf_files')
+    @mock.patch('certbot.storage.RenewableCert')
+    def test_found_match(self, mock_renewable_cert, mock_renewal_conf_files,
+        mock_make_or_verify_dir, mock_renewer_config):
+        mock_renewal_conf_files.return_value = ["somefile.conf"]
+        mock_match = mock.Mock(lineagename="example.com")
+        domains = ["example.com", "example.org"]
+        mock_match.names.return_value = domains
+        mock_renewable_cert.return_value = mock_match
+        from certbot import main
+        self.assertEqual(main._domains_for_certname(None, "example.com"), domains)
+        self.assertTrue(mock_make_or_verify_dir.called)
+        self.assertTrue(mock_renewer_config)
+
+    @mock.patch('certbot.configuration.RenewerConfiguration')
+    @mock.patch('certbot.util.make_or_verify_dir')
+    @mock.patch('certbot.renewal.renewal_conf_files')
+    @mock.patch('certbot.storage.RenewableCert')
+    def test_no_match(self, mock_renewable_cert, mock_renewal_conf_files,
+        mock_make_or_verify_dir, mock_renewer_config):
+        mock_renewal_conf_files.return_value = ["somefile.conf"]
+        mock_match = mock.Mock(lineagename="example.com")
+        domains = ["example.com", "example.org"]
+        mock_match.names.return_value = domains
+        mock_renewable_cert.return_value = mock_match
+        from certbot import main
+        self.assertEqual(main._domains_for_certname(None, "other.com"), None)
+        self.assertTrue(mock_make_or_verify_dir.called)
+        self.assertTrue(mock_renewer_config)
+
+class FindDomainsOrCertnameTest(unittest.TestCase):
+    """Tests for certbot.main._find_domains_or_certname."""
+
+    @mock.patch('certbot.display.ops.choose_names')
+    def test_display_ops(self, mock_choose_names):
+        mock_config = mock.Mock(domains=None, certname=None)
+        mock_choose_names.return_value = "domainname"
+        from certbot import main
+        self.assertEqual(main._find_domains_or_certname(mock_config, None),
+            ("domainname", None))
+
+    @mock.patch('certbot.display.ops.choose_names')
+    def test_no_results(self, mock_choose_names):
+        mock_config = mock.Mock(domains=None, certname=None)
+        mock_choose_names.return_value = []
+        from certbot import main
+        self.assertRaises(errors.Error, main._find_domains_or_certname, mock_config, None)
 
 class SetupLogFileHandlerTest(unittest.TestCase):
     """Tests for certbot.main.setup_log_file_handler."""

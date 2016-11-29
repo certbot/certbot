@@ -350,6 +350,7 @@ def _find_duplicative_certs(config, domains):
     return _search_lineages(config, func, (None, None))
 
 def _find_domains_or_certname(config, installer):
+    domains = None
     if config.domains:
         domains = config.domains
     elif not config.certname:
