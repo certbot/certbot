@@ -78,7 +78,7 @@ class RunTest(unittest.TestCase):
 
     def _call(self):
         args = '-a webroot -i null -d {0}'.format(self.domain).split()
-        plugins = plugins_disco.PluginsRegistry.find_all()
+        plugins = disco.PluginsRegistry.find_all()
         config = configuration.NamespaceConfig(
             cli.prepare_and_parse_args(plugins, args))
 
