@@ -148,7 +148,8 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
                 time.sleep(1)  # wait until thread starts
             else:
                 self.assertEqual(jose.ComparableX509(cert),
-                                 test_util.load_comparable_cert('rsa2048_cert.pem'))
+                                 test_util.load_comparable_cert(
+                                    'rsa2048_cert.pem'))
                 break
 
 
