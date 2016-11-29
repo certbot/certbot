@@ -16,6 +16,7 @@ from certbot.plugins import disco
 
 
 class TestReadFile(unittest.TestCase):
+    '''Test cli.read_file'''
     def test_read_file(self):
         tmp_dir = tempfile.mkdtemp()
         rel_test_path = os.path.relpath(os.path.join(tmp_dir, 'foo'))
@@ -33,16 +34,6 @@ class TestReadFile(unittest.TestCase):
 
 class ParseTest(unittest.TestCase):
     '''Test the cli args entrypoint'''
-
-    def setUp(self):
-        self.tmp_dir = tempfile.mkdtemp()
-        self.config_dir = os.path.join(self.tmp_dir, 'config')
-        self.work_dir = os.path.join(self.tmp_dir, 'work')
-        self.logs_dir = os.path.join(self.tmp_dir, 'logs')
-        os.mkdir(self.logs_dir)
-        self.standard_args = ['--config-dir', self.config_dir,
-                              '--work-dir', self.work_dir,
-                              '--logs-dir', self.logs_dir, '--text']
 
     @classmethod
     def setUpClass(cls):
