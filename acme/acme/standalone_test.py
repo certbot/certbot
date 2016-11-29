@@ -149,7 +149,7 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
             else:
                 self.assertEqual(jose.ComparableX509(cert),
                                  test_util.load_comparable_cert(
-                                    'rsa2048_cert.pem'))
+                                     'rsa2048_cert.pem'))
                 break
 
 
