@@ -690,7 +690,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "--cert-name", dest="certname",
         metavar="CERTNAME", default=None,
         help="Certificate name to apply. Only one certificate name can be used "
-             "per Certbot run. Show certificate names by running certificates command.")
+             "per Certbot run. Show certificate names by running certificates "
+             "command. If there is no existing certificate with this name and "
+             "domains are requested, create a new certificate with this name.")
     helpful.add(
         [None, "testing", "renew", "certonly"],
         "--dry-run", action="store_true", dest="dry_run",
@@ -743,6 +745,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "regardless of whether it is near expiry. (Often "
              "--keep-until-expiring is more appropriate). Also implies "
              "--expand.")
+    helpful.add(
+        "automation", "--renew-with-new-domains",
+        action="store_true", dest="renew_with_new_domains", help="If a "
+             "certificate already exists for the requested certificate name "
+             "but does not match the request domains, renew it now, "
+             "regardless of whether it is near expiry.")
     helpful.add(
         ["automation", "renew", "certonly"],
         "--allow-subset-of-names", action="store_true",

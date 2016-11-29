@@ -246,22 +246,24 @@ def _find_lineage_for_domains_and_certname(config, domains, certname):
         if lineage:
             if domains:
                 if set(_domains_for_certname(config, certname)) != set(domains):
-                    _ask_user_to_confirm_new_names(domains, certname,
+                    _ask_user_to_confirm_new_names(config, domains, certname,
                         lineage.names()) # raises if no
                     return "renew", lineage
+            # unnecessarily specified domains or no domains specified
             return _handle_identical_cert_request(config, lineage)
         else:
-            if not domains:
+            if domains:
+                return "newcert", None
+            else:
                 raise errors.ConfigurationError("No certificate with name {0} found. "
                     "Use -d to specify domains, or run certbot --certificates to see "
                     "possible certificate names.".format(certname))
-            else:
-                _ask_user_to_confirm_new_cert_with_domains(certname, domains) # raises if no
-                return "newcert", None
 
-def _ask_user_to_confirm_new_names(new_domains, certname, old_domains):
+def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
     """Ask user to confirm update cert certname to contain new_domains.
     """
+    if config.renew_with_new_domains:
+        return
     msg = ("Confirm that you intend to update certificate {0} "
            "to include domains {1}. Note that it previously "
            "contained domains {2}.".format(
@@ -271,17 +273,6 @@ def _ask_user_to_confirm_new_names(new_domains, certname, old_domains):
     obj = zope.component.getUtility(interfaces.IDisplay)
     if not obj.yesno(msg, "Update cert", "Cancel"):
         raise errors.ConfigurationError("Specified mismatched cert name and domains.")
-
-def _ask_user_to_confirm_new_cert_with_domains(certname, domains):
-    """Ask user to confirm new cert named certname with domains domains.
-    """
-    msg = ("Confirm that you intend to create a new certificate with name {0} "
-           "for domains {1}.".format(
-               certname,
-               domains))
-    obj = zope.component.getUtility(interfaces.IDisplay)
-    if not obj.yesno(msg, "Create cert", "Cancel"):
-        raise errors.Error(USER_CANCELLED)
 
 def _search_lineages(config, func, initial_rv):
     """Iterate func over unbroken lineages, allowing custom return conditions.

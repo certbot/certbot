@@ -147,7 +147,7 @@ class ObtainCertTest(unittest.TestCase):
         mock_lineage):
         mock_lineage.return_value = None
 
-        # user says yes to new cert with domains
+        # no lineage with this name but we specified domains so create a new cert
         self._call(('certonly --webroot -d example.com -d test.com '
             '--cert-name example.com').split())
         self.assertTrue(mock_lineage.call_count == 1)
@@ -156,13 +156,6 @@ class ObtainCertTest(unittest.TestCase):
         # no lineage with this name and we didn't give domains
         self.assertRaises(errors.ConfigurationError, self._call,
             ('certonly --webroot --cert-name example.com').split())
-
-        # user says no to creating new cert with domains
-        util_mock = mock.Mock()
-        util_mock.yesno.return_value = False
-        self.mock_get_utility.return_value = util_mock
-        self.assertRaises(errors.Error, self._call, ('certonly --webroot -d example.com'
-            ' -d test.com --cert-name example.com').split())
 
 class SearchLineagesTest(unittest.TestCase):
     """Tests for certbot.main._search_lineages."""
