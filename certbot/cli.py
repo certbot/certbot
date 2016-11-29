@@ -68,6 +68,7 @@ cert. Major SUBCOMMANDS are:
   rollback             Rollback server configuration changes made during install
   config_changes       Show changes made to server config during installation
   update_symlinks      Update cert symlinks based on renewal config file
+  rename               Update a certificate's name
   plugins              Display information about installed plugins
   certificates         Display information about certs configured with Certbot
 
@@ -326,7 +327,7 @@ class HelpfulArgumentParser(object):
                       "register": main.register, "renew": main.renew,
                       "revoke": main.revoke, "rollback": main.rollback,
                       "everything": main.run, "update_symlinks": main.update_symlinks,
-                      "certificates": main.certificates}
+                      "certificates": main.certificates, "rename": main.rename}
 
         # List of topics for which additional help can be provided
         HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
@@ -693,6 +694,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "per Certbot run. Show certificate names by running certificates "
              "command. If there is no existing certificate with this name and "
              "domains are requested, create a new certificate with this name.")
+    helpful.add(
+        "rename",
+        "--new-cert-name", dest="new_certname",
+        metavar="NEW_CERTNAME", default=None,
+        help="New name for the certificate. Must be a valid filename.")
     helpful.add(
         [None, "testing", "renew", "certonly"],
         "--dry-run", action="store_true", dest="dry_run",

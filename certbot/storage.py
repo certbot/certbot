@@ -96,6 +96,25 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
         config.write(outfile=f)
     return config
 
+def rename_renewal_config(prev_name, new_name, cli_config):
+    """Rename's cli_config.certname's config to cli_config.new_certname.
+
+    :param .RenewerConfiguration cli_config: parsed command line
+        arguments
+    """
+    prev_filename = os.path.join(
+        cli_config.renewal_configs_dir, prev_name) + ".conf"
+    new_filename = os.path.join(
+        cli_config.renewal_configs_dir, new_name) + ".conf"
+    if os.path.isfile(new_filename):
+        raise errors.ConfigurationError("The new certificate name "
+            "is already in use.")
+    try:
+        os.rename(prev_filename, new_filename)
+    except OSError:
+        raise errors.ConfigurationError("Please specify a valid filename "
+            "for the new certificate name.")
+
 
 def update_configuration(lineagename, archive_dir, target, cli_config):
     """Modifies lineagename's config to contain the specified values.

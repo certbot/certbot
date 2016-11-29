@@ -33,7 +33,6 @@ from certbot import storage
 from certbot.plugins import disco
 from certbot.plugins import manual
 
-from certbot.tests import storage_test
 from certbot.tests import test_util
 
 
@@ -603,7 +602,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         mock_client.obtain_certificate.return_value = (mock_certr, 'chain',
                                                        mock_key, 'csr')
         try:
-            with mock.patch('certbot.main._find_duplicative_certs') as mock_fdc:
+            with mock.patch('certbot.cert_manager.find_duplicative_certs') as mock_fdc:
                 mock_fdc.return_value = (mock_lineage, None)
                 with mock.patch('certbot.main._init_le_client') as mock_init:
                     mock_init.return_value = mock_client
@@ -1139,47 +1138,6 @@ class DetermineAccountTest(unittest.TestCase):
             self._call()
         self.assertEqual(self.accs[1].id, self.config.account)
         self.assertEqual('other email', self.config.email)
-
-
-class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
-    """Test to avoid duplicate lineages."""
-
-    def setUp(self):
-        super(DuplicativeCertsTest, self).setUp()
-        self.config.write()
-        self._write_out_ex_kinds()
-
-    def tearDown(self):
-        shutil.rmtree(self.tempdir)
-
-    @mock.patch('certbot.util.make_or_verify_dir')
-    def test_find_duplicative_names(self, unused_makedir):
-        from certbot.main import _find_duplicative_certs
-        test_cert = test_util.load_vector('cert-san.pem')
-        with open(self.test_rc.cert, 'wb') as f:
-            f.write(test_cert)
-
-        # No overlap at all
-        result = _find_duplicative_certs(
-            self.cli_config, ['wow.net', 'hooray.org'])
-        self.assertEqual(result, (None, None))
-
-        # Totally identical
-        result = _find_duplicative_certs(
-            self.cli_config, ['example.com', 'www.example.com'])
-        self.assertTrue(result[0].configfile.filename.endswith('example.org.conf'))
-        self.assertEqual(result[1], None)
-
-        # Superset
-        result = _find_duplicative_certs(
-            self.cli_config, ['example.com', 'www.example.com', 'something.new'])
-        self.assertEqual(result[0], None)
-        self.assertTrue(result[1].configfile.filename.endswith('example.org.conf'))
-
-        # Partial overlap doesn't count
-        result = _find_duplicative_certs(
-            self.cli_config, ['example.com', 'something.new'])
-        self.assertEqual(result, (None, None))
 
 
 class DefaultTest(unittest.TestCase):
