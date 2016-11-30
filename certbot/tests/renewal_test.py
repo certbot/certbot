@@ -5,7 +5,6 @@ import unittest
 import tempfile
 
 from certbot import configuration
-from certbot import renewal
 from certbot import storage
 
 from certbot.tests import test_util
@@ -26,5 +25,6 @@ class RenewalTest(unittest.TestCase):
                 rc_path, configuration.RenewerConfiguration(config))
         renewalparams = lineage.configuration["renewalparams"]
         # pylint: disable=protected-access
+        from certbot import renewal
         renewal._restore_webroot_config(config, renewalparams)
         self.assertEqual(config.webroot_path, ["/var/www/"])
