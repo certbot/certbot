@@ -32,16 +32,17 @@ from certbot.plugins import disco
 from certbot.plugins import manual
 
 
-from certbot.tests import test_util
 from certbot.tests import storage_test
 from acme import jose
 
-CERT_PATH = test_util.vector_path('cert.pem')
-KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key_2.pem"))
+from certbot.tests import storage_test
+import certbot.tests.util as test_util
 
+CERT_PATH = test_util.vector_path('cert.pem')
 CERT = test_util.vector_path('cert.pem')
 CSR = test_util.vector_path('csr.der')
-KEY = test_util.vector_path('rsa256_key.pem')
+#KEY = test_util.vector_path('rsa256_key.pem')
+KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key_2.pem"))
 
 
 class TestHandleIdenticalCerts(unittest.TestCase):

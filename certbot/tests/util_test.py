@@ -11,7 +11,7 @@ import mock
 import six
 
 from certbot import errors
-from certbot.tests import test_util
+import certbot.tests.util as test_util
 
 
 class RunScriptTest(unittest.TestCase):
