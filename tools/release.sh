@@ -147,6 +147,7 @@ cd ~-
 
 # get a snapshot of the CLI help for the docs
 certbot --help all > docs/cli-help.txt
+jws --help > acme/docs/jws-help.txt
 
 cd ..
 # freeze before installing anything else, so that we know end-user KGS

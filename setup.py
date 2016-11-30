@@ -79,7 +79,6 @@ docs_extras = [
     'repoze.sphinx.autointerface',
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
     'sphinx_rtd_theme',
-    'sphinxcontrib-programoutput',
 ]
 
 setup(
