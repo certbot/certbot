@@ -1115,5 +1115,59 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                             email in mock_utility().add_message.call_args[0][0])
 
 
+class TestHandleException(unittest.TestCase):
+    """Test main._handle_exception"""
+    @mock.patch('certbot.main.sys')
+    def test_handle_exception(self, mock_sys):
+        # pylint: disable=protected-access
+        from acme import messages
+
+        config = mock.MagicMock()
+        mock_open = mock.mock_open()
+
+        with mock.patch('certbot.main.open', mock_open, create=True):
+            exception = Exception('detail')
+            config.verbose_count = 1
+            main._handle_exception(
+                Exception, exc_value=exception, trace=None, config=None)
+            mock_open().write.assert_any_call(''.join(
+                traceback.format_exception_only(Exception, exception)))
+            error_msg = mock_sys.exit.call_args_list[0][0][0]
+            self.assertTrue('unexpected error' in error_msg)
+
+        with mock.patch('certbot.main.open', mock_open, create=True):
+            mock_open.side_effect = [KeyboardInterrupt]
+            error = errors.Error('detail')
+            main._handle_exception(
+                errors.Error, exc_value=error, trace=None, config=None)
+            # assert_any_call used because sys.exit doesn't exit in cli.py
+            mock_sys.exit.assert_any_call(''.join(
+                traceback.format_exception_only(errors.Error, error)))
+
+        bad_typ = messages.ERROR_PREFIX + 'triffid'
+        exception = messages.Error(detail='alpha', typ=bad_typ, title='beta')
+        config = mock.MagicMock(debug=False, verbose_count=-3)
+        main._handle_exception(
+            messages.Error, exc_value=exception, trace=None, config=config)
+        error_msg = mock_sys.exit.call_args_list[-1][0][0]
+        self.assertTrue('unexpected error' in error_msg)
+        self.assertTrue('acme:error' not in error_msg)
+        self.assertTrue('alpha' in error_msg)
+        self.assertTrue('beta' in error_msg)
+        config = mock.MagicMock(debug=False, verbose_count=1)
+        main._handle_exception(
+            messages.Error, exc_value=exception, trace=None, config=config)
+        error_msg = mock_sys.exit.call_args_list[-1][0][0]
+        self.assertTrue('unexpected error' in error_msg)
+        self.assertTrue('acme:error' in error_msg)
+        self.assertTrue('alpha' in error_msg)
+
+        interrupt = KeyboardInterrupt('detail')
+        main._handle_exception(
+            KeyboardInterrupt, exc_value=interrupt, trace=None, config=None)
+        mock_sys.exit.assert_called_with(''.join(
+            traceback.format_exception_only(KeyboardInterrupt, interrupt)))
+
+
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
