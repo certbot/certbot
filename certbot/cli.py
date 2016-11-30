@@ -336,6 +336,7 @@ class HelpfulArgumentParser(object):
         self.help_topics = HELP_TOPICS + plugin_names + [None]
         usage, short_usage = usage_strings(plugins)
         self.parser = configargparse.ArgParser(
+            prog="certbot",
             usage=short_usage,
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
             args_for_setting_config_path=["-c", "--config"],

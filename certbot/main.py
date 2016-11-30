@@ -12,6 +12,7 @@ import zope.component
 
 from acme import jose
 from acme import messages
+from acme import errors as acme_errors
 
 import certbot
 
@@ -525,7 +526,12 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
         key = acc.key
     acme = client.acme_from_config_key(config, key)
     cert = crypto_util.pyopenssl_load_certificate(config.cert_path[1])[0]
-    acme.revoke(jose.ComparableX509(cert))
+    try:
+        acme.revoke(jose.ComparableX509(cert))
+    except acme_errors.ClientError as e:
+        return e.message
+
+    display_ops.success_revocation(config.cert_path[0])
 
 
 def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
