@@ -196,6 +196,11 @@ class Client(object):
         else:
             self.auth_handler = None
 
+        # Warn if the client is using unsupported config options with an
+        # installer
+        if self.installer is not None:
+            self._verify_all_config_options_supported(config)
+
     def obtain_certificate_from_csr(self, domains, csr,
         typ=OpenSSL.crypto.FILETYPE_ASN1, authzr=None):
         """Obtain certificate.
@@ -411,9 +416,10 @@ class Client(object):
             raise errors.Error("No config available")
 
         supported = self.installer.supported_enhancements()
+
         redirect = config.redirect if "redirect" in supported else False
         hsts = config.hsts if "ensure-http-header" in supported else False
-        uir = config.uir if "ensure-http-header"  in supported else False
+        uir = config.uir if "ensure-http-header" in supported else False
         staple = config.staple if "staple-ocsp" in supported else False
 
         if redirect is None:
@@ -501,6 +507,32 @@ class Client(object):
                 reporter.HIGH_PRIORITY)
             raise
         reporter.add_message(success_msg, reporter.HIGH_PRIORITY)
+
+    def _verify_all_config_options_supported(self, config):
+        """Verifies that all config options are supported in current installer.
+
+         :ivar config: Namespace typically produced by
+            :meth:`argparse.ArgumentParser.parse_args`.
+         :type namespace: :class:`argparse.Namespace`
+        """
+        # Mapping between config options and string describing config option
+        # support in installer supported_enhancements.
+        option_support = {
+            "redirect": "redirect",
+            "hsts": "ensure-http-header",
+            "uir": "ensure-http-header",
+            "staple": "staple-ocsp"
+        }
+
+        supported = self.installer.supported_enhancements()
+
+        for config_name, support_string in option_support.items():
+            config_value = getattr(config, config_name, None)
+            if config_value and support_string not in supported:
+                msg = ("Option %s is not allowed with the current installer. "
+                       "Please disable the option and try again." %
+                       config_name)
+                logger.warning(msg)
 
 
 def validate_key_csr(privkey, csr=None):
