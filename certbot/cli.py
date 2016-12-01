@@ -692,12 +692,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "--cert-name", dest="certname",
         metavar="CERTNAME", default=None,
         help="Certificate name to apply. Only one certificate name can be used "
-             "per Certbot run. Show certificate names by running certificates "
-             "command. If there is no existing certificate with this name and "
+             "per Certbot run. To see certificate names, run 'certbot certificates'."
+             "If there is no existing certificate with this name and "
              "domains are requested, create a new certificate with this name.")
     helpful.add(
         "rename",
-        "--new-cert-name", dest="new_certname",
+        "--updated-cert-name", dest="new_certname",
         metavar="NEW_CERTNAME", default=None,
         help="New name for the certificate. Must be a valid filename.")
     helpful.add(
@@ -756,7 +756,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "automation", "--renew-with-new-domains",
         action="store_true", dest="renew_with_new_domains", help="If a "
              "certificate already exists for the requested certificate name "
-             "but does not match the request domains, renew it now, "
+             "but does not match the requested domains, renew it now, "
              "regardless of whether it is near expiry.")
     helpful.add(
         ["automation", "renew", "certonly"],

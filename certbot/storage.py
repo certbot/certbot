@@ -97,7 +97,7 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
     return config
 
 def rename_renewal_config(prev_name, new_name, cli_config):
-    """Rename's cli_config.certname's config to cli_config.new_certname.
+    """Renames cli_config.certname's config to cli_config.new_certname.
 
     :param .RenewerConfiguration cli_config: parsed command line
         arguments
@@ -106,7 +106,7 @@ def rename_renewal_config(prev_name, new_name, cli_config):
         cli_config.renewal_configs_dir, prev_name) + ".conf"
     new_filename = os.path.join(
         cli_config.renewal_configs_dir, new_name) + ".conf"
-    if os.path.isfile(new_filename):
+    if os.path.exists(new_filename):
         raise errors.ConfigurationError("The new certificate name "
             "is already in use.")
     try:

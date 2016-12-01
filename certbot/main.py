@@ -73,6 +73,10 @@ def _report_successful_dry_run(config):
 def _auth_from_available(le_client, config, domains=None, certname=None, lineage=None):
     """Authenticate and enroll certificate.
 
+    This method finds the relevant lineage, figures out what to do with it,
+    then performs that action. Includes calls to hooks, various reports,
+    checks, and requests for user input.
+
     :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains_and_certname
               action can be: "newcert" | "renew" | "reinstall"
     """
@@ -171,7 +175,7 @@ def _handle_identical_cert_request(config, lineage):
         # reinstalled without further prompting.
         return "reinstall", lineage
     question = (
-        "You have an existing certificate that contains exactly the same "
+        "You have an existing certificate that has exactly the same "
         "domains or certificate name you requested and isn't close to expiry."
         "{br}(ref: {0}){br}{br}What would you like to do?"
     ).format(lineage.configfile.filename, br=os.linesep)

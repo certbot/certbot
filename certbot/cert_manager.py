@@ -60,7 +60,7 @@ def rename_lineage(config):
     new_certname = config.new_certname
     if not new_certname:
         code, new_certname = disp.input("Enter the new name for certificate {0}"
-            .format(certname), flag="--new-cert-name")
+            .format(certname), flag="--updated-cert-name")
         if code != display_util.OK or not new_certname:
             raise errors.Error("User ended interaction.")
 
@@ -149,6 +149,9 @@ def certificates(config):
 
 def _search_lineages(config, func, initial_rv):
     """Iterate func over unbroken lineages, allowing custom return conditions.
+
+    Allows flexible customization of return values, including multiple
+    return values and complex checks.
     """
     cli_config = configuration.RenewerConfiguration(config)
     configs_dir = cli_config.renewal_configs_dir
