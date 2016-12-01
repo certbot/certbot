@@ -23,7 +23,7 @@ cover () {
     proc="--processes=2"
   elif [ "$1" = "certbot_apache" ]; then
     min=100
-    proc=
+    proc="--processes=2 --process-timeout=80"
   elif [ "$1" = "certbot_nginx" ]; then
     min=97
     proc="--processes=2"
