@@ -26,7 +26,7 @@ cover () {
     proc="--processes=2 --process-timeout=80"
   elif [ "$1" = "certbot_nginx" ]; then
     min=97
-    proc="--processes=2"
+    proc="--processes=2 --process-timeout=60"
   elif [ "$1" = "letshelp_certbot" ]; then
     min=100
     proc="--processes=2"
