@@ -17,7 +17,7 @@ fi
 cover () {
   if [ "$1" = "certbot" ]; then
     min=98
-    proc=
+    proc="--processes=2 --process-timeout=80"
   elif [ "$1" = "acme" ]; then
     min=100
     proc="--processes=2"
