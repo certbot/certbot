@@ -388,15 +388,10 @@ class Client(object):
             # sites may have been enabled / final cleanup
             self.installer.restart()
 
-    def enhance_config(self, domains, config, chain_path):
+    def enhance_config(self, domains, chain_path):
         """Enhance the configuration.
 
         :param list domains: list of domains to configure
-
-        :ivar config: Namespace typically produced by
-            :meth:`argparse.ArgumentParser.parse_args`.
-            it must have the redirect, hsts and uir attributes.
-        :type namespace: :class:`argparse.Namespace`
 
         :param chain_path: chain file path
         :type chain_path: `str` or `None`
@@ -411,16 +406,12 @@ class Client(object):
                            "configuration to enhance.")
             raise errors.Error("No installer available")
 
-        if config is None:
-            logger.warning("No config is specified.")
-            raise errors.Error("No config available")
-
         supported = self.installer.supported_enhancements()
 
-        redirect = config.redirect if "redirect" in supported else False
-        hsts = config.hsts if "ensure-http-header" in supported else False
-        uir = config.uir if "ensure-http-header" in supported else False
-        staple = config.staple if "staple-ocsp" in supported else False
+        hsts = self.config.hsts if "ensure-http-header" in supported else False
+        redirect = self.config.redirect if "redirect" in supported else False
+        staple = self.config.staple if "staple-ocsp" in supported else False
+        uir = self.config.uir if "ensure-http-header" in supported else False
 
         if redirect is None:
             redirect = enhancements.ask("redirect")
