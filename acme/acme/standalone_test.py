@@ -21,6 +21,8 @@ from acme import test_util
 class TLSServerTest(unittest.TestCase):
     """Tests for acme.standalone.TLSServer."""
 
+    _multiprocess_can_split_ = True
+
     def test_bind(self):  # pylint: disable=no-self-use
         from acme.standalone import TLSServer
         server = TLSServer(
@@ -30,6 +32,8 @@ class TLSServerTest(unittest.TestCase):
 
 class TLSSNI01ServerTest(unittest.TestCase):
     """Test for acme.standalone.TLSSNI01Server."""
+
+    _multiprocess_can_split_ = True
 
     def setUp(self):
         self.certs = {b'localhost': (
@@ -56,6 +60,8 @@ class TLSSNI01ServerTest(unittest.TestCase):
 
 class HTTP01ServerTest(unittest.TestCase):
     """Tests for acme.standalone.HTTP01Server."""
+
+    _multiprocess_can_split_ = True
 
     def setUp(self):
         self.account_key = jose.JWK.load(
@@ -108,6 +114,8 @@ class HTTP01ServerTest(unittest.TestCase):
 
 class TestSimpleTLSSNI01Server(unittest.TestCase):
     """Tests for acme.standalone.simple_tls_sni_01_server."""
+
+    _multiprocess_can_split_ = True
 
     def setUp(self):
         # mirror ../examples/standalone
