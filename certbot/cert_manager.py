@@ -13,6 +13,8 @@ from certbot import renewal
 from certbot import storage
 from certbot import util
 
+from certbot.display import util as display_util
+
 logger = logging.getLogger(__name__)
 
 def update_live_symlinks(config):
@@ -40,21 +42,33 @@ def rename_lineage(config):
     :type config: :class:`certbot.interfaces.IConfig`
 
     """
-    if not config.certname:
-        raise errors.ConfigurationError("Specify a certificate name with "
-            "with flag --cert-name.")
-    if not config.new_certname:
-        raise errors.ConfigurationError("Specify a new name for certificate {0} "
-            "with flag --new-cert-name."
-            .format(config.certname))
-    lineage = lineage_for_certname(config, config.certname)
+    disp = zope.component.getUtility(interfaces.IDisplay)
+
+    certname = config.certname
+    if not certname:
+        renewer_config = configuration.RenewerConfiguration(config)
+        choices = renewal.renewal_conf_files(renewer_config)
+        if not choices:
+            raise errors.Error("No existing certificates found.")
+        code, certname = disp.menu("Which certificate would you like to rename?",
+            choices, ok_label="Select", flag="--cert-name")
+        if code != display_util.OK or not certname:
+            raise errors.Error("User ended interaction.")
+
+    new_certname = config.new_certname
+    if not new_certname:
+        code, new_certname = disp.input("Enter the new name for certificate {0}"
+            .format(certname), flag="--new-cert-name")
+        if code != display_util.OK or not new_certname:
+            raise errors.Error("User ended interaction.")
+
+    lineage = lineage_for_certname(config, certname)
     if not lineage:
         raise errors.ConfigurationError("No existing certificate with name "
-            "{0} found.".format(config.certname))
-    storage.rename_renewal_config(config.certname, config.new_certname, config)
-    disp = zope.component.getUtility(interfaces.IDisplay)
+            "{0} found.".format(certname))
+    storage.rename_renewal_config(certname, new_certname, config)
     disp.notification("Successfully renamed {0} to {1}."
-        .format(config.certname, config.new_certname), pause=False)
+        .format(certname, new_certname), pause=False)
 
 def _report_lines(msgs):
     """Format a results report for a category of single-line renewal outcomes"""

@@ -10,6 +10,8 @@ import mock
 
 from certbot import configuration
 from certbot import errors
+
+from certbot.display import util as display_util
 from certbot.storage import ALL_FOUR
 
 from certbot.tests import storage_test
@@ -291,18 +293,42 @@ class RenameLineageTest(storage_test.BaseRenewableCertTest):
         from certbot import cert_manager
         return cert_manager.rename_lineage(*args, **kwargs)
 
-    def test_no_certname(self):
+    @mock.patch('certbot.renewal.renewal_conf_files')
+    @mock.patch('certbot.main.zope.component.getUtility')
+    def test_no_certname(self, mock_get_utility, mock_renewal_conf_files):
         mock_config = mock.Mock(certname=None)
-        self.assertRaises(errors.ConfigurationError,
-            self._call, mock_config)
 
-    def test_no_new_certname(self):
+        mock_renewal_conf_files.return_value = []
+        self.assertRaises(errors.Error, self._call, mock_config)
+
+        mock_renewal_conf_files.return_value = True
+        util_mock = mock.Mock()
+        util_mock.menu.return_value = (display_util.CANCEL, "name")
+        mock_get_utility.return_value = util_mock
+        self.assertRaises(errors.Error, self._call, mock_config)
+
+        util_mock = mock.Mock()
+        util_mock.menu.return_value = (display_util.OK, None)
+        mock_get_utility.return_value = util_mock
+        self.assertRaises(errors.Error, self._call, mock_config)
+
+    @mock.patch('certbot.main.zope.component.getUtility')
+    def test_no_new_certname(self, mock_get_utility):
         mock_config = mock.Mock(certname="one", new_certname=None)
-        self.assertRaises(errors.ConfigurationError,
-            self._call, mock_config)
 
+        util_mock = mock.Mock()
+        util_mock.input.return_value = (display_util.CANCEL, "name")
+        mock_get_utility.return_value = util_mock
+        self.assertRaises(errors.Error, self._call, mock_config)
+
+        util_mock = mock.Mock()
+        util_mock.input.return_value = (display_util.OK, None)
+        mock_get_utility.return_value = util_mock
+        self.assertRaises(errors.Error, self._call, mock_config)
+
+    @mock.patch('certbot.main.zope.component.getUtility')
     @mock.patch('certbot.cert_manager.lineage_for_certname')
-    def test_no_existing_certname(self, mock_lineage_for_certname):
+    def test_no_existing_certname(self, mock_lineage_for_certname, unused_get_utility):
         mock_config = mock.Mock(certname="one", new_certname="two")
         mock_lineage_for_certname.return_value = None
         self.assertRaises(errors.ConfigurationError,
