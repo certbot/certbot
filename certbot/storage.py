@@ -281,6 +281,11 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             return os.path.join(
                 self.cli_config.default_archive_dir, self.lineagename)
 
+    @property
+    def is_test_cert(self):
+        """Returns true if this is a test cert from a staging server."""
+        return util.is_staging(self.configuration["server"])
+
     def _check_symlinks(self):
         """Raises an exception if a symlink doesn't exist"""
         for kind in ALL_FOUR:

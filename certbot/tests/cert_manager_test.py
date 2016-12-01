@@ -160,6 +160,7 @@ class CertificatesTest(BaseCertManagerTest):
         parsed_certs = [cert]
         # pylint: disable=protected-access
         out = cert_manager._report_human_readable(parsed_certs)
+        print "Cert is staging: ", cert.is_test_cert
         self.assertTrue('EXPIRED' in out)
 
         cert.target_expiry += datetime.timedelta(hours=2)

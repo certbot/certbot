@@ -209,9 +209,6 @@ def should_renew(config, lineage):
 
 def _avoid_invalidating_lineage(config, lineage, original_server):
     "Do not renew a valid cert with one from a staging server!"
-    def _is_staging(srv):
-        return srv == constants.STAGING_URI or "staging" in srv
-
     # Some lineages may have begun with --staging, but then had production certs
     # added to them
     latest_cert = OpenSSL.crypto.load_certificate(
@@ -220,8 +217,8 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
     # we should test more methodically
     now_valid = "fake" not in repr(latest_cert.get_issuer()).lower()
 
-    if _is_staging(config.server):
-        if not _is_staging(original_server) or now_valid:
+    if util.is_staging(config.server):
+        if not util.is_staging(original_server) or now_valid:
             if not config.break_my_certs:
                 names = ", ".join(lineage.names())
                 raise errors.Error(
