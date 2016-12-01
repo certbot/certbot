@@ -190,6 +190,14 @@ def relevant_values(all_values):
         for option, value in six.iteritems(all_values)
         if _relevant(option) and cli.option_was_set(option, value))
 
+def lineagename_for_filename(config_filename):
+    """Returns the lineagename for a configuration filename.
+    """
+    if not config_filename.endswith(".conf"):
+        raise errors.CertStorageError(
+            "renewal config file name must end in .conf")
+    return os.path.basename(config_filename[:-len(".conf")])
+
 
 class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     """Renewable certificate.
@@ -238,11 +246,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         """
         self.cli_config = cli_config
-        if not config_filename.endswith(".conf"):
-            raise errors.CertStorageError(
-                "renewal config file name must end in .conf")
-        self.lineagename = os.path.basename(
-            config_filename[:-len(".conf")])
+        self.lineagename = lineagename_for_filename(config_filename)
 
         # self.configuration should be used to read parameters that
         # may have been chosen based on default values from the

@@ -43,15 +43,17 @@ def rename_lineage(config):
 
     """
     disp = zope.component.getUtility(interfaces.IDisplay)
+    renewer_config = configuration.RenewerConfiguration(config)
 
     certname = config.certname
     if not certname:
-        renewer_config = configuration.RenewerConfiguration(config)
-        choices = renewal.renewal_conf_files(renewer_config)
+        filenames = renewal.renewal_conf_files(renewer_config)
+        choices = [storage.lineagename_for_filename(name) for name in filenames]
         if not choices:
             raise errors.Error("No existing certificates found.")
-        code, certname = disp.menu("Which certificate would you like to rename?",
+        code, index = disp.menu("Which certificate would you like to rename?",
             choices, ok_label="Select", flag="--cert-name")
+        certname = choices[index]
         if code != display_util.OK or not certname:
             raise errors.Error("User ended interaction.")
 
@@ -66,7 +68,7 @@ def rename_lineage(config):
     if not lineage:
         raise errors.ConfigurationError("No existing certificate with name "
             "{0} found.".format(certname))
-    storage.rename_renewal_config(certname, new_certname, config)
+    storage.rename_renewal_config(certname, new_certname, renewer_config)
     disp.notification("Successfully renamed {0} to {1}."
         .format(certname, new_certname), pause=False)
 

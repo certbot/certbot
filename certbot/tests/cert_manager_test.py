@@ -301,7 +301,7 @@ class RenameLineageTest(storage_test.BaseRenewableCertTest):
         mock_renewal_conf_files.return_value = []
         self.assertRaises(errors.Error, self._call, mock_config)
 
-        mock_renewal_conf_files.return_value = True
+        mock_renewal_conf_files.return_value = ["one"]
         util_mock = mock.Mock()
         util_mock.menu.return_value = (display_util.CANCEL, "name")
         mock_get_utility.return_value = util_mock
