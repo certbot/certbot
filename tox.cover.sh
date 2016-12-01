@@ -17,19 +17,19 @@ fi
 cover () {
   if [ "$1" = "certbot" ]; then
     min=98
-    proc=1
+    proc=
   elif [ "$1" = "acme" ]; then
     min=100
-    proc=2
+    proc="--processes=2"
   elif [ "$1" = "certbot_apache" ]; then
     min=100
-    proc=1
+    proc=
   elif [ "$1" = "certbot_nginx" ]; then
     min=97
-    proc=2
+    proc="--processes=2"
   elif [ "$1" = "letshelp_certbot" ]; then
     min=100
-    proc=2
+    proc="--processes=2"
   else
     echo "Unrecognized package: $1"
     exit 1
@@ -42,7 +42,7 @@ cover () {
   # specific package directory; --cover-tests makes sure every tests
   # is run (c.f. #403)
   nosetests -c /dev/null --with-cover --cover-tests --cover-package  \
-            "$1" --cover-min-percentage="$min" "$1" --processes=$proc
+            "$1" --cover-min-percentage="$min" "$1" $proc
 }
 
 rm -f .coverage  # --cover-erase is off, make sure stats are correct
