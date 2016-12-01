@@ -21,6 +21,8 @@ from certbot_nginx.tests import util
 class NginxConfiguratorTest(util.NginxTest):
     """Test a semi complex vhost configuration."""
 
+    _multiprocess_can_split_ = True
+
     def setUp(self):
         super(NginxConfiguratorTest, self).setUp()
 
