@@ -37,7 +37,7 @@ cover () {
   # specific package directory; --cover-tests makes sure every tests
   # is run (c.f. #403)
   nosetests -c /dev/null --with-cover --cover-tests --cover-package  \
-            "$1" --cover-min-percentage="$min" "$1"
+            "$1" --cover-min-percentage="$min" "$1" --processes=2
 }
 
 rm -f .coverage  # --cover-erase is off, make sure stats are correct
