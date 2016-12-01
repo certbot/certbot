@@ -386,7 +386,7 @@ class EnhanceConfigTest(ClientTestCommon):
         self.client.installer.save.side_effect = errors.PluginError
         self._test_enhance_error()
         self.client.installer.recovery_routine.assert_called_once_with()
-        self.client.installer.save.assert_called_once_with()
+        self.client.installer.save.assert_called_once_with(mock.ANY)
 
     def test_enhance_config_restart_failure(self):
         self.client.installer = mock.MagicMock()
