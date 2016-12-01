@@ -8,8 +8,6 @@ import six
 
 class ReporterTest(unittest.TestCase):
     """Tests for certbot.reporter.Reporter."""
-    _multiprocess_can_split = False
-    _multiprocess_shared = False
 
     def setUp(self):
         from certbot import reporter
