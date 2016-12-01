@@ -45,6 +45,8 @@ KEY = test_util.vector_path('rsa256_key.pem')
 class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     """Tests for different commands."""
 
+    _multiprocess_can_split_ = True
+
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
         self.config_dir = os.path.join(self.tmp_dir, 'config')
