@@ -128,17 +128,6 @@ class ClientTest(ClientTestCommon):
         self.config.config_dir = "/etc/letsencrypt"
         self.eg_domains = ["example.com", "www.example.com"]
 
-    def test__init___warn_unsupported_config_options(self):
-        config = ConfigHelper(redirect=True, hsts=True)
-        installer = mock.MagicMock()
-        installer.supported_enhancements.return_value = ["redirect"]
-
-        with mock.patch('certbot.client.logger') as mock_logger:
-            from certbot.client import Client
-            Client(config=config, account_=self.account, auth=None,
-                   installer=installer, acme=self.acme)
-            mock_logger.warning.assert_called_once_with(mock.ANY)
-
     def test_init_acme_verify_ssl(self):
         net = self.acme_client.call_args[1]["net"]
         self.assertTrue(net.verify_ssl)
@@ -343,125 +332,99 @@ class EnhanceConfigTest(ClientTestCommon):
         self.config.redirect = False
         self.config.staple = False
         self.config.uir = False
-
-    @mock.patch("certbot.client.enhancements")
-    def test_enhance_config(self, mock_enhancements):
-        self.config.redirect = True
-        self.assertRaises(
-            errors.Error, self.client.enhance_config, ["example.org"], None)
-
-        mock_enhancements.ask.return_value = True
-        installer = mock.MagicMock()
-        self.client.installer = installer
-        installer.supported_enhancements.return_value = ["redirect"]
-
-        self.client.enhance_config(["example.org"], None)
-        installer.enhance.assert_called_once_with("example.org", "redirect", None)
-        self.assertEqual(installer.save.call_count, 1)
-        installer.restart.assert_called_once_with()
-
-    def test_enhance_config_no_ask_hsts(self):
-        self.config.hsts = True
-        self._enhance_config_no_ask_helper()
-        self.client.installer.enhance.assert_called_with(
-            "example.org", "ensure-http-header", "Strict-Transport-Security")
-
-    def test_enhance_config_no_ask_redirect(self):
-        self.config.redirect = True
-        self._enhance_config_no_ask_helper()
-        self.client.installer.enhance.assert_called_with(
-            "example.org", "redirect", None)
-
-    def test_enhance_config_no_ask_staple(self):
-        self.config.staple = True
-        self._enhance_config_no_ask_helper()
-        self.client.installer.enhance.assert_called_with(
-            "example.org", "staple-ocsp", None)
-
-    def test_enhance_config_no_ask_uir(self):
-        self.config.uir = True
-        self._enhance_config_no_ask_helper()
-        self.client.installer.enhance.assert_called_with(
-            "example.org", "ensure-http-header", "Upgrade-Insecure-Requests")
-
-    def _enhance_config_no_ask_helper(self):
-        self.client.installer = mock.MagicMock()
-        self.client.installer.supported_enhancements.return_value = [
-            "ensure-http-header", "redirect", "staple-ocsp"]
-        self.client.enhance_config(["example.org"], None)
-        self.assertEqual(self.client.installer.save.call_count, 1)
-        self.assertEqual(self.client.installer.restart.call_count, 1)
-
-    @mock.patch("certbot.client.enhancements")
-    def test_enhance_config_unsupported(self, mock_enhancements):
-        installer = mock.MagicMock()
-        self.client.installer = installer
-        installer.supported_enhancements.return_value = []
-
-        self.config.redirect = None
-        self.client.enhance_config(["example.org"], None)
-        installer.enhance.assert_not_called()
-        mock_enhancements.ask.assert_not_called()
+        self.domain = "example.org"
 
     def test_enhance_config_no_installer(self):
         self.assertRaises(
-            errors.Error, self.client.enhance_config, ["example.org"], None)
+            errors.Error, self.client.enhance_config, [self.domain], None)
 
-    @mock.patch("certbot.client.zope.component.getUtility")
-    def test_enhance_config_enhance_failure(self, mock_get_utility):
-        installer = mock.MagicMock()
-        self.client.installer = installer
-        installer.supported_enhancements.return_value = ["redirect"]
-        installer.enhance.side_effect = errors.PluginError
+    @mock.patch("certbot.client.enhancements")
+    def test_enhance_config_unsupported(self, mock_enhancements):
+        self.client.installer = mock.MagicMock()
+        self.client.installer.supported_enhancements.return_value = []
 
+        self.config.redirect = None
+        self.config.hsts = True
+        with mock.patch("certbot.client.logger") as mock_logger:
+            self.client.enhance_config([self.domain], None)
+        self.assertEqual(mock_logger.warning.call_count, 1)
+        self.client.installer.enhance.assert_not_called()
+        mock_enhancements.ask.assert_not_called()
+
+    def test_enhance_config_no_ask_hsts(self):
+        self.config.hsts = True
+        self._test_with_all_supported()
+        self.client.installer.enhance.assert_called_with(
+            self.domain, "ensure-http-header", "Strict-Transport-Security")
+
+    def test_enhance_config_no_ask_redirect(self):
         self.config.redirect = True
-        self.assertRaises(errors.PluginError, self.client.enhance_config,
-                          ["example.org"], None)
-        installer.recovery_routine.assert_called_once_with()
-        self.assertEqual(mock_get_utility().add_message.call_count, 1)
+        self._test_with_all_supported()
+        self.client.installer.enhance.assert_called_with(
+            self.domain, "redirect", None)
 
-    @mock.patch("certbot.client.zope.component.getUtility")
-    def test_enhance_config_save_failure(self, mock_get_utility):
+    def test_enhance_config_no_ask_staple(self):
+        self.config.staple = True
+        self._test_with_all_supported()
+        self.client.installer.enhance.assert_called_with(
+            self.domain, "staple-ocsp", None)
+
+    def test_enhance_config_no_ask_uir(self):
+        self.config.uir = True
+        self._test_with_all_supported()
+        self.client.installer.enhance.assert_called_with(
+            self.domain, "ensure-http-header", "Upgrade-Insecure-Requests")
+
+    def test_enhance_config_enhance_failure(self):
+        self.client.installer = mock.MagicMock()
+        self.client.installer.enhance.side_effect = errors.PluginError
+        self._test_enhance_error()
+        self.client.installer.recovery_routine.assert_called_once_with()
+
+    def test_enhance_config_save_failure(self):
+        self.client.installer = mock.MagicMock()
+        self.client.installer.save.side_effect = errors.PluginError
+        self._test_enhance_error()
+        self.client.installer.recovery_routine.assert_called_once_with()
+        self.client.installer.save.assert_called_once_with()
+
+    def test_enhance_config_restart_failure(self):
+        self.client.installer = mock.MagicMock()
+        self.client.installer.restart.side_effect = [errors.PluginError, None]
+        self._test_enhance_error_with_rollback()
+
+    def test_enhance_config_restart_failure2(self):
         installer = mock.MagicMock()
-        self.client.installer = installer
-        installer.supported_enhancements.return_value = ["redirect"]
-        installer.save.side_effect = errors.PluginError
-
-        self.config.redirect = True
-        self.assertRaises(errors.PluginError, self.client.enhance_config,
-                          ["example.org"], None)
-        installer.recovery_routine.assert_called_once_with()
-        self.assertEqual(mock_get_utility().add_message.call_count, 1)
-
-    @mock.patch("certbot.client.zope.component.getUtility")
-    def test_enhance_config_restart_failure(self, mock_get_utility):
-        installer = mock.MagicMock()
-        self.client.installer = installer
-        installer.supported_enhancements.return_value = ["redirect"]
-        installer.restart.side_effect = [errors.PluginError, None]
-
-        self.config.redirect = True
-        self.assertRaises(errors.PluginError, self.client.enhance_config,
-                          ["example.org"], None)
-
-        self.assertEqual(mock_get_utility().add_message.call_count, 1)
-        installer.rollback_checkpoints.assert_called_once_with()
-        self.assertEqual(installer.restart.call_count, 2)
-
-    @mock.patch("certbot.client.zope.component.getUtility")
-    def test_enhance_config_restart_failure2(self, mock_get_utility):
-        installer = mock.MagicMock()
-        self.client.installer = installer
-        installer.supported_enhancements.return_value = ["redirect"]
         installer.restart.side_effect = errors.PluginError
         installer.rollback_checkpoints.side_effect = errors.ReverterError
+        self.client.installer = installer
+        self._test_enhance_error_with_rollback()
 
+    @mock.patch("certbot.client.enhancements.ask")
+    def test_enhance_ask(self, mock_ask):
+        self.config.redirect = None
+        mock_ask.return_value = True
+        self._test_with_all_supported()
+
+    def _test_enhance_error_with_rollback(self):
+        self._test_enhance_error()
+        self.assertTrue(self.client.installer.restart.called)
+
+    def _test_enhance_error(self):
         self.config.redirect = True
-        self.assertRaises(errors.PluginError, self.client.enhance_config,
-                          ["example.org"], None)
-        self.assertEqual(mock_get_utility().add_message.call_count, 1)
-        installer.rollback_checkpoints.assert_called_once_with()
-        self.assertEqual(installer.restart.call_count, 1)
+        with mock.patch("certbot.client.zope.component.getUtility") as mock_gu:
+            self.assertRaises(
+                errors.PluginError, self._test_with_all_supported)
+        self.assertEqual(mock_gu().add_message.call_count, 1)
+
+    def _test_with_all_supported(self):
+        if self.client.installer is None:
+            self.client.installer = mock.MagicMock()
+        self.client.installer.supported_enhancements.return_value = [
+            "ensure-http-header", "redirect", "staple-ocsp"]
+        self.client.enhance_config([self.domain], None)
+        self.assertEqual(self.client.installer.save.call_count, 1)
+        self.assertEqual(self.client.installer.restart.call_count, 1)
 
 
 class RollbackTest(unittest.TestCase):
