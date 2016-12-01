@@ -274,7 +274,7 @@ class DomainsForCertnameTest(unittest.TestCase):
         self.assertTrue(mock_renewer_config)
 
 
-class RenameLineageTest(storage_test.BaseRenewableCertTest):
+class RenameLineageTest(BaseCertManagerTest):
     """Tests for certbot.cert_manager.rename_lineage"""
 
     def setUp(self):
@@ -311,8 +311,6 @@ class RenameLineageTest(storage_test.BaseRenewableCertTest):
         util_mock.menu.return_value = (display_util.OK, -1)
         self.assertRaises(errors.Error, self._call, mock_config)
 
-        
-
     @mock.patch('certbot.main.zope.component.getUtility')
     def test_no_new_certname(self, mock_get_utility):
         mock_config = mock.Mock(certname="one", new_certname=None)
@@ -340,7 +338,6 @@ class RenameLineageTest(storage_test.BaseRenewableCertTest):
     def test_rename_cert(self, mock_check, unused_get_utility):
         mock_check.return_value = True
         mock_config = self.mock_config
-        self.assertEqual(self.test_rc.lineagename, mock_config.certname)
         self._call(mock_config)
         from certbot import cert_manager
         updated_lineage = cert_manager.lineage_for_certname(mock_config, mock_config.new_certname)
