@@ -417,7 +417,7 @@ class Client(object):
                     enhanced = True
             elif config_value:
                 logger.warning(
-                    "Option %s is not supported by the selected installer."
+                    "Option %s is not supported by the selected installer. "
                     "Skipping enhancement.", config_name)
 
         msg = ("We were unable to restart web server")
