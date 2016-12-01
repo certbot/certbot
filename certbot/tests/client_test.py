@@ -334,12 +334,12 @@ class EnhanceConfigTest(ClientTestCommon):
         self.config.uir = False
         self.domain = "example.org"
 
-    def test_enhance_config_no_installer(self):
+    def test_no_installer(self):
         self.assertRaises(
             errors.Error, self.client.enhance_config, [self.domain], None)
 
     @mock.patch("certbot.client.enhancements")
-    def test_enhance_config_unsupported(self, mock_enhancements):
+    def test_unsupported(self, mock_enhancements):
         self.client.installer = mock.MagicMock()
         self.client.installer.supported_enhancements.return_value = []
 
@@ -351,66 +351,66 @@ class EnhanceConfigTest(ClientTestCommon):
         self.client.installer.enhance.assert_not_called()
         mock_enhancements.ask.assert_not_called()
 
-    def test_enhance_config_no_ask_hsts(self):
+    def test_no_ask_hsts(self):
         self.config.hsts = True
         self._test_with_all_supported()
         self.client.installer.enhance.assert_called_with(
             self.domain, "ensure-http-header", "Strict-Transport-Security")
 
-    def test_enhance_config_no_ask_redirect(self):
+    def test_no_ask_redirect(self):
         self.config.redirect = True
         self._test_with_all_supported()
         self.client.installer.enhance.assert_called_with(
             self.domain, "redirect", None)
 
-    def test_enhance_config_no_ask_staple(self):
+    def test_no_ask_staple(self):
         self.config.staple = True
         self._test_with_all_supported()
         self.client.installer.enhance.assert_called_with(
             self.domain, "staple-ocsp", None)
 
-    def test_enhance_config_no_ask_uir(self):
+    def test_no_ask_uir(self):
         self.config.uir = True
         self._test_with_all_supported()
         self.client.installer.enhance.assert_called_with(
             self.domain, "ensure-http-header", "Upgrade-Insecure-Requests")
 
-    def test_enhance_config_enhance_failure(self):
+    def test_enhance_failure(self):
         self.client.installer = mock.MagicMock()
         self.client.installer.enhance.side_effect = errors.PluginError
-        self._test_enhance_error()
+        self._test_error()
         self.client.installer.recovery_routine.assert_called_once_with()
 
-    def test_enhance_config_save_failure(self):
+    def test_save_failure(self):
         self.client.installer = mock.MagicMock()
         self.client.installer.save.side_effect = errors.PluginError
-        self._test_enhance_error()
+        self._test_error()
         self.client.installer.recovery_routine.assert_called_once_with()
         self.client.installer.save.assert_called_once_with(mock.ANY)
 
-    def test_enhance_config_restart_failure(self):
+    def test_restart_failure(self):
         self.client.installer = mock.MagicMock()
         self.client.installer.restart.side_effect = [errors.PluginError, None]
-        self._test_enhance_error_with_rollback()
+        self._test_error_with_rollback()
 
-    def test_enhance_config_restart_failure2(self):
+    def test_restart_failure2(self):
         installer = mock.MagicMock()
         installer.restart.side_effect = errors.PluginError
         installer.rollback_checkpoints.side_effect = errors.ReverterError
         self.client.installer = installer
-        self._test_enhance_error_with_rollback()
+        self._test_error_with_rollback()
 
     @mock.patch("certbot.client.enhancements.ask")
-    def test_enhance_ask(self, mock_ask):
+    def test_ask(self, mock_ask):
         self.config.redirect = None
         mock_ask.return_value = True
         self._test_with_all_supported()
 
-    def _test_enhance_error_with_rollback(self):
-        self._test_enhance_error()
+    def _test_error_with_rollback(self):
+        self._test_error()
         self.assertTrue(self.client.installer.restart.called)
 
-    def _test_enhance_error(self):
+    def _test_error(self):
         self.config.redirect = True
         with mock.patch("certbot.client.zope.component.getUtility") as mock_gu:
             self.assertRaises(
