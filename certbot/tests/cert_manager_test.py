@@ -298,19 +298,20 @@ class RenameLineageTest(storage_test.BaseRenewableCertTest):
     def test_no_certname(self, mock_get_utility, mock_renewal_conf_files):
         mock_config = mock.Mock(certname=None)
 
+        # if not choices
         mock_renewal_conf_files.return_value = []
         self.assertRaises(errors.Error, self._call, mock_config)
 
-        mock_renewal_conf_files.return_value = ["one"]
+        mock_renewal_conf_files.return_value = ["one.conf"]
         util_mock = mock.Mock()
-        util_mock.menu.return_value = (display_util.CANCEL, "name")
+        util_mock.menu.return_value = (display_util.CANCEL, 0)
         mock_get_utility.return_value = util_mock
         self.assertRaises(errors.Error, self._call, mock_config)
 
-        util_mock = mock.Mock()
-        util_mock.menu.return_value = (display_util.OK, None)
-        mock_get_utility.return_value = util_mock
+        util_mock.menu.return_value = (display_util.OK, -1)
         self.assertRaises(errors.Error, self._call, mock_config)
+
+        
 
     @mock.patch('certbot.main.zope.component.getUtility')
     def test_no_new_certname(self, mock_get_utility):
