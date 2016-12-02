@@ -31,18 +31,14 @@ from certbot import util
 from certbot.plugins import disco
 from certbot.plugins import manual
 
-
-from certbot.tests import storage_test
-from acme import jose
-
 from certbot.tests import storage_test
 import certbot.tests.util as test_util
 
 CERT_PATH = test_util.vector_path('cert.pem')
 CERT = test_util.vector_path('cert.pem')
 CSR = test_util.vector_path('csr.der')
-#KEY = test_util.vector_path('rsa256_key.pem')
-KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key_2.pem"))
+KEY = test_util.vector_path('rsa256_key.pem')
+JWK = jose.JWKRSA.load(test_util.load_vector("rsa512_key_2.pem"))
 
 
 class TestHandleIdenticalCerts(unittest.TestCase):
@@ -134,6 +130,7 @@ class ObtainCertTest(unittest.TestCase):
         # pylint: disable=unused-argument
         self.assertFalse(pause)
 
+
 class RevokeTest(unittest.TestCase):
     """Tests for certbot.main.revoke."""
 
@@ -161,10 +158,9 @@ class RevokeTest(unittest.TestCase):
             creation_host="test.certbot.org",
             creation_dt=datetime.datetime(
                 2015, 7, 4, 14, 4, 10, tzinfo=pytz.UTC))
-        self.acc = Account(self.regr, KEY, self.meta)
+        self.acc = Account(self.regr, JWK, self.meta)
 
         self.mock_determine_account.return_value = (self.acc, None)
-
 
     def tearDown(self):
         shutil.rmtree(self.tempdir_path)
@@ -173,7 +169,7 @@ class RevokeTest(unittest.TestCase):
 
     def _call(self):
         args = 'revoke --cert-path={0}'.format(self.tmp_cert_path).split()
-        plugins = plugins_disco.PluginsRegistry.find_all()
+        plugins = disco.PluginsRegistry.find_all()
         config = configuration.NamespaceConfig(
             cli.prepare_and_parse_args(plugins, args))
 
@@ -189,6 +185,7 @@ class RevokeTest(unittest.TestCase):
         self.mock_acme_client.side_effect = acme_errors.ClientError()
         self.assertRaises(acme_errors.ClientError, self._call)
         self.mock_success_revoke.assert_not_called()
+
 
 class SetupLogFileHandlerTest(unittest.TestCase):
     """Tests for certbot.main.setup_log_file_handler."""
