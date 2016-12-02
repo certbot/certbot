@@ -140,6 +140,22 @@ but for most users who want to avoid running an ACME client as root, either
 `letsencrypt-nosudo <https://github.com/diafygi/letsencrypt-nosudo>`_ or
 `simp_le <https://github.com/kuba/simp_le>`_ are more appropriate choices.
 
+It is possible that running ``letsencrypt-auto`` may fail on machines with a low
+(< 512MB) amount of free memory, failing to compile ``python-cryptography``.
+There are a few solutions to this problem:
+
+* Look for native OS packages for ``letsencrypt`` -- those do not use a
+  virtual environment or require any compilation, and are now available
+  for many platforms.
+* Enabling additional swap space or temporarily stopping memory-intensive
+  processes will allow the compilation to succeed
+* If your OS includes packages for ``python-cryptography`` version 0.7 or
+  later, but not yet for ``letsencrypt``, you may be able to use
+  ``pip install letsencrypt letsencrypt-apache`` to install letsencrypt
+  without a virtual environment or compilation. This method is not
+  officially tested or supported, but has been reported to work
+  for some people.
+
 The Apache plugin currently requires a Debian-based OS with augeas version
 1.0; this includes Ubuntu 12.04+ and Debian 7+.
 
