@@ -115,7 +115,7 @@ class NginxParser(object):
             for server, path in servers[filename]:
                 # Parse the server block into a VirtualHost object
 
-                parsed_server = parse_server(server)
+                parsed_server = self.parse_server(server)
                 vhost = obj.VirtualHost(filename,
                                         parsed_server['addrs'],
                                         parsed_server['ssl'],
@@ -241,6 +241,40 @@ class NginxParser(object):
             except IOError:
                 logger.error("Could not open file for writing: %s", filename)
 
+    def parse_server(self, server):
+        """Parses a list of server directives.
+
+        :param list server: list of directives in a server block
+        :rtype: dict
+
+        """
+        parsed_server = {'addrs': set(),
+                         'ssl': False,
+                         'names': set()}
+
+        apply_ssl_to_all_addrs = False
+
+        for directive in server:
+            if not directive:
+                continue
+            if directive[0] == 'listen':
+                addr = obj.Addr.fromstring(directive[1])
+                parsed_server['addrs'].add(addr)
+                if not parsed_server['ssl'] and addr.ssl:
+                    parsed_server['ssl'] = True
+            elif directive[0] == 'server_name':
+                parsed_server['names'].update(
+                    _get_servernames(directive[1]))
+            elif directive[0] == 'ssl' and directive[1] == 'on':
+                parsed_server['ssl'] = True
+                apply_ssl_to_all_addrs = True
+
+        if apply_ssl_to_all_addrs:
+            for addr in parsed_server['addrs']:
+                addr.ssl = True
+
+        return parsed_server
+
     def has_ssl_on_directive(self, vhost):
         """Does vhost have ssl on for all ports?
 
@@ -290,7 +324,7 @@ class NginxParser(object):
 
             # update vhost based on new directives
             new_server = self._get_included_directives(result)
-            parsed_server = parse_server(new_server)
+            parsed_server = self.parse_server(new_server)
             vhost.addrs = parsed_server['addrs']
             vhost.ssl = parsed_server['ssl']
             vhost.names = parsed_server['names']
@@ -433,41 +467,6 @@ def _get_servernames(names):
     whitespace_re = re.compile(r'\s+')
     names = re.sub(whitespace_re, ' ', names)
     return names.split(' ')
-
-
-def parse_server(server):
-    """Parses a list of server directives.
-
-    :param list server: list of directives in a server block
-    :rtype: dict
-
-    """
-    parsed_server = {'addrs': set(),
-                     'ssl': False,
-                     'names': set()}
-
-    apply_ssl_to_all_addrs = False
-
-    for directive in server:
-        if not directive:
-            continue
-        if directive[0] == 'listen':
-            addr = obj.Addr.fromstring(directive[1])
-            parsed_server['addrs'].add(addr)
-            if not parsed_server['ssl'] and addr.ssl:
-                parsed_server['ssl'] = True
-        elif directive[0] == 'server_name':
-            parsed_server['names'].update(
-                _get_servernames(directive[1]))
-        elif directive[0] == 'ssl' and directive[1] == 'on':
-            parsed_server['ssl'] = True
-            apply_ssl_to_all_addrs = True
-
-    if apply_ssl_to_all_addrs:
-        for addr in parsed_server['addrs']:
-            addr.ssl = True
-
-    return parsed_server
 
 def _add_directives(block, directives, replace):
     """Adds or replaces directives in a config block.

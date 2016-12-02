@@ -292,22 +292,23 @@ class NginxParserTest(util.NginxTest):
             ["\n", "e", " ", "f"]])
 
     def test_parse_server_ssl(self):
-        server = parser.parse_server([
+        nparser = parser.NginxParser(self.config_path, self.ssl_options)
+        server = nparser.parse_server([
             ['listen', '443']
         ])
         self.assertFalse(server['ssl'])
 
-        server = parser.parse_server([
+        server = nparser.parse_server([
             ['listen', '443 ssl']
         ])
         self.assertTrue(server['ssl'])
 
-        server = parser.parse_server([
+        server = nparser.parse_server([
             ['listen', '443'], ['ssl', 'off']
         ])
         self.assertFalse(server['ssl'])
 
-        server = parser.parse_server([
+        server = nparser.parse_server([
             ['listen', '443'], ['ssl', 'on']
         ])
         self.assertTrue(server['ssl'])
