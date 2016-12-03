@@ -154,6 +154,7 @@ def _relevant(option):
     plugins = list(plugins_disco.PluginsRegistry.find_all())
     return (option in renewal.STR_CONFIG_ITEMS
             or option in renewal.INT_CONFIG_ITEMS
+            or option in renewal.BOOL_CONFIG_ITEMS
             or any(option.startswith(x + "_") for x in plugins))
 
 

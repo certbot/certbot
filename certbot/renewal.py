@@ -33,6 +33,7 @@ STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
                     "standalone_supported_challenges", "renew_hook"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
+BOOL_CONFIG_ITEMS = ["must_staple"]
 
 
 def renewal_conf_files(config):
@@ -190,6 +191,17 @@ def _restore_required_config_elements(config, renewalparams):
                     raise errors.Error(
                         "Expected a numeric value for {0}".format(config_item))
             setattr(config.namespace, config_item, int_value)
+    # bool-valued items to add if they're present
+    for config_item in BOOL_CONFIG_ITEMS:
+        if config_item in renewalparams and not cli.set_by_cli(config_item):
+            config_value = renewalparams[config_item]
+            if config_value in ("True", "False"):
+                # bool("False") == True
+                # pylint: disable=eval-used
+                setattr(config.namespace, config_item, eval(config_value))
+            else:
+                raise errors.Error(
+                    "Expected 'True' or 'False' for {0}".format(config_item))
 
 
 def should_renew(config, lineage):
