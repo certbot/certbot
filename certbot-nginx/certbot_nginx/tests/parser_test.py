@@ -104,6 +104,11 @@ class NginxParserTest(util.NginxTest):
                                     lambda x, y, pts=paths: pts.append(y))
             self.assertEqual(paths, result)
 
+    def test_get_vhosts_global_ssl(self):
+        nparser = parser.NginxParser(self.config_path, self.ssl_options)
+        vhosts = nparser.get_vhosts()
+
+        # TODO: test behavior
 
     def test_get_vhosts(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
@@ -291,25 +296,31 @@ class NginxParserTest(util.NginxTest):
             COMMENT_BLOCK,
             ["\n", "e", " ", "f"]])
 
-    def test_parse_server_ssl(self):
-        nparser = parser.NginxParser(self.config_path, self.ssl_options)
-        server = nparser.parse_server([
+    def test_parse_server_raw_ssl(self):
+        server = parser._parse_server_raw([ #pylint: disable=protected-access
             ['listen', '443']
         ])
         self.assertFalse(server['ssl'])
 
-        server = nparser.parse_server([
+        server = parser._parse_server_raw([ #pylint: disable=protected-access
             ['listen', '443 ssl']
         ])
         self.assertTrue(server['ssl'])
 
-        server = nparser.parse_server([
+        server = parser._parse_server_raw([ #pylint: disable=protected-access
             ['listen', '443'], ['ssl', 'off']
         ])
         self.assertFalse(server['ssl'])
 
-        server = nparser.parse_server([
+        server = parser._parse_server_raw([ #pylint: disable=protected-access
             ['listen', '443'], ['ssl', 'on']
+        ])
+        self.assertTrue(server['ssl'])
+
+    def test_parse_server_global_ssl_applied(self):
+        nparser = parser.NginxParser(self.config_path, self.ssl_options)
+        server = nparser.parse_server([
+            ['listen', '443']
         ])
         self.assertTrue(server['ssl'])
 
