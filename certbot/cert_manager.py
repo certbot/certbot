@@ -45,15 +45,15 @@ def _report_human_readable(parsed_certs):
         if cert.is_test_cert:
             expiration_text = "INVALID: TEST CERT"
         elif cert.target_expiry <= now:
-            expiration_text = "VALID: EXPIRED"
+            expiration_text = "INVALID: EXPIRED"
         else:
             diff = cert.target_expiry - now
             if diff.days == 1:
                 expiration_text = "VALID: 1 day"
             elif diff.days < 1:
-                expiration_text = "VALID: {0} hours".format(diff.seconds // 3600)
+                expiration_text = "VALID: {0} hour(s)".format(diff.seconds // 3600)
             else:
-                expiration_text = "{0} days".format(diff.days)
+                expiration_text = "VALID: {0} days".format(diff.days)
         valid_string = "{0} ({1})".format(cert.target_expiry, expiration_text)
         certinfo.append("  Certificate Name: {0}\n"
                         "    Domains: {1}\n"
