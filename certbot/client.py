@@ -196,11 +196,6 @@ class Client(object):
         else:
             self.auth_handler = None
 
-        # Warn if the client is using unsupported config options with an
-        # installer
-        if self.installer is not None:
-            self._verify_all_config_options_supported(config)
-
     def obtain_certificate_from_csr(self, domains, csr,
         typ=OpenSSL.crypto.FILETYPE_ASN1, authzr=None):
         """Obtain certificate.
@@ -388,16 +383,10 @@ class Client(object):
             # sites may have been enabled / final cleanup
             self.installer.restart()
 
-    def enhance_config(self, domains, config, chain_path):
+    def enhance_config(self, domains, chain_path):
         """Enhance the configuration.
 
         :param list domains: list of domains to configure
-
-        :ivar config: Namespace typically produced by
-            :meth:`argparse.ArgumentParser.parse_args`.
-            it must have the redirect, hsts and uir attributes.
-        :type namespace: :class:`argparse.Namespace`
-
         :param chain_path: chain file path
         :type chain_path: `str` or `None`
 
@@ -405,40 +394,34 @@ class Client(object):
             client.
 
         """
-
         if self.installer is None:
             logger.warning("No installer is specified, there isn't any "
                            "configuration to enhance.")
             raise errors.Error("No installer available")
 
-        if config is None:
-            logger.warning("No config is specified.")
-            raise errors.Error("No config available")
-
+        enhanced = False
+        enhancement_info = (
+            ("hsts", "ensure-http-header", "Strict-Transport-Security"),
+            ("redirect", "redirect", None),
+            ("staple", "staple-ocsp", chain_path),
+            ("uir", "ensure-http-header", "Upgrade-Insecure-Requests"),)
         supported = self.installer.supported_enhancements()
 
-        redirect = config.redirect if "redirect" in supported else False
-        hsts = config.hsts if "ensure-http-header" in supported else False
-        uir = config.uir if "ensure-http-header" in supported else False
-        staple = config.staple if "staple-ocsp" in supported else False
-
-        if redirect is None:
-            redirect = enhancements.ask("redirect")
-
-        if redirect:
-            self.apply_enhancement(domains, "redirect")
-
-        if hsts:
-            self.apply_enhancement(domains, "ensure-http-header",
-                    "Strict-Transport-Security")
-        if uir:
-            self.apply_enhancement(domains, "ensure-http-header",
-                    "Upgrade-Insecure-Requests")
-        if staple:
-            self.apply_enhancement(domains, "staple-ocsp", chain_path)
+        for config_name, enhancement_name, option in enhancement_info:
+            config_value = getattr(self.config, config_name)
+            if enhancement_name in supported:
+                if config_name == "redirect" and config_value is None:
+                    config_value = enhancements.ask(enhancement_name)
+                if config_value:
+                    self.apply_enhancement(domains, enhancement_name, option)
+                    enhanced = True
+            elif config_value:
+                logger.warning(
+                    "Option %s is not supported by the selected installer. "
+                    "Skipping enhancement.", config_name)
 
         msg = ("We were unable to restart web server")
-        if redirect or hsts or uir or staple:
+        if enhanced:
             with error_handler.ErrorHandler(self._rollback_and_restart, msg):
                 self.installer.restart()
 
@@ -507,32 +490,6 @@ class Client(object):
                 reporter.HIGH_PRIORITY)
             raise
         reporter.add_message(success_msg, reporter.HIGH_PRIORITY)
-
-    def _verify_all_config_options_supported(self, config):
-        """Verifies that all config options are supported in current installer.
-
-         :ivar config: Namespace typically produced by
-            :meth:`argparse.ArgumentParser.parse_args`.
-         :type namespace: :class:`argparse.Namespace`
-        """
-        # Mapping between config options and string describing config option
-        # support in installer supported_enhancements.
-        option_support = {
-            "redirect": "redirect",
-            "hsts": "ensure-http-header",
-            "uir": "ensure-http-header",
-            "staple": "staple-ocsp"
-        }
-
-        supported = self.installer.supported_enhancements()
-
-        for config_name, support_string in option_support.items():
-            config_value = getattr(config, config_name, None)
-            if config_value and support_string not in supported:
-                msg = ("Option %s is not allowed with the current installer. "
-                       "Please disable the option and try again." %
-                       config_name)
-                logger.warning(msg)
 
 
 def validate_key_csr(privkey, csr=None):
