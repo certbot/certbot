@@ -172,7 +172,8 @@ def relevant_values(all_values):
         if _relevant(option) and cli.option_was_set(option, value))
 
 
-class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
+class RenewableCert(object):
+    # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Renewable certificate.
 
     Represents a lineage of certificates that is under the management of

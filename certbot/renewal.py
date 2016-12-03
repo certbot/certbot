@@ -13,7 +13,6 @@ import OpenSSL
 
 from certbot import configuration
 from certbot import cli
-from certbot import constants
 
 from certbot import crypto_util
 from certbot import errors
