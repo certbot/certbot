@@ -285,6 +285,8 @@ class RenewableCert(object):
     @property
     def is_test_cert(self):
         """Returns true if this is a test cert from a staging server."""
+        if "server" not in self.configuration:
+            return False
         return util.is_staging(self.configuration["server"])
 
     def _check_symlinks(self):
