@@ -735,11 +735,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, should_renew=True)
 
-    def test_must_staple_renew(self):
-        self._make_lineage('sample-renewal.conf')
-        args = ["renew", "--must-staple"]
-        self._test_renewal_common(True, [], args=args, should_renew=True)
-
     def test_quiet_renew(self):
         self._make_lineage('sample-renewal.conf')
         args = ["renew", "--dry-run"]
