@@ -272,7 +272,7 @@ UNLIKELY_EOF
         echo
         echo "Certbot has problem setting up the virtual environment."
 
-        if `echo $PIP_OUT | grep -q Killed` && `echo $PIP_OUT | grep -q "allocate memory"` ; then
+        if `echo $PIP_OUT | grep -q Killed` || `echo $PIP_OUT | grep -q "allocate memory"` ; then
           echo
           echo "Based on your pip output, the problem can likely be fixed by "
           echo "increasing the available memory."
