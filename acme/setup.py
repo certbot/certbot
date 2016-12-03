@@ -11,13 +11,11 @@ install_requires = [
     # load_pem_private/public_key (>=0.6)
     # rsa_recover_prime_factors (>=0.8)
     'cryptography>=0.8',
-    'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
-    'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
     # Connection.set_tlsext_host_name (>=0.13)
     'PyOpenSSL>=0.13',
     'pyrfc3339',
     'pytz',
-    'requests',
+    'requests[security]>=2.4.1',  # security extras added in 2.4.1
     # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
     # will tolerate; see #2599:
     'setuptools>=1.0',
@@ -49,7 +47,6 @@ dev_extras = [
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
     'sphinx_rtd_theme',
-    'sphinxcontrib-programoutput',
 ]
 
 

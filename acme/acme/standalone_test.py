@@ -33,8 +33,8 @@ class TLSSNI01ServerTest(unittest.TestCase):
 
     def setUp(self):
         self.certs = {b'localhost': (
-            test_util.load_pyopenssl_private_key('rsa512_key.pem'),
-            test_util.load_cert('cert.pem'),
+            test_util.load_pyopenssl_private_key('rsa2048_key.pem'),
+            test_util.load_cert('rsa2048_cert.pem'),
         )}
         from acme.standalone import TLSSNI01Server
         self.server = TLSSNI01Server(("", 0), certs=self.certs)
@@ -114,8 +114,9 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
         self.test_cwd = tempfile.mkdtemp()
         localhost_dir = os.path.join(self.test_cwd, 'localhost')
         os.makedirs(localhost_dir)
-        shutil.copy(test_util.vector_path('cert.pem'), localhost_dir)
-        shutil.copy(test_util.vector_path('rsa512_key.pem'),
+        shutil.copy(test_util.vector_path('rsa2048_cert.pem'),
+                    os.path.join(localhost_dir, 'cert.pem'))
+        shutil.copy(test_util.vector_path('rsa2048_key.pem'),
                     os.path.join(localhost_dir, 'key.pem'))
 
         from acme.standalone import simple_tls_sni_01_server
@@ -147,7 +148,8 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
                 time.sleep(1)  # wait until thread starts
             else:
                 self.assertEqual(jose.ComparableX509(cert),
-                                 test_util.load_comparable_cert('cert.pem'))
+                                 test_util.load_comparable_cert(
+                                     'rsa2048_cert.pem'))
                 break
 
 

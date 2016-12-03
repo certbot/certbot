@@ -79,7 +79,6 @@ docs_extras = [
     'repoze.sphinx.autointerface',
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
     'sphinx_rtd_theme',
-    'sphinxcontrib-programoutput',
 ]
 
 setup(
@@ -132,6 +131,7 @@ setup(
             'null = certbot.plugins.null:Installer',
             'standalone = certbot.plugins.standalone:Authenticator',
             'webroot = certbot.plugins.webroot:Authenticator',
+            'script = certbot.plugins.script:Authenticator',
         ],
     },
 )

@@ -279,8 +279,8 @@ class AutoTests(TestCase):
                 ok_(re.match(r'letsencrypt \d+\.\d+\.\d+',
                              err.strip().splitlines()[-1]))
                 # Make a few assertions to test the validity of the next tests:
-                self.assertIn('Upgrading certbot-auto ', out)
-                self.assertIn('Creating virtual environment...', out)
+                self.assertTrue('Upgrading certbot-auto ' in out)
+                self.assertTrue('Creating virtual environment...' in out)
 
                 # Now we have le-auto 99.9.9  and LE 99.9.9 installed. This
                 # conveniently sets us up to test the next 2 cases.
@@ -288,15 +288,15 @@ class AutoTests(TestCase):
                 # Test when neither phase-1 upgrade nor phase-2 upgrade is
                 # needed (probably a common case):
                 out, err = run_letsencrypt_auto()
-                self.assertNotIn('Upgrading certbot-auto ', out)
-                self.assertNotIn('Creating virtual environment...', out)
+                self.assertFalse('Upgrading certbot-auto ' in out)
+                self.assertFalse('Creating virtual environment...' in out)
 
                 # Test when a phase-1 upgrade is not needed but a phase-2
                 # upgrade is:
                 set_le_script_version(venv_dir, '0.0.1')
                 out, err = run_letsencrypt_auto()
-                self.assertNotIn('Upgrading certbot-auto ', out)
-                self.assertIn('Creating virtual environment...', out)
+                self.assertFalse('Upgrading certbot-auto ' in out)
+                self.assertTrue('Creating virtual environment...' in out)
 
     def test_openssl_failure(self):
         """Make sure we stop if the openssl signature check fails."""
@@ -313,9 +313,8 @@ class AutoTests(TestCase):
                     out, err = run_le_auto(venv_dir, base_url)
                 except CalledProcessError as exc:
                     eq_(exc.returncode, 1)
-                    self.assertIn("Couldn't verify signature of downloaded "
-                                  "certbot-auto.",
-                                  exc.output)
+                    self.assertTrue("Couldn't verify signature of downloaded "
+                                    "certbot-auto." in exc.output)
                 else:
                     self.fail('Signature check on certbot-auto erroneously passed.')
 
@@ -335,9 +334,8 @@ class AutoTests(TestCase):
                     out, err = run_le_auto(venv_dir, base_url)
                 except CalledProcessError as exc:
                     eq_(exc.returncode, 1)
-                    self.assertIn("THESE PACKAGES DO NOT MATCH THE HASHES "
-                                  "FROM THE REQUIREMENTS FILE",
-                                  exc.output)
+                    self.assertTrue("THESE PACKAGES DO NOT MATCH THE HASHES "
+                                    "FROM THE REQUIREMENTS FILE" in exc.output)
                     ok_(not exists(join(venv_dir, 'letsencrypt')),
                         msg="The virtualenv was left around, even though "
                             "installation didn't succeed. We shouldn't do "

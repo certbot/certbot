@@ -322,7 +322,7 @@ class Client(object):
                 self.config.strict_permissions)
 
         cert_pem = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped).decode('ascii')
+            OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped)
 
         cert_file, abs_cert_path = _open_pem_file('cert_path', cert_path)
 
@@ -383,16 +383,10 @@ class Client(object):
             # sites may have been enabled / final cleanup
             self.installer.restart()
 
-    def enhance_config(self, domains, config, chain_path):
+    def enhance_config(self, domains, chain_path):
         """Enhance the configuration.
 
         :param list domains: list of domains to configure
-
-        :ivar config: Namespace typically produced by
-            :meth:`argparse.ArgumentParser.parse_args`.
-            it must have the redirect, hsts and uir attributes.
-        :type namespace: :class:`argparse.Namespace`
-
         :param chain_path: chain file path
         :type chain_path: `str` or `None`
 
@@ -400,39 +394,34 @@ class Client(object):
             client.
 
         """
-
         if self.installer is None:
             logger.warning("No installer is specified, there isn't any "
                            "configuration to enhance.")
             raise errors.Error("No installer available")
 
-        if config is None:
-            logger.warning("No config is specified.")
-            raise errors.Error("No config available")
-
+        enhanced = False
+        enhancement_info = (
+            ("hsts", "ensure-http-header", "Strict-Transport-Security"),
+            ("redirect", "redirect", None),
+            ("staple", "staple-ocsp", chain_path),
+            ("uir", "ensure-http-header", "Upgrade-Insecure-Requests"),)
         supported = self.installer.supported_enhancements()
-        redirect = config.redirect if "redirect" in supported else False
-        hsts = config.hsts if "ensure-http-header" in supported else False
-        uir = config.uir if "ensure-http-header"  in supported else False
-        staple = config.staple if "staple-ocsp" in supported else False
 
-        if redirect is None:
-            redirect = enhancements.ask("redirect")
-
-        if redirect:
-            self.apply_enhancement(domains, "redirect")
-
-        if hsts:
-            self.apply_enhancement(domains, "ensure-http-header",
-                    "Strict-Transport-Security")
-        if uir:
-            self.apply_enhancement(domains, "ensure-http-header",
-                    "Upgrade-Insecure-Requests")
-        if staple:
-            self.apply_enhancement(domains, "staple-ocsp", chain_path)
+        for config_name, enhancement_name, option in enhancement_info:
+            config_value = getattr(self.config, config_name)
+            if enhancement_name in supported:
+                if config_name == "redirect" and config_value is None:
+                    config_value = enhancements.ask(enhancement_name)
+                if config_value:
+                    self.apply_enhancement(domains, enhancement_name, option)
+                    enhanced = True
+            elif config_value:
+                logger.warning(
+                    "Option %s is not supported by the selected installer. "
+                    "Skipping enhancement.", config_name)
 
         msg = ("We were unable to restart web server")
-        if redirect or hsts or uir or staple:
+        if enhanced:
             with error_handler.ErrorHandler(self._rollback_and_restart, msg):
                 self.installer.restart()
 
@@ -595,10 +584,10 @@ def _open_pem_file(cli_arg_path, pem_path):
 
     """
     if cli.set_by_cli(cli_arg_path):
-        return util.safe_open(pem_path, chmod=0o644),\
+        return util.safe_open(pem_path, chmod=0o644, mode="wb"),\
             os.path.abspath(pem_path)
     else:
-        uniq = util.unique_file(pem_path, 0o644)
+        uniq = util.unique_file(pem_path, 0o644, "wb")
         return uniq[0], os.path.abspath(uniq[1])
 
 def _save_chain(chain_pem, chain_file):

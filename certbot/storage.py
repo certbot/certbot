@@ -54,11 +54,12 @@ def add_time_interval(base_time, interval, textparser=parsedatetime.Calendar()):
     return textparser.parseDT(interval, base_time, tzinfo=tzinfo)[0]
 
 
-def write_renewal_config(o_filename, n_filename, target, relevant_data):
+def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_data):
     """Writes a renewal config file with the specified name and values.
 
     :param str o_filename: Absolute path to the previous version of config file
     :param str n_filename: Absolute path to the new destination of config file
+    :param str archive_dir: Absolute path to the archive directory
     :param dict target: Maps ALL_FOUR to their symlink paths
     :param dict relevant_data: Renewal configuration options to save
 
@@ -68,6 +69,7 @@ def write_renewal_config(o_filename, n_filename, target, relevant_data):
     """
     config = configobj.ConfigObj(o_filename)
     config["version"] = certbot.__version__
+    config["archive_dir"] = archive_dir
     for kind in ALL_FOUR:
         config[kind] = target[kind]
 
@@ -95,10 +97,11 @@ def write_renewal_config(o_filename, n_filename, target, relevant_data):
     return config
 
 
-def update_configuration(lineagename, target, cli_config):
+def update_configuration(lineagename, archive_dir, target, cli_config):
     """Modifies lineagename's config to contain the specified values.
 
     :param str lineagename: Name of the lineage being modified
+    :param str archive_dir: Absolute path to the archive directory
     :param dict target: Maps ALL_FOUR to their symlink paths
     :param .RenewerConfiguration cli_config: parsed command line
         arguments
@@ -117,7 +120,7 @@ def update_configuration(lineagename, target, cli_config):
 
     # Save only the config items that are relevant to renewal
     values = relevant_values(vars(cli_config.namespace))
-    write_renewal_config(config_filename, temp_filename, target, values)
+    write_renewal_config(config_filename, temp_filename, archive_dir, target, values)
     os.rename(temp_filename, config_filename)
 
     return configobj.ConfigObj(config_filename)
@@ -204,7 +207,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         renewal configuration file and/or systemwide defaults.
 
     """
-    def __init__(self, config_filename, cli_config):
+    def __init__(self, config_filename, cli_config, update_symlinks=False):
         """Instantiate a RenewableCert object from an existing lineage.
 
         :param str config_filename: the path to the renewal config file
@@ -256,7 +259,27 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         self.live_dir = os.path.dirname(self.cert)
 
         self._fix_symlinks()
+        if update_symlinks:
+            self._update_symlinks()
         self._check_symlinks()
+
+    @property
+    def target_expiry(self):
+        """The current target certificate's expiration datetime
+
+        :returns: Expiration datetime of the current target certificate
+        :rtype: :class:`datetime.datetime`
+        """
+        return crypto_util.notAfter(self.current_target("cert"))
+
+    @property
+    def archive_dir(self):
+        """Returns the default or specified archive directory"""
+        if "archive_dir" in self.configuration:
+            return self.configuration["archive_dir"]
+        else:
+            return os.path.join(
+                self.cli_config.default_archive_dir, self.lineagename)
 
     def _check_symlinks(self):
         """Raises an exception if a symlink doesn't exist"""
@@ -269,6 +292,16 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             if not os.path.exists(target):
                 raise errors.CertStorageError("target {0} of symlink {1} does "
                                               "not exist".format(target, link))
+
+    def _update_symlinks(self):
+        """Updates symlinks to use archive_dir"""
+        for kind in ALL_FOUR:
+            link = getattr(self, kind)
+            previous_link = get_link_target(link)
+            new_link = os.path.join(self.archive_dir, os.path.basename(previous_link))
+
+            os.unlink(link)
+            os.symlink(new_link, link)
 
     def _consistent(self):
         """Are the files associated with this lineage self-consistent?
@@ -297,16 +330,16 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
             # Each element's link must point within the cert lineage's
             # directory within the official archive directory
-            desired_directory = os.path.join(
-                self.cli_config.archive_dir, self.lineagename)
-            if not os.path.samefile(os.path.dirname(target),
-                                    desired_directory):
+            if not os.path.samefile(os.path.dirname(target), self.archive_dir):
                 logger.debug("Element's link does not point within the "
                              "cert lineage's directory within the "
                              "official archive directory. Link: %s, "
                              "target directory: %s, "
-                             "archive directory: %s.",
-                             link, os.path.dirname(target), desired_directory)
+                             "archive directory: %s. If you've specified "
+                             "the archive directory in the renewal configuration "
+                             "file, you may need to update links by running "
+                             "certbot update_symlinks.",
+                             link, os.path.dirname(target), self.archive_dir)
                 return False
 
             # The link must point to a file that exists
@@ -647,9 +680,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             if self.has_pending_deployment():
                 interval = self.configuration.get("deploy_before_expiry",
                                                   "5 days")
-                expiry = crypto_util.notAfter(self.current_target("cert"))
                 now = pytz.UTC.fromutc(datetime.datetime.utcnow())
-                if expiry < add_time_interval(now, interval):
+                if self.target_expiry < add_time_interval(now, interval):
                     return True
         return False
 
@@ -759,7 +791,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         """
 
         # Examine the configuration and find the new lineage's name
-        for i in (cli_config.renewal_configs_dir, cli_config.archive_dir,
+        for i in (cli_config.renewal_configs_dir, cli_config.default_archive_dir,
                   cli_config.live_dir):
             if not os.path.exists(i):
                 os.makedirs(i, 0o700)
@@ -774,7 +806,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # lineagename will now potentially be modified based on which
         # renewal configuration file could actually be created
         lineagename = os.path.basename(config_filename)[:-len(".conf")]
-        archive = os.path.join(cli_config.archive_dir, lineagename)
+        archive = os.path.join(cli_config.default_archive_dir, lineagename)
         live_dir = os.path.join(cli_config.live_dir, lineagename)
         if os.path.exists(archive):
             raise errors.CertStorageError(
@@ -786,29 +818,43 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         os.mkdir(live_dir)
         logger.debug("Archive directory %s and live "
                      "directory %s created.", archive, live_dir)
-        relative_archive = os.path.join("..", "..", "archive", lineagename)
 
         # Put the data into the appropriate files on disk
         target = dict([(kind, os.path.join(live_dir, kind + ".pem"))
                        for kind in ALL_FOUR])
         for kind in ALL_FOUR:
-            os.symlink(os.path.join(relative_archive, kind + "1.pem"),
+            os.symlink(os.path.join(archive, kind + "1.pem"),
                        target[kind])
-        with open(target["cert"], "w") as f:
+        with open(target["cert"], "wb") as f:
             logger.debug("Writing certificate to %s.", target["cert"])
             f.write(cert)
-        with open(target["privkey"], "w") as f:
+        with open(target["privkey"], "wb") as f:
             logger.debug("Writing private key to %s.", target["privkey"])
             f.write(privkey)
             # XXX: Let's make sure to get the file permissions right here
-        with open(target["chain"], "w") as f:
+        with open(target["chain"], "wb") as f:
             logger.debug("Writing chain to %s.", target["chain"])
             f.write(chain)
-        with open(target["fullchain"], "w") as f:
+        with open(target["fullchain"], "wb") as f:
             # assumes that OpenSSL.crypto.dump_certificate includes
             # ending newline character
             logger.debug("Writing full chain to %s.", target["fullchain"])
             f.write(cert + chain)
+
+        # Write a README file to the live directory
+        readme_path = os.path.join(live_dir, "README")
+        with open(readme_path, "w") as f:
+            logger.debug("Writing README to %s.", readme_path)
+            f.write("This directory contains your keys and certificates.\n\n"
+                    "`privkey.pem`  : the private key for your certificate.\n"
+                    "`fullchain.pem`: the certificate file used in most server software.\n"
+                    "`chain.pem`    : used for OCSP stapling in Nginx >=1.3.7.\n"
+                    "`cert.pem`     : will break many server configurations, and "
+                                        "should not be used\n"
+                    "                 without reading further documentation (see link below).\n\n"
+                    "We recommend not moving these files. For more information, see the Certbot\n"
+                    "User Guide at https://certbot.eff.org/docs/using.html#where-are-my-"
+                                        "certificates.\n")
 
         # Document what we've done in a new renewal config file
         config_file.close()
@@ -816,7 +862,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # Save only the config items that are relevant to renewal
         values = relevant_values(vars(cli_config.namespace))
 
-        new_config = write_renewal_config(config_filename, config_filename, target, values)
+        new_config = write_renewal_config(config_filename, config_filename, archive,
+            target, values)
         return cls(new_config.filename, cli_config)
 
     def save_successor(self, prior_version, new_cert,
@@ -851,14 +898,9 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         self.cli_config = cli_config
         target_version = self.next_free_version()
-        archive = self.cli_config.archive_dir
-        # XXX if anyone ever moves a renewal configuration file, this will
-        # break... perhaps prefix should be the dirname of the previous
-        # cert.pem?
-        prefix = os.path.join(archive, self.lineagename)
         target = dict(
             [(kind,
-              os.path.join(prefix, "{0}{1}.pem".format(kind, target_version)))
+              os.path.join(self.archive_dir, "{0}{1}.pem".format(kind, target_version)))
              for kind in ALL_FOUR])
 
         # Distinguish the cases where the privkey has changed and where it
@@ -868,7 +910,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             # The behavior below keeps the prior key by creating a new
             # symlink to the old key or the target of the old key symlink.
             old_privkey = os.path.join(
-                prefix, "privkey{0}.pem".format(prior_version))
+                self.archive_dir, "privkey{0}.pem".format(prior_version))
             if os.path.islink(old_privkey):
                 old_privkey = os.readlink(old_privkey)
             else:
@@ -894,7 +936,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         symlinks = dict((kind, self.configuration[kind]) for kind in ALL_FOUR)
         # Update renewal config file
         self.configfile = update_configuration(
-            self.lineagename, symlinks, cli_config)
+            self.lineagename, self.archive_dir, symlinks, cli_config)
         self.configuration = config_with_defaults(self.configfile)
 
         return target_version

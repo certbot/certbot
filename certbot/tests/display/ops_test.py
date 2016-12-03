@@ -321,7 +321,7 @@ class SuccessRenewalTest(unittest.TestCase):
     @classmethod
     def _call(cls, names):
         from certbot.display.ops import success_renewal
-        success_renewal(names, "renew")
+        success_renewal(names)
 
     @mock.patch("certbot.display.ops.z_util")
     def test_success_renewal(self, mock_util):
@@ -336,6 +336,21 @@ class SuccessRenewalTest(unittest.TestCase):
         for name in names:
             self.assertTrue(name in arg)
 
+class SuccessRevocationTest(unittest.TestCase):
+    # pylint: disable=too-few-public-methods
+    """Test the success revocation message."""
+    @classmethod
+    def _call(cls, path):
+        from certbot.display.ops import success_revocation
+        success_revocation(path)
+
+    @mock.patch("certbot.display.ops.z_util")
+    def test_success_revocation(self, mock_util):
+        mock_util().notification.return_value = None
+        path = "/path/to/cert.pem"
+        self._call(path)
+        mock_util().notification.assert_called_once()
+        self.assertTrue(path in mock_util().notification.call_args[0][0])
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

@@ -12,10 +12,12 @@ import zope.component
 
 from acme import jose
 from acme import messages
+from acme import errors as acme_errors
 
 import certbot
 
 from certbot import account
+from certbot import cert_manager
 from certbot import client
 from certbot import cli
 from certbot import crypto_util
@@ -433,7 +435,7 @@ def install(config, plugins):
     le_client.deploy_certificate(
         domains, config.key_path, config.cert_path, config.chain_path,
         config.fullchain_path)
-    le_client.enhance_config(domains, config, config.chain_path)
+    le_client.enhance_config(domains, config.chain_path)
 
 
 def plugins_cmd(config, plugins):  # TODO: Use IDisplay rather than print
@@ -475,6 +477,18 @@ def config_changes(config, unused_plugins):
     """
     client.view_config_changes(config, num=config.num)
 
+def update_symlinks(config, unused_plugins):
+    """Update the certificate file family symlinks
+
+    Use the information in the config file to make symlinks point to
+    the correct archive directory.
+    """
+    cert_manager.update_live_symlinks(config)
+
+def certificates(config, unused_plugins):
+    """Display information about certs configured with Certbot
+    """
+    cert_manager.certificates(config)
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
     """Revoke a previously obtained certificate."""
@@ -490,7 +504,12 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
         key = acc.key
     acme = client.acme_from_config_key(config, key)
     cert = crypto_util.pyopenssl_load_certificate(config.cert_path[1])[0]
-    acme.revoke(jose.ComparableX509(cert))
+    try:
+        acme.revoke(jose.ComparableX509(cert))
+    except acme_errors.ClientError as e:
+        return e.message
+
+    display_ops.success_revocation(config.cert_path[0])
 
 
 def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
@@ -513,12 +532,12 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
         domains, lineage.privkey, lineage.cert,
         lineage.chain, lineage.fullchain)
 
-    le_client.enhance_config(domains, config, lineage.chain)
+    le_client.enhance_config(domains, lineage.chain)
 
-    if len(lineage.available_versions("cert")) == 1:
+    if action in ("newcert", "reinstall",):
         display_ops.success_installation(domains)
     else:
-        display_ops.success_renewal(domains, action)
+        display_ops.success_renewal(domains)
 
     _suggest_donation_if_appropriate(config, action)
 
@@ -539,7 +558,6 @@ def _csr_obtain_cert(config, le_client):
         cert_path, _, cert_fullchain = le_client.save_certificate(
             certr, chain, config.cert_path, config.chain_path, config.fullchain_path)
         _report_new_cert(config, cert_path, cert_fullchain)
-
 
 def obtain_cert(config, plugins, lineage=None):
     """Authenticate & obtain cert, but do not install it.

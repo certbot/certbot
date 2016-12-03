@@ -143,6 +143,21 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         out = self._help_output(['-h'])
         self.assertTrue(cli.usage_strings(plugins)[0] in out)
 
+    def test_version_string_program_name(self):
+        toy_out = six.StringIO()
+        toy_err = six.StringIO()
+        with mock.patch('certbot.main.sys.stdout', new=toy_out):
+            with mock.patch('certbot.main.sys.stderr', new=toy_err):
+                try:
+                    main.main(["--version"])
+                except SystemExit:
+                    pass
+                finally:
+                    output = toy_out.getvalue() or toy_err.getvalue()
+                    self.assertTrue("certbot" in output, "Output is {0}".format(output))
+        toy_out.close()
+        toy_err.close()
+
     def _cli_missing_flag(self, args, message):
         "Ensure that a particular error raises a missing cli flag error containing message"
         exc = None
@@ -271,6 +286,16 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_config_changes(self):
         _, _, _, client = self._call(['config_changes'])
         self.assertEqual(1, client.view_config_changes.call_count)
+
+    @mock.patch('certbot.cert_manager.update_live_symlinks')
+    def test_update_symlinks(self, mock_cert_manager):
+        self._call_no_clientmock(['update_symlinks'])
+        self.assertEqual(1, mock_cert_manager.call_count)
+
+    @mock.patch('certbot.cert_manager.certificates')
+    def test_certificates(self, mock_cert_manager):
+        self._call_no_clientmock(['certificates'])
+        self.assertEqual(1, mock_cert_manager.call_count)
 
     def test_plugins(self):
         flags = ['--init', '--prepare', '--authenticators', '--installers']

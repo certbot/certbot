@@ -67,7 +67,9 @@ cert. Major SUBCOMMANDS are:
   register             Perform tasks related to registering with the CA
   rollback             Rollback server configuration changes made during install
   config_changes       Show changes made to server config during installation
+  update_symlinks      Update cert symlinks based on renewal config file
   plugins              Display information about installed plugins
+  certificates         Display information about certs configured with Certbot
 
 """.format(cli_command)
 
@@ -79,6 +81,7 @@ USAGE = SHORT_USAGE + """Choice of server plugins for obtaining and installing c
   --standalone      Run a standalone webserver for authentication
   %s
   --webroot         Place files in a server's webroot folder for authentication
+  --script          User provided shell scripts for authentication
 
 OR use different plugins to obtain (authenticate) the cert and then install it:
 
@@ -91,7 +94,7 @@ More detailed help:
 
    all, automation, paths, security, testing, or any of the subcommands or
    plugins (certonly, renew, install, register, nginx, apache, standalone,
-   webroot, etc.)
+   webroot, script, etc.)
 """
 
 
@@ -322,7 +325,8 @@ class HelpfulArgumentParser(object):
                       "install": main.install, "plugins": main.plugins_cmd,
                       "register": main.register, "renew": main.renew,
                       "revoke": main.revoke, "rollback": main.rollback,
-                      "everything": main.run}
+                      "everything": main.run, "update_symlinks": main.update_symlinks,
+                      "certificates": main.certificates}
 
         # List of topics for which additional help can be provided
         HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
@@ -331,6 +335,7 @@ class HelpfulArgumentParser(object):
         self.help_topics = HELP_TOPICS + plugin_names + [None]
         usage, short_usage = usage_strings(plugins)
         self.parser = configargparse.ArgParser(
+            prog="certbot",
             usage=short_usage,
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
             args_for_setting_config_path=["-c", "--config"],
@@ -586,7 +591,8 @@ class HelpfulArgumentParser(object):
 
         """
         for name, plugin_ep in six.iteritems(plugins):
-            parser_or_group = self.add_group(name, description=plugin_ep.description)
+            parser_or_group = self.add_group(name,
+                                             description=plugin_ep.long_description)
             plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)
 
     def determine_help_topics(self, chosen_topic):
@@ -680,7 +686,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Domain names to apply. For multiple domains you can use "
              "multiple -d flags or enter a comma separated list of domains "
              "as a parameter.")
-
     helpful.add(
         [None, "testing", "renew", "certonly"],
         "--dry-run", action="store_true", dest="dry_run",
@@ -989,6 +994,8 @@ def _plugins_parsing(helpful, plugins):
                 help="Obtain and install certs using Nginx")
     helpful.add(["plugins", "certonly"], "--standalone", action="store_true",
                 help='Obtain certs using a "standalone" webserver.')
+    helpful.add(["plugins", "certonly"], "--script", action="store_true",
+                help='Obtain certs using shell script(s)')
     helpful.add(["plugins", "certonly"], "--manual", action="store_true",
                 help='Provide laborious manual instructions for obtaining a cert')
     helpful.add(["plugins", "certonly"], "--webroot", action="store_true",

@@ -3,6 +3,8 @@ import os
 import shutil
 import tempfile
 import unittest
+import datetime
+import pytz
 
 import mock
 
@@ -13,9 +15,16 @@ from certbot import configuration
 from certbot import errors
 from certbot.plugins import disco as plugins_disco
 
+from certbot.tests import test_util
+from acme import jose
+
+CERT_PATH = test_util.vector_path('cert.pem')
+KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key_2.pem"))
+
 class MainTest(unittest.TestCase):
     def setUp(self):
         pass
+
     def tearDown(self):
         pass
 
@@ -26,6 +35,54 @@ class MainTest(unittest.TestCase):
         # pylint: disable=protected-access
         ret = main._handle_identical_cert_request(mock.Mock(), mock_lineage)
         self.assertEqual(ret, ("reinstall", mock_lineage))
+
+
+class RunTest(unittest.TestCase):
+    """Tests for certbot.main.run."""
+
+    def setUp(self):
+        self.domain = 'example.org'
+        self.patches = [
+            mock.patch('certbot.main._auth_from_domains'),
+            mock.patch('certbot.main.display_ops.success_installation'),
+            mock.patch('certbot.main.display_ops.success_renewal'),
+            mock.patch('certbot.main._init_le_client'),
+            mock.patch('certbot.main._suggest_donation_if_appropriate')]
+
+        self.mock_auth = self.patches[0].start()
+        self.mock_success_installation = self.patches[1].start()
+        self.mock_success_renewal = self.patches[2].start()
+        self.mock_init = self.patches[3].start()
+        self.mock_suggest_donation = self.patches[4].start()
+
+    def tearDown(self):
+        for patch in self.patches:
+            patch.stop()
+
+    def _call(self):
+        args = '-a webroot -i null -d {0}'.format(self.domain).split()
+        plugins = plugins_disco.PluginsRegistry.find_all()
+        config = configuration.NamespaceConfig(
+            cli.prepare_and_parse_args(plugins, args))
+
+        from certbot.main import run
+        run(config, plugins)
+
+    def test_newcert_success(self):
+        self.mock_auth.return_value = ('newcert', mock.Mock())
+        self._call()
+        self.mock_success_installation.assert_called_once_with([self.domain])
+
+    def test_reinstall_success(self):
+        self.mock_auth.return_value = ('reinstall', mock.Mock())
+        self._call()
+        self.mock_success_installation.assert_called_once_with([self.domain])
+
+    def test_renewal_success(self):
+        self.mock_auth.return_value = ('renewal', mock.Mock())
+        self._call()
+        self.mock_success_renewal.assert_called_once_with([self.domain])
+
 
 class ObtainCertTest(unittest.TestCase):
     """Tests for certbot.main.obtain_cert."""
@@ -60,6 +117,61 @@ class ObtainCertTest(unittest.TestCase):
         # pylint: disable=unused-argument
         self.assertFalse(pause)
 
+class RevokeTest(unittest.TestCase):
+    """Tests for certbot.main.revoke."""
+
+    def setUp(self):
+        self.tempdir_path = tempfile.mkdtemp()
+        shutil.copy(CERT_PATH, self.tempdir_path)
+        self.tmp_cert_path = os.path.abspath(os.path.join(self.tempdir_path,
+            'cert.pem'))
+
+        self.patches = [
+            mock.patch('acme.client.Client'),
+            mock.patch('certbot.client.Client'),
+            mock.patch('certbot.main._determine_account'),
+            mock.patch('certbot.main.display_ops.success_revocation')
+        ]
+        self.mock_acme_client = self.patches[0].start()
+        self.patches[1].start()
+        self.mock_determine_account = self.patches[2].start()
+        self.mock_success_revoke = self.patches[3].start()
+
+        from certbot.account import Account
+
+        self.regr = mock.MagicMock()
+        self.meta = Account.Meta(
+            creation_host="test.certbot.org",
+            creation_dt=datetime.datetime(
+                2015, 7, 4, 14, 4, 10, tzinfo=pytz.UTC))
+        self.acc = Account(self.regr, KEY, self.meta)
+
+        self.mock_determine_account.return_value = (self.acc, None)
+
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir_path)
+        for patch in self.patches:
+            patch.stop()
+
+    def _call(self):
+        args = 'revoke --cert-path={0}'.format(self.tmp_cert_path).split()
+        plugins = plugins_disco.PluginsRegistry.find_all()
+        config = configuration.NamespaceConfig(
+            cli.prepare_and_parse_args(plugins, args))
+
+        from certbot.main import revoke
+        revoke(config, plugins)
+
+    def test_revocation_success(self):
+        self._call()
+        self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
+
+    def test_revocation_error(self):
+        from acme import errors as acme_errors
+        self.mock_acme_client.side_effect = acme_errors.ClientError()
+        self.assertRaises(acme_errors.ClientError, self._call)
+        self.mock_success_revoke.assert_not_called()
 
 class SetupLogFileHandlerTest(unittest.TestCase):
     """Tests for certbot.main.setup_log_file_handler."""

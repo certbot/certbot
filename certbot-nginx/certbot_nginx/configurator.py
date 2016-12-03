@@ -29,6 +29,36 @@ from certbot_nginx import parser
 
 logger = logging.getLogger(__name__)
 
+REDIRECT_BLOCK = [[
+    ['\n    ', 'if', ' ', '($scheme != "https") '],
+    [['\n        ', 'return', ' ', '301 https://$host$request_uri'],
+     '\n    ']
+], ['\n']]
+
+TEST_REDIRECT_BLOCK = [
+    [
+        ['if', '($scheme != "https")'],
+        [
+            ['return', '301 https://$host$request_uri']
+        ]
+    ],
+    ['#', ' managed by Certbot']
+]
+
+REDIRECT_COMMENT_BLOCK = [
+    ['\n    ', '#', ' Redirect non-https traffic to https'],
+    ['\n    ', '#', ' if ($scheme != "https") {'],
+    ['\n    ', '#', "     return 301 https://$host$request_uri;"],
+    ['\n    ', '#', " } # managed by Certbot"],
+    ['\n']
+]
+
+TEST_REDIRECT_COMMENT_BLOCK = [
+    ['#', ' Redirect non-https traffic to https'],
+    ['#', ' if ($scheme != "https") {'],
+    ['#', "     return 301 https://$host$request_uri;"],
+    ['#', " } # managed by Certbot"],
+]
 
 @zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -405,7 +435,8 @@ class NginxConfigurator(common.Plugin):
         cert = acme_crypto_util.gen_ss_cert(key, domains=[socket.gethostname()])
         cert_pem = OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, cert)
-        cert_file, cert_path = util.unique_file(os.path.join(tmp_dir, "cert.pem"))
+        cert_file, cert_path = util.unique_file(
+            os.path.join(tmp_dir, "cert.pem"), mode="wb")
         with cert_file:
             cert_file.write(cert_pem)
         return cert_path, le_key.file
@@ -443,18 +474,6 @@ class NginxConfigurator(common.Plugin):
         self.parser.add_server_directives(
             vhost, ssl_block, replace=False)
 
-    def get_all_certs_keys(self):
-        """Find all existing keys, certs from configuration.
-
-        :returns: list of tuples with form [(cert, key, path)]
-            cert - str path to certificate file
-            key - str path to associated key file
-            path - File path to configuration file.
-        :rtype: set
-
-        """
-        return self.parser.get_all_certs_keys()
-
     ##################################
     # enhancement methods (IInstaller)
     ##################################
@@ -482,6 +501,23 @@ class NginxConfigurator(common.Plugin):
             logger.warning("Failed %s for %s", enhancement, domain)
             raise
 
+    def _has_certbot_redirect(self, vhost):
+        return vhost.contains_list(TEST_REDIRECT_BLOCK)
+
+    def _has_certbot_redirect_comment(self, vhost):
+        return vhost.contains_list(TEST_REDIRECT_COMMENT_BLOCK)
+
+    def _add_redirect_block(self, vhost, active=True):
+        """Add redirect directive to vhost
+        """
+        if active:
+            redirect_block = REDIRECT_BLOCK
+        else:
+            redirect_block = REDIRECT_COMMENT_BLOCK
+
+        self.parser.add_server_directives(
+            vhost, redirect_block, replace=False)
+
     def _enable_redirect(self, domain, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
 
@@ -504,17 +540,20 @@ class NginxConfigurator(common.Plugin):
             logger.info("No matching insecure server blocks listening on port %s found.",
                 self.DEFAULT_LISTEN_PORT)
         else:
-            # Redirect plaintextish host to https
-            redirect_block = [[
-                ['\n    ', 'if', ' ', '($scheme != "https") '],
-                [['\n        ', 'return', ' ', '301 https://$host$request_uri'],
-                 '\n    ']
-            ], ['\n']]
-
-            self.parser.add_server_directives(
-                vhost, redirect_block, replace=False)
-            logger.info("Redirecting all traffic on port %s to ssl in %s",
-                self.DEFAULT_LISTEN_PORT, vhost.filep)
+            if self._has_certbot_redirect(vhost):
+                logger.info("Traffic on port %s already redirecting to ssl in %s",
+                    self.DEFAULT_LISTEN_PORT, vhost.filep)
+            elif vhost.has_redirect():
+                if not self._has_certbot_redirect_comment(vhost):
+                    self._add_redirect_block(vhost, active=False)
+                logger.info("The appropriate server block is already redirecting "
+                            "traffic. To enable redirect anyway, uncomment the "
+                            "redirect lines in %s.", vhost.filep)
+            else:
+                # Redirect plaintextish host to https
+                self._add_redirect_block(vhost, active=True)
+                logger.info("Redirecting all traffic on port %s to ssl in %s",
+                    self.DEFAULT_LISTEN_PORT, vhost.filep)
 
     def _enable_ocsp_stapling(self, domain, chain_path):
         """Include OCSP response in TLS handshake

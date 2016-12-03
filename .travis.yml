@@ -4,9 +4,6 @@ cache:
     directories:
         - $HOME/.cache/pip
 
-# This makes sure we get a host with docker-compose present.
-dist: trusty
-
 before_install:
   - 'dpkg -s libaugeas0'
 
@@ -21,42 +18,61 @@ matrix:
   include:
     - python: "2.7"
       env: TOXENV=cover BOULDER_INTEGRATION=1
-      sudo: true
+      sudo: required
       after_failure:
         - sudo cat /var/log/mysql/error.log
         - ps aux | grep mysql
+      services: docker
     - python: "2.7"
       env: TOXENV=lint
     - python: "2.7"
       env: TOXENV=py27-oldest BOULDER_INTEGRATION=1
-      sudo: true
+      sudo: required
       after_failure:
         - sudo cat /var/log/mysql/error.log
         - ps aux | grep mysql
+      services: docker
     - python: "2.6"
       env: TOXENV=py26 BOULDER_INTEGRATION=1
-      sudo: true
+      sudo: required
       after_failure:
         - sudo cat /var/log/mysql/error.log
         - ps aux | grep mysql
+      services: docker
     - python: "2.6"
       env: TOXENV=py26-oldest BOULDER_INTEGRATION=1
-      sudo: true
+      sudo: required
       after_failure:
         - sudo cat /var/log/mysql/error.log
         - ps aux | grep mysql
+      services: docker
+    - sudo: required
+      env: TOXENV=apache_compat
+      services: docker
+      before_install:
+      addons:
     - sudo: required
       env: TOXENV=nginx_compat
       services: docker
       before_install:
       addons:
     - sudo: required
-      env: TOXENV=le_auto
+      env: TOXENV=le_auto_precise
       services: docker
       before_install:
       addons:
     - sudo: required
-      env: TOXENV=apache_compat
+      env: TOXENV=le_auto_trusty
+      services: docker
+      before_install:
+      addons:
+    - sudo: required
+      env: TOXENV=le_auto_wheezy
+      services: docker
+      before_install:
+      addons:
+    - sudo: required
+      env: TOXENV=le_auto_centos6
       services: docker
       before_install:
       addons:
@@ -114,7 +130,6 @@ addons:
     - apache2
     - libapache2-mod-wsgi
     - libapache2-mod-macro
-    - sudo
 
 install: "travis_retry pip install tox coveralls"
 script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/travis-integration.sh)'
