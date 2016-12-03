@@ -14,6 +14,9 @@ from certbot import constants
 from certbot import errors
 from certbot.plugins import disco
 
+def reset_set_by_cli():
+    '''Reset the state of the `set_by_cli` function'''
+    cli.set_by_cli.detector = None
 
 class TestReadFile(unittest.TestCase):
     '''Test cli.read_file'''
@@ -39,6 +42,9 @@ class ParseTest(unittest.TestCase):
     def setUpClass(cls):
         cls.plugins = disco.PluginsRegistry.find_all()
         cls.parse = functools.partial(cli.prepare_and_parse_args, cls.plugins)
+
+    def setUp(self):
+        reset_set_by_cli()
 
     def _help_output(self, args):
         "Run a command, and return the ouput string for scrutiny"
@@ -233,6 +239,18 @@ class ParseTest(unittest.TestCase):
         short_args += ['--staging']
         conflicts += ['--staging']
         self._check_server_conflict_message(short_args, conflicts)
+
+    def test_option_was_set(self):
+        key_size_option = 'rsa_key_size'
+        key_size_value = cli.flag_default(key_size_option)
+        self.parse('--rsa-key-size {0}'.format(key_size_value).split())
+
+        self.assertTrue(cli.option_was_set(key_size_option, key_size_value))
+        self.assertTrue(cli.option_was_set('no_verify_ssl', True))
+
+        config_dir_option = 'config_dir'
+        self.assertFalse(cli.option_was_set(
+            config_dir_option, cli.flag_default(config_dir_option)))
 
 
 class DefaultTest(unittest.TestCase):

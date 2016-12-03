@@ -664,24 +664,6 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             errors.Error, self._call,
             'certonly -d example.org --csr {0}'.format(CSR).split())
 
-    def _get_argument_parser(self):
-        plugins = disco.PluginsRegistry.find_all()
-        return functools.partial(cli.prepare_and_parse_args, plugins)
-
-    # why can't I remove this?
-    def test_option_was_set(self):
-        key_size_option = 'rsa_key_size'
-        key_size_value = cli.flag_default(key_size_option)
-        self._get_argument_parser()(
-            '--rsa-key-size {0}'.format(key_size_value).split())
-
-        self.assertTrue(cli.option_was_set(key_size_option, key_size_value))
-        self.assertTrue(cli.option_was_set('no_verify_ssl', True))
-
-        config_dir_option = 'config_dir'
-        self.assertFalse(cli.option_was_set(
-            config_dir_option, cli.flag_default(config_dir_option)))
-
     def _certonly_new_request_common(self, mock_client, args=None):
         with mock.patch('certbot.main._treat_as_renewal') as mock_renewal:
             mock_renewal.return_value = ("newcert", None)
