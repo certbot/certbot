@@ -1,7 +1,6 @@
 """Tests for certbot.main."""
 from __future__ import print_function
 
-import functools
 import itertools
 import mock
 import os
