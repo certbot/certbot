@@ -128,6 +128,8 @@ class Addr(object):
         return self.tup[0]
 
     def normalized_tuple(self):
+        """Normalized representation of addr/port tuple
+        """
         if self.ipv6:
             return (self._normalize_ipv6(self.tup[0]), self.tup[1])
         return self.tup
