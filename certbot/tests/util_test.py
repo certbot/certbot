@@ -11,7 +11,7 @@ import mock
 import six
 
 from certbot import errors
-from certbot.tests import test_util
+import certbot.tests.util as test_util
 
 
 class RunScriptTest(unittest.TestCase):
@@ -195,6 +195,7 @@ except NameError:
     import io
     file_type = io.TextIOWrapper
 
+
 class UniqueLineageNameTest(unittest.TestCase):
     """Tests for certbot.util.unique_lineage_name."""
 
@@ -372,6 +373,11 @@ class EnforceDomainSanityTest(unittest.TestCase):
     def test_nonascii_unicode(self):
         self.assertRaises(errors.ConfigurationError, self._call,
                           u"eichh\u00f6rnchen.example.com")
+
+    def test_punycode_ok(self):
+        # Punycode is now legal, so no longer an error; instead check
+        # that it's _not_ an error (at the initial sanity check stage)
+        self._call('this.is.xn--ls8h.tld')
 
 
 class OsInfoTest(unittest.TestCase):
