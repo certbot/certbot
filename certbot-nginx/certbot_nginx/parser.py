@@ -85,7 +85,6 @@ class NginxParser(object):
     def _build_addr_to_ssl(self):
         """Builds a map from address to whether it listens on ssl in any server block
         """
-        import ipdb; ipdb.set_trace()
         servers = self._get_raw_servers()
 
         addr_to_ssl = {}
