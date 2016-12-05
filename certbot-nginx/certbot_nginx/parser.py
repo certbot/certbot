@@ -89,7 +89,7 @@ class NginxParser(object):
 
         addr_to_ssl = {}
         for filename in servers:
-            for server, path in servers[filename]:
+            for server, _ in servers[filename]:
                 # Parse the server block to save addr info
                 parsed_server = _parse_server_raw(server)
                 for addr in parsed_server['addrs']:
@@ -100,6 +100,7 @@ class NginxParser(object):
         return addr_to_ssl
 
     def _get_raw_servers(self):
+        # pylint: disable=cell-var-from-loop
         """Get a map of unparsed all server blocks
         """
         servers = {}
