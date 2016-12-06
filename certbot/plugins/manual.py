@@ -98,7 +98,7 @@ s.serve_forever()" """
         add("test-mode", action="store_true",
             help="Test mode. Executes the manual command in subprocess.")
         add("public-ip-logging-ok", action="store_true",
-            help="Automatically allows public IP logging.")
+            help="Automatically allows public IP logging. (default: Ask)")
 
     def prepare(self):  # pylint: disable=missing-docstring,no-self-use
         if self.config.noninteractive_mode and not self.conf("test-mode"):

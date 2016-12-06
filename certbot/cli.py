@@ -750,7 +750,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "at this system. This option cannot be used with --csr.")
     helpful.add(
         "automation", "--agree-tos", dest="tos", action="store_true",
-        help="Agree to the ACME Subscriber Agreement")
+        help="Agree to the ACME Subscriber Agreement (default: Ask)")
     helpful.add(
         "automation", "--account", metavar="ACCOUNT_ID",
         help="Account ID to use")
@@ -764,7 +764,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         "automation", "--no-self-upgrade", action="store_true",
         help="(certbot-auto only) prevent the certbot-auto script from"
-             " upgrading itself to newer released versions")
+             " upgrading itself to newer released versions (default: Upgrade"
+             " automatically)")
     helpful.add(
         ["automation", "renew", "certonly"],
         "-q", "--quiet", dest="quiet", action="store_true",
@@ -897,12 +898,20 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
 def _create_subparsers(helpful):
     helpful.add("config_changes", "--num", type=int,
                 help="How many past revisions you want to be displayed")
+
+    class DummyConfig:
+        def __init__(self):
+            self.authenticator="XXX"
+            self.installer="YYY"
+            self.user_agent=None
+    from certbot.client import determine_user_agent # avoid import loops
     helpful.add(
         None, "--user-agent", default=None,
         help="Set a custom user agent string for the client. User agent strings allow "
              "the CA to collect high level statistics about success rates by OS and "
              "plugin. If you wish to hide your server OS version from the Let's "
-             'Encrypt server, set this to "".')
+             'Encrypt server, set this to "". '
+             '(default: {0})'.format(determine_user_agent(DummyConfig())))
     helpful.add("certonly",
                 "--csr", type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER or PEM format."
@@ -978,13 +987,13 @@ def _plugins_parsing(helpful, plugins):
         "--help <plugin_name> will list flags specific to that plugin.")
 
     helpful.add(
+        "plugins", "--configurator", help="Name of the plugin that is "
+        "both an authenticator and an installer. Should not be used "
+        "together with --authenticator or --installer. (default: Ask)")
+    helpful.add(
         "plugins", "-a", "--authenticator", help="Authenticator plugin name.")
     helpful.add(
         "plugins", "-i", "--installer", help="Installer plugin name (also used to find domains).")
-    helpful.add(
-        "plugins", "--configurator", help="Name of the plugin that is "
-        "both an authenticator and an installer. Should not be used "
-        "together with --authenticator or --installer.")
     helpful.add(["plugins", "certonly", "run", "install"],
                 "--apache", action="store_true",
                 help="Obtain and install certs using Apache")
