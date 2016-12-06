@@ -107,7 +107,7 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
 
 
 def probe_sni(name, host, port=443, timeout=300,
-              method=_DEFAULT_TLSSNI01_SSL_METHOD, source_address=('0', 0)):
+              method=_DEFAULT_TLSSNI01_SSL_METHOD, source_address=('', 0)):
     """Probe SNI server for SSL certificate.
 
     :param bytes name: Byte string to send as the server name in the

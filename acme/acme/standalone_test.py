@@ -1,6 +1,8 @@
 """Tests for acme.standalone."""
+import mock
 import os
 import shutil
+import socket
 import threading
 import tempfile
 import time
@@ -15,17 +17,44 @@ from acme import challenges
 from acme import crypto_util
 from acme import errors
 from acme import jose
+from acme import standalone
 from acme import test_util
+
+
+class IPv6EnabledTest(unittest.TestCase):
+    """Tests for acme.standalone.ipv6_enabled."""
+
+    @mock.patch.object(socket, 'socket')
+    def test_has_ipv6(self, socket_mock):
+        socket_mock.return_value = mock.Mock()
+        self.assertTrue(standalone.ipv6_enabled(12))
+
+    @mock.patch.object(socket, 'socket')
+    def test_cannot_bind_ipv6(self, socket_mock):
+        socket_mock.side_effect = socket.error
+        self.assertFalse(standalone.ipv6_enabled(12))
 
 
 class TLSServerTest(unittest.TestCase):
     """Tests for acme.standalone.TLSServer."""
 
-    def test_bind(self):  # pylint: disable=no-self-use
+    @mock.patch.object(standalone, 'ipv6_enabled')
+    def test_bind_has_ipv6(self, mock_ipv6):
+        mock_ipv6.return_value = True
         from acme.standalone import TLSServer
         server = TLSServer(
             ('', 0), socketserver.BaseRequestHandler, bind_and_activate=True)
         server.server_close()  # pylint: disable=no-member
+        self.assertEqual(server.address_family, socket.AF_INET6)
+
+    @mock.patch.object(standalone, 'ipv6_enabled')
+    def test_bind_no_ipv6(self, mock_ipv6):
+        mock_ipv6.return_value = False
+        from acme.standalone import TLSServer
+        server = TLSServer(
+            ('', 0), socketserver.BaseRequestHandler, bind_and_activate=True)
+        server.server_close()  # pylint: disable=no-member
+        self.assertEqual(server.address_family, socket.AF_INET)
 
 
 class TLSSNI01ServerTest(unittest.TestCase):
@@ -62,31 +91,49 @@ class HTTP01ServerTest(unittest.TestCase):
             test_util.load_vector('rsa1024_key.pem'))
         self.resources = set()
 
-        from acme.standalone import HTTP01Server
-        self.server = HTTP01Server(('', 0), resources=self.resources)
+    def _setup_server(self, ipv6=True):
+        # Run tests with IPv6 enabled by default, but allow toggling off to
+        # test fallback capability.
+        with mock.patch.object(standalone, 'ipv6_enabled', return_value=ipv6):
+            from acme.standalone import HTTP01Server
+            self.server = HTTP01Server(('', 0), resources=self.resources)  # pylint: disable=attribute-defined-outside-init
 
-        # pylint: disable=no-member
-        self.port = self.server.socket.getsockname()[1]
-        self.thread = threading.Thread(target=self.server.serve_forever)
-        self.thread.start()
+            # pylint: disable=no-member
+            self.port = self.server.socket.getsockname()[1]  # pylint: disable=attribute-defined-outside-init
+            self.thread = threading.Thread(target=self.server.serve_forever)  # pylint: disable=attribute-defined-outside-init
+            self.thread.start()
 
     def tearDown(self):
         self.server.shutdown()  # pylint: disable=no-member
         self.thread.join()
 
     def test_index(self):
+        self._setup_server()
         response = requests.get(
             'http://localhost:{0}'.format(self.port), verify=False)
         self.assertEqual(
             response.text, 'ACME client standalone challenge solver')
         self.assertTrue(response.ok)
+        self.assertEqual(self.server.address_family, socket.AF_INET6)
+
+    def test_index_no_ipv6(self):
+        self._setup_server(ipv6=False)
+        response = requests.get(
+            'http://localhost:{0}'.format(self.port), verify=False)
+        self.assertEqual(
+            response.text, 'ACME client standalone challenge solver')
+        self.assertTrue(response.ok)
+        self.assertEqual(self.server.address_family, socket.AF_INET)
 
     def test_404(self):
+        self._setup_server()
         response = requests.get(
             'http://localhost:{0}/foo'.format(self.port), verify=False)
         self.assertEqual(response.status_code, http_client.NOT_FOUND)
+        self.assertEqual(self.server.address_family, socket.AF_INET6)
 
     def _test_http01(self, add):
+        self._setup_server()
         chall = challenges.HTTP01(token=(b'x' * 16))
         response, validation = chall.response_and_validation(self.account_key)
 
@@ -101,9 +148,11 @@ class HTTP01ServerTest(unittest.TestCase):
 
     def test_http01_found(self):
         self.assertTrue(self._test_http01(add=True))
+        self.assertEqual(self.server.address_family, socket.AF_INET6)
 
     def test_http01_not_found(self):
         self.assertFalse(self._test_http01(add=False))
+        self.assertEqual(self.server.address_family, socket.AF_INET6)
 
 
 class TestSimpleTLSSNI01Server(unittest.TestCase):

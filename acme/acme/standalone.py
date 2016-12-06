@@ -4,6 +4,7 @@ import collections
 import functools
 import logging
 import os
+import socket
 import sys
 
 from six.moves import BaseHTTPServer  # pylint: disable=import-error
@@ -22,10 +23,41 @@ logger = logging.getLogger(__name__)
 # pylint: disable=too-few-public-methods,no-init
 
 
+def ipv6_enabled(port):
+    """Method to see if IPv6 is functional.
+
+    This method only verifies IPv6 is enabled in underlying OS; this method
+    makes nor attempts no claims that the IPv6 internet is reachable.
+
+    :param port: Port to attempt bogus IPv6 connection
+    :returns: bool indicating if IPv6 is enabled in underlying system
+    """
+    if not socket.has_ipv6:  # pragma: no cover
+        # Python compiled without IPv6 support
+        return False
+
+    try:
+        testsock = socket.socket(socket.AF_INET6,
+                                 socket.SOCK_STREAM,
+                                 socket.IPPROTO_IP)
+        testsock.bind(('::1', port))
+        testsock.close()
+    except socket.error:
+        return False
+
+    # We were able to bind to an IPv6 address.
+    return True
+
+
 class TLSServer(socketserver.TCPServer):
     """Generic TLS Server."""
 
     def __init__(self, *args, **kwargs):
+        if ipv6_enabled(args[0][1]):
+            self.address_family = socket.AF_INET6
+        else:
+            self.address_family = socket.AF_INET
+
         self.certs = kwargs.pop("certs", {})
         self.method = kwargs.pop(
             # pylint: disable=protected-access
@@ -74,6 +106,11 @@ class HTTP01Server(BaseHTTPServer.HTTPServer, ACMEServerMixin):
     """HTTP01 Server."""
 
     def __init__(self, server_address, resources):
+        if ipv6_enabled(server_address[1]):
+            self.address_family = socket.AF_INET6
+        else:
+            self.address_family = socket.AF_INET
+
         BaseHTTPServer.HTTPServer.__init__(
             self, server_address, HTTP01RequestHandler.partial_init(
                 simple_http_resources=resources))
