@@ -339,7 +339,9 @@ class HelpfulArgumentParser(object):
             usage=short_usage,
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
             args_for_setting_config_path=["-c", "--config"],
-            default_config_files=flag_default("config_files"))
+            default_config_files=flag_default("config_files"),
+            config_arg_help_message="path to config file (default: {0})".format(
+                " and ".join(flag_default("config_files"))))
 
         # This is the only way to turn off overly verbose config flag documentation
         self.parser._add_config_file_help = False  # pylint: disable=protected-access
@@ -725,7 +727,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         "automation", "--expand", action="store_true",
         help="If an existing cert covers some subset of the requested names, "
-             "always expand and replace it with the additional names.")
+             "always expand and replace it with the additional names. (default: Ask)")
     helpful.add(
         "automation", "--version", action="version",
         version="%(prog)s {0}".format(certbot.__version__),
@@ -874,7 +876,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " see if the programs being run are in the $PATH, so that mistakes can"
         " be caught early, even when the hooks aren't being run just yet. The"
         " validation is rather simplistic and fails if you use more advanced"
-        " shell constructs, so you can use this switch to disable it.")
+        " shell constructs, so you can use this switch to disable it."
+        " (default: False)")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
     helpful.add_deprecated_argument("--dialog", 0)
