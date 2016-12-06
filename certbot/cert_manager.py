@@ -170,8 +170,7 @@ def _search_lineages(config, func, initial_rv):
     return rv
 
 def lineage_for_certname(config, certname):
-    """Find a lineage object with name certname.
-    """
+    """Find a lineage object with name certname."""
     def update_cert_for_name_match(candidate_lineage, rv):
         """Return cert if it has name certname, else return rv
         """
@@ -182,8 +181,7 @@ def lineage_for_certname(config, certname):
     return _search_lineages(config, update_cert_for_name_match, None)
 
 def domains_for_certname(config, certname):
-    """Find the domains in the cert with name certname.
-    """
+    """Find the domains in the cert with name certname."""
     def update_domains_for_name_match(candidate_lineage, rv):
         """Return domains if certname matches, else return rv
         """
