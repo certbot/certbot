@@ -11,7 +11,6 @@ class ReporterTest(unittest.TestCase):
 
     def setUp(self):
         from certbot import reporter
-        self.rep_module = reporter
         self.reporter = reporter.Reporter(mock.MagicMock(quiet=False))
 
         self.old_stdout = sys.stdout
@@ -20,11 +19,9 @@ class ReporterTest(unittest.TestCase):
     def tearDown(self):
         sys.stdout = self.old_stdout
 
-    @mock.patch('certbot.reporter.os.getpid')
-    def test_multiline_message(self, mock_getpid):
+    def test_multiline_message(self):
         self.reporter.add_message("Line 1\nLine 2", self.reporter.LOW_PRIORITY)
-        mock_getpid.return_value = self.rep_module.INITIAL_PID
-        self.reporter.atexit_print_messages()
+        self.reporter.print_messages()
         output = sys.stdout.getvalue()
         self.assertTrue("Line 1\n" in output)
         self.assertTrue("Line 2" in output)
@@ -42,11 +39,9 @@ class ReporterTest(unittest.TestCase):
             self.reporter.print_messages()
         self.assertEqual(sys.stdout.getvalue(), "")
 
-    @mock.patch('certbot.reporter.os.getpid')
-    def test_atexit_print_messages(self, mock_getpid):
+    def test_atexit_print_messages(self):
         self._add_messages()
-        mock_getpid.return_value = self.rep_module.INITIAL_PID
-        self.reporter.atexit_print_messages()
+        self.reporter.print_messages()
         output = sys.stdout.getvalue()
         self.assertTrue("IMPORTANT NOTES:" in output)
         self.assertTrue("High" in output)
