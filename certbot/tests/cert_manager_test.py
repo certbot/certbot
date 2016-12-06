@@ -15,7 +15,7 @@ from certbot.display import util as display_util
 from certbot.storage import ALL_FOUR
 
 from certbot.tests import storage_test
-from certbot.tests import test_util
+from certbot.tests import util as test_util
 
 class BaseCertManagerTest(unittest.TestCase):
     """Base class for setting up Cert Manager tests.

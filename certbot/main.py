@@ -453,7 +453,7 @@ def install(config, plugins):
     le_client.deploy_certificate(
         domains, config.key_path, config.cert_path, config.chain_path,
         config.fullchain_path)
-    le_client.enhance_config(domains, config, config.chain_path)
+    le_client.enhance_config(domains, config.chain_path)
 
 
 def plugins_cmd(config, plugins):  # TODO: Use IDisplay rather than print
@@ -558,7 +558,7 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
         domains, lineage.privkey, lineage.cert,
         lineage.chain, lineage.fullchain)
 
-    le_client.enhance_config(domains, config, lineage.chain)
+    le_client.enhance_config(domains, lineage.chain)
 
     if action in ("newcert", "reinstall",):
         display_ops.success_installation(domains)
@@ -761,6 +761,29 @@ def make_or_verify_core_dir(directory, mode, uid, strict):
     except OSError as error:
         raise errors.Error(_PERM_ERR_FMT.format(error))
 
+def make_or_verify_needed_dirs(config):
+    """Create or verify existance of config, work, or logs directories"""
+    make_or_verify_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
+                            os.geteuid(), config.strict_permissions)
+    make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
+                            os.geteuid(), config.strict_permissions)
+    # TODO: logs might contain sensitive data such as contents of the
+    # private key! #525
+    make_or_verify_core_dir(config.logs_dir, 0o700,
+                            os.geteuid(), config.strict_permissions)
+
+
+def set_displayer(config):
+    """Set the displayer"""
+    if config.quiet:
+        config.noninteractive_mode = True
+        displayer = display_util.NoninteractiveDisplay(open(os.devnull, "w"))
+    elif config.noninteractive_mode:
+        displayer = display_util.NoninteractiveDisplay(sys.stdout)
+    else:
+        displayer = display_util.FileDisplay(sys.stdout)
+    zope.component.provideUtility(displayer)
+
 
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
@@ -772,17 +795,12 @@ def main(cli_args=sys.argv[1:]):
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
 
-    make_or_verify_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
-                            os.geteuid(), config.strict_permissions)
-    make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
-                            os.geteuid(), config.strict_permissions)
-    # TODO: logs might contain sensitive data such as contents of the
-    # private key! #525
-    make_or_verify_core_dir(config.logs_dir, 0o700,
-                            os.geteuid(), config.strict_permissions)
+    make_or_verify_needed_dirs(config)
+
     # Setup logging ASAP, otherwise "No handlers could be found for
     # logger ..." TODO: this should be done before plugins discovery
     setup_logging(config)
+
     cli.possible_deprecation_warning(config)
 
     logger.debug("certbot version: %s", certbot.__version__)
@@ -792,15 +810,7 @@ def main(cli_args=sys.argv[1:]):
 
     sys.excepthook = functools.partial(_handle_exception, config=config)
 
-    # Displayer
-    if config.quiet:
-        config.noninteractive_mode = True
-        displayer = display_util.NoninteractiveDisplay(open(os.devnull, "w"))
-    elif config.noninteractive_mode:
-        displayer = display_util.NoninteractiveDisplay(sys.stdout)
-    else:
-        displayer = display_util.FileDisplay(sys.stdout)
-    zope.component.provideUtility(displayer)
+    set_displayer(config)
 
     # Reporter
     report = reporter.Reporter(config)

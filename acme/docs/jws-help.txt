@@ -1,0 +1,8 @@
+usage: jws [-h] [--compact] {sign,verify} ...
+
+positional arguments:
+  {sign,verify}
+
+optional arguments:
+  -h, --help     show this help message and exit
+  --compact
