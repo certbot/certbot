@@ -40,7 +40,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_prepare(self):
         self.assertEqual((1, 6, 2), self.config.version)
-        self.assertEqual(7, len(self.config.parser.parsed))
+        self.assertEqual(8, len(self.config.parser.parsed))
         # ensure we successfully parsed a file for ssl_options
         self.assertTrue(self.config.parser.loc["ssl_options"])
 
@@ -68,7 +68,8 @@ class NginxConfiguratorTest(util.NginxTest):
         names = self.config.get_all_names()
         self.assertEqual(names, set(
             ["155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
-             "migration.com", "summer.com", "geese.com", "sslon.com"]))
+             "migration.com", "summer.com", "geese.com", "sslon.com",
+             "globalssl.com", "globalsslsetssl.com"]))
 
     def test_supported_enhancements(self):
         self.assertEqual(['redirect', 'staple-ocsp'],
