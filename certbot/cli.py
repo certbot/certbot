@@ -1,6 +1,5 @@
 """Certbot command line argument & config processing."""
 from __future__ import print_function
-import argparse
 import copy
 import glob
 import logging
@@ -20,6 +19,7 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import hooks
 from certbot import interfaces
+from certbot import tweakedparse as argparse
 from certbot import util
 
 from certbot.plugins import disco as plugins_disco
@@ -685,7 +685,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         metavar="DOMAIN", action=_DomainsAction, default=[],
         help="Domain names to apply. For multiple domains you can use "
              "multiple -d flags or enter a comma separated list of domains "
-             "as a parameter.")
+             "as a parameter. (default: Ask)")
     helpful.add(
         [None, "testing", "renew", "certonly"],
         "--dry-run", action="store_true", dest="dry_run",
@@ -721,7 +721,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         dest="reinstall", action="store_true",
         help="If the requested cert matches an existing cert, always keep the "
              "existing one until it is due for renewal (for the "
-             "'run' subcommand this means reinstall the existing cert)")
+             "'run' subcommand this means reinstall the existing cert). (default: Ask)")
     helpful.add(
         "automation", "--expand", action="store_true",
         help="If an existing cert covers some subset of the requested names, "
@@ -801,11 +801,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         "security", "--redirect", action="store_true",
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
-             "authenticated vhost.", dest="redirect", default=None)
+             "authenticated vhost. (default: Ask)", dest="redirect", default=None)
     helpful.add(
         "security", "--no-redirect", action="store_false",
         help="Do not automatically redirect all HTTP traffic to HTTPS for the newly "
-             "authenticated vhost.", dest="redirect", default=None)
+             "authenticated vhost. (default: Ask)", dest="redirect", default=None)
     helpful.add(
         "security", "--hsts", action="store_true",
         help="Add the Strict-Transport-Security header to every HTTP response."
@@ -813,8 +813,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              " Defends against SSL Stripping.", dest="hsts", default=False)
     helpful.add(
         "security", "--no-hsts", action="store_false",
-        help="Do not automatically add the Strict-Transport-Security header"
-             " to every HTTP response.", dest="hsts", default=False)
+        help=argparse.SUPPRESS, dest="hsts", default=False)
     helpful.add(
         "security", "--uir", action="store_true",
         help="Add the \"Content-Security-Policy: upgrade-insecure-requests\""
@@ -822,9 +821,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              " https:// for every http:// resource.", dest="uir", default=None)
     helpful.add(
         "security", "--no-uir", action="store_false",
-        help="Do not automatically set the \"Content-Security-Policy:"
-        " upgrade-insecure-requests\" header to every HTTP response.",
-        dest="uir", default=None)
+        help=argparse.SUPPRESS, dest="uir", default=None)
     helpful.add(
         "security", "--staple-ocsp", action="store_true",
         help="Enables OCSP Stapling. A valid OCSP response is stapled to"
@@ -832,8 +829,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         dest="staple", default=None)
     helpful.add(
         "security", "--no-staple-ocsp", action="store_false",
-        help="Do not automatically enable OCSP Stapling.",
-        dest="staple", default=None)
+        help=argparse.SUPPRESS, dest="staple", default=None)
     helpful.add(
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
