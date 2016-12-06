@@ -659,7 +659,7 @@ class ArgumentDefaultsHelpFormatter(HelpFormatter):
 
     def _get_help_string(self, action):
         help = action.help
-        if '%(default)' not in action.help:
+        if '%(default)' not in action.help and '(default:' not in action.help:
             if action.default != SUPPRESS:
                 defaulting_nargs = [OPTIONAL, ZERO_OR_MORE]
                 if action.option_strings or action.nargs in defaulting_nargs:
