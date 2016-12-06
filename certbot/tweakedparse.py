@@ -248,12 +248,12 @@ class HelpFormatter(object):
             self._add_item(self._format_text, [text])
 
     def add_usage(self, usage, actions, groups, prefix=None):
-        if usage is not SUPPRESS:
+        if usage != SUPPRESS:
             args = usage, actions, groups, prefix
             self._add_item(self._format_usage, args)
 
     def add_argument(self, action):
-        if action.help is not SUPPRESS:
+        if action.help != SUPPRESS:
 
             # find all invocations
             get_invocation = self._format_action_invocation
@@ -269,6 +269,8 @@ class HelpFormatter(object):
 
             # add the item to the list
             self._add_item(self._format_action, [action])
+            if SUPPRESS in action.help:
+                print "WTF argparse", repr(action.help), repr(SUPPRESS), action.help == SUPPRESS, action.help is SUPPRESS, type(SUPPRESS), type(action.help), id(SUPPRESS), id(action.help)
 
     def add_arguments(self, actions):
         for action in actions:
@@ -287,7 +289,7 @@ class HelpFormatter(object):
     def _join_parts(self, part_strings):
         return ''.join([part
                         for part in part_strings
-                        if part and part is not SUPPRESS])
+                        if part and part != SUPPRESS])
 
     def _format_usage(self, usage, actions, groups, prefix):
         if prefix is None:
@@ -658,7 +660,7 @@ class ArgumentDefaultsHelpFormatter(HelpFormatter):
     def _get_help_string(self, action):
         help = action.help
         if '%(default)' not in action.help:
-            if action.default is not SUPPRESS:
+            if action.default != SUPPRESS:
                 defaulting_nargs = [OPTIONAL, ZERO_OR_MORE]
                 if action.option_strings or action.nargs in defaulting_nargs:
                     help += ' (default: %(default)s)'
