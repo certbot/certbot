@@ -8,8 +8,9 @@ import six
 
 class ReporterTest(unittest.TestCase):
     """Tests for certbot.reporter.Reporter."""
-
-    def setUp(self):
+    @mock.patch('os.getpid')
+    def setUp(self, mock_getpid):
+        mock_getpid.return_value = 5
         from certbot import reporter
         self.reporter = reporter.Reporter(mock.MagicMock(quiet=False))
 
@@ -62,14 +63,17 @@ class ReporterTest(unittest.TestCase):
     def test_no_tty_unsuccessful_exit(self):
         self._unsuccessful_exit_common()
 
-    def _successful_exit_common(self):
-        self._add_messages()
-        self.reporter.print_messages()
-        output = sys.stdout.getvalue()
-        self.assertTrue("IMPORTANT NOTES:" in output)
-        self.assertTrue("High" in output)
-        self.assertTrue("Med" in output)
-        self.assertTrue("Low" in output)
+    @mock.patch('os.getpid')
+    def _successful_exit_common(self, mock_getpid):
+        mock_getpid.return_value = 5
+        with mock.patch('certbot.reporter.INITIAL_PID', 5):
+            self._add_messages()
+            self.reporter.atexit_print_messages()
+            output = sys.stdout.getvalue()
+            self.assertTrue("IMPORTANT NOTES:" in output)
+            self.assertTrue("High" in output)
+            self.assertTrue("Med" in output)
+            self.assertTrue("Low" in output)
 
     def _unsuccessful_exit_common(self):
         self._add_messages()
