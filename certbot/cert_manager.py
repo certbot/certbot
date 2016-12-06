@@ -172,30 +172,30 @@ def _search_lineages(config, func, initial_rv):
 def lineage_for_certname(config, certname):
     """Find a lineage object with name certname.
     """
-    def func(candidate_lineage, rv):
+    def update_cert_for_name_match(candidate_lineage, rv):
         """Return cert if it has name certname, else return rv
         """
         matching_lineage_name_cert = rv
         if candidate_lineage.lineagename == certname:
             matching_lineage_name_cert = candidate_lineage
         return matching_lineage_name_cert
-    return _search_lineages(config, func, None)
+    return _search_lineages(config, update_cert_for_name_match, None)
 
 def domains_for_certname(config, certname):
     """Find the domains in the cert with name certname.
     """
-    def func(candidate_lineage, rv):
+    def update_domains_for_name_match(candidate_lineage, rv):
         """Return domains if certname matches, else return rv
         """
         matching_domains = rv
         if candidate_lineage.lineagename == certname:
             matching_domains = candidate_lineage.names()
         return matching_domains
-    return _search_lineages(config, func, None)
+    return _search_lineages(config, update_domains_for_name_match, None)
 
 def find_duplicative_certs(config, domains):
     """Find existing certs that duplicate the request."""
-    def func(candidate_lineage, rv):
+    def update_certs_for_domain_matches(candidate_lineage, rv):
         """Return cert as identical_names_cert if it matches,
            or subset_names_cert if it matches as subset
         """
@@ -214,4 +214,4 @@ def find_duplicative_certs(config, domains):
                 subset_names_cert = candidate_lineage
         return (identical_names_cert, subset_names_cert)
 
-    return _search_lineages(config, func, (None, None))
+    return _search_lineages(config, update_certs_for_domain_matches, (None, None))
