@@ -899,11 +899,12 @@ def _create_subparsers(helpful):
     helpful.add("config_changes", "--num", type=int,
                 help="How many past revisions you want to be displayed")
 
-    class DummyConfig:
+    class DummyConfig(object):
+        "Shim for computing a sample user agent."
         def __init__(self):
-            self.authenticator="XXX"
-            self.installer="YYY"
-            self.user_agent=None
+            self.authenticator = "XXX"
+            self.installer = "YYY"
+            self.user_agent = None
     from certbot.client import determine_user_agent # avoid import loops
     helpful.add(
         None, "--user-agent", default=None,

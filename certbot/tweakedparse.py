@@ -1,3 +1,4 @@
+# pylint: skip-file
 # Author: Steven J. Bethard <steven.bethard@gmail.com>.
 
 """Command-line parsing library
