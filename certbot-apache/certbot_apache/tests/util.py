@@ -13,7 +13,7 @@ from certbot.display import util as display_util
 
 from certbot.plugins import common
 
-from certbot.tests import test_util
+from certbot.tests import util as test_util
 
 from certbot_apache import configurator
 from certbot_apache import constants

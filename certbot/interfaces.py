@@ -234,7 +234,7 @@ class IConfig(zope.interface.Interface):
         "A conforming ACME server will still attempt to connect on port 443.")
 
     http01_port = zope.interface.Attribute(
-        "Port used in the http-01 challenge."
+        "Port used in the http-01 challenge. "
         "This only affects the port Certbot listens on. "
         "A conforming ACME server will still attempt to connect on port 80.")
 

@@ -6,7 +6,7 @@ import unittest
 import mock
 
 from certbot.plugins.util import PSUTIL_REQUIREMENT
-from certbot.tests import test_util
+from certbot.tests import util as test_util
 
 
 class PathSurgeryTest(unittest.TestCase):
