@@ -93,9 +93,16 @@ class Addr(common.Addr):
     def __repr__(self):
         return "Addr(" + self.__str__() + ")"
 
+    def super_eq(self, other):
+        """Check ip/port equality, with IPv6 support.
+        """
+        # Nginx plugin currently doesn't support IPv6 but this will
+        # future-proof it
+        return super(Addr, self).__eq__(other)
+
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            return (self.tup == other.tup and
+            return (self.super_eq(other) and
                     self.ssl == other.ssl and
                     self.default == other.default)
         return False
