@@ -196,9 +196,7 @@ def _restore_required_config_elements(config, renewalparams):
         if config_item in renewalparams and not cli.set_by_cli(config_item):
             config_value = renewalparams[config_item]
             if config_value in ("True", "False"):
-                # bool("False") == True
-                # pylint: disable=eval-used
-                setattr(config.namespace, config_item, eval(config_value))
+                setattr(config.namespace, config_item, (config_value == "True"))
             else:
                 raise errors.Error(
                     "Expected 'True' or 'False' for {0}".format(config_item))
