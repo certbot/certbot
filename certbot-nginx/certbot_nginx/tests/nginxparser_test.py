@@ -1,7 +1,6 @@
 """Test for certbot_nginx.nginxparser."""
 import copy
 import operator
-import os
 import tempfile
 import unittest
 
