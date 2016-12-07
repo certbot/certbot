@@ -57,36 +57,38 @@ SHORT_USAGE = """
 
 Certbot can obtain and install HTTPS/TLS/SSL certificates.  By default,
 it will attempt to use a webserver both for obtaining and installing the
-cert. Major SUBCOMMANDS are:
+cert. The most common SUBCOMMANDS and flags are:
 
-  (default) run        Obtain & install a cert in your current webserver
-  certonly             Obtain cert, but do not install it (aka "auth")
-  install              Install a previously obtained cert in a server
-  renew                Renew previously obtained certs that are near expiry
-  revoke               Revoke a previously obtained certificate
-  register             Perform tasks related to registering with the CA
-  rollback             Rollback server configuration changes made during install
-  config_changes       Show changes made to server config during installation
-  update_symlinks      Update cert symlinks based on renewal config file
-  plugins              Display information about installed plugins
-  certificates         Display information about certs configured with Certbot
-
-""".format(cli_command)
-
-# This is the short help for certbot --help, where we disable argparse
-# altogether
-USAGE = SHORT_USAGE + """Choice of server plugins for obtaining and installing cert:
+obtain, install, and renew certificates:
+    (default) run   Obtain & install a cert in your current webserver
+    certonly        Obtain or renew a cert, but do not install it
+    renew           Renew all previously obtained certs that are near expiry
+   -d DOMAINS       Comma-separated list of domains to obtain a cert for
 
   %s
   --standalone      Run a standalone webserver for authentication
   %s
   --webroot         Place files in a server's webroot folder for authentication
-  --script          User provided shell scripts for authentication
+  --manual          Obtain certs interactively, or using shell script hoooks
 
-OR use different plugins to obtain (authenticate) the cert and then install it:
+   -n               Run non-interactively
+  --test-cert       Obtain a test cert from a staging server
+  --dry-run         Test "renew" or "certonly" without saving any certs to disk
 
-  --authenticator standalone --installer apache
+manage certificates:
+    certificates    Display information about certs you have from Certbot
+    revoke          Revoke a certificate (supply --cert-path)
 
+manage your account with Let's Encrypt:
+    register        Create a Let's Encrypt ACME account   
+  --agree-tos       Agree to the ACME server's Subscriber Agreement
+   -e               pr
+""".format(cli_command)
+print(SHORT_USAGE)
+
+# This is the short help for certbot --help, where we disable argparse
+# altogether
+USAGE = SHORT_USAGE + """
 More detailed help:
 
   -h, --help [topic]    print this message, or detailed help on a topic;
@@ -150,7 +152,7 @@ def usage_strings(plugins):
         apache_doc = "--apache          Use the Apache plugin for authentication & installation"
     else:
         apache_doc = "(the apache plugin is not installed)"
-    return USAGE % (apache_doc, nginx_doc), SHORT_USAGE
+    return USAGE % (apache_doc, nginx_doc), SHORT_USAGE % (apache_doc, nginx_doc)
 
 
 def possible_deprecation_warning(config):
