@@ -20,6 +20,9 @@ def reset_set_by_cli():
 
 class TestReadFile(unittest.TestCase):
     '''Test cli.read_file'''
+
+    _multiprocess_can_split_ = True
+
     def test_read_file(self):
         tmp_dir = tempfile.mkdtemp()
         rel_test_path = os.path.relpath(os.path.join(tmp_dir, 'foo'))
@@ -37,6 +40,8 @@ class TestReadFile(unittest.TestCase):
 
 class ParseTest(unittest.TestCase):
     '''Test the cli args entrypoint'''
+
+    _multiprocess_can_split_ = True
 
     @classmethod
     def setUpClass(cls):
@@ -256,6 +261,8 @@ class ParseTest(unittest.TestCase):
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""
 
+    _multiprocess_can_split_ = True
+
     def setUp(self):
         # pylint: disable=protected-access
         self.default1 = cli._Default()
@@ -274,6 +281,8 @@ class DefaultTest(unittest.TestCase):
 
 class SetByCliTest(unittest.TestCase):
     """Tests for certbot.set_by_cli and related functions."""
+
+    _multiprocess_can_split_ = True
 
     def setUp(self):
         reload_module(cli)

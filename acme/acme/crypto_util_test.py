@@ -18,6 +18,8 @@ from acme import test_util
 class SSLSocketAndProbeSNITest(unittest.TestCase):
     """Tests for acme.crypto_util.SSLSocket/probe_sni."""
 
+    _multiprocess_can_split_ = True
+
     def setUp(self):
         self.cert = test_util.load_comparable_cert('rsa2048_cert.pem')
         key = test_util.load_pyopenssl_private_key('rsa2048_key.pem')
@@ -66,6 +68,8 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
 
 class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
     """Test for acme.crypto_util._pyopenssl_cert_or_req_san."""
+
+    _multiprocess_can_split_ = True
 
     @classmethod
     def _call(cls, loader, name):
@@ -130,6 +134,8 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
 
 class RandomSnTest(unittest.TestCase):
     """Test for random certificate serial numbers."""
+
+    _multiprocess_can_split_ = True
 
     def setUp(self):
         self.cert_count = 5
