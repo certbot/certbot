@@ -8,9 +8,7 @@ import six
 
 class ReporterTest(unittest.TestCase):
     """Tests for certbot.reporter.Reporter."""
-    @mock.patch('os.getpid')
-    def setUp(self, mock_getpid):
-        mock_getpid.return_value = 5
+    def setUp(self):
         from certbot import reporter
         self.reporter = reporter.Reporter(mock.MagicMock(quiet=False))
 
@@ -40,9 +38,12 @@ class ReporterTest(unittest.TestCase):
             self.reporter.print_messages()
         self.assertEqual(sys.stdout.getvalue(), "")
 
-    def test_atexit_print_messages(self):
+    @mock.patch('certbot.reporter.os.getpid')
+    def test_atexit_print_messages(self, mock_getpid):
         self._add_messages()
-        self.reporter.print_messages()
+        mock_getpid.return_value = 42
+        with mock.patch('certbot.reporter.INITIAL_PID', 42):
+            self.reporter.atexit_print_messages()
         output = sys.stdout.getvalue()
         self.assertTrue("IMPORTANT NOTES:" in output)
         self.assertTrue("High" in output)
@@ -63,17 +64,14 @@ class ReporterTest(unittest.TestCase):
     def test_no_tty_unsuccessful_exit(self):
         self._unsuccessful_exit_common()
 
-    @mock.patch('os.getpid')
-    def _successful_exit_common(self, mock_getpid):
-        mock_getpid.return_value = 5
-        with mock.patch('certbot.reporter.INITIAL_PID', 5):
-            self._add_messages()
-            self.reporter.atexit_print_messages()
-            output = sys.stdout.getvalue()
-            self.assertTrue("IMPORTANT NOTES:" in output)
-            self.assertTrue("High" in output)
-            self.assertTrue("Med" in output)
-            self.assertTrue("Low" in output)
+    def _successful_exit_common(self):
+        self._add_messages()
+        self.reporter.print_messages()
+        output = sys.stdout.getvalue()
+        self.assertTrue("IMPORTANT NOTES:" in output)
+        self.assertTrue("High" in output)
+        self.assertTrue("Med" in output)
+        self.assertTrue("Low" in output)
 
     def _unsuccessful_exit_common(self):
         self._add_messages()
