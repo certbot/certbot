@@ -296,7 +296,7 @@ class RenameLineageTest(BaseCertManagerTest):
     @mock.patch('certbot.renewal.renewal_conf_files')
     @mock.patch('certbot.main.zope.component.getUtility')
     def test_no_certname(self, mock_get_utility, mock_renewal_conf_files):
-        mock_config = mock.Mock(certname=None)
+        mock_config = mock.Mock(certname=None, new_certname="two")
 
         # if not choices
         mock_renewal_conf_files.return_value = []
@@ -338,6 +338,21 @@ class RenameLineageTest(BaseCertManagerTest):
     def test_rename_cert(self, mock_check, unused_get_utility):
         mock_check.return_value = True
         mock_config = self.mock_config
+        self._call(mock_config)
+        from certbot import cert_manager
+        updated_lineage = cert_manager.lineage_for_certname(mock_config, mock_config.new_certname)
+        self.assertTrue(updated_lineage is not None)
+        self.assertEqual(updated_lineage.lineagename, mock_config.new_certname)
+
+    @mock.patch('certbot.main.zope.component.getUtility')
+    @mock.patch("certbot.storage.RenewableCert._check_symlinks")
+    def test_rename_cert_interactive_certname(self, mock_check, mock_get_utility):
+        mock_check.return_value = True
+        mock_config = self.mock_config
+        mock_config.certname = None
+        util_mock = mock.Mock()
+        util_mock.menu.return_value = (display_util.OK, 0)
+        mock_get_utility.return_value = util_mock
         self._call(mock_config)
         from certbot import cert_manager
         updated_lineage = cert_manager.lineage_for_certname(mock_config, mock_config.new_certname)
