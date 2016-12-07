@@ -908,6 +908,15 @@ def _create_subparsers(helpful):
                 "--csr", type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER or PEM format."
                 " Currently --csr only works with the 'certonly' subcommand.")
+    helpful.add("revoke", 
+                "--reason", type=str, choices=[
+                    "Unspecified",
+                    "KeyCompromise",
+                    "AffiliationChanged",
+                    "Superseded",
+                    "CessationOfOperation"], 
+                default="Unspecified",
+                help="Specify reason for revoking certificate." )
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",
                 default=flag_default("rollback_checkpoints"),
