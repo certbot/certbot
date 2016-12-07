@@ -1,5 +1,8 @@
 [MASTER]
 
+# use as many jobs as there are cores
+jobs=0
+
 # Specify a configuration file.
 #rcfile=
 
