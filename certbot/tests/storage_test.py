@@ -706,8 +706,6 @@ class RenewableCertTests(BaseRenewableCertTest):
                              excepted)
 
     def test_is_test_cert(self):
-        from certbot import storage
-
         self.test_rc.configuration["renewalparams"] = {}
         rp = self.test_rc.configuration["renewalparams"]
         self.assertEqual(self.test_rc.is_test_cert, False)

@@ -39,9 +39,6 @@ def _report_human_readable(parsed_certs):
     certinfo = []
     for cert in parsed_certs:
         now = pytz.UTC.fromutc(datetime.datetime.utcnow())
-        # TODO: perhaps one day we should actually ask OpenSSL to double check whether the
-        # certificate appears to be valid here, but that would require a dependency on
-        # either the openssl binary or PyOpenSSL 0.15 https://eff.org/r.pyopenssl-verify
         if cert.is_test_cert:
             expiration_text = "INVALID: TEST CERT"
         elif cert.target_expiry <= now:
