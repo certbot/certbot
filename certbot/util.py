@@ -17,6 +17,7 @@ import sys
 
 import configargparse
 
+from certbot import constants
 from certbot import errors
 
 
@@ -498,3 +499,14 @@ def get_strict_version(normalized):
     # strict version ending with "a" and a number designates a pre-release
     # pylint: disable=no-member
     return distutils.version.StrictVersion(normalized.replace(".dev", "a"))
+
+
+def is_staging(srv):
+    """
+    Determine whether a given ACME server is a known test / staging server.
+
+    :param str srv: the URI for the ACME server
+    :returns: True iff srv is a known test / staging server
+    :rtype bool:
+    """
+    return srv == constants.STAGING_URI or "staging" in srv

@@ -1,7 +1,7 @@
 """Test for certbot_nginx.nginxparser."""
 import copy
 import operator
-import os
+import tempfile
 import unittest
 
 from pyparsing import ParseException
@@ -128,44 +128,34 @@ class TestRawNginxParser(unittest.TestCase):
                                  [['root', ' ', 'html'],
                                   ['index', ' ', 'index.html index.htm']]]]]))
 
-        with open(util.get_data_filename('nginx.new.conf'), 'w') as handle:
-            dump(parsed, handle)
-        with open(util.get_data_filename('nginx.new.conf')) as handle:
-            parsed_new = load(handle)
-        try:
-            self.maxDiff = None
-            self.assertEqual(parsed[0], parsed_new[0])
-            self.assertEqual(parsed[1:], parsed_new[1:])
-        finally:
-            os.unlink(util.get_data_filename('nginx.new.conf'))
+        with tempfile.TemporaryFile() as f:
+            dump(parsed, f)
+            f.seek(0)
+            parsed_new = load(f)
+        self.assertEqual(parsed, parsed_new)
 
     def test_comments(self):
         with open(util.get_data_filename('minimalistic_comments.conf')) as handle:
             parsed = load(handle)
 
-        with open(util.get_data_filename('minimalistic_comments.new.conf'), 'w') as handle:
-            dump(parsed, handle)
+        with tempfile.TemporaryFile() as f:
+            dump(parsed, f)
+            f.seek(0)
+            parsed_new = load(f)
 
-        with open(util.get_data_filename('minimalistic_comments.new.conf')) as handle:
-            parsed_new = load(handle)
-
-        try:
-            self.assertEqual(parsed, parsed_new)
-
-            self.assertEqual(parsed_new, [
-                ['#', " Use bar.conf when it's a full moon!"],
-                ['include', 'foo.conf'],
-                ['#', ' Kilroy was here'],
-                ['check_status'],
-                [['server'],
-                 [['#', ''],
-                  ['#', " Don't forget to open up your firewall!"],
-                  ['#', ''],
-                  ['listen', '1234'],
-                  ['#', ' listen 80;']]],
-            ])
-        finally:
-            os.unlink(util.get_data_filename('minimalistic_comments.new.conf'))
+        self.assertEqual(parsed, parsed_new)
+        self.assertEqual(parsed_new, [
+            ['#', " Use bar.conf when it's a full moon!"],
+            ['include', 'foo.conf'],
+            ['#', ' Kilroy was here'],
+            ['check_status'],
+            [['server'],
+             [['#', ''],
+              ['#', " Don't forget to open up your firewall!"],
+              ['#', ''],
+              ['listen', '1234'],
+              ['#', ' listen 80;']]],
+        ])
 
     def test_issue_518(self):
         parsed = loads('if ($http_accept ~* "webp") { set $webp "true"; }')
