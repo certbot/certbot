@@ -908,15 +908,10 @@ def _create_subparsers(helpful):
                 "--csr", type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER or PEM format."
                 " Currently --csr only works with the 'certonly' subcommand.")
-    helpful.add("revoke", 
-                "--reason", type=str, choices=[
-                    "Unspecified",
-                    "KeyCompromise",
-                    "AffiliationChanged",
-                    "Superseded",
-                    "CessationOfOperation"], 
-                default="Unspecified",
-                help="Specify reason for revoking certificate." )
+    helpful.add("revoke",
+                "--reason", action=_ReasonAction, dest="reason",
+                choices=list(constants.REVOCATION_REASONS.keys()),
+                help="Specify reason for revoking certificate.")
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",
                 default=flag_default("rollback_checkpoints"),
@@ -1016,6 +1011,26 @@ def _plugins_parsing(helpful, plugins):
 
     helpful.add_plugin_args(plugins)
 
+
+class _ReasonAction(argparse.Action):
+    """Action class for parsing revocation reason."""
+
+    def __call__(self, parser, namespace, reason, option_string=None):
+        """Just wrap encode_reason in argparseese."""
+        encode_reason(namespace, reason)
+
+def encode_reason(args_or_config, reason):
+    """Encodes the reason for certificate revocation.
+
+    :param str reason: reason for revoking certificate
+
+    :returns: RFC 5280 encoding of revocation reason
+    :rtype: int
+    """
+
+    code = constants.REVOCATION_REASONS[reason]
+    args_or_config.reason = code
+    return code
 
 class _DomainsAction(argparse.Action):
     """Action class for parsing domains."""

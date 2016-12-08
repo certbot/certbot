@@ -431,6 +431,14 @@ class ClientTest(unittest.TestCase):
         self.net.post.assert_called_once_with(
             self.directory[messages.Revocation], mock.ANY, content_type=None)
 
+    def test_revocation_payload(self):
+        rsn = 1
+        obj = messages.Revocation(certificate=self.certr.body, reason=rsn)
+        self.assertTrue('reason' in obj.to_partial_json().keys())
+        self.assertEquals(rsn, obj.to_partial_json()['reason'])
+        obj = messages.Revocation(certificate=self.certr.body)
+        self.assertTrue('reason' not in obj.to_partial_json().keys())
+
     def test_revoke_bad_status_raises_error(self):
         self.response.status_code = http_client.METHOD_NOT_ALLOWED
         self.assertRaises(errors.ClientError, self.client.revoke, self.certr)

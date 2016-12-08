@@ -504,8 +504,10 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
         key = acc.key
     acme = client.acme_from_config_key(config, key)
     cert = crypto_util.pyopenssl_load_certificate(config.cert_path[1])[0]
+    logger.debug("Reason code for revocation: %s", config.reason)
+
     try:
-        acme.revoke(jose.ComparableX509(cert))
+        acme.revoke(jose.ComparableX509(cert), config.reason)
     except acme_errors.ClientError as e:
         return e.message
 

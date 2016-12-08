@@ -127,7 +127,7 @@ class RevokeTest(unittest.TestCase):
             'cert.pem'))
 
         self.patches = [
-            mock.patch('acme.client.Client'),
+            mock.patch('acme.client.Client', autospec=True),
             mock.patch('certbot.client.Client'),
             mock.patch('certbot.main._determine_account'),
             mock.patch('certbot.main.display_ops.success_revocation')
@@ -154,14 +154,28 @@ class RevokeTest(unittest.TestCase):
         for patch in self.patches:
             patch.stop()
 
-    def _call(self):
-        args = 'revoke --cert-path={0}'.format(self.tmp_cert_path).split()
+    def _call(self, extra_args=""):
+        args = 'revoke --cert-path={0} ' + extra_args
+        args = args.format(self.tmp_cert_path).split()
         plugins = plugins_disco.PluginsRegistry.find_all()
         config = configuration.NamespaceConfig(
             cli.prepare_and_parse_args(plugins, args))
 
         from certbot.main import revoke
         revoke(config, plugins)
+
+    @mock.patch('certbot.main.client.acme_client')
+    def test_revoke_with_reason(self, mock_acme_client):
+        mock_revoke = mock_acme_client.Client().revoke
+        self._call("--reason Unspecified")
+        self._call("--reason KeyCompromise")
+        self._call("--reason AffiliationChanged")
+        self._call("--reason Superseded")
+        self._call("--reason CessationOfOperation")
+        expected = [mock.call(mock.ANY, 0), mock.call(mock.ANY, 1),
+                    mock.call(mock.ANY, 3), mock.call(mock.ANY, 4),
+                    mock.call(mock.ANY, 5)]
+        self.assertEqual(expected, mock_revoke.call_args_list)
 
     def test_revocation_success(self):
         self._call()

@@ -943,7 +943,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with open(CERT, 'rb') as f:
             cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
             mock_revoke = mock_acme_client.Client().revoke
-            mock_revoke.assert_called_once_with(jose.ComparableX509(cert))
+            mock_revoke.assert_called_once_with(jose.ComparableX509(cert), None)
 
     @mock.patch('certbot.main._determine_account')
     def test_revoke_without_key(self, mock_determine_account):
@@ -952,7 +952,17 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with open(CERT) as f:
             cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
             mock_revoke = client.acme_from_config_key().revoke
-            mock_revoke.assert_called_once_with(jose.ComparableX509(cert))
+            mock_revoke.assert_called_once_with(jose.ComparableX509(cert), None)
+
+    def test_encode_reason_func(self):
+        mock_args_or_config = mock.MagicMock()
+        from certbot.cli import encode_reason
+        self.assertTrue(0 == encode_reason(mock_args_or_config, 'Unspecified'))
+        self.assertTrue(1 == encode_reason(mock_args_or_config, 'KeyCompromise'))
+        self.assertTrue(3 == encode_reason(mock_args_or_config, 'AffiliationChanged'))
+        self.assertTrue(4 == encode_reason(mock_args_or_config, 'Superseded'))
+        self.assertTrue(5 == encode_reason(mock_args_or_config, 'CessationOfOperation'))
+
 
     @mock.patch('certbot.main.sys')
     def test_handle_exception(self, mock_sys):
