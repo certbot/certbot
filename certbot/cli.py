@@ -667,6 +667,7 @@ def _add_all_groups(helpful):
     helpful.add_group("config_changes",
                       description="Options for showing a history of config changes")
     helpful.add_group("paths", description="Arguments changing execution paths & servers")
+    helpful.add_group("certificates", description="List all certificates managed by Certbot")
 
 
 def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: disable=too-many-statements
