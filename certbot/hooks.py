@@ -84,7 +84,8 @@ def execute(shell_cmd):
 
     :returns: `tuple` (`str` stderr, `str` stdout)"""
 
-    cmd = Popen(shell_cmd, shell=True, stdout=PIPE, stderr=PIPE)
+    cmd = Popen(shell_cmd, shell=True, stdout=PIPE,
+                stderr=PIPE, universal_newlines=True)
     out, err = cmd.communicate()
     if cmd.returncode != 0:
         logger.error('Hook command "%s" returned error code %d',
