@@ -688,7 +688,7 @@ def _handle_exception(exc_type, exc_value, trace, config):
                 with open(logfile, "w") as logfd:
                     traceback.print_exception(
                         exc_type, exc_value, trace, file=logfd)
-                assert "--debug" not in sys.argv
+                assert "--debug" not in sys.argv  # config is None if this explodes
             except:  # pylint: disable=bare-except
                 sys.exit("".join(
                     traceback.format_exception(exc_type, exc_value, trace)))
