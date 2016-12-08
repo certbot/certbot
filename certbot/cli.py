@@ -80,9 +80,9 @@ manage certificates:
     revoke          Revoke a certificate (supply --cert-path)
 
 manage your account with Let's Encrypt:
-    register        Create a Let's Encrypt ACME account   
+    register        Create a Let's Encrypt ACME account
   --agree-tos       Agree to the ACME server's Subscriber Agreement
-   -e               pr
+   -m EMAIL         Email address for important account notifications
 """.format(cli_command)
 print(SHORT_USAGE)
 
@@ -94,9 +94,9 @@ More detailed help:
   -h, --help [topic]    print this message, or detailed help on a topic;
                         the available topics are:
 
-   all, automation, paths, security, testing, or any of the subcommands or
-   plugins (certonly, renew, install, register, nginx, apache, standalone,
-   webroot, script, etc.)
+   all, automation, commands, paths, security, testing, or any of the
+   subcommands or plugins (certonly, renew, install, register, nginx,
+   apache, standalone, webroot, script, etc.)
 """
 
 
@@ -716,7 +716,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="With the register verb, indicates that details associated "
              "with an existing registration, such as the e-mail address, "
              "should be updated, rather than registering a new account.")
-    helpful.add(None, "-m", "--email", help=config_help("email"))
+    helpful.add(["register", "automation"], "-m", "--email", help=config_help("email"))
     helpful.add(
         ["automation", "renew", "certonly", "run"],
         "--keep-until-expiring", "--keep", "--reinstall",
