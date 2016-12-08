@@ -172,7 +172,8 @@ def relevant_values(all_values):
         if _relevant(option) and cli.option_was_set(option, value))
 
 
-class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
+class RenewableCert(object):
+    # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Renewable certificate.
 
     Represents a lineage of certificates that is under the management of
@@ -280,6 +281,15 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         else:
             return os.path.join(
                 self.cli_config.default_archive_dir, self.lineagename)
+
+    @property
+    def is_test_cert(self):
+        """Returns true if this is a test cert from a staging server."""
+        server = self.configuration["renewalparams"].get("server", None)
+        if server:
+            return util.is_staging(server)
+        else:
+            return False
 
     def _check_symlinks(self):
         """Raises an exception if a symlink doesn't exist"""

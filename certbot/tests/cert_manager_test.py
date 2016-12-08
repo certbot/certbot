@@ -157,26 +157,34 @@ class CertificatesTest(BaseCertManagerTest):
         cert = mock.MagicMock(lineagename="nameone")
         cert.target_expiry = expiry
         cert.names.return_value = ["nameone", "nametwo"]
+        cert.is_test_cert = False
         parsed_certs = [cert]
         # pylint: disable=protected-access
         out = cert_manager._report_human_readable(parsed_certs)
-        self.assertTrue('EXPIRED' in out)
+        self.assertTrue("INVALID: EXPIRED" in out)
 
         cert.target_expiry += datetime.timedelta(hours=2)
         # pylint: disable=protected-access
         out = cert_manager._report_human_readable(parsed_certs)
-        self.assertTrue('under 1 day' in out)
+        self.assertTrue('1 hour(s)' in out)
+        self.assertTrue('VALID' in out and not 'INVALID' in out)
 
         cert.target_expiry += datetime.timedelta(days=1)
         # pylint: disable=protected-access
         out = cert_manager._report_human_readable(parsed_certs)
         self.assertTrue('1 day' in out)
         self.assertFalse('under' in out)
+        self.assertTrue('VALID' in out and not 'INVALID' in out)
 
         cert.target_expiry += datetime.timedelta(days=2)
         # pylint: disable=protected-access
         out = cert_manager._report_human_readable(parsed_certs)
         self.assertTrue('3 days' in out)
+        self.assertTrue('VALID' in out and not 'INVALID' in out)
+
+        cert.is_test_cert = True
+        out = cert_manager._report_human_readable(parsed_certs)
+        self.assertTrue('INVALID: TEST CERT' in out)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
