@@ -42,8 +42,7 @@ Please deploy a DNS TXT record under the name
 
 {validation}
 
-Once this is deployed,
-"""
+Once this is deployed,"""
     _HTTP_INSTRUCTIONS = """\
 Make sure your web server displays the following content at
 {uri} before continuing:
@@ -60,8 +59,7 @@ printf "%s" {validation} > {achall.URI_ROOT_PATH}/{encoded_token}
 $(command -v python2 || command -v python2.7 || command -v python2.6) -c \\
 "import BaseHTTPServer, SimpleHTTPServer; \\
 s = BaseHTTPServer.HTTPServer(('', {port}), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
-s.serve_forever()"
-"""
+s.serve_forever()" """
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
