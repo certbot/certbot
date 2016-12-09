@@ -69,19 +69,19 @@ s.serve_forever()"
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add('auth-script',
+        add('auth-hook',
             help='Path or command to execute for the authentication script')
-        add('cleanup-script',
+        add('cleanup-hook',
             help='Path or command to execute for the cleanup script')
         add('public-ip-logging-ok', action='store_true',
             help='Automatically allows public IP logging')
 
     def prepare(self):  # pylint: disable=missing-docstring
-        if self.config.noninteractive_mode and not self.conf('auth-script'):
+        if self.config.noninteractive_mode and not self.conf('auth-hook'):
             raise errors.PluginError(
                 'An authentication script must be provided with --{0} when '
                 'using the manual plugin non-interactively.'.format(
-                    self.option_name('auth-script')))
+                    self.option_name('auth-hook')))
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return (
@@ -99,7 +99,7 @@ s.serve_forever()"
         responses = []
         for achall in achalls:
             response, validation = achall.response_and_validation()
-            if self.conf('auth-script'):
+            if self.conf('auth-hook'):
                 self._perform_achall_with_script(achall, validation)
             else:
                 self._perform_achall_manually(achall, response, validation)
@@ -125,7 +125,7 @@ s.serve_forever()"
         if isinstance(achall.chall, challenges.HTTP01):
             env['CERTBOT_TOKEN'] = achall.chall.encode('token')
         os.environ.update(env)
-        _, out = hooks.execute(self.conf('auth-script'))
+        _, out = hooks.execute(self.conf('auth-hook'))
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
         self.env[achall.domain] = env
 
@@ -148,7 +148,7 @@ s.serve_forever()"
         display.notification(msg, wrap=False)
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
-        if self.conf('cleanup-script'):
+        if self.conf('cleanup-hook'):
             for achall in achalls:
                 os.environ.update(self.env[achall.domain])
-                hooks.execute(self.conf('cleanup-script'))
+                hooks.execute(self.conf('cleanup-hook'))
