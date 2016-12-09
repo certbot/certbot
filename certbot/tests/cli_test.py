@@ -76,7 +76,7 @@ class ParseTest(unittest.TestCase):
         out = self._help_output(['--help', 'all'])
         self.assertTrue("--configurator" in out)
         self.assertTrue("how a cert is deployed" in out)
-        self.assertTrue("--manual-test-mode" in out)
+        self.assertTrue("--webroot-path" in out)
         self.assertTrue("--text" not in out)
         self.assertTrue("--dialog" not in out)
 
@@ -84,7 +84,7 @@ class ParseTest(unittest.TestCase):
         if "nginx" in self.plugins:
             # may be false while building distributions without plugins
             self.assertTrue("--nginx-ctl" in out)
-        self.assertTrue("--manual-test-mode" not in out)
+        self.assertTrue("--webroot-path" not in out)
         self.assertTrue("--checkpoints" not in out)
 
         out = self._help_output(['-h'])
@@ -95,7 +95,7 @@ class ParseTest(unittest.TestCase):
             self.assertTrue("(nginx support is experimental" in out)
 
         out = self._help_output(['--help', 'plugins'])
-        self.assertTrue("--manual-test-mode" not in out)
+        self.assertTrue("--webroot-path" not in out)
         self.assertTrue("--prepare" in out)
         self.assertTrue('"plugins" subcommand' in out)
 
