@@ -25,7 +25,6 @@ certbot_test_no_force_renew () {
         --no-verify-ssl \
         --tls-sni-01-port $tls_sni_01_port \
         --http-01-port $http_01_port \
-        --manual-test-mode \
         $store_flags \
         --non-interactive \
         --no-redirect \
