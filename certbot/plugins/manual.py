@@ -3,6 +3,7 @@ import os
 import logging
 import pipes
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -19,7 +20,6 @@ from acme import errors as acme_errors
 from certbot import errors
 from certbot import interfaces
 from certbot.plugins import common
-
 
 logger = logging.getLogger(__name__)
 
@@ -232,7 +232,7 @@ s.serve_forever()" """
                 "cleanup() must be called after perform()")
             if self._httpd.poll() is None:
                 logger.debug("Terminating manual command process")
-                self._httpd.terminate()
+                os.killpg(os.getpgid(self._httpd.pid), signal.SIGTERM)
             else:
                 logger.debug("Manual command process already terminated "
                              "with %s code", self._httpd.returncode)
