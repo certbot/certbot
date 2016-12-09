@@ -702,10 +702,8 @@ def _handle_exception(exc_type, exc_value, trace, config):
     to the user. sys.exit is always called with a nonzero status.
 
     """
-    logger.debug(
-        "Exiting abnormally:%s%s",
-        os.linesep,
-        "".join(traceback.format_exception(exc_type, exc_value, trace)))
+    tb_str = "".join(traceback.format_exception(exc_type, exc_value, trace))
+    logger.debug("Exiting abnormally:%s%s", os.linesep, tb_str)
 
     if issubclass(exc_type, Exception) and (config is None or not config.debug):
         if config is None:
@@ -715,8 +713,9 @@ def _handle_exception(exc_type, exc_value, trace, config):
                     traceback.print_exception(
                         exc_type, exc_value, trace, file=logfd)
             except:  # pylint: disable=bare-except
-                sys.exit("".join(
-                    traceback.format_exception(exc_type, exc_value, trace)))
+                sys.exit(tb_str)
+            if "--debug" in sys.argv:
+                sys.exit(tb_str)
 
         if issubclass(exc_type, errors.Error):
             sys.exit(exc_value)
@@ -741,8 +740,7 @@ def _handle_exception(exc_type, exc_value, trace, config):
                 msg += "logfiles in {0} for more details.".format(config.logs_dir)
             sys.exit(msg)
     else:
-        sys.exit("".join(
-            traceback.format_exception(exc_type, exc_value, trace)))
+        sys.exit(tb_str)
 
 
 def make_or_verify_core_dir(directory, mode, uid, strict):
