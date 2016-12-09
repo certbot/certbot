@@ -299,38 +299,75 @@ class HelpfulArgumentGroup(object):
         """Add a new command line argument to the argument group."""
         self._parser.add(self._topic, *args, **kwargs)
 
-def _usage_string(plugins, help_arg):
-    """Make usage strings late so that plugins can be initialised late
+# The attributes here are:
+# short: a string that will be displayed by "certbot -h commands"
+# opts:  a string that heads the section of flags with which this command is documented,
+#        both for "cerbot -h SUBCOMMAND" and "certbot -h all"
+# usage: an optional string that overrides the header of "certbot -h SUBCOMMAND"
+VERB_HELP = [
+    ("run (default)", {
+        "short": "Obtain/renew a certificate, and install it",
+        "opts": "Options for obtaining & installing certs",
+        "usage": SHORT_USAGE.replace("[SUBCOMMAND]", "")
+    }),
+    ("certonly", {
+        "short": "Obtain or renew a certificate, but do not install it",
+        "opts": "Options for modifying how a cert is obtained",
+        "usage": ("\n\n  certbot certonly [options] [-d DOMAIN] [-d DOMAIN] ...\n\n"
+                  "This command obtains a TLS/SSL certificate without installing it anywhere.")
+    }),
+    ("renew", {
+        "short": "Renew all certificates (or one specifed with --cert-name)",
+        "opts": ("The 'renew' subcommand will attempt to renew all"
+                 " certificates (or more precisely, certificate lineages) you have"
+                 " previously obtained if they are close to expiry, and print a"
+                 " summary of the results. By default, 'renew' will reuse the options"
+                 " used to create obtain or most recently successfully renew each"
+                 " certificate lineage. You can try it with `--dry-run` first. For"
+                 " more fine-grained control, you can renew individual lineages with"
+                 " the `certonly` subcommand. Hooks are available to run commands"
+                 " before and after renewal; see"
+                 " https://certbot.eff.org/docs/using.html#renewal for more"
+                 " information on these."),
+        "usage": "\n\n  certbot renew [options] [--cert-name NAME]\n\n"
+    }),
+    ("certificates", {
+        "short": "List all certificates managed by Certbot",
+        "opts": "List all certificates managed by Certbot"
+    }),
+    ("revoke", {
+        "short": "Revoke a certificate specified with --cert-path",
+        "opts": "Options for revocation of certs"
+    }),
+    ("register", {
+        "short": "Register for account with Let's Encrypt / other ACME server",
+        "opts": "Options for account registration & modification"
+    }),
+    ("install", {
+        "short": "Install an arbitrary cert in a server",
+        "opts": "Options for modifying how a cert is deployed"
+    }),
+    ("config_changes", {
+        "short": "Show changes that Certbot has made to server configurations",
+        "opts": "Options for controlling which changes are displayed"
+    }),
+    ("rollback", {
+        "short": "Roll back server conf changes made during cert installation",
+        "opts": "Options for rolling back server configuration changes"
+    }),
+    ("plugins", {
+        "short": "List plugins that are installed and available on your system",
+        "opts": 'Options for for the "plugins" subcommand'
+    }),
+    ("update_symlinks", {
+        "short": "Recreate symlinks in your /live/ directory",
+        "opts": 'Recreates cert and key symlinks in {0}, if you changed them by hand, or edited a renewal configuration file'.format(
+            os.path.join(flag_default("config_dir"), "live"))
+    }),
 
-    :param plugins: all discovered plugins
-    :param help_arg: False for none; True for --help; "TOPIC" for --help TOPIC
-    :rtype: str
-    :returns: a short usage string for the top of --help TOPIC)
-
-    """
-    if "nginx" in plugins:
-        nginx_doc = "--nginx           Use the Nginx plugin for authentication & installation"
-    else:
-        nginx_doc = "(the certbot nginx plugin is not installed)"
-    if "apache" in plugins:
-        apache_doc = "--apache          Use the Apache plugin for authentication & installation"
-    else:
-        apache_doc = "(the cerbot apache plugin is not installed)"
-
-    usage = SHORT_USAGE
-    if help_arg == True:
-        print(usage + COMMAND_OVERVIEW % (apache_doc, nginx_doc) + HELP_USAGE)
-        sys.exit(0)
-    elif self.help_arg in ("commands", "subcommands"):
-        print(usage)
-        sys.exit(0)
-    elif help_arg == "all":
-        # if we're doing --help all, the OVERVIEW is part of the SHORT_USAGE at
-        # the top; if we're doing --help someothertopic, it's OT so it's not
-        usage += COMMAND_OVERVIEW % (apache_doc, nginx_doc)
-
-    return usage
-
+]
+# VERB_HELP is a list in order to preserve order, but a dict is sometimes useful
+VERB_HELP_MAP = dict(VERB_HELP)
 
 
 class HelpfulArgumentParser(object):
@@ -341,6 +378,7 @@ class HelpfulArgumentParser(object):
     'certbot --help security' for security options.
 
     """
+
 
     def __init__(self, args, plugins, detect_defaults=False):
         from certbot import main
@@ -354,6 +392,7 @@ class HelpfulArgumentParser(object):
 
         # List of topics for which additional help can be provided
         HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
+        HELP_TOPICS += self.COMMANDS_TOPICS
 
         plugin_names = list(plugins)
         self.help_topics = HELP_TOPICS + plugin_names + [None]
@@ -368,7 +407,7 @@ class HelpfulArgumentParser(object):
         else:
             self.help_arg = help1 if isinstance(help1, str) else help2
 
-        short_usage = _usage_string(plugins, self.help_arg)
+        short_usage = self._usage_string(plugins, self.help_arg)
 
         self.visible_topics = self.determine_help_topics(self.help_arg)
         self.groups = {}       # elements are added by .add_group()
@@ -385,6 +424,60 @@ class HelpfulArgumentParser(object):
 
         # This is the only way to turn off overly verbose config flag documentation
         self.parser._add_config_file_help = False  # pylint: disable=protected-access
+
+    # Help that are synonyms for --help subcommands
+    COMMANDS_TOPICS = ["command", "commands", "subcommand", "subcommands", "verbs"]
+    def _list_subcommands(self):
+        inverted = {}
+        longest = 0
+        for verb, fn in self.VERBS.items():
+            longest = longest if len(verb) <= longest else len(verb)
+            inverted.setdefault(fn, []).append(verb)
+        longest += 4
+        text = "The full list of available SUBCOMMANDS is:\n\n"
+        for verb, props in VERB_HELP:
+            padding = (longest - len(verb))
+            doc = props.get("short", "")
+            text += verb + " " * padding + doc + "\n"
+
+
+        verblist = (" / ".join(verbs) for verbs in inverted.values())
+        text += "\nYou can get more help on a specific subcommand with --help SUBCOMMAND\n"
+        return text
+
+    def _usage_string(self, plugins, help_arg):
+        """Make usage strings late so that plugins can be initialised late
+
+        :param plugins: all discovered plugins
+        :param help_arg: False for none; True for --help; "TOPIC" for --help TOPIC
+        :rtype: str
+        :returns: a short usage string for the top of --help TOPIC)
+        """
+        if "nginx" in plugins:
+            nginx_doc = "--nginx           Use the Nginx plugin for authentication & installation"
+        else:
+            nginx_doc = "(the certbot nginx plugin is not installed)"
+        if "apache" in plugins:
+            apache_doc = "--apache          Use the Apache plugin for authentication & installation"
+        else:
+            apache_doc = "(the cerbot apache plugin is not installed)"
+
+        usage = SHORT_USAGE
+        if help_arg == True:
+            print(usage + COMMAND_OVERVIEW % (apache_doc, nginx_doc) + HELP_USAGE)
+            sys.exit(0)
+        elif help_arg in self.COMMANDS_TOPICS:
+            print(usage + self._list_subcommands() )
+            sys.exit(0)
+        elif help_arg == "all":
+            # if we're doing --help all, the OVERVIEW is part of the SHORT_USAGE at
+            # the top; if we're doing --help someothertopic, it's OT so it's not
+            usage += COMMAND_OVERVIEW % (apache_doc, nginx_doc)
+        else:
+            custom = VERB_HELP_MAP.get(help_arg, {}).get("usage", None)
+            usage = custom if custom else usage
+
+        return usage
 
 
     def parse_args(self):
@@ -699,7 +792,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         None, "-t", "--text", dest="text_mode", action="store_true",
         help=argparse.SUPPRESS)
     helpful.add(
-        [None, "automation"], "-n", "--non-interactive", "--noninteractive",
+        [None, "automation", "run", "certonly"], "-n", "--non-interactive", "--noninteractive",
         dest="noninteractive_mode", action="store_true",
         help="Run without ever asking for user input. This may require "
               "additional command line flags; the client will try to explain "
@@ -741,7 +834,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "should be updated, rather than registering a new account.")
     helpful.add(["register", "automation"], "-m", "--email", help=config_help("email"))
     helpful.add(
-        ["automation", "renew", "certonly", "run"],
+        ["automation", "certonly", "run"],
         "--keep-until-expiring", "--keep", "--reinstall",
         dest="reinstall", action="store_true",
         help="If the requested cert matches an existing cert, always keep the "
@@ -789,7 +882,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="(certbot-auto only) prevent the certbot-auto script from"
              " upgrading itself to newer released versions")
     helpful.add(
-        ["automation", "renew", "certonly"],
+        ["automation", "renew", "certonly", "run"],
         "-q", "--quiet", dest="quiet", action="store_true",
         help="Silence all output except errors. Useful for automation via cron."
              " Implies --non-interactive.")
@@ -806,11 +899,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help=config_help("no_verify_ssl"),
         default=flag_default("no_verify_ssl"))
     helpful.add(
-        ["certonly", "renew", "run"], "--tls-sni-01-port", type=int,
+        ["testing", "standalone", "apache", "nginx"], "--tls-sni-01-port", type=int,
         default=flag_default("tls_sni_01_port"),
         help=config_help("tls_sni_01_port"))
     helpful.add(
-        ["certonly", "renew", "run", "manual"], "--http-01-port", type=int,
+        ["testing", "standalone", "manual"], "--http-01-port", type=int,
         dest="http01_port",
         default=flag_default("http01_port"), help=config_help("http01_port"))
     helpful.add(
@@ -864,7 +957,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
     helpful.add(
-        ["manual", "standalone", "certonly", "renew", "run"],
+        ["manual", "standalone", "certonly", "renew"],
         "--preferred-challenges", dest="pref_challs",
         action=_PrefChallAction, default=[],
         help='A sorted, comma delimited list of the preferred challenge to '
@@ -980,7 +1073,7 @@ def _paths_parser(helpful):
     default_cp = None
     if verb == "certonly":
         default_cp = flag_default("auth_chain_path")
-    add("paths", "--fullchain-path", default=default_cp, type=os.path.abspath,
+    add(["install", "paths"], "--fullchain-path", default=default_cp, type=os.path.abspath,
         help="Accompanying path to a full certificate chain (cert plus chain).")
     add("paths", "--chain-path", default=default_cp, type=os.path.abspath,
         help="Accompanying path to a certificate chain.")
@@ -1011,10 +1104,10 @@ def _plugins_parsing(helpful, plugins):
         "plugins", "--configurator", help="Name of the plugin that is "
         "both an authenticator and an installer. Should not be used "
         "together with --authenticator or --installer.")
-    helpful.add(["plugins", "certonly", "run", "install"],
+    helpful.add(["plugins", "certonly", "run", "install", "config_changes"],
                 "--apache", action="store_true",
                 help="Obtain and install certs using Apache")
-    helpful.add(["plugins", "certonly", "run", "install"],
+    helpful.add(["plugins", "certonly", "run", "install", "config_changes"],
                 "--nginx", action="store_true",
                 help="Obtain and install certs using Nginx")
     helpful.add(["plugins", "certonly"], "--standalone", action="store_true",
