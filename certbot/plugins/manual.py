@@ -96,12 +96,11 @@ s.serve_forever()" """
 
         responses = []
         for achall in achalls:
-            response, validation = achall.response_and_validation()
             if self.conf('auth-hook'):
-                self._perform_achall_with_script(achall, validation)
+                self._perform_achall_with_script(achall)
             else:
-                self._perform_achall_manually(achall, validation)
-            responses.append(response)
+                self._perform_achall_manually(achall)
+            responses.append(achall.response())
         return responses
 
     def _verify_ip_logging_ok(self):
@@ -118,8 +117,9 @@ s.serve_forever()" """
             else:
                 raise errors.PluginError('Must agree to IP logging to proceed')
 
-    def _perform_achall_with_script(self, achall, validation):
-        env = dict(CERTBOT_DOMAIN=achall.domain, CERTBOT_VALIDATION=validation)
+    def _perform_achall_with_script(self, achall):
+        env = dict(CERTBOT_DOMAIN=achall.domain,
+                   CERTBOT_VALIDATION=achall.validation())
         if isinstance(achall.chall, challenges.HTTP01):
             env['CERTBOT_TOKEN'] = achall.chall.encode('token')
         os.environ.update(env)
@@ -127,7 +127,8 @@ s.serve_forever()" """
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
         self.env[achall.domain] = env
 
-    def _perform_achall_manually(self, achall, validation):
+    def _perform_achall_manually(self, achall):
+        validation = achall.validation()
         if isinstance(achall.chall, challenges.HTTP01):
             msg = self._HTTP_INSTRUCTIONS.format(
                 achall=achall, encoded_token=achall.chall.encode('token'),
