@@ -94,12 +94,14 @@ s.serve_forever()" """
     def perform(self, achalls):  # pylint: disable=missing-docstring
         self._verify_ip_logging_ok()
 
+        if self.conf('auth-hook'):
+            perform = self._perform_achall_with_script
+        else:
+            perform = self._perform_achall_manually
+
         responses = []
         for achall in achalls:
-            if self.conf('auth-hook'):
-                self._perform_achall_with_script(achall)
-            else:
-                self._perform_achall_manually(achall)
+            perform(achall)
             responses.append(achall.response(achall.account_key))
         return responses
 
@@ -122,6 +124,8 @@ s.serve_forever()" """
                    CERTBOT_VALIDATION=achall.validation(achall.account_key))
         if isinstance(achall.chall, challenges.HTTP01):
             env['CERTBOT_TOKEN'] = achall.chall.encode('token')
+        else:
+            os.environ.pop('CERTBOT_TOKEN', None)
         os.environ.update(env)
         _, out = hooks.execute(self.conf('auth-hook'))
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
@@ -145,5 +149,8 @@ s.serve_forever()" """
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         if self.conf('cleanup-hook'):
             for achall in achalls:
-                os.environ.update(self.env[achall.domain])
+                env = self.env[achall.domain]
+                if 'CERTBOT_TOKEN' not in env:
+                    os.environ.pop('CERTBOT_TOKEN', None)
+                os.environ.update(env)
                 hooks.execute(self.conf('cleanup-hook'))
