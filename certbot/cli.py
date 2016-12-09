@@ -467,7 +467,7 @@ class HelpfulArgumentParser(object):
             print(usage + COMMAND_OVERVIEW % (apache_doc, nginx_doc) + HELP_USAGE)
             sys.exit(0)
         elif help_arg in self.COMMANDS_TOPICS:
-            print(usage + self._list_subcommands() )
+            print(usage + self._list_subcommands())
             sys.exit(0)
         elif help_arg == "all":
             # if we're doing --help all, the OVERVIEW is part of the SHORT_USAGE at
