@@ -100,7 +100,7 @@ s.serve_forever()" """
             if self.conf('auth-hook'):
                 self._perform_achall_with_script(achall, validation)
             else:
-                self._perform_achall_manually(achall, response, validation)
+                self._perform_achall_manually(achall, validation)
             responses.append(response)
         return responses
 
@@ -127,21 +127,17 @@ s.serve_forever()" """
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
         self.env[achall.domain] = env
 
-    def _perform_achall_manually(self, achall, response, validation):
+    def _perform_achall_manually(self, achall, validation):
         if isinstance(achall.chall, challenges.HTTP01):
-            if self.config.http01_port is None:
-                port = response.port
-            else:
-                port = self.config.http01_port
             msg = self._HTTP_INSTRUCTIONS.format(
                 achall=achall, encoded_token=achall.chall.encode('token'),
-                response=response, port=port,
+                port=self.config.http01_port,
                 uri=achall.chall.uri(achall.domain), validation=validation)
         else:
             assert isinstance(achall.chall, challenges.DNS01)
             msg = self._DNS_INSTRUCTIONS.format(
                 domain=achall.validation_domain_name(achall.domain),
-                response=response, validation=validation)
+                validation=validation)
         display = zope.component.getUtility(interfaces.IDisplay)
         display.notification(msg, wrap=False)
 
