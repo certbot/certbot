@@ -123,7 +123,7 @@ s.serve_forever()"
     def _perform_achall_with_script(self, achall, validation):
         env = dict(CERTBOT_DOMAIN=achall.domain, CERTBOT_VALIDATION=validation)
         if isinstance(achall.chall, challenges.HTTP01):
-            env['CERTBOT_TOKEN'] = achall.encode("token")
+            env['CERTBOT_TOKEN'] = achall.chall.encode("token")
         os.environ.update(env)
         _, out = hooks.execute(self.conf('auth-script'))
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
@@ -136,7 +136,7 @@ s.serve_forever()"
             else:
                 port = self.config.http01_port
             msg = self._HTTP_INSTRUCTIONS.format(
-                achall=achall, encoded_token=achall.encode('token'),
+                achall=achall, encoded_token=achall.chall.encode('token'),
                 response=response, port=port, uri=achall.uri(achall.domain),
                 validation=validation)
         else:
