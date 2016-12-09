@@ -100,7 +100,7 @@ s.serve_forever()" """
                 self._perform_achall_with_script(achall)
             else:
                 self._perform_achall_manually(achall)
-            responses.append(achall.response())
+            responses.append(achall.response(achall.account_key))
         return responses
 
     def _verify_ip_logging_ok(self):
@@ -119,7 +119,7 @@ s.serve_forever()" """
 
     def _perform_achall_with_script(self, achall):
         env = dict(CERTBOT_DOMAIN=achall.domain,
-                   CERTBOT_VALIDATION=achall.validation())
+                   CERTBOT_VALIDATION=achall.validation(achall.account_key))
         if isinstance(achall.chall, challenges.HTTP01):
             env['CERTBOT_TOKEN'] = achall.chall.encode('token')
         os.environ.update(env)
@@ -128,7 +128,7 @@ s.serve_forever()" """
         self.env[achall.domain] = env
 
     def _perform_achall_manually(self, achall):
-        validation = achall.validation()
+        validation = achall.validation(achall.account_key)
         if isinstance(achall.chall, challenges.HTTP01):
             msg = self._HTTP_INSTRUCTIONS.format(
                 achall=achall, encoded_token=achall.chall.encode('token'),
