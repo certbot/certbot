@@ -38,6 +38,12 @@ def renewal_conf_files(config):
     """Return /path/to/*.conf in the renewal conf directory"""
     return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
 
+def renewal_file_for_certname(config, certname):
+    """Return /path/to/certname.conf in the renewal conf directory"""
+    path = os.path.join(config.renewal_configs_dir, "{0}.conf".format(certname))
+    if not os.path.exists(path):
+        raise errors.CertStorageError("No certificate found with name {0}.".format(certname))
+    return path
 
 def _reconstitute(config, full_path):
     """Try to instantiate a RenewableCert, updating config with relevant items.
@@ -296,26 +302,33 @@ def _renew_describe_results(config, renew_successes, renew_failures,
     print("\n".join(out))
 
 
-def renew_all_lineages(config):
+def handle_renewal_request(config):
     """Examine each lineage; renew if due and report results"""
 
     # This is trivially False if config.domains is empty
-    if any(domain not in config.webroot_map for domain in config.domains) or config.certname:
+    if any(domain not in config.webroot_map for domain in config.domains):
         # If more plugins start using cli.add_domains,
         # we may want to only log a warning here
-        raise errors.Error("Currently, the renew verb is only capable of "
+        raise errors.Error("Currently, the renew verb is capable of either "
                            "renewing all installed certificates that are due "
-                           "to be renewed; individual domains or lineages cannot be "
-                           "specified with this action. If you would like to "
-                           "renew specific certificates, use the certonly "
+                           "to be renewed or renewing a single certificate specified "
+                           "by its name. If you would like to renew specific "
+                           "certificates by their domains, use the certonly "
                            "command. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
+
     renewer_config = configuration.RenewerConfiguration(config)
+
+    if config.certname:
+        conf_files = [renewal_file_for_certname(renewer_config, config.certname)]
+    else:
+        conf_files = renewal_conf_files(renewer_config)
+
     renew_successes = []
     renew_failures = []
     renew_skipped = []
     parse_failures = []
-    for renewal_file in renewal_conf_files(renewer_config):
+    for renewal_file in conf_files:
         disp = zope.component.getUtility(interfaces.IDisplay)
         disp.notification("Processing " + renewal_file, pause=False)
         lineage_config = copy.deepcopy(config)

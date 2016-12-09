@@ -632,7 +632,7 @@ def obtain_cert(config, plugins, lineage=None):
 def renew(config, unused_plugins):
     """Renew previously-obtained certificates."""
     try:
-        renewal.renew_all_lineages(config)
+        renewal.handle_renewal_request(config)
     finally:
         hooks.post_hook(config, final=True)
 
