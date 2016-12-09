@@ -1,5 +1,6 @@
 """Certbot command line argument & config processing."""
 from __future__ import print_function
+import argparse
 import copy
 import glob
 import logging
@@ -19,7 +20,6 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import hooks
 from certbot import interfaces
-from certbot import tweakedparse as argparse
 from certbot import util
 
 from certbot.plugins import disco as plugins_disco
@@ -308,6 +308,21 @@ class HelpfulArgumentGroup(object):
         """Add a new command line argument to the argument group."""
         self._parser.add(self._topic, *args, **kwargs)
 
+class CustomHelpFormatter(argparse.HelpFormatter):
+    """This is a clone of ArgumentDefaultsHelpFormatter, with bugfixes.
+
+    In particular we fix https://bugs.python.org/issue28742
+    """
+
+    def _get_help_string(self, action):
+        help = action.help
+        if '%(default)' not in action.help and '(default:' not in action.help:
+            if action.default != argparse.SUPPRESS:
+                defaulting_nargs = [argparse.OPTIONAL, argparse.ZERO_OR_MORE]
+                if action.option_strings or action.nargs in defaulting_nargs:
+                    help += ' (default: %(default)s)'
+        return help
+
 
 class HelpfulArgumentParser(object):
     """Argparse Wrapper.
@@ -337,7 +352,7 @@ class HelpfulArgumentParser(object):
         self.parser = configargparse.ArgParser(
             prog="certbot",
             usage=short_usage,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            formatter_class=CustomHelpFormatter,
             args_for_setting_config_path=["-c", "--config"],
             default_config_files=flag_default("config_files"),
             config_arg_help_message="path to config file (default: {0})".format(
