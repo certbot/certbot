@@ -149,7 +149,7 @@ s.serve_forever()" """
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         if self.conf('cleanup-hook'):
             for achall in achalls:
-                env = self.env[achall.domain]
+                env = self.env.pop(achall.domain)
                 if 'CERTBOT_TOKEN' not in env:
                     os.environ.pop('CERTBOT_TOKEN', None)
                 os.environ.update(env)
