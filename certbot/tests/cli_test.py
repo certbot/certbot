@@ -125,8 +125,8 @@ class ParseTest(unittest.TestCase):
         self.assertTrue("--key-path" not in out)
 
         out = self._help_output(['-h'])
-        # pylint: disable=protected-access
-        self.assertTrue(cli._usage_strings(self.plugins, False)[0] in out)
+        self.assertTrue(cli.SHORT_USAGE in out)
+        self.assertTrue(cli.COMMAND_OVERVIEW[:100] in out)
 
     def test_parse_domains(self):
         short_args = ['-d', 'example.com']
