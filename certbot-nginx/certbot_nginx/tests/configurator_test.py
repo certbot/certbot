@@ -346,13 +346,13 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertRaises(errors.MisconfigurationError, self.config.restart)
 
     @mock.patch("certbot.util.run_script")
-    def test_config_test(self, _):
-        self.config.config_test()
-
-    @mock.patch("certbot.util.run_script")
     def test_config_test_bad_process(self, mock_run_script):
         mock_run_script.side_effect = errors.SubprocessError
         self.assertRaises(errors.MisconfigurationError, self.config.config_test)
+
+    @mock.patch("certbot.util.run_script")
+    def test_config_test(self, _):
+        self.config.config_test()
 
     @mock.patch("certbot.reverter.Reverter.recovery_routine")
     def test_recovery_routine_throws_error_from_reverter(self, mock_recovery_routine):
