@@ -315,13 +315,13 @@ class CustomHelpFormatter(argparse.HelpFormatter):
     """
 
     def _get_help_string(self, action):
-        help = action.help
+        helpstr = action.help
         if '%(default)' not in action.help and '(default:' not in action.help:
             if action.default != argparse.SUPPRESS:
                 defaulting_nargs = [argparse.OPTIONAL, argparse.ZERO_OR_MORE]
                 if action.option_strings or action.nargs in defaulting_nargs:
-                    help += ' (default: %(default)s)'
-        return help
+                    helpstr += ' (default: %(default)s)'
+        return helpstr
 
 
 class HelpfulArgumentParser(object):
