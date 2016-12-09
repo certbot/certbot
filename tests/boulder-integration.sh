@@ -44,7 +44,17 @@ python_server_pid=$!
 common --domains le2.wtf --preferred-challenges http-01 run
 kill $python_server_pid
 
+CheckServerProcessShutdown() {
+    if OUTPUT=`ps aux | grep SimpleHTTPServer | grep -v grep`
+    then
+        echo Server process not shutdown correctly 
+        echo $OUTPUT
+        exit 1
+    fi
+}
+
 common -a manual -d le.wtf auth --rsa-key-size 4096
+CheckServerProcessShutdown
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
        OPENSSL_CNF=examples/openssl.cnf
