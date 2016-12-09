@@ -99,7 +99,7 @@ class ParseTest(unittest.TestCase):
         if "nginx" in self.plugins:
             self.assertTrue("Use the Nginx plugin" in out)
         else:
-            self.assertTrue("(nginx support is experimental" in out)
+            self.assertTrue("(the certbot nginx plugin is not" in out)
 
         out = self._help_output(['--help', 'plugins'])
         self.assertTrue("--manual-test-mode" not in out)
