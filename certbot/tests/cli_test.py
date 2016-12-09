@@ -285,22 +285,22 @@ class SetByCliTest(unittest.TestCase):
 
     def test_report_config_interaction_str(self):
         cli.report_config_interaction('manual_public_ip_logging_ok',
-                                      'manual_test_mode')
-        cli.report_config_interaction('manual_test_mode', 'manual')
+                                      'manual_auth_hook')
+        cli.report_config_interaction('manual_auth_hook', 'manual')
 
         self._test_report_config_interaction_common()
 
     def test_report_config_interaction_iterable(self):
         cli.report_config_interaction(('manual_public_ip_logging_ok',),
-                                      ('manual_test_mode',))
-        cli.report_config_interaction(('manual_test_mode',), ('manual',))
+                                      ('manual_auth_hook',))
+        cli.report_config_interaction(('manual_auth_hook',), ('manual',))
 
         self._test_report_config_interaction_common()
 
     def _test_report_config_interaction_common(self):
         """Tests implied interaction between manual flags.
 
-        --manual implies --manual-test-mode which implies
+        --manual implies --manual-auth-hook which implies
         --manual-public-ip-logging-ok. These interactions don't actually
         exist in the client, but are used here for testing purposes.
 
@@ -308,13 +308,13 @@ class SetByCliTest(unittest.TestCase):
 
         args = ['--manual']
         verb = 'renew'
-        for v in ('manual', 'manual_test_mode', 'manual_public_ip_logging_ok'):
+        for v in ('manual', 'manual_auth_hook', 'manual_public_ip_logging_ok'):
             self.assertTrue(_call_set_by_cli(v, args, verb))
 
         cli.set_by_cli.detector = None
 
-        args = ['--manual-test-mode']
-        for v in ('manual_test_mode', 'manual_public_ip_logging_ok'):
+        args = ['--manual-auth-hook', 'command']
+        for v in ('manual_auth_hook', 'manual_public_ip_logging_ok'):
             self.assertTrue(_call_set_by_cli(v, args, verb))
 
         self.assertFalse(_call_set_by_cli('manual', args, verb))
