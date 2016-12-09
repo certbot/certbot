@@ -40,7 +40,10 @@ def renewal_conf_files(config):
 
 def renewal_file_for_certname(config, certname):
     """Return /path/to/certname.conf in the renewal conf directory"""
-    return os.path.join(config.renewal_configs_dir, "{0}.conf".format(certname))
+    path = os.path.join(config.renewal_configs_dir, "{0}.conf".format(certname))
+    if not os.path.exists(path):
+        raise errors.CertStorageError("No certificate found with name {0}.".format(certname))
+    return path
 
 def _reconstitute(config, full_path):
     """Try to instantiate a RenewableCert, updating config with relevant items.

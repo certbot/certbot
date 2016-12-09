@@ -877,6 +877,11 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._test_renewal_common(True, [], should_renew=True,
             args=['renew', '--dry-run', '--cert-name', 'sample-renewal'])
 
+    def test_renew_with_bad_certname(self):
+        self._test_renewal_common(True, [], should_renew=False,
+            args=['renew', '--dry-run', '--cert-name', 'sample-renewal'],
+            error_expected=True)
+
     def _make_dummy_renewal_config(self):
         renewer_configs_dir = os.path.join(self.config_dir, 'renewal')
         os.makedirs(renewer_configs_dir)
