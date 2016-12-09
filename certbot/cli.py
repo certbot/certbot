@@ -308,7 +308,8 @@ VERB_HELP = [
     ("run (default)", {
         "short": "Obtain/renew a certificate, and install it",
         "opts": "Options for obtaining & installing certs",
-        "usage": SHORT_USAGE.replace("[SUBCOMMAND]", "")
+        "usage": SHORT_USAGE.replace("[SUBCOMMAND]", ""),
+        "realname": "run"
     }),
     ("certonly", {
         "short": "Obtain or renew a certificate, but do not install it",
@@ -745,29 +746,12 @@ def _add_all_groups(helpful):
     helpful.add_group(
         "testing", description="The following flags are meant for "
         "testing and integration purposes only.")
-    # VERBS
-    helpful.add_group(
-        "renew", description="The 'renew' subcommand will attempt to renew all"
-        " certificates (or more precisely, certificate lineages) you have"
-        " previously obtained if they are close to expiry, and print a"
-        " summary of the results. By default, 'renew' will reuse the options"
-        " used to create obtain or most recently successfully renew each"
-        " certificate lineage. You can try it with `--dry-run` first. For"
-        " more fine-grained control, you can renew individual lineages with"
-        " the `certonly` subcommand. Hooks are available to run commands"
-        " before and after renewal; see"
-        " https://certbot.eff.org/docs/using.html#renewal for more"
-        " information on these.")
-
-    helpful.add_group("certonly", description="Options for modifying how a cert is obtained")
-    helpful.add_group("install", description="Options for modifying how a cert is deployed")
-    helpful.add_group("revoke", description="Options for revocation of certs")
-    helpful.add_group("rollback", description="Options for reverting config changes")
-    helpful.add_group("plugins", description='Options for the "plugins" subcommand')
-    helpful.add_group("config_changes",
-                      description="Options for showing a history of config changes")
     helpful.add_group("paths", description="Arguments changing execution paths & servers")
-    helpful.add_group("certificates", description="List all certificates managed by Certbot")
+
+    # VERBS
+    for verb, docs in VERB_HELP:
+        name = docs.get("realname", verb)
+        helpful.add_group(name, description=docs["opts"])
 
 
 def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: disable=too-many-statements
