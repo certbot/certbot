@@ -137,8 +137,8 @@ s.serve_forever()"
                 port = self.config.http01_port
             msg = self._HTTP_INSTRUCTIONS.format(
                 achall=achall, encoded_token=achall.chall.encode('token'),
-                response=response, port=port, uri=achall.uri(achall.domain),
-                validation=validation)
+                response=response, port=port,
+                uri=achall.chall.uri(achall.domain), validation=validation)
         else:
             assert isinstance(achall.chall, challenges.DNS01)
             msg = self._DNS_INSTRUCTIONS.format(
