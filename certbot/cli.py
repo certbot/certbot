@@ -57,7 +57,9 @@ SHORT_USAGE = """
 
 Certbot can obtain and install HTTPS/TLS/SSL certificates.  By default,
 it will attempt to use a webserver both for obtaining and installing the
-cert. The most common SUBCOMMANDS and flags are:
+cert. """.format(cli_command)
+
+OVERVIEW = """The most common SUBCOMMANDS and flags are:
 
 obtain, install, and renew certificates:
     (default) run   Obtain & install a cert in your current webserver
@@ -83,11 +85,11 @@ manage your account with Let's Encrypt:
     register        Create a Let's Encrypt ACME account
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
-""".format(cli_command)
+"""
 
 # This is the short help for certbot --help, where we disable argparse
 # altogether
-USAGE = SHORT_USAGE + """
+USAGE = SHORT_USAGE + OVERVIEW + """
 More detailed help:
 
   -h, --help [TOPIC]    print this message, or detailed help on a topic;
@@ -141,17 +143,30 @@ def report_config_interaction(modified, modifiers):
         VAR_MODIFIERS.setdefault(var, set()).update(modifiers)
 
 
-def usage_strings(plugins):
-    """Make usage strings late so that plugins can be initialised late"""
+def _usage_strings(plugins, help_arg):
+    """Make usage strings late so that plugins can be initialised late
+
+    :rtype: tuple
+    :returns: (a full usage string for --help, a short usage for the top of --help TOPIC)
+
+    """
     if "nginx" in plugins:
         nginx_doc = "--nginx           Use the Nginx plugin for authentication & installation"
     else:
-        nginx_doc = "(nginx support is experimental, buggy, and not installed by default)"
+        nginx_doc = "(the certbot nginx plugin is not installed)"
     if "apache" in plugins:
         apache_doc = "--apache          Use the Apache plugin for authentication & installation"
     else:
-        apache_doc = "(the apache plugin is not installed)"
-    return USAGE % (apache_doc, nginx_doc), SHORT_USAGE % (apache_doc, nginx_doc)
+        apache_doc = "(the cerbot apache plugin is not installed)"
+
+    # if we're doing --help all, the OVERVIEW is part of the SHORT_USAGE at
+    # the top; if we're doing --help someothertopic, it's OT so it's not
+
+    short = SHORT_USAGE
+    if help_arg == "all":
+        short += OVERVIEW % (apache_doc, nginx_doc)
+
+    return USAGE % (apache_doc, nginx_doc), short
 
 
 def possible_deprecation_warning(config):
@@ -334,19 +349,8 @@ class HelpfulArgumentParser(object):
 
         plugin_names = list(plugins)
         self.help_topics = HELP_TOPICS + plugin_names + [None]
-        usage, short_usage = usage_strings(plugins)
-        self.parser = configargparse.ArgParser(
-            prog="certbot",
-            usage=short_usage,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-            args_for_setting_config_path=["-c", "--config"],
-            default_config_files=flag_default("config_files"))
-
-        # This is the only way to turn off overly verbose config flag documentation
-        self.parser._add_config_file_help = False  # pylint: disable=protected-access
 
         self.detect_defaults = detect_defaults
-
         self.args = args
         self.determine_verb()
         help1 = self.prescan_for_flag("-h", self.help_topics)
@@ -355,13 +359,30 @@ class HelpfulArgumentParser(object):
             self.help_arg = help1 or help2
         else:
             self.help_arg = help1 if isinstance(help1, str) else help2
+
+        usage, short_usage = _usage_strings(plugins, self.help_arg)
+
         if self.help_arg is True:
             # just --help with no topic; avoid argparse altogether
             print(usage)
             sys.exit(0)
+
         self.visible_topics = self.determine_help_topics(self.help_arg)
         self.groups = {}       # elements are added by .add_group()
-        self.defaults = {}  # elements are added by .parse_args()
+        self.defaults = {}     # elements are added by .parse_args()
+
+        self.parser = configargparse.ArgParser(
+            prog="certbot",
+            usage=short_usage,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            args_for_setting_config_path=["-c", "--config"],
+            default_config_files=flag_default("config_files"),
+            config_arg_help_message="path to config file (default: {0})".format(
+                " and ".join(flag_default("config_files"))))
+
+        # This is the only way to turn off overly verbose config flag documentation
+        self.parser._add_config_file_help = False  # pylint: disable=protected-access
+
 
     def parse_args(self):
         """Parses command line arguments and returns the result.
