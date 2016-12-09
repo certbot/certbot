@@ -366,8 +366,9 @@ VERB_HELP = [
     }),
     ("update_symlinks", {
         "short": "Recreate symlinks in your /live/ directory",
-        "opts": 'Recreates cert and key symlinks in {0}, if you changed them by hand, or edited a renewal configuration file'.format(
-            os.path.join(flag_default("config_dir"), "live"))
+        "opts": ("Recreates cert and key symlinks in {0}, if you changed them by hand, "
+                 "or edited a renewal configuration file".format(
+                  os.path.join(flag_default("config_dir"), "live")))
     }),
 
 ]
@@ -433,20 +434,14 @@ class HelpfulArgumentParser(object):
     # Help that are synonyms for --help subcommands
     COMMANDS_TOPICS = ["command", "commands", "subcommand", "subcommands", "verbs"]
     def _list_subcommands(self):
-        inverted = {}
-        longest = 0
-        for verb, fn in self.VERBS.items():
-            longest = longest if len(verb) <= longest else len(verb)
-            inverted.setdefault(fn, []).append(verb)
-        longest += 4
+        longest = max(len(v) for v in VERB_HELP_MAP.keys())
+
         text = "The full list of available SUBCOMMANDS is:\n\n"
         for verb, props in VERB_HELP:
-            padding = (longest - len(verb))
+            padding = (longest - len(verb)) + 4
             doc = props.get("short", "")
             text += verb + " " * padding + doc + "\n"
 
-
-        verblist = (" / ".join(verbs) for verbs in inverted.values())
         text += "\nYou can get more help on a specific subcommand with --help SUBCOMMAND\n"
         return text
 
