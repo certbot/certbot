@@ -49,32 +49,8 @@ class KeyAuthorizationAnnotatedChallenge(AnnotatedChallenge):
     """Client annotated `KeyAuthorizationChallenge` challenge."""
     __slots__ = ('challb', 'domain', 'account_key')
 
-    def response(self, *args, **kwargs):
-        """Generate response to the challenge.
-
-        :returns: Response (initialized `response_cls`) to the challenge.
-        :rtype: acme.challenges.KeyAuthorizationChallengeResponse
-
-        """
-        return self.chalb.chall.response(self.account_key, *args, **kwargs)
-
-    def validation(self, *args, **kwargs):
-        """Generate validation for the challenge.
-
-        :returns: Challenge-specific validation.
-
-        """
-        return self.chalb.chall.validation(self.account_key, *args, **kwargs)
-
     def response_and_validation(self, *args, **kwargs):
-        """Generate response and validation.
-
-        Convenience function that return results of `response` and
-        `validation`.
-
-        :rtype: tuple
-
-        """
+        """Generate response and validation."""
         return self.challb.chall.response_and_validation(
             self.account_key, *args, **kwargs)
 
