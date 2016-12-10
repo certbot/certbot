@@ -80,6 +80,14 @@ s.serve_forever()" """
                 'An authentication script must be provided with --{0} when '
                 'using the manual plugin non-interactively.'.format(
                     self.option_name('auth-hook')))
+        self._validate_hooks()
+
+    def _validate_hooks(self):
+        if self.config.validate_hooks:
+            for hook_prefix in ('auth', 'cleanup',):
+                hook = self.conf('{0}-hook'.format(hook_prefix))
+                if hook is not None:
+                    hooks.validate_hook(hook, '--{0}'.format(hook_prefix))
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return (
