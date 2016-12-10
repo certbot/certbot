@@ -707,9 +707,10 @@ def _handle_exception(exc_type, exc_value, trace, config):
 
     if not issubclass(exc_type, Exception):
         sys.exit(tb_str)
-
-    if (config is not None and config.debug) or (config is None and "--debug" in sys.argv):
+    elif (config is not None and config.debug) or (config is None and "--debug" in sys.argv):
         sys.exit(tb_str)
+    elif issubclass(exc_type, errors.Error):
+        sys.exit(exc_value)
 
     if config is None:
         logfile = "certbot.log"
@@ -720,29 +721,24 @@ def _handle_exception(exc_type, exc_value, trace, config):
         except:  # pylint: disable=bare-except
             sys.exit(tb_str)
 
-    if issubclass(exc_type, errors.Error):
-        sys.exit(exc_value)
-    else:
-        # Here we're passing a client or ACME error out to the client at the shell
-        # Tell the user a bit about what happened, without overwhelming
-        # them with a full traceback
-        err = traceback.format_exception_only(exc_type, exc_value)[0]
-        # Typical error from the ACME module:
-        # acme.messages.Error: urn:ietf:params:acme:error:malformed :: The
-        # request message was malformed :: Error creating new registration
-        # :: Validation of contact mailto:none@longrandomstring.biz failed:
-        # Server failure at resolver
-        if (messages.is_acme_error(err) and ":: " in err and
-             config.verbose_count <= cli.flag_default("verbose_count")):
+    # Here we're passing a client or ACME error out to the client at the shell
+    # Tell the user a bit about what happened, without overwhelming
+    # them with a full traceback
+    err = traceback.format_exception_only(exc_type, exc_value)[0]
+    # Typical error from the ACME module:
+    # acme.messages.Error: urn:ietf:params:acme:error:malformed :: The request message was
+    # malformed :: Error creating new registration :: Validation of contact
+    # mailto:none@longrandomstring.biz failed: Server failure at resolver
+    if messages.is_acme_error(err) and ":: " in err:
+        if config.verbose_count <= cli.flag_default("verbose_count"):
             # prune ACME error code, we have a human description
             _code, _sep, err = err.partition(":: ")
-        msg = "An unexpected error occurred:\n" + err + "Please see the "
-        if config is None:
-            msg += "logfile '{0}' for more details.".format(logfile)
-        else:
-            msg += "logfiles in {0} for more details.".format(config.logs_dir)
-        sys.exit(msg)
-
+    msg = "An unexpected error occurred:\n" + err + "Please see the "
+    if config is None:
+        msg += "logfile '{0}' for more details.".format(logfile)
+    else:
+        msg += "logfiles in {0} for more details.".format(config.logs_dir)
+    sys.exit(msg)
 
 
 def make_or_verify_core_dir(directory, mode, uid, strict):
