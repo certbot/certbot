@@ -48,7 +48,7 @@ common certonly -a manual -d le.wtf --rsa-key-size 4096 \
     --manual-auth-hook ./tests/manual-http-auth.sh \
     --manual-cleanup-hook ./tests/manual-http-cleanup.sh
 
-common certonly -a manual -d dns.le.wtf \
+common certonly -a manual -d dns.le.wtf --preferred-challenges dns-01 \
     --manual-auth-hook ./tests/manual-dns-auth.sh
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
