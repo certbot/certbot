@@ -914,20 +914,14 @@ def _create_subparsers(helpful):
     helpful.add("config_changes", "--num", type=int,
                 help="How many past revisions you want to be displayed")
 
-    class DummyConfig(object):
-        "Shim for computing a sample user agent."
-        def __init__(self):
-            self.authenticator = "XXX"
-            self.installer = "YYY"
-            self.user_agent = None
-    from certbot.client import determine_user_agent # avoid import loops
+    from certbot.client import sample_user_agent # avoid import loops
     helpful.add(
         None, "--user-agent", default=None,
         help="Set a custom user agent string for the client. User agent strings allow "
              "the CA to collect high level statistics about success rates by OS and "
              "plugin. If you wish to hide your server OS version from the Let's "
              'Encrypt server, set this to "". '
-             '(default: {0})'.format(determine_user_agent(DummyConfig())))
+             '(default: {0})'.format(sample_user_agent()))
     helpful.add("certonly",
                 "--csr", type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER or PEM format."

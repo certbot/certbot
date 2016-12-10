@@ -59,6 +59,16 @@ def determine_user_agent(config):
         ua = config.user_agent
     return ua
 
+def sample_user_agent():
+    "Document what this Certbot's user agent string will be like."
+    class DummyConfig(object):
+        "Shim for computing a sample user agent."
+        def __init__(self):
+            self.authenticator = "XXX"
+            self.installer = "YYY"
+            self.user_agent = None
+    return determine_user_agent(DummyConfig())
+
 
 def register(config, account_storage, tos_cb=None):
     """Register new account with an ACME CA.
