@@ -24,6 +24,7 @@ obtain, install, and renew certificates:
 manage certificates:
     certificates    Display information about certs you have from Certbot
     revoke          Revoke a certificate (supply --cert-path)
+    rename          Rename a certificate
 
 manage your account with Let's Encrypt:
     register        Create a Let's Encrypt ACME account
@@ -53,9 +54,6 @@ optional arguments:
                         certificate with this name and domains are requested,
                         create a new certificate with this name. (default:
                         None)
-  --updated-cert-name NEW_CERTNAME
-                        New name for the certificate. Must be a valid
-                        filename. (default: None)
   --dry-run             Perform a test run of the client, obtaining test
                         (invalid) certs but not saving them to disk. This can
                         currently only be used with the 'certonly' and 'renew'
@@ -210,6 +208,16 @@ paths:
   --server SERVER       ACME Directory Resource URI. (default:
                         https://acme-v01.api.letsencrypt.org/directory)
 
+manage:
+  Various subcommands and flags are available for managing your
+  certificates:
+
+  certificates          List all certificates managed by Certbot
+  renew                 Renew all certificates (or one specifed with --cert-
+                        name)
+  revoke                Revoke a certificate specified with --cert-path
+  rename                Change a certificate's name (for management purposes)
+
 run:
   Options for obtaining & installing certs
 
@@ -268,8 +276,12 @@ certificates:
 revoke:
   Options for revocation of certs
 
-revoke:
+rename:
   Options changing certificate names
+
+  --updated-cert-name NEW_CERTNAME
+                        New name for the certificate. Must be a valid
+                        filename. (default: None)
 
 register:
   Options for account registration & modification
@@ -322,7 +334,7 @@ plugins:
 
 update_symlinks:
   Recreates cert and key symlinks in /etc/letsencrypt/live, if you changed
-  them by hand, or edited a renewal configuration file
+  them by hand or edited a renewal configuration file
 
 plugins:
   Plugin Selection: Certbot client supports an extensible plugins
