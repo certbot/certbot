@@ -44,9 +44,12 @@ python_server_pid=$!
 common --domains le2.wtf --preferred-challenges http-01 run
 kill $python_server_pid
 
-common auth -a manual -d le.wtf --rsa-key-size 4096 \
+common certonly -a manual -d le.wtf --rsa-key-size 4096 \
     --manual-auth-script ./tests/manual-http-auth.sh \
     --manual-cleanup-auth ./tests/manual-http-cleanup.sh
+
+common certonly -a manual -d dns.le.wtf \
+    --manual-auth-script ./tests/manual-dns-auth.sh
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
        OPENSSL_CNF=examples/openssl.cnf
