@@ -20,14 +20,20 @@ class AuthenticatorTest(unittest.TestCase):
         self.achalls = [self.http_achall, self.dns_achall]
         self.config = mock.MagicMock(
             http01_port=0, manual_auth_hook=None, manual_cleanup_hook=None,
-            manual_public_ip_logging_ok=False, noninteractive_mode=False)
+            manual_public_ip_logging_ok=False, noninteractive_mode=False,
+            validate_hooks=False)
 
         from certbot.plugins.manual import Authenticator
         self.auth = Authenticator(self.config, name='manual')
 
-    def test_prepare_failure(self):
+    def test_prepare_no_hook_noninteractive(self):
         self.config.noninteractive_mode = True
         self.assertRaises(errors.PluginError, self.auth.prepare)
+
+    def test_prepare_bad_hook(self):
+        self.config.manual_auth_hook = os.path.abspath(os.sep)  # is / on UNIX
+        self.config.validate_hooks = True
+        self.assertRaises(errors.HookCommandNotFound, self.auth.prepare)
 
     def test_more_info(self):
         self.assertTrue(isinstance(self.auth.more_info(), six.string_types))
