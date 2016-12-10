@@ -130,6 +130,16 @@ def get_valid_domains(domains):
             continue
     return valid_domains
 
+def _sort_names(FQDNs):
+    """Sort FQDNs by SLD (and if many, by their subdomains)
+
+    :param list FQDNs: list of domain names
+
+    :returns: Sorted list of domain names
+    :rtype: list
+    """
+    return sorted(FQDNs, key=lambda fqdn: fqdn.split('.')[::-1][1:])
+
 
 def _filter_names(names):
     """Determine which names the user would like to select from a list.
@@ -143,7 +153,7 @@ def _filter_names(names):
 
     """
     #Sort by domain first, and then by subdomain
-    sorted_names = sorted(names, key=lambda fqdn: fqdn.split('.')[::-1][1:])
+    sorted_names = _sort_names(names)
 
     code, names = z_util(interfaces.IDisplay).checklist(
         "Which names would you like to activate HTTPS for?",
