@@ -700,8 +700,9 @@ class HelpfulArgumentParser(object):
         """
         if self.visible_topics[topic]:
             self.groups[topic] = self.parser.add_argument_group(topic, **kwargs)
-            for v in verbs:
-                self.groups[topic].add_argument(v, help=VERB_HELP_MAP[v]["short"])
+            if self.help_arg:
+                for v in verbs:
+                    self.groups[topic].add_argument(v, help=VERB_HELP_MAP[v]["short"])
 
         return HelpfulArgumentGroup(self, topic)
 
