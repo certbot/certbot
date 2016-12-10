@@ -142,9 +142,12 @@ def _filter_names(names):
     :rtype: tuple
 
     """
+    #Sort by domain first, and then by subdomain
+    sorted_names = sorted(names, key=lambda fqdn: fqdn.split('.')[::-1][1:])
+
     code, names = z_util(interfaces.IDisplay).checklist(
         "Which names would you like to activate HTTPS for?",
-        tags=names, cli_flag="--domains")
+        tags=sorted_names, cli_flag="--domains")
     return code, [str(s) for s in names]
 
 
