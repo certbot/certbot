@@ -440,7 +440,7 @@ class HelpfulArgumentParser(object):
         text = "The full list of available SUBCOMMANDS is:\n\n"
         for verb, props in sorted(VERB_HELP):
             doc = props.get("short", "")
-            text += '{0:<{length}} {1}\n'.format(verb, doc, length=longest)
+            text += '{0:<{length}}     {1}\n'.format(verb, doc, length=longest)
 
         text += "\nYou can get more help on a specific subcommand with --help SUBCOMMAND\n"
         return text
