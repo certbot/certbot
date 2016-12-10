@@ -399,7 +399,7 @@ class HelpfulArgumentParser(object):
 
         # List of topics for which additional help can be provided
         HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
-        HELP_TOPICS += self.COMMANDS_TOPICS
+        HELP_TOPICS += self.COMMANDS_TOPICS + ["manage"]
 
         plugin_names = list(plugins)
         self.help_topics = HELP_TOPICS + plugin_names + [None]
@@ -683,7 +683,7 @@ class HelpfulArgumentParser(object):
         util.add_deprecated_argument(
             self.parser.add_argument, argument_name, num_args)
 
-    def add_group(self, topic, **kwargs):
+    def add_group(self, topic, verbs=[], **kwargs):
         """Create a new argument group.
 
         This method must be called once for every topic, however, calls
@@ -691,6 +691,8 @@ class HelpfulArgumentParser(object):
         clarity.
 
         :param str topic: Name of the new argument group.
+        :param str verbs: Subcommands that should be documented as part of
+                          this help group / topic
 
         :returns: The new argument group.
         :rtype: `HelpfulArgumentGroup`
@@ -698,6 +700,8 @@ class HelpfulArgumentParser(object):
         """
         if self.visible_topics[topic]:
             self.groups[topic] = self.parser.add_argument_group(topic, **kwargs)
+            for v in verbs:
+                self.groups[topic].add_argument(v, help=VERB_HELP_MAP[v]["short"])
 
         return HelpfulArgumentGroup(self, topic)
 
@@ -738,10 +742,12 @@ class HelpfulArgumentParser(object):
 def _add_all_groups(helpful):
     helpful.add_group("automation", description="Arguments for automating execution & other tweaks")
     helpful.add_group("security", description="Security parameters & server settings")
-    helpful.add_group(
-        "testing", description="The following flags are meant for "
-        "testing and integration purposes only.")
+    helpful.add_group("testing",
+        description="The following flags are meant for testing and integration purposes only.")
     helpful.add_group("paths", description="Arguments changing execution paths & servers")
+    helpful.add_group("manage",
+        description="Various subcommands and flags are available for managing your certificates:",
+        verbs=["certificates", "renew", "revoke", "rename"])
 
     # VERBS
     for verb, docs in VERB_HELP:
@@ -788,7 +794,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "multiple -d flags or enter a comma separated list of domains "
              "as a parameter.")
     helpful.add(
-        [None, "run", "certonly"],
+        [None, "run", "certonly", "manage"],
         "--cert-name", dest="certname",
         metavar="CERTNAME", default=None,
         help="Certificate name to apply. Only one certificate name can be used "
@@ -796,7 +802,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "If there is no existing certificate with this name and "
              "domains are requested, create a new certificate with this name.")
     helpful.add(
-        "rename",
+        ["rename", "manage"],
         "--updated-cert-name", dest="new_certname",
         metavar="NEW_CERTNAME", default=None,
         help="New name for the certificate. Must be a valid filename.")
@@ -1051,9 +1057,7 @@ def _paths_parser(helpful):
         verb = helpful.help_arg
 
     cph = "Path to where cert is saved (with auth --csr), installed from or revoked."
-    section = "paths"
-    if verb in ("install", "revoke", "certonly"):
-        section = verb
+    section = ["paths", "install", "revoke", "certonly", "manage"]
     if verb == "certonly":
         add(section, "--cert-path", type=os.path.abspath,
             default=flag_default("auth_cert_path"), help=cph)
