@@ -367,7 +367,7 @@ VERB_HELP = [
     }),
     ("update_symlinks", {
         "short": "Recreate symlinks in your /live/ directory",
-        "opts": ("Recreates cert and key symlinks in {0}, if you changed them by hand, "
+        "opts": ("Recreates cert and key symlinks in {0}, if you changed them by hand "
                  "or edited a renewal configuration file".format(
                   os.path.join(flag_default("config_dir"), "live")))
     }),
