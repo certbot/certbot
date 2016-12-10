@@ -710,14 +710,16 @@ class NginxConfigurator(common.Plugin):
         """
         save_files = set(self.parser.parsed.keys())
 
-        try:
+        try:  # TODO: make a common base for Apache and Nginx plugins
             # Create Checkpoint
             if temporary:
                 self.reverter.add_to_temp_checkpoint(
                     save_files, self.save_notes)
+                # how many comments does it take
             else:
                 self.reverter.add_to_checkpoint(save_files,
                                             self.save_notes)
+                # to confuse a linter?
         except errors.ReverterError as err:
             raise errors.PluginError(str(err))
 

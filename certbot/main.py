@@ -30,7 +30,6 @@ from certbot import interfaces
 from certbot import util
 from certbot import reporter
 from certbot import renewal
-from certbot import storage
 
 from certbot.display import util as display_util, ops as display_ops
 from certbot.plugins import disco as plugins_disco
@@ -41,6 +40,9 @@ _PERM_ERR_FMT = os.linesep.join((
     "The following error was encountered:", "{0}",
     "If running as non-root, set --config-dir, "
     "--logs-dir, and --work-dir to writeable paths."))
+
+USER_CANCELLED = ("User chose to cancel the operation and may "
+                  "reinvoke the client.")
 
 
 logger = logging.getLogger(__name__)
@@ -68,17 +70,21 @@ def _report_successful_dry_run(config):
                                   reporter_util.HIGH_PRIORITY, on_crash=False)
 
 
-def _auth_from_domains(le_client, config, domains, lineage=None):
+def _auth_from_available(le_client, config, domains=None, certname=None, lineage=None):
     """Authenticate and enroll certificate.
 
-    :returns: Tuple of (str action, cert_or_None) as per _treat_as_renewal
+    This method finds the relevant lineage, figures out what to do with it,
+    then performs that action. Includes calls to hooks, various reports,
+    checks, and requests for user input.
+
+    :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains_and_certname
               action can be: "newcert" | "renew" | "reinstall"
     """
     # If lineage is specified, use that one instead of looking around for
     # a matching one.
     if lineage is None:
         # This will find a relevant matching lineage that exists
-        action, lineage = _treat_as_renewal(config, domains)
+        action, lineage = _find_lineage_for_domains_and_certname(config, domains, certname)
     else:
         # Renewal, where we already know the specific lineage we're
         # interested in
@@ -94,11 +100,11 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
     try:
         if action == "renew":
             logger.info("Renewing an existing certificate")
-            renewal.renew_cert(config, domains, le_client, lineage)
+            renewal.renew_cert(config, le_client, lineage)
         elif action == "newcert":
             # TREAT AS NEW REQUEST
             logger.info("Obtaining a new certificate")
-            lineage = le_client.obtain_and_enroll_certificate(domains)
+            lineage = le_client.obtain_and_enroll_certificate(domains, certname)
             if lineage is False:
                 raise errors.Error("Certificate could not be obtained")
     finally:
@@ -115,7 +121,7 @@ def _handle_subset_cert_request(config, domains, cert):
 
     :param storage.RenewableCert cert:
 
-    :returns: Tuple of (str action, cert_or_None) as per _treat_as_renewal
+    :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains_and_certname
               action can be: "newcert" | "renew" | "reinstall"
     :rtype: tuple
 
@@ -147,9 +153,7 @@ def _handle_subset_cert_request(config, domains, cert):
                 br=os.linesep
             ),
             reporter_util.HIGH_PRIORITY)
-        raise errors.Error(
-            "User chose to cancel the operation and may "
-            "reinvoke the client.")
+        raise errors.Error(USER_CANCELLED)
 
 
 def _handle_identical_cert_request(config, lineage):
@@ -157,7 +161,7 @@ def _handle_identical_cert_request(config, lineage):
 
     :param storage.RenewableCert lineage:
 
-    :returns: Tuple of (str action, cert_or_None) as per _treat_as_renewal
+    :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains_and_certname
               action can be: "newcert" | "renew" | "reinstall"
     :rtype: tuple
 
@@ -171,8 +175,8 @@ def _handle_identical_cert_request(config, lineage):
         # reinstalled without further prompting.
         return "reinstall", lineage
     question = (
-        "You have an existing certificate that contains exactly the same "
-        "domains you requested and isn't close to expiry."
+        "You have an existing certificate that has exactly the same "
+        "domains or certificate name you requested and isn't close to expiry."
         "{br}(ref: {0}){br}{br}What would you like to do?"
     ).format(lineage.configfile.filename, br=os.linesep)
 
@@ -198,8 +202,7 @@ def _handle_identical_cert_request(config, lineage):
     else:
         assert False, "This is impossible"
 
-
-def _treat_as_renewal(config, domains):
+def _find_lineage_for_domains(config, domains):
     """Determine whether there are duplicated names and how to handle
     them (renew, reinstall, newcert, or raising an error to stop
     the client run if the user chooses to cancel the operation when
@@ -219,7 +222,7 @@ def _treat_as_renewal(config, domains):
     if config.duplicate:
         return "newcert", None
     # TODO: Also address superset case
-    ident_names_cert, subset_names_cert = _find_duplicative_certs(config, domains)
+    ident_names_cert, subset_names_cert = cert_manager.find_duplicative_certs(config, domains)
     # XXX ^ schoen is not sure whether that correctly reads the systemwide
     # configuration file.
     if ident_names_cert is None and subset_names_cert is None:
@@ -230,51 +233,66 @@ def _treat_as_renewal(config, domains):
     elif subset_names_cert is not None:
         return _handle_subset_cert_request(config, domains, subset_names_cert)
 
+def _find_lineage_for_domains_and_certname(config, domains, certname):
+    """Find appropriate lineage based on given domains and/or certname.
 
-def _find_duplicative_certs(config, domains):
-    """Find existing certs that duplicate the request."""
+    :returns: Two-element tuple containing desired new-certificate behavior as
+              a string token ("reinstall", "renew", or "newcert"), plus either
+              a RenewableCert instance or None if renewal shouldn't occur.
 
-    identical_names_cert, subset_names_cert = None, None
+    :raises .Error: If the user would like to rerun the client again.
 
-    cli_config = configuration.RenewerConfiguration(config)
-    configs_dir = cli_config.renewal_configs_dir
-    # Verify the directory is there
-    util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
+    """
+    if not certname:
+        return _find_lineage_for_domains(config, domains)
+    else:
+        lineage = cert_manager.lineage_for_certname(config, certname)
+        if lineage:
+            if domains:
+                if set(cert_manager.domains_for_certname(config, certname)) != set(domains):
+                    _ask_user_to_confirm_new_names(config, domains, certname,
+                        lineage.names()) # raises if no
+                    return "renew", lineage
+            # unnecessarily specified domains or no domains specified
+            return _handle_identical_cert_request(config, lineage)
+        else:
+            if domains:
+                return "newcert", None
+            else:
+                raise errors.ConfigurationError("No certificate with name {0} found. "
+                    "Use -d to specify domains, or run certbot --certificates to see "
+                    "possible certificate names.".format(certname))
 
-    for renewal_file in renewal.renewal_conf_files(cli_config):
-        try:
-            candidate_lineage = storage.RenewableCert(renewal_file, cli_config)
-        except (errors.CertStorageError, IOError):
-            logger.warning("Renewal conf file %s is broken. Skipping.", renewal_file)
-            logger.debug("Traceback was:\n%s", traceback.format_exc())
-            continue
-        # TODO: Handle these differently depending on whether they are
-        #       expired or still valid?
-        candidate_names = set(candidate_lineage.names())
-        if candidate_names == set(domains):
-            identical_names_cert = candidate_lineage
-        elif candidate_names.issubset(set(domains)):
-            # This logic finds and returns the largest subset-names cert
-            # in the case where there are several available.
-            if subset_names_cert is None:
-                subset_names_cert = candidate_lineage
-            elif len(candidate_names) > len(subset_names_cert.names()):
-                subset_names_cert = candidate_lineage
+def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
+    """Ask user to confirm update cert certname to contain new_domains.
+    """
+    if config.renew_with_new_domains:
+        return
+    msg = ("Confirm that you intend to update certificate {0} "
+           "to include domains {1}. Note that it previously "
+           "contained domains {2}.".format(
+               certname,
+               new_domains,
+               old_domains))
+    obj = zope.component.getUtility(interfaces.IDisplay)
+    if not obj.yesno(msg, "Update cert", "Cancel", default=True):
+        raise errors.ConfigurationError("Specified mismatched cert name and domains.")
 
-    return identical_names_cert, subset_names_cert
-
-
-def _find_domains(config, installer):
+def _find_domains_or_certname(config, installer):
+    """Retrieve domains and certname from config or user input.
+    """
+    domains = None
     if config.domains:
         domains = config.domains
-    else:
+    elif not config.certname:
         domains = display_ops.choose_names(installer)
 
-    if not domains:
+    if not domains and not config.certname:
         raise errors.Error("Please specify --domains, or --installer that "
-                           "will help in domain names autodiscovery")
+                           "will help in domain names autodiscovery, or "
+                           "--cert-name for an existing certificate name.")
 
-    return domains
+    return domains, config.certname
 
 
 def _report_new_cert(config, cert_path, fullchain_path):
@@ -429,7 +447,7 @@ def install(config, plugins):
     except errors.PluginSelectionError as e:
         return e.message
 
-    domains = _find_domains(config, installer)
+    domains, _ = _find_domains_or_certname(config, installer)
     le_client = _init_le_client(config, authenticator=None, installer=installer)
     assert config.cert_path is not None  # required=True in the subparser
     le_client.deploy_certificate(
@@ -485,6 +503,14 @@ def update_symlinks(config, unused_plugins):
     """
     cert_manager.update_live_symlinks(config)
 
+def rename(config, unused_plugins):
+    """Rename a certificate
+
+    Use the information in the config file to rename an existing
+    lineage.
+    """
+    cert_manager.rename_lineage(config)
+
 def certificates(config, unused_plugins):
     """Display information about certs configured with Certbot
     """
@@ -521,12 +547,12 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     except errors.PluginSelectionError as e:
         return e.message
 
-    domains = _find_domains(config, installer)
+    domains, certname = _find_domains_or_certname(config, installer)
 
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(config, authenticator, installer)
 
-    action, lineage = _auth_from_domains(le_client, config, domains)
+    action, lineage = _auth_from_available(le_client, config, domains, certname)
 
     le_client.deploy_certificate(
         domains, lineage.privkey, lineage.cert,
@@ -576,8 +602,8 @@ def obtain_cert(config, plugins, lineage=None):
 
     # SHOWTIME: Possibly obtain/renew a cert, and set action to renew | newcert | reinstall
     if config.csr is None: # the common case
-        domains = _find_domains(config, installer)
-        action, _ = _auth_from_domains(le_client, config, domains, lineage)
+        domains, certname = _find_domains_or_certname(config, installer)
+        action, _ = _auth_from_available(le_client, config, domains, certname, lineage)
     else:
         assert lineage is None, "Did not expect a CSR with a RenewableCert"
         _csr_obtain_cert(config, le_client)
@@ -606,7 +632,7 @@ def obtain_cert(config, plugins, lineage=None):
 def renew(config, unused_plugins):
     """Renew previously-obtained certificates."""
     try:
-        renewal.renew_all_lineages(config)
+        renewal.handle_renewal_request(config)
     finally:
         hooks.post_hook(config, final=True)
 
@@ -716,6 +742,7 @@ def _handle_exception(exc_type, exc_value, trace, config):
         else:
             msg += "logfiles in {0} for more details.".format(config.logs_dir)
         sys.exit(msg)
+
 
 
 def make_or_verify_core_dir(directory, mode, uid, strict):

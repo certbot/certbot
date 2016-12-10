@@ -125,6 +125,7 @@ class ParseTest(unittest.TestCase):
         self.assertTrue("--key-path" not in out)
 
         out = self._help_output(['-h'])
+
         self.assertTrue(cli.usage_strings(self.plugins)[0] in out)
 
     def test_parse_domains(self):
