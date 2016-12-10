@@ -81,6 +81,7 @@ obtain, install, and renew certificates:
 manage certificates:
     certificates    Display information about certs you have from Certbot
     revoke          Revoke a certificate (supply --cert-path)
+    rename          Rename a certificate
 
 manage your account with Let's Encrypt:
     register        Create a Let's Encrypt ACME account
@@ -340,7 +341,7 @@ VERB_HELP = [
         "short": "Revoke a certificate specified with --cert-path",
         "opts": "Options for revocation of certs"
     }),
-    ("revoke", {
+    ("rename", {
         "short": "Change a certificate's name (for management purposes)",
         "opts": "Options changing certificate names"
     }),
@@ -437,7 +438,7 @@ class HelpfulArgumentParser(object):
         longest = max(len(v) for v in VERB_HELP_MAP.keys())
 
         text = "The full list of available SUBCOMMANDS is:\n\n"
-        for verb, props in VERB_HELP:
+        for verb, props in sorted(VERB_HELP):
             padding = (longest - len(verb)) + 4
             doc = props.get("short", "")
             text += verb + " " * padding + doc + "\n"
