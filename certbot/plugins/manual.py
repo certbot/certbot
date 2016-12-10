@@ -107,7 +107,7 @@ s.serve_forever()" """
 
     def _verify_ip_logging_ok(self):
         if not self.conf('public-ip-logging-ok'):
-            cli_flag = self.option_name('public-ip-logging-ok')
+            cli_flag = '--{0}'.format(self.option_name('public-ip-logging-ok'))
             msg = ('NOTE: The IP of this machine will be publicly logged as '
                    "having requested this certificate. If you're running "
                    'certbot in manual mode on a machine that is not your '
