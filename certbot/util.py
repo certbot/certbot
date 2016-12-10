@@ -181,7 +181,7 @@ def unique_file(path, chmod=0o777, mode="w"):
         count=0, chmod=chmod, mode=mode)
 
 
-def unique_lineage_name(path, filename, chmod=0o777, mode="w"):
+def unique_lineage_name(path, filename, chmod=0o644, mode="w"):
     """Safely finds a unique file using lineage convention.
 
     :param str path: directory path
