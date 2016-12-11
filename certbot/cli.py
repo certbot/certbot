@@ -683,7 +683,7 @@ class HelpfulArgumentParser(object):
         util.add_deprecated_argument(
             self.parser.add_argument, argument_name, num_args)
 
-    def add_group(self, topic, verbs=[], **kwargs):
+    def add_group(self, topic, verbs=(), **kwargs):
         """Create a new argument group.
 
         This method must be called once for every topic, however, calls
@@ -691,7 +691,7 @@ class HelpfulArgumentParser(object):
         clarity.
 
         :param str topic: Name of the new argument group.
-        :param str verbs: Subcommands that should be documented as part of
+        :param str verbs: List of subcommands that should be documented as part of
                           this help group / topic
 
         :returns: The new argument group.
