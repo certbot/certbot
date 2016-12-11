@@ -20,6 +20,20 @@ else
   readlink="readlink"
 fi
 
+cleanup_and_exit() {
+    EXIT_STATUS=$? 
+    SERVER_PID=`ps aux | grep SimpleHTTPServer | grep -v grep | 
+       sed -e 's/\s\+/:/g' | cut -d: -f2`
+    if [ -n "$SERVER_PID" ]
+    then
+       echo Clean up SimpleHTTPServer
+       kill "$SERVER_PID"
+    fi
+    exit $EXIT_STATUS
+}
+
+trap cleanup_and_exit EXIT
+
 common_no_force_renew() {
     certbot_test_no_force_renew \
         --authenticator standalone \
