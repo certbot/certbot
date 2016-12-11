@@ -223,6 +223,45 @@ class ChooseNamesTest(unittest.TestCase):
         self.assertTrue(
             "configuration files" in mock_util().input.call_args[0][0])
 
+    def test_sort_names_trivial(self):
+        from certbot.display.ops import _sort_names
+
+        #sort an empty list
+        self.assertEqual(_sort_names([]), [])
+
+        #sort simple domains
+        some_domains = ["ex.com", "zx.com", "ax.com"]
+        self.assertEqual(_sort_names(some_domains), ["ax.com", "ex.com", "zx.com"])
+
+        #Sort subdomains of a single domain
+        domain = ".ex.com"
+        unsorted_short = ["e", "a", "z", "y"]
+        unsorted_long = [us + domain for us in unsorted_short]
+
+        sorted_short = sorted(unsorted_short)
+        sorted_long = [us + domain for us in sorted_short]
+
+        self.assertEqual(_sort_names(unsorted_long), sorted_long)
+
+    def test_sort_names_many(self):
+        from certbot.display.ops import _sort_names
+
+        unsorted_domains = [".cx.com", ".bx.com", ".ax.com", ".dx.com"]
+        unsorted_short = ["www", "bnother.long.subdomain", "a", "a.long.subdomain", "z", "b"]
+        #Of course sorted doesn't work here ;-)
+        sorted_short = ["a", "b", "a.long.subdomain", "bnother.long.subdomain", "www", "z"]
+
+        to_sort = []
+        for short in unsorted_short:
+            for domain in unsorted_domains:
+                to_sort.append(short+domain)
+        sortd = []
+        for domain in sorted(unsorted_domains):
+            for short in sorted_short:
+                sortd.append(short+domain)
+        self.assertEqual(_sort_names(to_sort), sortd)
+
+
     @mock.patch("certbot.display.ops.z_util")
     def test_filter_names_valid_return(self, mock_util):
         self.mock_install.get_all_names.return_value = set(["example.com"])
