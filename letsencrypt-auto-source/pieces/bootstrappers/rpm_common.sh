@@ -17,6 +17,14 @@ BootstrapRpmCommon() {
     exit 1
   fi
 
+  # checking if certbot is already packaged with the os
+  if [ "$QUIET" != 1 ]; then
+      if rpm -qa | grep -c certbot -gt 0; then
+         echo "Certbot is already packaged with you OS."
+         rpm -qa | grep certbot
+      fi
+  fi
+
   if [ "$ASSUME_YES" = 1 ]; then
     yes_flag="-y"
   fi
