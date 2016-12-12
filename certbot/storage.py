@@ -96,6 +96,25 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
         config.write(outfile=f)
     return config
 
+def rename_renewal_config(prev_name, new_name, cli_config):
+    """Renames cli_config.certname's config to cli_config.new_certname.
+
+    :param .RenewerConfiguration cli_config: parsed command line
+        arguments
+    """
+    prev_filename = os.path.join(
+        cli_config.renewal_configs_dir, prev_name) + ".conf"
+    new_filename = os.path.join(
+        cli_config.renewal_configs_dir, new_name) + ".conf"
+    if os.path.exists(new_filename):
+        raise errors.ConfigurationError("The new certificate name "
+            "is already in use.")
+    try:
+        os.rename(prev_filename, new_filename)
+    except OSError:
+        raise errors.ConfigurationError("Please specify a valid filename "
+            "for the new certificate name.")
+
 
 def update_configuration(lineagename, archive_dir, target, cli_config):
     """Modifies lineagename's config to contain the specified values.
@@ -171,8 +190,17 @@ def relevant_values(all_values):
         for option, value in six.iteritems(all_values)
         if _relevant(option) and cli.option_was_set(option, value))
 
+def lineagename_for_filename(config_filename):
+    """Returns the lineagename for a configuration filename.
+    """
+    if not config_filename.endswith(".conf"):
+        raise errors.CertStorageError(
+            "renewal config file name must end in .conf")
+    return os.path.basename(config_filename[:-len(".conf")])
 
-class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
+
+class RenewableCert(object):
+    # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Renewable certificate.
 
     Represents a lineage of certificates that is under the management of
@@ -219,11 +247,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         """
         self.cli_config = cli_config
-        if not config_filename.endswith(".conf"):
-            raise errors.CertStorageError(
-                "renewal config file name must end in .conf")
-        self.lineagename = os.path.basename(
-            config_filename[:-len(".conf")])
+        self.lineagename = lineagename_for_filename(config_filename)
 
         # self.configuration should be used to read parameters that
         # may have been chosen based on default values from the
@@ -280,6 +304,15 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         else:
             return os.path.join(
                 self.cli_config.default_archive_dir, self.lineagename)
+
+    @property
+    def is_test_cert(self):
+        """Returns true if this is a test cert from a staging server."""
+        server = self.configuration["renewalparams"].get("server", None)
+        if server:
+            return util.is_staging(server)
+        else:
+            return False
 
     def _check_symlinks(self):
         """Raises an exception if a symlink doesn't exist"""

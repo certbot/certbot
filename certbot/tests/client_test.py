@@ -13,7 +13,7 @@ from certbot import account
 from certbot import errors
 from certbot import util
 
-from certbot.tests import test_util
+import certbot.tests.util as test_util
 
 
 KEY = test_util.load_vector("rsa512_key.pem")
@@ -106,9 +106,14 @@ class RegisterTest(unittest.TestCase):
 class ClientTestCommon(unittest.TestCase):
     """Common base class for certbot.client.Client tests."""
     def setUp(self):
+        self.config = mock.MagicMock(
+            no_verify_ssl=False,
+            config_dir="/etc/letsencrypt",
+            work_dir="/var/lib/letsencrypt",
+            allow_subset_of_names=False)
+
         # pylint: disable=star-args
         self.account = mock.MagicMock(**{"key.pem": KEY})
-        self.config = mock.MagicMock(no_verify_ssl=False)
 
         from certbot.client import Client
         with mock.patch("certbot.client.acme_client.Client") as acme:
@@ -220,6 +225,27 @@ class ClientTest(ClientTestCommon):
         mock_crypto_util.init_save_csr.assert_called_once_with(
             mock.sentinel.key, domains, self.config.csr_dir)
         self._check_obtain_certificate()
+
+    @mock.patch('certbot.client.Client.obtain_certificate')
+    @mock.patch('certbot.storage.RenewableCert.new_lineage')
+    @mock.patch('OpenSSL.crypto.dump_certificate')
+    def test_obtain_and_enroll_certificate(self, mock_dump_certificate,
+        mock_storage, mock_obtain_certificate):
+        domains = ["example.com", "www.example.com"]
+        mock_obtain_certificate.return_value = (mock.MagicMock(),
+            mock.MagicMock(), mock.MagicMock(), None)
+
+        self.client.config.dry_run = False
+        self.assertTrue(self.client.obtain_and_enroll_certificate(domains, "example_cert"))
+
+        self.assertTrue(self.client.obtain_and_enroll_certificate(domains, None))
+
+        self.client.config.dry_run = True
+
+        self.assertFalse(self.client.obtain_and_enroll_certificate(domains, None))
+
+        self.assertTrue(mock_storage.call_count == 2)
+        self.assertTrue(mock_dump_certificate.call_count == 2)
 
     @mock.patch("certbot.cli.helpful_parser")
     def test_save_certificate(self, mock_parser):

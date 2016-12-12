@@ -7,6 +7,7 @@ import unittest
 
 import mock
 
+
 def get_signals(signums):
     """Get the handlers for an iterable of signums."""
     return dict((s, signal.getsignal(s)) for s in signums)

@@ -101,7 +101,7 @@ BootstrapDebCommon() {
 
 
 
-  if ! command -v virtualenv > /dev/null ; then
+  if ! $EXISTS virtualenv > /dev/null ; then
     echo Failed to install a working \"virtualenv\" command, exiting
     exit 1
   fi

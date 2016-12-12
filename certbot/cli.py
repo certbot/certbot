@@ -68,6 +68,7 @@ cert. Major SUBCOMMANDS are:
   rollback             Rollback server configuration changes made during install
   config_changes       Show changes made to server config during installation
   update_symlinks      Update cert symlinks based on renewal config file
+  rename               Update a certificate's name
   plugins              Display information about installed plugins
   certificates         Display information about certs configured with Certbot
 
@@ -326,7 +327,7 @@ class HelpfulArgumentParser(object):
                       "register": main.register, "renew": main.renew,
                       "revoke": main.revoke, "rollback": main.rollback,
                       "everything": main.run, "update_symlinks": main.update_symlinks,
-                      "certificates": main.certificates}
+                      "certificates": main.certificates, "rename": main.rename}
 
         # List of topics for which additional help can be provided
         HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
@@ -687,6 +688,19 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "multiple -d flags or enter a comma separated list of domains "
              "as a parameter.")
     helpful.add(
+        [None, "run", "certonly"],
+        "--cert-name", dest="certname",
+        metavar="CERTNAME", default=None,
+        help="Certificate name to apply. Only one certificate name can be used "
+             "per Certbot run. To see certificate names, run 'certbot certificates'."
+             "If there is no existing certificate with this name and "
+             "domains are requested, create a new certificate with this name.")
+    helpful.add(
+        "rename",
+        "--updated-cert-name", dest="new_certname",
+        metavar="NEW_CERTNAME", default=None,
+        help="New name for the certificate. Must be a valid filename.")
+    helpful.add(
         [None, "testing", "renew", "certonly"],
         "--dry-run", action="store_true", dest="dry_run",
         help="Perform a test run of the client, obtaining test (invalid) certs"
@@ -738,6 +752,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "regardless of whether it is near expiry. (Often "
              "--keep-until-expiring is more appropriate). Also implies "
              "--expand.")
+    helpful.add(
+        "automation", "--renew-with-new-domains",
+        action="store_true", dest="renew_with_new_domains", help="If a "
+             "certificate already exists for the requested certificate name "
+             "but does not match the requested domains, renew it now, "
+             "regardless of whether it is near expiry.")
     helpful.add(
         ["automation", "renew", "certonly"],
         "--allow-subset-of-names", action="store_true",
@@ -1038,7 +1058,6 @@ class _DomainsAction(argparse.Action):
     def __call__(self, parser, namespace, domain, option_string=None):
         """Just wrap add_domains in argparseese."""
         add_domains(namespace, domain)
-
 
 def add_domains(args_or_config, domains):
     """Registers new domains to be used during the current client run.
