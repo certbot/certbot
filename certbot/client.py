@@ -38,11 +38,11 @@ def acme_from_config_key(config, key):
     "Wrangle ACME client construction"
     # TODO: Allow for other alg types besides RS256
     net = acme_client.ClientNetwork(key, verify_ssl=(not config.no_verify_ssl),
-                                    user_agent=_determine_user_agent(config))
+                                    user_agent=determine_user_agent(config))
     return acme_client.Client(config.server, key=key, net=net)
 
 
-def _determine_user_agent(config):
+def determine_user_agent(config):
     """
     Set a user_agent string in the config based on the choice of plugins.
     (this wasn't knowable at construction time)

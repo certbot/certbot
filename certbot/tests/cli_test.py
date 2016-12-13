@@ -1,5 +1,4 @@
 """Tests for certbot.cli."""
-import argparse
 import functools
 import unittest
 import os
@@ -12,6 +11,7 @@ from six.moves import reload_module  # pylint: disable=import-error
 from certbot import cli
 from certbot import constants
 from certbot import errors
+from certbot import tweakedparse as argparse
 from certbot.plugins import disco
 
 def reset_set_by_cli():

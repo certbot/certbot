@@ -13,27 +13,27 @@ cert. Major SUBCOMMANDS are:
   register             Perform tasks related to registering with the CA
   rollback             Rollback server configuration changes made during install
   config_changes       Show changes made to server config during installation
+  update_symlinks      Update cert symlinks based on renewal config file
   plugins              Display information about installed plugins
+  certificates         Display information about certs configured with Certbot
 
 optional arguments:
   -h, --help            show this help message and exit
   -c CONFIG_FILE, --config CONFIG_FILE
-                        config file path (default: None)
+                        path to config file (default: /etc/letsencrypt/cli.ini
+                        and ~/.config/letsencrypt/cli.ini)
   -v, --verbose         This flag can be used multiple times to incrementally
                         increase the verbosity of output, e.g. -vvv. (default:
                         -2)
-  -t, --text            Use the text output instead of the curses UI.
-                        (default: False)
   -n, --non-interactive, --noninteractive
                         Run without ever asking for user input. This may
                         require additional command line flags; the client will
                         try to explain which ones are required if it finds one
                         missing (default: False)
-  --dialog              Run using interactive dialog menus (default: False)
   -d DOMAIN, --domains DOMAIN, --domain DOMAIN
                         Domain names to apply. For multiple domains you can
                         use multiple -d flags or enter a comma separated list
-                        of domains as a parameter. (default: [])
+                        of domains as a parameter. (default: Ask)
   --dry-run             Perform a test run of the client, obtaining test
                         (invalid) certs but not saving them to disk. This can
                         currently only be used with the 'certonly' and 'renew'
@@ -65,7 +65,7 @@ optional arguments:
                         registering a new account. (default: False)
   -m EMAIL, --email EMAIL
                         Email used for registration and recovery contact.
-                        (default: None)
+                        (default: Ask)
   --preferred-challenges PREF_CHALLS
                         A sorted, comma delimited list of the preferred
                         challenge to use during authorization with the most
@@ -81,7 +81,9 @@ optional arguments:
                         agent strings allow the CA to collect high level
                         statistics about success rates by OS and plugin. If
                         you wish to hide your server OS version from the Let's
-                        Encrypt server, set this to "". (default: None)
+                        Encrypt server, set this to "". (default:
+                        CertbotACMEClient/0.10.0.dev0 (Debian GNU/Linux
+                        stretch/sid) Authenticator/XXX Installer/YYY)
 
 automation:
   Arguments for automating execution & other tweaks
@@ -90,10 +92,10 @@ automation:
                         If the requested cert matches an existing cert, always
                         keep the existing one until it is due for renewal (for
                         the 'run' subcommand this means reinstall the existing
-                        cert) (default: False)
+                        cert). (default: Ask)
   --expand              If an existing cert covers some subset of the
                         requested names, always expand and replace it with the
-                        additional names. (default: False)
+                        additional names. (default: Ask)
   --version             show program's version number and exit
   --force-renewal, --renew-by-default
                         If a certificate already exists for the requested
@@ -108,8 +110,7 @@ automation:
                         succeed even if some domains no longer point at this
                         system. This option cannot be used with --csr.
                         (default: False)
-  --agree-tos           Agree to the ACME Subscriber Agreement (default:
-                        False)
+  --agree-tos           Agree to the ACME Subscriber Agreement (default: Ask)
   --account ACCOUNT_ID  Account ID to use (default: None)
   --duplicate           Allow making a certificate lineage that duplicates an
                         existing one (both can be renewed in parallel)
@@ -118,7 +119,7 @@ automation:
                         and then stop (default: False)
   --no-self-upgrade     (certbot-auto only) prevent the certbot-auto script
                         from upgrading itself to newer released versions
-                        (default: False)
+                        (default: Upgrade automatically)
   -q, --quiet           Silence all output except errors. Useful for
                         automation via cron. Implies --non-interactive.
                         (default: False)
@@ -132,28 +133,21 @@ security:
                         supported setups (Apache version >= 2.3.3 ). (default:
                         False)
   --redirect            Automatically redirect all HTTP traffic to HTTPS for
-                        the newly authenticated vhost. (default: None)
+                        the newly authenticated vhost. (default: Ask)
   --no-redirect         Do not automatically redirect all HTTP traffic to
                         HTTPS for the newly authenticated vhost. (default:
-                        None)
+                        Ask)
   --hsts                Add the Strict-Transport-Security header to every HTTP
                         response. Forcing browser to always use SSL for the
                         domain. Defends against SSL Stripping. (default:
                         False)
-  --no-hsts             Do not automatically add the Strict-Transport-Security
-                        header to every HTTP response. (default: False)
   --uir                 Add the "Content-Security-Policy: upgrade-insecure-
                         requests" header to every HTTP response. Forcing the
                         browser to use https:// for every http:// resource.
                         (default: None)
-  --no-uir              Do not automatically set the "Content-Security-Policy:
-                        upgrade-insecure-requests" header to every HTTP
-                        response. (default: None)
   --staple-ocsp         Enables OCSP Stapling. A valid OCSP response is
                         stapled to the certificate that the server offers
                         during TLS. (default: None)
-  --no-staple-ocsp      Do not automatically enable OCSP Stapling. (default:
-                        None)
   --strict-permissions  Require that all configuration files are owned by the
                         current user; only needed if your config is somewhere
                         unsafe like /tmp/ (default: False)
@@ -214,7 +208,7 @@ renew:
                         the hooks aren't being run just yet. The validation is
                         rather simplistic and fails if you use more advanced
                         shell constructs, so you can use this switch to
-                        disable it. (default: True)
+                        disable it. (default: False)
 
 certonly:
   Options for modifying how a cert is obtained
@@ -287,32 +281,38 @@ plugins:
   provided below. Running --help <plugin_name> will list flags specific to
   that plugin.
 
+  --configurator CONFIGURATOR
+                        Name of the plugin that is both an authenticator and
+                        an installer. Should not be used together with
+                        --authenticator or --installer. (default: Ask)
   -a AUTHENTICATOR, --authenticator AUTHENTICATOR
                         Authenticator plugin name. (default: None)
   -i INSTALLER, --installer INSTALLER
                         Installer plugin name (also used to find domains).
                         (default: None)
-  --configurator CONFIGURATOR
-                        Name of the plugin that is both an authenticator and
-                        an installer. Should not be used together with
-                        --authenticator or --installer. (default: None)
   --apache              Obtain and install certs using Apache (default: False)
   --nginx               Obtain and install certs using Nginx (default: False)
   --standalone          Obtain certs using a "standalone" webserver. (default:
                         False)
+  --script              Obtain certs using shell script(s) (default: False)
   --manual              Provide laborious manual instructions for obtaining a
                         cert (default: False)
   --webroot             Obtain certs by placing files in a webroot directory.
                         (default: False)
 
-nginx:
-  Nginx Web Server plugin - Alpha
+script:
+  Authenticate using user provided script(s). Authenticator script has the
+  following environment variables available for it: CERTBOT_DOMAIN - The
+  domain being authenticated CERTBOT_VALIDATION - The validation string
+  CERTBOT_TOKEN - Resource name part of HTTP-01 challenge (HTTP-01 only).
+  Cleanup script has all the above, and additional var: CERTBOT_AUTH_OUTPUT
+  - stdout output from the authenticator
 
-  --nginx-server-root NGINX_SERVER_ROOT
-                        Nginx server root directory. (default: /etc/nginx)
-  --nginx-ctl NGINX_CTL
-                        Path to the 'nginx' binary, used for 'configtest' and
-                        retrieving nginx version number. (default: nginx)
+  --script-auth SCRIPT_AUTH
+                        path or command for the authentication script
+                        (default: None)
+  --script-cleanup SCRIPT_CLEANUP
+                        path or command for the cleanup script (default: None)
 
 standalone:
   Spin up a temporary webserver
@@ -323,8 +323,7 @@ manual:
   --manual-test-mode    Test mode. Executes the manual command in subprocess.
                         (default: False)
   --manual-public-ip-logging-ok
-                        Automatically allows public IP logging. (default:
-                        False)
+                        Automatically allows public IP logging. (default: Ask)
 
 webroot:
   Place files in webroot directory
@@ -335,7 +334,7 @@ webroot:
                         domain will have the webroot path that preceded it.
                         For instance: `-w /var/www/example -d example.com -d
                         www.example.com -w /var/www/thing -d thing.net -d
-                        m.thing.net` (default: [])
+                        m.thing.net` (default: Ask)
   --webroot-map WEBROOT_MAP
                         JSON dictionary mapping domains to webroot paths; this
                         implies -d for each entry. You may need to escape this
@@ -346,6 +345,15 @@ webroot:
                         a config file, it needs to be on a single line, like:
                         webroot-map = {"example.com":"/var/www"}. (default:
                         {})
+
+nginx:
+  Nginx Web Server plugin - Alpha
+
+  --nginx-server-root NGINX_SERVER_ROOT
+                        Nginx server root directory. (default: /etc/nginx)
+  --nginx-ctl NGINX_CTL
+                        Path to the 'nginx' binary, used for 'configtest' and
+                        retrieving nginx version number. (default: nginx)
 
 apache:
   Apache Web Server plugin - Beta
