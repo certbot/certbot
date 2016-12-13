@@ -931,6 +931,7 @@ def _create_subparsers(helpful):
     helpful.add("revoke",
                 "--reason", action=_ReasonAction, dest="reason",
                 choices=list(constants.REVOCATION_REASONS.keys()),
+                default=0,
                 help="Specify reason for revoking certificate.")
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",

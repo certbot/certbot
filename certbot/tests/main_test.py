@@ -1057,7 +1057,9 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with open(CERT, 'rb') as f:
             cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
             mock_revoke = mock_acme_client.Client().revoke
-            mock_revoke.assert_called_once_with(jose.ComparableX509(cert), None)
+            mock_revoke.assert_called_once_with(
+                    jose.ComparableX509(cert),
+                    mock.ANY)
 
     @mock.patch('certbot.main._determine_account')
     def test_revoke_without_key(self, mock_determine_account):
@@ -1066,7 +1068,9 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with open(CERT) as f:
             cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
             mock_revoke = client.acme_from_config_key().revoke
-            mock_revoke.assert_called_once_with(jose.ComparableX509(cert), None)
+            mock_revoke.assert_called_once_with(
+                    jose.ComparableX509(cert),
+                    mock.ANY)
 
     def test_agree_dev_preview_config(self):
         with mock.patch('certbot.main.run') as mocked_run:

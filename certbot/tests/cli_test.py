@@ -258,6 +258,15 @@ class ParseTest(unittest.TestCase):
         self.assertFalse(cli.option_was_set(
             config_dir_option, cli.flag_default(config_dir_option)))
 
+    def test_encode_revocation_reason(self):
+        mock_args_or_config = mock.MagicMock()
+        from certbot.cli import encode_reason
+        self.assertTrue(0 == encode_reason(mock_args_or_config, 'Unspecified'))
+        self.assertTrue(1 == encode_reason(mock_args_or_config, 'KeyCompromise'))
+        self.assertTrue(3 == encode_reason(mock_args_or_config, 'AffiliationChanged'))
+        self.assertTrue(4 == encode_reason(mock_args_or_config, 'Superseded'))
+        self.assertTrue(5 == encode_reason(mock_args_or_config, 'CessationOfOperation'))
+
 
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""
