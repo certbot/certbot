@@ -243,14 +243,10 @@ class RevokeTest(unittest.TestCase):
     @mock.patch('certbot.main.client.acme_client')
     def test_revoke_with_reason(self, mock_acme_client):
         mock_revoke = mock_acme_client.Client().revoke
-        self._call("--reason Unspecified")
-        self._call("--reason KeyCompromise")
-        self._call("--reason AffiliationChanged")
-        self._call("--reason Superseded")
-        self._call("--reason CessationOfOperation")
-        expected = [mock.call(mock.ANY, 0), mock.call(mock.ANY, 1),
-                    mock.call(mock.ANY, 3), mock.call(mock.ANY, 4),
-                    mock.call(mock.ANY, 5)]
+        expected = []
+        for reason, code in constants.REVOCATION_REASONS.items():
+            self._call("--reason " + reason)
+            expected.append(mock.call(mock.ANY, code))
         self.assertEqual(expected, mock_revoke.call_args_list)
 
     def test_revocation_success(self):

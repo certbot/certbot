@@ -40,11 +40,11 @@ STAGING_URI = "https://acme-staging.api.letsencrypt.org/directory"
 # those accepted by the ACME server implementation. They are listed in
 # `letsencrypt.boulder.revocation.reasons.go`.
 REVOCATION_REASONS = {
-    "Unspecified": 0,
-    "KeyCompromise": 1,
-    "AffiliationChanged": 3,
-    "Superseded": 4,
-    "CessationOfOperation": 5}
+    "unspecified": 0,
+    "keycompromise": 1,
+    "affiliationchanged": 3,
+    "superseded": 4,
+    "cessationofoperation": 5}
 
 """Defaults for CLI flags and `.IConfig` attributes."""
 
