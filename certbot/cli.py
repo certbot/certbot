@@ -836,6 +836,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "with an existing registration, such as the e-mail address, "
              "should be updated, rather than registering a new account.")
     helpful.add(["register", "automation"], "-m", "--email", help=config_help("email"))
+    helpful.add(["register", "automation"], "--eff-email", action="store_true",
+                default=None, dest="eff_email",
+                help="Share your e-mail address with EFF")
+    helpful.add(["register", "automation"], "--no-eff-email", action="store_false",
+                default=None, dest="eff_email",
+                help="Don't share your e-mail address with EFF")
     helpful.add(
         ["automation", "certonly", "run"],
         "--keep-until-expiring", "--keep", "--reinstall",
