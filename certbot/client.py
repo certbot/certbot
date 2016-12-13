@@ -273,7 +273,7 @@ class Client(object):
         return (self.obtain_certificate_from_csr(domains, csr, authzr=authzr)
                                                                 + (key, csr))
 
-    def obtain_and_enroll_certificate(self, domains):
+    def obtain_and_enroll_certificate(self, domains, certname):
         """Obtain and enroll certificate.
 
         Get a new certificate for the specified domains using the specified
@@ -282,6 +282,7 @@ class Client(object):
 
         :param list domains: Domains to request.
         :param plugins: A PluginsFactory object.
+        :param str certname: Name of new cert
 
         :returns: A new :class:`certbot.storage.RenewableCert` instance
             referred to the enrolled cert lineage, False if the cert could not
@@ -296,13 +297,14 @@ class Client(object):
                 "Non-standard path(s), might not work with crontab installed "
                 "by your operating system package manager")
 
+        new_name = certname if certname else domains[0]
         if self.config.dry_run:
             logger.debug("Dry run: Skipping creating new lineage for %s",
-                        domains[0])
+                        new_name)
             return None
         else:
             return storage.RenewableCert.new_lineage(
-                domains[0], OpenSSL.crypto.dump_certificate(
+                new_name, OpenSSL.crypto.dump_certificate(
                     OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped),
                 key.pem, crypto_util.dump_pyopenssl_chain(chain),
                 configuration.RenewerConfiguration(self.config.namespace))

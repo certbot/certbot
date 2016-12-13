@@ -84,6 +84,8 @@ class ParseTest(unittest.TestCase):
         self.assertTrue("--manual-test-mode" in out)
         self.assertTrue("--text" not in out)
         self.assertTrue("--dialog" not in out)
+        self.assertTrue("%s" not in out)
+        self.assertTrue("{0}" not in out)
 
         out = self._help_output(['-h', 'nginx'])
         if "nginx" in self.plugins:
@@ -97,7 +99,7 @@ class ParseTest(unittest.TestCase):
         if "nginx" in self.plugins:
             self.assertTrue("Use the Nginx plugin" in out)
         else:
-            self.assertTrue("(nginx support is experimental" in out)
+            self.assertTrue("(the certbot nginx plugin is not" in out)
 
         out = self._help_output(['--help', 'plugins'])
         self.assertTrue("--manual-test-mode" not in out)
@@ -125,7 +127,10 @@ class ParseTest(unittest.TestCase):
         self.assertTrue("--key-path" not in out)
 
         out = self._help_output(['-h'])
-        self.assertTrue(cli.usage_strings(self.plugins)[0] in out)
+        self.assertTrue(cli.SHORT_USAGE in out)
+        self.assertTrue(cli.COMMAND_OVERVIEW[:100] in out)
+        self.assertTrue("%s" not in out)
+        self.assertTrue("{0}" not in out)
 
     def test_parse_domains(self):
         short_args = ['-d', 'example.com']

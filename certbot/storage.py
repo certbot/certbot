@@ -96,6 +96,25 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
         config.write(outfile=f)
     return config
 
+def rename_renewal_config(prev_name, new_name, cli_config):
+    """Renames cli_config.certname's config to cli_config.new_certname.
+
+    :param .RenewerConfiguration cli_config: parsed command line
+        arguments
+    """
+    prev_filename = os.path.join(
+        cli_config.renewal_configs_dir, prev_name) + ".conf"
+    new_filename = os.path.join(
+        cli_config.renewal_configs_dir, new_name) + ".conf"
+    if os.path.exists(new_filename):
+        raise errors.ConfigurationError("The new certificate name "
+            "is already in use.")
+    try:
+        os.rename(prev_filename, new_filename)
+    except OSError:
+        raise errors.ConfigurationError("Please specify a valid filename "
+            "for the new certificate name.")
+
 
 def update_configuration(lineagename, archive_dir, target, cli_config):
     """Modifies lineagename's config to contain the specified values.
@@ -171,6 +190,14 @@ def relevant_values(all_values):
         for option, value in six.iteritems(all_values)
         if _relevant(option) and cli.option_was_set(option, value))
 
+def lineagename_for_filename(config_filename):
+    """Returns the lineagename for a configuration filename.
+    """
+    if not config_filename.endswith(".conf"):
+        raise errors.CertStorageError(
+            "renewal config file name must end in .conf")
+    return os.path.basename(config_filename[:-len(".conf")])
+
 
 class RenewableCert(object):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
@@ -220,11 +247,7 @@ class RenewableCert(object):
 
         """
         self.cli_config = cli_config
-        if not config_filename.endswith(".conf"):
-            raise errors.CertStorageError(
-                "renewal config file name must end in .conf")
-        self.lineagename = os.path.basename(
-            config_filename[:-len(".conf")])
+        self.lineagename = lineagename_for_filename(config_filename)
 
         # self.configuration should be used to read parameters that
         # may have been chosen based on default values from the
