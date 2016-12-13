@@ -1119,20 +1119,18 @@ def _plugins_parsing(helpful, plugins):
         "a particular plugin by setting options provided below. Running "
         "--help <plugin_name> will list flags specific to that plugin.")
 
-    helpful.add(
-        "plugins", "--configurator", help="Name of the plugin that is "
-        "both an authenticator and an installer. Should not be used "
-        "together with --authenticator or --installer. (default: Ask)")
-    helpful.add(
-        "plugins", "-a", "--authenticator", help="Authenticator plugin name.")
-    helpful.add(
-        "plugins", "-i", "--installer", help="Installer plugin name (also used to find domains).")
+    helpful.add("plugins", "--configurator",
+                help="Name of the plugin that is both an authenticator and an installer."
+                " Should not be used together with --authenticator or --installer. "
+                "(default: Ask)")
+    helpful.add("plugins", "-a", "--authenticator", help="Authenticator plugin name.")
+    helpful.add("plugins", "-i", "--installer",
+                help="Installer plugin name (also used to find domains).")
     helpful.add(["plugins", "certonly", "run", "install", "config_changes"],
                 "--apache", action="store_true",
                 help="Obtain and install certs using Apache")
     helpful.add(["plugins", "certonly", "run", "install", "config_changes"],
-                "--nginx", action="store_true",
-                help="Obtain and install certs using Nginx")
+                "--nginx", action="store_true", help="Obtain and install certs using Nginx")
     helpful.add(["plugins", "certonly"], "--standalone", action="store_true",
                 help='Obtain certs using a "standalone" webserver.')
     helpful.add(["plugins", "certonly"], "--script", action="store_true",
