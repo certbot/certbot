@@ -43,11 +43,11 @@ def pre_hook(config):
 
 pre_hook.already = False
 
-def post_hook(config, final=False):
+def post_hook(config, renew_final=False):
     """Run post hook if defined.
 
     If the verb is renew, we might have more certs to renew, so we wait until
-    we're called with final=True before actually doing anything.
+    we're called with renew_final=True before actually doing anything.
     """
     if config.post_hook:
         if not pre_hook.already:
@@ -55,7 +55,7 @@ def post_hook(config, final=False):
             if config.verb != "renew":
                 logger.warning("Sanity failure in renewal hooks")
             return
-        if final or config.verb != "renew":
+        if renew_final or config.verb != "renew":
             logger.info("Running post-hook command: %s", config.post_hook)
             _run_hook(config.post_hook)
 

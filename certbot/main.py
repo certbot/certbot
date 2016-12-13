@@ -108,7 +108,7 @@ def _auth_from_available(le_client, config, domains=None, certname=None, lineage
             if lineage is False:
                 raise errors.Error("Certificate could not be obtained")
     finally:
-        hooks.post_hook(config, final=False)
+        hooks.post_hook(config, renew_final=False)
 
     if not config.dry_run and not config.verb == "renew":
         _report_new_cert(config, lineage.cert, lineage.fullchain)
@@ -634,7 +634,7 @@ def renew(config, unused_plugins):
     try:
         renewal.handle_renewal_request(config)
     finally:
-        hooks.post_hook(config, final=True)
+        hooks.post_hook(config, renew_final=True)
 
 
 def setup_log_file_handler(config, logfile, fmt):
