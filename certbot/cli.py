@@ -799,7 +799,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "--cert-name", dest="certname",
         metavar="CERTNAME", default=None,
         help="Certificate name to apply. Only one certificate name can be used "
-             "per Certbot run. To see certificate names, run 'certbot certificates'."
+             "per Certbot run. To see certificate names, run 'certbot certificates'. "
              "If there is no existing certificate with this name and "
              "domains are requested, create a new certificate with this name.")
     helpful.add(
@@ -1057,7 +1057,7 @@ def _paths_parser(helpful):
     if verb == "help":
         verb = helpful.help_arg
 
-    cph = "Path to where cert is saved (with auth --csr), installed from or revoked."
+    cph = "Path to where cert is saved (with auth --csr), installed from, or revoked."
     section = ["paths", "install", "revoke", "certonly", "manage"]
     if verb == "certonly":
         add(section, "--cert-path", type=os.path.abspath,
