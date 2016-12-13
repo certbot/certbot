@@ -99,7 +99,7 @@ matrix:
       env: TOXENV=cover
       before_install:
         - "travis_retry brew update"
-        - "travis_retry brew install python augeas dialog"
+        - "travis_retry brew install augeas dialog"
 
 # Only build pushes to the master branch, PRs, and branches beginning with
 # `test-`. This reduces the number of simultaneous Travis runs, which speeds
