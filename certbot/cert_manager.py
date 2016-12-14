@@ -17,6 +17,10 @@ from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
 
+###################
+# Commands
+###################
+
 def update_live_symlinks(config):
     """Update the certificate file family symlinks to use archive_dir.
 
@@ -72,6 +76,84 @@ def rename_lineage(config):
     disp.notification("Successfully renamed {0} to {1}."
         .format(certname, new_certname), pause=False)
 
+def certificates(config):
+    """Display information about certs configured with Certbot
+
+    :param config: Configuration.
+    :type config: :class:`certbot.interfaces.IConfig`
+    """
+    renewer_config = configuration.RenewerConfiguration(config)
+    parsed_certs = []
+    parse_failures = []
+    for renewal_file in renewal.renewal_conf_files(renewer_config):
+        try:
+            renewal_candidate = storage.RenewableCert(renewal_file,
+                configuration.RenewerConfiguration(config))
+            parsed_certs.append(renewal_candidate)
+        except Exception as e:  # pylint: disable=broad-except
+            logger.warning("Renewal configuration file %s produced an "
+                           "unexpected error: %s. Skipping.", renewal_file, e)
+            logger.debug("Traceback was:\n%s", traceback.format_exc())
+            parse_failures.append(renewal_file)
+
+    # Describe all the certs
+    _describe_certs(parsed_certs, parse_failures)
+
+
+###################
+# Public Helpers
+###################
+
+def lineage_for_certname(config, certname):
+    """Find a lineage object with name certname."""
+    def update_cert_for_name_match(candidate_lineage, rv):
+        """Return cert if it has name certname, else return rv
+        """
+        matching_lineage_name_cert = rv
+        if candidate_lineage.lineagename == certname:
+            matching_lineage_name_cert = candidate_lineage
+        return matching_lineage_name_cert
+    return _search_lineages(config, update_cert_for_name_match, None)
+
+def domains_for_certname(config, certname):
+    """Find the domains in the cert with name certname."""
+    def update_domains_for_name_match(candidate_lineage, rv):
+        """Return domains if certname matches, else return rv
+        """
+        matching_domains = rv
+        if candidate_lineage.lineagename == certname:
+            matching_domains = candidate_lineage.names()
+        return matching_domains
+    return _search_lineages(config, update_domains_for_name_match, None)
+
+def find_duplicative_certs(config, domains):
+    """Find existing certs that duplicate the request."""
+    def update_certs_for_domain_matches(candidate_lineage, rv):
+        """Return cert as identical_names_cert if it matches,
+           or subset_names_cert if it matches as subset
+        """
+        # TODO: Handle these differently depending on whether they are
+        #       expired or still valid?
+        identical_names_cert, subset_names_cert = rv
+        candidate_names = set(candidate_lineage.names())
+        if candidate_names == set(domains):
+            identical_names_cert = candidate_lineage
+        elif candidate_names.issubset(set(domains)):
+            # This logic finds and returns the largest subset-names cert
+            # in the case where there are several available.
+            if subset_names_cert is None:
+                subset_names_cert = candidate_lineage
+            elif len(candidate_names) > len(subset_names_cert.names()):
+                subset_names_cert = candidate_lineage
+        return (identical_names_cert, subset_names_cert)
+
+    return _search_lineages(config, update_certs_for_domain_matches, (None, None))
+
+
+###################
+# Private Helpers
+###################
+
 def _report_lines(msgs):
     """Format a results report for a category of single-line renewal outcomes"""
     return "  " + "\n  ".join(str(msg) for msg in msgs)
@@ -126,29 +208,6 @@ def _describe_certs(parsed_certs, parse_failures):
     disp = zope.component.getUtility(interfaces.IDisplay)
     disp.notification("\n".join(out), pause=False, wrap=False)
 
-def certificates(config):
-    """Display information about certs configured with Certbot
-
-    :param config: Configuration.
-    :type config: :class:`certbot.interfaces.IConfig`
-    """
-    renewer_config = configuration.RenewerConfiguration(config)
-    parsed_certs = []
-    parse_failures = []
-    for renewal_file in renewal.renewal_conf_files(renewer_config):
-        try:
-            renewal_candidate = storage.RenewableCert(renewal_file,
-                configuration.RenewerConfiguration(config))
-            parsed_certs.append(renewal_candidate)
-        except Exception as e:  # pylint: disable=broad-except
-            logger.warning("Renewal configuration file %s produced an "
-                           "unexpected error: %s. Skipping.", renewal_file, e)
-            logger.debug("Traceback was:\n%s", traceback.format_exc())
-            parse_failures.append(renewal_file)
-
-    # Describe all the certs
-    _describe_certs(parsed_certs, parse_failures)
-
 def _search_lineages(config, func, initial_rv):
     """Iterate func over unbroken lineages, allowing custom return conditions.
 
@@ -170,48 +229,3 @@ def _search_lineages(config, func, initial_rv):
             continue
         rv = func(candidate_lineage, rv)
     return rv
-
-def lineage_for_certname(config, certname):
-    """Find a lineage object with name certname."""
-    def update_cert_for_name_match(candidate_lineage, rv):
-        """Return cert if it has name certname, else return rv
-        """
-        matching_lineage_name_cert = rv
-        if candidate_lineage.lineagename == certname:
-            matching_lineage_name_cert = candidate_lineage
-        return matching_lineage_name_cert
-    return _search_lineages(config, update_cert_for_name_match, None)
-
-def domains_for_certname(config, certname):
-    """Find the domains in the cert with name certname."""
-    def update_domains_for_name_match(candidate_lineage, rv):
-        """Return domains if certname matches, else return rv
-        """
-        matching_domains = rv
-        if candidate_lineage.lineagename == certname:
-            matching_domains = candidate_lineage.names()
-        return matching_domains
-    return _search_lineages(config, update_domains_for_name_match, None)
-
-def find_duplicative_certs(config, domains):
-    """Find existing certs that duplicate the request."""
-    def update_certs_for_domain_matches(candidate_lineage, rv):
-        """Return cert as identical_names_cert if it matches,
-           or subset_names_cert if it matches as subset
-        """
-        # TODO: Handle these differently depending on whether they are
-        #       expired or still valid?
-        identical_names_cert, subset_names_cert = rv
-        candidate_names = set(candidate_lineage.names())
-        if candidate_names == set(domains):
-            identical_names_cert = candidate_lineage
-        elif candidate_names.issubset(set(domains)):
-            # This logic finds and returns the largest subset-names cert
-            # in the case where there are several available.
-            if subset_names_cert is None:
-                subset_names_cert = candidate_lineage
-            elif len(candidate_names) > len(subset_names_cert.names()):
-                subset_names_cert = candidate_lineage
-        return (identical_names_cert, subset_names_cert)
-
-    return _search_lineages(config, update_certs_for_domain_matches, (None, None))
