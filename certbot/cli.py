@@ -300,6 +300,21 @@ class HelpfulArgumentGroup(object):
         """Add a new command line argument to the argument group."""
         self._parser.add(self._topic, *args, **kwargs)
 
+class CustomHelpFormatter(argparse.HelpFormatter):
+    """This is a clone of ArgumentDefaultsHelpFormatter, with bugfixes.
+
+    In particular we fix https://bugs.python.org/issue28742
+    """
+
+    def _get_help_string(self, action):
+        helpstr = action.help
+        if '%(default)' not in action.help and '(default:' not in action.help:
+            if action.default != argparse.SUPPRESS:
+                defaulting_nargs = [argparse.OPTIONAL, argparse.ZERO_OR_MORE]
+                if action.option_strings or action.nargs in defaulting_nargs:
+                    helpstr += ' (default: %(default)s)'
+        return helpstr
+
 # The attributes here are:
 # short: a string that will be displayed by "certbot -h commands"
 # opts:  a string that heads the section of flags with which this command is documented,
@@ -423,7 +438,7 @@ class HelpfulArgumentParser(object):
         self.parser = configargparse.ArgParser(
             prog="certbot",
             usage=short_usage,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            formatter_class=CustomHelpFormatter,
             args_for_setting_config_path=["-c", "--config"],
             default_config_files=flag_default("config_files"),
             config_arg_help_message="path to config file (default: {0})".format(
@@ -793,7 +808,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         metavar="DOMAIN", action=_DomainsAction, default=[],
         help="Domain names to apply. For multiple domains you can use "
              "multiple -d flags or enter a comma separated list of domains "
-             "as a parameter.")
+             "as a parameter. (default: Ask)")
     helpful.add(
         [None, "run", "certonly", "manage"],
         "--cert-name", dest="certname",
@@ -842,11 +857,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         dest="reinstall", action="store_true",
         help="If the requested cert matches an existing cert, always keep the "
              "existing one until it is due for renewal (for the "
-             "'run' subcommand this means reinstall the existing cert)")
+             "'run' subcommand this means reinstall the existing cert). (default: Ask)")
     helpful.add(
         "automation", "--expand", action="store_true",
         help="If an existing cert covers some subset of the requested names, "
-             "always expand and replace it with the additional names.")
+             "always expand and replace it with the additional names. (default: Ask)")
     helpful.add(
         "automation", "--version", action="version",
         version="%(prog)s {0}".format(certbot.__version__),
@@ -875,7 +890,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "at this system. This option cannot be used with --csr.")
     helpful.add(
         "automation", "--agree-tos", dest="tos", action="store_true",
-        help="Agree to the ACME Subscriber Agreement")
+        help="Agree to the ACME Subscriber Agreement (default: Ask)")
     helpful.add(
         "automation", "--account", metavar="ACCOUNT_ID",
         help="Account ID to use")
@@ -889,7 +904,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         "automation", "--no-self-upgrade", action="store_true",
         help="(certbot-auto only) prevent the certbot-auto script from"
-             " upgrading itself to newer released versions")
+             " upgrading itself to newer released versions (default: Upgrade"
+             " automatically)")
     helpful.add(
         ["automation", "renew", "certonly", "run"],
         "-q", "--quiet", dest="quiet", action="store_true",
@@ -928,11 +944,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         "security", "--redirect", action="store_true",
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
-             "authenticated vhost.", dest="redirect", default=None)
+             "authenticated vhost. (default: Ask)", dest="redirect", default=None)
     helpful.add(
         "security", "--no-redirect", action="store_false",
         help="Do not automatically redirect all HTTP traffic to HTTPS for the newly "
-             "authenticated vhost.", dest="redirect", default=None)
+             "authenticated vhost. (default: Ask)", dest="redirect", default=None)
     helpful.add(
         "security", "--hsts", action="store_true",
         help="Add the Strict-Transport-Security header to every HTTP response."
@@ -940,8 +956,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              " Defends against SSL Stripping.", dest="hsts", default=False)
     helpful.add(
         "security", "--no-hsts", action="store_false",
-        help="Do not automatically add the Strict-Transport-Security header"
-             " to every HTTP response.", dest="hsts", default=False)
+        help=argparse.SUPPRESS, dest="hsts", default=False)
     helpful.add(
         "security", "--uir", action="store_true",
         help="Add the \"Content-Security-Policy: upgrade-insecure-requests\""
@@ -949,9 +964,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              " https:// for every http:// resource.", dest="uir", default=None)
     helpful.add(
         "security", "--no-uir", action="store_false",
-        help="Do not automatically set the \"Content-Security-Policy:"
-        " upgrade-insecure-requests\" header to every HTTP response.",
-        dest="uir", default=None)
+        help=argparse.SUPPRESS, dest="uir", default=None)
     helpful.add(
         "security", "--staple-ocsp", action="store_true",
         help="Enables OCSP Stapling. A valid OCSP response is stapled to"
@@ -959,8 +972,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         dest="staple", default=None)
     helpful.add(
         "security", "--no-staple-ocsp", action="store_false",
-        help="Do not automatically enable OCSP Stapling.",
-        dest="staple", default=None)
+        help=argparse.SUPPRESS, dest="staple", default=None)
     helpful.add(
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
@@ -1005,7 +1017,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " see if the programs being run are in the $PATH, so that mistakes can"
         " be caught early, even when the hooks aren't being run just yet. The"
         " validation is rather simplistic and fails if you use more advanced"
-        " shell constructs, so you can use this switch to disable it.")
+        " shell constructs, so you can use this switch to disable it."
+        " (default: False)")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
     helpful.add_deprecated_argument("--dialog", 0)
@@ -1025,12 +1038,15 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
 def _create_subparsers(helpful):
     helpful.add("config_changes", "--num", type=int,
                 help="How many past revisions you want to be displayed")
+
+    from certbot.client import sample_user_agent # avoid import loops
     helpful.add(
         None, "--user-agent", default=None,
         help="Set a custom user agent string for the client. User agent strings allow "
              "the CA to collect high level statistics about success rates by OS and "
              "plugin. If you wish to hide your server OS version from the Let's "
-             'Encrypt server, set this to "".')
+             'Encrypt server, set this to "". '
+             '(default: {0})'.format(sample_user_agent()))
     helpful.add("certonly",
                 "--csr", type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER or PEM format."
@@ -1103,20 +1119,18 @@ def _plugins_parsing(helpful, plugins):
         "a particular plugin by setting options provided below. Running "
         "--help <plugin_name> will list flags specific to that plugin.")
 
-    helpful.add(
-        "plugins", "-a", "--authenticator", help="Authenticator plugin name.")
-    helpful.add(
-        "plugins", "-i", "--installer", help="Installer plugin name (also used to find domains).")
-    helpful.add(
-        "plugins", "--configurator", help="Name of the plugin that is "
-        "both an authenticator and an installer. Should not be used "
-        "together with --authenticator or --installer.")
+    helpful.add("plugins", "--configurator",
+                help="Name of the plugin that is both an authenticator and an installer."
+                " Should not be used together with --authenticator or --installer. "
+                "(default: Ask)")
+    helpful.add("plugins", "-a", "--authenticator", help="Authenticator plugin name.")
+    helpful.add("plugins", "-i", "--installer",
+                help="Installer plugin name (also used to find domains).")
     helpful.add(["plugins", "certonly", "run", "install", "config_changes"],
                 "--apache", action="store_true",
                 help="Obtain and install certs using Apache")
     helpful.add(["plugins", "certonly", "run", "install", "config_changes"],
-                "--nginx", action="store_true",
-                help="Obtain and install certs using Nginx")
+                "--nginx", action="store_true", help="Obtain and install certs using Nginx")
     helpful.add(["plugins", "certonly"], "--standalone", action="store_true",
                 help='Obtain certs using a "standalone" webserver.')
     helpful.add(["plugins", "certonly"], "--script", action="store_true",

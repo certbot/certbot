@@ -45,7 +45,7 @@ to serve all files under specified web root ({0})."""
                  "times to handle different domains; each domain will have "
                  "the webroot path that preceded it.  For instance: `-w "
                  "/var/www/example -d example.com -d www.example.com -w "
-                 "/var/www/thing -d thing.net -d m.thing.net`")
+                 "/var/www/thing -d thing.net -d m.thing.net` (default: Ask)")
         add("map", default={}, action=_WebrootMapAction,
             help="JSON dictionary mapping domains to webroot paths; this "
                  "implies -d for each entry. You may need to escape this from "
