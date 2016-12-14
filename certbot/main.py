@@ -511,6 +511,14 @@ def rename(config, unused_plugins):
     """
     cert_manager.rename_lineage(config)
 
+def delete(config, unused_plugins):
+    """Delete a certificate
+
+    Use the information in the config file to delete an existing
+    lineage.
+    """
+    cert_manager.delete(config)
+
 def certificates(config, unused_plugins):
     """Display information about certs configured with Certbot
     """
