@@ -72,7 +72,7 @@ obtain, install, and renew certificates:
   --standalone      Run a standalone webserver for authentication
   %s
   --webroot         Place files in a server's webroot folder for authentication
-  --manual          Obtain certs interactively, or using shell script hoooks
+  --manual          Obtain certs interactively, or using shell script hooks
 
    -n               Run non-interactively
   --test-cert       Obtain a test cert from a staging server
