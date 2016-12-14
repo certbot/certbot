@@ -263,6 +263,11 @@ class ParseTest(unittest.TestCase):
         from certbot.cli import encode_reason
         for reason, code in constants.REVOCATION_REASONS.items():
             self.assertTrue(code == encode_reason(mock_args_or_config, reason))
+        for reason, code in constants.REVOCATION_REASONS.items():
+            self.assertTrue(code == encode_reason(
+                mock_args_or_config,
+                reason.upper()))
+
 
 
 class DefaultTest(unittest.TestCase):

@@ -247,6 +247,8 @@ class RevokeTest(unittest.TestCase):
         for reason, code in constants.REVOCATION_REASONS.items():
             self._call("--reason " + reason)
             expected.append(mock.call(mock.ANY, code))
+            self._call("--reason " + reason.upper())
+            expected.append(mock.call(mock.ANY, code))
         self.assertEqual(expected, mock_revoke.call_args_list)
 
     def test_revocation_success(self):

@@ -929,9 +929,9 @@ def _create_subparsers(helpful):
                 help="Path to a Certificate Signing Request (CSR) in DER or PEM format."
                 " Currently --csr only works with the 'certonly' subcommand.")
     helpful.add("revoke",
-                "--reason", action=_ReasonAction, dest="reason",
-                choices=list(constants.REVOCATION_REASONS.keys()),
-                default=0,
+                "--reason", dest="reason",
+                choices=CaseInsensitiveList(constants.REVOCATION_REASONS.keys()),
+                action=_ReasonAction, default=0,
                 help="Specify reason for revoking certificate.")
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",
@@ -947,6 +947,12 @@ def _create_subparsers(helpful):
     helpful.add("plugins",
                 "--installers", action="append_const", dest="ifaces",
                 const=interfaces.IInstaller, help="Limit to installer plugins only.")
+
+
+class CaseInsensitiveList(list):
+    """A list that will ignore case when searching."""
+    def __contains__(self, element):
+        return super(CaseInsensitiveList, self).__contains__(element.lower())
 
 
 def _paths_parser(helpful):
@@ -1049,7 +1055,7 @@ def encode_reason(args_or_config, reason):
     :rtype: int
     """
 
-    code = constants.REVOCATION_REASONS[reason]
+    code = constants.REVOCATION_REASONS[reason.lower()]
     args_or_config.reason = code
     return code
 
