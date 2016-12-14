@@ -72,7 +72,7 @@ s.serve_forever()" """
         add('cleanup-hook',
             help='Path or command to execute for the cleanup script')
         add('public-ip-logging-ok', action='store_true',
-            help='Automatically allows public IP logging')
+            help='Automatically allows public IP logging (default: Ask)')
 
     def prepare(self):  # pylint: disable=missing-docstring
         if self.config.noninteractive_mode and not self.conf('auth-hook'):
