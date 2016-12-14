@@ -7,6 +7,7 @@ import re
 import configobj
 import parsedatetime
 import pytz
+import shutil
 import six
 
 import certbot
@@ -981,7 +982,7 @@ class RenewableCert(object):
 
     def delete_files(self):
         """Delete all files related to the certificate."""
-        
+
         # cert files and (hopefully) live directory
         # it's not guaranteed that the files are in our default storage
         # structure. so, first delete the cert files.

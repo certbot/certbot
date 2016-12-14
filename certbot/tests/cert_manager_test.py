@@ -105,6 +105,20 @@ class UpdateLiveSymlinksTest(BaseCertManagerTest):
                     archive_paths[domain][kind])
 
 
+class DeleteTest(storage_test.BaseRenewableCertTest):
+    """Tests for certbot.cert_manager.delete
+    """
+    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot.storage.RenewableCert.delete_files')
+    def test_delete(self, mock_delete_files, mock_lineage_for_certname):
+        """Test delete"""
+        mock_lineage_for_certname.return_value = self.test_rc
+        self.cli_config.certname = "example.org"
+        from certbot import cert_manager
+        cert_manager.delete(self.cli_config)
+        self.assertTrue(mock_delete_files.called)
+
+
 class CertificatesTest(BaseCertManagerTest):
     """Tests for certbot.cert_manager.certificates
     """

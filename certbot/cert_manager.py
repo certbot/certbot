@@ -155,11 +155,10 @@ def find_duplicative_certs(config, domains):
 def _get_certname(config, verb):
     """Get certname from flag, interactively, or error out.
     """
-    disp = zope.component.getUtility(interfaces.IDisplay)
-    renewer_config = configuration.RenewerConfiguration(config)
-
     certname = config.certname
     if not certname:
+        disp = zope.component.getUtility(interfaces.IDisplay)
+        renewer_config = configuration.RenewerConfiguration(config)
         filenames = renewal.renewal_conf_files(renewer_config)
         choices = [storage.lineagename_for_filename(name) for name in filenames]
         if not choices:
