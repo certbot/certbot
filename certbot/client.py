@@ -108,6 +108,8 @@ def register(config, account_storage, tos_cb=None):
             raise errors.Error(msg)
         if not config.dry_run:
             logger.warning("Registering without email!")
+    else:
+        eff_sign_up(config)
 
     # Each new registration shall use a fresh new key
     key = jose.JWKRSA(key=jose.ComparableRSAKey(
@@ -131,6 +133,26 @@ def register(config, account_storage, tos_cb=None):
     account_storage.save(acc)
 
     return acc, acme
+
+
+def eff_sign_up(config):
+    """Sign up for an EFF newsletter if requested by the user.
+
+    :param .IConfig config: Client configuration.
+
+    """
+    if config.eff_email is None:
+        prompt = (
+            "Would you be willing to share your email address with the "
+            "Electronic Frontier Foundation, a founding partner of the Let's "
+            "Encrypt project and the non-profit organization that develops "
+            "Cerbot? We'd like to send you email about our work to encrypt "
+            "the web and protect its users.")
+        display = zope.component.getUtility(interfaces.IDisplay)
+        config.eff_email = display.yesno(prompt, default=False)
+    if config.eff_email:
+        # requests.post("eff.org", config.email)
+        pass
 
 
 def perform_registration(acme, config):
