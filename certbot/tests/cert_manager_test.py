@@ -108,9 +108,10 @@ class UpdateLiveSymlinksTest(BaseCertManagerTest):
 class DeleteTest(storage_test.BaseRenewableCertTest):
     """Tests for certbot.cert_manager.delete
     """
+    @mock.patch('zope.component.getUtility')
     @mock.patch('certbot.cert_manager.lineage_for_certname')
-    @mock.patch('certbot.storage.RenewableCert.delete_files')
-    def test_delete(self, mock_delete_files, mock_lineage_for_certname):
+    @mock.patch('certbot.storage.delete_files')
+    def test_delete(self, mock_delete_files, mock_lineage_for_certname, unused_get_utility):
         """Test delete"""
         mock_lineage_for_certname.return_value = self.test_rc
         self.cli_config.certname = "example.org"
@@ -215,7 +216,7 @@ class SearchLineagesTest(unittest.TestCase):
 
     @mock.patch('certbot.configuration.RenewerConfiguration')
     @mock.patch('certbot.util.make_or_verify_dir')
-    @mock.patch('certbot.renewal.renewal_conf_files')
+    @mock.patch('certbot.storage.renewal_conf_files')
     @mock.patch('certbot.storage.RenewableCert')
     def test_cert_storage_error(self, mock_renewable_cert, mock_renewal_conf_files,
         mock_make_or_verify_dir, mock_renewer_config):
@@ -233,7 +234,7 @@ class LineageForCertnameTest(unittest.TestCase):
 
     @mock.patch('certbot.configuration.RenewerConfiguration')
     @mock.patch('certbot.util.make_or_verify_dir')
-    @mock.patch('certbot.renewal.renewal_conf_files')
+    @mock.patch('certbot.storage.renewal_conf_files')
     @mock.patch('certbot.storage.RenewableCert')
     def test_found_match(self, mock_renewable_cert, mock_renewal_conf_files,
         mock_make_or_verify_dir, mock_renewer_config):
@@ -247,7 +248,7 @@ class LineageForCertnameTest(unittest.TestCase):
 
     @mock.patch('certbot.configuration.RenewerConfiguration')
     @mock.patch('certbot.util.make_or_verify_dir')
-    @mock.patch('certbot.renewal.renewal_conf_files')
+    @mock.patch('certbot.storage.renewal_conf_files')
     @mock.patch('certbot.storage.RenewableCert')
     def test_no_match(self, mock_renewable_cert, mock_renewal_conf_files,
         mock_make_or_verify_dir, mock_renewer_config):
@@ -265,7 +266,7 @@ class DomainsForCertnameTest(unittest.TestCase):
 
     @mock.patch('certbot.configuration.RenewerConfiguration')
     @mock.patch('certbot.util.make_or_verify_dir')
-    @mock.patch('certbot.renewal.renewal_conf_files')
+    @mock.patch('certbot.storage.renewal_conf_files')
     @mock.patch('certbot.storage.RenewableCert')
     def test_found_match(self, mock_renewable_cert, mock_renewal_conf_files,
         mock_make_or_verify_dir, mock_renewer_config):
@@ -281,7 +282,7 @@ class DomainsForCertnameTest(unittest.TestCase):
 
     @mock.patch('certbot.configuration.RenewerConfiguration')
     @mock.patch('certbot.util.make_or_verify_dir')
-    @mock.patch('certbot.renewal.renewal_conf_files')
+    @mock.patch('certbot.storage.renewal_conf_files')
     @mock.patch('certbot.storage.RenewableCert')
     def test_no_match(self, mock_renewable_cert, mock_renewal_conf_files,
         mock_make_or_verify_dir, mock_renewer_config):
@@ -315,7 +316,7 @@ class RenameLineageTest(BaseCertManagerTest):
         from certbot import cert_manager
         return cert_manager.rename_lineage(*args, **kwargs)
 
-    @mock.patch('certbot.renewal.renewal_conf_files')
+    @mock.patch('certbot.storage.renewal_conf_files')
     @mock.patch('certbot.main.zope.component.getUtility')
     def test_no_certname(self, mock_get_utility, mock_renewal_conf_files):
         mock_config = mock.Mock(certname=None, new_certname="two")

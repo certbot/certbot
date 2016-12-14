@@ -1,7 +1,6 @@
 """Functionality for autorenewal and associated juggling of configurations"""
 from __future__ import print_function
 import copy
-import glob
 import logging
 import os
 import traceback
@@ -33,17 +32,6 @@ STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "standalone_supported_challenges", "renew_hook"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
 
-
-def renewal_conf_files(config):
-    """Return /path/to/*.conf in the renewal conf directory"""
-    return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
-
-def renewal_file_for_certname(config, certname):
-    """Return /path/to/certname.conf in the renewal conf directory"""
-    path = os.path.join(config.renewal_configs_dir, "{0}.conf".format(certname))
-    if not os.path.exists(path):
-        raise errors.CertStorageError("No certificate found with name {0}.".format(certname))
-    return path
 
 def _reconstitute(config, full_path):
     """Try to instantiate a RenewableCert, updating config with relevant items.
@@ -320,9 +308,9 @@ def handle_renewal_request(config):
     renewer_config = configuration.RenewerConfiguration(config)
 
     if config.certname:
-        conf_files = [renewal_file_for_certname(renewer_config, config.certname)]
+        conf_files = [storage.renewal_file_for_certname(renewer_config, config.certname)]
     else:
-        conf_files = renewal_conf_files(renewer_config)
+        conf_files = storage.renewal_conf_files(renewer_config)
 
     renew_successes = []
     renew_failures = []

@@ -1,5 +1,6 @@
 """Renewable certificates storage."""
 import datetime
+import glob
 import logging
 import os
 import re
@@ -24,6 +25,17 @@ ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
 README = "README"
 CURRENT_VERSION = util.get_strict_version(certbot.__version__)
 
+
+def renewal_conf_files(config):
+    """Return /path/to/*.conf in the renewal conf directory"""
+    return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
+
+def renewal_file_for_certname(config, certname):
+    """Return /path/to/certname.conf in the renewal conf directory"""
+    path = os.path.join(config.renewal_configs_dir, "{0}.conf".format(certname))
+    if not os.path.exists(path):
+        raise errors.CertStorageError("No certificate found with name {0}.".format(certname))
+    return path
 
 def config_with_defaults(config=None):
     """Merge supplied config, if provided, on top of builtin defaults."""
@@ -202,6 +214,67 @@ def renewal_filename_for_lineagename(config, lineagename):
     """
     return os.path.join(config.renewal_configs_dir, lineagename) + ".conf"
 
+def _full_archive_path(config_obj, cli_config, lineagename):
+    """Returns the full archive path for a lineagename"""
+    if "archive_dir" in config_obj:
+        return config_obj["archive_dir"]
+    else:
+        return os.path.join(cli_config.default_archive_dir, lineagename)
+
+def delete_files(config, certname):
+    """Delete all files related to the certificate.
+
+    If some files are not found, ignore them and continue.
+    """
+    renewal_filename = renewal_file_for_certname(config, certname)
+    try:
+        renewal_config = configobj.ConfigObj(renewal_filename)
+    except configobj.ConfigObjError:
+        raise errors.CertStorageError(
+            "error parsing {0}".format(renewal_filename))
+
+    # cert files and (hopefully) live directory
+    # it's not guaranteed that the files are in our default storage
+    # structure. so, first delete the cert files.
+    directory_names = set()
+    for kind in ALL_FOUR:
+        link = renewal_config.get(kind)
+        try:
+            os.remove(link)
+        except OSError:
+            pass
+        directory = os.path.dirname(link)
+        directory_names.add(directory)
+
+    # if all four were in the same directory, and the only thing left
+    # is the README file (or nothing), delete that directory.
+    # this will be wrong in very few but some cases.
+    if len(directory_names) == 1:
+        # delete the README file
+        directory = directory_names.pop()
+        readme_path = os.path.join(directory, README)
+        try:
+            os.remove(readme_path)
+        except OSError:
+            pass
+        # if it's now empty, delete the directory
+        try:
+            os.rmdir(directory) # only removes empty directories
+        except OSError:
+            pass
+
+    # archive directory
+    try:
+        shutil.rmtree(_full_archive_path(renewal_config, config, certname))
+    except OSError:
+        pass
+
+    # renewal conf file
+    try:
+        os.remove(renewal_filename)
+    except OSError:
+        pass
+
 
 class RenewableCert(object):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
@@ -303,16 +376,8 @@ class RenewableCert(object):
     @property
     def archive_dir(self):
         """Returns the default or specified archive directory"""
-        if "archive_dir" in self.configuration:
-            return self.configuration["archive_dir"]
-        else:
-            return os.path.join(
-                self.cli_config.default_archive_dir, self.lineagename)
-
-    @property
-    def renewal_config_filename(self):
-        """Filename of the renewal config file"""
-        return renewal_filename_for_lineagename(self.cli_config, self.lineagename)
+        return _full_archive_path(self.configuration,
+            self.cli_config, self.lineagename)
 
     @property
     def is_test_cert(self):
@@ -979,35 +1044,3 @@ class RenewableCert(object):
         self.configuration = config_with_defaults(self.configfile)
 
         return target_version
-
-    def delete_files(self):
-        """Delete all files related to the certificate."""
-
-        # cert files and (hopefully) live directory
-        # it's not guaranteed that the files are in our default storage
-        # structure. so, first delete the cert files.
-        directory_names = set()
-        for kind in ALL_FOUR:
-            link = getattr(self, kind)
-            os.remove(link)
-            directory = os.path.dirname(link)
-            directory_names.add(directory)
-
-        # if all four were in the same directory, and the only thing left
-        # is the README file, delete that directory.
-        # this will be wrong in very few but some cases.
-        if len(directory_names) == 1:
-            # delete the README file
-            directory = directory_names.pop()
-            readme_path = os.path.join(directory, README)
-            os.remove(readme_path)
-            # if it's now empty
-            if not os.listdir(directory):
-                # delete directory
-                os.rmdir(directory)
-
-        # archive directory
-        shutil.rmtree(self.archive_dir)
-
-        # renewal conf file
-        os.remove(self.renewal_config_filename)

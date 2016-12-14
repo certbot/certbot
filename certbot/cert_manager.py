@@ -9,7 +9,6 @@ import zope.component
 from certbot import configuration
 from certbot import errors
 from certbot import interfaces
-from certbot import renewal
 from certbot import storage
 from certbot import util
 
@@ -34,7 +33,7 @@ def update_live_symlinks(config):
 
     """
     renewer_config = configuration.RenewerConfiguration(config)
-    for renewal_file in renewal.renewal_conf_files(renewer_config):
+    for renewal_file in storage.renewal_conf_files(renewer_config):
         storage.RenewableCert(renewal_file,
             configuration.RenewerConfiguration(renewer_config),
             update_symlinks=True)
@@ -75,7 +74,7 @@ def certificates(config):
     renewer_config = configuration.RenewerConfiguration(config)
     parsed_certs = []
     parse_failures = []
-    for renewal_file in renewal.renewal_conf_files(renewer_config):
+    for renewal_file in storage.renewal_conf_files(renewer_config):
         try:
             renewal_candidate = storage.RenewableCert(renewal_file,
                 configuration.RenewerConfiguration(config))
@@ -92,11 +91,10 @@ def certificates(config):
 def delete(config):
     """Delete Certbot files associated with a certificate lineage."""
     certname = _get_certname(config, "delete")
-    lineage = lineage_for_certname(config, certname)
-    if not lineage:
-        raise errors.ConfigurationError("No existing certificate with name "
-            "{0} found.".format(certname))
-    lineage.delete_files()
+    storage.delete_files(config, certname)
+    disp = zope.component.getUtility(interfaces.IDisplay)
+    disp.notification("Deleted all files relating to certificate {0}."
+        .format(certname), pause=False)
 
 ###################
 # Public Helpers
@@ -159,7 +157,7 @@ def _get_certname(config, verb):
     if not certname:
         disp = zope.component.getUtility(interfaces.IDisplay)
         renewer_config = configuration.RenewerConfiguration(config)
-        filenames = renewal.renewal_conf_files(renewer_config)
+        filenames = storage.renewal_conf_files(renewer_config)
         choices = [storage.lineagename_for_filename(name) for name in filenames]
         if not choices:
             raise errors.Error("No existing certificates found.")
@@ -236,7 +234,7 @@ def _search_lineages(config, func, initial_rv):
     util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
 
     rv = initial_rv
-    for renewal_file in renewal.renewal_conf_files(cli_config):
+    for renewal_file in storage.renewal_conf_files(cli_config):
         try:
             candidate_lineage = storage.RenewableCert(renewal_file, cli_config)
         except (errors.CertStorageError, IOError):

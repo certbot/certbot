@@ -770,6 +770,9 @@ class RenewableCertTests(BaseRenewableCertTest):
         storage.RenewableCert(self.config.filename, self.cli_config,
             update_symlinks=True)
 
+class DeleteFilesTest(BaseRenewableCertTest):
+    """Tests for certbot.storage.delete_files"""
+
     @mock.patch("certbot.storage.relevant_values")
     def test_delete_files(self, mock_rv):
         # Mock relevant_values to say everything is relevant here (so we
@@ -777,14 +780,12 @@ class RenewableCertTests(BaseRenewableCertTest):
         mock_rv.side_effect = lambda x: x
 
         from certbot import storage
-        result = storage.RenewableCert.new_lineage(
-            "the-lineage.com", b"cert", b"privkey", b"chain", self.cli_config)
-        result.delete_files()
+        storage.delete_files(self.cli_config, "example.org")
         self.assertFalse(os.path.exists(os.path.join(
-            self.cli_config.renewal_configs_dir, "the-lineage.com.conf")))
+            self.cli_config.renewal_configs_dir, "example.org.conf")))
         self.assertFalse(os.path.exists(os.path.join(
-            self.cli_config.live_dir, "the-lineage.com")))
-        archive_dir = os.path.join(self.tempdir, "archive", "the-lineage.com")
+            self.cli_config.live_dir, "example.org")))
+        archive_dir = os.path.join(self.tempdir, "archive", "example.org")
         self.assertFalse(os.path.exists(os.path.join(
             archive_dir, "the-lineage.com")))
 

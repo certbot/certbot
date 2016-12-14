@@ -339,7 +339,7 @@ VERB_HELP = [
         "opts": "List all certificates managed by Certbot"
     }),
     ("delete", {
-        "short": "Delete a certificate",
+        "short": "Clean up all files related to a certificate",
         "opts": "Options for deleting a certificate"
     }),
     ("revoke", {
