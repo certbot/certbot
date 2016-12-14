@@ -20,6 +20,7 @@ from certbot import util
 logger = logging.getLogger(__name__)
 
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
+README = "README"
 CURRENT_VERSION = util.get_strict_version(certbot.__version__)
 
 
@@ -102,10 +103,8 @@ def rename_renewal_config(prev_name, new_name, cli_config):
     :param .RenewerConfiguration cli_config: parsed command line
         arguments
     """
-    prev_filename = os.path.join(
-        cli_config.renewal_configs_dir, prev_name) + ".conf"
-    new_filename = os.path.join(
-        cli_config.renewal_configs_dir, new_name) + ".conf"
+    prev_filename = renewal_filename_for_lineagename(cli_config, prev_name)
+    new_filename = renewal_filename_for_lineagename(cli_config, new_name)
     if os.path.exists(new_filename):
         raise errors.ConfigurationError("The new certificate name "
             "is already in use.")
@@ -129,8 +128,7 @@ def update_configuration(lineagename, archive_dir, target, cli_config):
     :rtype: configobj.ConfigObj
 
     """
-    config_filename = os.path.join(
-        cli_config.renewal_configs_dir, lineagename) + ".conf"
+    config_filename = renewal_filename_for_lineagename(cli_config, lineagename)
     temp_filename = config_filename + ".new"
 
     # If an existing tempfile exists, delete it
@@ -197,6 +195,11 @@ def lineagename_for_filename(config_filename):
         raise errors.CertStorageError(
             "renewal config file name must end in .conf")
     return os.path.basename(config_filename[:-len(".conf")])
+
+def renewal_filename_for_lineagename(config, lineagename):
+    """Returns the lineagename for a configuration filename.
+    """
+    return os.path.join(config.renewal_configs_dir, lineagename) + ".conf"
 
 
 class RenewableCert(object):
@@ -304,6 +307,11 @@ class RenewableCert(object):
         else:
             return os.path.join(
                 self.cli_config.default_archive_dir, self.lineagename)
+
+    @property
+    def renewal_config_filename(self):
+        """Filename of the renewal config file"""
+        return renewal_filename_for_lineagename(self.cli_config, self.lineagename)
 
     @property
     def is_test_cert(self):
@@ -831,14 +839,11 @@ class RenewableCert(object):
                 logger.debug("Creating directory %s.", i)
         config_file, config_filename = util.unique_lineage_name(
             cli_config.renewal_configs_dir, lineagename)
-        if not config_filename.endswith(".conf"):
-            raise errors.CertStorageError(
-                "renewal config file name must end in .conf")
 
         # Determine where on disk everything will go
         # lineagename will now potentially be modified based on which
         # renewal configuration file could actually be created
-        lineagename = os.path.basename(config_filename)[:-len(".conf")]
+        lineagename = lineagename_for_filename(config_filename)
         archive = os.path.join(cli_config.default_archive_dir, lineagename)
         live_dir = os.path.join(cli_config.live_dir, lineagename)
         if os.path.exists(archive):
@@ -875,7 +880,7 @@ class RenewableCert(object):
             f.write(cert + chain)
 
         # Write a README file to the live directory
-        readme_path = os.path.join(live_dir, "README")
+        readme_path = os.path.join(live_dir, README)
         with open(readme_path, "w") as f:
             logger.debug("Writing README to %s.", readme_path)
             f.write("This directory contains your keys and certificates.\n\n"
@@ -973,3 +978,35 @@ class RenewableCert(object):
         self.configuration = config_with_defaults(self.configfile)
 
         return target_version
+
+    def delete_files(self):
+        """Delete all files related to the certificate."""
+        
+        # cert files and (hopefully) live directory
+        # it's not guaranteed that the files are in our default storage
+        # structure. so, first delete the cert files.
+        directory_names = set()
+        for kind in ALL_FOUR:
+            link = getattr(self, kind)
+            os.remove(link)
+            directory = os.path.dirname(link)
+            directory_names.add(directory)
+
+        # if all four were in the same directory, and the only thing left
+        # is the README file, delete that directory.
+        # this will be wrong in very few but some cases.
+        if len(directory_names) == 1:
+            # delete the README file
+            directory = directory_names.pop()
+            readme_path = os.path.join(directory, README)
+            os.remove(readme_path)
+            # if it's now empty
+            if not os.listdir(directory):
+                # delete directory
+                os.rmdir(directory)
+
+        # archive directory
+        shutil.rmtree(self.archive_dir)
+
+        # renewal conf file
+        os.remove(self.renewal_config_filename)

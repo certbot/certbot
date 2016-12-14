@@ -47,19 +47,8 @@ def rename_lineage(config):
 
     """
     disp = zope.component.getUtility(interfaces.IDisplay)
-    renewer_config = configuration.RenewerConfiguration(config)
 
-    certname = config.certname
-    if not certname:
-        filenames = renewal.renewal_conf_files(renewer_config)
-        choices = [storage.lineagename_for_filename(name) for name in filenames]
-        if not choices:
-            raise errors.Error("No existing certificates found.")
-        code, index = disp.menu("Which certificate would you like to rename?",
-            choices, ok_label="Select", flag="--cert-name")
-        if code != display_util.OK or not index in range(0, len(choices)):
-            raise errors.Error("User ended interaction.")
-        certname = choices[index]
+    certname = _get_certname(config, "rename")
 
     new_certname = config.new_certname
     if not new_certname:
@@ -72,6 +61,7 @@ def rename_lineage(config):
     if not lineage:
         raise errors.ConfigurationError("No existing certificate with name "
             "{0} found.".format(certname))
+    renewer_config = configuration.RenewerConfiguration(config)
     storage.rename_renewal_config(certname, new_certname, renewer_config)
     disp.notification("Successfully renamed {0} to {1}."
         .format(certname, new_certname), pause=False)
@@ -99,6 +89,14 @@ def certificates(config):
     # Describe all the certs
     _describe_certs(parsed_certs, parse_failures)
 
+def delete(config):
+    """Delete Certbot files associated with a certificate lineage."""
+    certname = _get_certname(config, "delete")
+    lineage = lineage_for_certname(config, certname)
+    if not lineage:
+        raise errors.ConfigurationError("No existing certificate with name "
+            "{0} found.".format(certname))
+    lineage.delete_files()
 
 ###################
 # Public Helpers
@@ -153,6 +151,25 @@ def find_duplicative_certs(config, domains):
 ###################
 # Private Helpers
 ###################
+
+def _get_certname(config, verb):
+    """Get certname from flag, interactively, or error out.
+    """
+    disp = zope.component.getUtility(interfaces.IDisplay)
+    renewer_config = configuration.RenewerConfiguration(config)
+
+    certname = config.certname
+    if not certname:
+        filenames = renewal.renewal_conf_files(renewer_config)
+        choices = [storage.lineagename_for_filename(name) for name in filenames]
+        if not choices:
+            raise errors.Error("No existing certificates found.")
+        code, index = disp.menu("Which certificate would you like to {0}?".format(verb),
+            choices, ok_label="Select", flag="--cert-name")
+        if code != display_util.OK or not index in range(0, len(choices)):
+            raise errors.Error("User ended interaction.")
+        certname = choices[index]
+    return certname
 
 def _report_lines(msgs):
     """Format a results report for a category of single-line renewal outcomes"""
