@@ -30,7 +30,6 @@ from certbot import util
 from certbot.plugins import disco
 from certbot.plugins import manual
 
-from certbot.tests import storage_test
 import certbot.tests.util as test_util
 
 CERT_PATH = test_util.vector_path('cert.pem')
@@ -56,7 +55,7 @@ class RunTest(unittest.TestCase):
     def setUp(self):
         self.domain = 'example.org'
         self.patches = [
-            mock.patch('certbot.main._auth_from_domains'),
+            mock.patch('certbot.main._auth_from_available'),
             mock.patch('certbot.main.display_ops.success_installation'),
             mock.patch('certbot.main.display_ops.success_renewal'),
             mock.patch('certbot.main._init_le_client'),
@@ -118,7 +117,7 @@ class ObtainCertTest(unittest.TestCase):
 
         return mock_init()  # returns the client
 
-    @mock.patch('certbot.main._auth_from_domains')
+    @mock.patch('certbot.main._auth_from_available')
     def test_no_reinstall_text_pause(self, mock_auth):
         mock_notification = self.mock_get_utility().notification
         mock_notification.side_effect = self._assert_no_pause
@@ -128,6 +127,71 @@ class ObtainCertTest(unittest.TestCase):
     def _assert_no_pause(self, message, pause=True):
         # pylint: disable=unused-argument
         self.assertFalse(pause)
+
+    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot.cert_manager.domains_for_certname')
+    @mock.patch('certbot.renewal.renew_cert')
+    @mock.patch('certbot.main._report_new_cert')
+    def test_find_lineage_for_domains_and_certname(self, mock_report_cert,
+        mock_renew_cert, mock_domains, mock_lineage):
+        domains = ['example.com', 'test.org']
+        mock_domains.return_value = domains
+        mock_lineage.names.return_value = domains
+        self._call(('certonly --webroot -d example.com -d test.org '
+            '--cert-name example.com').split())
+        self.assertTrue(mock_lineage.call_count == 1)
+        self.assertTrue(mock_domains.call_count == 1)
+        self.assertTrue(mock_renew_cert.call_count == 1)
+        self.assertTrue(mock_report_cert.call_count == 1)
+
+        # user confirms updating lineage with new domains
+        self._call(('certonly --webroot -d example.com -d test.com '
+            '--cert-name example.com').split())
+        self.assertTrue(mock_lineage.call_count == 2)
+        self.assertTrue(mock_domains.call_count == 2)
+        self.assertTrue(mock_renew_cert.call_count == 2)
+        self.assertTrue(mock_report_cert.call_count == 2)
+
+        # error in _ask_user_to_confirm_new_names
+        util_mock = mock.Mock()
+        util_mock.yesno.return_value = False
+        self.mock_get_utility.return_value = util_mock
+        self.assertRaises(errors.ConfigurationError, self._call,
+            ('certonly --webroot -d example.com -d test.com --cert-name example.com').split())
+
+    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot.main._report_new_cert')
+    def test_find_lineage_for_domains_new_certname(self, mock_report_cert,
+        mock_lineage):
+        mock_lineage.return_value = None
+
+        # no lineage with this name but we specified domains so create a new cert
+        self._call(('certonly --webroot -d example.com -d test.com '
+            '--cert-name example.com').split())
+        self.assertTrue(mock_lineage.call_count == 1)
+        self.assertTrue(mock_report_cert.call_count == 1)
+
+        # no lineage with this name and we didn't give domains
+        self.assertRaises(errors.ConfigurationError, self._call,
+            ('certonly --webroot --cert-name example.com').split())
+
+class FindDomainsOrCertnameTest(unittest.TestCase):
+    """Tests for certbot.main._find_domains_or_certname."""
+
+    @mock.patch('certbot.display.ops.choose_names')
+    def test_display_ops(self, mock_choose_names):
+        mock_config = mock.Mock(domains=None, certname=None)
+        mock_choose_names.return_value = "domainname"
+        # pylint: disable=protected-access
+        self.assertEqual(main._find_domains_or_certname(mock_config, None),
+            ("domainname", None))
+
+    @mock.patch('certbot.display.ops.choose_names')
+    def test_no_results(self, mock_choose_names):
+        mock_config = mock.Mock(domains=None, certname=None)
+        mock_choose_names.return_value = []
+        # pylint: disable=protected-access
+        self.assertRaises(errors.Error, main._find_domains_or_certname, mock_config, None)
 
 
 class RevokeTest(unittest.TestCase):
@@ -333,47 +397,6 @@ class DetermineAccountTest(unittest.TestCase):
         self.assertEqual('other email', self.config.email)
 
 
-class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
-    """Test to avoid duplicate lineages."""
-
-    def setUp(self):
-        super(DuplicativeCertsTest, self).setUp()
-        self.config.write()
-        self._write_out_ex_kinds()
-
-    def tearDown(self):
-        shutil.rmtree(self.tempdir)
-
-    @mock.patch('certbot.util.make_or_verify_dir')
-    def test_find_duplicative_names(self, unused_makedir):
-        from certbot.main import _find_duplicative_certs
-        test_cert = test_util.load_vector('cert-san.pem')
-        with open(self.test_rc.cert, 'wb') as f:
-            f.write(test_cert)
-
-        # No overlap at all
-        result = _find_duplicative_certs(
-            self.cli_config, ['wow.net', 'hooray.org'])
-        self.assertEqual(result, (None, None))
-
-        # Totally identical
-        result = _find_duplicative_certs(
-            self.cli_config, ['example.com', 'www.example.com'])
-        self.assertTrue(result[0].configfile.filename.endswith('example.org.conf'))
-        self.assertEqual(result[1], None)
-
-        # Superset
-        result = _find_duplicative_certs(
-            self.cli_config, ['example.com', 'www.example.com', 'something.new'])
-        self.assertEqual(result[0], None)
-        self.assertTrue(result[1].configfile.filename.endswith('example.org.conf'))
-
-        # Partial overlap doesn't count
-        result = _find_duplicative_certs(
-            self.cli_config, ['example.com', 'something.new'])
-        self.assertEqual(result, (None, None))
-
-
 class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     """Tests for different commands."""
 
@@ -445,7 +468,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._cli_missing_flag(args, "specify a plugin")
         args.extend(['--standalone', '-d', 'eg.is'])
         self._cli_missing_flag(args, "register before running")
-        with mock.patch('certbot.main._auth_from_domains'):
+        with mock.patch('certbot.main._auth_from_available'):
             with mock.patch('certbot.main.client.acme_from_config_key'):
                 args.extend(['--email', 'io@io.is'])
                 self._cli_missing_flag(args, "--agree-tos")
@@ -453,14 +476,14 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     @mock.patch('certbot.main.client.acme_client.Client')
     @mock.patch('certbot.main._determine_account')
     @mock.patch('certbot.main.client.Client.obtain_and_enroll_certificate')
-    @mock.patch('certbot.main._auth_from_domains')
-    def test_user_agent(self, afd, _obt, det, _client):
+    @mock.patch('certbot.main._auth_from_available')
+    def test_user_agent(self, afa, _obt, det, _client):
         # Normally the client is totally mocked out, but here we need more
         # arguments to automate it...
         args = ["--standalone", "certonly", "-m", "none@none.com",
                 "-d", "example.com", '--agree-tos'] + self.standard_args
         det.return_value = mock.MagicMock(), None
-        afd.return_value = "newcert", mock.MagicMock()
+        afa.return_value = "newcert", mock.MagicMock()
 
         with mock.patch('certbot.main.client.acme_client.ClientNetwork') as acme_net:
             self._call_no_clientmock(args)
@@ -512,8 +535,8 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._cli_missing_flag(["--standalone"], "With the standalone plugin, you probably")
 
         with mock.patch("certbot.main._init_le_client") as mock_init:
-            with mock.patch("certbot.main._auth_from_domains") as mock_afd:
-                mock_afd.return_value = (mock.MagicMock(), mock.MagicMock())
+            with mock.patch("certbot.main._auth_from_available") as mock_afa:
+                mock_afa.return_value = (mock.MagicMock(), mock.MagicMock())
                 self._call(["certonly", "--manual", "-d", "foo.bar"])
                 unused_config, auth, unused_installer = mock_init.call_args[0]
                 self.assertTrue(isinstance(auth, manual.Authenticator))
@@ -664,7 +687,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             'certonly -d example.org --csr {0}'.format(CSR).split())
 
     def _certonly_new_request_common(self, mock_client, args=None):
-        with mock.patch('certbot.main._treat_as_renewal') as mock_renewal:
+        with mock.patch('certbot.main._find_lineage_for_domains_and_certname') as mock_renewal:
             mock_renewal.return_value = ("newcert", None)
             with mock.patch('certbot.main._init_le_client') as mock_init:
                 mock_init.return_value = mock_client
@@ -718,6 +741,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path)
         mock_lineage.should_autorenew.return_value = due_for_renewal
         mock_lineage.has_pending_deployment.return_value = False
+        mock_lineage.names.return_value = ['isnot.org']
         mock_certr = mock.MagicMock()
         mock_key = mock.MagicMock(pem='pem_key')
         mock_client = mock.MagicMock()
@@ -725,7 +749,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         mock_client.obtain_certificate.return_value = (mock_certr, 'chain',
                                                        mock_key, 'csr')
         try:
-            with mock.patch('certbot.main._find_duplicative_certs') as mock_fdc:
+            with mock.patch('certbot.cert_manager.find_duplicative_certs') as mock_fdc:
                 mock_fdc.return_value = (mock_lineage, None)
                 with mock.patch('certbot.main._init_le_client') as mock_init:
                     mock_init.return_value = mock_client
@@ -848,6 +872,16 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(False, [], args=args, should_renew=False, error_expected=True)
 
+    def test_renew_with_certname(self):
+        test_util.make_lineage(self, 'sample-renewal.conf')
+        self._test_renewal_common(True, [], should_renew=True,
+            args=['renew', '--dry-run', '--cert-name', 'sample-renewal'])
+
+    def test_renew_with_bad_certname(self):
+        self._test_renewal_common(True, [], should_renew=False,
+            args=['renew', '--dry-run', '--cert-name', 'sample-renewal'],
+            error_expected=True)
+
     def _make_dummy_renewal_config(self):
         renewer_configs_dir = os.path.join(self.config_dir, 'renewal')
         os.makedirs(renewer_configs_dir)
@@ -945,7 +979,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                                   should_renew=False, error_expected=True)
 
     @mock.patch('certbot.main.zope.component.getUtility')
-    @mock.patch('certbot.main._treat_as_renewal')
+    @mock.patch('certbot.main._find_lineage_for_domains_and_certname')
     @mock.patch('certbot.main._init_le_client')
     def test_certonly_reinstall(self, mock_init, mock_renewal, mock_get_utility):
         mock_renewal.return_value = ('reinstall', mock.MagicMock())

@@ -43,6 +43,8 @@ class BaseRenewableCertTest(unittest.TestCase):
     your test.  Check :class:`.cli_test.DuplicateCertTest` for an example.
 
     """
+    _multiprocess_can_split_ = True
+
     def setUp(self):
         from certbot import storage
         self.tempdir = tempfile.mkdtemp()
@@ -702,6 +704,19 @@ class RenewableCertTests(BaseRenewableCertTest):
             base_time, interval = parameters
             self.assertEqual(storage.add_time_interval(base_time, interval),
                              excepted)
+
+    def test_is_test_cert(self):
+        self.test_rc.configuration["renewalparams"] = {}
+        rp = self.test_rc.configuration["renewalparams"]
+        self.assertEqual(self.test_rc.is_test_cert, False)
+        rp["server"] = "https://acme-staging.api.letsencrypt.org/directory"
+        self.assertEqual(self.test_rc.is_test_cert, True)
+        rp["server"] = "https://staging.someotherca.com/directory"
+        self.assertEqual(self.test_rc.is_test_cert, True)
+        rp["server"] = "https://acme-v01.api.letsencrypt.org/directory"
+        self.assertEqual(self.test_rc.is_test_cert, False)
+        rp["server"] = "https://acme-v02.api.letsencrypt.org/directory"
+        self.assertEqual(self.test_rc.is_test_cert, False)
 
     def test_missing_cert(self):
         from certbot import storage

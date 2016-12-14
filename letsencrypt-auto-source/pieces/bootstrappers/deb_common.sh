@@ -23,19 +23,22 @@ BootstrapDebCommon() {
   # distro version (#346)
 
   virtualenv=
-  if apt-cache show virtualenv > /dev/null 2>&1 && ! apt-cache --quiet=0 show virtualenv 2>&1 | grep -q 'No packages found'; then
-    virtualenv="virtualenv"
+  # virtual env is known to apt and is installable
+  if apt-cache show virtualenv > /dev/null 2>&1 ; then
+      if ! LC_ALL=C apt-cache --quiet=0 show virtualenv 2>&1 | grep -q 'No packages found'; then
+          virtualenv="virtualenv"
+      fi
   fi
 
   if apt-cache show python-virtualenv > /dev/null 2>&1; then
-    virtualenv="$virtualenv python-virtualenv"
+      virtualenv="$virtualenv python-virtualenv"
   fi
 
   augeas_pkg="libaugeas0 augeas-lenses"
-  AUGVERSION=`apt-cache show --no-all-versions libaugeas0 | grep ^Version: | cut -d" " -f2`
+  AUGVERSION=`LC_ALL=C apt-cache show --no-all-versions libaugeas0 | grep ^Version: | cut -d" " -f2`
 
   if [ "$ASSUME_YES" = 1 ]; then
-    YES_FLAG="-y"
+      YES_FLAG="-y"
   fi
 
   AddBackportRepo() {

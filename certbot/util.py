@@ -17,6 +17,7 @@ import sys
 
 import configargparse
 
+from certbot import constants
 from certbot import errors
 
 
@@ -180,7 +181,7 @@ def unique_file(path, chmod=0o777, mode="w"):
         count=0, chmod=chmod, mode=mode)
 
 
-def unique_lineage_name(path, filename, chmod=0o777, mode="w"):
+def unique_lineage_name(path, filename, chmod=0o644, mode="w"):
     """Safely finds a unique file using lineage convention.
 
     :param str path: directory path
@@ -424,7 +425,6 @@ def enforce_le_validity(domain):
                     label, domain))
     return domain
 
-
 def enforce_domain_sanity(domain):
     """Method which validates domain value and errors out if
     the requirements are not met.
@@ -499,3 +499,14 @@ def get_strict_version(normalized):
     # strict version ending with "a" and a number designates a pre-release
     # pylint: disable=no-member
     return distutils.version.StrictVersion(normalized.replace(".dev", "a"))
+
+
+def is_staging(srv):
+    """
+    Determine whether a given ACME server is a known test / staging server.
+
+    :param str srv: the URI for the ACME server
+    :returns: True iff srv is a known test / staging server
+    :rtype bool:
+    """
+    return srv == constants.STAGING_URI or "staging" in srv

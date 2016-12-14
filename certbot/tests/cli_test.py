@@ -20,6 +20,9 @@ def reset_set_by_cli():
 
 class TestReadFile(unittest.TestCase):
     '''Test cli.read_file'''
+
+    _multiprocess_can_split_ = True
+
     def test_read_file(self):
         tmp_dir = tempfile.mkdtemp()
         rel_test_path = os.path.relpath(os.path.join(tmp_dir, 'foo'))
@@ -37,6 +40,8 @@ class TestReadFile(unittest.TestCase):
 
 class ParseTest(unittest.TestCase):
     '''Test the cli args entrypoint'''
+
+    _multiprocess_can_split_ = True
 
     @classmethod
     def setUpClass(cls):
@@ -79,6 +84,8 @@ class ParseTest(unittest.TestCase):
         self.assertTrue("--webroot-path" in out)
         self.assertTrue("--text" not in out)
         self.assertTrue("--dialog" not in out)
+        self.assertTrue("%s" not in out)
+        self.assertTrue("{0}" not in out)
 
         out = self._help_output(['-h', 'nginx'])
         if "nginx" in self.plugins:
@@ -92,7 +99,7 @@ class ParseTest(unittest.TestCase):
         if "nginx" in self.plugins:
             self.assertTrue("Use the Nginx plugin" in out)
         else:
-            self.assertTrue("(nginx support is experimental" in out)
+            self.assertTrue("(the certbot nginx plugin is not" in out)
 
         out = self._help_output(['--help', 'plugins'])
         self.assertTrue("--webroot-path" not in out)
@@ -120,7 +127,10 @@ class ParseTest(unittest.TestCase):
         self.assertTrue("--key-path" not in out)
 
         out = self._help_output(['-h'])
-        self.assertTrue(cli.usage_strings(self.plugins)[0] in out)
+        self.assertTrue(cli.SHORT_USAGE in out)
+        self.assertTrue(cli.COMMAND_OVERVIEW[:100] in out)
+        self.assertTrue("%s" not in out)
+        self.assertTrue("{0}" not in out)
 
     def test_parse_domains(self):
         short_args = ['-d', 'example.com']
@@ -256,6 +266,8 @@ class ParseTest(unittest.TestCase):
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""
 
+    _multiprocess_can_split_ = True
+
     def setUp(self):
         # pylint: disable=protected-access
         self.default1 = cli._Default()
@@ -274,6 +286,8 @@ class DefaultTest(unittest.TestCase):
 
 class SetByCliTest(unittest.TestCase):
     """Tests for certbot.set_by_cli and related functions."""
+
+    _multiprocess_can_split_ = True
 
     def setUp(self):
         reload_module(cli)
