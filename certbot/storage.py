@@ -233,11 +233,9 @@ def delete_files(config, certname):
         raise errors.CertStorageError(
             "error parsing {0}".format(renewal_filename))
     finally:
-        # we couldn't read it, but let's at least try to delete it
-        try:
-            os.remove(renewal_filename)
-        except OSError:
-            pass
+        # we couldn't read it, but let's at least delete it
+        # if this was going to fail, it already would have.
+        os.remove(renewal_filename)
 
     # cert files and (hopefully) live directory
     # it's not guaranteed that the files are in our default storage
