@@ -21,6 +21,7 @@ def _prog(shell_cmd):
     cmd = _which(shell_cmd)
     return os.path.basename(cmd) if cmd else None
 
+
 def validate_hook(shell_cmd, hook_name):
     """Check that a command provided as a hook is plausibly executable.
 
@@ -65,6 +66,7 @@ def renew_hook(config, domains, lineage_path):
         if not config.dry_run:
             os.environ["RENEWED_DOMAINS"] = " ".join(domains)
             os.environ["RENEWED_LINEAGE"] = lineage_path
+            logger.info("Running renew-hook command: %s", config.renew_hook)
             _run_hook(config.renew_hook)
         else:
             logger.warning("Dry run: skipping renewal hook command: %s", config.renew_hook)
