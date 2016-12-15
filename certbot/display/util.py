@@ -199,10 +199,13 @@ class FileDisplay(object):
             else:
                 return code, []
 
-    def _return_default(self, default, force_interactive):
+    def _return_default(self, prompt, default, cli_flag, force_interactive):
         """Should we return the default instead of prompting the user?
 
+        :param str prompt: prompt for the user
         :param default: default answer to prompt
+        :param str cli_flag: command line option for setting an answer
+            to this question
         :param bool force_interactive: if interactivity is forced by the
             IDisplay call
 
@@ -210,7 +213,10 @@ class FileDisplay(object):
         :rtype: bool
 
         """
-        msg = "force_interactive must be True or you must provide a default"
+        msg = "Invalid IDisplay call for this prompt:\n{0}".format(prompt)
+        if cli_flag:
+            msg += ("\nYou can set an answer to "
+                    "this prompt with the {0} flag".format(cli_flag))
         assert default is not None or force_interactive, msg
         return not self._can_interact(force_interactive)
 
