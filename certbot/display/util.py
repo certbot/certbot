@@ -356,7 +356,7 @@ class NoninteractiveDisplay(object):
             msg += "\n\n(You can set this with the {0} flag)".format(cli_flag)
         raise errors.MissingCommandlineFlag(msg)
 
-    def notification(self, message, pause=False, wrap=True):
+    def notification(self, message, pause=False, wrap=True, **unused_kwargs):
         # pylint: disable=unused-argument
         """Displays a notification without waiting for user acceptance.
 
@@ -373,7 +373,7 @@ class NoninteractiveDisplay(object):
                 line=os.linesep, frame=side_frame, msg=message))
 
     def menu(self, message, choices, ok_label=None, cancel_label=None,
-             help_label=None, default=None, cli_flag=None):
+             help_label=None, default=None, cli_flag=None, *unused_kwargs):
         # pylint: disable=unused-argument,too-many-arguments
         """Avoid displaying a menu.
 
@@ -396,7 +396,7 @@ class NoninteractiveDisplay(object):
 
         return OK, default
 
-    def input(self, message, default=None, cli_flag=None):
+    def input(self, message, default=None, cli_flag=None, **unused_kwargs):
         """Accept input from the user.
 
         :param str message: message to display to the user
@@ -413,7 +413,8 @@ class NoninteractiveDisplay(object):
         else:
             return OK, default
 
-    def yesno(self, message, yes_label=None, no_label=None, default=None, cli_flag=None):
+    def yesno(self, message, yes_label=None, no_label=None,
+              default=None, cli_flag=None, **unused_kwargs):
         # pylint: disable=unused-argument
         """Decide Yes or No, without asking anybody
 
@@ -430,8 +431,8 @@ class NoninteractiveDisplay(object):
         else:
             return default
 
-    def checklist(self, message, tags, default=None, cli_flag=None, **kwargs):
-        # pylint: disable=unused-argument
+    def checklist(self, message, tags, default=None,
+                  cli_flag=None, **unused_kwargs):
         """Display a checklist.
 
         :param str message: Message to display to user
@@ -449,7 +450,8 @@ class NoninteractiveDisplay(object):
         else:
             return OK, default
 
-    def directory_select(self, message, default=None, cli_flag=None):
+    def directory_select(self, message, default=None,
+                         cli_flag=None, **unused_kwargs):
         """Simulate prompting the user for a directory.
 
         This function returns default if it is not ``None``, otherwise,
