@@ -199,6 +199,21 @@ class FileDisplay(object):
             else:
                 return code, []
 
+    def _return_default(self, default, force_interactive):
+        """Should we return the default instead of prompting the user?
+
+        :param default: default answer to prompt
+        :param bool force_interactive: if interactivity is forced by the
+            IDisplay call
+
+        :returns: True if we should return the default without prompting
+        :rtype: bool
+
+        """
+        msg = "force_interactive must be True or you must provide a default"
+        assert default is not None or force_interactive, msg
+        return not self._can_interact(force_interactive)
+
     def _can_interact(self, force_interactive):
         """Can we safely interact with the user?
 
