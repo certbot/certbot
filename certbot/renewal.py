@@ -10,7 +10,6 @@ import zope.component
 
 import OpenSSL
 
-from certbot import configuration
 from certbot import cli
 
 from certbot import crypto_util
@@ -51,8 +50,7 @@ def _reconstitute(config, full_path):
 
     """
     try:
-        renewal_candidate = storage.RenewableCert(
-            full_path, configuration.RenewerConfiguration(config))
+        renewal_candidate = storage.RenewableCert(full_path, config)
     except (errors.CertStorageError, IOError) as exc:
         logger.warning(exc)
         logger.warning("Renewal configuration file %s is broken. Skipping.", full_path)
@@ -234,9 +232,8 @@ def renew_cert(config, le_client, lineage):
         new_cert = OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, new_certr.body.wrapped)
         new_chain = crypto_util.dump_pyopenssl_chain(new_chain)
-        renewal_conf = configuration.RenewerConfiguration(config.namespace)
         # TODO: Check return value of save_successor
-        lineage.save_successor(prior_version, new_cert, new_key.pem, new_chain, renewal_conf)
+        lineage.save_successor(prior_version, new_cert, new_key.pem, new_chain, config)
         lineage.update_all_links_to(lineage.latest_common_version())
 
     hooks.renew_hook(config, lineage.names(), lineage.live_dir)
@@ -305,12 +302,10 @@ def handle_renewal_request(config):
                            "command. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
 
-    renewer_config = configuration.RenewerConfiguration(config)
-
     if config.certname:
-        conf_files = [storage.renewal_file_for_certname(renewer_config, config.certname)]
+        conf_files = [storage.renewal_file_for_certname(config, config.certname)]
     else:
-        conf_files = storage.renewal_conf_files(renewer_config)
+        conf_files = storage.renewal_conf_files(config)
 
     renew_successes = []
     renew_failures = []

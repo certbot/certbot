@@ -861,8 +861,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         rc_path = test_util.make_lineage(self, 'sample-renewal-ancient.conf')
         args = mock.MagicMock(account=None, email=None, webroot_path=None)
         config = configuration.NamespaceConfig(args)
-        lineage = storage.RenewableCert(rc_path,
-            configuration.RenewerConfiguration(config))
+        lineage = storage.RenewableCert(rc_path, config)
         renewalparams = lineage.configuration["renewalparams"]
         # pylint: disable=protected-access
         renewal._restore_webroot_config(config, renewalparams)

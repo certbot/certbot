@@ -49,7 +49,7 @@ class BaseRenewableCertTest(unittest.TestCase):
         from certbot import storage
         self.tempdir = tempfile.mkdtemp()
 
-        self.cli_config = configuration.RenewerConfiguration(
+        self.cli_config = configuration.NamespaceConfig(
             namespace=mock.MagicMock(
                 config_dir=self.tempdir,
                 work_dir=self.tempdir,
@@ -57,7 +57,7 @@ class BaseRenewableCertTest(unittest.TestCase):
             )
         )
 
-        # TODO: maybe provide RenewerConfiguration.make_dirs?
+        # TODO: maybe provide NamespaceConfig.make_dirs?
         # TODO: main() should create those dirs, c.f. #902
         os.makedirs(os.path.join(self.tempdir, "live", "example.org"))
         archive_path = os.path.join(self.tempdir, "archive", "example.org")

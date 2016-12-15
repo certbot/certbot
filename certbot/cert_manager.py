@@ -6,7 +6,6 @@ import pytz
 import traceback
 import zope.component
 
-from certbot import configuration
 from certbot import errors
 from certbot import interfaces
 from certbot import storage
@@ -29,20 +28,17 @@ def update_live_symlinks(config):
     .. note:: This assumes that the installation is using a Reverter object.
 
     :param config: Configuration.
-    :type config: :class:`certbot.interfaces.IConfig`
+    :type config: :class:`certbot.configuration.NamespaceConfig`
 
     """
-    renewer_config = configuration.RenewerConfiguration(config)
-    for renewal_file in storage.renewal_conf_files(renewer_config):
-        storage.RenewableCert(renewal_file,
-            configuration.RenewerConfiguration(renewer_config),
-            update_symlinks=True)
+    for renewal_file in storage.renewal_conf_files(config):
+        storage.RenewableCert(renewal_file, config, update_symlinks=True)
 
 def rename_lineage(config):
     """Rename the specified lineage to the new name.
 
     :param config: Configuration.
-    :type config: :class:`certbot.interfaces.IConfig`
+    :type config: :class:`certbot.configuration.NamespaceConfig`
 
     """
     disp = zope.component.getUtility(interfaces.IDisplay)
@@ -60,8 +56,7 @@ def rename_lineage(config):
     if not lineage:
         raise errors.ConfigurationError("No existing certificate with name "
             "{0} found.".format(certname))
-    renewer_config = configuration.RenewerConfiguration(config)
-    storage.rename_renewal_config(certname, new_certname, renewer_config)
+    storage.rename_renewal_config(certname, new_certname, config)
     disp.notification("Successfully renamed {0} to {1}."
         .format(certname, new_certname), pause=False)
 
@@ -69,15 +64,13 @@ def certificates(config):
     """Display information about certs configured with Certbot
 
     :param config: Configuration.
-    :type config: :class:`certbot.interfaces.IConfig`
+    :type config: :class:`certbot.configuration.NamespaceConfig`
     """
-    renewer_config = configuration.RenewerConfiguration(config)
     parsed_certs = []
     parse_failures = []
-    for renewal_file in storage.renewal_conf_files(renewer_config):
+    for renewal_file in storage.renewal_conf_files(config):
         try:
-            renewal_candidate = storage.RenewableCert(renewal_file,
-                configuration.RenewerConfiguration(config))
+            renewal_candidate = storage.RenewableCert(renewal_file, config)
             parsed_certs.append(renewal_candidate)
         except Exception as e:  # pylint: disable=broad-except
             logger.warning("Renewal configuration file %s produced an "
@@ -156,8 +149,7 @@ def _get_certname(config, verb):
     certname = config.certname
     if not certname:
         disp = zope.component.getUtility(interfaces.IDisplay)
-        renewer_config = configuration.RenewerConfiguration(config)
-        filenames = storage.renewal_conf_files(renewer_config)
+        filenames = storage.renewal_conf_files(config)
         choices = [storage.lineagename_for_filename(name) for name in filenames]
         if not choices:
             raise errors.Error("No existing certificates found.")
@@ -222,13 +214,12 @@ def _describe_certs(parsed_certs, parse_failures):
     disp = zope.component.getUtility(interfaces.IDisplay)
     disp.notification("\n".join(out), pause=False, wrap=False)
 
-def _search_lineages(config, func, initial_rv):
+def _search_lineages(cli_config, func, initial_rv):
     """Iterate func over unbroken lineages, allowing custom return conditions.
 
     Allows flexible customization of return values, including multiple
     return values and complex checks.
     """
-    cli_config = configuration.RenewerConfiguration(config)
     configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there
     util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())

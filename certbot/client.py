@@ -15,7 +15,6 @@ import certbot
 
 from certbot import account
 from certbot import auth_handler
-from certbot import configuration
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
@@ -297,7 +296,7 @@ class Client(object):
                 new_name, OpenSSL.crypto.dump_certificate(
                     OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped),
                 key.pem, crypto_util.dump_pyopenssl_chain(chain),
-                configuration.RenewerConfiguration(self.config.namespace))
+                self.config)
 
     def save_certificate(self, certr, chain_cert,
                          cert_path, chain_path, fullchain_path):
