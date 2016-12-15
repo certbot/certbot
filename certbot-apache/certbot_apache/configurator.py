@@ -1012,8 +1012,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.parser.find_dir("ServerAlias", target_name,
                                  start=vh_path, exclude=False)):
             return
-        matches = self._find_matching_wildcards(vh_path, target_name)
-        if matches:
+        if self._has_matching_wildcard(vh_path, target_name):
             return
         if not self.parser.find_dir("ServerName", None,
                                     start=vh_path, exclude=False):
@@ -1022,23 +1021,24 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.parser.add_dir(vh_path, "ServerAlias", target_name)
         self._add_servernames(vhost)
 
-    def _find_matching_wildcards(self, vh_path, target_name):
-        # find all wildcards
-        names = [self.aug.get(card) for card
-                 in self.parser.find_dir("ServerName", start=vh_path, exclude=False)]
-        aliases = [self.aug.get(card) for card
-                   in self.parser.find_dir("ServerAlias", start=vh_path, exclude=False)]
-        potential_wildcards = [server for server in names if server.startswith("*")]
-        potential_wildcards.extend([server for server in aliases if server.startswith("*")])
-        # reverse search through them to see if the target name is covered
-        target_split = target_name.split(".")[::-1]
-        matches = []
-        for wildcard in potential_wildcards:
-            for idx, part in enumerate(wildcard.split(".")[:0:-1]):
-                if target_split[idx] != part:
-                    break
-            matches.append(wildcard)
-        return matches
+    def _has_matching_wildcard(self, vh_path, target_name):
+        """Is target_name already included in a wildcard in the vhost?
+
+        :param str vh_path: Augeas path to the vhost
+        :param str target_name: name to compare with wildcards
+
+        :returns: True if there is a wildcard covering target_name in
+            the vhost in vhost_path, otherwise, False
+        :rtype: bool
+
+        """
+        matches = self.parser.find_dir(
+            "ServerAlias", start=vh_path, exclude=False)
+        for match in matches:
+            alias = self.aug.get(match)
+            if alias.startswith("*.") and target_name.endswith(alias[1:]):
+                return True
+        return False
 
     def _add_name_vhost_if_necessary(self, vhost):
         """Add NameVirtualHost Directives if necessary for new vhost.

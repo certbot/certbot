@@ -1294,9 +1294,9 @@ class AugeasVhostsTest(util.ApacheTest):
         self.assertEqual([], vhs)
 
     def test_wildcard_alias(self):
-        target_name = "banana.com"
+        target_name = "subdomain.example.net"
         chosen_vhost = self.config.choose_vhost(target_name)
-        self.assertTrue("*.banana.com" in chosen_vhost.aliases)
+        self.assertTrue(target_name not in chosen_vhost.aliases)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
