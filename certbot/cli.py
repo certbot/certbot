@@ -515,7 +515,16 @@ class HelpfulArgumentParser(object):
         # Do any post-parsing homework here
 
         if self.verb == "renew":
+            if parsed_args.force_interactive:
+                raise errors.Error(
+                    "{0} cannot be used with renew".format(
+                        constants.FORCE_INTERACTIVE_FLAG))
             parsed_args.noninteractive_mode = True
+
+        if parsed_args.force_interactive and parsed_args.noninteractive_mode:
+            raise errors.Error(
+                "Flag for non-interactive mode and {0} conflict".format(
+                    constants.FORCE_INTERACTIVE_FLAG))
 
         if parsed_args.staging or parsed_args.dry_run:
             self.set_test_server(parsed_args)
