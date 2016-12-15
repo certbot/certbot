@@ -803,6 +803,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
               "additional command line flags; the client will try to explain "
               "which ones are required if it finds one missing")
     helpful.add(
+        [None, "register", "run", "certonly"],
+        constants.FORCE_INTERACTIVE_FLAG, action="store_true",
+        help="Force Certbot to be interactive even if it detects it's not "
+             "being run in a terminal. This flag cannot be used with the "
+             "renew subcommand.")
+    helpful.add(
         [None, "run", "certonly"],
         "-d", "--domains", "--domain", dest="domains",
         metavar="DOMAIN", action=_DomainsAction, default=[],
