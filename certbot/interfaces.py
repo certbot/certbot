@@ -364,20 +364,28 @@ class IInstaller(IPlugin):
 
 class IDisplay(zope.interface.Interface):
     """Generic display."""
+    # pylint: disable=too-many-arguments
+    # see https://github.com/certbot/certbot/issues/3915
 
-    def notification(message, pause, wrap=True):
+    def notification(message, pause, wrap=True, force_interactive=False):
         """Displays a string message
 
         :param str message: Message to display
         :param bool pause: Whether or not the application should pause for
             confirmation (if available)
         :param bool wrap: Whether or not the application should wrap text
+        :param bool force_interactive: True if it's safe to prompt the user
+            because it won't cause any workflow regressions
 
         """
 
-    def menu(message, choices, ok_label="OK",      # pylint: disable=too-many-arguments
-             cancel_label="Cancel", help_label="", default=None, cli_flag=None):
+    def menu(message, choices, ok_label="OK",
+             cancel_label="Cancel", help_label="",
+             default=None, cli_flag=None, force_interactive=False):
         """Displays a generic menu.
+
+        When not setting force_interactive=True, you must provide a
+        default value.
 
         :param str message: message to display
 
@@ -389,6 +397,8 @@ class IDisplay(zope.interface.Interface):
         :param str help_label: label for Help button
         :param int default: default (non-interactive) choice from the menu
         :param str cli_flag: to automate choice from the menu, eg "--keep"
+        :param bool force_interactive: True if it's safe to prompt the user
+            because it won't cause any workflow regressions
 
         :returns: tuple of (`code`, `index`) where
             `code` - str display exit code
@@ -399,10 +409,16 @@ class IDisplay(zope.interface.Interface):
 
         """
 
-    def input(message, default=None, cli_args=None):
+    def input(message, default=None, cli_args=None, force_interactive=False):
         """Accept input from the user.
 
+        When not setting force_interactive=True, you must provide a
+        default value.
+
         :param str message: message to display to the user
+        :param str default: default (non-interactive) response to prompt
+        :param bool force_interactive: True if it's safe to prompt the user
+            because it won't cause any workflow regressions
 
         :returns: tuple of (`code`, `input`) where
             `code` - str display exit code
@@ -415,14 +431,19 @@ class IDisplay(zope.interface.Interface):
         """
 
     def yesno(message, yes_label="Yes", no_label="No", default=None,
-              cli_args=None):
+              cli_args=None, force_interactive=False):
         """Query the user with a yes/no question.
 
         Yes and No label must begin with different letters.
 
+        When not setting force_interactive=True, you must provide a
+        default value.
+
         :param str message: question for the user
         :param str default: default (non-interactive) choice from the menu
         :param str cli_flag: to automate choice from the menu, eg "--redirect / --no-redirect"
+        :param bool force_interactive: True if it's safe to prompt the user
+            because it won't cause any workflow regressions
 
         :returns: True for "Yes", False for "No"
         :rtype: bool
@@ -432,14 +453,20 @@ class IDisplay(zope.interface.Interface):
 
         """
 
-    def checklist(message, tags, default_state, default=None, cli_args=None):
+    def checklist(message, tags, default_state,
+                  default=None, cli_args=None, force_interactive=False):
         """Allow for multiple selections from a menu.
+
+        When not setting force_interactive=True, you must provide a
+        default value.
 
         :param str message: message to display to the user
         :param list tags: where each is of type :class:`str` len(tags) > 0
         :param bool default_status: If True, items are in a selected state by default.
         :param str default: default (non-interactive) state of the checklist
         :param str cli_flag: to automate choice from the menu, eg "--domains"
+        :param bool force_interactive: True if it's safe to prompt the user
+            because it won't cause any workflow regressions
 
         :returns: tuple of the form (code, list_tags) where
             `code` - int display exit code
@@ -451,8 +478,12 @@ class IDisplay(zope.interface.Interface):
 
         """
 
-    def directory_select(self, message, default=None, cli_flag=None):
+    def directory_select(self, message, default=None,
+                         cli_flag=None, force_interactive=False):
         """Display a directory selection screen.
+
+        When not setting force_interactive=True, you must provide a
+        default value.
 
         :param str message: prompt to give the user
         :param default: the default value to return, if one exists, when
@@ -460,6 +491,8 @@ class IDisplay(zope.interface.Interface):
         :param str cli_flag: option used to set this value with the CLI,
             if one exists, to be included in error messages given by
             NoninteractiveDisplay
+        :param bool force_interactive: True if it's safe to prompt the user
+            because it won't cause any workflow regressions
 
         :returns: tuple of the form (`code`, `string`) where
             `code` - int display exit code
