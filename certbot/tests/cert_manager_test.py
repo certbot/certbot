@@ -99,10 +99,16 @@ class UpdateLiveSymlinksTest(BaseCertManagerTest):
         cert_manager.update_live_symlinks(self.cli_config)
 
         # check that symlinks go where they should
-        for domain in self.domains:
-            for kind in ALL_FOUR:
-                self.assertEqual(os.readlink(self.configs[domain][kind]),
-                    archive_paths[domain][kind])
+        prev_dir = os.getcwd()
+        try:
+            for domain in self.domains:
+                for kind in ALL_FOUR:
+                    os.chdir(os.path.dirname(self.configs[domain][kind]))
+                    self.assertEqual(
+                        os.path.realpath(os.readlink(self.configs[domain][kind])),
+                        os.path.realpath(archive_paths[domain][kind]))
+        finally:
+            os.chdir(prev_dir)
 
 
 class CertificatesTest(BaseCertManagerTest):
