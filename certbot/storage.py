@@ -232,6 +232,12 @@ def delete_files(config, certname):
     except configobj.ConfigObjError:
         raise errors.CertStorageError(
             "error parsing {0}".format(renewal_filename))
+    finally:
+        # we couldn't read it, but let's at least try to delete it
+        try:
+            os.remove(renewal_filename)
+        except OSError:
+            pass
 
     # cert files and (hopefully) live directory
     # it's not guaranteed that the files are in our default storage
@@ -266,12 +272,6 @@ def delete_files(config, certname):
     # archive directory
     try:
         shutil.rmtree(_full_archive_path(renewal_config, config, certname))
-    except OSError:
-        pass
-
-    # renewal conf file
-    try:
-        os.remove(renewal_filename)
     except OSError:
         pass
 

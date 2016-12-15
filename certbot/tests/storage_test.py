@@ -60,13 +60,19 @@ class BaseRenewableCertTest(unittest.TestCase):
         # TODO: maybe provide RenewerConfiguration.make_dirs?
         # TODO: main() should create those dirs, c.f. #902
         os.makedirs(os.path.join(self.tempdir, "live", "example.org"))
-        os.makedirs(os.path.join(self.tempdir, "archive", "example.org"))
+        archive_path = os.path.join(self.tempdir, "archive", "example.org")
+        os.makedirs(archive_path)
         os.makedirs(os.path.join(self.tempdir, "renewal"))
 
         config = configobj.ConfigObj()
         for kind in ALL_FOUR:
-            config[kind] = os.path.join(self.tempdir, "live", "example.org",
+            kind_path = os.path.join(self.tempdir, "live", "example.org",
                                         kind + ".pem")
+            config[kind] = kind_path
+        with open(os.path.join(self.tempdir, "live", "example.org",
+                                        "README"), 'a'):
+            pass
+        config["archive"] = archive_path
         config.filename = os.path.join(self.tempdir, "renewal",
                                        "example.org.conf")
         config.write()
@@ -772,22 +778,91 @@ class RenewableCertTests(BaseRenewableCertTest):
 
 class DeleteFilesTest(BaseRenewableCertTest):
     """Tests for certbot.storage.delete_files"""
+    def setUp(self):
+        super(DeleteFilesTest, self).setUp()
+        for kind in ALL_FOUR:
+            kind_path = os.path.join(self.tempdir, "live", "example.org",
+                                        kind + ".pem")
+            with open(kind_path, 'a'):
+                pass
+        self.config.write()
+        self.assertTrue(os.path.exists(os.path.join(
+            self.cli_config.renewal_configs_dir, "example.org.conf")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.cli_config.live_dir, "example.org")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.tempdir, "archive", "example.org")))
 
-    @mock.patch("certbot.storage.relevant_values")
-    def test_delete_files(self, mock_rv):
-        # Mock relevant_values to say everything is relevant here (so we
-        # don't have to mock the parser to help it decide!)
-        mock_rv.side_effect = lambda x: x
-
+    def _call(self):
         from certbot import storage
         storage.delete_files(self.cli_config, "example.org")
+
+    def test_delete_all_files(self):
+        self._call()
+        
         self.assertFalse(os.path.exists(os.path.join(
             self.cli_config.renewal_configs_dir, "example.org.conf")))
         self.assertFalse(os.path.exists(os.path.join(
             self.cli_config.live_dir, "example.org")))
-        archive_dir = os.path.join(self.tempdir, "archive", "example.org")
         self.assertFalse(os.path.exists(os.path.join(
-            archive_dir, "the-lineage.com")))
+            self.tempdir, "archive", "example.org")))
+
+    def test_bad_renewal_config(self):
+        with open(self.config.filename, 'a') as file:
+            file.write("asdfasfasdfasdf")
+        
+        self.assertRaises(errors.CertStorageError, self._call)
+        self.assertTrue(os.path.exists(os.path.join(
+            self.cli_config.live_dir, "example.org")))
+        self.assertFalse(os.path.exists(os.path.join(
+            self.cli_config.renewal_configs_dir, "example.org.conf")))
+
+    def test_no_renewal_config(self):
+        os.remove(self.config.filename)
+        self.assertRaises(errors.CertStorageError, self._call)
+        self.assertTrue(os.path.exists(os.path.join(
+            self.cli_config.live_dir, "example.org")))
+        self.assertFalse(os.path.exists(self.config.filename))
+
+    def test_no_cert_file(self):
+        os.remove(os.path.join(
+            self.cli_config.live_dir, "example.org", "cert.pem"))
+        self._call()
+        self.assertFalse(os.path.exists(self.config.filename))
+        self.assertFalse(os.path.exists(os.path.join(
+            self.cli_config.live_dir, "example.org")))
+        self.assertFalse(os.path.exists(os.path.join(
+            self.tempdir, "archive", "example.org")))
+
+    def test_no_readme_file(self):
+        os.remove(os.path.join(
+            self.cli_config.live_dir, "example.org", "README"))
+        self._call()
+        self.assertFalse(os.path.exists(self.config.filename))
+        self.assertFalse(os.path.exists(os.path.join(
+            self.cli_config.live_dir, "example.org")))
+        self.assertFalse(os.path.exists(os.path.join(
+            self.tempdir, "archive", "example.org")))
+
+    def test_livedir_not_empty(self):
+        with open(os.path.join(
+            self.cli_config.live_dir, "example.org", "other_file"), 'a'):
+            pass
+        self._call()
+        self.assertFalse(os.path.exists(self.config.filename))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.cli_config.live_dir, "example.org")))
+        self.assertFalse(os.path.exists(os.path.join(
+            self.tempdir, "archive", "example.org")))
+
+    def test_no_archive(self):
+        archive_dir = os.path.join(self.tempdir, "archive", "example.org")
+        os.rmdir(archive_dir)
+        self._call()
+        self.assertFalse(os.path.exists(self.config.filename))
+        self.assertFalse(os.path.exists(os.path.join(
+            self.cli_config.live_dir, "example.org")))
+        self.assertFalse(os.path.exists(archive_dir))
 
 
 if __name__ == "__main__":
