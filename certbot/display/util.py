@@ -1,6 +1,7 @@
 """Certbot display."""
 import os
 import textwrap
+import sys
 
 import six
 import zope.interface
@@ -197,6 +198,21 @@ class FileDisplay(object):
                         "** Error - Invalid selection **%s" % os.linesep)
             else:
                 return code, []
+
+    def _can_interact(self, force_interactive):
+        """Can we safely interact with the user?
+
+        :param bool force_interactive: if interactivity is forced by the
+            IDisplay call
+
+        :returns: True if the display can interact with the user
+        :rtype: bool
+
+        """
+        if self.force_interactive or force_interactive:
+            return True
+        else:
+            return sys.stdin.isatty() and self.outfile.isatty()
 
     def directory_select(self, message, **unused_kwargs):
         """Display a directory selection screen.
