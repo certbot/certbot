@@ -139,7 +139,8 @@ def _handle_subset_cert_request(config, domains, cert):
              br=os.linesep)
     if config.expand or config.renew_by_default or zope.component.getUtility(
             interfaces.IDisplay).yesno(question, "Expand", "Cancel",
-                                       cli_flag="--expand"):
+                                       cli_flag="--expand",
+                                       force_interactive=True):
         return "renew", cert
     else:
         reporter_util = zope.component.getUtility(interfaces.IReporter)
@@ -188,7 +189,8 @@ def _handle_identical_cert_request(config, lineage):
                "Renew & replace the cert (limit ~5 per 7 days)"]
 
     display = zope.component.getUtility(interfaces.IDisplay)
-    response = display.menu(question, choices, "OK", "Cancel", default=0)
+    response = display.menu(question, choices, "OK", "Cancel",
+                            default=0, force_interactive=True)
     if response[0] == display_util.CANCEL:
         # TODO: Add notification related to command-line options for
         #       skipping the menu for this case.
@@ -275,7 +277,8 @@ def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
                new_domains,
                old_domains))
     obj = zope.component.getUtility(interfaces.IDisplay)
-    if not obj.yesno(msg, "Update cert", "Cancel", default=True):
+    if not obj.yesno(msg, "Update cert", "Cancel",
+                     default=True, force_interactive=True):
         raise errors.ConfigurationError("Specified mismatched cert name and domains.")
 
 def _find_domains_or_certname(config, installer):
@@ -365,7 +368,8 @@ def _determine_account(config):
                        "server at {1}".format(
                            regr.terms_of_service, config.server))
                 obj = zope.component.getUtility(interfaces.IDisplay)
-                return obj.yesno(msg, "Agree", "Cancel", cli_flag="--agree-tos")
+                return obj.yesno(msg, "Agree", "Cancel",
+                                 cli_flag="--agree-tos", force_interactive=True)
 
             try:
                 acc, acme = client.register(

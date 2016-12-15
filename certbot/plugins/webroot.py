@@ -129,7 +129,8 @@ to serve all files under specified web root ({0})."""
                     "public_html or webroot directory. The webroot "
                     "plugin works by temporarily saving necessary "
                     "resources in the HTTP server's webroot directory "
-                    "to pass domain validation challenges.")
+                    "to pass domain validation challenges.",
+                    force_interactive=True)
             else:  # code == display_util.OK
                 return None if index == 0 else known_webroots[index - 1]
 
@@ -138,7 +139,8 @@ to serve all files under specified web root ({0})."""
 
         while True:
             code, webroot = display.directory_select(
-                "Input the webroot for {0}:".format(domain))
+                "Input the webroot for {0}:".format(domain),
+                force_interactive=True)
             if code == display_util.HELP:
                 # Displaying help is not currently implemented
                 return None

@@ -52,15 +52,17 @@ def rename_lineage(config):
         if not choices:
             raise errors.Error("No existing certificates found.")
         code, index = disp.menu("Which certificate would you like to rename?",
-            choices, ok_label="Select", flag="--cert-name")
+            choices, ok_label="Select", flag="--cert-name",
+            force_interactive=True)
         if code != display_util.OK or not index in range(0, len(choices)):
             raise errors.Error("User ended interaction.")
         certname = choices[index]
 
     new_certname = config.new_certname
     if not new_certname:
-        code, new_certname = disp.input("Enter the new name for certificate {0}"
-            .format(certname), flag="--updated-cert-name")
+        code, new_certname = disp.input(
+            "Enter the new name for certificate {0}".format(certname),
+            flag="--updated-cert-name", force_interactive=True)
         if code != display_util.OK or not new_certname:
             raise errors.Error("User ended interaction.")
 
