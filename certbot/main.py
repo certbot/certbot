@@ -780,7 +780,8 @@ def set_displayer(config):
     elif config.noninteractive_mode:
         displayer = display_util.NoninteractiveDisplay(sys.stdout)
     else:
-        displayer = display_util.FileDisplay(sys.stdout)
+        displayer = display_util.FileDisplay(sys.stdout,
+                                             config.force_interactive)
     zope.component.provideUtility(displayer)
 
 

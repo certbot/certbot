@@ -51,9 +51,10 @@ def _wrap_lines(msg):
 class FileDisplay(object):
     """File-based display."""
 
-    def __init__(self, outfile):
+    def __init__(self, outfile, force_interactive):
         super(FileDisplay, self).__init__()
         self.outfile = outfile
+        self.force_interactive = force_interactive
 
     def notification(self, message, pause=True, wrap=True):
         # pylint: disable=unused-argument
@@ -310,7 +311,7 @@ class FileDisplay(object):
 class NoninteractiveDisplay(object):
     """An iDisplay implementation that never asks for interactive user input"""
 
-    def __init__(self, outfile):
+    def __init__(self, outfile, *unused_args, **unused_kwargs):
         super(NoninteractiveDisplay, self).__init__()
         self.outfile = outfile
 

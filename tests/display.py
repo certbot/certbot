@@ -18,5 +18,5 @@ def test_visual(displayer, choices):
 
 
 if __name__ == "__main__":
-    displayer = util.FileDisplay(sys.stdout):
+    displayer = util.FileDisplay(sys.stdout, False)
     test_visual(displayer, util_test.CHOICES)
