@@ -799,7 +799,7 @@ class DeleteFilesTest(BaseRenewableCertTest):
 
     def test_delete_all_files(self):
         self._call()
-        
+
         self.assertFalse(os.path.exists(os.path.join(
             self.cli_config.renewal_configs_dir, "example.org.conf")))
         self.assertFalse(os.path.exists(os.path.join(
@@ -808,9 +808,9 @@ class DeleteFilesTest(BaseRenewableCertTest):
             self.tempdir, "archive", "example.org")))
 
     def test_bad_renewal_config(self):
-        with open(self.config.filename, 'a') as file:
-            file.write("asdfasfasdfasdf")
-        
+        with open(self.config.filename, 'a') as config_file:
+            config_file.write("asdfasfasdfasdf")
+
         self.assertRaises(errors.CertStorageError, self._call)
         self.assertTrue(os.path.exists(os.path.join(
             self.cli_config.live_dir, "example.org")))
