@@ -6,17 +6,22 @@ FROM alpine:3.4
 # Add an unprivileged user:
 RUN adduser -S -D -h /home/lea -s /bin/bash -G wheel -u 1000 lea
 
-# Install pip, sudo, openssl, and nose:
-RUN apk --update add py-pip sudo openssl
-RUN pip install nose
-
 # Let that user sudo:
 RUN echo "%wheel ALL= (ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+
+
+# Install pip, sudo, openssl, and nose:
+RUN apk --update \
+    add py-pip sudo openssl ca-certificates \
+    && rm -rf /var/cache/apk/*
+RUN pip install nose
 
 RUN mkdir -p /home/lea/certbot
 
 # Install fake testing CA:
 COPY ./tests/certs/ca/my-root-ca.crt.pem /usr/local/share/ca-certificates/
+RUN update-ca-certificates
 
 # Copy code:
 COPY . /home/lea/certbot/letsencrypt-auto-source
