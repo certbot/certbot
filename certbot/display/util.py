@@ -81,8 +81,11 @@ class FileDisplay(object):
         self.outfile.write(
             "{line}{frame}{line}{msg}{line}{frame}{line}".format(
                 line=os.linesep, frame=side_frame, msg=message))
-        if pause and self._can_interact(force_interactive):
-            six.moves.input("Press Enter to Continue")
+        if pause:
+            if self._can_interact(force_interactive):
+                six.moves.input("Press Enter to Continue")
+            else:
+                logger.debug("Not pausing for user confirmation")
 
     def menu(self, message, choices, ok_label="", cancel_label="",
              help_label="", default=None,
@@ -254,7 +257,14 @@ class FileDisplay(object):
             msg += ("\nYou can set an answer to "
                     "this prompt with the {0} flag".format(cli_flag))
         assert default is not None or force_interactive, msg
-        return not self._can_interact(force_interactive)
+
+        if self._can_interact(force_interactive):
+            return False
+        else:
+            logger.debug(
+                "Falling back to default %s for the prompt:\n%s",
+                default, prompt)
+            return True
 
     def _can_interact(self, force_interactive):
         """Can we safely interact with the user?
