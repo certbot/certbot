@@ -39,7 +39,7 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.assertTrue("message" in self.mock_stdout.write.call_args[0][0])
 
     def test_notification_noninteractive(self):
-        force_noninteractive(self.displayer.notification, "message")
+        self._force_noninteractive(self.displayer.notification, "message")
         string = self.mock_stdout.write.call_args[0][0]
         self.assertTrue("message" in string)
 
@@ -65,14 +65,14 @@ class FileOutputDisplayTest(unittest.TestCase):
 
     def test_input_noninteractive(self):
         default = "foo"
-        code, input_ = force_noninteractive(
+        code, input_ = self._force_noninteractive(
             self.displayer.input, "message", default=default)
 
         self.assertEqual(code, display_util.OK)
         self.assertEqual(input_, default)
 
     def test_input_assertion_fail(self):
-        self.assertRaises(AssertionError, force_noninteractive,
+        self.assertRaises(AssertionError, self._force_noninteractive,
                           self.displayer.input, "message", cli_flag="--flag")
 
     def test_yesno(self):
@@ -97,7 +97,7 @@ class FileOutputDisplayTest(unittest.TestCase):
                 "msg", yes_label="Agree", force_interactive=True))
 
     def test_yesno_noninteractive(self):
-        self.assertTrue(force_noninteractive(
+        self.assertTrue(self._force_noninteractive(
             self.displayer.yesno, "message", default=True))
 
     @mock.patch("certbot.display.util.FileDisplay.input")
@@ -137,7 +137,7 @@ class FileOutputDisplayTest(unittest.TestCase):
 
     def test_checklist_noninteractive(self):
         default = TAGS
-        code, input_ = force_noninteractive(
+        code, input_ = self._force_noninteractive(
             self.displayer.checklist, "msg", TAGS, default=default)
 
         self.assertEqual(code, display_util.OK)
@@ -172,11 +172,26 @@ class FileOutputDisplayTest(unittest.TestCase):
 
     def test_directory_select_noninteractive(self):
         default = "/var/www/html"
-        code, input_ = force_noninteractive(
+        code, input_ = self._force_noninteractive(
             self.displayer.directory_select, "msg", default=default)
 
         self.assertEqual(code, display_util.OK)
         self.assertEqual(input_, default)
+
+    def _force_noninteractive(self, func, *args, **kwargs):
+        skipped_interaction = self.displayer.skipped_interaction
+
+        with mock.patch("certbot.display.util.sys.stdin") as mock_stdin:
+            mock_stdin.isatty.return_value = False
+            with mock.patch("certbot.display.util.logger") as mock_logger:
+                result = func(*args, **kwargs)
+
+        if skipped_interaction:
+            self.assertFalse(mock_logger.warning.called)
+        else:
+            self.assertEqual(mock_logger.warning.call_count, 1)
+
+        return result
 
     def test_scrub_checklist_input_invalid(self):
         # pylint: disable=protected-access
@@ -230,21 +245,6 @@ class FileOutputDisplayTest(unittest.TestCase):
                 self.assertEqual(
                     self.displayer._get_valid_int_ans(3),
                     (display_util.CANCEL, -1))
-
-
-def force_noninteractive(func, *args, **kwargs):
-    """Calls func but forces FileDisplay to be non-interactive
-
-    :param callable func: function to call
-    :param list *args: arguments to func
-    :param dict **kwargs: arguments to func
-
-    :returns: return value of func
-
-    """
-    with mock.patch("certbot.display.util.sys.stdin") as mock_stdin:
-        mock_stdin.isatty.return_value = False
-        return func(*args, **kwargs)
 
 
 class NoninteractiveDisplayTest(unittest.TestCase):

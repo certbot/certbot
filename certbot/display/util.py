@@ -1,4 +1,5 @@
 """Certbot display."""
+import logging
 import os
 import textwrap
 import sys
@@ -6,10 +7,12 @@ import sys
 import six
 import zope.interface
 
+from certbot import constants
 from certbot import interfaces
 from certbot import errors
 from certbot.display import completer
 
+logger = logging.getLogger(__name__)
 
 WIDTH = 72
 
@@ -58,6 +61,7 @@ class FileDisplay(object):
         super(FileDisplay, self).__init__()
         self.outfile = outfile
         self.force_interactive = force_interactive
+        self.skipped_interaction = False
 
     def notification(self, message, pause=True,
                      wrap=True, force_interactive=False):
@@ -262,10 +266,17 @@ class FileDisplay(object):
         :rtype: bool
 
         """
-        if self.force_interactive or force_interactive:
+        if (self.force_interactive or force_interactive or
+                sys.stdin.isatty() and self.outfile.isatty()):
             return True
-        else:
-            return sys.stdin.isatty() and self.outfile.isatty()
+        elif not self.skipped_interaction:
+            logger.warning(
+                "Skipped user interaction because Certbot doesn't appear to "
+                "be running in a terminal. You should probably include "
+                "--non-interactive or %s on the command line.",
+                constants.FORCE_INTERACTIVE_FLAG)
+            self.skipped_interaction = True
+        return False
 
     def directory_select(self, message, default=None, cli_flag=None,
                          force_interactive=False, **unused_kwargs):
