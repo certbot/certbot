@@ -82,6 +82,7 @@ manage certificates:
     certificates    Display information about certs you have from Certbot
     revoke          Revoke a certificate (supply --cert-path)
     rename          Rename a certificate
+    delete          Delete a certificate
 
 manage your account with Let's Encrypt:
     register        Create a Let's Encrypt ACME account
@@ -352,13 +353,17 @@ VERB_HELP = [
         "short": "List all certificates managed by Certbot",
         "opts": "List all certificates managed by Certbot"
     }),
+    ("delete", {
+        "short": "Clean up all files related to a certificate",
+        "opts": "Options for deleting a certificate"
+    }),
     ("revoke", {
         "short": "Revoke a certificate specified with --cert-path",
         "opts": "Options for revocation of certs"
     }),
     ("rename", {
         "short": "Change a certificate's name (for management purposes)",
-        "opts": "Options changing certificate names"
+        "opts": "Options for changing certificate names"
     }),
     ("register", {
         "short": "Register for account with Let's Encrypt / other ACME server",
@@ -410,7 +415,8 @@ class HelpfulArgumentParser(object):
                       "register": main.register, "renew": main.renew,
                       "revoke": main.revoke, "rollback": main.rollback,
                       "everything": main.run, "update_symlinks": main.update_symlinks,
-                      "certificates": main.certificates, "rename": main.rename}
+                      "certificates": main.certificates, "rename": main.rename,
+                      "delete": main.delete}
 
         # List of topics for which additional help can be provided
         HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
@@ -763,7 +769,7 @@ def _add_all_groups(helpful):
     helpful.add_group("paths", description="Arguments changing execution paths & servers")
     helpful.add_group("manage",
         description="Various subcommands and flags are available for managing your certificates:",
-        verbs=["certificates", "renew", "revoke", "rename"])
+        verbs=["certificates", "delete", "renew", "revoke", "rename"])
 
     # VERBS
     for verb, docs in VERB_HELP:
@@ -810,13 +816,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "multiple -d flags or enter a comma separated list of domains "
              "as a parameter. (default: Ask)")
     helpful.add(
-        [None, "run", "certonly", "manage"],
+        [None, "run", "certonly", "manage", "rename", "delete"],
         "--cert-name", dest="certname",
         metavar="CERTNAME", default=None,
         help="Certificate name to apply. Only one certificate name can be used "
              "per Certbot run. To see certificate names, run 'certbot certificates'. "
-             "If there is no existing certificate with this name and "
-             "domains are requested, create a new certificate with this name.")
+             "When creating a new certificate, specifies the new certificate's name.")
     helpful.add(
         ["rename", "manage"],
         "--updated-cert-name", dest="new_certname",
