@@ -913,7 +913,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Silence all output except errors. Useful for automation via cron."
              " Implies --non-interactive.")
     # overwrites server, handled in HelpfulArgumentParser.parse_args()
-    helpful.add(["testing", "revoke"], "--test-cert", "--staging", action='store_true', dest='staging',
+    helpful.add(["testing", "revoke"], "--test-cert", "--staging",
+        action='store_true', dest='staging',
         help='Use the staging server to obtain or revoke test (invalid) certs; equivalent'
              ' to --server ' + constants.STAGING_URI)
     helpful.add(
