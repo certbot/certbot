@@ -267,7 +267,7 @@ def delete_files(config, certname):
             os.remove(link)
             logger.debug("Removed %s", link)
         except OSError:
-            pass
+            logger.debug("Unable to delete %s", link)
         directory = os.path.dirname(link)
         directory_names.add(directory)
 
@@ -282,13 +282,13 @@ def delete_files(config, certname):
             os.remove(readme_path)
             logger.debug("Removed %s", readme_path)
         except OSError:
-            pass
+            logger.debug("Unable to delete %s", readme_path)
         # if it's now empty, delete the directory
         try:
             os.rmdir(directory) # only removes empty directories
             logger.debug("Removed %s", directory)
         except OSError:
-            pass
+            logger.debug("Unable to remove %s; may not be empty.", directory)
 
     # archive directory
     try:
@@ -296,7 +296,7 @@ def delete_files(config, certname):
         shutil.rmtree(archive_path)
         logger.debug("Removed %s", archive_path)
     except OSError:
-        pass
+        logger.debug("Unable to remove %s", archive_path)
 
 
 class RenewableCert(object):
