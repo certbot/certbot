@@ -68,7 +68,6 @@ dev_extras = [
     'coverage',
     'nose',
     'pep8',
-    'psutil>=2.2.1',  # for tests, optional
     'pylint==1.4.2',  # upstream #248
     'tox',
     'twine',
