@@ -795,7 +795,8 @@ class DeleteFilesTest(BaseRenewableCertTest):
 
     def _call(self):
         from certbot import storage
-        storage.delete_files(self.cli_config, "example.org")
+        with mock.patch("certbot.storage.logger"):
+            storage.delete_files(self.cli_config, "example.org")
 
     def test_delete_all_files(self):
         self._call()
