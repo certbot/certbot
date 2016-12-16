@@ -37,14 +37,41 @@ common() {
 # unrequested challenge to prevent regressions in #3601.
 python -m SimpleHTTPServer $http_01_port &
 python_server_pid=$!
-common --domains le1.wtf --preferred-challenges tls-sni-01 auth
+
+export HOOK_TEST="/tmp/hook$$"
+common --domains le1.wtf --preferred-challenges tls-sni-01 auth \
+       --pre-hook 'echo wtf.pre >> "$HOOK_TEST"' \
+       --post-hook 'echo wtf.post >> "$HOOK_TEST"'\
+       --renew-hook 'echo renew >> "$HOOK_TEST"'
 kill $python_server_pid
 python -m SimpleHTTPServer $tls_sni_01_port &
 python_server_pid=$!
-common --domains le2.wtf --preferred-challenges http-01 run
+common --domains le2.wtf --preferred-challenges http-01 run \
+       --pre-hook 'echo wtf.pre >> "$HOOK_TEST"' \
+       --post-hook 'echo wtf.post >> "$HOOK_TEST"'\
+       --renew-hook 'echo renew >> "$HOOK_TEST"'
 kill $python_server_pid
 
-common -a manual -d le.wtf auth --rsa-key-size 4096
+common -a manual -d le.wtf auth --rsa-key-size 4096 \
+       --pre-hook 'echo wtf2.pre >> "$HOOK_TEST"' \
+       --post-hook 'echo wtf2.post >> "$HOOK_TEST"'
+
+CheckHooks() {
+    EXPECTED="/tmp/expected$$"
+    echo "wtf.pre" > "$EXPECTED"
+    echo "wtf2.pre" >> "$EXPECTED"
+    echo "renew" >> "$EXPECTED"
+    echo "renew" >> "$EXPECTED"
+    echo "wtf.post" > "$EXPECTED"
+    echo "wtf2.post" >> "$EXPECTED"
+    if cmp --quiet "$EXPECTED" "$HOOK_TEST" ; then
+        echo Hooks did not run as expected\; got
+        cat "$HOOK_TEST"
+        echo Expected
+        cat "$EXPECTED"
+    fi
+    [ -f "$HOOK_TEST" ] && rm -f "$HOOK_TEST"
+}
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
        OPENSSL_CNF=examples/openssl.cnf
@@ -73,8 +100,11 @@ common_no_force_renew renew
 CheckCertCount 1
 
 # --renew-by-default is used, so renewal should occur
+[ -f "$HOOK_TEST" ] && rm -f "$HOOK_TEST"
 common renew
 CheckCertCount 2
+CheckHooks
+
 
 # This will renew because the expiry is less than 10 years from now
 sed -i "4arenew_before_expiry = 4 years" "$root/conf/renewal/le.wtf.conf"
