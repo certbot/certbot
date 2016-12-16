@@ -354,7 +354,8 @@ VERB_HELP = [
     }),
     ("revoke", {
         "short": "Revoke a certificate specified with --cert-path",
-        "opts": "Options for revocation of certs"
+        "opts": "Options for revocation of certs",
+        "usage": "\n\n  certbot revoke --cert-path /path/to/fullchain.pem [options]\n\n"
     }),
     ("rename", {
         "short": "Change a certificate's name (for management purposes)",
@@ -912,8 +913,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Silence all output except errors. Useful for automation via cron."
              " Implies --non-interactive.")
     # overwrites server, handled in HelpfulArgumentParser.parse_args()
-    helpful.add("testing", "--test-cert", "--staging", action='store_true', dest='staging',
-        help='Use the staging server to obtain test (invalid) certs; equivalent'
+    helpful.add(["testing", "revoke"], "--test-cert", "--staging", action='store_true', dest='staging',
+        help='Use the staging server to obtain or revoke test (invalid) certs; equivalent'
              ' to --server ' + constants.STAGING_URI)
     helpful.add(
         "testing", "--debug", action="store_true",
