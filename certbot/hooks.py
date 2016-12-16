@@ -58,7 +58,7 @@ def post_hook(config, renew_final=False):
     if config.verb == "renew":
         if not renew_final:
             if config.post_hook:
-                post_hook.eventually[config.post_hook] = True
+                post_hook.eventually.append(config.post_hook)
         else:
             for cmd in post_hook.eventually:
                 logger.info("Running post-hook command: %s", cmd)
@@ -70,7 +70,7 @@ def post_hook(config, renew_final=False):
             logger.info("Running post-hook command: %s", config.post_hook)
             _run_hook(config.post_hook)
 
-post_hook.eventually = {}
+post_hook.eventually = []
 
 def renew_hook(config, domains, lineage_path):
     "Run post-renewal hook if defined."
