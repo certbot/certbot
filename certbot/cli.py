@@ -876,13 +876,16 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " Intended primarily for renewal, where it can be used to temporarily"
         " shut down a webserver that might conflict with the standalone"
         " plugin. This will only be called if a certificate is actually to be"
-        " obtained/renewed.")
+        " obtained/renewed. When renewing several certificates that have"
+        " identical pre-hooks, only the first will be executed.")
     helpful.add(
         "renew", "--post-hook",
         help="Command to be run in a shell after attempting to obtain/renew"
         " certificates. Can be used to deploy renewed certificates, or to"
         " restart any servers that were stopped by --pre-hook. This is only"
-        " run if an attempt was made to obtain/renew a certificate.")
+        " run if an attempt was made to obtain/renew a certificate. If"
+        " multiple renewed certificates have identical post-hooks, only"
+        " one will be run.")
     helpful.add(
         "renew", "--renew-hook",
         help="Command to be run in a shell once for each successfully renewed"
