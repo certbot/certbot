@@ -46,34 +46,39 @@ class HookTest(unittest.TestCase):
         mockwhich.return_value = None
         self.assertEqual(hooks._prog("funky"), None)
 
-    def _test_a_hook(self, config, hook_function, calls_expected):
+    def _test_a_hook(self, config, hook_function, calls_expected, **kwargs):
         with mock.patch('certbot.hooks.logger') as mock_logger:
             mock_logger.warning = mock.MagicMock()
             with mock.patch('certbot.hooks._run_hook') as mock_run_hook:
-                hook_function(config)
-                hook_function(config)
+                hook_function(config, **kwargs)
+                hook_function(config, **kwargs)
                 self.assertEqual(mock_run_hook.call_count, calls_expected)
             return mock_logger.warning
 
     def test_pre_hook(self):
-        hooks.pre_hook.already = False
+        hooks.pre_hook.already = {}
         config = mock.MagicMock(pre_hook="true")
         self._test_a_hook(config, hooks.pre_hook, 1)
+        self._test_a_hook(config, hooks.pre_hook, 0)
+        config = mock.MagicMock(pre_hook="more_true")
+        self._test_a_hook(config, hooks.pre_hook, 1)
+        self._test_a_hook(config, hooks.pre_hook, 0)
         config = mock.MagicMock(pre_hook="")
         self._test_a_hook(config, hooks.pre_hook, 0)
 
     def test_post_hook(self):
-        hooks.pre_hook.already = False
-        # if pre-hook isn't called, post-hook shouldn't be
         config = mock.MagicMock(post_hook="true", verb="splonk")
-        self._test_a_hook(config, hooks.post_hook, 0)
-
-        config = mock.MagicMock(post_hook="true", verb="splonk")
-        self._test_a_hook(config, hooks.pre_hook, 1)
         self._test_a_hook(config, hooks.post_hook, 2)
 
         config = mock.MagicMock(post_hook="true", verb="renew")
         self._test_a_hook(config, hooks.post_hook, 0)
+        self._test_a_hook(config, hooks.post_hook, 2, renew_final=True)
+        self._test_a_hook(config, hooks.post_hook, 0)
+        self._test_a_hook(config, hooks.post_hook, 2, renew_final=True)
+
+        config = mock.MagicMock(post_hook="more_true", verb="renew")
+        self._test_a_hook(config, hooks.post_hook, 0)
+        self._test_a_hook(config, hooks.post_hook, 4, renew_final=True)
 
     def test_renew_hook(self):
         with mock.patch.dict('os.environ', {}):

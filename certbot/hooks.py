@@ -37,12 +37,14 @@ def validate_hook(shell_cmd, hook_name):
 
 def pre_hook(config):
     "Run pre-hook if it's defined and hasn't been run."
-    if config.pre_hook and not pre_hook.already:
-        logger.info("Running pre-hook command: %s", config.pre_hook)
-        _run_hook(config.pre_hook)
-    pre_hook.already = True
+    cmd = config.pre_hook
+    if cmd and cmd not in pre_hook.already:
+        logger.info("Running pre-hook command: %s", cmd)
+        _run_hook(cmd)
+        pre_hook.already[cmd] = True
 
-pre_hook.already = False
+pre_hook.already = {}
+
 
 def post_hook(config, renew_final=False):
     """Run post hook if defined.
@@ -50,15 +52,23 @@ def post_hook(config, renew_final=False):
     If the verb is renew, we might have more certs to renew, so we wait until
     we're called with renew_final=True before actually doing anything.
     """
-    if config.post_hook:
-        if not pre_hook.already:
-            logger.info("No renewals attempted, so not running post-hook")
-            if config.verb != "renew":
-                logger.warning("Sanity failure in renewal hooks")
-            return
-        if renew_final or config.verb != "renew":
+
+    if config.verb == "renew":
+        if not renew_final:
+            if config.post_hook:
+                post_hook.eventually[config.post_hook] = True
+        else:
+            for cmd in post_hook.eventually:
+                logger.info("Running post-hook command: %s", cmd)
+                _run_hook(cmd)
+            if len(post_hook.eventually) == 0:
+                logger.info("No renewals attempted, so not running post-hook")
+    else: # certonly / run
+        if config.post_hook:
             logger.info("Running post-hook command: %s", config.post_hook)
             _run_hook(config.post_hook)
+
+post_hook.eventually = {}
 
 def renew_hook(config, domains, lineage_path):
     "Run post-renewal hook if defined."
