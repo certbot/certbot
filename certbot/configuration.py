@@ -34,7 +34,6 @@ class NamespaceConfig(object):
       - `default_archive_dir`
       - `live_dir`
       - `renewal_configs_dir`
-      - `renewer_config_file`
 
     :ivar namespace: Namespace typically produced by
         :meth:`argparse.ArgumentParser.parse_args`.
@@ -105,11 +104,6 @@ class NamespaceConfig(object):
     def renewal_configs_dir(self):  # pylint: disable=missing-docstring
         return os.path.join(
             self.namespace.config_dir, constants.RENEWAL_CONFIGS_DIR)
-
-    @property
-    def renewer_config_file(self):  # pylint: disable=missing-docstring
-        return os.path.join(
-            self.namespace.config_dir, constants.RENEWER_CONFIG_FILENAME)
 
 
 def check_config_sanity(config):
