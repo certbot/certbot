@@ -175,6 +175,7 @@ DeterminePythonVersion() {
 
 {{ bootstrappers/deb_common.sh }}
 {{ bootstrappers/rpm_common.sh }}
+{{ bootstrappers/alpine_common.sh }}
 {{ bootstrappers/suse_common.sh }}
 {{ bootstrappers/arch_common.sh }}
 {{ bootstrappers/gentoo_common.sh }}
