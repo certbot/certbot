@@ -215,6 +215,10 @@ def renewal_filename_for_lineagename(config, lineagename):
     """
     return os.path.join(config.renewal_configs_dir, lineagename) + ".conf"
 
+def _relpath_from_file(archive_dir, from_file):
+    """Path to a directory from a file"""
+    return os.path.relpath(archive_dir, os.path.dirname(from_file))
+
 def _full_archive_path(config_obj, cli_config, lineagename):
     """Returns the full archive path for a lineagename
 
@@ -402,6 +406,13 @@ class RenewableCert(object):
         return _full_archive_path(self.configuration,
             self.cli_config, self.lineagename)
 
+    def relative_archive_dir(self, from_file):
+        """Returns the default or specified archive directory as a relative path
+
+        Used for creating symbolic links.
+        """
+        return _relpath_from_file(self.archive_dir, from_file)
+
     @property
     def is_test_cert(self):
         """Returns true if this is a test cert from a staging server."""
@@ -428,7 +439,8 @@ class RenewableCert(object):
         for kind in ALL_FOUR:
             link = getattr(self, kind)
             previous_link = get_link_target(link)
-            new_link = os.path.join(self.archive_dir, os.path.basename(previous_link))
+            new_link = os.path.join(self.relative_archive_dir(link),
+                os.path.basename(previous_link))
 
             os.unlink(link)
             os.symlink(new_link, link)
@@ -950,7 +962,7 @@ class RenewableCert(object):
         target = dict([(kind, os.path.join(live_dir, kind + ".pem"))
                        for kind in ALL_FOUR])
         for kind in ALL_FOUR:
-            os.symlink(os.path.join(archive, kind + "1.pem"),
+            os.symlink(os.path.join(_relpath_from_file(archive, target[kind]), kind + "1.pem"),
                        target[kind])
         with open(target["cert"], "wb") as f:
             logger.debug("Writing certificate to %s.", target["cert"])

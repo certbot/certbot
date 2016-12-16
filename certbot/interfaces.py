@@ -201,7 +201,7 @@ class IConfig(zope.interface.Interface):
     """
     server = zope.interface.Attribute("ACME Directory Resource URI.")
     email = zope.interface.Attribute(
-        "Email used for registration and recovery contact.")
+        "Email used for registration and recovery contact. (default: Ask)")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
     must_staple = zope.interface.Attribute(
         "Adds the OCSP Must Staple extension to the certificate. "
