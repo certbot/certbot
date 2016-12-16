@@ -383,7 +383,7 @@ class RenameLineageTest(BaseCertManagerTest):
         mock_config.new_certname = "example.org"
         self.assertRaises(errors.ConfigurationError, self._call, mock_config)
 
-        mock_config.new_certname = "one/two"
+        mock_config.new_certname = "one{0}two".format(os.path.sep)
         self.assertRaises(errors.ConfigurationError, self._call, mock_config)
 
 
