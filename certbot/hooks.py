@@ -7,6 +7,7 @@ import os
 from subprocess import Popen, PIPE
 
 from certbot import errors
+from certbot import util
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ def validate_hooks(config):
 
 def _prog(shell_cmd):
     """Extract the program run by a shell command"""
-    cmd = _which(shell_cmd)
+    cmd = util.which(shell_cmd)
     return os.path.basename(cmd) if cmd else None
 
 
@@ -108,24 +109,3 @@ def execute(shell_cmd):
         logger.error('Error output from %s:\n%s', _prog(shell_cmd), err)
     return (err, out)
 
-
-def _is_exe(fpath):
-    return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-
-def _which(program):
-    """Test if program is in the path."""
-    # Borrowed from:
-    # https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
-    # XXX May need more porting to handle .exe extensions on Windows
-
-    fpath, _fname = os.path.split(program)
-    if fpath:
-        if _is_exe(program):
-            return program
-    else:
-        for path in os.environ["PATH"].split(os.pathsep):
-            exe_file = os.path.join(path, program)
-            if _is_exe(exe_file):
-                return exe_file
-
-    return None

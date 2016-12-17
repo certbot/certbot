@@ -27,19 +27,8 @@ class HookTest(unittest.TestCase):
         config = mock.MagicMock(pre_hook="explodinator", post_hook="", renew_hook="")
         self.assertRaises(errors.HookCommandNotFound, hooks.validate_hooks, config)
 
-    @mock.patch('certbot.hooks._is_exe')
-    def test_which(self, mock_is_exe):
-        mock_is_exe.return_value = True
-        self.assertEqual(hooks._which("/path/to/something"), "/path/to/something")
 
-        with mock.patch.dict('os.environ', {"PATH": "/floop:/fleep"}):
-            mock_is_exe.return_value = True
-            self.assertEqual(hooks._which("pingify"), "/floop/pingify")
-            mock_is_exe.return_value = False
-            self.assertEqual(hooks._which("pingify"), None)
-        self.assertEqual(hooks._which("/path/to/something"), None)
-
-    @mock.patch('certbot.hooks._which')
+    @mock.patch('certbot.hooks.util.which')
     def test_prog(self, mockwhich):
         mockwhich.return_value = "/very/very/funky"
         self.assertEqual(hooks._prog("funky"), "funky")

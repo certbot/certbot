@@ -45,34 +45,19 @@ class RunScriptTest(unittest.TestCase):
         self.assertRaises(errors.SubprocessError, self._call, ["test"])
 
 
-class ExeExistsTest(unittest.TestCase):
-    """Tests for certbot.util.exe_exists."""
+class WhichTest(unittest.TestCase):
+    @mock.patch('certbot.util._is_exe')
+    def test_which(self, mock_is_exe):
+        from certbot.util import which
+        mock_is_exe.return_value = True
+        self.assertEqual(which("/path/to/something"), "/path/to/something")
 
-    @classmethod
-    def _call(cls, exe):
-        from certbot.util import exe_exists
-        return exe_exists(exe)
-
-    @mock.patch("certbot.util.os.path.isfile")
-    @mock.patch("certbot.util.os.access")
-    def test_full_path(self, mock_access, mock_isfile):
-        mock_access.return_value = True
-        mock_isfile.return_value = True
-        self.assertTrue(self._call("/path/to/exe"))
-
-    @mock.patch("certbot.util.os.path.isfile")
-    @mock.patch("certbot.util.os.access")
-    def test_on_path(self, mock_access, mock_isfile):
-        mock_access.return_value = True
-        mock_isfile.return_value = True
-        self.assertTrue(self._call("exe"))
-
-    @mock.patch("certbot.util.os.path.isfile")
-    @mock.patch("certbot.util.os.access")
-    def test_not_found(self, mock_access, mock_isfile):
-        mock_access.return_value = False
-        mock_isfile.return_value = True
-        self.assertFalse(self._call("exe"))
+        with mock.patch.dict('os.environ', {"PATH": "/floop:/fleep"}):
+            mock_is_exe.return_value = True
+            self.assertEqual(which("pingify"), "/floop/pingify")
+            mock_is_exe.return_value = False
+            self.assertEqual(which("pingify"), None)
+        self.assertEqual(which("/path/to/something"), None)
 
 
 class MakeOrVerifyDirTest(unittest.TestCase):
