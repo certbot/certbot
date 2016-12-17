@@ -9,6 +9,8 @@ from subprocess import Popen, PIPE
 from certbot import errors
 from certbot import util
 
+from certbot.plugins.util import path_surgery
+
 logger = logging.getLogger(__name__)
 
 def validate_hooks(config):
@@ -20,6 +22,10 @@ def validate_hooks(config):
 def _prog(shell_cmd):
     """Extract the program run by a shell command"""
     cmd = util.which(shell_cmd)
+    if not cmd:
+        path_surgery(shell_cmd)
+        cmd = util.which(shell_cmd)
+
     return os.path.basename(cmd) if cmd else None
 
 

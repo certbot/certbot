@@ -29,11 +29,14 @@ class HookTest(unittest.TestCase):
 
 
     @mock.patch('certbot.hooks.util.which')
-    def test_prog(self, mockwhich):
+    @mock.patch('certbot.hooks.path_surgery')
+    def test_prog(self, mock_ps, mockwhich):
         mockwhich.return_value = "/very/very/funky"
         self.assertEqual(hooks._prog("funky"), "funky")
+        self.assertEqual(mock_ps.call_count, 0)
         mockwhich.return_value = None
         self.assertEqual(hooks._prog("funky"), None)
+        self.assertEqual(mock_ps.call_count, 1)
 
     def _test_a_hook(self, config, hook_function, calls_expected, **kwargs):
         with mock.patch('certbot.hooks.logger') as mock_logger:
