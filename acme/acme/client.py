@@ -483,8 +483,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
             `.ComparableX509`
 
-        :param int or None rsn: Reason code for certificate revocation, None
-            if omitted.
+        :param int rsn: Reason code for certificate revocation.
 
         :raises .ClientError: If revocation is unsuccessful.
 

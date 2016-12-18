@@ -263,15 +263,12 @@ class ParseTest(unittest.TestCase):
             config_dir_option, cli.flag_default(config_dir_option)))
 
     def test_encode_revocation_reason(self):
-        mock_args_or_config = mock.MagicMock()
-        from certbot.cli import encode_reason
         for reason, code in constants.REVOCATION_REASONS.items():
-            self.assertTrue(code == encode_reason(mock_args_or_config, reason))
+            namespace = self.parse(['--reason', reason])
+            self.assertEqual(namespace.reason, code)
         for reason, code in constants.REVOCATION_REASONS.items():
-            self.assertTrue(code == encode_reason(
-                mock_args_or_config,
-                reason.upper()))
-
+            namespace = self.parse(['--reason', reason.upper()])
+            self.assertEqual(namespace.reason, code)
 
 
 class DefaultTest(unittest.TestCase):

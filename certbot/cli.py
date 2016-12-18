@@ -1054,7 +1054,7 @@ def _create_subparsers(helpful):
     helpful.add("revoke",
                 "--reason", dest="reason",
                 choices=CaseInsensitiveList(constants.REVOCATION_REASONS.keys()),
-                action=_ReasonAction, default=0,
+                action=_EncodeReasonAction, default=0,
                 help="Specify reason for revoking certificate.")
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",
@@ -1158,25 +1158,14 @@ def _plugins_parsing(helpful, plugins):
     helpful.add_plugin_args(plugins)
 
 
-class _ReasonAction(argparse.Action):
+class _EncodeReasonAction(argparse.Action):
     """Action class for parsing revocation reason."""
 
     def __call__(self, parser, namespace, reason, option_string=None):
-        """Just wrap encode_reason in argparseese."""
-        encode_reason(namespace, reason)
+        """Encodes the reason for certificate revocation."""
+        code = constants.REVOCATION_REASONS[reason.lower()]
+        setattr(namespace, self.dest, code)
 
-def encode_reason(args_or_config, reason):
-    """Encodes the reason for certificate revocation.
-
-    :param str reason: reason for revoking certificate
-
-    :returns: RFC 5280 encoding of revocation reason
-    :rtype: int
-    """
-
-    code = constants.REVOCATION_REASONS[reason.lower()]
-    args_or_config.reason = code
-    return code
 
 class _DomainsAction(argparse.Action):
     """Action class for parsing domains."""
