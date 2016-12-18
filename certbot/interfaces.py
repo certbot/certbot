@@ -201,7 +201,7 @@ class IConfig(zope.interface.Interface):
     """
     server = zope.interface.Attribute("ACME Directory Resource URI.")
     email = zope.interface.Attribute(
-        "Email used for registration and recovery contact.")
+        "Email used for registration and recovery contact. (default: Ask)")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
     must_staple = zope.interface.Attribute(
         "Adds the OCSP Must Staple extension to the certificate. "
@@ -222,9 +222,6 @@ class IConfig(zope.interface.Interface):
     key_dir = zope.interface.Attribute("Keys storage.")
     temp_checkpoint_dir = zope.interface.Attribute(
         "Temporary checkpoint directory.")
-
-    renewer_config_file = zope.interface.Attribute(
-        "Location of renewal configuration file.")
 
     no_verify_ssl = zope.interface.Attribute(
         "Disable verification of the ACME server's certificate.")

@@ -15,7 +15,6 @@ import certbot
 
 from certbot import account
 from certbot import auth_handler
-from certbot import configuration
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
@@ -38,11 +37,11 @@ def acme_from_config_key(config, key):
     "Wrangle ACME client construction"
     # TODO: Allow for other alg types besides RS256
     net = acme_client.ClientNetwork(key, verify_ssl=(not config.no_verify_ssl),
-                                    user_agent=_determine_user_agent(config))
+                                    user_agent=determine_user_agent(config))
     return acme_client.Client(config.server, key=key, net=net)
 
 
-def _determine_user_agent(config):
+def determine_user_agent(config):
     """
     Set a user_agent string in the config based on the choice of plugins.
     (this wasn't knowable at construction time)
@@ -58,6 +57,16 @@ def _determine_user_agent(config):
     else:
         ua = config.user_agent
     return ua
+
+def sample_user_agent():
+    "Document what this Certbot's user agent string will be like."
+    class DummyConfig(object):
+        "Shim for computing a sample user agent."
+        def __init__(self):
+            self.authenticator = "XXX"
+            self.installer = "YYY"
+            self.user_agent = None
+    return determine_user_agent(DummyConfig())
 
 
 def register(config, account_storage, tos_cb=None):
@@ -263,7 +272,7 @@ class Client(object):
         return (self.obtain_certificate_from_csr(domains, csr, authzr=authzr)
                                                                 + (key, csr))
 
-    def obtain_and_enroll_certificate(self, domains):
+    def obtain_and_enroll_certificate(self, domains, certname):
         """Obtain and enroll certificate.
 
         Get a new certificate for the specified domains using the specified
@@ -272,6 +281,7 @@ class Client(object):
 
         :param list domains: Domains to request.
         :param plugins: A PluginsFactory object.
+        :param str certname: Name of new cert
 
         :returns: A new :class:`certbot.storage.RenewableCert` instance
             referred to the enrolled cert lineage, False if the cert could not
@@ -286,16 +296,17 @@ class Client(object):
                 "Non-standard path(s), might not work with crontab installed "
                 "by your operating system package manager")
 
+        new_name = certname if certname else domains[0]
         if self.config.dry_run:
             logger.debug("Dry run: Skipping creating new lineage for %s",
-                        domains[0])
+                        new_name)
             return None
         else:
             return storage.RenewableCert.new_lineage(
-                domains[0], OpenSSL.crypto.dump_certificate(
+                new_name, OpenSSL.crypto.dump_certificate(
                     OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped),
                 key.pem, crypto_util.dump_pyopenssl_chain(chain),
-                configuration.RenewerConfiguration(self.config.namespace))
+                self.config)
 
     def save_certificate(self, certr, chain_cert,
                          cert_path, chain_path, fullchain_path):
