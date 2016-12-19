@@ -521,7 +521,16 @@ class HelpfulArgumentParser(object):
         # Do any post-parsing homework here
 
         if self.verb == "renew":
+            if parsed_args.force_interactive:
+                raise errors.Error(
+                    "{0} cannot be used with renew".format(
+                        constants.FORCE_INTERACTIVE_FLAG))
             parsed_args.noninteractive_mode = True
+
+        if parsed_args.force_interactive and parsed_args.noninteractive_mode:
+            raise errors.Error(
+                "Flag for non-interactive mode and {0} conflict".format(
+                    constants.FORCE_INTERACTIVE_FLAG))
 
         if parsed_args.staging or parsed_args.dry_run:
             self.set_test_server(parsed_args)
@@ -808,6 +817,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Run without ever asking for user input. This may require "
               "additional command line flags; the client will try to explain "
               "which ones are required if it finds one missing")
+    helpful.add(
+        [None, "register", "run", "certonly"],
+        constants.FORCE_INTERACTIVE_FLAG, action="store_true",
+        help="Force Certbot to be interactive even if it detects it's not "
+             "being run in a terminal. This flag cannot be used with the "
+             "renew subcommand.")
     helpful.add(
         [None, "run", "certonly"],
         "-d", "--domains", "--domain", dest="domains",

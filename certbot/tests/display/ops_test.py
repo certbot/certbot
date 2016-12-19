@@ -84,7 +84,8 @@ class GetEmailTest(unittest.TestCase):
 class ChooseAccountTest(unittest.TestCase):
     """Tests for certbot.display.ops.choose_account."""
     def setUp(self):
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
+        zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
+                                                               False))
 
         self.accounts_dir = tempfile.mkdtemp("accounts")
         self.account_keys_dir = os.path.join(self.accounts_dir, "keys")
@@ -127,7 +128,8 @@ class ChooseAccountTest(unittest.TestCase):
 class GenSSLLabURLs(unittest.TestCase):
     """Loose test of _gen_ssl_lab_urls. URL can change easily in the future."""
     def setUp(self):
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
+        zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
+                                                               False))
 
     @classmethod
     def _call(cls, domains):
@@ -146,7 +148,8 @@ class GenSSLLabURLs(unittest.TestCase):
 class GenHttpsNamesTest(unittest.TestCase):
     """Test _gen_https_names."""
     def setUp(self):
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
+        zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
+                                                               False))
 
     @classmethod
     def _call(cls, domains):
@@ -193,7 +196,8 @@ class GenHttpsNamesTest(unittest.TestCase):
 class ChooseNamesTest(unittest.TestCase):
     """Test choose names."""
     def setUp(self):
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
+        zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
+                                                               False))
         self.mock_install = mock.MagicMock()
 
     @classmethod
