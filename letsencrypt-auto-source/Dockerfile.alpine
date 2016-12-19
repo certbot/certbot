@@ -4,10 +4,10 @@
 FROM alpine:3.4
 
 # Add an unprivileged user:
-RUN adduser -S -D -h /home/lea -s /bin/bash -G wheel -u 1000 lea
+RUN adduser -S -D -h /home/lea -s /bin/sh -G wheel -u 1000 lea
 
 # Let that user sudo:
-RUN echo "%wheel ALL= (ALL) NOPASSWD: ALL" >> /etc/sudoers
+RUN echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 
 
