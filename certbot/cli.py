@@ -1073,7 +1073,11 @@ def _create_subparsers(helpful):
 
 
 class CaseInsensitiveList(list):
-    """A list that will ignore case when searching."""
+    """A list that will ignore case when searching.
+    
+    This class is passed to the `choices` argument of `argparse.add_arguments`
+    through the `helpful` wrapper. It is necessary due to special handling of
+    command line arguments by `set_by_cli` in which the `type_func` is not applied."""
     def __contains__(self, element):
         return super(CaseInsensitiveList, self).__contains__(element.lower())
 
