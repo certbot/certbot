@@ -30,7 +30,7 @@ class CommandNotExecutable(Error):
 
 
 class CommandNotFound(Error):
-    """Failed to find a command in PATH."""
+    """Command provided could not be found."""
 
 
 class SignalExit(Error):

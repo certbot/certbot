@@ -75,19 +75,42 @@ def exe_exists(exe):
     :rtype: bool
 
     """
+    try:
+        verify_exe_exists(exe)
+    except (errors.CommandNotExecutable, errors.CommandNotFound) as error:
+        logger.debug(error)
+        return False
+    return True
+
+
+def verify_exe_exists(exe):
+    """Verify that path/name refers to an executable.
+
+    :param str exe: Executable path or name
+
+    :raises .errors.CommandNotExecutable: if exe is a path but isn't a
+        path to an executable
+
+    :raises .errors.CommandNotFound: if exe is a name but an executable
+        with that name cannot be found in PATH
+
+    """
     def is_exe(path):
         """Determine if path is an exe."""
         return os.path.isfile(path) and os.access(path, os.X_OK)
 
     path, _ = os.path.split(exe)
     if path:
-        return is_exe(exe)
+        if not is_exe(exe):
+            raise errors.CommandNotExecutable(
+                "{0} isn't an executable".format(exe))
     else:
         for path in os.environ["PATH"].split(os.pathsep):
             if is_exe(os.path.join(path, exe)):
-                return True
-
-    return False
+                return
+        raise errors.CommandNotFound(
+            "Unable to find {0} in PATH.\n(PATH is {1})".format(
+                exe, os.environ["PATH"]))
 
 
 def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
