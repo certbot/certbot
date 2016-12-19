@@ -120,7 +120,7 @@ s.serve_forever()" """
                    "server, please ensure you're okay with that.\n\n"
                    'Are you OK with your IP being logged?')
             display = zope.component.getUtility(interfaces.IDisplay)
-            if display.yesno(msg, cli_flag=cli_flag):
+            if display.yesno(msg, cli_flag=cli_flag, force_interactive=True):
                 setattr(self.config, self.dest('public-ip-logging-ok'), True)
             else:
                 raise errors.PluginError('Must agree to IP logging to proceed')
@@ -150,7 +150,7 @@ s.serve_forever()" """
                 domain=achall.validation_domain_name(achall.domain),
                 validation=validation)
         display = zope.component.getUtility(interfaces.IDisplay)
-        display.notification(msg, wrap=False)
+        display.notification(msg, wrap=False, force_interactive=True)
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         if self.conf('cleanup-hook'):

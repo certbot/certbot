@@ -111,7 +111,8 @@ def choose_plugin(prepared, question):
 
     while True:
         disp = z_util(interfaces.IDisplay)
-        code, index = disp.menu(question, opts, help_label="More Info")
+        code, index = disp.menu(
+            question, opts, help_label="More Info", force_interactive=True)
 
         if code == display_util.OK:
             plugin_ep = prepared[index]
@@ -127,7 +128,8 @@ def choose_plugin(prepared, question):
                 msg = "Reported Error: %s" % prepared[index].prepare()
             else:
                 msg = prepared[index].init().more_info()
-            z_util(interfaces.IDisplay).notification(msg)
+            z_util(interfaces.IDisplay).notification(msg,
+                                                     force_interactive=True)
         else:
             return None
 
