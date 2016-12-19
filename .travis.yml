@@ -47,6 +47,7 @@ matrix:
       after_failure:
         - sudo cat /var/log/mysql/error.log
         - ps aux | grep mysql
+      services: docker
     - sudo: required
       env: TOXENV=apache_compat
       services: docker
