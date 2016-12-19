@@ -7,7 +7,7 @@
 #public_ip=$(curl -s http://169.254.169.254/2014-11-05/meta-data/public-ipv4)
 #private_ip=$(curl -s http://169.254.169.254/2014-11-05/meta-data/local-ipv4)
 
-cd letsencrypt
+cd letsencrypt/letsencrypt-auto-source
 ./letsencrypt-auto --os-packages-only --debug --version
 ./letsencrypt-auto certonly --no-self-upgrade -v --standalone --debug \
                    --text --agree-dev-preview --agree-tos \

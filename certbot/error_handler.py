@@ -15,9 +15,14 @@ logger = logging.getLogger(__name__)
 # potentially occur from inside Python. Signals such as SIGILL were not
 # included as they could be a sign of something devious and we should terminate
 # immediately.
-_SIGNALS = ([signal.SIGTERM] if os.name == "nt" else
-            [signal.SIGTERM, signal.SIGHUP, signal.SIGQUIT,
-             signal.SIGXCPU, signal.SIGXFSZ])
+_SIGNALS = [signal.SIGTERM]
+if os.name != "nt":
+    for signal_code in [signal.SIGHUP, signal.SIGQUIT,
+                        signal.SIGXCPU, signal.SIGXFSZ]:
+        # Adding only those signals that their default action is not Ignore.
+        # This is platform-dependent, so we check it dynamically.
+        if signal.getsignal(signal_code) != signal.SIG_IGN:
+            _SIGNALS.append(signal_code)
 
 
 class ErrorHandler(object):

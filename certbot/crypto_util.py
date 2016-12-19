@@ -53,7 +53,8 @@ def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
     # Save file
     util.make_or_verify_dir(key_dir, 0o700, os.geteuid(),
                             config.strict_permissions)
-    key_f, key_path = util.unique_file(os.path.join(key_dir, keyname), 0o600)
+    key_f, key_path = util.unique_file(
+        os.path.join(key_dir, keyname), 0o600, "wb")
     with key_f:
         key_f.write(key_pem)
 
@@ -85,7 +86,7 @@ def init_save_csr(privkey, names, path, csrname="csr-certbot.pem"):
     util.make_or_verify_dir(path, 0o755, os.geteuid(),
                                config.strict_permissions)
     csr_f, csr_filename = util.unique_file(
-        os.path.join(path, csrname), 0o644)
+        os.path.join(path, csrname), 0o644, "wb")
     csr_f.write(csr_pem)
     csr_f.close()
 
@@ -351,11 +352,11 @@ def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
         if isinstance(cert, jose.ComparableX509):
             # pylint: disable=protected-access
             cert = cert.wrapped
-        return OpenSSL.crypto.dump_certificate(filetype, cert).decode('ascii')
+        return OpenSSL.crypto.dump_certificate(filetype, cert)
 
     # assumes that OpenSSL.crypto.dump_certificate includes ending
     # newline character
-    return "".join(_dump_cert(cert) for cert in chain)
+    return b"".join(_dump_cert(cert) for cert in chain)
 
 
 def notBefore(cert_path):

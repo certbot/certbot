@@ -54,6 +54,14 @@ class PluginEntryPoint(object):
         return "{0} ({1})".format(self.description, self.name)
 
     @property
+    def long_description(self):
+        """Long description of the plugin."""
+        try:
+            return self.plugin_cls.long_description
+        except AttributeError:
+            return self.description
+
+    @property
     def hidden(self):
         """Should this plugin be hidden from UI?"""
         return getattr(self.plugin_cls, "hidden", False)

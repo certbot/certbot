@@ -11,7 +11,6 @@ BootstrapMageiaCommon() {
     if ! $SUDO urpmi --force \
            git \
            gcc \
-           cdialog \
            python-augeas \
            libopenssl-devel \
            libffi-devel \

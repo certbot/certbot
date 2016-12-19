@@ -5,245 +5,21 @@ User Guide
 .. contents:: Table of Contents
    :local:
 
-.. _installation:
+Certbot Commands
+================
 
-System Requirements
-===================
-
-The Let's Encrypt Client presently only runs on Unix-ish OSes that include
-Python 2.6 or 2.7; Python 3.x support will hopefully be added in the future. The
-client requires root access in order to write to ``/etc/letsencrypt``,
-``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to bind to ports 80 and 443
-(if you use the ``standalone`` plugin) and to read and modify webserver
-configurations (if you use the ``apache`` or ``nginx`` plugins).  If none of
-these apply to you, it is theoretically possible to run without root privileges,
-but for most users who want to avoid running an ACME client as root, either
-`letsencrypt-nosudo <https://github.com/diafygi/letsencrypt-nosudo>`_ or
-`simp_le <https://github.com/kuba/simp_le>`_ are more appropriate choices.
-
-The Apache plugin currently requires OS with augeas version 1.0; currently `it
-supports
-<https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/constants.py>`_
-modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
-
-
-Getting Certbot
-===============
-
-.. _certbot.eff.org: https://certbot.eff.org
-
-.. _certbot-auto: https://certbot.eff.org/docs/using.html#certbot-auto
-
-Commands
-========
-
-The Certbot client uses a number of different "commands" (also referred
+Certbot uses a number of different "commands" (also referred
 to, equivalently, as "subcommands") to request specific actions such as
 obtaining, renewing, or revoking certificates. Some of the most important
 and most commonly-used commands will be discussed throughout this
 document; an exhaustive list also appears near the end of the document.
-=======
-Certbot is packaged for many common operating systems and web servers. Check whether
-``certbot`` (or ``letsencrypt``) is packaged for your web server's OS by visiting
-certbot.eff.org_, where you will also find the correct installation instructions for
-your system.
-
-.. Note:: Unless you have very specific requirements, we kindly suggest that you use the Certbot packages provided by your package manager (see certbot.eff.org_). If such packages are not available, we recommend using ``certbot-auto``, which automates the process of installing Certbot on your system.
 
 The ``certbot`` script on your web server might be named ``letsencrypt`` if your system uses an older package, or ``certbot-auto`` if you used an alternate installation method. Throughout the docs, whenever you see ``certbot``, swap in the correct name as needed.
 
-
-Other installation methods
---------------------------
-If you are offline or your operating system doesn't provide a package, you can use
-an alternate method fo install ``certbot``.
-
-Certbot-Auto
-^^^^^^^^^^^^
-The ``certbot-auto`` wrapper script installs Certbot, obtaining some dependencies 
-from your web server OS and putting others in a python virtual environment. You can
-download and run it as follows::
-
-  user@webserver:~$ wget https://dl.eff.org/certbot-auto
-  user@webserver:~$ chmod a+x ./certbot-auto
-  user@webserver:~$ ./certbot-auto --help
-
-.. hint:: The certbot-auto download is protected by HTTPS, which is pretty good, but if you'd like to
-          double check the integrity of the ``certbot-auto`` script, you can use these steps for verification before running it::
-
-            user@server:~$ wget -N https://dl.eff.org/certbot-auto.asc
-            user@server:~$ gpg2 --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
-            user@server:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.asc certbot-auto
-
-The ``certbot-auto`` command updates to the latest client release automatically.
-Since ``certbot-auto`` is a wrapper to ``certbot``, it accepts exactly
-the same command line flags and arguments. For more information, see 
-`Certbot command-line options <https://certbot.eff.org/docs/using.html#command-line-options>`_.  
-
-Running with Docker
-^^^^^^^^^^^^^^^^^^^
-
-Docker_ is an amazingly simple and quick way to obtain a
-certificate. However, this mode of operation is unable to install
-certificates or configure your webserver, because our installer
-plugins cannot reach your webserver from inside the Docker container.
-
-Most users should use the operating system packages (see instructions at 
-certbot.eff.org_) or, as a fallback, ``certbot-auto``. You should only 
-use Docker if you are sure you know what you are doing and have a
-good reason to do so.
-
-You should definitely read the :ref:`where-certs` section, in order to
-know how to manage the certs
-manually. `Our ciphersuites page <ciphers.html>`__
-provides some information about recommended ciphersuites. If none of
-these make much sense to you, you should definitely use the
-certbot-auto_ method, which enables you to use installer plugins
-that cover both of those hard topics.
-
-If you're still not convinced and have decided to use this method,
-from the server that the domain you're requesting a cert for resolves
-to, `install Docker`_, then issue the following command:
-
-.. code-block:: shell
-
-   sudo docker run -it --rm -p 443:443 -p 80:80 --name certbot \
-               -v "/etc/letsencrypt:/etc/letsencrypt" \
-               -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
-               quay.io/letsencrypt/letsencrypt:latest certonly
-
-Running Certbot with the ``certonly`` command will obtain a certificate and place it in the directory
-``/etc/letsencrypt/live`` on your system. Because Certonly cannot install the certificate from 
-within Docker, you must install the certificate manually according to the procedure
-recommended by the provider of your webserver.
-
-For more information about the layout 
-of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`. 
-
-.. _Docker: https://docker.com
-.. _`install Docker`: https://docs.docker.com/userguide/
-
-
-Operating System Packages
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-**FreeBSD**
-
-  * Port: ``cd /usr/ports/security/py-certbot && make install clean``
-  * Package: ``pkg install py27-certbot``
-
-**OpenBSD**
-
-  * Port: ``cd /usr/ports/security/letsencrypt/client && make install clean``
-  * Package: ``pkg_add letsencrypt``
-
-**Arch Linux**
-
-.. code-block:: shell
-
-   sudo pacman -S certbot
-
-**Debian**
-
-If you run Debian Stretch or Debian Sid, you can install certbot packages.
-
-.. code-block:: shell
-
-   sudo apt-get update
-   sudo apt-get install certbot python-certbot-apache
-
-If you don't want to use the Apache plugin, you can omit the
-``python-certbot-apache`` package.
-
-Packages exist for Debian Jessie via backports. First you'll have to follow the
-instructions at http://backports.debian.org/Instructions/ to enable the Jessie backports
-repo, if you have not already done so. Then run:
-
-.. code-block:: shell
-
-   sudo apt-get install letsencrypt python-letsencrypt-apache -t jessie-backports
-
-**Fedora**
-
-.. code-block:: shell
-
-    sudo dnf install letsencrypt
-
-**Gentoo**
-
-The official Certbot client is available in Gentoo Portage. If you
-want to use the Apache plugin, it has to be installed separately:
-
-.. code-block:: shell
-
-   emerge -av app-crypt/letsencrypt
-   emerge -av app-crypt/letsencrypt-apache
-
-Currently, only the Apache plugin is included in Portage. However, if you
-Warning!
-You can use Layman to add the mrueg overlay which does include a package for the
-Certbot Nginx plugin, however, this plugin is known to be buggy and should only
-be used with caution after creating a backup up your Nginx configuration.
-We strongly recommend you use the app-crypt/letsencrypt package instead until
-the Nginx plugin is ready.
-
-.. code-block:: shell
-
-   emerge -av app-portage/layman
-   layman -S
-   layman -a mrueg
-   emerge -av app-crypt/letsencrypt-nginx
-
-When using the Apache plugin, you will run into a "cannot find a cert or key
-directive" error if you're sporting the default Gentoo ``httpd.conf``.
-You can fix this by commenting out two lines in ``/etc/apache2/httpd.conf``
-as follows:
-
-Change
-
-.. code-block:: shell
-
-   <IfDefine SSL>
-   LoadModule ssl_module modules/mod_ssl.so
-   </IfDefine>
-
-to
-
-.. code-block:: shell
-
-   #<IfDefine SSL>
-   LoadModule ssl_module modules/mod_ssl.so
-   #</IfDefine>
-
-For the time being, this is the only way for the Apache plugin to recognise
-the appropriate directives when installing the certificate.
-Note: this change is not required for the other plugins.
-
-**Other Operating Systems**
-
-OS packaging is an ongoing effort. If you'd like to package
-Certbot for your distribution of choice please have a
-look at the :doc:`packaging`.
-
-
-Installing from source
-^^^^^^^^^^^^^^^^^^^^^^
-
-Installation from source is only supported for developers and the
-whole process is described in the :doc:`contributing`.
-
-.. warning:: Please do **not** use ``python setup.py install`` or
-   ``python pip install .``. Please do **not** attempt the
-   installation commands as superuser/root and/or without virtual
-   environment, e.g. ``sudo python setup.py install``, ``sudo pip
-   install``, ``sudo ./venv/bin/...``. These modes of operation might
-   corrupt your operating system and are **not supported** by the
-   Certbot team!
-
 .. _plugins:
 
-Getting certificates
-====================
+Getting certificates (and choosing plugins)
+===========================================
 
 The Certbot client supports a number of different "plugins" that can be
 used to obtain and/or install certificates.
@@ -252,37 +28,50 @@ Plugins that can obtain a cert are called "authenticators" and can be used with
 the "certonly" command. This will carry out the steps needed to validate that you
 control the domain(s) you are requesting a cert for, obtain a cert for the specified
 domain(s), and place it in the ``/etc/letsencrypt`` directory on your
-machine - without editing any of your server's configuration files to serve the 
+machine - without editing any of your server's configuration files to serve the
 obtained certificate. If you specify multiple domains to authenticate, they will
 all be listed in a single certificate. To obtain multiple seperate certificates
 you will need to run Certbot multiple times.
 
-Plugins that can install a cert are called "installers" and can be used with the 
+Plugins that can install a cert are called "installers" and can be used with the
 "install" command.  These plugins can modify your webserver's configuration to
-serve your website over HTTPS using certificates obtained by certbot. 
+serve your website over HTTPS using certificates obtained by certbot.
 
 Plugins that do both can be used with the "certbot run" command, which is the default
 when no command is specified. The "run" subcommand can also be used to specify
 a combination of distinct authenticator and installer plugins.
 
-=========== ==== ==== ===============================================================
-Plugin      Auth Inst Notes
-=========== ==== ==== ===============================================================
-apache_     Y    Y    Automates obtaining and installing a cert with Apache 2.4 on
-                      Debian-based distributions with ``libaugeas0`` 1.0+.
-webroot_    Y    N    Obtains a cert by writing to the webroot directory of an
-                      already running webserver.
-standalone_ Y    N    Uses a "standalone" webserver to obtain a cert. Requires
-                      port 80 or 443 to be available. This is useful on systems
-                      with no webserver, or when direct integration with the local
-                      webserver is not supported or not desired.
-manual_     Y    N    Helps you obtain a cert by giving you instructions to perform
-                      domain validation yourself.
-nginx_      Y    Y    Very experimental and not included in certbot-auto_.
-=========== ==== ==== ===============================================================
+=========== ==== ==== =============================================================== =============================
+Plugin      Auth Inst Notes                                                           Challenge types (and port)
+=========== ==== ==== =============================================================== =============================
+apache_     Y    Y    | Automates obtaining and installing a cert with Apache 2.4 on  tls-sni-01_ (443)
+                      | Debian-based distributions with ``libaugeas0`` 1.0+.
+webroot_    Y    N    | Obtains a cert by writing to the webroot directory of an      http-01_ (80)
+                      | already running webserver.
+nginx_      Y    Y    | Automates obtaining and installing a cert with Nginx. Alpha   tls-sni-01_ (443)
+                      | release shipped with Certbot 0.9.0.
+standalone_ Y    N    | Uses a "standalone" webserver to obtain a cert. Requires      http-01_ (80) or
+                      | port 80 or 443 to be available. This is useful on systems     tls-sni-01_ (443)
+                      | with no webserver, or when direct integration with the local
+                      | webserver is not supported or not desired.
+manual_     Y    N    | Helps you obtain a cert by giving you instructions to perform http-01_ (80) or
+                      | domain validation yourself.                                   dns-01_ (53)
+=========== ==== ==== =============================================================== =============================
+
+Under the hood, plugins use one of several ACME protocol "Challenges_" to
+prove you control a domain.  The options are http-01_ (which uses port 80),
+tls-sni-01_ (port 443) and dns-01_ (requring configuration of a DNS server on
+port 53, thought that's often not the same machine as your webserver). A few
+plugins support more than one challenge type, in which case you can choose one
+with ``--preferred-challenges``.
 
 There are also many third-party-plugins_ available. Below we describe in more detail
 the circumstances in which each plugin can be used, and how to use it.
+
+.. _Challenges: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7
+.. _tls-sni-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7.3
+.. _http-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7.2
+.. _dns-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7.4
 
 Apache
 ------
@@ -337,6 +126,19 @@ your webserver configuration, you might need to modify the configuration
 to ensure that files inside ``/.well-known/acme-challenge`` are served by
 the webserver.
 
+Nginx
+-----
+
+The Nginx plugin has been distributed with Certbot since version 0.9.0 and should
+work for most configurations. Because it is alpha code, we recommend backing up Nginx
+configurations before using it (though you can also revert changes to
+configurations with ``certbot --nginx rollback``). You can use it by providing
+the ``--nginx`` flag on the commandline.
+
+::
+
+   certbot --nginx
+
 Standalone
 ----------
 
@@ -366,15 +168,6 @@ the UI, you can use the plugin to obtain a cert by specifying
 to copy and paste commands into another terminal session, which may
 be on a different computer.
 
-Nginx
------
-
-In the future, if you're running Nginx you will hopefully be able to use this
-plugin to automatically obtain and install your certificate. The Nginx plugin is
-still experimental, however, and is not installed with certbot-auto_. If
-installed, you can select this plugin on the command line by including
-``--nginx``.
-
 .. _third-party-plugins:
 
 Third-party plugins
@@ -400,7 +193,7 @@ postfix_    N    Y    STARTTLS Everywhere is becoming a Certbot Postfix/Exim plu
 =========== ==== ==== ===============================================================
 
 .. _plesk: https://github.com/plesk/letsencrypt-plesk
-.. _haproxy: https://code.greenhost.net/open/letsencrypt-haproxy
+.. _haproxy: https://github.com/greenhost/certbot-haproxy
 .. _s3front: https://github.com/dlapiduz/letsencrypt-s3front
 .. _gandi: https://github.com/Gandi/letsencrypt-gandi
 .. _icecast: https://github.com/e00E/lets-encrypt-icecast
@@ -440,7 +233,7 @@ certificate that contains all of the old domains and one or more additional
 new domains.
 
 ``--allow-subset-of-names`` tells Certbot to continue with cert generation if
-only some of the specified domain authorazations can be obtained. This may
+only some of the specified domain authorizations can be obtained. This may
 be useful if some domains specified in a certificate no longer point at this
 system.
 
@@ -585,43 +378,41 @@ The following files are available:
 
   This is what Apache needs for `SSLCertificateKeyFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatekeyfile>`_,
-  and nginx for `ssl_certificate_key
+  and Nginx for `ssl_certificate_key
   <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate_key>`_.
 
-``cert.pem``
-  Server certificate only.
-
-  This is what Apache < 2.4.8 needs for `SSLCertificateFile
-  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_.
-
-``chain.pem``
-  All certificates that need to be served by the browser **excluding**
-  server certificate, i.e. root and intermediate certificates only.
-
-  This is what Apache < 2.4.8 needs for `SSLCertificateChainFile
-  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatechainfile>`_,
-  and what nginx >= 1.3.7 needs for `ssl_trusted_certificate
-  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_trusted_certificate>`_.
-
 ``fullchain.pem``
-  All certificates, **including** server certificate. This is
-  concatenation of ``cert.pem`` and ``chain.pem``.
+  All certificates, **including** server certificate (aka leaf certificate or
+  end-entity certificate). The server certificate is the first one in this file,
+  followed by any intermediates.
 
   This is what Apache >= 2.4.8 needs for `SSLCertificateFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_,
-  and what nginx needs for `ssl_certificate
+  and what Nginx needs for `ssl_certificate
   <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate>`_.
 
+``cert.pem`` and ``chain.pem`` (less common)
+  ``cert.pem`` contains the server certificate by itself, and
+  ``chain.pem`` contains the additional intermediate certificate or
+  certificates that web browsers will need in order to validate the
+  server certificate. If you provide one of these files to your web
+  server, you **must** provide both of them, or some browsers will show
+  "This Connection is Untrusted" errors for your site, `some of the time
+  <https://whatsmychaincert.com/>`_.
 
-For both chain files, all certificates are ordered from root (primary
-certificate) towards leaf.
+  Apache < 2.4.8 needs these for `SSLCertificateFile
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_.
+  and `SSLCertificateChainFile
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatechainfile>`_,
+  respectively.
 
-Please note, that **you must use** either ``chain.pem`` or
-``fullchain.pem``. In case of webservers, using only ``cert.pem``,
-will cause nasty errors served through the browsers!
+  If you're using OCSP stapling with Nginx >= 1.3.7, ``chain.pem`` should be
+  provided as the `ssl_trusted_certificate
+  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_trusted_certificate>`_
+  to validate OCSP responses.
 
-.. note:: All files are PEM-encoded (as the filename suffix
-   suggests). If you need other format, such as DER or PFX, then you
+.. note:: All files are PEM-encoded.
+   If you need other format, such as DER or PFX, then you
    could convert using ``openssl``. You can automate that with
    ``--renew-hook`` if you're using automatic renewal_.
 
@@ -651,14 +442,15 @@ By default, the following locations are searched:
 Getting help
 ============
 
-If you're having problems you can chat with us on `IRC (#certbot @
-OFTC) <https://webchat.oftc.net?channels=%23certbot>`_ or at
-`IRC (#letsencrypt @ freenode) <https://webchat.freenode.net?channels=%23letsencrypt>`_
-or get support on the Let's Encrypt `forums <https://community.letsencrypt.org>`_.
+If you're having problems, we recommend posting on the Let's Encrypt
+`Community Forum <https://community.letsencrypt.org>`_.
+
+You can also chat with us on IRC: `(#certbot @
+OFTC) <https://webchat.oftc.net?channels=%23certbot>`_ or
+`(#letsencrypt @ freenode) <https://webchat.freenode.net?channels=%23letsencrypt>`_.
 
 If you find a bug in the software, please do report it in our `issue
-tracker
-<https://github.com/certbot/certbot/issues>`_. Remember to
+tracker <https://github.com/certbot/certbot/issues>`_. Remember to
 give us as much information as possible:
 
 - copy and paste exact command line used and the output (though mind
@@ -669,5 +461,3 @@ give us as much information as possible:
 - copy and paste ``certbot --version`` output
 - your operating system, including specific version
 - specify which installation method you've chosen
-
-

@@ -1,10 +1,12 @@
 """Tests for certbot.plugins.util."""
 import os
+import socket
 import unittest
-import sys
 
 import mock
-from six.moves import reload_module  # pylint: disable=import-error
+
+from certbot.plugins.util import PSUTIL_REQUIREMENT
+from certbot.tests import util as test_util
 
 
 class PathSurgeryTest(unittest.TestCase):
@@ -32,91 +34,47 @@ class PathSurgeryTest(unittest.TestCase):
             self.assertTrue("/tmp" in os.environ["PATH"])
 
 
-class AlreadyListeningTestNoPsutil(unittest.TestCase):
+class AlreadyListeningTest(unittest.TestCase):
+    """Tests for certbot.plugins.already_listening."""
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.plugins.util import already_listening
+        return already_listening(*args, **kwargs)
+
+
+class AlreadyListeningTestNoPsutil(AlreadyListeningTest):
     """Tests for certbot.plugins.already_listening when
     psutil is not available"""
-    def setUp(self):
-        import certbot.plugins.util
-        # Ensure we get importerror
-        self.psutil = None
-        if "psutil" in sys.modules:
-            self.psutil = sys.modules['psutil']
-        sys.modules['psutil'] = None
-        # Reload hackery to ensure getting non-psutil version
-        # loaded to memory
-        reload_module(certbot.plugins.util)
-
-    def tearDown(self):
-        # Need to reload the module to ensure
-        # getting back to normal
-        import certbot.plugins.util
-        sys.modules["psutil"] = self.psutil
-        reload_module(certbot.plugins.util)
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        with mock.patch("certbot.plugins.util.USE_PSUTIL", False):
+            return super(
+                AlreadyListeningTestNoPsutil, cls)._call(*args, **kwargs)
 
     @mock.patch("certbot.plugins.util.zope.component.getUtility")
     def test_ports_available(self, mock_getutil):
-        import certbot.plugins.util as plugins_util
         # Ensure we don't get error
         with mock.patch("socket.socket.bind"):
-            self.assertFalse(plugins_util.already_listening(80))
-            self.assertFalse(plugins_util.already_listening(80, True))
+            self.assertFalse(self._call(80))
+            self.assertFalse(self._call(80, True))
             self.assertEqual(mock_getutil.call_count, 0)
 
     @mock.patch("certbot.plugins.util.zope.component.getUtility")
     def test_ports_blocked(self, mock_getutil):
-        sys.modules["psutil"] = None
-        import certbot.plugins.util as plugins_util
-        import socket
-        with mock.patch("socket.socket.bind", side_effect=socket.error):
-            self.assertTrue(plugins_util.already_listening(80))
-            self.assertTrue(plugins_util.already_listening(80, True))
-        with mock.patch("socket.socket", side_effect=socket.error):
-            self.assertFalse(plugins_util.already_listening(80))
+        with mock.patch("certbot.plugins.util.socket.socket.bind") as mock_bind:
+            mock_bind.side_effect = socket.error
+            self.assertTrue(self._call(80))
+            self.assertTrue(self._call(80, True))
+        with mock.patch("certbot.plugins.util.socket.socket") as mock_socket:
+            mock_socket.side_effect = socket.error
+            self.assertFalse(self._call(80))
         self.assertEqual(mock_getutil.call_count, 2)
 
 
-def psutil_available():
-    """Checks if psutil can be imported.
-
-    :rtype: bool
-    :returns: ``True`` if psutil can be imported, otherwise, ``False``
-
-    """
-    try:
-        import psutil  # pylint: disable=unused-variable
-    except ImportError:
-        return False
-    return True
-
-
-def skipUnless(condition, reason):
-    """Skip tests unless a condition holds.
-
-    This implements the basic functionality of unittest.skipUnless
-    which is only available on Python 2.7+.
-
-    :param bool condition: If ``False``, the test will be skipped
-    :param str reason: the reason for skipping the test
-
-    :rtype: callable
-    :returns: decorator that hides tests unless condition is ``True``
-
-    """
-    if hasattr(unittest, "skipUnless"):
-        return unittest.skipUnless(condition, reason)
-    elif condition:
-        return lambda cls: cls
-    else:
-        return lambda cls: None
-
-
-@skipUnless(psutil_available(), "optional dependency psutil is not available")
-class AlreadyListeningTestPsutil(unittest.TestCase):
+@test_util.skip_unless(test_util.requirement_available(PSUTIL_REQUIREMENT),
+                       "optional dependency psutil is not available")
+class AlreadyListeningTestPsutil(AlreadyListeningTest):
     """Tests for certbot.plugins.already_listening."""
-    def _call(self, *args, **kwargs):
-        from certbot.plugins.util import already_listening
-        return already_listening(*args, **kwargs)
-
     @mock.patch("certbot.plugins.util.psutil.net_connections")
     @mock.patch("certbot.plugins.util.psutil.Process")
     @mock.patch("certbot.plugins.util.zope.component.getUtility")

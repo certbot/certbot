@@ -40,8 +40,15 @@ class Validator(object):
             return False
 
         redirect_location = response.headers.get("location", "")
+        # We're checking that the redirect we added behaves correctly.
+        # It's okay for some server configuration to redirect to an
+        # http URL, as long as it's on some other domain.
         if not redirect_location.startswith("https://"):
-            return False
+            if not redirect_location.startswith("http://"):
+                return False
+            else:
+                if redirect_location[len("http://"):] == name:
+                    return False
 
         if response.status_code != 301:
             logger.error("Server did not redirect with permanent code")

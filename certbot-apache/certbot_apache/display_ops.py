@@ -85,7 +85,8 @@ def _vhost_menu(domain, vhosts):
             "or Address of {0}.{1}Which virtual host would you "
             "like to choose?\n(note: conf files with multiple "
             "vhosts are not yet supported)".format(domain, os.linesep),
-            choices, help_label="More Info", ok_label="Select")
+            choices, help_label="More Info",
+            ok_label="Select", force_interactive=True)
     except errors.MissingCommandlineFlag:
         msg = ("Encountered vhost ambiguity but unable to ask for user guidance in "
                "non-interactive mode. Currently Certbot needs each vhost to be "
@@ -101,4 +102,4 @@ def _more_info_vhost(vhost):
     zope.component.getUtility(interfaces.IDisplay).notification(
         "Virtual Host Information:{0}{1}{0}{2}".format(
             os.linesep, "-" * (display_util.WIDTH - 4), str(vhost)),
-        height=display_util.HEIGHT)
+        force_interactive=True)

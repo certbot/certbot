@@ -17,6 +17,7 @@ import sys
 
 import configargparse
 
+from certbot import constants
 from certbot import errors
 
 
@@ -151,11 +152,11 @@ def safe_open(path, mode="w", chmod=None, buffering=None):
         mode, *fdopen_args)
 
 
-def _unique_file(path, filename_pat, count, mode):
+def _unique_file(path, filename_pat, count, chmod, mode):
     while True:
         current_path = os.path.join(path, filename_pat(count))
         try:
-            return safe_open(current_path, chmod=mode),\
+            return safe_open(current_path, chmod=chmod, mode=mode),\
                 os.path.abspath(current_path)
         except OSError as err:
             # "File exists," is okay, try a different name.
@@ -164,11 +165,12 @@ def _unique_file(path, filename_pat, count, mode):
         count += 1
 
 
-def unique_file(path, mode=0o777):
+def unique_file(path, chmod=0o777, mode="w"):
     """Safely finds a unique file.
 
     :param str path: path/filename.ext
-    :param int mode: File mode
+    :param int chmod: File mode
+    :param str mode: Open mode
 
     :returns: tuple of file object and file name
 
@@ -176,15 +178,16 @@ def unique_file(path, mode=0o777):
     path, tail = os.path.split(path)
     return _unique_file(
         path, filename_pat=(lambda count: "%04d_%s" % (count, tail)),
-        count=0, mode=mode)
+        count=0, chmod=chmod, mode=mode)
 
 
-def unique_lineage_name(path, filename, mode=0o777):
+def unique_lineage_name(path, filename, chmod=0o644, mode="w"):
     """Safely finds a unique file using lineage convention.
 
     :param str path: directory path
     :param str filename: proposed filename
-    :param int mode: file mode
+    :param int chmod: file mode
+    :param str mode: open mode
 
     :returns: tuple of file object and file name (which may be modified
         from the requested one by appending digits to ensure uniqueness)
@@ -196,13 +199,13 @@ def unique_lineage_name(path, filename, mode=0o777):
     """
     preferred_path = os.path.join(path, "%s.conf" % (filename))
     try:
-        return safe_open(preferred_path, chmod=mode), preferred_path
+        return safe_open(preferred_path, chmod=chmod), preferred_path
     except OSError as err:
         if err.errno != errno.EEXIST:
             raise
     return _unique_file(
         path, filename_pat=(lambda count: "%s-%04d.conf" % (filename, count)),
-        count=1, mode=mode)
+        count=1, chmod=chmod, mode=mode)
 
 
 def safely_remove(path):
@@ -390,12 +393,44 @@ def add_deprecated_argument(add_argument, argument_name, nargs):
                  help=argparse.SUPPRESS, nargs=nargs)
 
 
+def enforce_le_validity(domain):
+    """Checks that Let's Encrypt will consider domain to be valid.
+
+    :param str domain: FQDN to check
+    :type domain: `str` or `unicode`
+    :returns: The domain cast to `str`, with ASCII-only contents
+    :rtype: str
+    :raises ConfigurationError: for invalid domains and cases where Let's
+                                Encrypt currently will not issue certificates
+
+    """
+    domain = enforce_domain_sanity(domain)
+    if not re.match("^[A-Za-z0-9.-]*$", domain):
+        raise errors.ConfigurationError(
+            "{0} contains an invalid character. "
+            "Valid characters are A-Z, a-z, 0-9, ., and -.".format(domain))
+
+    labels = domain.split(".")
+    if len(labels) < 2:
+        raise errors.ConfigurationError(
+            "{0} needs at least two labels".format(domain))
+    for label in labels:
+        if label.startswith("-"):
+            raise errors.ConfigurationError(
+                'label "{0}" in domain "{1}" cannot start with "-"'.format(
+                    label, domain))
+        if label.endswith("-"):
+            raise errors.ConfigurationError(
+                'label "{0}" in domain "{1}" cannot end with "-"'.format(
+                    label, domain))
+    return domain
+
 def enforce_domain_sanity(domain):
     """Method which validates domain value and errors out if
     the requirements are not met.
 
     :param domain: Domain to check
-    :type domains: `str` or `unicode`
+    :type domain: `str` or `unicode`
     :raises ConfigurationError: for invalid domains and cases where Let's
                                 Encrypt currently will not issue certificates
 
@@ -404,19 +439,13 @@ def enforce_domain_sanity(domain):
     """
     if isinstance(domain, six.text_type):
         wildcard_marker = u"*."
-        punycode_marker = u"xn--"
     else:
         wildcard_marker = b"*."
-        punycode_marker = b"xn--"
 
     # Check if there's a wildcard domain
     if domain.startswith(wildcard_marker):
         raise errors.ConfigurationError(
             "Wildcard domains are not supported: {0}".format(domain))
-    # Punycode
-    if punycode_marker in domain:
-        raise errors.ConfigurationError(
-            "Punycode domains are not presently supported: {0}".format(domain))
 
     # Unicode
     try:
@@ -424,12 +453,8 @@ def enforce_domain_sanity(domain):
             domain = domain.decode('utf-8')
         domain.encode('ascii')
     except UnicodeError:
-        error_fmt = (u"Internationalized domain names "
-                     "are not presently supported: {0}")
-        if isinstance(domain, six.text_type):
-            raise errors.ConfigurationError(error_fmt.format(domain))
-        else:
-            raise errors.ConfigurationError(str(error_fmt).format(domain))
+        raise errors.ConfigurationError("Non-ASCII domain names not supported. "
+            "To issue for an Internationalized Domain Name, use Punycode.")
 
     domain = domain.lower()
 
@@ -474,3 +499,14 @@ def get_strict_version(normalized):
     # strict version ending with "a" and a number designates a pre-release
     # pylint: disable=no-member
     return distutils.version.StrictVersion(normalized.replace(".dev", "a"))
+
+
+def is_staging(srv):
+    """
+    Determine whether a given ACME server is a known test / staging server.
+
+    :param str srv: the URI for the ACME server
+    :returns: True iff srv is a known test / staging server
+    :rtype bool:
+    """
+    return srv == constants.STAGING_URI or "staging" in srv

@@ -13,7 +13,7 @@ from certbot.display import util as display_util
 
 from certbot.plugins import common
 
-from certbot.tests import test_util
+from certbot.tests import util as test_util
 
 from certbot_apache import configurator
 from certbot_apache import constants
@@ -64,7 +64,8 @@ class ParserTest(ApacheTest):  # pytlint: disable=too-few-public-methods
               vhost_root="debian_apache_2_4/multiple_vhosts/apache2/sites-available"):
         super(ParserTest, self).setUp(test_dir, config_root, vhost_root)
 
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
+        zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
+                                                               False))
 
         from certbot_apache.parser import ApacheParser
         self.aug = augeas.Augeas(

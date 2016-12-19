@@ -1,7 +1,6 @@
 """Functionality for autorenewal and associated juggling of configurations"""
 from __future__ import print_function
 import copy
-import glob
 import logging
 import os
 import traceback
@@ -11,9 +10,7 @@ import zope.component
 
 import OpenSSL
 
-from certbot import configuration
 from certbot import cli
-from certbot import constants
 
 from certbot import crypto_util
 from certbot import errors
@@ -31,20 +28,15 @@ logger = logging.getLogger(__name__)
 # the renewal configuration process loses this information.
 STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
-                    "standalone_supported_challenges"]
+                    "standalone_supported_challenges", "renew_hook"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
-
-
-def renewal_conf_files(config):
-    """Return /path/to/*.conf in the renewal conf directory"""
-    return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
 
 
 def _reconstitute(config, full_path):
     """Try to instantiate a RenewableCert, updating config with relevant items.
 
     This is specifically for use in renewal and enforces several checks
-    and policies to ensure that we can try to proceed with the renwal
+    and policies to ensure that we can try to proceed with the renewal
     request. The config argument is modified by including relevant options
     read from the renewal configuration file.
 
@@ -58,8 +50,7 @@ def _reconstitute(config, full_path):
 
     """
     try:
-        renewal_candidate = storage.RenewableCert(
-            full_path, configuration.RenewerConfiguration(config))
+        renewal_candidate = storage.RenewableCert(full_path, config)
     except (errors.CertStorageError, IOError) as exc:
         logger.warning(exc)
         logger.warning("Renewal configuration file %s is broken. Skipping.", full_path)
@@ -209,9 +200,6 @@ def should_renew(config, lineage):
 
 def _avoid_invalidating_lineage(config, lineage, original_server):
     "Do not renew a valid cert with one from a staging server!"
-    def _is_staging(srv):
-        return srv == constants.STAGING_URI or "staging" in srv
-
     # Some lineages may have begun with --staging, but then had production certs
     # added to them
     latest_cert = OpenSSL.crypto.load_certificate(
@@ -220,8 +208,8 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
     # we should test more methodically
     now_valid = "fake" not in repr(latest_cert.get_issuer()).lower()
 
-    if _is_staging(config.server):
-        if not _is_staging(original_server) or now_valid:
+    if util.is_staging(config.server):
+        if not util.is_staging(original_server) or now_valid:
             if not config.break_my_certs:
                 names = ", ".join(lineage.names())
                 raise errors.Error(
@@ -230,12 +218,12 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
                     "unless you use the --break-my-certs flag!".format(names))
 
 
-def renew_cert(config, domains, le_client, lineage):
+def renew_cert(config, le_client, lineage):
     "Renew a certificate lineage."
     renewal_params = lineage.configuration["renewalparams"]
     original_server = renewal_params.get("server", cli.flag_default("server"))
     _avoid_invalidating_lineage(config, lineage, original_server)
-    new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
+    new_certr, new_chain, new_key, _ = le_client.obtain_certificate(lineage.names())
     if config.dry_run:
         logger.debug("Dry run: skipping updating lineage at %s",
                     os.path.dirname(lineage.cert))
@@ -244,12 +232,11 @@ def renew_cert(config, domains, le_client, lineage):
         new_cert = OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, new_certr.body.wrapped)
         new_chain = crypto_util.dump_pyopenssl_chain(new_chain)
-        renewal_conf = configuration.RenewerConfiguration(config.namespace)
         # TODO: Check return value of save_successor
-        lineage.save_successor(prior_version, new_cert, new_key.pem, new_chain, renewal_conf)
+        lineage.save_successor(prior_version, new_cert, new_key.pem, new_chain, config)
         lineage.update_all_links_to(lineage.latest_common_version())
 
-    hooks.renew_hook(config, domains, lineage.live_dir)
+    hooks.renew_hook(config, lineage.names(), lineage.live_dir)
 
 
 def report(msgs, category):
@@ -300,26 +287,31 @@ def _renew_describe_results(config, renew_successes, renew_failures,
     print("\n".join(out))
 
 
-def renew_all_lineages(config):
+def handle_renewal_request(config):
     """Examine each lineage; renew if due and report results"""
 
     # This is trivially False if config.domains is empty
     if any(domain not in config.webroot_map for domain in config.domains):
         # If more plugins start using cli.add_domains,
         # we may want to only log a warning here
-        raise errors.Error("Currently, the renew verb is only capable of "
+        raise errors.Error("Currently, the renew verb is capable of either "
                            "renewing all installed certificates that are due "
-                           "to be renewed; individual domains cannot be "
-                           "specified with this action. If you would like to "
-                           "renew specific certificates, use the certonly "
+                           "to be renewed or renewing a single certificate specified "
+                           "by its name. If you would like to renew specific "
+                           "certificates by their domains, use the certonly "
                            "command. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
-    renewer_config = configuration.RenewerConfiguration(config)
+
+    if config.certname:
+        conf_files = [storage.renewal_file_for_certname(config, config.certname)]
+    else:
+        conf_files = storage.renewal_conf_files(config)
+
     renew_successes = []
     renew_failures = []
     renew_skipped = []
     parse_failures = []
-    for renewal_file in renewal_conf_files(renewer_config):
+    for renewal_file in conf_files:
         disp = zope.component.getUtility(interfaces.IDisplay)
         disp.notification("Processing " + renewal_file, pause=False)
         lineage_config = copy.deepcopy(config)
@@ -341,6 +333,7 @@ def renew_all_lineages(config):
             else:
                 # XXX: ensure that each call here replaces the previous one
                 zope.component.provideUtility(lineage_config)
+                renewal_candidate.ensure_deployed()
                 if should_renew(lineage_config, renewal_candidate):
                     plugins = plugins_disco.PluginsRegistry.find_all()
                     from certbot import main

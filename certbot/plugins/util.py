@@ -5,13 +5,19 @@ import socket
 
 import zope.component
 
+from acme import errors as acme_errors
+from acme import util as acme_util
+
 from certbot import interfaces
 from certbot import util
 
+PSUTIL_REQUIREMENT = "psutil>=2.2.1"
+
 try:
-    import psutil
+    acme_util.activate(PSUTIL_REQUIREMENT)
+    import psutil  # pragma: no cover
     USE_PSUTIL = True
-except ImportError:
+except acme_errors.DependencyError:  # pragma: no cover
     USE_PSUTIL = False
 
 logger = logging.getLogger(__name__)
@@ -85,6 +91,7 @@ def already_listening_socket(port, renewer=False):
 
     try:
         testsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+        testsocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             testsocket.bind(("", port))
         except socket.error:
@@ -96,7 +103,7 @@ def already_listening_socket(port, renewer=False):
                 "Port {0} is already in use by another process. This will "
                 "prevent us from binding to that port. Please stop the "
                 "process that is populating the port in question and try "
-                "again. {1}".format(port, extra), height=13)
+                "again. {1}".format(port, extra), force_interactive=True)
             return True
         finally:
             testsocket.close()
@@ -145,7 +152,7 @@ def already_listening_psutil(port, renewer=False):
                 "on TCP port {2}. This will prevent us from binding to "
                 "that port. Please stop the {0} program temporarily "
                 "and then try again.{3}".format(name, pid, port, extra),
-                height=13)
+                force_interactive=True)
             return True
     except (psutil.NoSuchProcess, psutil.AccessDenied):
         # Perhaps the result of a race where the process could have

@@ -63,6 +63,18 @@ class PluginEntryPointTest(unittest.TestCase):
         self.assertEqual(
             "Desc (sa)", self.plugin_ep.description_with_name)
 
+    def test_long_description(self):
+        self.plugin_ep.plugin_cls = mock.MagicMock(
+            long_description="Long desc")
+        self.assertEqual(
+            "Long desc", self.plugin_ep.long_description)
+
+    def test_long_description_nonexistent(self):
+        self.plugin_ep.plugin_cls = mock.MagicMock(
+            description="Long desc not found", spec=["description"])
+        self.assertEqual(
+            "Long desc not found", self.plugin_ep.long_description)
+
     def test_ifaces(self):
         self.assertTrue(self.plugin_ep.ifaces((interfaces.IAuthenticator,)))
         self.assertFalse(self.plugin_ep.ifaces((interfaces.IInstaller,)))

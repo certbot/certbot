@@ -10,7 +10,7 @@ from acme import jose
 from certbot import achallenges
 
 from certbot.tests import acme_util
-from certbot.tests import test_util
+from certbot.tests import util as test_util
 
 
 class NamespaceFunctionsTest(unittest.TestCase):

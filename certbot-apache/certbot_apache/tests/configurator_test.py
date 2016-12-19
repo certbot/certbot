@@ -24,6 +24,8 @@ from certbot_apache.tests import util
 class MultipleVhostsTest(util.ApacheTest):
     """Test two standard well-configured HTTP vhosts."""
 
+    _multiprocess_can_split_ = True
+
     def setUp(self):  # pylint: disable=arguments-differ
         super(MultipleVhostsTest, self).setUp()
 
@@ -775,21 +777,6 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertRaises(errors.MisconfigurationError,
                           self.config.config_test)
 
-    def test_get_all_certs_keys(self):
-        c_k = self.config.get_all_certs_keys()
-        self.assertEqual(len(c_k), 3)
-        cert, key, path = next(iter(c_k))
-        self.assertTrue("cert" in cert)
-        self.assertTrue("key" in key)
-        self.assertTrue("default-ssl" in path or "ocsp-ssl" in path)
-
-    def test_get_all_certs_keys_malformed_conf(self):
-        self.config.parser.find_dir = mock.Mock(
-            side_effect=[["path"], [], ["path"], [], ["path"], []])
-        c_k = self.config.get_all_certs_keys()
-
-        self.assertFalse(c_k)
-
     def test_more_info(self):
         self.assertTrue(self.config.more_info())
 
@@ -1256,6 +1243,7 @@ class MultipleVhostsTest(util.ApacheTest):
 class AugeasVhostsTest(util.ApacheTest):
     """Test vhosts with illegal names dependant on augeas version."""
     # pylint: disable=protected-access
+    _multiprocess_can_split_ = True
 
     def setUp(self):  # pylint: disable=arguments-differ
         td = "debian_apache_2_4/augeas_vhosts"
