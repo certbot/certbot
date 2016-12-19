@@ -18,8 +18,8 @@ class Authenticator(common.Plugin):
     """Manual authenticator
 
     This plugin allows the user to perform the domain validation
-    challenge(s) themselves. This can be done either be done manually
-    by the user or through shell scripts provided to Certbot.
+    challenge(s) themselves. This either be done manually by the user or
+    through shell scripts provided to Certbot.
 
     """
 
@@ -103,13 +103,13 @@ s.serve_forever()" """
         self._verify_ip_logging_ok()
 
         if self.conf('auth-hook'):
-            perform = self._perform_achall_with_script
+            perform_achall = self._perform_achall_with_script
         else:
-            perform = self._perform_achall_manually
+            perform_achall = self._perform_achall_manually
 
         responses = []
         for achall in achalls:
-            perform(achall)
+            perform_achall(achall)
             responses.append(achall.response(achall.account_key))
         return responses
 
