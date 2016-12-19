@@ -33,7 +33,7 @@ class AuthenticatorTest(unittest.TestCase):
     def test_prepare_bad_hook(self):
         self.config.manual_auth_hook = os.path.abspath(os.sep)  # is / on UNIX
         self.config.validate_hooks = True
-        self.assertRaises(errors.CommandNotFound, self.auth.prepare)
+        self.assertRaises(errors.CommandNotExecutable, self.auth.prepare)
 
     def test_more_info(self):
         self.assertTrue(isinstance(self.auth.more_info(), six.string_types))

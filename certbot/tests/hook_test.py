@@ -6,7 +6,6 @@ import unittest
 
 import mock
 
-from certbot import errors
 from certbot import hooks
 
 class HookTest(unittest.TestCase):
@@ -16,35 +15,14 @@ class HookTest(unittest.TestCase):
     def tearDown(self):
         pass
 
-    @mock.patch('certbot.hooks._prog')
-    def test_validate_hooks(self, mock_prog):
-        config = mock.MagicMock(pre_hook="", post_hook="ls -lR", renew_hook="uptime")
+    @mock.patch('certbot.hooks.util.verify_exe_exists')
+    def test_validate_hooks(self, mock_verify):
+        config = mock.MagicMock(
+            pre_hook=None, post_hook="ls -lR", renew_hook="uptime")
         hooks.validate_hooks(config)
-        self.assertEqual(mock_prog.call_count, 2)
-        self.assertEqual(mock_prog.call_args_list[1][0][0], 'uptime')
-        self.assertEqual(mock_prog.call_args_list[0][0][0], 'ls')
-        mock_prog.return_value = None
-        config = mock.MagicMock(pre_hook="explodinator", post_hook="", renew_hook="")
-        self.assertRaises(errors.CommandNotFound, hooks.validate_hooks, config)
-
-    @mock.patch('certbot.hooks._is_exe')
-    def test_which(self, mock_is_exe):
-        mock_is_exe.return_value = True
-        self.assertEqual(hooks._which("/path/to/something"), "/path/to/something")
-
-        with mock.patch.dict('os.environ', {"PATH": "/floop:/fleep"}):
-            mock_is_exe.return_value = True
-            self.assertEqual(hooks._which("pingify"), "/floop/pingify")
-            mock_is_exe.return_value = False
-            self.assertEqual(hooks._which("pingify"), None)
-        self.assertEqual(hooks._which("/path/to/something"), None)
-
-    @mock.patch('certbot.hooks._which')
-    def test_prog(self, mockwhich):
-        mockwhich.return_value = "/very/very/funky"
-        self.assertEqual(hooks._prog("funky"), "funky")
-        mockwhich.return_value = None
-        self.assertEqual(hooks._prog("funky"), None)
+        self.assertEqual(mock_verify.call_count, 2)
+        self.assertEqual(mock_verify.call_args_list[1][0][0], 'uptime')
+        self.assertEqual(mock_verify.call_args_list[0][0][0], 'ls')
 
     def _test_a_hook(self, config, hook_function, calls_expected):
         with mock.patch('certbot.hooks.logger') as mock_logger:
