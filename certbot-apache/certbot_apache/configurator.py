@@ -1,6 +1,7 @@
 """Apache Configuration based off of Augeas Configurator."""
 # pylint: disable=too-many-lines
 import filecmp
+import fnmatch
 import logging
 import os
 import re
@@ -1032,11 +1033,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: bool
 
         """
+        # use lowercase strings because fnmatch can be case sensitive
+        target_name = target_name.lower()
         matches = self.parser.find_dir(
             "ServerAlias", start=vh_path, exclude=False)
         for match in matches:
-            alias = self.aug.get(match)
-            if alias.startswith("*.") and target_name.endswith(alias[1:]):
+            alias = self.aug.get(match).lower()
+            # fnmatch treats "[seq]" specially and [ or ] characters aren't
+            # valid in Apache but Apache doesn't error out if they are present
+            if "[" not in alias and fnmatch.fnmatch(target_name, alias):
                 return True
         return False
 
