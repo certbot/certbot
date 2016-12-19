@@ -25,8 +25,12 @@ class CertStorageError(Error):
     """Generic `.CertStorage` error."""
 
 
-class HookCommandNotFound(Error):
-    """Failed to find a hook command in the PATH."""
+class CommandNotExecutable(Error):
+    """Command provided is not executable."""
+
+
+class CommandNotFound(Error):
+    """Failed to find a command in PATH."""
 
 
 class SignalExit(Error):

@@ -25,7 +25,7 @@ class HookTest(unittest.TestCase):
         self.assertEqual(mock_prog.call_args_list[0][0][0], 'ls')
         mock_prog.return_value = None
         config = mock.MagicMock(pre_hook="explodinator", post_hook="", renew_hook="")
-        self.assertRaises(errors.HookCommandNotFound, hooks.validate_hooks, config)
+        self.assertRaises(errors.CommandNotFound, hooks.validate_hooks, config)
 
     @mock.patch('certbot.hooks._is_exe')
     def test_which(self, mock_is_exe):

@@ -24,7 +24,7 @@ def _prog(shell_cmd):
 def validate_hook(shell_cmd, hook_name):
     """Check that a command provided as a hook is plausibly executable.
 
-    :raises .errors.HookCommandNotFound: if the command is not found
+    :raises .errors.CommandNotFound: if the command is not found
     """
     if shell_cmd:
         cmd = shell_cmd.split(None, 1)[0]
@@ -32,7 +32,7 @@ def validate_hook(shell_cmd, hook_name):
             path = os.environ["PATH"]
             msg = "Unable to find {2}-hook command {0} in the PATH.\n(PATH is {1})".format(
                 cmd, path, hook_name)
-            raise errors.HookCommandNotFound(msg)
+            raise errors.CommandNotFound(msg)
 
 def pre_hook(config):
     "Run pre-hook if it's defined and hasn't been run."
