@@ -220,10 +220,6 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertRaises(
             errors.PluginError, self.config.choose_vhost, "none.com")
 
-    def test_choosevhost_select_vhost_with_wildcard(self):
-        chosen_vhost = self.config.choose_vhost("blue.purple.com", temp=True)
-        self.assertEqual(self.vh_truth[6], chosen_vhost)
-
     def test_findbest_continues_on_short_domain(self):
         # pylint: disable=protected-access
         chosen_vhost = self.config._find_best_vhost("purple.com")

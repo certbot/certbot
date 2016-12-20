@@ -363,18 +363,24 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return vhost
 
     def included_in_wildcard(self, names, target_name):
-        """Helper function to see if alias is covered by wildcard"""
-        target_name = target_name.split(".")[::-1]
-        wildcards = [domain.split(".")[1:] for domain in
-                     names if domain.startswith("*")]
-        for wildcard in wildcards:
-            if len(wildcard) > len(target_name):
-                continue
-            for idx, segment in enumerate(wildcard[::-1]):
-                if segment != target_name[idx]:
-                    break
-            else:
-                # https://docs.python.org/2/tutorial/controlflow.html#break-and-continue-statements-and-else-clauses-on-loops
+        """Is target_name covered by a wildcard?
+
+        :param names: server aliases
+        :type names: `collections.Iterable` of `str`
+        :param str target_name: name to compare with wildcards
+
+        :returns: True if target_name is covered by a wildcard,
+            otherwise, False
+        :rtype: bool
+
+        """
+        # use lowercase strings because fnmatch can be case sensitive
+        target_name = target_name.lower()
+        for name in names:
+            name = name.lower()
+            # fnmatch treats "[seq]" specially and [ or ] characters aren't
+            # valid in Apache but Apache doesn't error out if they are present
+            if "[" not in name and fnmatch.fnmatch(target_name, name):
                 return True
         return False
 
@@ -1033,17 +1039,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: bool
 
         """
-        # use lowercase strings because fnmatch can be case sensitive
-        target_name = target_name.lower()
         matches = self.parser.find_dir(
             "ServerAlias", start=vh_path, exclude=False)
-        for match in matches:
-            alias = self.aug.get(match).lower()
-            # fnmatch treats "[seq]" specially and [ or ] characters aren't
-            # valid in Apache but Apache doesn't error out if they are present
-            if "[" not in alias and fnmatch.fnmatch(target_name, alias):
-                return True
-        return False
+        aliases = (self.aug.get(match) for match in matches)
+        return self.included_in_wildcard(aliases, target_name)
 
     def _add_name_vhost_if_necessary(self, vhost):
         """Add NameVirtualHost Directives if necessary for new vhost.
