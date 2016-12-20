@@ -262,6 +262,12 @@ class ParseTest(unittest.TestCase):
         self.assertFalse(cli.option_was_set(
             config_dir_option, cli.flag_default(config_dir_option)))
 
+    def test_force_interactive(self):
+        self.assertRaises(
+            errors.Error, self.parse, "renew --force-interactive".split())
+        self.assertRaises(
+            errors.Error, self.parse, "-n --force-interactive".split())
+
 
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""

@@ -463,7 +463,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             zope.component.getUtility(interfaces.IDisplay).notification(
                 "Apache mod_macro seems to be in use in file(s):\n{0}"
                 "\n\nUnfortunately mod_macro is not yet supported".format(
-                    "\n  ".join(vhost_macro)))
+                    "\n  ".join(vhost_macro)), force_interactive=True)
 
         return all_names
 

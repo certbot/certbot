@@ -251,7 +251,8 @@ s.serve_forever()" """
         if not (self.conf("test-mode") or self.conf("public-ip-logging-ok")):
             if not zope.component.getUtility(interfaces.IDisplay).yesno(
                     self.IP_DISCLAIMER, "Yes", "No",
-                    cli_flag="--manual-public-ip-logging-ok"):
+                    cli_flag="--manual-public-ip-logging-ok",
+                    force_interactive=True):
                 raise errors.PluginError("Must agree to IP logging to proceed")
             else:
                 self.config.namespace.manual_public_ip_logging_ok = True

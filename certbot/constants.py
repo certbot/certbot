@@ -92,3 +92,6 @@ TEMP_CHECKPOINT_DIR = "temp_checkpoint"
 
 RENEWAL_CONFIGS_DIR = "renewal"
 """Renewal configs directory, relative to `IConfig.config_dir`."""
+
+FORCE_INTERACTIVE_FLAG = "--force-interactive"
+"""Flag to disable TTY checking in IDisplay."""

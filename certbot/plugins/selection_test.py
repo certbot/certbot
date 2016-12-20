@@ -110,7 +110,8 @@ class ChoosePluginTest(unittest.TestCase):
     """Tests for certbot.plugins.selection.choose_plugin."""
 
     def setUp(self):
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
+        zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
+                                                               False))
         self.mock_apache = mock.Mock(
             description_with_name="a", misconfigured=True)
         self.mock_stand = mock.Mock(

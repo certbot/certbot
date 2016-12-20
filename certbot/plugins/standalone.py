@@ -243,13 +243,13 @@ class Authenticator(common.Plugin):
                     "Could not bind TCP port {0} because you don't have "
                     "the appropriate permissions (for example, you "
                     "aren't running this program as "
-                    "root).".format(error.port))
+                    "root).".format(error.port), force_interactive=True)
             elif error.socket_error.errno == socket.errno.EADDRINUSE:
                 display.notification(
                     "Could not bind TCP port {0} because it is already in "
                     "use by another process on this system (such as a web "
                     "server). Please stop the program in question and then "
-                    "try again.".format(error.port))
+                    "try again.".format(error.port), force_interactive=True)
             else:
                 raise  # XXX: How to handle unknown errors in binding?
 
