@@ -40,9 +40,10 @@ def revoked_status(cert_path, chain_path):
             "-issuer", chain_path,
             "-cert", cert_path,
             "-url", url,
-            "-CAfile", chain_path])
+            "-CAfile", chain_path,
+            "-verify_other", chain_path])
     except errors.SubprocessError:
-        return "(OCSP Failure)"
+        return "OCSP Failure"
 
     return _translate_ocsp_query(cert_path, output)
 
