@@ -86,10 +86,8 @@ class RevocationChecker(object):
         try:
             output, err = util.run_script(cmd, log=logging.debug)
         except errors.SubprocessError, e:
-            logger.info("We're offline, or OCSP querying is broken. "
-                        "Assuming nothing is revoked...")
+            logger.info("We're offline, or OCSP querying is broken. ")
             logger.debug("Command was:\n%s\nError was:\n%s", " ".join(cmd), e)
-            self.broken = True
             return False
 
         return _translate_ocsp_query(cert_path, output, err)
