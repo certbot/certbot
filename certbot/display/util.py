@@ -223,7 +223,8 @@ class FileDisplay(object):
 
             code, ans = self.input("Select the appropriate numbers separated "
                                    "by commas and/or spaces, or leave input "
-                                   "blank to select all options shown")
+                                   "blank to select all options shown",
+                                   force_interactive=True)
 
             if code == OK:
                 if len(ans.strip()) == 0:
