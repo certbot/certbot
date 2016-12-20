@@ -43,12 +43,29 @@ class FileOutputDisplayTest(unittest.TestCase):
         string = self.mock_stdout.write.call_args[0][0]
         self.assertTrue("message" in string)
 
+    def test_notification_noninteractive2(self):
+        # The main purpose of this test is to make sure we only call
+        # logger.warning once which _force_noninteractive checks internally
+        self._force_noninteractive(self.displayer.notification, "message")
+        string = self.mock_stdout.write.call_args[0][0]
+        self.assertTrue("message" in string)
+
+        self._force_noninteractive(self.displayer.notification, "message2")
+        string = self.mock_stdout.write.call_args[0][0]
+        self.assertTrue("message2" in string)
+
     @mock.patch("certbot.display.util."
                 "FileDisplay._get_valid_int_ans")
     def test_menu(self, mock_ans):
         mock_ans.return_value = (display_util.OK, 1)
         ret = self.displayer.menu("message", CHOICES, force_interactive=True)
         self.assertEqual(ret, (display_util.OK, 0))
+
+    def test_menu_noninteractive(self):
+        default = 0
+        result = self._force_noninteractive(
+            self.displayer.menu, "msg", CHOICES, default=default)
+        self.assertEqual(result, (display_util.OK, default))
 
     def test_input_cancel(self):
         with mock.patch("six.moves.input", return_value="c"):
