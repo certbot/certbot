@@ -7,8 +7,7 @@ from certbot import util
 logger = logging.getLogger(__name__)
 
 
-REV_LABEL = "**Revoked**"
-EXP_LABEL = "**Expired**"
+REV_LABEL = "REVOKED"
 
 INSTALL_LABEL = "(Installed)"
 
@@ -36,7 +35,7 @@ def revoked_status(cert_path, chain_path):
     try:
         output, _ = util.run_script(
             ["openssl", "ocsp",
-            "-no_nonce", "-header", "Host", host,
+            "-no_nonce", "-header", "Host="+host,
             "-issuer", chain_path,
             "-cert", cert_path,
             "-url", url,
