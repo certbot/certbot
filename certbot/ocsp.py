@@ -27,7 +27,7 @@ class RevocationChecker(object):
 
        # New versions of openssl want -header var=val, old ones want -header var val
         test_host_format = Popen(["openssl", "ocsp", "-header", "var", "val"],
-                                 stdout=PIPE, stderr=PIPE)
+                                 stdout=PIPE, stderr=PIPE, universal_newlines=True)
         _out, err = test_host_format.communicate()
         if "Missing =" in err:
             self.host_args = lambda host: ["Host=" + host]
