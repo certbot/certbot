@@ -6,30 +6,33 @@ import os
 
 from subprocess import Popen, PIPE
 
-from certbot import util
+from certbot import errors
 
 logger = logging.getLogger(__name__)
 
 def validate_hooks(config):
     """Check hook commands are executable."""
-    for hook in (config.pre_hook, config.post_hook, config.renew_hook,):
-        validate_hook(hook)
+    validate_hook(config.pre_hook, "pre")
+    validate_hook(config.post_hook, "post")
+    validate_hook(config.renew_hook, "renew")
 
-def validate_hook(shell_cmd):
+def _prog(shell_cmd):
+    """Extract the program run by a shell command"""
+    cmd = _which(shell_cmd)
+    return os.path.basename(cmd) if cmd else None
+
+def validate_hook(shell_cmd, hook_name):
     """Check that a command provided as a hook is plausibly executable.
 
-    If shell_cmd is None, no validation is done.
-
-    :param shell_cmd: command to execute in a shell
-
-    :raises .errors.CommandNotExecutable: if a path is given for command
-        but it isn't a path to an executable
-
-    :raises .errors.CommandNotFound: if the command is not found
-
+    :raises .errors.HookCommandNotFound: if the command is not found
     """
-    if shell_cmd is not None:
-        util.verify_exe_exists(shell_cmd.split(None, 1)[0])
+    if shell_cmd:
+        cmd = shell_cmd.split(None, 1)[0]
+        if not _prog(cmd):
+            path = os.environ["PATH"]
+            msg = "Unable to find {2}-hook command {0} in the PATH.\n(PATH is {1})".format(
+                cmd, path, hook_name)
+            raise errors.HookCommandNotFound(msg)
 
 def pre_hook(config):
     "Run pre-hook if it's defined and hasn't been run."
@@ -90,6 +93,27 @@ def execute(shell_cmd):
         logger.error('Hook command "%s" returned error code %d',
                      shell_cmd, cmd.returncode)
     if err:
-        base_cmd = os.path.basename(shell_cmd.split(None, 1)[0])
-        logger.error('Error output from %s:\n%s', base_cmd, err)
+        logger.error('Error output from %s:\n%s', _prog(shell_cmd), err)
     return (err, out)
+
+
+def _is_exe(fpath):
+    return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+def _which(program):
+    """Test if program is in the path."""
+    # Borrowed from:
+    # https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
+    # XXX May need more porting to handle .exe extensions on Windows
+
+    fpath, _fname = os.path.split(program)
+    if fpath:
+        if _is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, program)
+            if _is_exe(exe_file):
+                return exe_file
+
+    return None

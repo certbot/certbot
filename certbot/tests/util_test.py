@@ -55,28 +55,21 @@ class ExeExistsTest(unittest.TestCase):
 
     @mock.patch("certbot.util.os.path.isfile")
     @mock.patch("certbot.util.os.access")
-    def test_good_path(self, mock_access, mock_isfile):
+    def test_full_path(self, mock_access, mock_isfile):
         mock_access.return_value = True
         mock_isfile.return_value = True
         self.assertTrue(self._call("/path/to/exe"))
 
     @mock.patch("certbot.util.os.path.isfile")
     @mock.patch("certbot.util.os.access")
-    def test_bad_path(self, mock_access, mock_isfile):
-        mock_access.return_value = False
-        mock_isfile.return_value = True
-        self.assertFalse(self._call("/path/to/exe"))
-
-    @mock.patch("certbot.util.os.path.isfile")
-    @mock.patch("certbot.util.os.access")
-    def test_good_name(self, mock_access, mock_isfile):
+    def test_on_path(self, mock_access, mock_isfile):
         mock_access.return_value = True
         mock_isfile.return_value = True
         self.assertTrue(self._call("exe"))
 
     @mock.patch("certbot.util.os.path.isfile")
     @mock.patch("certbot.util.os.access")
-    def test_bad_name(self, mock_access, mock_isfile):
+    def test_not_found(self, mock_access, mock_isfile):
         mock_access.return_value = False
         mock_isfile.return_value = True
         self.assertFalse(self._call("exe"))
