@@ -23,6 +23,7 @@ class RevocationChecker(object):
         if not util.exe_exists("openssl"):
             logging.info("openssl not installed, can't check revocation")
             self.broken = True
+            return
 
        # New versions of openssl want -header var=val, old ones want -header var val
         test_host_format = Popen(["openssl", "ocsp", "-header", "var", "val"],
