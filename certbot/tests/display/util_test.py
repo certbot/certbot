@@ -43,12 +43,31 @@ class FileOutputDisplayTest(unittest.TestCase):
         string = self.mock_stdout.write.call_args[0][0]
         self.assertTrue("message" in string)
 
+    def test_notification_noninteractive2(self):
+        # The main purpose of this test is to make sure we only call
+        # logger.warning once which _force_noninteractive checks internally
+        self._force_noninteractive(self.displayer.notification, "message")
+        string = self.mock_stdout.write.call_args[0][0]
+        self.assertTrue("message" in string)
+
+        self.assertTrue(self.displayer.skipped_interaction)
+
+        self._force_noninteractive(self.displayer.notification, "message2")
+        string = self.mock_stdout.write.call_args[0][0]
+        self.assertTrue("message2" in string)
+
     @mock.patch("certbot.display.util."
                 "FileDisplay._get_valid_int_ans")
     def test_menu(self, mock_ans):
         mock_ans.return_value = (display_util.OK, 1)
         ret = self.displayer.menu("message", CHOICES, force_interactive=True)
         self.assertEqual(ret, (display_util.OK, 0))
+
+    def test_menu_noninteractive(self):
+        default = 0
+        result = self._force_noninteractive(
+            self.displayer.menu, "msg", CHOICES, default=default)
+        self.assertEqual(result, (display_util.OK, default))
 
     def test_input_cancel(self):
         with mock.patch("six.moves.input", return_value="c"):
@@ -100,38 +119,32 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.assertTrue(self._force_noninteractive(
             self.displayer.yesno, "message", default=True))
 
-    @mock.patch("certbot.display.util.FileDisplay.input")
+    @mock.patch("certbot.display.util.six.moves.input")
     def test_checklist_valid(self, mock_input):
-        mock_input.return_value = (display_util.OK, "2 1")
+        mock_input.return_value = "2 1"
         code, tag_list = self.displayer.checklist(
             "msg", TAGS, force_interactive=True)
         self.assertEqual(
             (code, set(tag_list)), (display_util.OK, set(["tag1", "tag2"])))
 
-    @mock.patch("certbot.display.util.FileDisplay.input")
+    @mock.patch("certbot.display.util.six.moves.input")
     def test_checklist_empty(self, mock_input):
-        mock_input.return_value = (display_util.OK, "")
+        mock_input.return_value = ""
         code, tag_list = self.displayer.checklist("msg", TAGS, force_interactive=True)
         self.assertEqual(
             (code, set(tag_list)), (display_util.OK, set(["tag1", "tag2", "tag3"])))
 
-    @mock.patch("certbot.display.util.FileDisplay.input")
+    @mock.patch("certbot.display.util.six.moves.input")
     def test_checklist_miss_valid(self, mock_input):
-        mock_input.side_effect = [
-            (display_util.OK, "10"),
-            (display_util.OK, "tag1 please"),
-            (display_util.OK, "1")
-        ]
+        mock_input.side_effect = ["10", "tag1 please", "1"]
 
         ret = self.displayer.checklist("msg", TAGS, force_interactive=True)
         self.assertEqual(ret, (display_util.OK, ["tag1"]))
 
-    @mock.patch("certbot.display.util.FileDisplay.input")
+    @mock.patch("certbot.display.util.six.moves.input")
     def test_checklist_miss_quit(self, mock_input):
-        mock_input.side_effect = [
-            (display_util.OK, "10"),
-            (display_util.CANCEL, "1")
-        ]
+        mock_input.side_effect = ["10", "c"]
+
         ret = self.displayer.checklist("msg", TAGS, force_interactive=True)
         self.assertEqual(ret, (display_util.CANCEL, []))
 
@@ -160,15 +173,15 @@ class FileOutputDisplayTest(unittest.TestCase):
                 self.displayer._scrub_checklist_input(list_, TAGS))
             self.assertEqual(set_tags, exp[i])
 
-    @mock.patch("certbot.display.util.FileDisplay.input")
+    @mock.patch("certbot.display.util.six.moves.input")
     def test_directory_select(self, mock_input):
         # pylint: disable=star-args
         args = ["msg", "/var/www/html", "--flag", True]
-        result = (display_util.OK, "/var/www/html")
-        mock_input.return_value = result
+        user_input = "/var/www/html"
+        mock_input.return_value = user_input
 
-        self.assertEqual(self.displayer.directory_select(*args), result)
-        mock_input.assert_called_once_with(*args)
+        returned = self.displayer.directory_select(*args)
+        self.assertEqual(returned, (display_util.OK, user_input))
 
     def test_directory_select_noninteractive(self):
         default = "/var/www/html"
