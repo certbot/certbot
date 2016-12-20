@@ -159,11 +159,12 @@ class ObtainCertTest(unittest.TestCase):
         self.assertRaises(errors.ConfigurationError, self._call,
             ('certonly --webroot -d example.com -d test.com --cert-name example.com').split())
 
+    @mock.patch('certbot.cert_manager.domains_for_certname')
     @mock.patch('certbot.display.ops.choose_names')
     @mock.patch('certbot.cert_manager.lineage_for_certname')
     @mock.patch('certbot.main._report_new_cert')
     def test_find_lineage_for_domains_new_certname(self, mock_report_cert,
-        mock_lineage, mock_choose_names):
+        mock_lineage, mock_choose_names, mock_domains_for_certname):
         mock_lineage.return_value = None
 
         # no lineage with this name but we specified domains so create a new cert
@@ -174,6 +175,7 @@ class ObtainCertTest(unittest.TestCase):
 
         # no lineage with this name and we didn't give domains
         mock_choose_names.return_value = ["somename"]
+        mock_domains_for_certname.return_value = None
         self._call(('certonly --webroot --cert-name example.com').split())
         self.assertTrue(mock_choose_names.called)
 
