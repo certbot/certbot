@@ -1287,6 +1287,29 @@ class AugeasVhostsTest(util.ApacheTest):
             for name in ("a.example.net", "other.example.net"):
                 self.assertTrue(name in self.config.choose_vhost(name).aliases)
 
+    def test_choose_vhost_wildcard_not_found(self):
+        mock_path = "certbot_apache.display_ops.select_vhost"
+        names = (
+            "abc.example.net", "not.there.tld", "aa.wildcard.tld"
+        )
+        with mock.patch(mock_path) as mock_select:
+            mock_select.return_value = self.config.vhosts[0]
+            for name in names:
+                orig_cc = mock_select.call_count
+                self.config.choose_vhost(name)
+                self.assertEqual(mock_select.call_count - orig_cc, 1)
+
+    def test_choose_vhost_wildcard_found(self):
+        mock_path = "certbot_apache.display_ops.select_vhost"
+        names = (
+            "ab.example.net", "a.wildcard.tld", "yetanother.example.net"
+        )
+        with mock.patch(mock_path) as mock_select:
+            mock_select.return_value = self.config.vhosts[0]
+            for name in names:
+                self.config.choose_vhost(name)
+                self.assertEqual(mock_select.call_count, 0)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
