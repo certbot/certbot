@@ -193,6 +193,14 @@ class FindDomainsOrCertnameTest(unittest.TestCase):
         # pylint: disable=protected-access
         self.assertRaises(errors.Error, main._find_domains_or_certname, mock_config, None)
 
+    @mock.patch('certbot.cert_manager.domains_for_certname')
+    def test_display_ops(self, mock_domains):
+        mock_config = mock.Mock(domains=None, certname="one.com")
+        mock_domains.return_value = ["one.com", "two.com"]
+        # pylint: disable=protected-access
+        self.assertEqual(main._find_domains_or_certname(mock_config, None),
+            (["one.com", "two.com"], "one.com"))
+
 
 class RevokeTest(unittest.TestCase):
     """Tests for certbot.main.revoke."""

@@ -292,6 +292,9 @@ def _find_domains_or_certname(config, installer):
                            "will help in domain names autodiscovery, or "
                            "--cert-name for an existing certificate name.")
 
+    if config.certname and not domains:
+        domains = cert_manager.domains_for_certname(config, config.certname)
+
     return domains, config.certname
 
 
