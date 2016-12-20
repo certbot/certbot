@@ -169,11 +169,14 @@ def _report_lines(msgs):
 def _report_human_readable(parsed_certs):
     """Format a results report for a parsed cert"""
     certinfo = []
+    checker = ocsp.RevocationChecker()
     for cert in parsed_certs:
         now = pytz.UTC.fromutc(datetime.datetime.utcnow())
         expiration_text = ""
-        revoked = ocsp.revoked_status(cert.cert, cert.chain)
-        if cert.is_test_cert:
+        revoked = checker.check_ocsp(cert.cert, cert.chain)
+        if revoked:
+            expiration_text = "INVALID: " + revoked
+        elif cert.is_test_cert:
             expiration_text = "INVALID: TEST CERT"
         elif cert.target_expiry <= now:
             expiration_text = "INVALID: EXPIRED"

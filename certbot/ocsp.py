@@ -13,50 +13,43 @@ REV_LABEL = "REVOKED"
 
 INSTALL_LABEL = "(Installed)"
 
+class RevocationChecker(object):
+    "This class figures out OCSP checking on this system, and performs it."
 
-def revoked_status(cert_path, chain_path):
-    """Get revoked status for a particular cert version.
+    def __init__(self):
+        self.broken = False
 
-    .. todo:: Make this a non-blocking call
+        if not util.exe_exists("openssl"):
+            logging.info("openssl not installed, can't check revocation")
+            self.broken = True
 
-    :param str cert_path: Path to certificate
-    :param str chain_path: Path to chain certificate
+       # New versions of openssl want -header var=val, old ones want -header var val
+        test_host_format = Popen(["openssl", "ocsp", "-header", "var", "val"],
+                                 stdout=PIPE, stderr=PIPE)
+        _out, err = test_host_format.communicate()
+        if "Missing =" in err:
+            self.host_args = lambda host: ["Host=" + host]
+        else:
+            self.host_args = lambda host: ["Host", host]
 
-    """
 
-    if revoked_status.broken:
-        return False
+    def check_ocsp(self, cert_path, chain_path):
+        """Get revoked status for a particular cert version.
 
-    if not util.exe_exists("openssl"):
-        logging.info("openssl not installed, can't check revocation")
-        revoked_status.broken = True
-        return False
+        .. todo:: Make this a non-blocking call
 
-    try:
-        url, err = util.run_script(
-            ["openssl", "x509", "-in", cert_path, "-noout", "-ocsp_uri"],
-            log=logging.debug)
-    except errors.SubprocessError:
-        logger.info("Cannot extract OCSP URI from %s", cert_path)
-        return False
+        :param str cert_path: Path to certificate
+        :param str chain_path: Path to intermediate cert
 
-    url = url.rstrip()
-    host = url.partition("://")[2].rstrip("/")
-    if not host:
-        logger.info("Cannot process OCSP host from URL (%s) in cert at %s", url, cert_path)
-        return False
+        """
+        if self.broken:
+            return False
 
-    # New versions of openssl want -header var=val, old ones want -header var val
-    test_host_format = Popen(["openssl", "ocsp", "-header", "var", "val"],
-                             stdout=PIPE, stderr=PIPE)
-    _out, err = test_host_format.communicate()
-    if "Missing =" in err:
-        host_args = ["Host=" + host]
-    else:
-        host_args = ["Host", host]
-
-    # jdkasten thanks "Bulletproof SSL and TLS - Ivan Ristic" for documenting this!
-    try:
+        logger.debug("Querying OCSP for %s", cert_path)
+        url, host = self.determine_ocsp_server(cert_path)
+        if not host:
+            return False
+        # jdkasten thanks "Bulletproof SSL and TLS - Ivan Ristic" for documenting this!
         cmd = ["openssl", "ocsp",
                "-no_nonce",
                "-issuer", chain_path,
@@ -64,16 +57,43 @@ def revoked_status(cert_path, chain_path):
                "-url", url,
                "-CAfile", chain_path,
                "-verify_other", chain_path,
-               "-header"] + host_args
-        output, err = util.run_script(cmd, log=logging.debug)
-    except errors.SubprocessError:
-        logger.info("OCSP querying seems to be broken, assuming nothing is revoked...")
-        logger.debug("Command was:\n%s\nError was:\n%s", " ".join(cmd), err)
-        revoked_status.broken = True
-        return False
+               "-header"] + self.host_args(host)
+        try:
+            output, err = util.run_script(cmd, log=logging.debug)
+        except errors.SubprocessError, e:
+            logger.info("We're offline, or OCSP querying is broken. "
+                        "Assuming nothing is revoked...")
+            logger.debug("Command was:\n%s\nError was:\n%s", " ".join(cmd), e)
+            self.broken = True
+            return False
 
-    return _translate_ocsp_query(cert_path, output, err)
-revoked_status.broken = False
+        return _translate_ocsp_query(cert_path, output, err)
+
+
+    def determine_ocsp_server(self, cert_path):
+        """Extract the OCSP server host from a certificate.
+
+        :param str cert_path: Path to the cert we're checking OCSP for
+        :rtype tuple:
+        :returns: (OCSP server URL or None, OCSP server host or None)
+
+        """
+        try:
+            url, err = util.run_script(
+                ["openssl", "x509", "-in", cert_path, "-noout", "-ocsp_uri"],
+                log=logging.debug)
+        except errors.SubprocessError:
+            logger.info("Cannot extract OCSP URI from %s", cert_path)
+            logger.debug("Error was:\n%s", err)
+            return None, None
+
+        url = url.rstrip()
+        host = url.partition("://")[2].rstrip("/")
+        if host:
+            return url, host
+        else:
+            logger.info("Cannot process OCSP host from URL (%s) in cert at %s", url, cert_path)
+            return None, None
 
 
 def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
