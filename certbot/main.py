@@ -782,6 +782,20 @@ def set_displayer(config):
         displayer = display_util.FileDisplay(sys.stdout)
     zope.component.provideUtility(displayer)
 
+def _post_logging_setup(config, plugins, cli_args):
+    "Perform any setup or configuration tasks that require a logger."
+
+    # This needs logging, but would otherwise be in HelpfulArgumentParser
+    if config.validate_hooks:
+        hooks.validate_hooks(config)
+
+    cli.possible_deprecation_warning(config)
+
+    logger.debug("certbot version: %s", certbot.__version__)
+    # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
+    logger.debug("Arguments: %r", cli_args)
+    logger.debug("Discovered plugins: %r", plugins)
+
 
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
@@ -799,12 +813,7 @@ def main(cli_args=sys.argv[1:]):
     # logger ..." TODO: this should be done before plugins discovery
     setup_logging(config)
 
-    cli.possible_deprecation_warning(config)
-
-    logger.debug("certbot version: %s", certbot.__version__)
-    # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
-    logger.debug("Arguments: %r", cli_args)
-    logger.debug("Discovered plugins: %r", plugins)
+    _post_logging_setup(config, plugins, cli_args)
 
     sys.excepthook = functools.partial(_handle_exception, config=config)
 
