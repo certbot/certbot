@@ -16,8 +16,9 @@ INSTALL_LABEL = "(Installed)"
 class RevocationChecker(object):
     "This class figures out OCSP checking on this system, and performs it."
 
-    def __init__(self):
+    def __init__(self, config):
         self.broken = False
+        self.config = config
 
         if not util.exe_exists("openssl"):
             logging.info("openssl not installed, can't check revocation")
@@ -31,6 +32,30 @@ class RevocationChecker(object):
             self.host_args = lambda host: ["Host=" + host]
         else:
             self.host_args = lambda host: ["Host", host]
+
+
+    def ocsp_status(self, cert_path, chain_path, status_in):
+        """Helper function: updates a cert status string with revocation information
+
+        :param str cert_path: path to a cert to check
+        :param str chain_path: issuing intermediate for the cert
+        :param str status_in: a string that is either empty, if the cert is otherwise
+                              believed to be valid, or 'INVALID: $REASON'.
+
+        :returns: a new status including revocation, if the cert is revoked."""
+
+        if self.config.check_ocsp.lower() == "never":
+            return status_in
+        elif self.config.check_ocsp.lower() == "lazy" and status_in:
+            return status_in
+
+        revoked = self.check_ocsp(cert_path, chain_path)
+        if not revoked:
+            return status_in
+        elif status_in:
+            return status_in + ",REVOKED"
+        else:
+            return "INVALID: REVOKED"
 
 
     def check_ocsp(self, cert_path, chain_path):

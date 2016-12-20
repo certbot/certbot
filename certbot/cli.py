@@ -944,9 +944,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help=config_help("no_verify_ssl"),
         default=flag_default("no_verify_ssl"))
     helpful.add(
-        ["testing", "certificates"], "--check-ocsp", default="if otherwise valid",
+        ["certificates", "testing"], "--check-ocsp", default="always",
         help='Whether to check OCSP for listed certs. Can be set to "never", "always",'
-             'or "if otherwise valid".')
+             ' or "lazy" (ie, only for certs that are otherwise valid).')
     helpful.add(
         ["testing", "standalone", "apache", "nginx"], "--tls-sni-01-port", type=int,
         default=flag_default("tls_sni_01_port"),

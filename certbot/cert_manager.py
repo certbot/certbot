@@ -81,7 +81,7 @@ def certificates(config):
             parse_failures.append(renewal_file)
 
     # Describe all the certs
-    _describe_certs(parsed_certs, parse_failures)
+    _describe_certs(config, parsed_certs, parse_failures)
 
 def delete(config):
     """Delete Certbot files associated with a certificate lineage."""
@@ -166,34 +166,30 @@ def _report_lines(msgs):
     """Format a results report for a category of single-line renewal outcomes"""
     return "  " + "\n  ".join(str(msg) for msg in msgs)
 
-def _report_human_readable(parsed_certs):
+def _report_human_readable(config, parsed_certs):
     """Format a results report for a parsed cert"""
     certinfo = []
-    checker = ocsp.RevocationChecker()
+    checker = ocsp.RevocationChecker(config)
     for cert in parsed_certs:
         now = pytz.UTC.fromutc(datetime.datetime.utcnow())
-        expiration_text = ""
-        revoked = checker.check_ocsp(cert.cert, cert.chain)
-        if revoked:
-            expiration_text = "INVALID: " + revoked
-        elif cert.is_test_cert:
-            expiration_text = "INVALID: TEST CERT"
-        elif cert.target_expiry <= now:
-            expiration_text = "INVALID: EXPIRED"
+        status = ""
+        if cert.is_test_cert:
+            status = "INVALID: TEST_CERT"
+        if cert.target_expiry <= now:
+            status = status + ",EXPIRED" if status else "INVALID: EXPIRED"
         else:
-            if revoked:
-                expiration_text = "INVALID: " + revoked
+            status = checker.ocsp_status(cert.cert, cert.chain, status)
 
-        if not expiration_text:
+        if not status:
             diff = cert.target_expiry - now
             if diff.days == 1:
-                expiration_text = "VALID: 1 day"
+                status = "VALID: 1 day"
             elif diff.days < 1:
-                expiration_text = "VALID: {0} hour(s)".format(diff.seconds // 3600)
+                status = "VALID: {0} hour(s)".format(diff.seconds // 3600)
             else:
-                expiration_text = "VALID: {0} days".format(diff.days)
+                status = "VALID: {0} days".format(diff.days)
 
-        valid_string = "{0} ({1})".format(cert.target_expiry, expiration_text)
+        valid_string = "{0} ({1})".format(cert.target_expiry, status)
         certinfo.append("  Certificate Name: {0}\n"
                         "    Domains: {1}\n"
                         "    Expiry Date: {2}\n"
@@ -206,7 +202,7 @@ def _report_human_readable(parsed_certs):
                             cert.privkey))
     return "\n".join(certinfo)
 
-def _describe_certs(parsed_certs, parse_failures):
+def _describe_certs(config, parsed_certs, parse_failures):
     """Print information about the certs we know about"""
     out = []
 
@@ -217,7 +213,7 @@ def _describe_certs(parsed_certs, parse_failures):
     else:
         if parsed_certs:
             notify("Found the following certs:")
-            notify(_report_human_readable(parsed_certs))
+            notify(_report_human_readable(config, parsed_certs))
         if parse_failures:
             notify("\nThe following renewal configuration files "
                "were invalid:")
