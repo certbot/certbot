@@ -171,6 +171,10 @@ def _report_human_readable(config, parsed_certs):
     certinfo = []
     checker = ocsp.RevocationChecker(config)
     for cert in parsed_certs:
+        if config.certname and cert.lineagename != config.certname:
+            continue
+        if config.domains and not set(config.domains).issubset(cert.names()):
+            continue
         now = pytz.UTC.fromutc(datetime.datetime.utcnow())
         status = ""
         if cert.is_test_cert:
@@ -212,7 +216,8 @@ def _describe_certs(config, parsed_certs, parse_failures):
         notify("No certs found.")
     else:
         if parsed_certs:
-            notify("Found the following certs:")
+            match = "matching " if config.certname or config.domains else ""
+            notify("Found the following {0}certs:".format(match))
             notify(_report_human_readable(config, parsed_certs))
         if parse_failures:
             notify("\nThe following renewal configuration files "
