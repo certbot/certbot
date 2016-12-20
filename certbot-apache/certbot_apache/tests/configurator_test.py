@@ -1251,8 +1251,6 @@ class AugeasVhostsTest(util.ApacheTest):
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)
-        self.vh_truth = util.get_vh_truth(
-            self.temp_dir, "debian_apache_2_4/augeas_vhosts")
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -1277,10 +1275,17 @@ class AugeasVhostsTest(util.ApacheTest):
         vhs = self.config.get_virtual_hosts()
         self.assertEqual([], vhs)
 
-    def test_wildcard_alias(self):
-        target_name = "a.example.net"
-        chosen_vhost = self.config.choose_vhost(target_name)
-        self.assertTrue(target_name not in chosen_vhost.aliases)
+    def test_choose_vhost_with_matching_wildcard(self):
+        names = (
+            "an.example.net", "another.example.net", "an.other.example.net")
+        for name in names:
+            self.assertFalse(name in self.config.choose_vhost(name).aliases)
+
+    def test_choose_vhost_without_matching_wildcard(self):
+        mock_path = "certbot_apache.display_ops.select_vhost"
+        with mock.patch(mock_path, lambda _, vhosts: vhosts[0]):
+            for name in ("a.example.net", "other.example.net"):
+                self.assertTrue(name in self.config.choose_vhost(name).aliases)
 
 
 if __name__ == "__main__":
