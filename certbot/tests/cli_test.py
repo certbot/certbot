@@ -268,6 +268,10 @@ class ParseTest(unittest.TestCase):
         self.assertRaises(
             errors.Error, self.parse, "-n --force-interactive".split())
 
+    def test_check_ocsp(self):
+        self.assertRaises(errors.Error, self.parse, "certificates --check-ocsp bogus".split())
+        self.parse("certificates --check-ocsp lazy".split())
+
 
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""

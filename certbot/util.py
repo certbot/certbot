@@ -48,7 +48,8 @@ def run_script(params, log=logger.error):
     try:
         proc = subprocess.Popen(params,
                                 stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
+                                stderr=subprocess.PIPE,
+                                universal_newlines=True)
 
     except (OSError, ValueError):
         msg = "Unable to run the command: %s" % " ".join(params)

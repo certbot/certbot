@@ -529,6 +529,10 @@ class HelpfulArgumentParser(object):
                         constants.FORCE_INTERACTIVE_FLAG))
             parsed_args.noninteractive_mode = True
 
+        parsed_args.check_ocsp = parsed_args.check_ocsp.lower()
+        if parsed_args.check_ocsp not in ("always", "never", "lazy"):
+            raise errors.Error('--check-ocsp must be "always", "never", or "lazy"')
+
         if parsed_args.force_interactive and parsed_args.noninteractive_mode:
             raise errors.Error(
                 "Flag for non-interactive mode and {0} conflict".format(
