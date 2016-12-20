@@ -1,6 +1,8 @@
 """Tools for checking certificate revocation."""
 import logging
 
+from subprocess import Popen, PIPE
+
 from certbot import errors
 from certbot import util
 
@@ -21,6 +23,7 @@ def revoked_status(cert_path, chain_path):
     :param str chain_path: Path to chain certificate
 
     """
+
     url, _ = util.run_script(
         ["openssl", "x509", "-in", cert_path, "-noout", "-ocsp_uri"])
 
@@ -30,12 +33,21 @@ def revoked_status(cert_path, chain_path):
         raise errors.Error(
             "Unable to get OCSP host from cert, url - %s", url)
 
-    # This was a PITA...
-    # Thanks to "Bulletproof SSL and TLS - Ivan Ristic" for helping me out
+    # New versions of openssl want -header var=val, old ones want -header var val
+    test_host_format = Popen(["openssl", "ocsp", "-header", "var", "val"],
+                             stdout=PIPE, stderr=PIPE)
+    _out, err = test_host_format.communicate()
+    if "Missing =" in err:
+        host_arg = ["Host=" + host]
+    else:
+        host_arg = ["Host", host]
+
+    # jdkasten thanks "Bulletproof SSL and TLS - Ivan Ristic" for documenting this!
     try:
         output, _ = util.run_script(
             ["openssl", "ocsp",
-            "-no_nonce", "-header", "Host="+host,
+            "-no_nonce",
+            "-header"] + host_arg + [
             "-issuer", chain_path,
             "-cert", cert_path,
             "-url", url,
