@@ -50,6 +50,8 @@ class FileOutputDisplayTest(unittest.TestCase):
         string = self.mock_stdout.write.call_args[0][0]
         self.assertTrue("message" in string)
 
+        self.assertTrue(self.displayer.skipped_interaction)
+
         self._force_noninteractive(self.displayer.notification, "message2")
         string = self.mock_stdout.write.call_args[0][0]
         self.assertTrue("message2" in string)
