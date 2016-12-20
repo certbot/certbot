@@ -179,7 +179,9 @@ class CertificatesTest(BaseCertManagerTest):
         self.assertTrue(mock_utility.called)
         shutil.rmtree(tempdir)
 
-    def test_report_human_readable(self):
+    @mock.patch('certbot.cert_manager.ocsp.RevocationChecker.ocsp_status')
+    def test_report_human_readable(self, mock_ocsp):
+        mock_ocsp.side_effect = lambda _cert, _chain, status: status
         from certbot import cert_manager
         import datetime, pytz
         expiry = pytz.UTC.fromutc(datetime.datetime.utcnow())
@@ -190,7 +192,7 @@ class CertificatesTest(BaseCertManagerTest):
         cert.is_test_cert = False
         parsed_certs = [cert]
 
-        mock_config = mock.MagicMock()
+        mock_config = mock.MagicMock(certname=None, lineagename=None)
         # pylint: disable=protected-access
         out = cert_manager._report_human_readable(mock_config, parsed_certs)
         self.assertTrue("INVALID: EXPIRED" in out)
@@ -216,7 +218,7 @@ class CertificatesTest(BaseCertManagerTest):
 
         cert.is_test_cert = True
         out = cert_manager._report_human_readable(mock_config, parsed_certs)
-        self.assertTrue('INVALID: TEST CERT' in out)
+        self.assertTrue('INVALID: TEST_CERT' in out)
 
 
 class SearchLineagesTest(BaseCertManagerTest):
