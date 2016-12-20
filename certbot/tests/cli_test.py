@@ -268,7 +268,12 @@ class ParseTest(unittest.TestCase):
             self.assertEqual(namespace.reason, code)
         for reason, code in constants.REVOCATION_REASONS.items():
             namespace = self.parse(['--reason', reason.upper()])
-            self.assertEqual(namespace.reason, code)
+
+    def test_force_interactive(self):
+        self.assertRaises(
+            errors.Error, self.parse, "renew --force-interactive".split())
+        self.assertRaises(
+            errors.Error, self.parse, "-n --force-interactive".split())
 
 
 class DefaultTest(unittest.TestCase):

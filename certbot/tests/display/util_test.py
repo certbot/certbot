@@ -20,10 +20,11 @@ class FileOutputDisplayTest(unittest.TestCase):
     functions look to a user, uncomment the test_visual function.
 
     """
+    # pylint:disable=too-many-public-methods
     def setUp(self):
         super(FileOutputDisplayTest, self).setUp()
         self.mock_stdout = mock.MagicMock()
-        self.displayer = display_util.FileDisplay(self.mock_stdout)
+        self.displayer = display_util.FileDisplay(self.mock_stdout, False)
 
     def test_notification_no_pause(self):
         self.displayer.notification("message", False)
@@ -33,56 +34,84 @@ class FileOutputDisplayTest(unittest.TestCase):
 
     def test_notification_pause(self):
         with mock.patch("six.moves.input", return_value="enter"):
-            self.displayer.notification("message")
+            self.displayer.notification("message", force_interactive=True)
 
         self.assertTrue("message" in self.mock_stdout.write.call_args[0][0])
+
+    def test_notification_noninteractive(self):
+        self._force_noninteractive(self.displayer.notification, "message")
+        string = self.mock_stdout.write.call_args[0][0]
+        self.assertTrue("message" in string)
 
     @mock.patch("certbot.display.util."
                 "FileDisplay._get_valid_int_ans")
     def test_menu(self, mock_ans):
         mock_ans.return_value = (display_util.OK, 1)
-        ret = self.displayer.menu("message", CHOICES)
+        ret = self.displayer.menu("message", CHOICES, force_interactive=True)
         self.assertEqual(ret, (display_util.OK, 0))
 
     def test_input_cancel(self):
         with mock.patch("six.moves.input", return_value="c"):
-            code, _ = self.displayer.input("message")
+            code, _ = self.displayer.input("message", force_interactive=True)
 
         self.assertTrue(code, display_util.CANCEL)
 
     def test_input_normal(self):
         with mock.patch("six.moves.input", return_value="domain.com"):
-            code, input_ = self.displayer.input("message")
+            code, input_ = self.displayer.input("message", force_interactive=True)
 
         self.assertEqual(code, display_util.OK)
         self.assertEqual(input_, "domain.com")
 
+    def test_input_noninteractive(self):
+        default = "foo"
+        code, input_ = self._force_noninteractive(
+            self.displayer.input, "message", default=default)
+
+        self.assertEqual(code, display_util.OK)
+        self.assertEqual(input_, default)
+
+    def test_input_assertion_fail(self):
+        self.assertRaises(AssertionError, self._force_noninteractive,
+                          self.displayer.input, "message", cli_flag="--flag")
+
     def test_yesno(self):
         with mock.patch("six.moves.input", return_value="Yes"):
-            self.assertTrue(self.displayer.yesno("message"))
+            self.assertTrue(self.displayer.yesno(
+                "message", force_interactive=True))
         with mock.patch("six.moves.input", return_value="y"):
-            self.assertTrue(self.displayer.yesno("message"))
+            self.assertTrue(self.displayer.yesno(
+                "message", force_interactive=True))
         with mock.patch("six.moves.input", side_effect=["maybe", "y"]):
-            self.assertTrue(self.displayer.yesno("message"))
+            self.assertTrue(self.displayer.yesno(
+                "message", force_interactive=True))
         with mock.patch("six.moves.input", return_value="No"):
-            self.assertFalse(self.displayer.yesno("message"))
+            self.assertFalse(self.displayer.yesno(
+                "message", force_interactive=True))
         with mock.patch("six.moves.input", side_effect=["cancel", "n"]):
-            self.assertFalse(self.displayer.yesno("message"))
+            self.assertFalse(self.displayer.yesno(
+                "message", force_interactive=True))
 
         with mock.patch("six.moves.input", return_value="a"):
-            self.assertTrue(self.displayer.yesno("msg", yes_label="Agree"))
+            self.assertTrue(self.displayer.yesno(
+                "msg", yes_label="Agree", force_interactive=True))
+
+    def test_yesno_noninteractive(self):
+        self.assertTrue(self._force_noninteractive(
+            self.displayer.yesno, "message", default=True))
 
     @mock.patch("certbot.display.util.FileDisplay.input")
     def test_checklist_valid(self, mock_input):
         mock_input.return_value = (display_util.OK, "2 1")
-        code, tag_list = self.displayer.checklist("msg", TAGS)
+        code, tag_list = self.displayer.checklist(
+            "msg", TAGS, force_interactive=True)
         self.assertEqual(
             (code, set(tag_list)), (display_util.OK, set(["tag1", "tag2"])))
 
     @mock.patch("certbot.display.util.FileDisplay.input")
     def test_checklist_empty(self, mock_input):
         mock_input.return_value = (display_util.OK, "")
-        code, tag_list = self.displayer.checklist("msg", TAGS)
+        code, tag_list = self.displayer.checklist("msg", TAGS, force_interactive=True)
         self.assertEqual(
             (code, set(tag_list)), (display_util.OK, set(["tag1", "tag2", "tag3"])))
 
@@ -94,7 +123,7 @@ class FileOutputDisplayTest(unittest.TestCase):
             (display_util.OK, "1")
         ]
 
-        ret = self.displayer.checklist("msg", TAGS)
+        ret = self.displayer.checklist("msg", TAGS, force_interactive=True)
         self.assertEqual(ret, (display_util.OK, ["tag1"]))
 
     @mock.patch("certbot.display.util.FileDisplay.input")
@@ -103,8 +132,16 @@ class FileOutputDisplayTest(unittest.TestCase):
             (display_util.OK, "10"),
             (display_util.CANCEL, "1")
         ]
-        ret = self.displayer.checklist("msg", TAGS)
+        ret = self.displayer.checklist("msg", TAGS, force_interactive=True)
         self.assertEqual(ret, (display_util.CANCEL, []))
+
+    def test_checklist_noninteractive(self):
+        default = TAGS
+        code, input_ = self._force_noninteractive(
+            self.displayer.checklist, "msg", TAGS, default=default)
+
+        self.assertEqual(code, display_util.OK)
+        self.assertEqual(input_, default)
 
     def test_scrub_checklist_input_valid(self):
         # pylint: disable=protected-access
@@ -125,12 +162,36 @@ class FileOutputDisplayTest(unittest.TestCase):
 
     @mock.patch("certbot.display.util.FileDisplay.input")
     def test_directory_select(self, mock_input):
-        message = "msg"
-        result = (display_util.OK, "/var/www/html",)
+        # pylint: disable=star-args
+        args = ["msg", "/var/www/html", "--flag", True]
+        result = (display_util.OK, "/var/www/html")
         mock_input.return_value = result
 
-        self.assertEqual(self.displayer.directory_select(message), result)
-        mock_input.assert_called_once_with(message)
+        self.assertEqual(self.displayer.directory_select(*args), result)
+        mock_input.assert_called_once_with(*args)
+
+    def test_directory_select_noninteractive(self):
+        default = "/var/www/html"
+        code, input_ = self._force_noninteractive(
+            self.displayer.directory_select, "msg", default=default)
+
+        self.assertEqual(code, display_util.OK)
+        self.assertEqual(input_, default)
+
+    def _force_noninteractive(self, func, *args, **kwargs):
+        skipped_interaction = self.displayer.skipped_interaction
+
+        with mock.patch("certbot.display.util.sys.stdin") as mock_stdin:
+            mock_stdin.isatty.return_value = False
+            with mock.patch("certbot.display.util.logger") as mock_logger:
+                result = func(*args, **kwargs)
+
+        if skipped_interaction:
+            self.assertFalse(mock_logger.warning.called)
+        else:
+            self.assertEqual(mock_logger.warning.call_count, 1)
+
+        return result
 
     def test_scrub_checklist_input_invalid(self):
         # pylint: disable=protected-access

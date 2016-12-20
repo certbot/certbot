@@ -21,8 +21,7 @@ class RenewalTest(unittest.TestCase):
         rc_path = util.make_lineage(self, 'sample-renewal-ancient.conf')
         args = mock.MagicMock(account=None, email=None, webroot_path=None)
         config = configuration.NamespaceConfig(args)
-        lineage = storage.RenewableCert(
-                rc_path, configuration.RenewerConfiguration(config))
+        lineage = storage.RenewableCert(rc_path, config)
         renewalparams = lineage.configuration["renewalparams"]
         # pylint: disable=protected-access
         from certbot import renewal
