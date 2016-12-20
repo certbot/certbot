@@ -1012,12 +1012,33 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.parser.find_dir("ServerAlias", target_name,
                                  start=vh_path, exclude=False)):
             return
+        matches = self._find_matching_wildcards(vh_path, target_name)
+        if matches:
+            return
         if not self.parser.find_dir("ServerName", None,
                                     start=vh_path, exclude=False):
             self.parser.add_dir(vh_path, "ServerName", target_name)
         else:
             self.parser.add_dir(vh_path, "ServerAlias", target_name)
         self._add_servernames(vhost)
+
+    def _find_matching_wildcards(self, vh_path, target_name):
+        # find all wildcards
+        names = [self.aug.get(card) for card
+                 in self.parser.find_dir("ServerName", start=vh_path, exclude=False)]
+        aliases = [self.aug.get(card) for card
+                   in self.parser.find_dir("ServerAlias", start=vh_path, exclude=False)]
+        potential_wildcards = [server for server in names if server.startswith("*")]
+        potential_wildcards.extend([server for server in aliases if server.startswith("*")])
+        # reverse search through them to see if the target name is covered
+        target_split = target_name.split(".")[::-1]
+        matches = []
+        for wildcard in potential_wildcards:
+            for idx, part in enumerate(wildcard.split(".")[:0:-1]):
+                if target_split[idx] != part:
+                    break
+            matches.append(wildcard)
+        return matches
 
     def _add_name_vhost_if_necessary(self, vhost):
         """Add NameVirtualHost Directives if necessary for new vhost.
