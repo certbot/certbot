@@ -86,7 +86,7 @@ class OCSPTest(unittest.TestCase):
         c = "confusion"
         mock_run.side_effect = errors.SubprocessError(c)
         self.assertEqual(self.checker.determine_ocsp_server("beep"), (None, None))
-        self.assertTrue(c in mock_debug.call_args[0][1])
+        self.assertTrue(c in repr(mock_debug.call_args[0][1]))
 
     @mock.patch('certbot.ocsp.logger')
     @mock.patch('certbot.util.run_script')
