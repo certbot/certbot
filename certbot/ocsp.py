@@ -45,9 +45,9 @@ class RevocationChecker(object):
 
         :returns: a new status including revocation, if the cert is revoked."""
 
-        if self.config.check_ocsp.lower() == "never":
+        if self.config.check_ocsp == "never":
             return status_in
-        elif self.config.check_ocsp.lower() == "lazy" and status_in:
+        elif self.config.check_ocsp == "lazy" and status_in:
             return status_in
 
         revoked = self.check_ocsp(cert_path, chain_path)
@@ -106,9 +106,9 @@ class RevocationChecker(object):
             url, err = util.run_script(
                 ["openssl", "x509", "-in", cert_path, "-noout", "-ocsp_uri"],
                 log=logging.debug)
-        except errors.SubprocessError:
+        except errors.SubprocessError as e:
             logger.info("Cannot extract OCSP URI from %s", cert_path)
-            logger.debug("Error was:\n%s", err)
+            logger.debug("Error was:\n%s", e)
             return None, None
 
         url = url.rstrip()
@@ -122,7 +122,7 @@ class RevocationChecker(object):
 
 def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
     """Returns a label string out of the query."""
-    if not "Response verify OK":
+    if not "Response verify OK" in ocsp_errors:
         logger.info("Revocation status for %s is unknown", cert_path)
         logger.debug("Uncertain ouput:\n%s\nstderr:\n%s", ocsp_output, ocsp_errors)
         return ""

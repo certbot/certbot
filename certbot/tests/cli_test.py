@@ -270,7 +270,7 @@ class ParseTest(unittest.TestCase):
 
     def test_check_ocsp(self):
         self.assertRaises(errors.Error, self.parse, "certificates --check-ocsp bogus".split())
-        self.parse("certificates --check-ocsp lazy".split())
+        self.parse("certificates --check-ocsp LaZy".split())
 
 
 class DefaultTest(unittest.TestCase):
