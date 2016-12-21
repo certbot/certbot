@@ -8,17 +8,11 @@ from certbot import util
 
 logger = logging.getLogger(__name__)
 
-
-REV_LABEL = "REVOKED"
-
-INSTALL_LABEL = "(Installed)"
-
 class RevocationChecker(object):
     "This class figures out OCSP checking on this system, and performs it."
 
-    def __init__(self, config):
+    def __init__(self):
         self.broken = False
-        self.config = config
 
         if not util.exe_exists("openssl"):
             logging.info("openssl not installed, can't check revocation")
@@ -35,46 +29,25 @@ class RevocationChecker(object):
             self.host_args = lambda host: ["Host", host]
 
 
-    def ocsp_status(self, cert_path, chain_path, status_in):
-        """Helper function: updates a cert status string with revocation information
-
-        :param str cert_path: path to a cert to check
-        :param str chain_path: issuing intermediate for the cert
-        :param str status_in: a string that is either empty, if the cert is otherwise
-                              believed to be valid, or 'INVALID: $REASON'.
-
-        :returns: a new status including revocation, if the cert is revoked."""
-
-        if self.config.check_ocsp == "never":
-            return status_in
-        elif self.config.check_ocsp == "lazy" and status_in:
-            return status_in
-
-        revoked = self.check_ocsp(cert_path, chain_path)
-        if not revoked:
-            return status_in
-        elif status_in:
-            return status_in + ",REVOKED"
-        else:
-            return "INVALID: REVOKED"
-
-
-    def check_ocsp(self, cert_path, chain_path):
+    def ocsp_revoked(self, cert_path, chain_path):
         """Get revoked status for a particular cert version.
 
         .. todo:: Make this a non-blocking call
 
         :param str cert_path: Path to certificate
         :param str chain_path: Path to intermediate cert
+        :rtype bool or None:
+        :returns: False if valid; True if revoked; None if check itself failed
 
         """
         if self.broken:
-            return False
+            return None
+
 
         logger.debug("Querying OCSP for %s", cert_path)
         url, host = self.determine_ocsp_server(cert_path)
         if not host:
-            return False
+            return None
         # jdkasten thanks "Bulletproof SSL and TLS - Ivan Ristic" for documenting this!
         cmd = ["openssl", "ocsp",
                "-no_nonce",
@@ -89,7 +62,7 @@ class RevocationChecker(object):
         except errors.SubprocessError as e:
             logger.info("OCSP check failed for %s (are we offline?)", cert_path)
             logger.debug("Command was:\n%s\nError was:\n%s", " ".join(cmd), e)
-            return False
+            return None
 
         return _translate_ocsp_query(cert_path, output, err)
 
@@ -103,7 +76,7 @@ class RevocationChecker(object):
 
         """
         try:
-            url, err = util.run_script(
+            url, _err = util.run_script(
                 ["openssl", "x509", "-in", cert_path, "-noout", "-ocsp_uri"],
                 log=logging.debug)
         except errors.SubprocessError as e:
@@ -119,18 +92,18 @@ class RevocationChecker(object):
             logger.info("Cannot process OCSP host from URL (%s) in cert at %s", url, cert_path)
             return None, None
 
-
 def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
-    """Returns a label string out of the query."""
+    """Parse openssl's weird output to work out what it means."""
+
     if not "Response verify OK" in ocsp_errors:
         logger.info("Revocation status for %s is unknown", cert_path)
         logger.debug("Uncertain ouput:\n%s\nstderr:\n%s", ocsp_output, ocsp_errors)
-        return ""
+        return None
     if cert_path + ": good" in ocsp_output:
-        return ""
+        return False
     elif cert_path + ": revoked" in ocsp_output:
-        return REV_LABEL
+        return True
     else:
         logger.warn("Unable to properly parse OCSP output: %s", ocsp_output)
-        return ""
+        return None
 

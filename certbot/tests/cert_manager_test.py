@@ -179,9 +179,9 @@ class CertificatesTest(BaseCertManagerTest):
         self.assertTrue(mock_utility.called)
         shutil.rmtree(tempdir)
 
-    @mock.patch('certbot.cert_manager.ocsp.RevocationChecker.ocsp_status')
+    @mock.patch('certbot.cert_manager.ocsp.RevocationChecker.ocsp_revoked')
     def test_report_human_readable(self, mock_ocsp):
-        mock_ocsp.side_effect = lambda _cert, _chain, status: status
+        mock_ocsp.side_effect = lambda _cert, _chain: None
         from certbot import cert_manager
         import datetime, pytz
         expiry = pytz.UTC.fromutc(datetime.datetime.utcnow())

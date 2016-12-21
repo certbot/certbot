@@ -2,13 +2,11 @@
 """Tests for hooks.py"""
 # pylint: disable=protected-access
 
-import os
 import unittest
 
 import mock
 
 from certbot import errors
-from certbot import hooks
 
 out = """Missing = in header key=value
 ocsp: Use -help for summary.
@@ -20,8 +18,13 @@ class OCSPTest(unittest.TestCase):
 
     def setUp(self):
         from certbot import ocsp
-        self.config = mock.MagicMock()
-        self.checker = ocsp.RevocationChecker(self.config)
+        with mock.patch('certbot.ocsp.Popen') as mock_popen:
+            with mock.patch('certbot.util.exe_exists') as mock_exists:
+                mock_communicate = mock.MagicMock()
+                mock_communicate.communicate.return_value = (None, out)
+                mock_popen.return_value = mock_communicate
+                mock_exists.return_value = True
+                self.checker = ocsp.RevocationChecker()
 
     def tearDown(self):
         pass
@@ -36,44 +39,38 @@ class OCSPTest(unittest.TestCase):
         mock_exists.return_value = True
 
         from certbot import ocsp
-        checker = ocsp.RevocationChecker(self.config)
+        checker = ocsp.RevocationChecker()
         self.assertEqual(mock_popen.call_count, 1)
         self.assertEqual(checker.host_args("x"), ["Host=x"])
 
         mock_communicate.communicate.return_value = (None, out.partition("\n")[2])
-        checker = ocsp.RevocationChecker(self.config)
+        checker = ocsp.RevocationChecker()
         self.assertEqual(checker.host_args("x"), ["Host", "x"])
         self.assertEqual(checker.broken, False)
 
         mock_exists.return_value = False
         mock_popen.call_count = 0
-        checker = ocsp.RevocationChecker(self.config)
+        checker = ocsp.RevocationChecker()
         self.assertEqual(mock_popen.call_count, 0)
         self.assertEqual(mock_log.call_count, 1)
         self.assertEqual(checker.broken, True)
 
-    def test_ocsp_status(self):
-        from certbot import ocsp
-        checker = self.checker
-        checker.check_ocsp = mock.MagicMock()
-        checker.check_ocsp.return_value = "octopus found in certificate"
+    @mock.patch('certbot.ocsp.RevocationChecker.determine_ocsp_server')
+    @mock.patch('certbot.util.run_script')
+    def test_ocsp_revoked(self, mock_run, mock_determine):
+        self.checker.broken = True
+        mock_determine.return_value = ("", "")
+        self.assertEqual(self.checker.ocsp_revoked("x", "y"), None)
 
-        checker.config.check_ocsp = "never"
-        self.assertEqual(checker.ocsp_status("a", "a", "xyz"), "xyz")
-        self.assertEqual(checker.ocsp_status("a", "a", ""), "")
-        self.assertEqual(checker.check_ocsp.call_count, 0)
+        self.checker.broken = False
+        mock_run.return_value = tuple(openssl_happy[1:])
+        self.assertEqual(self.checker.ocsp_revoked("x", "y"), None)
+        self.assertEqual(mock_run.call_count, 0)
 
-        checker.config.check_ocsp = "lazy"
-        self.assertEqual(checker.ocsp_status("a", "a", "xyz"), "xyz")
-        self.assertEqual(checker.check_ocsp.call_count, 0)
-        self.assertEqual(checker.ocsp_status("a", "a", ""), "INVALID: REVOKED")
+        mock_determine.return_value = ("http://x.co", "x.co")
+        self.assertEqual(self.checker.ocsp_revoked("blah.pem", "chain.pem"), False)
 
-        checker.config.check_ocsp = "always"
-        self.assertEqual(checker.ocsp_status("a", "a", "xyz"), "xyz,REVOKED")
-        checker.check_ocsp.return_value = ""
-        self.assertEqual(checker.ocsp_status("a", "a", "xyz"), "xyz")
-        
-            
+
     @mock.patch('certbot.ocsp.logger.debug')
     @mock.patch('certbot.ocsp.logger.info')
     @mock.patch('certbot.util.run_script')
@@ -81,31 +78,32 @@ class OCSPTest(unittest.TestCase):
         uri = "http://ocsp.stg-int-x1.letsencrypt.org/"
         host = "ocsp.stg-int-x1.letsencrypt.org"
         mock_run.return_value = uri, ""
-        self.assertEquals(self.checker.determine_ocsp_server("beep"), (uri, host))
+        self.assertEqual(self.checker.determine_ocsp_server("beep"), (uri, host))
         mock_run.return_value = "ftp:/" + host + "/", ""
-        self.assertEquals(self.checker.determine_ocsp_server("beep"), (None, None))
-        self.assertEquals(mock_info.call_count, 1)
+        self.assertEqual(self.checker.determine_ocsp_server("beep"), (None, None))
+        self.assertEqual(mock_info.call_count, 1)
 
         c = "confusion"
         mock_run.side_effect = errors.SubprocessError(c)
-        self.assertEquals(self.checker.determine_ocsp_server("beep"), (None, None))
+        self.assertEqual(self.checker.determine_ocsp_server("beep"), (None, None))
         self.assertTrue(c in mock_debug.call_args[0][1])
 
     @mock.patch('certbot.ocsp.logger')
     @mock.patch('certbot.util.run_script')
     def test_translate_ocsp(self, mock_run, mock_log):
-        # pylint: disable=protected-access 
+        # pylint: disable=protected-access,star-args
         mock_run.return_value = openssl_confused
         from certbot import ocsp
-        self.assertEquals(ocsp._translate_ocsp_query(*openssl_happy), "")
-        self.assertEquals(ocsp._translate_ocsp_query(*openssl_confused), "")
-        self.assertEquals(mock_log.debug.call_count, 1)
-        self.assertEquals(mock_log.warn.call_count, 0)
-        self.assertEquals(ocsp._translate_ocsp_query(*openssl_broken), "")
-        self.assertEquals(mock_log.warn.call_count, 1)
-        self.assertEquals(ocsp._translate_ocsp_query(*openssl_revoked), "REVOKED")
+        self.assertEqual(ocsp._translate_ocsp_query(*openssl_happy), False)
+        self.assertEqual(ocsp._translate_ocsp_query(*openssl_confused), None)
+        self.assertEqual(mock_log.debug.call_count, 1)
+        self.assertEqual(mock_log.warn.call_count, 0)
+        self.assertEqual(ocsp._translate_ocsp_query(*openssl_broken), None)
+        self.assertEqual(mock_log.warn.call_count, 1)
+        self.assertEqual(ocsp._translate_ocsp_query(*openssl_revoked), True)
 
 
+# pylint: disable=line-too-long
 openssl_confused = ("", """
 /etc/letsencrypt/live/example.org/cert.pem: good
 	This Update: Dec 17 00:00:00 2016 GMT
