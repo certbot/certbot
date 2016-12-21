@@ -20,6 +20,28 @@ else
   readlink="readlink"
 fi
 
+cleanup_and_exit() {
+    EXIT_STATUS=$?
+    SCRIPT_PID=$$
+    SERVER_PID=`ps aux | grep SimpleHTTPServer | grep -v grep |
+        sed -e 's/\s\+/:/g' | cut -d: -f2`
+    if [ -n "$SERVER_PID" ]
+    then
+        PARENT_PID=`ps -q ${SERVER_PID} -o ppid=`
+        if [ "$PARENT_PID" -eq "$SCRIPT_PID" ]
+        then
+            echo Shutting down server subprocess
+            ps -q $SERVER_PID -f
+            kill $SERVER_PID
+            exit 1
+        fi
+    fi
+    exit $EXIT_STATUS
+}
+
+
+trap cleanup_and_exit EXIT
+
 common_no_force_renew() {
     certbot_test_no_force_renew \
         --authenticator standalone \
@@ -44,7 +66,27 @@ python_server_pid=$!
 common --domains le2.wtf --preferred-challenges http-01 run
 kill $python_server_pid
 
+CheckServerProcessShutdown() {
+    SERVER_PID=`ps aux | grep "BaseHTTPServer, SimpleHTTPServer" |
+        grep -v grep | sed -e 's/\s\+/:/g' | cut -d: -f2`
+    if [ -n "$SERVER_PID" ]
+    then
+        # If the certbot script leaves a server running, it will have
+        # ppid of 1 as will any other abandoned processes
+        # so instead we compare elapsed process times.
+        ELAPSED_SERVER_TIME=`ps -q $SERVER_PID -o etimes= | tr -d [:blank:]`
+        ELAPSED_SCRIPT_TIME=`ps -q $$ -o etimes= | tr -d [:blank:]`
+        if [ "$ELAPSED_SERVER_TIME" -le "$ELAPSED_SCRIPT_TIME" ]
+        then
+            echo Server subprocess not shutdown correctly
+            ps -q $SERVER_PID -f
+            kill $SERVER_PID
+            exit 1
+        fi
+    fi
+}
 common -a manual -d le.wtf auth --rsa-key-size 4096
+CheckServerProcessShutdown
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
        OPENSSL_CNF=examples/openssl.cnf

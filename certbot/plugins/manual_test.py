@@ -122,12 +122,14 @@ class AuthenticatorTest(unittest.TestCase):
         httpd.poll.return_value = 0
         self.auth_test_mode.cleanup(self.achalls)
 
-    def test_cleanup_test_mode_kills_still_running(self):
+    @mock.patch("os.killpg")
+    @mock.patch("os.getpgid")
+    def test_cleanup_test_mode_kills_still_running(self, mock_os_killpg, unused_mock_pgid):
         # pylint: disable=protected-access
         self.auth_test_mode._httpd = httpd = mock.Mock(pid=1234)
         httpd.poll.return_value = None
         self.auth_test_mode.cleanup(self.achalls)
-        httpd.terminate.assert_called_once_with()
+        mock_os_killpg.assert_called_once()
 
 
 if __name__ == "__main__":
