@@ -1,14 +1,17 @@
+"""Tools for checking certificate revocation."""
 import logging
 
-from letsencrypt import errors
-from letsencrypt import le_util
-
+from certbot import errors
+from certbot import util
 
 logger = logging.getLogger(__name__)
 
 
 REV_LABEL = "**Revoked**"
 EXP_LABEL = "**Expired**"
+
+INSTALL_LABEL = "(Installed)"
+
 
 def revoked_status(cert_path, chain_path):
     """Get revoked status for a particular cert version.
@@ -19,7 +22,7 @@ def revoked_status(cert_path, chain_path):
     :param str chain_path: Path to chain certificate
 
     """
-    url, _ = le_util.run_script(
+    url, _ = util.run_script(
         ["openssl", "x509", "-in", cert_path, "-noout", "-ocsp_uri"])
 
     url = url.rstrip()
@@ -31,7 +34,7 @@ def revoked_status(cert_path, chain_path):
     # This was a PITA...
     # Thanks to "Bulletproof SSL and TLS - Ivan Ristic" for helping me out
     try:
-        output, _ = le_util.run_script(
+        output, _ = util.run_script(
             ["openssl", "ocsp",
             "-no_nonce", "-header", "Host", host,
             "-issuer", chain_path,
@@ -55,5 +58,4 @@ def _translate_ocsp_query(cert_path, ocsp_output):
     else:
         raise errors.Error(
             "Unable to properly parse OCSP output: %s", ocsp_output)
-
 

@@ -8,6 +8,7 @@ import zope.component
 
 from certbot import errors
 from certbot import interfaces
+from certbot import ocsp
 from certbot import storage
 from certbot import util
 
@@ -170,11 +171,17 @@ def _report_human_readable(parsed_certs):
     certinfo = []
     for cert in parsed_certs:
         now = pytz.UTC.fromutc(datetime.datetime.utcnow())
+        expiration_text = ""
         if cert.is_test_cert:
             expiration_text = "INVALID: TEST CERT"
         elif cert.target_expiry <= now:
             expiration_text = "INVALID: EXPIRED"
         else:
+            revoked = ocsp.revoked_status(cert.cert, cert.chain)
+            if revoked:
+                expiration_text = "INVALID: " + revoked
+
+        if not expiration_text:
             diff = cert.target_expiry - now
             if diff.days == 1:
                 expiration_text = "VALID: 1 day"
@@ -182,6 +189,7 @@ def _report_human_readable(parsed_certs):
                 expiration_text = "VALID: {0} hour(s)".format(diff.seconds // 3600)
             else:
                 expiration_text = "VALID: {0} days".format(diff.days)
+
         valid_string = "{0} ({1})".format(cert.target_expiry, expiration_text)
         certinfo.append("  Certificate Name: {0}\n"
                         "    Domains: {1}\n"
