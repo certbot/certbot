@@ -825,6 +825,14 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "renew subcommand.")
     helpful.add(
         [None, "run", "certonly"],
+        "--lineage", metavar="LINEAGE", dest="lineage", default=None,
+        help="File name of a config file under CONFIG_DIR/renewal/ whose associated certificate "
+             "lineage should be renewed by the 'certonly' or 'run' subcommands.  If not specified, "
+             "the relevant certificate lineage will be automatically determined based on the "
+             "specified domain names and the presence or absence of the --expand or --duplicate "
+             "flags.")
+    helpful.add(
+        [None, "run", "certonly"],
         "-d", "--domains", "--domain", dest="domains",
         metavar="DOMAIN", action=_DomainsAction, default=[],
         help="Domain names to apply. For multiple domains you can use "

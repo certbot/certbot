@@ -83,6 +83,8 @@ def _auth_from_available(le_client, config, domains=None, certname=None, lineage
     # If lineage is specified, use that one instead of looking around for
     # a matching one.
     if lineage is None:
+        lineage = _cli_lineage(config)
+    if lineage is None:
         # This will find a relevant matching lineage that exists
         action, lineage = _find_lineage_for_domains_and_certname(config, domains, certname)
     else:
@@ -304,6 +306,35 @@ def _find_domains_or_certname(config, installer):
                            "--cert-name for an existing certificate name.")
 
     return domains, certname
+
+
+def _cli_lineage(config):
+    """Obtain the lineage that was specified using --lineage on the command line
+
+    :returns: A storage.RenewableCert, or None if --lineage was not specified
+    :rtype: storage.RenewableCert or None
+
+    :raises .Error: If the specified lineage does not exist or is broken
+
+    """
+
+    if not config.lineage:
+        return None
+
+    cli_config = configuration.RenewerConfiguration(config)
+    configs_dir = cli_config.renewal_configs_dir
+    # Verify the directory is there
+    util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
+
+    renewal_file = os.path.join(configs_dir, config.lineage)
+    try:
+        lineage = storage.RenewableCert(renewal_file, cli_config)
+    except (errors.CertStorageError, IOError):
+        logger.debug("Traceback:\n%s", traceback.format_exc())
+        raise errors.Error("Renewal conf file " + renewal_file + " does not "
+                           "exist or is broken.")
+
+    return lineage
 
 
 def _report_new_cert(config, cert_path, fullchain_path):
