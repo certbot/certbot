@@ -9,7 +9,7 @@ from subprocess import Popen, PIPE
 from certbot import errors
 from certbot import util
 
-from certbot.plugins.util import path_surgery
+from certbot.plugins import util as plug_util
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ def _prog(shell_cmd):
     """Extract the program run by a shell command"""
     cmd = util.which(shell_cmd)
     if not cmd:
-        path_surgery(shell_cmd)
+        plug_util.path_surgery(shell_cmd)
         cmd = util.which(shell_cmd)
 
     return os.path.basename(cmd) if cmd else None
@@ -55,33 +55,35 @@ def pre_hook(config):
 pre_hook.already = {}
 
 
-def post_hook(config, renew_final=False):
+def post_hook(config):
     """Run post hook if defined.
 
     If the verb is renew, we might have more certs to renew, so we wait until
-    we're called with renew_final=True before actually doing anything.
+    run_saved_post_hooks() is called.
     """
 
     cmd = config.post_hook
+    # In the "renew" case, we save these up to run at the end
     if config.verb == "renew":
-        if not renew_final:
-            if cmd and cmd not in post_hook.eventually:
-                post_hook.eventually.append(cmd)
-        else:
-            for cmd in post_hook.eventually:
-                logger.info("Running post-hook command: %s", cmd)
-                _run_hook(cmd)
-            if len(post_hook.eventually) == 0:
-                logger.info("No renewals attempted, so not running post-hook")
-    else: # certonly / run
-        if cmd:
-            logger.info("Running post-hook command: %s", cmd)
-            _run_hook(cmd)
+        if cmd and cmd not in post_hook.eventually:
+            post_hook.eventually.append(cmd)
+    # certonly / run
+    elif cmd:
+        logger.info("Running post-hook command: %s", cmd)
+        _run_hook(cmd)
 
 post_hook.eventually = []
 
+def run_saved_post_hooks():
+    """Run any post hooks that were saved up in the course of the 'renew' verb"""
+    for cmd in post_hook.eventually:
+        logger.info("Running post-hook command: %s", cmd)
+        _run_hook(cmd)
+    if len(post_hook.eventually) == 0:
+        logger.info("No renewals attempted, so not running post-hook")
+
 def renew_hook(config, domains, lineage_path):
-    "Run post-renewal hook if defined."
+    """Run post-renewal hook if defined."""
     if config.renew_hook:
         if not config.dry_run:
             os.environ["RENEWED_DOMAINS"] = " ".join(domains)

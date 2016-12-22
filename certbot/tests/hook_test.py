@@ -27,9 +27,8 @@ class HookTest(unittest.TestCase):
         config = mock.MagicMock(pre_hook="explodinator", post_hook="", renew_hook="")
         self.assertRaises(errors.HookCommandNotFound, hooks.validate_hooks, config)
 
-
     @mock.patch('certbot.hooks.util.which')
-    @mock.patch('certbot.hooks.path_surgery')
+    @mock.patch('certbot.hooks.plug_util.path_surgery')
     def test_prog(self, mock_ps, mockwhich):
         mockwhich.return_value = "/very/very/funky"
         self.assertEqual(hooks._prog("funky"), "funky")
@@ -58,19 +57,30 @@ class HookTest(unittest.TestCase):
         config = mock.MagicMock(pre_hook="")
         self._test_a_hook(config, hooks.pre_hook, 0)
 
-    def test_post_hook(self):
+    def _test_renew_post_hooks(self, expected_count):
+        with mock.patch('certbot.hooks.logger.info') as mock_info:
+            with mock.patch('certbot.hooks._run_hook') as mock_run:
+                hooks.run_saved_post_hooks()
+                self.assertEqual(mock_run.call_count, expected_count)
+                if expected_count:
+                    self.assertEqual(mock_info.call_count, expected_count)
+                else:
+                    self.assertEqual(mock_info.call_count, 1)
+
+    def test_post_hooks(self):
         config = mock.MagicMock(post_hook="true", verb="splonk")
         self._test_a_hook(config, hooks.post_hook, 2)
+        self._test_renew_post_hooks(0)
 
         config = mock.MagicMock(post_hook="true", verb="renew")
         self._test_a_hook(config, hooks.post_hook, 0)
-        self._test_a_hook(config, hooks.post_hook, 2, renew_final=True)
+        self._test_renew_post_hooks(1)
         self._test_a_hook(config, hooks.post_hook, 0)
-        self._test_a_hook(config, hooks.post_hook, 2, renew_final=True)
+        self._test_renew_post_hooks(1)
 
         config = mock.MagicMock(post_hook="more_true", verb="renew")
         self._test_a_hook(config, hooks.post_hook, 0)
-        self._test_a_hook(config, hooks.post_hook, 4, renew_final=True)
+        self._test_renew_post_hooks(2)
 
     def test_renew_hook(self):
         with mock.patch.dict('os.environ', {}):
