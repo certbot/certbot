@@ -1,5 +1,4 @@
-
-"""Tests for hooks.py"""
+"""Tests for ocsp.py"""
 # pylint: disable=protected-access
 
 import unittest

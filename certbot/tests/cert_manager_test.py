@@ -1,5 +1,5 @@
 """Tests for certbot.cert_manager."""
-# pylint disable=protected-access
+# pylint: disable=protected-access
 import os
 import re
 import shutil
@@ -192,6 +192,8 @@ class CertificatesTest(BaseCertManagerTest):
         cert.names.return_value = ["nameone", "nametwo"]
         cert.is_test_cert = False
         parsed_certs = [cert]
+
+        # pylint: disable=protected-access
         get_report = lambda: cert_manager._report_human_readable(mock_config, parsed_certs)
 
         mock_config = mock.MagicMock(certname=None, lineagename=None)
