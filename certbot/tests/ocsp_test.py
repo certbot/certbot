@@ -69,6 +69,9 @@ class OCSPTest(unittest.TestCase):
 
         mock_determine.return_value = ("http://x.co", "x.co")
         self.assertEqual(self.checker.ocsp_revoked("blah.pem", "chain.pem"), False)
+        mock_run.side_effect = errors.SubprocessError("Unable to load certificate launcher")
+        self.assertEqual(self.checker.ocsp_revoked("x", "y"), None)
+        self.assertEqual(mock_run.call_count, 2)
 
 
     @mock.patch('certbot.ocsp.logger.debug')

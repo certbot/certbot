@@ -1,6 +1,7 @@
 """Tests for certbot.cert_manager."""
 # pylint disable=protected-access
 import os
+import re
 import shutil
 import tempfile
 import unittest
@@ -181,7 +182,7 @@ class CertificatesTest(BaseCertManagerTest):
 
     @mock.patch('certbot.cert_manager.ocsp.RevocationChecker.ocsp_revoked')
     def test_report_human_readable(self, mock_ocsp):
-        mock_ocsp.side_effect = lambda _cert, _chain: None
+        mock_ocsp.return_value = None
         from certbot import cert_manager
         import datetime, pytz
         expiry = pytz.UTC.fromutc(datetime.datetime.utcnow())
@@ -191,34 +192,56 @@ class CertificatesTest(BaseCertManagerTest):
         cert.names.return_value = ["nameone", "nametwo"]
         cert.is_test_cert = False
         parsed_certs = [cert]
+        get_report = lambda: cert_manager._report_human_readable(mock_config, parsed_certs)
 
         mock_config = mock.MagicMock(certname=None, lineagename=None)
         # pylint: disable=protected-access
-        out = cert_manager._report_human_readable(mock_config, parsed_certs)
+        out = get_report()
         self.assertTrue("INVALID: EXPIRED" in out)
 
         cert.target_expiry += datetime.timedelta(hours=2)
         # pylint: disable=protected-access
-        out = cert_manager._report_human_readable(mock_config, parsed_certs)
+        out = get_report()
         self.assertTrue('1 hour(s)' in out)
         self.assertTrue('VALID' in out and not 'INVALID' in out)
 
         cert.target_expiry += datetime.timedelta(days=1)
         # pylint: disable=protected-access
-        out = cert_manager._report_human_readable(mock_config, parsed_certs)
+        out = get_report()
         self.assertTrue('1 day' in out)
         self.assertFalse('under' in out)
         self.assertTrue('VALID' in out and not 'INVALID' in out)
 
         cert.target_expiry += datetime.timedelta(days=2)
         # pylint: disable=protected-access
-        out = cert_manager._report_human_readable(mock_config, parsed_certs)
+        out = get_report()
         self.assertTrue('3 days' in out)
         self.assertTrue('VALID' in out and not 'INVALID' in out)
 
         cert.is_test_cert = True
-        out = cert_manager._report_human_readable(mock_config, parsed_certs)
+        out = get_report()
         self.assertTrue('INVALID: TEST_CERT' in out)
+
+        cert = mock.MagicMock(lineagename="indescribable")
+        cert.target_expiry = expiry
+        cert.names.return_value = ["nameone", "thrice.named"]
+        cert.is_test_cert = True
+        parsed_certs.append(cert)
+
+        out = get_report()
+        self.assertEqual(len(re.findall("INVALID:", out)), 2)
+        mock_config.domains = ["thrice.named"]
+        out = get_report()
+        self.assertEqual(len(re.findall("INVALID:", out)), 1)
+        mock_config.domains = ["nameone"]
+        out = get_report()
+        self.assertEqual(len(re.findall("INVALID:", out)), 2)
+        mock_config.certname = "indescribable"
+        out = get_report()
+        self.assertEqual(len(re.findall("INVALID:", out)), 1)
+        mock_config.certname = "horror"
+        out = get_report()
+        self.assertEqual(len(re.findall("INVALID:", out)), 0)
 
 
 class SearchLineagesTest(BaseCertManagerTest):
