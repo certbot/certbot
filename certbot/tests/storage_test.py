@@ -551,7 +551,8 @@ class RenewableCertTests(BaseRenewableCertTest):
 
         from certbot.storage import relevant_values
         with mock.patch("certbot.cli.helpful_parser", mock_parser):
-            return relevant_values(values)
+            # make a copy to ensure values isn't modified
+            return relevant_values(values.copy())
 
     def test_relevant_values(self):
         """Test that relevant_values() can reject an irrelevant value."""
@@ -567,10 +568,18 @@ class RenewableCertTests(BaseRenewableCertTest):
     def test_relevant_values_nondefault(self):
         """Test that relevant_values() can retain a non-default value."""
         values = {"rsa_key_size": 12}
-        # A copy is given to _test_relevant_values_common
-        # to make sure values isn't modified by the method
         self.assertEqual(
-            self._test_relevant_values_common(values.copy()), values)
+            self._test_relevant_values_common(values), values)
+
+    def test_relevant_values_bool(self):
+        values = {"allow_subset_of_names": True}
+        self.assertEqual(
+            self._test_relevant_values_common(values), values)
+
+    def test_relevant_values_str(self):
+        values = {"authenticator": "apache"}
+        self.assertEqual(
+            self._test_relevant_values_common(values), values)
 
     @mock.patch("certbot.storage.relevant_values")
     def test_new_lineage(self, mock_rv):
