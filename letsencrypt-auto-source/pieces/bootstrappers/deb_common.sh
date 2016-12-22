@@ -99,6 +99,7 @@ BootstrapDebCommon() {
     gcc \
     $augeas_pkg \
     libssl-dev \
+    openssl \
     libffi-dev \
     ca-certificates \
 
