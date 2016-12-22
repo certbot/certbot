@@ -37,17 +37,17 @@ class RevocationChecker(object):
         :param str cert_path: Path to certificate
         :param str chain_path: Path to intermediate cert
         :rtype bool or None:
-        :returns: False if valid; True if revoked; None if check itself failed
+        :returns: True if revoked; False if valid or the check failed
 
         """
         if self.broken:
-            return None
+            return False
 
 
         logger.debug("Querying OCSP for %s", cert_path)
         url, host = self.determine_ocsp_server(cert_path)
         if not host:
-            return None
+            return False
         # jdkasten thanks "Bulletproof SSL and TLS - Ivan Ristic" for documenting this!
         cmd = ["openssl", "ocsp",
                "-no_nonce",
@@ -62,7 +62,7 @@ class RevocationChecker(object):
         except errors.SubprocessError as e:
             logger.info("OCSP check failed for %s (are we offline?)", cert_path)
             logger.debug("Command was:\n%s\nError was:\n%s", " ".join(cmd), e)
-            return None
+            return False
 
         return _translate_ocsp_query(cert_path, output, err)
 
@@ -98,12 +98,12 @@ def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
     if not "Response verify OK" in ocsp_errors:
         logger.info("Revocation status for %s is unknown", cert_path)
         logger.debug("Uncertain ouput:\n%s\nstderr:\n%s", ocsp_output, ocsp_errors)
-        return None
+        return False
     if cert_path + ": good" in ocsp_output:
         return False
     elif cert_path + ": revoked" in ocsp_output:
         return True
     else:
         logger.warn("Unable to properly parse OCSP output: %s", ocsp_output)
-        return None
+        return False
 

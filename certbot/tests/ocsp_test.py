@@ -59,17 +59,17 @@ class OCSPTest(unittest.TestCase):
     def test_ocsp_revoked(self, mock_run, mock_determine):
         self.checker.broken = True
         mock_determine.return_value = ("", "")
-        self.assertEqual(self.checker.ocsp_revoked("x", "y"), None)
+        self.assertEqual(self.checker.ocsp_revoked("x", "y"), False)
 
         self.checker.broken = False
         mock_run.return_value = tuple(openssl_happy[1:])
-        self.assertEqual(self.checker.ocsp_revoked("x", "y"), None)
+        self.assertEqual(self.checker.ocsp_revoked("x", "y"), False)
         self.assertEqual(mock_run.call_count, 0)
 
         mock_determine.return_value = ("http://x.co", "x.co")
         self.assertEqual(self.checker.ocsp_revoked("blah.pem", "chain.pem"), False)
         mock_run.side_effect = errors.SubprocessError("Unable to load certificate launcher")
-        self.assertEqual(self.checker.ocsp_revoked("x", "y"), None)
+        self.assertEqual(self.checker.ocsp_revoked("x", "y"), False)
         self.assertEqual(mock_run.call_count, 2)
 
 
@@ -97,10 +97,10 @@ class OCSPTest(unittest.TestCase):
         mock_run.return_value = openssl_confused
         from certbot import ocsp
         self.assertEqual(ocsp._translate_ocsp_query(*openssl_happy), False)
-        self.assertEqual(ocsp._translate_ocsp_query(*openssl_confused), None)
+        self.assertEqual(ocsp._translate_ocsp_query(*openssl_confused), False)
         self.assertEqual(mock_log.debug.call_count, 1)
         self.assertEqual(mock_log.warn.call_count, 0)
-        self.assertEqual(ocsp._translate_ocsp_query(*openssl_broken), None)
+        self.assertEqual(ocsp._translate_ocsp_query(*openssl_broken), False)
         self.assertEqual(mock_log.warn.call_count, 1)
         self.assertEqual(ocsp._translate_ocsp_query(*openssl_revoked), True)
 
