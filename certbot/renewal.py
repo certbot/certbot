@@ -27,10 +27,11 @@ logger = logging.getLogger(__name__)
 # file's renewalparams and actually used in the client configuration
 # during the renewal process. We have to record their types here because
 # the renewal configuration process loses this information.
+BOOL_CONFIG_ITEMS = ["allow_subset_of_names"]
+INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
 STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
                     "standalone_supported_challenges", "renew_hook"]
-INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
 
 
 def _reconstitute(config, full_path):
@@ -159,12 +160,32 @@ def _restore_required_config_elements(config, renewalparams):
 
     """
     required_items = itertools.chain(
+        six.moves.zip(BOOL_CONFIG_ITEMS, itertools.repeat(_restore_bool)),
         six.moves.zip(INT_CONFIG_ITEMS, itertools.repeat(_restore_int)),
         six.moves.zip(STR_CONFIG_ITEMS, itertools.repeat(_restore_str)))
     for item_name, restore_func in required_items:
         if item_name in renewalparams and not cli.set_by_cli(item_name):
             value = restore_func(item_name, renewalparams[item_name])
             setattr(config.namespace, item_name, value)
+
+
+def _restore_bool(name, value):
+    """Restores an boolean key-value pair from a renewal config file.
+
+    :param str name: option name
+    :param str value: option value
+
+    :returns: converted option value to be stored in the runtime config
+    :rtype: bool
+
+    :raises errors.Error: if value can't be converted to an bool
+
+    """
+    lowercase_value = value.lower()
+    if lowercase_value not in ("true", "false"):
+        raise errors.Error(
+            "Expected True or False for {0} but found {1}".format(name, value))
+    return lowercase_value == "true"
 
 
 def _restore_int(name, value):
