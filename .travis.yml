@@ -134,7 +134,7 @@ addons:
     - libapache2-mod-macro
 
 install: "travis_retry pip install tox coveralls"
-script: './tests/travis.sh'
+script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/travis-integration.sh)'
 
 after_success: '[ "$TOXENV" == "cover" ] && coveralls'
 
