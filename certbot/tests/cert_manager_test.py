@@ -181,8 +181,8 @@ class CertificatesTest(BaseCertManagerTest):
         shutil.rmtree(tempdir)
 
     @mock.patch('certbot.cert_manager.ocsp.RevocationChecker.ocsp_revoked')
-    def test_report_human_readable(self, mock_ocsp):
-        mock_ocsp.return_value = None
+    def test_report_human_readable(self, mock_revoked):
+        mock_revoked.return_value = None
         from certbot import cert_manager
         import datetime, pytz
         expiry = pytz.UTC.fromutc(datetime.datetime.utcnow())
@@ -221,8 +221,9 @@ class CertificatesTest(BaseCertManagerTest):
         self.assertTrue('VALID' in out and not 'INVALID' in out)
 
         cert.is_test_cert = True
+        mock_revoked.return_value = True
         out = get_report()
-        self.assertTrue('INVALID: TEST_CERT' in out)
+        self.assertTrue('INVALID: TEST_CERT, REVOKED' in out)
 
         cert = mock.MagicMock(lineagename="indescribable")
         cert.target_expiry = expiry
