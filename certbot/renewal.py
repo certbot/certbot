@@ -72,7 +72,7 @@ def _reconstitute(config, full_path):
     # Now restore specific values along with their data types, if
     # those elements are present.
     try:
-        _restore_required_config_elements(config, renewalparams)
+        restore_required_config_elements(config, renewalparams)
         _restore_plugin_configs(config, renewalparams)
     except (ValueError, errors.Error) as error:
         logger.warning(
@@ -152,7 +152,7 @@ def _restore_plugin_configs(config, renewalparams):
                     setattr(config.namespace, config_item, cast(config_value))
 
 
-def _restore_required_config_elements(config, renewalparams):
+def restore_required_config_elements(config, renewalparams):
     """Sets non-plugin specific values in config from renewalparams
 
     :param configuration.NamespaceConfig config: configuration for the
