@@ -100,6 +100,8 @@ class OCSPTest(unittest.TestCase):
         self.assertEqual(ocsp._translate_ocsp_query(*openssl_confused), False)
         self.assertEqual(mock_log.debug.call_count, 1)
         self.assertEqual(mock_log.warn.call_count, 0)
+        self.assertEqual(ocsp._translate_ocsp_query(*openssl_expired_ocsp), False)
+        self.assertEqual(mock_log.debug.call_count, 2)
         self.assertEqual(ocsp._translate_ocsp_query(*openssl_broken), False)
         self.assertEqual(mock_log.warn.call_count, 1)
         self.assertEqual(ocsp._translate_ocsp_query(*openssl_revoked), True)
