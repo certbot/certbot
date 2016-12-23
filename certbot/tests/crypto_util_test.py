@@ -11,7 +11,7 @@ import zope.component
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot.tests import test_util
+import certbot.tests.util as test_util
 
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')
 RSA512_KEY = test_util.load_vector('rsa512_key.pem')
@@ -59,13 +59,13 @@ class InitSaveCSRTest(unittest.TestCase):
     def test_it(self, unused_mock_verify, mock_csr):
         from certbot.crypto_util import init_save_csr
 
-        mock_csr.return_value = ('csr_pem', 'csr_der')
+        mock_csr.return_value = (b'csr_pem', b'csr_der')
 
         csr = init_save_csr(
             mock.Mock(pem='dummy_key'), 'example.com', self.csr_dir,
             'csr-certbot.pem')
 
-        self.assertEqual(csr.data, 'csr_der')
+        self.assertEqual(csr.data, b'csr_der')
         self.assertTrue('csr-certbot.pem' in csr.file)
 
 
@@ -103,7 +103,7 @@ class MakeCSRTest(unittest.TestCase):
             # OpenSSL.crypto.X509Extension doesn't give us the extension's raw OID,
             # and the shortname field is just "UNDEF"
             must_staple_exts = [e for e in csr.get_extensions()
-                if e.get_data() == "0\x03\x02\x01\x05"]
+                if e.get_data() == b"0\x03\x02\x01\x05"]
             self.assertEqual(len(must_staple_exts), 1,
                 "Expected exactly one Must Staple extension")
 
@@ -350,7 +350,7 @@ class CertLoaderTest(unittest.TestCase):
 
     def test_load_invalid_cert(self):
         from certbot.crypto_util import pyopenssl_load_certificate
-        bad_cert_data = CERT.replace("BEGIN CERTIFICATE", "ASDFASDFASDF!!!")
+        bad_cert_data = CERT.replace(b"BEGIN CERTIFICATE", b"ASDFASDFASDF!!!")
         self.assertRaises(
             errors.Error, pyopenssl_load_certificate, bad_cert_data)
 

@@ -33,9 +33,23 @@ common() {
         "$@"
 }
 
-common --domains le1.wtf --standalone-supported-challenges tls-sni-01 auth
-common --domains le2.wtf --standalone-supported-challenges http-01 run
-common -a manual -d le.wtf auth --rsa-key-size 4096
+# We start a server listening on the port for the
+# unrequested challenge to prevent regressions in #3601.
+python -m SimpleHTTPServer $http_01_port &
+python_server_pid=$!
+common --domains le1.wtf --preferred-challenges tls-sni-01 auth
+kill $python_server_pid
+python -m SimpleHTTPServer $tls_sni_01_port &
+python_server_pid=$!
+common --domains le2.wtf --preferred-challenges http-01 run
+kill $python_server_pid
+
+common certonly -a manual -d le.wtf --rsa-key-size 4096 \
+    --manual-auth-hook ./tests/manual-http-auth.sh \
+    --manual-cleanup-hook ./tests/manual-http-cleanup.sh
+
+common certonly -a manual -d dns.le.wtf --preferred-challenges dns-01 \
+    --manual-auth-hook ./tests/manual-dns-auth.sh
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
        OPENSSL_CNF=examples/openssl.cnf

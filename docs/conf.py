@@ -45,7 +45,6 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
     'repoze.sphinx.autointerface',
-    'sphinxcontrib.programoutput',
 ]
 
 autodoc_member_order = 'bysource'

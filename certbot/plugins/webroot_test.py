@@ -21,7 +21,7 @@ from certbot import errors
 from certbot.display import util as display_util
 
 from certbot.tests import acme_util
-from certbot.tests import test_util
+from certbot.tests import util as test_util
 
 
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
@@ -111,8 +111,7 @@ class AuthenticatorTest(unittest.TestCase):
 
         self.assertTrue(mock_display.notification.called)
         for call in mock_display.notification.call_args_list:
-            self.assertTrue(imaginary_dir in call[0][0] or
-                            display_util.DSELECT_HELP == call[0][0])
+            self.assertTrue(imaginary_dir in call[0][0])
 
         self.assertTrue(mock_display.directory_select.called)
         for call in mock_display.directory_select.call_args_list:

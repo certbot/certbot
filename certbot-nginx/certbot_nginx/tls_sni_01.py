@@ -47,7 +47,7 @@ class NginxTlsSni01(common.TLSSNI01):
             return []
 
         addresses = []
-        default_addr = "{0} default_server ssl".format(
+        default_addr = "{0} ssl".format(
             self.configurator.config.tls_sni_01_port)
 
         for achall in self.achalls:
@@ -59,12 +59,10 @@ class NginxTlsSni01(common.TLSSNI01):
                     achall.domain)
                 return None
 
-            for addr in vhost.addrs:
-                if addr.default:
-                    addresses.append([obj.Addr.fromstring(default_addr)])
-                    break
-            else:
+            if vhost.addrs:
                 addresses.append(list(vhost.addrs))
+            else:
+                addresses.append([obj.Addr.fromstring(default_addr)])
 
         # Create challenge certs
         responses = [self._setup_challenge_cert(x) for x in self.achalls]
@@ -91,17 +89,17 @@ class NginxTlsSni01(common.TLSSNI01):
         # Add the 'include' statement for the challenges if it doesn't exist
         # already in the main config
         included = False
-        include_directive = ['include', ' ', self.challenge_conf]
+        include_directive = ['\n', 'include', ' ', self.challenge_conf]
         root = self.configurator.parser.loc["root"]
 
-        bucket_directive = ['server_names_hash_bucket_size', ' ', '128']
+        bucket_directive = ['\n', 'server_names_hash_bucket_size', ' ', '128']
 
         main = self.configurator.parser.parsed[root]
         for key, body in main:
             if key == ['http']:
                 found_bucket = False
                 for k, _ in body:
-                    if k == bucket_directive[0]:
+                    if k == bucket_directive[1]:
                         found_bucket = True
                 if not found_bucket:
                     body.insert(0, bucket_directive)
@@ -141,11 +139,10 @@ class NginxTlsSni01(common.TLSSNI01):
         document_root = os.path.join(
             self.configurator.config.work_dir, "tls_sni_01_page")
 
-        block = [['listen', ' ', str(addr)] for addr in addrs]
+        block = [['listen', ' ', addr.to_string(include_default=False)] for addr in addrs]
 
         block.extend([['server_name', ' ',
                        achall.response(achall.account_key).z_domain],
-                      ['include', ' ', self.configurator.parser.loc["ssl_options"]],
                       # access and error logs necessary for
                       # integration testing (non-root)
                       ['access_log', ' ', os.path.join(
@@ -154,6 +151,6 @@ class NginxTlsSni01(common.TLSSNI01):
                           self.configurator.config.work_dir, 'error.log')],
                       ['ssl_certificate', ' ', self.get_cert_path(achall)],
                       ['ssl_certificate_key', ' ', self.get_key_path(achall)],
-                      [['location', ' ', '/'], [['root', ' ', document_root]]]])
-
+                      [['location', ' ', '/'], [['root', ' ', document_root]]]] +
+                     self.configurator.parser.loc["ssl_options"])
         return [['server'], block]

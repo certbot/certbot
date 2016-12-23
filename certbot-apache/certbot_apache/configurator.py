@@ -1,6 +1,7 @@
 """Apache Configuration based off of Augeas Configurator."""
 # pylint: disable=too-many-lines
 import filecmp
+import fnmatch
 import logging
 import os
 import re
@@ -84,7 +85,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     """
 
-    description = "Apache Web Server - Alpha"
+    description = "Apache Web Server plugin - Beta"
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -98,6 +99,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             help="Apache server root directory.")
         add("vhost-root", default=constants.os_constant("vhost_root"),
             help="Apache server VirtualHost configuration root")
+        add("logs-root", default=constants.os_constant("logs_root"),
+            help="Apache server logs directory")
         add("challenge-location",
             default=constants.os_constant("challenge_location"),
             help="Directory path for challenge configuration.")
@@ -360,18 +363,24 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return vhost
 
     def included_in_wildcard(self, names, target_name):
-        """Helper function to see if alias is covered by wildcard"""
-        target_name = target_name.split(".")[::-1]
-        wildcards = [domain.split(".")[1:] for domain in
-                     names if domain.startswith("*")]
-        for wildcard in wildcards:
-            if len(wildcard) > len(target_name):
-                continue
-            for idx, segment in enumerate(wildcard[::-1]):
-                if segment != target_name[idx]:
-                    break
-            else:
-                # https://docs.python.org/2/tutorial/controlflow.html#break-and-continue-statements-and-else-clauses-on-loops
+        """Is target_name covered by a wildcard?
+
+        :param names: server aliases
+        :type names: `collections.Iterable` of `str`
+        :param str target_name: name to compare with wildcards
+
+        :returns: True if target_name is covered by a wildcard,
+            otherwise, False
+        :rtype: bool
+
+        """
+        # use lowercase strings because fnmatch can be case sensitive
+        target_name = target_name.lower()
+        for name in names:
+            name = name.lower()
+            # fnmatch treats "[seq]" specially and [ or ] characters aren't
+            # valid in Apache but Apache doesn't error out if they are present
+            if "[" not in name and fnmatch.fnmatch(target_name, name):
                 return True
         return False
 
@@ -461,7 +470,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             zope.component.getUtility(interfaces.IDisplay).notification(
                 "Apache mod_macro seems to be in use in file(s):\n{0}"
                 "\n\nUnfortunately mod_macro is not yet supported".format(
-                    "\n  ".join(vhost_macro)))
+                    "\n  ".join(vhost_macro)), force_interactive=True)
 
         return all_names
 
@@ -1010,12 +1019,30 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.parser.find_dir("ServerAlias", target_name,
                                  start=vh_path, exclude=False)):
             return
+        if self._has_matching_wildcard(vh_path, target_name):
+            return
         if not self.parser.find_dir("ServerName", None,
                                     start=vh_path, exclude=False):
             self.parser.add_dir(vh_path, "ServerName", target_name)
         else:
             self.parser.add_dir(vh_path, "ServerAlias", target_name)
         self._add_servernames(vhost)
+
+    def _has_matching_wildcard(self, vh_path, target_name):
+        """Is target_name already included in a wildcard in the vhost?
+
+        :param str vh_path: Augeas path to the vhost
+        :param str target_name: name to compare with wildcards
+
+        :returns: True if there is a wildcard covering target_name in
+            the vhost in vhost_path, otherwise, False
+        :rtype: bool
+
+        """
+        matches = self.parser.find_dir(
+            "ServerAlias", start=vh_path, exclude=False)
+        aliases = (self.aug.get(match) for match in matches)
+        return self.included_in_wildcard(aliases, target_name)
 
     def _add_name_vhost_if_necessary(self, vhost):
         """Add NameVirtualHost Directives if necessary for new vhost.
@@ -1425,13 +1452,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "RewriteEngine On\n"
                 "RewriteRule %s\n"
                 "\n"
-                "ErrorLog /var/log/apache2/redirect.error.log\n"
+                "ErrorLog %s/redirect.error.log\n"
                 "LogLevel warn\n"
                 "</VirtualHost>\n"
                 % (" ".join(str(addr) for
                             addr in self._get_proposed_addrs(ssl_vhost)),
                    servername, serveralias,
-                   " ".join(rewrite_rule_args)))
+                   " ".join(rewrite_rule_args),
+                   self.conf("logs-root")))
 
     def _write_out_redirect(self, ssl_vhost, text):
         # This is the default name
@@ -1490,38 +1518,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             redirects.add(addr.get_addr_obj(port))
 
         return redirects
-
-    def get_all_certs_keys(self):
-        """Find all existing keys, certs from configuration.
-
-        Retrieve all certs and keys set in VirtualHosts on the Apache server
-
-        :returns: list of tuples with form [(cert, key, path)]
-            cert - str path to certificate file
-            key - str path to associated key file
-            path - File path to configuration file.
-        :rtype: list
-
-        """
-        c_k = set()
-
-        for vhost in self.vhosts:
-            if vhost.ssl:
-                cert_path = self.parser.find_dir(
-                    "SSLCertificateFile", None,
-                    start=vhost.path, exclude=False)
-                key_path = self.parser.find_dir(
-                    "SSLCertificateKeyFile", None,
-                    start=vhost.path, exclude=False)
-
-                if cert_path and key_path:
-                    cert = os.path.abspath(self.parser.get_arg(cert_path[-1]))
-                    key = os.path.abspath(self.parser.get_arg(key_path[-1]))
-                    c_k.add((cert, key, get_file_path(cert_path[-1])))
-                else:
-                    logger.warning(
-                        "Invalid VirtualHost configuration - %s", vhost.filep)
-        return c_k
 
     def is_site_enabled(self, avail_fp):
         """Checks to see if the given site is enabled.

@@ -54,6 +54,14 @@ class PluginEntryPoint(object):
         return "{0} ({1})".format(self.description, self.name)
 
     @property
+    def long_description(self):
+        """Long description of the plugin."""
+        try:
+            return self.plugin_cls.long_description
+        except AttributeError:
+            return self.description
+
+    @property
     def hidden(self):
         """Should this plugin be hidden from UI?"""
         return getattr(self.plugin_cls, "hidden", False)
@@ -255,4 +263,4 @@ class PluginsRegistry(collections.Mapping):
     def __str__(self):
         if not self._plugins:
             return "No plugins"
-        return "\n\n".join(str(p_ep) for p_ep in self._plugins.itervalues())
+        return "\n\n".join(str(p_ep) for p_ep in six.itervalues(self._plugins))

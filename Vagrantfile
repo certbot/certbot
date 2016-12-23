@@ -29,6 +29,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       # VM needs more memory to run test suite, got "OSError: [Errno 12]
       # Cannot allocate memory" when running
       # letsencrypt.client.tests.display.util_test.NcursesDisplayTest
+      # We may no longer need this.
       v.memory = 1024
 
       # Handle cases when the host is behind a private network by making the 

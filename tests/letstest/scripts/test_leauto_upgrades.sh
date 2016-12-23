@@ -22,14 +22,14 @@ if ! command -v git ; then
     fi
 fi
 BRANCH=`git rev-parse --abbrev-ref HEAD`
-git checkout v0.1.0
+git checkout -f v0.1.0
 ./letsencrypt-auto -v --debug --version
 unset PIP_INDEX_URL
 
 export PIP_EXTRA_INDEX_URL="$SAVE"
 
 git checkout -f "$BRANCH"
-if ! ./letsencrypt-auto -v --debug --version | grep 0.3.0 ; then
+if ! ./letsencrypt-auto -v --debug --version | grep 0.9.0 ; then
     echo upgrade appeared to fail
     exit 1
 fi
