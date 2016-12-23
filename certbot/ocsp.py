@@ -60,7 +60,7 @@ class RevocationChecker(object):
                "-header"] + self.host_args(host)
         try:
             output, err = util.run_script(cmd, log=logging.debug)
-        except errors.SubprocessError as e:
+        except errors.SubprocessError:
             logger.info("OCSP check failed for %s (are we offline?)", cert_path)
             return False
 
@@ -79,7 +79,7 @@ class RevocationChecker(object):
             url, _err = util.run_script(
                 ["openssl", "x509", "-in", cert_path, "-noout", "-ocsp_uri"],
                 log=logging.debug)
-        except errors.SubprocessError as e:
+        except errors.SubprocessError:
             logger.info("Cannot extract OCSP URI from %s", cert_path)
             return None, None
 
@@ -100,10 +100,9 @@ def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
 
     if (not "Response verify OK" in ocsp_errors) or (good and warning):
         logger.info("Revocation status for %s is unknown", cert_path)
-        logger.debug("Uncertain ouput:\n%s\nstderr:\n%s", ocsp_output, ocsp_errors)
+        logger.debug("Uncertain output:\n%s\nstderr:\n%s", ocsp_output, ocsp_errors)
         return False
-
-    if good and not warning:
+    elif good and not warning:
         return False
     elif cert_path + ": revoked" in ocsp_output:
         return True
