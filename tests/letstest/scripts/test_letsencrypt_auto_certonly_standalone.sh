@@ -32,7 +32,7 @@ if [ "$TEST_CERTS" != 2 ] ; then
     exit 1
 fi
 
-if [ "$REVOKED" != 2 ] ; then
+if [ "$REVOKED" != 1 ] ; then
     echo Did not find one revoked cert as expected ("$REVOKED")
     exit 1
 fi
