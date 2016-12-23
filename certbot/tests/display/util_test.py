@@ -1,10 +1,12 @@
 """Test :mod:`certbot.display.util`."""
+import inspect
 import os
 import unittest
 
 import mock
 
-import certbot.errors as errors
+from certbot import errors
+from certbot import interfaces
 
 from certbot.display import util as display_util
 
@@ -259,6 +261,13 @@ class FileOutputDisplayTest(unittest.TestCase):
                     self.displayer._get_valid_int_ans(3),
                     (display_util.CANCEL, -1))
 
+    def test_methods_take_force_interactive(self):
+        # Every IDisplay method implemented by FileDisplay must take
+        # force_interactive to prevent workflow regressions.
+        for name in interfaces.IDisplay.names():  # pylint: disable=no-member
+            arg_spec = inspect.getargspec(getattr(self.displayer, name))
+            self.assertTrue("force_interactive" in arg_spec.args)
+
 
 class NoninteractiveDisplayTest(unittest.TestCase):
     """Test non-interactive display.
@@ -308,6 +317,16 @@ class NoninteractiveDisplayTest(unittest.TestCase):
 
         self.assertRaises(
             errors.MissingCommandlineFlag, self.displayer.directory_select, "msg")
+
+    def test_methods_take_kwargs(self):
+        # Every IDisplay method implemented by NoninteractiveDisplay
+        # should take **kwargs because every method of FileDisplay must
+        # take force_interactive which doesn't apply to
+        # NoninteractiveDisplay.
+        for name in interfaces.IDisplay.names():  # pylint: disable=no-member
+            method = getattr(self.displayer, name)
+            # asserts method accepts arbitrary keyword arguments
+            self.assertFalse(inspect.getargspec(method).keywords is None)
 
 
 class SeparateListInputTest(unittest.TestCase):
