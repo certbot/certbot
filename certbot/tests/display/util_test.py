@@ -315,7 +315,7 @@ class NoninteractiveDisplayTest(unittest.TestCase):
         # Every public method of NoninteractiveDisplay should take kwargs
         # because every method of FileDisplay must take force_interactive
         # which doesn't apply to NoninteractiveDisplay.
-        for name in interfaces.IDisplay.names():
+        for name in interfaces.IDisplay.names():  # pylint: disable=no-member
             method = getattr(self.displayer, name)
             # asserts method accepts arbitrary keyword arguments
             self.assertFalse(inspect.getargspec(method).keywords is None)
