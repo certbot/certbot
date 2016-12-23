@@ -7,10 +7,13 @@
 #public_ip=$(curl -s http://169.254.169.254/2014-11-05/meta-data/public-ipv4)
 #private_ip=$(curl -s http://169.254.169.254/2014-11-05/meta-data/local-ipv4)
 
-cd letsencrypt/letsencrypt-auto-source
-./letsencrypt-auto --os-packages-only --debug --version
-./letsencrypt-auto certonly --no-self-upgrade -v --standalone --debug \
+cd letsencrypt
+export PATH="$PWD/letsencrypt-auto-source:$PATH"
+letsencrypt-auto --os-packages-only --debug --version
+letsencrypt-auto certonly --no-self-upgrade -v --standalone --debug \
                    --text --agree-dev-preview --agree-tos \
                    --renew-by-default --redirect \
                    --register-unsafely-without-email \
                    --domain $PUBLIC_HOSTNAME --server $BOULDER_URL
+export CONFDIR="$PWD"/../tests/letstest/testdata/sample-config
+out=`./letsencrypt-auto certificates --config-dir "$CONFDIR"`
