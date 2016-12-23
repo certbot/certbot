@@ -73,10 +73,9 @@ class OCSPTest(unittest.TestCase):
         self.assertEqual(mock_run.call_count, 2)
 
 
-    @mock.patch('certbot.ocsp.logger.debug')
     @mock.patch('certbot.ocsp.logger.info')
     @mock.patch('certbot.util.run_script')
-    def test_determine_ocsp_server(self, mock_run, mock_info, mock_debug):
+    def test_determine_ocsp_server(self, mock_run, mock_info):
         uri = "http://ocsp.stg-int-x1.letsencrypt.org/"
         host = "ocsp.stg-int-x1.letsencrypt.org"
         mock_run.return_value = uri, ""
@@ -88,7 +87,6 @@ class OCSPTest(unittest.TestCase):
         c = "confusion"
         mock_run.side_effect = errors.SubprocessError(c)
         self.assertEqual(self.checker.determine_ocsp_server("beep"), (None, None))
-        self.assertTrue(c in repr(mock_debug.call_args[0][1]))
 
     @mock.patch('certbot.ocsp.logger')
     @mock.patch('certbot.util.run_script')

@@ -82,7 +82,6 @@ class RevocationChecker(object):
                 log=logging.debug)
         except errors.SubprocessError as e:
             logger.info("Cannot extract OCSP URI from %s", cert_path)
-            logger.debug("Error was:\n%s", e)
             return None, None
 
         url = url.rstrip()
