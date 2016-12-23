@@ -96,7 +96,7 @@ class RevocationChecker(object):
 def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
     """Parse openssl's weird output to work out what it means."""
 
-    pattern = r"{0}: (WARNING.*)good".format(cert_path)
+    pattern = r"{0}: (WARNING.*)?good".format(cert_path)
     good = re.search(pattern, ocsp_output, flags=re.DOTALL)
     warning = good.group(1) if good else None
 
