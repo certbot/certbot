@@ -350,8 +350,10 @@ VERB_HELP = [
         "usage": "\n\n  certbot renew [--cert-name NAME] [options]\n\n"
     }),
     ("certificates", {
-        "short": "List all certificates managed by Certbot",
-        "opts": "List all certificates managed by Certbot"
+        "short": "List certificates managed by Certbot",
+        "opts": "List certificates managed by Certbot",
+        "usage": ("\n\n  certbot certificates [options] ...\n\n"
+                  "Print information about the status of certificates managed by Certbot.")
     }),
     ("delete", {
         "short": "Clean up all files related to a certificate",
@@ -824,14 +826,14 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "being run in a terminal. This flag cannot be used with the "
              "renew subcommand.")
     helpful.add(
-        [None, "run", "certonly"],
+        [None, "run", "certonly", "certificates"],
         "-d", "--domains", "--domain", dest="domains",
         metavar="DOMAIN", action=_DomainsAction, default=[],
         help="Domain names to apply. For multiple domains you can use "
              "multiple -d flags or enter a comma separated list of domains "
              "as a parameter. (default: Ask)")
     helpful.add(
-        [None, "run", "certonly", "manage", "rename", "delete"],
+        [None, "run", "certonly", "manage", "rename", "delete", "certificates"],
         "--cert-name", dest="certname",
         metavar="CERTNAME", default=None,
         help="Certificate name to apply. Only one certificate name can be used "

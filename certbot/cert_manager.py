@@ -8,6 +8,7 @@ import zope.component
 
 from certbot import errors
 from certbot import interfaces
+from certbot import ocsp
 from certbot import storage
 from certbot import util
 
@@ -80,7 +81,7 @@ def certificates(config):
             parse_failures.append(renewal_file)
 
     # Describe all the certs
-    _describe_certs(parsed_certs, parse_failures)
+    _describe_certs(config, parsed_certs, parse_failures)
 
 def delete(config):
     """Delete Certbot files associated with a certificate lineage."""
@@ -165,24 +166,37 @@ def _report_lines(msgs):
     """Format a results report for a category of single-line renewal outcomes"""
     return "  " + "\n  ".join(str(msg) for msg in msgs)
 
-def _report_human_readable(parsed_certs):
+def _report_human_readable(config, parsed_certs):
     """Format a results report for a parsed cert"""
     certinfo = []
+    checker = ocsp.RevocationChecker()
     for cert in parsed_certs:
+        if config.certname and cert.lineagename != config.certname:
+            continue
+        if config.domains and not set(config.domains).issubset(cert.names()):
+            continue
         now = pytz.UTC.fromutc(datetime.datetime.utcnow())
+
+        reasons = []
         if cert.is_test_cert:
-            expiration_text = "INVALID: TEST CERT"
-        elif cert.target_expiry <= now:
-            expiration_text = "INVALID: EXPIRED"
+            reasons.append('TEST_CERT')
+        if cert.target_expiry <= now:
+            reasons.append('EXPIRED')
+        if checker.ocsp_revoked(cert.cert, cert.chain):
+            reasons.append('REVOKED')
+
+        if reasons:
+            status = "INVALID: " + ", ".join(reasons)
         else:
             diff = cert.target_expiry - now
             if diff.days == 1:
-                expiration_text = "VALID: 1 day"
+                status = "VALID: 1 day"
             elif diff.days < 1:
-                expiration_text = "VALID: {0} hour(s)".format(diff.seconds // 3600)
+                status = "VALID: {0} hour(s)".format(diff.seconds // 3600)
             else:
-                expiration_text = "VALID: {0} days".format(diff.days)
-        valid_string = "{0} ({1})".format(cert.target_expiry, expiration_text)
+                status = "VALID: {0} days".format(diff.days)
+
+        valid_string = "{0} ({1})".format(cert.target_expiry, status)
         certinfo.append("  Certificate Name: {0}\n"
                         "    Domains: {1}\n"
                         "    Expiry Date: {2}\n"
@@ -195,7 +209,7 @@ def _report_human_readable(parsed_certs):
                             cert.privkey))
     return "\n".join(certinfo)
 
-def _describe_certs(parsed_certs, parse_failures):
+def _describe_certs(config, parsed_certs, parse_failures):
     """Print information about the certs we know about"""
     out = []
 
@@ -205,8 +219,9 @@ def _describe_certs(parsed_certs, parse_failures):
         notify("No certs found.")
     else:
         if parsed_certs:
-            notify("Found the following certs:")
-            notify(_report_human_readable(parsed_certs))
+            match = "matching " if config.certname or config.domains else ""
+            notify("Found the following {0}certs:".format(match))
+            notify(_report_human_readable(config, parsed_certs))
         if parse_failures:
             notify("\nThe following renewal configuration files "
                "were invalid:")
