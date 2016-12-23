@@ -133,5 +133,15 @@ blah.pem: revoked
 
 openssl_broken = ("", "tentacles", "Response verify OK")
 
+openssl_expired_ocsp = ("blah.pem", """
+blah.pem: WARNING: Status times invalid.
+140659132298912:error:2707307D:OCSP routines:OCSP_check_validity:status expired:ocsp_cl.c:372:
+good
+	This Update: Apr  6 00:00:00 2016 GMT
+	Next Update: Apr 13 00:00:00 2016 GMT
+""",
+"""Response verify OK""")
+
+
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover

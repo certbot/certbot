@@ -1,5 +1,6 @@
 """Tools for checking certificate revocation."""
 import logging
+import re
 
 from subprocess import Popen, PIPE
 
@@ -95,15 +96,21 @@ class RevocationChecker(object):
 def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
     """Parse openssl's weird output to work out what it means."""
 
-    if not "Response verify OK" in ocsp_errors:
+    pattern = r"{0}: (WARNING.*)good".format(cert_path)
+    good = re.search(pattern, ocsp_output, flags=re.DOTALL)
+    warning = good.group(1) if good else None
+
+    if (not "Response verify OK" in ocsp_errors) or (good and warning):
         logger.info("Revocation status for %s is unknown", cert_path)
         logger.debug("Uncertain ouput:\n%s\nstderr:\n%s", ocsp_output, ocsp_errors)
         return False
-    if cert_path + ": good" in ocsp_output:
+
+    if good and not warning:
         return False
     elif cert_path + ": revoked" in ocsp_output:
         return True
     else:
-        logger.warn("Unable to properly parse OCSP output: %s", ocsp_output)
+        logger.warn("Unable to properly parse OCSP output: %s\nstderr:%s",
+                    ocsp_output, ocsp_errors)
         return False
 
