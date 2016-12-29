@@ -1106,14 +1106,19 @@ def _paths_parser(helpful):
         add(section, "--cert-path", type=os.path.abspath,
             help=cph, required=(verb == "install"))
 
-    section = "paths"
-    if verb in ("install", "revoke"):
-        section = verb
-    # revoke --key-path reads a file, install --key-path takes a string
-    add(section, "--key-path", required=(verb == "install"),
+    sections = ["paths", "install", "renew", "revoke"]
+    # revoke --key-path reads a file, install and renew --key-path takes a
+    # string
+    add(sections, "--key-path", required=(verb == "install"),
         type=((verb == "revoke" and read_file) or os.path.abspath),
-        help="Path to private key for cert installation "
-             "or revocation (if account key is missing)")
+        help="Path to private key for cert installation, renewal, or "
+             "revocation (if account key is missing)")
+
+    # --reuse-key will renew a cert with the same key used when obtaining the
+    # cert
+    add(["renew"], "--reuse-key", default=flag_default("reuse_key"),
+        type=bool,
+        help="Reuse existing key to sign certificate during renewal.")
 
     default_cp = None
     if verb == "certonly":
