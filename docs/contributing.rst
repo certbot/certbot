@@ -107,7 +107,7 @@ command you are required to run is::
 
 Otherwise, please follow the following instructions.
 
-Mac OS X users: Run ``./tests/mac-bootstrap.sh`` instead of
+macOS users: Run ``./tests/mac-bootstrap.sh`` instead of
 ``boulder-start.sh`` to install dependencies, configure the
 environment, and start boulder.
 
