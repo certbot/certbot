@@ -87,7 +87,7 @@ fi
 SUDO_ENV=""
 export CERTBOT_AUTO="$0"
 if test "`id -u`" -ne "0" ; then
-  if command -v sudo 1>/dev/null 2>&1; then
+  if command -v sudo 1>/dev/null 2>&1 && sudo -vn 1>/dev/null 2>&1 ; then
     SUDO=sudo
     SUDO_ENV="CERTBOT_AUTO=$0"
   else
