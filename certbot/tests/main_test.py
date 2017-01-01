@@ -159,10 +159,12 @@ class ObtainCertTest(unittest.TestCase):
         self.assertRaises(errors.ConfigurationError, self._call,
             ('certonly --webroot -d example.com -d test.com --cert-name example.com').split())
 
+    @mock.patch('certbot.cert_manager.domains_for_certname')
+    @mock.patch('certbot.display.ops.choose_names')
     @mock.patch('certbot.cert_manager.lineage_for_certname')
     @mock.patch('certbot.main._report_new_cert')
     def test_find_lineage_for_domains_new_certname(self, mock_report_cert,
-        mock_lineage):
+        mock_lineage, mock_choose_names, mock_domains_for_certname):
         mock_lineage.return_value = None
 
         # no lineage with this name but we specified domains so create a new cert
@@ -172,8 +174,10 @@ class ObtainCertTest(unittest.TestCase):
         self.assertTrue(mock_report_cert.call_count == 1)
 
         # no lineage with this name and we didn't give domains
-        self.assertRaises(errors.ConfigurationError, self._call,
-            ('certonly --webroot --cert-name example.com').split())
+        mock_choose_names.return_value = ["somename"]
+        mock_domains_for_certname.return_value = None
+        self._call(('certonly --webroot --cert-name example.com').split())
+        self.assertTrue(mock_choose_names.called)
 
 class FindDomainsOrCertnameTest(unittest.TestCase):
     """Tests for certbot.main._find_domains_or_certname."""
@@ -192,6 +196,14 @@ class FindDomainsOrCertnameTest(unittest.TestCase):
         mock_choose_names.return_value = []
         # pylint: disable=protected-access
         self.assertRaises(errors.Error, main._find_domains_or_certname, mock_config, None)
+
+    @mock.patch('certbot.cert_manager.domains_for_certname')
+    def test_grab_domains(self, mock_domains):
+        mock_config = mock.Mock(domains=None, certname="one.com")
+        mock_domains.return_value = ["one.com", "two.com"]
+        # pylint: disable=protected-access
+        self.assertEqual(main._find_domains_or_certname(mock_config, None),
+            (["one.com", "two.com"], "one.com"))
 
 
 class RevokeTest(unittest.TestCase):

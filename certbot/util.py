@@ -38,20 +38,22 @@ ANSI_SGR_RED = "\033[31m"
 ANSI_SGR_RESET = "\033[0m"
 
 
-def run_script(params):
+def run_script(params, log=logger.error):
     """Run the script with the given params.
 
     :param list params: List of parameters to pass to Popen
+    :param logging.Logger log: Logger to use for errors
 
     """
     try:
         proc = subprocess.Popen(params,
                                 stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
+                                stderr=subprocess.PIPE,
+                                universal_newlines=True)
 
     except (OSError, ValueError):
         msg = "Unable to run the command: %s" % " ".join(params)
-        logger.error(msg)
+        log(msg)
         raise errors.SubprocessError(msg)
 
     stdout, stderr = proc.communicate()
@@ -60,7 +62,7 @@ def run_script(params):
         msg = "Error while running %s.\n%s\n%s" % (
             " ".join(params), stdout, stderr)
         # Enter recovery routine...
-        logger.error(msg)
+        log(msg)
         raise errors.SubprocessError(msg)
 
     return stdout, stderr

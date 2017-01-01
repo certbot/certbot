@@ -223,7 +223,8 @@ class FileDisplay(object):
 
             code, ans = self.input("Select the appropriate numbers separated "
                                    "by commas and/or spaces, or leave input "
-                                   "blank to select all options shown")
+                                   "blank to select all options shown",
+                                   force_interactive=True)
 
             if code == OK:
                 if len(ans.strip()) == 0:
@@ -437,7 +438,7 @@ class NoninteractiveDisplay(object):
                 line=os.linesep, frame=side_frame, msg=message))
 
     def menu(self, message, choices, ok_label=None, cancel_label=None,
-             help_label=None, default=None, cli_flag=None, *unused_kwargs):
+             help_label=None, default=None, cli_flag=None, **unused_kwargs):
         # pylint: disable=unused-argument,too-many-arguments
         """Avoid displaying a menu.
 

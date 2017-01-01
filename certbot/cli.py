@@ -72,7 +72,7 @@ obtain, install, and renew certificates:
   --standalone      Run a standalone webserver for authentication
   %s
   --webroot         Place files in a server's webroot folder for authentication
-  --manual          Obtain certs interactively, or using shell script hoooks
+  --manual          Obtain certs interactively, or using shell script hooks
 
    -n               Run non-interactively
   --test-cert       Obtain a test cert from a staging server
@@ -100,7 +100,7 @@ More detailed help:
 
    all, automation, commands, paths, security, testing, or any of the
    subcommands or plugins (certonly, renew, install, register, nginx,
-   apache, standalone, webroot, script, etc.)
+   apache, standalone, webroot, etc.)
 """
 
 
@@ -350,8 +350,10 @@ VERB_HELP = [
         "usage": "\n\n  certbot renew [--cert-name NAME] [options]\n\n"
     }),
     ("certificates", {
-        "short": "List all certificates managed by Certbot",
-        "opts": "List all certificates managed by Certbot"
+        "short": "List certificates managed by Certbot",
+        "opts": "List certificates managed by Certbot",
+        "usage": ("\n\n  certbot certificates [options] ...\n\n"
+                  "Print information about the status of certificates managed by Certbot.")
     }),
     ("delete", {
         "short": "Clean up all files related to a certificate",
@@ -824,14 +826,14 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "being run in a terminal. This flag cannot be used with the "
              "renew subcommand.")
     helpful.add(
-        [None, "run", "certonly"],
+        [None, "run", "certonly", "certificates"],
         "-d", "--domains", "--domain", dest="domains",
         metavar="DOMAIN", action=_DomainsAction, default=[],
         help="Domain names to apply. For multiple domains you can use "
              "multiple -d flags or enter a comma separated list of domains "
              "as a parameter. (default: Ask)")
     helpful.add(
-        [None, "run", "certonly", "manage", "rename", "delete"],
+        [None, "run", "certonly", "manage", "rename", "delete", "certificates"],
         "--cert-name", dest="certname",
         metavar="CERTNAME", default=None,
         help="Certificate name to apply. Only one certificate name can be used "
@@ -1168,8 +1170,6 @@ def _plugins_parsing(helpful, plugins):
                 "--nginx", action="store_true", help="Obtain and install certs using Nginx")
     helpful.add(["plugins", "certonly"], "--standalone", action="store_true",
                 help='Obtain certs using a "standalone" webserver.')
-    helpful.add(["plugins", "certonly"], "--script", action="store_true",
-                help='Obtain certs using shell script(s)')
     helpful.add(["plugins", "certonly"], "--manual", action="store_true",
                 help='Provide laborious manual instructions for obtaining a cert')
     helpful.add(["plugins", "certonly"], "--webroot", action="store_true",

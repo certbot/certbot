@@ -1,6 +1,7 @@
 """Apache Configuration based off of Augeas Configurator."""
 # pylint: disable=too-many-lines
 import filecmp
+import fnmatch
 import logging
 import os
 import re
@@ -362,18 +363,24 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return vhost
 
     def included_in_wildcard(self, names, target_name):
-        """Helper function to see if alias is covered by wildcard"""
-        target_name = target_name.split(".")[::-1]
-        wildcards = [domain.split(".")[1:] for domain in
-                     names if domain.startswith("*")]
-        for wildcard in wildcards:
-            if len(wildcard) > len(target_name):
-                continue
-            for idx, segment in enumerate(wildcard[::-1]):
-                if segment != target_name[idx]:
-                    break
-            else:
-                # https://docs.python.org/2/tutorial/controlflow.html#break-and-continue-statements-and-else-clauses-on-loops
+        """Is target_name covered by a wildcard?
+
+        :param names: server aliases
+        :type names: `collections.Iterable` of `str`
+        :param str target_name: name to compare with wildcards
+
+        :returns: True if target_name is covered by a wildcard,
+            otherwise, False
+        :rtype: bool
+
+        """
+        # use lowercase strings because fnmatch can be case sensitive
+        target_name = target_name.lower()
+        for name in names:
+            name = name.lower()
+            # fnmatch treats "[seq]" specially and [ or ] characters aren't
+            # valid in Apache but Apache doesn't error out if they are present
+            if "[" not in name and fnmatch.fnmatch(target_name, name):
                 return True
         return False
 
@@ -1012,12 +1019,30 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.parser.find_dir("ServerAlias", target_name,
                                  start=vh_path, exclude=False)):
             return
+        if self._has_matching_wildcard(vh_path, target_name):
+            return
         if not self.parser.find_dir("ServerName", None,
                                     start=vh_path, exclude=False):
             self.parser.add_dir(vh_path, "ServerName", target_name)
         else:
             self.parser.add_dir(vh_path, "ServerAlias", target_name)
         self._add_servernames(vhost)
+
+    def _has_matching_wildcard(self, vh_path, target_name):
+        """Is target_name already included in a wildcard in the vhost?
+
+        :param str vh_path: Augeas path to the vhost
+        :param str target_name: name to compare with wildcards
+
+        :returns: True if there is a wildcard covering target_name in
+            the vhost in vhost_path, otherwise, False
+        :rtype: bool
+
+        """
+        matches = self.parser.find_dir(
+            "ServerAlias", start=vh_path, exclude=False)
+        aliases = (self.aug.get(match) for match in matches)
+        return self.included_in_wildcard(aliases, target_name)
 
     def _add_name_vhost_if_necessary(self, vhost):
         """Add NameVirtualHost Directives if necessary for new vhost.

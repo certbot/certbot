@@ -133,7 +133,7 @@ def choose_plugin(prepared, question):
         else:
             return None
 
-noninstaller_plugins = ["webroot", "manual", "standalone", "script"]
+noninstaller_plugins = ["webroot", "manual", "standalone"]
 
 def record_chosen_plugins(config, plugins, auth, inst):
     "Update the config entries to reflect the plugins we actually selected."
@@ -238,8 +238,6 @@ def cli_plugin_requests(config):
         req_auth = set_configurator(req_auth, "webroot")
     if config.manual:
         req_auth = set_configurator(req_auth, "manual")
-    if config.script:
-        req_auth = set_configurator(req_auth, "script")
     logger.debug("Requested authenticator %s and installer %s", req_auth, req_inst)
     return req_auth, req_inst
 
