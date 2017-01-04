@@ -1,4 +1,6 @@
 """Tests for certbot.plugins.common."""
+import shutil
+import tempfile
 import unittest
 
 import mock
@@ -170,8 +172,15 @@ class TLSSNI01Test(unittest.TestCase):
     ]
 
     def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+        configurator = mock.MagicMock()
+        configurator.config.config_dir = self.tempdir
+
         from certbot.plugins.common import TLSSNI01
-        self.sni = TLSSNI01(configurator=mock.MagicMock())
+        self.sni = TLSSNI01(configurator=configurator)
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
 
     def test_add_chall(self):
         self.sni.add_chall(self.achalls[0], 0)
