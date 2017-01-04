@@ -805,7 +805,7 @@ def set_displayer(config):
     zope.component.provideUtility(displayer)
 
 def _post_logging_setup(config, plugins, cli_args):
-    "Perform any setup or configuration tasks that require a logger."
+    """Perform any setup or configuration tasks that require a logger."""
 
     # This needs logging, but would otherwise be in HelpfulArgumentParser
     if config.validate_hooks:
