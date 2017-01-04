@@ -35,17 +35,18 @@ common() {
 
 export HOOK_TEST="/tmp/hook$$"
 CheckHooks() {
+    COMMON="wtf2.auth\nwtf2.cleanup\nrenew\nrenew"
     EXPECTED="/tmp/expected$$"
     if [ $(head -n1 $HOOK_TEST) = "wtf.pre" ]; then
+        echo "wtf.pre" > "$EXPECTED"
         echo "wtf2.pre" >> "$EXPECTED"
-        echo "renew" >> "$EXPECTED"
-        echo "renew" >> "$EXPECTED"
+        echo $COMMON >> "$EXPECTED"
         echo "wtf.post" >> "$EXPECTED"
         echo "wtf2.post" >> "$EXPECTED"
     else
+        echo "wtf2.pre" > "$EXPECTED"
         echo "wtf.pre" >> "$EXPECTED"
-        echo "renew" >> "$EXPECTED"
-        echo "renew" >> "$EXPECTED"
+        echo $COMMON >> "$EXPECTED"
         echo "wtf2.post" >> "$EXPECTED"
         echo "wtf.post" >> "$EXPECTED"
     fi
