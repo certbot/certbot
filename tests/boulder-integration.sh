@@ -33,6 +33,23 @@ common() {
         "$@"
 }
 
+CheckHooks() {
+    EXPECTED="/tmp/expected$$"
+    echo "wtf.pre" > "$EXPECTED"
+    echo "wtf2.pre" >> "$EXPECTED"
+    echo "renew" >> "$EXPECTED"
+    echo "renew" >> "$EXPECTED"
+    echo "wtf.post" > "$EXPECTED"
+    echo "wtf2.post" >> "$EXPECTED"
+    if cmp --quiet "$EXPECTED" "$HOOK_TEST" ; then
+        echo Hooks did not run as expected\; got
+        cat "$HOOK_TEST"
+        echo Expected
+        cat "$EXPECTED"
+    fi
+    [ -f "$HOOK_TEST" ] && rm -f "$HOOK_TEST"
+}
+
 # We start a server listening on the port for the
 # unrequested challenge to prevent regressions in #3601.
 python -m SimpleHTTPServer $http_01_port &
@@ -52,26 +69,14 @@ common --domains le2.wtf --preferred-challenges http-01 run \
        --renew-hook 'echo renew >> "$HOOK_TEST"'
 kill $python_server_pid
 
-common -a manual -d le.wtf auth --rsa-key-size 4096 \
-       --pre-hook 'echo wtf2.pre >> "$HOOK_TEST"' \
-       --post-hook 'echo wtf2.post >> "$HOOK_TEST"'
+common certonly -a manual -d le.wtf --rsa-key-size 4096 \
+    --manual-auth-hook ./tests/manual-http-auth.sh \
+    --manual-cleanup-hook ./tests/manual-http-cleanup.sh
+    --pre-hook 'echo wtf2.pre >> "$HOOK_TEST"' \
+    --post-hook 'echo wtf2.post >> "$HOOK_TEST"'
 
-CheckHooks() {
-    EXPECTED="/tmp/expected$$"
-    echo "wtf.pre" > "$EXPECTED"
-    echo "wtf2.pre" >> "$EXPECTED"
-    echo "renew" >> "$EXPECTED"
-    echo "renew" >> "$EXPECTED"
-    echo "wtf.post" > "$EXPECTED"
-    echo "wtf2.post" >> "$EXPECTED"
-    if cmp --quiet "$EXPECTED" "$HOOK_TEST" ; then
-        echo Hooks did not run as expected\; got
-        cat "$HOOK_TEST"
-        echo Expected
-        cat "$EXPECTED"
-    fi
-    [ -f "$HOOK_TEST" ] && rm -f "$HOOK_TEST"
-}
+common certonly -a manual -d dns.le.wtf --preferred-challenges dns-01 \
+    --manual-auth-hook ./tests/manual-dns-auth.sh
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
        OPENSSL_CNF=examples/openssl.cnf

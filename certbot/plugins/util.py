@@ -103,7 +103,7 @@ def already_listening_socket(port, renewer=False):
                 "Port {0} is already in use by another process. This will "
                 "prevent us from binding to that port. Please stop the "
                 "process that is populating the port in question and try "
-                "again. {1}".format(port, extra))
+                "again. {1}".format(port, extra), force_interactive=True)
             return True
         finally:
             testsocket.close()
@@ -151,7 +151,8 @@ def already_listening_psutil(port, renewer=False):
                 "The program {0} (process ID {1}) is already listening "
                 "on TCP port {2}. This will prevent us from binding to "
                 "that port. Please stop the {0} program temporarily "
-                "and then try again.{3}".format(name, pid, port, extra))
+                "and then try again.{3}".format(name, pid, port, extra),
+                force_interactive=True)
             return True
     except (psutil.NoSuchProcess, psutil.AccessDenied):
         # Perhaps the result of a race where the process could have

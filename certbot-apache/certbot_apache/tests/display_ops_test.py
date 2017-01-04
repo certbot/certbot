@@ -17,7 +17,8 @@ class SelectVhostTest(unittest.TestCase):
     """Tests for certbot_apache.display_ops.select_vhost."""
 
     def setUp(self):
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
+        zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
+                                                               False))
         self.base_dir = "/example_path"
         self.vhosts = util.get_vh_truth(
             self.base_dir, "debian_apache_2_4/multiple_vhosts")

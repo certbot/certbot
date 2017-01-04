@@ -139,7 +139,8 @@ def _handle_subset_cert_request(config, domains, cert):
              br=os.linesep)
     if config.expand or config.renew_by_default or zope.component.getUtility(
             interfaces.IDisplay).yesno(question, "Expand", "Cancel",
-                                       cli_flag="--expand"):
+                                       cli_flag="--expand",
+                                       force_interactive=True):
         return "renew", cert
     else:
         reporter_util = zope.component.getUtility(interfaces.IReporter)
@@ -188,7 +189,8 @@ def _handle_identical_cert_request(config, lineage):
                "Renew & replace the cert (limit ~5 per 7 days)"]
 
     display = zope.component.getUtility(interfaces.IDisplay)
-    response = display.menu(question, choices, "OK", "Cancel", default=0)
+    response = display.menu(question, choices, "OK", "Cancel",
+                            default=0, force_interactive=True)
     if response[0] == display_util.CANCEL:
         # TODO: Add notification related to command-line options for
         #       skipping the menu for this case.
@@ -282,17 +284,26 @@ def _find_domains_or_certname(config, installer):
     """Retrieve domains and certname from config or user input.
     """
     domains = None
+    certname = config.certname
+    # first, try to get domains from the config
     if config.domains:
         domains = config.domains
-    elif not config.certname:
+    # if we can't do that but we have a certname, get the domains
+    # with that certname
+    elif certname:
+        domains = cert_manager.domains_for_certname(config, certname)
+
+    # that certname might not have existed, or there was a problem.
+    # try to get domains from the user.
+    if not domains:
         domains = display_ops.choose_names(installer)
 
-    if not domains and not config.certname:
+    if not domains and not certname:
         raise errors.Error("Please specify --domains, or --installer that "
                            "will help in domain names autodiscovery, or "
                            "--cert-name for an existing certificate name.")
 
-    return domains, config.certname
+    return domains, certname
 
 
 def _report_new_cert(config, cert_path, fullchain_path):
@@ -365,7 +376,8 @@ def _determine_account(config):
                        "server at {1}".format(
                            regr.terms_of_service, config.server))
                 obj = zope.component.getUtility(interfaces.IDisplay)
-                return obj.yesno(msg, "Agree", "Cancel", cli_flag="--agree-tos")
+                return obj.yesno(msg, "Agree", "Cancel",
+                                 cli_flag="--agree-tos", force_interactive=True)
 
             try:
                 acc, acme = client.register(
@@ -510,6 +522,14 @@ def rename(config, unused_plugins):
     lineage.
     """
     cert_manager.rename_lineage(config)
+
+def delete(config, unused_plugins):
+    """Delete a certificate
+
+    Use the information in the config file to delete an existing
+    lineage.
+    """
+    cert_manager.delete(config)
 
 def certificates(config, unused_plugins):
     """Display information about certs configured with Certbot
@@ -712,6 +732,7 @@ def _handle_exception(exc_type, exc_value, trace, config):
                 with open(logfile, "w") as logfd:
                     traceback.print_exception(
                         exc_type, exc_value, trace, file=logfd)
+                assert "--debug" not in sys.argv  # config is None if this explodes
             except:  # pylint: disable=bare-except
                 sys.exit(tb_str)
             if "--debug" in sys.argv:
@@ -779,7 +800,8 @@ def set_displayer(config):
     elif config.noninteractive_mode:
         displayer = display_util.NoninteractiveDisplay(sys.stdout)
     else:
-        displayer = display_util.FileDisplay(sys.stdout)
+        displayer = display_util.FileDisplay(sys.stdout,
+                                             config.force_interactive)
     zope.component.provideUtility(displayer)
 
 def _post_logging_setup(config, plugins, cli_args):
