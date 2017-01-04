@@ -20,13 +20,19 @@ def validate_hooks(config):
     validate_hook(config.renew_hook, "renew")
 
 def _prog(shell_cmd):
-    """Extract the program run by a shell command"""
-    cmd = util.which(shell_cmd)
-    if not cmd:
-        plug_util.path_surgery(shell_cmd)
-        cmd = util.which(shell_cmd)
+    """Extract the program run by a shell command.
 
-    return os.path.basename(cmd) if cmd else None
+    :param str shell_cmd: command to be executed
+
+    :returns: basename of command or None if the command isn't found
+    :rtype: str or None
+
+    """
+    if not util.exe_exists(shell_cmd):
+        plug_util.path_surgery(shell_cmd)
+        if not util.exe_exists(shell_cmd):
+            return None
+    return os.path.basename(shell_cmd)
 
 
 def validate_hook(shell_cmd, hook_name):
@@ -117,6 +123,7 @@ def execute(shell_cmd):
         logger.error('Hook command "%s" returned error code %d',
                      shell_cmd, cmd.returncode)
     if err:
-        logger.error('Error output from %s:\n%s', _prog(shell_cmd), err)
+        base_cmd = os.path.basename(shell_cmd.split(None, 1)[0])
+        logger.error('Error output from %s:\n%s', base_cmd, err)
     return (err, out)
 

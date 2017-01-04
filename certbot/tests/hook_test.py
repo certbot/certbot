@@ -27,13 +27,13 @@ class HookTest(unittest.TestCase):
         config = mock.MagicMock(pre_hook="explodinator", post_hook="", renew_hook="")
         self.assertRaises(errors.HookCommandNotFound, hooks.validate_hooks, config)
 
-    @mock.patch('certbot.hooks.util.which')
+    @mock.patch('certbot.hooks.util.exe_exists')
     @mock.patch('certbot.hooks.plug_util.path_surgery')
-    def test_prog(self, mock_ps, mockwhich):
-        mockwhich.return_value = "/very/very/funky"
+    def test_prog(self, mock_ps, mock_exe_exists):
+        mock_exe_exists.return_value = True
         self.assertEqual(hooks._prog("funky"), "funky")
         self.assertEqual(mock_ps.call_count, 0)
-        mockwhich.return_value = None
+        mock_exe_exists.return_value = False
         self.assertEqual(hooks._prog("funky"), None)
         self.assertEqual(mock_ps.call_count, 1)
 
