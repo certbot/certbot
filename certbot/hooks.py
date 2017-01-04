@@ -54,11 +54,11 @@ def pre_hook(config):
     if cmd and cmd not in pre_hook.already:
         logger.info("Running pre-hook command: %s", cmd)
         _run_hook(cmd)
-        pre_hook.already[cmd] = True
+        pre_hook.already.add(cmd)
     elif cmd:
         logger.info("Pre-hook command already run, skipping: %s", cmd)
 
-pre_hook.already = {}
+pre_hook.already = set()
 
 
 def post_hook(config):

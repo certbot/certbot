@@ -47,7 +47,7 @@ class HookTest(unittest.TestCase):
             return mock_logger.warning
 
     def test_pre_hook(self):
-        hooks.pre_hook.already = {}
+        hooks.pre_hook.already = set()
         config = mock.MagicMock(pre_hook="true")
         self._test_a_hook(config, hooks.pre_hook, 1)
         self._test_a_hook(config, hooks.pre_hook, 0)
