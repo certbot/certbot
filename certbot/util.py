@@ -68,36 +68,28 @@ def run_script(params, log=logger.error):
     return stdout, stderr
 
 
-def _is_exe(fpath):
-    return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-
-def which(program):
+def exe_exists(exe):
     """Determine whether path/name refers to an executable.
 
-    :param str program: Executable path or name
+    :param str exe: Executable path or name
 
-    :returns: Path to executable if it exists, or None
-    :rtype: str or None
+    :returns: If exe is a valid executable
+    :rtype: bool
 
     """
-    # Borrowed from:
-    # https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
-    # XXX May need more porting to handle .exe extensions on Windows
+    def is_exe(path):
+        """Determine if path is an exe."""
+        return os.path.isfile(path) and os.access(path, os.X_OK)
 
-    fpath, _fname = os.path.split(program)
-    if fpath:
-        if _is_exe(program):
-            return program
+    path, _ = os.path.split(exe)
+    if path:
+        return is_exe(exe)
     else:
         for path in os.environ["PATH"].split(os.pathsep):
-            exe_file = os.path.join(path, program)
-            if _is_exe(exe_file):
-                return exe_file
+            if is_exe(os.path.join(path, exe)):
+                return True
 
-    return None
-
-# Either name makes sense, and we have a lot of call sites!
-exe_exists = which
+    return False
 
 
 def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
