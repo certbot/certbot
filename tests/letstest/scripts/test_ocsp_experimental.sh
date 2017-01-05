@@ -24,16 +24,16 @@ cd tests/letstest/testdata/
 
 # 2. refer to the config with the same level of relativitity that it itself
 # contains :/
-sudo ../../../venv/bin/certbot certificates  -v --config-dir sample-config
-TEST_CERTS=`sudo ../../../venv/bin/certbot certificates --config-dir sample-config | grep TEST_CERT | wc -l`
-REVOKED=`sudo ../../../venv/bin/certbot certificates --config-dir sample-config | grep REVOKED | wc -l`
+OUT=`../../../venv/bin/certbot certificates  -v --config-dir sample-config`
+TEST_CERTS=`echo "$OUT" | grep TEST_CERT | wc -l`
+REVOKED=`echo "$OUT" | grep REVOKED | wc -l`
 
-if [ "$TEST_CERTS" -ne 2 ] ; then
-    echo Did not find two test certs as expected ("$TEST_CERTS")
+if [ "$TEST_CERTS" != 2 ] ; then
+    echo "Did not find two test certs as expected ($TEST_CERTS)"
     exit 1
 fi
 
-if [ "$REVOKED" -ne 1 ] ; then
-    echo Did not find one revoked cert as expected ("$REVOKED")
+if [ "$REVOKED" != 1 ] ; then
+    echo "Did not find one revoked cert as expected ($REVOKED)"
     exit 1
 fi

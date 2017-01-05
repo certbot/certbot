@@ -23,16 +23,16 @@ cd tests/letstest/testdata/
 
 # 2. refer to the config with the same level of relativitity that it itself
 # contains :/
-letsencrypt-auto certificates --config-dir sample-config
-TEST_CERTS=`letsencrypt-auto certificates --config-dir sample-config | grep TEST_CERT | wc -l`
-REVOKED=`letsencrypt-auto certificates --config-dir sample-config | grep REVOKED | wc -l`
+OUT=`letsencrypt-auto certificates --config-dir sample-config -v`
+TEST_CERTS=`echo "$OUT" | grep TEST_CERT | wc -l`
+REVOKED=`echo "$OUT" | grep REVOKED | wc -l`
 
 if [ "$TEST_CERTS" != 2 ] ; then
-    echo Did not find two test certs as expected ("$TEST_CERTS")
+    echo "Did not find two test certs as expected ($TEST_CERTS)"
     exit 1
 fi
 
 if [ "$REVOKED" != 1 ] ; then
-    echo Did not find one revoked cert as expected ("$REVOKED")
+    echo "Did not find one revoked cert as expected ($REVOKED)"
     exit 1
 fi
