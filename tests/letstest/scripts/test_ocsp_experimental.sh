@@ -9,8 +9,9 @@
 
 cd letsencrypt
 export PATH="$PWD/letsencrypt-auto-source:$PATH"
-letsencrypt-auto --os-packages-only --debug --version
-letsencrypt-auto certonly --no-self-upgrade -v --standalone --debug \
+letsencrypt-auto-source/letsencrypt-auto --os-packages-only --debug --version
+tools/venv.sh
+sudo venv/bin/certbot certonly --no-self-upgrade -v --standalone --debug \
                    --text --agree-dev-preview --agree-tos \
                    --renew-by-default --redirect \
                    --register-unsafely-without-email \
@@ -23,7 +24,7 @@ cd tests/letstest/testdata/
 
 # 2. refer to the config with the same level of relativitity that it itself
 # contains :/
-OUT=`letsencrypt-auto certificates --config-dir sample-config -v`
+OUT=`sudo ../../../venv/bin/certbot certificates  -v --config-dir sample-config`
 TEST_CERTS=`echo "$OUT" | grep TEST_CERT | wc -l`
 REVOKED=`echo "$OUT" | grep REVOKED | wc -l`
 
