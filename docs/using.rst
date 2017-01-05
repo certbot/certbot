@@ -61,7 +61,7 @@ manual_     Y    N    | Helps you obtain a cert by giving you instructions to pe
 Under the hood, plugins use one of several ACME protocol "Challenges_" to
 prove you control a domain.  The options are http-01_ (which uses port 80),
 tls-sni-01_ (port 443) and dns-01_ (requring configuration of a DNS server on
-port 53, thought that's often not the same machine as your webserver). A few
+port 53, though that's often not the same machine as your webserver). A few
 plugins support more than one challenge type, in which case you can choose one
 with ``--preferred-challenges``.
 
@@ -193,7 +193,7 @@ postfix_    N    Y    STARTTLS Everywhere is becoming a Certbot Postfix/Exim plu
 =========== ==== ==== ===============================================================
 
 .. _plesk: https://github.com/plesk/letsencrypt-plesk
-.. _haproxy: https://code.greenhost.net/open/letsencrypt-haproxy
+.. _haproxy: https://github.com/greenhost/certbot-haproxy
 .. _s3front: https://github.com/dlapiduz/letsencrypt-s3front
 .. _gandi: https://github.com/Gandi/letsencrypt-gandi
 .. _icecast: https://github.com/e00E/lets-encrypt-icecast
@@ -233,7 +233,7 @@ certificate that contains all of the old domains and one or more additional
 new domains.
 
 ``--allow-subset-of-names`` tells Certbot to continue with cert generation if
-only some of the specified domain authorazations can be obtained. This may
+only some of the specified domain authorizations can be obtained. This may
 be useful if some domains specified in a certificate no longer point at this
 system.
 

@@ -84,7 +84,8 @@ class GetEmailTest(unittest.TestCase):
 class ChooseAccountTest(unittest.TestCase):
     """Tests for certbot.display.ops.choose_account."""
     def setUp(self):
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
+        zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
+                                                               False))
 
         self.accounts_dir = tempfile.mkdtemp("accounts")
         self.account_keys_dir = os.path.join(self.accounts_dir, "keys")
@@ -127,7 +128,8 @@ class ChooseAccountTest(unittest.TestCase):
 class GenSSLLabURLs(unittest.TestCase):
     """Loose test of _gen_ssl_lab_urls. URL can change easily in the future."""
     def setUp(self):
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
+        zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
+                                                               False))
 
     @classmethod
     def _call(cls, domains):
@@ -146,7 +148,8 @@ class GenSSLLabURLs(unittest.TestCase):
 class GenHttpsNamesTest(unittest.TestCase):
     """Test _gen_https_names."""
     def setUp(self):
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
+        zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
+                                                               False))
 
     @classmethod
     def _call(cls, domains):
@@ -193,7 +196,8 @@ class GenHttpsNamesTest(unittest.TestCase):
 class ChooseNamesTest(unittest.TestCase):
     """Test choose names."""
     def setUp(self):
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
+        zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
+                                                               False))
         self.mock_install = mock.MagicMock()
 
     @classmethod
@@ -222,6 +226,45 @@ class ChooseNamesTest(unittest.TestCase):
         self.assertEqual(actual_doms, [domain])
         self.assertTrue(
             "configuration files" in mock_util().input.call_args[0][0])
+
+    def test_sort_names_trivial(self):
+        from certbot.display.ops import _sort_names
+
+        #sort an empty list
+        self.assertEqual(_sort_names([]), [])
+
+        #sort simple domains
+        some_domains = ["ex.com", "zx.com", "ax.com"]
+        self.assertEqual(_sort_names(some_domains), ["ax.com", "ex.com", "zx.com"])
+
+        #Sort subdomains of a single domain
+        domain = ".ex.com"
+        unsorted_short = ["e", "a", "z", "y"]
+        unsorted_long = [us + domain for us in unsorted_short]
+
+        sorted_short = sorted(unsorted_short)
+        sorted_long = [us + domain for us in sorted_short]
+
+        self.assertEqual(_sort_names(unsorted_long), sorted_long)
+
+    def test_sort_names_many(self):
+        from certbot.display.ops import _sort_names
+
+        unsorted_domains = [".cx.com", ".bx.com", ".ax.com", ".dx.com"]
+        unsorted_short = ["www", "bnother.long.subdomain", "a", "a.long.subdomain", "z", "b"]
+        #Of course sorted doesn't work here ;-)
+        sorted_short = ["a", "b", "a.long.subdomain", "bnother.long.subdomain", "www", "z"]
+
+        to_sort = []
+        for short in unsorted_short:
+            for domain in unsorted_domains:
+                to_sort.append(short+domain)
+        sortd = []
+        for domain in sorted(unsorted_domains):
+            for short in sorted_short:
+                sortd.append(short+domain)
+        self.assertEqual(_sort_names(to_sort), sortd)
+
 
     @mock.patch("certbot.display.ops.z_util")
     def test_filter_names_valid_return(self, mock_util):

@@ -15,7 +15,6 @@ import certbot
 
 from certbot import account
 from certbot import auth_handler
-from certbot import configuration
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
@@ -38,11 +37,11 @@ def acme_from_config_key(config, key):
     "Wrangle ACME client construction"
     # TODO: Allow for other alg types besides RS256
     net = acme_client.ClientNetwork(key, verify_ssl=(not config.no_verify_ssl),
-                                    user_agent=_determine_user_agent(config))
+                                    user_agent=determine_user_agent(config))
     return acme_client.Client(config.server, key=key, net=net)
 
 
-def _determine_user_agent(config):
+def determine_user_agent(config):
     """
     Set a user_agent string in the config based on the choice of plugins.
     (this wasn't knowable at construction time)
@@ -58,6 +57,16 @@ def _determine_user_agent(config):
     else:
         ua = config.user_agent
     return ua
+
+def sample_user_agent():
+    "Document what this Certbot's user agent string will be like."
+    class DummyConfig(object):
+        "Shim for computing a sample user agent."
+        def __init__(self):
+            self.authenticator = "XXX"
+            self.installer = "YYY"
+            self.user_agent = None
+    return determine_user_agent(DummyConfig())
 
 
 def register(config, account_storage, tos_cb=None):
@@ -297,7 +306,7 @@ class Client(object):
                 new_name, OpenSSL.crypto.dump_certificate(
                     OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped),
                 key.pem, crypto_util.dump_pyopenssl_chain(chain),
-                configuration.RenewerConfiguration(self.config.namespace))
+                self.config)
 
     def save_certificate(self, certr, chain_cert,
                          cert_path, chain_path, fullchain_path):

@@ -15,9 +15,13 @@ set -e  # Work even if somebody does "sh thisscript.sh".
 
 # Note: you can set XDG_DATA_HOME or VENV_PATH before running this script,
 # if you want to change where the virtual environment will be installed
-XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
+if [ -z "$XDG_DATA_HOME" ]; then
+  XDG_DATA_HOME="~/.local/share"
+fi
 VENV_NAME="letsencrypt"
-VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
+if [ -z "$VENV_PATH" ]; then
+  VENV_PATH="$XDG_DATA_HOME/$VENV_NAME"
+fi
 VENV_BIN="$VENV_PATH/bin"
 LE_AUTO_VERSION="0.10.0.dev0"
 BASENAME=$(basename $0)
@@ -80,6 +84,17 @@ if [ $BASENAME = "letsencrypt-auto" ]; then
   HELP=0
 fi
 
+# Support for busybox and others where there is no "command",
+# but "which" instead
+if command -v command > /dev/null 2>&1 ; then
+  export EXISTS="command -v"
+elif which which > /dev/null 2>&1 ; then
+  export EXISTS="which"
+else
+  echo "Cannot find command nor which... please install one!"
+  exit 1
+fi
+
 # certbot-auto needs root access to bootstrap OS dependencies, and
 # certbot itself needs root access for almost all modes of operation
 # The "normal" case is that sudo is used for the steps that need root, but
@@ -127,7 +142,7 @@ if [ -n "${LE_AUTO_SUDO+x}" ]; then
   echo "Using preset root authorization mechanism '$LE_AUTO_SUDO'."
 else
   if test "`id -u`" -ne "0" ; then
-    if command -v sudo 1>/dev/null 2>&1; then
+    if $EXISTS sudo 1>/dev/null 2>&1; then
       SUDO=sudo
       SUDO_ENV="CERTBOT_AUTO=$0"
     else
@@ -157,7 +172,7 @@ ExperimentalBootstrap() {
 DeterminePythonVersion() {
   for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
     # Break (while keeping the LE_PYTHON value) if found.
-    command -v "$LE_PYTHON" > /dev/null && break
+    $EXISTS "$LE_PYTHON" > /dev/null && break
   done
   if [ "$?" != "0" ]; then
     echo "Cannot find any Pythons; please install one!"
@@ -198,19 +213,22 @@ BootstrapDebCommon() {
   # distro version (#346)
 
   virtualenv=
-  if apt-cache show virtualenv > /dev/null 2>&1 && ! apt-cache --quiet=0 show virtualenv 2>&1 | grep -q 'No packages found'; then
-    virtualenv="virtualenv"
+  # virtual env is known to apt and is installable
+  if apt-cache show virtualenv > /dev/null 2>&1 ; then
+      if ! LC_ALL=C apt-cache --quiet=0 show virtualenv 2>&1 | grep -q 'No packages found'; then
+          virtualenv="virtualenv"
+      fi
   fi
 
   if apt-cache show python-virtualenv > /dev/null 2>&1; then
-    virtualenv="$virtualenv python-virtualenv"
+      virtualenv="$virtualenv python-virtualenv"
   fi
 
   augeas_pkg="libaugeas0 augeas-lenses"
-  AUGVERSION=`apt-cache show --no-all-versions libaugeas0 | grep ^Version: | cut -d" " -f2`
+  AUGVERSION=`LC_ALL=C apt-cache show --no-all-versions libaugeas0 | grep ^Version: | cut -d" " -f2`
 
   if [ "$ASSUME_YES" = 1 ]; then
-    YES_FLAG="-y"
+      YES_FLAG="-y"
   fi
 
   AddBackportRepo() {
@@ -271,12 +289,13 @@ BootstrapDebCommon() {
     gcc \
     $augeas_pkg \
     libssl-dev \
+    openssl \
     libffi-dev \
     ca-certificates \
 
 
 
-  if ! command -v virtualenv > /dev/null ; then
+  if ! $EXISTS virtualenv > /dev/null ; then
     echo Failed to install a working \"virtualenv\" command, exiting
     exit 1
   fi
@@ -517,6 +536,7 @@ BootstrapMageiaCommon() {
            git \
            gcc \
            python-augeas \
+           openssl \
            libopenssl-devel \
            libffi-devel \
            rootcerts
@@ -960,7 +980,28 @@ UNLIKELY_EOF
       # Report error. (Otherwise, be quiet.)
       echo "Had a problem while installing Python packages."
       if [ "$VERBOSE" != 1 ]; then
+        echo
+        echo "pip prints the following errors: "
+        echo "====================================================="
         echo "$PIP_OUT"
+        echo "====================================================="
+        echo
+        echo "Certbot has problem setting up the virtual environment."
+
+        if `echo $PIP_OUT | grep -q Killed` || `echo $PIP_OUT | grep -q "allocate memory"` ; then
+          echo
+          echo "Based on your pip output, the problem can likely be fixed by "
+          echo "increasing the available memory."
+        else
+          echo
+          echo "We were not be able to guess the right solution from your pip "
+          echo "output."
+        fi
+
+        echo
+        echo "Consult https://certbot.eff.org/docs/install.html#problems-with-python-virtual-environment"
+        echo "for possible solutions."
+        echo "You may also find some support resources at https://certbot.eff.org/support/ ."
       fi
       rm -rf "$VENV_PATH"
       exit 1

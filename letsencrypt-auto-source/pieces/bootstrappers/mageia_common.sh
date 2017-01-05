@@ -12,6 +12,7 @@ BootstrapMageiaCommon() {
            git \
            gcc \
            python-augeas \
+           openssl \
            libopenssl-devel \
            libffi-devel \
            rootcerts

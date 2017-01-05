@@ -81,15 +81,17 @@ class ParseTest(unittest.TestCase):
         out = self._help_output(['--help', 'all'])
         self.assertTrue("--configurator" in out)
         self.assertTrue("how a cert is deployed" in out)
-        self.assertTrue("--manual-test-mode" in out)
+        self.assertTrue("--webroot-path" in out)
         self.assertTrue("--text" not in out)
         self.assertTrue("--dialog" not in out)
+        self.assertTrue("%s" not in out)
+        self.assertTrue("{0}" not in out)
 
         out = self._help_output(['-h', 'nginx'])
         if "nginx" in self.plugins:
             # may be false while building distributions without plugins
             self.assertTrue("--nginx-ctl" in out)
-        self.assertTrue("--manual-test-mode" not in out)
+        self.assertTrue("--webroot-path" not in out)
         self.assertTrue("--checkpoints" not in out)
 
         out = self._help_output(['-h'])
@@ -97,10 +99,10 @@ class ParseTest(unittest.TestCase):
         if "nginx" in self.plugins:
             self.assertTrue("Use the Nginx plugin" in out)
         else:
-            self.assertTrue("(nginx support is experimental" in out)
+            self.assertTrue("(the certbot nginx plugin is not" in out)
 
         out = self._help_output(['--help', 'plugins'])
-        self.assertTrue("--manual-test-mode" not in out)
+        self.assertTrue("--webroot-path" not in out)
         self.assertTrue("--prepare" in out)
         self.assertTrue('"plugins" subcommand' in out)
 
@@ -125,8 +127,10 @@ class ParseTest(unittest.TestCase):
         self.assertTrue("--key-path" not in out)
 
         out = self._help_output(['-h'])
-
-        self.assertTrue(cli.usage_strings(self.plugins)[0] in out)
+        self.assertTrue(cli.SHORT_USAGE in out)
+        self.assertTrue(cli.COMMAND_OVERVIEW[:100] in out)
+        self.assertTrue("%s" not in out)
+        self.assertTrue("{0}" not in out)
 
     def test_parse_domains(self):
         short_args = ['-d', 'example.com']
@@ -258,6 +262,12 @@ class ParseTest(unittest.TestCase):
         self.assertFalse(cli.option_was_set(
             config_dir_option, cli.flag_default(config_dir_option)))
 
+    def test_force_interactive(self):
+        self.assertRaises(
+            errors.Error, self.parse, "renew --force-interactive".split())
+        self.assertRaises(
+            errors.Error, self.parse, "-n --force-interactive".split())
+
 
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""
@@ -295,22 +305,22 @@ class SetByCliTest(unittest.TestCase):
 
     def test_report_config_interaction_str(self):
         cli.report_config_interaction('manual_public_ip_logging_ok',
-                                      'manual_test_mode')
-        cli.report_config_interaction('manual_test_mode', 'manual')
+                                      'manual_auth_hook')
+        cli.report_config_interaction('manual_auth_hook', 'manual')
 
         self._test_report_config_interaction_common()
 
     def test_report_config_interaction_iterable(self):
         cli.report_config_interaction(('manual_public_ip_logging_ok',),
-                                      ('manual_test_mode',))
-        cli.report_config_interaction(('manual_test_mode',), ('manual',))
+                                      ('manual_auth_hook',))
+        cli.report_config_interaction(('manual_auth_hook',), ('manual',))
 
         self._test_report_config_interaction_common()
 
     def _test_report_config_interaction_common(self):
         """Tests implied interaction between manual flags.
 
-        --manual implies --manual-test-mode which implies
+        --manual implies --manual-auth-hook which implies
         --manual-public-ip-logging-ok. These interactions don't actually
         exist in the client, but are used here for testing purposes.
 
@@ -318,13 +328,13 @@ class SetByCliTest(unittest.TestCase):
 
         args = ['--manual']
         verb = 'renew'
-        for v in ('manual', 'manual_test_mode', 'manual_public_ip_logging_ok'):
+        for v in ('manual', 'manual_auth_hook', 'manual_public_ip_logging_ok'):
             self.assertTrue(_call_set_by_cli(v, args, verb))
 
         cli.set_by_cli.detector = None
 
-        args = ['--manual-test-mode']
-        for v in ('manual_test_mode', 'manual_public_ip_logging_ok'):
+        args = ['--manual-auth-hook', 'command']
+        for v in ('manual_auth_hook', 'manual_public_ip_logging_ok'):
             self.assertTrue(_call_set_by_cli(v, args, verb))
 
         self.assertFalse(_call_set_by_cli('manual', args, verb))
