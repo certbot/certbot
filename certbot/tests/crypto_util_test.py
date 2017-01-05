@@ -11,7 +11,7 @@ import zope.component
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot.tests import test_util
+import certbot.tests.util as test_util
 
 
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')

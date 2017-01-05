@@ -21,6 +21,8 @@ from certbot_nginx.tests import util
 class NginxConfiguratorTest(util.NginxTest):
     """Test a semi complex vhost configuration."""
 
+    _multiprocess_can_split_ = True
+
     def setUp(self):
         super(NginxConfiguratorTest, self).setUp()
 
@@ -40,7 +42,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_prepare(self):
         self.assertEqual((1, 6, 2), self.config.version)
-        self.assertEqual(7, len(self.config.parser.parsed))
+        self.assertEqual(8, len(self.config.parser.parsed))
         # ensure we successfully parsed a file for ssl_options
         self.assertTrue(self.config.parser.loc["ssl_options"])
 
@@ -68,7 +70,8 @@ class NginxConfiguratorTest(util.NginxTest):
         names = self.config.get_all_names()
         self.assertEqual(names, set(
             ["155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
-             "migration.com", "summer.com", "geese.com", "sslon.com"]))
+             "migration.com", "summer.com", "geese.com", "sslon.com",
+             "globalssl.com", "globalsslsetssl.com"]))
 
     def test_supported_enhancements(self):
         self.assertEqual(['redirect', 'staple-ocsp'],
@@ -343,13 +346,13 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertRaises(errors.MisconfigurationError, self.config.restart)
 
     @mock.patch("certbot.util.run_script")
-    def test_config_test(self, _):
-        self.config.config_test()
-
-    @mock.patch("certbot.util.run_script")
     def test_config_test_bad_process(self, mock_run_script):
         mock_run_script.side_effect = errors.SubprocessError
         self.assertRaises(errors.MisconfigurationError, self.config.config_test)
+
+    @mock.patch("certbot.util.run_script")
+    def test_config_test(self, _):
+        self.config.config_test()
 
     @mock.patch("certbot.reverter.Reverter.recovery_routine")
     def test_recovery_routine_throws_error_from_reverter(self, mock_recovery_routine):

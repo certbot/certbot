@@ -12,7 +12,7 @@ from certbot import achallenges
 from certbot import errors
 
 from certbot.tests import acme_util
-from certbot.tests import test_util
+from certbot.tests import util as test_util
 
 
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))

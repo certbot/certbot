@@ -193,7 +193,7 @@ postfix_    N    Y    STARTTLS Everywhere is becoming a Certbot Postfix/Exim plu
 =========== ==== ==== ===============================================================
 
 .. _plesk: https://github.com/plesk/letsencrypt-plesk
-.. _haproxy: https://code.greenhost.net/open/letsencrypt-haproxy
+.. _haproxy: https://github.com/greenhost/certbot-haproxy
 .. _s3front: https://github.com/dlapiduz/letsencrypt-s3front
 .. _gandi: https://github.com/Gandi/letsencrypt-gandi
 .. _icecast: https://github.com/e00E/lets-encrypt-icecast
@@ -233,7 +233,7 @@ certificate that contains all of the old domains and one or more additional
 new domains.
 
 ``--allow-subset-of-names`` tells Certbot to continue with cert generation if
-only some of the specified domain authorazations can be obtained. This may
+only some of the specified domain authorizations can be obtained. This may
 be useful if some domains specified in a certificate no longer point at this
 system.
 
