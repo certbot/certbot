@@ -53,6 +53,18 @@ class RestoreRequiredConfigElementsTest(unittest.TestCase):
         self.assertRaises(
             errors.Error, self._call, self.config, renewalparams)
 
+    @mock.patch('certbot.renewal.cli.set_by_cli')
+    def test_must_staple_success(self, mock_set_by_cli):
+        mock_set_by_cli.return_value = False
+        self._call(self.config, {'must_staple': 'True'})
+        self.assertTrue(self.config.namespace.must_staple is True)
+
+    @mock.patch('certbot.renewal.cli.set_by_cli')
+    def test_must_staple_failure(self, mock_set_by_cli):
+        mock_set_by_cli.return_value = False
+        renewalparams = {'must_staple': 'maybe'}
+        self.assertRaises(
+            errors.Error, self._call, self.config, renewalparams)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
