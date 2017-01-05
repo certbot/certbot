@@ -98,11 +98,13 @@ def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
 
     pattern = r"{0}: (WARNING.*)?good".format(cert_path)
     rpattern = r"{0}: (WARNING.*)?revoked".format(cert_path)
+    upattern = r"{0}: (WARNING.*)?unknown".format(cert_path)
     good = re.search(pattern, ocsp_output, flags=re.DOTALL)
     revoked = re.search(rpattern, ocsp_output, flags=re.DOTALL)
+    unknown = re.search(upattern, ocsp_output, flags=re.DOTALL)
     warning = good.group(1) if good else None
 
-    if (not "Response verify OK" in ocsp_errors) or (good and warning):
+    if (not "Response verify OK" in ocsp_errors) or (good and warning) or unknown:
         logger.info("Revocation status for %s is unknown", cert_path)
         logger.debug("Uncertain output:\n%s\nstderr:\n%s", ocsp_output, ocsp_errors)
         return False
