@@ -38,7 +38,7 @@ Help for certbot itself cannot be provided until it is installed.
   -n, --non-interactive, --noninteractive   run without asking for user input
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
-  -q, --quiet                               provide only update/error output
+  -q, --quiet                               provide only update/error output; implies --non-interactive
   -v, --verbose                             provide more output
 
 All arguments are accepted and forwarded to the Certbot client when run."
@@ -82,6 +82,11 @@ if [ $BASENAME = "letsencrypt-auto" ]; then
   # letsencrypt-auto does not respect --help or --yes for backwards compatibility
   ASSUME_YES=1
   HELP=0
+fi
+
+# Set ASSUME_YES to 1 if QUIET (i.e. --quiet implies --non-interactive)
+if [ $QUIET == 1 ]; then
+  ASSUME_YES=1
 fi
 
 # Support for busybox and others where there is no "command",
