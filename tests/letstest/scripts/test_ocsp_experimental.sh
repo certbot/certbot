@@ -11,7 +11,7 @@ cd letsencrypt
 export PATH="$PWD/letsencrypt-auto-source:$PATH"
 letsencrypt-auto-source/letsencrypt-auto --os-packages-only --debug --version
 tools/venv.sh
-sudo ../../../venv/bin/certbot certonly --no-self-upgrade -v --standalone --debug \
+sudo venv/bin/certbot certonly --no-self-upgrade -v --standalone --debug \
                    --text --agree-dev-preview --agree-tos \
                    --renew-by-default --redirect \
                    --register-unsafely-without-email \
