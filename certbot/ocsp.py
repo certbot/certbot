@@ -56,6 +56,7 @@ class RevocationChecker(object):
                "-url", url,
                "-CAfile", chain_path,
                "-verify_other", chain_path,
+               "-trust_other",
                "-header"] + self.host_args(host)
         logger.debug("Querying OCSP for %s", cert_path)
         logger.debug(" ".join(cmd))
