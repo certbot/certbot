@@ -1,6 +1,7 @@
 """Functionality for autorenewal and associated juggling of configurations"""
 from __future__ import print_function
 import copy
+import itertools
 import logging
 import os
 import traceback
@@ -30,6 +31,10 @@ STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
                     "standalone_supported_challenges", "renew_hook"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
+BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names"]
+
+CONFIG_ITEMS = set(itertools.chain(
+    BOOL_CONFIG_ITEMS, INT_CONFIG_ITEMS, STR_CONFIG_ITEMS))
 
 
 def _reconstitute(config, full_path):
@@ -68,7 +73,7 @@ def _reconstitute(config, full_path):
     # Now restore specific values along with their data types, if
     # those elements are present.
     try:
-        _restore_required_config_elements(config, renewalparams)
+        restore_required_config_elements(config, renewalparams)
         _restore_plugin_configs(config, renewalparams)
     except (ValueError, errors.Error) as error:
         logger.warning(
@@ -148,7 +153,7 @@ def _restore_plugin_configs(config, renewalparams):
                     setattr(config.namespace, config_item, cast(config_value))
 
 
-def _restore_required_config_elements(config, renewalparams):
+def restore_required_config_elements(config, renewalparams):
     """Sets non-plugin specific values in config from renewalparams
 
     :param configuration.NamespaceConfig config: configuration for the
@@ -157,30 +162,69 @@ def _restore_required_config_elements(config, renewalparams):
         configuration file that defines this lineage
 
     """
-    # string-valued items to add if they're present
-    for config_item in STR_CONFIG_ITEMS:
-        if config_item in renewalparams and not cli.set_by_cli(config_item):
-            value = renewalparams[config_item]
-            # Unfortunately, we've lost type information from ConfigObj,
-            # so we don't know if the original was NoneType or str!
-            if value == "None":
-                value = None
-            setattr(config.namespace, config_item, value)
-    # int-valued items to add if they're present
-    for config_item in INT_CONFIG_ITEMS:
-        if config_item in renewalparams and not cli.set_by_cli(config_item):
-            config_value = renewalparams[config_item]
-            # the default value for http01_port was None during private beta
-            if config_item == "http01_port" and config_value == "None":
-                logger.info("updating legacy http01_port value")
-                int_value = cli.flag_default("http01_port")
-            else:
-                try:
-                    int_value = int(config_value)
-                except ValueError:
-                    raise errors.Error(
-                        "Expected a numeric value for {0}".format(config_item))
-            setattr(config.namespace, config_item, int_value)
+
+    required_items = itertools.chain(
+        six.moves.zip(BOOL_CONFIG_ITEMS, itertools.repeat(_restore_bool)),
+        six.moves.zip(INT_CONFIG_ITEMS, itertools.repeat(_restore_int)),
+        six.moves.zip(STR_CONFIG_ITEMS, itertools.repeat(_restore_str)))
+    for item_name, restore_func in required_items:
+        if item_name in renewalparams and not cli.set_by_cli(item_name):
+            value = restore_func(item_name, renewalparams[item_name])
+            setattr(config.namespace, item_name, value)
+
+
+def _restore_bool(name, value):
+    """Restores an boolean key-value pair from a renewal config file.
+
+    :param str name: option name
+    :param str value: option value
+
+    :returns: converted option value to be stored in the runtime config
+    :rtype: bool
+
+    :raises errors.Error: if value can't be converted to an bool
+
+    """
+    lowercase_value = value.lower()
+    if lowercase_value not in ("true", "false"):
+        raise errors.Error(
+            "Expected True or False for {0} but found {1}".format(name, value))
+    return lowercase_value == "true"
+
+
+def _restore_int(name, value):
+    """Restores an integer key-value pair from a renewal config file.
+
+    :param str name: option name
+    :param str value: option value
+
+    :returns: converted option value to be stored in the runtime config
+    :rtype: int
+
+    :raises errors.Error: if value can't be converted to an int
+
+    """
+    if name == "http01_port" and value == "None":
+        logger.info("updating legacy http01_port value")
+        return cli.flag_default("http01_port")
+
+    try:
+        return int(value)
+    except ValueError:
+        raise errors.Error("Expected a numeric value for {0}".format(name))
+
+
+def _restore_str(unused_name, value):
+    """Restores an string key-value pair from a renewal config file.
+
+    :param str unused_name: option name
+    :param str value: option value
+
+    :returns: converted option value to be stored in the runtime config
+    :rtype: str or None
+
+    """
+    return None if value == "None" else value
 
 
 def should_renew(config, lineage):
