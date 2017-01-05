@@ -96,12 +96,10 @@ class RevocationChecker(object):
 def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
     """Parse openssl's weird output to work out what it means."""
 
-    pattern = r"{0}: (WARNING.*)?good".format(cert_path)
-    rpattern = r"{0}: (WARNING.*)?revoked".format(cert_path)
-    upattern = r"{0}: (WARNING.*)?unknown".format(cert_path)
-    good = re.search(pattern, ocsp_output, flags=re.DOTALL)
-    revoked = re.search(rpattern, ocsp_output, flags=re.DOTALL)
-    unknown = re.search(upattern, ocsp_output, flags=re.DOTALL)
+    states = ("good", "revoked", "unknown")
+    patterns = [r"{0}: (WARNING.*)?{1}".format(cert_path, s) for s in states]
+    good, revoked, unknown = (re.search(p, ocsp_output, flags=re.DOTALL) for p in patterns)
+
     warning = good.group(1) if good else None
 
     if (not "Response verify OK" in ocsp_errors) or (good and warning) or unknown:
