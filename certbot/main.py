@@ -736,8 +736,7 @@ def _handle_exception(exc_type, exc_value, trace, config):
         logfile = "certbot.log"
         try:
             with open(logfile, "w") as logfd:
-                traceback.print_exception(
-                    exc_type, exc_value, trace, file=logfd)
+                logfd.write(tb_str + "\n")
         except:  # pylint: disable=bare-except
             sys.exit(tb_str)
 
