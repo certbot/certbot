@@ -45,7 +45,6 @@ class RevocationChecker(object):
             return False
 
 
-        logger.debug("Querying OCSP for %s", cert_path)
         url, host = self.determine_ocsp_server(cert_path)
         if not host:
             return False
@@ -58,6 +57,8 @@ class RevocationChecker(object):
                "-CAfile", chain_path,
                "-verify_other", chain_path,
                "-header"] + self.host_args(host)
+        logger.debug("Querying OCSP for %s", cert_path)
+        logger.debug(" ".join(cmd))
         try:
             output, err = util.run_script(cmd, log=logging.debug)
         except errors.SubprocessError:
