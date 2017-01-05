@@ -85,8 +85,7 @@ def run_saved_post_hooks():
     for cmd in post_hook.eventually:
         logger.info("Running post-hook command: %s", cmd)
         _run_hook(cmd)
-    if not post_hook.eventually:
-        logger.info("No renewals attempted, so not running post-hook")
+
 
 def renew_hook(config, domains, lineage_path):
     """Run post-renewal hook if defined."""

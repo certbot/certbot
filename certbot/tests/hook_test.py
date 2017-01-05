@@ -62,10 +62,7 @@ class HookTest(unittest.TestCase):
             with mock.patch('certbot.hooks._run_hook') as mock_run:
                 hooks.run_saved_post_hooks()
                 self.assertEqual(mock_run.call_count, expected_count)
-                if expected_count:
-                    self.assertEqual(mock_info.call_count, expected_count)
-                else:
-                    self.assertEqual(mock_info.call_count, 1)
+                self.assertEqual(mock_info.call_count, expected_count)
 
     def test_post_hooks(self):
         config = mock.MagicMock(post_hook="true", verb="splonk")
