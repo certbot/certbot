@@ -24,7 +24,7 @@ cd tests/letstest/testdata/
 
 # 2. refer to the config with the same level of relativitity that it itself
 # contains :/
-OUT=`../../../venv/bin/certbot certificates  -v --config-dir sample-config`
+OUT=`sudo ../../../venv/bin/certbot certificates  -v --config-dir sample-config`
 TEST_CERTS=`echo "$OUT" | grep TEST_CERT | wc -l`
 REVOKED=`echo "$OUT" | grep REVOKED | wc -l`
 
