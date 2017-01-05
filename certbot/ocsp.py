@@ -97,7 +97,9 @@ def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
     """Parse openssl's weird output to work out what it means."""
 
     pattern = r"{0}: (WARNING.*)?good".format(cert_path)
+    rpattern = r"{0}: (WARNING.*)?revoked".format(cert_path)
     good = re.search(pattern, ocsp_output, flags=re.DOTALL)
+    revoked = re.search(rpattern, ocsp_output, flags=re.DOTALL)
     warning = good.group(1) if good else None
 
     if (not "Response verify OK" in ocsp_errors) or (good and warning):
@@ -106,7 +108,10 @@ def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
         return False
     elif good and not warning:
         return False
-    elif cert_path + ": revoked" in ocsp_output:
+    elif revoked:
+        warning = revoked.group(1)
+        if warning:
+            logger.info("OCSP revocation warning: %s", warning)
         return True
     else:
         logger.warn("Unable to properly parse OCSP output: %s\nstderr:%s",

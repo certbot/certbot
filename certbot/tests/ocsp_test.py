@@ -102,7 +102,11 @@ class OCSPTest(unittest.TestCase):
         self.assertEqual(mock_log.debug.call_count, 2)
         self.assertEqual(ocsp._translate_ocsp_query(*openssl_broken), False)
         self.assertEqual(mock_log.warn.call_count, 1)
+        mock_log.info.call_count = 0
         self.assertEqual(ocsp._translate_ocsp_query(*openssl_revoked), True)
+        self.assertEqual(mock_log.info.call_count, 0)
+        self.assertEqual(ocsp._translate_ocsp_query(*openssl_expired_ocsp_revoked), True)
+        self.assertEqual(mock_log.info.call_count, 1)
 
 
 # pylint: disable=line-too-long
@@ -142,6 +146,14 @@ good
 """,
 """Response verify OK""")
 
+openssl_expired_ocsp_revoked = ("blah.pem", """
+blah.pem: WARNING: Status times invalid.
+140659132298912:error:2707307D:OCSP routines:OCSP_check_validity:status expired:ocsp_cl.c:372:
+revoked
+	This Update: Apr  6 00:00:00 2016 GMT
+	Next Update: Apr 13 00:00:00 2016 GMT
+""",
+"""Response verify OK""")
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
