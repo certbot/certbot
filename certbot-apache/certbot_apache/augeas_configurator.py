@@ -68,9 +68,12 @@ class AugeasConfigurator(common.Plugin):
             # As aug.get may return null
             if lens_path and lens in lens_path:
                 msg = (
-                    "There has been an error in parsing the file (%s): %s",
+                    "There has been an error in parsing the file {0} on line {1}: "
+                    "{2}".format(
                     # Strip off /augeas/files and /error
-                    path[13:len(path) - 6], self.aug.get(path + "/message"))
+                    path[13:len(path) - 6],
+                    self.aug.get(path + "/line"),
+                    self.aug.get(path + "/message")))
                 raise errors.PluginError(msg)
 
     # TODO: Cleanup this function
