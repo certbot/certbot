@@ -28,12 +28,12 @@ BootstrapRpmCommon() {
       exit 1
     fi
     if [ "$ASSUME_YES" = 1 ]; then
-        /bin/echo -n "Enabling the EPEL repository in 3 seconds..."
-        sleep 1s
-        /bin/echo -ne "\e[0K\rEnabling the EPEL repository in 2 seconds..."
-        sleep 1s
-        /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 seconds..."
-        sleep 1s
+      /bin/echo -n "Enabling the EPEL repository in 3 seconds..."
+      sleep 1s
+      /bin/echo -ne "\e[0K\rEnabling the EPEL repository in 2 seconds..."
+      sleep 1s
+      /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 seconds..."
+      sleep 1s
     fi
     if ! $SUDO $tool install $yes_flag epel-release; then
       echo "Could not enable EPEL. Aborting bootstrap!"
