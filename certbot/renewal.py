@@ -304,6 +304,9 @@ def _renew_describe_results(config, renew_successes, renew_failures,
         notify(report(renew_skipped, "skipped"))
     if not renew_successes and not renew_failures:
         notify("No renewals were attempted.")
+        if (config.pre_hook is not None or
+                config.renew_hook is not None or config.post_hook is not None):
+            notify("No hooks were run.")
     elif renew_successes and not renew_failures:
         notify("Congratulations, all renewals succeeded. The following certs "
                "have been renewed:")
