@@ -304,6 +304,8 @@ def _renew_describe_results(config, renew_successes, renew_failures,
         notify(report(renew_skipped, "skipped"))
     if not renew_successes and not renew_failures:
         notify("No renewals were attempted.")
+        if config.pre_hook is not None or config.post_hook is not None:
+            notify("No hooks were run.")
     elif renew_successes and not renew_failures:
         notify("Congratulations, all renewals succeeded. The following certs "
                "have been renewed:")
@@ -332,7 +334,7 @@ def _renew_describe_results(config, renew_successes, renew_failures,
     print("\n".join(out))
 
 
-def handle_renewal_request(config):  # pylint: disable=too-many-branches
+def handle_renewal_request(config):
     """Examine each lineage; renew if due and report results"""
 
     # This is trivially False if config.domains is empty
@@ -400,7 +402,5 @@ def handle_renewal_request(config):  # pylint: disable=too-many-branches
     if renew_failures or parse_failures:
         raise errors.Error("{0} renew failure(s), {1} parse failure(s)".format(
             len(renew_failures), len(parse_failures)))
-    elif not renew_successes:
-        if config.pre_hook is not None or config.post_hook is not None:
-            logger.info("No renewals attempted, so not running hooks.")
-    logger.debug("no renewal failures")
+    else:
+        logger.debug("no renewal failures")

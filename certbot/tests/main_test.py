@@ -995,10 +995,10 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                                   should_renew=False, error_expected=True)
 
     def test_no_renewal_with_hooks(self):
-        self._test_renewal_common(
+        _, _, stdout = self._test_renewal_common(
             due_for_renewal=False, extra_args=None, should_renew=False,
-            log_out='No renewals attempted, so not running hooks.',
             args=['renew', '--post-hook', 'echo hello world'])
+        self.assertTrue("No hooks were run." in stdout.getvalue())
 
     @mock.patch('certbot.main.zope.component.getUtility')
     @mock.patch('certbot.main._find_lineage_for_domains_and_certname')
