@@ -339,7 +339,7 @@ Building letsencrypt-auto-source/letsencrypt-auto
 -------------------------------------------------
 Once changes to any of the aforementioned files have been made, the
 ``letesncrypt-auto-source/letsencrypt-auto`` script should be updated.  In lieu of
-manualy updating this script, run the build script, which lives at
+manually updating this script, run the build script, which lives at
 ``letsencrypt-auto-source/build.py``:
 
 .. code-block:: shell
@@ -349,6 +349,8 @@ manualy updating this script, run the build script, which lives at
 Running ``build.py`` will update the ``letsencrypt-auto-source/letsencrypt-auto``
 script.  Note that the ``certbot-auto`` and ``letsencrypt-auto`` scripts in the root
 directory of the repository will remain **unchanged** after this script is run.
+Your changes will be propagated to these files during the next release of
+Certbot.
 
 Opening a PR
 ------------
