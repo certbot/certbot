@@ -1199,6 +1199,24 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertFalse(acme_client.acme.deactivate_registration.called)
 
 
+class DeactivateTest(unittest.TestCase):
+    def test_abort_deactivate(self):
+        get_utility_patch = mock.patch('certbot.main.zope.component.getUtility')
+        mock_get_utility = get_utility_patch.start()
+
+        util_mock = mock.Mock()
+        util_mock.yesno.return_value = False
+        mock_get_utility.return_value = util_mock
+
+        config = mock.Mock()
+        accounts = mock.Mock()
+        accounts.__bool__ = mock.Mock()
+        accounts.__bool__.return_value = True
+        messenger = mock.Mock()
+        res = main._deactivate(config, accounts, messenger)
+        self.assertEqual(res, "Deactivation aborted.")
+
+
 class TestHandleException(unittest.TestCase):
     """Test main._handle_exception"""
     @mock.patch('certbot.main.sys')
