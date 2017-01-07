@@ -375,10 +375,13 @@ class EnforceDomainSanityTest(unittest.TestCase):
                           u"eichh\u00f6rnchen.example.com")
 
     def test_too_long(self):
-        # pylint: disable=line-too-long
-        long_domain = u"LoremipsumdolorsitametconsecteturadipiscingelitInestorcitinciduntidjustoacmolestielaoreetnislNullamidiaculisloremadignissimturpisSuspendissenecdictumnequeFuscetinciduntquisvelitutfringillaPellentesquehabitantmorbitristiquesenectusetnetusetmalesuadafamesac"
+        long_domain = u"a"*256
         self.assertRaises(errors.ConfigurationError, self._call,
                           long_domain)
+
+    def test_not_too_long(self):
+        not_too_long_domain = u"{0}.{1}.{2}.{3}".format("a"*63, "b"*63, "c"*63, "d"*63)
+        self._call(not_too_long_domain)
 
     def test_empty_label(self):
         empty_label_domain = u"fizz..example.com"
@@ -390,11 +393,19 @@ class EnforceDomainSanityTest(unittest.TestCase):
         self.assertRaises(errors.ConfigurationError, self._call,
                           empty_trailing_label_domain)
 
-    def test_long_label(self):
-        # pylint: disable=line-too-long
-        long_label_domain = u"LoremipsumdolorsitametconsecteturadipiscingelitInestorcitincidunt.example.com"
+    def test_long_label_1(self):
+        long_label_domain = u"a"*64
         self.assertRaises(errors.ConfigurationError, self._call,
                           long_label_domain)
+
+    def test_long_label_2(self):
+        long_label_domain = u"{0}.{1}.com".format(u"a"*64, u"b"*63)
+        self.assertRaises(errors.ConfigurationError, self._call,
+                          long_label_domain)
+
+    def test_not_long_label(self):
+        not_too_long_label_domain = u"{0}.{1}.com".format(u"a"*63, u"b"*63)
+        self._call(not_too_long_label_domain)
 
     def test_empty_domain(self):
         empty_domain = u""
