@@ -870,7 +870,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(["register", "automation"], "-m", "--email", help=config_help("email"))
     helpful.add(
         "register", "--deactivate", action="store_true",
-        help="Irrecvocably deactivate your account")
+        help="Irrevocably deactivate your account")
     helpful.add(
         ["automation", "certonly", "run"],
         "--keep-until-expiring", "--keep", "--reinstall",

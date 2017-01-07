@@ -407,7 +407,7 @@ def _init_le_client(config, authenticator, installer):
 
 
 def _deactivate(config, accounts, messenger):
-    if len(accounts) == 0:
+    if not accounts:
         return "Could not find existing account to deactivate."
     yesno = zope.component.getUtility(interfaces.IDisplay).yesno
     prompt = ("Are you sure you would like to irrevocably deactivate "
