@@ -1,4 +1,5 @@
-#!/bin/sh -e
+#!/bin/bash -e
+set -o pipefail
 release_test_dir=$(realpath $(dirname $0))
 release_openssl_privkey="$release_test_dir/fake.pem"
 export RELEASE_OPENSSL_PUBKEY="$release_test_dir/fake.pub"
