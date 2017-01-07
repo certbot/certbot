@@ -374,6 +374,33 @@ class EnforceDomainSanityTest(unittest.TestCase):
         self.assertRaises(errors.ConfigurationError, self._call,
                           u"eichh\u00f6rnchen.example.com")
 
+    def test_too_long(self):
+        # pylint: disable=line-too-long
+        long_domain = u"LoremipsumdolorsitametconsecteturadipiscingelitInestorcitinciduntidjustoacmolestielaoreetnislNullamidiaculisloremadignissimturpisSuspendissenecdictumnequeFuscetinciduntquisvelitutfringillaPellentesquehabitantmorbitristiquesenectusetnetusetmalesuadafamesac"
+        self.assertRaises(errors.ConfigurationError, self._call,
+                          long_domain)
+
+    def test_empty_label(self):
+        empty_label_domain = u"fizz..example.com"
+        self.assertRaises(errors.ConfigurationError, self._call,
+                          empty_label_domain)
+
+    def test_empty_trailing_label(self):
+        empty_trailing_label_domain = u"example.com.."
+        self.assertRaises(errors.ConfigurationError, self._call,
+                          empty_trailing_label_domain)
+
+    def test_long_label(self):
+        # pylint: disable=line-too-long
+        long_label_domain = u"LoremipsumdolorsitametconsecteturadipiscingelitInestorcitincidunt.example.com"
+        self.assertRaises(errors.ConfigurationError, self._call,
+                          long_label_domain)
+
+    def test_empty_domain(self):
+        empty_domain = u""
+        self.assertRaises(errors.ConfigurationError, self._call,
+                          empty_domain)
+
     def test_punycode_ok(self):
         # Punycode is now legal, so no longer an error; instead check
         # that it's _not_ an error (at the initial sanity check stage)
