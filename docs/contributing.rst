@@ -384,8 +384,9 @@ Note that you will need to have the ``Sphinx``, ``sphinx_rtd_theme``, and
 Install these packages by running:
 
 .. code-block:: shell
-    # pip install -U Sphinx sphinx_rtd_theme
-    # easy_install repoze.sphinx.autointerface
+
+    pip install -U Sphinx sphinx_rtd_theme
+    easy_install repoze.sphinx.autointerface
 
 
 Other methods for running the client
