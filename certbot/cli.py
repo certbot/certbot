@@ -18,7 +18,6 @@ import certbot
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
-from certbot import hooks
 from certbot import interfaces
 from certbot import util
 
@@ -361,7 +360,8 @@ VERB_HELP = [
     }),
     ("revoke", {
         "short": "Revoke a certificate specified with --cert-path",
-        "opts": "Options for revocation of certs"
+        "opts": "Options for revocation of certs",
+        "usage": "\n\n  certbot revoke --cert-path /path/to/fullchain.pem [options]\n\n"
     }),
     ("rename", {
         "short": "Change a certificate's name (for management purposes)",
@@ -542,9 +542,6 @@ class HelpfulArgumentParser(object):
 
         if parsed_args.must_staple:
             parsed_args.staple = True
-
-        if parsed_args.validate_hooks:
-            hooks.validate_hooks(parsed_args)
 
         return parsed_args
 
@@ -934,8 +931,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Silence all output except errors. Useful for automation via cron."
              " Implies --non-interactive.")
     # overwrites server, handled in HelpfulArgumentParser.parse_args()
-    helpful.add("testing", "--test-cert", "--staging", action='store_true', dest='staging',
-        help='Use the staging server to obtain test (invalid) certs; equivalent'
+    helpful.add(["testing", "revoke", "run"], "--test-cert", "--staging",
+        action='store_true', dest='staging',
+        help='Use the staging server to obtain or revoke test (invalid) certs; equivalent'
              ' to --server ' + constants.STAGING_URI)
     helpful.add(
         "testing", "--debug", action="store_true",
@@ -1017,13 +1015,16 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " Intended primarily for renewal, where it can be used to temporarily"
         " shut down a webserver that might conflict with the standalone"
         " plugin. This will only be called if a certificate is actually to be"
-        " obtained/renewed.")
+        " obtained/renewed. When renewing several certificates that have"
+        " identical pre-hooks, only the first will be executed.")
     helpful.add(
         "renew", "--post-hook",
         help="Command to be run in a shell after attempting to obtain/renew"
         " certificates. Can be used to deploy renewed certificates, or to"
         " restart any servers that were stopped by --pre-hook. This is only"
-        " run if an attempt was made to obtain/renew a certificate.")
+        " run if an attempt was made to obtain/renew a certificate. If"
+        " multiple renewed certificates have identical post-hooks, only"
+        " one will be run.")
     helpful.add(
         "renew", "--renew-hook",
         help="Command to be run in a shell once for each successfully renewed"

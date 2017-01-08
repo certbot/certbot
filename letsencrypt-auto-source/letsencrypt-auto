@@ -16,7 +16,7 @@ set -e  # Work even if somebody does "sh thisscript.sh".
 # Note: you can set XDG_DATA_HOME or VENV_PATH before running this script,
 # if you want to change where the virtual environment will be installed
 if [ -z "$XDG_DATA_HOME" ]; then
-  XDG_DATA_HOME="~/.local/share"
+  XDG_DATA_HOME=~/.local/share
 fi
 VENV_NAME="letsencrypt"
 if [ -z "$VENV_PATH" ]; then
@@ -289,6 +289,7 @@ BootstrapDebCommon() {
     gcc \
     $augeas_pkg \
     libssl-dev \
+    openssl \
     libffi-dev \
     ca-certificates \
 
@@ -535,6 +536,7 @@ BootstrapMageiaCommon() {
            git \
            gcc \
            python-augeas \
+           openssl \
            libopenssl-devel \
            libffi-devel \
            rootcerts
