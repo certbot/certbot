@@ -121,6 +121,7 @@ class ParseTest(unittest.TestCase):
         out = self._help_output(['--help', 'revoke'])
         self.assertTrue("--cert-path" in out)
         self.assertTrue("--key-path" in out)
+        self.assertTrue("--reason" in out)
 
         out = self._help_output(['-h', 'config_changes'])
         self.assertTrue("--cert-path" not in out)
@@ -268,6 +269,7 @@ class ParseTest(unittest.TestCase):
             self.assertEqual(namespace.reason, code)
         for reason, code in constants.REVOCATION_REASONS.items():
             namespace = self.parse(['--reason', reason.upper()])
+            self.assertEqual(namespace.reason, code)
 
     def test_force_interactive(self):
         self.assertRaises(
