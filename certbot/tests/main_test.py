@@ -1189,6 +1189,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                                                 mocked_account, mocked_det):
         mocked_storage = mock.MagicMock()
         mocked_account.AccountFileStorage.return_value = mocked_storage
+        mocked_storage.find_all.return_value = []
         mocked_det.return_value = (mock.MagicMock(), "foo")
         acme_client = mock.MagicMock()
         mocked_client.Client.return_value = acme_client
@@ -1213,8 +1214,10 @@ class DeactivateTest(unittest.TestCase):
         accounts.__bool__ = mock.Mock()
         accounts.__bool__.return_value = True
         messenger = mock.Mock()
+        # pylint: disable=protected-access
         res = main._deactivate(config, accounts, messenger)
         self.assertEqual(res, "Deactivation aborted.")
+        get_utility_patch.stop()
 
 
 class TestHandleException(unittest.TestCase):

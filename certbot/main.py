@@ -431,7 +431,6 @@ def _deactivate(config, accounts, messenger):
     messenger("Account deactivated.")
 
 
-
 def register(config, unused_plugins):
     """Create or modify accounts on the server."""
 
