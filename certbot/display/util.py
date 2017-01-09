@@ -253,12 +253,7 @@ class FileDisplay(object):
         :rtype: bool
 
         """
-        msg = "Invalid IDisplay call for this prompt:\n{0}".format(prompt)
-        if cli_flag:
-            msg += ("\nYou can set an answer to "
-                    "this prompt with the {0} flag".format(cli_flag))
-        assert default is not None or force_interactive, msg
-
+        assert_valid_call(prompt, default, cli_flag, force_interactive)
         if self._can_interact(force_interactive):
             return False
         else:
@@ -401,6 +396,24 @@ class FileDisplay(object):
                     "{0}** Invalid input **{0}".format(os.linesep))
 
         return OK, selection
+
+
+def assert_valid_call(prompt, default, cli_flag, force_interactive):
+    """Verify that provided arguments is a valid IDisplay call.
+
+    :param str prompt: prompt for the user
+    :param default: default answer to prompt
+    :param str cli_flag: command line option for setting an answer
+        to this question
+    :param bool force_interactive: if interactivity is forced by the
+        IDisplay call
+
+    """
+    msg = "Invalid IDisplay call for this prompt:\n{0}".format(prompt)
+    if cli_flag:
+        msg += ("\nYou can set an answer to "
+                "this prompt with the {0} flag".format(cli_flag))
+    assert default is not None or force_interactive, msg
 
 
 @zope.interface.implementer(interfaces.IDisplay)
