@@ -56,7 +56,8 @@ standalone_ Y    N    | Uses a "standalone" webserver to obtain a cert. Requires
                       | webserver is not supported or not desired.
 manual_     Y    N    | Helps you obtain a cert by giving you instructions to perform http-01_ (80) or
                       | domain validation yourself. Additionally allows you to        dns-01_ (53)
-                      | specify scripts to be run before and after validation.
+                      | specify scripts to automate the validation task in a
+                      | customized way.
 =========== ==== ==== =============================================================== =============================
 
 Under the hood, plugins use one of several ACME protocol "Challenges_" to
@@ -169,9 +170,10 @@ the UI, you can use the plugin to obtain a cert by specifying
 to copy and paste commands into another terminal session, which may
 be on a different computer.
 
-Additionally you can specify scripts to run before and after verification
-by using the ``--manual-auth-hook`` and ``--manual-cleanup-hook`` flags.
-This is described in more depth in the hooks_ section.
+Additionally you can specify scripts to prepare for validation and perform the
+authentication procedure  and/or clean up after it by using the
+``--manual-auth-hook`` and ``--manual-cleanup-hook`` flags. This is described in
+more depth in the hooks_ section.
 
 .. _third-party-plugins:
 
