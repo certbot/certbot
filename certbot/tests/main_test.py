@@ -216,7 +216,7 @@ class RevokeTest(unittest.TestCase):
             'cert.pem'))
 
         self.patches = [
-            mock.patch('acme.client.Client'),
+            mock.patch('acme.client.Client', autospec=True),
             mock.patch('certbot.client.Client'),
             mock.patch('certbot.main._determine_account'),
             mock.patch('certbot.main.display_ops.success_revocation')
@@ -242,14 +242,26 @@ class RevokeTest(unittest.TestCase):
         for patch in self.patches:
             patch.stop()
 
-    def _call(self):
-        args = 'revoke --cert-path={0}'.format(self.tmp_cert_path).split()
+    def _call(self, extra_args=""):
+        args = 'revoke --cert-path={0} ' + extra_args
+        args = args.format(self.tmp_cert_path).split()
         plugins = disco.PluginsRegistry.find_all()
         config = configuration.NamespaceConfig(
             cli.prepare_and_parse_args(plugins, args))
 
         from certbot.main import revoke
         revoke(config, plugins)
+
+    @mock.patch('certbot.main.client.acme_client')
+    def test_revoke_with_reason(self, mock_acme_client):
+        mock_revoke = mock_acme_client.Client().revoke
+        expected = []
+        for reason, code in constants.REVOCATION_REASONS.items():
+            self._call("--reason " + reason)
+            expected.append(mock.call(mock.ANY, code))
+            self._call("--reason " + reason.upper())
+            expected.append(mock.call(mock.ANY, code))
+        self.assertEqual(expected, mock_revoke.call_args_list)
 
     def test_revocation_success(self):
         self._call()
@@ -1065,7 +1077,9 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with open(CERT, 'rb') as f:
             cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
             mock_revoke = mock_acme_client.Client().revoke
-            mock_revoke.assert_called_once_with(jose.ComparableX509(cert))
+            mock_revoke.assert_called_once_with(
+                    jose.ComparableX509(cert),
+                    mock.ANY)
 
     @mock.patch('certbot.main._determine_account')
     def test_revoke_without_key(self, mock_determine_account):
@@ -1074,7 +1088,9 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with open(CERT) as f:
             cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
             mock_revoke = client.acme_from_config_key().revoke
-            mock_revoke.assert_called_once_with(jose.ComparableX509(cert))
+            mock_revoke.assert_called_once_with(
+                    jose.ComparableX509(cert),
+                    mock.ANY)
 
     def test_agree_dev_preview_config(self):
         with mock.patch('certbot.main.run') as mocked_run:
