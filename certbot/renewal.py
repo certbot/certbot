@@ -75,7 +75,7 @@ def _reconstitute(config, full_path):
     # those elements are present.
     try:
         restore_required_config_elements(config, renewalparams)
-        _restore_plugin_configs(config, renewalparams)
+        restore_plugin_configs(config, renewalparams)
     except (ValueError, errors.Error) as error:
         logger.warning(
             "An error occurred while parsing %s. The error was %s. "
@@ -112,7 +112,7 @@ def _restore_webroot_config(config, renewalparams):
         config.namespace.webroot_path = wp
 
 
-def _restore_plugin_configs(config, renewalparams):
+def restore_plugin_configs(config, renewalparams):
     """Sets plugin specific values in config from renewalparams
 
     :param configuration.NamespaceConfig config: configuration for the
