@@ -93,7 +93,7 @@ def _auth_from_available(le_client, config, domains=None, certname=None, lineage
                 renewalparams = lineage.configuration["renewalparams"]
                 renewal.restore_required_config_elements(config, renewalparams)
                 renewal._restore_plugin_configs(config, renewalparams)
-            except KeyError, ValueError:
+            except (KeyError, ValueError):
                 # This doesn't make things worse... right?
                 pass
 
