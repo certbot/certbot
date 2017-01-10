@@ -43,7 +43,7 @@ class RawNginxParser(object):
     modifier = Literal("=") | Literal("~*") | Literal("~") | Literal("^~")
 
     # rules
-    comment = space + Literal('#') + restOfLine()
+    comment = space + Literal('#') + restOfLine
 
     assignment = space + key + Optional(space + value, default=None) + semicolon
     location_statement = space + Optional(modifier) + Optional(space + location + space)
