@@ -164,15 +164,16 @@ def make_lineage(self, testfile):
     return conf_path
 
 
-class FrozenMock(object):
+class FreezableMock(object):
     """Mock object with the ability to freeze attributes."""
-    def __init__(self, freeze=False, func=None):
-        self._frozen_set = set() if freeze else set(('freeze',))
+    def __init__(self, frozen=False, func=None):
+        self._frozen_set = set() if frozen else set(('freeze',))
         self._func = func
         self._mock = mock.MagicMock()
-        self._frozen = freeze
+        self._frozen = frozen
 
     def freeze(self):
+        """Freeze object preventing further changes."""
         self._frozen = True
 
     def __call__(self, *args, **kwargs):
@@ -209,10 +210,10 @@ def patch_get_utility():
     :rtype: mock.MagicMock
 
     """
-    display = FrozenMock()
-    for name in interfaces.IDisplay.names():
+    display = FreezableMock()
+    for name in interfaces.IDisplay.names():  # pylint: disable=no-member
         if name != 'notification':
-            frozen_mock = FrozenMock(freeze=True, func=_assert_valid_call)
+            frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call)
             setattr(display, name, frozen_mock)
     display.freeze()
     return mock.patch('zope.component.getUtility', return_value=display)
@@ -226,4 +227,5 @@ def _assert_valid_call(*args, **kwargs):
     assert_kwargs['cli_flag'] = kwargs.get('cli_flag', None)
     assert_kwargs['force_interactive'] = kwargs.get('force_interactive', False)
 
+    # pylint: disable=star-args
     display_util.assert_valid_call(*assert_args, **assert_kwargs)
