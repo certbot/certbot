@@ -253,7 +253,7 @@ class FileDisplay(object):
         :rtype: bool
 
         """
-        assert_valid_call(prompt, default, cli_flag, force_interactive)
+        # assert_valid_call(prompt, default, cli_flag, force_interactive)
         if self._can_interact(force_interactive):
             return False
         elif default is None:

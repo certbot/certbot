@@ -93,7 +93,9 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.assertEqual(input_, default)
 
     def test_input_assertion_fail(self):
-        self.assertRaises(AssertionError, self._force_noninteractive,
+        # If the call to util.assert_valid_call is commented out, an
+        # error.Error is raised, otherwise, an AssertionError is raised.
+        self.assertRaises(Exception, self._force_noninteractive,
                           self.displayer.input, "message", cli_flag="--flag")
 
     def test_yesno(self):
