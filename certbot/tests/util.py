@@ -180,7 +180,18 @@ def patch_get_utility(target='zope.component.getUtility'):
 
 
 class FreezableMock(object):
-    """Mock object with the ability to freeze attributes."""
+    """Mock object with the ability to freeze attributes.
+
+    This class works like a regular mock.MagicMock object, except
+    attributes and behavior can be set and frozen so they cannot be
+    changed during tests.
+
+    If a func argument is provided to the constructor, this function
+    is called first when an instance of FreezableMock is called,
+    followed by the usual behavior defined by MagicMock. The return
+    value of func is ignored.
+
+    """
     def __init__(self, frozen=False, func=None):
         self._frozen_set = set() if frozen else set(('freeze',))
         self._func = func
