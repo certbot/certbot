@@ -256,6 +256,13 @@ class FileDisplay(object):
         assert_valid_call(prompt, default, cli_flag, force_interactive)
         if self._can_interact(force_interactive):
             return False
+        elif default is None:
+            msg = "Unable to get an answer for the question:\n{0}".format(prompt)
+            if cli_flag:
+                msg += (
+                    "\nYou can provide an answer on the "
+                    "command line with the {0} flag.".format(cli_flag))
+            raise errors.Error(msg)
         else:
             logger.debug(
                 "Falling back to default %s for the prompt:\n%s",
