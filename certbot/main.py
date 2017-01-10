@@ -93,7 +93,10 @@ def _auth_from_available(le_client, config, domains=None, certname=None, lineage
                 renewalparams = lineage.configuration["renewalparams"]
                 renewal.restore_required_config_elements(config, renewalparams)
                 renewal.restore_plugin_configs(config, renewalparams)
-            except (KeyError, ValueError):
+            except (KeyError, ValueError) as exc:
+                logger.info(exc)
+                logger.info("Renewal configuration file %s is broken or missing elements when attempting to get defaults. Skipping.", lineage.lineagename)
+                logger.debug("Traceback was:\n%s", traceback.format_exc())
                 # This doesn't make things worse... right?
                 pass
 
