@@ -164,6 +164,21 @@ def make_lineage(self, testfile):
     return conf_path
 
 
+def patch_get_utility(target='zope.component.getUtility'):
+    """Patch zope.component.getUtility to use a special mock IDisplay.
+
+    The mock IDisplay works like a regular mock object, except it also
+    also asserts that methods are called with valid arguments.
+
+    :param str target: path to patch
+
+    :returns: mock zope.component.getUtility
+    :rtype: mock.MagicMock
+
+    """
+    return mock.patch(target, new_callable=_create_get_utility_mock)
+
+
 class FreezableMock(object):
     """Mock object with the ability to freeze attributes."""
     def __init__(self, frozen=False, func=None):
@@ -200,25 +215,14 @@ class FreezableMock(object):
         return object.__setattr__(self, name, value)
 
 
-def patch_get_utility(target='zope.component.getUtility'):
-    """Patch zope.component.getUtility to use a special mock IDisplay.
-
-    The mock IDisplay works like a regular mock object, except it also
-    also asserts that methods are called with valid arguments.
-
-    :param str target: path to patch
-
-    :returns: mock zope.component.getUtility
-    :rtype: mock.MagicMock
-
-    """
+def _create_get_utility_mock():
     display = FreezableMock()
     for name in interfaces.IDisplay.names():  # pylint: disable=no-member
         if name != 'notification':
             frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call)
             setattr(display, name, frozen_mock)
     display.freeze()
-    return mock.patch(target, return_value=display)
+    return mock.MagicMock(return_value=display)
 
 
 def _assert_valid_call(*args, **kwargs):
