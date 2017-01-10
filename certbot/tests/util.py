@@ -10,6 +10,7 @@ import unittest
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
+import mock
 import OpenSSL
 
 from acme import errors
@@ -17,7 +18,10 @@ from acme import jose
 from acme import util
 
 from certbot import constants
+from certbot import interfaces
 from certbot import storage
+
+from certbot.display import util as display_util
 
 
 def vector_path(*names):
@@ -158,3 +162,68 @@ def make_lineage(self, testfile):
                 line.replace('MAGICDIR', self.config_dir) for line in src)
 
     return conf_path
+
+
+class FrozenMock(object):
+    """Mock object with the ability to freeze attributes."""
+    def __init__(self, freeze=False, func=None):
+        self._frozen_set = set() if freeze else set(('freeze',))
+        self._func = func
+        self._mock = mock.MagicMock()
+        self._frozen = freeze
+
+    def freeze(self):
+        self._frozen = True
+
+    def __call__(self, *args, **kwargs):
+        if self._func is not None:
+            self._func(*args, **kwargs)
+        return self._mock(*args, **kwargs)
+
+    def __getattribute__(self, name):
+        if name == '_frozen':
+            try:
+                return object.__getattribute__(self, name)
+            except AttributeError:
+                return False
+        elif name == '_frozen_set' or name in self._frozen_set:
+            return object.__getattribute__(self, name)
+        else:
+            return getattr(object.__getattribute__(self, '_mock'), name)
+
+    def __setattr__(self, name, value):
+        if self._frozen:
+            return setattr(self._mock, name, value)
+        elif name != '_frozen_set':
+            self._frozen_set.add(name)
+        return object.__setattr__(self, name, value)
+
+
+def patch_get_utility():
+    """Patch zope.component.getUtility to use a special mock IDisplay.
+
+    The mock IDisplay works like a regular mock object, except it also
+    also asserts that methods are called with valid arguments.
+
+    :returns: mock zope.component.getUtility
+    :rtype: mock.MagicMock
+
+    """
+    display = FrozenMock()
+    for name in interfaces.IDisplay.names():
+        if name != 'notification':
+            frozen_mock = FrozenMock(freeze=True, func=_assert_valid_call)
+            setattr(display, name, frozen_mock)
+    display.freeze()
+    return mock.patch('zope.component.getUtility', return_value=display)
+
+
+def _assert_valid_call(*args, **kwargs):
+    assert_args = [args[0] if args else kwargs['message']]
+
+    assert_kwargs = {}
+    assert_kwargs['default'] = kwargs.get('default', None)
+    assert_kwargs['cli_flag'] = kwargs.get('cli_flag', None)
+    assert_kwargs['force_interactive'] = kwargs.get('force_interactive', False)
+
+    display_util.assert_valid_call(*assert_args, **assert_kwargs)
