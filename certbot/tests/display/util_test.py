@@ -98,10 +98,10 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.assertRaises(Exception, self._force_noninteractive,
                           self.displayer.input, "message", cli_flag="--flag")
 
-    @mock.patch("certbot.display.util.assert_valid_call")
-    def test_input_assertion_fail2(self, mock_assert_valid_call):
-        self.assertRaises(errors.Error, self._force_noninteractive,
-                          self.displayer.input, "message", cli_flag="--flag")
+    def test_input_assertion_fail2(self):
+        with mock.patch("certbot.display.util.assert_valid_call"):
+            self.assertRaises(errors.Error, self._force_noninteractive,
+                              self.displayer.input, "msg", cli_flag="--flag")
 
     def test_yesno(self):
         with mock.patch("six.moves.input", return_value="Yes"):
