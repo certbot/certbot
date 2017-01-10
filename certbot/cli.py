@@ -388,7 +388,7 @@ VERB_HELP = [
         "opts": 'Options for for the "plugins" subcommand'
     }),
     ("update_symlinks", {
-        "short": "Recreate symlinks in your /live/ directory",
+        "short": "Recreate symlinks in your /etc/letsencrypt/live/ directory",
         "opts": ("Recreates cert and key symlinks in {0}, if you changed them by hand "
                  "or edited a renewal configuration file".format(
                   os.path.join(flag_default("config_dir"), "live")))
@@ -777,7 +777,7 @@ def _add_all_groups(helpful):
     helpful.add_group("paths", description="Arguments changing execution paths & servers")
     helpful.add_group("manage",
         description="Various subcommands and flags are available for managing your certificates:",
-        verbs=["certificates", "delete", "renew", "revoke", "rename"])
+        verbs=["certificates", "delete", "renew", "revoke", "rename", "update_symlinks"])
 
     # VERBS
     for verb, docs in VERB_HELP:
