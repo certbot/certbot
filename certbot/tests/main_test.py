@@ -100,8 +100,7 @@ class ObtainCertTest(unittest.TestCase):
     """Tests for certbot.main.obtain_cert."""
 
     def setUp(self):
-        self.get_utility_patch = mock.patch(
-            'certbot.main.zope.component.getUtility')
+        self.get_utility_patch = test_util.patch_get_utility()
         self.mock_get_utility = self.get_utility_patch.start()
 
     def tearDown(self):
@@ -713,7 +712,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 args += '-d foo.bar -a standalone certonly'.split()
                 self._call(args)
 
-    @mock.patch('certbot.main.zope.component.getUtility')
+    @test_util.patch_get_utility()
     def test_certonly_dry_run_new_request_success(self, mock_get_utility):
         mock_client = mock.MagicMock()
         mock_client.obtain_and_enroll_certificate.return_value = None
@@ -726,7 +725,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(mock_get_utility().add_message.call_count, 1)
 
     @mock.patch('certbot.crypto_util.notAfter')
-    @mock.patch('certbot.main.zope.component.getUtility')
+    @test_util.patch_get_utility()
     def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter):
         cert_path = '/etc/letsencrypt/live/foo.bar'
         date = '1970-01-01'
@@ -770,8 +769,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 mock_fdc.return_value = (mock_lineage, None)
                 with mock.patch('certbot.main._init_le_client') as mock_init:
                     mock_init.return_value = mock_client
-                    get_utility_path = 'certbot.main.zope.component.getUtility'
-                    with mock.patch(get_utility_path) as mock_get_utility:
+                    with test_util.patch_get_utility() as mock_get_utility:
                         with mock.patch('certbot.main.renewal.OpenSSL') as mock_ssl:
                             mock_latest = mock.MagicMock()
                             mock_latest.get_issuer.return_value = "Fake fake"
@@ -1000,7 +998,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             args=['renew', '--post-hook', 'echo hello world'])
         self.assertTrue('No hooks were run.' in stdout.getvalue())
 
-    @mock.patch('certbot.main.zope.component.getUtility')
+    @test_util.patch_get_utility()
     @mock.patch('certbot.main._find_lineage_for_domains_and_certname')
     @mock.patch('certbot.main._init_le_client')
     def test_certonly_reinstall(self, mock_init, mock_renewal, mock_get_utility):
@@ -1021,8 +1019,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         mock_client.save_certificate.return_value = cert_path, None, None
         with mock.patch('certbot.main._init_le_client') as mock_init:
             mock_init.return_value = mock_client
-            get_utility_path = 'certbot.main.zope.component.getUtility'
-            with mock.patch(get_utility_path) as mock_get_utility:
+            with test_util.patch_get_utility() as mock_get_utility:
                 chain_path = '/etc/letsencrypt/live/example.com/chain.pem'
                 full_path = '/etc/letsencrypt/live/example.com/fullchain.pem'
                 args = ('-a standalone certonly --csr {0} --cert-path {1} '
@@ -1121,7 +1118,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self.assertTrue("--register-unsafely-without-email" in x[0])
 
     @mock.patch('certbot.main.display_ops.get_email')
-    @mock.patch('certbot.main.zope.component.getUtility')
+    @test_util.patch_get_utility()
     def test_update_registration_with_email(self, mock_utility, mock_email):
         email = "user@example.com"
         mock_email.return_value = email

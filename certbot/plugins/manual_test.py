@@ -8,7 +8,9 @@ import mock
 from acme import challenges
 
 from certbot import errors
+
 from certbot.tests import acme_util
+from certbot.tests import util as test_util
 
 
 class AuthenticatorTest(unittest.TestCase):
@@ -42,12 +44,12 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(self.auth.get_chall_pref('example.org'),
                          [challenges.HTTP01, challenges.DNS01])
 
-    @mock.patch('certbot.plugins.manual.zope.component.getUtility')
+    @test_util.patch_get_utility()
     def test_ip_logging_not_ok(self, mock_get_utility):
         mock_get_utility().yesno.return_value = False
         self.assertRaises(errors.PluginError, self.auth.perform, [])
 
-    @mock.patch('certbot.plugins.manual.zope.component.getUtility')
+    @test_util.patch_get_utility()
     def test_ip_logging_ok(self, mock_get_utility):
         mock_get_utility().yesno.return_value = True
         self.auth.perform([])
@@ -75,7 +77,7 @@ class AuthenticatorTest(unittest.TestCase):
             self.auth.env[self.http_achall.domain]['CERTBOT_AUTH_OUTPUT'],
             http_expected)
 
-    @mock.patch('certbot.plugins.manual.zope.component.getUtility')
+    @test_util.patch_get_utility()
     def test_manual_perform(self, mock_get_utility):
         self.config.manual_public_ip_logging_ok = True
         self.assertEqual(
