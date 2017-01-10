@@ -478,9 +478,9 @@ def enforce_domain_sanity(domain):
     # FQDN checks according to RFC 2181: domain name should be less than 255
     # octets (inclusive). And each label is 1 - 63 octets (inclusive).
     # https://tools.ietf.org/html/rfc2181#section-11
-    msg = "Requested domain {0} is not a FQDN because ".format(domain)
+    msg = "Requested domain {0} is not a FQDN because".format(domain)
     if len(domain) > 255:
-        raise errors.ConfigurationError(msg + "it is too long.")
+        raise errors.ConfigurationError("{0} it is too long.".format(msg))
     labels = domain.split('.')
     for l in labels:
         if not l:
