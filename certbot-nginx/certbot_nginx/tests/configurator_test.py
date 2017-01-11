@@ -158,6 +158,18 @@ class NginxConfiguratorTest(util.NginxTest):
             "example/chain.pem",
             None)
 
+    @mock.patch('certbot_nginx.parser.NginxParser.add_server_directives')
+    def test_deploy_cert_raise_on_add_error(self, mock_add_server_directives):
+        mock_add_server_directives.side_effect = errors.MisconfigurationError()
+        self.assertRaises(
+            errors.PluginError,
+            self.config.deploy_cert,
+            "migration.com",
+            "example/cert.pem",
+            "example/key.pem",
+            "example/chain.pem",
+            "example/fullchain.pem")
+
     def test_deploy_cert(self):
         server_conf = self.config.parser.abs_path('server.conf')
         nginx_conf = self.config.parser.abs_path('nginx.conf')

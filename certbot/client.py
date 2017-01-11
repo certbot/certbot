@@ -376,7 +376,8 @@ class Client(object):
 
         chain_path = None if chain_path is None else os.path.abspath(chain_path)
 
-        with error_handler.ErrorHandler(self.installer.recovery_routine):
+        msg = ("Unable to install the certificate")
+        with error_handler.ErrorHandler(self._recovery_routine_with_msg, msg):
             for dom in domains:
                 self.installer.deploy_cert(
                     domain=dom, cert_path=os.path.abspath(cert_path),
