@@ -164,7 +164,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertRaises(
             errors.PluginError,
             self.config.deploy_cert,
-            "www.example.com",
+            "migration.com",
             "example/cert.pem",
             "example/key.pem",
             "example/chain.pem",
