@@ -80,7 +80,6 @@ obtain, install, and renew certificates:
 manage certificates:
     certificates    Display information about certs you have from Certbot
     revoke          Revoke a certificate (supply --cert-path)
-    rename          Rename a certificate
     delete          Delete a certificate
 
 manage your account with Let's Encrypt:
@@ -363,10 +362,6 @@ VERB_HELP = [
         "opts": "Options for revocation of certs",
         "usage": "\n\n  certbot revoke --cert-path /path/to/fullchain.pem [options]\n\n"
     }),
-    ("rename", {
-        "short": "Change a certificate's name (for management purposes)",
-        "opts": "Options for changing certificate names"
-    }),
     ("register", {
         "short": "Register for account with Let's Encrypt / other ACME server",
         "opts": "Options for account registration & modification"
@@ -388,7 +383,7 @@ VERB_HELP = [
         "opts": 'Options for for the "plugins" subcommand'
     }),
     ("update_symlinks", {
-        "short": "Recreate symlinks in your /live/ directory",
+        "short": "Recreate symlinks in your /etc/letsencrypt/live/ directory",
         "opts": ("Recreates cert and key symlinks in {0}, if you changed them by hand "
                  "or edited a renewal configuration file".format(
                   os.path.join(flag_default("config_dir"), "live")))
@@ -411,14 +406,22 @@ class HelpfulArgumentParser(object):
 
     def __init__(self, args, plugins, detect_defaults=False):
         from certbot import main
-        self.VERBS = {"auth": main.obtain_cert, "certonly": main.obtain_cert,
-                      "config_changes": main.config_changes, "run": main.run,
-                      "install": main.install, "plugins": main.plugins_cmd,
-                      "register": main.register, "renew": main.renew,
-                      "revoke": main.revoke, "rollback": main.rollback,
-                      "everything": main.run, "update_symlinks": main.update_symlinks,
-                      "certificates": main.certificates, "rename": main.rename,
-                      "delete": main.delete}
+        self.VERBS = {
+            "auth": main.obtain_cert,
+            "certonly": main.obtain_cert,
+            "config_changes": main.config_changes,
+            "run": main.run,
+            "install": main.install,
+            "plugins": main.plugins_cmd,
+            "register": main.register,
+            "renew": main.renew,
+            "revoke": main.revoke,
+            "rollback": main.rollback,
+            "everything": main.run,
+            "update_symlinks": main.update_symlinks,
+            "certificates": main.certificates,
+            "delete": main.delete,
+        }
 
         # List of topics for which additional help can be provided
         HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
@@ -777,7 +780,7 @@ def _add_all_groups(helpful):
     helpful.add_group("paths", description="Arguments changing execution paths & servers")
     helpful.add_group("manage",
         description="Various subcommands and flags are available for managing your certificates:",
-        verbs=["certificates", "delete", "renew", "revoke", "rename"])
+        verbs=["certificates", "delete", "renew", "revoke", "update_symlinks"])
 
     # VERBS
     for verb, docs in VERB_HELP:
@@ -830,17 +833,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "multiple -d flags or enter a comma separated list of domains "
              "as a parameter. (default: Ask)")
     helpful.add(
-        [None, "run", "certonly", "manage", "rename", "delete", "certificates"],
+        [None, "run", "certonly", "manage", "delete", "certificates"],
         "--cert-name", dest="certname",
         metavar="CERTNAME", default=None,
         help="Certificate name to apply. Only one certificate name can be used "
              "per Certbot run. To see certificate names, run 'certbot certificates'. "
              "When creating a new certificate, specifies the new certificate's name.")
-    helpful.add(
-        ["rename", "manage"],
-        "--updated-cert-name", dest="new_certname",
-        metavar="NEW_CERTNAME", default=None,
-        help="New name for the certificate. Must be a valid filename.")
     helpful.add(
         [None, "testing", "renew", "certonly"],
         "--dry-run", action="store_true", dest="dry_run",

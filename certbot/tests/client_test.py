@@ -323,7 +323,7 @@ class ClientTest(ClientTestCommon):
                           ["foo.bar"], "key", "cert", "chain", "fullchain")
         installer.recovery_routine.assert_called_once_with()
 
-    @mock.patch("certbot.client.zope.component.getUtility")
+    @test_util.patch_get_utility()
     def test_deploy_certificate_restart_failure(self, mock_get_utility):
         installer = mock.MagicMock()
         installer.restart.side_effect = [errors.PluginError, None]
@@ -335,7 +335,7 @@ class ClientTest(ClientTestCommon):
         installer.rollback_checkpoints.assert_called_once_with()
         self.assertEqual(installer.restart.call_count, 2)
 
-    @mock.patch("certbot.client.zope.component.getUtility")
+    @test_util.patch_get_utility()
     def test_deploy_certificate_restart_failure2(self, mock_get_utility):
         installer = mock.MagicMock()
         installer.restart.side_effect = errors.PluginError
@@ -438,7 +438,7 @@ class EnhanceConfigTest(ClientTestCommon):
 
     def _test_error(self):
         self.config.redirect = True
-        with mock.patch("certbot.client.zope.component.getUtility") as mock_gu:
+        with test_util.patch_get_utility() as mock_gu:
             self.assertRaises(
                 errors.PluginError, self._test_with_all_supported)
         self.assertEqual(mock_gu().add_message.call_count, 1)
