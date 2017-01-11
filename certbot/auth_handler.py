@@ -437,9 +437,6 @@ def _report_no_chall_path():
     raise errors.AuthorizationError(msg)
 
 
-_ACME_PREFIX = "urn:acme:error:"
-
-
 _ERROR_HELP_COMMON = (
     "To fix these errors, please make sure that your domain name was entered "
     "correctly and the DNS A record(s) for that domain contain(s) the "
@@ -501,9 +498,10 @@ def _generate_failed_chall_msg(failed_achalls):
     :rtype: str
 
     """
-    typ = failed_achalls[0].error.typ
-    if typ.startswith(_ACME_PREFIX):
-        typ = typ[len(_ACME_PREFIX):]
+    error = failed_achalls[0].error
+    typ = error.typ
+    if messages.is_acme_error(error):
+        typ = error.code
     msg = ["The following errors were reported by the server:"]
 
     for achall in failed_achalls:

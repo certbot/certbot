@@ -32,7 +32,7 @@ Installation
 
 The easiest way to install Certbot is by visiting `certbot.eff.org`_, where you can
 find the correct installation instructions for many web server and OS combinations.
-For more information, see the `User Guide <https://certbot.eff.org/docs/using.html#getting-certbot>`_.
+For more information, see `Get Certbot <https://certbot.eff.org/docs/install.html>`_.
 
 .. _certbot.eff.org: https://certbot.eff.org/
 
@@ -152,11 +152,12 @@ Current Features
 
 * Supports multiple web servers:
 
-  - apache/2.x (working on Debian 8+ and Ubuntu 12.04+)
-  - standalone (runs its own simple webserver to prove you control a domain)
+  - apache/2.x (beta support for auto-configuration)
+  - nginx/0.8.48+ (alpha support for auto-configuration)
   - webroot (adds files to webroot directories in order to prove control of
     domains and obtain certs)
-  - nginx/0.8.48+ (highly experimental, not included in certbot-auto)
+  - standalone (runs its own simple webserver to prove you control a domain)
+  - other server software via `third party plugins <https://certbot.eff.org/docs/using.html#third-party-plugins>`_
 
 * The private key is generated locally on your system.
 * Can talk to the Let's Encrypt CA or optionally to other ACME

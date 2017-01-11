@@ -88,31 +88,19 @@ class NamespaceConfigTest(unittest.TestCase):
         self.assertTrue(os.path.isabs(config.key_dir))
         self.assertTrue(os.path.isabs(config.temp_checkpoint_dir))
 
-
-class RenewerConfigurationTest(unittest.TestCase):
-    """Test for certbot.configuration.RenewerConfiguration."""
-
-    def setUp(self):
-        self.namespace = mock.MagicMock(config_dir='/tmp/config')
-        from certbot.configuration import RenewerConfiguration
-        self.config = RenewerConfiguration(self.namespace)
-
     @mock.patch('certbot.configuration.constants')
-    def test_dynamic_dirs(self, constants):
+    def test_renewal_dynamic_dirs(self, constants):
         constants.ARCHIVE_DIR = 'a'
         constants.LIVE_DIR = 'l'
         constants.RENEWAL_CONFIGS_DIR = 'renewal_configs'
-        constants.RENEWER_CONFIG_FILENAME = 'r.conf'
 
-        self.assertEqual(self.config.archive_dir, '/tmp/config/a')
+        self.assertEqual(self.config.default_archive_dir, '/tmp/config/a')
         self.assertEqual(self.config.live_dir, '/tmp/config/l')
         self.assertEqual(
             self.config.renewal_configs_dir, '/tmp/config/renewal_configs')
-        self.assertEqual(self.config.renewer_config_file, '/tmp/config/r.conf')
 
-    def test_absolute_paths(self):
+    def test_renewal_absolute_paths(self):
         from certbot.configuration import NamespaceConfig
-        from certbot.configuration import RenewerConfiguration
 
         config_base = "foo"
         work_base = "bar"
@@ -125,12 +113,11 @@ class RenewerConfigurationTest(unittest.TestCase):
         mock_namespace.config_dir = config_base
         mock_namespace.work_dir = work_base
         mock_namespace.logs_dir = logs_base
-        config = RenewerConfiguration(NamespaceConfig(mock_namespace))
+        config = NamespaceConfig(mock_namespace)
 
-        self.assertTrue(os.path.isabs(config.archive_dir))
+        self.assertTrue(os.path.isabs(config.default_archive_dir))
         self.assertTrue(os.path.isabs(config.live_dir))
         self.assertTrue(os.path.isabs(config.renewal_configs_dir))
-        self.assertTrue(os.path.isabs(config.renewer_config_file))
 
 
 if __name__ == '__main__':

@@ -29,7 +29,7 @@ def get_email(invalid=False, optional=True):
 
     """
     invalid_prefix = "There seem to be problems with that address. "
-    msg = "Enter email address (used for urgent notices and lost key recovery)"
+    msg = "Enter email address (used for urgent renewal and security notices)"
     unsafe_suggestion = ("\n\nIf you really want to skip this, you can run "
                          "the client with --register-unsafely-without-email "
                          "but make sure you then backup your account key from "
@@ -37,6 +37,7 @@ def get_email(invalid=False, optional=True):
     if optional:
         if invalid:
             msg += unsafe_suggestion
+            suggest_unsafe = False
         else:
             suggest_unsafe = True
     else:
@@ -45,7 +46,8 @@ def get_email(invalid=False, optional=True):
     while True:
         try:
             code, email = z_util(interfaces.IDisplay).input(
-                invalid_prefix + msg if invalid else msg)
+                invalid_prefix + msg if invalid else msg,
+                force_interactive=True)
         except errors.MissingCommandlineFlag:
             msg = ("You should register before running non-interactively, "
                    "or provide --agree-tos and --email <email_address> flags.")
@@ -78,7 +80,7 @@ def choose_account(accounts):
     labels = [acc.slug for acc in accounts]
 
     code, index = z_util(interfaces.IDisplay).menu(
-        "Please choose an account", labels)
+        "Please choose an account", labels, force_interactive=True)
     if code == display_util.OK:
         return accounts[index]
     else:
@@ -103,18 +105,8 @@ def choose_names(installer):
     names = get_valid_domains(domains)
 
     if not names:
-        manual = z_util(interfaces.IDisplay).yesno(
-            "No names were found in your configuration files.{0}You should "
-            "specify ServerNames in your config files in order to allow for "
-            "accurate installation of your certificate.{0}"
-            "If you do use the default vhost, you may specify the name "
-            "manually. Would you like to continue?{0}".format(os.linesep),
-            default=True)
-
-        if manual:
-            return _choose_names_manually()
-        else:
-            return []
+        return _choose_names_manually(
+            "No names were found in your configuration files. ")
 
     code, names = _filter_names(names)
     if code == display_util.OK and names:
@@ -139,6 +131,16 @@ def get_valid_domains(domains):
             continue
     return valid_domains
 
+def _sort_names(FQDNs):
+    """Sort FQDNs by SLD (and if many, by their subdomains)
+
+    :param list FQDNs: list of domain names
+
+    :returns: Sorted list of domain names
+    :rtype: list
+    """
+    return sorted(FQDNs, key=lambda fqdn: fqdn.split('.')[::-1][1:])
+
 
 def _filter_names(names):
     """Determine which names the user would like to select from a list.
@@ -151,18 +153,28 @@ def _filter_names(names):
     :rtype: tuple
 
     """
+    #Sort by domain first, and then by subdomain
+    sorted_names = _sort_names(names)
+
     code, names = z_util(interfaces.IDisplay).checklist(
         "Which names would you like to activate HTTPS for?",
-        tags=names, cli_flag="--domains")
+        tags=sorted_names, cli_flag="--domains", force_interactive=True)
     return code, [str(s) for s in names]
 
 
-def _choose_names_manually():
-    """Manually input names for those without an installer."""
+def _choose_names_manually(prompt_prefix=""):
+    """Manually input names for those without an installer.
 
+    :param str prompt_prefix: string to prepend to prompt for domains
+
+    :returns: list of provided names
+    :rtype: `list` of `str`
+
+    """
     code, input_ = z_util(interfaces.IDisplay).input(
+        prompt_prefix +
         "Please enter in your domain name(s) (comma and/or space separated) ",
-        cli_flag="--domains")
+        cli_flag="--domains", force_interactive=True)
 
     if code == display_util.OK:
         invalid_domains = dict()
@@ -200,7 +212,8 @@ def _choose_names_manually():
 
         if retry_message:
             # We had error in input
-            retry = z_util(interfaces.IDisplay).yesno(retry_message)
+            retry = z_util(interfaces.IDisplay).yesno(retry_message,
+                                                      force_interactive=True)
             if retry:
                 return _choose_names_manually()
         else:
@@ -211,8 +224,6 @@ def _choose_names_manually():
 def success_installation(domains):
     """Display a box confirming the installation of HTTPS.
 
-    .. todo:: This should be centered on the screen
-
     :param list domains: domain names which were enabled
 
     """
@@ -222,29 +233,36 @@ def success_installation(domains):
             _gen_https_names(domains),
             os.linesep,
             os.linesep.join(_gen_ssl_lab_urls(domains))),
-        height=(10 + len(domains)),
         pause=False)
 
 
-def success_renewal(domains, action):
+def success_renewal(domains):
     """Display a box confirming the renewal of an existing certificate.
 
-    .. todo:: This should be centered on the screen
-
     :param list domains: domain names which were renewed
-    :param str action: can be "reinstall" or "renew"
 
     """
     z_util(interfaces.IDisplay).notification(
-        "Your existing certificate has been successfully {3}ed, and the "
+        "Your existing certificate has been successfully renewed, and the "
         "new certificate has been installed.{1}{1}"
         "The new certificate covers the following domains: {0}{1}{1}"
         "You should test your configuration at:{1}{2}".format(
             _gen_https_names(domains),
             os.linesep,
-            os.linesep.join(_gen_ssl_lab_urls(domains)),
-            action),
-        height=(14 + len(domains)),
+            os.linesep.join(_gen_ssl_lab_urls(domains))),
+        pause=False)
+
+def success_revocation(cert_path):
+    """Display a box confirming a certificate has been revoked.
+
+    :param list cert_path: path to certificate which was revoked.
+
+    """
+    z_util(interfaces.IDisplay).notification(
+        "Congratulations! You have successfully revoked the certificate "
+        "that was located at {0}{1}{1}".format(
+            cert_path,
+            os.linesep),
         pause=False)
 
 

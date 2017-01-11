@@ -40,9 +40,6 @@ class Installer(common.Plugin):
     def supported_enhancements(self):
         return []
 
-    def get_all_certs_keys(self):
-        return []
-
     def save(self, title=None, temporary=False):
         pass  # pragma: no cover
 

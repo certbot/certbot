@@ -15,6 +15,7 @@ from certbot import errors
 from certbot import util
 
 from certbot.tests import acme_util
+from certbot.tests import util as test_util
 
 
 class ChallengeFactoryTest(unittest.TestCase):
@@ -251,7 +252,7 @@ class PollChallengesTest(unittest.TestCase):
             self.assertEqual(authzr.body.status, messages.STATUS_PENDING)
 
     @mock.patch("certbot.auth_handler.time")
-    @mock.patch("certbot.auth_handler.zope.component.getUtility")
+    @test_util.patch_get_utility()
     def test_poll_challenges_failure(self, unused_mock_time, unused_mock_zope):
         self.mock_net.poll.side_effect = self._mock_poll_solve_one_invalid
         self.assertRaises(
@@ -386,7 +387,7 @@ class ReportFailedChallsTest(unittest.TestCase):
             "chall": acme_util.HTTP01,
             "uri": "uri",
             "status": messages.STATUS_INVALID,
-            "error": messages.Error(typ="urn:acme:error:tls", detail="detail"),
+            "error": messages.Error.with_code("tls", detail="detail"),
         }
 
         # Prevent future regressions if the error type changes
@@ -412,7 +413,7 @@ class ReportFailedChallsTest(unittest.TestCase):
             domain="foo.bar",
             account_key="key")
 
-    @mock.patch("certbot.auth_handler.zope.component.getUtility")
+    @test_util.patch_get_utility()
     def test_same_error_and_domain(self, mock_zope):
         from certbot import auth_handler
 
@@ -421,7 +422,7 @@ class ReportFailedChallsTest(unittest.TestCase):
         self.assertTrue(len(call_list) == 1)
         self.assertTrue("Domain: example.com\nType:   tls\nDetail: detail" in call_list[0][0][0])
 
-    @mock.patch("certbot.auth_handler.zope.component.getUtility")
+    @test_util.patch_get_utility()
     def test_different_errors_and_domains(self, mock_zope):
         from certbot import auth_handler
 

@@ -17,6 +17,7 @@ import sys
 
 import configargparse
 
+from certbot import constants
 from certbot import errors
 
 
@@ -37,20 +38,22 @@ ANSI_SGR_RED = "\033[31m"
 ANSI_SGR_RESET = "\033[0m"
 
 
-def run_script(params):
+def run_script(params, log=logger.error):
     """Run the script with the given params.
 
     :param list params: List of parameters to pass to Popen
+    :param logging.Logger log: Logger to use for errors
 
     """
     try:
         proc = subprocess.Popen(params,
                                 stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
+                                stderr=subprocess.PIPE,
+                                universal_newlines=True)
 
     except (OSError, ValueError):
         msg = "Unable to run the command: %s" % " ".join(params)
-        logger.error(msg)
+        log(msg)
         raise errors.SubprocessError(msg)
 
     stdout, stderr = proc.communicate()
@@ -59,7 +62,7 @@ def run_script(params):
         msg = "Error while running %s.\n%s\n%s" % (
             " ".join(params), stdout, stderr)
         # Enter recovery routine...
-        logger.error(msg)
+        log(msg)
         raise errors.SubprocessError(msg)
 
     return stdout, stderr
@@ -151,11 +154,11 @@ def safe_open(path, mode="w", chmod=None, buffering=None):
         mode, *fdopen_args)
 
 
-def _unique_file(path, filename_pat, count, mode):
+def _unique_file(path, filename_pat, count, chmod, mode):
     while True:
         current_path = os.path.join(path, filename_pat(count))
         try:
-            return safe_open(current_path, chmod=mode),\
+            return safe_open(current_path, chmod=chmod, mode=mode),\
                 os.path.abspath(current_path)
         except OSError as err:
             # "File exists," is okay, try a different name.
@@ -164,11 +167,12 @@ def _unique_file(path, filename_pat, count, mode):
         count += 1
 
 
-def unique_file(path, mode=0o777):
+def unique_file(path, chmod=0o777, mode="w"):
     """Safely finds a unique file.
 
     :param str path: path/filename.ext
-    :param int mode: File mode
+    :param int chmod: File mode
+    :param str mode: Open mode
 
     :returns: tuple of file object and file name
 
@@ -176,15 +180,16 @@ def unique_file(path, mode=0o777):
     path, tail = os.path.split(path)
     return _unique_file(
         path, filename_pat=(lambda count: "%04d_%s" % (count, tail)),
-        count=0, mode=mode)
+        count=0, chmod=chmod, mode=mode)
 
 
-def unique_lineage_name(path, filename, mode=0o777):
+def unique_lineage_name(path, filename, chmod=0o644, mode="w"):
     """Safely finds a unique file using lineage convention.
 
     :param str path: directory path
     :param str filename: proposed filename
-    :param int mode: file mode
+    :param int chmod: file mode
+    :param str mode: open mode
 
     :returns: tuple of file object and file name (which may be modified
         from the requested one by appending digits to ensure uniqueness)
@@ -196,13 +201,13 @@ def unique_lineage_name(path, filename, mode=0o777):
     """
     preferred_path = os.path.join(path, "%s.conf" % (filename))
     try:
-        return safe_open(preferred_path, chmod=mode), preferred_path
+        return safe_open(preferred_path, chmod=chmod), preferred_path
     except OSError as err:
         if err.errno != errno.EEXIST:
             raise
     return _unique_file(
         path, filename_pat=(lambda count: "%s-%04d.conf" % (filename, count)),
-        count=1, mode=mode)
+        count=1, chmod=chmod, mode=mode)
 
 
 def safely_remove(path):
@@ -422,7 +427,6 @@ def enforce_le_validity(domain):
                     label, domain))
     return domain
 
-
 def enforce_domain_sanity(domain):
     """Method which validates domain value and errors out if
     the requirements are not met.
@@ -437,19 +441,13 @@ def enforce_domain_sanity(domain):
     """
     if isinstance(domain, six.text_type):
         wildcard_marker = u"*."
-        punycode_marker = u"xn--"
     else:
         wildcard_marker = b"*."
-        punycode_marker = b"xn--"
 
     # Check if there's a wildcard domain
     if domain.startswith(wildcard_marker):
         raise errors.ConfigurationError(
             "Wildcard domains are not supported: {0}".format(domain))
-    # Punycode
-    if punycode_marker in domain:
-        raise errors.ConfigurationError(
-            "Punycode domains are not presently supported: {0}".format(domain))
 
     # Unicode
     try:
@@ -457,12 +455,8 @@ def enforce_domain_sanity(domain):
             domain = domain.decode('utf-8')
         domain.encode('ascii')
     except UnicodeError:
-        error_fmt = (u"Internationalized domain names "
-                     "are not presently supported: {0}")
-        if isinstance(domain, six.text_type):
-            raise errors.ConfigurationError(error_fmt.format(domain))
-        else:
-            raise errors.ConfigurationError(str(error_fmt).format(domain))
+        raise errors.ConfigurationError("Non-ASCII domain names not supported. "
+            "To issue for an Internationalized Domain Name, use Punycode.")
 
     domain = domain.lower()
 
@@ -484,13 +478,15 @@ def enforce_domain_sanity(domain):
     # FQDN checks according to RFC 2181: domain name should be less than 255
     # octets (inclusive). And each label is 1 - 63 octets (inclusive).
     # https://tools.ietf.org/html/rfc2181#section-11
-    msg = "Requested domain {0} is not a FQDN because ".format(domain)
+    msg = "Requested domain {0} is not a FQDN because".format(domain)
+    if len(domain) > 255:
+        raise errors.ConfigurationError("{0} it is too long.".format(msg))
     labels = domain.split('.')
     for l in labels:
-        if not 0 < len(l) < 64:
-            raise errors.ConfigurationError(msg + "label {0} is too long.".format(l))
-    if len(domain) > 255:
-        raise errors.ConfigurationError(msg + "it is too long.")
+        if not l:
+            raise errors.ConfigurationError("{0} it contains an empty label.".format(msg))
+        elif len(l) > 63:
+            raise errors.ConfigurationError("{0} label {1} is too long.".format(msg, l))
 
     return domain
 
@@ -507,3 +503,14 @@ def get_strict_version(normalized):
     # strict version ending with "a" and a number designates a pre-release
     # pylint: disable=no-member
     return distutils.version.StrictVersion(normalized.replace(".dev", "a"))
+
+
+def is_staging(srv):
+    """
+    Determine whether a given ACME server is a known test / staging server.
+
+    :param str srv: the URI for the ACME server
+    :returns: True iff srv is a known test / staging server
+    :rtype bool:
+    """
+    return srv == constants.STAGING_URI or "staging" in srv

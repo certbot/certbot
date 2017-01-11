@@ -11,7 +11,7 @@ import zope.component
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot.tests import test_util
+import certbot.tests.util as test_util
 
 
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')
@@ -40,9 +40,9 @@ class InitSaveKeyTest(unittest.TestCase):
 
     @mock.patch('certbot.crypto_util.make_key')
     def test_success(self, mock_make):
-        mock_make.return_value = 'key_pem'
+        mock_make.return_value = b'key_pem'
         key = self._call(1024, self.key_dir)
-        self.assertEqual(key.pem, 'key_pem')
+        self.assertEqual(key.pem, b'key_pem')
         self.assertTrue('key-certbot.pem' in key.file)
 
     @mock.patch('certbot.crypto_util.make_key')
@@ -67,13 +67,13 @@ class InitSaveCSRTest(unittest.TestCase):
     def test_it(self, unused_mock_verify, mock_csr):
         from certbot.crypto_util import init_save_csr
 
-        mock_csr.return_value = ('csr_pem', 'csr_der')
+        mock_csr.return_value = (b'csr_pem', b'csr_der')
 
         csr = init_save_csr(
             mock.Mock(pem='dummy_key'), 'example.com', self.csr_dir,
             'csr-certbot.pem')
 
-        self.assertEqual(csr.data, 'csr_der')
+        self.assertEqual(csr.data, b'csr_der')
         self.assertTrue('csr-certbot.pem' in csr.file)
 
 

@@ -37,6 +37,9 @@ STAGING_URI = "https://acme-staging.api.letsencrypt.org/directory"
 
 """Defaults for CLI flags and `.IConfig` attributes."""
 
+QUIET_LOGGING_LEVEL = logging.WARNING
+"""Logging level to use in quiet mode."""
+
 RENEWER_DEFAULTS = dict(
     renewer_enabled="yes",
     renew_before_expiry="30 days",
@@ -90,5 +93,5 @@ TEMP_CHECKPOINT_DIR = "temp_checkpoint"
 RENEWAL_CONFIGS_DIR = "renewal"
 """Renewal configs directory, relative to `IConfig.config_dir`."""
 
-RENEWER_CONFIG_FILENAME = "renewer.conf"
-"""Renewer config file name (relative to `IConfig.config_dir`)."""
+FORCE_INTERACTIVE_FLAG = "--force-interactive"
+"""Flag to disable TTY checking in IDisplay."""
