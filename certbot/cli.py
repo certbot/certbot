@@ -831,7 +831,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         metavar="DOMAIN", action=_DomainsAction, default=[],
         help="Domain names to apply. For multiple domains you can use "
              "multiple -d flags or enter a comma separated list of domains "
-             "as a parameter. The first domain in the list will be used to "
+             "as a parameter. The first provided domain will be used to "
              "decide where to store the new certificate, unless otherwise "
              "specified. (default: Ask)")
     helpful.add(
