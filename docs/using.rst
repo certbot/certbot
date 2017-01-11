@@ -197,6 +197,7 @@ icecast_    N    Y    Deploy certs to Icecast 2 streaming media servers
 pritunl_    N    Y    Install certs in pritunl distributed OpenVPN servers
 proxmox_    N    Y    Install certs in Proxmox Virtualization servers
 postfix_    N    Y    STARTTLS Everywhere is becoming a Certbot Postfix/Exim plugin
+heroku_     Y    Y    Integration with Heroku SSL
 =========== ==== ==== ===============================================================
 
 .. _plesk: https://github.com/plesk/letsencrypt-plesk
@@ -210,6 +211,7 @@ postfix_    N    Y    STARTTLS Everywhere is becoming a Certbot Postfix/Exim plu
 .. _proxmox: https://github.com/kharkevich/letsencrypt-proxmox
 .. _external: https://github.com/marcan/letsencrypt-external
 .. _postfix: https://github.com/EFForg/starttls-everywhere
+.. _heroku: https://github.com/gboudreau/certbot-heroku
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
