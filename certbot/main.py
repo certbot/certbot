@@ -39,7 +39,7 @@ from certbot.plugins import selection as plug_sel
 _PERM_ERR_FMT = os.linesep.join((
     "The following error was encountered:", "{0}",
     "If running as non-root, set --config-dir, "
-    "--logs-dir, and --work-dir to writeable paths."))
+    "--work-dir, and --logs-dir to writeable paths."))
 
 USER_CANCELLED = ("User chose to cancel the operation and may "
                   "reinvoke the client.")
