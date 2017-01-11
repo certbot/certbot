@@ -1,12 +1,13 @@
 """Test certbot_apache.display_ops."""
-import sys
 import unittest
 
 import mock
-import zope.component
+
+from certbot import errors
 
 from certbot.display import util as display_util
-from certbot import errors
+
+from certbot.tests import util as certbot_util
 
 from certbot_apache import obj
 
@@ -17,8 +18,6 @@ class SelectVhostTest(unittest.TestCase):
     """Tests for certbot_apache.display_ops.select_vhost."""
 
     def setUp(self):
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
-                                                               False))
         self.base_dir = "/example_path"
         self.vhosts = util.get_vh_truth(
             self.base_dir, "debian_apache_2_4/multiple_vhosts")
@@ -28,12 +27,12 @@ class SelectVhostTest(unittest.TestCase):
         from certbot_apache.display_ops import select_vhost
         return select_vhost("example.com", vhosts)
 
-    @mock.patch("certbot_apache.display_ops.zope.component.getUtility")
+    @certbot_util.patch_get_utility()
     def test_successful_choice(self, mock_util):
         mock_util().menu.return_value = (display_util.OK, 3)
         self.assertEqual(self.vhosts[3], self._call(self.vhosts))
 
-    @mock.patch("certbot_apache.display_ops.zope.component.getUtility")
+    @certbot_util.patch_get_utility()
     def test_noninteractive(self, mock_util):
         mock_util().menu.side_effect = errors.MissingCommandlineFlag("no vhost default")
         try:
@@ -41,7 +40,7 @@ class SelectVhostTest(unittest.TestCase):
         except errors.MissingCommandlineFlag as e:
             self.assertTrue("vhost ambiguity" in e.message)
 
-    @mock.patch("certbot_apache.display_ops.zope.component.getUtility")
+    @certbot_util.patch_get_utility()
     def test_more_info_cancel(self, mock_util):
         mock_util().menu.side_effect = [
             (display_util.HELP, 1),
@@ -56,7 +55,7 @@ class SelectVhostTest(unittest.TestCase):
         self.assertEqual(self._call([]), None)
 
     @mock.patch("certbot_apache.display_ops.display_util")
-    @mock.patch("certbot_apache.display_ops.zope.component.getUtility")
+    @certbot_util.patch_get_utility()
     @mock.patch("certbot_apache.display_ops.logger")
     def test_small_display(self, mock_logger, mock_util, mock_display_util):
         mock_display_util.WIDTH = 20
@@ -65,7 +64,7 @@ class SelectVhostTest(unittest.TestCase):
 
         self.assertEqual(mock_logger.debug.call_count, 1)
 
-    @mock.patch("certbot_apache.display_ops.zope.component.getUtility")
+    @certbot_util.patch_get_utility()
     def test_multiple_names(self, mock_util):
         mock_util().menu.return_value = (display_util.OK, 5)
 
