@@ -481,17 +481,21 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                 "Recursion limit reached. Didn't get {0}".format(uri))
         return chain
 
-    def revoke(self, cert):
+    def revoke(self, cert, rsn):
         """Revoke certificate.
 
         :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
             `.ComparableX509`
 
+        :param int rsn: Reason code for certificate revocation.
+
         :raises .ClientError: If revocation is unsuccessful.
 
         """
         response = self.net.post(self.directory[messages.Revocation],
-                                 messages.Revocation(certificate=cert),
+                                 messages.Revocation(
+                                     certificate=cert,
+                                     reason=rsn),
                                  content_type=None)
         if response.status_code != http_client.OK:
             raise errors.ClientError(
