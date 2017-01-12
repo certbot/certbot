@@ -81,6 +81,9 @@ class ClientTest(unittest.TestCase):
             uri='https://www.letsencrypt-demo.org/acme/cert/1',
             cert_chain_uri='https://www.letsencrypt-demo.org/ca')
 
+        # Reason code for revocation
+        self.rsn = 1
+
     def test_init_downloads_directory(self):
         uri = 'http://www.letsencrypt-demo.org/directory'
         from acme.client import Client
@@ -427,13 +430,22 @@ class ClientTest(unittest.TestCase):
         self.assertRaises(errors.Error, self.client.fetch_chain, self.certr)
 
     def test_revoke(self):
-        self.client.revoke(self.certr.body)
+        self.client.revoke(self.certr.body, self.rsn)
         self.net.post.assert_called_once_with(
             self.directory[messages.Revocation], mock.ANY, content_type=None)
 
+    def test_revocation_payload(self):
+        obj = messages.Revocation(certificate=self.certr.body, reason=self.rsn)
+        self.assertTrue('reason' in obj.to_partial_json().keys())
+        self.assertEquals(self.rsn, obj.to_partial_json()['reason'])
+
     def test_revoke_bad_status_raises_error(self):
         self.response.status_code = http_client.METHOD_NOT_ALLOWED
-        self.assertRaises(errors.ClientError, self.client.revoke, self.certr)
+        self.assertRaises(
+            errors.ClientError,
+            self.client.revoke,
+            self.certr,
+            self.rsn)
 
 
 class ClientNetworkTest(unittest.TestCase):
@@ -533,6 +545,29 @@ class ClientNetworkTest(unittest.TestCase):
         self.net.session.request.assert_called_once_with(
             'HEAD', 'http://example.com/', 'foo',
             headers=mock.ANY, verify=mock.ANY, bar='baz')
+
+    @mock.patch('acme.client.logger')
+    def test_send_request_get_der(self, mock_logger):
+        self.net.session = mock.MagicMock()
+        self.net.session.request.return_value = mock.MagicMock(
+            ok=True, status_code=http_client.OK,
+            headers={"Content-Type": "application/pkix-cert"},
+            content=b"hi")
+        # pylint: disable=protected-access
+        self.net._send_request('HEAD', 'http://example.com/', 'foo', bar='baz')
+        mock_logger.debug.assert_called_once_with(
+            'Received response:\nHTTP %d\n%s\n\n%s', 200,
+            'Content-Type: application/pkix-cert', b'aGk=')
+
+    def test_send_request_post(self):
+        self.net.session = mock.MagicMock()
+        self.net.session.request.return_value = self.response
+        # pylint: disable=protected-access
+        self.assertEqual(self.response, self.net._send_request(
+            'POST', 'http://example.com/', 'foo', data='qux', bar='baz'))
+        self.net.session.request.assert_called_once_with(
+            'POST', 'http://example.com/', 'foo',
+            headers=mock.ANY, verify=mock.ANY, data='qux', bar='baz')
 
     def test_send_request_verify_ssl(self):
         # pylint: disable=protected-access

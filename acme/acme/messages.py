@@ -469,3 +469,4 @@ class Revocation(jose.JSONObjectWithFields):
     resource = fields.Resource(resource_type)
     certificate = jose.Field(
         'certificate', decoder=jose.decode_cert, encoder=jose.encode_cert)
+    reason = jose.Field('reason')

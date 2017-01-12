@@ -1,7 +1,6 @@
 """Certbot main entry point."""
 from __future__ import print_function
 import atexit
-import dialog
 import functools
 import logging.handlers
 import os
@@ -13,10 +12,12 @@ import zope.component
 
 from acme import jose
 from acme import messages
+from acme import errors as acme_errors
 
 import certbot
 
 from certbot import account
+from certbot import cert_manager
 from certbot import client
 from certbot import cli
 from certbot import crypto_util
@@ -27,10 +28,8 @@ from certbot import errors
 from certbot import hooks
 from certbot import interfaces
 from certbot import util
-from certbot import log
 from certbot import reporter
 from certbot import renewal
-from certbot import storage
 
 from certbot.display import util as display_util, ops as display_ops
 from certbot.plugins import disco as plugins_disco
@@ -40,7 +39,10 @@ from certbot.plugins import selection as plug_sel
 _PERM_ERR_FMT = os.linesep.join((
     "The following error was encountered:", "{0}",
     "If running as non-root, set --config-dir, "
-    "--logs-dir, and --work-dir to writeable paths."))
+    "--work-dir, and --logs-dir to writeable paths."))
+
+USER_CANCELLED = ("User chose to cancel the operation and may "
+                  "reinvoke the client.")
 
 
 logger = logging.getLogger(__name__)
@@ -68,17 +70,21 @@ def _report_successful_dry_run(config):
                                   reporter_util.HIGH_PRIORITY, on_crash=False)
 
 
-def _auth_from_domains(le_client, config, domains, lineage=None):
+def _auth_from_available(le_client, config, domains=None, certname=None, lineage=None):
     """Authenticate and enroll certificate.
 
-    :returns: Tuple of (str action, cert_or_None) as per _treat_as_renewal
+    This method finds the relevant lineage, figures out what to do with it,
+    then performs that action. Includes calls to hooks, various reports,
+    checks, and requests for user input.
+
+    :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains_and_certname
               action can be: "newcert" | "renew" | "reinstall"
     """
     # If lineage is specified, use that one instead of looking around for
     # a matching one.
     if lineage is None:
         # This will find a relevant matching lineage that exists
-        action, lineage = _treat_as_renewal(config, domains)
+        action, lineage = _find_lineage_for_domains_and_certname(config, domains, certname)
     else:
         # Renewal, where we already know the specific lineage we're
         # interested in
@@ -94,15 +100,15 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
     try:
         if action == "renew":
             logger.info("Renewing an existing certificate")
-            renewal.renew_cert(config, domains, le_client, lineage)
+            renewal.renew_cert(config, le_client, lineage)
         elif action == "newcert":
             # TREAT AS NEW REQUEST
             logger.info("Obtaining a new certificate")
-            lineage = le_client.obtain_and_enroll_certificate(domains)
+            lineage = le_client.obtain_and_enroll_certificate(domains, certname)
             if lineage is False:
                 raise errors.Error("Certificate could not be obtained")
     finally:
-        hooks.post_hook(config, final=False)
+        hooks.post_hook(config)
 
     if not config.dry_run and not config.verb == "renew":
         _report_new_cert(config, lineage.cert, lineage.fullchain)
@@ -115,7 +121,7 @@ def _handle_subset_cert_request(config, domains, cert):
 
     :param storage.RenewableCert cert:
 
-    :returns: Tuple of (str action, cert_or_None) as per _treat_as_renewal
+    :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains_and_certname
               action can be: "newcert" | "renew" | "reinstall"
     :rtype: tuple
 
@@ -133,7 +139,8 @@ def _handle_subset_cert_request(config, domains, cert):
              br=os.linesep)
     if config.expand or config.renew_by_default or zope.component.getUtility(
             interfaces.IDisplay).yesno(question, "Expand", "Cancel",
-                                       cli_flag="--expand"):
+                                       cli_flag="--expand",
+                                       force_interactive=True):
         return "renew", cert
     else:
         reporter_util = zope.component.getUtility(interfaces.IReporter)
@@ -147,9 +154,7 @@ def _handle_subset_cert_request(config, domains, cert):
                 br=os.linesep
             ),
             reporter_util.HIGH_PRIORITY)
-        raise errors.Error(
-            "User chose to cancel the operation and may "
-            "reinvoke the client.")
+        raise errors.Error(USER_CANCELLED)
 
 
 def _handle_identical_cert_request(config, lineage):
@@ -157,7 +162,7 @@ def _handle_identical_cert_request(config, lineage):
 
     :param storage.RenewableCert lineage:
 
-    :returns: Tuple of (str action, cert_or_None) as per _treat_as_renewal
+    :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains_and_certname
               action can be: "newcert" | "renew" | "reinstall"
     :rtype: tuple
 
@@ -171,8 +176,8 @@ def _handle_identical_cert_request(config, lineage):
         # reinstalled without further prompting.
         return "reinstall", lineage
     question = (
-        "You have an existing certificate that contains exactly the same "
-        "domains you requested and isn't close to expiry."
+        "You have an existing certificate that has exactly the same "
+        "domains or certificate name you requested and isn't close to expiry."
         "{br}(ref: {0}){br}{br}What would you like to do?"
     ).format(lineage.configfile.filename, br=os.linesep)
 
@@ -184,7 +189,8 @@ def _handle_identical_cert_request(config, lineage):
                "Renew & replace the cert (limit ~5 per 7 days)"]
 
     display = zope.component.getUtility(interfaces.IDisplay)
-    response = display.menu(question, choices, "OK", "Cancel", default=0)
+    response = display.menu(question, choices, "OK", "Cancel",
+                            default=0, force_interactive=True)
     if response[0] == display_util.CANCEL:
         # TODO: Add notification related to command-line options for
         #       skipping the menu for this case.
@@ -198,8 +204,7 @@ def _handle_identical_cert_request(config, lineage):
     else:
         assert False, "This is impossible"
 
-
-def _treat_as_renewal(config, domains):
+def _find_lineage_for_domains(config, domains):
     """Determine whether there are duplicated names and how to handle
     them (renew, reinstall, newcert, or raising an error to stop
     the client run if the user chooses to cancel the operation when
@@ -219,7 +224,7 @@ def _treat_as_renewal(config, domains):
     if config.duplicate:
         return "newcert", None
     # TODO: Also address superset case
-    ident_names_cert, subset_names_cert = _find_duplicative_certs(config, domains)
+    ident_names_cert, subset_names_cert = cert_manager.find_duplicative_certs(config, domains)
     # XXX ^ schoen is not sure whether that correctly reads the systemwide
     # configuration file.
     if ident_names_cert is None and subset_names_cert is None:
@@ -230,51 +235,75 @@ def _treat_as_renewal(config, domains):
     elif subset_names_cert is not None:
         return _handle_subset_cert_request(config, domains, subset_names_cert)
 
+def _find_lineage_for_domains_and_certname(config, domains, certname):
+    """Find appropriate lineage based on given domains and/or certname.
 
-def _find_duplicative_certs(config, domains):
-    """Find existing certs that duplicate the request."""
+    :returns: Two-element tuple containing desired new-certificate behavior as
+              a string token ("reinstall", "renew", or "newcert"), plus either
+              a RenewableCert instance or None if renewal shouldn't occur.
 
-    identical_names_cert, subset_names_cert = None, None
+    :raises .Error: If the user would like to rerun the client again.
 
-    cli_config = configuration.RenewerConfiguration(config)
-    configs_dir = cli_config.renewal_configs_dir
-    # Verify the directory is there
-    util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
+    """
+    if not certname:
+        return _find_lineage_for_domains(config, domains)
+    else:
+        lineage = cert_manager.lineage_for_certname(config, certname)
+        if lineage:
+            if domains:
+                if set(cert_manager.domains_for_certname(config, certname)) != set(domains):
+                    _ask_user_to_confirm_new_names(config, domains, certname,
+                        lineage.names()) # raises if no
+                    return "renew", lineage
+            # unnecessarily specified domains or no domains specified
+            return _handle_identical_cert_request(config, lineage)
+        else:
+            if domains:
+                return "newcert", None
+            else:
+                raise errors.ConfigurationError("No certificate with name {0} found. "
+                    "Use -d to specify domains, or run certbot --certificates to see "
+                    "possible certificate names.".format(certname))
 
-    for renewal_file in renewal.renewal_conf_files(cli_config):
-        try:
-            candidate_lineage = storage.RenewableCert(renewal_file, cli_config)
-        except (errors.CertStorageError, IOError):
-            logger.warning("Renewal conf file %s is broken. Skipping.", renewal_file)
-            logger.debug("Traceback was:\n%s", traceback.format_exc())
-            continue
-        # TODO: Handle these differently depending on whether they are
-        #       expired or still valid?
-        candidate_names = set(candidate_lineage.names())
-        if candidate_names == set(domains):
-            identical_names_cert = candidate_lineage
-        elif candidate_names.issubset(set(domains)):
-            # This logic finds and returns the largest subset-names cert
-            # in the case where there are several available.
-            if subset_names_cert is None:
-                subset_names_cert = candidate_lineage
-            elif len(candidate_names) > len(subset_names_cert.names()):
-                subset_names_cert = candidate_lineage
+def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
+    """Ask user to confirm update cert certname to contain new_domains.
+    """
+    if config.renew_with_new_domains:
+        return
+    msg = ("Confirm that you intend to update certificate {0} "
+           "to include domains {1}. Note that it previously "
+           "contained domains {2}.".format(
+               certname,
+               new_domains,
+               old_domains))
+    obj = zope.component.getUtility(interfaces.IDisplay)
+    if not obj.yesno(msg, "Update cert", "Cancel", default=True):
+        raise errors.ConfigurationError("Specified mismatched cert name and domains.")
 
-    return identical_names_cert, subset_names_cert
-
-
-def _find_domains(config, installer):
+def _find_domains_or_certname(config, installer):
+    """Retrieve domains and certname from config or user input.
+    """
+    domains = None
+    certname = config.certname
+    # first, try to get domains from the config
     if config.domains:
         domains = config.domains
-    else:
+    # if we can't do that but we have a certname, get the domains
+    # with that certname
+    elif certname:
+        domains = cert_manager.domains_for_certname(config, certname)
+
+    # that certname might not have existed, or there was a problem.
+    # try to get domains from the user.
+    if not domains:
         domains = display_ops.choose_names(installer)
 
-    if not domains:
+    if not domains and not certname:
         raise errors.Error("Please specify --domains, or --installer that "
-                           "will help in domain names autodiscovery")
+                           "will help in domain names autodiscovery, or "
+                           "--cert-name for an existing certificate name.")
 
-    return domains
+    return domains, certname
 
 
 def _report_new_cert(config, cert_path, fullchain_path):
@@ -347,7 +376,8 @@ def _determine_account(config):
                        "server at {1}".format(
                            regr.terms_of_service, config.server))
                 obj = zope.component.getUtility(interfaces.IDisplay)
-                return obj.yesno(msg, "Agree", "Cancel", cli_flag="--agree-tos")
+                return obj.yesno(msg, "Agree", "Cancel",
+                                 cli_flag="--agree-tos", force_interactive=True)
 
             try:
                 acc, acme = client.register(
@@ -429,13 +459,13 @@ def install(config, plugins):
     except errors.PluginSelectionError as e:
         return e.message
 
-    domains = _find_domains(config, installer)
+    domains, _ = _find_domains_or_certname(config, installer)
     le_client = _init_le_client(config, authenticator=None, installer=installer)
     assert config.cert_path is not None  # required=True in the subparser
     le_client.deploy_certificate(
         domains, config.key_path, config.cert_path, config.chain_path,
         config.fullchain_path)
-    le_client.enhance_config(domains, config, config.chain_path)
+    le_client.enhance_config(domains, config.chain_path)
 
 
 def plugins_cmd(config, plugins):  # TODO: Use IDisplay rather than print
@@ -477,6 +507,34 @@ def config_changes(config, unused_plugins):
     """
     client.view_config_changes(config, num=config.num)
 
+def update_symlinks(config, unused_plugins):
+    """Update the certificate file family symlinks
+
+    Use the information in the config file to make symlinks point to
+    the correct archive directory.
+    """
+    cert_manager.update_live_symlinks(config)
+
+def rename(config, unused_plugins):
+    """Rename a certificate
+
+    Use the information in the config file to rename an existing
+    lineage.
+    """
+    cert_manager.rename_lineage(config)
+
+def delete(config, unused_plugins):
+    """Delete a certificate
+
+    Use the information in the config file to delete an existing
+    lineage.
+    """
+    cert_manager.delete(config)
+
+def certificates(config, unused_plugins):
+    """Display information about certs configured with Certbot
+    """
+    cert_manager.certificates(config)
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
     """Revoke a previously obtained certificate."""
@@ -492,7 +550,14 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
         key = acc.key
     acme = client.acme_from_config_key(config, key)
     cert = crypto_util.pyopenssl_load_certificate(config.cert_path[1])[0]
-    acme.revoke(jose.ComparableX509(cert))
+    logger.debug("Reason code for revocation: %s", config.reason)
+
+    try:
+        acme.revoke(jose.ComparableX509(cert), config.reason)
+    except acme_errors.ClientError as e:
+        return e.message
+
+    display_ops.success_revocation(config.cert_path[0])
 
 
 def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
@@ -504,23 +569,23 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     except errors.PluginSelectionError as e:
         return e.message
 
-    domains = _find_domains(config, installer)
+    domains, certname = _find_domains_or_certname(config, installer)
 
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(config, authenticator, installer)
 
-    action, lineage = _auth_from_domains(le_client, config, domains)
+    action, lineage = _auth_from_available(le_client, config, domains, certname)
 
     le_client.deploy_certificate(
         domains, lineage.privkey, lineage.cert,
         lineage.chain, lineage.fullchain)
 
-    le_client.enhance_config(domains, config, lineage.chain)
+    le_client.enhance_config(domains, lineage.chain)
 
-    if len(lineage.available_versions("cert")) == 1:
+    if action in ("newcert", "reinstall",):
         display_ops.success_installation(domains)
     else:
-        display_ops.success_renewal(domains, action)
+        display_ops.success_renewal(domains)
 
     _suggest_donation_if_appropriate(config, action)
 
@@ -542,7 +607,6 @@ def _csr_obtain_cert(config, le_client):
             certr, chain, config.cert_path, config.chain_path, config.fullchain_path)
         _report_new_cert(config, cert_path, cert_fullchain)
 
-
 def obtain_cert(config, plugins, lineage=None):
     """Authenticate & obtain cert, but do not install it.
 
@@ -560,8 +624,8 @@ def obtain_cert(config, plugins, lineage=None):
 
     # SHOWTIME: Possibly obtain/renew a cert, and set action to renew | newcert | reinstall
     if config.csr is None: # the common case
-        domains = _find_domains(config, installer)
-        action, _ = _auth_from_domains(le_client, config, domains, lineage)
+        domains, certname = _find_domains_or_certname(config, installer)
+        action, _ = _auth_from_available(le_client, config, domains, certname, lineage)
     else:
         assert lineage is None, "Did not expect a CSR with a RenewableCert"
         _csr_obtain_cert(config, le_client)
@@ -590,9 +654,9 @@ def obtain_cert(config, plugins, lineage=None):
 def renew(config, unused_plugins):
     """Renew previously-obtained certificates."""
     try:
-        renewal.renew_all_lineages(config)
+        renewal.handle_renewal_request(config)
     finally:
-        hooks.post_hook(config, final=True)
+        hooks.run_saved_post_hooks()
 
 
 def setup_log_file_handler(config, logfile, fmt):
@@ -614,14 +678,9 @@ def setup_log_file_handler(config, logfile, fmt):
     return handler, log_file_path
 
 
-def _cli_log_handler(config, level, fmt):
-    if config.text_mode or config.noninteractive_mode or config.verb == "renew":
-        handler = colored_logging.StreamHandler()
-        handler.setFormatter(logging.Formatter(fmt))
-    else:
-        handler = log.DialogHandler()
-        # dialog box is small, display as less as possible
-        handler.setFormatter(logging.Formatter("%(message)s"))
+def _cli_log_handler(level, fmt):
+    handler = colored_logging.StreamHandler()
+    handler.setFormatter(logging.Formatter(fmt))
     handler.setLevel(level)
     return handler
 
@@ -641,7 +700,7 @@ def setup_logging(config):
         level = -config.verbose_count * 10
     file_handler, log_file_path = setup_log_file_handler(
         config, logfile=logfile, fmt=file_fmt)
-    cli_handler = _cli_log_handler(config, level, cli_fmt)
+    cli_handler = _cli_log_handler(level, cli_fmt)
 
     # TODO: use fileConfig?
 
@@ -665,10 +724,8 @@ def _handle_exception(exc_type, exc_value, trace, config):
     to the user. sys.exit is always called with a nonzero status.
 
     """
-    logger.debug(
-        "Exiting abnormally:%s%s",
-        os.linesep,
-        "".join(traceback.format_exception(exc_type, exc_value, trace)))
+    tb_str = "".join(traceback.format_exception(exc_type, exc_value, trace))
+    logger.debug("Exiting abnormally:%s%s", os.linesep, tb_str)
 
     if issubclass(exc_type, Exception) and (config is None or not config.debug):
         if config is None:
@@ -677,9 +734,11 @@ def _handle_exception(exc_type, exc_value, trace, config):
                 with open(logfile, "w") as logfd:
                     traceback.print_exception(
                         exc_type, exc_value, trace, file=logfd)
+                assert "--debug" not in sys.argv  # config is None if this explodes
             except:  # pylint: disable=bare-except
-                sys.exit("".join(
-                    traceback.format_exception(exc_type, exc_value, trace)))
+                sys.exit(tb_str)
+            if "--debug" in sys.argv:
+                sys.exit(tb_str)
 
         if issubclass(exc_type, errors.Error):
             sys.exit(exc_value)
@@ -687,10 +746,7 @@ def _handle_exception(exc_type, exc_value, trace, config):
             # Here we're passing a client or ACME error out to the client at the shell
             # Tell the user a bit about what happened, without overwhelming
             # them with a full traceback
-            if issubclass(exc_type, dialog.error):
-                err = exc_value.complete_message()
-            else:
-                err = traceback.format_exception_only(exc_type, exc_value)[0]
+            err = traceback.format_exception_only(exc_type, exc_value)[0]
             # Typical error from the ACME module:
             # acme.messages.Error: urn:ietf:params:acme:error:malformed :: The
             # request message was malformed :: Error creating new registration
@@ -707,8 +763,7 @@ def _handle_exception(exc_type, exc_value, trace, config):
                 msg += "logfiles in {0} for more details.".format(config.logs_dir)
             sys.exit(msg)
     else:
-        sys.exit("".join(
-            traceback.format_exception(exc_type, exc_value, trace)))
+        sys.exit(tb_str)
 
 
 def make_or_verify_core_dir(directory, mode, uid, strict):
@@ -727,6 +782,44 @@ def make_or_verify_core_dir(directory, mode, uid, strict):
     except OSError as error:
         raise errors.Error(_PERM_ERR_FMT.format(error))
 
+def make_or_verify_needed_dirs(config):
+    """Create or verify existance of config, work, or logs directories"""
+    make_or_verify_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
+                            os.geteuid(), config.strict_permissions)
+    make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
+                            os.geteuid(), config.strict_permissions)
+    # TODO: logs might contain sensitive data such as contents of the
+    # private key! #525
+    make_or_verify_core_dir(config.logs_dir, 0o700,
+                            os.geteuid(), config.strict_permissions)
+
+
+def set_displayer(config):
+    """Set the displayer"""
+    if config.quiet:
+        config.noninteractive_mode = True
+        displayer = display_util.NoninteractiveDisplay(open(os.devnull, "w"))
+    elif config.noninteractive_mode:
+        displayer = display_util.NoninteractiveDisplay(sys.stdout)
+    else:
+        displayer = display_util.FileDisplay(sys.stdout,
+                                             config.force_interactive)
+    zope.component.provideUtility(displayer)
+
+def _post_logging_setup(config, plugins, cli_args):
+    """Perform any setup or configuration tasks that require a logger."""
+
+    # This needs logging, but would otherwise be in HelpfulArgumentParser
+    if config.validate_hooks:
+        hooks.validate_hooks(config)
+
+    cli.possible_deprecation_warning(config)
+
+    logger.debug("certbot version: %s", certbot.__version__)
+    # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
+    logger.debug("Arguments: %r", cli_args)
+    logger.debug("Discovered plugins: %r", plugins)
+
 
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
@@ -738,37 +831,17 @@ def main(cli_args=sys.argv[1:]):
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
 
-    make_or_verify_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
-                            os.geteuid(), config.strict_permissions)
-    make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
-                            os.geteuid(), config.strict_permissions)
-    # TODO: logs might contain sensitive data such as contents of the
-    # private key! #525
-    make_or_verify_core_dir(config.logs_dir, 0o700,
-                            os.geteuid(), config.strict_permissions)
+    make_or_verify_needed_dirs(config)
+
     # Setup logging ASAP, otherwise "No handlers could be found for
     # logger ..." TODO: this should be done before plugins discovery
     setup_logging(config)
-    cli.possible_deprecation_warning(config)
 
-    logger.debug("certbot version: %s", certbot.__version__)
-    # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
-    logger.debug("Arguments: %r", cli_args)
-    logger.debug("Discovered plugins: %r", plugins)
+    _post_logging_setup(config, plugins, cli_args)
 
     sys.excepthook = functools.partial(_handle_exception, config=config)
 
-    # Displayer
-    if config.quiet:
-        config.noninteractive_mode = True
-        displayer = display_util.NoninteractiveDisplay(open(os.devnull, "w"))
-    elif config.noninteractive_mode:
-        displayer = display_util.NoninteractiveDisplay(sys.stdout)
-    elif config.text_mode:
-        displayer = display_util.FileDisplay(sys.stdout)
-    else:
-        displayer = display_util.NcursesDisplay()
-    zope.component.provideUtility(displayer)
+    set_displayer(config)
 
     # Reporter
     report = reporter.Reporter(config)

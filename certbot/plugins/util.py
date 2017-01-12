@@ -30,12 +30,12 @@ RENEWER_EXTRA_MSG = (
     " needing to stop and start your webserver.")
 
 
-def path_surgery(restart_cmd):
-    """Attempt to perform PATH surgery to find restart_cmd
+def path_surgery(cmd):
+    """Attempt to perform PATH surgery to find cmd
 
     Mitigates https://github.com/certbot/certbot/issues/1833
 
-    :param str restart_cmd: the command that is being searched for in the PATH
+    :param str cmd: the command that is being searched for in the PATH
 
     :returns: True if the operation succeeded, False otherwise
     """
@@ -49,14 +49,14 @@ def path_surgery(restart_cmd):
 
     if any(added):
         logger.debug("Can't find %s, attempting PATH mitigation by adding %s",
-                     restart_cmd, os.pathsep.join(added))
+                     cmd, os.pathsep.join(added))
         os.environ["PATH"] = path
 
-    if util.exe_exists(restart_cmd):
+    if util.exe_exists(cmd):
         return True
     else:
         expanded = " expanded" if any(added) else ""
-        logger.warning("Failed to find %s in%s PATH: %s", restart_cmd,
+        logger.warning("Failed to find %s in%s PATH: %s", cmd,
                        expanded, path)
         return False
 
@@ -103,7 +103,7 @@ def already_listening_socket(port, renewer=False):
                 "Port {0} is already in use by another process. This will "
                 "prevent us from binding to that port. Please stop the "
                 "process that is populating the port in question and try "
-                "again. {1}".format(port, extra), height=13)
+                "again. {1}".format(port, extra), force_interactive=True)
             return True
         finally:
             testsocket.close()
@@ -152,7 +152,7 @@ def already_listening_psutil(port, renewer=False):
                 "on TCP port {2}. This will prevent us from binding to "
                 "that port. Please stop the {0} program temporarily "
                 "and then try again.{3}".format(name, pid, port, extra),
-                height=13)
+                force_interactive=True)
             return True
     except (psutil.NoSuchProcess, psutil.AccessDenied):
         # Perhaps the result of a race where the process could have

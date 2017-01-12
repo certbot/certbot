@@ -6,7 +6,7 @@ import unittest
 import mock
 
 from certbot.plugins.util import PSUTIL_REQUIREMENT
-from certbot.tests import test_util
+from certbot.tests import util as test_util
 
 
 class PathSurgeryTest(unittest.TestCase):
@@ -51,7 +51,7 @@ class AlreadyListeningTestNoPsutil(AlreadyListeningTest):
             return super(
                 AlreadyListeningTestNoPsutil, cls)._call(*args, **kwargs)
 
-    @mock.patch("certbot.plugins.util.zope.component.getUtility")
+    @test_util.patch_get_utility()
     def test_ports_available(self, mock_getutil):
         # Ensure we don't get error
         with mock.patch("socket.socket.bind"):
@@ -59,7 +59,7 @@ class AlreadyListeningTestNoPsutil(AlreadyListeningTest):
             self.assertFalse(self._call(80, True))
             self.assertEqual(mock_getutil.call_count, 0)
 
-    @mock.patch("certbot.plugins.util.zope.component.getUtility")
+    @test_util.patch_get_utility()
     def test_ports_blocked(self, mock_getutil):
         with mock.patch("certbot.plugins.util.socket.socket.bind") as mock_bind:
             mock_bind.side_effect = socket.error
@@ -77,7 +77,7 @@ class AlreadyListeningTestPsutil(AlreadyListeningTest):
     """Tests for certbot.plugins.already_listening."""
     @mock.patch("certbot.plugins.util.psutil.net_connections")
     @mock.patch("certbot.plugins.util.psutil.Process")
-    @mock.patch("certbot.plugins.util.zope.component.getUtility")
+    @test_util.patch_get_utility()
     def test_race_condition(self, mock_get_utility, mock_process, mock_net):
         # This tests a race condition, or permission problem, or OS
         # incompatibility in which, for some reason, no process name can be
@@ -103,7 +103,7 @@ class AlreadyListeningTestPsutil(AlreadyListeningTest):
 
     @mock.patch("certbot.plugins.util.psutil.net_connections")
     @mock.patch("certbot.plugins.util.psutil.Process")
-    @mock.patch("certbot.plugins.util.zope.component.getUtility")
+    @test_util.patch_get_utility()
     def test_not_listening(self, mock_get_utility, mock_process, mock_net):
         from psutil._common import sconn
         conns = [
@@ -121,7 +121,7 @@ class AlreadyListeningTestPsutil(AlreadyListeningTest):
 
     @mock.patch("certbot.plugins.util.psutil.net_connections")
     @mock.patch("certbot.plugins.util.psutil.Process")
-    @mock.patch("certbot.plugins.util.zope.component.getUtility")
+    @test_util.patch_get_utility()
     def test_listening_ipv4(self, mock_get_utility, mock_process, mock_net):
         from psutil._common import sconn
         conns = [
@@ -142,7 +142,7 @@ class AlreadyListeningTestPsutil(AlreadyListeningTest):
 
     @mock.patch("certbot.plugins.util.psutil.net_connections")
     @mock.patch("certbot.plugins.util.psutil.Process")
-    @mock.patch("certbot.plugins.util.zope.component.getUtility")
+    @test_util.patch_get_utility()
     def test_listening_ipv6(self, mock_get_utility, mock_process, mock_net):
         from psutil._common import sconn
         conns = [

@@ -1,5 +1,6 @@
 """Renewable certificates storage."""
 import datetime
+import glob
 import logging
 import os
 import re
@@ -7,6 +8,7 @@ import re
 import configobj
 import parsedatetime
 import pytz
+import shutil
 import six
 
 import certbot
@@ -20,8 +22,21 @@ from certbot import util
 logger = logging.getLogger(__name__)
 
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
+README = "README"
 CURRENT_VERSION = util.get_strict_version(certbot.__version__)
 
+
+def renewal_conf_files(config):
+    """Return /path/to/*.conf in the renewal conf directory"""
+    return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
+
+def renewal_file_for_certname(config, certname):
+    """Return /path/to/certname.conf in the renewal conf directory"""
+    path = os.path.join(config.renewal_configs_dir, "{0}.conf".format(certname))
+    if not os.path.exists(path):
+        raise errors.CertStorageError("No certificate found with name {0} (expected "
+            "{1}).".format(certname, path))
+    return path
 
 def config_with_defaults(config=None):
     """Merge supplied config, if provided, on top of builtin defaults."""
@@ -54,11 +69,12 @@ def add_time_interval(base_time, interval, textparser=parsedatetime.Calendar()):
     return textparser.parseDT(interval, base_time, tzinfo=tzinfo)[0]
 
 
-def write_renewal_config(o_filename, n_filename, target, relevant_data):
+def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_data):
     """Writes a renewal config file with the specified name and values.
 
     :param str o_filename: Absolute path to the previous version of config file
     :param str n_filename: Absolute path to the new destination of config file
+    :param str archive_dir: Absolute path to the archive directory
     :param dict target: Maps ALL_FOUR to their symlink paths
     :param dict relevant_data: Renewal configuration options to save
 
@@ -68,6 +84,7 @@ def write_renewal_config(o_filename, n_filename, target, relevant_data):
     """
     config = configobj.ConfigObj(o_filename)
     config["version"] = certbot.__version__
+    config["archive_dir"] = archive_dir
     for kind in ALL_FOUR:
         config[kind] = target[kind]
 
@@ -94,21 +111,38 @@ def write_renewal_config(o_filename, n_filename, target, relevant_data):
         config.write(outfile=f)
     return config
 
+def rename_renewal_config(prev_name, new_name, cli_config):
+    """Renames cli_config.certname's config to cli_config.new_certname.
 
-def update_configuration(lineagename, target, cli_config):
+    :param .NamespaceConfig cli_config: parsed command line
+        arguments
+    """
+    prev_filename = renewal_filename_for_lineagename(cli_config, prev_name)
+    new_filename = renewal_filename_for_lineagename(cli_config, new_name)
+    if os.path.exists(new_filename):
+        raise errors.ConfigurationError("The new certificate name "
+            "is already in use.")
+    try:
+        os.rename(prev_filename, new_filename)
+    except OSError:
+        raise errors.ConfigurationError("Please specify a valid filename "
+            "for the new certificate name.")
+
+
+def update_configuration(lineagename, archive_dir, target, cli_config):
     """Modifies lineagename's config to contain the specified values.
 
     :param str lineagename: Name of the lineage being modified
+    :param str archive_dir: Absolute path to the archive directory
     :param dict target: Maps ALL_FOUR to their symlink paths
-    :param .RenewerConfiguration cli_config: parsed command line
+    :param .NamespaceConfig cli_config: parsed command line
         arguments
 
     :returns: Configuration object for the updated config file
     :rtype: configobj.ConfigObj
 
     """
-    config_filename = os.path.join(
-        cli_config.renewal_configs_dir, lineagename) + ".conf"
+    config_filename = renewal_filename_for_lineagename(cli_config, lineagename)
     temp_filename = config_filename + ".new"
 
     # If an existing tempfile exists, delete it
@@ -117,7 +151,7 @@ def update_configuration(lineagename, target, cli_config):
 
     # Save only the config items that are relevant to renewal
     values = relevant_values(vars(cli_config.namespace))
-    write_renewal_config(config_filename, temp_filename, target, values)
+    write_renewal_config(config_filename, temp_filename, archive_dir, target, values)
     os.rename(temp_filename, config_filename)
 
     return configobj.ConfigObj(config_filename)
@@ -149,9 +183,9 @@ def _relevant(option):
     from certbot import renewal
     from certbot.plugins import disco as plugins_disco
     plugins = list(plugins_disco.PluginsRegistry.find_all())
-    return (option in renewal.STR_CONFIG_ITEMS
-            or option in renewal.INT_CONFIG_ITEMS
-            or any(option.startswith(x + "_") for x in plugins))
+
+    return (option in renewal.CONFIG_ITEMS or
+            any(option.startswith(x + "_") for x in plugins))
 
 
 def relevant_values(all_values):
@@ -168,8 +202,109 @@ def relevant_values(all_values):
         for option, value in six.iteritems(all_values)
         if _relevant(option) and cli.option_was_set(option, value))
 
+def lineagename_for_filename(config_filename):
+    """Returns the lineagename for a configuration filename.
+    """
+    if not config_filename.endswith(".conf"):
+        raise errors.CertStorageError(
+            "renewal config file name must end in .conf")
+    return os.path.basename(config_filename[:-len(".conf")])
 
-class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
+def renewal_filename_for_lineagename(config, lineagename):
+    """Returns the lineagename for a configuration filename.
+    """
+    return os.path.join(config.renewal_configs_dir, lineagename) + ".conf"
+
+def _relpath_from_file(archive_dir, from_file):
+    """Path to a directory from a file"""
+    return os.path.relpath(archive_dir, os.path.dirname(from_file))
+
+def _full_archive_path(config_obj, cli_config, lineagename):
+    """Returns the full archive path for a lineagename
+
+    Uses cli_config to determine archive path if not available from config_obj.
+
+    :param configobj.ConfigObj config_obj: Renewal conf file contents (can be None)
+    :param configuration.NamespaceConfig cli_config: Main config file
+    :param str lineagename: Certificate name
+    """
+    if config_obj and "archive_dir" in config_obj:
+        return config_obj["archive_dir"]
+    else:
+        return os.path.join(cli_config.default_archive_dir, lineagename)
+
+def _full_live_path(cli_config, lineagename):
+    """Returns the full default live path for a lineagename"""
+    return os.path.join(cli_config.live_dir, lineagename)
+
+def delete_files(config, certname):
+    """Delete all files related to the certificate.
+
+    If some files are not found, ignore them and continue.
+    """
+    renewal_filename = renewal_file_for_certname(config, certname)
+    # file exists
+    full_default_archive_dir = _full_archive_path(None, config, certname)
+    full_default_live_dir = _full_live_path(config, certname)
+    try:
+        renewal_config = configobj.ConfigObj(renewal_filename)
+    except configobj.ConfigObjError:
+        # config is corrupted
+        logger.warning("Could not parse %s. You may wish to manually "
+            "delete the contents of %s and %s.", renewal_filename,
+            full_default_live_dir, full_default_archive_dir)
+        raise errors.CertStorageError(
+            "error parsing {0}".format(renewal_filename))
+    finally:
+        # we couldn't read it, but let's at least delete it
+        # if this was going to fail, it already would have.
+        os.remove(renewal_filename)
+        logger.debug("Removed %s", renewal_filename)
+
+    # cert files and (hopefully) live directory
+    # it's not guaranteed that the files are in our default storage
+    # structure. so, first delete the cert files.
+    directory_names = set()
+    for kind in ALL_FOUR:
+        link = renewal_config.get(kind)
+        try:
+            os.remove(link)
+            logger.debug("Removed %s", link)
+        except OSError:
+            logger.debug("Unable to delete %s", link)
+        directory = os.path.dirname(link)
+        directory_names.add(directory)
+
+    # if all four were in the same directory, and the only thing left
+    # is the README file (or nothing), delete that directory.
+    # this will be wrong in very few but some cases.
+    if len(directory_names) == 1:
+        # delete the README file
+        directory = directory_names.pop()
+        readme_path = os.path.join(directory, README)
+        try:
+            os.remove(readme_path)
+            logger.debug("Removed %s", readme_path)
+        except OSError:
+            logger.debug("Unable to delete %s", readme_path)
+        # if it's now empty, delete the directory
+        try:
+            os.rmdir(directory) # only removes empty directories
+            logger.debug("Removed %s", directory)
+        except OSError:
+            logger.debug("Unable to remove %s; may not be empty.", directory)
+
+    # archive directory
+    try:
+        archive_path = _full_archive_path(renewal_config, config, certname)
+        shutil.rmtree(archive_path)
+        logger.debug("Removed %s", archive_path)
+    except OSError:
+        logger.debug("Unable to remove %s", archive_path)
+
+
+class RenewableCert(object):
+    # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Renewable certificate.
 
     Represents a lineage of certificates that is under the management of
@@ -204,23 +339,19 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         renewal configuration file and/or systemwide defaults.
 
     """
-    def __init__(self, config_filename, cli_config):
+    def __init__(self, config_filename, cli_config, update_symlinks=False):
         """Instantiate a RenewableCert object from an existing lineage.
 
         :param str config_filename: the path to the renewal config file
             that defines this lineage.
-        :param .RenewerConfiguration: parsed command line arguments
+        :param .NamespaceConfig: parsed command line arguments
 
         :raises .CertStorageError: if the configuration file's name didn't end
             in ".conf", or the file is missing or broken.
 
         """
         self.cli_config = cli_config
-        if not config_filename.endswith(".conf"):
-            raise errors.CertStorageError(
-                "renewal config file name must end in .conf")
-        self.lineagename = os.path.basename(
-            config_filename[:-len(".conf")])
+        self.lineagename = lineagename_for_filename(config_filename)
 
         # self.configuration should be used to read parameters that
         # may have been chosen based on default values from the
@@ -256,7 +387,40 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         self.live_dir = os.path.dirname(self.cert)
 
         self._fix_symlinks()
+        if update_symlinks:
+            self._update_symlinks()
         self._check_symlinks()
+
+    @property
+    def target_expiry(self):
+        """The current target certificate's expiration datetime
+
+        :returns: Expiration datetime of the current target certificate
+        :rtype: :class:`datetime.datetime`
+        """
+        return crypto_util.notAfter(self.current_target("cert"))
+
+    @property
+    def archive_dir(self):
+        """Returns the default or specified archive directory"""
+        return _full_archive_path(self.configuration,
+            self.cli_config, self.lineagename)
+
+    def relative_archive_dir(self, from_file):
+        """Returns the default or specified archive directory as a relative path
+
+        Used for creating symbolic links.
+        """
+        return _relpath_from_file(self.archive_dir, from_file)
+
+    @property
+    def is_test_cert(self):
+        """Returns true if this is a test cert from a staging server."""
+        server = self.configuration["renewalparams"].get("server", None)
+        if server:
+            return util.is_staging(server)
+        else:
+            return False
 
     def _check_symlinks(self):
         """Raises an exception if a symlink doesn't exist"""
@@ -269,6 +433,17 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             if not os.path.exists(target):
                 raise errors.CertStorageError("target {0} of symlink {1} does "
                                               "not exist".format(target, link))
+
+    def _update_symlinks(self):
+        """Updates symlinks to use archive_dir"""
+        for kind in ALL_FOUR:
+            link = getattr(self, kind)
+            previous_link = get_link_target(link)
+            new_link = os.path.join(self.relative_archive_dir(link),
+                os.path.basename(previous_link))
+
+            os.unlink(link)
+            os.symlink(new_link, link)
 
     def _consistent(self):
         """Are the files associated with this lineage self-consistent?
@@ -297,16 +472,16 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
             # Each element's link must point within the cert lineage's
             # directory within the official archive directory
-            desired_directory = os.path.join(
-                self.cli_config.archive_dir, self.lineagename)
-            if not os.path.samefile(os.path.dirname(target),
-                                    desired_directory):
+            if not os.path.samefile(os.path.dirname(target), self.archive_dir):
                 logger.debug("Element's link does not point within the "
                              "cert lineage's directory within the "
                              "official archive directory. Link: %s, "
                              "target directory: %s, "
-                             "archive directory: %s.",
-                             link, os.path.dirname(target), desired_directory)
+                             "archive directory: %s. If you've specified "
+                             "the archive directory in the renewal configuration "
+                             "file, you may need to update links by running "
+                             "certbot update_symlinks.",
+                             link, os.path.dirname(target), self.archive_dir)
                 return False
 
             # The link must point to a file that exists
@@ -647,9 +822,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             if self.has_pending_deployment():
                 interval = self.configuration.get("deploy_before_expiry",
                                                   "5 days")
-                expiry = crypto_util.notAfter(self.current_target("cert"))
                 now = pytz.UTC.fromutc(datetime.datetime.utcnow())
-                if expiry < add_time_interval(now, interval):
+                if self.target_expiry < add_time_interval(now, interval):
                     return True
         return False
 
@@ -750,7 +924,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :param str cert: the initial certificate version in PEM format
         :param str privkey: the private key in PEM format
         :param str chain: the certificate chain in PEM format
-        :param .RenewerConfiguration cli_config: parsed command line
+        :param .NamespaceConfig cli_config: parsed command line
             arguments
 
         :returns: the newly-created RenewalCert object
@@ -759,23 +933,20 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         """
 
         # Examine the configuration and find the new lineage's name
-        for i in (cli_config.renewal_configs_dir, cli_config.archive_dir,
+        for i in (cli_config.renewal_configs_dir, cli_config.default_archive_dir,
                   cli_config.live_dir):
             if not os.path.exists(i):
                 os.makedirs(i, 0o700)
                 logger.debug("Creating directory %s.", i)
         config_file, config_filename = util.unique_lineage_name(
             cli_config.renewal_configs_dir, lineagename)
-        if not config_filename.endswith(".conf"):
-            raise errors.CertStorageError(
-                "renewal config file name must end in .conf")
 
         # Determine where on disk everything will go
         # lineagename will now potentially be modified based on which
         # renewal configuration file could actually be created
-        lineagename = os.path.basename(config_filename)[:-len(".conf")]
-        archive = os.path.join(cli_config.archive_dir, lineagename)
-        live_dir = os.path.join(cli_config.live_dir, lineagename)
+        lineagename = lineagename_for_filename(config_filename)
+        archive = _full_archive_path(None, cli_config, lineagename)
+        live_dir = _full_live_path(cli_config, lineagename)
         if os.path.exists(archive):
             raise errors.CertStorageError(
                 "archive directory exists for " + lineagename)
@@ -786,29 +957,43 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         os.mkdir(live_dir)
         logger.debug("Archive directory %s and live "
                      "directory %s created.", archive, live_dir)
-        relative_archive = os.path.join("..", "..", "archive", lineagename)
 
         # Put the data into the appropriate files on disk
         target = dict([(kind, os.path.join(live_dir, kind + ".pem"))
                        for kind in ALL_FOUR])
         for kind in ALL_FOUR:
-            os.symlink(os.path.join(relative_archive, kind + "1.pem"),
+            os.symlink(os.path.join(_relpath_from_file(archive, target[kind]), kind + "1.pem"),
                        target[kind])
-        with open(target["cert"], "w") as f:
+        with open(target["cert"], "wb") as f:
             logger.debug("Writing certificate to %s.", target["cert"])
             f.write(cert)
-        with open(target["privkey"], "w") as f:
+        with open(target["privkey"], "wb") as f:
             logger.debug("Writing private key to %s.", target["privkey"])
             f.write(privkey)
             # XXX: Let's make sure to get the file permissions right here
-        with open(target["chain"], "w") as f:
+        with open(target["chain"], "wb") as f:
             logger.debug("Writing chain to %s.", target["chain"])
             f.write(chain)
-        with open(target["fullchain"], "w") as f:
+        with open(target["fullchain"], "wb") as f:
             # assumes that OpenSSL.crypto.dump_certificate includes
             # ending newline character
             logger.debug("Writing full chain to %s.", target["fullchain"])
             f.write(cert + chain)
+
+        # Write a README file to the live directory
+        readme_path = os.path.join(live_dir, README)
+        with open(readme_path, "w") as f:
+            logger.debug("Writing README to %s.", readme_path)
+            f.write("This directory contains your keys and certificates.\n\n"
+                    "`privkey.pem`  : the private key for your certificate.\n"
+                    "`fullchain.pem`: the certificate file used in most server software.\n"
+                    "`chain.pem`    : used for OCSP stapling in Nginx >=1.3.7.\n"
+                    "`cert.pem`     : will break many server configurations, and "
+                                        "should not be used\n"
+                    "                 without reading further documentation (see link below).\n\n"
+                    "We recommend not moving these files. For more information, see the Certbot\n"
+                    "User Guide at https://certbot.eff.org/docs/using.html#where-are-my-"
+                                        "certificates.\n")
 
         # Document what we've done in a new renewal config file
         config_file.close()
@@ -816,7 +1001,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # Save only the config items that are relevant to renewal
         values = relevant_values(vars(cli_config.namespace))
 
-        new_config = write_renewal_config(config_filename, config_filename, target, values)
+        new_config = write_renewal_config(config_filename, config_filename, archive,
+            target, values)
         return cls(new_config.filename, cli_config)
 
     def save_successor(self, prior_version, new_cert,
@@ -836,7 +1022,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :param str new_privkey: the new private key, in PEM format,
             or ``None``, if the private key has not changed
         :param str new_chain: the new chain, in PEM format
-        :param .RenewerConfiguration cli_config: parsed command line
+        :param .NamespaceConfig cli_config: parsed command line
             arguments
 
         :returns: the new version number that was created
@@ -851,14 +1037,9 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         self.cli_config = cli_config
         target_version = self.next_free_version()
-        archive = self.cli_config.archive_dir
-        # XXX if anyone ever moves a renewal configuration file, this will
-        # break... perhaps prefix should be the dirname of the previous
-        # cert.pem?
-        prefix = os.path.join(archive, self.lineagename)
         target = dict(
             [(kind,
-              os.path.join(prefix, "{0}{1}.pem".format(kind, target_version)))
+              os.path.join(self.archive_dir, "{0}{1}.pem".format(kind, target_version)))
              for kind in ALL_FOUR])
 
         # Distinguish the cases where the privkey has changed and where it
@@ -868,7 +1049,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             # The behavior below keeps the prior key by creating a new
             # symlink to the old key or the target of the old key symlink.
             old_privkey = os.path.join(
-                prefix, "privkey{0}.pem".format(prior_version))
+                self.archive_dir, "privkey{0}.pem".format(prior_version))
             if os.path.islink(old_privkey):
                 old_privkey = os.readlink(old_privkey)
             else:
@@ -894,7 +1075,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         symlinks = dict((kind, self.configuration[kind]) for kind in ALL_FOUR)
         # Update renewal config file
         self.configfile = update_configuration(
-            self.lineagename, symlinks, cli_config)
+            self.lineagename, self.archive_dir, symlinks, cli_config)
         self.configuration = config_with_defaults(self.configfile)
 
         return target_version

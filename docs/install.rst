@@ -73,6 +73,23 @@ For full command line help, you can type::
 
   ./certbot-auto --help all
 
+Problems with Python virtual environment
+----------------------------------------
+
+On a low memory system such as VPS with only 256MB of RAM, the required dependencies of Certbot will failed to build.
+This can be identified if the pip outputs contains something like ``internal compiler error: Killed (program cc1)``.
+You can workaround this restriction by creating a temporary swapfile::
+
+  user@webserver:~$ sudo fallocate -l 1G /tmp/swapfile
+  user@webserver:~$ sudo chmod 600 /tmp/swapfile
+  user@webserver:~$ sudo mkswap /tmp/swapfile
+  user@webserver:~$ sudo swapon /tmp/swapfile
+
+Disable and remove the swapfile once the virtual enviroment is constructed::
+
+  user@webserver:~$ sudo swapoff /tmp/swapfile
+  user@webserver:~$ sudo rm /tmp/swapfile
+
 Running with Docker
 -------------------
 
@@ -114,7 +131,7 @@ For more information about the layout
 of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`.
 
 .. _Docker: https://docker.com
-.. _`install Docker`: https://docs.docker.com/userguide/
+.. _`install Docker`: https://docs.docker.com/engine/installation/
 
 Operating System Packages
 -------------------------
@@ -153,13 +170,13 @@ repo, if you have not already done so. Then run:
 
 .. code-block:: shell
 
-   sudo apt-get install letsencrypt python-letsencrypt-apache -t jessie-backports
+   sudo apt-get install certbot python-certbot-apache -t jessie-backports
 
 **Fedora**
 
 .. code-block:: shell
 
-    sudo dnf install letsencrypt
+    sudo dnf install certbot python2-certbot-apache
 
 **Gentoo**
 
@@ -168,8 +185,8 @@ want to use the Apache plugin, it has to be installed separately:
 
 .. code-block:: shell
 
-   emerge -av app-crypt/letsencrypt
-   emerge -av app-crypt/letsencrypt-apache
+   emerge -av app-crypt/certbot
+   emerge -av app-crypt/certbot-apache
 
 When using the Apache plugin, you will run into a "cannot find a cert or key
 directive" error if you're sporting the default Gentoo ``httpd.conf``.

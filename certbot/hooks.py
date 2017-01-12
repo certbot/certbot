@@ -7,21 +7,35 @@ import os
 from subprocess import Popen, PIPE
 
 from certbot import errors
+from certbot import util
+
+from certbot.plugins import util as plug_util
 
 logger = logging.getLogger(__name__)
 
 def validate_hooks(config):
     """Check hook commands are executable."""
-    _validate_hook(config.pre_hook, "pre")
-    _validate_hook(config.post_hook, "post")
-    _validate_hook(config.renew_hook, "renew")
+    validate_hook(config.pre_hook, "pre")
+    validate_hook(config.post_hook, "post")
+    validate_hook(config.renew_hook, "renew")
 
 def _prog(shell_cmd):
-    """Extract the program run by a shell command"""
-    cmd = _which(shell_cmd)
-    return os.path.basename(cmd) if cmd else None
+    """Extract the program run by a shell command.
 
-def _validate_hook(shell_cmd, hook_name):
+    :param str shell_cmd: command to be executed
+
+    :returns: basename of command or None if the command isn't found
+    :rtype: str or None
+
+    """
+    if not util.exe_exists(shell_cmd):
+        plug_util.path_surgery(shell_cmd)
+        if not util.exe_exists(shell_cmd):
+            return None
+    return os.path.basename(shell_cmd)
+
+
+def validate_hook(shell_cmd, hook_name):
     """Check that a command provided as a hook is plausibly executable.
 
     :raises .errors.HookCommandNotFound: if the command is not found
@@ -36,68 +50,79 @@ def _validate_hook(shell_cmd, hook_name):
 
 def pre_hook(config):
     "Run pre-hook if it's defined and hasn't been run."
-    if config.pre_hook and not pre_hook.already:
-        logger.info("Running pre-hook command: %s", config.pre_hook)
-        _run_hook(config.pre_hook)
-    pre_hook.already = True
+    cmd = config.pre_hook
+    if cmd and cmd not in pre_hook.already:
+        logger.info("Running pre-hook command: %s", cmd)
+        _run_hook(cmd)
+        pre_hook.already.add(cmd)
+    elif cmd:
+        logger.info("Pre-hook command already run, skipping: %s", cmd)
 
-pre_hook.already = False
+pre_hook.already = set()
 
-def post_hook(config, final=False):
+
+def post_hook(config):
     """Run post hook if defined.
 
     If the verb is renew, we might have more certs to renew, so we wait until
-    we're called with final=True before actually doing anything.
+    run_saved_post_hooks() is called.
     """
-    if config.post_hook:
-        if not pre_hook.already:
-            logger.info("No renewals attempted, so not running post-hook")
-            if config.verb != "renew":
-                logger.warning("Sanity failure in renewal hooks")
-            return
-        if final or config.verb != "renew":
-            logger.info("Running post-hook command: %s", config.post_hook)
-            _run_hook(config.post_hook)
+
+    cmd = config.post_hook
+    # In the "renew" case, we save these up to run at the end
+    if config.verb == "renew":
+        if cmd and cmd not in post_hook.eventually:
+            post_hook.eventually.append(cmd)
+    # certonly / run
+    elif cmd:
+        logger.info("Running post-hook command: %s", cmd)
+        _run_hook(cmd)
+
+post_hook.eventually = []
+
+def run_saved_post_hooks():
+    """Run any post hooks that were saved up in the course of the 'renew' verb"""
+    for cmd in post_hook.eventually:
+        logger.info("Running post-hook command: %s", cmd)
+        _run_hook(cmd)
+
 
 def renew_hook(config, domains, lineage_path):
-    "Run post-renewal hook if defined."
+    """Run post-renewal hook if defined."""
     if config.renew_hook:
         if not config.dry_run:
             os.environ["RENEWED_DOMAINS"] = " ".join(domains)
             os.environ["RENEWED_LINEAGE"] = lineage_path
+            logger.info("Running renew-hook command: %s", config.renew_hook)
             _run_hook(config.renew_hook)
         else:
             logger.warning("Dry run: skipping renewal hook command: %s", config.renew_hook)
+
 
 def _run_hook(shell_cmd):
     """Run a hook command.
 
     :returns: stderr if there was any"""
 
-    cmd = Popen(shell_cmd, shell=True, stdout=PIPE, stderr=PIPE, stdin=PIPE)
-    _out, err = cmd.communicate()
+    err, _ = execute(shell_cmd)
+    return err
+
+
+def execute(shell_cmd):
+    """Run a command.
+
+    :returns: `tuple` (`str` stderr, `str` stdout)"""
+
+    # universal_newlines causes Popen.communicate()
+    # to return str objects instead of bytes in Python 3
+    cmd = Popen(shell_cmd, shell=True, stdout=PIPE,
+                stderr=PIPE, universal_newlines=True)
+    out, err = cmd.communicate()
     if cmd.returncode != 0:
-        logger.error('Hook command "%s" returned error code %d', shell_cmd, cmd.returncode)
+        logger.error('Hook command "%s" returned error code %d',
+                     shell_cmd, cmd.returncode)
     if err:
-        logger.error('Error output from %s:\n%s', _prog(shell_cmd), err)
+        base_cmd = os.path.basename(shell_cmd.split(None, 1)[0])
+        logger.error('Error output from %s:\n%s', base_cmd, err)
+    return (err, out)
 
-def _is_exe(fpath):
-    return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-
-def _which(program):
-    """Test if program is in the path."""
-    # Borrowed from:
-    # https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
-    # XXX May need more porting to handle .exe extensions on Windows
-
-    fpath, _fname = os.path.split(program)
-    if fpath:
-        if _is_exe(program):
-            return program
-    else:
-        for path in os.environ["PATH"].split(os.pathsep):
-            exe_file = os.path.join(path, program)
-            if _is_exe(exe_file):
-                return exe_file
-
-    return None

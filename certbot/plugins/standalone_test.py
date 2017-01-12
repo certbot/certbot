@@ -15,7 +15,7 @@ from certbot import errors
 from certbot import interfaces
 
 from certbot.tests import acme_util
-from certbot.tests import test_util
+from certbot.tests import util as test_util
 
 
 class ServerManagerTest(unittest.TestCase):
@@ -169,7 +169,7 @@ class AuthenticatorTest(unittest.TestCase):
             mock_util.already_listening.assert_called_once_with(port, False)
             mock_util.already_listening.reset_mock()
 
-    @mock.patch("certbot.plugins.standalone.zope.component.getUtility")
+    @test_util.patch_get_utility()
     def test_perform(self, unused_mock_get_utility):
         achalls = self._get_achalls()
 
@@ -177,7 +177,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(mock.sentinel.responses, self.auth.perform(achalls))
         self.auth.perform2.assert_called_once_with(achalls)
 
-    @mock.patch("certbot.plugins.standalone.zope.component.getUtility")
+    @test_util.patch_get_utility()
     def _test_perform_bind_errors(self, errno, achalls, mock_get_utility):
         port = get_open_port()
         def _perform2(unused_achalls):

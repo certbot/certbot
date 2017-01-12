@@ -1,5 +1,6 @@
 """Test the helper objects in certbot_nginx.obj."""
 import unittest
+import itertools
 
 
 class AddrTest(unittest.TestCase):
@@ -72,6 +73,24 @@ class AddrTest(unittest.TestCase):
         self.assertNotEqual(self.addr1, self.addr2)
         self.assertFalse(self.addr1 == 3333)
 
+    def test_equivalent_any_addresses(self):
+        from certbot_nginx.obj import Addr
+        any_addresses = ("0.0.0.0:80 default_server ssl",
+                         "80 default_server ssl",
+                         "*:80 default_server ssl")
+        for first, second in itertools.combinations(any_addresses, 2):
+            self.assertEqual(Addr.fromstring(first), Addr.fromstring(second))
+
+        # Also, make sure ports are checked.
+        self.assertNotEqual(Addr.fromstring(any_addresses[0]),
+                            Addr.fromstring("0.0.0.0:443 default_server ssl"))
+
+        # And they aren't equivalent to a specified address.
+        for any_address in any_addresses:
+            self.assertNotEqual(
+                Addr.fromstring("192.168.1.2:80 default_server ssl"),
+                Addr.fromstring(any_address))
+
     def test_set_inclusion(self):
         from certbot_nginx.obj import Addr
         set_a = set([self.addr1, self.addr2])
@@ -87,10 +106,43 @@ class VirtualHostTest(unittest.TestCase):
     def setUp(self):
         from certbot_nginx.obj import VirtualHost
         from certbot_nginx.obj import Addr
+        raw1 = [
+            ['listen', '69.50.225.155:9000'],
+            [['if', '($scheme != "https") '],
+                [['return', '301 https://$host$request_uri']]
+            ],
+            ['#', ' managed by Certbot']
+        ]
         self.vhost1 = VirtualHost(
             "filep",
             set([Addr.fromstring("localhost")]), False, False,
-            set(['localhost']), [], [])
+            set(['localhost']), raw1, [])
+        raw2 = [
+            ['listen', '69.50.225.155:9000'],
+            [['if', '($scheme != "https") '],
+                [['return', '301 https://$host$request_uri']]
+            ]
+        ]
+        self.vhost2 = VirtualHost(
+            "filep",
+            set([Addr.fromstring("localhost")]), False, False,
+            set(['localhost']), raw2, [])
+        raw3 = [
+            ['listen', '69.50.225.155:9000'],
+            ['rewrite', '^(.*)$ $scheme://www.domain.com$1 permanent;']
+        ]
+        self.vhost3 = VirtualHost(
+            "filep",
+            set([Addr.fromstring("localhost")]), False, False,
+            set(['localhost']), raw3, [])
+        raw4 = [
+            ['listen', '69.50.225.155:9000'],
+            ['server_name', 'return.com']
+        ]
+        self.vhost4 = VirtualHost(
+            "filp",
+            set([Addr.fromstring("localhost")]), False, False,
+            set(['localhost']), raw4, [])
 
     def test_eq(self):
         from certbot_nginx.obj import Addr
@@ -110,6 +162,47 @@ class VirtualHostTest(unittest.TestCase):
                                  'enabled: False'])
         self.assertEqual(stringified, str(self.vhost1))
 
+    def test_has_redirect(self):
+        self.assertTrue(self.vhost1.has_redirect())
+        self.assertTrue(self.vhost2.has_redirect())
+        self.assertTrue(self.vhost3.has_redirect())
+        self.assertFalse(self.vhost4.has_redirect())
+
+    def test_contains_list(self):
+        from certbot_nginx.obj import VirtualHost
+        from certbot_nginx.obj import Addr
+        from certbot_nginx.configurator import TEST_REDIRECT_BLOCK
+        test_needle = TEST_REDIRECT_BLOCK
+        test_haystack = [['listen', '80'], ['root', '/var/www/html'],
+            ['index', 'index.html index.htm index.nginx-debian.html'],
+            ['server_name', 'two.functorkitten.xyz'], ['listen', '443 ssl'],
+            ['#', ' managed by Certbot'],
+            ['ssl_certificate', '/etc/letsencrypt/live/two.functorkitten.xyz/fullchain.pem'],
+            ['#', ' managed by Certbot'],
+            ['ssl_certificate_key', '/etc/letsencrypt/live/two.functorkitten.xyz/privkey.pem'],
+            ['#', ' managed by Certbot'],
+            [['if', '($scheme != "https")'], [['return', '301 https://$host$request_uri']]],
+            ['#', ' managed by Certbot'], []]
+        vhost_haystack = VirtualHost(
+            "filp",
+            set([Addr.fromstring("localhost")]), False, False,
+            set(['localhost']), test_haystack, [])
+        test_bad_haystack = [['listen', '80'], ['root', '/var/www/html'],
+            ['index', 'index.html index.htm index.nginx-debian.html'],
+            ['server_name', 'two.functorkitten.xyz'], ['listen', '443 ssl'],
+            ['#', ' managed by Certbot'],
+            ['ssl_certificate', '/etc/letsencrypt/live/two.functorkitten.xyz/fullchain.pem'],
+            ['#', ' managed by Certbot'],
+            ['ssl_certificate_key', '/etc/letsencrypt/live/two.functorkitten.xyz/privkey.pem'],
+            ['#', ' managed by Certbot'],
+            [['if', '($scheme != "https")'], [['return', '302 https://$host$request_uri']]],
+            ['#', ' managed by Certbot'], []]
+        vhost_bad_haystack = VirtualHost(
+            "filp",
+            set([Addr.fromstring("localhost")]), False, False,
+            set(['localhost']), test_bad_haystack, [])
+        self.assertTrue(vhost_haystack.contains_list(test_needle))
+        self.assertFalse(vhost_bad_haystack.contains_list(test_needle))
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
