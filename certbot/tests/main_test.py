@@ -874,8 +874,9 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         test_util.make_lineage(self, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "--post-hook=no-such-command",
                 "--disable-hook-validation"]
-        self._test_renewal_common(True, [], args=args, should_renew=True,
-                                  error_expected=False)
+        with mock.patch("certbot.hooks.post_hook"):
+            self._test_renewal_common(True, [], args=args, should_renew=True,
+                                      error_expected=False)
 
     @mock.patch("certbot.cli.set_by_cli")
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
