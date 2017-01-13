@@ -12,6 +12,7 @@ import datetime
 import pytz
 
 import six
+from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import jose
 
@@ -434,10 +435,9 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                               '--logs-dir', self.logs_dir, '--text']
 
     def tearDown(self):
-        shutil.rmtree(self.tmp_dir)
         # Reset globals in cli
-        # pylint: disable=protected-access
-        cli._parser = cli.set_by_cli.detector = None
+        reload_module(cli)
+        shutil.rmtree(self.tmp_dir)
 
     def _call(self, args, stdout=None):
         "Run the cli with output streams and actual client mocked out"

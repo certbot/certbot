@@ -5,18 +5,14 @@ import unittest
 import os
 import tempfile
 
-import six
 import mock
+import six
 from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import cli
 from certbot import constants
 from certbot import errors
 from certbot.plugins import disco
-
-def reset_set_by_cli():
-    '''Reset the state of the `set_by_cli` function'''
-    cli.set_by_cli.detector = None
 
 class TestReadFile(unittest.TestCase):
     '''Test cli.read_file'''
@@ -49,7 +45,7 @@ class ParseTest(unittest.TestCase):
         cls.parse = functools.partial(cli.prepare_and_parse_args, cls.plugins)
 
     def setUp(self):
-        reset_set_by_cli()
+        reload_module(cli)
 
     def _help_output(self, args):
         "Run a command, and return the ouput string for scrutiny"
