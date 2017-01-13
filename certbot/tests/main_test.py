@@ -1,4 +1,5 @@
 """Tests for certbot.main."""
+# pylint: disable=too-many-lines
 from __future__ import print_function
 
 import itertools
