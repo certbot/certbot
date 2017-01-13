@@ -398,7 +398,11 @@ class SuccessRevocationTest(unittest.TestCase):
         mock_util().notification.return_value = None
         path = "/path/to/cert.pem"
         self._call(path)
-        mock_util().notification.assert_called_once()
+        mock_util().notification.assert_called_once_with(
+            "Congratulations! You have successfully revoked the certificate "
+            "that was located at {0}{1}{1}".format(
+                path,
+                os.linesep), pause=False)
         self.assertTrue(path in mock_util().notification.call_args[0][0])
 
 if __name__ == "__main__":
