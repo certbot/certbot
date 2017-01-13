@@ -1163,61 +1163,68 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                         self.assertTrue(
                             email in mock_utility().add_message.call_args[0][0])
 
-    @mock.patch('certbot.main._determine_account')
-    @mock.patch('certbot.main.account')
-    @mock.patch('certbot.main.client')
-    @mock.patch('certbot.main.zope.component.getUtility')
-    def test_registration_deactivate(self, mock_utility, mocked_client,
-                                     mocked_account, mocked_det):
-        mocked_storage = mock.MagicMock()
-        mocked_account.AccountFileStorage.return_value = mocked_storage
-        mocked_storage.find_all.return_value = ["an account"]
-        mocked_det.return_value = (mock.MagicMock(), "foo")
-        acme_client = mock.MagicMock()
-        mocked_client.Client.return_value = acme_client
 
-        x = self._call_no_clientmock(["register", "--deactivate"])
-        self.assertTrue(x[0] is None)
-        self.assertTrue(acme_client.acme.deactivate_registration.called)
-        m = "Account deactivated."
-        self.assertTrue(m in mock_utility().add_message.call_args[0][0])
+class UnregisterTest(unittest.TestCase):
+    def setUp(self):
+        self.patchers = {
+            '_determine_account': mock.patch('certbot.main._determine_account'),
+            'account': mock.patch('certbot.main.account'),
+            'client': mock.patch('certbot.main.client'),
+            'getUtility': mock.patch('certbot.main.zope.component.getUtility')}
+        self.mocks = dict((k, v.start()) for k, v in self.patchers.items())
 
-    @mock.patch('certbot.main._determine_account')
-    @mock.patch('certbot.main.account')
-    @mock.patch('certbot.main.client')
-    def test_registration_deactivate_no_account(self, mocked_client,
-                                                mocked_account, mocked_det):
-        mocked_storage = mock.MagicMock()
-        mocked_account.AccountFileStorage.return_value = mocked_storage
-        mocked_storage.find_all.return_value = []
-        mocked_det.return_value = (mock.MagicMock(), "foo")
-        acme_client = mock.MagicMock()
-        mocked_client.Client.return_value = acme_client
+    def tearDown(self):
+        for patch in self.patchers.values():
+            patch.stop()
 
-        x = self._call_no_clientmock(["register", "--deactivate"])
-        m = "Could not find existing account to deactivate."
-        self.assertTrue(x[0] == m)
-        self.assertFalse(acme_client.acme.deactivate_registration.called)
-
-
-class DeactivateTest(unittest.TestCase):
-    def test_abort_deactivate(self):
-        get_utility_patch = mock.patch('certbot.main.zope.component.getUtility')
-        mock_get_utility = get_utility_patch.start()
+    def test_abort_unregister(self):
+        self.mocks['account'].AccountFileStorage.return_value = mock.Mock()
 
         util_mock = mock.Mock()
         util_mock.yesno.return_value = False
-        mock_get_utility.return_value = util_mock
+        self.mocks['getUtility'].return_value = util_mock
 
         config = mock.Mock()
-        accounts = mock.Mock()
-        accounts.__bool__ = mock.Mock()
-        accounts.__bool__.return_value = True
-        messenger = mock.Mock()
-        # pylint: disable=protected-access
-        res = main._deactivate(config, accounts, messenger)
+        unused_plugins = mock.Mock()
+
+        res = main.unregister(config, None)
         self.assertEqual(res, "Deactivation aborted.")
-        get_utility_patch.stop()
+
+    def test_unregister(self):
+        mocked_storage = mock.MagicMock()
+        mocked_storage.find_all.return_value = ["an account"]
+
+        self.mocks['account'].AccountFileStorage.return_value = mocked_storage
+        self.mocks['_determine_account'].return_value = (mock.MagicMock(), "foo")
+
+        acme_client = mock.MagicMock()
+        self.mocks['client'].Client.return_value = acme_client
+
+        config = mock.MagicMock()
+        unused_plugins = mock.MagicMock()
+
+        res = main.unregister(config, unused_plugins)
+
+        self.assertTrue(res is None)
+        self.assertTrue(acme_client.acme.deactivate_registration.called)
+        m = "Account deactivated."
+        self.assertTrue(m in self.mocks['getUtility']().add_message.call_args[0][0])
+
+    def test_unregister_no_account(self):
+        mocked_storage = mock.MagicMock()
+        mocked_storage.find_all.return_value = []
+        self.mocks['account'].AccountFileStorage.return_value = mocked_storage
+
+        acme_client = mock.MagicMock()
+        self.mocks['client'].Client.return_value = acme_client
+
+        config = mock.MagicMock()
+        unused_plugins = mock.MagicMock()
+
+        res = main.unregister(config, unused_plugins)
+        m = "Could not find existing account to deactivate."
+        self.assertTrue(res == m)
+        self.assertFalse(acme_client.acme.deactivate_registration.called)
 
 
 class TestHandleException(unittest.TestCase):

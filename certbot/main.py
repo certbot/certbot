@@ -406,14 +406,18 @@ def _init_le_client(config, authenticator, installer):
     return client.Client(config, acc, authenticator, installer, acme=acme)
 
 
-def _deactivate(config, accounts, messenger):
+def unregister(config, unused_plugins):
+    """Deactivate account on server"""
+    account_storage = account.AccountFileStorage(config)
+    accounts = account_storage.find_all()
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+
     if not accounts:
         return "Could not find existing account to deactivate."
     yesno = zope.component.getUtility(interfaces.IDisplay).yesno
     prompt = ("Are you sure you would like to irrevocably deactivate "
               "your account?")
-    wants_deactivate = yesno(prompt, yes_label='Deactivate',
-                             no_label='Abort', cli_flag='--deactivate',
+    wants_deactivate = yesno(prompt, yes_label='Deactivate', no_label='Abort',
                              default=True)
 
     if not wants_deactivate:
@@ -428,7 +432,7 @@ def _deactivate(config, accounts, messenger):
     # delete local account files
     account_files.delete(config.account)
 
-    messenger("Account deactivated.")
+    reporter_util.add_message("Account deactivated.", reporter_util.MEDIUM_PRIORITY)
 
 
 def register(config, unused_plugins):
@@ -440,9 +444,6 @@ def register(config, unused_plugins):
     accounts = account_storage.find_all()
     reporter_util = zope.component.getUtility(interfaces.IReporter)
     add_msg = lambda m: reporter_util.add_message(m, reporter_util.MEDIUM_PRIORITY)
-
-    if config.deactivate:
-        return _deactivate(config, accounts, add_msg)
 
     # registering a new account
     if not config.update_registration:

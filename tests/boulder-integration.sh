@@ -164,7 +164,7 @@ common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
     --key-path "$root/conf/live/le2.wtf/privkey.pem" \
     --reason keyCompromise
 
-common register --deactivate
+common unregister
 
 if type nginx;
 then
