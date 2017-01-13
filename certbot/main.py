@@ -100,7 +100,7 @@ def _auth_from_available(le_client, config, domains=None, certname=None, lineage
     try:
         if action == "renew":
             logger.info("Renewing an existing certificate")
-            renewal.renew_cert(config, le_client, lineage)
+            renewal.renew_cert(config, domains, le_client, lineage)
         elif action == "newcert":
             # TREAT AS NEW REQUEST
             logger.info("Obtaining a new certificate")
