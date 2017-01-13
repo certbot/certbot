@@ -96,6 +96,7 @@ matrix:
 # turnaround time on review since there is a cap of 5 simultaneous runs.
 branches:
   only:
+    - 0.10.x
     - master
     - /^test-.*$/
 
