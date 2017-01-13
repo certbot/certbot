@@ -29,7 +29,7 @@ unset PIP_INDEX_URL
 export PIP_EXTRA_INDEX_URL="$SAVE"
 
 git checkout -f "$BRANCH"
-EXPECTED_VERSION=$(tools/get_certbot_version.sh)
+EXPECTED_VERSION=$(grep -m1 LE_AUTO_VERSION letsencrypt-auto | cut -d\" -f2)
 if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade | grep $EXPECTED_VERSION ; then
     echo upgrade appeared to fail
     exit 1
