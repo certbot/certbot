@@ -1,6 +1,5 @@
 """Tests for certbot.cli."""
 import argparse
-import functools
 import unittest
 import os
 import tempfile
@@ -13,6 +12,9 @@ from certbot import cli
 from certbot import constants
 from certbot import errors
 from certbot.plugins import disco
+
+PLUGINS = disco.PluginsRegistry.find_all()
+
 
 class TestReadFile(unittest.TestCase):
     '''Test cli.read_file'''
@@ -39,13 +41,13 @@ class ParseTest(unittest.TestCase):
 
     _multiprocess_can_split_ = True
 
-    @classmethod
-    def setUpClass(cls):
-        cls.plugins = disco.PluginsRegistry.find_all()
-        cls.parse = functools.partial(cli.prepare_and_parse_args, cls.plugins)
-
     def setUp(self):
         reload_module(cli)
+
+    @staticmethod
+    def parse(*args, **kwargs):
+        """Get result of cli.prepare_and_parse_args."""
+        return cli.prepare_and_parse_args(PLUGINS, *args, **kwargs)
 
     def _help_output(self, args):
         "Run a command, and return the ouput string for scrutiny"
@@ -84,7 +86,7 @@ class ParseTest(unittest.TestCase):
         self.assertTrue("{0}" not in out)
 
         out = self._help_output(['-h', 'nginx'])
-        if "nginx" in self.plugins:
+        if "nginx" in PLUGINS:
             # may be false while building distributions without plugins
             self.assertTrue("--nginx-ctl" in out)
         self.assertTrue("--webroot-path" not in out)
@@ -92,7 +94,7 @@ class ParseTest(unittest.TestCase):
 
         out = self._help_output(['-h'])
         self.assertTrue("letsencrypt-auto" not in out)  # test cli.cli_command
-        if "nginx" in self.plugins:
+        if "nginx" in PLUGINS:
             self.assertTrue("Use the Nginx plugin" in out)
         else:
             self.assertTrue("(the certbot nginx plugin is not" in out)
