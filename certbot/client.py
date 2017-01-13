@@ -243,12 +243,14 @@ class Client(object):
                 authzr)
         return certr, self.acme.fetch_chain(certr)
 
-    def obtain_certificate(self, domains):
+    def obtain_certificate(self, domains, privkey_path=None):
         """Obtains a certificate from the ACME server.
 
         `.register` must be called before `.obtain_certificate`
 
         :param list domains: domains to get a certificate
+        :param str privkey_path: symlink path to private key. Only used during
+                                 cert renewal when --renew-key is specified.
 
         :returns: `.CertificateResource`, certificate chain (as
             returned by `.fetch_chain`), and newly generated private key
@@ -264,10 +266,45 @@ class Client(object):
         auth_domains = set(a.body.identifier.value for a in authzr)
         domains = [d for d in domains if d in auth_domains]
 
-        # Create CSR from names
-        key = crypto_util.init_save_key(
-            self.config.rsa_key_size, self.config.key_dir)
+        # Create CSR from names. Use existing private key if specified.
+        if privkey_path is not None:
+            try:
+                key_path = os.path.abspath(privkey_path)
+                key_pem = open(key_path, 'r').read()
+                if not crypto_util.valid_privkey(key_pem):
+                    raise errors.Error("Invalid private key specified")
+            except Exception:
+                msg = ("Unable to load private key from existing key file %s."
+                       " File must be a valid RSA private key in PEM format. "
+                       "You may try again without the --reuse-key option to "
+                       "generate a new private key to use to sign the "
+                       "certificate." % str(privkey_path))
+                logger.warning(msg)
+                raise
+            key = util.Key(key_path, key_pem)
+        elif self.config.key_path is None:
+            key = crypto_util.init_save_key(
+                self.config.rsa_key_size, self.config.key_dir)
+        else:
+            try:
+                key_pem = open(self.config.key_path, 'r').read()
+                if not crypto_util.valid_privkey(key_pem):
+                    raise errors.Error("Invalid private key specified")
+            except Exception:
+                msg = ("Unable to load private key from specified key file %s."
+                       " File must be a valid RSA private key in PEM format." %
+                       str(self.config.key_path))
+                logger.warning(msg)
+                raise
+            key = util.Key(self.config.key_path, key_pem)
+
         csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
+
+        # Validate key against CSR in case key was not newly generated on this
+        # run
+        # TODO(mariojv) key.pem or this function needs proper mocking for unit
+        # tests to pass
+        # validate_key_csr(key, csr=csr)
 
         return (self.obtain_certificate_from_csr(domains, csr, authzr=authzr)
                                                                 + (key, csr))

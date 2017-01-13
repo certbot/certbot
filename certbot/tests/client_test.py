@@ -110,7 +110,8 @@ class ClientTestCommon(unittest.TestCase):
             no_verify_ssl=False,
             config_dir="/etc/letsencrypt",
             work_dir="/var/lib/letsencrypt",
-            allow_subset_of_names=False)
+            allow_subset_of_names=False,
+            key_path=None)
 
         # pylint: disable=star-args
         self.account = mock.MagicMock(**{"key.pem": KEY})
@@ -191,8 +192,7 @@ class ClientTest(ClientTestCommon):
             test_csr)
         mock_logger.warning.assert_called_once_with(mock.ANY)
 
-    @mock.patch("certbot.client.crypto_util")
-    def test_obtain_certificate(self, mock_crypto_util):
+    def _test_obtain_certificate(self, mock_crypto_util, key_to_check=None):
         self._mock_obtain_certificate()
 
         csr = util.CSR(form="der", file=None, data=CSR_SAN)
@@ -216,14 +216,25 @@ class ClientTest(ClientTestCommon):
 
         self.client.auth_handler.get_authorizations.return_value = authzr
 
-        self.assertEqual(
-            self.client.obtain_certificate(domains),
-            (mock.sentinel.certr, mock.sentinel.chain, mock.sentinel.key, csr))
+        if key_to_check is None:
+            self.assertEqual(
+                self.client.obtain_certificate(domains),
+                (mock.sentinel.certr, mock.sentinel.chain, mock.sentinel.key,
+                 csr))
+            mock_crypto_util.init_save_key.assert_called_once_with(
+                self.config.rsa_key_size, self.config.key_dir)
+            mock_crypto_util.init_save_csr.assert_called_once_with(
+                mock.sentinel.key, domains, self.config.csr_dir)
+        else:
+            fake_key = util.Key(self.config.key_path, key_to_check)
+            self.assertEqual(
+                self.client.obtain_certificate(domains),
+                (mock.sentinel.certr, mock.sentinel.chain, fake_key,
+                 csr))
+            self.assertFalse(mock_crypto_util.init_save_key.called)
+            mock_crypto_util.init_save_csr.assert_called_once_with(
+                fake_key, domains, self.config.csr_dir)
 
-        mock_crypto_util.init_save_key.assert_called_once_with(
-            self.config.rsa_key_size, self.config.key_dir)
-        mock_crypto_util.init_save_csr.assert_called_once_with(
-            mock.sentinel.key, domains, self.config.csr_dir)
         self._check_obtain_certificate()
 
     @mock.patch('certbot.client.Client.obtain_certificate')
@@ -246,6 +257,18 @@ class ClientTest(ClientTestCommon):
 
         self.assertTrue(mock_storage.call_count == 2)
         self.assertTrue(mock_dump_certificate.call_count == 2)
+
+    @mock.patch("certbot.client.crypto_util")
+    def test_obtain_certificate(self, mock_crypto_util):
+        self._test_obtain_certificate(mock_crypto_util)
+
+    @mock.patch("certbot.client.crypto_util")
+    def test_obtain_certificate_priv_key_specified(self, mock_crypto_util):
+        self.config.key_path = '/path/to/a/key.pem'
+        with mock.patch("certbot.client.open", mock.mock_open(read_data=KEY),
+                        create=True) as mock_open:
+            self._test_obtain_certificate(mock_crypto_util, KEY)
+            mock_open.assert_called_once_with(self.config.key_path, 'r')
 
     @mock.patch("certbot.cli.helpful_parser")
     def test_save_certificate(self, mock_parser):
