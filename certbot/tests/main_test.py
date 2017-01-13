@@ -12,6 +12,7 @@ import datetime
 import pytz
 
 import six
+from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import jose
 
@@ -434,10 +435,9 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                               '--logs-dir', self.logs_dir, '--text']
 
     def tearDown(self):
-        shutil.rmtree(self.tmp_dir)
         # Reset globals in cli
-        # pylint: disable=protected-access
-        cli._parser = cli.set_by_cli.detector = None
+        reload_module(cli)
+        shutil.rmtree(self.tmp_dir)
 
     def _call(self, args, stdout=None):
         "Run the cli with output streams and actual client mocked out"
@@ -874,8 +874,9 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         test_util.make_lineage(self, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "--post-hook=no-such-command",
                 "--disable-hook-validation"]
-        self._test_renewal_common(True, [], args=args, should_renew=True,
-                                  error_expected=False)
+        with mock.patch("certbot.hooks.post_hook"):
+            self._test_renewal_common(True, [], args=args, should_renew=True,
+                                      error_expected=False)
 
     @mock.patch("certbot.cli.set_by_cli")
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
