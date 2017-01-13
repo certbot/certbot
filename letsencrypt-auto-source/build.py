@@ -8,6 +8,7 @@ other, special definitions.
 """
 from os.path import abspath, dirname, join
 import re
+import subprocess
 from sys import argv
 
 
@@ -16,11 +17,9 @@ DIR = dirname(abspath(__file__))
 
 def certbot_version(build_script_dir):
     """Return the version number stamped in certbot/__init__.py."""
-    return re.search('''^__version__ = ['"](.+)['"].*''',
-                     file_contents(join(dirname(build_script_dir),
-                                        'certbot',
-                                        '__init__.py')),
-                     re.M).group(1)
+    repo_root = dirname(build_script_dir)
+    get_certbot_version = join(repo_root, 'tools', 'get_certbot_version.sh')
+    return subprocess.check_output(get_certbot_version)
 
 
 def file_contents(path):
