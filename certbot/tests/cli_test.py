@@ -131,6 +131,26 @@ class ParseTest(unittest.TestCase):
         self.assertTrue("%s" not in out)
         self.assertTrue("{0}" not in out)
 
+        # testing alternate help syntax
+        self._help_output(['help'])  # assert SystemExit is raised here
+
+        out = self._help_output(['help', 'all'])
+        self.assertTrue("--configurator" in out)
+        self.assertTrue("how a cert is deployed" in out)
+        self.assertTrue("--webroot-path" in out)
+        self.assertTrue("--text" not in out)
+        self.assertTrue("--dialog" not in out)
+        self.assertTrue("%s" not in out)
+        self.assertTrue("{0}" not in out)
+
+        out = self._help_output(['help', 'install'])
+        self.assertTrue("--cert-path" in out)
+        self.assertTrue("--key-path" in out)
+
+        out = self._help_output(['help', 'revoke'])
+        self.assertTrue("--cert-path" in out)
+        self.assertTrue("--key-path" in out)
+
     def test_parse_domains(self):
         short_args = ['-d', 'example.com']
         namespace = self.parse(short_args)
