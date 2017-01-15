@@ -475,10 +475,12 @@ class HelpfulArgumentParser(object):
         """Make usage strings late so that plugins can be initialised late
 
         :param plugins: all discovered plugins
-        :param help_arg: False for none; True for --help; "TOPIC" for --help TOPIC
+        :param help_arg: False for none; True for --help or -h; "TOPIC" for --help TOPIC
         :rtype: str
         :returns: a short usage string for the top of --help TOPIC)
         """
+        print('_usage_string is running')
+        print('help_arg: {h}'.format(h=help_arg))
         if "nginx" in plugins:
             nginx_doc = "--nginx           Use the Nginx plugin for authentication & installation"
         else:
@@ -488,11 +490,36 @@ class HelpfulArgumentParser(object):
         else:
             apache_doc = "(the cerbot apache plugin is not installed)"
 
+        print('--- printing self.args ---')
+        for a in self.args:
+            print(a)
+            
+        print('--- done printing self.args ---')
+        print('********************')
+        print(HELP_USAGE)
+        print('********************')
+        print('self.help_topics: {h}'.format(h=self.help_topics))
+        print('self.verb: {v}'.format(v=self.verb))
+        
         usage = SHORT_USAGE
+
+        if self.args[-1] not in self.help_topics:
+            print("""
+Could not find {a} ...
+
+    Available topics are:
+                
+all, automation, commands, paths, security, testing, or any of the
+subcommands or plugins (certonly, renew, install, register, nginx,
+apache, standalone, webroot, etc.)
+            """.format(a=self.args[-1]))
+            sys.exit(0)
+        
         if help_arg == True:
             print(usage + COMMAND_OVERVIEW % (apache_doc, nginx_doc) + HELP_USAGE)
             sys.exit(0)
         elif help_arg in self.COMMANDS_TOPICS:
+            print('help_arg is in self.COMMANDS_TOPICS')
             print(usage + self._list_subcommands())
             sys.exit(0)
         elif help_arg == "all":
@@ -513,10 +540,10 @@ class HelpfulArgumentParser(object):
         :rtype: argparse.Namespace
 
         """
+        print('parse_args is running')
         parsed_args = self.parser.parse_args(self.args)
         parsed_args.func = self.VERBS[self.verb]
         parsed_args.verb = self.verb
-
         if self.detect_defaults:
             return parsed_args
 
@@ -629,6 +656,10 @@ class HelpfulArgumentParser(object):
     def prescan_for_flag(self, flag, possible_arguments):
         """Checks cli input for flags.
 
+        :param flag: str either -h or --help
+        :param possible_arguments: list[str] passed in copy of self.args for
+                                   iterating through
+
         Check for a flag, which accepts a fixed set of possible arguments, in
         the command line; we will use this information to configure argparse's
         help correctly.  Return the flag's argument, if it has one that matches
@@ -636,7 +667,10 @@ class HelpfulArgumentParser(object):
         present.
 
         """
+        print('prescan_for_flag is running')
+        print('flag: {f}'.format(f=flag))
         if flag not in self.args:
+            print('flag not in self.args')
             return False
         pos = self.args.index(flag)
         try:
@@ -800,7 +834,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     """
 
     # pylint: disable=too-many-statements
-
+    print('prepare_and_parse_args is running')
+    print('args: {a}'.format(a=args))
     helpful = HelpfulArgumentParser(args, plugins, detect_defaults)
     _add_all_groups(helpful)
 
