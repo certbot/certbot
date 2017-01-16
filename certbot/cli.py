@@ -100,6 +100,13 @@ More detailed help:
    subcommands or plugins (certonly, renew, install, register, nginx,
    apache, standalone, webroot, etc.)
 """
+TOPIC_NOT_FOUND_USAGE = """
+        Available topics are:
+
+   all, automation, commands, paths, security, testing, or any of the
+   subcommands or plugins (certonly, renew, install, register, nginx,
+   apache, standalone, webroot, etc.)
+"""
 
 
 # These argparse parameters should be removed when detecting defaults.
@@ -479,8 +486,7 @@ class HelpfulArgumentParser(object):
         :rtype: str
         :returns: a short usage string for the top of --help TOPIC)
         """
-        print('_usage_string is running')
-        print('help_arg: {h}'.format(h=help_arg))
+
         if "nginx" in plugins:
             nginx_doc = "--nginx           Use the Nginx plugin for authentication & installation"
         else:
@@ -490,31 +496,13 @@ class HelpfulArgumentParser(object):
         else:
             apache_doc = "(the cerbot apache plugin is not installed)"
 
-        print('--- printing self.args ---')
-        for a in self.args:
-            print(a)
-            
-        print('--- done printing self.args ---')
-        print('********************')
-        print(HELP_USAGE)
-        print('********************')
-        print('self.help_topics: {h}'.format(h=self.help_topics))
-        print('self.verb: {v}'.format(v=self.verb))
-        
         usage = SHORT_USAGE
 
         if self.args[-1] not in self.help_topics:
-            print("""
-Could not find {a} ...
-
-    Available topics are:
-                
-all, automation, commands, paths, security, testing, or any of the
-subcommands or plugins (certonly, renew, install, register, nginx,
-apache, standalone, webroot, etc.)
-            """.format(a=self.args[-1]))
+            print('Could not find {a} ...'.format(a=self.args[-1]))
+            print(TOPIC_NOT_FOUND_USAGE)
             sys.exit(0)
-        
+
         if help_arg == True:
             print(usage + COMMAND_OVERVIEW % (apache_doc, nginx_doc) + HELP_USAGE)
             sys.exit(0)
@@ -540,7 +528,6 @@ apache, standalone, webroot, etc.)
         :rtype: argparse.Namespace
 
         """
-        print('parse_args is running')
         parsed_args = self.parser.parse_args(self.args)
         parsed_args.func = self.VERBS[self.verb]
         parsed_args.verb = self.verb
@@ -667,10 +654,8 @@ apache, standalone, webroot, etc.)
         present.
 
         """
-        print('prescan_for_flag is running')
-        print('flag: {f}'.format(f=flag))
+
         if flag not in self.args:
-            print('flag not in self.args')
             return False
         pos = self.args.index(flag)
         try:
@@ -834,8 +819,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     """
 
     # pylint: disable=too-many-statements
-    print('prepare_and_parse_args is running')
-    print('args: {a}'.format(a=args))
     helpful = HelpfulArgumentParser(args, plugins, detect_defaults)
     _add_all_groups(helpful)
 
