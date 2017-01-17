@@ -30,7 +30,7 @@ class HookCommandNotFound(Error):
 
 
 class SignalExit(Error):
-    """A Unix signal was recieved while in the ErrorHandler context manager."""
+    """A Unix signal was received while in the ErrorHandler context manager."""
 
 
 # Auth Handler Errors
