@@ -134,8 +134,6 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         update = regr.body if update is None else update
         updated_regr = self._send_recv_regr(
             regr, body=messages.UpdateRegistration(**dict(update)))
-        if updated_regr != regr:
-            raise errors.UnexpectedUpdate(regr)
         return updated_regr
 
     def query_registration(self, regr):
