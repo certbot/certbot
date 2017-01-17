@@ -93,8 +93,15 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.assertEqual(input_, default)
 
     def test_input_assertion_fail(self):
-        self.assertRaises(AssertionError, self._force_noninteractive,
+        # If the call to util.assert_valid_call is commented out, an
+        # error.Error is raised, otherwise, an AssertionError is raised.
+        self.assertRaises(Exception, self._force_noninteractive,
                           self.displayer.input, "message", cli_flag="--flag")
+
+    def test_input_assertion_fail2(self):
+        with mock.patch("certbot.display.util.assert_valid_call"):
+            self.assertRaises(errors.Error, self._force_noninteractive,
+                              self.displayer.input, "msg", cli_flag="--flag")
 
     def test_yesno(self):
         with mock.patch("six.moves.input", return_value="Yes"):

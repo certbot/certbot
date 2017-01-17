@@ -27,7 +27,11 @@ logger = logging.getLogger(__name__)
 # for SSL, which does allow these options to be configured.
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
 if sys.version_info < (2, 7, 9):  # pragma: no cover
-    requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
+    try:
+        requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
+    except AttributeError:
+        import urllib3.contrib.pyopenssl  # pylint: disable=import-error
+        urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 DER_CONTENT_TYPE = 'application/pkix-cert'
 
@@ -477,17 +481,21 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                 "Recursion limit reached. Didn't get {0}".format(uri))
         return chain
 
-    def revoke(self, cert):
+    def revoke(self, cert, rsn):
         """Revoke certificate.
 
         :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
             `.ComparableX509`
 
+        :param int rsn: Reason code for certificate revocation.
+
         :raises .ClientError: If revocation is unsuccessful.
 
         """
         response = self.net.post(self.directory[messages.Revocation],
-                                 messages.Revocation(certificate=cert),
+                                 messages.Revocation(
+                                     certificate=cert,
+                                     reason=rsn),
                                  content_type=None)
         if response.status_code != http_client.OK:
             raise errors.ClientError(

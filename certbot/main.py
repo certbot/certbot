@@ -39,7 +39,7 @@ from certbot.plugins import selection as plug_sel
 _PERM_ERR_FMT = os.linesep.join((
     "The following error was encountered:", "{0}",
     "If running as non-root, set --config-dir, "
-    "--logs-dir, and --work-dir to writeable paths."))
+    "--work-dir, and --logs-dir to writeable paths."))
 
 USER_CANCELLED = ("User chose to cancel the operation and may "
                   "reinvoke the client.")
@@ -100,7 +100,7 @@ def _auth_from_available(le_client, config, domains=None, certname=None, lineage
     try:
         if action == "renew":
             logger.info("Renewing an existing certificate")
-            renewal.renew_cert(config, le_client, lineage)
+            renewal.renew_cert(config, domains, le_client, lineage)
         elif action == "newcert":
             # TREAT AS NEW REQUEST
             logger.info("Obtaining a new certificate")
@@ -108,7 +108,7 @@ def _auth_from_available(le_client, config, domains=None, certname=None, lineage
             if lineage is False:
                 raise errors.Error("Certificate could not be obtained")
     finally:
-        hooks.post_hook(config, final=False)
+        hooks.post_hook(config)
 
     if not config.dry_run and not config.verb == "renew":
         _report_new_cert(config, lineage.cert, lineage.fullchain)
@@ -550,8 +550,10 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
         key = acc.key
     acme = client.acme_from_config_key(config, key)
     cert = crypto_util.pyopenssl_load_certificate(config.cert_path[1])[0]
+    logger.debug("Reason code for revocation: %s", config.reason)
+
     try:
-        acme.revoke(jose.ComparableX509(cert))
+        acme.revoke(jose.ComparableX509(cert), config.reason)
     except acme_errors.ClientError as e:
         return e.message
 
@@ -654,7 +656,7 @@ def renew(config, unused_plugins):
     try:
         renewal.handle_renewal_request(config)
     finally:
-        hooks.post_hook(config, final=True)
+        hooks.run_saved_post_hooks()
 
 
 def setup_log_file_handler(config, logfile, fmt):
@@ -804,6 +806,20 @@ def set_displayer(config):
                                              config.force_interactive)
     zope.component.provideUtility(displayer)
 
+def _post_logging_setup(config, plugins, cli_args):
+    """Perform any setup or configuration tasks that require a logger."""
+
+    # This needs logging, but would otherwise be in HelpfulArgumentParser
+    if config.validate_hooks:
+        hooks.validate_hooks(config)
+
+    cli.possible_deprecation_warning(config)
+
+    logger.debug("certbot version: %s", certbot.__version__)
+    # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
+    logger.debug("Arguments: %r", cli_args)
+    logger.debug("Discovered plugins: %r", plugins)
+
 
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
@@ -821,12 +837,7 @@ def main(cli_args=sys.argv[1:]):
     # logger ..." TODO: this should be done before plugins discovery
     setup_logging(config)
 
-    cli.possible_deprecation_warning(config)
-
-    logger.debug("certbot version: %s", certbot.__version__)
-    # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
-    logger.debug("Arguments: %r", cli_args)
-    logger.debug("Discovered plugins: %r", plugins)
+    _post_logging_setup(config, plugins, cli_args)
 
     sys.excepthook = functools.partial(_handle_exception, config=config)
 

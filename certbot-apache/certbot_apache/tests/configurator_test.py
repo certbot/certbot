@@ -13,6 +13,7 @@ from certbot import achallenges
 from certbot import errors
 
 from certbot.tests import acme_util
+from certbot.tests import util as certbot_util
 
 from certbot_apache import configurator
 from certbot_apache import parser
@@ -97,7 +98,7 @@ class MultipleVhostsTest(util.ApacheTest):
         # Weak test..
         ApacheConfigurator.add_parser_arguments(mock.MagicMock())
 
-    @mock.patch("zope.component.getUtility")
+    @certbot_util.patch_get_utility()
     def test_get_all_names(self, mock_getutility):
         mock_getutility.notification = mock.MagicMock(return_value=True)
         names = self.config.get_all_names()
@@ -105,7 +106,7 @@ class MultipleVhostsTest(util.ApacheTest):
             ["certbot.demo", "ocspvhost.com", "encryption-example.demo",
                 "ip-172-30-0-17", "*.blue.purple.com"]))
 
-    @mock.patch("zope.component.getUtility")
+    @certbot_util.patch_get_utility()
     @mock.patch("certbot_apache.configurator.socket.gethostbyaddr")
     def test_get_all_names_addrs(self, mock_gethost, mock_getutility):
         mock_gethost.side_effect = [("google.com", "", ""), socket.error]
@@ -1117,7 +1118,7 @@ class MultipleVhostsTest(util.ApacheTest):
         not_rewriterule = "NotRewriteRule ^ ..."
         self.assertFalse(self.config._sift_rewrite_rule(not_rewriterule))
 
-    @mock.patch("certbot_apache.configurator.zope.component.getUtility")
+    @certbot_util.patch_get_utility()
     def test_make_vhost_ssl_with_existing_rewrite_rule(self, mock_get_utility):
         self.config.parser.modules.add("rewrite_module")
 
@@ -1146,7 +1147,7 @@ class MultipleVhostsTest(util.ApacheTest):
         mock_get_utility().add_message.assert_called_once_with(mock.ANY,
 
                                                                mock.ANY)
-    @mock.patch("certbot_apache.configurator.zope.component.getUtility")
+    @certbot_util.patch_get_utility()
     def test_make_vhost_ssl_with_existing_rewrite_conds(self, mock_get_utility):
         self.config.parser.modules.add("rewrite_module")
 

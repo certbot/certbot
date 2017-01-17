@@ -18,7 +18,6 @@ import certbot
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
-from certbot import hooks
 from certbot import interfaces
 from certbot import util
 
@@ -81,7 +80,6 @@ obtain, install, and renew certificates:
 manage certificates:
     certificates    Display information about certs you have from Certbot
     revoke          Revoke a certificate (supply --cert-path)
-    rename          Rename a certificate
     delete          Delete a certificate
 
 manage your account with Let's Encrypt:
@@ -364,10 +362,6 @@ VERB_HELP = [
         "opts": "Options for revocation of certs",
         "usage": "\n\n  certbot revoke --cert-path /path/to/fullchain.pem [options]\n\n"
     }),
-    ("rename", {
-        "short": "Change a certificate's name (for management purposes)",
-        "opts": "Options for changing certificate names"
-    }),
     ("register", {
         "short": "Register for account with Let's Encrypt / other ACME server",
         "opts": "Options for account registration & modification"
@@ -389,7 +383,7 @@ VERB_HELP = [
         "opts": 'Options for for the "plugins" subcommand'
     }),
     ("update_symlinks", {
-        "short": "Recreate symlinks in your /live/ directory",
+        "short": "Recreate symlinks in your /etc/letsencrypt/live/ directory",
         "opts": ("Recreates cert and key symlinks in {0}, if you changed them by hand "
                  "or edited a renewal configuration file".format(
                   os.path.join(flag_default("config_dir"), "live")))
@@ -412,14 +406,22 @@ class HelpfulArgumentParser(object):
 
     def __init__(self, args, plugins, detect_defaults=False):
         from certbot import main
-        self.VERBS = {"auth": main.obtain_cert, "certonly": main.obtain_cert,
-                      "config_changes": main.config_changes, "run": main.run,
-                      "install": main.install, "plugins": main.plugins_cmd,
-                      "register": main.register, "renew": main.renew,
-                      "revoke": main.revoke, "rollback": main.rollback,
-                      "everything": main.run, "update_symlinks": main.update_symlinks,
-                      "certificates": main.certificates, "rename": main.rename,
-                      "delete": main.delete}
+        self.VERBS = {
+            "auth": main.obtain_cert,
+            "certonly": main.obtain_cert,
+            "config_changes": main.config_changes,
+            "run": main.run,
+            "install": main.install,
+            "plugins": main.plugins_cmd,
+            "register": main.register,
+            "renew": main.renew,
+            "revoke": main.revoke,
+            "rollback": main.rollback,
+            "everything": main.run,
+            "update_symlinks": main.update_symlinks,
+            "certificates": main.certificates,
+            "delete": main.delete,
+        }
 
         # List of topics for which additional help can be provided
         HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
@@ -430,6 +432,10 @@ class HelpfulArgumentParser(object):
 
         self.detect_defaults = detect_defaults
         self.args = args
+
+        if self.args[0] == 'help':
+            self.args[0] = '--help'
+
         self.determine_verb()
         help1 = self.prescan_for_flag("-h", self.help_topics)
         help2 = self.prescan_for_flag("--help", self.help_topics)
@@ -543,9 +549,6 @@ class HelpfulArgumentParser(object):
 
         if parsed_args.must_staple:
             parsed_args.staple = True
-
-        if parsed_args.validate_hooks:
-            hooks.validate_hooks(parsed_args)
 
         return parsed_args
 
@@ -781,7 +784,7 @@ def _add_all_groups(helpful):
     helpful.add_group("paths", description="Arguments changing execution paths & servers")
     helpful.add_group("manage",
         description="Various subcommands and flags are available for managing your certificates:",
-        verbs=["certificates", "delete", "renew", "revoke", "rename"])
+        verbs=["certificates", "delete", "renew", "revoke", "update_symlinks"])
 
     # VERBS
     for verb, docs in VERB_HELP:
@@ -834,17 +837,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "multiple -d flags or enter a comma separated list of domains "
              "as a parameter. (default: Ask)")
     helpful.add(
-        [None, "run", "certonly", "manage", "rename", "delete", "certificates"],
+        [None, "run", "certonly", "manage", "delete", "certificates"],
         "--cert-name", dest="certname",
         metavar="CERTNAME", default=None,
         help="Certificate name to apply. Only one certificate name can be used "
              "per Certbot run. To see certificate names, run 'certbot certificates'. "
              "When creating a new certificate, specifies the new certificate's name.")
-    helpful.add(
-        ["rename", "manage"],
-        "--updated-cert-name", dest="new_certname",
-        metavar="NEW_CERTNAME", default=None,
-        help="New name for the certificate. Must be a valid filename.")
     helpful.add(
         [None, "testing", "renew", "certonly"],
         "--dry-run", action="store_true", dest="dry_run",
@@ -1019,13 +1017,16 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " Intended primarily for renewal, where it can be used to temporarily"
         " shut down a webserver that might conflict with the standalone"
         " plugin. This will only be called if a certificate is actually to be"
-        " obtained/renewed.")
+        " obtained/renewed. When renewing several certificates that have"
+        " identical pre-hooks, only the first will be executed.")
     helpful.add(
         "renew", "--post-hook",
         help="Command to be run in a shell after attempting to obtain/renew"
         " certificates. Can be used to deploy renewed certificates, or to"
         " restart any servers that were stopped by --pre-hook. This is only"
-        " run if an attempt was made to obtain/renew a certificate.")
+        " run if an attempt was made to obtain/renew a certificate. If"
+        " multiple renewed certificates have identical post-hooks, only"
+        " one will be run.")
     helpful.add(
         "renew", "--renew-hook",
         help="Command to be run in a shell once for each successfully renewed"
@@ -1075,6 +1076,11 @@ def _create_subparsers(helpful):
                 "--csr", type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER or PEM format."
                 " Currently --csr only works with the 'certonly' subcommand.")
+    helpful.add("revoke",
+                "--reason", dest="reason",
+                choices=CaseInsensitiveList(constants.REVOCATION_REASONS.keys()),
+                action=_EncodeReasonAction, default=0,
+                help="Specify reason for revoking certificate.")
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",
                 default=flag_default("rollback_checkpoints"),
@@ -1089,6 +1095,16 @@ def _create_subparsers(helpful):
     helpful.add("plugins",
                 "--installers", action="append_const", dest="ifaces",
                 const=interfaces.IInstaller, help="Limit to installer plugins only.")
+
+
+class CaseInsensitiveList(list):
+    """A list that will ignore case when searching.
+
+    This class is passed to the `choices` argument of `argparse.add_arguments`
+    through the `helpful` wrapper. It is necessary due to special handling of
+    command line arguments by `set_by_cli` in which the `type_func` is not applied."""
+    def __contains__(self, element):
+        return super(CaseInsensitiveList, self).__contains__(element.lower())
 
 
 def _paths_parser(helpful):
@@ -1167,6 +1183,15 @@ def _plugins_parsing(helpful, plugins):
     # specific groups (so that plugins_group.description makes sense)
 
     helpful.add_plugin_args(plugins)
+
+
+class _EncodeReasonAction(argparse.Action):
+    """Action class for parsing revocation reason."""
+
+    def __call__(self, parser, namespace, reason, option_string=None):
+        """Encodes the reason for certificate revocation."""
+        code = constants.REVOCATION_REASONS[reason.lower()]
+        setattr(namespace, self.dest, code)
 
 
 class _DomainsAction(argparse.Action):

@@ -12,6 +12,7 @@ import datetime
 import pytz
 
 import six
+from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import jose
 
@@ -100,8 +101,7 @@ class ObtainCertTest(unittest.TestCase):
     """Tests for certbot.main.obtain_cert."""
 
     def setUp(self):
-        self.get_utility_patch = mock.patch(
-            'certbot.main.zope.component.getUtility')
+        self.get_utility_patch = test_util.patch_get_utility()
         self.mock_get_utility = self.get_utility_patch.start()
 
     def tearDown(self):
@@ -216,7 +216,7 @@ class RevokeTest(unittest.TestCase):
             'cert.pem'))
 
         self.patches = [
-            mock.patch('acme.client.Client'),
+            mock.patch('acme.client.Client', autospec=True),
             mock.patch('certbot.client.Client'),
             mock.patch('certbot.main._determine_account'),
             mock.patch('certbot.main.display_ops.success_revocation')
@@ -242,14 +242,26 @@ class RevokeTest(unittest.TestCase):
         for patch in self.patches:
             patch.stop()
 
-    def _call(self):
-        args = 'revoke --cert-path={0}'.format(self.tmp_cert_path).split()
+    def _call(self, extra_args=""):
+        args = 'revoke --cert-path={0} ' + extra_args
+        args = args.format(self.tmp_cert_path).split()
         plugins = disco.PluginsRegistry.find_all()
         config = configuration.NamespaceConfig(
             cli.prepare_and_parse_args(plugins, args))
 
         from certbot.main import revoke
         revoke(config, plugins)
+
+    @mock.patch('certbot.main.client.acme_client')
+    def test_revoke_with_reason(self, mock_acme_client):
+        mock_revoke = mock_acme_client.Client().revoke
+        expected = []
+        for reason, code in constants.REVOCATION_REASONS.items():
+            self._call("--reason " + reason)
+            expected.append(mock.call(mock.ANY, code))
+            self._call("--reason " + reason.upper())
+            expected.append(mock.call(mock.ANY, code))
+        self.assertEqual(expected, mock_revoke.call_args_list)
 
     def test_revocation_success(self):
         self._call()
@@ -423,10 +435,9 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                               '--logs-dir', self.logs_dir, '--text']
 
     def tearDown(self):
-        shutil.rmtree(self.tmp_dir)
         # Reset globals in cli
-        # pylint: disable=protected-access
-        cli._parser = cli.set_by_cli.detector = None
+        reload_module(cli)
+        shutil.rmtree(self.tmp_dir)
 
     def _call(self, args, stdout=None):
         "Run the cli with output streams and actual client mocked out"
@@ -713,7 +724,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 args += '-d foo.bar -a standalone certonly'.split()
                 self._call(args)
 
-    @mock.patch('certbot.main.zope.component.getUtility')
+    @test_util.patch_get_utility()
     def test_certonly_dry_run_new_request_success(self, mock_get_utility):
         mock_client = mock.MagicMock()
         mock_client.obtain_and_enroll_certificate.return_value = None
@@ -726,7 +737,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(mock_get_utility().add_message.call_count, 1)
 
     @mock.patch('certbot.crypto_util.notAfter')
-    @mock.patch('certbot.main.zope.component.getUtility')
+    @test_util.patch_get_utility()
     def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter):
         cert_path = '/etc/letsencrypt/live/foo.bar'
         date = '1970-01-01'
@@ -770,8 +781,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                 mock_fdc.return_value = (mock_lineage, None)
                 with mock.patch('certbot.main._init_le_client') as mock_init:
                     mock_init.return_value = mock_client
-                    get_utility_path = 'certbot.main.zope.component.getUtility'
-                    with mock.patch(get_utility_path) as mock_get_utility:
+                    with test_util.patch_get_utility() as mock_get_utility:
                         with mock.patch('certbot.main.renewal.OpenSSL') as mock_ssl:
                             mock_latest = mock.MagicMock()
                             mock_latest.get_issuer.return_value = "Fake fake"
@@ -864,8 +874,9 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         test_util.make_lineage(self, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "--post-hook=no-such-command",
                 "--disable-hook-validation"]
-        self._test_renewal_common(True, [], args=args, should_renew=True,
-                                  error_expected=False)
+        with mock.patch("certbot.hooks.post_hook"):
+            self._test_renewal_common(True, [], args=args, should_renew=True,
+                                      error_expected=False)
 
     @mock.patch("certbot.cli.set_by_cli")
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
@@ -994,7 +1005,13 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._test_renewal_common(True, None, args='renew --csr {0}'.format(CSR).split(),
                                   should_renew=False, error_expected=True)
 
-    @mock.patch('certbot.main.zope.component.getUtility')
+    def test_no_renewal_with_hooks(self):
+        _, _, stdout = self._test_renewal_common(
+            due_for_renewal=False, extra_args=None, should_renew=False,
+            args=['renew', '--post-hook', 'echo hello world'])
+        self.assertTrue('No hooks were run.' in stdout.getvalue())
+
+    @test_util.patch_get_utility()
     @mock.patch('certbot.main._find_lineage_for_domains_and_certname')
     @mock.patch('certbot.main._init_le_client')
     def test_certonly_reinstall(self, mock_init, mock_renewal, mock_get_utility):
@@ -1015,8 +1032,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         mock_client.save_certificate.return_value = cert_path, None, None
         with mock.patch('certbot.main._init_le_client') as mock_init:
             mock_init.return_value = mock_client
-            get_utility_path = 'certbot.main.zope.component.getUtility'
-            with mock.patch(get_utility_path) as mock_get_utility:
+            with test_util.patch_get_utility() as mock_get_utility:
                 chain_path = '/etc/letsencrypt/live/example.com/chain.pem'
                 full_path = '/etc/letsencrypt/live/example.com/fullchain.pem'
                 args = ('-a standalone certonly --csr {0} --cert-path {1} '
@@ -1059,7 +1075,9 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with open(CERT, 'rb') as f:
             cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
             mock_revoke = mock_acme_client.Client().revoke
-            mock_revoke.assert_called_once_with(jose.ComparableX509(cert))
+            mock_revoke.assert_called_once_with(
+                    jose.ComparableX509(cert),
+                    mock.ANY)
 
     @mock.patch('certbot.main._determine_account')
     def test_revoke_without_key(self, mock_determine_account):
@@ -1068,7 +1086,9 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with open(CERT) as f:
             cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
             mock_revoke = client.acme_from_config_key().revoke
-            mock_revoke.assert_called_once_with(jose.ComparableX509(cert))
+            mock_revoke.assert_called_once_with(
+                    jose.ComparableX509(cert),
+                    mock.ANY)
 
     def test_agree_dev_preview_config(self):
         with mock.patch('certbot.main.run') as mocked_run:
@@ -1115,7 +1135,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self.assertTrue("--register-unsafely-without-email" in x[0])
 
     @mock.patch('certbot.main.display_ops.get_email')
-    @mock.patch('certbot.main.zope.component.getUtility')
+    @test_util.patch_get_utility()
     def test_update_registration_with_email(self, mock_utility, mock_email):
         email = "user@example.com"
         mock_email.return_value = email

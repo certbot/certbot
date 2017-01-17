@@ -5,16 +5,14 @@ import os
 import unittest
 
 import mock
+from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import errors
 from certbot import hooks
 
 class HookTest(unittest.TestCase):
     def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
+        reload_module(hooks)
 
     @mock.patch('certbot.hooks._prog')
     def test_validate_hooks(self, mock_prog):
@@ -27,53 +25,56 @@ class HookTest(unittest.TestCase):
         config = mock.MagicMock(pre_hook="explodinator", post_hook="", renew_hook="")
         self.assertRaises(errors.HookCommandNotFound, hooks.validate_hooks, config)
 
-    @mock.patch('certbot.hooks._is_exe')
-    def test_which(self, mock_is_exe):
-        mock_is_exe.return_value = True
-        self.assertEqual(hooks._which("/path/to/something"), "/path/to/something")
-
-        with mock.patch.dict('os.environ', {"PATH": "/floop:/fleep"}):
-            mock_is_exe.return_value = True
-            self.assertEqual(hooks._which("pingify"), "/floop/pingify")
-            mock_is_exe.return_value = False
-            self.assertEqual(hooks._which("pingify"), None)
-        self.assertEqual(hooks._which("/path/to/something"), None)
-
-    @mock.patch('certbot.hooks._which')
-    def test_prog(self, mockwhich):
-        mockwhich.return_value = "/very/very/funky"
+    @mock.patch('certbot.hooks.util.exe_exists')
+    @mock.patch('certbot.hooks.plug_util.path_surgery')
+    def test_prog(self, mock_ps, mock_exe_exists):
+        mock_exe_exists.return_value = True
         self.assertEqual(hooks._prog("funky"), "funky")
-        mockwhich.return_value = None
+        self.assertEqual(mock_ps.call_count, 0)
+        mock_exe_exists.return_value = False
         self.assertEqual(hooks._prog("funky"), None)
+        self.assertEqual(mock_ps.call_count, 1)
 
-    def _test_a_hook(self, config, hook_function, calls_expected):
+    def _test_a_hook(self, config, hook_function, calls_expected, **kwargs):
         with mock.patch('certbot.hooks.logger') as mock_logger:
             mock_logger.warning = mock.MagicMock()
             with mock.patch('certbot.hooks._run_hook') as mock_run_hook:
-                hook_function(config)
-                hook_function(config)
+                hook_function(config, **kwargs)
+                hook_function(config, **kwargs)
                 self.assertEqual(mock_run_hook.call_count, calls_expected)
             return mock_logger.warning
 
     def test_pre_hook(self):
-        hooks.pre_hook.already = False
         config = mock.MagicMock(pre_hook="true")
         self._test_a_hook(config, hooks.pre_hook, 1)
+        self._test_a_hook(config, hooks.pre_hook, 0)
+        config = mock.MagicMock(pre_hook="more_true")
+        self._test_a_hook(config, hooks.pre_hook, 1)
+        self._test_a_hook(config, hooks.pre_hook, 0)
         config = mock.MagicMock(pre_hook="")
         self._test_a_hook(config, hooks.pre_hook, 0)
 
-    def test_post_hook(self):
-        hooks.pre_hook.already = False
-        # if pre-hook isn't called, post-hook shouldn't be
-        config = mock.MagicMock(post_hook="true", verb="splonk")
-        self._test_a_hook(config, hooks.post_hook, 0)
+    def _test_renew_post_hooks(self, expected_count):
+        with mock.patch('certbot.hooks.logger.info') as mock_info:
+            with mock.patch('certbot.hooks._run_hook') as mock_run:
+                hooks.run_saved_post_hooks()
+                self.assertEqual(mock_run.call_count, expected_count)
+                self.assertEqual(mock_info.call_count, expected_count)
 
+    def test_post_hooks(self):
         config = mock.MagicMock(post_hook="true", verb="splonk")
-        self._test_a_hook(config, hooks.pre_hook, 1)
         self._test_a_hook(config, hooks.post_hook, 2)
+        self._test_renew_post_hooks(0)
 
         config = mock.MagicMock(post_hook="true", verb="renew")
         self._test_a_hook(config, hooks.post_hook, 0)
+        self._test_renew_post_hooks(1)
+        self._test_a_hook(config, hooks.post_hook, 0)
+        self._test_renew_post_hooks(1)
+
+        config = mock.MagicMock(post_hook="more_true", verb="renew")
+        self._test_a_hook(config, hooks.post_hook, 0)
+        self._test_renew_post_hooks(2)
 
     def test_renew_hook(self):
         with mock.patch.dict('os.environ', {}):

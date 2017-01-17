@@ -55,7 +55,9 @@ standalone_ Y    N    | Uses a "standalone" webserver to obtain a cert. Requires
                       | with no webserver, or when direct integration with the local
                       | webserver is not supported or not desired.
 manual_     Y    N    | Helps you obtain a cert by giving you instructions to perform http-01_ (80) or
-                      | domain validation yourself.                                   dns-01_ (53)
+                      | domain validation yourself. Additionally allows you to        dns-01_ (53)
+                      | specify scripts to automate the validation task in a
+                      | customized way.
 =========== ==== ==== =============================================================== =============================
 
 Under the hood, plugins use one of several ACME protocol "Challenges_" to
@@ -168,6 +170,11 @@ the UI, you can use the plugin to obtain a cert by specifying
 to copy and paste commands into another terminal session, which may
 be on a different computer.
 
+Additionally you can specify scripts to prepare for validation and perform the
+authentication procedure  and/or clean up after it by using the
+``--manual-auth-hook`` and ``--manual-cleanup-hook`` flags. This is described in
+more depth in the hooks_ section.
+
 .. _third-party-plugins:
 
 Third-party plugins
@@ -190,6 +197,7 @@ icecast_    N    Y    Deploy certs to Icecast 2 streaming media servers
 pritunl_    N    Y    Install certs in pritunl distributed OpenVPN servers
 proxmox_    N    Y    Install certs in Proxmox Virtualization servers
 postfix_    N    Y    STARTTLS Everywhere is becoming a Certbot Postfix/Exim plugin
+heroku_     Y    Y    Integration with Heroku SSL
 =========== ==== ==== ===============================================================
 
 .. _plesk: https://github.com/plesk/letsencrypt-plesk
@@ -203,6 +211,7 @@ postfix_    N    Y    STARTTLS Everywhere is becoming a Certbot Postfix/Exim plu
 .. _proxmox: https://github.com/kharkevich/letsencrypt-proxmox
 .. _external: https://github.com/marcan/letsencrypt-external
 .. _postfix: https://github.com/EFForg/starttls-everywhere
+.. _heroku: https://github.com/gboudreau/certbot-heroku
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
@@ -415,6 +424,129 @@ The following files are available:
    If you need other format, such as DER or PFX, then you
    could convert using ``openssl``. You can automate that with
    ``--renew-hook`` if you're using automatic renewal_.
+
+.. _hooks:
+
+Pre and Post Validation Hooks
+=============================
+
+Certbot allows for the specification fo pre and post validation hooks when run
+in manual mode. The flags to specify these scripts are ``--manual-auth-hook``
+and ``--manual-cleanup-hook`` respectively and can be used as such:
+
+::
+
+ certbot certonly --manual --manual-auth-hook /path/to/http/authenticator.sh --manual-cleanup-hook /path/to/http/cleanup.sh -d secure.example.com
+
+This will run the authenticator.sh script, attempt the validation, and then run
+the cleanup.sh script. Additionally certbot will pass three environment
+variables to these scripts:
+
+- ``CERTBOT_DOMAIN``: The domain being authenticated
+- ``CERTBOT_VALIDATION``: The validation string
+- ``CERTBOT_TOKEN``: Resource name part of the HTTP-01 challenege (HTTP-01 only)
+
+Additionally for cleanup:
+
+- ``CERTBOT_AUTH_OUTPUT``: Whatever the auth script wrote to stdout
+
+Example usage for HTTP-01:
+
+::
+
+ certbot certonly --manual --preferred-challenges=http --manual-auth-hook /path/to/http/authenticator.sh --manual-cleanup-hook /path/to/http/cleanup.sh -d secure.example.com
+
+/path/to/http/authenticator.sh
+
+.. code-block:: none
+
+   #!/bin/bash
+   echo $CERTBOT_VALIDATION > /var/www/htdocs/.well-known/acme-challenge/$CERTBOT_TOKEN
+
+/path/to/http/cleanup.sh
+
+.. code-block:: none
+
+   #!/bin/bash
+   rm -f /var/www/htdocs/.well-known/acme-challenge/$CERTBOT_TOKEN
+
+Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not use)
+
+::
+
+ certbot certonly --manual --preferred-challenges=dns --manual-auth-hook /path/to/dns/authenticator.sh --manual-cleanup-hook /path/to/dns/cleanup.sh -d secure.example.com
+
+/path/to/dns/authenticator.sh
+
+.. code-block:: none
+
+   #!/bin/bash
+
+   # Get your API key from https://www.cloudflare.com/a/account/my-account
+   API_KEY="your-api-key"
+   EMAIL="your.email@example.com"
+
+   # Strip only the top domain to get the zone id
+   DOMAIN=$(expr match "$CERTBOT_DOMAIN" '.*\.\(.*\..*\)')
+
+   # Get the Cloudflare zone id
+   ZONE_EXTRA_PARAMS="status=active&page=1&per_page=20&order=status&direction=desc&match=all"
+   ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$DOMAIN&$ZONE_EXTRA_PARAMS" \
+        -H     "X-Auth-Email: $EMAIL" \
+        -H     "X-Auth-Key: $API_KEY" \
+        -H     "Content-Type: application/json" | python -c "import sys,json;print(json.load(sys.stdin)['result'][0]['id'])")
+
+   # Create TXT record
+   CREATE_DOMAIN="_acme-challenge.$CERTBOT_DOMAIN"
+   RECORD_ID=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
+        -H     "X-Auth-Email: $EMAIL" \
+        -H     "X-Auth-Key: $API_KEY" \
+        -H     "Content-Type: application/json" \
+        --data '{"type":"TXT","name":"'"$CREATE_DOMAIN"'","content":"'"$CERTBOT_VALIDATION"'","ttl":120}' \
+                | python -c "import sys,json;print(json.load(sys.stdin)['result']['id'])")
+   # Save info for cleanup
+   if [ ! -d /tmp/CERTBOT_$CERTBOT_DOMAIN ];then
+           mkdir -m 0700 /tmp/CERTBOT_$CERTBOT_DOMAIN
+   fi
+   echo $ZONE_ID > /tmp/CERTBOT_$CERTBOT_DOMAIN/ZONE_ID
+   echo $RECORD_ID > /tmp/CERTBOT_$CERTBOT_DOMAIN/RECORD_ID
+
+   # Sleep to make sure the change has time to propagate over to DNS
+   sleep 25
+
+/path/to/dns/cleanup.sh
+
+.. code-block:: none
+
+   #!/bin/bash
+
+   # Get your API key from https://www.cloudflare.com/a/account/my-account
+   API_KEY="your-api-key"
+   EMAIL="your.email@example.com"
+
+   if [ -f /tmp/CERTBOT_$CERTBOT_DOMAIN/ZONE_ID ]; then
+           ZONE_ID=$(cat /tmp/CERTBOT_$CERTBOT_DOMAIN/ZONE_ID)
+           rm -f /tmp/CERTBOT_$CERTBOT_DOMAIN/ZONE_ID
+   fi
+
+   if [ -f /tmp/CERTBOT_$CERTBOT_DOMAIN/RECORD_ID ]; then
+           RECORD_ID=$(cat /tmp/CERTBOT_$CERTBOT_DOMAIN/RECORD_ID)
+           rm -f /tmp/CERTBOT_$CERTBOT_DOMAIN/RECORD_ID
+   fi
+
+   # Remove the challenge TXT record from the zone
+   if [ -n "${ZONE_ID}" ]; then
+       if [ -n "${RECORD_ID}" ]; then
+           curl -s -X DELETE "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
+                   -H "X-Auth-Email: $EMAIL" \
+                   -H "X-Auth-Key: $API_KEY" \
+                   -H "Content-Type: application/json"
+       fi
+   fi
+
+
+
+ 
 
 
 .. _config-file:
