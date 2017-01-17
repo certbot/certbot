@@ -432,6 +432,10 @@ class HelpfulArgumentParser(object):
 
         self.detect_defaults = detect_defaults
         self.args = args
+
+        if self.args[0] == 'help':
+            self.args[0] = '--help'
+
         self.determine_verb()
         help1 = self.prescan_for_flag("-h", self.help_topics)
         help2 = self.prescan_for_flag("--help", self.help_topics)
