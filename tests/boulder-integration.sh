@@ -155,6 +155,14 @@ openssl x509 -in "${root}/csr/cert-p384.pem" -text | grep 'ASN1 OID: secp384r1'
 common auth --must-staple --domains "must-staple.le.wtf"
 openssl x509 -in "${root}/conf/live/must-staple.le.wtf/cert.pem" -text | grep '1.3.6.1.5.5.7.1.24'
 
+# revoke by account key
+common revoke --cert-path "$root/conf/live/le.wtf/cert.pem"
+# revoke renewed
+common revoke --cert-path "$root/conf/live/le1.wtf/cert.pem"
+# revoke by cert key
+common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
+    --key-path "$root/conf/live/le2.wtf/privkey.pem"
+
 # Get new certs to test revoke with a reason, by account and by cert key
 common --domains le1.wtf
 common revoke --cert-path "$root/conf/live/le1.wtf/cert.pem" \

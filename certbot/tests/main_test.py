@@ -1171,7 +1171,7 @@ class UnregisterTest(unittest.TestCase):
             '_determine_account': mock.patch('certbot.main._determine_account'),
             'account': mock.patch('certbot.main.account'),
             'client': mock.patch('certbot.main.client'),
-            'getUtility': mock.patch('certbot.main.zope.component.getUtility')}
+            'get_utility': test_util.patch_get_utility()}
         self.mocks = dict((k, v.start()) for k, v in self.patchers.items())
 
     def tearDown(self):
@@ -1181,14 +1181,13 @@ class UnregisterTest(unittest.TestCase):
     def test_abort_unregister(self):
         self.mocks['account'].AccountFileStorage.return_value = mock.Mock()
 
-        util_mock = mock.Mock()
+        util_mock = self.mocks['get_utility'].return_value
         util_mock.yesno.return_value = False
-        self.mocks['getUtility'].return_value = util_mock
 
         config = mock.Mock()
         unused_plugins = mock.Mock()
 
-        res = main.unregister(config, None)
+        res = main.unregister(config, unused_plugins)
         self.assertEqual(res, "Deactivation aborted.")
 
     def test_unregister(self):
@@ -1209,7 +1208,7 @@ class UnregisterTest(unittest.TestCase):
         self.assertTrue(res is None)
         self.assertTrue(acme_client.acme.deactivate_registration.called)
         m = "Account deactivated."
-        self.assertTrue(m in self.mocks['getUtility']().add_message.call_args[0][0])
+        self.assertTrue(m in self.mocks['get_utility']().add_message.call_args[0][0])
 
     def test_unregister_no_account(self):
         mocked_storage = mock.MagicMock()
@@ -1224,7 +1223,7 @@ class UnregisterTest(unittest.TestCase):
 
         res = main.unregister(config, unused_plugins)
         m = "Could not find existing account to deactivate."
-        self.assertTrue(res == m)
+        self.assertEqual(res, m)
         self.assertFalse(acme_client.acme.deactivate_registration.called)
 
 
