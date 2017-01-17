@@ -131,7 +131,7 @@ class ParseTest(unittest.TestCase):
         self.assertTrue("%s" not in out)
         self.assertTrue("{0}" not in out)
 
-        # testing alternate help syntax
+    def test_help_no_dashes(self):
         self._help_output(['help'])  # assert SystemExit is raised here
 
         out = self._help_output(['help', 'all'])
