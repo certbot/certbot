@@ -8,10 +8,10 @@ User Guide
 Certbot Commands
 ================
 
-Certbot uses a number of different "commands" (also referred
-to, equivalently, as "subcommands") to request specific actions such as
-obtaining, renewing, or revoking certificates. Some of the most important
-and most commonly-used commands will be discussed throughout this
+Certbot uses a number of different commands (also referred
+to as "subcommands") to request specific actions such as
+obtaining, renewing, or revoking certificates. The most important
+and commonly-used commands will be discussed throughout this
 document; an exhaustive list also appears near the end of the document.
 
 The ``certbot`` script on your web server might be named ``letsencrypt`` if your system uses an older package, or ``certbot-auto`` if you used an alternate installation method. Throughout the docs, whenever you see ``certbot``, swap in the correct name as needed.
@@ -21,24 +21,24 @@ The ``certbot`` script on your web server might be named ``letsencrypt`` if your
 Getting certificates (and choosing plugins)
 ===========================================
 
-The Certbot client supports a number of different "plugins" that can be
-used to obtain and/or install certificates.
+The Certbot client supports two types of plugins for
+obtaining and installing certificates.
 
-Plugins that can obtain a cert are called "authenticators" and can be used with
-the "certonly" command. This will carry out the steps needed to validate that you
-control the domain(s) you are requesting a cert for, obtain a cert for the specified
-domain(s), and place it in the ``/etc/letsencrypt`` directory on your
-machine - without editing any of your server's configuration files to serve the
-obtained certificate. If you specify multiple domains to authenticate, they will
+Authenticators are plugins used with the ``certonly`` command to obtain a cert.
+The authenticator validates that you
+control the domain(s) you are requesting a cert for, obtains a cert for the specified
+domain(s), and places the cert in the ``/etc/letsencrypt`` directory on your
+machine. The authenticator does not install the cert (it does not edit any of your server's configuration files to serve the
+obtained certificate). If you specify multiple domains to authenticate, they will
 all be listed in a single certificate. To obtain multiple seperate certificates
 you will need to run Certbot multiple times.
 
-Plugins that can install a cert are called "installers" and can be used with the
-"install" command.  These plugins can modify your webserver's configuration to
+Installers are Plugins used with the ``install`` command to install a cert.
+These plugins can modify your webserver's configuration to
 serve your website over HTTPS using certificates obtained by certbot.
 
-Plugins that do both can be used with the "certbot run" command, which is the default
-when no command is specified. The "run" subcommand can also be used to specify
+Plugins that do both can be used with the ``certbot run`` command, which is the default
+when no command is specified. The ``run`` subcommand can also be used to specify
 a combination of distinct authenticator and installer plugins.
 
 =========== ==== ==== =============================================================== =============================
@@ -78,7 +78,7 @@ the circumstances in which each plugin can be used, and how to use it.
 Apache
 ------
 
-The Apache plugin currently requires OS with augeas version 1.0; currently `it
+The Apache plugin currently requires an OS with augeas version 1.0; currently `it
 supports
 <https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/constants.py>`_
 modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
@@ -253,22 +253,6 @@ certificate counts against several rate limits that are intended to prevent
 abuse of the ACME protocol, as described
 `here <https://community.letsencrypt.org/t/rate-limits-for-lets-encrypt/6769>`__.
 
-Certbot also provides a ``renew`` command. This command examines *all* existing
-certificates to determine whether or not each is near expiry. For any existing
-certificate that is near expiry, ``certbot renew`` will attempt to obtain a
-new certificate for the same domains. Unlike ``certonly``, ``renew`` acts on
-multiple certificates and always takes into account whether each one is near
-expiry. Because of this, ``renew`` is suitable (and designed) for automated use,
-to allow your system to automatically renew each certificate when appropriate.
-Since ``renew`` will only renew certificates that are near expiry it can be
-run as frequently as you want - since it will usually take no action.
-
-Typically, ``certbot renew`` runs a reduced risk of rate-limit problems
-because it renews certificates only when necessary, and because some of
-the Let's Encrypt CA's rate limit policies treat the issuance of a new
-certificate under these circumstances more generously. More details about
-the use of ``certbot renew`` are provided below.
-
 .. _renewal:
 
 Renewing certificates
@@ -287,7 +271,12 @@ them. The simplest form is simply
 This will attempt to renew any previously-obtained certificates that
 expire in less than 30 days. The same plugin and options that were used
 at the time the certificate was originally issued will be used for the
-renewal attempt, unless you specify other plugins or options.
+renewal attempt, unless you specify other plugins or options. Unlike ``certonly``, ``renew`` acts on
+multiple certificates and always takes into account whether each one is near
+expiry. Because of this, ``renew`` is suitable (and designed) for automated use,
+to allow your system to automatically renew each certificate when appropriate.
+Since ``renew`` will only renew certificates that are near expiry it can be
+run as frequently as you want - since it will usually take no action.
 
 You can also specify hooks to be run before or after a certificate is
 renewed. For example, if you have only a single cert and you obtained it using
@@ -470,7 +459,7 @@ Example usage for HTTP-01:
    #!/bin/bash
    rm -f /var/www/htdocs/.well-known/acme-challenge/$CERTBOT_TOKEN
 
-Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not use)
+Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not use as-is)
 
 ::
 
