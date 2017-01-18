@@ -9,7 +9,7 @@
 # Note: this script is called by Boulder integration test suite!
 
 . ./tests/integration/_common.sh
-export PATH="/usr/sbin:$PATH"  # /usr/sbin/nginx
+export PATH="$PATH:/usr/sbin"  # /usr/sbin/nginx
 
 export GOPATH="${GOPATH:-/tmp/go}"
 export PATH="$GOPATH/bin:$PATH"
@@ -19,6 +19,18 @@ if [ `uname` = "Darwin" ];then
 else
   readlink="readlink"
 fi
+
+cleanup_and_exit() {
+    EXIT_STATUS=$?
+    if SERVER_STILL_RUNNING=`ps -p $python_server_pid -o pid=`
+    then
+        echo Kill server subprocess, left running by abnormal exit
+        kill $SERVER_STILL_RUNNING
+    fi
+    exit $EXIT_STATUS
+}
+
+trap cleanup_and_exit EXIT
 
 common_no_force_renew() {
     certbot_test_no_force_renew \
@@ -33,18 +45,59 @@ common() {
         "$@"
 }
 
+export HOOK_TEST="/tmp/hook$$"
+CheckHooks() {
+    COMMON="wtf2.auth\nwtf2.cleanup\nrenew\nrenew"
+    EXPECTED="/tmp/expected$$"
+    if [ $(head -n1 $HOOK_TEST) = "wtf.pre" ]; then
+        echo "wtf.pre" > "$EXPECTED"
+        echo "wtf2.pre" >> "$EXPECTED"
+        echo $COMMON >> "$EXPECTED"
+        echo "wtf.post" >> "$EXPECTED"
+        echo "wtf2.post" >> "$EXPECTED"
+    else
+        echo "wtf2.pre" > "$EXPECTED"
+        echo "wtf.pre" >> "$EXPECTED"
+        echo $COMMON >> "$EXPECTED"
+        echo "wtf2.post" >> "$EXPECTED"
+        echo "wtf.post" >> "$EXPECTED"
+    fi
+
+    if cmp --quiet "$EXPECTED" "$HOOK_TEST" ; then
+        echo Hooks did not run as expected\; got
+        cat "$HOOK_TEST"
+        echo Expected
+        cat "$EXPECTED"
+    fi
+    rm "$HOOK_TEST"
+}
+
 # We start a server listening on the port for the
 # unrequested challenge to prevent regressions in #3601.
 python -m SimpleHTTPServer $http_01_port &
 python_server_pid=$!
-common --domains le1.wtf --preferred-challenges tls-sni-01 auth
+
+common --domains le1.wtf --preferred-challenges tls-sni-01 auth \
+       --pre-hook 'echo wtf.pre >> "$HOOK_TEST"' \
+       --post-hook 'echo wtf.post >> "$HOOK_TEST"'\
+       --renew-hook 'echo renew >> "$HOOK_TEST"'
 kill $python_server_pid
 python -m SimpleHTTPServer $tls_sni_01_port &
 python_server_pid=$!
-common --domains le2.wtf --preferred-challenges http-01 run
+common --domains le2.wtf --preferred-challenges http-01 run \
+       --pre-hook 'echo wtf.pre >> "$HOOK_TEST"' \
+       --post-hook 'echo wtf.post >> "$HOOK_TEST"'\
+       --renew-hook 'echo renew >> "$HOOK_TEST"'
 kill $python_server_pid
 
-common -a manual -d le.wtf auth --rsa-key-size 4096
+common certonly -a manual -d le.wtf --rsa-key-size 4096 \
+    --manual-auth-hook 'echo wtf2.auth >> "$HOOK_TEST" && ./tests/manual-http-auth.sh' \
+    --manual-cleanup-hook 'echo wtf2.cleanup >> "$HOOK_TEST" && ./tests/manual-http-cleanup.sh' \
+    --pre-hook 'echo wtf2.pre >> "$HOOK_TEST"' \
+    --post-hook 'echo wtf2.post >> "$HOOK_TEST"'
+
+common certonly -a manual -d dns.le.wtf --preferred-challenges dns-01 \
+    --manual-auth-hook ./tests/manual-dns-auth.sh
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
        OPENSSL_CNF=examples/openssl.cnf
@@ -73,8 +126,11 @@ common_no_force_renew renew
 CheckCertCount 1
 
 # --renew-by-default is used, so renewal should occur
+[ -f "$HOOK_TEST" ] && rm -f "$HOOK_TEST"
 common renew
 CheckCertCount 2
+CheckHooks
+
 
 # This will renew because the expiry is less than 10 years from now
 sed -i "4arenew_before_expiry = 4 years" "$root/conf/renewal/le.wtf.conf"
@@ -117,7 +173,18 @@ common revoke --cert-path "$root/conf/live/le.wtf/cert.pem"
 common revoke --cert-path "$root/conf/live/le1.wtf/cert.pem"
 # revoke by cert key
 common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
-       --key-path "$root/conf/live/le2.wtf/privkey.pem"
+    --key-path "$root/conf/live/le2.wtf/privkey.pem"
+
+# Get new certs to test revoke with a reason, by account and by cert key
+common --domains le1.wtf
+common revoke --cert-path "$root/conf/live/le1.wtf/cert.pem" \
+    --reason cessationOfOperation
+common --domains le2.wtf
+common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
+    --key-path "$root/conf/live/le2.wtf/privkey.pem" \
+    --reason keyCompromise
+
+common unregister
 
 if type nginx;
 then

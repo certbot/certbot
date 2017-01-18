@@ -29,10 +29,14 @@ class Addr(common.Addr):
     :param bool default: Whether the directive includes 'default_server'
 
     """
+    UNSPECIFIED_IPV4_ADDRESSES = ('', '*', '0.0.0.0')
+    CANONICAL_UNSPECIFIED_ADDRESS = UNSPECIFIED_IPV4_ADDRESSES[0]
+
     def __init__(self, host, port, ssl, default):
         super(Addr, self).__init__((host, port))
         self.ssl = ssl
         self.default = default
+        self.unspecified_address = host in self.UNSPECIFIED_IPV4_ADDRESSES
 
     @classmethod
     def fromstring(cls, str_addr):
@@ -96,6 +100,13 @@ class Addr(common.Addr):
     def super_eq(self, other):
         """Check ip/port equality, with IPv6 support.
         """
+        # If both addresses got an unspecified address, then make sure the
+        # host representation in each match when doing the comparison.
+        if self.unspecified_address and other.unspecified_address:
+            return common.Addr((self.CANONICAL_UNSPECIFIED_ADDRESS,
+                                self.tup[1]), self.ipv6) == \
+                   common.Addr((other.CANONICAL_UNSPECIFIED_ADDRESS,
+                                other.tup[1]), other.ipv6)
         # Nginx plugin currently doesn't support IPv6 but this will
         # future-proof it
         return super(Addr, self).__eq__(other)

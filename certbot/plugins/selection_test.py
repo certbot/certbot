@@ -6,6 +6,7 @@ import mock
 import zope.component
 
 from certbot.display import util as display_util
+from certbot.tests import util as test_util
 from certbot import interfaces
 
 
@@ -110,7 +111,8 @@ class ChoosePluginTest(unittest.TestCase):
     """Tests for certbot.plugins.selection.choose_plugin."""
 
     def setUp(self):
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
+        zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
+                                                               False))
         self.mock_apache = mock.Mock(
             description_with_name="a", misconfigured=True)
         self.mock_stand = mock.Mock(
@@ -125,14 +127,14 @@ class ChoosePluginTest(unittest.TestCase):
         from certbot.plugins.selection import choose_plugin
         return choose_plugin(self.plugins, "Question?")
 
-    @mock.patch("certbot.plugins.selection.z_util")
+    @test_util.patch_get_utility("certbot.plugins.selection.z_util")
     def test_selection(self, mock_util):
         mock_util().menu.side_effect = [(display_util.OK, 0),
                                         (display_util.OK, 1)]
         self.assertEqual(self.mock_stand, self._call())
         self.assertEqual(mock_util().notification.call_count, 1)
 
-    @mock.patch("certbot.plugins.selection.z_util")
+    @test_util.patch_get_utility("certbot.plugins.selection.z_util")
     def test_more_info(self, mock_util):
         mock_util().menu.side_effect = [
             (display_util.HELP, 0),
@@ -143,7 +145,7 @@ class ChoosePluginTest(unittest.TestCase):
         self.assertEqual(self.mock_stand, self._call())
         self.assertEqual(mock_util().notification.call_count, 2)
 
-    @mock.patch("certbot.plugins.selection.z_util")
+    @test_util.patch_get_utility("certbot.plugins.selection.z_util")
     def test_no_choice(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, 0)
         self.assertTrue(self._call() is None)

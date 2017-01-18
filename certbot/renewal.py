@@ -1,7 +1,7 @@
 """Functionality for autorenewal and associated juggling of configurations"""
 from __future__ import print_function
 import copy
-import glob
+import itertools
 import logging
 import os
 import traceback
@@ -11,7 +11,6 @@ import zope.component
 
 import OpenSSL
 
-from certbot import configuration
 from certbot import cli
 
 from certbot import crypto_util
@@ -30,20 +29,14 @@ logger = logging.getLogger(__name__)
 # the renewal configuration process loses this information.
 STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
-                    "standalone_supported_challenges", "renew_hook"]
+                    "standalone_supported_challenges", "renew_hook",
+                    "pre_hook", "post_hook"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
+BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names"]
 
+CONFIG_ITEMS = set(itertools.chain(
+    BOOL_CONFIG_ITEMS, INT_CONFIG_ITEMS, STR_CONFIG_ITEMS))
 
-def renewal_conf_files(config):
-    """Return /path/to/*.conf in the renewal conf directory"""
-    return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
-
-def renewal_file_for_certname(config, certname):
-    """Return /path/to/certname.conf in the renewal conf directory"""
-    path = os.path.join(config.renewal_configs_dir, "{0}.conf".format(certname))
-    if not os.path.exists(path):
-        raise errors.CertStorageError("No certificate found with name {0}.".format(certname))
-    return path
 
 def _reconstitute(config, full_path):
     """Try to instantiate a RenewableCert, updating config with relevant items.
@@ -63,8 +56,7 @@ def _reconstitute(config, full_path):
 
     """
     try:
-        renewal_candidate = storage.RenewableCert(
-            full_path, configuration.RenewerConfiguration(config))
+        renewal_candidate = storage.RenewableCert(full_path, config)
     except (errors.CertStorageError, IOError) as exc:
         logger.warning(exc)
         logger.warning("Renewal configuration file %s is broken. Skipping.", full_path)
@@ -82,7 +74,7 @@ def _reconstitute(config, full_path):
     # Now restore specific values along with their data types, if
     # those elements are present.
     try:
-        _restore_required_config_elements(config, renewalparams)
+        restore_required_config_elements(config, renewalparams)
         _restore_plugin_configs(config, renewalparams)
     except (ValueError, errors.Error) as error:
         logger.warning(
@@ -162,7 +154,7 @@ def _restore_plugin_configs(config, renewalparams):
                     setattr(config.namespace, config_item, cast(config_value))
 
 
-def _restore_required_config_elements(config, renewalparams):
+def restore_required_config_elements(config, renewalparams):
     """Sets non-plugin specific values in config from renewalparams
 
     :param configuration.NamespaceConfig config: configuration for the
@@ -171,30 +163,69 @@ def _restore_required_config_elements(config, renewalparams):
         configuration file that defines this lineage
 
     """
-    # string-valued items to add if they're present
-    for config_item in STR_CONFIG_ITEMS:
-        if config_item in renewalparams and not cli.set_by_cli(config_item):
-            value = renewalparams[config_item]
-            # Unfortunately, we've lost type information from ConfigObj,
-            # so we don't know if the original was NoneType or str!
-            if value == "None":
-                value = None
-            setattr(config.namespace, config_item, value)
-    # int-valued items to add if they're present
-    for config_item in INT_CONFIG_ITEMS:
-        if config_item in renewalparams and not cli.set_by_cli(config_item):
-            config_value = renewalparams[config_item]
-            # the default value for http01_port was None during private beta
-            if config_item == "http01_port" and config_value == "None":
-                logger.info("updating legacy http01_port value")
-                int_value = cli.flag_default("http01_port")
-            else:
-                try:
-                    int_value = int(config_value)
-                except ValueError:
-                    raise errors.Error(
-                        "Expected a numeric value for {0}".format(config_item))
-            setattr(config.namespace, config_item, int_value)
+
+    required_items = itertools.chain(
+        six.moves.zip(BOOL_CONFIG_ITEMS, itertools.repeat(_restore_bool)),
+        six.moves.zip(INT_CONFIG_ITEMS, itertools.repeat(_restore_int)),
+        six.moves.zip(STR_CONFIG_ITEMS, itertools.repeat(_restore_str)))
+    for item_name, restore_func in required_items:
+        if item_name in renewalparams and not cli.set_by_cli(item_name):
+            value = restore_func(item_name, renewalparams[item_name])
+            setattr(config.namespace, item_name, value)
+
+
+def _restore_bool(name, value):
+    """Restores an boolean key-value pair from a renewal config file.
+
+    :param str name: option name
+    :param str value: option value
+
+    :returns: converted option value to be stored in the runtime config
+    :rtype: bool
+
+    :raises errors.Error: if value can't be converted to an bool
+
+    """
+    lowercase_value = value.lower()
+    if lowercase_value not in ("true", "false"):
+        raise errors.Error(
+            "Expected True or False for {0} but found {1}".format(name, value))
+    return lowercase_value == "true"
+
+
+def _restore_int(name, value):
+    """Restores an integer key-value pair from a renewal config file.
+
+    :param str name: option name
+    :param str value: option value
+
+    :returns: converted option value to be stored in the runtime config
+    :rtype: int
+
+    :raises errors.Error: if value can't be converted to an int
+
+    """
+    if name == "http01_port" and value == "None":
+        logger.info("updating legacy http01_port value")
+        return cli.flag_default("http01_port")
+
+    try:
+        return int(value)
+    except ValueError:
+        raise errors.Error("Expected a numeric value for {0}".format(name))
+
+
+def _restore_str(unused_name, value):
+    """Restores an string key-value pair from a renewal config file.
+
+    :param str unused_name: option name
+    :param str value: option value
+
+    :returns: converted option value to be stored in the runtime config
+    :rtype: str or None
+
+    """
+    return None if value == "None" else value
 
 
 def should_renew(config, lineage):
@@ -232,12 +263,14 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
                     "unless you use the --break-my-certs flag!".format(names))
 
 
-def renew_cert(config, le_client, lineage):
+def renew_cert(config, domains, le_client, lineage):
     "Renew a certificate lineage."
     renewal_params = lineage.configuration["renewalparams"]
     original_server = renewal_params.get("server", cli.flag_default("server"))
     _avoid_invalidating_lineage(config, lineage, original_server)
-    new_certr, new_chain, new_key, _ = le_client.obtain_certificate(lineage.names())
+    if not domains:
+        domains = lineage.names()
+    new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
     if config.dry_run:
         logger.debug("Dry run: skipping updating lineage at %s",
                     os.path.dirname(lineage.cert))
@@ -246,12 +279,11 @@ def renew_cert(config, le_client, lineage):
         new_cert = OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, new_certr.body.wrapped)
         new_chain = crypto_util.dump_pyopenssl_chain(new_chain)
-        renewal_conf = configuration.RenewerConfiguration(config.namespace)
         # TODO: Check return value of save_successor
-        lineage.save_successor(prior_version, new_cert, new_key.pem, new_chain, renewal_conf)
+        lineage.save_successor(prior_version, new_cert, new_key.pem, new_chain, config)
         lineage.update_all_links_to(lineage.latest_common_version())
 
-    hooks.renew_hook(config, lineage.names(), lineage.live_dir)
+    hooks.renew_hook(config, domains, lineage.live_dir)
 
 
 def report(msgs, category):
@@ -274,6 +306,9 @@ def _renew_describe_results(config, renew_successes, renew_failures,
         notify(report(renew_skipped, "skipped"))
     if not renew_successes and not renew_failures:
         notify("No renewals were attempted.")
+        if (config.pre_hook is not None or
+                config.renew_hook is not None or config.post_hook is not None):
+            notify("No hooks were run.")
     elif renew_successes and not renew_failures:
         notify("Congratulations, all renewals succeeded. The following certs "
                "have been renewed:")
@@ -317,12 +352,10 @@ def handle_renewal_request(config):
                            "command. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
 
-    renewer_config = configuration.RenewerConfiguration(config)
-
     if config.certname:
-        conf_files = [renewal_file_for_certname(renewer_config, config.certname)]
+        conf_files = [storage.renewal_file_for_certname(config, config.certname)]
     else:
-        conf_files = renewal_conf_files(renewer_config)
+        conf_files = storage.renewal_conf_files(config)
 
     renew_successes = []
     renew_failures = []

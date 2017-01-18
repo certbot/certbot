@@ -118,9 +118,9 @@ class ErrorHandler(object):
         self.prev_handlers.clear()
 
     def _signal_handler(self, signum, unused_frame):
-        """Replacement function for handling recieved signals.
+        """Replacement function for handling received signals.
 
-        Store the recieved signal. If we are executing the code block in
+        Store the received signal. If we are executing the code block in
         the body of the context manager, stop by raising signal exit.
 
         :param int signum: number of current signal

@@ -81,6 +81,9 @@ class ClientTest(unittest.TestCase):
             uri='https://www.letsencrypt-demo.org/acme/cert/1',
             cert_chain_uri='https://www.letsencrypt-demo.org/ca')
 
+        # Reason code for revocation
+        self.rsn = 1
+
     def test_init_downloads_directory(self):
         uri = 'http://www.letsencrypt-demo.org/directory'
         from acme.client import Client
@@ -120,6 +123,20 @@ class ClientTest(unittest.TestCase):
             contact=()).to_json()
         self.assertRaises(
             errors.UnexpectedUpdate, self.client.update_registration, self.regr)
+
+    def test_deactivate_account(self):
+        self.response.headers['Location'] = self.regr.uri
+        self.response.json.return_value = self.regr.body.to_json()
+        self.assertEqual(self.regr,
+                         self.client.deactivate_registration(self.regr))
+
+    def test_deactivate_account_bad_registration_returned(self):
+        self.response.headers['Location'] = self.regr.uri
+        self.response.json.return_value = "some wrong registration thing"
+        self.assertRaises(
+            errors.UnexpectedUpdate,
+            self.client.deactivate_registration,
+            self.regr)
 
     def test_query_registration(self):
         self.response.json.return_value = self.regr.body.to_json()
@@ -427,13 +444,22 @@ class ClientTest(unittest.TestCase):
         self.assertRaises(errors.Error, self.client.fetch_chain, self.certr)
 
     def test_revoke(self):
-        self.client.revoke(self.certr.body)
+        self.client.revoke(self.certr.body, self.rsn)
         self.net.post.assert_called_once_with(
             self.directory[messages.Revocation], mock.ANY, content_type=None)
 
+    def test_revocation_payload(self):
+        obj = messages.Revocation(certificate=self.certr.body, reason=self.rsn)
+        self.assertTrue('reason' in obj.to_partial_json().keys())
+        self.assertEquals(self.rsn, obj.to_partial_json()['reason'])
+
     def test_revoke_bad_status_raises_error(self):
         self.response.status_code = http_client.METHOD_NOT_ALLOWED
-        self.assertRaises(errors.ClientError, self.client.revoke, self.certr)
+        self.assertRaises(
+            errors.ClientError,
+            self.client.revoke,
+            self.certr,
+            self.rsn)
 
 
 class ClientNetworkTest(unittest.TestCase):

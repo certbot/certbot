@@ -38,20 +38,22 @@ ANSI_SGR_RED = "\033[31m"
 ANSI_SGR_RESET = "\033[0m"
 
 
-def run_script(params):
+def run_script(params, log=logger.error):
     """Run the script with the given params.
 
     :param list params: List of parameters to pass to Popen
+    :param logging.Logger log: Logger to use for errors
 
     """
     try:
         proc = subprocess.Popen(params,
                                 stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
+                                stderr=subprocess.PIPE,
+                                universal_newlines=True)
 
     except (OSError, ValueError):
         msg = "Unable to run the command: %s" % " ".join(params)
-        logger.error(msg)
+        log(msg)
         raise errors.SubprocessError(msg)
 
     stdout, stderr = proc.communicate()
@@ -60,7 +62,7 @@ def run_script(params):
         msg = "Error while running %s.\n%s\n%s" % (
             " ".join(params), stdout, stderr)
         # Enter recovery routine...
-        logger.error(msg)
+        log(msg)
         raise errors.SubprocessError(msg)
 
     return stdout, stderr
@@ -476,13 +478,15 @@ def enforce_domain_sanity(domain):
     # FQDN checks according to RFC 2181: domain name should be less than 255
     # octets (inclusive). And each label is 1 - 63 octets (inclusive).
     # https://tools.ietf.org/html/rfc2181#section-11
-    msg = "Requested domain {0} is not a FQDN because ".format(domain)
+    msg = "Requested domain {0} is not a FQDN because".format(domain)
+    if len(domain) > 255:
+        raise errors.ConfigurationError("{0} it is too long.".format(msg))
     labels = domain.split('.')
     for l in labels:
-        if not 0 < len(l) < 64:
-            raise errors.ConfigurationError(msg + "label {0} is too long.".format(l))
-    if len(domain) > 255:
-        raise errors.ConfigurationError(msg + "it is too long.")
+        if not l:
+            raise errors.ConfigurationError("{0} it contains an empty label.".format(msg))
+        elif len(l) > 63:
+            raise errors.ConfigurationError("{0} label {1} is too long.".format(msg, l))
 
     return domain
 

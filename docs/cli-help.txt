@@ -1,39 +1,61 @@
 usage: 
-  certbot [SUBCOMMAND] [options] [-d domain] [-d domain] ...
+  certbot [SUBCOMMAND] [options] [-d DOMAIN] [-d DOMAIN] ...
 
 Certbot can obtain and install HTTPS/TLS/SSL certificates.  By default,
 it will attempt to use a webserver both for obtaining and installing the
-cert. Major SUBCOMMANDS are:
+cert. The most common SUBCOMMANDS and flags are:
 
-  (default) run        Obtain & install a cert in your current webserver
-  certonly             Obtain cert, but do not install it (aka "auth")
-  install              Install a previously obtained cert in a server
-  renew                Renew previously obtained certs that are near expiry
-  revoke               Revoke a previously obtained certificate
-  register             Perform tasks related to registering with the CA
-  rollback             Rollback server configuration changes made during install
-  config_changes       Show changes made to server config during installation
-  plugins              Display information about installed plugins
+obtain, install, and renew certificates:
+    (default) run   Obtain & install a cert in your current webserver
+    certonly        Obtain or renew a cert, but do not install it
+    renew           Renew all previously obtained certs that are near expiry
+   -d DOMAINS       Comma-separated list of domains to obtain a cert for
+
+  --apache          Use the Apache plugin for authentication & installation
+  --standalone      Run a standalone webserver for authentication
+  --nginx           Use the Nginx plugin for authentication & installation
+  --webroot         Place files in a server's webroot folder for authentication
+  --manual          Obtain certs interactively, or using shell script hooks
+
+   -n               Run non-interactively
+  --test-cert       Obtain a test cert from a staging server
+  --dry-run         Test "renew" or "certonly" without saving any certs to disk
+
+manage certificates:
+    certificates    Display information about certs you have from Certbot
+    revoke          Revoke a certificate (supply --cert-path)
+    delete          Delete a certificate
+
+manage your account with Let's Encrypt:
+    register        Create a Let's Encrypt ACME account
+  --agree-tos       Agree to the ACME server's Subscriber Agreement
+   -m EMAIL         Email address for important account notifications
 
 optional arguments:
   -h, --help            show this help message and exit
   -c CONFIG_FILE, --config CONFIG_FILE
-                        config file path (default: None)
+                        path to config file (default: /etc/letsencrypt/cli.ini
+                        and ~/.config/letsencrypt/cli.ini)
   -v, --verbose         This flag can be used multiple times to incrementally
                         increase the verbosity of output, e.g. -vvv. (default:
                         -2)
-  -t, --text            Use the text output instead of the curses UI.
-                        (default: False)
   -n, --non-interactive, --noninteractive
                         Run without ever asking for user input. This may
                         require additional command line flags; the client will
                         try to explain which ones are required if it finds one
                         missing (default: False)
-  --dialog              Run using interactive dialog menus (default: False)
+  --force-interactive   Force Certbot to be interactive even if it detects
+                        it's not being run in a terminal. This flag cannot be
+                        used with the renew subcommand. (default: False)
   -d DOMAIN, --domains DOMAIN, --domain DOMAIN
                         Domain names to apply. For multiple domains you can
                         use multiple -d flags or enter a comma separated list
-                        of domains as a parameter. (default: [])
+                        of domains as a parameter. (default: Ask)
+  --cert-name CERTNAME  Certificate name to apply. Only one certificate name
+                        can be used per Certbot run. To see certificate names,
+                        run 'certbot certificates'. When creating a new
+                        certificate, specifies the new certificate's name.
+                        (default: None)
   --dry-run             Perform a test run of the client, obtaining test
                         (invalid) certs but not saving them to disk. This can
                         currently only be used with the 'certonly' and 'renew'
@@ -48,24 +70,6 @@ optional arguments:
                         because they may be necessary to accurately simulate
                         renewal. --renew-hook commands are not called.
                         (default: False)
-  --register-unsafely-without-email
-                        Specifying this flag enables registering an account
-                        with no email address. This is strongly discouraged,
-                        because in the event of key loss or account compromise
-                        you will irrevocably lose access to your account. You
-                        will also be unable to receive notice about impending
-                        expiration or revocation of your certificates. Updates
-                        to the Subscriber Agreement will still affect you, and
-                        will be effective 14 days after posting an update to
-                        the web site. (default: False)
-  --update-registration
-                        With the register verb, indicates that details
-                        associated with an existing registration, such as the
-                        e-mail address, should be updated, rather than
-                        registering a new account. (default: False)
-  -m EMAIL, --email EMAIL
-                        Email used for registration and recovery contact.
-                        (default: None)
   --preferred-challenges PREF_CHALLS
                         A sorted, comma delimited list of the preferred
                         challenge to use during authorization with the most
@@ -81,7 +85,9 @@ optional arguments:
                         agent strings allow the CA to collect high level
                         statistics about success rates by OS and plugin. If
                         you wish to hide your server OS version from the Let's
-                        Encrypt server, set this to "". (default: None)
+                        Encrypt server, set this to "". (default:
+                        CertbotACMEClient/0.10.1 (Ubuntu 16.04.1 LTS)
+                        Authenticator/XXX Installer/YYY)
 
 automation:
   Arguments for automating execution & other tweaks
@@ -90,16 +96,21 @@ automation:
                         If the requested cert matches an existing cert, always
                         keep the existing one until it is due for renewal (for
                         the 'run' subcommand this means reinstall the existing
-                        cert) (default: False)
+                        cert). (default: Ask)
   --expand              If an existing cert covers some subset of the
                         requested names, always expand and replace it with the
-                        additional names. (default: False)
+                        additional names. (default: Ask)
   --version             show program's version number and exit
   --force-renewal, --renew-by-default
                         If a certificate already exists for the requested
                         domains, renew it now, regardless of whether it is
                         near expiry. (Often --keep-until-expiring is more
                         appropriate). Also implies --expand. (default: False)
+  --renew-with-new-domains
+                        If a certificate already exists for the requested
+                        certificate name but does not match the requested
+                        domains, renew it now, regardless of whether it is
+                        near expiry. (default: False)
   --allow-subset-of-names
                         When performing domain validation, do not consider it
                         a failure if authorizations can not be obtained for a
@@ -108,8 +119,7 @@ automation:
                         succeed even if some domains no longer point at this
                         system. This option cannot be used with --csr.
                         (default: False)
-  --agree-tos           Agree to the ACME Subscriber Agreement (default:
-                        False)
+  --agree-tos           Agree to the ACME Subscriber Agreement (default: Ask)
   --account ACCOUNT_ID  Account ID to use (default: None)
   --duplicate           Allow making a certificate lineage that duplicates an
                         existing one (both can be renewed in parallel)
@@ -118,7 +128,7 @@ automation:
                         and then stop (default: False)
   --no-self-upgrade     (certbot-auto only) prevent the certbot-auto script
                         from upgrading itself to newer released versions
-                        (default: False)
+                        (default: Upgrade automatically)
   -q, --quiet           Silence all output except errors. Useful for
                         automation via cron. Implies --non-interactive.
                         (default: False)
@@ -132,47 +142,89 @@ security:
                         supported setups (Apache version >= 2.3.3 ). (default:
                         False)
   --redirect            Automatically redirect all HTTP traffic to HTTPS for
-                        the newly authenticated vhost. (default: None)
+                        the newly authenticated vhost. (default: Ask)
   --no-redirect         Do not automatically redirect all HTTP traffic to
                         HTTPS for the newly authenticated vhost. (default:
-                        None)
+                        Ask)
   --hsts                Add the Strict-Transport-Security header to every HTTP
                         response. Forcing browser to always use SSL for the
                         domain. Defends against SSL Stripping. (default:
                         False)
-  --no-hsts             Do not automatically add the Strict-Transport-Security
-                        header to every HTTP response. (default: False)
   --uir                 Add the "Content-Security-Policy: upgrade-insecure-
                         requests" header to every HTTP response. Forcing the
                         browser to use https:// for every http:// resource.
                         (default: None)
-  --no-uir              Do not automatically set the "Content-Security-Policy:
-                        upgrade-insecure-requests" header to every HTTP
-                        response. (default: None)
   --staple-ocsp         Enables OCSP Stapling. A valid OCSP response is
                         stapled to the certificate that the server offers
                         during TLS. (default: None)
-  --no-staple-ocsp      Do not automatically enable OCSP Stapling. (default:
-                        None)
   --strict-permissions  Require that all configuration files are owned by the
                         current user; only needed if your config is somewhere
                         unsafe like /tmp/ (default: False)
 
 testing:
-  The following flags are meant for testing purposes only! Do NOT change
-  them, unless you really know what you're doing!
+  The following flags are meant for testing and integration purposes only.
 
   --test-cert, --staging
-                        Use the staging server to obtain test (invalid) certs;
-                        equivalent to --server https://acme-
+                        Use the staging server to obtain or revoke test
+                        (invalid) certs; equivalent to --server https://acme-
                         staging.api.letsencrypt.org/directory (default: False)
   --debug               Show tracebacks in case of errors, and allow certbot-
                         auto execution on experimental platforms (default:
                         False)
   --no-verify-ssl       Disable verification of the ACME server's certificate.
                         (default: False)
+  --tls-sni-01-port TLS_SNI_01_PORT
+                        Port used during tls-sni-01 challenge. This only
+                        affects the port Certbot listens on. A conforming ACME
+                        server will still attempt to connect on port 443.
+                        (default: 443)
+  --http-01-port HTTP01_PORT
+                        Port used in the http-01 challenge. This only affects
+                        the port Certbot listens on. A conforming ACME server
+                        will still attempt to connect on port 80. (default:
+                        80)
   --break-my-certs      Be willing to replace or renew valid certs with
                         invalid (testing/staging) certs (default: False)
+
+paths:
+  Arguments changing execution paths & servers
+
+  --cert-path CERT_PATH
+                        Path to where cert is saved (with auth --csr),
+                        installed from, or revoked. (default: None)
+  --key-path KEY_PATH   Path to private key for cert installation or
+                        revocation (if account key is missing) (default: None)
+  --chain-path CHAIN_PATH
+                        Accompanying path to a certificate chain. (default:
+                        None)
+  --config-dir CONFIG_DIR
+                        Configuration directory. (default: /etc/letsencrypt)
+  --work-dir WORK_DIR   Working directory. (default: /var/lib/letsencrypt)
+  --logs-dir LOGS_DIR   Logs directory. (default: /var/log/letsencrypt)
+  --server SERVER       ACME Directory Resource URI. (default:
+                        https://acme-v01.api.letsencrypt.org/directory)
+
+manage:
+  Various subcommands and flags are available for managing your
+  certificates:
+
+  certificates          List certificates managed by Certbot
+  delete                Clean up all files related to a certificate
+  renew                 Renew all certificates (or one specifed with --cert-
+                        name)
+  revoke                Revoke a certificate specified with --cert-path
+  update_symlinks       Recreate symlinks in your /etc/letsencrypt/live/
+                        directory
+
+run:
+  Options for obtaining & installing certs
+
+certonly:
+  Options for modifying how a cert is obtained
+
+  --csr CSR             Path to a Certificate Signing Request (CSR) in DER or
+                        PEM format. Currently --csr only works with the
+                        'certonly' subcommand. (default: None)
 
 renew:
   The 'renew' subcommand will attempt to renew all certificates (or more
@@ -190,14 +242,17 @@ renew:
                         can be used to temporarily shut down a webserver that
                         might conflict with the standalone plugin. This will
                         only be called if a certificate is actually to be
-                        obtained/renewed. (default: None)
+                        obtained/renewed. When renewing several certificates
+                        that have identical pre-hooks, only the first will be
+                        executed. (default: None)
   --post-hook POST_HOOK
                         Command to be run in a shell after attempting to
                         obtain/renew certificates. Can be used to deploy
                         renewed certificates, or to restart any servers that
                         were stopped by --pre-hook. This is only run if an
-                        attempt was made to obtain/renew a certificate.
-                        (default: None)
+                        attempt was made to obtain/renew a certificate. If
+                        multiple renewed certificates have identical post-
+                        hooks, only one will be run. (default: None)
   --renew-hook RENEW_HOOK
                         Command to be run in a shell once for each
                         successfully renewed certificate. For this command,
@@ -214,71 +269,69 @@ renew:
                         the hooks aren't being run just yet. The validation is
                         rather simplistic and fails if you use more advanced
                         shell constructs, so you can use this switch to
-                        disable it. (default: True)
+                        disable it. (default: False)
 
-certonly:
-  Options for modifying how a cert is obtained
+certificates:
+  List certificates managed by Certbot
 
-  --tls-sni-01-port TLS_SNI_01_PORT
-                        Port used during tls-sni-01 challenge. This only
-                        affects the port Certbot listens on. A conforming ACME
-                        server will still attempt to connect on port 443.
-                        (default: 443)
-  --http-01-port HTTP01_PORT
-                        Port used in the http-01 challenge. This only affects
-                        the port Certbot listens on. A conforming ACME server
-                        will still attempt to connect on port 80. (default:
-                        80)
-  --csr CSR             Path to a Certificate Signing Request (CSR) in DER or
-                        PEM format. Currently --csr only works with the
-                        'certonly' subcommand. (default: None)
-
-install:
-  Options for modifying how a cert is deployed
+delete:
+  Options for deleting a certificate
 
 revoke:
   Options for revocation of certs
 
+register:
+  Options for account registration & modification
+
+  --register-unsafely-without-email
+                        Specifying this flag enables registering an account
+                        with no email address. This is strongly discouraged,
+                        because in the event of key loss or account compromise
+                        you will irrevocably lose access to your account. You
+                        will also be unable to receive notice about impending
+                        expiration or revocation of your certificates. Updates
+                        to the Subscriber Agreement will still affect you, and
+                        will be effective 14 days after posting an update to
+                        the web site. (default: False)
+  --update-registration
+                        With the register verb, indicates that details
+                        associated with an existing registration, such as the
+                        e-mail address, should be updated, rather than
+                        registering a new account. (default: False)
+  -m EMAIL, --email EMAIL
+                        Email used for registration and recovery contact.
+                        (default: Ask)
+
+install:
+  Options for modifying how a cert is deployed
+
+  --fullchain-path FULLCHAIN_PATH
+                        Accompanying path to a full certificate chain (cert
+                        plus chain). (default: None)
+
+config_changes:
+  Options for controlling which changes are displayed
+
+  --num NUM             How many past revisions you want to be displayed
+                        (default: None)
+
 rollback:
-  Options for reverting config changes
+  Options for rolling back server configuration changes
 
   --checkpoints N       Revert configuration N number of checkpoints.
                         (default: 1)
 
 plugins:
-  Options for the "plugins" subcommand
+  Options for for the "plugins" subcommand
 
   --init                Initialize plugins. (default: False)
   --prepare             Initialize and prepare plugins. (default: False)
   --authenticators      Limit to authenticator plugins only. (default: None)
   --installers          Limit to installer plugins only. (default: None)
 
-config_changes:
-  Options for showing a history of config changes
-
-  --num NUM             How many past revisions you want to be displayed
-                        (default: None)
-
-paths:
-  Arguments changing execution paths & servers
-
-  --cert-path CERT_PATH
-                        Path to where cert is saved (with auth --csr),
-                        installed from or revoked. (default: None)
-  --key-path KEY_PATH   Path to private key for cert installation or
-                        revocation (if account key is missing) (default: None)
-  --fullchain-path FULLCHAIN_PATH
-                        Accompanying path to a full certificate chain (cert
-                        plus chain). (default: None)
-  --chain-path CHAIN_PATH
-                        Accompanying path to a certificate chain. (default:
-                        None)
-  --config-dir CONFIG_DIR
-                        Configuration directory. (default: /etc/letsencrypt)
-  --work-dir WORK_DIR   Working directory. (default: /var/lib/letsencrypt)
-  --logs-dir LOGS_DIR   Logs directory. (default: /var/log/letsencrypt)
-  --server SERVER       ACME Directory Resource URI. (default:
-                        https://acme-v01.api.letsencrypt.org/directory)
+update_symlinks:
+  Recreates cert and key symlinks in /etc/letsencrypt/live, if you changed
+  them by hand or edited a renewal configuration file
 
 plugins:
   Plugin Selection: Certbot client supports an extensible plugins
@@ -287,15 +340,15 @@ plugins:
   provided below. Running --help <plugin_name> will list flags specific to
   that plugin.
 
+  --configurator CONFIGURATOR
+                        Name of the plugin that is both an authenticator and
+                        an installer. Should not be used together with
+                        --authenticator or --installer. (default: Ask)
   -a AUTHENTICATOR, --authenticator AUTHENTICATOR
                         Authenticator plugin name. (default: None)
   -i INSTALLER, --installer INSTALLER
                         Installer plugin name (also used to find domains).
                         (default: None)
-  --configurator CONFIGURATOR
-                        Name of the plugin that is both an authenticator and
-                        an installer. Should not be used together with
-                        --authenticator or --installer. (default: None)
   --apache              Obtain and install certs using Apache (default: False)
   --nginx               Obtain and install certs using Nginx (default: False)
   --standalone          Obtain certs using a "standalone" webserver. (default:
@@ -318,13 +371,24 @@ standalone:
   Spin up a temporary webserver
 
 manual:
-  Manually configure an HTTP server
+  Authenticate through manual configuration or custom shell scripts. When
+  using shell scripts, an authenticator script must be provided. The
+  environment variables available to this script are $CERTBOT_DOMAIN which
+  contains the domain being authenticated, $CERTBOT_VALIDATION which is the
+  validation string, and $CERTBOT_TOKEN which is the filename of the
+  resource requested when performing an HTTP-01 challenge. An additional
+  cleanup script can also be provided and can use the additional variable
+  $CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth
+  script.
 
-  --manual-test-mode    Test mode. Executes the manual command in subprocess.
-                        (default: False)
+  --manual-auth-hook MANUAL_AUTH_HOOK
+                        Path or command to execute for the authentication
+                        script (default: None)
+  --manual-cleanup-hook MANUAL_CLEANUP_HOOK
+                        Path or command to execute for the cleanup script
+                        (default: None)
   --manual-public-ip-logging-ok
-                        Automatically allows public IP logging. (default:
-                        False)
+                        Automatically allows public IP logging (default: Ask)
 
 webroot:
   Place files in webroot directory
@@ -335,7 +399,7 @@ webroot:
                         domain will have the webroot path that preceded it.
                         For instance: `-w /var/www/example -d example.com -d
                         www.example.com -w /var/www/thing -d thing.net -d
-                        m.thing.net` (default: [])
+                        m.thing.net` (default: Ask)
   --webroot-map WEBROOT_MAP
                         JSON dictionary mapping domains to webroot paths; this
                         implies -d for each entry. You may need to escape this

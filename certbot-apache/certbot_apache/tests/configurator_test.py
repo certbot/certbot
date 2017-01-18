@@ -13,6 +13,7 @@ from certbot import achallenges
 from certbot import errors
 
 from certbot.tests import acme_util
+from certbot.tests import util as certbot_util
 
 from certbot_apache import configurator
 from certbot_apache import parser
@@ -97,7 +98,7 @@ class MultipleVhostsTest(util.ApacheTest):
         # Weak test..
         ApacheConfigurator.add_parser_arguments(mock.MagicMock())
 
-    @mock.patch("zope.component.getUtility")
+    @certbot_util.patch_get_utility()
     def test_get_all_names(self, mock_getutility):
         mock_getutility.notification = mock.MagicMock(return_value=True)
         names = self.config.get_all_names()
@@ -105,7 +106,7 @@ class MultipleVhostsTest(util.ApacheTest):
             ["certbot.demo", "ocspvhost.com", "encryption-example.demo",
                 "ip-172-30-0-17", "*.blue.purple.com"]))
 
-    @mock.patch("zope.component.getUtility")
+    @certbot_util.patch_get_utility()
     @mock.patch("certbot_apache.configurator.socket.gethostbyaddr")
     def test_get_all_names_addrs(self, mock_gethost, mock_getutility):
         mock_gethost.side_effect = [("google.com", "", ""), socket.error]
@@ -219,10 +220,6 @@ class MultipleVhostsTest(util.ApacheTest):
 
         self.assertRaises(
             errors.PluginError, self.config.choose_vhost, "none.com")
-
-    def test_choosevhost_select_vhost_with_wildcard(self):
-        chosen_vhost = self.config.choose_vhost("blue.purple.com", temp=True)
-        self.assertEqual(self.vh_truth[6], chosen_vhost)
 
     def test_findbest_continues_on_short_domain(self):
         # pylint: disable=protected-access
@@ -1121,7 +1118,7 @@ class MultipleVhostsTest(util.ApacheTest):
         not_rewriterule = "NotRewriteRule ^ ..."
         self.assertFalse(self.config._sift_rewrite_rule(not_rewriterule))
 
-    @mock.patch("certbot_apache.configurator.zope.component.getUtility")
+    @certbot_util.patch_get_utility()
     def test_make_vhost_ssl_with_existing_rewrite_rule(self, mock_get_utility):
         self.config.parser.modules.add("rewrite_module")
 
@@ -1150,7 +1147,7 @@ class MultipleVhostsTest(util.ApacheTest):
         mock_get_utility().add_message.assert_called_once_with(mock.ANY,
 
                                                                mock.ANY)
-    @mock.patch("certbot_apache.configurator.zope.component.getUtility")
+    @certbot_util.patch_get_utility()
     def test_make_vhost_ssl_with_existing_rewrite_conds(self, mock_get_utility):
         self.config.parser.modules.add("rewrite_module")
 
@@ -1255,8 +1252,6 @@ class AugeasVhostsTest(util.ApacheTest):
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)
-        self.vh_truth = util.get_vh_truth(
-            self.temp_dir, "debian_apache_2_4/augeas_vhosts")
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -1280,6 +1275,42 @@ class AugeasVhostsTest(util.ApacheTest):
         mock_vhost.return_value = None
         vhs = self.config.get_virtual_hosts()
         self.assertEqual([], vhs)
+
+    def test_choose_vhost_with_matching_wildcard(self):
+        names = (
+            "an.example.net", "another.example.net", "an.other.example.net")
+        for name in names:
+            self.assertFalse(name in self.config.choose_vhost(name).aliases)
+
+    def test_choose_vhost_without_matching_wildcard(self):
+        mock_path = "certbot_apache.display_ops.select_vhost"
+        with mock.patch(mock_path, lambda _, vhosts: vhosts[0]):
+            for name in ("a.example.net", "other.example.net"):
+                self.assertTrue(name in self.config.choose_vhost(name).aliases)
+
+    def test_choose_vhost_wildcard_not_found(self):
+        mock_path = "certbot_apache.display_ops.select_vhost"
+        names = (
+            "abc.example.net", "not.there.tld", "aa.wildcard.tld"
+        )
+        with mock.patch(mock_path) as mock_select:
+            mock_select.return_value = self.config.vhosts[0]
+            for name in names:
+                orig_cc = mock_select.call_count
+                self.config.choose_vhost(name)
+                self.assertEqual(mock_select.call_count - orig_cc, 1)
+
+    def test_choose_vhost_wildcard_found(self):
+        mock_path = "certbot_apache.display_ops.select_vhost"
+        names = (
+            "ab.example.net", "a.wildcard.tld", "yetanother.example.net"
+        )
+        with mock.patch(mock_path) as mock_select:
+            mock_select.return_value = self.config.vhosts[0]
+            for name in names:
+                self.config.choose_vhost(name)
+                self.assertEqual(mock_select.call_count, 0)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

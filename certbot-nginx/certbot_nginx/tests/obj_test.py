@@ -1,5 +1,6 @@
 """Test the helper objects in certbot_nginx.obj."""
 import unittest
+import itertools
 
 
 class AddrTest(unittest.TestCase):
@@ -71,6 +72,24 @@ class AddrTest(unittest.TestCase):
         self.assertEqual(self.addr1, new_addr1)
         self.assertNotEqual(self.addr1, self.addr2)
         self.assertFalse(self.addr1 == 3333)
+
+    def test_equivalent_any_addresses(self):
+        from certbot_nginx.obj import Addr
+        any_addresses = ("0.0.0.0:80 default_server ssl",
+                         "80 default_server ssl",
+                         "*:80 default_server ssl")
+        for first, second in itertools.combinations(any_addresses, 2):
+            self.assertEqual(Addr.fromstring(first), Addr.fromstring(second))
+
+        # Also, make sure ports are checked.
+        self.assertNotEqual(Addr.fromstring(any_addresses[0]),
+                            Addr.fromstring("0.0.0.0:443 default_server ssl"))
+
+        # And they aren't equivalent to a specified address.
+        for any_address in any_addresses:
+            self.assertNotEqual(
+                Addr.fromstring("192.168.1.2:80 default_server ssl"),
+                Addr.fromstring(any_address))
 
     def test_set_inclusion(self):
         from certbot_nginx.obj import Addr
