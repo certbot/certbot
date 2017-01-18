@@ -1,4 +1,5 @@
 """Certbot command line argument & config processing."""
+# pylint: disable=too-many-lines
 from __future__ import print_function
 import argparse
 import copy
