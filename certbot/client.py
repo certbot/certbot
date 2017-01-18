@@ -162,10 +162,12 @@ def eff_sign_up(config):
         display = zope.component.getUtility(interfaces.IDisplay)
         config.eff_email = display.yesno(prompt, default=False)
     if config.eff_email:
+        url = constants.EFF_SUBSCRIBE_URI
         data = {"data_type": "json",
                 "email": config.email,
                 "form_id": "eff_supporters_library_subscribe_form"}
-        requests.post(constants.EFF_SUBSCRIBE_URI, data=data)
+        logger.debug("Sending POST request to %s:\n%s", url, data)
+        requests.post(url, data=data)
 
 
 def perform_registration(acme, config):
