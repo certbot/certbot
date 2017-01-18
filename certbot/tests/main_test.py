@@ -363,6 +363,9 @@ class DetermineAccountTest(unittest.TestCase):
 
     def setUp(self):
         self.args = mock.MagicMock(account=None, email=None,
+                                   config_dir="unused_config",
+                                   logs_dir="unused_logs",
+                                   work_dir="unused_work",
                                    register_unsafely_without_email=False)
         self.config = configuration.NamespaceConfig(self.args)
         self.accs = [mock.MagicMock(id='x'), mock.MagicMock(id='y')]
@@ -883,7 +886,9 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         rc_path = test_util.make_lineage(self, 'sample-renewal-ancient.conf')
-        args = mock.MagicMock(account=None, email=None, webroot_path=None)
+        args = mock.MagicMock(account=None, config_dir=self.config_dir,
+                              logs_dir=self.logs_dir, work_dir=self.work_dir,
+                              email=None, webroot_path=None)
         config = configuration.NamespaceConfig(args)
         lineage = storage.RenewableCert(rc_path, config)
         renewalparams = lineage.configuration["renewalparams"]

@@ -2,6 +2,7 @@
 import os
 import mock
 import unittest
+import shutil
 import tempfile
 
 from certbot import configuration
@@ -16,11 +17,16 @@ class RenewalTest(unittest.TestCase):
         self.tmp_dir = tempfile.mkdtemp()
         self.config_dir = os.path.join(self.tmp_dir, 'config')
 
+    def tearDown(self):
+        shutil.rmtree(self.tmp_dir)
+
     @mock.patch('certbot.cli.set_by_cli')
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         rc_path = util.make_lineage(self, 'sample-renewal-ancient.conf')
-        args = mock.MagicMock(account=None, email=None, webroot_path=None)
+        args = mock.MagicMock(account=None, config_dir=self.config_dir,
+                              logs_dir="logs", work_dir="work",
+                              email=None, webroot_path=None)
         config = configuration.NamespaceConfig(args)
         lineage = storage.RenewableCert(rc_path, config)
         renewalparams = lineage.configuration['renewalparams']
