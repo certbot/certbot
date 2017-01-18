@@ -20,6 +20,18 @@ else
   readlink="readlink"
 fi
 
+cleanup_and_exit() {
+    EXIT_STATUS=$?
+    if SERVER_STILL_RUNNING=`ps -p $python_server_pid -o pid=`
+    then
+        echo Kill server subprocess, left running by abnormal exit
+        kill $SERVER_STILL_RUNNING
+    fi
+    exit $EXIT_STATUS
+}
+
+trap cleanup_and_exit EXIT
+
 common_no_force_renew() {
     certbot_test_no_force_renew \
         --authenticator standalone \
