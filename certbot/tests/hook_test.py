@@ -5,16 +5,14 @@ import os
 import unittest
 
 import mock
+from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import errors
 from certbot import hooks
 
 class HookTest(unittest.TestCase):
     def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
+        reload_module(hooks)
 
     @mock.patch('certbot.hooks._prog')
     def test_validate_hooks(self, mock_prog):
@@ -47,7 +45,6 @@ class HookTest(unittest.TestCase):
             return mock_logger.warning
 
     def test_pre_hook(self):
-        hooks.pre_hook.already = set()
         config = mock.MagicMock(pre_hook="true")
         self._test_a_hook(config, hooks.pre_hook, 1)
         self._test_a_hook(config, hooks.pre_hook, 0)

@@ -1807,7 +1807,7 @@ def get_file_path(vhost_path):
         else:
             return None
     except AttributeError:
-        # If we recieved a None path
+        # If we received a None path
         return None
 
     last_good = ""

@@ -263,12 +263,14 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
                     "unless you use the --break-my-certs flag!".format(names))
 
 
-def renew_cert(config, le_client, lineage):
+def renew_cert(config, domains, le_client, lineage):
     "Renew a certificate lineage."
     renewal_params = lineage.configuration["renewalparams"]
     original_server = renewal_params.get("server", cli.flag_default("server"))
     _avoid_invalidating_lineage(config, lineage, original_server)
-    new_certr, new_chain, new_key, _ = le_client.obtain_certificate(lineage.names())
+    if not domains:
+        domains = lineage.names()
+    new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
     if config.dry_run:
         logger.debug("Dry run: skipping updating lineage at %s",
                     os.path.dirname(lineage.cert))
@@ -281,7 +283,7 @@ def renew_cert(config, le_client, lineage):
         lineage.save_successor(prior_version, new_cert, new_key.pem, new_chain, config)
         lineage.update_all_links_to(lineage.latest_common_version())
 
-    hooks.renew_hook(config, lineage.names(), lineage.live_dir)
+    hooks.renew_hook(config, domains, lineage.live_dir)
 
 
 def report(msgs, category):
