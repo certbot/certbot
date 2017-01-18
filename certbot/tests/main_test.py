@@ -362,6 +362,9 @@ class DetermineAccountTest(unittest.TestCase):
 
     def setUp(self):
         self.args = mock.MagicMock(account=None, email=None,
+                                   config_dir="unused_config",
+                                   logs_dir="unused_logs",
+                                   work_dir="unused_work",
                                    register_unsafely_without_email=False)
         self.config = configuration.NamespaceConfig(self.args)
         self.accs = [mock.MagicMock(id='x'), mock.MagicMock(id='y')]
