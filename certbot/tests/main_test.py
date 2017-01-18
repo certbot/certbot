@@ -1,4 +1,5 @@
 """Tests for certbot.main."""
+# pylint: disable=too-many-lines
 from __future__ import print_function
 
 import itertools
@@ -1162,6 +1163,68 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                         self.assertTrue(mocked_storage.save_regr.called)
                         self.assertTrue(
                             email in mock_utility().add_message.call_args[0][0])
+
+
+class UnregisterTest(unittest.TestCase):
+    def setUp(self):
+        self.patchers = {
+            '_determine_account': mock.patch('certbot.main._determine_account'),
+            'account': mock.patch('certbot.main.account'),
+            'client': mock.patch('certbot.main.client'),
+            'get_utility': test_util.patch_get_utility()}
+        self.mocks = dict((k, v.start()) for k, v in self.patchers.items())
+
+    def tearDown(self):
+        for patch in self.patchers.values():
+            patch.stop()
+
+    def test_abort_unregister(self):
+        self.mocks['account'].AccountFileStorage.return_value = mock.Mock()
+
+        util_mock = self.mocks['get_utility'].return_value
+        util_mock.yesno.return_value = False
+
+        config = mock.Mock()
+        unused_plugins = mock.Mock()
+
+        res = main.unregister(config, unused_plugins)
+        self.assertEqual(res, "Deactivation aborted.")
+
+    def test_unregister(self):
+        mocked_storage = mock.MagicMock()
+        mocked_storage.find_all.return_value = ["an account"]
+
+        self.mocks['account'].AccountFileStorage.return_value = mocked_storage
+        self.mocks['_determine_account'].return_value = (mock.MagicMock(), "foo")
+
+        acme_client = mock.MagicMock()
+        self.mocks['client'].Client.return_value = acme_client
+
+        config = mock.MagicMock()
+        unused_plugins = mock.MagicMock()
+
+        res = main.unregister(config, unused_plugins)
+
+        self.assertTrue(res is None)
+        self.assertTrue(acme_client.acme.deactivate_registration.called)
+        m = "Account deactivated."
+        self.assertTrue(m in self.mocks['get_utility']().add_message.call_args[0][0])
+
+    def test_unregister_no_account(self):
+        mocked_storage = mock.MagicMock()
+        mocked_storage.find_all.return_value = []
+        self.mocks['account'].AccountFileStorage.return_value = mocked_storage
+
+        acme_client = mock.MagicMock()
+        self.mocks['client'].Client.return_value = acme_client
+
+        config = mock.MagicMock()
+        unused_plugins = mock.MagicMock()
+
+        res = main.unregister(config, unused_plugins)
+        m = "Could not find existing account to deactivate."
+        self.assertEqual(res, m)
+        self.assertFalse(acme_client.acme.deactivate_registration.called)
 
 
 class TestHandleException(unittest.TestCase):

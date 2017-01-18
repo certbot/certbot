@@ -366,6 +366,10 @@ VERB_HELP = [
         "short": "Register for account with Let's Encrypt / other ACME server",
         "opts": "Options for account registration & modification"
     }),
+    ("unregister", {
+        "short": "Irrevocably deactivate your account",
+        "opts": "Options for account deactivation."
+    }),
     ("install", {
         "short": "Install an arbitrary cert in a server",
         "opts": "Options for modifying how a cert is deployed"
@@ -414,6 +418,7 @@ class HelpfulArgumentParser(object):
             "install": main.install,
             "plugins": main.plugins_cmd,
             "register": main.register,
+            "unregister": main.unregister,
             "renew": main.renew,
             "revoke": main.revoke,
             "rollback": main.rollback,
@@ -871,7 +876,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="With the register verb, indicates that details associated "
              "with an existing registration, such as the e-mail address, "
              "should be updated, rather than registering a new account.")
-    helpful.add(["register", "automation"], "-m", "--email", help=config_help("email"))
+    helpful.add(
+        ["register", "unregister", "automation"], "-m", "--email",
+        help=config_help("email"))
     helpful.add(
         ["automation", "certonly", "run"],
         "--keep-until-expiring", "--keep", "--reinstall",
@@ -913,7 +920,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "automation", "--agree-tos", dest="tos", action="store_true",
         help="Agree to the ACME Subscriber Agreement (default: Ask)")
     helpful.add(
-        "automation", "--account", metavar="ACCOUNT_ID",
+        ["unregister", "automation"], "--account", metavar="ACCOUNT_ID",
         help="Account ID to use")
     helpful.add(
         "automation", "--duplicate", dest="duplicate", action="store_true",

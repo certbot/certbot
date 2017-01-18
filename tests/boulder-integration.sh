@@ -9,7 +9,7 @@
 # Note: this script is called by Boulder integration test suite!
 
 . ./tests/integration/_common.sh
-export PATH="/usr/sbin:$PATH"  # /usr/sbin/nginx
+export PATH="$PATH:/usr/sbin"  # /usr/sbin/nginx
 
 export GOPATH="${GOPATH:-/tmp/go}"
 export PATH="$GOPATH/bin:$PATH"
@@ -161,7 +161,8 @@ common revoke --cert-path "$root/conf/live/le.wtf/cert.pem"
 common revoke --cert-path "$root/conf/live/le1.wtf/cert.pem"
 # revoke by cert key
 common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
-       --key-path "$root/conf/live/le2.wtf/privkey.pem"
+    --key-path "$root/conf/live/le2.wtf/privkey.pem"
+
 # Get new certs to test revoke with a reason, by account and by cert key
 common --domains le1.wtf
 common revoke --cert-path "$root/conf/live/le1.wtf/cert.pem" \
@@ -170,6 +171,9 @@ common --domains le2.wtf
 common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
     --key-path "$root/conf/live/le2.wtf/privkey.pem" \
     --reason keyCompromise
+
+common unregister
+
 if type nginx;
 then
     . ./certbot-nginx/tests/boulder-integration.sh
