@@ -10,6 +10,7 @@ import mock
 from acme import jose
 
 from certbot import account
+from certbot import constants
 from certbot import errors
 from certbot import util
 
@@ -44,20 +45,25 @@ class RegisterTest(unittest.TestCase):
     def test_no_tos(self):
         with mock.patch("certbot.client.acme_client.Client") as mock_client:
             mock_client.register().terms_of_service = "http://tos"
-            with mock.patch("certbot.account.report_new_account"):
-                self.tos_cb.return_value = False
-                self.assertRaises(errors.Error, self._call)
+            with mock.patch("certbot.client.eff_sign_up") as mock_sign_up:
+                with mock.patch("certbot.account.report_new_account"):
+                    self.tos_cb.return_value = False
+                    self.assertRaises(errors.Error, self._call)
+                    self.assertFalse(mock_sign_up.called)
 
-                self.tos_cb.return_value = True
-                self._call()
+                    self.tos_cb.return_value = True
+                    self._call()
+                    self.assertTrue(mock_sign_up.called)
 
-                self.tos_cb = None
-                self._call()
+                    self.tos_cb = None
+                    self._call()
+                    self.assertEqual(mock_sign_up.call_count, 2)
 
     def test_it(self):
         with mock.patch("certbot.client.acme_client.Client"):
             with mock.patch("certbot.account.report_new_account"):
-                self._call()
+                with mock.patch("certbot.client.eff_sign_up"):
+                    self._call()
 
     @mock.patch("certbot.account.report_new_account")
     @mock.patch("certbot.client.display_ops.get_email")
@@ -67,9 +73,11 @@ class RegisterTest(unittest.TestCase):
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
         mx_err = messages.Error.with_code('invalidContact', detail=msg)
         with mock.patch("certbot.client.acme_client.Client") as mock_client:
-            mock_client().register.side_effect = [mx_err, mock.MagicMock()]
-            self._call()
-            self.assertEqual(mock_get_email.call_count, 1)
+            with mock.patch("certbot.client.eff_sign_up") as mock_sign_up:
+                mock_client().register.side_effect = [mx_err, mock.MagicMock()]
+                self._call()
+                self.assertEqual(mock_get_email.call_count, 1)
+                self.assertTrue(mock_sign_up.called)
 
     @mock.patch("certbot.account.report_new_account")
     def test_email_invalid_noninteractive(self, _rep):
@@ -77,8 +85,9 @@ class RegisterTest(unittest.TestCase):
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
         mx_err = messages.Error.with_code('invalidContact', detail=msg)
         with mock.patch("certbot.client.acme_client.Client") as mock_client:
-            mock_client().register.side_effect = [mx_err, mock.MagicMock()]
-            self.assertRaises(errors.Error, self._call)
+            with mock.patch("certbot.client.eff_sign_up"):
+                mock_client().register.side_effect = [mx_err, mock.MagicMock()]
+                self.assertRaises(errors.Error, self._call)
 
     def test_needs_email(self):
         self.config.email = None
@@ -86,21 +95,79 @@ class RegisterTest(unittest.TestCase):
 
     @mock.patch("certbot.client.logger")
     def test_without_email(self, mock_logger):
-        with mock.patch("certbot.client.acme_client.Client"):
-            with mock.patch("certbot.account.report_new_account"):
-                self.config.email = None
-                self.config.register_unsafely_without_email = True
-                self.config.dry_run = False
-                self._call()
-                mock_logger.warning.assert_called_once_with(mock.ANY)
+        with mock.patch("certbot.client.eff_sign_up") as mock_sign_up:
+            with mock.patch("certbot.client.acme_client.Client"):
+                with mock.patch("certbot.account.report_new_account"):
+                    self.config.email = None
+                    self.config.register_unsafely_without_email = True
+                    self.config.dry_run = False
+                    self._call()
+                    mock_logger.warning.assert_called_once_with(mock.ANY)
+                    self.assertFalse(mock_sign_up.called)
 
     def test_unsupported_error(self):
         from acme import messages
         msg = "Test"
         mx_err = messages.Error(detail=msg, typ="malformed", title="title")
         with mock.patch("certbot.client.acme_client.Client") as mock_client:
-            mock_client().register.side_effect = [mx_err, mock.MagicMock()]
-            self.assertRaises(messages.Error, self._call)
+            with mock.patch("certbot.client.eff_sign_up"):
+                mock_client().register.side_effect = [mx_err, mock.MagicMock()]
+                self.assertRaises(messages.Error, self._call)
+
+
+class EffSignUpTest(unittest.TestCase):
+    """Tests for certbot.client.eff_sign_up."""
+    # pylint gets confused on patched method calls
+    # pylint: disable=no-value-for-parameter
+
+    def setUp(self):
+        self.config = mock.MagicMock(eff_email=None, email="foo@example.com")
+
+    def _call(self):
+        from certbot.client import eff_sign_up
+        return eff_sign_up(self.config)
+
+    def test_preset_no(self):
+        self.config.eff_email = False
+        self._call_and_assert_not_subscribed()
+
+    def test_preset_yes(self):
+        self.config.eff_email = True
+        self._call_and_assert_subscribed()
+
+    @test_util.patch_get_utility()
+    def test_prompt_no(self, mock_get_utility):
+        mock_yesno = mock_get_utility.return_value.yesno
+        mock_yesno.return_value = False
+        self._call_and_assert_not_subscribed()
+        self._assert_correct_yesno_call(mock_yesno)
+
+    @test_util.patch_get_utility()
+    def test_prompt_yes(self, mock_get_utility):
+        mock_yesno = mock_get_utility.return_value.yesno
+        mock_yesno.return_value = True
+        self._call_and_assert_subscribed()
+        self._assert_correct_yesno_call(mock_yesno)
+
+    def _assert_correct_yesno_call(self, mock_yesno):
+        call_args, call_kwargs = mock_yesno.call_args
+        self.assertTrue("Electronic Frontier Foundation" in call_args[0])
+        self.assertFalse(call_kwargs.get("default", True))
+
+    @mock.patch("certbot.client.requests.post")
+    def _call_and_assert_subscribed(self, mock_post):
+        self._call()
+
+        self.assertTrue(mock_post.called)
+
+        call_args, call_kwargs = mock_post.call_args
+        self.assertEqual(call_args[0], constants.EFF_SUBSCRIBE_URI)
+        self.assertEqual(call_kwargs["data"]["email"], self.config.email)
+
+    @mock.patch("certbot.client.requests.post")
+    def _call_and_assert_not_subscribed(self, mock_post):
+        self._call()
+        self.assertFalse(mock_post.called)
 
 
 class ClientTestCommon(unittest.TestCase):

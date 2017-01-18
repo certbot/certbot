@@ -5,6 +5,7 @@ import os
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 import OpenSSL
+import requests
 import zope.component
 
 from acme import client as acme_client
@@ -117,8 +118,6 @@ def register(config, account_storage, tos_cb=None):
             raise errors.Error(msg)
         if not config.dry_run:
             logger.warning("Registering without email!")
-    else:
-        eff_sign_up(config)
 
     # Each new registration shall use a fresh new key
     key = jose.JWKRSA(key=jose.ComparableRSAKey(
@@ -141,6 +140,9 @@ def register(config, account_storage, tos_cb=None):
     account.report_new_account(acc, config)
     account_storage.save(acc)
 
+    if config.email is not None:
+        eff_sign_up(config)
+
     return acc, acme
 
 
@@ -160,8 +162,10 @@ def eff_sign_up(config):
         display = zope.component.getUtility(interfaces.IDisplay)
         config.eff_email = display.yesno(prompt, default=False)
     if config.eff_email:
-        # requests.post("eff.org", config.email)
-        pass
+        data = {"data_type": "json",
+                "email": config.email,
+                "form_id": "eff_supporters_library_subscribe_form"}
+        requests.post(constants.EFF_SUBSCRIBE_URI, data=data)
 
 
 def perform_registration(acme, config):
