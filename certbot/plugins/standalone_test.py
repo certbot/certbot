@@ -154,6 +154,15 @@ class AuthenticatorTest(unittest.TestCase):
         expected = [achall.response(achall.account_key) for achall in achalls]
         self.assertEqual(response, expected)
 
+    def test_perform_eacces(self):
+        self.auth.servers = mock.MagicMock()
+        socket_error = mock.MagicMock(errno=socket.errno.EACCES)
+        error = errors.StandaloneBindError(socket_error, -1)
+        self.auth.servers.run.side_effect = error
+
+        achalls = self._get_achalls()
+        self.assertRaises(errors.PluginError, self.auth.perform, achalls)
+
     @classmethod
     def _get_achalls(cls):
         domain = b'localhost'
