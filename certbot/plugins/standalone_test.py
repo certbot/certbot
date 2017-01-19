@@ -158,6 +158,11 @@ class AuthenticatorTest(unittest.TestCase):
         achalls = self._setup_perform_error(socket.errno.EACCES)
         self.assertRaises(errors.PluginError, self.auth.perform, achalls)
 
+    def test_perform_unexpected_socket_error(self):
+        achalls = self._setup_perform_error(socket.errno.ENOTCONN)
+        self.assertRaises(
+            errors.StandaloneBindError, self.auth.perform, achalls)
+
     def _setup_perform_error(self, errno):
         self.auth.servers = mock.MagicMock()
         socket_error = mock.MagicMock(errno=errno)
