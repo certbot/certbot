@@ -210,6 +210,28 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
     """ACME dns-01 challenge response."""
     typ = "dns-01"
 
+    def simple_verify(self, chall, domain, account_public_key):
+        """Simple verify.
+
+        This method no longer checks DNS records and is a simple wrapper
+        around `KeyAuthorizationChallengeResponse.verify`.
+
+        :param challenges.DNS01 chall: Corresponding challenge.
+        :param unicode domain: Domain name being verified.
+        :param JWK account_public_key: Public key for the key pair
+            being authorized.
+
+        :return: ``True`` iff verification of the key authorization was
+            successful.
+        :rtype: bool
+
+        """
+        # pylint: disable=unused-argument
+        verified = self.verify(chall, account_public_key)
+        if not verified:
+            logger.debug("Verification of key authorization in response failed")
+        return verified
+
 
 @Challenge.register  # pylint: disable=too-many-ancestors
 class DNS01(KeyAuthorizationChallenge):
