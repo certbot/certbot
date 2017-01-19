@@ -158,6 +158,17 @@ class AuthenticatorTest(unittest.TestCase):
         achalls = self._setup_perform_error(socket.errno.EACCES)
         self.assertRaises(errors.PluginError, self.auth.perform, achalls)
 
+    @test_util.patch_get_utility()
+    def test_perform_eaddrinuse_no_retry(self, mock_get_utility):
+        achalls = self._setup_perform_error(socket.errno.EADDRINUSE)
+        mock_yesno = mock_get_utility.return_value.yesno
+        mock_yesno.return_value = False
+
+        self.assertRaises(errors.PluginError, self.auth.perform, achalls)
+        yesno_args, yesno_kwargs = mock_yesno.call_args
+        self.assertTrue("in use" in yesno_args[0])
+        self.assertFalse(yesno_kwargs.get("default", True))
+
     def test_perform_unexpected_socket_error(self):
         achalls = self._setup_perform_error(socket.errno.ENOTCONN)
         self.assertRaises(
