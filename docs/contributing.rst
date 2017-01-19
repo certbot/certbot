@@ -15,7 +15,7 @@ Running a local copy of the client
 ----------------------------------
 
 Running the client in developer mode from your local tree is a little
-different than running ``letsencrypt-auto``.  To get set up, do these things
+different than running ``certbot-auto``.  To get set up, do these things
 once:
 
 .. code-block:: shell
