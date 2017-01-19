@@ -157,7 +157,7 @@ class AuthenticatorTest(unittest.TestCase):
 
         return [http_01, tls_sni_01]
 
-    @mock.patch("certbot.plugins.standalone.zope.component.getUtility")
+    @test_util.patch_get_utility()
     def test_perform(self, unused_mock_get_utility):
         achalls = self._get_achalls()
 
@@ -165,7 +165,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(mock.sentinel.responses, self.auth.perform(achalls))
         self.auth.perform2.assert_called_once_with(achalls)
 
-    @mock.patch("certbot.plugins.standalone.zope.component.getUtility")
+    @test_util.patch_get_utility()
     def _test_perform_bind_errors(self, errno, achalls, mock_get_utility):
         port = get_open_port()
         def _perform2(unused_achalls):

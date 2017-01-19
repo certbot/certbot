@@ -191,11 +191,9 @@ class NginxConfigurator(common.Plugin):
                         vhost.filep, vhost.names)
         except errors.MisconfigurationError as error:
             logger.debug(error)
-            logger.warning(
-                "Cannot find a cert or key directive in %s for %s. "
-                "VirtualHost was not modified.", vhost.filep, vhost.names)
             # Presumably break here so that the virtualhost is not modified
-            return False
+            raise errors.PluginError("Cannot find a cert or key directive in {0} for {1}. "
+                "VirtualHost was not modified.".format(vhost.filep, vhost.names))
 
         self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
                             (vhost.filep,

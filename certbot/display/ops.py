@@ -46,7 +46,8 @@ def get_email(invalid=False, optional=True):
     while True:
         try:
             code, email = z_util(interfaces.IDisplay).input(
-                invalid_prefix + msg if invalid else msg)
+                invalid_prefix + msg if invalid else msg,
+                force_interactive=True)
         except errors.MissingCommandlineFlag:
             msg = ("You should register before running non-interactively, "
                    "or provide --agree-tos and --email <email_address> flags.")
@@ -79,7 +80,7 @@ def choose_account(accounts):
     labels = [acc.slug for acc in accounts]
 
     code, index = z_util(interfaces.IDisplay).menu(
-        "Please choose an account", labels)
+        "Please choose an account", labels, force_interactive=True)
     if code == display_util.OK:
         return accounts[index]
     else:
@@ -157,7 +158,7 @@ def _filter_names(names):
 
     code, names = z_util(interfaces.IDisplay).checklist(
         "Which names would you like to activate HTTPS for?",
-        tags=sorted_names, cli_flag="--domains")
+        tags=sorted_names, cli_flag="--domains", force_interactive=True)
     return code, [str(s) for s in names]
 
 
@@ -173,7 +174,7 @@ def _choose_names_manually(prompt_prefix=""):
     code, input_ = z_util(interfaces.IDisplay).input(
         prompt_prefix +
         "Please enter in your domain name(s) (comma and/or space separated) ",
-        cli_flag="--domains")
+        cli_flag="--domains", force_interactive=True)
 
     if code == display_util.OK:
         invalid_domains = dict()
@@ -211,7 +212,8 @@ def _choose_names_manually(prompt_prefix=""):
 
         if retry_message:
             # We had error in input
-            retry = z_util(interfaces.IDisplay).yesno(retry_message)
+            retry = z_util(interfaces.IDisplay).yesno(retry_message,
+                                                      force_interactive=True)
             if retry:
                 return _choose_names_manually()
         else:

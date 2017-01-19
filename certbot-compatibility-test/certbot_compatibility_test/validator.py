@@ -4,6 +4,8 @@ import socket
 import requests
 import zope.interface
 
+import six
+
 from acme import crypto_util
 from acme import errors as acme_errors
 from certbot import interfaces
@@ -19,7 +21,14 @@ class Validator(object):
 
     def certificate(self, cert, name, alt_host=None, port=443):
         """Verifies the certificate presented at name is cert"""
-        host = alt_host if alt_host else socket.gethostbyname(name)
+        if alt_host is None:
+            host = socket.gethostbyname(name)
+        elif isinstance(alt_host, six.binary_type):
+            host = alt_host
+        else:
+            host = alt_host.encode()
+        name = name if isinstance(name, six.binary_type) else name.encode()
+
         try:
             presented_cert = crypto_util.probe_sni(name, host, port)
         except acme_errors.Error as error:

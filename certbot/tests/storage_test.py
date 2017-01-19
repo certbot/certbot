@@ -49,7 +49,7 @@ class BaseRenewableCertTest(unittest.TestCase):
         from certbot import storage
         self.tempdir = tempfile.mkdtemp()
 
-        self.cli_config = configuration.RenewerConfiguration(
+        self.cli_config = configuration.NamespaceConfig(
             namespace=mock.MagicMock(
                 config_dir=self.tempdir,
                 work_dir=self.tempdir,
@@ -57,16 +57,22 @@ class BaseRenewableCertTest(unittest.TestCase):
             )
         )
 
-        # TODO: maybe provide RenewerConfiguration.make_dirs?
+        # TODO: maybe provide NamespaceConfig.make_dirs?
         # TODO: main() should create those dirs, c.f. #902
         os.makedirs(os.path.join(self.tempdir, "live", "example.org"))
-        os.makedirs(os.path.join(self.tempdir, "archive", "example.org"))
+        archive_path = os.path.join(self.tempdir, "archive", "example.org")
+        os.makedirs(archive_path)
         os.makedirs(os.path.join(self.tempdir, "renewal"))
 
         config = configobj.ConfigObj()
         for kind in ALL_FOUR:
-            config[kind] = os.path.join(self.tempdir, "live", "example.org",
+            kind_path = os.path.join(self.tempdir, "live", "example.org",
                                         kind + ".pem")
+            config[kind] = kind_path
+        with open(os.path.join(self.tempdir, "live", "example.org",
+                                        "README"), 'a'):
+            pass
+        config["archive"] = archive_path
         config.filename = os.path.join(self.tempdir, "renewal",
                                        "example.org.conf")
         config.write()
@@ -545,7 +551,8 @@ class RenewableCertTests(BaseRenewableCertTest):
 
         from certbot.storage import relevant_values
         with mock.patch("certbot.cli.helpful_parser", mock_parser):
-            return relevant_values(values)
+            # make a copy to ensure values isn't modified
+            return relevant_values(values.copy())
 
     def test_relevant_values(self):
         """Test that relevant_values() can reject an irrelevant value."""
@@ -561,10 +568,18 @@ class RenewableCertTests(BaseRenewableCertTest):
     def test_relevant_values_nondefault(self):
         """Test that relevant_values() can retain a non-default value."""
         values = {"rsa_key_size": 12}
-        # A copy is given to _test_relevant_values_common
-        # to make sure values isn't modified by the method
         self.assertEqual(
-            self._test_relevant_values_common(values.copy()), values)
+            self._test_relevant_values_common(values), values)
+
+    def test_relevant_values_bool(self):
+        values = {"allow_subset_of_names": True}
+        self.assertEqual(
+            self._test_relevant_values_common(values), values)
+
+    def test_relevant_values_str(self):
+        values = {"authenticator": "apache"}
+        self.assertEqual(
+            self._test_relevant_values_common(values), values)
 
     @mock.patch("certbot.storage.relevant_values")
     def test_new_lineage(self, mock_rv):
@@ -769,6 +784,96 @@ class RenewableCertTests(BaseRenewableCertTest):
                           self.cli_config)
         storage.RenewableCert(self.config.filename, self.cli_config,
             update_symlinks=True)
+
+class DeleteFilesTest(BaseRenewableCertTest):
+    """Tests for certbot.storage.delete_files"""
+    def setUp(self):
+        super(DeleteFilesTest, self).setUp()
+        for kind in ALL_FOUR:
+            kind_path = os.path.join(self.tempdir, "live", "example.org",
+                                        kind + ".pem")
+            with open(kind_path, 'a'):
+                pass
+        self.config.write()
+        self.assertTrue(os.path.exists(os.path.join(
+            self.cli_config.renewal_configs_dir, "example.org.conf")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.cli_config.live_dir, "example.org")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.tempdir, "archive", "example.org")))
+
+    def _call(self):
+        from certbot import storage
+        with mock.patch("certbot.storage.logger"):
+            storage.delete_files(self.cli_config, "example.org")
+
+    def test_delete_all_files(self):
+        self._call()
+
+        self.assertFalse(os.path.exists(os.path.join(
+            self.cli_config.renewal_configs_dir, "example.org.conf")))
+        self.assertFalse(os.path.exists(os.path.join(
+            self.cli_config.live_dir, "example.org")))
+        self.assertFalse(os.path.exists(os.path.join(
+            self.tempdir, "archive", "example.org")))
+
+    def test_bad_renewal_config(self):
+        with open(self.config.filename, 'a') as config_file:
+            config_file.write("asdfasfasdfasdf")
+
+        self.assertRaises(errors.CertStorageError, self._call)
+        self.assertTrue(os.path.exists(os.path.join(
+            self.cli_config.live_dir, "example.org")))
+        self.assertFalse(os.path.exists(os.path.join(
+            self.cli_config.renewal_configs_dir, "example.org.conf")))
+
+    def test_no_renewal_config(self):
+        os.remove(self.config.filename)
+        self.assertRaises(errors.CertStorageError, self._call)
+        self.assertTrue(os.path.exists(os.path.join(
+            self.cli_config.live_dir, "example.org")))
+        self.assertFalse(os.path.exists(self.config.filename))
+
+    def test_no_cert_file(self):
+        os.remove(os.path.join(
+            self.cli_config.live_dir, "example.org", "cert.pem"))
+        self._call()
+        self.assertFalse(os.path.exists(self.config.filename))
+        self.assertFalse(os.path.exists(os.path.join(
+            self.cli_config.live_dir, "example.org")))
+        self.assertFalse(os.path.exists(os.path.join(
+            self.tempdir, "archive", "example.org")))
+
+    def test_no_readme_file(self):
+        os.remove(os.path.join(
+            self.cli_config.live_dir, "example.org", "README"))
+        self._call()
+        self.assertFalse(os.path.exists(self.config.filename))
+        self.assertFalse(os.path.exists(os.path.join(
+            self.cli_config.live_dir, "example.org")))
+        self.assertFalse(os.path.exists(os.path.join(
+            self.tempdir, "archive", "example.org")))
+
+    def test_livedir_not_empty(self):
+        with open(os.path.join(
+            self.cli_config.live_dir, "example.org", "other_file"), 'a'):
+            pass
+        self._call()
+        self.assertFalse(os.path.exists(self.config.filename))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.cli_config.live_dir, "example.org")))
+        self.assertFalse(os.path.exists(os.path.join(
+            self.tempdir, "archive", "example.org")))
+
+    def test_no_archive(self):
+        archive_dir = os.path.join(self.tempdir, "archive", "example.org")
+        os.rmdir(archive_dir)
+        self._call()
+        self.assertFalse(os.path.exists(self.config.filename))
+        self.assertFalse(os.path.exists(os.path.join(
+            self.cli_config.live_dir, "example.org")))
+        self.assertFalse(os.path.exists(archive_dir))
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

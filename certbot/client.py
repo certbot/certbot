@@ -15,7 +15,6 @@ import certbot
 
 from certbot import account
 from certbot import auth_handler
-from certbot import configuration
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
@@ -173,7 +172,7 @@ def perform_registration(acme, config):
 
 
 class Client(object):
-    """ACME protocol client.
+    """Certbot's client.
 
     :ivar .IConfig config: Client configuration.
     :ivar .Account account: Account registered with `register`.
@@ -307,7 +306,7 @@ class Client(object):
                 new_name, OpenSSL.crypto.dump_certificate(
                     OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped),
                 key.pem, crypto_util.dump_pyopenssl_chain(chain),
-                configuration.RenewerConfiguration(self.config.namespace))
+                self.config)
 
     def save_certificate(self, certr, chain_cert,
                          cert_path, chain_path, fullchain_path):
@@ -377,7 +376,8 @@ class Client(object):
 
         chain_path = None if chain_path is None else os.path.abspath(chain_path)
 
-        with error_handler.ErrorHandler(self.installer.recovery_routine):
+        msg = ("Unable to install the certificate")
+        with error_handler.ErrorHandler(self._recovery_routine_with_msg, msg):
             for dom in domains:
                 self.installer.deploy_cert(
                     domain=dom, cert_path=os.path.abspath(cert_path),

@@ -1,14 +1,18 @@
 """Certbot display."""
+import logging
 import os
 import textwrap
+import sys
 
 import six
 import zope.interface
 
+from certbot import constants
 from certbot import interfaces
 from certbot import errors
 from certbot.display import completer
 
+logger = logging.getLogger(__name__)
 
 WIDTH = 72
 
@@ -50,19 +54,25 @@ def _wrap_lines(msg):
 @zope.interface.implementer(interfaces.IDisplay)
 class FileDisplay(object):
     """File-based display."""
+    # pylint: disable=too-many-arguments
+    # see https://github.com/certbot/certbot/issues/3915
 
-    def __init__(self, outfile):
+    def __init__(self, outfile, force_interactive):
         super(FileDisplay, self).__init__()
         self.outfile = outfile
+        self.force_interactive = force_interactive
+        self.skipped_interaction = False
 
-    def notification(self, message, pause=True, wrap=True):
-        # pylint: disable=unused-argument
+    def notification(self, message, pause=True,
+                     wrap=True, force_interactive=False):
         """Displays a notification and waits for user acceptance.
 
         :param str message: Message to display
         :param bool pause: Whether or not the program should pause for the
             user's confirmation
         :param bool wrap: Whether or not the application should wrap text
+        :param bool force_interactive: True if it's safe to prompt the user
+            because it won't cause any workflow regressions
 
         """
         side_frame = "-" * 79
@@ -72,10 +82,14 @@ class FileDisplay(object):
             "{line}{frame}{line}{msg}{line}{frame}{line}".format(
                 line=os.linesep, frame=side_frame, msg=message))
         if pause:
-            six.moves.input("Press Enter to Continue")
+            if self._can_interact(force_interactive):
+                six.moves.input("Press Enter to Continue")
+            else:
+                logger.debug("Not pausing for user confirmation")
 
     def menu(self, message, choices, ok_label="", cancel_label="",
-             help_label="", **unused_kwargs):
+             help_label="", default=None,
+             cli_flag=None, force_interactive=False, **unused_kwargs):
         # pylint: disable=unused-argument
         """Display a menu.
 
@@ -86,7 +100,10 @@ class FileDisplay(object):
         :param choices: Menu lines, len must be > 0
         :type choices: list of tuples (tag, item) or
             list of descriptions (tags will be enumerated)
-        :param dict _kwargs: absorbs default / cli_args
+        :param default: default value to return (if one exists)
+        :param str cli_flag: option used to set this value with the CLI
+        :param bool force_interactive: True if it's safe to prompt the user
+            because it won't cause any workflow regressions
 
         :returns: tuple of (`code`, `index`) where
             `code` - str display exit code
@@ -95,18 +112,25 @@ class FileDisplay(object):
         :rtype: tuple
 
         """
+        if self._return_default(message, default, cli_flag, force_interactive):
+            return OK, default
+
         self._print_menu(message, choices)
 
         code, selection = self._get_valid_int_ans(len(choices))
 
         return code, selection - 1
 
-    def input(self, message, **unused_kwargs):
+    def input(self, message, default=None,
+              cli_flag=None, force_interactive=False, **unused_kwargs):
         # pylint: disable=no-self-use
         """Accept input from the user.
 
         :param str message: message to display to the user
-        :param dict _kwargs: absorbs default / cli_args
+        :param default: default value to return (if one exists)
+        :param str cli_flag: option used to set this value with the CLI
+        :param bool force_interactive: True if it's safe to prompt the user
+            because it won't cause any workflow regressions
 
         :returns: tuple of (`code`, `input`) where
             `code` - str display exit code
@@ -114,6 +138,9 @@ class FileDisplay(object):
         :rtype: tuple
 
         """
+        if self._return_default(message, default, cli_flag, force_interactive):
+            return OK, default
+
         ans = six.moves.input(
             textwrap.fill(
                 "%s (Enter 'c' to cancel): " % message,
@@ -126,7 +153,8 @@ class FileDisplay(object):
         else:
             return OK, ans
 
-    def yesno(self, message, yes_label="Yes", no_label="No", **unused_kwargs):
+    def yesno(self, message, yes_label="Yes", no_label="No", default=None,
+              cli_flag=None, force_interactive=False, **unused_kwargs):
         """Query the user with a yes/no question.
 
         Yes and No label must begin with different letters, and must contain at
@@ -135,12 +163,18 @@ class FileDisplay(object):
         :param str message: question for the user
         :param str yes_label: Label of the "Yes" parameter
         :param str no_label: Label of the "No" parameter
-        :param dict _kwargs: absorbs default / cli_args
+        :param default: default value to return (if one exists)
+        :param str cli_flag: option used to set this value with the CLI
+        :param bool force_interactive: True if it's safe to prompt the user
+            because it won't cause any workflow regressions
 
         :returns: True for "Yes", False for "No"
         :rtype: bool
 
         """
+        if self._return_default(message, default, cli_flag, force_interactive):
+            return default
+
         side_frame = ("-" * 79) + os.linesep
 
         message = _wrap_lines(message)
@@ -162,14 +196,18 @@ class FileDisplay(object):
                     ans.startswith(no_label[0].upper())):
                 return False
 
-    def checklist(self, message, tags, default_status=True, **unused_kwargs):
+    def checklist(self, message, tags, default_status=True, default=None,
+                  cli_flag=None, force_interactive=False, **unused_kwargs):
         # pylint: disable=unused-argument
         """Display a checklist.
 
         :param str message: Message to display to user
         :param list tags: `str` tags to select, len(tags) > 0
         :param bool default_status: Not used for FileDisplay
-        :param dict _kwargs: absorbs default / cli_args
+        :param default: default value to return (if one exists)
+        :param str cli_flag: option used to set this value with the CLI
+        :param bool force_interactive: True if it's safe to prompt the user
+            because it won't cause any workflow regressions
 
         :returns: tuple of (`code`, `tags`) where
             `code` - str display exit code
@@ -177,12 +215,16 @@ class FileDisplay(object):
         :rtype: tuple
 
         """
+        if self._return_default(message, default, cli_flag, force_interactive):
+            return OK, default
+
         while True:
             self._print_menu(message, tags)
 
             code, ans = self.input("Select the appropriate numbers separated "
                                    "by commas and/or spaces, or leave input "
-                                   "blank to select all options shown")
+                                   "blank to select all options shown",
+                                   force_interactive=True)
 
             if code == OK:
                 if len(ans.strip()) == 0:
@@ -197,10 +239,67 @@ class FileDisplay(object):
             else:
                 return code, []
 
-    def directory_select(self, message, **unused_kwargs):
+    def _return_default(self, prompt, default, cli_flag, force_interactive):
+        """Should we return the default instead of prompting the user?
+
+        :param str prompt: prompt for the user
+        :param default: default answer to prompt
+        :param str cli_flag: command line option for setting an answer
+            to this question
+        :param bool force_interactive: if interactivity is forced by the
+            IDisplay call
+
+        :returns: True if we should return the default without prompting
+        :rtype: bool
+
+        """
+        # assert_valid_call(prompt, default, cli_flag, force_interactive)
+        if self._can_interact(force_interactive):
+            return False
+        elif default is None:
+            msg = "Unable to get an answer for the question:\n{0}".format(prompt)
+            if cli_flag:
+                msg += (
+                    "\nYou can provide an answer on the "
+                    "command line with the {0} flag.".format(cli_flag))
+            raise errors.Error(msg)
+        else:
+            logger.debug(
+                "Falling back to default %s for the prompt:\n%s",
+                default, prompt)
+            return True
+
+    def _can_interact(self, force_interactive):
+        """Can we safely interact with the user?
+
+        :param bool force_interactive: if interactivity is forced by the
+            IDisplay call
+
+        :returns: True if the display can interact with the user
+        :rtype: bool
+
+        """
+        if (self.force_interactive or force_interactive or
+                sys.stdin.isatty() and self.outfile.isatty()):
+            return True
+        elif not self.skipped_interaction:
+            logger.warning(
+                "Skipped user interaction because Certbot doesn't appear to "
+                "be running in a terminal. You should probably include "
+                "--non-interactive or %s on the command line.",
+                constants.FORCE_INTERACTIVE_FLAG)
+            self.skipped_interaction = True
+        return False
+
+    def directory_select(self, message, default=None, cli_flag=None,
+                         force_interactive=False, **unused_kwargs):
         """Display a directory selection screen.
 
         :param str message: prompt to give the user
+        :param default: default value to return (if one exists)
+        :param str cli_flag: option used to set this value with the CLI
+        :param bool force_interactive: True if it's safe to prompt the user
+            because it won't cause any workflow regressions
 
         :returns: tuple of the form (`code`, `string`) where
             `code` - display exit code
@@ -208,7 +307,7 @@ class FileDisplay(object):
 
         """
         with completer.Completer():
-            return self.input(message)
+            return self.input(message, default, cli_flag, force_interactive)
 
     def _scrub_checklist_input(self, indices, tags):
         # pylint: disable=no-self-use
@@ -306,11 +405,29 @@ class FileDisplay(object):
         return OK, selection
 
 
+def assert_valid_call(prompt, default, cli_flag, force_interactive):
+    """Verify that provided arguments is a valid IDisplay call.
+
+    :param str prompt: prompt for the user
+    :param default: default answer to prompt
+    :param str cli_flag: command line option for setting an answer
+        to this question
+    :param bool force_interactive: if interactivity is forced by the
+        IDisplay call
+
+    """
+    msg = "Invalid IDisplay call for this prompt:\n{0}".format(prompt)
+    if cli_flag:
+        msg += ("\nYou can set an answer to "
+                "this prompt with the {0} flag".format(cli_flag))
+    assert default is not None or force_interactive, msg
+
+
 @zope.interface.implementer(interfaces.IDisplay)
 class NoninteractiveDisplay(object):
     """An iDisplay implementation that never asks for interactive user input"""
 
-    def __init__(self, outfile):
+    def __init__(self, outfile, *unused_args, **unused_kwargs):
         super(NoninteractiveDisplay, self).__init__()
         self.outfile = outfile
 
@@ -324,7 +441,7 @@ class NoninteractiveDisplay(object):
             msg += "\n\n(You can set this with the {0} flag)".format(cli_flag)
         raise errors.MissingCommandlineFlag(msg)
 
-    def notification(self, message, pause=False, wrap=True):
+    def notification(self, message, pause=False, wrap=True, **unused_kwargs):
         # pylint: disable=unused-argument
         """Displays a notification without waiting for user acceptance.
 
@@ -341,7 +458,7 @@ class NoninteractiveDisplay(object):
                 line=os.linesep, frame=side_frame, msg=message))
 
     def menu(self, message, choices, ok_label=None, cancel_label=None,
-             help_label=None, default=None, cli_flag=None):
+             help_label=None, default=None, cli_flag=None, **unused_kwargs):
         # pylint: disable=unused-argument,too-many-arguments
         """Avoid displaying a menu.
 
@@ -364,7 +481,7 @@ class NoninteractiveDisplay(object):
 
         return OK, default
 
-    def input(self, message, default=None, cli_flag=None):
+    def input(self, message, default=None, cli_flag=None, **unused_kwargs):
         """Accept input from the user.
 
         :param str message: message to display to the user
@@ -381,7 +498,8 @@ class NoninteractiveDisplay(object):
         else:
             return OK, default
 
-    def yesno(self, message, yes_label=None, no_label=None, default=None, cli_flag=None):
+    def yesno(self, message, yes_label=None, no_label=None,
+              default=None, cli_flag=None, **unused_kwargs):
         # pylint: disable=unused-argument
         """Decide Yes or No, without asking anybody
 
@@ -398,8 +516,8 @@ class NoninteractiveDisplay(object):
         else:
             return default
 
-    def checklist(self, message, tags, default=None, cli_flag=None, **kwargs):
-        # pylint: disable=unused-argument
+    def checklist(self, message, tags, default=None,
+                  cli_flag=None, **unused_kwargs):
         """Display a checklist.
 
         :param str message: Message to display to user
@@ -417,7 +535,8 @@ class NoninteractiveDisplay(object):
         else:
             return OK, default
 
-    def directory_select(self, message, default=None, cli_flag=None):
+    def directory_select(self, message, default=None,
+                         cli_flag=None, **unused_kwargs):
         """Simulate prompting the user for a directory.
 
         This function returns default if it is not ``None``, otherwise,

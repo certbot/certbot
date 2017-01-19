@@ -110,12 +110,13 @@ to serve all files under specified web root ({0})."""
 
     def _prompt_with_webroot_list(self, domain, known_webroots):
         display = zope.component.getUtility(interfaces.IDisplay)
+        path_flag = "--" + self.option_name("path")
 
         while True:
             code, index = display.menu(
                 "Select the webroot for {0}:".format(domain),
                 ["Enter a new webroot"] + known_webroots,
-                help_label="Help", cli_flag="--" + self.option_name("path"))
+                help_label="Help", cli_flag=path_flag, force_interactive=True)
             if code == display_util.CANCEL:
                 raise errors.PluginError(
                     "Every requested domain must have a "
@@ -129,7 +130,8 @@ to serve all files under specified web root ({0})."""
                     "public_html or webroot directory. The webroot "
                     "plugin works by temporarily saving necessary "
                     "resources in the HTTP server's webroot directory "
-                    "to pass domain validation challenges.")
+                    "to pass domain validation challenges.",
+                    force_interactive=True)
             else:  # code == display_util.OK
                 return None if index == 0 else known_webroots[index - 1]
 
@@ -138,7 +140,8 @@ to serve all files under specified web root ({0})."""
 
         while True:
             code, webroot = display.directory_select(
-                "Input the webroot for {0}:".format(domain))
+                "Input the webroot for {0}:".format(domain),
+                force_interactive=True)
             if code == display_util.HELP:
                 # Displaying help is not currently implemented
                 return None

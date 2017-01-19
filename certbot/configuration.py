@@ -25,8 +25,15 @@ class NamespaceConfig(object):
       - `csr_dir`
       - `in_progress_dir`
       - `key_dir`
-      - `renewer_config_file`
       - `temp_checkpoint_dir`
+
+    And the following paths are dynamically resolved using
+    :attr:`~certbot.interfaces.IConfig.config_dir` and relative
+    paths defined in :py:mod:`certbot.constants`:
+
+      - `default_archive_dir`
+      - `live_dir`
+      - `renewal_configs_dir`
 
     :ivar namespace: Namespace typically produced by
         :meth:`argparse.ArgumentParser.parse_args`.
@@ -85,16 +92,6 @@ class NamespaceConfig(object):
         new_ns = copy.deepcopy(self.namespace)
         return type(self)(new_ns)
 
-
-class RenewerConfiguration(object):
-    """Configuration wrapper for renewer."""
-
-    def __init__(self, namespace):
-        self.namespace = namespace
-
-    def __getattr__(self, name):
-        return getattr(self.namespace, name)
-
     @property
     def default_archive_dir(self):  # pylint: disable=missing-docstring
         return os.path.join(self.namespace.config_dir, constants.ARCHIVE_DIR)
@@ -107,11 +104,6 @@ class RenewerConfiguration(object):
     def renewal_configs_dir(self):  # pylint: disable=missing-docstring
         return os.path.join(
             self.namespace.config_dir, constants.RENEWAL_CONFIGS_DIR)
-
-    @property
-    def renewer_config_file(self):  # pylint: disable=missing-docstring
-        return os.path.join(
-            self.namespace.config_dir, constants.RENEWER_CONFIG_FILENAME)
 
 
 def check_config_sanity(config):

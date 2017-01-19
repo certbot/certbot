@@ -1,12 +1,11 @@
 """Tests for certbot.cli."""
 import argparse
-import functools
 import unittest
 import os
 import tempfile
 
-import six
 import mock
+import six
 from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import cli
@@ -14,9 +13,8 @@ from certbot import constants
 from certbot import errors
 from certbot.plugins import disco
 
-def reset_set_by_cli():
-    '''Reset the state of the `set_by_cli` function'''
-    cli.set_by_cli.detector = None
+PLUGINS = disco.PluginsRegistry.find_all()
+
 
 class TestReadFile(unittest.TestCase):
     '''Test cli.read_file'''
@@ -43,13 +41,13 @@ class ParseTest(unittest.TestCase):
 
     _multiprocess_can_split_ = True
 
-    @classmethod
-    def setUpClass(cls):
-        cls.plugins = disco.PluginsRegistry.find_all()
-        cls.parse = functools.partial(cli.prepare_and_parse_args, cls.plugins)
-
     def setUp(self):
-        reset_set_by_cli()
+        reload_module(cli)
+
+    @staticmethod
+    def parse(*args, **kwargs):
+        """Get result of cli.prepare_and_parse_args."""
+        return cli.prepare_and_parse_args(PLUGINS, *args, **kwargs)
 
     def _help_output(self, args):
         "Run a command, and return the ouput string for scrutiny"
@@ -81,28 +79,28 @@ class ParseTest(unittest.TestCase):
         out = self._help_output(['--help', 'all'])
         self.assertTrue("--configurator" in out)
         self.assertTrue("how a cert is deployed" in out)
-        self.assertTrue("--manual-test-mode" in out)
+        self.assertTrue("--webroot-path" in out)
         self.assertTrue("--text" not in out)
         self.assertTrue("--dialog" not in out)
         self.assertTrue("%s" not in out)
         self.assertTrue("{0}" not in out)
 
         out = self._help_output(['-h', 'nginx'])
-        if "nginx" in self.plugins:
+        if "nginx" in PLUGINS:
             # may be false while building distributions without plugins
             self.assertTrue("--nginx-ctl" in out)
-        self.assertTrue("--manual-test-mode" not in out)
+        self.assertTrue("--webroot-path" not in out)
         self.assertTrue("--checkpoints" not in out)
 
         out = self._help_output(['-h'])
         self.assertTrue("letsencrypt-auto" not in out)  # test cli.cli_command
-        if "nginx" in self.plugins:
+        if "nginx" in PLUGINS:
             self.assertTrue("Use the Nginx plugin" in out)
         else:
             self.assertTrue("(the certbot nginx plugin is not" in out)
 
         out = self._help_output(['--help', 'plugins'])
-        self.assertTrue("--manual-test-mode" not in out)
+        self.assertTrue("--webroot-path" not in out)
         self.assertTrue("--prepare" in out)
         self.assertTrue('"plugins" subcommand' in out)
 
@@ -121,6 +119,7 @@ class ParseTest(unittest.TestCase):
         out = self._help_output(['--help', 'revoke'])
         self.assertTrue("--cert-path" in out)
         self.assertTrue("--key-path" in out)
+        self.assertTrue("--reason" in out)
 
         out = self._help_output(['-h', 'config_changes'])
         self.assertTrue("--cert-path" not in out)
@@ -131,6 +130,26 @@ class ParseTest(unittest.TestCase):
         self.assertTrue(cli.COMMAND_OVERVIEW[:100] in out)
         self.assertTrue("%s" not in out)
         self.assertTrue("{0}" not in out)
+
+    def test_help_no_dashes(self):
+        self._help_output(['help'])  # assert SystemExit is raised here
+
+        out = self._help_output(['help', 'all'])
+        self.assertTrue("--configurator" in out)
+        self.assertTrue("how a cert is deployed" in out)
+        self.assertTrue("--webroot-path" in out)
+        self.assertTrue("--text" not in out)
+        self.assertTrue("--dialog" not in out)
+        self.assertTrue("%s" not in out)
+        self.assertTrue("{0}" not in out)
+
+        out = self._help_output(['help', 'install'])
+        self.assertTrue("--cert-path" in out)
+        self.assertTrue("--key-path" in out)
+
+        out = self._help_output(['help', 'revoke'])
+        self.assertTrue("--cert-path" in out)
+        self.assertTrue("--key-path" in out)
 
     def test_parse_domains(self):
         short_args = ['-d', 'example.com']
@@ -262,6 +281,20 @@ class ParseTest(unittest.TestCase):
         self.assertFalse(cli.option_was_set(
             config_dir_option, cli.flag_default(config_dir_option)))
 
+    def test_encode_revocation_reason(self):
+        for reason, code in constants.REVOCATION_REASONS.items():
+            namespace = self.parse(['--reason', reason])
+            self.assertEqual(namespace.reason, code)
+        for reason, code in constants.REVOCATION_REASONS.items():
+            namespace = self.parse(['--reason', reason.upper()])
+            self.assertEqual(namespace.reason, code)
+
+    def test_force_interactive(self):
+        self.assertRaises(
+            errors.Error, self.parse, "renew --force-interactive".split())
+        self.assertRaises(
+            errors.Error, self.parse, "-n --force-interactive".split())
+
 
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""
@@ -299,22 +332,22 @@ class SetByCliTest(unittest.TestCase):
 
     def test_report_config_interaction_str(self):
         cli.report_config_interaction('manual_public_ip_logging_ok',
-                                      'manual_test_mode')
-        cli.report_config_interaction('manual_test_mode', 'manual')
+                                      'manual_auth_hook')
+        cli.report_config_interaction('manual_auth_hook', 'manual')
 
         self._test_report_config_interaction_common()
 
     def test_report_config_interaction_iterable(self):
         cli.report_config_interaction(('manual_public_ip_logging_ok',),
-                                      ('manual_test_mode',))
-        cli.report_config_interaction(('manual_test_mode',), ('manual',))
+                                      ('manual_auth_hook',))
+        cli.report_config_interaction(('manual_auth_hook',), ('manual',))
 
         self._test_report_config_interaction_common()
 
     def _test_report_config_interaction_common(self):
         """Tests implied interaction between manual flags.
 
-        --manual implies --manual-test-mode which implies
+        --manual implies --manual-auth-hook which implies
         --manual-public-ip-logging-ok. These interactions don't actually
         exist in the client, but are used here for testing purposes.
 
@@ -322,13 +355,13 @@ class SetByCliTest(unittest.TestCase):
 
         args = ['--manual']
         verb = 'renew'
-        for v in ('manual', 'manual_test_mode', 'manual_public_ip_logging_ok'):
+        for v in ('manual', 'manual_auth_hook', 'manual_public_ip_logging_ok'):
             self.assertTrue(_call_set_by_cli(v, args, verb))
 
         cli.set_by_cli.detector = None
 
-        args = ['--manual-test-mode']
-        for v in ('manual_test_mode', 'manual_public_ip_logging_ok'):
+        args = ['--manual-auth-hook', 'command']
+        for v in ('manual_auth_hook', 'manual_public_ip_logging_ok'):
             self.assertTrue(_call_set_by_cli(v, args, verb))
 
         self.assertFalse(_call_set_by_cli('manual', args, verb))

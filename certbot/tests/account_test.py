@@ -190,6 +190,14 @@ class AccountFileStorageTest(unittest.TestCase):
             self.assertRaises(
                 errors.AccountStorageError, self.storage.save, self.acc)
 
+    def test_delete(self):
+        self.storage.save(self.acc)
+        self.storage.delete(self.acc.id)
+        self.assertRaises(errors.AccountNotFound, self.storage.load, self.acc.id)
+
+    def test_delete_no_account(self):
+        self.assertRaises(errors.AccountNotFound, self.storage.delete, self.acc.id)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

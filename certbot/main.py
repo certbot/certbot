@@ -39,7 +39,7 @@ from certbot.plugins import selection as plug_sel
 _PERM_ERR_FMT = os.linesep.join((
     "The following error was encountered:", "{0}",
     "If running as non-root, set --config-dir, "
-    "--logs-dir, and --work-dir to writeable paths."))
+    "--work-dir, and --logs-dir to writeable paths."))
 
 USER_CANCELLED = ("User chose to cancel the operation and may "
                   "reinvoke the client.")
@@ -100,7 +100,7 @@ def _auth_from_available(le_client, config, domains=None, certname=None, lineage
     try:
         if action == "renew":
             logger.info("Renewing an existing certificate")
-            renewal.renew_cert(config, le_client, lineage)
+            renewal.renew_cert(config, domains, le_client, lineage)
         elif action == "newcert":
             # TREAT AS NEW REQUEST
             logger.info("Obtaining a new certificate")
@@ -108,7 +108,7 @@ def _auth_from_available(le_client, config, domains=None, certname=None, lineage
             if lineage is False:
                 raise errors.Error("Certificate could not be obtained")
     finally:
-        hooks.post_hook(config, final=False)
+        hooks.post_hook(config)
 
     if not config.dry_run and not config.verb == "renew":
         _report_new_cert(config, lineage.cert, lineage.fullchain)
@@ -139,7 +139,8 @@ def _handle_subset_cert_request(config, domains, cert):
              br=os.linesep)
     if config.expand or config.renew_by_default or zope.component.getUtility(
             interfaces.IDisplay).yesno(question, "Expand", "Cancel",
-                                       cli_flag="--expand"):
+                                       cli_flag="--expand",
+                                       force_interactive=True):
         return "renew", cert
     else:
         reporter_util = zope.component.getUtility(interfaces.IReporter)
@@ -188,7 +189,8 @@ def _handle_identical_cert_request(config, lineage):
                "Renew & replace the cert (limit ~5 per 7 days)"]
 
     display = zope.component.getUtility(interfaces.IDisplay)
-    response = display.menu(question, choices, "OK", "Cancel", default=0)
+    response = display.menu(question, choices, "OK", "Cancel",
+                            default=0, force_interactive=True)
     if response[0] == display_util.CANCEL:
         # TODO: Add notification related to command-line options for
         #       skipping the menu for this case.
@@ -282,17 +284,26 @@ def _find_domains_or_certname(config, installer):
     """Retrieve domains and certname from config or user input.
     """
     domains = None
+    certname = config.certname
+    # first, try to get domains from the config
     if config.domains:
         domains = config.domains
-    elif not config.certname:
+    # if we can't do that but we have a certname, get the domains
+    # with that certname
+    elif certname:
+        domains = cert_manager.domains_for_certname(config, certname)
+
+    # that certname might not have existed, or there was a problem.
+    # try to get domains from the user.
+    if not domains:
         domains = display_ops.choose_names(installer)
 
-    if not domains and not config.certname:
+    if not domains and not certname:
         raise errors.Error("Please specify --domains, or --installer that "
                            "will help in domain names autodiscovery, or "
                            "--cert-name for an existing certificate name.")
 
-    return domains, config.certname
+    return domains, certname
 
 
 def _report_new_cert(config, cert_path, fullchain_path):
@@ -365,7 +376,8 @@ def _determine_account(config):
                        "server at {1}".format(
                            regr.terms_of_service, config.server))
                 obj = zope.component.getUtility(interfaces.IDisplay)
-                return obj.yesno(msg, "Agree", "Cancel", cli_flag="--agree-tos")
+                return obj.yesno(msg, "Agree", "Cancel",
+                                 cli_flag="--agree-tos", force_interactive=True)
 
             try:
                 acc, acme = client.register(
@@ -394,6 +406,35 @@ def _init_le_client(config, authenticator, installer):
     return client.Client(config, acc, authenticator, installer, acme=acme)
 
 
+def unregister(config, unused_plugins):
+    """Deactivate account on server"""
+    account_storage = account.AccountFileStorage(config)
+    accounts = account_storage.find_all()
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+
+    if not accounts:
+        return "Could not find existing account to deactivate."
+    yesno = zope.component.getUtility(interfaces.IDisplay).yesno
+    prompt = ("Are you sure you would like to irrevocably deactivate "
+              "your account?")
+    wants_deactivate = yesno(prompt, yes_label='Deactivate', no_label='Abort',
+                             default=True)
+
+    if not wants_deactivate:
+        return "Deactivation aborted."
+
+    acc, acme = _determine_account(config)
+    acme_client = client.Client(config, acc, None, None, acme=acme)
+
+    # delete on boulder
+    acme_client.acme.deactivate_registration(acc.regr)
+    account_files = account.AccountFileStorage(config)
+    # delete local account files
+    account_files.delete(config.account)
+
+    reporter_util.add_message("Account deactivated.", reporter_util.MEDIUM_PRIORITY)
+
+
 def register(config, unused_plugins):
     """Create or modify accounts on the server."""
 
@@ -401,6 +442,8 @@ def register(config, unused_plugins):
     # exist or not.
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    add_msg = lambda m: reporter_util.add_message(m, reporter_util.MEDIUM_PRIORITY)
 
     # registering a new account
     if not config.update_registration:
@@ -431,9 +474,7 @@ def register(config, unused_plugins):
     acc.regr = acme_client.acme.update_registration(acc.regr.update(
         body=acc.regr.body.update(contact=('mailto:' + config.email,))))
     account_storage.save_regr(acc)
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
-    msg = "Your e-mail address was updated to {0}.".format(config.email)
-    reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
+    add_msg("Your e-mail address was updated to {0}.".format(config.email))
 
 
 def install(config, plugins):
@@ -511,6 +552,14 @@ def rename(config, unused_plugins):
     """
     cert_manager.rename_lineage(config)
 
+def delete(config, unused_plugins):
+    """Delete a certificate
+
+    Use the information in the config file to delete an existing
+    lineage.
+    """
+    cert_manager.delete(config)
+
 def certificates(config, unused_plugins):
     """Display information about certs configured with Certbot
     """
@@ -530,8 +579,10 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
         key = acc.key
     acme = client.acme_from_config_key(config, key)
     cert = crypto_util.pyopenssl_load_certificate(config.cert_path[1])[0]
+    logger.debug("Reason code for revocation: %s", config.reason)
+
     try:
-        acme.revoke(jose.ComparableX509(cert))
+        acme.revoke(jose.ComparableX509(cert), config.reason)
     except acme_errors.ClientError as e:
         return e.message
 
@@ -634,7 +685,7 @@ def renew(config, unused_plugins):
     try:
         renewal.handle_renewal_request(config)
     finally:
-        hooks.post_hook(config, final=True)
+        hooks.run_saved_post_hooks()
 
 
 def setup_log_file_handler(config, logfile, fmt):
@@ -780,8 +831,23 @@ def set_displayer(config):
     elif config.noninteractive_mode:
         displayer = display_util.NoninteractiveDisplay(sys.stdout)
     else:
-        displayer = display_util.FileDisplay(sys.stdout)
+        displayer = display_util.FileDisplay(sys.stdout,
+                                             config.force_interactive)
     zope.component.provideUtility(displayer)
+
+def _post_logging_setup(config, plugins, cli_args):
+    """Perform any setup or configuration tasks that require a logger."""
+
+    # This needs logging, but would otherwise be in HelpfulArgumentParser
+    if config.validate_hooks:
+        hooks.validate_hooks(config)
+
+    cli.possible_deprecation_warning(config)
+
+    logger.debug("certbot version: %s", certbot.__version__)
+    # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
+    logger.debug("Arguments: %r", cli_args)
+    logger.debug("Discovered plugins: %r", plugins)
 
 
 def main(cli_args=sys.argv[1:]):
@@ -800,12 +866,7 @@ def main(cli_args=sys.argv[1:]):
     # logger ..." TODO: this should be done before plugins discovery
     setup_logging(config)
 
-    cli.possible_deprecation_warning(config)
-
-    logger.debug("certbot version: %s", certbot.__version__)
-    # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
-    logger.debug("Arguments: %r", cli_args)
-    logger.debug("Discovered plugins: %r", plugins)
+    _post_logging_setup(config, plugins, cli_args)
 
     sys.excepthook = functools.partial(_handle_exception, config=config)
 

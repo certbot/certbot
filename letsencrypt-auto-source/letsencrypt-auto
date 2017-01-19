@@ -16,14 +16,14 @@ set -e  # Work even if somebody does "sh thisscript.sh".
 # Note: you can set XDG_DATA_HOME or VENV_PATH before running this script,
 # if you want to change where the virtual environment will be installed
 if [ -z "$XDG_DATA_HOME" ]; then
-  XDG_DATA_HOME="~/.local/share"
+  XDG_DATA_HOME=~/.local/share
 fi
 VENV_NAME="letsencrypt"
 if [ -z "$VENV_PATH" ]; then
   VENV_PATH="$XDG_DATA_HOME/$VENV_NAME"
 fi
 VENV_BIN="$VENV_PATH/bin"
-LE_AUTO_VERSION="0.10.0.dev0"
+LE_AUTO_VERSION="0.11.0.dev0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -289,6 +289,7 @@ BootstrapDebCommon() {
     gcc \
     $augeas_pkg \
     libssl-dev \
+    openssl \
     libffi-dev \
     ca-certificates \
 
@@ -496,7 +497,7 @@ BootstrapMac() {
     $pkgcmd python
   fi
 
-  # Workaround for _dlopen not finding augeas on OS X
+  # Workaround for _dlopen not finding augeas on macOS
   if [ "$pkgman" = "port" ] && ! [ -e "/usr/local/lib/libaugeas.dylib" ] && [ -e "/opt/local/lib/libaugeas.dylib" ]; then
     echo "Applying augeas workaround"
     $SUDO mkdir -p /usr/local/lib/
@@ -535,6 +536,7 @@ BootstrapMageiaCommon() {
            git \
            gcc \
            python-augeas \
+           openssl \
            libopenssl-devel \
            libffi-devel \
            rootcerts
@@ -578,7 +580,7 @@ Bootstrap() {
   elif uname | grep -iq FreeBSD ; then
     ExperimentalBootstrap "FreeBSD" BootstrapFreeBsd
   elif uname | grep -iq Darwin ; then
-    ExperimentalBootstrap "Mac OS X" BootstrapMac
+    ExperimentalBootstrap "macOS" BootstrapMac
   elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
     ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
   elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
@@ -594,7 +596,7 @@ Bootstrap() {
 }
 
 TempDir() {
-  mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || OS X
+  mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || macOS
 }
 
 
@@ -607,6 +609,11 @@ if [ "$1" = "--le-auto-phase2" ]; then
     # --version output ran through grep due to python-cryptography DeprecationWarnings
     # grep for both certbot and letsencrypt until certbot and shim packages have been released
     INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | grep "^certbot\|^letsencrypt" | cut -d " " -f 2)
+    if [ -z "$INSTALLED_VERSION" ]; then
+        echo "Error: couldn't get currently installed version for $VENV_BIN/letsencrypt: " 1>&2
+        "$VENV_BIN/letsencrypt" --version
+        exit 1
+    fi
   else
     INSTALLED_VERSION="none"
   fi
@@ -799,18 +806,18 @@ letsencrypt==0.7.0 \
 
 # THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT; ADD ALL DEPENDENCIES ABOVE.
 
-acme==0.9.3 \
-    --hash=sha256:d18ce17a75ad24d27981dfaef0524aa905eab757b267e027162b56a8967ab8fb \
-    --hash=sha256:a6eff1f955eb2e4316abd9aa2fedb6d9345e6b5b8a2d64ea0ad35e05d6124099
-certbot==0.9.3 \
-    --hash=sha256:a87ef4c53c018df4e52ee2f2e906ad16bbb37789f29e6f284c495a2eb4d9b243 \
-    --hash=sha256:68149cb8392b29f5d5246e7226d25f913f2b10482bf3bc7368e8c8821d25f3b0
-certbot-apache==0.9.3 \
-    --hash=sha256:f379b1053e10709692654d7a6fcea9eaed19b66c49a753b61e31bd06a04b0aac \
-    --hash=sha256:a5d98cf972072de08f984db4e6a7f20269f3f023c43f6d4e781fe43be7c10086
-certbot-nginx==0.9.3 \
-    --hash=sha256:3c26f18f0b57550f069263bd9b2984ef33eab6693e7796611c1b2cc16574069c \
-    --hash=sha256:7337a2e90e0b28a1ab09e31d9fb81c6d78e6453500c824c0f18bab5d31b63058
+acme==0.10.1 \
+    --hash=sha256:1dd5124078bc44739065409f3be51765608a90994c83460578c2680c582c1026 \
+    --hash=sha256:f51c2fb0a31646364abeb7fdd8cfc7c8a4e63b0641b14ab3ce1b2e3a8921a211
+certbot==0.10.1 \
+    --hash=sha256:9a56fc76f726beeed2f5a08d690088377cd430907f8a38c50e2aa9a258ee1253 \
+    --hash=sha256:e0d699adb3f8ca3e077a4db339de29ebb3f790fbc5f3f02e446e227ed40aa743
+certbot-apache==0.10.1 \
+    --hash=sha256:1252fd7e435ba48484b0bd9b72535a9755b03d8f0440f164b9c1c560d96cadb8 \
+    --hash=sha256:134f46690da55262125defa58aa74472eb4a1555c9ed83edb3c8667df5a561b5
+certbot-nginx==0.10.1 \
+    --hash=sha256:afd15ed9e4f3076056b63916f272b7287084d871cb8136477d16b08f64d514f0 \
+    --hash=sha256:da1b7ea4831ead3f9eb526ee11bf1bf197da0fea4defeeb7b1ce24c5d3f45b51
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1191,7 +1198,7 @@ UNLIKELY_EOF
       # TODO: Deal with quotes in pathnames.
       echo "Replacing certbot-auto..."
       # Clone permissions with cp. chmod and chown don't have a --reference
-      # option on OS X or BSD, and stat -c on Linux is stat -f on OS X and BSD:
+      # option on macOS or BSD, and stat -c on Linux is stat -f on macOS and BSD:
       $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
       $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
       # Using mv rather than cp leaves the old file descriptor pointing to the

@@ -16,7 +16,7 @@ set -e  # Work even if somebody does "sh thisscript.sh".
 # Note: you can set XDG_DATA_HOME or VENV_PATH before running this script,
 # if you want to change where the virtual environment will be installed
 if [ -z "$XDG_DATA_HOME" ]; then
-  XDG_DATA_HOME="~/.local/share"
+  XDG_DATA_HOME=~/.local/share
 fi
 VENV_NAME="letsencrypt"
 if [ -z "$VENV_PATH" ]; then
@@ -231,7 +231,7 @@ Bootstrap() {
   elif uname | grep -iq FreeBSD ; then
     ExperimentalBootstrap "FreeBSD" BootstrapFreeBsd
   elif uname | grep -iq Darwin ; then
-    ExperimentalBootstrap "Mac OS X" BootstrapMac
+    ExperimentalBootstrap "macOS" BootstrapMac
   elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
     ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
   elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
@@ -247,7 +247,7 @@ Bootstrap() {
 }
 
 TempDir() {
-  mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || OS X
+  mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || macOS
 }
 
 
@@ -260,6 +260,11 @@ if [ "$1" = "--le-auto-phase2" ]; then
     # --version output ran through grep due to python-cryptography DeprecationWarnings
     # grep for both certbot and letsencrypt until certbot and shim packages have been released
     INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | grep "^certbot\|^letsencrypt" | cut -d " " -f 2)
+    if [ -z "$INSTALLED_VERSION" ]; then
+        echo "Error: couldn't get currently installed version for $VENV_BIN/letsencrypt: " 1>&2
+        "$VENV_BIN/letsencrypt" --version
+        exit 1
+    fi
   else
     INSTALLED_VERSION="none"
   fi
@@ -387,7 +392,7 @@ UNLIKELY_EOF
       # TODO: Deal with quotes in pathnames.
       echo "Replacing certbot-auto..."
       # Clone permissions with cp. chmod and chown don't have a --reference
-      # option on OS X or BSD, and stat -c on Linux is stat -f on OS X and BSD:
+      # option on macOS or BSD, and stat -c on Linux is stat -f on macOS and BSD:
       $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
       $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
       # Using mv rather than cp leaves the old file descriptor pointing to the
