@@ -144,6 +144,15 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(self.auth.get_chall_pref(domain=None),
                          [challenges.TLSSNI01])
 
+    def test_perform(self):
+        achalls = self._get_achalls()
+        self.auth.servers = mock.MagicMock()
+
+        response = self.auth.perform(achalls)
+
+        expected = [achall.response(achall.account_key) for achall in achalls]
+        self.assertEqual(response, expected)
+
     @classmethod
     def _get_achalls(cls):
         domain = b'localhost'
