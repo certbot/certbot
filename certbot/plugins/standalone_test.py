@@ -112,6 +112,7 @@ def get_open_port():
     open_socket.close()
     return port
 
+
 class AuthenticatorTest(unittest.TestCase):
     """Tests for certbot.plugins.standalone.Authenticator."""
 
