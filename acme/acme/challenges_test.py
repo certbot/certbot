@@ -10,7 +10,6 @@ from six.moves.urllib import parse as urllib_parse  # pylint: disable=import-err
 from acme import errors
 from acme import jose
 from acme import test_util
-from acme.dns_resolver import DNS_REQUIREMENT
 
 CERT = test_util.load_comparable_cert('cert.pem')
 KEY = jose.JWKRSA(key=test_util.load_rsa_private_key('rsa512_key.pem'))
@@ -92,7 +91,6 @@ class DNS01ResponseTest(unittest.TestCase):
         from acme.challenges import DNS01
         self.chall = DNS01(token=(b'x' * 16))
         self.response = self.chall.response(KEY)
-        self.records_for_name_path = "acme.dns_resolver.txt_records_for_name"
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
@@ -104,46 +102,6 @@ class DNS01ResponseTest(unittest.TestCase):
     def test_from_json_hashable(self):
         from acme.challenges import DNS01Response
         hash(DNS01Response.from_json(self.jmsg))
-
-    def test_simple_verify_bad_key_authorization(self):
-        key2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
-        self.response.simple_verify(self.chall, "local", key2.public_key())
-
-    @mock.patch('acme.dns_resolver.DNS_AVAILABLE', False)
-    def test_simple_verify_without_dns(self):
-        self.assertRaises(
-            errors.DependencyError, self.response.simple_verify,
-            self.chall, 'local', KEY.public_key())
-
-    @test_util.skip_unless(test_util.requirement_available(DNS_REQUIREMENT),
-                           "optional dependency dnspython is not available")
-    def test_simple_verify_good_validation(self):  # pragma: no cover
-        with mock.patch(self.records_for_name_path) as mock_resolver:
-            mock_resolver.return_value = [
-                self.chall.validation(KEY.public_key())]
-            self.assertTrue(self.response.simple_verify(
-                self.chall, "local", KEY.public_key()))
-            mock_resolver.assert_called_once_with(
-                self.chall.validation_domain_name("local"))
-
-    @test_util.skip_unless(test_util.requirement_available(DNS_REQUIREMENT),
-                           "optional dependency dnspython is not available")
-    def test_simple_verify_good_validation_multitxts(self):  # pragma: no cover
-        with mock.patch(self.records_for_name_path) as mock_resolver:
-            mock_resolver.return_value = [
-                "!", self.chall.validation(KEY.public_key())]
-            self.assertTrue(self.response.simple_verify(
-                self.chall, "local", KEY.public_key()))
-            mock_resolver.assert_called_once_with(
-                self.chall.validation_domain_name("local"))
-
-    @test_util.skip_unless(test_util.requirement_available(DNS_REQUIREMENT),
-                           "optional dependency dnspython is not available")
-    def test_simple_verify_bad_validation(self):  # pragma: no cover
-        with mock.patch(self.records_for_name_path) as mock_resolver:
-            mock_resolver.return_value = ["!"]
-            self.assertFalse(self.response.simple_verify(
-                self.chall, "local", KEY.public_key()))
 
 
 class DNS01Test(unittest.TestCase):
