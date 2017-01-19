@@ -40,7 +40,6 @@ dns_extras = [
 
 dev_extras = [
     'nose',
-    'pep8',
     'tox',
 ]
 
