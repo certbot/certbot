@@ -155,13 +155,15 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(response, expected)
 
     def test_perform_eacces(self):
+        achalls = self._setup_perform_error(socket.errno.EACCES)
+        self.assertRaises(errors.PluginError, self.auth.perform, achalls)
+
+    def _setup_perform_error(self, errno):
         self.auth.servers = mock.MagicMock()
-        socket_error = mock.MagicMock(errno=socket.errno.EACCES)
+        socket_error = mock.MagicMock(errno=errno)
         error = errors.StandaloneBindError(socket_error, -1)
         self.auth.servers.run.side_effect = error
-
-        achalls = self._get_achalls()
-        self.assertRaises(errors.PluginError, self.auth.perform, achalls)
+        return self._get_achalls()
 
     @classmethod
     def _get_achalls(cls):
