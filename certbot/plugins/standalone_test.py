@@ -146,31 +146,50 @@ class AuthenticatorTest(unittest.TestCase):
                          [challenges.TLSSNI01])
 
     def test_perform(self):
-        achalls = self._get_achalls()
         self.auth.servers = mock.MagicMock()
+        self._test_successful_perform()
 
+    @test_util.patch_get_utility()
+    def test_perform_eaddrinuse_retry(self, mock_get_utility):
+        self._setup_perform_error(socket.errno.EADDRINUSE)
+        error = self.auth.servers.run.side_effect
+        self.auth.servers.run.side_effect = [error] + 2 * [mock.MagicMock()]
+        mock_yesno = mock_get_utility.return_value.yesno
+        mock_yesno.return_value = True
+
+        self._test_successful_perform()
+        self._assert_correct_yesno_call(mock_yesno)
+
+    def _test_successful_perform(self):
+        achalls = self._get_achalls()
         response = self.auth.perform(achalls)
 
         expected = [achall.response(achall.account_key) for achall in achalls]
         self.assertEqual(response, expected)
 
-    def test_perform_eacces(self):
-        achalls = self._setup_perform_error(socket.errno.EACCES)
-        self.assertRaises(errors.PluginError, self.auth.perform, achalls)
-
     @test_util.patch_get_utility()
     def test_perform_eaddrinuse_no_retry(self, mock_get_utility):
-        achalls = self._setup_perform_error(socket.errno.EADDRINUSE)
+        self._setup_perform_error(socket.errno.EADDRINUSE)
         mock_yesno = mock_get_utility.return_value.yesno
         mock_yesno.return_value = False
 
+        achalls = self._get_achalls()
         self.assertRaises(errors.PluginError, self.auth.perform, achalls)
+        self._assert_correct_yesno_call(mock_yesno)
+
+    def _assert_correct_yesno_call(self, mock_yesno):
         yesno_args, yesno_kwargs = mock_yesno.call_args
         self.assertTrue("in use" in yesno_args[0])
         self.assertFalse(yesno_kwargs.get("default", True))
 
+    def test_perform_eacces(self):
+        achalls = self._get_achalls()
+        self._setup_perform_error(socket.errno.EACCES)
+        self.assertRaises(errors.PluginError, self.auth.perform, achalls)
+
     def test_perform_unexpected_socket_error(self):
-        achalls = self._setup_perform_error(socket.errno.ENOTCONN)
+        achalls = self._get_achalls()
+        self._setup_perform_error(socket.errno.ENOTCONN)
         self.assertRaises(
             errors.StandaloneBindError, self.auth.perform, achalls)
 
@@ -179,7 +198,6 @@ class AuthenticatorTest(unittest.TestCase):
         socket_error = mock.MagicMock(errno=errno)
         error = errors.StandaloneBindError(socket_error, -1)
         self.auth.servers.run.side_effect = error
-        return self._get_achalls()
 
     @classmethod
     def _get_achalls(cls):
