@@ -78,7 +78,7 @@ BootstrapRpmCommon() {
   fi
 
   if ! $SUDO $tool install $yes_flag $pkgs; then
-      echo "Could not install OS dependencies. Aborting bootstrap!"
-      exit 1
+    echo "Could not install OS dependencies. Aborting bootstrap!"
+    exit 1
   fi
 }
