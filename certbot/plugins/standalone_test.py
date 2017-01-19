@@ -8,11 +8,9 @@ import six
 
 from acme import challenges
 from acme import jose
-from acme import standalone as acme_standalone
 
 from certbot import achallenges
 from certbot import errors
-from certbot import interfaces
 
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
@@ -156,70 +154,6 @@ class AuthenticatorTest(unittest.TestCase):
             challb=acme_util.TLSSNI01_P, domain=domain, account_key=key)
 
         return [http_01, tls_sni_01]
-
-    @test_util.patch_get_utility()
-    def test_perform(self, unused_mock_get_utility):
-        achalls = self._get_achalls()
-
-        self.auth.perform2 = mock.Mock(return_value=mock.sentinel.responses)
-        self.assertEqual(mock.sentinel.responses, self.auth.perform(achalls))
-        self.auth.perform2.assert_called_once_with(achalls)
-
-    @test_util.patch_get_utility()
-    def _test_perform_bind_errors(self, errno, achalls, mock_get_utility):
-        port = get_open_port()
-        def _perform2(unused_achalls):
-            raise errors.StandaloneBindError(mock.Mock(errno=errno), port)
-
-        self.auth.perform2 = mock.MagicMock(side_effect=_perform2)
-        self.auth.perform(achalls)
-        mock_get_utility.assert_called_once_with(interfaces.IDisplay)
-        notification = mock_get_utility.return_value.notification
-        self.assertEqual(1, notification.call_count)
-        self.assertTrue(str(port) in notification.call_args[0][0])
-
-    def test_perform_eacces(self):
-        # pylint: disable=no-value-for-parameter
-        self._test_perform_bind_errors(socket.errno.EACCES, [])
-
-    def test_perform_eaddrinuse(self):
-        # pylint: disable=no-value-for-parameter
-        self._test_perform_bind_errors(socket.errno.EADDRINUSE, [])
-
-    def test_perfom_unknown_bind_error(self):
-        self.assertRaises(
-            errors.StandaloneBindError, self._test_perform_bind_errors,
-            socket.errno.ENOTCONN, [])
-
-    def test_perform2(self):
-        http_01, tls_sni_01 = self._get_achalls()
-
-        self.auth.servers = mock.MagicMock()
-
-        def _run(port, tls):  # pylint: disable=unused-argument
-            return "server{0}".format(port)
-
-        self.auth.servers.run.side_effect = _run
-        responses = self.auth.perform2([http_01, tls_sni_01])
-
-        self.assertTrue(isinstance(responses, list))
-        self.assertEqual(2, len(responses))
-        self.assertTrue(isinstance(responses[0], challenges.HTTP01Response))
-        self.assertTrue(isinstance(responses[1], challenges.TLSSNI01Response))
-
-        self.assertEqual(self.auth.servers.run.mock_calls, [
-            mock.call(self.config.http01_port, challenges.HTTP01),
-            mock.call(self.config.tls_sni_01_port, challenges.TLSSNI01),
-        ])
-        self.assertEqual(self.auth.served, {
-            "server" + str(self.config.tls_sni_01_port): set([tls_sni_01]),
-            "server" + str(self.config.http01_port): set([http_01]),
-        })
-        self.assertEqual(1, len(self.auth.http_01_resources))
-        self.assertEqual(1, len(self.auth.certs))
-        self.assertEqual(list(self.auth.http_01_resources), [
-            acme_standalone.HTTP01RequestHandler.HTTP01Resource(
-                acme_util.HTTP01, responses[0], mock.ANY)])
 
     def test_cleanup(self):
         self.auth.servers = mock.Mock()
