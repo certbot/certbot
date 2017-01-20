@@ -17,7 +17,11 @@ BootstrapDebCommon() {
   #
   # - Debian 6.0.10 "squeeze" (x64)
 
-  $SUDO apt-get update || echo apt-get update hit problems but continuing anyway...
+  if [ "$QUIET" == 1 ]; then
+    QUIET_FLAG='-qq'
+  fi
+
+  $SUDO apt-get $QUIET_FLAG update || echo apt-get update hit problems but continuing anyway...
 
   # virtualenv binary can be found in different packages depending on
   # distro version (#346)
@@ -68,12 +72,12 @@ BootstrapDebCommon() {
         fi
         if [ "$add_backports" = 1 ]; then
           $SUDO sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
-          $SUDO apt-get update
+          $SUDO apt-get $QUIET_FLAG update
         fi
       fi
     fi
     if [ "$add_backports" != 0 ]; then
-      $SUDO apt-get install $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
+      $SUDO apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
       augeas_pkg=
     fi
   }
@@ -92,7 +96,7 @@ BootstrapDebCommon() {
     # XXX add a case for ubuntu PPAs
   fi
 
-  $SUDO apt-get install $YES_FLAG --no-install-recommends \
+  $SUDO apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends \
     python \
     python-dev \
     $virtualenv \

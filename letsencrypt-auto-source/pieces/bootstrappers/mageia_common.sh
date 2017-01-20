@@ -1,5 +1,9 @@
 BootstrapMageiaCommon() {
-  if ! $SUDO urpmi --force  \
+  if [ "$QUIET" == 1 ]; then
+    QUIET_FLAG='--quiet'
+  fi
+
+  if ! $SUDO urpmi --force $QUIET_FLAG \
       python \
       libpython-devel \
       python-virtualenv
@@ -8,7 +12,7 @@ BootstrapMageiaCommon() {
       exit 1
   fi
 
-  if ! $SUDO urpmi --force \
+  if ! $SUDO urpmi --force $QUIET_FLAG \
       git \
       gcc \
       python-augeas \

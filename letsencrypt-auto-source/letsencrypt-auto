@@ -38,8 +38,9 @@ Help for certbot itself cannot be provided until it is installed.
   -n, --non-interactive, --noninteractive   run without asking for user input
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
-  -q, --quiet                               provide only update/error output
   -v, --verbose                             provide more output
+  -q, --quiet                               provide only update/error output;
+                                            implies --non-interactive
 
 All arguments are accepted and forwarded to the Certbot client when run."
 
@@ -82,6 +83,11 @@ if [ $BASENAME = "letsencrypt-auto" ]; then
   # letsencrypt-auto does not respect --help or --yes for backwards compatibility
   ASSUME_YES=1
   HELP=0
+fi
+
+# Set ASSUME_YES to 1 if QUIET (i.e. --quiet implies --non-interactive)
+if [ $QUIET == 1 ]; then
+  ASSUME_YES=1
 fi
 
 # Support for busybox and others where there is no "command",
@@ -207,7 +213,11 @@ BootstrapDebCommon() {
   #
   # - Debian 6.0.10 "squeeze" (x64)
 
-  $SUDO apt-get update || echo apt-get update hit problems but continuing anyway...
+  if [ "$QUIET" == 1 ]; then
+    QUIET_FLAG='-qq'
+  fi
+
+  $SUDO apt-get $QUIET_FLAG update || echo apt-get update hit problems but continuing anyway...
 
   # virtualenv binary can be found in different packages depending on
   # distro version (#346)
@@ -258,12 +268,12 @@ BootstrapDebCommon() {
         fi
         if [ "$add_backports" = 1 ]; then
           $SUDO sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
-          $SUDO apt-get update
+          $SUDO apt-get $QUIET_FLAG update
         fi
       fi
     fi
     if [ "$add_backports" != 0 ]; then
-      $SUDO apt-get install $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
+      $SUDO apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
       augeas_pkg=
     fi
   }
@@ -282,7 +292,7 @@ BootstrapDebCommon() {
     # XXX add a case for ubuntu PPAs
   fi
 
-  $SUDO apt-get install $YES_FLAG --no-install-recommends \
+  $SUDO apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends \
     python \
     python-dev \
     $virtualenv \
@@ -322,6 +332,9 @@ BootstrapRpmCommon() {
   if [ "$ASSUME_YES" = 1 ]; then
     yes_flag="-y"
   fi
+  if [ "$QUIET" == 1 ]; then
+    QUIET_FLAG='--quiet'
+  fi
 
   if ! $SUDO $tool list *virtualenv >/dev/null 2>&1; then
     echo "To use Certbot, packages from the EPEL repository need to be installed."
@@ -337,7 +350,7 @@ BootstrapRpmCommon() {
       /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 seconds..."
       sleep 1s
     fi
-    if ! $SUDO $tool install $yes_flag epel-release; then
+    if ! $SUDO $tool install $yes_flag $QUIET_FLAG epel-release; then
       echo "Could not enable EPEL. Aborting bootstrap!"
       exit 1
     fi
@@ -379,9 +392,9 @@ BootstrapRpmCommon() {
     "
   fi
 
-  if ! $SUDO $tool install $yes_flag $pkgs; then
-      echo "Could not install OS dependencies. Aborting bootstrap!"
-      exit 1
+  if ! $SUDO $tool install $yes_flag $QUIET_FLAG $pkgs; then
+    echo "Could not install OS dependencies. Aborting bootstrap!"
+    exit 1
   fi
 }
 
@@ -393,7 +406,11 @@ BootstrapSuseCommon() {
     install_flags="-l"
   fi
 
-  $SUDO zypper $zypper_flags in $install_flags \
+  if [ "$QUIET" == 1 ]; then
+    QUIET_FLAG='-qq'
+  fi
+
+  $SUDO zypper $QUIET_FLAG $zypper_flags in $install_flags \
     python \
     python-devel \
     python-virtualenv \
@@ -431,7 +448,11 @@ BootstrapArchCommon() {
   fi
 
   if [ "$missing" ]; then
-    $SUDO pacman -S --needed $missing $noconfirm
+    if [ "$QUIET" == 1]; then
+      $SUDO pacman -S --needed $missing $noconfirm > /dev/null
+    else
+      $SUDO pacman -S --needed $missing $noconfirm
+    fi
   fi
 }
 
@@ -464,7 +485,11 @@ BootstrapGentooCommon() {
 }
 
 BootstrapFreeBsd() {
-  $SUDO pkg install -Ay \
+  if [ "$QUIET" == 1 ]; then
+    QUIET_FLAG="--quiet"
+  fi
+
+  $SUDO pkg install -Ay $QUIET_FLAG \
     python \
     py27-virtualenv \
     augeas \
@@ -522,7 +547,11 @@ BootstrapSmartOS() {
 }
 
 BootstrapMageiaCommon() {
-  if ! $SUDO urpmi --force  \
+  if [ "$QUIET" == 1 ]; then
+    QUIET_FLAG='--quiet'
+  fi
+
+  if ! $SUDO urpmi --force $QUIET_FLAG \
       python \
       libpython-devel \
       python-virtualenv

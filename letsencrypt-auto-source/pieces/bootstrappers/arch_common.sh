@@ -25,6 +25,10 @@ BootstrapArchCommon() {
   fi
 
   if [ "$missing" ]; then
-    $SUDO pacman -S --needed $missing $noconfirm
+    if [ "$QUIET" == 1]; then
+      $SUDO pacman -S --needed $missing $noconfirm > /dev/null
+    else
+      $SUDO pacman -S --needed $missing $noconfirm
+    fi
   fi
 }
