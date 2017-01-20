@@ -6,7 +6,7 @@ cd letsencrypt
 PLUGINS="certbot-apache certbot-nginx"
 PYTHON=$(command -v python2.7 || command -v python27 || command -v python2 || command -v python)
 TEMP_DIR=$(mktemp -d)
-VERSION=$(tools/get_certbot_version.sh)
+VERSION=$(letsencrypt-auto-source/version.py)
 
 # setup venv
 virtualenv --no-site-packages -p $PYTHON venv
