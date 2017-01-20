@@ -214,7 +214,7 @@ BootstrapDebCommon() {
   # - Debian 6.0.10 "squeeze" (x64)
 
   if [ "$QUIET" == 1 ]; then
-      QUIET_FLAG='-qq'
+    QUIET_FLAG='-qq'
   fi
 
   $SUDO apt-get $QUIET_FLAG update || echo apt-get update hit problems but continuing anyway...
@@ -407,7 +407,7 @@ BootstrapSuseCommon() {
   fi
 
   if [ "$QUIET" == 1 ]; then
-      QUIET_FLAG='-qq'
+    QUIET_FLAG='-qq'
   fi
 
   $SUDO zypper $QUIET_FLAG $zypper_flags in $install_flags \
@@ -449,9 +449,9 @@ BootstrapArchCommon() {
 
   if [ "$missing" ]; then
     if [ "$QUIET" == 1]; then
-        $SUDO pacman -S --needed $missing $noconfirm > /dev/null
+      $SUDO pacman -S --needed $missing $noconfirm > /dev/null
     else
-        $SUDO pacman -S --needed $missing $noconfirm
+      $SUDO pacman -S --needed $missing $noconfirm
     fi
   fi
 }
@@ -486,7 +486,7 @@ BootstrapGentooCommon() {
 
 BootstrapFreeBsd() {
   if [ "$QUIET" == 1 ]; then
-      QUIET_FLAG="--quiet"
+    QUIET_FLAG="--quiet"
   fi
 
   $SUDO pkg install -Ay $QUIET_FLAG \
@@ -548,7 +548,7 @@ BootstrapSmartOS() {
 
 BootstrapMageiaCommon() {
   if [ "$QUIET" == 1 ]; then
-      QUIET_FLAG='--quiet'
+    QUIET_FLAG='--quiet'
   fi
 
   if ! $SUDO urpmi --force $QUIET_FLAG \

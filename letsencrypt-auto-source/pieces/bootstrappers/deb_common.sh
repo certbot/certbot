@@ -18,7 +18,7 @@ BootstrapDebCommon() {
   # - Debian 6.0.10 "squeeze" (x64)
 
   if [ "$QUIET" == 1 ]; then
-      QUIET_FLAG='-qq'
+    QUIET_FLAG='-qq'
   fi
 
   $SUDO apt-get $QUIET_FLAG update || echo apt-get update hit problems but continuing anyway...

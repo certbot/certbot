@@ -1,6 +1,6 @@
 BootstrapMageiaCommon() {
   if [ "$QUIET" == 1 ]; then
-      QUIET_FLAG='--quiet'
+    QUIET_FLAG='--quiet'
   fi
 
   if ! $SUDO urpmi --force $QUIET_FLAG \

@@ -1,6 +1,6 @@
 BootstrapFreeBsd() {
   if [ "$QUIET" == 1 ]; then
-      QUIET_FLAG="--quiet"
+    QUIET_FLAG="--quiet"
   fi
 
   $SUDO pkg install -Ay $QUIET_FLAG \
