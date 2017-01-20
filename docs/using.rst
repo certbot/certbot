@@ -534,8 +534,90 @@ Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not 
    fi
 
 
+.. _managing-certs:
 
- 
+Managing certificates
+=====================
+
+To view a list of the certificates Certbot knows about, run
+the ``certificates`` subcommand:
+
+``certbot certifices``
+
+This will return information in the following format::
+
+  Found the following certs:
+    Certificate Name: example.com
+      Domains: example.com, www.example.com
+      Expiry Date: 2017-02-19 19:53:00+00:00 (VALID: 30 days)
+      Certificate Path: /etc/letsencrypt/live/example.com/fullchain.pem
+      Private Key Path: /etc/letsencrypt/live/example.com/privkey.pem
+
+``Certificate Name`` gives the name Certbot knows the certificate by. Pass this name
+to the ``--cert-name`` flag to specify a particular certificate for the ``run``,
+``certonly``, ``certificates``, ``renew`` and ``delete`` commands::
+
+  certbot certonly --cert-name example.com
+
+The ``--cert-name`` flag can also be used to modify the domains a certificate contains,
+by specifying new domains using the ``-d/--domains`` flag. If certificate ``example.com``
+previously contained ``example.com`` and ``www.example.com``, it can be modified to only
+contain ``example.com`` by specifying only ``example.com`` with the ``-d/--domains`` flag::
+
+  certbot certonly --cert-name example.com -d example.com
+
+The same format can be used to expand the set of domains a certificate contains, or to
+replace that set entirely::
+
+  certbot certonly --cert-name example.com -d example.org,www.example.org
+
+If a certificate is requested with ``run`` or ``certonly`` with a name that does not already
+exist, the new certificate created will be assigned the name specified.
+
+If your account key has been compromised or you otherwise need to revoke a certificate,
+use the revoke command to do so. Note that the revoke command is passed the certificate path
+(ending in ``cert.pem``), not a certificate name or domain. Additionally, if a certificate
+is a test cert obtained via the ``--staging/--test-cert`` flag, that flag must be passed to the
+``revoke`` subcommand::
+
+  certbot revoke --cert-path /etc/letsencrypt/live/CERTNAME/cert.pem
+
+Once a certificate is revoked (or for other cert management tasks), all of a certificate's
+relevant files can be removed from the system with the ``delete`` subcommand::
+
+  certbot delete --cert-name example.com
+
+For advanced certificate management tasks, it is possible to manually modify the certificate's
+renewal configuration file, located at ``/etc/letsencrypt/renewal/CERTNAME``.
+
+.. warning:: Modifying any files in ``/etc/letsencrypt`` can make it so Certbot can no longer
+   properly manage its certificates, and we do not recommend doing so for most users.
+
+If the contents of ``/etc/letsencrypt/archive/CERTNAME`` are moved to a new folder, first specify
+the new folder's name in the renewal configuration file, then run ``certbot update_symlinks`` to
+point the symlinks in ``/etc/letsencrypt/live/CERTNAME`` to the new folder.
+
+If you would like the live certificate files whose symlink location Certbot updates on each run to
+reside in a different location, first move them to that location, then specify the full path of
+each of the four files in the renewal configuration file. Since the symlinks are relative links,
+you must follow this with an invocation of ``certbot update_symlinks``.
+
+For example, say that a certificate's renewal configuration file previously contained the following
+directives::
+
+  archive_dir = /etc/letsencrypt/archive/example.com
+  cert = /etc/letsencrypt/live/example.com/cert.pem
+  privkey = /etc/letsencrypt/live/example.com/privkey.pem
+  chain = /etc/letsencrypt/live/example.com/chain.pem
+  fullchain = /etc/letsencrypt/live/example.com/fullchain.pem
+
+The following commands could be used to specify where these files are located::
+
+  mv /etc/letsencrypt/archive/example.com /home/user/me/certbot/example_archive
+  sed -i 's,/etc/letsencrypt/archive/example.com,/home/user/me/certbot/example_archive,' /etc/letsencrypt/renewal/example.com.conf
+  mv /etc/letsencrypt/live/example.com/*.pem /home/user/me/certbot/
+  sed -i 's,/etc/letsencrypt/live/example.com,/home/user/me/certbot,g' /etc/letsencrypt/renewal/example.com.conf
+  certbot update_symlinks 
 
 
 .. _config-file:
