@@ -46,6 +46,7 @@ cd ${SCRIPT_PATH}/../
 cp letsencrypt-auto-source/letsencrypt-auto ${temp_dir}/original-lea
 python letsencrypt-auto-source/build.py
 cp letsencrypt-auto-source/letsencrypt-auto ${temp_dir}/build-lea
+cp ${temp_dir}/original-lea letsencrypt-auto-source/letsencrypt-auto
 
 cd $temp_dir
 
