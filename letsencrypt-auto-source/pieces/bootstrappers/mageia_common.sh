@@ -12,7 +12,7 @@ BootstrapMageiaCommon() {
       exit 1
   fi
 
-  if ! $SUDO urpmi --force \
+  if ! $SUDO urpmi --force $QUIET_FLAG \
       git \
       gcc \
       python-augeas \
