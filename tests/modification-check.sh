@@ -61,8 +61,8 @@ else
 build.py."
 fi
 
+rm -rf temp_dir
+
 if $FLAG ; then
 	exit 1
 fi
-
-rm -rf temp_dir
