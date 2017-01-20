@@ -1,5 +1,5 @@
 BootstrapFreeBsd() {
-  if [ "$QUIET" == 1 ]; then
+  if [ "$QUIET" = 1 ]; then
     QUIET_FLAG="--quiet"
   fi
 
