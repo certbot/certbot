@@ -38,8 +38,9 @@ Help for certbot itself cannot be provided until it is installed.
   -n, --non-interactive, --noninteractive   run without asking for user input
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
-  -q, --quiet                               provide only update/error output; implies --non-interactive
   -v, --verbose                             provide more output
+  -q, --quiet                               provide only update/error output;
+                                            implies --non-interactive
 
 All arguments are accepted and forwarded to the Certbot client when run."
 
