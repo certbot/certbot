@@ -1,4 +1,5 @@
 """Module contains classes used by the Apache Configurator."""
+import os
 import re
 
 from certbot.plugins import common
@@ -122,7 +123,8 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
         # pylint: disable=too-many-arguments
         """Initialize a VH."""
-        self.filep = filep
+        # Resolve the possible symlinks
+        self.filep = os.path.realpath(filep)
         self.path = path
         self.addrs = addrs
         self.name = name

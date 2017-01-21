@@ -794,6 +794,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         self._copy_create_ssl_vhost_skeleton(avail_fp, ssl_fp)
 
+        # make sure the new file is added to augeas paths
+        self.parser._parse_file(ssl_fp)
+
         # Reload augeas to take into account the new vhost
         self.aug.load()
         # Get Vhost augeas path for new vhost

@@ -119,6 +119,9 @@ def get_vh_truth(temp_dir, config_name):
     """Return the ground truth for the specified directory."""
     if config_name == "debian_apache_2_4/multiple_vhosts":
         prefix = os.path.join(
+            temp_dir, config_name, "apache2/sites-enabled")
+
+        alt_prefix = os.path.join(
             temp_dir, config_name, "apache2/sites-available")
         aug_pre = "/files" + prefix
         vh_truth = [
@@ -130,7 +133,7 @@ def get_vh_truth(temp_dir, config_name):
             obj.VirtualHost(
                 os.path.join(prefix, "default-ssl.conf"),
                 os.path.join(aug_pre, "default-ssl.conf/IfModule/VirtualHost"),
-                set([obj.Addr.fromstring("_default_:443")]), True, False),
+                set([obj.Addr.fromstring("_default_:443")]), True, True),
             obj.VirtualHost(
                 os.path.join(prefix, "000-default.conf"),
                 os.path.join(aug_pre, "000-default.conf/VirtualHost"),
@@ -156,13 +159,19 @@ def get_vh_truth(temp_dir, config_name):
             obj.VirtualHost(
                 os.path.join(prefix, "wildcard.conf"),
                 os.path.join(aug_pre, "wildcard.conf/VirtualHost"),
-                set([obj.Addr.fromstring("*:80")]), False, False,
+                set([obj.Addr.fromstring("*:80")]), False, True,
                 "ip-172-30-0-17", aliases=["*.blue.purple.com"]),
             obj.VirtualHost(
                 os.path.join(prefix, "ocsp-ssl.conf"),
                 os.path.join(aug_pre, "ocsp-ssl.conf/IfModule/VirtualHost"),
                 set([obj.Addr.fromstring("10.2.3.4:443")]), True, True,
-                "ocspvhost.com")]
+                "ocspvhost.com"),
+            obj.VirtualHost(
+                os.path.join(alt_prefix, "wildcard-disabled.conf"),
+                os.path.join("/files", alt_prefix,
+                             "wildcard-disabled.conf/VirtualHost"),
+                set([obj.Addr.fromstring("*:80")]), False, False,
+                "ip-172-30-0-18", aliases=["*.red.purple.com"])]
         return vh_truth
 
     return None  # pragma: no cover

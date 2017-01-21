@@ -152,14 +152,9 @@ class MultipleVhostsTest(util.ApacheTest):
             self.vh_truth[2].get_names(), set(["*.le.co", "ip-172-30-0-17"]))
 
     def test_get_virtual_hosts(self):
-        """Make sure all vhosts are being properly found.
-
-        .. note:: If test fails, only finding 1 Vhost... it is likely that
-            it is a problem with is_enabled.  If finding only 3, likely is_ssl
-
-        """
+        """Make sure all vhosts are being properly found."""
         vhs = self.config.get_virtual_hosts()
-        self.assertEqual(len(vhs), 8)
+        self.assertEqual(len(vhs), 7)
         found = 0
 
         for vhost in vhs:
@@ -170,7 +165,7 @@ class MultipleVhostsTest(util.ApacheTest):
             else:
                 raise Exception("Missed: %s" % vhost)  # pragma: no cover
 
-        self.assertEqual(found, 8)
+        self.assertEqual(found, 7)
 
         # Handle case of non-debian layout get_virtual_hosts
         with mock.patch(
@@ -178,7 +173,7 @@ class MultipleVhostsTest(util.ApacheTest):
         ) as mock_conf:
             mock_conf.return_value = False
             vhs = self.config.get_virtual_hosts()
-            self.assertEqual(len(vhs), 8)
+            self.assertEqual(len(vhs), 7)
 
     @mock.patch("certbot_apache.display_ops.select_vhost")
     def test_choose_vhost_none_avail(self, mock_select):
@@ -278,7 +273,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
         """
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[0].filep))
-        self.assertFalse(self.config.is_site_enabled(self.vh_truth[1].filep))
+        self.assertTrue(self.config.is_site_enabled(self.vh_truth[1].filep))
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[2].filep))
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[3].filep))
         with mock.patch("os.path.isdir") as mock_isdir:
@@ -314,9 +309,9 @@ class MultipleVhostsTest(util.ApacheTest):
 
     def test_enable_site(self):
         # Default 443 vhost
-        self.assertFalse(self.vh_truth[1].enabled)
-        self.config.enable_site(self.vh_truth[1])
-        self.assertTrue(self.vh_truth[1].enabled)
+        self.assertFalse(self.vh_truth[8].enabled)
+        self.config.enable_site(self.vh_truth[8])
+        self.assertTrue(self.vh_truth[8].enabled)
 
         # Go again to make sure nothing fails
         self.config.enable_site(self.vh_truth[1])
@@ -355,12 +350,14 @@ class MultipleVhostsTest(util.ApacheTest):
 
         # Verify one directive was found in the correct file
         self.assertEqual(len(loc_cert), 1)
-        self.assertEqual(configurator.get_file_path(loc_cert[0]),
-                         self.vh_truth[1].filep)
+        self.assertEqual(
+            os.path.realpath(configurator.get_file_path(loc_cert[0])),
+            self.vh_truth[1].filep)
 
         self.assertEqual(len(loc_key), 1)
-        self.assertEqual(configurator.get_file_path(loc_key[0]),
-                         self.vh_truth[1].filep)
+        self.assertEqual(
+            os.path.realpath(configurator.get_file_path(loc_key[0])),
+            self.vh_truth[1].filep)
 
     def test_deploy_cert_newssl_no_fullchain(self):
         self.config = util.get_apache_configurator(
@@ -419,16 +416,19 @@ class MultipleVhostsTest(util.ApacheTest):
 
         # Verify one directive was found in the correct file
         self.assertEqual(len(loc_cert), 1)
-        self.assertEqual(configurator.get_file_path(loc_cert[0]),
-                         self.vh_truth[1].filep)
+        self.assertEqual(
+            os.path.realpath(configurator.get_file_path(loc_cert[0])),
+            self.vh_truth[1].filep)
 
         self.assertEqual(len(loc_key), 1)
-        self.assertEqual(configurator.get_file_path(loc_key[0]),
-                         self.vh_truth[1].filep)
+        self.assertEqual(
+            os.path.realpath(configurator.get_file_path(loc_key[0])),
+            self.vh_truth[1].filep)
 
         self.assertEqual(len(loc_chain), 1)
-        self.assertEqual(configurator.get_file_path(loc_chain[0]),
-                         self.vh_truth[1].filep)
+        self.assertEqual(
+            os.path.realpath(configurator.get_file_path(loc_chain[0])),
+            self.vh_truth[1].filep)
 
         # One more time for chain directive setting
         self.config.deploy_cert(
@@ -589,7 +589,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(self.config.is_name_vhost(self.vh_truth[0]),
                          self.config.is_name_vhost(ssl_vhost))
 
-        self.assertEqual(len(self.config.vhosts), 9)
+        self.assertEqual(len(self.config.vhosts), 8)
 
     def test_clean_vhost_ssl(self):
         # pylint: disable=protected-access
