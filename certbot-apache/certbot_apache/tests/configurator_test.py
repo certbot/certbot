@@ -188,8 +188,10 @@ class MultipleVhostsTest(util.ApacheTest):
             self.vh_truth[1], self.config.choose_vhost("none.com"))
 
     @mock.patch("certbot_apache.display_ops.select_vhost")
-    def test_choose_vhost_select_vhost_non_ssl(self, mock_select):
+    @mock.patch("certbot_apache.obj.VirtualHost.conflicts")
+    def test_choose_vhost_select_vhost_non_ssl(self, mock_conf, mock_select):
         mock_select.return_value = self.vh_truth[0]
+        mock_conf.return_value = False
         chosen_vhost = self.config.choose_vhost("none.com")
         self.vh_truth[0].aliases.add("none.com")
         self.assertEqual(
@@ -1091,7 +1093,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
         # pylint: disable=protected-access
         self.config._enable_redirect(self.vh_truth[1], "")
-        self.assertEqual(len(self.config.vhosts), 9)
+        self.assertEqual(len(self.config.vhosts), 8)
 
     def test_create_own_redirect_for_old_apache_version(self):
         self.config.parser.modules.add("rewrite_module")
@@ -1102,7 +1104,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
         # pylint: disable=protected-access
         self.config._enable_redirect(self.vh_truth[1], "")
-        self.assertEqual(len(self.config.vhosts), 9)
+        self.assertEqual(len(self.config.vhosts), 8)
 
     def test_sift_rewrite_rule(self):
         # pylint: disable=protected-access

@@ -1420,6 +1420,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         redirect_filepath = self._write_out_redirect(ssl_vhost, text)
 
+        # Make sure the redirect file is read by augeas
+        self.parser._parse_file(redirect_filepath)
+
         self.aug.load()
         # Make a new vhost data structure and add it to the lists
         new_vhost = self._create_vhost(parser.get_aug_path(self._escape(redirect_filepath)))
