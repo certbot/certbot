@@ -1056,7 +1056,7 @@ UNLIKELY_EOF
   fi
 
 else
-  # Phase 1: Upgrade certbot-auto if neceesary, then self-invoke.
+  # Phase 1: Upgrade certbot-auto if necessary, then self-invoke.
   #
   # Each phase checks the version of only the thing it is responsible for
   # upgrading. Phase 1 checks the version of the latest release of
