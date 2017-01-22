@@ -317,7 +317,7 @@ class CustomHelpFormatter(argparse.HelpFormatter):
 # The attributes here are:
 # short: a string that will be displayed by "certbot -h commands"
 # opts:  a string that heads the section of flags with which this command is documented,
-#        both for "cerbot -h SUBCOMMAND" and "certbot -h all"
+#        both for "certbot -h SUBCOMMAND" and "certbot -h all"
 # usage: an optional string that overrides the header of "certbot -h SUBCOMMAND"
 VERB_HELP = [
     ("run (default)", {
@@ -495,7 +495,7 @@ class HelpfulArgumentParser(object):
         if "apache" in plugins:
             apache_doc = "--apache          Use the Apache plugin for authentication & installation"
         else:
-            apache_doc = "(the cerbot apache plugin is not installed)"
+            apache_doc = "(the certbot apache plugin is not installed)"
 
         usage = SHORT_USAGE
         if help_arg == True:
