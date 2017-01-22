@@ -52,7 +52,7 @@ class RawNginxParser(object):
 
     map_statement = space + Literal("map") + space + nonspace + space + dollar_var + space
     # This is NOT an accurate way to parse nginx map entries; it's almost
-    # certianly too permissive and may be wrong in other ways, but it should
+    # certainly too permissive and may be wrong in other ways, but it should
     # preserve things correctly in mmmmost or all cases.
     #
     #    - I can neither prove nor disprove that it is corect wrt all escaped
