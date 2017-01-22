@@ -170,7 +170,7 @@ class ClientTest(unittest.TestCase):
             self.directory.new_authz,
             messages.NewAuthorization(identifier=self.identifier))
 
-    def test_requets_challenges_custom_uri(self):
+    def test_request_challenges_custom_uri(self):
         self._prepare_response_for_request_challenges()
         self.client.request_challenges(self.identifier, 'URI')
         self.net.post.assert_called_once_with('URI', mock.ANY)
