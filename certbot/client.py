@@ -93,7 +93,7 @@ def register(config, account_storage, tos_cb=None):
         Terms of Service present in the contained
         `.Registration.terms_of_service` is accepted by the client, and
         ``False`` otherwise. ``tos_cb`` will be called only if the
-        client acction is necessary, i.e. when ``terms_of_service is not
+        client action is necessary, i.e. when ``terms_of_service is not
         None``. This argument is optional, if not supplied it will
         default to automatic acceptance!
 
