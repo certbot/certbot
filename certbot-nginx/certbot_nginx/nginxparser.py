@@ -55,7 +55,7 @@ class RawNginxParser(object):
     # certainly too permissive and may be wrong in other ways, but it should
     # preserve things correctly in mmmmost or all cases.
     #
-    #    - I can neither prove nor disprove that it is corect wrt all escaped
+    #    - I can neither prove nor disprove that it is correct wrt all escaped
     #      semicolon situations
     # Addresses https://github.com/fatiherikli/nginxparser/issues/19
     map_pattern = Regex(r'".*"') | Regex(r"'.*'") | nonspace
