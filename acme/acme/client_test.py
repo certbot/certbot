@@ -388,7 +388,7 @@ class ClientTest(unittest.TestCase):
             errors.PollError, self.client.poll_and_request_issuance,
             csr, authzrs=(invalid_authzr,), mintime=mintime)
 
-        # exceeded max_attemps | TODO: move to a separate test
+        # exceeded max_attempts | TODO: move to a separate test
         self.assertRaises(
             errors.PollError, self.client.poll_and_request_issuance,
             csr, authzrs, mintime=mintime, max_attempts=2)
