@@ -22,7 +22,7 @@ sudo venv/bin/certbot certonly --no-self-upgrade -v --standalone --debug \
 # 1. be in the right directory
 cd tests/letstest/testdata/
 
-# 2. refer to the config with the same level of relativitity that it itself
+# 2. refer to the config with the same level of relativity that it itself
 # contains :/
 OUT=`sudo ../../../venv/bin/certbot certificates  -v --config-dir sample-config`
 TEST_CERTS=`echo "$OUT" | grep TEST_CERT | wc -l`
