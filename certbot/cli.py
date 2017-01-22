@@ -333,7 +333,7 @@ VERB_HELP = [
                   "This command obtains a TLS/SSL certificate without installing it anywhere.")
     }),
     ("renew", {
-        "short": "Renew all certificates (or one specifed with --cert-name)",
+        "short": "Renew all certificates (or one specified with --cert-name)",
         "opts": ("The 'renew' subcommand will attempt to renew all"
                  " certificates (or more precisely, certificate lineages) you have"
                  " previously obtained if they are close to expiry, and print a"
