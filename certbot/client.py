@@ -494,7 +494,7 @@ class Client(object):
             self.installer.rollback_checkpoints()
             self.installer.restart()
         except:
-            # TODO: suggest letshelp-letsencypt here
+            # TODO: suggest letshelp-letsencrypt here
             reporter.add_message(
                 "An error occurred and we failed to restore your config and "
                 "restart your server. Please submit a bug report to "

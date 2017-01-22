@@ -336,7 +336,7 @@ the ``letsencrypt-auto-source`` and
 Building letsencrypt-auto-source/letsencrypt-auto
 -------------------------------------------------
 Once changes to any of the aforementioned files have been made, the
-``letesncrypt-auto-source/letsencrypt-auto`` script should be updated.  In lieu of
+``letsencrypt-auto-source/letsencrypt-auto`` script should be updated.  In lieu of
 manually updating this script, run the build script, which lives at
 ``letsencrypt-auto-source/build.py``:
 
