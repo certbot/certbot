@@ -230,7 +230,7 @@ class PluginsRegistry(collections.Mapping):
     def available(self):
         """Filter plugins based on availability."""
         return self.filter(lambda p_ep: p_ep.available)
-        # succefully prepared + misconfigured
+        # successfully prepared + misconfigured
 
     def find_init(self, plugin):
         """Find an initialized plugin.
