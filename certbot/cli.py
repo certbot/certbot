@@ -149,7 +149,7 @@ def possible_deprecation_warning(config):
     if cli_command != LEAUTO:
         return
     if config.no_self_upgrade:
-        # users setting --no-self-upgrade might be hanging on a clent version like 0.3.0
+        # users setting --no-self-upgrade might be hanging on a client version like 0.3.0
         # or 0.5.0 which is the new script, but doesn't set CERTBOT_AUTO; they don't
         # need warnings
         return
