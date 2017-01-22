@@ -438,7 +438,7 @@ class Client(object):
                 self.installer.restart()
 
     def apply_enhancement(self, domains, enhancement, options=None):
-        """Applies an enhacement on all domains.
+        """Applies an enhancement on all domains.
 
         :param domains: list of ssl_vhosts
         :type list of str

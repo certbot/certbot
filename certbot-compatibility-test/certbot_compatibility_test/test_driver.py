@@ -202,7 +202,7 @@ def test_enhancements(plugin, domains):
             success = False
 
     if success:
-        logger.info("Enhancments test succeeded")
+        logger.info("Enhancements test succeeded")
 
     return success
 
