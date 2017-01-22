@@ -143,7 +143,7 @@ class RawNginxDumper(object):
 def loads(source):
     """Parses from a string.
 
-    :param str souce: The string to parse
+    :param str source: The string to parse
     :returns: The parsed tree
     :rtype: list
 
