@@ -30,7 +30,7 @@ control the domain(s) you are requesting a cert for, obtains a cert for the spec
 domain(s), and places the cert in the ``/etc/letsencrypt`` directory on your
 machine. The authenticator does not install the cert (it does not edit any of your server's configuration files to serve the
 obtained certificate). If you specify multiple domains to authenticate, they will
-all be listed in a single certificate. To obtain multiple seperate certificates
+all be listed in a single certificate. To obtain multiple separate certificates
 you will need to run Certbot multiple times.
 
 Installers are Plugins used with the ``install`` command to install a cert.
