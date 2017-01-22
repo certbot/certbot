@@ -79,7 +79,7 @@ class PluginEntryPoint(object):
         return self._initialized is not None
 
     def init(self, config=None):
-        """Memoized plugin inititialization."""
+        """Memoized plugin initialization."""
         if not self.initialized:
             self.entry_point.require()  # fetch extras!
             self._initialized = self.plugin_cls(config, self.name)
