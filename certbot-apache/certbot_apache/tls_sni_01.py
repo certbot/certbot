@@ -177,7 +177,7 @@ class ApacheTlsSni01(common.TLSSNI01):
         ips = " ".join(str(i) for i in ip_addrs)
         document_root = os.path.join(
             self.configurator.config.work_dir, "tls_sni_01_page/")
-        # TODO: Python docs is not clear how mutliline string literal
+        # TODO: Python docs is not clear how multiline string literal
         # newlines are parsed on different platforms. At least on
         # Linux (Debian sid), when source file uses CRLF, Python still
         # parses it as "\n"... c.f.:
