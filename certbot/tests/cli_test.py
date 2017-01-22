@@ -50,7 +50,7 @@ class ParseTest(unittest.TestCase):
         return cli.prepare_and_parse_args(PLUGINS, *args, **kwargs)
 
     def _help_output(self, args):
-        "Run a command, and return the ouput string for scrutiny"
+        "Run a command, and return the output string for scrutiny"
 
         output = six.StringIO()
         with mock.patch('certbot.main.sys.stdout', new=output):
