@@ -41,5 +41,8 @@ def txt_records_for_name(name):
         logger.error("Error resolving %s: %s", name, str(error))
         return []
 
-    return [txt_rec.decode("utf-8") for rdata in dns_response
-            for txt_rec in rdata.strings]
+    try:
+        return [txt_rec.decode("utf-8") for rdata in dns_response
+                for txt_rec in rdata.strings]
+    except AttributeError:  # Python3.3 or later
+        return [txt_rec for rdata in dns_response for txt_rec in rdata.strings]
