@@ -14,7 +14,7 @@ RUN /opt/certbot/src/certbot-auto -n --os-packages-only
 # the above is not likely to change, so by putting it further up the
 # Dockerfile we make sure we cache as much as possible
 
-COPY setup.py README.rst CHANGES.rst MANIFEST.in linter_plugin.py tox.cover.sh tox.ini pep8.travis.sh .pep8 .pylintrc /opt/certbot/src/
+COPY setup.py README.rst CHANGES.rst MANIFEST.in linter_plugin.py tox.cover.sh tox.ini .pylintrc /opt/certbot/src/
 
 # all above files are necessary for setup.py, however, package source
 # code directory has to be copied separately to a subdirectory...
