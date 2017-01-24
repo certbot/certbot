@@ -132,7 +132,8 @@ def get_vh_truth(temp_dir, config_name):
                 False, True, "encryption-example.demo"),
             obj.VirtualHost(
                 os.path.join(prefix, "default-ssl.conf"),
-                os.path.join(aug_pre, "default-ssl.conf/IfModule/VirtualHost"),
+                os.path.join(aug_pre,
+                             "default-ssl.conf/IfModule/VirtualHost"),
                 set([obj.Addr.fromstring("_default_:443")]), True, True),
             obj.VirtualHost(
                 os.path.join(prefix, "000-default.conf"),
@@ -155,7 +156,7 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(prefix, "default-ssl-port-only.conf"),
                 os.path.join(aug_pre, ("default-ssl-port-only.conf/"
                                        "IfModule/VirtualHost")),
-                set([obj.Addr.fromstring("_default_:443")]), True, False),
+                set([obj.Addr.fromstring("_default_:443")]), True, True),
             obj.VirtualHost(
                 os.path.join(prefix, "wildcard.conf"),
                 os.path.join(aug_pre, "wildcard.conf/VirtualHost"),
@@ -167,11 +168,10 @@ def get_vh_truth(temp_dir, config_name):
                 set([obj.Addr.fromstring("10.2.3.4:443")]), True, True,
                 "ocspvhost.com"),
             obj.VirtualHost(
-                os.path.join(alt_prefix, "wildcard-disabled.conf"),
-                os.path.join("/files", alt_prefix,
-                             "wildcard-disabled.conf/VirtualHost"),
-                set([obj.Addr.fromstring("*:80")]), False, False,
-                "ip-172-30-0-18", aliases=["*.red.purple.com"])]
+                os.path.join(prefix, "default-ssl-port-only.conf"),
+                os.path.join(aug_pre,
+                             "default-ssl-port-only.conf/VirtualHost"),
+                set([obj.Addr.fromstring("*:80")]), True, True, "")]
         return vh_truth
 
     return None  # pragma: no cover
