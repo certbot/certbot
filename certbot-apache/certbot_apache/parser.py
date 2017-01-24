@@ -618,7 +618,6 @@ class ApacheParser(object):
         for name in location:
             if os.path.isfile(os.path.join(self.root, name)):
                 return os.path.join(self.root, name)
-
         raise errors.NoInstallationError("Could not find configuration root")
 
 

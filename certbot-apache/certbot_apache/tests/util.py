@@ -121,8 +121,6 @@ def get_vh_truth(temp_dir, config_name):
         prefix = os.path.join(
             temp_dir, config_name, "apache2/sites-enabled")
 
-        alt_prefix = os.path.join(
-            temp_dir, config_name, "apache2/sites-available")
         aug_pre = "/files" + prefix
         vh_truth = [
             obj.VirtualHost(

@@ -145,7 +145,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return os.path.join(self.config.config_dir,
                             constants.MOD_SSL_CONF_DEST)
 
-
     def prepare(self):
         """Prepare the authenticator/installer.
 
@@ -287,11 +286,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                              set_cert_path, key_path))
         if chain_path is not None:
             self.save_notes += "\tSSLCertificateChainFile %s\n" % chain_path
-
-        # Make sure vhost is enabled if distro with enabled / available
-        if self.conf("handle-sites"):
-            if not vhost.enabled:
-                self.enable_site(vhost)
 
     def choose_vhost(self, target_name, temp=False):
         """Chooses a virtual host based on the given domain name.
@@ -589,15 +583,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 if realpath not in vhost_paths.keys():
                     vhs.append(new_vhost)
                     vhost_paths[realpath] = new_vhost.filep
-                elif realpath == new_vhost.filep:
-                    # Prefer "real" vhost paths instead of symlinked ones
-                    # ex: sites-enabled/vh.conf -> sites-available/vh.conf
-
-                    # remove old (most likely) symlinked one
-                    vhs = [v for v in vhs if v.filep != vhost_paths[realpath]]
-                    vhs.append(new_vhost)
-                    vhost_paths[realpath] = realpath
-
         return vhs
 
     def is_name_vhost(self, target_addr):
@@ -836,10 +821,18 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # This is for compliance with versions of Apache < 2.4
         self._add_name_vhost_if_necessary(ssl_vhost)
 
+        # Enable the new vhost if needed
+        if self.conf("handle-sites"):
+            if not self.is_site_enabled(ssl_fp):
+                self.enable_site(ssl_vhost)
+
         return ssl_vhost
 
     def _get_ssl_vhost_path(self, non_ssl_vh_fp):
         # Get filepath of new ssl_vhost
+        # Make sure we use the realpath (eg. sites-available instead of
+        # sites-enabled
+        non_ssl_vh_fp = os.path.realpath(non_ssl_vh_fp)
         if non_ssl_vh_fp.endswith(".conf"):
             return non_ssl_vh_fp[:-(len(".conf"))] + self.conf("le_vhost_ext")
         else:
