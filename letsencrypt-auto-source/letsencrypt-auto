@@ -86,7 +86,7 @@ if [ $BASENAME = "letsencrypt-auto" ]; then
 fi
 
 # Set ASSUME_YES to 1 if QUIET (i.e. --quiet implies --non-interactive)
-if [ $QUIET == 1 ]; then
+if [ "$QUIET" = 1 ]; then
   ASSUME_YES=1
 fi
 
@@ -213,7 +213,7 @@ BootstrapDebCommon() {
   #
   # - Debian 6.0.10 "squeeze" (x64)
 
-  if [ "$QUIET" == 1 ]; then
+  if [ "$QUIET" = 1 ]; then
     QUIET_FLAG='-qq'
   fi
 
@@ -332,7 +332,7 @@ BootstrapRpmCommon() {
   if [ "$ASSUME_YES" = 1 ]; then
     yes_flag="-y"
   fi
-  if [ "$QUIET" == 1 ]; then
+  if [ "$QUIET" = 1 ]; then
     QUIET_FLAG='--quiet'
   fi
 
@@ -406,7 +406,7 @@ BootstrapSuseCommon() {
     install_flags="-l"
   fi
 
-  if [ "$QUIET" == 1 ]; then
+  if [ "$QUIET" = 1 ]; then
     QUIET_FLAG='-qq'
   fi
 
@@ -448,7 +448,7 @@ BootstrapArchCommon() {
   fi
 
   if [ "$missing" ]; then
-    if [ "$QUIET" == 1]; then
+    if [ "$QUIET" = 1]; then
       $SUDO pacman -S --needed $missing $noconfirm > /dev/null
     else
       $SUDO pacman -S --needed $missing $noconfirm
@@ -485,7 +485,7 @@ BootstrapGentooCommon() {
 }
 
 BootstrapFreeBsd() {
-  if [ "$QUIET" == 1 ]; then
+  if [ "$QUIET" = 1 ]; then
     QUIET_FLAG="--quiet"
   fi
 
@@ -547,7 +547,7 @@ BootstrapSmartOS() {
 }
 
 BootstrapMageiaCommon() {
-  if [ "$QUIET" == 1 ]; then
+  if [ "$QUIET" = 1 ]; then
     QUIET_FLAG='--quiet'
   fi
 
@@ -560,7 +560,7 @@ BootstrapMageiaCommon() {
       exit 1
   fi
 
-  if ! $SUDO urpmi --force \
+  if ! $SUDO urpmi --force $QUIET_FLAG \
       git \
       gcc \
       python-augeas \

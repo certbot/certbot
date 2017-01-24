@@ -6,7 +6,7 @@ BootstrapSuseCommon() {
     install_flags="-l"
   fi
 
-  if [ "$QUIET" == 1 ]; then
+  if [ "$QUIET" = 1 ]; then
     QUIET_FLAG='-qq'
   fi
 

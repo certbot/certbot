@@ -86,7 +86,7 @@ if [ $BASENAME = "letsencrypt-auto" ]; then
 fi
 
 # Set ASSUME_YES to 1 if QUIET (i.e. --quiet implies --non-interactive)
-if [ $QUIET == 1 ]; then
+if [ "$QUIET" = 1 ]; then
   ASSUME_YES=1
 fi
 
