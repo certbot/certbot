@@ -38,7 +38,7 @@ class BasicParserTest(util.ParserTest):
         file_path = os.path.join(
             self.config_path, "not-parsed-by-default", "certbot.conf")
 
-        self.parser._parse_file(file_path)  # pylint: disable=protected-access
+        self.parser.parse_file(file_path)  # pylint: disable=protected-access
 
         # search for the httpd incl
         matches = self.parser.aug.match(

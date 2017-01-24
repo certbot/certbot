@@ -44,7 +44,7 @@ class ApacheParser(object):
         # Find configuration root and make sure augeas can parse it.
         self.root = os.path.abspath(root)
         self.loc = {"root": self._find_config_root()}
-        self._parse_file(self.loc["root"])
+        self.parse_file(self.loc["root"])
 
         self.vhostroot = os.path.abspath(vhostroot)
 
@@ -64,7 +64,7 @@ class ApacheParser(object):
         # omit sites-available for debian / ubuntu
         if (not self.vhostroot.endswith("sites-available") and
                 not constants.os_constant("handle_sites")):
-            self._parse_file(self.vhostroot + "/" +
+            self.parse_file(self.vhostroot + "/" +
                              constants.os_constant("vhost_files"))
 
         # check to see if there were unparsed define statements
@@ -428,9 +428,9 @@ class ApacheParser(object):
 
         # Attempts to add a transform to the file if one does not already exist
         if os.path.isdir(arg):
-            self._parse_file(os.path.join(arg, "*"))
+            self.parse_file(os.path.join(arg, "*"))
         else:
-            self._parse_file(arg)
+            self.parse_file(arg)
 
         # Argument represents an fnmatch regular expression, convert it
         # Split up the path and convert each into an Augeas accepted regex
@@ -466,7 +466,7 @@ class ApacheParser(object):
         # This strips off final /Z(?ms)
         return fnmatch.translate(clean_fn_match)[:-7]
 
-    def _parse_file(self, filepath):
+    def parse_file(self, filepath):
         """Parse file with Augeas
 
         Checks to see if file_path is parsed by Augeas

@@ -780,7 +780,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._copy_create_ssl_vhost_skeleton(avail_fp, ssl_fp)
 
         # make sure the new file is added to augeas paths
-        self.parser._parse_file(ssl_fp)
+        self.parser.parse_file(ssl_fp)
 
         # Reload augeas to take into account the new vhost
         self.aug.load()
@@ -1414,7 +1414,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         redirect_filepath = self._write_out_redirect(ssl_vhost, text)
 
         # Make sure the redirect file is read by augeas
-        self.parser._parse_file(redirect_filepath)
+        self.parser.parse_file(redirect_filepath)
 
         self.aug.load()
         # Make a new vhost data structure and add it to the lists

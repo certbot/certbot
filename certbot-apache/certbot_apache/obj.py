@@ -1,5 +1,4 @@
 """Module contains classes used by the Apache Configurator."""
-import os
 import re
 
 from certbot.plugins import common

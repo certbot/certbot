@@ -92,7 +92,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertRaises(
             errors.NotSupportedError, self.config.prepare)
 
-    @mock.patch("certbot_apache.parser.ApacheParser._parse_file")
+    @mock.patch("certbot_apache.parser.ApacheParser.parse_file")
     @mock.patch("certbot_apache.parser.ApacheParser.update_runtime_variables")
     def test_prepare_custom_vhost_dir(self, _, mock_parsefile):
         server_root = self.config.conf("server-root")
