@@ -1244,5 +1244,4 @@ class _PrefChallAction(argparse.Action):
         if unrecognized:
             raise argparse.ArgumentTypeError(
                 "Unrecognized challenges: {0}".format(unrecognized))
-        namespace.pref_challs.extend(challenges.Challenge.TYPES[name]
-                                     for name in challs)
+        namespace.pref_challs.extend(challs)
