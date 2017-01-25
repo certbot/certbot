@@ -5,6 +5,8 @@ import unittest
 import shutil
 import tempfile
 
+from acme import challenges
+
 from certbot import configuration
 from certbot import errors
 from certbot import storage
@@ -58,6 +60,21 @@ class RestoreRequiredConfigElementsTest(unittest.TestCase):
         renewalparams = {'allow_subset_of_names': 'maybe'}
         self.assertRaises(
             errors.Error, self._call, self.config, renewalparams)
+
+    @mock.patch('certbot.renewal.cli.set_by_cli')
+    def test_pref_challs_success(self, mock_set_by_cli):
+        mock_set_by_cli.return_value = False
+        renewalparams = {'pref_challs': 'tls-sni, http-01, dns'.split(',')}
+        self._call(self.config, renewalparams)
+        expected = [challenges.TLSSNI01.typ,
+                    challenges.HTTP01.typ, challenges.DNS01.typ]
+        self.assertEqual(self.config.namespace.pref_challs, expected)
+
+    @mock.patch('certbot.renewal.cli.set_by_cli')
+    def test_pref_challs_failure(self, mock_set_by_cli):
+        mock_set_by_cli.return_value = False
+        renewalparams = {'pref_challs': 'finding-a-shrubbery'}
+        self.assertRaises(errors.Error, self._call, self.config, renewalparams)
 
     @mock.patch('certbot.renewal.cli.set_by_cli')
     def test_must_staple_success(self, mock_set_by_cli):

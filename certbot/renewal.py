@@ -165,6 +165,7 @@ def restore_required_config_elements(config, renewalparams):
     """
 
     required_items = itertools.chain(
+        (("pref_challs", _restore_pref_challs),),
         six.moves.zip(BOOL_CONFIG_ITEMS, itertools.repeat(_restore_bool)),
         six.moves.zip(INT_CONFIG_ITEMS, itertools.repeat(_restore_int)),
         six.moves.zip(STR_CONFIG_ITEMS, itertools.repeat(_restore_str)))
@@ -172,6 +173,22 @@ def restore_required_config_elements(config, renewalparams):
         if item_name in renewalparams and not cli.set_by_cli(item_name):
             value = restore_func(item_name, renewalparams[item_name])
             setattr(config.namespace, item_name, value)
+
+
+def _restore_pref_challs(unused_name, value):
+    """Restores preferred challenges from a renewal config file.
+
+    :param str unused_name: option name
+    :param value: option value
+    :type value: `list` of `str`
+
+    :returns: converted option value to be stored in the runtime config
+    :rtype: `list` of `str`
+
+    :raises errors.Error: if value can't be converted to an bool
+
+    """
+    return cli.parse_preferred_challenges(value)
 
 
 def _restore_bool(name, value):
