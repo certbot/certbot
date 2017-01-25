@@ -239,6 +239,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "cert_key": self.parser.find_dir("SSLCertificateKeyFile",
                                                  None, vhost.path)}
 
+        # Enable the new vhost if needed
+        if self.conf("handle-sites"):
+            if not self.is_site_enabled(vhost.filep):
+                self.enable_site(vhost)
+
         # Only include if a certificate chain is specified
         if chain_path is not None:
             path["chain_path"] = self.parser.find_dir(
@@ -821,10 +826,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # This is for compliance with versions of Apache < 2.4
         self._add_name_vhost_if_necessary(ssl_vhost)
 
-        # Enable the new vhost if needed
-        if self.conf("handle-sites"):
-            if not self.is_site_enabled(ssl_fp):
-                self.enable_site(ssl_vhost)
 
         return ssl_vhost
 
