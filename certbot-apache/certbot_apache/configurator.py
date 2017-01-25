@@ -239,11 +239,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "cert_key": self.parser.find_dir("SSLCertificateKeyFile",
                                                  None, vhost.path)}
 
-        # Enable the new vhost if needed
-        if self.conf("handle-sites"):
-            if not self.is_site_enabled(vhost.filep):
-                self.enable_site(vhost)
-
         # Only include if a certificate chain is specified
         if chain_path is not None:
             path["chain_path"] = self.parser.find_dir(
@@ -281,6 +276,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             set_cert_path = fullchain_path
             self.aug.set(path["cert_path"][-1], fullchain_path)
             self.aug.set(path["cert_key"][-1], key_path)
+
+        # Enable the new vhost if needed
+        if self.conf("handle-sites"):
+            if not self.is_site_enabled(vhost.filep):
+                self.enable_site(vhost)
+
 
         # Save notes about the transaction that took place
         self.save_notes += ("Changed vhost at %s with addresses of %s\n"
