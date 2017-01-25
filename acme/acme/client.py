@@ -660,8 +660,16 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
     def post(self, url, obj, content_type=JOSE_CONTENT_TYPE, **kwargs):
         """POST object wrapped in `.JWS` and check response."""
-        data = self._wrap_in_jws(obj, self._get_nonce(url))
-        kwargs.setdefault('headers', {'Content-Type': content_type})
-        response = self._send_request('POST', url, data=data, **kwargs)
-        self._add_nonce(response)
-        return self._check_response(response, content_type=content_type)
+        MAX_ATTEMPTS = 3
+        for attempt in range(MAX_ATTEMPTS+1):
+            try:
+                data = self._wrap_in_jws(obj, self._get_nonce(url))
+                kwargs.setdefault('headers', {'Content-Type': content_type})
+                response = self._send_request('POST', url, data=data, **kwargs)
+                self._add_nonce(response)
+                return self._check_response(response, content_type=content_type)
+            except messages.Error as e:
+                if attempt < MAX_ATTEMPTS and e.typ == 'urn:ietf:params:acme:error:badNonce':
+                    logger.debug('Got badNonce error (%i times)', attempt+1)
+                else:
+                    raise
