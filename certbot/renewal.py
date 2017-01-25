@@ -178,9 +178,11 @@ def restore_required_config_elements(config, renewalparams):
 def _restore_pref_challs(unused_name, value):
     """Restores preferred challenges from a renewal config file.
 
+    If value is a `str`, it should be a single challenge type.
+
     :param str unused_name: option name
     :param value: option value
-    :type value: `list` of `str`
+    :type value: `list` of `str` or `str`
 
     :returns: converted option value to be stored in the runtime config
     :rtype: `list` of `str`
@@ -188,6 +190,10 @@ def _restore_pref_challs(unused_name, value):
     :raises errors.Error: if value can't be converted to an bool
 
     """
+    # If pref_challs has only one element, configobj saves the value
+    # with a trailing comma so it's parsed as a list. If this comma is
+    # removed by the user, the value is parsed as a str.
+    value = [value] if isinstance(value, str) else value
     return cli.parse_preferred_challenges(value)
 
 
