@@ -351,6 +351,19 @@ class MultipleVhostsTest(util.ApacheTest):
             self.config.enable_site,
             obj.VirtualHost("asdf", "afsaf", set(), False, False))
 
+    def test_deploy_cert_enable_new_vhost(self):
+        # Create
+        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
+        self.config.parser.modules.add("ssl_module")
+        self.config.parser.modules.add("mod_ssl.c")
+        self.assertFalse(self.config.is_site_enabled(ssl_vhost.filep))
+        self.config.deploy_cert(
+            "encryption-example.demo", "example/cert.pem", "example/key.pem",
+            "example/cert_chain.pem", "example/fullchain.pem")
+        self.assertTrue(self.config.is_site_enabled(ssl_vhost.filep))
+
+
+
     def test_deploy_cert_newssl(self):
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir,
@@ -608,7 +621,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(set([obj.Addr.fromstring("*:443")]), ssl_vhost.addrs)
         self.assertEqual(ssl_vhost.name, "encryption-example.demo")
         self.assertTrue(ssl_vhost.ssl)
-        self.assertTrue(ssl_vhost.enabled)
+        self.assertFalse(ssl_vhost.enabled)
 
         self.assertTrue(self.config.parser.find_dir(
             "SSLCertificateFile", None, ssl_vhost.path, False))
