@@ -122,8 +122,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
         # pylint: disable=too-many-arguments
         """Initialize a VH."""
-        # Resolve the possible symlinks
-        self.filep = filep # os.path.realpath(filep)
+        self.filep = filep
         self.path = path
         self.addrs = addrs
         self.name = name
