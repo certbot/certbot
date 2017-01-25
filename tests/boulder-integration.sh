@@ -113,29 +113,29 @@ common --domains le3.wtf install \
        --key-path "${root}/csr/key.pem"
 
 CheckCertCount() {
-    CERTCOUNT=`ls "${root}/conf/archive/le.wtf/cert"* | wc -l`
-    if [ "$CERTCOUNT" -ne "$1" ] ; then
-        echo Wrong cert count, not "$1" `ls "${root}/conf/archive/le.wtf/"*`
+    CERTCOUNT=`ls "${root}/conf/archive/$1/cert"* | wc -l`
+    if [ "$CERTCOUNT" -ne "$2" ] ; then
+        echo Wrong cert count, not "$2" `ls "${root}/conf/archive/$1/"*`
         exit 1
     fi
 }
 
-CheckCertCount 1
+CheckCertCount "le.wtf" 1
 # This won't renew (because it's not time yet)
 common_no_force_renew renew
-CheckCertCount 1
+CheckCertCount "le.wtf" 1
 
 # --renew-by-default is used, so renewal should occur
 [ -f "$HOOK_TEST" ] && rm -f "$HOOK_TEST"
 common renew
-CheckCertCount 2
+CheckCertCount "le.wtf" 2
 CheckHooks
 
 
 # This will renew because the expiry is less than 10 years from now
 sed -i "4arenew_before_expiry = 4 years" "$root/conf/renewal/le.wtf.conf"
 common_no_force_renew renew --rsa-key-size 2048
-CheckCertCount 3
+CheckCertCount "le.wtf" 3
 
 # The 4096 bit setting should persist to the first renewal, but be overriden in the second
 
