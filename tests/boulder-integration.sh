@@ -96,7 +96,7 @@ common certonly -a manual -d le.wtf --rsa-key-size 4096 \
     --pre-hook 'echo wtf2.pre >> "$HOOK_TEST"' \
     --post-hook 'echo wtf2.post >> "$HOOK_TEST"'
 
-common certonly -a manual -d dns.le.wtf --preferred-challenges dns-01 \
+common certonly -a manual -d dns.le.wtf --preferred-challenges dns,tls-sni \
     --manual-auth-hook ./tests/manual-dns-auth.sh
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
@@ -125,12 +125,13 @@ CheckCertCount "le.wtf" 1
 common_no_force_renew renew
 CheckCertCount "le.wtf" 1
 
-# --renew-by-default is used, so renewal should occur
-[ -f "$HOOK_TEST" ] && rm -f "$HOOK_TEST"
-common renew
+# renew using HTTP manual auth hooks
+common renew --cert-name le.wtf --authenticator manual
 CheckCertCount "le.wtf" 2
-CheckHooks
 
+# renew using DNS manual auth hooks
+common renew --cert-name dns.le.wtf --authenticator manual
+CheckCertCount "dns.le.wtf" 2
 
 # This will renew because the expiry is less than 10 years from now
 sed -i "4arenew_before_expiry = 4 years" "$root/conf/renewal/le.wtf.conf"
@@ -148,6 +149,12 @@ if [ "$size1" -lt 3000 ] || [ "$size2" -lt 3000 ] || [ "$size3" -gt 1800 ] ; the
     ls -l "${root}/conf/archive/le.wtf/privkey"*
     exit 1
 fi
+
+# --renew-by-default is used, so renewal should occur
+[ -f "$HOOK_TEST" ] && rm -f "$HOOK_TEST"
+common renew
+CheckCertCount "le.wtf" 4
+CheckHooks
 
 # ECDSA
 openssl ecparam -genkey -name secp384r1 -out "${root}/privkey-p384.pem"
