@@ -658,18 +658,27 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             self._add_nonce(self.head(url))
         return self._nonces.pop()
 
-    def post(self, url, obj, content_type=JOSE_CONTENT_TYPE, **kwargs):
-        """POST object wrapped in `.JWS` and check response."""
-        MAX_ATTEMPTS = 3
-        for attempt in range(MAX_ATTEMPTS+1):
+    def post(self, *args, **kwargs):
+        """POST object wrapped in `.JWS` and check response.
+
+        If the server responded with a badNonce error, the request will
+        be retried once.
+
+        """
+        should_retry = True
+        while True:
             try:
-                data = self._wrap_in_jws(obj, self._get_nonce(url))
-                kwargs.setdefault('headers', {'Content-Type': content_type})
-                response = self._send_request('POST', url, data=data, **kwargs)
-                self._add_nonce(response)
-                return self._check_response(response, content_type=content_type)
-            except messages.Error as e:
-                if attempt < MAX_ATTEMPTS and e.typ == 'urn:ietf:params:acme:error:badNonce':
-                    logger.debug('Got badNonce error (%i times)', attempt+1)
+                return self._post_once(*args, **kwargs)
+            except messages.Error as error:
+                if should_retry and error.code == 'badNonce':
+                    logger.debug('Retrying request after error:\n%s', error)
+                    should_retry = False
                 else:
                     raise
+
+    def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE, **kwargs):
+        data = self._wrap_in_jws(obj, self._get_nonce(url))
+        kwargs.setdefault('headers', {'Content-Type': content_type})
+        response = self._send_request('POST', url, data=data, **kwargs)
+        self._add_nonce(response)
+        return self._check_response(response, content_type=content_type)
