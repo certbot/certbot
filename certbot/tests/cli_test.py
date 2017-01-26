@@ -8,6 +8,8 @@ import mock
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 
+from acme import challenges
+
 from certbot import cli
 from certbot import constants
 from certbot import errors
@@ -157,12 +159,12 @@ class ParseTest(unittest.TestCase):
         self.assertEqual(namespace.domains, ['example.com', 'another.net'])
 
     def test_preferred_challenges(self):
-        from acme.challenges import HTTP01, TLSSNI01, DNS01
-
         short_args = ['--preferred-challenges', 'http, tls-sni-01, dns']
         namespace = self.parse(short_args)
 
-        self.assertEqual(namespace.pref_challs, [HTTP01, TLSSNI01, DNS01])
+        expected = [challenges.HTTP01.typ,
+                    challenges.TLSSNI01.typ, challenges.DNS01.typ]
+        self.assertEqual(namespace.pref_challs, expected)
 
         short_args = ['--preferred-challenges', 'jumping-over-the-moon']
         self.assertRaises(argparse.ArgumentTypeError, self.parse, short_args)
