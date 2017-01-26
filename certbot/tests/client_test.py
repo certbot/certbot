@@ -10,7 +10,6 @@ import mock
 from acme import jose
 
 from certbot import account
-from certbot import constants
 from certbot import errors
 from certbot import util
 
@@ -85,7 +84,7 @@ class RegisterTest(unittest.TestCase):
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
         mx_err = messages.Error.with_code('invalidContact', detail=msg)
         with mock.patch("certbot.client.acme_client.Client") as mock_client:
-            with mock.patch("certbot.eff.handle_subscription") as mock_handle:
+            with mock.patch("certbot.eff.handle_subscription"):
                 mock_client().register.side_effect = [mx_err, mock.MagicMock()]
                 self.assertRaises(errors.Error, self._call)
 

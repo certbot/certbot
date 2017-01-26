@@ -5,7 +5,6 @@ import os
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 import OpenSSL
-import requests
 import zope.component
 
 from acme import client as acme_client
