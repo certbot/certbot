@@ -16,15 +16,16 @@ import certbot
 
 from certbot import account
 from certbot import auth_handler
+from certbot import cli
 from certbot import constants
 from certbot import crypto_util
-from certbot import errors
+from certbot import eff
 from certbot import error_handler
+from certbot import errors
 from certbot import interfaces
-from certbot import util
 from certbot import reverter
 from certbot import storage
-from certbot import cli
+from certbot import util
 
 from certbot.display import ops as display_ops
 from certbot.display import enhancements
@@ -140,34 +141,9 @@ def register(config, account_storage, tos_cb=None):
     account.report_new_account(acc, config)
     account_storage.save(acc)
 
-    if config.email is not None:
-        eff_sign_up(config)
+    eff.handle_subscription(config)
 
     return acc, acme
-
-
-def eff_sign_up(config):
-    """Sign up for an EFF newsletter if requested by the user.
-
-    :param .IConfig config: Client configuration.
-
-    """
-    if config.eff_email is None:
-        prompt = (
-            "Would you be willing to share your email address with the "
-            "Electronic Frontier Foundation, a founding partner of the Let's "
-            "Encrypt project and the non-profit organization that develops "
-            "Cerbot? We'd like to send you email about our work to encrypt "
-            "the web and protect its users.")
-        display = zope.component.getUtility(interfaces.IDisplay)
-        config.eff_email = display.yesno(prompt, default=False)
-    if config.eff_email:
-        url = constants.EFF_SUBSCRIBE_URI
-        data = {"data_type": "json",
-                "email": config.email,
-                "form_id": "eff_supporters_library_subscribe_form"}
-        logger.debug("Sending POST request to %s:\n%s", url, data)
-        requests.post(url, data=data)
 
 
 def perform_registration(acme, config):
