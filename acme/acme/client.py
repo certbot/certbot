@@ -681,16 +681,14 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         be retried once.
 
         """
-        should_retry = True
-        while True:
-            try:
+        try:
+            return self._post_once(*args, **kwargs)
+        except messages.Error as error:
+            if error.code == 'badNonce':
+                logger.debug('Retrying request after error:\n%s', error)
                 return self._post_once(*args, **kwargs)
-            except messages.Error as error:
-                if should_retry and error.code == 'badNonce':
-                    logger.debug('Retrying request after error:\n%s', error)
-                    should_retry = False
-                else:
-                    raise
+            else:
+                raise
 
     def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE, **kwargs):
         data = self._wrap_in_jws(obj, self._get_nonce(url))

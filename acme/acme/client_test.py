@@ -717,6 +717,16 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.assertRaises(messages.Error, self.net.post, 'uri',
                           self.obj, content_type=self.content_type)
 
+    def test_post_not_retried(self):
+        check_response = mock.MagicMock()
+        check_response.side_effect = [messages.Error.with_code('malformed'),
+                                      self.checked_response]
+
+        # pylint: disable=protected-access
+        self.net._check_response = check_response
+        self.assertRaises(messages.Error, self.net.post, 'uri',
+                          self.obj, content_type=self.content_type)
+
     def test_post_successful_retry(self):
         check_response = mock.MagicMock()
         check_response.side_effect = [messages.Error.with_code('badNonce'),
