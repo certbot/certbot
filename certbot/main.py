@@ -48,20 +48,17 @@ USER_CANCELLED = ("User chose to cancel the operation and may "
 logger = logging.getLogger(__name__)
 
 
-def _suggest_donation_if_appropriate(config, action):
+def _suggest_donation(config):
     """Potentially suggest a donation to support Certbot."""
+    assert config.verb != "renew"
     if config.staging or config.verb == "renew":
         # --dry-run implies --staging
-        return
-    if action not in ["renew", "newcert"]:
         return
     reporter_util = zope.component.getUtility(interfaces.IReporter)
     msg = ("If you like Certbot, please consider supporting our work by:\n\n"
            "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
            "Donating to EFF:                    https://eff.org/donate-le\n\n")
     reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
-
-
 
 def _report_successful_dry_run(config):
     reporter_util = zope.component.getUtility(interfaces.IReporter)
@@ -296,7 +293,7 @@ def _find_domains_or_certname(config, installer):
     return domains, certname
 
 
-def _report_new_cert(config, cert_path, fullchain_path):
+def _report_new_cert(config, lineage=None, print_fullchain_path=True):
     """Reports the creation of a new certificate to the user.
 
     :param str cert_path: path to cert
@@ -306,9 +303,14 @@ def _report_new_cert(config, cert_path, fullchain_path):
     if config.dry_run:
         _report_successful_dry_run(config)
         return
+
+    path_provider = lineage if lineage else config
+    cert_path = path_provider.cert_path
+    fullchain_path = path_provider.fullchain_path
+
     expiry = crypto_util.notAfter(cert_path).date()
     reporter_util = zope.component.getUtility(interfaces.IReporter)
-    if fullchain_path:
+    if print_fullchain_path:
         # Print the path to fullchain.pem because that's what modern webservers
         # (Nginx and Apache2.4) will want.
         and_chain = "and chain have"
@@ -470,20 +472,12 @@ def register(config, unused_plugins):
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
 
 def _install_cert(config, le_client, domains, lineage=None):
-    try:
-        key = lineage.privkey
-        cert = lineage.cert
-        chain = lineage.chain
-        fullchain = lineage.fullchain
-    except AttributeError:
-        assert config.cert_path is not None  # required=True in the subparser
-        key = config.key_path
-        cert = lineage.cert_path
-        chain = config.chain_path
-        fullchain = config.fullchain_path
+    path_provider = lineage if lineage else config
+    assert path_provider.cert_path is not None
 
-    le_client.deploy_certificate(omains, key, cert, chain, fullchain)
-    le_client.enhance_config(domains, chain)
+    le_client.deploy_certificate(domains, path_provider.key_path,
+        path_provider.cert_path, path_provider.chain_path, path_provider.fullchain_path)
+    le_client.enhance_config(domains, path_provider.chain_path)
 
 def install(config, plugins):
     """Install a previously obtained cert in a server."""
@@ -612,7 +606,7 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
         new_lineage = _get_and_save_cert(le_client, config, domains,
             certname, lineage)
 
-    _report_new_cert(config, new_lineage.cert, new_lineage.fullchain)
+    _report_new_cert(config, new_lineage)
 
     _install_cert(config, le_client, domains, new_lineage)
 
@@ -637,11 +631,11 @@ def _csr_obtain_cert(config, le_client):
         logger.debug(
             "Dry run: skipping saving certificate to %s", config.cert_path)
     else:
-        cert_path, _, cert_fullchain = le_client.save_certificate(
+        le_client.save_certificate(
             certr, chain, config.cert_path, config.chain_path, config.fullchain_path)
-        return (cert_path, cert_fullchain)
 
 def renew_cert(config, plugins, lineage):
+    """Renew & save an existing cert. Do not install it."""
     try:
         # installers are used in auth mode to determine domain names
         installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
@@ -667,8 +661,8 @@ def certonly(config, plugins):
     le_client = _init_le_client(config, auth, installer)
 
     if config.csr:
-        cert_path, cert_fullchain = _csr_obtain_cert(config, le_client)
-        _report_new_cert(config, cert_path, cert_fullchain)
+        _csr_obtain_cert(config, le_client)
+        _report_new_cert(config, print_fullchain_path=False)
         _suggest_donation(config)
         return
 
@@ -682,7 +676,7 @@ def certonly(config, plugins):
 
     lineage = _get_and_save_cert(le_client, config, domains, certname, lineage)
 
-    _report_new_cert(config, lineage.cert, lineage.fullchain)
+    _report_new_cert(config, lineage)
     _suggest_donation(config)
 
 def renew(config, unused_plugins):
