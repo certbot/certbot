@@ -93,7 +93,7 @@ def register(config, account_storage, tos_cb=None):
         Terms of Service present in the contained
         `.Registration.terms_of_service` is accepted by the client, and
         ``False`` otherwise. ``tos_cb`` will be called only if the
-        client acction is necessary, i.e. when ``terms_of_service is not
+        client action is necessary, i.e. when ``terms_of_service is not
         None``. This argument is optional, if not supplied it will
         default to automatic acceptance!
 
@@ -438,7 +438,7 @@ class Client(object):
                 self.installer.restart()
 
     def apply_enhancement(self, domains, enhancement, options=None):
-        """Applies an enhacement on all domains.
+        """Applies an enhancement on all domains.
 
         :param domains: list of ssl_vhosts
         :type list of str
@@ -494,7 +494,7 @@ class Client(object):
             self.installer.rollback_checkpoints()
             self.installer.restart()
         except:
-            # TODO: suggest letshelp-letsencypt here
+            # TODO: suggest letshelp-letsencrypt here
             reporter.add_message(
                 "An error occurred and we failed to restore your config and "
                 "restart your server. Please submit a bug report to "

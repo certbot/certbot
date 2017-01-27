@@ -150,7 +150,7 @@ def possible_deprecation_warning(config):
     if cli_command != LEAUTO:
         return
     if config.no_self_upgrade:
-        # users setting --no-self-upgrade might be hanging on a clent version like 0.3.0
+        # users setting --no-self-upgrade might be hanging on a client version like 0.3.0
         # or 0.5.0 which is the new script, but doesn't set CERTBOT_AUTO; they don't
         # need warnings
         return
@@ -318,7 +318,7 @@ class CustomHelpFormatter(argparse.HelpFormatter):
 # The attributes here are:
 # short: a string that will be displayed by "certbot -h commands"
 # opts:  a string that heads the section of flags with which this command is documented,
-#        both for "cerbot -h SUBCOMMAND" and "certbot -h all"
+#        both for "certbot -h SUBCOMMAND" and "certbot -h all"
 # usage: an optional string that overrides the header of "certbot -h SUBCOMMAND"
 VERB_HELP = [
     ("run (default)", {
@@ -334,7 +334,7 @@ VERB_HELP = [
                   "This command obtains a TLS/SSL certificate without installing it anywhere.")
     }),
     ("renew", {
-        "short": "Renew all certificates (or one specifed with --cert-name)",
+        "short": "Renew all certificates (or one specified with --cert-name)",
         "opts": ("The 'renew' subcommand will attempt to renew all"
                  " certificates (or more precisely, certificate lineages) you have"
                  " previously obtained if they are close to expiry, and print a"
@@ -496,7 +496,7 @@ class HelpfulArgumentParser(object):
         if "apache" in plugins:
             apache_doc = "--apache          Use the Apache plugin for authentication & installation"
         else:
-            apache_doc = "(the cerbot apache plugin is not installed)"
+            apache_doc = "(the certbot apache plugin is not installed)"
 
         usage = SHORT_USAGE
         if help_arg == True:

@@ -8,7 +8,7 @@ class Addr(common.Addr):
     """Represents an Apache address."""
 
     def __eq__(self, other):
-        """This is defined as equalivalent within Apache.
+        """This is defined as equivalent within Apache.
 
         ip_addr:* == ip_addr
 

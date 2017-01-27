@@ -716,7 +716,7 @@ class RenewableCert(object):
 
         :returns: ``True`` if there is a complete version of this
             lineage with a larger version number than the current
-            version, and ``False`` otherwis
+            version, and ``False`` otherwise
         :rtype: bool
 
         """

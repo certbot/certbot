@@ -37,7 +37,7 @@ charset_map  windows-1251  utf-8 {
     AA  D084 ;   # capital Ukrainian YE
     AB  C2AB ;   # left-pointing double angle quotation mark
     AC  C2AC ;   # not sign
-    AD  C2AD ;   # soft hypen
+    AD  C2AD ;   # soft hyphen
     AE  C2AE ;   # (R)
     AF  D087 ;   # capital Ukrainian YI
 

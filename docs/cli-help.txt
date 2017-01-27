@@ -210,7 +210,7 @@ manage:
 
   certificates          List certificates managed by Certbot
   delete                Clean up all files related to a certificate
-  renew                 Renew all certificates (or one specifed with --cert-
+  renew                 Renew all certificates (or one specified with --cert-
                         name)
   revoke                Revoke a certificate specified with --cert-path
   update_symlinks       Recreate symlinks in your /etc/letsencrypt/live/

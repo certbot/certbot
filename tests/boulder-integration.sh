@@ -139,7 +139,7 @@ sed -i "4arenew_before_expiry = 4 years" "$root/conf/renewal/le.wtf.conf"
 common_no_force_renew renew --rsa-key-size 2048
 CheckCertCount "le.wtf" 3
 
-# The 4096 bit setting should persist to the first renewal, but be overriden in the second
+# The 4096 bit setting should persist to the first renewal, but be overridden in the second
 
 size1=`wc -c ${root}/conf/archive/le.wtf/privkey1.pem | cut -d" " -f1`
 size2=`wc -c ${root}/conf/archive/le.wtf/privkey2.pem | cut -d" " -f1`

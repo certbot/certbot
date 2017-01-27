@@ -105,7 +105,7 @@ fi
 # certbot itself needs root access for almost all modes of operation
 # The "normal" case is that sudo is used for the steps that need root, but
 # this script *can* be run as root (not recommended), or fall back to using
-# `su`. Auto-detection can be overrided by explicitly setting the
+# `su`. Auto-detection can be overridden by explicitly setting the
 # environment variable LE_AUTO_SUDO to 'sudo', 'sudo_su' or '' as used below.
 
 # Because the parameters in `su -c` has to be a string,
@@ -1056,7 +1056,7 @@ UNLIKELY_EOF
   fi
 
 else
-  # Phase 1: Upgrade certbot-auto if neceesary, then self-invoke.
+  # Phase 1: Upgrade certbot-auto if necessary, then self-invoke.
   #
   # Each phase checks the version of only the thing it is responsible for
   # upgrading. Phase 1 checks the version of the latest release of

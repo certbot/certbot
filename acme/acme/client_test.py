@@ -170,7 +170,7 @@ class ClientTest(unittest.TestCase):
             self.directory.new_authz,
             messages.NewAuthorization(identifier=self.identifier))
 
-    def test_requets_challenges_custom_uri(self):
+    def test_request_challenges_custom_uri(self):
         self._prepare_response_for_request_challenges()
         self.client.request_challenges(self.identifier, 'URI')
         self.net.post.assert_called_once_with('URI', mock.ANY)
@@ -388,7 +388,7 @@ class ClientTest(unittest.TestCase):
             errors.PollError, self.client.poll_and_request_issuance,
             csr, authzrs=(invalid_authzr,), mintime=mintime)
 
-        # exceeded max_attemps | TODO: move to a separate test
+        # exceeded max_attempts | TODO: move to a separate test
         self.assertRaises(
             errors.PollError, self.client.poll_and_request_issuance,
             csr, authzrs, mintime=mintime, max_attempts=2)
