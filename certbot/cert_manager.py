@@ -95,27 +95,23 @@ def delete(config):
 # Public Helpers
 ###################
 
-def lineage_for_certname(config, certname):
+def lineage_for_certname(cli_config, certname):
     """Find a lineage object with name certname."""
-    def update_cert_for_name_match(candidate_lineage, rv):
-        """Return cert if it has name certname, else return rv
-        """
-        matching_lineage_name_cert = rv
-        if candidate_lineage.lineagename == certname:
-            matching_lineage_name_cert = candidate_lineage
-        return matching_lineage_name_cert
-    return _search_lineages(config, update_cert_for_name_match, None)
+    configs_dir = cli_config.renewal_configs_dir
+    # Verify the directory is there
+    util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
+    renewal_file = storage.renewal_file_for_certname(cli_config, certname)
+    try:
+        return storage.RenewableCert(renewal_file, cli_config)
+    except (errors.CertStorageError, IOError):
+        logger.debug("Renewal conf file %s is broken.", renewal_file)
+        logger.debug("Traceback was:\n%s", traceback.format_exc())
+        return None
 
 def domains_for_certname(config, certname):
     """Find the domains in the cert with name certname."""
-    def update_domains_for_name_match(candidate_lineage, rv):
-        """Return domains if certname matches, else return rv
-        """
-        matching_domains = rv
-        if candidate_lineage.lineagename == certname:
-            matching_domains = candidate_lineage.names()
-        return matching_domains
-    return _search_lineages(config, update_domains_for_name_match, None)
+    lineage = lineage_for_certname(config, certname)
+    return lineage.names() if lineage else None
 
 def find_duplicative_certs(config, domains):
     """Find existing certs that duplicate the request."""
