@@ -602,6 +602,7 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     domains, certname = _find_domains_or_certname(config, installer)
     should_get_cert, lineage = _find_cert(config, domains, certname)
 
+    new_lineage = lineage
     if should_get_cert:
         new_lineage = _get_and_save_cert(le_client, config, domains,
             certname, lineage)

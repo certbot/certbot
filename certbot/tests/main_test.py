@@ -62,7 +62,8 @@ class RunTest(unittest.TestCase):
             mock.patch('certbot.main.display_ops.success_renewal'),
             mock.patch('certbot.main._init_le_client'),
             mock.patch('certbot.main._suggest_donation'),
-            mock.patch('certbot.main._report_new_cert')]
+            mock.patch('certbot.main._report_new_cert'),
+            mock.patch('certbot.main._find_cert')]
 
         self.mock_auth = self.patches[0].start()
         self.mock_success_installation = self.patches[1].start()
@@ -70,6 +71,7 @@ class RunTest(unittest.TestCase):
         self.mock_init = self.patches[3].start()
         self.mock_suggest_donation = self.patches[4].start()
         self.mock_report_cert = self.patches[5].start()
+        self.mock_find_cert = self.patches[6].start()
 
     def tearDown(self):
         for patch in self.patches:
@@ -86,18 +88,19 @@ class RunTest(unittest.TestCase):
 
     def test_newcert_success(self):
         self.mock_auth.return_value = mock.Mock()
+        self.mock_find_cert.return_value = True, None
         self._call()
         self.mock_success_installation.assert_called_once_with([self.domain])
 
     def test_reinstall_success(self):
         self.mock_auth.return_value = mock.Mock()
+        self.mock_find_cert.return_value = False, mock.Mock()
         self._call()
         self.mock_success_installation.assert_called_once_with([self.domain])
 
-    @mock.patch('certbot.main._find_cert')
-    def test_renewal_success(self, mock_find_cert):
+    def test_renewal_success(self):
         self.mock_auth.return_value = mock.Mock()
-        mock_find_cert.return_value = True, mock.Mock()
+        self.mock_find_cert.return_value = True, mock.Mock()
         self._call()
         self.mock_success_renewal.assert_called_once_with([self.domain])
 
@@ -123,12 +126,15 @@ class CertonlyTest(unittest.TestCase):
 
         return mock_init()  # returns the client
 
+    @mock.patch('certbot.main._find_cert')
     @mock.patch('certbot.main._get_and_save_cert')
     @mock.patch('certbot.main._report_new_cert')
-    def test_no_reinstall_text_pause(self, unused_report, mock_auth):
+    def test_no_reinstall_text_pause(self, unused_report, mock_auth,
+        mock_find_cert):
         mock_notification = self.mock_get_utility().notification
         mock_notification.side_effect = self._assert_no_pause
         mock_auth.return_value = mock.Mock()
+        mock_find_cert.return_value = None, None
         self._call('certonly --webroot -d example.com'.split())
 
     def _assert_no_pause(self, message, pause=True):
