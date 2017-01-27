@@ -812,7 +812,7 @@ def make_or_verify_core_dir(directory, mode, uid, strict):
         raise errors.Error(_PERM_ERR_FMT.format(error))
 
 def make_or_verify_needed_dirs(config):
-    """Create or verify existance of config, work, or logs directories"""
+    """Create or verify existence of config, work, or logs directories"""
     make_or_verify_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
                             os.geteuid(), config.strict_permissions)
     make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,

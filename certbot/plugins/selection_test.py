@@ -1,4 +1,4 @@
-"""Tests for letsenecrypt.plugins.selection"""
+"""Tests for letsencrypt.plugins.selection"""
 import sys
 import unittest
 

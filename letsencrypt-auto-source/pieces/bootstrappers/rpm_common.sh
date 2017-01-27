@@ -20,6 +20,9 @@ BootstrapRpmCommon() {
   if [ "$ASSUME_YES" = 1 ]; then
     yes_flag="-y"
   fi
+  if [ "$QUIET" = 1 ]; then
+    QUIET_FLAG='--quiet'
+  fi
 
   if ! $SUDO $tool list *virtualenv >/dev/null 2>&1; then
     echo "To use Certbot, packages from the EPEL repository need to be installed."
@@ -35,7 +38,7 @@ BootstrapRpmCommon() {
       /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 seconds..."
       sleep 1s
     fi
-    if ! $SUDO $tool install $yes_flag epel-release; then
+    if ! $SUDO $tool install $yes_flag $QUIET_FLAG epel-release; then
       echo "Could not enable EPEL. Aborting bootstrap!"
       exit 1
     fi
@@ -77,7 +80,7 @@ BootstrapRpmCommon() {
     "
   fi
 
-  if ! $SUDO $tool install $yes_flag $pkgs; then
+  if ! $SUDO $tool install $yes_flag $QUIET_FLAG $pkgs; then
     echo "Could not install OS dependencies. Aborting bootstrap!"
     exit 1
   fi

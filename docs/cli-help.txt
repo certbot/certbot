@@ -86,7 +86,7 @@ optional arguments:
                         statistics about success rates by OS and plugin. If
                         you wish to hide your server OS version from the Let's
                         Encrypt server, set this to "". (default:
-                        CertbotACMEClient/0.10.1 (Ubuntu 16.04.1 LTS)
+                        CertbotACMEClient/0.10.2 (Ubuntu 16.04.1 LTS)
                         Authenticator/XXX Installer/YYY)
 
 automation:
@@ -210,7 +210,7 @@ manage:
 
   certificates          List certificates managed by Certbot
   delete                Clean up all files related to a certificate
-  renew                 Renew all certificates (or one specifed with --cert-
+  renew                 Renew all certificates (or one specified with --cert-
                         name)
   revoke                Revoke a certificate specified with --cert-path
   update_symlinks       Recreate symlinks in your /etc/letsencrypt/live/

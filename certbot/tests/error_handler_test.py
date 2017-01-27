@@ -70,7 +70,7 @@ class ErrorHandlerTest(unittest.TestCase):
                 send_signal(self.signals[0])
                 should_be_42 *= 10
 
-        # check exectuion stoped when the signal was sent
+        # check execution stoped when the signal was sent
         self.assertEqual(42, should_be_42)
         # assert signals were caught
         self.assertEqual([self.signals[0]], signals_received)

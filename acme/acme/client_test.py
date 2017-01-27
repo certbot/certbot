@@ -170,7 +170,7 @@ class ClientTest(unittest.TestCase):
             self.directory.new_authz,
             messages.NewAuthorization(identifier=self.identifier))
 
-    def test_requets_challenges_custom_uri(self):
+    def test_request_challenges_custom_uri(self):
         self._prepare_response_for_request_challenges()
         self.client.request_challenges(self.identifier, 'URI')
         self.net.post.assert_called_once_with('URI', mock.ANY)
@@ -388,7 +388,7 @@ class ClientTest(unittest.TestCase):
             errors.PollError, self.client.poll_and_request_issuance,
             csr, authzrs=(invalid_authzr,), mintime=mintime)
 
-        # exceeded max_attemps | TODO: move to a separate test
+        # exceeded max_attempts | TODO: move to a separate test
         self.assertRaises(
             errors.PollError, self.client.poll_and_request_issuance,
             csr, authzrs, mintime=mintime, max_attempts=2)
@@ -642,7 +642,9 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.wrapped_obj = mock.MagicMock()
         self.content_type = mock.sentinel.content_type
 
-        self.all_nonces = [jose.b64encode(b'Nonce'), jose.b64encode(b'Nonce2')]
+        self.all_nonces = [
+            jose.b64encode(b'Nonce'),
+            jose.b64encode(b'Nonce2'), jose.b64encode(b'Nonce3')]
         self.available_nonces = self.all_nonces[:]
 
         def send_request(*args, **kwargs):
@@ -690,7 +692,7 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.net._wrap_in_jws.assert_called_once_with(
             self.obj, jose.b64decode(self.all_nonces.pop()))
 
-        assert not self.available_nonces
+        self.available_nonces = []
         self.assertRaises(errors.MissingNonce, self.net.post,
                           'uri', self.obj, content_type=self.content_type)
         self.net._wrap_in_jws.assert_called_with(
@@ -705,6 +707,25 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.available_nonces = [jose.b64encode(b'good'), b'f']
         self.assertRaises(errors.BadNonce, self.net.post, 'uri',
                           self.obj, content_type=self.content_type)
+
+    def test_post_failed_retry(self):
+        check_response = mock.MagicMock()
+        check_response.side_effect = messages.Error.with_code('badNonce')
+
+        # pylint: disable=protected-access
+        self.net._check_response = check_response
+        self.assertRaises(messages.Error, self.net.post, 'uri',
+                          self.obj, content_type=self.content_type)
+
+    def test_post_successful_retry(self):
+        check_response = mock.MagicMock()
+        check_response.side_effect = [messages.Error.with_code('badNonce'),
+                                      self.checked_response]
+
+        # pylint: disable=protected-access
+        self.net._check_response = check_response
+        self.assertEqual(self.checked_response, self.net.post(
+            'uri', self.obj, content_type=self.content_type))
 
     def test_head_get_post_error_passthrough(self):
         self.send_request.side_effect = requests.exceptions.RequestException

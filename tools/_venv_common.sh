@@ -2,7 +2,7 @@
 
 VENV_NAME=${VENV_NAME:-venv}
 
-# .egg-info directories tend to cause bizzaire problems (e.g. `pip -e
+# .egg-info directories tend to cause bizarre problems (e.g. `pip -e
 # .` might unexpectedly install letshelp-certbot only, in case
 # `python letshelp-certbot/setup.py build` has been called
 # earlier)

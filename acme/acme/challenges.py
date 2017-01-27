@@ -183,7 +183,7 @@ class KeyAuthorizationChallenge(_TokenChallenge):
 
         Subclasses must implement this method, but they are likely to
         return completely different data structures, depending on what's
-        necessary to complete the challenge. Interepretation of that
+        necessary to complete the challenge. Interpretation of that
         return value must be known to the caller.
 
         :param JWK account_key:

@@ -72,7 +72,7 @@ pip install -U virtualenv
 root_without_le="$version.$$"
 root="./releases/le.$root_without_le"
 
-echo "Cloning into fresh copy at $root"  # clean repo = no artificats
+echo "Cloning into fresh copy at $root"  # clean repo = no artifacts
 git clone . $root
 git rev-parse HEAD
 cd $root
