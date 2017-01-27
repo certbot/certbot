@@ -9,10 +9,10 @@ TEMP_DIR=$(mktemp -d)
 VERSION=$(letsencrypt-auto-source/version.py)
 
 # setup venv
-virtualenv --no-site-packages -p $PYTHON venv
+virtualenv --no-site-packages -p $PYTHON --setuptools venv
 . ./venv/bin/activate
-pip install -U setuptools
 pip install -U pip
+pip install -U setuptools
 
 # build sdists
 for pkg_dir in acme . $PLUGINS; do
