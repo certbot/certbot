@@ -1018,7 +1018,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mock_rc.return_value = mock_lineage
             mock_lineage.configuration = {
                 'renewalparams': {'authenticator': 'webroot'}}
-            with mock.patch('certbot.main.certonly') as mock_obtain_cert:
+            with mock.patch('certbot.main.renew_cert') as mock_obtain_cert:
                 mock_obtain_cert.side_effect = Exception
                 self._test_renewal_common(True, None, error_expected=True,
                                           args=['renew'], should_renew=False)
