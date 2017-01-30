@@ -80,8 +80,21 @@ def certificates(config):
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             parse_failures.append(renewal_file)
 
+    if config.json is True:
+        style = "json"
+    #elif config.grep is True:
+    #    style = "grep"
+    else:
+        style = "human_readable"
+
+    formatter = {
+        "human_readable": HumanReadableCertOutputFormatter,
+        "json": JSONCertificateOutputFormatter,
+        #"grep": GrepCertificateOutputFormatter
+    }
+
     # Describe all the certs
-    _describe_certs(config, parsed_certs, parse_failures)
+    _describe_certs(formatter[style](parsed_certs, parse_failures))
 
 def delete(config):
     """Delete Certbot files associated with a certificate lineage."""
