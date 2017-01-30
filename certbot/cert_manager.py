@@ -203,6 +203,44 @@ class BaseCertificateOutputFormatter(object):
         return valid_string
 
 
+class HumanReadableCertOutputFormatter(BaseCertificateOutputFormatter):
+    """Extract certificate information and format it to be human readable. """
+
+    def report(self):  # pylint: disable=arguments-differ
+        """Produce a human readable report of certificate information. """
+        out = []
+        notify = out.append
+        return "\n".join(super(HumanReadableCertOutputFormatter, self).report(
+            notify, out))
+
+    def report_successes(self):
+        """Format a human readable report of certificate information. """
+        certinfo = []
+        for cert in self.parsed_certs:
+            valid_string = self._cert_validity(cert)
+            certinfo.append("  Certificate Name: {0}\n"
+                            "    Domains: {1}\n"
+                            "    Expiry Date: {2}\n"
+                            "    Certificate Path: {3}\n"
+                            "    Private Key Path: {4}".format(
+                                cert.lineagename,
+                                " ".join(cert.names()),
+                                valid_string,
+                                cert.fullchain,
+                                cert.privkey))
+            successes = "\n".join(certinfo)
+        return "Found the following certs: \n" + successes
+
+    def report_failures(self):
+        """Format a results report for a category of single-line renewal outcomes"""
+        failures = "\n".join(str(path) for path in self.parse_failures)
+        preface = "\nThe following renewal configuration files were invalid: \n"
+        return  preface + failures
+
+    def report_missing(self):
+        return "No certs found."
+
+
 class JSONCertificateOutputFormatter(BaseCertificateOutputFormatter):
     """Extract certificate information and format it for JSON. """
 
