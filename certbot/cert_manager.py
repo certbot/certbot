@@ -94,7 +94,7 @@ def certificates(config):
     }
 
     # Describe all the certs
-    _describe_certs(formatter[style](parsed_certs, parse_failures))
+    _describe_certs(formatter[style](config, parsed_certs, parse_failures))
 
 def delete(config):
     """Delete Certbot files associated with a certificate lineage."""
@@ -158,9 +158,10 @@ def find_duplicative_certs(config, domains):
 class BaseCertificateOutputFormatter(object):
     """Base class for formatting output of certificate information. """
 
-    def __init__(self, parsed_certs, parse_failures):
+    def __init__(self, config, parsed_certs, parse_failures):
         self.parsed_certs = parsed_certs
         self.parse_failures = parse_failures
+        self.config = config
 
     def report(self, notify, out):
         """Produce a report of certificate information. """
@@ -229,7 +230,9 @@ class HumanReadableCertOutputFormatter(BaseCertificateOutputFormatter):
                                 cert.fullchain,
                                 cert.privkey))
             successes = "\n".join(certinfo)
-        return "Found the following certs: \n" + successes
+        match = "matching " if self.config.certname or self.config.domains else ""
+        preface = "Found the following {0}certs:\n".format(match)
+        return preface + successes
 
     def report_failures(self):
         """Format a results report for a category of single-line renewal outcomes"""
@@ -322,7 +325,13 @@ def _report_human_readable(config, parsed_certs):
                             cert.privkey))
     return "\n".join(certinfo)
 
-def _describe_certs(config, parsed_certs, parse_failures):
+def _describe_certs(formatter):
+    """Print information about the certs we know about"""
+    out = formatter.report()
+    disp = zope.component.getUtility(interfaces.IDisplay)
+    disp.notification(out, pause=False, wrap=False)
+
+def _old_describe_certs(config, parsed_certs, parse_failures):
     """Print information about the certs we know about"""
     out = []
 
