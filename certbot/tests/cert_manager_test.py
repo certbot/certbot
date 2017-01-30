@@ -6,16 +6,6 @@ import shutil
 import tempfile
 import unittest
 
-# Workaround to skip unittests in Python2.6
-# From http://stackoverflow.com/questions/20395524/
-# how-to-skip-a-unittest-case-in-python-2-6#34558606
-try:
-    from unittest import skip
-except ImportError:
-    def skip(f):  # pylint: disable=unused-argument
-        """Removes tests decorated with @skip in Python2.6"""
-        return lambda self: None
-
 import configobj
 import mock
 
@@ -162,7 +152,7 @@ class CertificatesTest(BaseCertManagerTest):
     @mock.patch('certbot.cert_manager.logger')
     @test_util.patch_get_utility()
     @mock.patch("certbot.storage.RenewableCert")
-    @mock.patch('certbot.cert_manager._report_human_readable')
+    @mock.patch('certbot.cert_manager.HumanReadableCertOutputFormatter.report')
     def test_certificates_parse_success(self, mock_report, mock_renewable_cert,
         mock_utility, mock_logger):
         mock_report.return_value = ""
@@ -260,7 +250,6 @@ class CertificatesTest(BaseCertManagerTest):
 class FormattersTest(CertificatesTest):
     """Tests for certbot.cert_manager.*CertOutputFormatter classes"""
 
-    @skip("Formatter not currently connected")
     @mock.patch('certbot.cert_manager.logger')
     @mock.patch('zope.component.getUtility')
     @mock.patch("certbot.storage.RenewableCert")
@@ -274,7 +263,6 @@ class FormattersTest(CertificatesTest):
         self.assertTrue(mock_utility.called)
         self.assertTrue(mock_renewable_cert.called)
 
-    @skip("Formatter not currently connected")
     @mock.patch('certbot.cert_manager.ocsp.RevocationChecker.ocsp_revoked')
     def test_report_human_readable_formatter(self, mock_revoked):
         mock_revoked.return_value = None
@@ -341,7 +329,6 @@ class FormattersTest(CertificatesTest):
         out = get_report()
         self.assertEqual(len(re.findall("INVALID:", out)), 0)
 
-    @skip("Formatter not currently connected")
     def test_report_json(self):
         from certbot import cert_manager
         import json
@@ -364,7 +351,6 @@ class FormattersTest(CertificatesTest):
         except ValueError as e:
             self.fail(e)
 
-    @skip("Formatter not currently connected")
     def test_json_formatter(self):
         from certbot import cert_manager
         import json

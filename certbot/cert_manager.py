@@ -81,21 +81,15 @@ def certificates(config):
             parse_failures.append(renewal_file)
 
     if config.json is True:
-        style = "json"  # pylint: disable=unused-variable
-    #elif config.grep is True:
-    #    style = "grep"
+        formatter = JSONCertificateOutputFormatter
     else:
-        style = "human_readable"  # pylint: disable=unused-variable
+        # TODO Use legacy function for now, later transition to use
+        # formatter for all cases.
+        #_describe_certs(config, parsed_certs, parse_failures)
+        formatter = HumanReadableCertOutputFormatter
 
-    formatter = {  # pylint: disable=unused-variable
-        "human_readable": HumanReadableCertOutputFormatter,
-        "json": JSONCertificateOutputFormatter,
-        #"grep": GrepCertificateOutputFormatter
-    }
+    _new_describe_certs(formatter(config, parsed_certs, parse_failures))
 
-    # Describe all the certs
-    #_describe_certs(formatter[style](config, parsed_certs, parse_failures))
-    _describe_certs(config, parsed_certs, parse_failures)
 
 def delete(config):
     """Delete Certbot files associated with a certificate lineage."""
