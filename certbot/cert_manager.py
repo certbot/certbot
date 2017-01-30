@@ -156,7 +156,9 @@ class BaseCertificateOutputFormatter(object):
             notify(self.report_missing())
         else:
             if self.parsed_certs:
-                notify(self.report_successes())
+                match = "matching " if self.config.certname or self.config.domains else ""
+                preface = "Found the following {0}certs:\n".format(match)
+                notify(self.report_successes(preface))
             if self.parse_failures:
                 notify(self.report_failures())
         return out
@@ -201,7 +203,7 @@ class HumanReadableCertOutputFormatter(BaseCertificateOutputFormatter):
         return "\n".join(super(HumanReadableCertOutputFormatter, self).report(
             notify, out))
 
-    def report_successes(self):
+    def report_successes(self, preface):
         """Format a human readable report of certificate information. """
         certinfo = []
         for cert in self.parsed_certs:
@@ -217,8 +219,6 @@ class HumanReadableCertOutputFormatter(BaseCertificateOutputFormatter):
                                 cert.fullchain,
                                 cert.privkey))
             successes = "\n".join(certinfo)
-        match = "matching " if self.config.certname or self.config.domains else ""
-        preface = "Found the following {0}certs:\n".format(match)
         return preface + successes
 
     def report_failures(self):
@@ -243,7 +243,7 @@ class JSONCertificateOutputFormatter(BaseCertificateOutputFormatter):
             notify, out),
             indent=4)
 
-    def report_successes(self):
+    def report_successes(self, preface):
         """Format a JSON report of certificate information. """
         certs = []
         for cert in self.parsed_certs:
@@ -254,8 +254,6 @@ class JSONCertificateOutputFormatter(BaseCertificateOutputFormatter):
                 "expiry_date": valid_string,
                 "certificate_path": cert.fullchain,
                 "private_key_path": cert.privkey})
-        match = "matching " if self.config.certname or self.config.domains else ""
-        preface = "Found the following {0}certs".format(match)
         return {"found": [preface, certs]}
 
     def report_failures(self):

@@ -366,8 +366,8 @@ class FormattersTest(CertificatesTest):
             mock_config,
             parsed_certs,
             None)
-
-        out = formatter.report_successes()
+        mock_preface = 'Found certs' 
+        out = formatter.report_successes(mock_preface)
 
         try:
             out = json.dumps(out)
