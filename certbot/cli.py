@@ -1080,6 +1080,8 @@ def _create_subparsers(helpful):
              "plugin. If you wish to hide your server OS version from the Let's "
              'Encrypt server, set this to "". '
              '(default: {0})'.format(sample_user_agent()))
+    helpful.add("certificates",
+                "--json", action="store_true", default=False, help="Use json format.")
     helpful.add("certonly",
                 "--csr", type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER or PEM format."

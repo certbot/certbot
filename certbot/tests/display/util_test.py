@@ -336,6 +336,23 @@ class NoninteractiveDisplayTest(unittest.TestCase):
             self.assertFalse(inspect.getargspec(method).keywords is None)
 
 
+class MachineReadableDisplayTest(unittest.TestCase):
+    """Test output from MachineReadableDisplay. """
+
+    def setUp(self):
+        self.message = "Something"
+        self.mock_stdout = mock.MagicMock()
+        self.displayer = display_util.MachineReadableDisplay(self.mock_stdout)
+
+    def _call(self, message):
+        self.displayer.notification(message)
+
+    def test_output(self):
+        self._call(self.message)
+        string = self.mock_stdout.write.call_args[0][0]
+        self.assertEquals(string, self.message + "\n")
+
+
 class SeparateListInputTest(unittest.TestCase):
     """Test Module functions."""
     def setUp(self):

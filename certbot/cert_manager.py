@@ -81,20 +81,21 @@ def certificates(config):
             parse_failures.append(renewal_file)
 
     if config.json is True:
-        style = "json"
+        style = "json"  # pylint: disable=unused-variable
     #elif config.grep is True:
     #    style = "grep"
     else:
-        style = "human_readable"
+        style = "human_readable"  # pylint: disable=unused-variable
 
-    formatter = {
+    formatter = {  # pylint: disable=unused-variable
         "human_readable": HumanReadableCertOutputFormatter,
         "json": JSONCertificateOutputFormatter,
         #"grep": GrepCertificateOutputFormatter
     }
 
     # Describe all the certs
-    _describe_certs(formatter[style](config, parsed_certs, parse_failures))
+    #_describe_certs(formatter[style](config, parsed_certs, parse_failures))
+    _describe_certs(config, parsed_certs, parse_failures)
 
 def delete(config):
     """Delete Certbot files associated with a certificate lineage."""
@@ -348,13 +349,13 @@ def _report_human_readable(config, parsed_certs):
                             cert.privkey))
     return "\n".join(certinfo)
 
-def _describe_certs(formatter):
+def _new_describe_certs(formatter):
     """Print information about the certs we know about"""
     out = formatter.report()
     disp = zope.component.getUtility(interfaces.IDisplay)
     disp.notification(out, pause=False, wrap=False)
 
-def _old_describe_certs(config, parsed_certs, parse_failures):
+def _describe_certs(config, parsed_certs, parse_failures):
     """Print information about the certs we know about"""
     out = []
 

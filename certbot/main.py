@@ -822,7 +822,6 @@ def make_or_verify_needed_dirs(config):
     make_or_verify_core_dir(config.logs_dir, 0o700,
                             os.geteuid(), config.strict_permissions)
 
-
 def set_displayer(config):
     """Set the displayer"""
     if config.quiet:
@@ -833,6 +832,10 @@ def set_displayer(config):
     else:
         displayer = display_util.FileDisplay(sys.stdout,
                                              config.force_interactive)
+
+    if config.json:
+        displayer = display_util.MachineReadableDisplay(sys.stdout)
+
     zope.component.provideUtility(displayer)
 
 def _post_logging_setup(config, plugins, cli_args):

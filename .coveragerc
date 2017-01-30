@@ -5,3 +5,4 @@ show_missing = True
 [run]
 
 omit = certbot/tests/util.py
+    certbot/tests/cert_manager_test.py

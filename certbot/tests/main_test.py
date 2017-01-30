@@ -594,6 +594,11 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._call_no_clientmock(['certificates'])
         self.assertEqual(1, mock_cert_manager.call_count)
 
+    @mock.patch('certbot.cert_manager.certificates')
+    def test_certificates_json(self, mock_cert_manager):
+        self._call_no_clientmock(['certificates', '--json'])
+        self.assertEqual(1, mock_cert_manager.call_count)
+
     @mock.patch('certbot.cert_manager.delete')
     def test_delete(self, mock_cert_manager):
         self._call_no_clientmock(['delete'])
