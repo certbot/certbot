@@ -80,7 +80,7 @@ def certificates(config):
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             parse_failures.append(renewal_file)
 
-    _new_describe_certs(config, parsed_certs, parse_failures)
+    _describe_certs(config, parsed_certs, parse_failures)
 
 
 def delete(config):
@@ -335,7 +335,7 @@ def _report_human_readable(config, parsed_certs):
                             cert.privkey))
     return "\n".join(certinfo)
 
-def _new_describe_certs(config, parsed_certs, parse_failures):
+def _describe_certs(config, parsed_certs, parse_failures):
     """Print information about the certs we know about"""
     if config.json is True:
         Formatter = JSONCertificateOutputFormatter
@@ -350,7 +350,7 @@ def _new_describe_certs(config, parsed_certs, parse_failures):
     disp = zope.component.getUtility(interfaces.IDisplay)
     disp.notification(out, pause=False, wrap=False)
 
-def _describe_certs(config, parsed_certs, parse_failures):
+def _old_describe_certs(config, parsed_certs, parse_failures):
     """Print information about the certs we know about"""
     out = []
 
