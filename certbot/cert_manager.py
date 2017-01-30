@@ -142,7 +142,55 @@ def find_duplicative_certs(config, domains):
 ###################
 
 
-class JSONCertificateOutputFormatter(object):
+class BaseCertificateOutputFormatter(object):
+    """Base class for formatting output of certificate information. """
+
+    def __init__(self, parsed_certs, parse_failures):
+        self.parsed_certs = parsed_certs
+        self.parse_failures = parse_failures
+
+    def report(self, notify, out):
+        """Produce a report of certificate information. """
+        if not self.parsed_certs and not self.parse_failures:
+            notify(self.report_missing())
+        else:
+            if self.parsed_certs:
+                notify(self.report_successes())
+            if self.parse_failures:
+                notify(self.report_failures())
+        return out
+
+    def report_successes(self):
+        """Stub method to be implemented by subclasses."""
+        pass
+
+    def report_failures(self):
+        """Stub method to be implemented by subclasses."""
+        pass
+
+    def report_missing(self):
+        """Stub method to be implemented by subclasses."""
+        pass
+
+    def _cert_validity(self, cert):
+        now = pytz.UTC.fromutc(datetime.datetime.utcnow())
+        if cert.is_test_cert:
+            expiration_text = "INVALID: TEST CERT"
+        elif cert.target_expiry <= now:
+            expiration_text = "INVALID: EXPIRED"
+        else:
+            diff = cert.target_expiry - now
+            if diff.days == 1:
+                expiration_text = "VALID: 1 day"
+            elif diff.days < 1:
+                expiration_text = "VALID: {0} hour(s)".format(diff.seconds // 3600)
+            else:
+                expiration_text = "VALID: {0} days".format(diff.days)
+        valid_string = "{0} ({1})".format(cert.target_expiry, expiration_text)
+        return valid_string
+
+
+class JSONCertificateOutputFormatter(BaseCertificateOutputFormatter):
     """Extract certificate information and format it for JSON. """
 
     def report(self):
