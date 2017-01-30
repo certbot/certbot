@@ -247,17 +247,40 @@ class HumanReadableCertOutputFormatter(BaseCertificateOutputFormatter):
 class JSONCertificateOutputFormatter(BaseCertificateOutputFormatter):
     """Extract certificate information and format it for JSON. """
 
-    def report(self):
+    def report(self):  # pylint: disable=arguments-differ
         """Produce a JSON report of certificate information. """
-        pass
+        import json
+        out = {}
+        notify = out.update
+        return json.dumps(super(JSONCertificateOutputFormatter, self).report(
+            notify, out),
+            indent=4)
 
     def report_successes(self):
         """Format a JSON report of certificate information. """
-        pass
+        certs = []
+        for cert in self.parsed_certs:
+            valid_string = self._cert_validity(cert)
+            certs.append({
+                "certificate_name": cert.lineagename,
+                "domains": cert.names(),
+                "expiry_date": valid_string,
+                "certificate_path": cert.fullchain,
+                "private_key_path": cert.privkey})
+        match = "matching " if self.config.certname or self.config.domains else ""
+        preface = "Found the following {0}certs".format(match)
+        return {"found": [preface, certs]}
 
     def report_failures(self):
         """Format a JSON report of problem conf files. """
-        pass
+        report = []
+        for path in self.parse_failures:
+            report.append({
+                "invalid_conf_file": path})
+        return {"failures": report}
+
+    def report_missing(self):
+        return {"No certs found": "Please check config dir"}
 
 
 def _get_certname(config, verb):
