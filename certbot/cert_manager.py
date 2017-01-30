@@ -141,6 +141,23 @@ def find_duplicative_certs(config, domains):
 # Private Helpers
 ###################
 
+
+class JSONCertificateOutputFormatter(object):
+    """Extract certificate information and format it for JSON. """
+
+    def report(self):
+        """Produce a JSON report of certificate information. """
+        pass
+
+    def report_successes(self):
+        """Format a JSON report of certificate information. """
+        pass
+
+    def report_failures(self):
+        """Format a JSON report of problem conf files. """
+        pass
+
+
 def _get_certname(config, verb):
     """Get certname from flag, interactively, or error out.
     """
