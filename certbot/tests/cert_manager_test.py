@@ -115,7 +115,7 @@ class UpdateLiveSymlinksTest(BaseCertManagerTest):
 class DeleteTest(storage_test.BaseRenewableCertTest):
     """Tests for certbot.cert_manager.delete
     """
-    @mock.patch('zope.component.getUtility')
+    @test_util.patch_get_utility()
     @mock.patch('certbot.cert_manager.lineage_for_certname')
     @mock.patch('certbot.storage.delete_files')
     def test_delete(self, mock_delete_files, mock_lineage_for_certname, unused_get_utility):
@@ -135,14 +135,14 @@ class CertificatesTest(BaseCertManagerTest):
         return certificates(*args, **kwargs)
 
     @mock.patch('certbot.cert_manager.logger')
-    @mock.patch('zope.component.getUtility')
+    @test_util.patch_get_utility()
     def test_certificates_parse_fail(self, mock_utility, mock_logger):
         self._certificates(self.cli_config)
         self.assertTrue(mock_logger.warning.called) #pylint: disable=no-member
         self.assertTrue(mock_utility.called)
 
     @mock.patch('certbot.cert_manager.logger')
-    @mock.patch('zope.component.getUtility')
+    @test_util.patch_get_utility()
     def test_certificates_quiet(self, mock_utility, mock_logger):
         self.cli_config.quiet = True
         self._certificates(self.cli_config)
@@ -150,7 +150,7 @@ class CertificatesTest(BaseCertManagerTest):
         self.assertTrue(mock_logger.warning.called) #pylint: disable=no-member
 
     @mock.patch('certbot.cert_manager.logger')
-    @mock.patch('zope.component.getUtility')
+    @test_util.patch_get_utility()
     @mock.patch("certbot.storage.RenewableCert")
     @mock.patch('certbot.cert_manager._report_human_readable')
     def test_certificates_parse_success(self, mock_report, mock_renewable_cert,
@@ -163,7 +163,7 @@ class CertificatesTest(BaseCertManagerTest):
         self.assertTrue(mock_renewable_cert.called)
 
     @mock.patch('certbot.cert_manager.logger')
-    @mock.patch('zope.component.getUtility')
+    @test_util.patch_get_utility()
     def test_certificates_no_files(self, mock_utility, mock_logger):
         tempdir = tempfile.mkdtemp()
 
@@ -268,11 +268,11 @@ class LineageForCertnameTest(BaseCertManagerTest):
     """Tests for certbot.cert_manager.lineage_for_certname"""
 
     @mock.patch('certbot.util.make_or_verify_dir')
-    @mock.patch('certbot.storage.renewal_conf_files')
+    @mock.patch('certbot.storage.renewal_file_for_certname')
     @mock.patch('certbot.storage.RenewableCert')
-    def test_found_match(self, mock_renewable_cert, mock_renewal_conf_files,
+    def test_found_match(self, mock_renewable_cert, mock_renewal_conf_file,
         mock_make_or_verify_dir):
-        mock_renewal_conf_files.return_value = ["somefile.conf"]
+        mock_renewal_conf_file.return_value = "somefile.conf"
         mock_match = mock.Mock(lineagename="example.com")
         mock_renewable_cert.return_value = mock_match
         from certbot import cert_manager
@@ -281,13 +281,10 @@ class LineageForCertnameTest(BaseCertManagerTest):
         self.assertTrue(mock_make_or_verify_dir.called)
 
     @mock.patch('certbot.util.make_or_verify_dir')
-    @mock.patch('certbot.storage.renewal_conf_files')
-    @mock.patch('certbot.storage.RenewableCert')
-    def test_no_match(self, mock_renewable_cert, mock_renewal_conf_files,
+    @mock.patch('certbot.storage.renewal_file_for_certname')
+    def test_no_match(self, mock_renewal_conf_file,
         mock_make_or_verify_dir):
-        mock_renewal_conf_files.return_value = ["somefile.conf"]
-        mock_match = mock.Mock(lineagename="other.com")
-        mock_renewable_cert.return_value = mock_match
+        mock_renewal_conf_file.return_value = "other.com.conf"
         from certbot import cert_manager
         self.assertEqual(cert_manager.lineage_for_certname(self.cli_config, "example.com"),
             None)
@@ -298,11 +295,11 @@ class DomainsForCertnameTest(BaseCertManagerTest):
     """Tests for certbot.cert_manager.domains_for_certname"""
 
     @mock.patch('certbot.util.make_or_verify_dir')
-    @mock.patch('certbot.storage.renewal_conf_files')
+    @mock.patch('certbot.storage.renewal_file_for_certname')
     @mock.patch('certbot.storage.RenewableCert')
-    def test_found_match(self, mock_renewable_cert, mock_renewal_conf_files,
+    def test_found_match(self, mock_renewable_cert, mock_renewal_conf_file,
         mock_make_or_verify_dir):
-        mock_renewal_conf_files.return_value = ["somefile.conf"]
+        mock_renewal_conf_file.return_value = "somefile.conf"
         mock_match = mock.Mock(lineagename="example.com")
         domains = ["example.com", "example.org"]
         mock_match.names.return_value = domains
@@ -313,15 +310,10 @@ class DomainsForCertnameTest(BaseCertManagerTest):
         self.assertTrue(mock_make_or_verify_dir.called)
 
     @mock.patch('certbot.util.make_or_verify_dir')
-    @mock.patch('certbot.storage.renewal_conf_files')
-    @mock.patch('certbot.storage.RenewableCert')
-    def test_no_match(self, mock_renewable_cert, mock_renewal_conf_files,
+    @mock.patch('certbot.storage.renewal_file_for_certname')
+    def test_no_match(self, mock_renewal_conf_file,
         mock_make_or_verify_dir):
-        mock_renewal_conf_files.return_value = ["somefile.conf"]
-        mock_match = mock.Mock(lineagename="example.com")
-        domains = ["example.com", "example.org"]
-        mock_match.names.return_value = domains
-        mock_renewable_cert.return_value = mock_match
+        mock_renewal_conf_file.return_value = "somefile.conf"
         from certbot import cert_manager
         self.assertEqual(cert_manager.domains_for_certname(self.cli_config, "other.com"),
             None)
@@ -348,7 +340,7 @@ class RenameLineageTest(BaseCertManagerTest):
         return cert_manager.rename_lineage(*args, **kwargs)
 
     @mock.patch('certbot.storage.renewal_conf_files')
-    @mock.patch('certbot.main.zope.component.getUtility')
+    @test_util.patch_get_utility()
     def test_no_certname(self, mock_get_utility, mock_renewal_conf_files):
         mock_config = mock.Mock(certname=None, new_certname="two")
 
@@ -365,7 +357,7 @@ class RenameLineageTest(BaseCertManagerTest):
         util_mock.menu.return_value = (display_util.OK, -1)
         self.assertRaises(errors.Error, self._call, mock_config)
 
-    @mock.patch('certbot.main.zope.component.getUtility')
+    @test_util.patch_get_utility()
     def test_no_new_certname(self, mock_get_utility):
         mock_config = mock.Mock(certname="one", new_certname=None)
 
@@ -379,7 +371,7 @@ class RenameLineageTest(BaseCertManagerTest):
         mock_get_utility.return_value = util_mock
         self.assertRaises(errors.Error, self._call, mock_config)
 
-    @mock.patch('certbot.main.zope.component.getUtility')
+    @test_util.patch_get_utility()
     @mock.patch('certbot.cert_manager.lineage_for_certname')
     def test_no_existing_certname(self, mock_lineage_for_certname, unused_get_utility):
         mock_config = mock.Mock(certname="one", new_certname="two")
@@ -387,7 +379,7 @@ class RenameLineageTest(BaseCertManagerTest):
         self.assertRaises(errors.ConfigurationError,
             self._call, mock_config)
 
-    @mock.patch('certbot.main.zope.component.getUtility')
+    @test_util.patch_get_utility()
     @mock.patch("certbot.storage.RenewableCert._check_symlinks")
     def test_rename_cert(self, mock_check, unused_get_utility):
         mock_check.return_value = True
@@ -398,7 +390,7 @@ class RenameLineageTest(BaseCertManagerTest):
         self.assertTrue(updated_lineage is not None)
         self.assertEqual(updated_lineage.lineagename, mock_config.new_certname)
 
-    @mock.patch('certbot.main.zope.component.getUtility')
+    @test_util.patch_get_utility()
     @mock.patch("certbot.storage.RenewableCert._check_symlinks")
     def test_rename_cert_interactive_certname(self, mock_check, mock_get_utility):
         mock_check.return_value = True
@@ -413,7 +405,7 @@ class RenameLineageTest(BaseCertManagerTest):
         self.assertTrue(updated_lineage is not None)
         self.assertEqual(updated_lineage.lineagename, mock_config.new_certname)
 
-    @mock.patch('certbot.main.zope.component.getUtility')
+    @test_util.patch_get_utility()
     @mock.patch("certbot.storage.RenewableCert._check_symlinks")
     def test_rename_cert_bad_new_certname(self, mock_check, unused_get_utility):
         mock_check.return_value = True

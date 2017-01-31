@@ -79,7 +79,7 @@ class PluginEntryPoint(object):
         return self._initialized is not None
 
     def init(self, config=None):
-        """Memoized plugin inititialization."""
+        """Memoized plugin initialization."""
         if not self.initialized:
             self.entry_point.require()  # fetch extras!
             self._initialized = self.plugin_cls(config, self.name)
@@ -230,7 +230,7 @@ class PluginsRegistry(collections.Mapping):
     def available(self):
         """Filter plugins based on availability."""
         return self.filter(lambda p_ep: p_ep.available)
-        # succefully prepared + misconfigured
+        # successfully prepared + misconfigured
 
     def find_init(self, plugin):
         """Find an initialized plugin.

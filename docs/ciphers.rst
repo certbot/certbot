@@ -206,7 +206,7 @@ or a family of enhancements, one per selectable ciphersuite configuration.
 
 Feedback
 ========
-We recieve lots of feedback on the type of ciphersuites that Let's Encrypt supports and list some coallated feedback below. This section aims to track suggestions and references that people have offered or identified to improve the ciphersuites that Let's Encrypt enables when configuring TLS on servers.
+We receive lots of feedback on the type of ciphersuites that Let's Encrypt supports and list some collated feedback below. This section aims to track suggestions and references that people have offered or identified to improve the ciphersuites that Let's Encrypt enables when configuring TLS on servers.
 
 Because of the Chatham House Rule applicable to some of the discussions, people are *not* individually credited for their suggestions, but most suggestions here were made or found by other people, and I thank them for their contributions.
 

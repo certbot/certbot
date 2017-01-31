@@ -1,22 +1,22 @@
 """Tests for certbot.cli."""
 import argparse
-import functools
 import unittest
 import os
 import tempfile
 
-import six
 import mock
+import six
 from six.moves import reload_module  # pylint: disable=import-error
+
+from acme import challenges
 
 from certbot import cli
 from certbot import constants
 from certbot import errors
 from certbot.plugins import disco
 
-def reset_set_by_cli():
-    '''Reset the state of the `set_by_cli` function'''
-    cli.set_by_cli.detector = None
+PLUGINS = disco.PluginsRegistry.find_all()
+
 
 class TestReadFile(unittest.TestCase):
     '''Test cli.read_file'''
@@ -43,16 +43,16 @@ class ParseTest(unittest.TestCase):
 
     _multiprocess_can_split_ = True
 
-    @classmethod
-    def setUpClass(cls):
-        cls.plugins = disco.PluginsRegistry.find_all()
-        cls.parse = functools.partial(cli.prepare_and_parse_args, cls.plugins)
-
     def setUp(self):
-        reset_set_by_cli()
+        reload_module(cli)
+
+    @staticmethod
+    def parse(*args, **kwargs):
+        """Get result of cli.prepare_and_parse_args."""
+        return cli.prepare_and_parse_args(PLUGINS, *args, **kwargs)
 
     def _help_output(self, args):
-        "Run a command, and return the ouput string for scrutiny"
+        "Run a command, and return the output string for scrutiny"
 
         output = six.StringIO()
         with mock.patch('certbot.main.sys.stdout', new=output):
@@ -88,7 +88,7 @@ class ParseTest(unittest.TestCase):
         self.assertTrue("{0}" not in out)
 
         out = self._help_output(['-h', 'nginx'])
-        if "nginx" in self.plugins:
+        if "nginx" in PLUGINS:
             # may be false while building distributions without plugins
             self.assertTrue("--nginx-ctl" in out)
         self.assertTrue("--webroot-path" not in out)
@@ -96,7 +96,7 @@ class ParseTest(unittest.TestCase):
 
         out = self._help_output(['-h'])
         self.assertTrue("letsencrypt-auto" not in out)  # test cli.cli_command
-        if "nginx" in self.plugins:
+        if "nginx" in PLUGINS:
             self.assertTrue("Use the Nginx plugin" in out)
         else:
             self.assertTrue("(the certbot nginx plugin is not" in out)
@@ -121,6 +121,7 @@ class ParseTest(unittest.TestCase):
         out = self._help_output(['--help', 'revoke'])
         self.assertTrue("--cert-path" in out)
         self.assertTrue("--key-path" in out)
+        self.assertTrue("--reason" in out)
 
         out = self._help_output(['-h', 'config_changes'])
         self.assertTrue("--cert-path" not in out)
@@ -131,6 +132,26 @@ class ParseTest(unittest.TestCase):
         self.assertTrue(cli.COMMAND_OVERVIEW[:100] in out)
         self.assertTrue("%s" not in out)
         self.assertTrue("{0}" not in out)
+
+    def test_help_no_dashes(self):
+        self._help_output(['help'])  # assert SystemExit is raised here
+
+        out = self._help_output(['help', 'all'])
+        self.assertTrue("--configurator" in out)
+        self.assertTrue("how a cert is deployed" in out)
+        self.assertTrue("--webroot-path" in out)
+        self.assertTrue("--text" not in out)
+        self.assertTrue("--dialog" not in out)
+        self.assertTrue("%s" not in out)
+        self.assertTrue("{0}" not in out)
+
+        out = self._help_output(['help', 'install'])
+        self.assertTrue("--cert-path" in out)
+        self.assertTrue("--key-path" in out)
+
+        out = self._help_output(['help', 'revoke'])
+        self.assertTrue("--cert-path" in out)
+        self.assertTrue("--key-path" in out)
 
     def test_parse_domains(self):
         short_args = ['-d', 'example.com']
@@ -159,12 +180,12 @@ class ParseTest(unittest.TestCase):
         self.assertEqual(namespace.domains, ['example.com', 'another.net'])
 
     def test_preferred_challenges(self):
-        from acme.challenges import HTTP01, TLSSNI01, DNS01
-
         short_args = ['--preferred-challenges', 'http, tls-sni-01, dns']
         namespace = self.parse(short_args)
 
-        self.assertEqual(namespace.pref_challs, [HTTP01, TLSSNI01, DNS01])
+        expected = [challenges.HTTP01.typ,
+                    challenges.TLSSNI01.typ, challenges.DNS01.typ]
+        self.assertEqual(namespace.pref_challs, expected)
 
         short_args = ['--preferred-challenges', 'jumping-over-the-moon']
         self.assertRaises(argparse.ArgumentTypeError, self.parse, short_args)
@@ -261,6 +282,14 @@ class ParseTest(unittest.TestCase):
         config_dir_option = 'config_dir'
         self.assertFalse(cli.option_was_set(
             config_dir_option, cli.flag_default(config_dir_option)))
+
+    def test_encode_revocation_reason(self):
+        for reason, code in constants.REVOCATION_REASONS.items():
+            namespace = self.parse(['--reason', reason])
+            self.assertEqual(namespace.reason, code)
+        for reason, code in constants.REVOCATION_REASONS.items():
+            namespace = self.parse(['--reason', reason.upper()])
+            self.assertEqual(namespace.reason, code)
 
     def test_force_interactive(self):
         self.assertRaises(

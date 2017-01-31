@@ -43,7 +43,7 @@ class RawNginxParser(object):
     modifier = Literal("=") | Literal("~*") | Literal("~") | Literal("^~")
 
     # rules
-    comment = space + Literal('#') + restOfLine()
+    comment = space + Literal('#') + restOfLine
 
     assignment = space + key + Optional(space + value, default=None) + semicolon
     location_statement = space + Optional(modifier) + Optional(space + location + space)
@@ -52,10 +52,10 @@ class RawNginxParser(object):
 
     map_statement = space + Literal("map") + space + nonspace + space + dollar_var + space
     # This is NOT an accurate way to parse nginx map entries; it's almost
-    # certianly too permissive and may be wrong in other ways, but it should
+    # certainly too permissive and may be wrong in other ways, but it should
     # preserve things correctly in mmmmost or all cases.
     #
-    #    - I can neither prove nor disprove that it is corect wrt all escaped
+    #    - I can neither prove nor disprove that it is correct wrt all escaped
     #      semicolon situations
     # Addresses https://github.com/fatiherikli/nginxparser/issues/19
     map_pattern = Regex(r'".*"') | Regex(r"'.*'") | nonspace
@@ -143,7 +143,7 @@ class RawNginxDumper(object):
 def loads(source):
     """Parses from a string.
 
-    :param str souce: The string to parse
+    :param str source: The string to parse
     :returns: The parsed tree
     :rtype: list
 

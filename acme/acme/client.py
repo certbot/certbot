@@ -27,7 +27,11 @@ logger = logging.getLogger(__name__)
 # for SSL, which does allow these options to be configured.
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
 if sys.version_info < (2, 7, 9):  # pragma: no cover
-    requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
+    try:
+        requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
+    except AttributeError:
+        import urllib3.contrib.pyopenssl  # pylint: disable=import-error
+        urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 DER_CONTENT_TYPE = 'application/pkix-cert'
 
@@ -128,11 +132,23 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         """
         update = regr.body if update is None else update
-        updated_regr = self._send_recv_regr(
-            regr, body=messages.UpdateRegistration(**dict(update)))
+        body = messages.UpdateRegistration(**dict(update))
+        updated_regr = self._send_recv_regr(regr, body=body)
         if updated_regr != regr:
             raise errors.UnexpectedUpdate(regr)
         return updated_regr
+
+    def deactivate_registration(self, regr):
+        """Deactivate registration.
+
+        :param messages.RegistrationResource regr: The Registration Resource
+            to be deactivated.
+
+        :returns: The Registration resource that was deactivated.
+        :rtype: `.RegistrationResource`
+
+        """
+        return self.update_registration(regr, update={'status': 'deactivated'})
 
     def query_registration(self, regr):
         """Query server about registration.
@@ -477,17 +493,21 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                 "Recursion limit reached. Didn't get {0}".format(uri))
         return chain
 
-    def revoke(self, cert):
+    def revoke(self, cert, rsn):
         """Revoke certificate.
 
         :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
             `.ComparableX509`
 
+        :param int rsn: Reason code for certificate revocation.
+
         :raises .ClientError: If revocation is unsuccessful.
 
         """
         response = self.net.post(self.directory[messages.Revocation],
-                                 messages.Revocation(certificate=cert),
+                                 messages.Revocation(
+                                     certificate=cert,
+                                     reason=rsn),
                                  content_type=None)
         if response.status_code != http_client.OK:
             raise errors.ClientError(
@@ -654,8 +674,23 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             self._add_nonce(self.head(url))
         return self._nonces.pop()
 
-    def post(self, url, obj, content_type=JOSE_CONTENT_TYPE, **kwargs):
-        """POST object wrapped in `.JWS` and check response."""
+    def post(self, *args, **kwargs):
+        """POST object wrapped in `.JWS` and check response.
+
+        If the server responded with a badNonce error, the request will
+        be retried once.
+
+        """
+        try:
+            return self._post_once(*args, **kwargs)
+        except messages.Error as error:
+            if error.code == 'badNonce':
+                logger.debug('Retrying request after error:\n%s', error)
+                return self._post_once(*args, **kwargs)
+            else:
+                raise
+
+    def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE, **kwargs):
         data = self._wrap_in_jws(obj, self._get_nonce(url))
         kwargs.setdefault('headers', {'Content-Type': content_type})
         response = self._send_request('POST', url, data=data, **kwargs)

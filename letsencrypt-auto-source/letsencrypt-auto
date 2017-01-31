@@ -16,14 +16,14 @@ set -e  # Work even if somebody does "sh thisscript.sh".
 # Note: you can set XDG_DATA_HOME or VENV_PATH before running this script,
 # if you want to change where the virtual environment will be installed
 if [ -z "$XDG_DATA_HOME" ]; then
-  XDG_DATA_HOME="~/.local/share"
+  XDG_DATA_HOME=~/.local/share
 fi
 VENV_NAME="letsencrypt"
 if [ -z "$VENV_PATH" ]; then
   VENV_PATH="$XDG_DATA_HOME/$VENV_NAME"
 fi
 VENV_BIN="$VENV_PATH/bin"
-LE_AUTO_VERSION="0.10.0.dev0"
+LE_AUTO_VERSION="0.11.0.dev0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -38,8 +38,9 @@ Help for certbot itself cannot be provided until it is installed.
   -n, --non-interactive, --noninteractive   run without asking for user input
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
-  -q, --quiet                               provide only update/error output
   -v, --verbose                             provide more output
+  -q, --quiet                               provide only update/error output;
+                                            implies --non-interactive
 
 All arguments are accepted and forwarded to the Certbot client when run."
 
@@ -86,6 +87,11 @@ if [ $BASENAME = "letsencrypt-auto" ]; then
   HELP=0
 fi
 
+# Set ASSUME_YES to 1 if QUIET (i.e. --quiet implies --non-interactive)
+if [ "$QUIET" = 1 ]; then
+  ASSUME_YES=1
+fi
+
 # Support for busybox and others where there is no "command",
 # but "which" instead
 if command -v command > /dev/null 2>&1 ; then
@@ -101,7 +107,7 @@ fi
 # certbot itself needs root access for almost all modes of operation
 # The "normal" case is that sudo is used for the steps that need root, but
 # this script *can* be run as root (not recommended), or fall back to using
-# `su`. Auto-detection can be overrided by explicitly setting the
+# `su`. Auto-detection can be overridden by explicitly setting the
 # environment variable LE_AUTO_SUDO to 'sudo', 'sudo_su' or '' as used below.
 
 # Because the parameters in `su -c` has to be a string,
@@ -209,7 +215,11 @@ BootstrapDebCommon() {
   #
   # - Debian 6.0.10 "squeeze" (x64)
 
-  $SUDO apt-get update || echo apt-get update hit problems but continuing anyway...
+  if [ "$QUIET" = 1 ]; then
+    QUIET_FLAG='-qq'
+  fi
+
+  $SUDO apt-get $QUIET_FLAG update || echo apt-get update hit problems but continuing anyway...
 
   # virtualenv binary can be found in different packages depending on
   # distro version (#346)
@@ -217,83 +227,83 @@ BootstrapDebCommon() {
   virtualenv=
   # virtual env is known to apt and is installable
   if apt-cache show virtualenv > /dev/null 2>&1 ; then
-      if ! LC_ALL=C apt-cache --quiet=0 show virtualenv 2>&1 | grep -q 'No packages found'; then
-          virtualenv="virtualenv"
-      fi
+    if ! LC_ALL=C apt-cache --quiet=0 show virtualenv 2>&1 | grep -q 'No packages found'; then
+      virtualenv="virtualenv"
+    fi
   fi
 
   if apt-cache show python-virtualenv > /dev/null 2>&1; then
-      virtualenv="$virtualenv python-virtualenv"
+    virtualenv="$virtualenv python-virtualenv"
   fi
 
   augeas_pkg="libaugeas0 augeas-lenses"
   AUGVERSION=`LC_ALL=C apt-cache show --no-all-versions libaugeas0 | grep ^Version: | cut -d" " -f2`
 
   if [ "$ASSUME_YES" = 1 ]; then
-      YES_FLAG="-y"
+    YES_FLAG="-y"
   fi
 
   AddBackportRepo() {
-      # ARGS:
-      BACKPORT_NAME="$1"
-      BACKPORT_SOURCELINE="$2"
-      echo "To use the Apache Certbot plugin, augeas needs to be installed from $BACKPORT_NAME."
-      if ! grep -v -e ' *#' /etc/apt/sources.list | grep -q "$BACKPORT_NAME" ; then
-          # This can theoretically error if sources.list.d is empty, but in that case we don't care.
-          if ! grep -v -e ' *#' /etc/apt/sources.list.d/* 2>/dev/null | grep -q "$BACKPORT_NAME"; then
-              if [ "$ASSUME_YES" = 1 ]; then
-                  /bin/echo -n "Installing augeas from $BACKPORT_NAME in 3 seconds..."
-                  sleep 1s
-                  /bin/echo -ne "\e[0K\rInstalling augeas from $BACKPORT_NAME in 2 seconds..."
-                  sleep 1s
-                  /bin/echo -e "\e[0K\rInstalling augeas from $BACKPORT_NAME in 1 second ..."
-                  sleep 1s
-                  add_backports=1
-              else
-                  read -p "Would you like to enable the $BACKPORT_NAME repository [Y/n]? " response
-                  case $response in
-                      [yY][eE][sS]|[yY]|"")
-                          add_backports=1;;
-                      *)
-                          add_backports=0;;
-                  esac
-              fi
-              if [ "$add_backports" = 1 ]; then
-                  $SUDO sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
-                  $SUDO apt-get update
-              fi
-          fi
+    # ARGS:
+    BACKPORT_NAME="$1"
+    BACKPORT_SOURCELINE="$2"
+    echo "To use the Apache Certbot plugin, augeas needs to be installed from $BACKPORT_NAME."
+    if ! grep -v -e ' *#' /etc/apt/sources.list | grep -q "$BACKPORT_NAME" ; then
+      # This can theoretically error if sources.list.d is empty, but in that case we don't care.
+      if ! grep -v -e ' *#' /etc/apt/sources.list.d/* 2>/dev/null | grep -q "$BACKPORT_NAME"; then
+        if [ "$ASSUME_YES" = 1 ]; then
+          /bin/echo -n "Installing augeas from $BACKPORT_NAME in 3 seconds..."
+          sleep 1s
+          /bin/echo -ne "\e[0K\rInstalling augeas from $BACKPORT_NAME in 2 seconds..."
+          sleep 1s
+          /bin/echo -e "\e[0K\rInstalling augeas from $BACKPORT_NAME in 1 second ..."
+          sleep 1s
+          add_backports=1
+        else
+          read -p "Would you like to enable the $BACKPORT_NAME repository [Y/n]? " response
+          case $response in
+            [yY][eE][sS]|[yY]|"")
+              add_backports=1;;
+            *)
+              add_backports=0;;
+          esac
+        fi
+        if [ "$add_backports" = 1 ]; then
+          $SUDO sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
+          $SUDO apt-get $QUIET_FLAG update
+        fi
       fi
-      if [ "$add_backports" != 0 ]; then
-          $SUDO apt-get install $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
-          augeas_pkg=
-      fi
+    fi
+    if [ "$add_backports" != 0 ]; then
+      $SUDO apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
+      augeas_pkg=
+    fi
   }
 
 
   if dpkg --compare-versions 1.0 gt "$AUGVERSION" ; then
-      if lsb_release -a | grep -q wheezy ; then
-          AddBackportRepo wheezy-backports "deb http://http.debian.net/debian wheezy-backports main"
-      elif lsb_release -a | grep -q precise ; then
-          # XXX add ARM case
-          AddBackportRepo precise-backports "deb http://archive.ubuntu.com/ubuntu precise-backports main restricted universe multiverse"
-      else
-          echo "No libaugeas0 version is available that's new enough to run the"
-          echo "Certbot apache plugin..."
-      fi
-      # XXX add a case for ubuntu PPAs
+    if lsb_release -a | grep -q wheezy ; then
+      AddBackportRepo wheezy-backports "deb http://http.debian.net/debian wheezy-backports main"
+    elif lsb_release -a | grep -q precise ; then
+      # XXX add ARM case
+      AddBackportRepo precise-backports "deb http://archive.ubuntu.com/ubuntu precise-backports main restricted universe multiverse"
+    else
+      echo "No libaugeas0 version is available that's new enough to run the"
+      echo "Certbot apache plugin..."
+    fi
+    # XXX add a case for ubuntu PPAs
   fi
 
-  $SUDO apt-get install $YES_FLAG --no-install-recommends \
+  $SUDO apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends \
     python \
     python-dev \
     $virtualenv \
     gcc \
     $augeas_pkg \
     libssl-dev \
+    openssl \
     libffi-dev \
     ca-certificates \
-
 
 
   if ! $EXISTS virtualenv > /dev/null ; then
@@ -324,6 +334,9 @@ BootstrapRpmCommon() {
   if [ "$ASSUME_YES" = 1 ]; then
     yes_flag="-y"
   fi
+  if [ "$QUIET" = 1 ]; then
+    QUIET_FLAG='--quiet'
+  fi
 
   if ! $SUDO $tool list *virtualenv >/dev/null 2>&1; then
     echo "To use Certbot, packages from the EPEL repository need to be installed."
@@ -332,14 +345,14 @@ BootstrapRpmCommon() {
       exit 1
     fi
     if [ "$ASSUME_YES" = 1 ]; then
-        /bin/echo -n "Enabling the EPEL repository in 3 seconds..."
-        sleep 1s
-        /bin/echo -ne "\e[0K\rEnabling the EPEL repository in 2 seconds..."
-        sleep 1s
-        /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 seconds..."
-        sleep 1s
+      /bin/echo -n "Enabling the EPEL repository in 3 seconds..."
+      sleep 1s
+      /bin/echo -ne "\e[0K\rEnabling the EPEL repository in 2 seconds..."
+      sleep 1s
+      /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 seconds..."
+      sleep 1s
     fi
-    if ! $SUDO $tool install $yes_flag epel-release; then
+    if ! $SUDO $tool install $yes_flag $QUIET_FLAG epel-release; then
       echo "Could not enable EPEL. Aborting bootstrap!"
       exit 1
     fi
@@ -381,9 +394,9 @@ BootstrapRpmCommon() {
     "
   fi
 
-  if ! $SUDO $tool install $yes_flag $pkgs; then
-      echo "Could not install OS dependencies. Aborting bootstrap!"
-      exit 1
+  if ! $SUDO $tool install $yes_flag $QUIET_FLAG $pkgs; then
+    echo "Could not install OS dependencies. Aborting bootstrap!"
+    exit 1
   fi
 }
 
@@ -395,7 +408,11 @@ BootstrapSuseCommon() {
     install_flags="-l"
   fi
 
-  $SUDO zypper $zypper_flags in $install_flags \
+  if [ "$QUIET" = 1 ]; then
+    QUIET_FLAG='-qq'
+  fi
+
+  $SUDO zypper $QUIET_FLAG $zypper_flags in $install_flags \
     python \
     python-devel \
     python-virtualenv \
@@ -433,7 +450,11 @@ BootstrapArchCommon() {
   fi
 
   if [ "$missing" ]; then
-    $SUDO pacman -S --needed $missing $noconfirm
+    if [ "$QUIET" = 1]; then
+      $SUDO pacman -S --needed $missing $noconfirm > /dev/null
+    else
+      $SUDO pacman -S --needed $missing $noconfirm
+    fi
   fi
 }
 
@@ -466,7 +487,11 @@ BootstrapGentooCommon() {
 }
 
 BootstrapFreeBsd() {
-  $SUDO pkg install -Ay \
+  if [ "$QUIET" = 1 ]; then
+    QUIET_FLAG="--quiet"
+  fi
+
+  $SUDO pkg install -Ay $QUIET_FLAG \
     python \
     py27-virtualenv \
     augeas \
@@ -498,7 +523,7 @@ BootstrapMac() {
     $pkgcmd python
   fi
 
-  # Workaround for _dlopen not finding augeas on OS X
+  # Workaround for _dlopen not finding augeas on macOS
   if [ "$pkgman" = "port" ] && ! [ -e "/usr/local/lib/libaugeas.dylib" ] && [ -e "/opt/local/lib/libaugeas.dylib" ]; then
     echo "Applying augeas workaround"
     $SUDO mkdir -p /usr/local/lib/
@@ -506,15 +531,15 @@ BootstrapMac() {
   fi
 
   if ! hash pip 2>/dev/null; then
-      echo "pip not installed"
-      echo "Installing pip..."
-      curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | python
+    echo "pip not installed"
+    echo "Installing pip..."
+    curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | python
   fi
 
   if ! hash virtualenv 2>/dev/null; then
-      echo "virtualenv not installed."
-      echo "Installing with pip..."
-      pip install virtualenv
+    echo "virtualenv not installed."
+    echo "Installing with pip..."
+    pip install virtualenv
   fi
 }
 
@@ -524,25 +549,29 @@ BootstrapSmartOS() {
 }
 
 BootstrapMageiaCommon() {
-    if ! $SUDO urpmi --force  \
-           python \
-           libpython-devel \
-           python-virtualenv
+  if [ "$QUIET" = 1 ]; then
+    QUIET_FLAG='--quiet'
+  fi
+
+  if ! $SUDO urpmi --force $QUIET_FLAG \
+      python \
+      libpython-devel \
+      python-virtualenv
     then
       echo "Could not install Python dependencies. Aborting bootstrap!"
       exit 1
-    fi
+  fi
 
-    if ! $SUDO urpmi --force \
-           git \
-           gcc \
-           python-augeas \
-           libopenssl-devel \
-           libffi-devel \
-           rootcerts
+  if ! $SUDO urpmi --force $QUIET_FLAG \
+      git \
+      gcc \
+      python-augeas \
+      libopenssl-devel \
+      libffi-devel \
+      rootcerts
     then
-        echo "Could not install additional dependencies. Aborting bootstrap!"
-        exit 1
+      echo "Could not install additional dependencies. Aborting bootstrap!"
+      exit 1
     fi
 }
 
@@ -583,7 +612,7 @@ Bootstrap() {
   elif uname | grep -iq FreeBSD ; then
     ExperimentalBootstrap "FreeBSD" BootstrapFreeBsd
   elif uname | grep -iq Darwin ; then
-    ExperimentalBootstrap "Mac OS X" BootstrapMac
+    ExperimentalBootstrap "macOS" BootstrapMac
   elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
     ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
   elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
@@ -599,7 +628,7 @@ Bootstrap() {
 }
 
 TempDir() {
-  mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || OS X
+  mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || macOS
 }
 
 
@@ -612,6 +641,11 @@ if [ "$1" = "--le-auto-phase2" ]; then
     # --version output ran through grep due to python-cryptography DeprecationWarnings
     # grep for both certbot and letsencrypt until certbot and shim packages have been released
     INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | grep "^certbot\|^letsencrypt" | cut -d " " -f 2)
+    if [ -z "$INSTALLED_VERSION" ]; then
+        echo "Error: couldn't get currently installed version for $VENV_BIN/letsencrypt: " 1>&2
+        "$VENV_BIN/letsencrypt" --version
+        exit 1
+    fi
   else
     INSTALLED_VERSION="none"
   fi
@@ -804,18 +838,18 @@ letsencrypt==0.7.0 \
 
 # THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT; ADD ALL DEPENDENCIES ABOVE.
 
-acme==0.9.3 \
-    --hash=sha256:d18ce17a75ad24d27981dfaef0524aa905eab757b267e027162b56a8967ab8fb \
-    --hash=sha256:a6eff1f955eb2e4316abd9aa2fedb6d9345e6b5b8a2d64ea0ad35e05d6124099
-certbot==0.9.3 \
-    --hash=sha256:a87ef4c53c018df4e52ee2f2e906ad16bbb37789f29e6f284c495a2eb4d9b243 \
-    --hash=sha256:68149cb8392b29f5d5246e7226d25f913f2b10482bf3bc7368e8c8821d25f3b0
-certbot-apache==0.9.3 \
-    --hash=sha256:f379b1053e10709692654d7a6fcea9eaed19b66c49a753b61e31bd06a04b0aac \
-    --hash=sha256:a5d98cf972072de08f984db4e6a7f20269f3f023c43f6d4e781fe43be7c10086
-certbot-nginx==0.9.3 \
-    --hash=sha256:3c26f18f0b57550f069263bd9b2984ef33eab6693e7796611c1b2cc16574069c \
-    --hash=sha256:7337a2e90e0b28a1ab09e31d9fb81c6d78e6453500c824c0f18bab5d31b63058
+acme==0.10.2 \
+    --hash=sha256:053bbf8d36be298e411e0fa397289307e1a888f419de1205931236114f8f825e \
+    --hash=sha256:6465b66256849f8cd4269a43037d404b1ccf31a60d3c93fc628d6f6f4c43de78
+certbot==0.10.2 \
+    --hash=sha256:1e680cab3cda6c3079ee64066903f93e421df46a8d4db63264a6359f3d5ba63e \
+    --hash=sha256:33729ce100fc9d00d9820c81fc3ef9b95802b8d261f0cca0cce422bc568b1631
+certbot-apache==0.10.2 \
+    --hash=sha256:c1f196506bf961e2171fb2af9feca8926100564b644acda1895acdf294c46e71 \
+    --hash=sha256:8573275e74c8b74a9c7d7824636a37a4bc83327a7cc97a43b334fe8956ba8cb1
+certbot-nginx==0.10.2 \
+    --hash=sha256:74c32bdaf2f3873aa811c3e2cdc205d3137b59c64dbcdca6f3982ed2a89b4f2a \
+    --hash=sha256:c8265ab4b4bc0a6a3a81d7f0b8ff2606dd28ebbb3cd045635862286b97af2c36
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1027,7 +1061,7 @@ UNLIKELY_EOF
   fi
 
 else
-  # Phase 1: Upgrade certbot-auto if neceesary, then self-invoke.
+  # Phase 1: Upgrade certbot-auto if necessary, then self-invoke.
   #
   # Each phase checks the version of only the thing it is responsible for
   # upgrading. Phase 1 checks the version of the latest release of
@@ -1196,7 +1230,7 @@ UNLIKELY_EOF
       # TODO: Deal with quotes in pathnames.
       echo "Replacing certbot-auto..."
       # Clone permissions with cp. chmod and chown don't have a --reference
-      # option on OS X or BSD, and stat -c on Linux is stat -f on OS X and BSD:
+      # option on macOS or BSD, and stat -c on Linux is stat -f on macOS and BSD:
       $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
       $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
       # Using mv rather than cp leaves the old file descriptor pointing to the

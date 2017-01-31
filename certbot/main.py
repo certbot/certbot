@@ -39,7 +39,7 @@ from certbot.plugins import selection as plug_sel
 _PERM_ERR_FMT = os.linesep.join((
     "The following error was encountered:", "{0}",
     "If running as non-root, set --config-dir, "
-    "--logs-dir, and --work-dir to writeable paths."))
+    "--work-dir, and --logs-dir to writeable paths."))
 
 USER_CANCELLED = ("User chose to cancel the operation and may "
                   "reinvoke the client.")
@@ -100,7 +100,7 @@ def _auth_from_available(le_client, config, domains=None, certname=None, lineage
     try:
         if action == "renew":
             logger.info("Renewing an existing certificate")
-            renewal.renew_cert(config, le_client, lineage)
+            renewal.renew_cert(config, domains, le_client, lineage)
         elif action == "newcert":
             # TREAT AS NEW REQUEST
             logger.info("Obtaining a new certificate")
@@ -108,7 +108,7 @@ def _auth_from_available(le_client, config, domains=None, certname=None, lineage
             if lineage is False:
                 raise errors.Error("Certificate could not be obtained")
     finally:
-        hooks.post_hook(config, final=False)
+        hooks.post_hook(config)
 
     if not config.dry_run and not config.verb == "renew":
         _report_new_cert(config, lineage.cert, lineage.fullchain)
@@ -406,6 +406,35 @@ def _init_le_client(config, authenticator, installer):
     return client.Client(config, acc, authenticator, installer, acme=acme)
 
 
+def unregister(config, unused_plugins):
+    """Deactivate account on server"""
+    account_storage = account.AccountFileStorage(config)
+    accounts = account_storage.find_all()
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+
+    if not accounts:
+        return "Could not find existing account to deactivate."
+    yesno = zope.component.getUtility(interfaces.IDisplay).yesno
+    prompt = ("Are you sure you would like to irrevocably deactivate "
+              "your account?")
+    wants_deactivate = yesno(prompt, yes_label='Deactivate', no_label='Abort',
+                             default=True)
+
+    if not wants_deactivate:
+        return "Deactivation aborted."
+
+    acc, acme = _determine_account(config)
+    acme_client = client.Client(config, acc, None, None, acme=acme)
+
+    # delete on boulder
+    acme_client.acme.deactivate_registration(acc.regr)
+    account_files = account.AccountFileStorage(config)
+    # delete local account files
+    account_files.delete(config.account)
+
+    reporter_util.add_message("Account deactivated.", reporter_util.MEDIUM_PRIORITY)
+
+
 def register(config, unused_plugins):
     """Create or modify accounts on the server."""
 
@@ -413,6 +442,8 @@ def register(config, unused_plugins):
     # exist or not.
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    add_msg = lambda m: reporter_util.add_message(m, reporter_util.MEDIUM_PRIORITY)
 
     # registering a new account
     if not config.update_registration:
@@ -443,9 +474,7 @@ def register(config, unused_plugins):
     acc.regr = acme_client.acme.update_registration(acc.regr.update(
         body=acc.regr.body.update(contact=('mailto:' + config.email,))))
     account_storage.save_regr(acc)
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
-    msg = "Your e-mail address was updated to {0}.".format(config.email)
-    reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
+    add_msg("Your e-mail address was updated to {0}.".format(config.email))
 
 
 def install(config, plugins):
@@ -550,8 +579,10 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
         key = acc.key
     acme = client.acme_from_config_key(config, key)
     cert = crypto_util.pyopenssl_load_certificate(config.cert_path[1])[0]
+    logger.debug("Reason code for revocation: %s", config.reason)
+
     try:
-        acme.revoke(jose.ComparableX509(cert))
+        acme.revoke(jose.ComparableX509(cert), config.reason)
     except acme_errors.ClientError as e:
         return e.message
 
@@ -654,7 +685,7 @@ def renew(config, unused_plugins):
     try:
         renewal.handle_renewal_request(config)
     finally:
-        hooks.post_hook(config, final=True)
+        hooks.run_saved_post_hooks()
 
 
 def setup_log_file_handler(config, logfile, fmt):
@@ -781,7 +812,7 @@ def make_or_verify_core_dir(directory, mode, uid, strict):
         raise errors.Error(_PERM_ERR_FMT.format(error))
 
 def make_or_verify_needed_dirs(config):
-    """Create or verify existance of config, work, or logs directories"""
+    """Create or verify existence of config, work, or logs directories"""
     make_or_verify_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
                             os.geteuid(), config.strict_permissions)
     make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
@@ -804,6 +835,20 @@ def set_displayer(config):
                                              config.force_interactive)
     zope.component.provideUtility(displayer)
 
+def _post_logging_setup(config, plugins, cli_args):
+    """Perform any setup or configuration tasks that require a logger."""
+
+    # This needs logging, but would otherwise be in HelpfulArgumentParser
+    if config.validate_hooks:
+        hooks.validate_hooks(config)
+
+    cli.possible_deprecation_warning(config)
+
+    logger.debug("certbot version: %s", certbot.__version__)
+    # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
+    logger.debug("Arguments: %r", cli_args)
+    logger.debug("Discovered plugins: %r", plugins)
+
 
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
@@ -821,12 +866,7 @@ def main(cli_args=sys.argv[1:]):
     # logger ..." TODO: this should be done before plugins discovery
     setup_logging(config)
 
-    cli.possible_deprecation_warning(config)
-
-    logger.debug("certbot version: %s", certbot.__version__)
-    # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
-    logger.debug("Arguments: %r", cli_args)
-    logger.debug("Discovered plugins: %r", plugins)
+    _post_logging_setup(config, plugins, cli_args)
 
     sys.excepthook = functools.partial(_handle_exception, config=config)
 
