@@ -175,21 +175,28 @@ class BaseCertificateOutputFormatter(object):
         """Stub method to be implemented by subclasses."""
         pass
 
-    def _cert_validity(self, cert):
+    def _cert_validity(self, cert, checker):
         now = pytz.UTC.fromutc(datetime.datetime.utcnow())
+
+        reasons = []
         if cert.is_test_cert:
-            expiration_text = "INVALID: TEST CERT"
-        elif cert.target_expiry <= now:
-            expiration_text = "INVALID: EXPIRED"
+            reasons.append('TEST_CERT')
+        if cert.target_expiry <= now:
+            reasons.append('EXPIRED')
+        if checker.ocsp_revoked(cert.cert, cert.chain):
+            reasons.append('REVOKED')
+
+        if reasons:
+            status = "INVALID: " + ", ".join(reasons)
         else:
             diff = cert.target_expiry - now
             if diff.days == 1:
-                expiration_text = "VALID: 1 day"
+                status = "VALID: 1 day"
             elif diff.days < 1:
-                expiration_text = "VALID: {0} hour(s)".format(diff.seconds // 3600)
+                status = "VALID: {0} hour(s)".format(diff.seconds // 3600)
             else:
-                expiration_text = "VALID: {0} days".format(diff.days)
-        valid_string = "{0} ({1})".format(cert.target_expiry, expiration_text)
+                status = "VALID: {0} days".format(diff.days)
+        valid_string = "{0} ({1})".format(cert.target_expiry, status)
         return valid_string
 
 
@@ -206,8 +213,13 @@ class HumanReadableCertOutputFormatter(BaseCertificateOutputFormatter):
     def report_successes(self, preface):
         """Format a human readable report of certificate information. """
         certinfo = []
+        checker = ocsp.RevocationChecker()
         for cert in self.parsed_certs:
-            valid_string = self._cert_validity(cert)
+            if self.config.certname and cert.lineagename != config.certname:
+                continue
+            if self.config.domains and not set(config.domains).issubset(cert.names()):
+                continue
+            valid_string = self._cert_validity(cert, checker)
             certinfo.append("  Certificate Name: {0}\n"
                             "    Domains: {1}\n"
                             "    Expiry Date: {2}\n"
@@ -246,8 +258,13 @@ class JSONCertificateOutputFormatter(BaseCertificateOutputFormatter):
     def report_successes(self, preface):
         """Format a JSON report of certificate information. """
         certs = []
+        checker = ocsp.RevocationChecker()
         for cert in self.parsed_certs:
-            valid_string = self._cert_validity(cert)
+            if self.config.certname and cert.lineagename != self.config.certname:
+                continue
+            if self.config.domains and not set(self.config.domains).issubset(cert.names()):
+                continue
+            valid_string = self._cert_validity(cert, checker)
             certs.append({
                 "certificate_name": cert.lineagename,
                 "domains": cert.names(),
