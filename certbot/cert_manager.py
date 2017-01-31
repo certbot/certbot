@@ -354,9 +354,6 @@ def _describe_certs(config, parsed_certs, parse_failures):
     if config.json is True:
         Formatter = JSONCertificateOutputFormatter
     else:
-        # TODO Use legacy function for now, later transition to use
-        # formatter for all cases.
-        #_describe_certs(config, parsed_certs, parse_failures)
         Formatter = HumanReadableCertOutputFormatter
 
     formatter = Formatter(config, parsed_certs, parse_failures)
