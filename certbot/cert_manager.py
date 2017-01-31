@@ -163,7 +163,7 @@ class BaseCertificateOutputFormatter(object):
                 notify(self.report_failures())
         return out
 
-    def report_successes(self):
+    def report_successes(self, preface):
         """Stub method to be implemented by subclasses."""
         pass
 
@@ -215,9 +215,9 @@ class HumanReadableCertOutputFormatter(BaseCertificateOutputFormatter):
         certinfo = []
         checker = ocsp.RevocationChecker()
         for cert in self.parsed_certs:
-            if self.config.certname and cert.lineagename != config.certname:
+            if self.config.certname and cert.lineagename != self.config.certname:
                 continue
-            if self.config.domains and not set(config.domains).issubset(cert.names()):
+            if self.config.domains and not set(self.config.domains).issubset(cert.names()):
                 continue
             valid_string = self._cert_validity(cert, checker)
             certinfo.append("  Certificate Name: {0}\n"
