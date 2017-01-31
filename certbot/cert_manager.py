@@ -235,8 +235,8 @@ class HumanReadableCertOutputFormatter(BaseCertificateOutputFormatter):
 
     def report_failures(self):
         """Format a results report for a category of single-line renewal outcomes"""
-        failures = "\n".join(str(path) for path in self.parse_failures)
         preface = "\nThe following renewal configuration files were invalid: \n"
+        failures = "\n".join(str(path) for path in self.parse_failures)
         return  preface + failures
 
     def report_missing(self):
@@ -277,8 +277,7 @@ class JSONCertificateOutputFormatter(BaseCertificateOutputFormatter):
         """Format a JSON report of problem conf files. """
         report = []
         for path in self.parse_failures:
-            report.append({
-                "invalid_conf_file": path})
+            report.append(path)
         return {"failures": report}
 
     def report_missing(self):
