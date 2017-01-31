@@ -271,7 +271,7 @@ class JSONCertificateOutputFormatter(BaseCertificateOutputFormatter):
                 "expiry_date": valid_string,
                 "certificate_path": cert.fullchain,
                 "private_key_path": cert.privkey})
-        return {"found": [preface, certs]}
+        return {"found": certs}
 
     def report_failures(self):
         """Format a JSON report of problem conf files. """
