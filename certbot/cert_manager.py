@@ -283,7 +283,6 @@ class JSONCertificateOutputFormatter(BaseCertificateOutputFormatter):
     def report_missing(self):
         return {"No certs found": "Please check config dir"}
 
-
 def _get_certname(config, verb):
     """Get certname from flag, interactively, or error out.
     """
@@ -302,53 +301,6 @@ def _get_certname(config, verb):
         certname = choices[index]
     return certname
 
-def _report_lines(msgs):
-    """Format a results report for a category of single-line renewal outcomes"""
-    return "  " + "\n  ".join(str(msg) for msg in msgs)
-
-def _report_human_readable(config, parsed_certs):
-    """Format a results report for a parsed cert"""
-    certinfo = []
-    checker = ocsp.RevocationChecker()
-    for cert in parsed_certs:
-        if config.certname and cert.lineagename != config.certname:
-            continue
-        if config.domains and not set(config.domains).issubset(cert.names()):
-            continue
-        now = pytz.UTC.fromutc(datetime.datetime.utcnow())
-
-        reasons = []
-        if cert.is_test_cert:
-            reasons.append('TEST_CERT')
-        if cert.target_expiry <= now:
-            reasons.append('EXPIRED')
-        if checker.ocsp_revoked(cert.cert, cert.chain):
-            reasons.append('REVOKED')
-
-        if reasons:
-            status = "INVALID: " + ", ".join(reasons)
-        else:
-            diff = cert.target_expiry - now
-            if diff.days == 1:
-                status = "VALID: 1 day"
-            elif diff.days < 1:
-                status = "VALID: {0} hour(s)".format(diff.seconds // 3600)
-            else:
-                status = "VALID: {0} days".format(diff.days)
-
-        valid_string = "{0} ({1})".format(cert.target_expiry, status)
-        certinfo.append("  Certificate Name: {0}\n"
-                        "    Domains: {1}\n"
-                        "    Expiry Date: {2}\n"
-                        "    Certificate Path: {3}\n"
-                        "    Private Key Path: {4}".format(
-                            cert.lineagename,
-                            " ".join(cert.names()),
-                            valid_string,
-                            cert.fullchain,
-                            cert.privkey))
-    return "\n".join(certinfo)
-
 def _describe_certs(config, parsed_certs, parse_failures):
     """Print information about the certs we know about"""
     if config.json is True:
@@ -360,27 +312,6 @@ def _describe_certs(config, parsed_certs, parse_failures):
     out = formatter.report()
     disp = zope.component.getUtility(interfaces.IDisplay)
     disp.notification(out, pause=False, wrap=False)
-
-def _old_describe_certs(config, parsed_certs, parse_failures):
-    """Print information about the certs we know about"""
-    out = []
-
-    notify = out.append
-
-    if not parsed_certs and not parse_failures:
-        notify("No certs found.")
-    else:
-        if parsed_certs:
-            match = "matching " if config.certname or config.domains else ""
-            notify("Found the following {0}certs:".format(match))
-            notify(_report_human_readable(config, parsed_certs))
-        if parse_failures:
-            notify("\nThe following renewal configuration files "
-               "were invalid:")
-            notify(_report_lines(parse_failures))
-
-    disp = zope.component.getUtility(interfaces.IDisplay)
-    disp.notification("\n".join(out), pause=False, wrap=False)
 
 def _search_lineages(cli_config, func, initial_rv):
     """Iterate func over unbroken lineages, allowing custom return conditions.
