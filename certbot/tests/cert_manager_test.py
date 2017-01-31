@@ -184,7 +184,6 @@ class CertificatesTest(BaseCertManagerTest):
     @mock.patch('certbot.cert_manager.ocsp.RevocationChecker.ocsp_revoked')
     def test_report_human_readable(self, mock_revoked):
         mock_revoked.return_value = None
-        import datetime, pytz
         expiry = pytz.UTC.fromutc(datetime.datetime.utcnow())
 
         cert = mock.MagicMock(lineagename="nameone")
