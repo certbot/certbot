@@ -38,6 +38,7 @@ Help for certbot itself cannot be provided until it is installed.
   -n, --non-interactive, --noninteractive   run without asking for user input
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
+  --no-bootstrap                            do not install OS dependencies
   -v, --verbose                             provide more output
   -q, --quiet                               provide only update/error output;
                                             implies --non-interactive
@@ -166,7 +167,7 @@ ExperimentalBootstrap() {
   # Arguments: Platform name, bootstrap function name
   if [ "$DEBUG" = 1 ]; then
     if [ "$2" != "" ]; then
-      echo "Bootstrapping dependencies via $1..."
+      echo "Bootstrapping dependencies via $1..." $B
       $2
     fi
   else
@@ -581,21 +582,22 @@ Bootstrap() {
   if [ "$NO_BOOTSTRAP" = 1 ]; then
       return
   fi
+  B="(you can skip this with --no-bootstrap)"
   if [ -f /etc/debian_version ]; then
-    echo "Bootstrapping dependencies for Debian-based OSes..."
+    echo "Bootstrapping dependencies for Debian-based OSes..." $B
     BootstrapDebCommon
   elif [ -f /etc/mageia-release ]; then
     # Mageia has both /etc/mageia-release and /etc/redhat-release
     ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
   elif [ -f /etc/redhat-release ]; then
-    echo "Bootstrapping dependencies for RedHat-based OSes..."
+    echo "Bootstrapping dependencies for RedHat-based OSes..." $B
     BootstrapRpmCommon
   elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
-    echo "Bootstrapping dependencies for openSUSE-based OSes..."
+    echo "Bootstrapping dependencies for openSUSE-based OSes..." $B
     BootstrapSuseCommon
   elif [ -f /etc/arch-release ]; then
     if [ "$DEBUG" = 1 ]; then
-      echo "Bootstrapping dependencies for Archlinux..."
+      echo "Bootstrapping dependencies for Archlinux..." $B
       BootstrapArchCommon
     else
       echo "Please use pacman to install letsencrypt packages:"
@@ -620,7 +622,7 @@ Bootstrap() {
   else
     echo "Sorry, I don't know how to bootstrap Certbot on your operating system!"
     echo
-    echo "You will need to bootstrap, configure virtualenv, and run pip install manually."
+    echo "You will need to install OS dependencies, configure virtualenv, and run pip install manually."
     echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
     echo "for more info."
     exit 1
