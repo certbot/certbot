@@ -7,7 +7,7 @@ Usage() {
     exit 1
 }
 
-if [ "`dirname $0`" != "tools" ] ; then
+if [ "`dirname $0`" != "./tools" ] ; then
     echo Please run this script from the repo root
     exit 1
 fi
@@ -88,9 +88,9 @@ SetVersion() {
       sed -i "s/^version.*/version = '$ver'/" $pkg_dir/setup.py
     done
     sed -i "s/^__version.*/__version__ = '$ver'/" certbot/__init__.py
-    
+
     # interactive user input
-    git add -p certbot $SUBPKGS certbot-compatibility-test 
+    git add -p certbot $SUBPKGS certbot-compatibility-test
 
 }
 
