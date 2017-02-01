@@ -106,3 +106,6 @@ RENEWAL_CONFIGS_DIR = "renewal"
 
 FORCE_INTERACTIVE_FLAG = "--force-interactive"
 """Flag to disable TTY checking in IDisplay."""
+
+EFF_SUBSCRIBE_URI = "https://supporters.eff.org/subscribe/certbot"
+"""EFF URI used to submit the e-mail address of users who opt-in."""
