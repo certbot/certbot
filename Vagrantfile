@@ -23,7 +23,7 @@ SETUP_SCRIPT
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.define "ubuntu-trusty", primary: true do |ubuntu_trusty|
-    ubuntu_trusty.vm.box = "ubuntu/trusty64"
+    ubuntu_trusty.vm.box = "ubuntu/xenial64"
     ubuntu_trusty.vm.provision "shell", inline: $ubuntu_setup_script
     ubuntu_trusty.vm.provider "virtualbox" do |v|
       # VM needs more memory to run test suite, got "OSError: [Errno 12]
