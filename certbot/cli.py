@@ -439,7 +439,7 @@ class HelpfulArgumentParser(object):
         self.detect_defaults = detect_defaults
         self.args = args
 
-        if self.args[0] == 'help':
+        if self.args and self.args[0] == 'help':
             self.args[0] = '--help'
 
         self.determine_verb()
