@@ -207,6 +207,23 @@ class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
         OpenSSL.crypto.load_privatekey(
             OpenSSL.crypto.FILETYPE_PEM, make_key(1024))
 
+class VerifyRenewableCertSigTest(unittest.TestCase):
+    """Tests for certbot.crypto_util.valid_cert_signature_and_ca_pubkey."""
+ 
+    def setUp(self):
+        self.ss_cert_path = test_util.vector_path('ss_cert.pem')
+
+    @classmethod
+    def _call(cls, renewable_cert):
+        from certbot.crypto_util import verify_renewable_cert_sig
+        return verify_renewable_cert_sig(renewable_cert)
+
+    def test_good_signature(self):
+        renewable_cert = mock.MagicMock()
+        renewable_cert.chain = self.ss_cert_path
+        renewable_cert.cert = self.ss_cert_path
+
+        self.assertIsNone(self._call(renewable_cert)) 
 
 class ValidPrivkeyTest(unittest.TestCase):
     """Tests for certbot.crypto_util.valid_privkey."""

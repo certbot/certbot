@@ -20,6 +20,8 @@ from certbot import errors
 from certbot import interfaces
 from certbot import util
 
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
 
 logger = logging.getLogger(__name__)
 
@@ -235,6 +237,25 @@ def valid_privkey(privkey):
     except (TypeError, OpenSSL.crypto.Error):
         return False
 
+def verify_renewable_cert_sig(renewable_cert):
+    """For checking that your certs weren't corrupted for whatever reason.
+ 
+    :param typ: `storage.RenewableCert`
+
+    :raises OpenSSL.crypto.Error if signature verification fails
+    """
+    openssl_errors = []
+
+    try:
+        with open(renewable_cert.chain) as chain:
+            with open(renewable_cert.cert) as cert:
+                chain = pyopenssl_load_certificate(chain.read())[0]
+                cert = x509.load_pem_x509_certificate(cert.read(), default_backend())
+                hash_name = cert.signature_hash_algorithm.name
+                return OpenSSL.crypto.verify(chain, cert.signature, cert.tbs_certificate_bytes, hash_name)
+    except OpenSSL.crypto.Error as error:
+            openssl_errors.append(error)
+    raise errors.Error("it seems your cert is corrupted. Details:".format(",".join(str(error) for error in openssl_errors)))
 
 def pyopenssl_load_certificate(data):
     """Load PEM/DER certificate.
