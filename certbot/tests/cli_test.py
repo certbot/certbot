@@ -60,6 +60,11 @@ class ParseTest(unittest.TestCase):
                 self.assertRaises(SystemExit, self.parse, args, output)
         return output.getvalue()
 
+    def test_no_args(self):
+        namespace = self.parse([])
+        for d in ('config_dir', 'logs_dir', 'work_dir'):
+            self.assertEqual(getattr(namespace, d), cli.flag_default(d))
+
     def test_install_abspath(self):
         cert = 'cert'
         key = 'key'
