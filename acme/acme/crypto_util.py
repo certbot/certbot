@@ -149,6 +149,28 @@ def probe_sni(name, host, port=443, timeout=300,
             raise errors.Error(error)
     return client_ssl.get_peer_certificate()
 
+def make_csr(domains):
+    """Generate a private key and CSR.
+
+    :param list domains: List of DNS names to include in subjectAltNames of CSR.
+    :returns: tuple of CSR as OpenSSL.crypto.X509Req and private key as buffer
+        containing PEM-encoded PKCS#8.
+    """
+    pkey = OpenSSL.crypto.PKey()
+    pkey.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
+    csr = OpenSSL.crypto.X509Req()
+    csr.add_extensions([
+        OpenSSL.crypto.X509Extension(
+            'subjectAltName',
+            critical=False,
+            value=', '.join('DNS:' + d for d in domains).encode()
+        ),
+    ])
+    csr.set_pubkey(pkey)
+    csr.set_version(2)
+    csr.sign(pkey, 'sha256')
+
+    return csr, OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, pkey)
 
 def _pyopenssl_cert_or_req_san(cert_or_req):
     """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.
