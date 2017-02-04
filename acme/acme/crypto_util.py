@@ -149,15 +149,18 @@ def probe_sni(name, host, port=443, timeout=300,
             raise errors.Error(error)
     return client_ssl.get_peer_certificate()
 
-def make_csr(domains):
+def make_csr(domains, private_key=None):
     """Generate a private key and CSR.
 
     :param list domains: List of DNS names to include in subjectAltNames of CSR.
     :returns: tuple of CSR as OpenSSL.crypto.X509Req and private key as buffer
         containing PEM-encoded PKCS#8.
     """
-    pkey = OpenSSL.crypto.PKey()
-    pkey.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
+    if private_key is None:
+        pkey = OpenSSL.crypto.PKey()
+        pkey.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
+    else:
+        #...
     csr = OpenSSL.crypto.X509Req()
     csr.add_extensions([
         OpenSSL.crypto.X509Extension(
