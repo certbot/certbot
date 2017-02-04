@@ -3,7 +3,7 @@ import binascii
 import unittest
 
 from acme import test_util
-from cryptography.hazmat.backends.openssl import rsa
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 from acme.jose import errors
 from acme.jose import json_util
@@ -119,7 +119,7 @@ class JWKRSATest(unittest.TestCase, JWKTestBaseMixin):
         from acme.jose.jwk import JWKRSA
         jwk = JWKRSA()
         # pylint: disable=protected-access
-        self.assertTrue(isinstance(jwk.key._wrapped, rsa._RSAPrivateKey))
+        self.assertTrue(isinstance(jwk.key._wrapped, rsa.RSAPrivateKey))
 
     def test_encode_param_zero(self):
         from acme.jose.jwk import JWKRSA
