@@ -155,7 +155,7 @@ class Authenticator(common.Plugin):
         return change_id
 
     def _wait_for_change(self, change_id):
-        deadline = datetime.datetime.now() + datetime.timedelta(minutes=1)
+        deadline = datetime.datetime.now() + datetime.timedelta(minutes=10)
         while datetime.datetime.now() < deadline:
             response = self.route53_client.get_change(Id=change_id)
             if response["ChangeInfo"]["Status"] == "INSYNC":
