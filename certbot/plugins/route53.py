@@ -79,7 +79,6 @@ class Authenticator(common.Plugin):
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         for name, value in self.txt_records:
             self._delete_txt_record(name, value)
-        pass
 
     def _create_single(self, achall):
         """Create a TXT record, return a change_id"""
