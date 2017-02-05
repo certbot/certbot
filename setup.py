@@ -36,6 +36,7 @@ version = meta['version']
 # https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
     'acme=={0}'.format(version),
+    'boto3',
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
     # saying so here causes a runtime error against our temporary fork of 0.9.3
     # in which we added 2.6 support (see #2243), so we relax the requirement.
