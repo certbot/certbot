@@ -15,15 +15,16 @@ import certbot
 
 from certbot import account
 from certbot import auth_handler
+from certbot import cli
 from certbot import constants
 from certbot import crypto_util
-from certbot import errors
+from certbot import eff
 from certbot import error_handler
+from certbot import errors
 from certbot import interfaces
-from certbot import util
 from certbot import reverter
 from certbot import storage
-from certbot import cli
+from certbot import util
 
 from certbot.display import ops as display_ops
 from certbot.display import enhancements
@@ -93,7 +94,7 @@ def register(config, account_storage, tos_cb=None):
         Terms of Service present in the contained
         `.Registration.terms_of_service` is accepted by the client, and
         ``False`` otherwise. ``tos_cb`` will be called only if the
-        client acction is necessary, i.e. when ``terms_of_service is not
+        client action is necessary, i.e. when ``terms_of_service is not
         None``. This argument is optional, if not supplied it will
         default to automatic acceptance!
 
@@ -138,6 +139,8 @@ def register(config, account_storage, tos_cb=None):
     acc = account.Account(regr, key)
     account.report_new_account(acc, config)
     account_storage.save(acc)
+
+    eff.handle_subscription(config)
 
     return acc, acme
 
@@ -438,7 +441,7 @@ class Client(object):
                 self.installer.restart()
 
     def apply_enhancement(self, domains, enhancement, options=None):
-        """Applies an enhacement on all domains.
+        """Applies an enhancement on all domains.
 
         :param domains: list of ssl_vhosts
         :type list of str
@@ -494,7 +497,7 @@ class Client(object):
             self.installer.rollback_checkpoints()
             self.installer.restart()
         except:
-            # TODO: suggest letshelp-letsencypt here
+            # TODO: suggest letshelp-letsencrypt here
             reporter.add_message(
                 "An error occurred and we failed to restore your config and "
                 "restart your server. Please submit a bug report to "

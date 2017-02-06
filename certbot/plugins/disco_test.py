@@ -255,7 +255,7 @@ class PluginsRegistryTest(unittest.TestCase):
 
     def test_find_init(self):
         self.assertTrue(self.reg.find_init(mock.Mock()) is None)
-        self.plugin_ep.initalized = True
+        self.plugin_ep.initialized = True
         self.assertTrue(
             self.reg.find_init(self.plugin_ep.init()) is self.plugin_ep)
 

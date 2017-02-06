@@ -94,11 +94,13 @@ matrix:
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
-# `test-`. This reduces the number of simultaneous Travis runs, which speeds
-# turnaround time on review since there is a cap of 5 simultaneous runs.
+# `test-` or of the form `digit(s).digit(s).x`. This reduces the number of
+# simultaneous Travis runs, which speeds turnaround time on review since there
+# is a cap of on the number of simultaneous runs.
 branches:
   only:
     - master
+    - /^\d+\.\d+\.x$/
     - /^test-.*$/
 
 # container-based infrastructure

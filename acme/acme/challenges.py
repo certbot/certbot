@@ -9,7 +9,6 @@ from cryptography.hazmat.primitives import hashes
 import OpenSSL
 import requests
 
-from acme import dns_resolver
 from acme import errors
 from acme import crypto_util
 from acme import fields
@@ -183,7 +182,7 @@ class KeyAuthorizationChallenge(_TokenChallenge):
 
         Subclasses must implement this method, but they are likely to
         return completely different data structures, depending on what's
-        necessary to complete the challenge. Interepretation of that
+        necessary to complete the challenge. Interpretation of that
         return value must be known to the caller.
 
         :param JWK account_key:
@@ -214,36 +213,24 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
     def simple_verify(self, chall, domain, account_public_key):
         """Simple verify.
 
+        This method no longer checks DNS records and is a simple wrapper
+        around `KeyAuthorizationChallengeResponse.verify`.
+
         :param challenges.DNS01 chall: Corresponding challenge.
         :param unicode domain: Domain name being verified.
         :param JWK account_public_key: Public key for the key pair
             being authorized.
 
-        :returns: ``True`` iff validation with the TXT records resolved from a
-            DNS server is successful.
+        :return: ``True`` iff verification of the key authorization was
+            successful.
         :rtype: bool
 
         """
-        if not self.verify(chall, account_public_key):
+        # pylint: disable=unused-argument
+        verified = self.verify(chall, account_public_key)
+        if not verified:
             logger.debug("Verification of key authorization in response failed")
-            return False
-
-        validation_domain_name = chall.validation_domain_name(domain)
-        validation = chall.validation(account_public_key)
-        logger.debug("Verifying %s at %s...", chall.typ, validation_domain_name)
-
-        try:
-            txt_records = dns_resolver.txt_records_for_name(
-                validation_domain_name)
-        except errors.DependencyError:
-            raise errors.DependencyError("Local validation for 'dns-01' "
-                                         "challenges requires 'dnspython'")
-        exists = validation in txt_records
-        if not exists:
-            logger.debug("Key authorization from response (%r) doesn't match "
-                         "any DNS response in %r", self.key_authorization,
-                         txt_records)
-        return exists
+        return verified
 
 
 @Challenge.register  # pylint: disable=too-many-ancestors

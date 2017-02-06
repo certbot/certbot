@@ -30,7 +30,7 @@ control the domain(s) you are requesting a cert for, obtains a cert for the spec
 domain(s), and places the cert in the ``/etc/letsencrypt`` directory on your
 machine. The authenticator does not install the cert (it does not edit any of your server's configuration files to serve the
 obtained certificate). If you specify multiple domains to authenticate, they will
-all be listed in a single certificate. To obtain multiple seperate certificates
+all be listed in a single certificate. To obtain multiple separate certificates
 you will need to run Certbot multiple times.
 
 Installers are Plugins used with the ``install`` command to install a cert.
@@ -62,7 +62,7 @@ manual_     Y    N    | Helps you obtain a cert by giving you instructions to pe
 
 Under the hood, plugins use one of several ACME protocol "Challenges_" to
 prove you control a domain.  The options are http-01_ (which uses port 80),
-tls-sni-01_ (port 443) and dns-01_ (requring configuration of a DNS server on
+tls-sni-01_ (port 443) and dns-01_ (requiring configuration of a DNS server on
 port 53, though that's often not the same machine as your webserver). A few
 plugins support more than one challenge type, in which case you can choose one
 with ``--preferred-challenges``.
@@ -433,7 +433,7 @@ variables to these scripts:
 
 - ``CERTBOT_DOMAIN``: The domain being authenticated
 - ``CERTBOT_VALIDATION``: The validation string
-- ``CERTBOT_TOKEN``: Resource name part of the HTTP-01 challenege (HTTP-01 only)
+- ``CERTBOT_TOKEN``: Resource name part of the HTTP-01 challenge (HTTP-01 only)
 
 Additionally for cleanup:
 

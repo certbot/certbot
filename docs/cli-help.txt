@@ -86,7 +86,7 @@ optional arguments:
                         statistics about success rates by OS and plugin. If
                         you wish to hide your server OS version from the Let's
                         Encrypt server, set this to "". (default:
-                        CertbotACMEClient/0.10.1 (Ubuntu 16.04.1 LTS)
+                        CertbotACMEClient/0.11.0 (Ubuntu 16.04.1 LTS)
                         Authenticator/XXX Installer/YYY)
 
 automation:
@@ -120,7 +120,6 @@ automation:
                         system. This option cannot be used with --csr.
                         (default: False)
   --agree-tos           Agree to the ACME Subscriber Agreement (default: Ask)
-  --account ACCOUNT_ID  Account ID to use (default: None)
   --duplicate           Allow making a certificate lineage that duplicates an
                         existing one (both can be renewed in parallel)
                         (default: False)
@@ -210,7 +209,7 @@ manage:
 
   certificates          List certificates managed by Certbot
   delete                Clean up all files related to a certificate
-  renew                 Renew all certificates (or one specifed with --cert-
+  renew                 Renew all certificates (or one specified with --cert-
                         name)
   revoke                Revoke a certificate specified with --cert-path
   update_symlinks       Recreate symlinks in your /etc/letsencrypt/live/
@@ -280,6 +279,9 @@ delete:
 revoke:
   Options for revocation of certs
 
+  --reason {keycompromise,affiliationchanged,superseded,unspecified,cessationofoperation}
+                        Specify reason for revoking certificate. (default: 0)
+
 register:
   Options for account registration & modification
 
@@ -301,6 +303,14 @@ register:
   -m EMAIL, --email EMAIL
                         Email used for registration and recovery contact.
                         (default: Ask)
+  --eff-email           Share your e-mail address with EFF (default: None)
+  --no-eff-email        Don't share your e-mail address with EFF (default:
+                        None)
+
+unregister:
+  Options for account deactivation.
+
+  --account ACCOUNT_ID  Account ID to use (default: None)
 
 install:
   Options for modifying how a cert is deployed

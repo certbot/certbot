@@ -26,7 +26,7 @@ class ErrorTest(unittest.TestCase):
             'type': ERROR_PREFIX + 'malformed',
         }
         self.error_custom = Error(typ='custom', detail='bar')
-        self.jobj_cusom = {'type': 'custom', 'detail': 'bar'}
+        self.jobj_custom = {'type': 'custom', 'detail': 'bar'}
 
     def test_default_typ(self):
         from acme.messages import Error

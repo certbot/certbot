@@ -8,6 +8,8 @@ import mock
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 
+from acme import challenges
+
 from certbot import cli
 from certbot import constants
 from certbot import errors
@@ -50,13 +52,18 @@ class ParseTest(unittest.TestCase):
         return cli.prepare_and_parse_args(PLUGINS, *args, **kwargs)
 
     def _help_output(self, args):
-        "Run a command, and return the ouput string for scrutiny"
+        "Run a command, and return the output string for scrutiny"
 
         output = six.StringIO()
         with mock.patch('certbot.main.sys.stdout', new=output):
             with mock.patch('certbot.main.sys.stderr'):
                 self.assertRaises(SystemExit, self.parse, args, output)
         return output.getvalue()
+
+    def test_no_args(self):
+        namespace = self.parse([])
+        for d in ('config_dir', 'logs_dir', 'work_dir'):
+            self.assertEqual(getattr(namespace, d), cli.flag_default(d))
 
     def test_install_abspath(self):
         cert = 'cert'
@@ -178,12 +185,12 @@ class ParseTest(unittest.TestCase):
         self.assertEqual(namespace.domains, ['example.com', 'another.net'])
 
     def test_preferred_challenges(self):
-        from acme.challenges import HTTP01, TLSSNI01, DNS01
-
         short_args = ['--preferred-challenges', 'http, tls-sni-01, dns']
         namespace = self.parse(short_args)
 
-        self.assertEqual(namespace.pref_challs, [HTTP01, TLSSNI01, DNS01])
+        expected = [challenges.HTTP01.typ,
+                    challenges.TLSSNI01.typ, challenges.DNS01.typ]
+        self.assertEqual(namespace.pref_challs, expected)
 
         short_args = ['--preferred-challenges', 'jumping-over-the-moon']
         self.assertRaises(argparse.ArgumentTypeError, self.parse, short_args)

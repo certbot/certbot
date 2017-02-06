@@ -18,7 +18,6 @@ from certbot import errors
 from certbot import interfaces
 
 from certbot.plugins import common
-from certbot.plugins import util
 
 logger = logging.getLogger(__name__)
 
@@ -208,74 +207,38 @@ class Authenticator(common.Plugin):
         # pylint: disable=unused-argument,missing-docstring
         return self.supported_challenges
 
-    def _verify_ports_are_available(self, achalls):
-        """Confirm the ports are available to solve all achalls.
-
-        :param list achalls: list of
-            :class:`~certbot.achallenges.AnnotatedChallenge`
-
-        :raises .errors.MisconfigurationError: if required port is
-            unavailable
-
-        """
-        ports = []
-        if any(isinstance(ac.chall, challenges.HTTP01) for ac in achalls):
-            ports.append(self.config.http01_port)
-        if any(isinstance(ac.chall, challenges.TLSSNI01) for ac in achalls):
-            ports.append(self.config.tls_sni_01_port)
-
-        renewer = (self.config.verb == "renew")
-
-        if any(util.already_listening(port, renewer) for port in ports):
-            raise errors.MisconfigurationError(
-                "At least one of the required ports is already taken.")
-
     def perform(self, achalls):  # pylint: disable=missing-docstring
-        self._verify_ports_are_available(achalls)
+        return [self._try_perform_single(achall) for achall in achalls]
 
-        try:
-            return self.perform2(achalls)
-        except errors.StandaloneBindError as error:
-            display = zope.component.getUtility(interfaces.IDisplay)
+    def _try_perform_single(self, achall):
+        while True:
+            try:
+                return self._perform_single(achall)
+            except errors.StandaloneBindError as error:
+                _handle_perform_error(error)
 
-            if error.socket_error.errno == socket.errno.EACCES:
-                display.notification(
-                    "Could not bind TCP port {0} because you don't have "
-                    "the appropriate permissions (for example, you "
-                    "aren't running this program as "
-                    "root).".format(error.port), force_interactive=True)
-            elif error.socket_error.errno == socket.errno.EADDRINUSE:
-                display.notification(
-                    "Could not bind TCP port {0} because it is already in "
-                    "use by another process on this system (such as a web "
-                    "server). Please stop the program in question and then "
-                    "try again.".format(error.port), force_interactive=True)
-            else:
-                raise  # XXX: How to handle unknown errors in binding?
+    def _perform_single(self, achall):
+        if isinstance(achall.chall, challenges.HTTP01):
+            server, response = self._perform_http_01(achall)
+        else:  # tls-sni-01
+            server, response = self._perform_tls_sni_01(achall)
+        self.served[server].add(achall)
+        return response
 
-    def perform2(self, achalls):
-        """Perform achallenges without IDisplay interaction."""
-        responses = []
+    def _perform_http_01(self, achall):
+        server = self.servers.run(self.config.http01_port, challenges.HTTP01)
+        response, validation = achall.response_and_validation()
+        resource = acme_standalone.HTTP01RequestHandler.HTTP01Resource(
+            chall=achall.chall, response=response, validation=validation)
+        self.http_01_resources.add(resource)
+        return server, response
 
-        for achall in achalls:
-            if isinstance(achall.chall, challenges.HTTP01):
-                server = self.servers.run(
-                    self.config.http01_port, challenges.HTTP01)
-                response, validation = achall.response_and_validation()
-                self.http_01_resources.add(
-                    acme_standalone.HTTP01RequestHandler.HTTP01Resource(
-                        chall=achall.chall, response=response,
-                        validation=validation))
-            else:  # tls-sni-01
-                server = self.servers.run(
-                    self.config.tls_sni_01_port, challenges.TLSSNI01)
-                response, (cert, _) = achall.response_and_validation(
-                    cert_key=self.key)
-                self.certs[response.z_domain] = (self.key, cert)
-            self.served[server].add(achall)
-            responses.append(response)
-
-        return responses
+    def _perform_tls_sni_01(self, achall):
+        port = self.config.tls_sni_01_port
+        server = self.servers.run(port, challenges.TLSSNI01)
+        response, (cert, _) = achall.response_and_validation(cert_key=self.key)
+        self.certs[response.z_domain] = (self.key, cert)
+        return server, response
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         # reduce self.served and close servers if none challenges are served
@@ -286,3 +249,25 @@ class Authenticator(common.Plugin):
         for port, server in six.iteritems(self.servers.running()):
             if not self.served[server]:
                 self.servers.stop(port)
+
+
+def _handle_perform_error(error):
+    if error.socket_error.errno == socket.errno.EACCES:
+        raise errors.PluginError(
+            "Could not bind TCP port {0} because you don't have "
+            "the appropriate permissions (for example, you "
+            "aren't running this program as "
+            "root).".format(error.port))
+    elif error.socket_error.errno == socket.errno.EADDRINUSE:
+        display = zope.component.getUtility(interfaces.IDisplay)
+        msg = (
+            "Could not bind TCP port {0} because it is already in "
+            "use by another process on this system (such as a web "
+            "server). Please stop the program in question and "
+            "then try again.".format(error.port))
+        should_retry = display.yesno(msg, "Retry",
+                                     "Cancel", default=False)
+        if not should_retry:
+            raise errors.PluginError(msg)
+    else:
+        raise

@@ -24,6 +24,7 @@ from certbot import crypto_util
 from certbot import colored_logging
 from certbot import configuration
 from certbot import constants
+from certbot import eff
 from certbot import errors
 from certbot import hooks
 from certbot import interfaces
@@ -474,6 +475,7 @@ def register(config, unused_plugins):
     acc.regr = acme_client.acme.update_registration(acc.regr.update(
         body=acc.regr.body.update(contact=('mailto:' + config.email,))))
     account_storage.save_regr(acc)
+    eff.handle_subscription(config)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
 
 
@@ -812,7 +814,7 @@ def make_or_verify_core_dir(directory, mode, uid, strict):
         raise errors.Error(_PERM_ERR_FMT.format(error))
 
 def make_or_verify_needed_dirs(config):
-    """Create or verify existance of config, work, or logs directories"""
+    """Create or verify existence of config, work, or logs directories"""
     make_or_verify_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
                             os.geteuid(), config.strict_permissions)
     make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,

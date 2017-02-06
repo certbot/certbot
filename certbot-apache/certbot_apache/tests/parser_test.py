@@ -178,7 +178,7 @@ class ParserInitTest(util.ApacheTest):
         shutil.rmtree(self.work_dir)
 
     @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
-    def test_unparsable(self, mock_cfg):
+    def test_unparseable(self, mock_cfg):
         from certbot_apache.parser import ApacheParser
         mock_cfg.return_value = ('Define: TEST')
         self.assertRaises(
