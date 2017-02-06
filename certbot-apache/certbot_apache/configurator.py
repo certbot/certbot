@@ -1,6 +1,5 @@
 """Apache Configuration based off of Augeas Configurator."""
 # pylint: disable=too-many-lines
-import filecmp
 import fnmatch
 import logging
 import os
@@ -550,17 +549,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if filename is None:
             return None
 
-        if self.conf("handle-sites"):
-            is_enabled = False
-        else:
-            is_enabled = True
-
         macro = False
         if "/macro/" in path.lower():
             macro = True
 
         vhost = obj.VirtualHost(filename, path, addrs, is_ssl,
-                                is_enabled, modmacro=macro)
+                                True, modmacro=macro)
         self._add_servernames(vhost)
         return vhost
 
@@ -816,6 +810,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # We know the length is one because of the assertion above
         # Create the Vhost object
         ssl_vhost = self._create_vhost(vh_p)
+        if self.conf("handle-sites"):
+            ssl_vhost.enabled = False
         self.vhosts.append(ssl_vhost)
 
         # NOTE: Searches through Augeas seem to ruin changes to directives

@@ -92,30 +92,6 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertRaises(
             errors.NotSupportedError, self.config.prepare)
 
-    @mock.patch("certbot_apache.parser.ApacheParser.parse_file")
-    @mock.patch("certbot_apache.parser.ApacheParser.update_runtime_variables")
-    def test_prepare_custom_vhost_dir(self, _, mock_parsefile):
-        server_root = self.config.conf("server-root")
-        vhost_root = self.config.conf("vhost-root")
-        version = self.config.version
-        with mock.patch("certbot_apache.constants.os_constant") as mock_const:
-            mock_const.side_effect = [True, "*.conf"]
-            parser.ApacheParser(self.config.aug,
-                                server_root,
-                                vhost_root,
-                                version)
-            self.assertEqual(mock_parsefile.call_count, 9)
-        mock_parsefile.reset_mock()
-
-        with mock.patch("certbot_apache.constants.os_constant") as mock_const:
-            mock_const.side_effect = [False, "*.conf"]
-            parser.ApacheParser(self.config.aug,
-                                server_root,
-                                vhost_root.replace(
-                                    "sites-available", "sites-enabled"),
-                                self.config.version)
-            self.assertEqual(mock_parsefile.call_count, 10)
-
     def test_add_parser_arguments(self):  # pylint: disable=no-self-use
         from certbot_apache.configurator import ApacheConfigurator
         # Weak test..
@@ -298,25 +274,6 @@ class MultipleVhostsTest(util.ApacheTest):
         # pylint: disable=protected-access
         self.assertEqual(len(self.config._non_default_vhosts()), 6)
 
-    def test_is_site_enabled(self):
-        """Test if site is enabled.
-
-        .. note:: This test currently fails for hard links
-            (which may happen if you move dirs incorrectly)
-        .. warning:: This test does not work when running using the
-            unittest.main() function. It incorrectly copies symlinks.
-
-        """
-        self.assertTrue(self.config.is_site_enabled(self.vh_truth[0].filep))
-        self.assertTrue(self.config.is_site_enabled(self.vh_truth[1].filep))
-        self.assertTrue(self.config.is_site_enabled(self.vh_truth[2].filep))
-        self.assertTrue(self.config.is_site_enabled(self.vh_truth[3].filep))
-        with mock.patch("os.path.isdir") as mock_isdir:
-            mock_isdir.return_value = False
-            self.assertRaises(errors.ConfigurationError,
-                              self.config.is_site_enabled,
-                              "irrelevant")
-
     @mock.patch("certbot.util.run_script")
     @mock.patch("certbot.util.exe_exists")
     @mock.patch("certbot_apache.parser.subprocess.Popen")
@@ -357,13 +314,11 @@ class MultipleVhostsTest(util.ApacheTest):
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
-        self.assertFalse(self.config.is_site_enabled(ssl_vhost.filep))
+        self.assertFalse(ssl_vhost.enabled)
         self.config.deploy_cert(
             "encryption-example.demo", "example/cert.pem", "example/key.pem",
             "example/cert_chain.pem", "example/fullchain.pem")
-        self.assertTrue(self.config.is_site_enabled(ssl_vhost.filep))
-
-
+        self.assertTrue(ssl_vhost.enabled)
 
     def test_deploy_cert_newssl(self):
         self.config = util.get_apache_configurator(
