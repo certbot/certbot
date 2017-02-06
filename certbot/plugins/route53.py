@@ -34,6 +34,7 @@ from certbot import interfaces
 from certbot.plugins import common
 
 import boto3
+from botocore.exceptions import NoCredentialsError
 import time
 import datetime
 
@@ -71,10 +72,13 @@ class Authenticator(common.Plugin):
         return self.supported_challenges
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
-        change_ids = [self._create_single(achall) for achall in achalls]
-        for change_id in change_ids:
-            self._wait_for_change(change_id)
-        return [achall.response(achall.account_key) for achall in achalls]
+        try:
+            change_ids = [self._create_single(achall) for achall in achalls]
+            for change_id in change_ids:
+                self._wait_for_change(change_id)
+            return [achall.response(achall.account_key) for achall in achalls]
+        except NoCredentialsError:
+            raise Exception("no crds")
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         for name, value in self.txt_records:
