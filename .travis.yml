@@ -12,7 +12,8 @@ before_install:
 # test has failed
 env:
   global:
-    - BOULDERPATH=$PWD/boulder/
+    - GOPATH=$PWD/gopath
+    - BOULDERPATH=$GOPATH/src/github.com/letsencrypt/boulder/
 
 matrix:
   include:

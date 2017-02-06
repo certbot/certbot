@@ -3,7 +3,7 @@
 set -xe
 
 # Check out special branch until latest docker changes land in Boulder master.
-git clone -b docker-integration https://github.com/letsencrypt/boulder $BOULDERPATH
+git clone --depth=1 https://github.com/letsencrypt/boulder $BOULDERPATH
 cd $BOULDERPATH
 FAKE_DNS=$(ifconfig docker0 | grep "inet addr:" | cut -d: -f2 | awk '{ print $1}')
 sed -i "s/FAKE_DNS: .*/FAKE_DNS: $FAKE_DNS/" docker-compose.yml
