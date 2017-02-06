@@ -279,7 +279,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Enable the new vhost if needed
         if self.conf("handle-sites"):
-            if not self.is_site_enabled(vhost.filep):
+            if not vhost.enabled:
                 self.enable_site(vhost)
 
 
@@ -551,7 +551,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return None
 
         if self.conf("handle-sites"):
-            is_enabled = self.is_site_enabled(filename)
+            is_enabled = False
         else:
             is_enabled = True
 
@@ -1520,33 +1520,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return redirects
 
-    def is_site_enabled(self, avail_fp):
-        """Checks to see if the given site is enabled.
-
-        .. todo:: fix hardcoded sites-enabled, check os.path.samefile
-
-        :param str avail_fp: Complete file path of available site
-
-        :returns: Success
-        :rtype: bool
-
-        """
-
-        enabled_dir = os.path.join(self.parser.root, "sites-enabled")
-        if not os.path.isdir(enabled_dir):
-            error_msg = ("Directory '{0}' does not exist. Please ensure "
-                         "that the values for --apache-handle-sites and "
-                         "--apache-server-root are correct for your "
-                         "environment.".format(enabled_dir))
-            raise errors.ConfigurationError(error_msg)
-        for entry in os.listdir(enabled_dir):
-            try:
-                if filecmp.cmp(avail_fp, os.path.join(enabled_dir, entry)):
-                    return True
-            except OSError:
-                pass
-        return False
-
     def enable_site(self, vhost):
         """Enables an available site, Apache reload required.
 
@@ -1565,7 +1538,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             supported.
 
         """
-        if self.is_site_enabled(vhost.filep):
+        if vhost.enabled:
             return
 
         if "/sites-available/" in vhost.filep:
