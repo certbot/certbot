@@ -61,7 +61,7 @@ class RunTest(unittest.TestCase):
             mock.patch('certbot.main.display_ops.success_installation'),
             mock.patch('certbot.main.display_ops.success_renewal'),
             mock.patch('certbot.main._init_le_client'),
-            mock.patch('certbot.main._suggest_donation'),
+            mock.patch('certbot.main._suggest_donation_if_appropriate'),
             mock.patch('certbot.main._report_new_cert'),
             mock.patch('certbot.main._find_cert')]
 
@@ -121,7 +121,7 @@ class CertonlyTest(unittest.TestCase):
             cli.prepare_and_parse_args(plugins, args))
 
         with mock.patch('certbot.main._init_le_client') as mock_init:
-            with mock.patch('certbot.main._suggest_donation'):
+            with mock.patch('certbot.main._suggest_donation_if_appropriate'):
                 main.certonly(config, plugins)
 
         return mock_init()  # returns the client
@@ -134,7 +134,7 @@ class CertonlyTest(unittest.TestCase):
         mock_notification = self.mock_get_utility().notification
         mock_notification.side_effect = self._assert_no_pause
         mock_auth.return_value = mock.Mock()
-        mock_find_cert.return_value = None, None
+        mock_find_cert.return_value = False, None
         self._call('certonly --webroot -d example.com'.split())
 
     def _assert_no_pause(self, message, pause=True):
@@ -517,13 +517,13 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     @mock.patch('certbot.main._determine_account')
     @mock.patch('certbot.main.client.Client.obtain_and_enroll_certificate')
     @mock.patch('certbot.main._get_and_save_cert')
-    def test_user_agent(self, afa, _obt, det, _client, unused_report):
+    def test_user_agent(self, gsc, _obt, det, _client, unused_report):
         # Normally the client is totally mocked out, but here we need more
         # arguments to automate it...
         args = ["--standalone", "certonly", "-m", "none@none.com",
                 "-d", "example.com", '--agree-tos'] + self.standard_args
         det.return_value = mock.MagicMock(), None
-        afa.return_value = mock.MagicMock()
+        gsc.return_value = mock.MagicMock()
 
         with mock.patch('certbot.main.client.acme_client.ClientNetwork') as acme_net:
             self._call_no_clientmock(args)
@@ -576,8 +576,8 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._cli_missing_flag(["--standalone"], "With the standalone plugin, you probably")
 
         with mock.patch("certbot.main._init_le_client") as mock_init:
-            with mock.patch("certbot.main._get_and_save_cert") as mock_afa:
-                mock_afa.return_value = mock.MagicMock()
+            with mock.patch("certbot.main._get_and_save_cert") as mock_gsc:
+                mock_gsc.return_value = mock.MagicMock()
                 self._call(["certonly", "--manual", "-d", "foo.bar"])
                 unused_config, auth, unused_installer = mock_init.call_args[0]
                 self.assertTrue(isinstance(auth, manual.Authenticator))
@@ -670,12 +670,12 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         chain = 'chain'
         fullchain = 'fullchain'
 
-        with mock.patch('certbot.main.certonly') as mock_obtaincert:
+        with mock.patch('certbot.main.certonly') as mock_certonly:
             self._call(['certonly', '--cert-path', cert, '--key-path', 'key',
                         '--chain-path', 'chain',
                         '--fullchain-path', 'fullchain'])
 
-        config, unused_plugins = mock_obtaincert.call_args[0]
+        config, unused_plugins = mock_certonly.call_args[0]
         self.assertEqual(config.cert_path, os.path.abspath(cert))
         self.assertEqual(config.key_path, os.path.abspath(key))
         self.assertEqual(config.chain_path, os.path.abspath(chain))
@@ -1018,8 +1018,8 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mock_rc.return_value = mock_lineage
             mock_lineage.configuration = {
                 'renewalparams': {'authenticator': 'webroot'}}
-            with mock.patch('certbot.main.renew_cert') as mock_obtain_cert:
-                mock_obtain_cert.side_effect = Exception
+            with mock.patch('certbot.main.renew_cert') as mock_renew_cert:
+                mock_renew_cert.side_effect = Exception
                 self._test_renewal_common(True, None, error_expected=True,
                                           args=['renew'], should_renew=False)
 
@@ -1053,12 +1053,12 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         mock_client = mock.MagicMock()
         mock_client.obtain_certificate_from_csr.return_value = (certr, chain)
         cert_path = '/etc/letsencrypt/live/example.com/cert.pem'
-        mock_client.save_certificate.return_value = cert_path, None, None
+        full_path = '/etc/letsencrypt/live/example.com/fullchain.pem'
+        mock_client.save_certificate.return_value = cert_path, None, full_path
         with mock.patch('certbot.main._init_le_client') as mock_init:
             mock_init.return_value = mock_client
             with test_util.patch_get_utility() as mock_get_utility:
                 chain_path = '/etc/letsencrypt/live/example.com/chain.pem'
-                full_path = '/etc/letsencrypt/live/example.com/fullchain.pem'
                 args = ('-a standalone certonly --csr {0} --cert-path {1} '
                         '--chain-path {2} --fullchain-path {3}').format(
                             CSR, cert_path, chain_path, full_path).split()
@@ -1078,7 +1078,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_certonly_csr(self):
         mock_get_utility = self._test_certonly_csr_common()
         cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
-        self.assertTrue('cert.pem' in cert_msg)
+        self.assertTrue('fullchain.pem' in cert_msg)
         self.assertTrue(
             'donate' in mock_get_utility().add_message.call_args[0][0])
 

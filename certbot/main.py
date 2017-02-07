@@ -313,24 +313,17 @@ def _report_new_cert(config, cert_path, fullchain_path):
 
     expiry = crypto_util.notAfter(cert_path).date()
     reporter_util = zope.component.getUtility(interfaces.IReporter)
-    if print_fullchain_path:
-        # Print the path to fullchain.pem because that's what modern webservers
-        # (Nginx and Apache2.4) will want.
-        and_chain = "and chain have"
-        path = fullchain_path
-    else:
-        # Unless we're in .csr mode and there really isn't one
-        and_chain = "has "
-        path = cert_path
+    # Print the path to fullchain.pem because that's what modern webservers
+    # (Nginx and Apache2.4) will want.
 
     verbswitch = ' with the "certonly" option' if config.verb == "run" else ""
     # XXX Perhaps one day we could detect the presence of known old webservers
     # and say something more informative here.
-    msg = ('Congratulations! Your certificate {0} been saved at {1}.'
-           ' Your cert will expire on {2}. To obtain a new or tweaked version of this '
-           'certificate in the future, simply run {3} again{4}. '
-           'To non-interactively renew *all* of your certificates, run "{3} renew"'
-           .format(and_chain, path, expiry, cli.cli_command, verbswitch))
+    msg = ('Congratulations! Your certificate and chain have been saved at {0}.'
+           ' Your cert will expire on {1}. To obtain a new or tweaked version of this '
+           'certificate in the future, simply run {2} again{3}. '
+           'To non-interactively renew *all* of your certificates, run "{2} renew"'
+           .format(fullchain_path, expiry, cli.cli_command, verbswitch))
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
 
@@ -611,7 +604,9 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
         new_lineage = _get_and_save_cert(le_client, config, domains,
             certname, lineage)
 
-    _report_new_cert(config, new_lineage.cert_path, new_lineage.fullchain_path)
+    cert_path = new_lineage.cert_path if new_lineage else None
+    fullchain_path = new_lineage.fullchain_path if new_lineage else None
+    _report_new_cert(config, cert_path, fullchain_path)
 
     _install_cert(config, le_client, domains, new_lineage)
 
@@ -635,8 +630,8 @@ def _csr_obtain_cert(config, le_client):
     if config.dry_run:
         logger.debug(
             "Dry run: skipping saving certificate to %s", config.cert_path)
-    else:
-        cert_path, _, fullchain_path = le_client.save_certificate(
+        return None, None
+    cert_path, _, fullchain_path = le_client.save_certificate(
             certr, chain, config.cert_path, config.chain_path, config.fullchain_path)
     return cert_path, fullchain_path
 
@@ -653,15 +648,15 @@ def renew_cert(config, plugins, lineage):
     _get_and_save_cert(le_client, config, lineage=lineage)
 
     notify = zope.component.getUtility(interfaces.IDisplay).notification
-    if installer is None:       
-        notify("new certificate deployed without reload, fullchain is {0}".format(        
-               lineage.fullchain), pause=False)       
-    else:     
-        # In case of a renewal, reload server to pick up new certificate.     
-        # In principle we could have a configuration option to inhibit this       
-        # from happening.     
-        installer.restart()       
-        notify("new certificate deployed with reload of {0} server; fullchain is {1}".format(     
+    if installer is None:
+        notify("new certificate deployed without reload, fullchain is {0}".format(
+               lineage.fullchain), pause=False)
+    else:
+        # In case of a renewal, reload server to pick up new certificate.
+        # In principle we could have a configuration option to inhibit this
+        # from happening.
+        installer.restart()
+        notify("new certificate deployed with reload of {0} server; fullchain is {1}".format(
                config.installer, lineage.fullchain), pause=False)
 
 def certonly(config, plugins):
@@ -694,7 +689,9 @@ def certonly(config, plugins):
 
     lineage = _get_and_save_cert(le_client, config, domains, certname, lineage)
 
-    _report_new_cert(config, lineage.cert_path, lineage.fullchain_path)
+    cert_path = lineage.cert_path if lineage else None
+    fullchain_path = lineage.fullchain_path if lineage else None
+    _report_new_cert(config, cert_path, fullchain_path)
     _suggest_donation_if_appropriate(config)
 
 def renew(config, unused_plugins):
