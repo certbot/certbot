@@ -3,10 +3,8 @@
 temp_dir=`mktemp -d`
 trap "rm -rf $temp_dir" EXIT
 
-# Script should be run from Certbot's root directory
-
-SCRIPT_PATH=`dirname $0`
-SCRIPT_PATH=`readlink -f $SCRIPT_PATH`
+# cd to repo root
+cd $(dirname $(dirname $(readlink -f $0)))
 FLAG=false
 
 if ! cmp -s certbot-auto letsencrypt-auto; then
