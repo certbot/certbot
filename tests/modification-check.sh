@@ -1,45 +1,39 @@
-#!/bin/bash
+#!/bin/bash -xe
 
 temp_dir=`mktemp -d`
+trap "rm -rf $temp_dir" EXIT
 
-# Script should be run from Certbot's root directory
-
-SCRIPT_PATH=`dirname $0`
-SCRIPT_PATH=`readlink -f $SCRIPT_PATH`
+# cd to repo root
+cd $(dirname $(dirname $(readlink -f $0)))
 FLAG=false
 
-# Compare root letsencrypt-auto and certbot-auto with published versions
-
-cp letsencrypt-auto ${temp_dir}/letsencrypt-to-be-checked
-cp certbot-auto ${temp_dir}/certbot-to-be-checked
-
-cp letsencrypt-auto-source/pieces/fetch.py ${temp_dir}/fetch.py
-cd ${temp_dir}
-
-LATEST_VERSION=`python fetch.py --latest-version`
-python fetch.py --le-auto-script v${LATEST_VERSION}
-
-cmp -s letsencrypt-auto letsencrypt-to-be-checked
-
-if [ $? != 0 ]; then
-	echo "Root letsencrypt-auto has changed."
-	FLAG=true
+if ! cmp -s certbot-auto letsencrypt-auto; then
+    echo "Root certbot-auto and letsencrypt-auto differ."
+    FLAG=true
 else
-	echo "Root letsencrypt-auto is unchanged."
+    cp certbot-auto "$temp_dir/local-auto"
+    cp letsencrypt-auto-source/pieces/fetch.py "$temp_dir/fetch.py"
+    cd $temp_dir
+
+    env
+    # Compare file against current version in the target branch
+    BRANCH=${TRAVIS_BRANCH:-master}
+    URL="https://raw.githubusercontent.com/certbot/certbot/$BRANCH/certbot-auto"
+    curl -sS $URL > certbot-auto
+    if cmp -s certbot-auto local-auto; then
+        echo "Root *-auto were unchanged."
+    else
+        # Compare file against the latest released version
+        python fetch.py --le-auto-script "v$(python fetch.py --latest-version)"
+        if cmp -s letsencrypt-auto local-auto; then
+            echo "Root *-auto were updated to the latest version."
+        else
+            echo "Root *-auto have unexpected changes."
+            FLAG=true
+        fi
+    fi
+    cd ~-
 fi
-
-cmp -s letsencrypt-auto certbot-to-be-checked
-
-if [ $? != 0 ]; then
-	echo "Root certbot-auto has changed."
-	FLAG=true
-else
-	echo "Root certbot-auto is unchanged."
-fi
-
-# Cleanup
-rm ${temp_dir}/*
-cd ${SCRIPT_PATH}/../
 
 # Compare letsencrypt-auto-source/letsencrypt-auto with output of build.py
 
