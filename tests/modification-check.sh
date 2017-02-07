@@ -15,6 +15,7 @@ else
     cp letsencrypt-auto-source/pieces/fetch.py "$temp_dir/fetch.py"
     cd $temp_dir
 
+    env
     # Compare file against current version in the target branch
     BRANCH=${TRAVIS_BRANCH:-master}
     URL="https://raw.githubusercontent.com/certbot/certbot/$BRANCH/certbot-auto"
