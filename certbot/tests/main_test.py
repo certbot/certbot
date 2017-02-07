@@ -1163,9 +1163,9 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_update_registration_with_email(self, mock_utility, mock_email):
         email = "user@example.com"
         mock_email.return_value = email
-        with mock.patch('certbot.main.client') as mocked_client:
-            with mock.patch('certbot.main.account') as mocked_account:
-                with mock.patch('certbot.main._determine_account') as mocked_det:
+        with mock.patch('certbot.eff.handle_subscription') as mock_handle:
+            with mock.patch('certbot.main._determine_account') as mocked_det:
+                with mock.patch('certbot.main.account') as mocked_account:
                     with mock.patch('certbot.main.client') as mocked_client:
                         mocked_storage = mock.MagicMock()
                         mocked_account.AccountFileStorage.return_value = mocked_storage
@@ -1186,6 +1186,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                         self.assertTrue(mocked_storage.save_regr.called)
                         self.assertTrue(
                             email in mock_utility().add_message.call_args[0][0])
+                        self.assertTrue(mock_handle.called)
 
 
 class UnregisterTest(unittest.TestCase):

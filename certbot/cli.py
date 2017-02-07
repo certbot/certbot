@@ -439,7 +439,7 @@ class HelpfulArgumentParser(object):
         self.detect_defaults = detect_defaults
         self.args = args
 
-        if self.args[0] == 'help':
+        if self.args and self.args[0] == 'help':
             self.args[0] = '--help'
 
         self.determine_verb()
@@ -880,6 +880,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         ["register", "unregister", "automation"], "-m", "--email",
         help=config_help("email"))
+    helpful.add(["register", "automation"], "--eff-email", action="store_true",
+                default=None, dest="eff_email",
+                help="Share your e-mail address with EFF")
+    helpful.add(["register", "automation"], "--no-eff-email", action="store_false",
+                default=None, dest="eff_email",
+                help="Don't share your e-mail address with EFF")
     helpful.add(
         ["automation", "certonly", "run"],
         "--keep-until-expiring", "--keep", "--reinstall",

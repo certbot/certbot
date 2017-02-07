@@ -24,6 +24,7 @@ from certbot import crypto_util
 from certbot import colored_logging
 from certbot import configuration
 from certbot import constants
+from certbot import eff
 from certbot import errors
 from certbot import hooks
 from certbot import interfaces
@@ -469,6 +470,7 @@ def register(config, unused_plugins):
     acc.regr = acme_client.acme.update_registration(acc.regr.update(
         body=acc.regr.body.update(contact=('mailto:' + config.email,))))
     account_storage.save_regr(acc)
+    eff.handle_subscription(config)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
 
 def _install_cert(config, le_client, domains, lineage=None):

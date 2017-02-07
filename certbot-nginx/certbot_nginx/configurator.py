@@ -403,25 +403,7 @@ class NginxConfigurator(common.Plugin):
                     except (socket.error, socket.herror, socket.timeout):
                         continue
 
-        return self._get_filtered_names(all_names)
-
-    def _get_filtered_names(self, all_names):
-        """Removes names that aren't considered valid by Let's Encrypt.
-
-        :param set all_names: all names found in the Nginx configuration
-
-        :returns: all found names that are considered valid by LE
-        :rtype: set
-
-        """
-        filtered_names = set()
-        for name in all_names:
-            try:
-                filtered_names.add(util.enforce_le_validity(name))
-            except errors.ConfigurationError as error:
-                logger.debug('Not suggesting name "%s"', name)
-                logger.debug(error)
-        return filtered_names
+        return util.get_filtered_names(all_names)
 
     def _get_snakeoil_paths(self):
         # TODO: generate only once
