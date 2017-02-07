@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -xe
 
 temp_dir=`mktemp -d`
 trap "rm -rf $temp_dir" EXIT
