@@ -64,7 +64,7 @@ class ReportNewAccountTest(unittest.TestCase):
         self.config = mock.MagicMock(config_dir="/etc/letsencrypt")
         reg = messages.Registration.from_data(email="rhino@jungle.io")
         self.acc = mock.MagicMock(regr=messages.RegistrationResource(
-            uri=None, new_authzr_uri=None, body=reg))
+            uri=None, body=reg))
 
     def _call(self):
         from certbot.account import report_new_account
@@ -115,7 +115,7 @@ class AccountFileStorageTest(unittest.TestCase):
         from certbot.account import Account
         self.acc = Account(
             regr=messages.RegistrationResource(
-                uri=None, new_authzr_uri=None, body=messages.Registration()),
+                uri=None, body=messages.Registration()),
             key=KEY)
 
     def tearDown(self):
