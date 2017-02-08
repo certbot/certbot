@@ -39,7 +39,7 @@ import time
 import datetime
 
 INSTRUCTIONS = (
-    "To use, create an IAM user with the AmazonRoute53FullAccess permission, then store "
+    "To use, create an IAM user and attach the AmazonRoute53FullAccess policy, then store "
     "the access key ID and secret key in ~/.aws/credentials or in "
     "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, as described at "
     "https://boto3.readthedocs.io/en/latest/guide/configuration.html")
