@@ -76,6 +76,9 @@ For full command line help, you can type::
 Problems with Python virtual environment
 ----------------------------------------
 
+Low memory system
+^^^^^^^^^^^^^^^^^
+
 On a low memory system such as VPS with only 256MB of RAM, the required dependencies of Certbot will failed to build.
 This can be identified if the pip outputs contains something like ``internal compiler error: Killed (program cc1)``.
 You can workaround this restriction by creating a temporary swapfile::
@@ -89,6 +92,11 @@ Disable and remove the swapfile once the virtual enviroment is constructed::
 
   user@webserver:~$ sudo swapoff /tmp/swapfile
   user@webserver:~$ sudo rm /tmp/swapfile
+
+Custom Python environment
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Note that if you have configured any custom Python environment variables on your system, make sure they are properly (un)set when running `certbot-auto` and `sudo`. This could happen if you run `sudo zsh` as your user's `PYTHONPATH` will be preserved which might cause problems.
 
 Running with Docker
 -------------------
