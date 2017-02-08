@@ -20,7 +20,11 @@ BootstrapMac() {
     # We want to avoid using the system Python because it requires root to use pip.
     # python.org, MacPorts or HomeBrew Python installations should all be OK.
     echo "Installing python..."
-    $pkgcmd python
+    if [ "$pkgman" == "brew" ]; then
+      $pkgcmd python
+    elif [ "$pkgman" == "port" ]; then
+      $pkgcmd python27
+    fi
   fi
 
   # Workaround for _dlopen not finding augeas on macOS
