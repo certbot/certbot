@@ -440,8 +440,8 @@ class HelpfulArgumentParser(object):
         }
 
         # List of topics for which additional help can be provided
-        HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
-        HELP_TOPICS += self.COMMANDS_TOPICS + ["manage"]
+        HELP_TOPICS = ["all", "security", "paths", "automation", "testing"]
+        HELP_TOPICS += list(self.VERBS) + self.COMMANDS_TOPICS + ["manage"]
 
         plugin_names = list(plugins)
         self.help_topics = HELP_TOPICS + plugin_names + [None]
@@ -849,6 +849,16 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         None, "-t", "--text", dest="text_mode", action="store_true",
         help=argparse.SUPPRESS)
+    helpful.add(
+        # Note, 1 is subtracted from max_log_count in certbot/main.py
+        #> to correct an off by one error.
+        [None, "paths"],
+        "--max-log-count", dest="max_log_count",
+        type=int, default=1000,
+        help="Specifies the maximum number of certbot log files "
+               "that will be kept. 0 disables log rotation. 1 causes "
+               "only the log from the most recent run to be kept. "
+               "2+ enables log rotation at start of certbot execution.")
     helpful.add(
         [None, "automation", "run", "certonly"], "-n", "--non-interactive", "--noninteractive",
         dest="noninteractive_mode", action="store_true",
