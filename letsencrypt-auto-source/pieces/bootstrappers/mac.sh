@@ -37,12 +37,12 @@ BootstrapMac() {
   if ! hash pip 2>/dev/null; then
     echo "pip not installed"
     echo "Installing pip..."
-    curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | $SUDO python
+    curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | python
   fi
 
   if ! hash virtualenv 2>/dev/null; then
     echo "virtualenv not installed."
     echo "Installing with pip..."
-    $SUDO pip install virtualenv
+    pip install virtualenv
   fi
 }
