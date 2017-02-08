@@ -824,6 +824,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         None, "-t", "--text", dest="text_mode", action="store_true",
         help=argparse.SUPPRESS)
     helpful.add(
+        [None, "automation", "paths"],
+        "--disable-log-rotation", dest="disable_log_rotation",
+        action="store_true", default=False,
+        help="Disable per-run rotation of the log. This results in a single "
+        "log file.")
+    helpful.add(
         [None, "automation", "run", "certonly"], "-n", "--non-interactive", "--noninteractive",
         dest="noninteractive_mode", action="store_true",
         help="Run without ever asking for user input. This may require "
