@@ -38,6 +38,12 @@ from botocore.exceptions import NoCredentialsError
 import time
 import datetime
 
+INSTRUCTIONS = (
+    "To use, create an IAM user with the AmazonRoute53FullAccess permission, then store "
+    "the access key ID and secret key in ~/.aws/credentials or in "
+    "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, as described at "
+    "https://boto3.readthedocs.io/en/latest/guide/configuration.html")
+
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(common.Plugin):
@@ -47,7 +53,10 @@ class Authenticator(common.Plugin):
     Route53.
     """
 
-    description = "Add TXT records to AWS Route53"
+    description = ("Authenticate domain names using the DNS challenge type, "
+        "by automatically updating TXT records using AWS Route53. Works only "
+        "if you use AWS Route53 to host DNS for your domains. " +
+        INSTRUCTIONS)
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
@@ -78,7 +87,7 @@ class Authenticator(common.Plugin):
                 self._wait_for_change(change_id)
             return [achall.response(achall.account_key) for achall in achalls]
         except NoCredentialsError:
-            raise Exception("no crds")
+            raise Exception("No AWS Route53 credentials found. " + INSTRUCTIONS)
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         for name, value in self.txt_records:
