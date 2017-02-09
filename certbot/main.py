@@ -405,7 +405,7 @@ def _init_le_client(config, authenticator, installer):
 
     return client.Client(config, acc, authenticator, installer, acme=acme)
 
-def _want_delete(config):
+def _delete_if_appropriate(config):
     """Does the user want to delete their now-revoked certs?
 
     """
@@ -565,7 +565,7 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
 
     try:
         acme.revoke(jose.ComparableX509(cert), config.reason)
-        _want_delete(config)
+        _delete_if_appropriate(config)
     except acme_errors.ClientError as e:
         return e.message
 
