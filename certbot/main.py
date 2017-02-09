@@ -411,8 +411,9 @@ def _delete_if_appropriate(config):
     """
     prompt = (
             'Would you like certbot to delete the revoked certificate '
-            'and related files on disk? Warning: your severs could be '
-            'left misconfigured.')
+            'and related files on disk? If so, you will probably need to '
+            "update your server's configuration files to stop serving "
+            'a nonexistant file.')
     display = zope.component.getUtility(interfaces.IDisplay)
     if display.yesno(prompt, default=False):
         cert_manager.delete(config)
