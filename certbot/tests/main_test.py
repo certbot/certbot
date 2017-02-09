@@ -273,6 +273,19 @@ class RevokeTest(unittest.TestCase):
         self.assertRaises(acme_errors.ClientError, self._call)
         self.mock_success_revoke.assert_not_called()
 
+    @mock.patch('certbot.cert_manager.delete')
+    @test_util.patch_get_utility()
+    def test_revocation_with_prompt(self, mock_get_utility, mock_delete):
+        mock_get_utility().yesno.return_value = False
+        self._call()
+        self.assertFalse(mock_delete.called)
+
+    @mock.patch('certbot.cert_manager.delete')
+    @test_util.patch_get_utility()
+    def test_revocation_with_prompt_other(self, mock_get_utility, mock_delete):
+        mock_get_utility().yesno.return_value = True
+        self._call()
+        self.assertTrue(mock_delete.called)
 
 class SetupLogFileHandlerTest(unittest.TestCase):
     """Tests for certbot.main.setup_log_file_handler."""
