@@ -268,7 +268,7 @@ valid method of renewing a specific individual
 certificate.
 
 ``--duplicate`` tells Certbot to create a separate, unrelated certificate
-with the same domains as an existing certificate. This certificate is 
+with the same domains as an existing certificate. This certificate is
 saved completely separately from the prior one. Most users will not
 need to issue this command in normal circumstances.
 
@@ -350,7 +350,7 @@ run as frequently as you want - since it will usually take no action.
 
 The ``renew`` command includes hooks for running commands or scripts before or after a certificate is
 renewed. For example, if you have a single cert obtained using
-the standalone_ plugin, you might need to stop the webserver 
+the standalone_ plugin, you might need to stop the webserver
 before renewing so standalone can bind to the necessary ports, and
 then restart it after the plugin is finished. Example::
 
@@ -417,8 +417,8 @@ renewal configuration file, located at ``/etc/letsencrypt/renewal/CERTNAME``.
 
 .. warning:: Modifying any files in ``/etc/letsencrypt`` can damage them so Certbot can no longer properly manage its certificates, and we do not recommend doing so.
 
-For most tasks, it is safest to limit yourself to pointing symlinks at the files there, or using 
-``--renew-hook`` to copy / make new files based upon those files, if your operational situation requires it 
+For most tasks, it is safest to limit yourself to pointing symlinks at the files there, or using
+``--renew-hook`` to copy / make new files based upon those files, if your operational situation requires it
 (for instance, combining certs and keys in different way, or having copies of things with different
 specific permissions that are demanded by other programs).
 
@@ -446,8 +446,7 @@ The following commands could be used to specify where these files are located::
   sed -i 's,/etc/letsencrypt/archive/example.com,/home/user/me/certbot/example_archive,' /etc/letsencrypt/renewal/example.com.conf
   mv /etc/letsencrypt/live/example.com/*.pem /home/user/me/certbot/
   sed -i 's,/etc/letsencrypt/live/example.com,/home/user/me/certbot,g' /etc/letsencrypt/renewal/example.com.conf
-  certbot update_symlinks 
-
+  certbot update_symlinks
 
 
 .. _where-certs:
