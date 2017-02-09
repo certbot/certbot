@@ -832,7 +832,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         [None, "logging", "paths"],
         "--max-log-count", dest="max_log_count",
-        action="store_true", default=1000,
+        type=int, default=1000,
         help="Specifies the maximum number of certbot log files "
         "that will be kept.")
     helpful.add(
