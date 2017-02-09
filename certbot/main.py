@@ -640,6 +640,11 @@ def obtain_cert(config, plugins, lineage=None):
             notify("new certificate deployed without reload, fullchain is {0}".format(
                    lineage.fullchain), pause=False)
         else:
+            # In case of a renewal, we give the plugin the opportunity
+            # to handle the renewed certificate
+            le_client.renew_deploy_certificate(domains, lineage.privkey,
+                lineage.cert, lineage.chain, lineage.fullchain)
+
             # In case of a renewal, reload server to pick up new certificate.
             # In principle we could have a configuration option to inhibit this
             # from happening.
