@@ -244,17 +244,17 @@ using the ``--cert-name`` flag to specify a particular certificate for the ``run
 Re-creating and Updating Existing Certificates
 ----------------------------------------------
 
-You can use ``certonly`` or ``run`` subcommands to request 
+You can use ``certonly`` or ``run`` subcommands to request
 the creation of a single new certificate even if you already have an
-existing certificate with some of the same domain names. 
+existing certificate with some of the same domain names.
 
-If a certificate is requested with ``run`` or ``certonly`` specifying a 
-``Certificate name`` that already exists, the new certificate replaces
+If a certificate is requested with ``run`` or ``certonly`` specifying a
+certificate name that already exists, Certbot updates
 the existing certificate. Otherwise a new certificate
 is created and assigned the specified name.
 
-The ``--force-renewal``, ``--duplicate``, and ``--expand`` options 
-(introduced in version 0.10.0) control Certbot's behavior when re-creating
+The ``--force-renewal``, ``--duplicate``, and ``--expand`` options
+control Certbot's behavior when re-creating
 a certificate with the same name as an existing certificate.
 If you don't specify a requested behavior, Certbot may ask you what you intended.
 
@@ -332,7 +332,7 @@ Renewing certificates
    days). Make sure you renew the certificates at least once in 3
    months.
 
-As of version 0.10.0, ``certbot`` client supports a ``renew`` action to check
+As of version 0.10.0, Certbot supports a ``renew`` action to check
 all installed certificates for impending expiry and attempt to renew
 them. The simplest form is simply
 
