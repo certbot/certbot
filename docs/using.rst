@@ -236,7 +236,7 @@ This returns information in the following format::
 
 ``Certificate Name`` shows the name of the certificate. Pass this name
 using the ``--cert-name`` flag to specify a particular certificate for the ``run``,
-``certonly``, ``certificates``, ``renew`` and ``delete`` commands. Example::
+``certonly``, ``certificates``, ``renew``, and ``delete`` commands. Example::
 
   certbot certonly --cert-name example.com
 
