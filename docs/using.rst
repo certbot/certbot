@@ -288,13 +288,13 @@ certificate counts against several rate limits that are intended to prevent
 abuse of the ACME protocol, as described
 `here <https://community.letsencrypt.org/t/rate-limits-for-lets-encrypt/6769>`__.
 
-Changing a Certificate’s Domains
-````````````````````````````````
+Changing a Certificate's Domains
+--------------------------------
 
 The ``--cert-name`` flag can also be used to modify the domains a certificate contains,
-by specifying new domains using the ``-d`` or ``—domains`` flag. If certificate ``example.com``
+by specifying new domains using the ``-d`` or ``--domains`` flag. If certificate ``example.com``
 previously contained ``example.com`` and ``www.example.com``, it can be modified to only
-contain ``example.com`` by specifying only ``example.com`` with the ``-d`` or ``—domains`` flag. Example::
+contain ``example.com`` by specifying only ``example.com`` with the ``-d`` or ``--domains`` flag. Example::
 
   certbot certonly --cert-name example.com -d example.com
 
@@ -314,14 +314,14 @@ use the ``revoke`` command to do so. Note that the ``revoke`` command takes the 
   certbot revoke --cert-path /etc/letsencrypt/live/CERTNAME/cert.pem
 
 Additionally, if a certificate
-is a test cert obtained via the ``--staging`` or ``—test-cert`` flag, that flag must be passed to the
+is a test cert obtained via the ``--staging`` or ``--test-cert`` flag, that flag must be passed to the
 ``revoke`` subcommand.
 Once a certificate is revoked (or for other cert management tasks), all of a certificate's
 relevant files can be removed from the system with the ``delete`` subcommand::
 
   certbot delete --cert-name example.com
 
-.. note:: If you don’t use ``delete`` to remove the certificate completely, it will be renewed automatically at the next renewal event.
+.. note:: If you don't use ``delete`` to remove the certificate completely, it will be renewed automatically at the next renewal event.
 
 .. _renewal:
 
@@ -410,15 +410,15 @@ apologize for any inconvenience you encounter in integrating these
 commands into your individual environment.
 
 Modifying the Renewal Configuration File
-````````````````````````````````````````
+----------------------------------------
 
 For advanced certificate management tasks, it is possible to manually modify the certificate's
 renewal configuration file, located at ``/etc/letsencrypt/renewal/CERTNAME``.
 
-.. warning:: Modifying any files in ``/etc/letsencrypt`` can damage it so Certbot can no longer properly manage its certificates, and we do not recommend doing so.
+.. warning:: Modifying any files in ``/etc/letsencrypt`` can damage them so Certbot can no longer properly manage its certificates, and we do not recommend doing so.
 
 For most tasks, it is safest to limit yourself to pointing symlinks at the files there, or using 
-``—renew-hook`` to copy / make new files based upon those files, if your operational situation requires it 
+``--renew-hook`` to copy / make new files based upon those files, if your operational situation requires it 
 (for instance, combining certs and keys in different way, or having copies of things with different
 specific permissions that are demanded by other programs).
 
