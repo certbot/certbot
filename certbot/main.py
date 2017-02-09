@@ -405,6 +405,17 @@ def _init_le_client(config, authenticator, installer):
 
     return client.Client(config, acc, authenticator, installer, acme=acme)
 
+def _want_delete(config):
+    """Does the user want to delete their now-revoked certs?
+
+    """
+    prompt = (
+            'Would you like certbot to delete the revoked certificate '
+            'and related files on disk? Warning: your severs could be '
+            'left misconfigured.')
+    display = zope.component.getUtility(interfaces.IDisplay)
+    if display.yesno(prompt, default=False):
+        cert_manager.delete(config)
 
 def register(config, unused_plugins):
     """Create or modify accounts on the server."""
@@ -554,6 +565,7 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
 
     try:
         acme.revoke(jose.ComparableX509(cert), config.reason)
+        _want_delete(config)
     except acme_errors.ClientError as e:
         return e.message
 
