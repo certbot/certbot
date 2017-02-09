@@ -430,7 +430,7 @@ class HelpfulArgumentParser(object):
         }
 
         # List of topics for which additional help can be provided
-        HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
+        HELP_TOPICS = ["all", "security", "paths", "logging", "automation", "testing"] + list(self.VERBS)
         HELP_TOPICS += self.COMMANDS_TOPICS + ["manage"]
 
         plugin_names = list(plugins)
@@ -791,7 +791,7 @@ def _add_all_groups(helpful):
     helpful.add_group("manage",
         description="Various subcommands and flags are available for managing your certificates:",
         verbs=["certificates", "delete", "renew", "revoke", "update_symlinks"])
-    helpful.add_group("logging", description="Arguments for controlling how logging is handled.")
+    helpful.add_group("logging", description="Arguments for controlling how logging is handled")
 
     # VERBS
     for verb, docs in VERB_HELP:
