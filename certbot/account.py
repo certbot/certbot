@@ -3,6 +3,7 @@ import datetime
 import hashlib
 import logging
 import os
+import shutil
 import socket
 
 from cryptography.hazmat.primitives import serialization
@@ -196,6 +197,18 @@ class AccountFileStorage(interfaces.AccountStorage):
 
         """
         self._save(account, regr_only=True)
+
+    def delete(self, account_id):
+        """Delete registration info from disk
+
+        :param account_id: id of account which should be deleted
+
+        """
+        account_dir_path = self._account_dir_path(account_id)
+        if not os.path.isdir(account_dir_path):
+            raise errors.AccountNotFound(
+                "Account at %s does not exist" % account_dir_path)
+        shutil.rmtree(account_dir_path)
 
     def _save(self, account, regr_only):
         account_dir_path = self._account_dir_path(account.id)

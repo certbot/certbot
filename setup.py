@@ -31,6 +31,9 @@ changes = read_file(os.path.join(here, 'CHANGES.rst'))
 version = meta['version']
 
 # Please update tox.ini when modifying dependency version requirements
+# This package relies on requests, however, it isn't specified here to avoid
+# masking the more specific request requirements in acme. See
+# https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
     'acme=={0}'.format(version),
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
@@ -67,8 +70,6 @@ dev_extras = [
     'astroid==1.3.5',
     'coverage',
     'nose',
-    'pep8',
-    'psutil>=2.2.1',  # for tests, optional
     'pylint==1.4.2',  # upstream #248
     'tox',
     'twine',

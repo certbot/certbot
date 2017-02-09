@@ -1,4 +1,5 @@
 """Tests for certbot.main."""
+# pylint: disable=too-many-lines
 from __future__ import print_function
 
 import itertools
@@ -12,6 +13,7 @@ import datetime
 import pytz
 
 import six
+from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import jose
 
@@ -361,6 +363,9 @@ class DetermineAccountTest(unittest.TestCase):
 
     def setUp(self):
         self.args = mock.MagicMock(account=None, email=None,
+                                   config_dir="unused_config",
+                                   logs_dir="unused_logs",
+                                   work_dir="unused_work",
                                    register_unsafely_without_email=False)
         self.config = configuration.NamespaceConfig(self.args)
         self.accs = [mock.MagicMock(id='x'), mock.MagicMock(id='y')]
@@ -434,10 +439,9 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                               '--logs-dir', self.logs_dir, '--text']
 
     def tearDown(self):
-        shutil.rmtree(self.tmp_dir)
         # Reset globals in cli
-        # pylint: disable=protected-access
-        cli._parser = cli.set_by_cli.detector = None
+        reload_module(cli)
+        shutil.rmtree(self.tmp_dir)
 
     def _call(self, args, stdout=None):
         "Run the cli with output streams and actual client mocked out"
@@ -874,14 +878,17 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         test_util.make_lineage(self, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "--post-hook=no-such-command",
                 "--disable-hook-validation"]
-        self._test_renewal_common(True, [], args=args, should_renew=True,
-                                  error_expected=False)
+        with mock.patch("certbot.hooks.post_hook"):
+            self._test_renewal_common(True, [], args=args, should_renew=True,
+                                      error_expected=False)
 
     @mock.patch("certbot.cli.set_by_cli")
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         rc_path = test_util.make_lineage(self, 'sample-renewal-ancient.conf')
-        args = mock.MagicMock(account=None, email=None, webroot_path=None)
+        args = mock.MagicMock(account=None, config_dir=self.config_dir,
+                              logs_dir=self.logs_dir, work_dir=self.work_dir,
+                              email=None, webroot_path=None)
         config = configuration.NamespaceConfig(args)
         lineage = storage.RenewableCert(rc_path, config)
         renewalparams = lineage.configuration["renewalparams"]
@@ -1138,9 +1145,9 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_update_registration_with_email(self, mock_utility, mock_email):
         email = "user@example.com"
         mock_email.return_value = email
-        with mock.patch('certbot.main.client') as mocked_client:
-            with mock.patch('certbot.main.account') as mocked_account:
-                with mock.patch('certbot.main._determine_account') as mocked_det:
+        with mock.patch('certbot.eff.handle_subscription') as mock_handle:
+            with mock.patch('certbot.main._determine_account') as mocked_det:
+                with mock.patch('certbot.main.account') as mocked_account:
                     with mock.patch('certbot.main.client') as mocked_client:
                         mocked_storage = mock.MagicMock()
                         mocked_account.AccountFileStorage.return_value = mocked_storage
@@ -1161,6 +1168,69 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                         self.assertTrue(mocked_storage.save_regr.called)
                         self.assertTrue(
                             email in mock_utility().add_message.call_args[0][0])
+                        self.assertTrue(mock_handle.called)
+
+
+class UnregisterTest(unittest.TestCase):
+    def setUp(self):
+        self.patchers = {
+            '_determine_account': mock.patch('certbot.main._determine_account'),
+            'account': mock.patch('certbot.main.account'),
+            'client': mock.patch('certbot.main.client'),
+            'get_utility': test_util.patch_get_utility()}
+        self.mocks = dict((k, v.start()) for k, v in self.patchers.items())
+
+    def tearDown(self):
+        for patch in self.patchers.values():
+            patch.stop()
+
+    def test_abort_unregister(self):
+        self.mocks['account'].AccountFileStorage.return_value = mock.Mock()
+
+        util_mock = self.mocks['get_utility'].return_value
+        util_mock.yesno.return_value = False
+
+        config = mock.Mock()
+        unused_plugins = mock.Mock()
+
+        res = main.unregister(config, unused_plugins)
+        self.assertEqual(res, "Deactivation aborted.")
+
+    def test_unregister(self):
+        mocked_storage = mock.MagicMock()
+        mocked_storage.find_all.return_value = ["an account"]
+
+        self.mocks['account'].AccountFileStorage.return_value = mocked_storage
+        self.mocks['_determine_account'].return_value = (mock.MagicMock(), "foo")
+
+        acme_client = mock.MagicMock()
+        self.mocks['client'].Client.return_value = acme_client
+
+        config = mock.MagicMock()
+        unused_plugins = mock.MagicMock()
+
+        res = main.unregister(config, unused_plugins)
+
+        self.assertTrue(res is None)
+        self.assertTrue(acme_client.acme.deactivate_registration.called)
+        m = "Account deactivated."
+        self.assertTrue(m in self.mocks['get_utility']().add_message.call_args[0][0])
+
+    def test_unregister_no_account(self):
+        mocked_storage = mock.MagicMock()
+        mocked_storage.find_all.return_value = []
+        self.mocks['account'].AccountFileStorage.return_value = mocked_storage
+
+        acme_client = mock.MagicMock()
+        self.mocks['client'].Client.return_value = acme_client
+
+        config = mock.MagicMock()
+        unused_plugins = mock.MagicMock()
+
+        res = main.unregister(config, unused_plugins)
+        m = "Could not find existing account to deactivate."
+        self.assertEqual(res, m)
+        self.assertFalse(acme_client.acme.deactivate_registration.called)
 
 
 class TestHandleException(unittest.TestCase):

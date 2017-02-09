@@ -24,6 +24,7 @@ from certbot import crypto_util
 from certbot import colored_logging
 from certbot import configuration
 from certbot import constants
+from certbot import eff
 from certbot import errors
 from certbot import hooks
 from certbot import interfaces
@@ -100,7 +101,7 @@ def _auth_from_available(le_client, config, domains=None, certname=None, lineage
     try:
         if action == "renew":
             logger.info("Renewing an existing certificate")
-            renewal.renew_cert(config, le_client, lineage)
+            renewal.renew_cert(config, domains, le_client, lineage)
         elif action == "newcert":
             # TREAT AS NEW REQUEST
             logger.info("Obtaining a new certificate")
@@ -406,6 +407,35 @@ def _init_le_client(config, authenticator, installer):
     return client.Client(config, acc, authenticator, installer, acme=acme)
 
 
+def unregister(config, unused_plugins):
+    """Deactivate account on server"""
+    account_storage = account.AccountFileStorage(config)
+    accounts = account_storage.find_all()
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+
+    if not accounts:
+        return "Could not find existing account to deactivate."
+    yesno = zope.component.getUtility(interfaces.IDisplay).yesno
+    prompt = ("Are you sure you would like to irrevocably deactivate "
+              "your account?")
+    wants_deactivate = yesno(prompt, yes_label='Deactivate', no_label='Abort',
+                             default=True)
+
+    if not wants_deactivate:
+        return "Deactivation aborted."
+
+    acc, acme = _determine_account(config)
+    acme_client = client.Client(config, acc, None, None, acme=acme)
+
+    # delete on boulder
+    acme_client.acme.deactivate_registration(acc.regr)
+    account_files = account.AccountFileStorage(config)
+    # delete local account files
+    account_files.delete(config.account)
+
+    reporter_util.add_message("Account deactivated.", reporter_util.MEDIUM_PRIORITY)
+
+
 def register(config, unused_plugins):
     """Create or modify accounts on the server."""
 
@@ -413,6 +443,8 @@ def register(config, unused_plugins):
     # exist or not.
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    add_msg = lambda m: reporter_util.add_message(m, reporter_util.MEDIUM_PRIORITY)
 
     # registering a new account
     if not config.update_registration:
@@ -443,9 +475,8 @@ def register(config, unused_plugins):
     acc.regr = acme_client.acme.update_registration(acc.regr.update(
         body=acc.regr.body.update(contact=('mailto:' + config.email,))))
     account_storage.save_regr(acc)
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
-    msg = "Your e-mail address was updated to {0}.".format(config.email)
-    reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
+    eff.handle_subscription(config)
+    add_msg("Your e-mail address was updated to {0}.".format(config.email))
 
 
 def install(config, plugins):
@@ -788,7 +819,7 @@ def make_or_verify_core_dir(directory, mode, uid, strict):
         raise errors.Error(_PERM_ERR_FMT.format(error))
 
 def make_or_verify_needed_dirs(config):
-    """Create or verify existance of config, work, or logs directories"""
+    """Create or verify existence of config, work, or logs directories"""
     make_or_verify_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
                             os.geteuid(), config.strict_permissions)
     make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,

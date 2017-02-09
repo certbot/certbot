@@ -132,11 +132,23 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         """
         update = regr.body if update is None else update
-        updated_regr = self._send_recv_regr(
-            regr, body=messages.UpdateRegistration(**dict(update)))
+        body = messages.UpdateRegistration(**dict(update))
+        updated_regr = self._send_recv_regr(regr, body=body)
         if updated_regr != regr:
             raise errors.UnexpectedUpdate(regr)
         return updated_regr
+
+    def deactivate_registration(self, regr):
+        """Deactivate registration.
+
+        :param messages.RegistrationResource regr: The Registration Resource
+            to be deactivated.
+
+        :returns: The Registration resource that was deactivated.
+        :rtype: `.RegistrationResource`
+
+        """
+        return self.update_registration(regr, update={'status': 'deactivated'})
 
     def query_registration(self, regr):
         """Query server about registration.
@@ -662,8 +674,23 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             self._add_nonce(self.head(url))
         return self._nonces.pop()
 
-    def post(self, url, obj, content_type=JOSE_CONTENT_TYPE, **kwargs):
-        """POST object wrapped in `.JWS` and check response."""
+    def post(self, *args, **kwargs):
+        """POST object wrapped in `.JWS` and check response.
+
+        If the server responded with a badNonce error, the request will
+        be retried once.
+
+        """
+        try:
+            return self._post_once(*args, **kwargs)
+        except messages.Error as error:
+            if error.code == 'badNonce':
+                logger.debug('Retrying request after error:\n%s', error)
+                return self._post_once(*args, **kwargs)
+            else:
+                raise
+
+    def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE, **kwargs):
         data = self._wrap_in_jws(obj, self._get_nonce(url))
         kwargs.setdefault('headers', {'Content-Type': content_type})
         response = self._send_request('POST', url, data=data, **kwargs)

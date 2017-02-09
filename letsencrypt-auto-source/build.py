@@ -8,24 +8,11 @@ other, special definitions.
 """
 from os.path import abspath, dirname, join
 import re
-from sys import argv
+
+from version import certbot_version, file_contents
 
 
 DIR = dirname(abspath(__file__))
-
-
-def certbot_version(build_script_dir):
-    """Return the version number stamped in certbot/__init__.py."""
-    return re.search('''^__version__ = ['"](.+)['"].*''',
-                     file_contents(join(dirname(build_script_dir),
-                                        'certbot',
-                                        '__init__.py')),
-                     re.M).group(1)
-
-
-def file_contents(path):
-    with open(path) as file:
-        return file.read()
 
 
 def build(version=None, requirements=None):
