@@ -280,10 +280,8 @@ class SetupLogFileHandlerTest(unittest.TestCase):
 
     def setUp(self):
         self.config = mock.Mock(spec_set=['logs_dir'],
-                                logs_dir=tempfile.mkdtemp())
-        self.config = mock.Mock(spec_set=['disable_log_rotation'],
-                                disable_log_rotation=False)
-        self.config = mock.Mock(spec_set=['max_log_count'],
+                                logs_dir=tempfile.mkdtemp(),
+                                disable_log_rotation=False,
                                 max_log_count=1)
 
     def tearDown(self):
