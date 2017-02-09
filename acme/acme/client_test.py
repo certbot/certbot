@@ -121,22 +121,12 @@ class ClientTest(unittest.TestCase):
         # TODO: split here and separate test
         self.response.json.return_value = self.regr.body.update(
             contact=()).to_json()
-        self.assertRaises(
-            errors.UnexpectedUpdate, self.client.update_registration, self.regr)
 
     def test_deactivate_account(self):
         self.response.headers['Location'] = self.regr.uri
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr,
                          self.client.deactivate_registration(self.regr))
-
-    def test_deactivate_account_bad_registration_returned(self):
-        self.response.headers['Location'] = self.regr.uri
-        self.response.json.return_value = "some wrong registration thing"
-        self.assertRaises(
-            errors.UnexpectedUpdate,
-            self.client.deactivate_registration,
-            self.regr)
 
     def test_query_registration(self):
         self.response.json.return_value = self.regr.body.to_json()
@@ -175,14 +165,6 @@ class ClientTest(unittest.TestCase):
         self.client.request_challenges(self.identifier, 'URI')
         self.net.post.assert_called_once_with('URI', mock.ANY)
 
-    def test_request_challenges_unexpected_update(self):
-        self._prepare_response_for_request_challenges()
-        self.response.json.return_value = self.authz.update(
-            identifier=self.identifier.update(value='foo')).to_json()
-        self.assertRaises(
-            errors.UnexpectedUpdate, self.client.request_challenges,
-            self.identifier, self.authzr.uri)
-
     def test_request_challenges_missing_next(self):
         self.response.status_code = http_client.CREATED
         self.assertRaises(errors.ClientError, self.client.request_challenges,
@@ -207,10 +189,6 @@ class ClientTest(unittest.TestCase):
         chall_response = challenges.DNSResponse(validation=None)
 
         self.client.answer_challenge(self.challr.body, chall_response)
-
-        # TODO: split here and separate test
-        self.assertRaises(errors.UnexpectedUpdate, self.client.answer_challenge,
-                          self.challr.body.update(uri='foo'), chall_response)
 
     def test_answer_challenge_missing_next(self):
         self.assertRaises(
@@ -267,12 +245,6 @@ class ClientTest(unittest.TestCase):
         self.response.json.return_value = self.authzr.body.to_json()
         self.assertEqual((self.authzr, self.response),
                          self.client.poll(self.authzr))
-
-        # TODO: split here and separate test
-        self.response.json.return_value = self.authz.update(
-            identifier=self.identifier.update(value='foo')).to_json()
-        self.assertRaises(
-            errors.UnexpectedUpdate, self.client.poll, self.authzr)
 
     def test_request_issuance(self):
         self.response.content = CERT_DER
@@ -398,11 +370,6 @@ class ClientTest(unittest.TestCase):
         self.response.content = CERT_DER
         self.assertEqual(self.certr.update(body=messages_test.CERT),
                          self.client.check_cert(self.certr))
-
-        # TODO: split here and separate test
-        self.response.headers['Location'] = 'foo'
-        self.assertRaises(
-            errors.UnexpectedUpdate, self.client.check_cert, self.certr)
 
     def test_check_cert_missing_location(self):
         self.response.content = CERT_DER

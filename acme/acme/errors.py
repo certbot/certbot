@@ -18,10 +18,6 @@ class ClientError(Error):
     """Network error."""
 
 
-class UnexpectedUpdate(ClientError):
-    """Unexpected update error."""
-
-
 class NonceError(ClientError):
     """Server response nonce error."""
 
