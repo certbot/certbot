@@ -96,12 +96,6 @@ def report_new_account(acc, config):
             config.config_dir),
         reporter.MEDIUM_PRIORITY)
 
-    if acc.regr.body.emails:
-        recovery_msg = ("If you lose your account credentials, you can "
-                        "recover through e-mails sent to {0}.".format(
-                            ", ".join(acc.regr.body.emails)))
-        reporter.add_message(recovery_msg, reporter.MEDIUM_PRIORITY)
-
 
 class AccountMemoryStorage(interfaces.AccountStorage):
     """In-memory account strage."""
