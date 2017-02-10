@@ -136,12 +136,12 @@ AUGEAS_LENS_DIR = pkg_resources.resource_filename(
 """Path to the Augeas lens directory"""
 
 REWRITE_HTTPS_ARGS = [
-    "^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,QSA,R=permanent]"]
+    "^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,NE,R=permanent]"]
 """Apache version<2.3.9 rewrite rule arguments used for redirections to
 https vhost"""
 
 REWRITE_HTTPS_ARGS_WITH_END = [
-    "^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[END,QSA,R=permanent]"]
+    "^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[END,NE,R=permanent]"]
 """Apache version >= 2.3.9 rewrite rule arguments used for redirections to
     https vhost"""
 

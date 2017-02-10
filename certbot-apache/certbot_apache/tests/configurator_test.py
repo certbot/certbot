@@ -1132,7 +1132,7 @@ class MultipleVhostsTest(util.ApacheTest):
             http_vhost.path, "RewriteRule",
             ["^",
              "https://%{SERVER_NAME}%{REQUEST_URI}",
-             "[L,QSA,R=permanent]"])
+             "[L,NE,R=permanent]"])
         self.config.save()
 
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
@@ -1143,7 +1143,7 @@ class MultipleVhostsTest(util.ApacheTest):
         conf_text = open(ssl_vhost.filep).read()
         commented_rewrite_rule = ("# RewriteRule ^ "
                                   "https://%{SERVER_NAME}%{REQUEST_URI} "
-                                  "[L,QSA,R=permanent]")
+                                  "[L,NE,R=permanent]")
         self.assertTrue(commented_rewrite_rule in conf_text)
         mock_get_utility().add_message.assert_called_once_with(mock.ANY,
 
@@ -1162,7 +1162,7 @@ class MultipleVhostsTest(util.ApacheTest):
                 "RewriteCond", ["%{DOCUMENT_ROOT}/%{REQUEST_FILENAME}", "!-f"])
         self.config.parser.add_dir(
             http_vhost.path, "RewriteRule",
-            ["^(.*)$", "b://u%{REQUEST_URI}", "[P,QSA,L]"])
+            ["^(.*)$", "b://u%{REQUEST_URI}", "[P,NE,L]"])
 
         # Add a chunk that should be commented out.
         self.config.parser.add_dir(http_vhost.path,
@@ -1173,7 +1173,7 @@ class MultipleVhostsTest(util.ApacheTest):
             http_vhost.path, "RewriteRule",
             ["^",
              "https://%{SERVER_NAME}%{REQUEST_URI}",
-             "[L,QSA,R=permanent]"])
+             "[L,NE,R=permanent]"])
 
         self.config.save()
 
@@ -1184,13 +1184,13 @@ class MultipleVhostsTest(util.ApacheTest):
         not_commented_cond1 = ("RewriteCond "
                 "%{DOCUMENT_ROOT}/%{REQUEST_FILENAME} !-f")
         not_commented_rewrite_rule = ("RewriteRule "
-            "^(.*)$ b://u%{REQUEST_URI} [P,QSA,L]")
+            "^(.*)$ b://u%{REQUEST_URI} [P,NE,L]")
 
         commented_cond1 = "# RewriteCond %{HTTPS} !=on"
         commented_cond2 = "# RewriteCond %{HTTPS} !^$"
         commented_rewrite_rule = ("# RewriteRule ^ "
                                   "https://%{SERVER_NAME}%{REQUEST_URI} "
-                                  "[L,QSA,R=permanent]")
+                                  "[L,NE,R=permanent]")
 
         self.assertTrue(not_commented_cond1 in conf_line_set)
         self.assertTrue(not_commented_rewrite_rule in conf_line_set)
