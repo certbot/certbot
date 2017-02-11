@@ -145,6 +145,10 @@ REWRITE_HTTPS_ARGS_WITH_END = [
 """Apache version >= 2.3.9 rewrite rule arguments used for redirections to
     https vhost"""
 
+OLD_REWRITE_HTTPS_ARGS = [
+    ["^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,QSA,R=permanent]"],
+    ["^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[END,QSA,R=permanent]"]]
+
 HSTS_ARGS = ["always", "set", "Strict-Transport-Security",
              "\"max-age=31536000\""]
 """Apache header arguments for HSTS"""
