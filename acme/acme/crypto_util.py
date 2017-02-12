@@ -149,18 +149,24 @@ def probe_sni(name, host, port=443, timeout=300,
             raise errors.Error(error)
     return client_ssl.get_peer_certificate()
 
-def make_csr(domains, private_key=None):
-    """Generate a private key and CSR.
+def make_private_key():
+    """Generate a private key.
 
-    :param list domains: List of DNS names to include in subjectAltNames of CSR.
-    :returns: tuple of CSR as OpenSSL.crypto.X509Req and private key as buffer
-        containing PEM-encoded PKCS#8.
+    :returns: buffer containing PEM-encoded PKCS#8 private key.
     """
-    if private_key is None:
-        pkey = OpenSSL.crypto.PKey()
-        pkey.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
-    else:
-        #...
+    pkey = OpenSSL.crypto.PKey()
+    pkey.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
+    return OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, pkey)
+
+def make_csr(private_key_pem, domains):
+    """Generate a CSR containing a list of domains as subjectAltNames.
+
+    :param buffer private_key_pem: Private key, in PEM PKCS#8 format.
+    :param list domains: List of DNS names to include in subjectAltNames of CSR.
+    :returns: buffer PEM-encoded Certificate Signing Request.
+    """
+    private_key = OpenSSL.crypto.load_privatekey(
+        OpenSSL.crypto.FILETYPE_PEM, private_key_pem)
     csr = OpenSSL.crypto.X509Req()
     csr.add_extensions([
         OpenSSL.crypto.X509Extension(
@@ -169,11 +175,11 @@ def make_csr(domains, private_key=None):
             value=', '.join('DNS:' + d for d in domains).encode()
         ),
     ])
-    csr.set_pubkey(pkey)
+    csr.set_pubkey(private_key)
     csr.set_version(2)
-    csr.sign(pkey, 'sha256')
-
-    return csr, OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, pkey)
+    csr.sign(private_key, 'sha256')
+    return OpenSSL.crypto.dump_certificate_request(
+        OpenSSL.crypto.FILETYPE_PEM, csr)
 
 def _pyopenssl_cert_or_req_san(cert_or_req):
     """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.

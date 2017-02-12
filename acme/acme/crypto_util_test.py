@@ -151,6 +151,31 @@ class RandomSnTest(unittest.TestCase):
             self.serial_num.append(cert.get_serial_number())
         self.assertTrue(len(set(self.serial_num)) > 1)
 
+class FunctionTest(unittest.TestCase):
+    """Test for standalone functions."""
+
+    def test_make_private_key(self):
+        from acme.crypto_util import make_private_key
+        pem = make_private_key()
+        self.assertIn("--BEGIN PRIVATE KEY--", pem)
+        self.assertIn("--END PRIVATE KEY--", pem)
+
+    def test_make_csr(self):
+        from acme.crypto_util import make_private_key, make_csr
+        private_key_pem = make_private_key()
+        csr_pem = make_csr(private_key_pem, ["a.example", "b.example"])
+        self.assertIn("--BEGIN CERTIFICATE REQUEST--", csr_pem)
+        self.assertIn("--END CERTIFICATE REQUEST--", csr_pem)
+        csr = OpenSSL.crypto.load_certificate_request(
+            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+        self.assertEquals(len(csr.get_extensions()), 1)
+        self.assertEquals(csr.get_extensions()[0].get_data(),
+            OpenSSL.crypto.X509Extension(
+                'subjectAltName',
+                critical=False,
+                value='DNS:a.example, DNS:b.example',
+            ).get_data(),
+        )
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
