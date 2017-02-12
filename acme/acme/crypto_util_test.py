@@ -168,14 +168,18 @@ class FunctionTest(unittest.TestCase):
         self.assertIn("--END CERTIFICATE REQUEST--", csr_pem)
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, csr_pem)
-        self.assertEquals(len(csr.get_extensions()), 1)
-        self.assertEquals(csr.get_extensions()[0].get_data(),
-            OpenSSL.crypto.X509Extension(
-                'subjectAltName',
-                critical=False,
-                value='DNS:a.example, DNS:b.example',
-            ).get_data(),
-        )
+        # In pyopenssl 0.13 (used with TOXENV=py26-oldest and py27-oldest), csr
+        # objects don't have a get_extensions() method, so we skip this test if
+        # the method isn't available.
+        if hasattr(csr, 'get_extensions'):
+            self.assertEquals(len(csr.get_extensions()), 1)
+            self.assertEquals(csr.get_extensions()[0].get_data(),
+                OpenSSL.crypto.X509Extension(
+                    'subjectAltName',
+                    critical=False,
+                    value='DNS:a.example, DNS:b.example',
+                ).get_data(),
+            )
 
     def test_make_csr_must_staple(self):
         from acme.crypto_util import make_private_key, make_csr
