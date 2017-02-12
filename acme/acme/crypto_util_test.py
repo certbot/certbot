@@ -187,12 +187,12 @@ class FunctionTest(unittest.TestCase):
         csr_pem = make_csr(private_key_pem, ["a.example"], must_staple=True)
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, csr_pem)
-        self.assertEquals(len(csr.get_extensions()), 2)
 
         # In pyopenssl 0.13 (used with TOXENV=py26-oldest and py27-oldest), csr
         # objects don't have a get_extensions() method, so we skip this test if
         # the method isn't available.
         if hasattr(csr, 'get_extensions'):
+            self.assertEquals(len(csr.get_extensions()), 2)
             # NOTE: Ideally we would filter by the TLS Feature OID, but
             # OpenSSL.crypto.X509Extension doesn't give us the extension's raw OID,
             # and the shortname field is just "UNDEF"
