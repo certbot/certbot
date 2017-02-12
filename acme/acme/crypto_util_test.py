@@ -164,8 +164,8 @@ class FunctionTest(unittest.TestCase):
         from acme.crypto_util import make_private_key, make_csr
         private_key_pem = make_private_key()
         csr_pem = make_csr(private_key_pem, ["a.example", "b.example"])
-        self.assertIn("--BEGIN CERTIFICATE REQUEST--", csr_pem)
-        self.assertIn("--END CERTIFICATE REQUEST--", csr_pem)
+        self.assertTrue("--BEGIN CERTIFICATE REQUEST--" in csr_pem)
+        self.assertTrue("--END CERTIFICATE REQUEST--" in csr_pem)
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, csr_pem)
         # In pyopenssl 0.13 (used with TOXENV=py26-oldest and py27-oldest), csr
