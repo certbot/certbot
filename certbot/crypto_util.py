@@ -63,7 +63,7 @@ def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
     return util.Key(key_path, key_pem)
 
 
-def init_save_csr(privkey, names, path, csrname="csr-certbot.pem"):
+def init_save_csr(privkey, names, path):
     """Initialize a CSR with the given private key.
 
     :param privkey: Key to include in the CSR
@@ -79,61 +79,20 @@ def init_save_csr(privkey, names, path, csrname="csr-certbot.pem"):
     """
     config = zope.component.getUtility(interfaces.IConfig)
 
-    csr_pem, csr_der = make_csr(privkey.pem, names,
-        must_staple=config.must_staple)
+    csr_pem = acme_crypto_util.make_csr(
+        privkey.pem, names, must_staple=config.must_staple)
 
     # Save CSR
     util.make_or_verify_dir(path, 0o755, os.geteuid(),
                                config.strict_permissions)
     csr_f, csr_filename = util.unique_file(
-        os.path.join(path, csrname), 0o644, "wb")
+        os.path.join(path, "csr-certbot.pem"), 0o644, "wb")
     csr_f.write(csr_pem)
     csr_f.close()
 
     logger.info("Creating CSR: %s", csr_filename)
 
-    return util.CSR(csr_filename, csr_der, "der")
-
-
-# Lower level functions
-def make_csr(key_str, domains, must_staple=False):
-    """Generate a CSR.
-
-    :param str key_str: PEM-encoded RSA key.
-    :param list domains: Domains included in the certificate.
-
-    .. todo:: Detect duplicates in `domains`? Using a set doesn't
-              preserve order...
-
-    :returns: new CSR in PEM and DER form containing all domains
-    :rtype: tuple
-
-    """
-    assert domains, "Must provide one or more hostnames for the CSR."
-    pkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, key_str)
-    req = OpenSSL.crypto.X509Req()
-    req.get_subject().CN = domains[0]
-    # TODO: what to put into req.get_subject()?
-    # TODO: put SAN if len(domains) > 1
-    extensions = [
-        OpenSSL.crypto.X509Extension(
-            b"subjectAltName",
-            critical=False,
-            value=", ".join("DNS:%s" % d for d in domains).encode('ascii')
-        )
-    ]
-    if must_staple:
-        extensions.append(OpenSSL.crypto.X509Extension(
-            b"1.3.6.1.5.5.7.1.24",
-            critical=False,
-            value=b"DER:30:03:02:01:05"))
-    req.add_extensions(extensions)
-    req.set_version(2)
-    req.set_pubkey(pkey)
-    req.sign(pkey, "sha256")
-    return tuple(OpenSSL.crypto.dump_certificate_request(method, req)
-                 for method in (OpenSSL.crypto.FILETYPE_PEM,
-                                OpenSSL.crypto.FILETYPE_ASN1))
+    return util.CSR(csr_filename, csr_pem, "pem")
 
 
 # WARNING: the csr and private key file are possible attack vectors for TOCTOU

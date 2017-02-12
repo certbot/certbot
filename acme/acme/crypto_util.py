@@ -158,23 +158,31 @@ def make_private_key():
     pkey.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
     return OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, pkey)
 
-def make_csr(private_key_pem, domains):
+def make_csr(private_key_pem, domains, must_staple=False):
     """Generate a CSR containing a list of domains as subjectAltNames.
 
     :param buffer private_key_pem: Private key, in PEM PKCS#8 format.
     :param list domains: List of DNS names to include in subjectAltNames of CSR.
+    :param bool must_staple: Whether to include the TLS Feature extension (aka
+        OCSP Must Staple: https://tools.ietf.org/html/rfc7633).
     :returns: buffer PEM-encoded Certificate Signing Request.
     """
     private_key = OpenSSL.crypto.load_privatekey(
         OpenSSL.crypto.FILETYPE_PEM, private_key_pem)
     csr = OpenSSL.crypto.X509Req()
-    csr.add_extensions([
+    extensions = [
         OpenSSL.crypto.X509Extension(
             'subjectAltName',
             critical=False,
             value=', '.join('DNS:' + d for d in domains).encode()
         ),
-    ])
+    ]
+    if must_staple:
+        extensions.append(OpenSSL.crypto.X509Extension(
+            b"1.3.6.1.5.5.7.1.24",
+            critical=False,
+            value=b"DER:30:03:02:01:05"))
+    csr.add_extensions(extensions)
     csr.set_pubkey(private_key)
     csr.set_version(2)
     csr.sign(private_key, 'sha256')

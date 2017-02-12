@@ -177,5 +177,25 @@ class FunctionTest(unittest.TestCase):
             ).get_data(),
         )
 
+    def test_make_csr_must_staple(self):
+        from acme.crypto_util import make_private_key, make_csr
+        private_key_pem = make_private_key()
+        csr_pem = make_csr(private_key_pem, ["a.example"], must_staple=True)
+        csr = OpenSSL.crypto.load_certificate_request(
+            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+        self.assertEquals(len(csr.get_extensions()), 2)
+
+        # In pyopenssl 0.13 (used with TOXENV=py26-oldest and py27-oldest), csr
+        # objects don't have a get_extensions() method, so we skip this test if
+        # the method isn't available.
+        if hasattr(csr, 'get_extensions'):
+            # NOTE: Ideally we would filter by the TLS Feature OID, but
+            # OpenSSL.crypto.X509Extension doesn't give us the extension's raw OID,
+            # and the shortname field is just "UNDEF"
+            must_staple_exts = [e for e in csr.get_extensions()
+                if e.get_data() == b"0\x03\x02\x01\x05"]
+            self.assertEqual(len(must_staple_exts), 1,
+                "Expected exactly one Must Staple extension")
+
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
