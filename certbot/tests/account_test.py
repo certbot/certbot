@@ -80,8 +80,6 @@ class ReportNewAccountTest(unittest.TestCase):
         self._call()
         call_list = mock_zope().add_message.call_args_list
         self.assertTrue(self.config.config_dir in call_list[0][0][0])
-        self.assertTrue(
-            ", ".join(self.acc.regr.body.emails) in call_list[1][0][0])
 
 
 class AccountMemoryStorageTest(unittest.TestCase):
