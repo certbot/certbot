@@ -82,7 +82,7 @@ class Account(object):  # pylint: disable=too-few-public-methods
                 self.meta == other.meta)
 
 
-def report_new_account(acc, config):
+def report_new_account(config):
     """Informs the user about their new ACME account."""
     reporter = zope.component.queryUtility(interfaces.IReporter)
     if reporter is None:
