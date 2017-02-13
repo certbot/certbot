@@ -240,9 +240,9 @@ class Client(object):
             authzr = self.auth_handler.get_authorizations(domains)
 
         certr = self.acme.request_issuance(
-            jose.ComparableX509(
-                OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr.data),
-                authzr)
+            jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
+                                OpenSSL.crypto.FILETYPE_PEM, csr.data)),
+            authzr)
         return certr, self.acme.fetch_chain(certr)
 
     def obtain_certificate(self, domains):

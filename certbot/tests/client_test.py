@@ -17,7 +17,7 @@ import certbot.tests.util as test_util
 
 
 KEY = test_util.load_vector("rsa512_key.pem")
-CSR_SAN = test_util.load_vector("csr-san.der")
+CSR_SAN = test_util.load_vector("csr-san.pem")
 
 
 class ConfigHelper(object):
@@ -164,7 +164,7 @@ class ClientTest(ClientTestCommon):
 
         self.acme.request_issuance.assert_called_once_with(
             jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
-                OpenSSL.crypto.FILETYPE_ASN1, CSR_SAN)),
+                OpenSSL.crypto.FILETYPE_PEM, CSR_SAN)),
             authzr)
 
         self.acme.fetch_chain.assert_called_once_with(mock.sentinel.certr)
@@ -172,7 +172,7 @@ class ClientTest(ClientTestCommon):
     @mock.patch("certbot.client.logger")
     def test_obtain_certificate_from_csr(self, mock_logger):
         self._mock_obtain_certificate()
-        test_csr = util.CSR(form="der", file=None, data=CSR_SAN)
+        test_csr = util.CSR(form="pem", file=None, data=CSR_SAN)
         auth_handler = self.client.auth_handler
 
         authzr = auth_handler.get_authorizations(self.eg_domains, False)
@@ -207,7 +207,7 @@ class ClientTest(ClientTestCommon):
     def test_obtain_certificate(self, mock_crypto_util):
         self._mock_obtain_certificate()
 
-        csr = util.CSR(form="der", file=None, data=CSR_SAN)
+        csr = util.CSR(form="pem", file=None, data=CSR_SAN)
         mock_crypto_util.init_save_csr.return_value = csr
         mock_crypto_util.init_save_key.return_value = mock.sentinel.key
         domains = ["example.com", "www.example.com"]

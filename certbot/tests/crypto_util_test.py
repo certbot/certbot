@@ -93,9 +93,6 @@ class ValidCSRTest(unittest.TestCase):
     def test_valid_der_false(self):
         self.assertFalse(self._call(test_util.load_vector('csr.der')))
 
-    def test_valid_der_san_false(self):
-        self.assertFalse(self._call(test_util.load_vector('csr-san.der')))
-
     def test_empty_false(self):
         self.assertFalse(self._call(''))
 
