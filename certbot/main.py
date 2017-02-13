@@ -416,7 +416,20 @@ def _delete_if_appropriate(config):
             'a nonexistant file.')
     display = zope.component.getUtility(interfaces.IDisplay)
     if display.yesno(prompt, default=False):
-        cert_manager.delete(config)
+        user_set_certname = bool(config.certname)
+        potential_certname = cert_manager._get_certname(config, 'delete')
+        certname_implied_path = os.path.join(config.live_dir, potential_certname, "fullchain.pem")
+
+        if certname_implied_path != config.cert_path[0]:
+            if user_set_certname:
+                error_msg = "--cert-path and --cert-name were passed conflicating arguments!"
+            else:
+                error_msg = "The certificate you selected for deletion does not match the \
+                        --cert-path you passed in."
+            raise errors.Error(error_msg)
+        else:
+            config.certname = potential_certname
+            cert_manager.delete(config)
 
 def register(config, unused_plugins):
     """Create or modify accounts on the server."""
