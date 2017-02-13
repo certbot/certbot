@@ -82,7 +82,7 @@ class Account(object):  # pylint: disable=too-few-public-methods
                 self.meta == other.meta)
 
 
-def report_new_account(acc, config):
+def report_new_account(config):
     """Informs the user about their new ACME account."""
     reporter = zope.component.queryUtility(interfaces.IReporter)
     if reporter is None:
@@ -95,12 +95,6 @@ def report_new_account(acc, config):
         "so making regular backups of this folder is ideal.".format(
             config.config_dir),
         reporter.MEDIUM_PRIORITY)
-
-    if acc.regr.body.emails:
-        recovery_msg = ("If you lose your account credentials, you can "
-                        "recover through e-mails sent to {0}.".format(
-                            ", ".join(acc.regr.body.emails)))
-        reporter.add_message(recovery_msg, reporter.MEDIUM_PRIORITY)
 
 
 class AccountMemoryStorage(interfaces.AccountStorage):
