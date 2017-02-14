@@ -64,16 +64,17 @@ tests, and be compliant with the :ref:`coding style <coding-style>`.
 Testing
 -------
 
-When you are working in a file foo.py, there should also be a file foo_test.py
+When you are working in a file ``foo.py``, there should also be a file ``foo_test.py``
+either in the same directory as ``foo.py`` or in the ``tests`` subdirectory
 (if there isn't, make one). While you are working on your code and tests, run
 ``python foo_test.py`` to run the relevant tests.
 
-For debugging, we recommend ``pip install ipdb`` and putting
-``import ipdb; ipdb.set_trace()`` statement inside the source
+For debugging, we recommend running ``pip install ipdb`` and putting
+``import ipdb; ipdb.set_trace()`` statements inside the source
 code. Alternatively, you can use Python's standard library `pdb`,
 but you won't get TAB completion.
 
-Once you are done with your code changes, and the tests in foo_test.py pass,
+Once you are done with your code changes, and the tests in ``foo_test.py`` pass,
 run all of the unittests for Certbot with ``tox -e py27`` (this uses Python
 2.7).
 
