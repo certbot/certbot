@@ -157,8 +157,8 @@ class FunctionTest(unittest.TestCase):
     def test_make_private_key(self):
         from acme.crypto_util import make_private_key
         pem = make_private_key()
-        self.assertTrue(b'--BEGIN PRIVATE KEY--', pem)
-        self.assertTrue(b'--END PRIVATE KEY--', pem)
+        self.assertTrue(b'--BEGIN PRIVATE KEY--' in pem)
+        self.assertTrue(b'--END PRIVATE KEY--' in pem)
 
     def test_make_csr(self):
         from acme.crypto_util import make_private_key, make_csr
