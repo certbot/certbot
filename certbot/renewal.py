@@ -20,6 +20,7 @@ from certbot import util
 from certbot import hooks
 from certbot import storage
 from certbot.plugins import disco as plugins_disco
+from certbot.plugins import selection as plug_sel
 
 logger = logging.getLogger(__name__)
 
@@ -360,7 +361,7 @@ def _renew_describe_results(config, renew_successes, renew_failures,
     print("\n".join(out))
 
 
-def handle_renewal_request(config):
+def handle_renewal_request(config):  # pylint: disable=too-many-branches,too-many-statements
     """Examine each lineage; renew if due and report results"""
 
     # This is trivially False if config.domains is empty
@@ -424,6 +425,19 @@ def handle_renewal_request(config):
     # Describe all the results
     _renew_describe_results(config, renew_successes, renew_failures,
                             renew_skipped, parse_failures)
+
+    # Restart if we have successes
+    if renew_successes:
+        try:
+            plugins = plugins_disco.PluginsRegistry.find_all()
+            installer, _ = plug_sel.choose_configurator_plugins(
+                config, plugins, "certonly")
+            if installer:
+                installer.restart()
+
+        except errors.PluginSelectionError as e:
+            logger.info("Could not choose appropriate plugin: %s", e)
+            raise
 
     if renew_failures or parse_failures:
         raise errors.Error("{0} renew failure(s), {1} parse failure(s)".format(
