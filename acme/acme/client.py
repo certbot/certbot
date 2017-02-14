@@ -172,7 +172,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         return self.update_registration(
             regr.update(body=regr.body.update(agreement=regr.terms_of_service)))
 
-    def _authzr_from_response(self, response, uri=None, new_cert_uri=None):
+    def _authzr_from_response(self, response, identifier,
+                              uri=None, new_cert_uri=None):
         # pylint: disable=no-self-use
         if new_cert_uri is None:
             try:
@@ -184,6 +185,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             body=messages.Authorization.from_json(response.json()),
             uri=response.headers.get('Location', uri),
             new_cert_uri=new_cert_uri)
+        if authzr.body.identifier != identifier:
+            raise errors.UnexpectedUpdate(authzr)
         return authzr
 
     def request_challenges(self, identifier, new_authzr_uri=None):
@@ -203,7 +206,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                                  new_authz)
         # TODO: handle errors
         assert response.status_code == http_client.CREATED
-        return self._authzr_from_response(response)
+        return self._authzr_from_response(response, identifier)
 
     def request_domain_challenges(self, domain, new_authzr_uri=None):
         """Request challenges for domain names.
@@ -234,6 +237,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :returns: Challenge Resource with updated body.
         :rtype: `.ChallengeResource`
 
+        :raises .UnexpectedUpdate:
+
         """
         response = self.net.post(challb.uri, response)
         try:
@@ -243,6 +248,9 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         challr = messages.ChallengeResource(
             authzr_uri=authzr_uri,
             body=messages.ChallengeBody.from_json(response.json()))
+        # TODO: check that challr.uri == response.headers['Location']?
+        if challr.uri != challb.uri:
+            raise errors.UnexpectedUpdate(challr.uri)
         return challr
 
     @classmethod
@@ -290,7 +298,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         """
         response = self.net.get(authzr.uri)
         updated_authzr = self._authzr_from_response(
-            response, authzr.uri, authzr.new_cert_uri)
+            response, authzr.body.identifier, authzr.uri, authzr.new_cert_uri)
         return updated_authzr, response
 
     def request_issuance(self, csr, authzrs):
@@ -434,6 +442,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         response, cert = self._get_cert(certr.uri)
         if 'Location' not in response.headers:
             raise errors.ClientError('Location header missing')
+        if response.headers['Location'] != certr.uri:
+            raise errors.UnexpectedUpdate(response.text)
         return certr.update(body=cert)
 
     def refresh(self, certr):
