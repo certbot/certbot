@@ -104,10 +104,10 @@ class ChooseAccountTest(unittest.TestCase):
         self.key = KEY
 
         self.acc1 = account.Account(messages.RegistrationResource(
-            uri=None, new_authzr_uri=None, body=messages.Registration.from_data(
+            uri=None, body=messages.Registration.from_data(
                 email="email1@g.com")), self.key)
         self.acc2 = account.Account(messages.RegistrationResource(
-            uri=None, new_authzr_uri=None, body=messages.Registration.from_data(
+            uri=None, body=messages.Registration.from_data(
                 email="email2@g.com", phone="phone")), self.key)
 
     @classmethod

@@ -191,7 +191,7 @@ class Directory(jose.JSONDeSerializable):
         try:
             return self[name.replace('_', '-')]
         except KeyError as error:
-            raise AttributeError(str(error))
+            raise AttributeError(str(error) + ': ' + name)
 
     def __getitem__(self, name):
         try:
@@ -315,12 +315,10 @@ class RegistrationResource(ResourceWithURI):
     """Registration Resource.
 
     :ivar acme.messages.Registration body:
-    :ivar unicode new_authzr_uri: URI found in the 'next' ``Link`` header
     :ivar unicode terms_of_service: URL for the CA TOS.
 
     """
     body = jose.Field('body', decoder=Registration.from_json)
-    new_authzr_uri = jose.Field('new_authzr_uri')
     terms_of_service = jose.Field('terms_of_service', omitempty=True)
 
 
@@ -425,11 +423,9 @@ class AuthorizationResource(ResourceWithURI):
     """Authorization Resource.
 
     :ivar acme.messages.Authorization body:
-    :ivar unicode new_cert_uri: URI found in the 'next' ``Link`` header
 
     """
     body = jose.Field('body', decoder=Authorization.from_json)
-    new_cert_uri = jose.Field('new_cert_uri')
 
 
 @Directory.register
