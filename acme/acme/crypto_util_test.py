@@ -157,15 +157,15 @@ class FunctionTest(unittest.TestCase):
     def test_make_private_key(self):
         from acme.crypto_util import make_private_key
         pem = make_private_key()
-        self.assertIn("--BEGIN PRIVATE KEY--", pem)
-        self.assertIn("--END PRIVATE KEY--", pem)
+        self.assertTrue(b'--BEGIN PRIVATE KEY--', pem)
+        self.assertTrue(b'--END PRIVATE KEY--', pem)
 
     def test_make_csr(self):
         from acme.crypto_util import make_private_key, make_csr
         private_key_pem = make_private_key()
         csr_pem = make_csr(private_key_pem, ["a.example", "b.example"])
-        self.assertTrue("--BEGIN CERTIFICATE REQUEST--" in csr_pem)
-        self.assertTrue("--END CERTIFICATE REQUEST--" in csr_pem)
+        self.assertTrue(b'--BEGIN CERTIFICATE REQUEST--' in csr_pem)
+        self.assertTrue(b'--END CERTIFICATE REQUEST--' in csr_pem)
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, csr_pem)
         # In pyopenssl 0.13 (used with TOXENV=py26-oldest and py27-oldest), csr
@@ -175,9 +175,9 @@ class FunctionTest(unittest.TestCase):
             self.assertEquals(len(csr.get_extensions()), 1)
             self.assertEquals(csr.get_extensions()[0].get_data(),
                 OpenSSL.crypto.X509Extension(
-                    'subjectAltName',
+                    b'subjectAltName',
                     critical=False,
-                    value='DNS:a.example, DNS:b.example',
+                    value=b'DNS:a.example, DNS:b.example',
                 ).get_data(),
             )
 

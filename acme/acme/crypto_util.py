@@ -172,7 +172,7 @@ def make_csr(private_key_pem, domains, must_staple=False):
     csr = OpenSSL.crypto.X509Req()
     extensions = [
         OpenSSL.crypto.X509Extension(
-            'subjectAltName',
+            b'subjectAltName',
             critical=False,
             value=', '.join('DNS:' + d for d in domains).encode('ascii')
         ),
