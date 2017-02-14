@@ -627,6 +627,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         kwargs['verify'] = self.verify_ssl
         kwargs.setdefault('headers', {})
         kwargs['headers'].setdefault('User-Agent', self.user_agent)
+        kwargs.setdefault('timeout', 45) # timeout after 45 seconds
         response = self.session.request(method, url, *args, **kwargs)
         # If content is DER, log the base64 of it instead of raw bytes, to keep
         # binary data out of the logs.
