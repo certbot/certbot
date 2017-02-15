@@ -146,7 +146,7 @@ def import_csr_file(csrfile, data):
     :param str csrfile: CSR filename
     :param str data: contents of the CSR file
 
-    :returns: (`OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`,
+    :returns: (`OpenSSL.crypto.FILETYPE_PEM`,
                util.CSR object representing the CSR,
                list of domains requested in the CSR)
     :rtype: tuple
