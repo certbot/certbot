@@ -137,7 +137,7 @@ def register(config, account_storage, tos_cb=None):
         regr = acme.agree_to_tos(regr)
 
     acc = account.Account(regr, key)
-    account.report_new_account(acc, config)
+    account.report_new_account(config)
     account_storage.save(acc)
 
     eff.handle_subscription(config)

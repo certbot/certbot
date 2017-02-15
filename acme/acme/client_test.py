@@ -40,6 +40,8 @@ class ClientTest(unittest.TestCase):
                 'https://www.letsencrypt-demo.org/acme/revoke-cert',
             messages.NewAuthorization:
                 'https://www.letsencrypt-demo.org/acme/new-authz',
+            messages.CertificateRequest:
+                'https://www.letsencrypt-demo.org/acme/new-cert',
         })
 
         from acme.client import Client
@@ -56,7 +58,6 @@ class ClientTest(unittest.TestCase):
         self.new_reg = messages.NewRegistration(**dict(reg))
         self.regr = messages.RegistrationResource(
             body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1',
-            new_authzr_uri='https://www.letsencrypt-demo.org/acme/new-reg',
             terms_of_service='https://www.letsencrypt-demo.org/tos')
 
         # Authorization
@@ -72,8 +73,7 @@ class ClientTest(unittest.TestCase):
                 typ=messages.IDENTIFIER_FQDN, value='example.com'),
             challenges=(challb,), combinations=None)
         self.authzr = messages.AuthorizationResource(
-            body=self.authz, uri=authzr_uri,
-            new_cert_uri='https://www.letsencrypt-demo.org/acme/new-cert')
+            body=self.authz, uri=authzr_uri)
 
         # Request issuance
         self.certr = messages.CertificateResource(
@@ -98,17 +98,11 @@ class ClientTest(unittest.TestCase):
         self.response.json.return_value = self.regr.body.to_json()
         self.response.headers['Location'] = self.regr.uri
         self.response.links.update({
-            'next': {'url': self.regr.new_authzr_uri},
             'terms-of-service': {'url': self.regr.terms_of_service},
         })
 
         self.assertEqual(self.regr, self.client.register(self.new_reg))
         # TODO: test POST call arguments
-
-    def test_register_missing_next(self):
-        self.response.status_code = http_client.CREATED
-        self.assertRaises(
-            errors.ClientError, self.client.register, self.new_reg)
 
     def test_update_registration(self):
         # "Instance of 'Field' has no to_json/update member" bug:
@@ -142,13 +136,6 @@ class ClientTest(unittest.TestCase):
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr, self.client.query_registration(self.regr))
 
-    def test_query_registration_updates_new_authzr_uri(self):
-        self.response.json.return_value = self.regr.body.to_json()
-        self.response.links = {'next': {'url': 'UPDATED'}}
-        self.assertEqual(
-            'UPDATED',
-            self.client.query_registration(self.regr).new_authzr_uri)
-
     def test_agree_to_tos(self):
         self.client.update_registration = mock.Mock()
         self.client.agree_to_tos(self.regr)
@@ -159,9 +146,6 @@ class ClientTest(unittest.TestCase):
         self.response.status_code = http_client.CREATED
         self.response.headers['Location'] = self.authzr.uri
         self.response.json.return_value = self.authz.to_json()
-        self.response.links = {
-            'next': {'url': self.authzr.new_cert_uri},
-        }
 
     def test_request_challenges(self):
         self._prepare_response_for_request_challenges()
@@ -172,8 +156,9 @@ class ClientTest(unittest.TestCase):
 
     def test_request_challenges_custom_uri(self):
         self._prepare_response_for_request_challenges()
-        self.client.request_challenges(self.identifier, 'URI')
-        self.net.post.assert_called_once_with('URI', mock.ANY)
+        self.client.request_challenges(self.identifier)
+        self.net.post.assert_called_once_with(
+            'https://www.letsencrypt-demo.org/acme/new-authz', mock.ANY)
 
     def test_request_challenges_unexpected_update(self):
         self._prepare_response_for_request_challenges()
@@ -181,24 +166,13 @@ class ClientTest(unittest.TestCase):
             identifier=self.identifier.update(value='foo')).to_json()
         self.assertRaises(
             errors.UnexpectedUpdate, self.client.request_challenges,
-            self.identifier, self.authzr.uri)
-
-    def test_request_challenges_missing_next(self):
-        self.response.status_code = http_client.CREATED
-        self.assertRaises(errors.ClientError, self.client.request_challenges,
-                          self.identifier)
+            self.identifier)
 
     def test_request_domain_challenges(self):
         self.client.request_challenges = mock.MagicMock()
         self.assertEqual(
             self.client.request_challenges(self.identifier),
             self.client.request_domain_challenges('example.com'))
-
-    def test_request_domain_challenges_custom_uri(self):
-        self.client.request_challenges = mock.MagicMock()
-        self.assertEqual(
-            self.client.request_challenges(self.identifier, 'URI'),
-            self.client.request_domain_challenges('example.com', 'URI'))
 
     def test_answer_challenge(self):
         self.response.links['up'] = {'url': self.challr.authzr_uri}
