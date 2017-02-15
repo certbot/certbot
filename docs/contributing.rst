@@ -104,10 +104,14 @@ and working. Fetch and start Boulder using:
 
   ./tests/boulder-fetch.sh
 
+If you have problems with Docker, you may want to try `removing all containers and
+volumes`_.
+
 Run the integration tests using:
 
   ./tests/boulder-integration.sh
 
+:: _removing all containers and volumes: https://www.digitalocean.com/community/tutorials/how-to-remove-docker-images-containers-and-volumes
 
 Code components and layout
 ==========================
