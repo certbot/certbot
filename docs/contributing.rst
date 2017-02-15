@@ -102,12 +102,16 @@ Integration testing with the Boulder CA
 To run integration tests locally, you need Docker and docker-compose installed
 and working. Fetch and start Boulder using:
 
+.. code-block:: shell
+
   ./tests/boulder-fetch.sh
 
 If you have problems with Docker, you may want to try `removing all containers and
 volumes`_ and making sure you have at least 1GB of memory.
 
 Run the integration tests using:
+
+.. code-block:: shell
 
   ./tests/boulder-integration.sh
 
