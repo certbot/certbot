@@ -10,10 +10,6 @@ before_install:
 # using separate envs with different TOXENVs creates 4x1 Travis build
 # matrix, which allows us to clearly distinguish which component under
 # test has failed
-env:
-  global:
-    - BOULDERPATH=$PWD/boulder/
-
 matrix:
   include:
     - python: "2.7"
