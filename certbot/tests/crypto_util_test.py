@@ -128,12 +128,13 @@ class ImportCSRFileTest(unittest.TestCase):
     def test_der_csr(self):
         csrfile = test_util.vector_path('csr.der')
         data = test_util.load_vector('csr.der')
+        data_pem = test_util.load_vector('csr.pem')
 
         self.assertEqual(
-            (OpenSSL.crypto.FILETYPE_ASN1,
+            (OpenSSL.crypto.FILETYPE_PEM,
              util.CSR(file=csrfile,
-                      data=data,
-                      form="der"),
+                      data=data_pem,
+                      form="pem"),
              ["example.com"],),
             self._call(csrfile, data))
 
@@ -200,36 +201,6 @@ class GetSANsFromCertTest(unittest.TestCase):
             self._call(test_util.load_vector('cert-san.pem')))
 
 
-class GetSANsFromCSRTest(unittest.TestCase):
-    """Tests for certbot.crypto_util.get_sans_from_csr."""
-
-    @classmethod
-    def _call(cls, *args, **kwargs):
-        from certbot.crypto_util import get_sans_from_csr
-        return get_sans_from_csr(*args, **kwargs)
-
-    def test_extract_one_san(self):
-        self.assertEqual(['example.com'], self._call(
-            test_util.load_vector('csr.pem')))
-
-    def test_extract_two_sans(self):
-        self.assertEqual(['example.com', 'www.example.com'], self._call(
-            test_util.load_vector('csr-san.pem')))
-
-    def test_extract_six_sans(self):
-        self.assertEqual(self._call(test_util.load_vector('csr-6sans.pem')),
-                         ["example.com", "example.org", "example.net",
-                          "example.info", "subdomain.example.com",
-                          "other.subdomain.example.com"])
-
-    def test_parse_non_csr(self):
-        self.assertRaises(OpenSSL.crypto.Error, self._call, "hello there")
-
-    def test_parse_no_sans(self):
-        self.assertEqual(
-            [], self._call(test_util.load_vector('csr-nosans.pem')))
-
-
 class GetNamesFromCertTest(unittest.TestCase):
     """Tests for certbot.crypto_util.get_names_from_cert."""
 
@@ -254,36 +225,6 @@ class GetNamesFromCertTest(unittest.TestCase):
         self.assertEqual(
             ['example.com'] + ['{0}.example.com'.format(c) for c in 'abcd'],
             self._call(test_util.load_vector('cert-5sans.pem')))
-
-
-class GetNamesFromCSRTest(unittest.TestCase):
-    """Tests for certbot.crypto_util.get_names_from_csr."""
-    @classmethod
-    def _call(cls, *args, **kwargs):
-        from certbot.crypto_util import get_names_from_csr
-        return get_names_from_csr(*args, **kwargs)
-
-    def test_extract_one_san(self):
-        self.assertEqual(['example.com'], self._call(
-            test_util.load_vector('csr.pem')))
-
-    def test_extract_two_sans(self):
-        self.assertEqual(set(('example.com', 'www.example.com',)), set(
-            self._call(test_util.load_vector('csr-san.pem'))))
-
-    def test_extract_six_sans(self):
-        self.assertEqual(
-            set(self._call(test_util.load_vector('csr-6sans.pem'))),
-            set(("example.com", "example.org", "example.net",
-                 "example.info", "subdomain.example.com",
-                 "other.subdomain.example.com",)))
-
-    def test_parse_non_csr(self):
-        self.assertRaises(OpenSSL.crypto.Error, self._call, "hello there")
-
-    def test_parse_no_sans(self):
-        self.assertEqual(["example.org"],
-                         self._call(test_util.load_vector('csr-nosans.pem')))
 
 
 class CertLoaderTest(unittest.TestCase):

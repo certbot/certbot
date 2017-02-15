@@ -152,16 +152,21 @@ def import_csr_file(csrfile, data):
     :rtype: tuple
 
     """
-    for form, typ in (("der", OpenSSL.crypto.FILETYPE_ASN1,),
-                      ("pem", OpenSSL.crypto.FILETYPE_PEM,),):
+    PEM = OpenSSL.crypto.FILETYPE_PEM
+    load = OpenSSL.crypto.load_certificate_request
+    try:
+        # Try to parse as DER first, then fall back to PEM.
+        csr = load(OpenSSL.crypto.FILETYPE_ASN1, data)
+    except OpenSSL.crypto.Error:
         try:
-            domains = get_names_from_csr(data, typ)
+            csr = load(PEM, data)
         except OpenSSL.crypto.Error:
-            logger.debug("CSR parse error (form=%s, typ=%s):", form, typ)
-            logger.debug(traceback.format_exc())
-            continue
-        return typ, util.CSR(file=csrfile, data=data, form=form), domains
-    raise errors.Error("Failed to parse CSR file: {0}".format(csrfile))
+           raise errors.Error("Failed to parse CSR file: {0}".format(csrfile))
+
+    domains = _get_names_from_loaded_cert_or_req(csr)
+    # Internally we always use PEM, so re-encode as PEM before returning.
+    data_pem = OpenSSL.crypto.dump_certificate_request(PEM, csr)
+    return PEM, util.CSR(file=csrfile, data=data_pem, form="pem"), domains
 
 
 def make_key(bits):
@@ -243,22 +248,12 @@ def get_sans_from_cert(cert, typ=OpenSSL.crypto.FILETYPE_PEM):
         cert, OpenSSL.crypto.load_certificate, typ)
 
 
-def get_sans_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
-    """Get a list of Subject Alternative Names from a CSR.
-
-    :param str csr: CSR (encoded).
-    :param typ: `OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`
-
-    :returns: A list of Subject Alternative Names.
-    :rtype: list
-
-    """
-    return _get_sans_from_cert_or_req(
-        csr, OpenSSL.crypto.load_certificate_request, typ)
-
-
 def _get_names_from_cert_or_req(cert_or_req, load_func, typ):
     loaded_cert_or_req = _load_cert_or_req(cert_or_req, load_func, typ)
+    return _get_names_from_loaded_cert_or_req(loaded_cert_or_req)
+
+
+def _get_names_from_loaded_cert_or_req(loaded_cert_or_req):
     common_name = loaded_cert_or_req.get_subject().CN
     # pylint: disable=protected-access
     sans = acme_crypto_util._pyopenssl_cert_or_req_san(loaded_cert_or_req)
@@ -281,20 +276,6 @@ def get_names_from_cert(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
     """
     return _get_names_from_cert_or_req(
         csr, OpenSSL.crypto.load_certificate, typ)
-
-
-def get_names_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
-    """Get a list of domains from a CSR, including the CN if it is set.
-
-    :param str csr: CSR (encoded).
-    :param typ: `OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`
-
-    :returns: A list of domain names.
-    :rtype: list
-
-    """
-    return _get_names_from_cert_or_req(
-        csr, OpenSSL.crypto.load_certificate_request, typ)
 
 
 def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
