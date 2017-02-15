@@ -161,7 +161,7 @@ def import_csr_file(csrfile, data):
         try:
             csr = load(PEM, data)
         except OpenSSL.crypto.Error:
-           raise errors.Error("Failed to parse CSR file: {0}".format(csrfile))
+            raise errors.Error("Failed to parse CSR file: {0}".format(csrfile))
 
     domains = _get_names_from_loaded_cert_or_req(csr)
     # Internally we always use PEM, so re-encode as PEM before returning.
