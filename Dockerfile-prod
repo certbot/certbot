@@ -1,0 +1,28 @@
+FROM ubuntu:14.04.5
+
+MAINTAINER  MadLab Brazil Team Maintainers "mesaque.s.silva@gmail.com"
+
+WORKDIR /opt/certbot
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y git-core
+RUN git clone https://github.com/certbot/certbot /opt/certbot/src
+RUN /opt/certbot/src/letsencrypt-auto-source/letsencrypt-auto --os-packages-only && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* \
+           /tmp/* \
+           /var/tmp/*
+
+RUN virtualenv --no-site-packages -p python2 /opt/certbot/venv  && \
+	PATH=/opt/certbot/venv/bin:$PATH && \
+	/bin/cp  /opt/certbot/src/letsencrypt-auto-source/pieces/pipstrap.py /opt/certbot/src/ && \
+	/opt/certbot/venv/bin/python /opt/certbot/src/pipstrap.py && \
+    /opt/certbot/venv/bin/pip install \
+    -e /opt/certbot/src/acme \
+    -e /opt/certbot/src \
+    -e /opt/certbot/src/certbot-apache \
+    -e /opt/certbot/src/certbot-nginx
+
+ENV PATH /opt/certbot/venv/bin:$PATH
+
+ENTRYPOINT [ "certbot" ]
