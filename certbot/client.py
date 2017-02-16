@@ -362,6 +362,48 @@ class Client(object):
 
             return abs_cert_path, abs_chain_path, abs_fullchain_path
 
+    def renew_deploy_certificate(self, domains, privkey_path,
+                           cert_path, chain_path, fullchain_path):
+        """Allow installer to handle renewed certificate
+
+        :param list domains: list of domains to install the certificate
+        :param str privkey_path: path to certificate private key
+        :param str cert_path: certificate file path (optional)
+        :param str chain_path: chain file path
+
+        """
+        if self.installer is None:
+            logger.warning("No installer specified, client is unable to deploy"
+                           "the certificate")
+            raise errors.Error("No installer available")
+
+        chain_path = None if chain_path is None else os.path.abspath(chain_path)
+
+        with error_handler.ErrorHandler(self.installer.recovery_routine):
+            for dom in domains:
+                # this is an optional method. be sure it exists
+                # before executing
+                if (hasattr(self.installer, 'renew_deploy_cert') and
+                    callable(getattr(self.installer, 'renew_deploy_cert'))):
+                    self.installer.renew_deploy_cert(
+                    domain=dom, cert_path=os.path.abspath(cert_path),
+                    key_path=os.path.abspath(privkey_path),
+                    chain_path=chain_path,
+                    fullchain_path=fullchain_path)
+
+                self.installer.save()  # needed by the Apache plugin
+
+            self.installer.save("Deployed ACME Certificate")
+
+        msg = ("We were unable to install your certificate, "
+               "however, we successfully restored your "
+               "server to its prior configuration.")
+        with error_handler.ErrorHandler(self._rollback_and_restart, msg):
+            # sites may have been enabled / final cleanup
+            self.installer.restart()
+
+
+
     def deploy_certificate(self, domains, privkey_path,
                            cert_path, chain_path, fullchain_path):
         """Install certificate
