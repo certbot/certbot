@@ -86,6 +86,21 @@ def _auth_from_available(le_client, config, domains=None, certname=None, lineage
     if lineage is None:
         # This will find a relevant matching lineage that exists
         action, lineage = _find_lineage_for_domains_and_certname(config, domains, certname)
+        if action in ("renew", "reinstall"):
+            # Found existing lineage; update config based on its configuration.
+            try:
+                # Some of the steps of reconstitute(), but without copying
+                # domains and without as much sanity checking.
+                renewalparams = lineage.configuration["renewalparams"]
+                renewal.restore_required_config_elements(config, renewalparams)
+                renewal.restore_plugin_configs(config, renewalparams)
+            except (KeyError, ValueError) as exc:
+                logger.info(exc)
+                logger.info("Renewal configuration file %s is broken or "
+                            "missing elements when attempting to get defaults. "
+                            "Skipping.", lineage.lineagename)
+                logger.debug("Traceback was:\n%s", traceback.format_exc())
+
     else:
         # Renewal, where we already know the specific lineage we're
         # interested in
