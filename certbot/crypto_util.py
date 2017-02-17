@@ -6,7 +6,6 @@
 """
 import logging
 import os
-import traceback
 
 import OpenSSL
 import pyrfc3339
