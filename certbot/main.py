@@ -629,7 +629,7 @@ def _csr_obtain_cert(config, le_client):
     So we just save the cert & chain to disk :/
     """
     csr, typ = config.actual_csr
-    certr, chain = le_client.obtain_certificate_from_csr(config.domains, csr, typ)
+    certr, chain = le_client.obtain_certificate_from_csr(config.domains, csr)
     if config.dry_run:
         logger.debug(
             "Dry run: skipping saving certificate to %s", config.cert_path)
