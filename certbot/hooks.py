@@ -44,8 +44,12 @@ def validate_hook(shell_cmd, hook_name):
         cmd = shell_cmd.split(None, 1)[0]
         if not _prog(cmd):
             path = os.environ["PATH"]
-            msg = "Unable to find {2}-hook command {0} in the PATH.\n(PATH is {1})".format(
-                cmd, path, hook_name)
+            if os.path.exists(cmd):
+                msg = "{1}-hook command {0} exists, but is not executable.".format(cmd, hook_name)
+            else:
+                msg = "Unable to find {2}-hook command {0} in the PATH.\n(PATH is {1})".format(
+                    cmd, path, hook_name)
+                
             raise errors.HookCommandNotFound(msg)
 
 def pre_hook(config):
