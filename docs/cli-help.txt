@@ -86,7 +86,7 @@ optional arguments:
                         statistics about success rates by OS and plugin. If
                         you wish to hide your server OS version from the Let's
                         Encrypt server, set this to "". (default:
-                        CertbotACMEClient/0.11.0 (Ubuntu 16.04.1 LTS)
+                        CertbotACMEClient/0.11.1 (Ubuntu 16.04.1 LTS)
                         Authenticator/XXX Installer/YYY)
 
 automation:

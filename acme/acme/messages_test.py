@@ -225,14 +225,12 @@ class RegistrationResourceTest(unittest.TestCase):
         from acme.messages import RegistrationResource
         self.regr = RegistrationResource(
             body=mock.sentinel.body, uri=mock.sentinel.uri,
-            new_authzr_uri=mock.sentinel.new_authzr_uri,
             terms_of_service=mock.sentinel.terms_of_service)
 
     def test_to_partial_json(self):
         self.assertEqual(self.regr.to_json(), {
             'body': mock.sentinel.body,
             'uri': mock.sentinel.uri,
-            'new_authzr_uri': mock.sentinel.new_authzr_uri,
             'terms_of_service': mock.sentinel.terms_of_service,
         })
 
@@ -346,9 +344,7 @@ class AuthorizationResourceTest(unittest.TestCase):
         from acme.messages import AuthorizationResource
         authzr = AuthorizationResource(
             uri=mock.sentinel.uri,
-            body=mock.sentinel.body,
-            new_cert_uri=mock.sentinel.new_cert_uri,
-        )
+            body=mock.sentinel.body)
         self.assertTrue(isinstance(authzr, jose.JSONDeSerializable))
 
 

@@ -22,7 +22,7 @@ Getting certificates (and choosing plugins)
 ===========================================
 
 The Certbot client supports two types of plugins for
-obtaining and installing certificates.
+obtaining and installing certificates: authenticators and installers.
 
 Authenticators are plugins used with the ``certonly`` command to obtain a cert.
 The authenticator validates that you
@@ -60,7 +60,7 @@ manual_     Y    N    | Helps you obtain a cert by giving you instructions to pe
                       | customized way.
 =========== ==== ==== =============================================================== =============================
 
-Under the hood, plugins use one of several ACME protocol "Challenges_" to
+Under the hood, plugins use one of several ACME protocol challenges_ to
 prove you control a domain.  The options are http-01_ (which uses port 80),
 tls-sni-01_ (port 443) and dns-01_ (requiring configuration of a DNS server on
 port 53, though that's often not the same machine as your webserver). A few
@@ -70,7 +70,7 @@ with ``--preferred-challenges``.
 There are also many third-party-plugins_ available. Below we describe in more detail
 the circumstances in which each plugin can be used, and how to use it.
 
-.. _Challenges: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7
+.. _challenges: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7
 .. _tls-sni-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7.3
 .. _http-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7.2
 .. _dns-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7.4
@@ -215,78 +215,148 @@ heroku_     Y    Y    Integration with Heroku SSL
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
-Re-running Certbot
-==================
+.. _managing-certs:
 
-Running Certbot with the ``certonly`` or ``run`` commands always requests
-the creation of a single new certificate, even if you already have an
-existing certificate with some of the same domain names. The ``--force-renewal``,
-``--duplicate``, and ``--expand`` options control Certbot's behavior in this case.
+Managing certificates
+=====================
+
+To view a list of the certificates Certbot knows about, run
+the ``certificates`` subcommand:
+
+``certbot certificates``
+
+This returns information in the following format::
+
+  Found the following certs:
+    Certificate Name: example.com
+      Domains: example.com, www.example.com
+      Expiry Date: 2017-02-19 19:53:00+00:00 (VALID: 30 days)
+      Certificate Path: /etc/letsencrypt/live/example.com/fullchain.pem
+      Private Key Path: /etc/letsencrypt/live/example.com/privkey.pem
+
+``Certificate Name`` shows the name of the certificate. Pass this name
+using the ``--cert-name`` flag to specify a particular certificate for the ``run``,
+``certonly``, ``certificates``, ``renew``, and ``delete`` commands. Example::
+
+  certbot certonly --cert-name example.com
+
+
+Re-creating and Updating Existing Certificates
+----------------------------------------------
+
+You can use ``certonly`` or ``run`` subcommands to request
+the creation of a single new certificate even if you already have an
+existing certificate with some of the same domain names.
+
+If a certificate is requested with ``run`` or ``certonly`` specifying a
+certificate name that already exists, Certbot updates
+the existing certificate. Otherwise a new certificate
+is created and assigned the specified name.
+
+The ``--force-renewal``, ``--duplicate``, and ``--expand`` options
+control Certbot's behavior when re-creating
+a certificate with the same name as an existing certificate.
 If you don't specify a requested behavior, Certbot may ask you what you intended.
 
+
 ``--force-renewal`` tells Certbot to request a new certificate
-with the same domains as an existing certificate. (Each and every domain
-must be explicitly specified via ``-d``.) If successful, this certificate
-will be saved alongside the earlier one and symbolic links (the "``live``"
+with the same domains as an existing certificate. Each domain
+must be explicitly specified via ``-d``. If successful, this certificate
+is saved alongside the earlier one and symbolic links (the "``live``"
 reference) will be updated to point to the new certificate. This is a
-valid method of explicitly requesting the renewal of a specific individual
+valid method of renewing a specific individual
 certificate.
 
 ``--duplicate`` tells Certbot to create a separate, unrelated certificate
-with the same domains as an existing certificate. This certificate will
-be saved completely separately from the prior one. Most users probably
-do not want this behavior.
+with the same domains as an existing certificate. This certificate is
+saved completely separately from the prior one. Most users will not
+need to issue this command in normal circumstances.
 
 ``--expand`` tells Certbot to update an existing certificate with a new
 certificate that contains all of the old domains and one or more additional
 new domains.
 
-``--allow-subset-of-names`` tells Certbot to continue with cert generation if
+``--allow-subset-of-names`` tells Certbot to continue with certificate generation if
 only some of the specified domain authorizations can be obtained. This may
 be useful if some domains specified in a certificate no longer point at this
 system.
 
 Whenever you obtain a new certificate in any of these ways, the new
-certificate exists alongside any previously-obtained certificates, whether
+certificate exists alongside any previously obtained certificates, whether
 or not the previous certificates have expired. The generation of a new
 certificate counts against several rate limits that are intended to prevent
 abuse of the ACME protocol, as described
 `here <https://community.letsencrypt.org/t/rate-limits-for-lets-encrypt/6769>`__.
 
+Changing a Certificate's Domains
+--------------------------------
+
+The ``--cert-name`` flag can also be used to modify the domains a certificate contains,
+by specifying new domains using the ``-d`` or ``--domains`` flag. If certificate ``example.com``
+previously contained ``example.com`` and ``www.example.com``, it can be modified to only
+contain ``example.com`` by specifying only ``example.com`` with the ``-d`` or ``--domains`` flag. Example::
+
+  certbot certonly --cert-name example.com -d example.com
+
+The same format can be used to expand the set of domains a certificate contains, or to
+replace that set entirely::
+
+  certbot certonly --cert-name example.com -d example.org,www.example.org
+
+
+Revoking certificates
+---------------------
+
+If your account key has been compromised or you otherwise need to revoke a certificate,
+use the ``revoke`` command to do so. Note that the ``revoke`` command takes the certificate path
+(ending in ``cert.pem``), not a certificate name or domain. Example::
+
+  certbot revoke --cert-path /etc/letsencrypt/live/CERTNAME/cert.pem
+
+Additionally, if a certificate
+is a test cert obtained via the ``--staging`` or ``--test-cert`` flag, that flag must be passed to the
+``revoke`` subcommand.
+Once a certificate is revoked (or for other cert management tasks), all of a certificate's
+relevant files can be removed from the system with the ``delete`` subcommand::
+
+  certbot delete --cert-name example.com
+
+.. note:: If you don't use ``delete`` to remove the certificate completely, it will be renewed automatically at the next renewal event.
+
 .. _renewal:
 
 Renewing certificates
-=====================
+---------------------
 
 .. note:: Let's Encrypt CA issues short-lived certificates (90
    days). Make sure you renew the certificates at least once in 3
    months.
 
-The ``certbot`` client now supports a ``renew`` action to check
+As of version 0.10.0, Certbot supports a ``renew`` action to check
 all installed certificates for impending expiry and attempt to renew
 them. The simplest form is simply
 
 ``certbot renew``
 
-This will attempt to renew any previously-obtained certificates that
+This command attempts to renew any previously-obtained certificates that
 expire in less than 30 days. The same plugin and options that were used
 at the time the certificate was originally issued will be used for the
 renewal attempt, unless you specify other plugins or options. Unlike ``certonly``, ``renew`` acts on
 multiple certificates and always takes into account whether each one is near
 expiry. Because of this, ``renew`` is suitable (and designed) for automated use,
 to allow your system to automatically renew each certificate when appropriate.
-Since ``renew`` will only renew certificates that are near expiry it can be
+Since ``renew`` only renews certificates that are near expiry it can be
 run as frequently as you want - since it will usually take no action.
 
-You can also specify hooks to be run before or after a certificate is
-renewed. For example, if you have only a single cert and you obtained it using
-the standalone_ plugin, it will be used by default when renewing. In that case
-you may want to use a command like this to renew your certificate.
+The ``renew`` command includes hooks for running commands or scripts before or after a certificate is
+renewed. For example, if you have a single cert obtained using
+the standalone_ plugin, you might need to stop the webserver
+before renewing so standalone can bind to the necessary ports, and
+then restart it after the plugin is finished. Example::
 
-``certbot renew --pre-hook "service nginx stop" --post-hook "service nginx start"``
+  certbot renew --pre-hook "service nginx stop" --post-hook "service nginx start"
 
-This will stop Nginx so standalone can bind to the necessary ports and
-then restart Nginx after the plugin is finished. The hooks will only be
+The hooks will only be
 run if a certificate is due for renewal, so you can run this command
 frequently without unnecessarily stopping your webserver. More
 information about renewal hooks can be found by running
@@ -324,30 +394,60 @@ user input (which is useful when running the command from cron).
 
 ``certbot certonly -n -d example.com -d www.example.com``
 
-(All of the domains covered by the certificate must be specified in
+All of the domains covered by the certificate must be specified in
 this case in order to renew and replace the old certificate rather
 than obtaining a new one; don't forget any `www.` domains! Specifying
 a subset of the domains creates a new, separate certificate containing
-only those domains, rather than replacing the original certificate.)
+only those domains, rather than replacing the original certificate.
 When run with a set of domains corresponding to an existing certificate,
-the ``certonly`` command attempts to renew that one individual certificate.
+the ``certonly`` command attempts to renew that specific certificate.
 
 Please note that the CA will send notification emails to the address
 you provide if you do not renew certificates that are about to expire.
 
-Certbot is working hard on improving the renewal process, and we
-apologize for any inconveniences you encounter in integrating these
+Certbot is working hard to improve the renewal process, and we
+apologize for any inconvenience you encounter in integrating these
 commands into your individual environment.
 
-.. _command-line:
+Modifying the Renewal Configuration File
+----------------------------------------
 
-Certbot command-line options
-============================
+For advanced certificate management tasks, it is possible to manually modify the certificate's
+renewal configuration file, located at ``/etc/letsencrypt/renewal/CERTNAME``.
 
-Certbot supports a lot of command line options.  Here's the full list, from
-``certbot --help all``:
+.. warning:: Modifying any files in ``/etc/letsencrypt`` can damage them so Certbot can no longer properly manage its certificates, and we do not recommend doing so.
 
-.. literalinclude:: cli-help.txt
+For most tasks, it is safest to limit yourself to pointing symlinks at the files there, or using
+``--renew-hook`` to copy / make new files based upon those files, if your operational situation requires it
+(for instance, combining certs and keys in different way, or having copies of things with different
+specific permissions that are demanded by other programs).
+
+If the contents of ``/etc/letsencrypt/archive/CERTNAME`` are moved to a new folder, first specify
+the new folder's name in the renewal configuration file, then run ``certbot update_symlinks`` to
+point the symlinks in ``/etc/letsencrypt/live/CERTNAME`` to the new folder.
+
+If you would like the live certificate files whose symlink location Certbot updates on each run to
+reside in a different location, first move them to that location, then specify the full path of
+each of the four files in the renewal configuration file. Since the symlinks are relative links,
+you must follow this with an invocation of ``certbot update_symlinks``.
+
+For example, say that a certificate's renewal configuration file previously contained the following
+directives::
+
+  archive_dir = /etc/letsencrypt/archive/example.com
+  cert = /etc/letsencrypt/live/example.com/cert.pem
+  privkey = /etc/letsencrypt/live/example.com/privkey.pem
+  chain = /etc/letsencrypt/live/example.com/chain.pem
+  fullchain = /etc/letsencrypt/live/example.com/fullchain.pem
+
+The following commands could be used to specify where these files are located::
+
+  mv /etc/letsencrypt/archive/example.com /home/user/me/certbot/example_archive
+  sed -i 's,/etc/letsencrypt/archive/example.com,/home/user/me/certbot/example_archive,' /etc/letsencrypt/renewal/example.com.conf
+  mv /etc/letsencrypt/live/example.com/*.pem /home/user/me/certbot/
+  sed -i 's,/etc/letsencrypt/live/example.com,/home/user/me/certbot,g' /etc/letsencrypt/renewal/example.com.conf
+  certbot update_symlinks
+
 
 .. _where-certs:
 
@@ -419,16 +519,16 @@ The following files are available:
 Pre and Post Validation Hooks
 =============================
 
-Certbot allows for the specification fo pre and post validation hooks when run
+Certbot allows for the specification of pre and post validation hooks when run
 in manual mode. The flags to specify these scripts are ``--manual-auth-hook``
-and ``--manual-cleanup-hook`` respectively and can be used as such:
+and ``--manual-cleanup-hook`` respectively and can be used as follows:
 
 ::
 
  certbot certonly --manual --manual-auth-hook /path/to/http/authenticator.sh --manual-cleanup-hook /path/to/http/cleanup.sh -d secure.example.com
 
-This will run the authenticator.sh script, attempt the validation, and then run
-the cleanup.sh script. Additionally certbot will pass three environment
+This will run the ``authenticator.sh`` script, attempt the validation, and then run
+the ``cleanup.sh`` script. Additionally certbot will pass three environment
 variables to these scripts:
 
 - ``CERTBOT_DOMAIN``: The domain being authenticated
@@ -535,9 +635,6 @@ Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not 
 
 
 
- 
-
-
 .. _config-file:
 
 Configuration file
@@ -559,6 +656,15 @@ By default, the following locations are searched:
 
 .. keep it up to date with constants.py
 
+.. _command-line:
+
+Certbot command-line options
+============================
+
+Certbot supports a lot of command line options.  Here's the full list, from
+``certbot --help all``:
+
+.. literalinclude:: cli-help.txt
 
 Getting help
 ============
