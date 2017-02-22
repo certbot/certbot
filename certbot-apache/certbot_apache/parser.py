@@ -28,7 +28,7 @@ class ApacheParser(object):
     arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
     fnmatch_chars = set(["*", "?", "\\", "[", "]"])
 
-    def __init__(self, aug, root, vhostroot, version=(2, 4)):
+    def __init__(self, aug, root, vhostroot, version=(2, 4), extra_path=False):
         # Note: Order is important here.
 
         # This uses the binary, so it can be done first.
@@ -59,6 +59,11 @@ class ApacheParser(object):
 
         # Set up rest of locations
         self.loc.update(self._set_locations())
+
+        # Must also attempt to parse virtual host root
+        if extra_path:
+            self.parse_file(self.vhostroot + "/" +
+                            constants.os_constant("vhost_files"))
 
         # check to see if there were unparsed define statements
         if version < (2, 4):

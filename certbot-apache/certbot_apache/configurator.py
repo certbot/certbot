@@ -182,9 +182,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "version 1.2.0 or higher, please make sure you have you have "
                 "those installed.")
 
+        # Determine if we should parse vhostroot (ignore debian/ubuntu default)
+        extra_path = False
+        if self.conf("handle-sites"):
+            if self.conf("vhost-root") != constants.os_constant("vhost_root"):
+                extra_path = True
+
         self.parser = parser.ApacheParser(
             self.aug, self.conf("server-root"), self.conf("vhost-root"),
-            self.version)
+            self.version, extra_path)
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
 

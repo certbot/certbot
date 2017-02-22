@@ -30,9 +30,20 @@ class MultipleVhostsTest(util.ApacheTest):
     def setUp(self):  # pylint: disable=arguments-differ
         super(MultipleVhostsTest, self).setUp()
 
-        self.config = util.get_apache_configurator(
-            self.config_path, self.vhost_path, self.config_dir, self.work_dir)
-        self.config = self.mock_deploy_cert(self.config)
+        from certbot_apache.constants import os_constant
+        orig_os_constant = os_constant
+        def mock_os_constant(key, vhost_path=self.vhost_path):
+            """Mock default vhost path"""
+            if key == "vhost_root":
+                return vhost_path
+            else:
+                return orig_os_constant(key)
+
+        with mock.patch("certbot_apache.constants.os_constant") as mock_c:
+            mock_c.side_effect = mock_os_constant
+            self.config = util.get_apache_configurator(
+                self.config_path, self.vhost_path, self.config_dir, self.work_dir)
+            self.config = self.mock_deploy_cert(self.config)
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
 
