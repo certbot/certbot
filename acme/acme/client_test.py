@@ -543,7 +543,7 @@ class ClientNetworkTest(unittest.TestCase):
             content=b"hi")
         # pylint: disable=protected-access
         self.net._send_request('HEAD', 'http://example.com/', 'foo', bar='baz')
-        mock_logger.debug.assert_called_once_with(
+        mock_logger.debug.assert_called_with(
             'Received response:\nHTTP %d\n%s\n\n%s', 200,
             'Content-Type: application/pkix-cert', b'aGk=')
 
