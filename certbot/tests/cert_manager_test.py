@@ -290,6 +290,16 @@ class LineageForCertnameTest(BaseCertManagerTest):
             None)
         self.assertTrue(mock_make_or_verify_dir.called)
 
+    @mock.patch('certbot.util.make_or_verify_dir')
+    @mock.patch('certbot.storage.renewal_file_for_certname')
+    def test_no_renewal_file(self, mock_renewal_conf_file,
+        mock_make_or_verify_dir):
+        mock_renewal_conf_file.side_effect = errors.CertStorageError()
+        from certbot import cert_manager
+        self.assertEqual(cert_manager.lineage_for_certname(self.cli_config, "example.com"),
+            None)
+        self.assertTrue(mock_make_or_verify_dir.called)
+
 
 class DomainsForCertnameTest(BaseCertManagerTest):
     """Tests for certbot.cert_manager.domains_for_certname"""
