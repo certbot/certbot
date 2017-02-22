@@ -835,7 +835,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def _get_ssl_vhost_path(self, non_ssl_vh_fp):
         # Get filepath of new ssl_vhost
         # Make sure we use the realpath (eg. sites-available instead of
-        # sites-enabled
+        # sites-enabled)
         non_ssl_vh_fp = os.path.realpath(non_ssl_vh_fp)
         if non_ssl_vh_fp.endswith(".conf"):
             return non_ssl_vh_fp[:-(len(".conf"))] + self.conf("le_vhost_ext")
