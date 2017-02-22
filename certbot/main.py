@@ -311,6 +311,8 @@ def _report_new_cert(config, cert_path, fullchain_path):
         _report_successful_dry_run(config)
         return
 
+    assert cert_path and fullchain_path, "No certificates saved to report."
+
     expiry = crypto_util.notAfter(cert_path).date()
     reporter_util = zope.component.getUtility(interfaces.IReporter)
     # Print the path to fullchain.pem because that's what modern webservers
@@ -618,7 +620,7 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     _suggest_donation_if_appropriate(config)
 
 
-def _csr_obtain_cert(config, le_client):
+def _csr_get_and_save_cert(config, le_client):
     """Obtain a cert using a user-supplied CSR
 
     This works differently in the CSR case (for now) because we don't
@@ -674,7 +676,7 @@ def certonly(config, plugins):
     le_client = _init_le_client(config, auth, installer)
 
     if config.csr:
-        cert_path, fullchain_path = _csr_obtain_cert(config, le_client)
+        cert_path, fullchain_path = _csr_get_and_save_cert(config, le_client)
         _report_new_cert(config, cert_path, fullchain_path)
         _suggest_donation_if_appropriate(config)
         return
