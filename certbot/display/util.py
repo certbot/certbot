@@ -253,14 +253,16 @@ class FileDisplay(object):
         :rtype: bool
 
         """
-        msg = "Invalid IDisplay call for this prompt:\n{0}".format(prompt)
-        if cli_flag:
-            msg += ("\nYou can set an answer to "
-                    "this prompt with the {0} flag".format(cli_flag))
-        assert default is not None or force_interactive, msg
-
+        # assert_valid_call(prompt, default, cli_flag, force_interactive)
         if self._can_interact(force_interactive):
             return False
+        elif default is None:
+            msg = "Unable to get an answer for the question:\n{0}".format(prompt)
+            if cli_flag:
+                msg += (
+                    "\nYou can provide an answer on the "
+                    "command line with the {0} flag.".format(cli_flag))
+            raise errors.Error(msg)
         else:
             logger.debug(
                 "Falling back to default %s for the prompt:\n%s",
@@ -403,6 +405,24 @@ class FileDisplay(object):
         return OK, selection
 
 
+def assert_valid_call(prompt, default, cli_flag, force_interactive):
+    """Verify that provided arguments is a valid IDisplay call.
+
+    :param str prompt: prompt for the user
+    :param default: default answer to prompt
+    :param str cli_flag: command line option for setting an answer
+        to this question
+    :param bool force_interactive: if interactivity is forced by the
+        IDisplay call
+
+    """
+    msg = "Invalid IDisplay call for this prompt:\n{0}".format(prompt)
+    if cli_flag:
+        msg += ("\nYou can set an answer to "
+                "this prompt with the {0} flag".format(cli_flag))
+    assert default is not None or force_interactive, msg
+
+
 @zope.interface.implementer(interfaces.IDisplay)
 class NoninteractiveDisplay(object):
     """An iDisplay implementation that never asks for interactive user input"""
@@ -438,7 +458,7 @@ class NoninteractiveDisplay(object):
                 line=os.linesep, frame=side_frame, msg=message))
 
     def menu(self, message, choices, ok_label=None, cancel_label=None,
-             help_label=None, default=None, cli_flag=None, *unused_kwargs):
+             help_label=None, default=None, cli_flag=None, **unused_kwargs):
         # pylint: disable=unused-argument,too-many-arguments
         """Avoid displaying a menu.
 

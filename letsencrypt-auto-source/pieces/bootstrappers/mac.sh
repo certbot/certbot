@@ -23,7 +23,7 @@ BootstrapMac() {
     $pkgcmd python
   fi
 
-  # Workaround for _dlopen not finding augeas on OS X
+  # Workaround for _dlopen not finding augeas on macOS
   if [ "$pkgman" = "port" ] && ! [ -e "/usr/local/lib/libaugeas.dylib" ] && [ -e "/opt/local/lib/libaugeas.dylib" ]; then
     echo "Applying augeas workaround"
     $SUDO mkdir -p /usr/local/lib/
@@ -31,14 +31,14 @@ BootstrapMac() {
   fi
 
   if ! hash pip 2>/dev/null; then
-      echo "pip not installed"
-      echo "Installing pip..."
-      curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | python
+    echo "pip not installed"
+    echo "Installing pip..."
+    curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | python
   fi
 
   if ! hash virtualenv 2>/dev/null; then
-      echo "virtualenv not installed."
-      echo "Installing with pip..."
-      pip install virtualenv
+    echo "virtualenv not installed."
+    echo "Installing with pip..."
+    pip install virtualenv
   fi
 }

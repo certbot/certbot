@@ -15,6 +15,7 @@ from certbot import errors
 from certbot import util
 
 from certbot.tests import acme_util
+from certbot.tests import util as test_util
 
 
 class ChallengeFactoryTest(unittest.TestCase):
@@ -175,7 +176,8 @@ class GetAuthorizationsTest(unittest.TestCase):
         mock_poll.side_effect = self._validate_all
         self.mock_auth.get_chall_pref.return_value.append(challenges.HTTP01)
 
-        self.handler.pref_challs.extend((challenges.HTTP01, challenges.DNS01,))
+        self.handler.pref_challs.extend((challenges.HTTP01.typ,
+                                         challenges.DNS01.typ,))
 
         self.handler.get_authorizations(["0"])
 
@@ -186,7 +188,7 @@ class GetAuthorizationsTest(unittest.TestCase):
     def test_preferred_challenges_not_supported(self):
         self.mock_net.request_domain_challenges.side_effect = functools.partial(
             gen_dom_authzr, challs=acme_util.CHALLENGES)
-        self.handler.pref_challs.append(challenges.HTTP01)
+        self.handler.pref_challs.append(challenges.HTTP01.typ)
         self.assertRaises(
             errors.AuthorizationError, self.handler.get_authorizations, ["0"])
 
@@ -251,7 +253,7 @@ class PollChallengesTest(unittest.TestCase):
             self.assertEqual(authzr.body.status, messages.STATUS_PENDING)
 
     @mock.patch("certbot.auth_handler.time")
-    @mock.patch("certbot.auth_handler.zope.component.getUtility")
+    @test_util.patch_get_utility()
     def test_poll_challenges_failure(self, unused_mock_time, unused_mock_zope):
         self.mock_net.poll.side_effect = self._mock_poll_solve_one_invalid
         self.assertRaises(
@@ -307,7 +309,6 @@ class PollChallengesTest(unittest.TestCase):
 
         new_authzr = messages.AuthorizationResource(
             uri=authzr.uri,
-            new_cert_uri=authzr.new_cert_uri,
             body=messages.Authorization(
                 identifier=authzr.body.identifier,
                 challenges=new_challbs,
@@ -412,7 +413,7 @@ class ReportFailedChallsTest(unittest.TestCase):
             domain="foo.bar",
             account_key="key")
 
-    @mock.patch("certbot.auth_handler.zope.component.getUtility")
+    @test_util.patch_get_utility()
     def test_same_error_and_domain(self, mock_zope):
         from certbot import auth_handler
 
@@ -421,7 +422,7 @@ class ReportFailedChallsTest(unittest.TestCase):
         self.assertTrue(len(call_list) == 1)
         self.assertTrue("Domain: example.com\nType:   tls\nDetail: detail" in call_list[0][0][0])
 
-    @mock.patch("certbot.auth_handler.zope.component.getUtility")
+    @test_util.patch_get_utility()
     def test_different_errors_and_domains(self, mock_zope):
         from certbot import auth_handler
 
@@ -435,7 +436,7 @@ def gen_auth_resp(chall_list):
             for chall in chall_list]
 
 
-def gen_dom_authzr(domain, unused_new_authzr_uri, challs, combos=True):
+def gen_dom_authzr(domain, challs, combos=True):
     """Generates new authzr for domains."""
     return acme_util.gen_authzr(
         messages.STATUS_PENDING, domain, challs,

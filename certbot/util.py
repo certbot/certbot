@@ -219,6 +219,25 @@ def safely_remove(path):
             raise
 
 
+def get_filtered_names(all_names):
+    """Removes names that aren't considered valid by Let's Encrypt.
+
+    :param set all_names: all names found in the configuration
+
+    :returns: all found names that are considered valid by LE
+    :rtype: set
+
+    """
+    filtered_names = set()
+    for name in all_names:
+        try:
+            filtered_names.add(enforce_le_validity(name))
+        except errors.ConfigurationError as error:
+            logger.debug('Not suggesting name "%s"', name)
+            logger.debug(error)
+    return filtered_names
+
+
 def get_os_info(filepath="/etc/os-release"):
     """
     Get OS name and version
@@ -478,13 +497,15 @@ def enforce_domain_sanity(domain):
     # FQDN checks according to RFC 2181: domain name should be less than 255
     # octets (inclusive). And each label is 1 - 63 octets (inclusive).
     # https://tools.ietf.org/html/rfc2181#section-11
-    msg = "Requested domain {0} is not a FQDN because ".format(domain)
+    msg = "Requested domain {0} is not a FQDN because".format(domain)
+    if len(domain) > 255:
+        raise errors.ConfigurationError("{0} it is too long.".format(msg))
     labels = domain.split('.')
     for l in labels:
-        if not 0 < len(l) < 64:
-            raise errors.ConfigurationError(msg + "label {0} is too long.".format(l))
-    if len(domain) > 255:
-        raise errors.ConfigurationError(msg + "it is too long.")
+        if not l:
+            raise errors.ConfigurationError("{0} it contains an empty label.".format(msg))
+        elif len(l) > 63:
+            raise errors.ConfigurationError("{0} label {1} is too long.".format(msg, l))
 
     return domain
 

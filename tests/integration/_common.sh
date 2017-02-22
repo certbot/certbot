@@ -2,7 +2,7 @@
 
 if [ "xxx$root" = "xxx" ];
 then
-    # The -t is required on OS X. It provides a template file path for
+    # The -t is required on macOS. It provides a template file path for
     # the kernel to use.
     root="$(mktemp -d -t leitXXXX)"
     echo "Root integration tests directory: $root"

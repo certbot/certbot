@@ -16,7 +16,7 @@ set -e  # Work even if somebody does "sh thisscript.sh".
 # Note: you can set XDG_DATA_HOME or VENV_PATH before running this script,
 # if you want to change where the virtual environment will be installed
 if [ -z "$XDG_DATA_HOME" ]; then
-  XDG_DATA_HOME="~/.local/share"
+  XDG_DATA_HOME=~/.local/share
 fi
 VENV_NAME="letsencrypt"
 if [ -z "$VENV_PATH" ]; then
@@ -38,8 +38,9 @@ Help for certbot itself cannot be provided until it is installed.
   -n, --non-interactive, --noninteractive   run without asking for user input
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
-  -q, --quiet                               provide only update/error output
   -v, --verbose                             provide more output
+  -q, --quiet                               provide only update/error output;
+                                            implies --non-interactive
 
 All arguments are accepted and forwarded to the Certbot client when run."
 
@@ -84,6 +85,11 @@ if [ $BASENAME = "letsencrypt-auto" ]; then
   HELP=0
 fi
 
+# Set ASSUME_YES to 1 if QUIET (i.e. --quiet implies --non-interactive)
+if [ "$QUIET" = 1 ]; then
+  ASSUME_YES=1
+fi
+
 # Support for busybox and others where there is no "command",
 # but "which" instead
 if command -v command > /dev/null 2>&1 ; then
@@ -99,7 +105,7 @@ fi
 # certbot itself needs root access for almost all modes of operation
 # The "normal" case is that sudo is used for the steps that need root, but
 # this script *can* be run as root (not recommended), or fall back to using
-# `su`. Auto-detection can be overrided by explicitly setting the
+# `su`. Auto-detection can be overridden by explicitly setting the
 # environment variable LE_AUTO_SUDO to 'sudo', 'sudo_su' or '' as used below.
 
 # Because the parameters in `su -c` has to be a string,
@@ -231,7 +237,7 @@ Bootstrap() {
   elif uname | grep -iq FreeBSD ; then
     ExperimentalBootstrap "FreeBSD" BootstrapFreeBsd
   elif uname | grep -iq Darwin ; then
-    ExperimentalBootstrap "Mac OS X" BootstrapMac
+    ExperimentalBootstrap "macOS" BootstrapMac
   elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
     ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
   elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
@@ -247,7 +253,7 @@ Bootstrap() {
 }
 
 TempDir() {
-  mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || OS X
+  mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || macOS
 }
 
 
@@ -260,6 +266,11 @@ if [ "$1" = "--le-auto-phase2" ]; then
     # --version output ran through grep due to python-cryptography DeprecationWarnings
     # grep for both certbot and letsencrypt until certbot and shim packages have been released
     INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | grep "^certbot\|^letsencrypt" | cut -d " " -f 2)
+    if [ -z "$INSTALLED_VERSION" ]; then
+        echo "Error: couldn't get currently installed version for $VENV_BIN/letsencrypt: " 1>&2
+        "$VENV_BIN/letsencrypt" --version
+        exit 1
+    fi
   else
     INSTALLED_VERSION="none"
   fi
@@ -344,7 +355,7 @@ UNLIKELY_EOF
   fi
 
 else
-  # Phase 1: Upgrade certbot-auto if neceesary, then self-invoke.
+  # Phase 1: Upgrade certbot-auto if necessary, then self-invoke.
   #
   # Each phase checks the version of only the thing it is responsible for
   # upgrading. Phase 1 checks the version of the latest release of
@@ -387,7 +398,7 @@ UNLIKELY_EOF
       # TODO: Deal with quotes in pathnames.
       echo "Replacing certbot-auto..."
       # Clone permissions with cp. chmod and chown don't have a --reference
-      # option on OS X or BSD, and stat -c on Linux is stat -f on OS X and BSD:
+      # option on macOS or BSD, and stat -c on Linux is stat -f on macOS and BSD:
       $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
       $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
       # Using mv rather than cp leaves the old file descriptor pointing to the

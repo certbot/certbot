@@ -171,15 +171,15 @@ letsencrypt==0.7.0 \
 
 # THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT; ADD ALL DEPENDENCIES ABOVE.
 
-acme==0.9.3 \
-    --hash=sha256:d18ce17a75ad24d27981dfaef0524aa905eab757b267e027162b56a8967ab8fb \
-    --hash=sha256:a6eff1f955eb2e4316abd9aa2fedb6d9345e6b5b8a2d64ea0ad35e05d6124099
-certbot==0.9.3 \
-    --hash=sha256:a87ef4c53c018df4e52ee2f2e906ad16bbb37789f29e6f284c495a2eb4d9b243 \
-    --hash=sha256:68149cb8392b29f5d5246e7226d25f913f2b10482bf3bc7368e8c8821d25f3b0
-certbot-apache==0.9.3 \
-    --hash=sha256:f379b1053e10709692654d7a6fcea9eaed19b66c49a753b61e31bd06a04b0aac \
-    --hash=sha256:a5d98cf972072de08f984db4e6a7f20269f3f023c43f6d4e781fe43be7c10086
-certbot-nginx==0.9.3 \
-    --hash=sha256:3c26f18f0b57550f069263bd9b2984ef33eab6693e7796611c1b2cc16574069c \
-    --hash=sha256:7337a2e90e0b28a1ab09e31d9fb81c6d78e6453500c824c0f18bab5d31b63058
+acme==0.11.1 \
+    --hash=sha256:9f4efac6dc4477a3baa7eb2392d4f7583f974e4ad336439aa1961ef805622a77 \
+    --hash=sha256:db35258edfc13dfe5839215898fe2d5d3caafc9a084f631a032f3fdf712c694e
+certbot==0.11.1 \
+    --hash=sha256:ba80552df0f390dbc5fcd14b4ea4b1499ea866f5f78c8c1a375abc25101dedf1 \
+    --hash=sha256:6c1724486d500c5163c9313d6a14af5af9f4515f79553627303a6b86df2c3af2
+certbot-apache==0.11.1 \
+    --hash=sha256:70132d9013509011b9edeba64fc208961f50ef78457f58d3b80a61094102efcd \
+    --hash=sha256:efe2224b531595edee366423c115e2874a3c9011890321d3ccda0367efc776c0
+certbot-nginx==0.11.1 \
+    --hash=sha256:1895eea1de92ab3dfd762998a4be7868ec3ec4d42cce7772995e4e9b2e488e6a \
+    --hash=sha256:e5e5ffe8930ba10139bb61c2a05a30e84d9a69a7d8fc6a7b391f707eae8bfce5

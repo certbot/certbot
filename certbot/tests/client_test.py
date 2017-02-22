@@ -45,20 +45,25 @@ class RegisterTest(unittest.TestCase):
     def test_no_tos(self):
         with mock.patch("certbot.client.acme_client.Client") as mock_client:
             mock_client.register().terms_of_service = "http://tos"
-            with mock.patch("certbot.account.report_new_account"):
-                self.tos_cb.return_value = False
-                self.assertRaises(errors.Error, self._call)
+            with mock.patch("certbot.eff.handle_subscription") as mock_handle:
+                with mock.patch("certbot.account.report_new_account"):
+                    self.tos_cb.return_value = False
+                    self.assertRaises(errors.Error, self._call)
+                    self.assertFalse(mock_handle.called)
 
-                self.tos_cb.return_value = True
-                self._call()
+                    self.tos_cb.return_value = True
+                    self._call()
+                    self.assertTrue(mock_handle.called)
 
-                self.tos_cb = None
-                self._call()
+                    self.tos_cb = None
+                    self._call()
+                    self.assertEqual(mock_handle.call_count, 2)
 
     def test_it(self):
         with mock.patch("certbot.client.acme_client.Client"):
             with mock.patch("certbot.account.report_new_account"):
-                self._call()
+                with mock.patch("certbot.eff.handle_subscription"):
+                    self._call()
 
     @mock.patch("certbot.account.report_new_account")
     @mock.patch("certbot.client.display_ops.get_email")
@@ -68,9 +73,11 @@ class RegisterTest(unittest.TestCase):
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
         mx_err = messages.Error.with_code('invalidContact', detail=msg)
         with mock.patch("certbot.client.acme_client.Client") as mock_client:
-            mock_client().register.side_effect = [mx_err, mock.MagicMock()]
-            self._call()
-            self.assertEqual(mock_get_email.call_count, 1)
+            with mock.patch("certbot.eff.handle_subscription") as mock_handle:
+                mock_client().register.side_effect = [mx_err, mock.MagicMock()]
+                self._call()
+                self.assertEqual(mock_get_email.call_count, 1)
+                self.assertTrue(mock_handle.called)
 
     @mock.patch("certbot.account.report_new_account")
     def test_email_invalid_noninteractive(self, _rep):
@@ -78,8 +85,9 @@ class RegisterTest(unittest.TestCase):
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
         mx_err = messages.Error.with_code('invalidContact', detail=msg)
         with mock.patch("certbot.client.acme_client.Client") as mock_client:
-            mock_client().register.side_effect = [mx_err, mock.MagicMock()]
-            self.assertRaises(errors.Error, self._call)
+            with mock.patch("certbot.eff.handle_subscription"):
+                mock_client().register.side_effect = [mx_err, mock.MagicMock()]
+                self.assertRaises(errors.Error, self._call)
 
     def test_needs_email(self):
         self.config.email = None
@@ -87,21 +95,25 @@ class RegisterTest(unittest.TestCase):
 
     @mock.patch("certbot.client.logger")
     def test_without_email(self, mock_logger):
-        with mock.patch("certbot.client.acme_client.Client"):
-            with mock.patch("certbot.account.report_new_account"):
-                self.config.email = None
-                self.config.register_unsafely_without_email = True
-                self.config.dry_run = False
-                self._call()
-                mock_logger.warning.assert_called_once_with(mock.ANY)
+        with mock.patch("certbot.eff.handle_subscription") as mock_handle:
+            with mock.patch("certbot.client.acme_client.Client"):
+                with mock.patch("certbot.account.report_new_account"):
+                    self.config.email = None
+                    self.config.register_unsafely_without_email = True
+                    self.config.dry_run = False
+                    self._call()
+                    mock_logger.warning.assert_called_once_with(mock.ANY)
+                    self.assertTrue(mock_handle.called)
 
     def test_unsupported_error(self):
         from acme import messages
         msg = "Test"
         mx_err = messages.Error(detail=msg, typ="malformed", title="title")
         with mock.patch("certbot.client.acme_client.Client") as mock_client:
-            mock_client().register.side_effect = [mx_err, mock.MagicMock()]
-            self.assertRaises(messages.Error, self._call)
+            with mock.patch("certbot.eff.handle_subscription") as mock_handle:
+                mock_client().register.side_effect = [mx_err, mock.MagicMock()]
+                self.assertRaises(messages.Error, self._call)
+        self.assertFalse(mock_handle.called)
 
 
 class ClientTestCommon(unittest.TestCase):
@@ -454,7 +466,7 @@ class ClientTest(ClientTestCommon):
                           ["foo.bar"], "key", "cert", "chain", "fullchain")
         installer.recovery_routine.assert_called_once_with()
 
-    @mock.patch("certbot.client.zope.component.getUtility")
+    @test_util.patch_get_utility()
     def test_deploy_certificate_restart_failure(self, mock_get_utility):
         installer = mock.MagicMock()
         installer.restart.side_effect = [errors.PluginError, None]
@@ -466,7 +478,7 @@ class ClientTest(ClientTestCommon):
         installer.rollback_checkpoints.assert_called_once_with()
         self.assertEqual(installer.restart.call_count, 2)
 
-    @mock.patch("certbot.client.zope.component.getUtility")
+    @test_util.patch_get_utility()
     def test_deploy_certificate_restart_failure2(self, mock_get_utility):
         installer = mock.MagicMock()
         installer.restart.side_effect = errors.PluginError
@@ -569,7 +581,7 @@ class EnhanceConfigTest(ClientTestCommon):
 
     def _test_error(self):
         self.config.redirect = True
-        with mock.patch("certbot.client.zope.component.getUtility") as mock_gu:
+        with test_util.patch_get_utility() as mock_gu:
             self.assertRaises(
                 errors.PluginError, self._test_with_all_supported)
         self.assertEqual(mock_gu().add_message.call_count, 1)

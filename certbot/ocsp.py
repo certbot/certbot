@@ -1,5 +1,6 @@
 """Tools for checking certificate revocation."""
 import logging
+import re
 
 from subprocess import Popen, PIPE
 
@@ -44,7 +45,6 @@ class RevocationChecker(object):
             return False
 
 
-        logger.debug("Querying OCSP for %s", cert_path)
         url, host = self.determine_ocsp_server(cert_path)
         if not host:
             return False
@@ -56,12 +56,14 @@ class RevocationChecker(object):
                "-url", url,
                "-CAfile", chain_path,
                "-verify_other", chain_path,
+               "-trust_other",
                "-header"] + self.host_args(host)
+        logger.debug("Querying OCSP for %s", cert_path)
+        logger.debug(" ".join(cmd))
         try:
             output, err = util.run_script(cmd, log=logging.debug)
-        except errors.SubprocessError as e:
+        except errors.SubprocessError:
             logger.info("OCSP check failed for %s (are we offline?)", cert_path)
-            logger.debug("Command was:\n%s\nError was:\n%s", " ".join(cmd), e)
             return False
 
         return _translate_ocsp_query(cert_path, output, err)
@@ -79,9 +81,8 @@ class RevocationChecker(object):
             url, _err = util.run_script(
                 ["openssl", "x509", "-in", cert_path, "-noout", "-ocsp_uri"],
                 log=logging.debug)
-        except errors.SubprocessError as e:
+        except errors.SubprocessError:
             logger.info("Cannot extract OCSP URI from %s", cert_path)
-            logger.debug("Error was:\n%s", e)
             return None, None
 
         url = url.rstrip()
@@ -95,15 +96,25 @@ class RevocationChecker(object):
 def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
     """Parse openssl's weird output to work out what it means."""
 
-    if not "Response verify OK" in ocsp_errors:
+    states = ("good", "revoked", "unknown")
+    patterns = [r"{0}: (WARNING.*)?{1}".format(cert_path, s) for s in states]
+    good, revoked, unknown = (re.search(p, ocsp_output, flags=re.DOTALL) for p in patterns)
+
+    warning = good.group(1) if good else None
+
+    if (not "Response verify OK" in ocsp_errors) or (good and warning) or unknown:
         logger.info("Revocation status for %s is unknown", cert_path)
-        logger.debug("Uncertain ouput:\n%s\nstderr:\n%s", ocsp_output, ocsp_errors)
+        logger.debug("Uncertain output:\n%s\nstderr:\n%s", ocsp_output, ocsp_errors)
         return False
-    if cert_path + ": good" in ocsp_output:
+    elif good and not warning:
         return False
-    elif cert_path + ": revoked" in ocsp_output:
+    elif revoked:
+        warning = revoked.group(1)
+        if warning:
+            logger.info("OCSP revocation warning: %s", warning)
         return True
     else:
-        logger.warn("Unable to properly parse OCSP output: %s", ocsp_output)
+        logger.warn("Unable to properly parse OCSP output: %s\nstderr:%s",
+                    ocsp_output, ocsp_errors)
         return False
 

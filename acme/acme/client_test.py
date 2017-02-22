@@ -40,6 +40,8 @@ class ClientTest(unittest.TestCase):
                 'https://www.letsencrypt-demo.org/acme/revoke-cert',
             messages.NewAuthorization:
                 'https://www.letsencrypt-demo.org/acme/new-authz',
+            messages.CertificateRequest:
+                'https://www.letsencrypt-demo.org/acme/new-cert',
         })
 
         from acme.client import Client
@@ -56,7 +58,6 @@ class ClientTest(unittest.TestCase):
         self.new_reg = messages.NewRegistration(**dict(reg))
         self.regr = messages.RegistrationResource(
             body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1',
-            new_authzr_uri='https://www.letsencrypt-demo.org/acme/new-reg',
             terms_of_service='https://www.letsencrypt-demo.org/tos')
 
         # Authorization
@@ -72,14 +73,16 @@ class ClientTest(unittest.TestCase):
                 typ=messages.IDENTIFIER_FQDN, value='example.com'),
             challenges=(challb,), combinations=None)
         self.authzr = messages.AuthorizationResource(
-            body=self.authz, uri=authzr_uri,
-            new_cert_uri='https://www.letsencrypt-demo.org/acme/new-cert')
+            body=self.authz, uri=authzr_uri)
 
         # Request issuance
         self.certr = messages.CertificateResource(
             body=messages_test.CERT, authzrs=(self.authzr,),
             uri='https://www.letsencrypt-demo.org/acme/cert/1',
             cert_chain_uri='https://www.letsencrypt-demo.org/ca')
+
+        # Reason code for revocation
+        self.rsn = 1
 
     def test_init_downloads_directory(self):
         uri = 'http://www.letsencrypt-demo.org/directory'
@@ -95,17 +98,11 @@ class ClientTest(unittest.TestCase):
         self.response.json.return_value = self.regr.body.to_json()
         self.response.headers['Location'] = self.regr.uri
         self.response.links.update({
-            'next': {'url': self.regr.new_authzr_uri},
             'terms-of-service': {'url': self.regr.terms_of_service},
         })
 
         self.assertEqual(self.regr, self.client.register(self.new_reg))
         # TODO: test POST call arguments
-
-    def test_register_missing_next(self):
-        self.response.status_code = http_client.CREATED
-        self.assertRaises(
-            errors.ClientError, self.client.register, self.new_reg)
 
     def test_update_registration(self):
         # "Instance of 'Field' has no to_json/update member" bug:
@@ -121,16 +118,23 @@ class ClientTest(unittest.TestCase):
         self.assertRaises(
             errors.UnexpectedUpdate, self.client.update_registration, self.regr)
 
+    def test_deactivate_account(self):
+        self.response.headers['Location'] = self.regr.uri
+        self.response.json.return_value = self.regr.body.to_json()
+        self.assertEqual(self.regr,
+                         self.client.deactivate_registration(self.regr))
+
+    def test_deactivate_account_bad_registration_returned(self):
+        self.response.headers['Location'] = self.regr.uri
+        self.response.json.return_value = "some wrong registration thing"
+        self.assertRaises(
+            errors.UnexpectedUpdate,
+            self.client.deactivate_registration,
+            self.regr)
+
     def test_query_registration(self):
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr, self.client.query_registration(self.regr))
-
-    def test_query_registration_updates_new_authzr_uri(self):
-        self.response.json.return_value = self.regr.body.to_json()
-        self.response.links = {'next': {'url': 'UPDATED'}}
-        self.assertEqual(
-            'UPDATED',
-            self.client.query_registration(self.regr).new_authzr_uri)
 
     def test_agree_to_tos(self):
         self.client.update_registration = mock.Mock()
@@ -142,9 +146,6 @@ class ClientTest(unittest.TestCase):
         self.response.status_code = http_client.CREATED
         self.response.headers['Location'] = self.authzr.uri
         self.response.json.return_value = self.authz.to_json()
-        self.response.links = {
-            'next': {'url': self.authzr.new_cert_uri},
-        }
 
     def test_request_challenges(self):
         self._prepare_response_for_request_challenges()
@@ -153,10 +154,11 @@ class ClientTest(unittest.TestCase):
             self.directory.new_authz,
             messages.NewAuthorization(identifier=self.identifier))
 
-    def test_requets_challenges_custom_uri(self):
+    def test_request_challenges_custom_uri(self):
         self._prepare_response_for_request_challenges()
-        self.client.request_challenges(self.identifier, 'URI')
-        self.net.post.assert_called_once_with('URI', mock.ANY)
+        self.client.request_challenges(self.identifier)
+        self.net.post.assert_called_once_with(
+            'https://www.letsencrypt-demo.org/acme/new-authz', mock.ANY)
 
     def test_request_challenges_unexpected_update(self):
         self._prepare_response_for_request_challenges()
@@ -164,24 +166,13 @@ class ClientTest(unittest.TestCase):
             identifier=self.identifier.update(value='foo')).to_json()
         self.assertRaises(
             errors.UnexpectedUpdate, self.client.request_challenges,
-            self.identifier, self.authzr.uri)
-
-    def test_request_challenges_missing_next(self):
-        self.response.status_code = http_client.CREATED
-        self.assertRaises(errors.ClientError, self.client.request_challenges,
-                          self.identifier)
+            self.identifier)
 
     def test_request_domain_challenges(self):
         self.client.request_challenges = mock.MagicMock()
         self.assertEqual(
             self.client.request_challenges(self.identifier),
             self.client.request_domain_challenges('example.com'))
-
-    def test_request_domain_challenges_custom_uri(self):
-        self.client.request_challenges = mock.MagicMock()
-        self.assertEqual(
-            self.client.request_challenges(self.identifier, 'URI'),
-            self.client.request_domain_challenges('example.com', 'URI'))
 
     def test_answer_challenge(self):
         self.response.links['up'] = {'url': self.challr.authzr_uri}
@@ -371,7 +362,7 @@ class ClientTest(unittest.TestCase):
             errors.PollError, self.client.poll_and_request_issuance,
             csr, authzrs=(invalid_authzr,), mintime=mintime)
 
-        # exceeded max_attemps | TODO: move to a separate test
+        # exceeded max_attempts | TODO: move to a separate test
         self.assertRaises(
             errors.PollError, self.client.poll_and_request_issuance,
             csr, authzrs, mintime=mintime, max_attempts=2)
@@ -427,13 +418,22 @@ class ClientTest(unittest.TestCase):
         self.assertRaises(errors.Error, self.client.fetch_chain, self.certr)
 
     def test_revoke(self):
-        self.client.revoke(self.certr.body)
+        self.client.revoke(self.certr.body, self.rsn)
         self.net.post.assert_called_once_with(
             self.directory[messages.Revocation], mock.ANY, content_type=None)
 
+    def test_revocation_payload(self):
+        obj = messages.Revocation(certificate=self.certr.body, reason=self.rsn)
+        self.assertTrue('reason' in obj.to_partial_json().keys())
+        self.assertEquals(self.rsn, obj.to_partial_json()['reason'])
+
     def test_revoke_bad_status_raises_error(self):
         self.response.status_code = http_client.METHOD_NOT_ALLOWED
-        self.assertRaises(errors.ClientError, self.client.revoke, self.certr)
+        self.assertRaises(
+            errors.ClientError,
+            self.client.revoke,
+            self.certr,
+            self.rsn)
 
 
 class ClientNetworkTest(unittest.TestCase):
@@ -616,7 +616,9 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.wrapped_obj = mock.MagicMock()
         self.content_type = mock.sentinel.content_type
 
-        self.all_nonces = [jose.b64encode(b'Nonce'), jose.b64encode(b'Nonce2')]
+        self.all_nonces = [
+            jose.b64encode(b'Nonce'),
+            jose.b64encode(b'Nonce2'), jose.b64encode(b'Nonce3')]
         self.available_nonces = self.all_nonces[:]
 
         def send_request(*args, **kwargs):
@@ -664,7 +666,7 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.net._wrap_in_jws.assert_called_once_with(
             self.obj, jose.b64decode(self.all_nonces.pop()))
 
-        assert not self.available_nonces
+        self.available_nonces = []
         self.assertRaises(errors.MissingNonce, self.net.post,
                           'uri', self.obj, content_type=self.content_type)
         self.net._wrap_in_jws.assert_called_with(
@@ -679,6 +681,35 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.available_nonces = [jose.b64encode(b'good'), b'f']
         self.assertRaises(errors.BadNonce, self.net.post, 'uri',
                           self.obj, content_type=self.content_type)
+
+    def test_post_failed_retry(self):
+        check_response = mock.MagicMock()
+        check_response.side_effect = messages.Error.with_code('badNonce')
+
+        # pylint: disable=protected-access
+        self.net._check_response = check_response
+        self.assertRaises(messages.Error, self.net.post, 'uri',
+                          self.obj, content_type=self.content_type)
+
+    def test_post_not_retried(self):
+        check_response = mock.MagicMock()
+        check_response.side_effect = [messages.Error.with_code('malformed'),
+                                      self.checked_response]
+
+        # pylint: disable=protected-access
+        self.net._check_response = check_response
+        self.assertRaises(messages.Error, self.net.post, 'uri',
+                          self.obj, content_type=self.content_type)
+
+    def test_post_successful_retry(self):
+        check_response = mock.MagicMock()
+        check_response.side_effect = [messages.Error.with_code('badNonce'),
+                                      self.checked_response]
+
+        # pylint: disable=protected-access
+        self.net._check_response = check_response
+        self.assertEqual(self.checked_response, self.net.post(
+            'uri', self.obj, content_type=self.content_type))
 
     def test_head_get_post_error_passthrough(self):
         self.send_request.side_effect = requests.exceptions.RequestException
