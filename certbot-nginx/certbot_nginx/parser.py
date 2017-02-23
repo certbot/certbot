@@ -205,8 +205,8 @@ class NginxParser(object):
                     trees.append(parsed)
             except IOError:
                 logger.warning("Could not open file: %s", item)
-            except pyparsing.ParseException:
-                logger.debug("Could not parse file: %s", item)
+            except pyparsing.ParseException as err:
+                logger.debug("Could not parse file: %s due to %s", item, err)
         return trees
 
     def _parse_ssl_options(self, ssl_options):
@@ -216,8 +216,8 @@ class NginxParser(object):
                     return nginxparser.load(_file).spaced
             except IOError:
                 logger.warn("Missing NGINX TLS options file: %s", ssl_options)
-            except pyparsing.ParseBaseException:
-                logger.debug("Could not parse file: %s", ssl_options)
+            except pyparsing.ParseBaseException as err:
+                logger.debug("Could not parse file: %s due to %s", ssl_options, err)
         return []
 
     def _set_locations(self, ssl_options):
