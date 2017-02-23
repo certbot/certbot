@@ -157,7 +157,9 @@ one of the options shown below on the command line.
 The standalone plugin does not rely on any other server software running
 on the machine where you obtain the certificate. It must still be possible
 for that machine to accept inbound connections from the Internet on the
-specified port using each requested domain name.
+specified port using each requested domain name
+The standalone plugin will give you a certificate with the domain you entered
+without specifying the application root just give it the domain name
 
 Manual
 ------
