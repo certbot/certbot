@@ -203,7 +203,7 @@ More details about these changes can be found on our GitHub repo:
 https://github.com/certbot/certbot/issues?q=milestone%3A0.7.0+is%3Aissue 
 
 # 0.6.0
-## 05/11/2016 
+## 05/12/2016 
 
 * Renamed the client from `letsencrypt` to `certbot`
 * Fixed a small json deserialization error
