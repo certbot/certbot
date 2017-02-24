@@ -36,9 +36,9 @@ Help for certbot itself cannot be provided until it is installed.
   --debug                                   attempt experimental installation
   -h, --help                                print this help
   -n, --non-interactive, --noninteractive   run without asking for user input
+  --no-bootstrap                            do not install OS dependencies
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
-  --no-bootstrap                            do not install OS dependencies
   -v, --verbose                             provide more output
   -q, --quiet                               provide only update/error output;
                                             implies --non-interactive
