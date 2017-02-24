@@ -472,7 +472,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "\n\nUnfortunately mod_macro is not yet supported".format(
                     "\n  ".join(vhost_macro)), force_interactive=True)
 
-        return all_names
+        return util.get_filtered_names(all_names)
 
     def get_name_from_ip(self, addr):  # pylint: disable=no-self-use
         """Returns a reverse dns name if available.
@@ -580,7 +580,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 ("/files%s//*[label()=~regexp('%s')]" %
                     (vhost_path, parser.case_i("VirtualHost"))))
             paths = [path for path in paths if
-                     os.path.basename(path) == "VirtualHost"]
+                     os.path.basename(path.lower()) == "virtualhost"]
             for path in paths:
                 new_vhost = self._create_vhost(path)
                 if not new_vhost:

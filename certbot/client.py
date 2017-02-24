@@ -15,15 +15,16 @@ import certbot
 
 from certbot import account
 from certbot import auth_handler
+from certbot import cli
 from certbot import constants
 from certbot import crypto_util
-from certbot import errors
+from certbot import eff
 from certbot import error_handler
+from certbot import errors
 from certbot import interfaces
-from certbot import util
 from certbot import reverter
 from certbot import storage
-from certbot import cli
+from certbot import util
 
 from certbot.display import ops as display_ops
 from certbot.display import enhancements
@@ -136,8 +137,10 @@ def register(config, account_storage, tos_cb=None):
         regr = acme.agree_to_tos(regr)
 
     acc = account.Account(regr, key)
-    account.report_new_account(acc, config)
+    account.report_new_account(config)
     account_storage.save(acc)
+
+    eff.handle_subscription(config)
 
     return acc, acme
 
