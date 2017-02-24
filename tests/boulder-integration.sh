@@ -1,7 +1,7 @@
 #!/bin/sh -xe
 # Simple integration test. Make sure to activate virtualenv beforehand
 # (source venv/bin/activate) and that you are running Boulder test
-# instance (see ./boulder-start.sh).
+# instance (see ./boulder-fetch.sh).
 #
 # Environment variables:
 #   SERVER: Passed as "certbot --server" argument.
