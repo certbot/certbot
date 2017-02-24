@@ -179,6 +179,8 @@ ExperimentalBootstrap() {
     echo "FATAL: $1 support is very experimental at present..."
     echo "if you would like to work on improving it, please ensure you have backups"
     echo "and then run this script again with the --debug flag!"
+    echo "Alternatively, you can install OS dependencies yourself and run this script"
+    echo "again with --no-bootstrap."
     exit 1
   fi
 }
