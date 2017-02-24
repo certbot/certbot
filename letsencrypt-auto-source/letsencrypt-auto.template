@@ -163,11 +163,16 @@ else
   fi
 fi
 
+BootstrapMessage() {
+  # Arguments: Platform name
+  echo "Bootstrapping dependencies for $1... (you can skip this with --no-bootstrap)"
+}
+
 ExperimentalBootstrap() {
   # Arguments: Platform name, bootstrap function name
   if [ "$DEBUG" = 1 ]; then
     if [ "$2" != "" ]; then
-      echo "Bootstrapping dependencies via $1..." $B
+      BootstrapMessage $1
       $2
     fi
   else
@@ -212,22 +217,21 @@ Bootstrap() {
   if [ "$NO_BOOTSTRAP" = 1 ]; then
       return
   fi
-  B="(you can skip this with --no-bootstrap)"
   if [ -f /etc/debian_version ]; then
-    echo "Bootstrapping dependencies for Debian-based OSes..." $B
+    BootstrapMessage "Debian-based OSes"
     BootstrapDebCommon
   elif [ -f /etc/mageia-release ]; then
     # Mageia has both /etc/mageia-release and /etc/redhat-release
     ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
   elif [ -f /etc/redhat-release ]; then
-    echo "Bootstrapping dependencies for RedHat-based OSes..." $B
+    BootstrapMessage "RedHat-based OSes"
     BootstrapRpmCommon
   elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
-    echo "Bootstrapping dependencies for openSUSE-based OSes..." $B
+    BootstrapMessage "openSUSE-based OSes"
     BootstrapSuseCommon
   elif [ -f /etc/arch-release ]; then
     if [ "$DEBUG" = 1 ]; then
-      echo "Bootstrapping dependencies for Archlinux..." $B
+      BootstrapMessage "Archlinux"
       BootstrapArchCommon
     else
       echo "Please use pacman to install letsencrypt packages:"
