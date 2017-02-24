@@ -69,6 +69,7 @@ dev_extras = [
     # Pin astroid==1.3.5, pylint==1.4.2 as a workaround for #289
     'astroid==1.3.5',
     'coverage',
+    'ipdb',
     'nose',
     'pylint==1.4.2',  # upstream #248
     'tox',
