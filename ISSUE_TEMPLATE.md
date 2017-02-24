@@ -1,7 +1,3 @@
-Thanks for using Certbot - if you're experiencing issues with using Certbot
-we'd appreciate it if you could answer a few questions about your environment so
-that we can better assist you:
-
 ## My operating system is (include version):
 
 
@@ -11,8 +7,10 @@ that we can better assist you:
 ## How did you install Certbot:
 
 
-## What command did you run? What output did it produce?
-### Please provide the Certbot error log if you can. It is stored by default in `/var/log/letsencrypt`
+## What command did you run and what output did it produce?
 
 
-## Many problems can occur due to your server or DNS records being misconfigured. If you share the domain you're attempting to validate with us we can often debug the issue by accessing the URL and getting some information about this configuration. If you have concerns about publishing this domain publicly you contact one of the maintainers to share it over email.
+## Can you provide a Certbot error log showing the issue?
+###### It is stored by default in `/var/log/letsencrypt` - feel free to redact domain names, e-mail and IP addresses as you see fit
+
+
