@@ -586,8 +586,7 @@ BootstrapMageiaCommon() {
 Bootstrap() {
   if [ "$NO_BOOTSTRAP" = 1 ]; then
       return
-  fi
-  if [ -f /etc/debian_version ]; then
+  elif [ -f /etc/debian_version ]; then
     BootstrapMessage "Debian-based OSes"
     BootstrapDebCommon
   elif [ -f /etc/mageia-release ]; then
