@@ -110,6 +110,24 @@ CLI_DEFAULTS_SUSE = dict(
     MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
         "certbot_apache", "options-ssl-apache.conf")
 )
+CLI_DEFAULTS_ARCH = dict(
+    server_root="/etc/httpd",
+    vhost_root="/etc/httpd/conf",
+    vhost_files="*.conf",
+    logs_root="/var/log/httpd",
+    version_cmd=['apachectl', '-v'],
+    define_cmd=['apachectl', '-t', '-D', 'DUMP_RUN_CFG'],
+    restart_cmd=['apachectl', 'graceful'],
+    conftest_cmd=['apachectl', 'configtest'],
+    enmod=None,
+    dismod=None,
+    le_vhost_ext="-le-ssl.conf",
+    handle_mods=False,
+    handle_sites=False,
+    challenge_location="/etc/httpd/conf",
+    MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
+        "certbot_apache", "options-ssl-apache.conf")
+)
 CLI_DEFAULTS = {
     "default": CLI_DEFAULTS_DEFAULT,
     "debian": CLI_DEFAULTS_DEBIAN,
@@ -125,6 +143,7 @@ CLI_DEFAULTS = {
     "darwin": CLI_DEFAULTS_DARWIN,
     "opensuse": CLI_DEFAULTS_SUSE,
     "suse": CLI_DEFAULTS_SUSE,
+    "arch": CLI_DEFAULTS_ARCH,
 }
 """CLI defaults."""
 
