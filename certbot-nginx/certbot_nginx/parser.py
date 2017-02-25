@@ -205,8 +205,8 @@ class NginxParser(object):
                     trees.append(parsed)
             except IOError:
                 logger.warning("Could not open file: %s", item)
-            except pyparsing.ParseException as err:
-                logger.debug("Could not parse file: %s due to %s", item, err)
+            except pyparsing.ParseException:
+                logger.debug("Could not parse file: %s", item)
         return trees
 
     def _parse_ssl_options(self, ssl_options):
@@ -216,8 +216,8 @@ class NginxParser(object):
                     return nginxparser.load(_file).spaced
             except IOError:
                 logger.warn("Missing NGINX TLS options file: %s", ssl_options)
-            except pyparsing.ParseBaseException as err:
-                logger.debug("Could not parse file: %s due to %s", ssl_options, err)
+            except pyparsing.ParseBaseException:
+                logger.debug("Could not parse file: %s", ssl_options)
         return []
 
     def _set_locations(self, ssl_options):
@@ -586,9 +586,10 @@ def _parse_server_raw(server):
             continue
         if directive[0] == 'listen':
             addr = obj.Addr.fromstring(directive[1])
-            parsed_server['addrs'].add(addr)
-            if addr.ssl:
-                parsed_server['ssl'] = True
+            if addr:
+                parsed_server['addrs'].add(addr)
+                if addr.ssl:
+                    parsed_server['ssl'] = True
         elif directive[0] == 'server_name':
             parsed_server['names'].update(
                 _get_servernames(directive[1]))

@@ -323,6 +323,12 @@ class NginxParserTest(util.NginxTest):
         ])
         self.assertTrue(server['ssl'])
 
+    def test_parse_server_raw_unix(self):
+        server = parser._parse_server_raw([ #pylint: disable=protected-access
+            ['listen', 'unix:/var/run/nginx.sock']
+        ])
+        self.assertEqual(len(server['addrs']), 0)
+
     def test_parse_server_global_ssl_applied(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
         server = nparser.parse_server([
