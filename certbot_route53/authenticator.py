@@ -66,7 +66,7 @@ class Authenticator(common.Plugin):
         response, validation = achall.response_and_validation()
         self._excute_r53_action(r53, achall, zone, validation, 'UPSERT', wait_for_change=True)
 
-        for _ in xrange(TTL*2):
+        for _ in range(TTL*2):
             if response.simple_verify(
                 achall.chall,
                 achall.domain,
