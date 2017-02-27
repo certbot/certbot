@@ -97,7 +97,7 @@ discoverability.
 * Many small bug fixes. 
 
 More details about these changes can be found on our GitHub repo:
-https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.10.0 is%3Aclosed
+https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.10.0is%3Aclosed
 
 # 0.9.3
 ## 10/13/2016
@@ -168,7 +168,6 @@ https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.9.0+is%3Acl
 # 0.8.1
 ## 06/14/2016
 
-
 * Preserving a certificate's common name when using `renew` 
 * Save webroot values for renewal when they are entered interactively 
 * Problems with an invalid user-agent string on OS X 
@@ -212,7 +211,7 @@ https://github.com/certbot/certbot/issues?q=milestone%3A0.7.0+is%3Aissue
 * Some minor bug fixes
 
 More details about these changes can be found on our GitHub repo:
-https://github.com/certbot/certbot/issues?utf8=%E2%9C%93&q=is%3Aissue%20milestone%3A0.6.0%20is%3Aclosed%20
+https://github.com/certbot/certbot/issues?q=is%3Aissue%20milestone%3A0.6.0%20is%3Aclosed%20
 
 # 0.5.0
 ## 04/05/2016
@@ -249,10 +248,10 @@ https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aissue+milestone%3A0.4.2
 # 0.4.1
 ## 02/29/2016
 
-* Apache parsing errors with some configurations 
-* Werkzeug dependency problems on some Red Hat systems 
-* Bootstraping failures when using letsencrypt-auto with --no-self-upgrade 
-* Problems with parsing renewal config files from private beta 
+* Fixes Apache parsing errors with some configurations
+* Fixes Werkzeug dependency problems on some Red Hat systems
+* Fixes bootstraping failures when using letsencrypt-auto with --no-self-upgrade
+* Fixes problems with parsing renewal config files from private beta
 
 More details about these changes can be found on our GitHub repo:
 https://github.com/letsencrypt/letsencrypt/issues?q=is:issue+milestone:0.4.1 
@@ -275,7 +274,7 @@ resulting certificates to disk.
 * Major improvements have been added to letsencrypt-auto. This script 
 has been rewritten to include full support for Python 2.6, the ability 
 for letsencrypt-auto to update itself, and improvements to the 
-    stability, security, and performance of the script. 
+stability, security, and performance of the script. 
 * Support for Apache 2.2 has been added to the Apache plugin. 
 
 More details about these changes can be found on our GitHub repo:
@@ -292,7 +291,6 @@ cron/systemd.
 couple months, we've been working on increasing the reliability and 
 security of letsencrypt-auto. A number of changes landed in this 
 release to prepare for the new version of this script. 
-
 
 More details about these changes can be found on our GitHub repo:
 https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aissue+milestone%3A0.3.0 
@@ -316,16 +314,13 @@ https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aissue+milestone%3A0.2.0
 # 0.1.1
 ## 12/15/2015
 
-* fix a confusing UI path that caused some users to repeatedly renew 
+* Fix a confusing UI path that caused some users to repeatedly renew 
 their certs while experimenting with the client, in some cases 
 hitting issuance rate limits 
-* numerous Apache configuration parser fixes 
-* avoid attempting to issue for unqualified domain names like 
+* Fixes numerous Apache configuration parser fixes 
+* Avoids attempting to issue for unqualified domain names like 
 "localhost" 
-* fix --webroot permission handling for non-root users 
+* Fixes --webroot permission handling for non-root users 
 
 More details about these changes can be found on our GitHub repo:
 https://github.com/letsencrypt/letsencrypt/issues?q=milestone%3A0.1.1 
-
-
-
