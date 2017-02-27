@@ -255,7 +255,7 @@ I have access to an English-language summary of the recommendations.
 Keylength.com
 ~~~~~~~~~~~~~
 
-Damien Giry collects recommendations by academic researchers and standards organizations about keylengths for particular cryptoperiods, years, or security levels.  The keylength recommendations of the various sources are summarized in a chart.  This site has been updated over time and includes expert guidance from eight sources published between 2000 and 2015.
+Damien Giry collects recommendations by academic researchers and standards organizations about keylengths for particular cryptoperiods, years, or security levels.  The keylength recommendations of the various sources are summarized in a chart.  This site has been updated over time and includes expert guidance from eight sources published between 2000 and 2017.
 
 http://www.keylength.com/
 
