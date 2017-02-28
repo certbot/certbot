@@ -28,7 +28,7 @@ class OCSPTest(unittest.TestCase):
     def tearDown(self):
         pass
 
-    @mock.patch('certbot.ocsp.logging.info')
+    @mock.patch('certbot.ocsp.logger.info')
     @mock.patch('certbot.ocsp.Popen')
     @mock.patch('certbot.util.exe_exists')
     def test_init(self, mock_exists, mock_popen, mock_log):
