@@ -158,7 +158,7 @@ class VirtualHostTest(unittest.TestCase):
 
     def test_str(self):
         stringified = '\n'.join(['file: filep', 'addrs: localhost',
-                                 "names: set(['localhost'])", 'ssl: False',
+                                 "names: ['localhost']", 'ssl: False',
                                  'enabled: False'])
         self.assertEqual(stringified, str(self.vhost1))
 
