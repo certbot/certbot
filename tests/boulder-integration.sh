@@ -100,6 +100,8 @@ common certonly -a manual -d le.wtf --rsa-key-size 4096 \
 common certonly -a manual -d dns.le.wtf --preferred-challenges dns,tls-sni \
     --manual-auth-hook ./tests/manual-dns-auth.sh
 
+common certonly --cert-name newname -d newname.le.wtf
+
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
        OPENSSL_CNF=examples/openssl.cnf
 ./examples/generate-csr.sh le3.wtf

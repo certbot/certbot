@@ -57,17 +57,21 @@ class RunTest(unittest.TestCase):
     def setUp(self):
         self.domain = 'example.org'
         self.patches = [
-            mock.patch('certbot.main._auth_from_available'),
+            mock.patch('certbot.main._get_and_save_cert'),
             mock.patch('certbot.main.display_ops.success_installation'),
             mock.patch('certbot.main.display_ops.success_renewal'),
             mock.patch('certbot.main._init_le_client'),
-            mock.patch('certbot.main._suggest_donation_if_appropriate')]
+            mock.patch('certbot.main._suggest_donation_if_appropriate'),
+            mock.patch('certbot.main._report_new_cert'),
+            mock.patch('certbot.main._find_cert')]
 
         self.mock_auth = self.patches[0].start()
         self.mock_success_installation = self.patches[1].start()
         self.mock_success_renewal = self.patches[2].start()
         self.mock_init = self.patches[3].start()
         self.mock_suggest_donation = self.patches[4].start()
+        self.mock_report_cert = self.patches[5].start()
+        self.mock_find_cert = self.patches[6].start()
 
     def tearDown(self):
         for patch in self.patches:
@@ -83,23 +87,26 @@ class RunTest(unittest.TestCase):
         run(config, plugins)
 
     def test_newcert_success(self):
-        self.mock_auth.return_value = ('newcert', mock.Mock())
+        self.mock_auth.return_value = mock.Mock()
+        self.mock_find_cert.return_value = True, None
         self._call()
         self.mock_success_installation.assert_called_once_with([self.domain])
 
     def test_reinstall_success(self):
-        self.mock_auth.return_value = ('reinstall', mock.Mock())
+        self.mock_auth.return_value = mock.Mock()
+        self.mock_find_cert.return_value = False, mock.Mock()
         self._call()
         self.mock_success_installation.assert_called_once_with([self.domain])
 
     def test_renewal_success(self):
-        self.mock_auth.return_value = ('renewal', mock.Mock())
+        self.mock_auth.return_value = mock.Mock()
+        self.mock_find_cert.return_value = True, mock.Mock()
         self._call()
         self.mock_success_renewal.assert_called_once_with([self.domain])
 
 
-class ObtainCertTest(unittest.TestCase):
-    """Tests for certbot.main.obtain_cert."""
+class CertonlyTest(unittest.TestCase):
+    """Tests for certbot.main.certonly."""
 
     def setUp(self):
         self.get_utility_patch = test_util.patch_get_utility()
@@ -114,15 +121,20 @@ class ObtainCertTest(unittest.TestCase):
             cli.prepare_and_parse_args(plugins, args))
 
         with mock.patch('certbot.main._init_le_client') as mock_init:
-            main.obtain_cert(config, plugins)
+            with mock.patch('certbot.main._suggest_donation_if_appropriate'):
+                main.certonly(config, plugins)
 
         return mock_init()  # returns the client
 
-    @mock.patch('certbot.main._auth_from_available')
-    def test_no_reinstall_text_pause(self, mock_auth):
+    @mock.patch('certbot.main._find_cert')
+    @mock.patch('certbot.main._get_and_save_cert')
+    @mock.patch('certbot.main._report_new_cert')
+    def test_no_reinstall_text_pause(self, unused_report, mock_auth,
+        mock_find_cert):
         mock_notification = self.mock_get_utility().notification
         mock_notification.side_effect = self._assert_no_pause
-        mock_auth.return_value = ('reinstall', mock.ANY)
+        mock_auth.return_value = mock.Mock()
+        mock_find_cert.return_value = False, None
         self._call('certonly --webroot -d example.com'.split())
 
     def _assert_no_pause(self, message, pause=True):
@@ -495,22 +507,23 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._cli_missing_flag(args, "specify a plugin")
         args.extend(['--standalone', '-d', 'eg.is'])
         self._cli_missing_flag(args, "register before running")
-        with mock.patch('certbot.main._auth_from_available'):
+        with mock.patch('certbot.main._get_and_save_cert'):
             with mock.patch('certbot.main.client.acme_from_config_key'):
                 args.extend(['--email', 'io@io.is'])
                 self._cli_missing_flag(args, "--agree-tos")
 
+    @mock.patch('certbot.main._report_new_cert')
     @mock.patch('certbot.main.client.acme_client.Client')
     @mock.patch('certbot.main._determine_account')
     @mock.patch('certbot.main.client.Client.obtain_and_enroll_certificate')
-    @mock.patch('certbot.main._auth_from_available')
-    def test_user_agent(self, afa, _obt, det, _client):
+    @mock.patch('certbot.main._get_and_save_cert')
+    def test_user_agent(self, gsc, _obt, det, _client, unused_report):
         # Normally the client is totally mocked out, but here we need more
         # arguments to automate it...
         args = ["--standalone", "certonly", "-m", "none@none.com",
                 "-d", "example.com", '--agree-tos'] + self.standard_args
         det.return_value = mock.MagicMock(), None
-        afa.return_value = "newcert", mock.MagicMock()
+        gsc.return_value = mock.MagicMock()
 
         with mock.patch('certbot.main.client.acme_client.ClientNetwork') as acme_net:
             self._call_no_clientmock(args)
@@ -535,8 +548,9 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                     '--key-path', 'key', '--chain-path', 'chain'])
         self.assertEqual(mock_pick_installer.call_count, 1)
 
+    @mock.patch('certbot.main._report_new_cert')
     @mock.patch('certbot.util.exe_exists')
-    def test_configurator_selection(self, mock_exe_exists):
+    def test_configurator_selection(self, mock_exe_exists, unused_report):
         mock_exe_exists.return_value = True
         real_plugins = disco.PluginsRegistry.find_all()
         args = ['--apache', '--authenticator', 'standalone']
@@ -562,13 +576,13 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self._cli_missing_flag(["--standalone"], "With the standalone plugin, you probably")
 
         with mock.patch("certbot.main._init_le_client") as mock_init:
-            with mock.patch("certbot.main._auth_from_available") as mock_afa:
-                mock_afa.return_value = (mock.MagicMock(), mock.MagicMock())
+            with mock.patch("certbot.main._get_and_save_cert") as mock_gsc:
+                mock_gsc.return_value = mock.MagicMock()
                 self._call(["certonly", "--manual", "-d", "foo.bar"])
                 unused_config, auth, unused_installer = mock_init.call_args[0]
                 self.assertTrue(isinstance(auth, manual.Authenticator))
 
-        with mock.patch('certbot.main.obtain_cert') as mock_certonly:
+        with mock.patch('certbot.main.certonly') as mock_certonly:
             self._call(["auth", "--standalone"])
             self.assertEqual(1, mock_certonly.call_count)
 
@@ -656,12 +670,12 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         chain = 'chain'
         fullchain = 'fullchain'
 
-        with mock.patch('certbot.main.obtain_cert') as mock_obtaincert:
+        with mock.patch('certbot.main.certonly') as mock_certonly:
             self._call(['certonly', '--cert-path', cert, '--key-path', 'key',
                         '--chain-path', 'chain',
                         '--fullchain-path', 'fullchain'])
 
-        config, unused_plugins = mock_obtaincert.call_args[0]
+        config, unused_plugins = mock_certonly.call_args[0]
         self.assertEqual(config.cert_path, os.path.abspath(cert))
         self.assertEqual(config.key_path, os.path.abspath(key))
         self.assertEqual(config.chain_path, os.path.abspath(chain))
@@ -747,7 +761,8 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         date = '1970-01-01'
         mock_notAfter().date.return_value = date
 
-        mock_lineage = mock.MagicMock(cert=cert_path, fullchain=cert_path)
+        mock_lineage = mock.MagicMock(cert=cert_path, fullchain=cert_path,
+                                      fullchain_path=cert_path)
         mock_client = mock.MagicMock()
         mock_client.obtain_and_enroll_certificate.return_value = mock_lineage
         self._certonly_new_request_common(mock_client)
@@ -770,7 +785,8 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         # pylint: disable=too-many-locals,too-many-arguments
         cert_path = test_util.vector_path('cert.pem')
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
-        mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path)
+        mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path,
+                                      cert_path=cert_path, fullchain_path=chain_path)
         mock_lineage.should_autorenew.return_value = due_for_renewal
         mock_lineage.has_pending_deployment.return_value = False
         mock_lineage.names.return_value = ['isnot.org']
@@ -821,7 +837,8 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
         return mock_lineage, mock_get_utility, stdout
 
-    def test_certonly_renewal(self):
+    @mock.patch('certbot.crypto_util.notAfter')
+    def test_certonly_renewal(self, unused_notafter):
         lineage, get_utility, _ = self._test_renewal_common(True, [])
         self.assertEqual(lineage.save_successor.call_count, 1)
         lineage.update_all_links_to.assert_called_once_with(
@@ -830,7 +847,8 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue('fullchain.pem' in cert_msg)
         self.assertTrue('donate' in get_utility().add_message.call_args[0][0])
 
-    def test_certonly_renewal_triggers(self):
+    @mock.patch('certbot.crypto_util.notAfter')
+    def test_certonly_renewal_triggers(self, unused_notafter):
         # --dry-run should force renewal
         _, get_utility, _ = self._test_renewal_common(False, ['--dry-run', '--keep'],
                                                       log_out="simulating renewal")
@@ -932,15 +950,15 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             if names is not None:
                 mock_lineage.names.return_value = names
             mock_rc.return_value = mock_lineage
-            with mock.patch('certbot.main.obtain_cert') as mock_obtain_cert:
+            with mock.patch('certbot.main.renew_cert') as mock_renew_cert:
                 kwargs.setdefault('args', ['renew'])
                 self._test_renewal_common(True, None, should_renew=False, **kwargs)
 
             if assert_oc_called is not None:
                 if assert_oc_called:
-                    self.assertTrue(mock_obtain_cert.called)
+                    self.assertTrue(mock_renew_cert.called)
                 else:
-                    self.assertFalse(mock_obtain_cert.called)
+                    self.assertFalse(mock_renew_cert.called)
 
     def test_renew_no_renewalparams(self):
         self._test_renew_common(assert_oc_called=False, error_expected=True)
@@ -1000,8 +1018,8 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             mock_rc.return_value = mock_lineage
             mock_lineage.configuration = {
                 'renewalparams': {'authenticator': 'webroot'}}
-            with mock.patch('certbot.main.obtain_cert') as mock_obtain_cert:
-                mock_obtain_cert.side_effect = Exception
+            with mock.patch('certbot.main.renew_cert') as mock_renew_cert:
+                mock_renew_cert.side_effect = Exception
                 self._test_renewal_common(True, None, error_expected=True,
                                           args=['renew'], should_renew=False)
 
@@ -1035,12 +1053,12 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         mock_client = mock.MagicMock()
         mock_client.obtain_certificate_from_csr.return_value = (certr, chain)
         cert_path = '/etc/letsencrypt/live/example.com/cert.pem'
-        mock_client.save_certificate.return_value = cert_path, None, None
+        full_path = '/etc/letsencrypt/live/example.com/fullchain.pem'
+        mock_client.save_certificate.return_value = cert_path, None, full_path
         with mock.patch('certbot.main._init_le_client') as mock_init:
             mock_init.return_value = mock_client
             with test_util.patch_get_utility() as mock_get_utility:
                 chain_path = '/etc/letsencrypt/live/example.com/chain.pem'
-                full_path = '/etc/letsencrypt/live/example.com/fullchain.pem'
                 args = ('-a standalone certonly --csr {0} --cert-path {1} '
                         '--chain-path {2} --fullchain-path {3}').format(
                             CSR, cert_path, chain_path, full_path).split()
@@ -1060,7 +1078,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_certonly_csr(self):
         mock_get_utility = self._test_certonly_csr_common()
         cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
-        self.assertTrue('cert.pem' in cert_msg)
+        self.assertTrue('fullchain.pem' in cert_msg)
         self.assertTrue(
             'donate' in mock_get_utility().add_message.call_args[0][0])
 

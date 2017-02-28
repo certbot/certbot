@@ -6,6 +6,8 @@ import socket
 import unittest
 
 import mock
+# six is used in mock.patch()
+import six  # pylint: disable=unused-import
 
 from acme import challenges
 
@@ -517,12 +519,12 @@ class MultipleVhostsTest(util.ApacheTest):
         # Test
         self.config.prepare_server_https("8080", temp=True)
         self.assertEqual(mock_add_dir.call_count, 3)
-        self.assertEqual(mock_add_dir.call_args_list[0][0][2],
-                         ["1.2.3.4:8080", "https"])
-        self.assertEqual(mock_add_dir.call_args_list[1][0][2],
-                         ["[::1]:8080", "https"])
-        self.assertEqual(mock_add_dir.call_args_list[2][0][2],
-                         ["1.1.1.1:8080", "https"])
+        call_args_list = [mock_add_dir.call_args_list[i][0][2] for i in range(3)]
+        self.assertEqual(
+            sorted(call_args_list),
+            sorted([["1.2.3.4:8080", "https"],
+                    ["[::1]:8080", "https"],
+                    ["1.1.1.1:8080", "https"]]))
 
         # mock_get.side_effect = ["1.2.3.4:80", "[::1]:80"]
         # mock_find.return_value = ["test1", "test2", "test3"]
@@ -662,7 +664,7 @@ class MultipleVhostsTest(util.ApacheTest):
         # This calls open
         self.config.reverter.register_file_creation = mock.Mock()
         mock_open.side_effect = IOError
-        with mock.patch("__builtin__.open", mock_open):
+        with mock.patch("six.moves.builtins.open", mock_open):
             self.assertRaises(
                 errors.PluginError,
                 self.config.make_vhost_ssl, self.vh_truth[0])
@@ -1208,13 +1210,13 @@ class MultipleVhostsTest(util.ApacheTest):
         achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
                 challenges.TLSSNI01(
-                    token="jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q"),
+                    token=b"jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q"),
                 "pending"),
             domain="encryption-example.demo", account_key=account_key)
         achall2 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
                 challenges.TLSSNI01(
-                    token="uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU"),
+                    token=b"uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU"),
                 "pending"),
             domain="certbot.demo", account_key=account_key)
 
