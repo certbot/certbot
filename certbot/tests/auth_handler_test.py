@@ -309,6 +309,7 @@ class PollChallengesTest(unittest.TestCase):
 
         new_authzr = messages.AuthorizationResource(
             uri=authzr.uri,
+            new_cert_uri=authzr.new_cert_uri,
             body=messages.Authorization(
                 identifier=authzr.body.identifier,
                 challenges=new_challbs,
@@ -436,7 +437,7 @@ def gen_auth_resp(chall_list):
             for chall in chall_list]
 
 
-def gen_dom_authzr(domain, challs, combos=True):
+def gen_dom_authzr(domain, unused_new_authzr_uri, challs, combos=True):
     """Generates new authzr for domains."""
     return acme_util.gen_authzr(
         messages.STATUS_PENDING, domain, challs,
