@@ -19,7 +19,7 @@ BRANCH=`git rev-parse --abbrev-ref HEAD`
 # it's the first version that both pins package versions and properly supports
 # --no-self-upgrade.
 git checkout -f v0.4.1
-if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade | grep 0.4.1 ; then
+if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | grep 0.4.1 ; then
     echo initial installation appeared to fail
     exit 1
 fi
