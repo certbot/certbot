@@ -250,7 +250,7 @@ https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aissue+milestone%3A0.4.2
 
 * Fixes Apache parsing errors with some configurations
 * Fixes Werkzeug dependency problems on some Red Hat systems
-* Fixes bootstraping failures when using letsencrypt-auto with --no-self-upgrade
+* Fixes bootstrapping failures when using letsencrypt-auto with --no-self-upgrade
 * Fixes problems with parsing renewal config files from private beta
 
 More details about these changes can be found on our GitHub repo:
