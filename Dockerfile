@@ -61,6 +61,8 @@ RUN /opt/certbot/venv/bin/python /opt/certbot/src/pipstrap.py && \
     -e /opt/certbot/src \
     -e /opt/certbot/src/certbot-apache \
     -e /opt/certbot/src/certbot-nginx
+COPY tests /opt/certbot/src/tests
+COPY examples /opt/certbot/src/examples
 
 # install in editable mode (-e) to save space: it's not possible to
 # "rm -rf /opt/certbot/src" (it's stays in the underlaying image);
