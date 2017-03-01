@@ -30,6 +30,7 @@ from certbot import interfaces
 from certbot import util
 from certbot import reporter
 from certbot import renewal
+from certbot import storage
 
 from certbot.display import util as display_util, ops as display_ops
 from certbot.plugins import disco as plugins_disco
@@ -405,31 +406,53 @@ def _init_le_client(config, authenticator, installer):
 
     return client.Client(config, acc, authenticator, installer, acme=acme)
 
+def _cert_path_to_lineage(config):
+    """ If config.cert_path is defined, find an appropriate value for config.certname
+    by searching through available files in config.renewal_configs_dir, and finding
+    one with an appropriate value for 'fullchain'."""
+
+    for potential_conf in os.listdir(config.renewal_configs_dir):
+        lineage_name = storage.lineagename_for_filename(potential_conf)
+        renewal_file = storage.renewal_file_for_certname(config, lineage_name)
+        conf_fullchain = storage.fullchain_for_renewal_conf(renewal_file)
+
+        if conf_fullchain == config.cert_path[0]:
+            return lineage_name
+   
 def _delete_if_appropriate(config):
-    """Does the user want to delete their now-revoked certs?
+    """Does the user want to delete their now-revoked certs?"""
 
-    """
-    prompt = (
-            'Would you like certbot to delete the revoked certificate '
-            'and related files on disk? If so, you will probably need to '
-            "update your server's configuration files to stop serving "
-            'a nonexistant file.')
-    display = zope.component.getUtility(interfaces.IDisplay)
-    if display.yesno(prompt, default=False):
-        user_set_certname = bool(config.certname)
-        potential_certname = cert_manager._get_certname(config, 'delete')
-        certname_implied_path = os.path.join(config.live_dir, potential_certname, "fullchain.pem")
+    if config.certname and config.cert_path:
+        # first, check if certname and cert_path imply the same certs
+        cert_path_implied_cert_name = _cert_path_to_lineage(config)
+        cert_path_implied_conf = storage.renewal_file_for_certname(config, cert_path_implied_cert_name)
+        cert_name_implied_conf = storage.renewal_file_for_certname(config, config.certname)
+ 
+        if cert_path_implied_conf != cert_name_implied_conf:
+            msg = "You specified conflicting values for --cert-path and --cert-name.\
+                   For --cert-path you specified $0, which implies the following conf file: $1.\
+                   For --cert-name you specified $2, which implies the following conf file: $3."\
+                   .format(config.cert_path, cert_path_implied_conf,
+                           config.certname, cert_name_implied_conf)
+            choices = [cert_path_implied_conf, cert_name_implied_conf]
+            display = zope.component.getUtility(interfaces.IDisplay)
+            code, index = display.menu("Which did you mean to select?",
+                    choices, ok_label="Select", force_interactive=True)
 
-        if certname_implied_path != config.cert_path[0]:
-            if user_set_certname:
-                error_msg = "--cert-path and --cert-name were passed conflicating arguments!"
+            if code != display_util.OK or not index in range(0, len(choices)):
+                raise errors.Error("User ended interaction.")
+
+            if index == 0:
+                config.certname = cert_path_implied_cert_name 
             else:
-                error_msg = "The certificate you selected for deletion does not match the \
-                        --cert-path you passed in."
-            raise errors.Error(error_msg)
-        else:
-            config.certname = potential_certname
-            cert_manager.delete(config)
+                cert_path = storage.fullchain_for_renewal_conf(cert_name_implied_conf)
+                with open(cert_path) as f:
+                    config.cert_path = (cert_path, f.read()) 
+
+    else: # if only config.cert_path was specified
+        config.cert_name = _cert_path_to_lineage(config)
+
+    cert_manager.delete(config)
 
 def register(config, unused_plugins):
     """Create or modify accounts on the server."""

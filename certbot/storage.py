@@ -38,12 +38,16 @@ def renewal_file_for_certname(config, certname):
             "{1}).".format(certname, path))
     return path
 
+def fullchain_for_renewal_conf(conf_file):
+    with open(conf_file) as f:
+        fullchain = re.findall('fullchain = (.*?)\n', f.read())[0]
+    return fullchain
+
 def config_with_defaults(config=None):
     """Merge supplied config, if provided, on top of builtin defaults."""
     defaults_copy = configobj.ConfigObj(constants.RENEWER_DEFAULTS)
     defaults_copy.merge(config if config is not None else configobj.ConfigObj())
     return defaults_copy
-
 
 def add_time_interval(base_time, interval, textparser=parsedatetime.Calendar()):
     """Parse the time specified time interval, and add it to the base_time
