@@ -23,7 +23,7 @@ if [ -z "$VENV_PATH" ]; then
   VENV_PATH="$XDG_DATA_HOME/$VENV_NAME"
 fi
 VENV_BIN="$VENV_PATH/bin"
-LE_AUTO_VERSION="0.12.0"
+LE_AUTO_VERSION="0.13.0.dev0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
