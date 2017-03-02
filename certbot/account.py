@@ -117,6 +117,18 @@ class AccountMemoryStorage(interfaces.AccountStorage):
         except KeyError:
             raise errors.AccountNotFound(account_id)
 
+class RegistrationResourceWithNewAuthzrURI(messages.RegistrationResource):
+    """A backwards-compatible RegistrationResource with a new-authz URI.
+
+       Hack: Certbot versions pre-0.11.1 expect to load
+       new_authzr_uri as part of the account. Because people
+       sometimes switch between old and new versions, we will
+       continue to write out this field for some time so older
+       clients don't crash in that scenario. Because this is a
+       temporary hack, just hardcode the known new-authz URI for
+       Let's Encrypt.
+    """
+    new_authzr_uri = jose.Field('new_authzr_uri')
 
 class AccountFileStorage(interfaces.AccountStorage):
     """Accounts file storage.
@@ -210,7 +222,13 @@ class AccountFileStorage(interfaces.AccountStorage):
                                 self.config.strict_permissions)
         try:
             with open(self._regr_path(account_dir_path), "w") as regr_file:
-                regr_file.write(account.regr.json_dumps())
+                regr = account.regr
+                with_uri = RegistrationResourceWithNewAuthzrURI(
+                    new_authzr_uri="https://acme-v01.api.letsencrypt.org/acme/new-authz",
+                    body=regr.body,
+                    uri=regr.uri,
+                    terms_of_service=regr.terms_of_service)
+                regr_file.write(with_uri.json_dumps())
             if not regr_only:
                 with util.safe_open(self._key_path(account_dir_path),
                                     "w", chmod=0o400) as key_file:
