@@ -35,6 +35,17 @@ CLI_DEFAULTS = dict(
 )
 STAGING_URI = "https://acme-staging.api.letsencrypt.org/directory"
 
+# The set of reasons for revoking a certificate is defined in RFC 5280 in
+# section 5.3.1. The reasons that users are allowed to submit are restricted to
+# those accepted by the ACME server implementation. They are listed in
+# `letsencrypt.boulder.revocation.reasons.go`.
+REVOCATION_REASONS = {
+    "unspecified": 0,
+    "keycompromise": 1,
+    "affiliationchanged": 3,
+    "superseded": 4,
+    "cessationofoperation": 5}
+
 """Defaults for CLI flags and `.IConfig` attributes."""
 
 QUIET_LOGGING_LEVEL = logging.WARNING
@@ -95,3 +106,6 @@ RENEWAL_CONFIGS_DIR = "renewal"
 
 FORCE_INTERACTIVE_FLAG = "--force-interactive"
 """Flag to disable TTY checking in IDisplay."""
+
+EFF_SUBSCRIBE_URI = "https://supporters.eff.org/subscribe/certbot"
+"""EFF URI used to submit the e-mail address of users who opt-in."""

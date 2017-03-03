@@ -12,7 +12,8 @@ class NamespaceConfigTest(unittest.TestCase):
 
     def setUp(self):
         self.namespace = mock.MagicMock(
-            config_dir='/tmp/config', work_dir='/tmp/foo', foo='bar',
+            config_dir='/tmp/config', work_dir='/tmp/foo',
+            logs_dir="/tmp/bar", foo='bar',
             server='https://acme-server.org:443/new',
             tls_sni_01_port=1234, http01_port=4321)
         from certbot.configuration import NamespaceConfig

@@ -219,6 +219,25 @@ def safely_remove(path):
             raise
 
 
+def get_filtered_names(all_names):
+    """Removes names that aren't considered valid by Let's Encrypt.
+
+    :param set all_names: all names found in the configuration
+
+    :returns: all found names that are considered valid by LE
+    :rtype: set
+
+    """
+    filtered_names = set()
+    for name in all_names:
+        try:
+            filtered_names.add(enforce_le_validity(name))
+        except errors.ConfigurationError as error:
+            logger.debug('Not suggesting name "%s"', name)
+            logger.debug(error)
+    return filtered_names
+
+
 def get_os_info(filepath="/etc/os-release"):
     """
     Get OS name and version

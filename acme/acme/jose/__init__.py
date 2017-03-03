@@ -1,6 +1,6 @@
 """Javascript Object Signing and Encryption (jose).
 
-This package is a Python implementation of the stadards developed by
+This package is a Python implementation of the standards developed by
 IETF `Javascript Object Signing and Encryption (Active WG)`_, in
 particular the following RFCs:
 

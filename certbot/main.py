@@ -24,6 +24,7 @@ from certbot import crypto_util
 from certbot import colored_logging
 from certbot import configuration
 from certbot import constants
+from certbot import eff
 from certbot import errors
 from certbot import hooks
 from certbot import interfaces
@@ -39,7 +40,7 @@ from certbot.plugins import selection as plug_sel
 _PERM_ERR_FMT = os.linesep.join((
     "The following error was encountered:", "{0}",
     "If running as non-root, set --config-dir, "
-    "--logs-dir, and --work-dir to writeable paths."))
+    "--work-dir, and --logs-dir to writeable paths."))
 
 USER_CANCELLED = ("User chose to cancel the operation and may "
                   "reinvoke the client.")
@@ -48,12 +49,11 @@ USER_CANCELLED = ("User chose to cancel the operation and may "
 logger = logging.getLogger(__name__)
 
 
-def _suggest_donation_if_appropriate(config, action):
+def _suggest_donation_if_appropriate(config):
     """Potentially suggest a donation to support Certbot."""
-    if config.staging or config.verb == "renew":
+    assert config.verb != "renew"
+    if config.staging:
         # --dry-run implies --staging
-        return
-    if action not in ["renew", "newcert"]:
         return
     reporter_util = zope.component.getUtility(interfaces.IReporter)
     msg = ("If you like Certbot, please consider supporting our work by:\n\n"
@@ -61,48 +61,33 @@ def _suggest_donation_if_appropriate(config, action):
            "Donating to EFF:                    https://eff.org/donate-le\n\n")
     reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
 
-
-
 def _report_successful_dry_run(config):
     reporter_util = zope.component.getUtility(interfaces.IReporter)
-    if config.verb != "renew":
-        reporter_util.add_message("The dry run was successful.",
-                                  reporter_util.HIGH_PRIORITY, on_crash=False)
+    assert config.verb != "renew"
+    reporter_util.add_message("The dry run was successful.",
+                              reporter_util.HIGH_PRIORITY, on_crash=False)
 
 
-def _auth_from_available(le_client, config, domains=None, certname=None, lineage=None):
+def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=None):
     """Authenticate and enroll certificate.
 
     This method finds the relevant lineage, figures out what to do with it,
     then performs that action. Includes calls to hooks, various reports,
     checks, and requests for user input.
 
-    :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains_and_certname
-              action can be: "newcert" | "renew" | "reinstall"
+    :returns: the issued certificate or `None` if doing a dry run
+    :rtype: `storage.RenewableCert` or `None`
     """
-    # If lineage is specified, use that one instead of looking around for
-    # a matching one.
-    if lineage is None:
-        # This will find a relevant matching lineage that exists
-        action, lineage = _find_lineage_for_domains_and_certname(config, domains, certname)
-    else:
-        # Renewal, where we already know the specific lineage we're
-        # interested in
-        action = "renew"
-
-    if action == "reinstall":
-        # The lineage already exists; allow the caller to try installing
-        # it without getting a new certificate at all.
-        logger.info("Keeping the existing certificate")
-        return "reinstall", lineage
-
     hooks.pre_hook(config)
     try:
-        if action == "renew":
+        if lineage is not None:
+            # Renewal, where we already know the specific lineage we're
+            # interested in
             logger.info("Renewing an existing certificate")
-            renewal.renew_cert(config, le_client, lineage)
-        elif action == "newcert":
+            renewal.renew_cert(config, domains, le_client, lineage)
+        else:
             # TREAT AS NEW REQUEST
+            assert domains is not None
             logger.info("Obtaining a new certificate")
             lineage = le_client.obtain_and_enroll_certificate(domains, certname)
             if lineage is False:
@@ -110,10 +95,7 @@ def _auth_from_available(le_client, config, domains=None, certname=None, lineage
     finally:
         hooks.post_hook(config)
 
-    if not config.dry_run and not config.verb == "renew":
-        _report_new_cert(config, lineage.cert, lineage.fullchain)
-
-    return action, lineage
+    return lineage
 
 
 def _handle_subset_cert_request(config, domains, cert):
@@ -235,6 +217,18 @@ def _find_lineage_for_domains(config, domains):
     elif subset_names_cert is not None:
         return _handle_subset_cert_request(config, domains, subset_names_cert)
 
+def _find_cert(config, domains, certname):
+    """Finds an existing certificate object given domains and/or a certificate name.
+
+    :returns: Two-element tuple of a boolean that indicates if this function should be
+              followed by a call to fetch a certificate from the server, and either a
+              RenewableCert instance or None.
+    """
+    action, lineage = _find_lineage_for_domains_and_certname(config, domains, certname)
+    if action == "reinstall":
+        logger.info("Keeping the existing certificate")
+    return (action != "reinstall"), lineage
+
 def _find_lineage_for_domains_and_certname(config, domains, certname):
     """Find appropriate lineage based on given domains and/or certname.
 
@@ -313,26 +307,25 @@ def _report_new_cert(config, cert_path, fullchain_path):
     :param str fullchain_path: path to full chain
 
     """
+    if config.dry_run:
+        _report_successful_dry_run(config)
+        return
+
+    assert cert_path and fullchain_path, "No certificates saved to report."
+
     expiry = crypto_util.notAfter(cert_path).date()
     reporter_util = zope.component.getUtility(interfaces.IReporter)
-    if fullchain_path:
-        # Print the path to fullchain.pem because that's what modern webservers
-        # (Nginx and Apache2.4) will want.
-        and_chain = "and chain have"
-        path = fullchain_path
-    else:
-        # Unless we're in .csr mode and there really isn't one
-        and_chain = "has "
-        path = cert_path
+    # Print the path to fullchain.pem because that's what modern webservers
+    # (Nginx and Apache2.4) will want.
 
     verbswitch = ' with the "certonly" option' if config.verb == "run" else ""
     # XXX Perhaps one day we could detect the presence of known old webservers
     # and say something more informative here.
-    msg = ('Congratulations! Your certificate {0} been saved at {1}.'
-           ' Your cert will expire on {2}. To obtain a new or tweaked version of this '
-           'certificate in the future, simply run {3} again{4}. '
-           'To non-interactively renew *all* of your certificates, run "{3} renew"'
-           .format(and_chain, path, expiry, cli.cli_command, verbswitch))
+    msg = ('Congratulations! Your certificate and chain have been saved at {0}.'
+           ' Your cert will expire on {1}. To obtain a new or tweaked version of this '
+           'certificate in the future, simply run {2} again{3}. '
+           'To non-interactively renew *all* of your certificates, run "{2} renew"'
+           .format(fullchain_path, expiry, cli.cli_command, verbswitch))
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
 
@@ -406,6 +399,35 @@ def _init_le_client(config, authenticator, installer):
     return client.Client(config, acc, authenticator, installer, acme=acme)
 
 
+def unregister(config, unused_plugins):
+    """Deactivate account on server"""
+    account_storage = account.AccountFileStorage(config)
+    accounts = account_storage.find_all()
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+
+    if not accounts:
+        return "Could not find existing account to deactivate."
+    yesno = zope.component.getUtility(interfaces.IDisplay).yesno
+    prompt = ("Are you sure you would like to irrevocably deactivate "
+              "your account?")
+    wants_deactivate = yesno(prompt, yes_label='Deactivate', no_label='Abort',
+                             default=True)
+
+    if not wants_deactivate:
+        return "Deactivation aborted."
+
+    acc, acme = _determine_account(config)
+    acme_client = client.Client(config, acc, None, None, acme=acme)
+
+    # delete on boulder
+    acme_client.acme.deactivate_registration(acc.regr)
+    account_files = account.AccountFileStorage(config)
+    # delete local account files
+    account_files.delete(config.account)
+
+    reporter_util.add_message("Account deactivated.", reporter_util.MEDIUM_PRIORITY)
+
+
 def register(config, unused_plugins):
     """Create or modify accounts on the server."""
 
@@ -413,6 +435,8 @@ def register(config, unused_plugins):
     # exist or not.
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    add_msg = lambda m: reporter_util.add_message(m, reporter_util.MEDIUM_PRIORITY)
 
     # registering a new account
     if not config.update_registration:
@@ -443,10 +467,16 @@ def register(config, unused_plugins):
     acc.regr = acme_client.acme.update_registration(acc.regr.update(
         body=acc.regr.body.update(contact=('mailto:' + config.email,))))
     account_storage.save_regr(acc)
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
-    msg = "Your e-mail address was updated to {0}.".format(config.email)
-    reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
+    eff.handle_subscription(config)
+    add_msg("Your e-mail address was updated to {0}.".format(config.email))
 
+def _install_cert(config, le_client, domains, lineage=None):
+    path_provider = lineage if lineage else config
+    assert path_provider.cert_path is not None
+
+    le_client.deploy_certificate(domains, path_provider.key_path,
+        path_provider.cert_path, path_provider.chain_path, path_provider.fullchain_path)
+    le_client.enhance_config(domains, path_provider.chain_path)
 
 def install(config, plugins):
     """Install a previously obtained cert in a server."""
@@ -461,11 +491,7 @@ def install(config, plugins):
 
     domains, _ = _find_domains_or_certname(config, installer)
     le_client = _init_le_client(config, authenticator=None, installer=installer)
-    assert config.cert_path is not None  # required=True in the subparser
-    le_client.deploy_certificate(
-        domains, config.key_path, config.cert_path, config.chain_path,
-        config.fullchain_path)
-    le_client.enhance_config(domains, config.chain_path)
+    _install_cert(config, le_client, domains)
 
 
 def plugins_cmd(config, plugins):  # TODO: Use IDisplay rather than print
@@ -550,8 +576,10 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
         key = acc.key
     acme = client.acme_from_config_key(config, key)
     cert = crypto_util.pyopenssl_load_certificate(config.cert_path[1])[0]
+    logger.debug("Reason code for revocation: %s", config.reason)
+
     try:
-        acme.revoke(jose.ComparableX509(cert))
+        acme.revoke(jose.ComparableX509(cert), config.reason)
     except acme_errors.ClientError as e:
         return e.message
 
@@ -567,28 +595,32 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     except errors.PluginSelectionError as e:
         return e.message
 
-    domains, certname = _find_domains_or_certname(config, installer)
-
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(config, authenticator, installer)
 
-    action, lineage = _auth_from_available(le_client, config, domains, certname)
+    domains, certname = _find_domains_or_certname(config, installer)
+    should_get_cert, lineage = _find_cert(config, domains, certname)
 
-    le_client.deploy_certificate(
-        domains, lineage.privkey, lineage.cert,
-        lineage.chain, lineage.fullchain)
+    new_lineage = lineage
+    if should_get_cert:
+        new_lineage = _get_and_save_cert(le_client, config, domains,
+            certname, lineage)
 
-    le_client.enhance_config(domains, lineage.chain)
+    cert_path = new_lineage.cert_path if new_lineage else None
+    fullchain_path = new_lineage.fullchain_path if new_lineage else None
+    _report_new_cert(config, cert_path, fullchain_path)
 
-    if action in ("newcert", "reinstall",):
+    _install_cert(config, le_client, domains, new_lineage)
+
+    if lineage is None or not should_get_cert:
         display_ops.success_installation(domains)
     else:
         display_ops.success_renewal(domains)
 
-    _suggest_donation_if_appropriate(config, action)
+    _suggest_donation_if_appropriate(config)
 
 
-def _csr_obtain_cert(config, le_client):
+def _csr_get_and_save_cert(config, le_client):
     """Obtain a cert using a user-supplied CSR
 
     This works differently in the CSR case (for now) because we don't
@@ -600,16 +632,39 @@ def _csr_obtain_cert(config, le_client):
     if config.dry_run:
         logger.debug(
             "Dry run: skipping saving certificate to %s", config.cert_path)
-    else:
-        cert_path, _, cert_fullchain = le_client.save_certificate(
+        return None, None
+    cert_path, _, fullchain_path = le_client.save_certificate(
             certr, chain, config.cert_path, config.chain_path, config.fullchain_path)
-        _report_new_cert(config, cert_path, cert_fullchain)
+    return cert_path, fullchain_path
 
-def obtain_cert(config, plugins, lineage=None):
+def renew_cert(config, plugins, lineage):
+    """Renew & save an existing cert. Do not install it."""
+    try:
+        # installers are used in auth mode to determine domain names
+        installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
+    except errors.PluginSelectionError as e:
+        logger.info("Could not choose appropriate plugin: %s", e)
+        raise
+    le_client = _init_le_client(config, auth, installer)
+
+    _get_and_save_cert(le_client, config, lineage=lineage)
+
+    notify = zope.component.getUtility(interfaces.IDisplay).notification
+    if installer is None:
+        notify("new certificate deployed without reload, fullchain is {0}".format(
+               lineage.fullchain), pause=False)
+    else:
+        # In case of a renewal, reload server to pick up new certificate.
+        # In principle we could have a configuration option to inhibit this
+        # from happening.
+        installer.restart()
+        notify("new certificate deployed with reload of {0} server; fullchain is {1}".format(
+               config.installer, lineage.fullchain), pause=False)
+
+def certonly(config, plugins):
     """Authenticate & obtain cert, but do not install it.
 
-    This implements the 'certonly' subcommand, and is also called from within the
-    'renew' command."""
+    This implements the 'certonly' subcommand."""
 
     # SETUP: Select plugins and construct a client instance
     try:
@@ -620,34 +675,26 @@ def obtain_cert(config, plugins, lineage=None):
         raise
     le_client = _init_le_client(config, auth, installer)
 
-    # SHOWTIME: Possibly obtain/renew a cert, and set action to renew | newcert | reinstall
-    if config.csr is None: # the common case
-        domains, certname = _find_domains_or_certname(config, installer)
-        action, _ = _auth_from_available(le_client, config, domains, certname, lineage)
-    else:
-        assert lineage is None, "Did not expect a CSR with a RenewableCert"
-        _csr_obtain_cert(config, le_client)
-        action = "newcert"
+    if config.csr:
+        cert_path, fullchain_path = _csr_get_and_save_cert(config, le_client)
+        _report_new_cert(config, cert_path, fullchain_path)
+        _suggest_donation_if_appropriate(config)
+        return
 
-    # POSTPRODUCTION: Cleanup, deployment & reporting
-    notify = zope.component.getUtility(interfaces.IDisplay).notification
-    if config.dry_run:
-        _report_successful_dry_run(config)
-    elif config.verb == "renew":
-        if installer is None:
-            notify("new certificate deployed without reload, fullchain is {0}".format(
-                   lineage.fullchain), pause=False)
-        else:
-            # In case of a renewal, reload server to pick up new certificate.
-            # In principle we could have a configuration option to inhibit this
-            # from happening.
-            installer.restart()
-            notify("new certificate deployed with reload of {0} server; fullchain is {1}".format(
-                   config.installer, lineage.fullchain), pause=False)
-    elif action == "reinstall" and config.verb == "certonly":
+    domains, certname = _find_domains_or_certname(config, installer)
+    should_get_cert, lineage = _find_cert(config, domains, certname)
+
+    if not should_get_cert:
+        notify = zope.component.getUtility(interfaces.IDisplay).notification
         notify("Certificate not yet due for renewal; no action taken.", pause=False)
-    _suggest_donation_if_appropriate(config, action)
+        return
 
+    lineage = _get_and_save_cert(le_client, config, domains, certname, lineage)
+
+    cert_path = lineage.cert_path if lineage else None
+    fullchain_path = lineage.fullchain_path if lineage else None
+    _report_new_cert(config, cert_path, fullchain_path)
+    _suggest_donation_if_appropriate(config)
 
 def renew(config, unused_plugins):
     """Renew previously-obtained certificates."""
@@ -781,7 +828,7 @@ def make_or_verify_core_dir(directory, mode, uid, strict):
         raise errors.Error(_PERM_ERR_FMT.format(error))
 
 def make_or_verify_needed_dirs(config):
-    """Create or verify existance of config, work, or logs directories"""
+    """Create or verify existence of config, work, or logs directories"""
     make_or_verify_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
                             os.geteuid(), config.strict_permissions)
     make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,

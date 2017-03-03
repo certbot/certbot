@@ -1,4 +1,5 @@
 """Certbot command line argument & config processing."""
+# pylint: disable=too-many-lines
 from __future__ import print_function
 import argparse
 import copy
@@ -149,7 +150,7 @@ def possible_deprecation_warning(config):
     if cli_command != LEAUTO:
         return
     if config.no_self_upgrade:
-        # users setting --no-self-upgrade might be hanging on a clent version like 0.3.0
+        # users setting --no-self-upgrade might be hanging on a client version like 0.3.0
         # or 0.5.0 which is the new script, but doesn't set CERTBOT_AUTO; they don't
         # need warnings
         return
@@ -317,7 +318,7 @@ class CustomHelpFormatter(argparse.HelpFormatter):
 # The attributes here are:
 # short: a string that will be displayed by "certbot -h commands"
 # opts:  a string that heads the section of flags with which this command is documented,
-#        both for "cerbot -h SUBCOMMAND" and "certbot -h all"
+#        both for "certbot -h SUBCOMMAND" and "certbot -h all"
 # usage: an optional string that overrides the header of "certbot -h SUBCOMMAND"
 VERB_HELP = [
     ("run (default)", {
@@ -333,7 +334,7 @@ VERB_HELP = [
                   "This command obtains a TLS/SSL certificate without installing it anywhere.")
     }),
     ("renew", {
-        "short": "Renew all certificates (or one specifed with --cert-name)",
+        "short": "Renew all certificates (or one specified with --cert-name)",
         "opts": ("The 'renew' subcommand will attempt to renew all"
                  " certificates (or more precisely, certificate lineages) you have"
                  " previously obtained if they are close to expiry, and print a"
@@ -365,6 +366,10 @@ VERB_HELP = [
     ("register", {
         "short": "Register for account with Let's Encrypt / other ACME server",
         "opts": "Options for account registration & modification"
+    }),
+    ("unregister", {
+        "short": "Irrevocably deactivate your account",
+        "opts": "Options for account deactivation."
     }),
     ("install", {
         "short": "Install an arbitrary cert in a server",
@@ -407,13 +412,14 @@ class HelpfulArgumentParser(object):
     def __init__(self, args, plugins, detect_defaults=False):
         from certbot import main
         self.VERBS = {
-            "auth": main.obtain_cert,
-            "certonly": main.obtain_cert,
+            "auth": main.certonly,
+            "certonly": main.certonly,
             "config_changes": main.config_changes,
             "run": main.run,
             "install": main.install,
             "plugins": main.plugins_cmd,
             "register": main.register,
+            "unregister": main.unregister,
             "renew": main.renew,
             "revoke": main.revoke,
             "rollback": main.rollback,
@@ -432,6 +438,10 @@ class HelpfulArgumentParser(object):
 
         self.detect_defaults = detect_defaults
         self.args = args
+
+        if self.args and self.args[0] == 'help':
+            self.args[0] = '--help'
+
         self.determine_verb()
         help1 = self.prescan_for_flag("-h", self.help_topics)
         help2 = self.prescan_for_flag("--help", self.help_topics)
@@ -486,7 +496,7 @@ class HelpfulArgumentParser(object):
         if "apache" in plugins:
             apache_doc = "--apache          Use the Apache plugin for authentication & installation"
         else:
-            apache_doc = "(the cerbot apache plugin is not installed)"
+            apache_doc = "(the certbot apache plugin is not installed)"
 
         usage = SHORT_USAGE
         if help_arg == True:
@@ -867,7 +877,15 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="With the register verb, indicates that details associated "
              "with an existing registration, such as the e-mail address, "
              "should be updated, rather than registering a new account.")
-    helpful.add(["register", "automation"], "-m", "--email", help=config_help("email"))
+    helpful.add(
+        ["register", "unregister", "automation"], "-m", "--email",
+        help=config_help("email"))
+    helpful.add(["register", "automation"], "--eff-email", action="store_true",
+                default=None, dest="eff_email",
+                help="Share your e-mail address with EFF")
+    helpful.add(["register", "automation"], "--no-eff-email", action="store_false",
+                default=None, dest="eff_email",
+                help="Don't share your e-mail address with EFF")
     helpful.add(
         ["automation", "certonly", "run"],
         "--keep-until-expiring", "--keep", "--reinstall",
@@ -909,7 +927,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "automation", "--agree-tos", dest="tos", action="store_true",
         help="Agree to the ACME Subscriber Agreement (default: Ask)")
     helpful.add(
-        "automation", "--account", metavar="ACCOUNT_ID",
+        ["unregister", "automation"], "--account", metavar="ACCOUNT_ID",
         help="Account ID to use")
     helpful.add(
         "automation", "--duplicate", dest="duplicate", action="store_true",
@@ -1072,6 +1090,11 @@ def _create_subparsers(helpful):
                 "--csr", type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER or PEM format."
                 " Currently --csr only works with the 'certonly' subcommand.")
+    helpful.add("revoke",
+                "--reason", dest="reason",
+                choices=CaseInsensitiveList(constants.REVOCATION_REASONS.keys()),
+                action=_EncodeReasonAction, default=0,
+                help="Specify reason for revoking certificate.")
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",
                 default=flag_default("rollback_checkpoints"),
@@ -1086,6 +1109,16 @@ def _create_subparsers(helpful):
     helpful.add("plugins",
                 "--installers", action="append_const", dest="ifaces",
                 const=interfaces.IInstaller, help="Limit to installer plugins only.")
+
+
+class CaseInsensitiveList(list):
+    """A list that will ignore case when searching.
+
+    This class is passed to the `choices` argument of `argparse.add_arguments`
+    through the `helpful` wrapper. It is necessary due to special handling of
+    command line arguments by `set_by_cli` in which the `type_func` is not applied."""
+    def __contains__(self, element):
+        return super(CaseInsensitiveList, self).__contains__(element.lower())
 
 
 def _paths_parser(helpful):
@@ -1166,6 +1199,15 @@ def _plugins_parsing(helpful, plugins):
     helpful.add_plugin_args(plugins)
 
 
+class _EncodeReasonAction(argparse.Action):
+    """Action class for parsing revocation reason."""
+
+    def __call__(self, parser, namespace, reason, option_string=None):
+        """Encodes the reason for certificate revocation."""
+        code = constants.REVOCATION_REASONS[reason.lower()]
+        setattr(namespace, self.dest, code)
+
+
 class _DomainsAction(argparse.Action):
     """Action class for parsing domains."""
 
@@ -1201,13 +1243,31 @@ class _PrefChallAction(argparse.Action):
     """Action class for parsing preferred challenges."""
 
     def __call__(self, parser, namespace, pref_challs, option_string=None):
-        aliases = {"dns": "dns-01", "http": "http-01", "tls-sni": "tls-sni-01"}
-        challs = [c.strip() for c in pref_challs.split(",")]
-        challs = [aliases[c] if c in aliases else c for c in challs]
-        unrecognized = ", ".join(name for name in challs
-                                 if name not in challenges.Challenge.TYPES)
-        if unrecognized:
-            raise argparse.ArgumentTypeError(
-                "Unrecognized challenges: {0}".format(unrecognized))
-        namespace.pref_challs.extend(challenges.Challenge.TYPES[name]
-                                     for name in challs)
+        try:
+            challs = parse_preferred_challenges(pref_challs.split(","))
+        except errors.Error as error:
+            raise argparse.ArgumentTypeError(str(error))
+        namespace.pref_challs.extend(challs)
+
+
+def parse_preferred_challenges(pref_challs):
+    """Translate and validate preferred challenges.
+
+    :param pref_challs: list of preferred challenge types
+    :type pref_challs: `list` of `str`
+
+    :returns: validated list of preferred challenge types
+    :rtype: `list` of `str`
+
+    :raises errors.Error: if pref_challs is invalid
+
+    """
+    aliases = {"dns": "dns-01", "http": "http-01", "tls-sni": "tls-sni-01"}
+    challs = [c.strip() for c in pref_challs]
+    challs = [aliases.get(c, c) for c in challs]
+    unrecognized = ", ".join(name for name in challs
+                             if name not in challenges.Challenge.TYPES)
+    if unrecognized:
+        raise errors.Error(
+            "Unrecognized challenges: {0}".format(unrecognized))
+    return challs

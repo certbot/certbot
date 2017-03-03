@@ -62,13 +62,10 @@ class ReportNewAccountTest(unittest.TestCase):
 
     def setUp(self):
         self.config = mock.MagicMock(config_dir="/etc/letsencrypt")
-        reg = messages.Registration.from_data(email="rhino@jungle.io")
-        self.acc = mock.MagicMock(regr=messages.RegistrationResource(
-            uri=None, new_authzr_uri=None, body=reg))
 
     def _call(self):
         from certbot.account import report_new_account
-        report_new_account(self.acc, self.config)
+        report_new_account(self.config)
 
     @mock.patch("certbot.account.zope.component.queryUtility")
     def test_no_reporter(self, mock_zope):
@@ -80,8 +77,6 @@ class ReportNewAccountTest(unittest.TestCase):
         self._call()
         call_list = mock_zope().add_message.call_args_list
         self.assertTrue(self.config.config_dir in call_list[0][0][0])
-        self.assertTrue(
-            ", ".join(self.acc.regr.body.emails) in call_list[1][0][0])
 
 
 class AccountMemoryStorageTest(unittest.TestCase):
@@ -189,6 +184,14 @@ class AccountFileStorageTest(unittest.TestCase):
         with mock.patch("six.moves.builtins.open", mock_open):
             self.assertRaises(
                 errors.AccountStorageError, self.storage.save, self.acc)
+
+    def test_delete(self):
+        self.storage.save(self.acc)
+        self.storage.delete(self.acc.id)
+        self.assertRaises(errors.AccountNotFound, self.storage.load, self.acc.id)
+
+    def test_delete_no_account(self):
+        self.assertRaises(errors.AccountNotFound, self.storage.delete, self.acc.id)
 
 
 if __name__ == "__main__":

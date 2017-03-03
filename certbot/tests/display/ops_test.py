@@ -115,17 +115,17 @@ class ChooseAccountTest(unittest.TestCase):
         from certbot.display import ops
         return ops.choose_account(accounts)
 
-    @mock.patch("certbot.display.ops.z_util")
+    @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_one(self, mock_util):
         mock_util().menu.return_value = (display_util.OK, 0)
         self.assertEqual(self._call([self.acc1]), self.acc1)
 
-    @mock.patch("certbot.display.ops.z_util")
+    @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_two(self, mock_util):
         mock_util().menu.return_value = (display_util.OK, 1)
         self.assertEqual(self._call([self.acc1, self.acc2]), self.acc2)
 
-    @mock.patch("certbot.display.ops.z_util")
+    @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_cancel(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, 1)
         self.assertTrue(self._call([self.acc1, self.acc2]) is None)
@@ -216,12 +216,12 @@ class ChooseNamesTest(unittest.TestCase):
         self._call(None)
         self.assertEqual(mock_manual.call_count, 1)
 
-    @mock.patch("certbot.display.ops.z_util")
+    @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_no_installer_cancel(self, mock_util):
         mock_util().input.return_value = (display_util.CANCEL, [])
         self.assertEqual(self._call(None), [])
 
-    @mock.patch("certbot.display.ops.z_util")
+    @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_no_names_choose(self, mock_util):
         self.mock_install().get_all_names.return_value = set()
         domain = "example.com"
@@ -272,7 +272,7 @@ class ChooseNamesTest(unittest.TestCase):
         self.assertEqual(_sort_names(to_sort), sortd)
 
 
-    @mock.patch("certbot.display.ops.z_util")
+    @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_filter_names_valid_return(self, mock_util):
         self.mock_install.get_all_names.return_value = set(["example.com"])
         mock_util().checklist.return_value = (display_util.OK, ["example.com"])
@@ -281,14 +281,14 @@ class ChooseNamesTest(unittest.TestCase):
         self.assertEqual(names, ["example.com"])
         self.assertEqual(mock_util().checklist.call_count, 1)
 
-    @mock.patch("certbot.display.ops.z_util")
+    @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_filter_names_nothing_selected(self, mock_util):
         self.mock_install.get_all_names.return_value = set(["example.com"])
         mock_util().checklist.return_value = (display_util.OK, [])
 
         self.assertEqual(self._call(self.mock_install), [])
 
-    @mock.patch("certbot.display.ops.z_util")
+    @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_filter_names_cancel(self, mock_util):
         self.mock_install.get_all_names.return_value = set(["example.com"])
         mock_util().checklist.return_value = (
@@ -307,7 +307,7 @@ class ChooseNamesTest(unittest.TestCase):
         self.assertEqual(get_valid_domains(all_invalid), [])
         self.assertEqual(len(get_valid_domains(two_valid)), 2)
 
-    @mock.patch("certbot.display.ops.z_util")
+    @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_choose_manually(self, mock_util):
         from certbot.display.ops import _choose_names_manually
         # No retry
@@ -350,7 +350,7 @@ class SuccessInstallationTest(unittest.TestCase):
         from certbot.display.ops import success_installation
         success_installation(names)
 
-    @mock.patch("certbot.display.ops.z_util")
+    @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_success_installation(self, mock_util):
         mock_util().notification.return_value = None
         names = ["example.com", "abc.com"]
@@ -372,7 +372,7 @@ class SuccessRenewalTest(unittest.TestCase):
         from certbot.display.ops import success_renewal
         success_renewal(names)
 
-    @mock.patch("certbot.display.ops.z_util")
+    @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_success_renewal(self, mock_util):
         mock_util().notification.return_value = None
         names = ["example.com", "abc.com"]
@@ -393,12 +393,16 @@ class SuccessRevocationTest(unittest.TestCase):
         from certbot.display.ops import success_revocation
         success_revocation(path)
 
-    @mock.patch("certbot.display.ops.z_util")
+    @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_success_revocation(self, mock_util):
         mock_util().notification.return_value = None
         path = "/path/to/cert.pem"
         self._call(path)
-        mock_util().notification.assert_called_once()
+        mock_util().notification.assert_called_once_with(
+            "Congratulations! You have successfully revoked the certificate "
+            "that was located at {0}{1}{1}".format(
+                path,
+                os.linesep), pause=False)
         self.assertTrue(path in mock_util().notification.call_args[0][0])
 
 if __name__ == "__main__":
