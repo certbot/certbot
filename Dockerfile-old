@@ -67,4 +67,9 @@ RUN /opt/certbot/venv/bin/python /opt/certbot/src/pipstrap.py && \
 # this might also help in debugging: you can "docker run --entrypoint
 # bash" and investigate, apply patches, etc.
 
+# set up certbot/letsencrypt wrapper to warn people about Dockerfile changes
+COPY tools/docker-warning.sh /opt/certbot/bin/certbot
+RUN ln -s /opt/certbot/bin/certbot /opt/certbot/bin/letsencrypt
+ENV PATH /opt/certbot/bin:$PATH
+
 ENTRYPOINT [ "certbot" ]
