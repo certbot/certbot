@@ -336,8 +336,8 @@ class CertLoaderTest(unittest.TestCase):
         from certbot.crypto_util import pyopenssl_load_certificate
 
         cert, file_type = pyopenssl_load_certificate(CERT)
-        self.assertEqual(cert.digest('sha1'),
-                         OpenSSL.crypto.load_certificate(file_type, CERT).digest('sha1'))
+        self.assertEqual(cert.digest('sha256'),
+                         OpenSSL.crypto.load_certificate(file_type, CERT).digest('sha256'))
 
     def test_load_invalid_cert(self):
         from certbot.crypto_util import pyopenssl_load_certificate
