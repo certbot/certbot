@@ -5,7 +5,9 @@ EXPOSE 80 443
 VOLUME /etc/letsencrypt /var/lib/letsencrypt
 WORKDIR /opt/certbot
 
-COPY . src
+COPY CHANGES.rst README.rst setup.py src/
+COPY acme src/acme
+COPY certbot src/certbot
 
 RUN apk add --no-cache --virtual .certbot-deps \
         libffi \
