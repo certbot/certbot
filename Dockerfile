@@ -1,9 +1,10 @@
 FROM python:2-alpine
 
+ENTRYPOINT [ "certbot" ]
 EXPOSE 80 443
 VOLUME /etc/letsencrypt /var/lib/letsencrypt
 WORKDIR /opt/certbot
-ENTRYPOINT [ "certbot" ]
+
 COPY . src
 
 RUN apk add --no-cache --virtual .certbot-deps \
