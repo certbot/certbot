@@ -98,6 +98,12 @@ if [ "$QUIET" = 1 ]; then
   ASSUME_YES=1
 fi
 
+say() {
+    if [  "$QUIET" != 1 ]; then
+        echo "$@"
+    fi
+}
+
 # Support for busybox and others where there is no "command",
 # but "which" instead
 if command -v command > /dev/null 2>&1 ; then
