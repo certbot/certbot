@@ -100,7 +100,10 @@ def lineage_for_certname(cli_config, certname):
     configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there
     util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
-    renewal_file = storage.renewal_file_for_certname(cli_config, certname)
+    try:
+        renewal_file = storage.renewal_file_for_certname(cli_config, certname)
+    except errors.CertStorageError:
+        return None
     try:
         return storage.RenewableCert(renewal_file, cli_config)
     except (errors.CertStorageError, IOError):

@@ -88,7 +88,7 @@ Main Website: https://certbot.eff.org
 
 Let's Encrypt Website: https://letsencrypt.org
 
-IRC Channel: #letsencrypt on `Freenode`_ or #certbot on `OFTC`_
+IRC Channel: #letsencrypt on `Freenode`_
 
 Community: https://community.letsencrypt.org
 

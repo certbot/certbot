@@ -392,6 +392,26 @@ class RenewableCert(object):
         self._check_symlinks()
 
     @property
+    def key_path(self):
+        """Duck type for self.privkey"""
+        return self.privkey
+
+    @property
+    def cert_path(self):
+        """Duck type for self.cert"""
+        return self.cert
+
+    @property
+    def chain_path(self):
+        """Duck type for self.chain"""
+        return self.chain
+
+    @property
+    def fullchain_path(self):
+        """Duck type for self.fullchain"""
+        return self.fullchain
+
+    @property
     def target_expiry(self):
         """The current target certificate's expiration datetime
 

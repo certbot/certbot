@@ -40,8 +40,6 @@ class ClientTest(unittest.TestCase):
                 'https://www.letsencrypt-demo.org/acme/revoke-cert',
             messages.NewAuthorization:
                 'https://www.letsencrypt-demo.org/acme/new-authz',
-            messages.CertificateRequest:
-                'https://www.letsencrypt-demo.org/acme/new-cert',
         })
 
         from acme.client import Client
@@ -58,6 +56,7 @@ class ClientTest(unittest.TestCase):
         self.new_reg = messages.NewRegistration(**dict(reg))
         self.regr = messages.RegistrationResource(
             body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1',
+            new_authzr_uri='https://www.letsencrypt-demo.org/acme/new-reg',
             terms_of_service='https://www.letsencrypt-demo.org/tos')
 
         # Authorization
@@ -73,7 +72,8 @@ class ClientTest(unittest.TestCase):
                 typ=messages.IDENTIFIER_FQDN, value='example.com'),
             challenges=(challb,), combinations=None)
         self.authzr = messages.AuthorizationResource(
-            body=self.authz, uri=authzr_uri)
+            body=self.authz, uri=authzr_uri,
+            new_cert_uri='https://www.letsencrypt-demo.org/acme/new-cert')
 
         # Request issuance
         self.certr = messages.CertificateResource(
@@ -98,11 +98,17 @@ class ClientTest(unittest.TestCase):
         self.response.json.return_value = self.regr.body.to_json()
         self.response.headers['Location'] = self.regr.uri
         self.response.links.update({
+            'next': {'url': self.regr.new_authzr_uri},
             'terms-of-service': {'url': self.regr.terms_of_service},
         })
 
         self.assertEqual(self.regr, self.client.register(self.new_reg))
         # TODO: test POST call arguments
+
+    def test_register_missing_next(self):
+        self.response.status_code = http_client.CREATED
+        self.assertRaises(
+            errors.ClientError, self.client.register, self.new_reg)
 
     def test_update_registration(self):
         # "Instance of 'Field' has no to_json/update member" bug:
@@ -126,6 +132,13 @@ class ClientTest(unittest.TestCase):
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr, self.client.query_registration(self.regr))
 
+    def test_query_registration_updates_new_authzr_uri(self):
+        self.response.json.return_value = self.regr.body.to_json()
+        self.response.links = {'next': {'url': 'UPDATED'}}
+        self.assertEqual(
+            'UPDATED',
+            self.client.query_registration(self.regr).new_authzr_uri)
+
     def test_agree_to_tos(self):
         self.client.update_registration = mock.Mock()
         self.client.agree_to_tos(self.regr)
@@ -136,6 +149,9 @@ class ClientTest(unittest.TestCase):
         self.response.status_code = http_client.CREATED
         self.response.headers['Location'] = self.authzr.uri
         self.response.json.return_value = self.authz.to_json()
+        self.response.links = {
+            'next': {'url': self.authzr.new_cert_uri},
+        }
 
     def test_request_challenges(self):
         self._prepare_response_for_request_challenges()
@@ -146,9 +162,8 @@ class ClientTest(unittest.TestCase):
 
     def test_request_challenges_custom_uri(self):
         self._prepare_response_for_request_challenges()
-        self.client.request_challenges(self.identifier)
-        self.net.post.assert_called_once_with(
-            'https://www.letsencrypt-demo.org/acme/new-authz', mock.ANY)
+        self.client.request_challenges(self.identifier, 'URI')
+        self.net.post.assert_called_once_with('URI', mock.ANY)
 
     def test_request_challenges_unexpected_update(self):
         self._prepare_response_for_request_challenges()
@@ -156,13 +171,24 @@ class ClientTest(unittest.TestCase):
             identifier=self.identifier.update(value='foo')).to_json()
         self.assertRaises(
             errors.UnexpectedUpdate, self.client.request_challenges,
-            self.identifier)
+            self.identifier, self.authzr.uri)
+
+    def test_request_challenges_missing_next(self):
+        self.response.status_code = http_client.CREATED
+        self.assertRaises(errors.ClientError, self.client.request_challenges,
+                          self.identifier)
 
     def test_request_domain_challenges(self):
         self.client.request_challenges = mock.MagicMock()
         self.assertEqual(
             self.client.request_challenges(self.identifier),
             self.client.request_domain_challenges('example.com'))
+
+    def test_request_domain_challenges_custom_uri(self):
+        self.client.request_challenges = mock.MagicMock()
+        self.assertEqual(
+            self.client.request_challenges(self.identifier, 'URI'),
+            self.client.request_domain_challenges('example.com', 'URI'))
 
     def test_answer_challenge(self):
         self.response.links['up'] = {'url': self.challr.authzr_uri}
@@ -522,7 +548,7 @@ class ClientNetworkTest(unittest.TestCase):
             'HEAD', 'http://example.com/', 'foo', bar='baz'))
         self.net.session.request.assert_called_once_with(
             'HEAD', 'http://example.com/', 'foo',
-            headers=mock.ANY, verify=mock.ANY, bar='baz')
+            headers=mock.ANY, verify=mock.ANY, timeout=mock.ANY, bar='baz')
 
     @mock.patch('acme.client.logger')
     def test_send_request_get_der(self, mock_logger):
@@ -532,8 +558,9 @@ class ClientNetworkTest(unittest.TestCase):
             headers={"Content-Type": "application/pkix-cert"},
             content=b"hi")
         # pylint: disable=protected-access
-        self.net._send_request('HEAD', 'http://example.com/', 'foo', bar='baz')
-        mock_logger.debug.assert_called_once_with(
+        self.net._send_request('HEAD', 'http://example.com/', 'foo',
+          timeout=mock.ANY, bar='baz')
+        mock_logger.debug.assert_called_with(
             'Received response:\nHTTP %d\n%s\n\n%s', 200,
             'Content-Type: application/pkix-cert', b'aGk=')
 
@@ -545,7 +572,7 @@ class ClientNetworkTest(unittest.TestCase):
             'POST', 'http://example.com/', 'foo', data='qux', bar='baz'))
         self.net.session.request.assert_called_once_with(
             'POST', 'http://example.com/', 'foo',
-            headers=mock.ANY, verify=mock.ANY, data='qux', bar='baz')
+            headers=mock.ANY, verify=mock.ANY, timeout=mock.ANY, data='qux', bar='baz')
 
     def test_send_request_verify_ssl(self):
         # pylint: disable=protected-access
@@ -558,7 +585,8 @@ class ClientNetworkTest(unittest.TestCase):
                 self.response,
                 self.net._send_request('GET', 'http://example.com/'))
             self.net.session.request.assert_called_once_with(
-                'GET', 'http://example.com/', verify=verify, headers=mock.ANY)
+                'GET', 'http://example.com/', verify=verify,
+                timeout=mock.ANY, headers=mock.ANY)
 
     def test_send_request_user_agent(self):
         self.net.session = mock.MagicMock()
@@ -567,13 +595,23 @@ class ClientNetworkTest(unittest.TestCase):
                                headers={'bar': 'baz'})
         self.net.session.request.assert_called_once_with(
             'GET', 'http://example.com/', verify=mock.ANY,
+            timeout=mock.ANY,
             headers={'User-Agent': 'acme-python-test', 'bar': 'baz'})
 
         self.net._send_request('GET', 'http://example.com/',
                                headers={'User-Agent': 'foo2'})
         self.net.session.request.assert_called_with(
             'GET', 'http://example.com/',
-            verify=mock.ANY, headers={'User-Agent': 'foo2'})
+            verify=mock.ANY, timeout=mock.ANY, headers={'User-Agent': 'foo2'})
+
+    def test_send_request_timeout(self):
+        self.net.session = mock.MagicMock()
+        # pylint: disable=protected-access
+        self.net._send_request('GET', 'http://example.com/',
+                               headers={'bar': 'baz'})
+        self.net.session.request.assert_called_once_with(
+            mock.ANY, mock.ANY, verify=mock.ANY, headers=mock.ANY,
+            timeout=45)
 
     def test_del(self):
         sess = mock.MagicMock()

@@ -410,7 +410,12 @@ def handle_renewal_request(config):
                 if should_renew(lineage_config, renewal_candidate):
                     plugins = plugins_disco.PluginsRegistry.find_all()
                     from certbot import main
-                    main.obtain_cert(lineage_config, plugins, renewal_candidate)
+                    # domains have been restored into lineage_config by reconstitute
+                    # but they're unnecessary anyway because renew_cert here
+                    # will just grab them from the certificate
+                    # we already know it's time to renew based on should_renew
+                    # and we have a lineage in renewal_candidate
+                    main.renew_cert(lineage_config, plugins, renewal_candidate)
                     renew_successes.append(renewal_candidate.fullchain)
                 else:
                     renew_skipped.append(renewal_candidate.fullchain)
