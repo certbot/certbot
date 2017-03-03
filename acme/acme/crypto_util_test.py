@@ -151,19 +151,19 @@ class RandomSnTest(unittest.TestCase):
             self.serial_num.append(cert.get_serial_number())
         self.assertTrue(len(set(self.serial_num)) > 1)
 
-class FunctionTest(unittest.TestCase):
+class MakeCSRTest(unittest.TestCase):
     """Test for standalone functions."""
 
-    def test_make_private_key(self):
-        from acme.crypto_util import make_private_key
-        pem = make_private_key()
-        self.assertTrue(b'--BEGIN PRIVATE KEY--' in pem)
-        self.assertTrue(b'--END PRIVATE KEY--' in pem)
+    @classmethod
+    def _call_with_key(cls, *args, **kwargs):
+        privkey = OpenSSL.crypto.PKey()
+        privkey.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
+        privkey_pem = OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, privkey)
+        from acme.crypto_util import make_csr
+        return make_csr(privkey_pem, *args, **kwargs)
 
     def test_make_csr(self):
-        from acme.crypto_util import make_private_key, make_csr
-        private_key_pem = make_private_key()
-        csr_pem = make_csr(private_key_pem, ["a.example", "b.example"])
+        csr_pem = self._call_with_key(["a.example", "b.example"])
         self.assertTrue(b'--BEGIN CERTIFICATE REQUEST--' in csr_pem)
         self.assertTrue(b'--END CERTIFICATE REQUEST--' in csr_pem)
         csr = OpenSSL.crypto.load_certificate_request(
@@ -182,9 +182,7 @@ class FunctionTest(unittest.TestCase):
             )
 
     def test_make_csr_must_staple(self):
-        from acme.crypto_util import make_private_key, make_csr
-        private_key_pem = make_private_key()
-        csr_pem = make_csr(private_key_pem, ["a.example"], must_staple=True)
+        csr_pem = self._call_with_key(["a.example"], must_staple=True)
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, csr_pem)
 

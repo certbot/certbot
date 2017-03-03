@@ -226,6 +226,9 @@ class GetNamesFromCertTest(unittest.TestCase):
             ['example.com'] + ['{0}.example.com'.format(c) for c in 'abcd'],
             self._call(test_util.load_vector('cert-5sans.pem')))
 
+    def test_parse_non_cert(self):
+        self.assertRaises(OpenSSL.crypto.Error, self._call, "hello there")
+
 
 class CertLoaderTest(unittest.TestCase):
     """Tests for certbot.crypto_util.pyopenssl_load_certificate"""
