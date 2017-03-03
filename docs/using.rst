@@ -144,6 +144,10 @@ the ``--nginx`` flag on the commandline.
 Standalone
 ----------
 
+Use standalone mode to obtain a cert if you don't want to use (or don't currently have)
+existing server software. The standalone plugin does not rely on any other server
+software running on the machine where you obtain the cert.
+
 To obtain a cert using a "standalone" webserver, you can use the
 standalone plugin by including ``certonly`` and ``--standalone``
 on the command line. This plugin needs to bind to port 80 or 443 in
@@ -154,10 +158,8 @@ one of the options shown below on the command line.
     * ``--standalone-supported-challenges http-01`` to use port 80
     * ``--standalone-supported-challenges tls-sni-01`` to use port 443
 
-The standalone plugin does not rely on any other server software running
-on the machine where you obtain the certificate. It must still be possible
-for that machine to accept inbound connections from the Internet on the
-specified port using each requested domain name.
+It must still be possible for your machine to accept inbound connections from
+the Internet on the specified port using each requested domain name.
 
 Manual
 ------
