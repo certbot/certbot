@@ -140,6 +140,18 @@ def find_duplicative_certs(config, domains):
 
     return _search_lineages(config, update_certs_for_domain_matches, (None, None))
 
+def cert_path_to_lineage(config):
+    """ If config.cert_path is defined, find an appropriate value for config.certname
+    by searching through available files in config.renewal_configs_dir, and finding
+    one with an appropriate value for 'fullchain'."""
+    
+    def update_cert_name_for_cert_path_match(candidate_lineage, rv):
+            """ Return the lineagename or return None. """
+
+            if candidate_lineage.fullchain == config.cert_path[0]:
+                return candidate_lineage.lineagename
+
+    return _search_lineages(config, update_cert_name_for_cert_path_match, None) 
 
 ###################
 # Private Helpers

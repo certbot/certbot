@@ -406,25 +406,12 @@ def _init_le_client(config, authenticator, installer):
 
     return client.Client(config, acc, authenticator, installer, acme=acme)
 
-def _cert_path_to_lineage(config):
-    """ If config.cert_path is defined, find an appropriate value for config.certname
-    by searching through available files in config.renewal_configs_dir, and finding
-    one with an appropriate value for 'fullchain'."""
-
-    for potential_conf in os.listdir(config.renewal_configs_dir):
-        lineage_name = storage.lineagename_for_filename(potential_conf)
-        renewal_file = storage.renewal_file_for_certname(config, lineage_name)
-        conf_fullchain = storage.fullchain_for_renewal_conf(renewal_file)
-
-        if conf_fullchain == config.cert_path[0]:
-            return lineage_name
-   
 def _delete_if_appropriate(config):
     """Does the user want to delete their now-revoked certs?"""
 
     if config.certname and config.cert_path:
         # first, check if certname and cert_path imply the same certs
-        cert_path_implied_cert_name = _cert_path_to_lineage(config)
+        cert_path_implied_cert_name = cert_manager.cert_path_to_lineage(config)
         cert_path_implied_conf = storage.renewal_file_for_certname(config, cert_path_implied_cert_name)
         cert_name_implied_conf = storage.renewal_file_for_certname(config, config.certname)
  
@@ -450,7 +437,7 @@ def _delete_if_appropriate(config):
                     config.cert_path = (cert_path, f.read()) 
 
     else: # if only config.cert_path was specified
-        config.cert_name = _cert_path_to_lineage(config)
+        config.cert_name = cert_manager.cert_path_to_lineage(config)
 
     cert_manager.delete(config)
 
