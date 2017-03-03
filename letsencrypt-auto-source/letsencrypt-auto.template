@@ -104,6 +104,10 @@ say() {
     fi
 }
 
+error() {
+    echo "$@"
+}
+
 # Support for busybox and others where there is no "command",
 # but "which" instead
 if command -v command > /dev/null 2>&1 ; then
