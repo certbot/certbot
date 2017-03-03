@@ -9,7 +9,7 @@ from certbot import achallenges
 from certbot.tests import acme_util
 
 
-class FaiiledChallengesTest(unittest.TestCase):
+class FailedChallengesTest(unittest.TestCase):
     """Tests for certbot.errors.FailedChallenges."""
 
     def setUp(self):

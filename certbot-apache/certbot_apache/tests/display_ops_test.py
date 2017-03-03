@@ -38,7 +38,7 @@ class SelectVhostTest(unittest.TestCase):
         try:
             self._call(self.vhosts)
         except errors.MissingCommandlineFlag as e:
-            self.assertTrue("vhost ambiguity" in e.message)
+            self.assertTrue("vhost ambiguity" in str(e))
 
     @certbot_util.patch_get_utility()
     def test_more_info_cancel(self, mock_util):

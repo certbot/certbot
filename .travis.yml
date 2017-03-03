@@ -10,10 +10,6 @@ before_install:
 # using separate envs with different TOXENVs creates 4x1 Travis build
 # matrix, which allows us to clearly distinguish which component under
 # test has failed
-env:
-  global:
-    - BOULDERPATH=$PWD/boulder/
-
 matrix:
   include:
     - python: "2.7"
@@ -87,16 +83,20 @@ matrix:
       env: TOXENV=py34
     - python: "3.5"
       env: TOXENV=py35
+    - python: "3.6"
+      env: TOXENV=py36
     - python: "2.7"
       env: TOXENV=nginxroundtrip
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
-# `test-`. This reduces the number of simultaneous Travis runs, which speeds
-# turnaround time on review since there is a cap of 5 simultaneous runs.
+# `test-` or of the form `digit(s).digit(s).x`. This reduces the number of
+# simultaneous Travis runs, which speeds turnaround time on review since there
+# is a cap of on the number of simultaneous runs.
 branches:
   only:
     - master
+    - /^\d+\.\d+\.x$/
     - /^test-.*$/
 
 # container-based infrastructure

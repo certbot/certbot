@@ -176,7 +176,8 @@ class GetAuthorizationsTest(unittest.TestCase):
         mock_poll.side_effect = self._validate_all
         self.mock_auth.get_chall_pref.return_value.append(challenges.HTTP01)
 
-        self.handler.pref_challs.extend((challenges.HTTP01, challenges.DNS01,))
+        self.handler.pref_challs.extend((challenges.HTTP01.typ,
+                                         challenges.DNS01.typ,))
 
         self.handler.get_authorizations(["0"])
 
@@ -187,7 +188,7 @@ class GetAuthorizationsTest(unittest.TestCase):
     def test_preferred_challenges_not_supported(self):
         self.mock_net.request_domain_challenges.side_effect = functools.partial(
             gen_dom_authzr, challs=acme_util.CHALLENGES)
-        self.handler.pref_challs.append(challenges.HTTP01)
+        self.handler.pref_challs.append(challenges.HTTP01.typ)
         self.assertRaises(
             errors.AuthorizationError, self.handler.get_authorizations, ["0"])
 
