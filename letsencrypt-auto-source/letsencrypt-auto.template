@@ -115,7 +115,7 @@ if command -v command > /dev/null 2>&1 ; then
 elif which which > /dev/null 2>&1 ; then
   export EXISTS="which"
 else
-  echo "Cannot find command nor which... please install one!"
+  error "Cannot find command nor which... please install one!"
   exit 1
 fi
 
@@ -160,7 +160,7 @@ if [ -n "${LE_AUTO_SUDO+x}" ]; then
       ;;
     '') ;; # Nothing to do for plain root method.
     *)
-      echo "Error: unknown root authorization mechanism '$LE_AUTO_SUDO'."
+      error "Error: unknown root authorization mechanism '$LE_AUTO_SUDO'."
       exit 1
   esac
   say "Using preset root authorization mechanism '$LE_AUTO_SUDO'."
@@ -191,11 +191,11 @@ ExperimentalBootstrap() {
       $2
     fi
   else
-    echo "FATAL: $1 support is very experimental at present..."
-    echo "if you would like to work on improving it, please ensure you have backups"
-    echo "and then run this script again with the --debug flag!"
-    echo "Alternatively, you can install OS dependencies yourself and run this script"
-    echo "again with --no-bootstrap."
+    error "FATAL: $1 support is very experimental at present..."
+    error "if you would like to work on improving it, please ensure you have backups"
+    error "and then run this script again with the --debug flag!"
+    error "Alternatively, you can install OS dependencies yourself and run this script"
+    error "again with --no-bootstrap."
     exit 1
   fi
 }
@@ -206,15 +206,15 @@ DeterminePythonVersion() {
     $EXISTS "$LE_PYTHON" > /dev/null && break
   done
   if [ "$?" != "0" ]; then
-    echo "Cannot find any Pythons; please install one!"
+    error "Cannot find any Pythons; please install one!"
     exit 1
   fi
   export LE_PYTHON
 
   PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
   if [ "$PYVER" -lt 26 ]; then
-    echo "You have an ancient version of Python entombed in your operating system..."
-    echo "This isn't going to work; you'll need at least version 2.6."
+    error "You have an ancient version of Python entombed in your operating system..."
+    error "This isn't going to work; you'll need at least version 2.6."
     exit 1
   fi
 }
@@ -250,11 +250,11 @@ Bootstrap() {
       BootstrapMessage "Archlinux"
       BootstrapArchCommon
     else
-      echo "Please use pacman to install letsencrypt packages:"
-      echo "# pacman -S certbot certbot-apache"
-      echo
-      echo "If you would like to use the virtualenv way, please run the script again with the"
-      echo "--debug flag."
+      error "Please use pacman to install letsencrypt packages:"
+      error "# pacman -S certbot certbot-apache"
+      error
+      error "If you would like to use the virtualenv way, please run the script again with the"
+      error "--debug flag."
       exit 1
     fi
   elif [ -f /etc/manjaro-release ]; then
@@ -270,11 +270,11 @@ Bootstrap() {
   elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
     ExperimentalBootstrap "Joyent SmartOS Zone" BootstrapSmartOS
   else
-    echo "Sorry, I don't know how to bootstrap Certbot on your operating system!"
-    echo
-    echo "You will need to install OS dependencies, configure virtualenv, and run pip install manually."
-    echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
-    echo "for more info."
+    error "Sorry, I don't know how to bootstrap Certbot on your operating system!"
+    error
+    error "You will need to install OS dependencies, configure virtualenv, and run pip install manually."
+    error "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
+    error "for more info."
     exit 1
   fi
 }
@@ -294,7 +294,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
     # grep for both certbot and letsencrypt until certbot and shim packages have been released
     INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | grep "^certbot\|^letsencrypt" | cut -d " " -f 2)
     if [ -z "$INSTALLED_VERSION" ]; then
-        echo "Error: couldn't get currently installed version for $VENV_BIN/letsencrypt: " 1>&2
+        error "Error: couldn't get currently installed version for $VENV_BIN/letsencrypt: " 1>&2
         "$VENV_BIN/letsencrypt" --version
         exit 1
     fi
@@ -336,30 +336,30 @@ UNLIKELY_EOF
     set -e
     if [ "$PIP_STATUS" != 0 ]; then
       # Report error. (Otherwise, be quiet.)
-      echo "Had a problem while installing Python packages."
+      error "Had a problem while installing Python packages."
       if [ "$VERBOSE" != 1 ]; then
-        echo
-        echo "pip prints the following errors: "
-        echo "====================================================="
-        echo "$PIP_OUT"
-        echo "====================================================="
-        echo
-        echo "Certbot has problem setting up the virtual environment."
+        error
+        error "pip prints the following errors: "
+        error "====================================================="
+        error "$PIP_OUT"
+        error "====================================================="
+        error
+        error "Certbot has problem setting up the virtual environment."
 
         if `echo $PIP_OUT | grep -q Killed` || `echo $PIP_OUT | grep -q "allocate memory"` ; then
-          echo
-          echo "Based on your pip output, the problem can likely be fixed by "
-          echo "increasing the available memory."
+          error
+          error "Based on your pip output, the problem can likely be fixed by "
+          error "increasing the available memory."
         else
-          echo
-          echo "We were not be able to guess the right solution from your pip "
-          echo "output."
+          error
+          error "We were not be able to guess the right solution from your pip "
+          error "output."
         fi
 
-        echo
-        echo "Consult https://certbot.eff.org/docs/install.html#problems-with-python-virtual-environment"
-        echo "for possible solutions."
-        echo "You may also find some support resources at https://certbot.eff.org/support/ ."
+        error
+        error "Consult https://certbot.eff.org/docs/install.html#problems-with-python-virtual-environment"
+        error "for possible solutions."
+        error "You may also find some support resources at https://certbot.eff.org/support/ ."
       fi
       rm -rf "$VENV_PATH"
       exit 1
@@ -410,7 +410,7 @@ UNLIKELY_EOF
     # ---------------------------------------------------------------------------
     DeterminePythonVersion
     if ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then
-      echo "WARNING: unable to check for updates."
+      error "WARNING: unable to check for updates."
     elif [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
       say "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
 

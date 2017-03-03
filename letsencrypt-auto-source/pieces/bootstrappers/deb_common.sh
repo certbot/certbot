@@ -21,7 +21,7 @@ BootstrapDebCommon() {
     QUIET_FLAG='-qq'
   fi
 
-  $SUDO apt-get $QUIET_FLAG update || echo apt-get update hit problems but continuing anyway...
+  $SUDO apt-get $QUIET_FLAG update || error apt-get update hit problems but continuing anyway...
 
   # virtualenv binary can be found in different packages depending on
   # distro version (#346)
@@ -109,7 +109,7 @@ BootstrapDebCommon() {
 
 
   if ! $EXISTS virtualenv > /dev/null ; then
-    echo Failed to install a working \"virtualenv\" command, exiting
+    error Failed to install a working \"virtualenv\" command, exiting
     exit 1
   fi
 }
