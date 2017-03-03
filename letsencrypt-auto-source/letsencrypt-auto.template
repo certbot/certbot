@@ -159,14 +159,14 @@ if [ -n "${LE_AUTO_SUDO+x}" ]; then
       echo "Error: unknown root authorization mechanism '$LE_AUTO_SUDO'."
       exit 1
   esac
-  echo "Using preset root authorization mechanism '$LE_AUTO_SUDO'."
+  say "Using preset root authorization mechanism '$LE_AUTO_SUDO'."
 else
   if test "`id -u`" -ne "0" ; then
     if $EXISTS sudo 1>/dev/null 2>&1; then
       SUDO=sudo
       SUDO_ENV="CERTBOT_AUTO=$0"
     else
-      echo \"sudo\" is not available, will use \"su\" for installation steps...
+      say \"sudo\" is not available, will use \"su\" for installation steps...
       SUDO=su_sudo
     fi
   else
@@ -176,7 +176,7 @@ fi
 
 BootstrapMessage() {
   # Arguments: Platform name
-  echo "Bootstrapping dependencies for $1... (you can skip this with --no-bootstrap)"
+  say "Bootstrapping dependencies for $1... (you can skip this with --no-bootstrap)"
 }
 
 ExperimentalBootstrap() {
@@ -298,7 +298,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
     INSTALLED_VERSION="none"
   fi
   if [ "$LE_AUTO_VERSION" != "$INSTALLED_VERSION" ]; then
-    echo "Creating virtual environment..."
+    say "Creating virtual environment..."
     DeterminePythonVersion
     rm -rf "$VENV_PATH"
     if [ "$VERBOSE" = 1 ]; then
@@ -307,7 +307,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
       virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" > /dev/null
     fi
 
-    echo "Installing Python packages..."
+    say "Installing Python packages..."
     TEMP_DIR=$(TempDir)
     trap 'rm -rf "$TEMP_DIR"' EXIT
     # There is no $ interpolation due to quotes on starting heredoc delimiter.
@@ -360,14 +360,12 @@ UNLIKELY_EOF
       rm -rf "$VENV_PATH"
       exit 1
     fi
-    echo "Installation succeeded."
+    say "Installation succeeded."
   fi
   if [ -n "$SUDO" ]; then
     # SUDO is su wrapper or sudo
-    if [  "$QUIET" != 1 ]; then
-      echo "Requesting root privileges to run certbot..."
-      echo "  $VENV_BIN/letsencrypt" "$@"
-    fi
+    echo "Requesting root privileges to run certbot..."
+    echo "  $VENV_BIN/letsencrypt" "$@"
   fi
   if [ -z "$SUDO_ENV" ] ; then
     # SUDO is su wrapper / noop
@@ -394,7 +392,7 @@ else
     Bootstrap
   fi
   if [ "$OS_PACKAGES_ONLY" = 1 ]; then
-    echo "OS packages installed."
+    say "OS packages installed."
     exit 0
   fi
 
@@ -410,7 +408,7 @@ UNLIKELY_EOF
     if ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then
       echo "WARNING: unable to check for updates."
     elif [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
-      echo "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
+      say "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
 
       # Now we drop into Python so we don't have to install even more
       # dependencies (curl, etc.), for better flow control, and for the option of
@@ -419,7 +417,7 @@ UNLIKELY_EOF
 
       # Install new copy of certbot-auto.
       # TODO: Deal with quotes in pathnames.
-      echo "Replacing certbot-auto..."
+      say "Replacing certbot-auto..."
       # Clone permissions with cp. chmod and chown don't have a --reference
       # option on macOS or BSD, and stat -c on Linux is stat -f on macOS and BSD:
       $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
