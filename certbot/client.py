@@ -155,8 +155,6 @@ def perform_registration(acme, config):
 
     :returns: Registration Resource.
     :rtype: `acme.messages.RegistrationResource`
-
-    :raises .UnexpectedUpdate:
     """
     try:
         return acme.register(messages.NewRegistration.from_data(email=config.email))

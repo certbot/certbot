@@ -445,7 +445,7 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
         """
         # pylint: disable=protected-access
         sans = crypto_util._pyopenssl_cert_or_req_san(cert)
-        logger.debug('Certificate %s. SANs: %s', cert.digest('sha1'), sans)
+        logger.debug('Certificate %s. SANs: %s', cert.digest('sha256'), sans)
         return self.z_domain.decode() in sans
 
     def simple_verify(self, chall, domain, account_public_key,

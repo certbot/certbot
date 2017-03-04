@@ -134,8 +134,6 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         update = regr.body if update is None else update
         body = messages.UpdateRegistration(**dict(update))
         updated_regr = self._send_recv_regr(regr, body=body)
-        if updated_regr != regr:
-            raise errors.UnexpectedUpdate(regr)
         return updated_regr
 
     def deactivate_registration(self, regr):
@@ -301,7 +299,6 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         response = self.net.get(authzr.uri)
         updated_authzr = self._authzr_from_response(
             response, authzr.body.identifier, authzr.uri, authzr.new_cert_uri)
-        # TODO: check and raise UnexpectedUpdate
         return updated_authzr, response
 
     def request_issuance(self, csr, authzrs):

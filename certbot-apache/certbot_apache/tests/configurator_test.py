@@ -18,6 +18,7 @@ from certbot.tests import acme_util
 from certbot.tests import util as certbot_util
 
 from certbot_apache import configurator
+from certbot_apache import constants
 from certbot_apache import parser
 from certbot_apache import obj
 
@@ -1047,6 +1048,36 @@ class MultipleVhostsTest(util.ApacheTest):
 
         self.assertTrue("rewrite_module" in self.config.parser.modules)
 
+    @mock.patch("certbot.util.run_script")
+    @mock.patch("certbot.util.exe_exists")
+    def test_redirect_with_old_https_redirection(self, mock_exe, _):
+        self.config.parser.update_runtime_variables = mock.Mock()
+        mock_exe.return_value = True
+        self.config.get_version = mock.Mock(return_value=(2, 2, 0))
+
+        ssl_vhost = self.config.choose_vhost("certbot.demo")
+
+        # pylint: disable=protected-access
+        http_vhost = self.config._get_http_vhost(ssl_vhost)
+
+        # Create an old (previously suppoorted) https redirectoin rewrite rule
+        self.config.parser.add_dir(
+            http_vhost.path, "RewriteRule",
+            ["^",
+             "https://%{SERVER_NAME}%{REQUEST_URI}",
+             "[L,QSA,R=permanent]"])
+
+        self.config.save()
+
+        try:
+            self.config.enhance("certbot.demo", "redirect")
+        except errors.PluginEnhancementAlreadyPresent:
+            args_paths = self.config.parser.find_dir(
+                "RewriteRule", None, http_vhost.path, False)
+            arg_vals = [self.config.aug.get(x) for x in args_paths]
+            self.assertEqual(arg_vals, constants.REWRITE_HTTPS_ARGS)
+
+
     def test_redirect_with_conflict(self):
         self.config.parser.modules.add("rewrite_module")
         ssl_vh = obj.VirtualHost(
@@ -1134,7 +1165,7 @@ class MultipleVhostsTest(util.ApacheTest):
             http_vhost.path, "RewriteRule",
             ["^",
              "https://%{SERVER_NAME}%{REQUEST_URI}",
-             "[L,QSA,R=permanent]"])
+             "[L,NE,R=permanent]"])
         self.config.save()
 
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
@@ -1145,7 +1176,7 @@ class MultipleVhostsTest(util.ApacheTest):
         conf_text = open(ssl_vhost.filep).read()
         commented_rewrite_rule = ("# RewriteRule ^ "
                                   "https://%{SERVER_NAME}%{REQUEST_URI} "
-                                  "[L,QSA,R=permanent]")
+                                  "[L,NE,R=permanent]")
         self.assertTrue(commented_rewrite_rule in conf_text)
         mock_get_utility().add_message.assert_called_once_with(mock.ANY,
 
@@ -1164,7 +1195,7 @@ class MultipleVhostsTest(util.ApacheTest):
                 "RewriteCond", ["%{DOCUMENT_ROOT}/%{REQUEST_FILENAME}", "!-f"])
         self.config.parser.add_dir(
             http_vhost.path, "RewriteRule",
-            ["^(.*)$", "b://u%{REQUEST_URI}", "[P,QSA,L]"])
+            ["^(.*)$", "b://u%{REQUEST_URI}", "[P,NE,L]"])
 
         # Add a chunk that should be commented out.
         self.config.parser.add_dir(http_vhost.path,
@@ -1175,7 +1206,7 @@ class MultipleVhostsTest(util.ApacheTest):
             http_vhost.path, "RewriteRule",
             ["^",
              "https://%{SERVER_NAME}%{REQUEST_URI}",
-             "[L,QSA,R=permanent]"])
+             "[L,NE,R=permanent]"])
 
         self.config.save()
 
@@ -1186,13 +1217,13 @@ class MultipleVhostsTest(util.ApacheTest):
         not_commented_cond1 = ("RewriteCond "
                 "%{DOCUMENT_ROOT}/%{REQUEST_FILENAME} !-f")
         not_commented_rewrite_rule = ("RewriteRule "
-            "^(.*)$ b://u%{REQUEST_URI} [P,QSA,L]")
+            "^(.*)$ b://u%{REQUEST_URI} [P,NE,L]")
 
         commented_cond1 = "# RewriteCond %{HTTPS} !=on"
         commented_cond2 = "# RewriteCond %{HTTPS} !^$"
         commented_rewrite_rule = ("# RewriteRule ^ "
                                   "https://%{SERVER_NAME}%{REQUEST_URI} "
-                                  "[L,QSA,R=permanent]")
+                                  "[L,NE,R=permanent]")
 
         self.assertTrue(not_commented_cond1 in conf_line_set)
         self.assertTrue(not_commented_rewrite_rule in conf_line_set)
