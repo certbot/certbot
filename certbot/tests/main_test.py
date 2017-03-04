@@ -382,6 +382,9 @@ class DetermineAccountTest(unittest.TestCase):
         self.config = configuration.NamespaceConfig(self.args)
         self.accs = [mock.MagicMock(id='x'), mock.MagicMock(id='y')]
         self.account_storage = account.AccountMemoryStorage()
+        # For use in saving accounts: fake out the new_authz URL.
+        self.mock_client = mock.MagicMock()
+        self.mock_client.directory.new_authz = "hi"
 
     def _call(self):
         # pylint: disable=protected-access
@@ -391,14 +394,14 @@ class DetermineAccountTest(unittest.TestCase):
             return _determine_account(self.config)
 
     def test_args_account_set(self):
-        self.account_storage.save(self.accs[1])
+        self.account_storage.save(self.accs[1], self.mock_client)
         self.config.account = self.accs[1].id
         self.assertEqual((self.accs[1], None), self._call())
         self.assertEqual(self.accs[1].id, self.config.account)
         self.assertTrue(self.config.email is None)
 
     def test_single_account(self):
-        self.account_storage.save(self.accs[0])
+        self.account_storage.save(self.accs[0], self.mock_client)
         self.assertEqual((self.accs[0], None), self._call())
         self.assertEqual(self.accs[0].id, self.config.account)
         self.assertTrue(self.config.email is None)
@@ -406,7 +409,7 @@ class DetermineAccountTest(unittest.TestCase):
     @mock.patch('certbot.client.display_ops.choose_account')
     def test_multiple_accounts(self, mock_choose_accounts):
         for acc in self.accs:
-            self.account_storage.save(acc)
+            self.account_storage.save(acc, self.mock_client)
         mock_choose_accounts.return_value = self.accs[1]
         self.assertEqual((self.accs[1], None), self._call())
         self.assertEqual(

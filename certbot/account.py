@@ -106,7 +106,8 @@ class AccountMemoryStorage(interfaces.AccountStorage):
     def find_all(self):
         return list(six.itervalues(self.accounts))
 
-    def save(self, account, _):
+    def save(self, account, acme):
+        # pylint: disable=unused-argument
         if account.id in self.accounts:
             logger.debug("Overwriting account: %s", account.id)
         self.accounts[account.id] = account
