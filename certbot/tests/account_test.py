@@ -4,7 +4,6 @@ import json
 import os
 import shutil
 import stat
-import tempfile
 import unittest
 
 import mock
@@ -16,6 +15,8 @@ from acme import messages
 from certbot import errors
 
 from certbot.tests import util
+
+from certbot.tests.util import TempDirTestCase
 
 
 KEY = jose.JWKRSA.load(util.load_vector("rsa512_key_2.pem"))
@@ -98,13 +99,14 @@ class AccountMemoryStorageTest(unittest.TestCase):
         self.assertEqual([account], self.storage.find_all())
 
 
-class AccountFileStorageTest(unittest.TestCase):
+class AccountFileStorageTest(TempDirTestCase):
     """Tests for certbot.account.AccountFileStorage."""
 
     def setUp(self):
-        self.tmp = tempfile.mkdtemp()
+        super(AccountFileStorageTest, self).setUp()
+
         self.config = mock.MagicMock(
-            accounts_dir=os.path.join(self.tmp, "accounts"))
+            accounts_dir=os.path.join(self.tempdir, "accounts"))
         from certbot.account import AccountFileStorage
         self.storage = AccountFileStorage(self.config)
 
@@ -117,9 +119,6 @@ class AccountFileStorageTest(unittest.TestCase):
             key=KEY)
         self.mock_client = mock.MagicMock()
         self.mock_client.directory.new_authz = new_authzr_uri
-
-    def tearDown(self):
-        shutil.rmtree(self.tmp)
 
     def test_init_creates_dir(self):
         self.assertTrue(os.path.isdir(self.config.accounts_dir))
