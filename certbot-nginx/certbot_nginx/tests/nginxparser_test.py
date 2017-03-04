@@ -218,6 +218,13 @@ class TestRawNginxParser(unittest.TestCase):
             ]]
         ])
 
+    def test_variable_name(self):
+        parsed = loads("try_files /typo3temp/tx_ncstaticfilecache/$host"
+            "${request_uri}index.html @nocache;")
+
+        self.assertEqual(parsed, [
+            ['try_files', '/typo3temp/tx_ncstaticfilecache/$host${request_uri}index.html', '@nocache']
+        ])
 
 class TestUnspacedList(unittest.TestCase):
     """Test the UnspacedList data structure"""
