@@ -98,7 +98,7 @@ def report_new_account(config):
 
 
 class AccountMemoryStorage(interfaces.AccountStorage):
-    """In-memory account strage."""
+    """In-memory account storage."""
 
     def __init__(self, initial_accounts=None):
         self.accounts = initial_accounts if initial_accounts is not None else {}
@@ -106,7 +106,7 @@ class AccountMemoryStorage(interfaces.AccountStorage):
     def find_all(self):
         return list(six.itervalues(self.accounts))
 
-    def save(self, account):
+    def save(self, account, _):
         if account.id in self.accounts:
             logger.debug("Overwriting account: %s", account.id)
         self.accounts[account.id] = account
@@ -124,9 +124,7 @@ class RegistrationResourceWithNewAuthzrURI(messages.RegistrationResource):
        new_authzr_uri as part of the account. Because people
        sometimes switch between old and new versions, we will
        continue to write out this field for some time so older
-       clients don't crash in that scenario. Because this is a
-       temporary hack, just hardcode the known new-authz URI for
-       Let's Encrypt.
+       clients don't crash in that scenario.
     """
     new_authzr_uri = jose.Field('new_authzr_uri')
 
@@ -193,16 +191,16 @@ class AccountFileStorage(interfaces.AccountStorage):
                     account_id, acc.id))
         return acc
 
-    def save(self, account):
-        self._save(account, regr_only=False)
+    def save(self, account, acme):
+        self._save(account, acme, regr_only=False)
 
-    def save_regr(self, account):
+    def save_regr(self, account, acme):
         """Save the registration resource.
 
         :param Account account: account whose regr should be saved
 
         """
-        self._save(account, regr_only=True)
+        self._save(account, acme, regr_only=True)
 
     def delete(self, account_id):
         """Delete registration info from disk
@@ -216,7 +214,7 @@ class AccountFileStorage(interfaces.AccountStorage):
                 "Account at %s does not exist" % account_dir_path)
         shutil.rmtree(account_dir_path)
 
-    def _save(self, account, regr_only):
+    def _save(self, account, acme, regr_only):
         account_dir_path = self._account_dir_path(account.id)
         util.make_or_verify_dir(account_dir_path, 0o700, os.geteuid(),
                                 self.config.strict_permissions)
@@ -224,7 +222,7 @@ class AccountFileStorage(interfaces.AccountStorage):
             with open(self._regr_path(account_dir_path), "w") as regr_file:
                 regr = account.regr
                 with_uri = RegistrationResourceWithNewAuthzrURI(
-                    new_authzr_uri="https://acme-v01.api.letsencrypt.org/acme/new-authz",
+                    new_authzr_uri=acme.directory.new_authz,
                     body=regr.body,
                     uri=regr.uri,
                     terms_of_service=regr.terms_of_service)
