@@ -104,7 +104,7 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['listen', '127.0.0.1'],
                             ['server_name', '.example.com'],
                             ['server_name', 'example.*'],
-                            ['listen', '5001 ssl'],
+                            ['listen', '5001', 'ssl'],
                             ['#', parser.COMMENT]]]],
                          parsed[0])
 
@@ -204,13 +204,13 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['server_name', '.example.com'],
                             ['server_name', 'example.*'],
 
-                            ['listen', '5001 ssl'],
+                            ['listen', '5001', 'ssl'],
                             ['ssl_certificate', 'example/fullchain.pem'],
                             ['ssl_certificate_key', 'example/key.pem']] +
                             util.filter_comments(self.config.parser.loc["ssl_options"])
                             ]],
                          parsed_example_conf)
-        self.assertEqual([['server_name', 'somename  alias  another.alias']],
+        self.assertEqual([['server_name', 'somename', 'alias', 'another.alias']],
                          parsed_server_conf)
         self.assertTrue(util.contains_at_depth(
             parsed_nginx_conf,
@@ -221,8 +221,8 @@ class NginxConfiguratorTest(util.NginxTest):
               ['include', 'server.conf'],
               [['location', '/'],
                [['root', 'html'],
-                ['index', 'index.html index.htm']]],
-              ['listen', '5001 ssl'],
+                ['index', 'index.html', 'index.htm']]],
+              ['listen', '5001', 'ssl'],
               ['ssl_certificate', '/etc/nginx/fullchain.pem'],
               ['ssl_certificate_key', '/etc/nginx/key.pem']] +
              util.filter_comments(self.config.parser.loc["ssl_options"])
@@ -246,7 +246,7 @@ class NginxConfiguratorTest(util.NginxTest):
                            ['server_name', 'summer.com'],
 
                            ['listen', '80'],
-                           ['listen', '5001 ssl'],
+                           ['listen', '5001', 'ssl'],
                            ['ssl_certificate', 'summer/fullchain.pem'],
                            ['ssl_certificate_key', 'summer/key.pem']] +
                            util.filter_comments(self.config.parser.loc["ssl_options"])

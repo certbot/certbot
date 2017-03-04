@@ -298,9 +298,9 @@ class NginxParser(object):
         """
         server = vhost.raw
         for directive in server:
-            if not directive or len(directive) < 2:
+            if not directive:
                 continue
-            elif directive[0] == 'ssl' and directive[1] == 'on':
+            elif _is_ssl_on_directive(directive):
                 return True
 
         return False
@@ -468,6 +468,17 @@ def _is_include_directive(entry):
             len(entry) == 2 and entry[0] == 'include' and
             isinstance(entry[1], str))
 
+def _is_ssl_on_directive(entry):
+    """Checks if an nginx parsed entry is an 'include' directive.
+
+    :param list entry: the parsed entry
+    :returns: Whether it's an 'ssl on' directive
+    :rtype: bool
+
+    """
+    return (isinstance(entry, list) and
+            len(entry) == 2 and entry[0] == 'ssl' and
+            entry[1] == 'on')
 
 def _get_servernames(names):
     """Turns a server_name string into a list of server names
@@ -550,12 +561,11 @@ def _add_directive(block, directive, replace):
         # and there is already a copy of that directive with a different value
         # in the config file.
         directive_name = directive[0]
-        directive_value = directive[1]
         if location is None or (isinstance(directive_name, str) and
                                 directive_name in REPEATABLE_DIRECTIVES):
             block.append(directive)
             _comment_directive(block, len(block) - 1)
-        elif block[location][1] != directive_value:
+        elif block[location] != directive:
             raise errors.MisconfigurationError(
                 'tried to insert directive "{0}" but found '
                 'conflicting "{1}".'.format(directive, block[location]))
@@ -585,15 +595,15 @@ def _parse_server_raw(server):
         if not directive:
             continue
         if directive[0] == 'listen':
-            addr = obj.Addr.fromstring(directive[1])
+            addr = obj.Addr.fromstring(" ".join(directive[1:]))
             if addr:
                 parsed_server['addrs'].add(addr)
                 if addr.ssl:
                     parsed_server['ssl'] = True
         elif directive[0] == 'server_name':
             parsed_server['names'].update(
-                _get_servernames(directive[1]))
-        elif directive[0] == 'ssl' and directive[1] == 'on':
+                _get_servernames(" ".join(directive[1:])))
+        elif _is_ssl_on_directive(directive):
             parsed_server['ssl'] = True
             apply_ssl_to_all_addrs = True
 

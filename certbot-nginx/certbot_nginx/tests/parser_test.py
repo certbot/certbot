@@ -52,7 +52,7 @@ class NginxParserTest(util.NginxTest):
                                'sites-enabled/sslon.com',
                                'sites-enabled/globalssl.com']]),
                          set(nparser.parsed.keys()))
-        self.assertEqual([['server_name', 'somename  alias  another.alias']],
+        self.assertEqual([['server_name', 'somename', 'alias', 'another.alias']],
                          nparser.parsed[nparser.abs_path('server.conf')])
         self.assertEqual([[['server'], [['listen', '69.50.225.155:9000'],
                                         ['listen', '127.0.0.1'],
@@ -341,7 +341,7 @@ class NginxParserTest(util.NginxTest):
         self.assertEqual(nginxparser.UnspacedList(nparser.loc["ssl_options"]),
                          [['ssl_session_cache', 'shared:le_nginx_SSL:1m'],
                           ['ssl_session_timeout', '1440m'],
-                          ['ssl_protocols', 'TLSv1 TLSv1.1 TLSv1.2'],
+                          ['ssl_protocols', 'TLSv1', 'TLSv1.1', 'TLSv1.2'],
                           ['ssl_prefer_server_ciphers', 'on'],
                           ['ssl_ciphers', '"ECDHE-ECDSA-AES128-GCM-SHA256 ECDHE-ECDSA-'+
                            'AES256-GCM-SHA384 ECDHE-ECDSA-AES128-SHA ECDHE-ECDSA-AES256'+
