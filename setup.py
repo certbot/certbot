@@ -65,6 +65,13 @@ if sys.version_info < (2, 7):
 else:
     install_requires.append('mock')
 
+if sys.version_info < (3,):
+    install_requires.append(
+        'python2-pythondialog>=3.2.2rc1',  # Debian squeeze support, cf. #280
+    )
+else:
+    install_requires.append('pythondialog>=3.2.2rc1')
+
 dev_extras = [
     # Pin astroid==1.3.5, pylint==1.4.2 as a workaround for #289
     'astroid==1.3.5',
