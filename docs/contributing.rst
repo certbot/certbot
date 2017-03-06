@@ -15,7 +15,7 @@ Running a local copy of the client
 ----------------------------------
 
 Running the client in developer mode from your local tree is a little
-different than running ``letsencrypt-auto``.  To get set up, do these things
+different than running ``certbot-auto``.  To get set up, do these things
 once:
 
 .. code-block:: shell
@@ -54,104 +54,66 @@ where appropriate.
 
 Once you've got a working branch, you can open a pull request.  All changes in
 your pull request must have thorough unit test coverage, pass our
-`integration`_ tests, and be compliant with the :ref:`coding style
-<coding-style>`.
+tests, and be compliant with the :ref:`coding style <coding-style>`.
 
 .. _github issue tracker: https://github.com/certbot/certbot/issues
 .. _Good Volunteer Task: https://github.com/certbot/certbot/issues?q=is%3Aopen+is%3Aissue+label%3A%22Good+Volunteer+Task%22
 
+.. _testing:
+
 Testing
 -------
 
-The following tools are there to help you:
+When you are working in a file ``foo.py``, there should also be a file ``foo_test.py``
+either in the same directory as ``foo.py`` or in the ``tests`` subdirectory
+(if there isn't, make one). While you are working on your code and tests, run
+``python foo_test.py`` to run the relevant tests.
 
-- ``tox`` starts a full set of tests. Please note that it includes
-  apacheconftest, which uses the system's Apache install to test config file
-  parsing, so it should only be run on systems that have an
-  experimental, non-production Apache2 install on them.  ``tox -e
-  apacheconftest`` can be used to run those specific Apache conf tests.
+For debugging, we recommend putting
+``import ipdb; ipdb.set_trace()`` statements inside the source code.
 
-- ``tox --skip-missing-interpreters`` runs tox while ignoring missing versions
-  of Python needed for running the tests.
+Once you are done with your code changes, and the tests in ``foo_test.py`` pass,
+run all of the unittests for Certbot with ``tox -e py27`` (this uses Python
+2.7).
 
-- ``tox -e py27``, ``tox -e py26`` etc, run unit tests for specific Python
-  versions.
+Once all the unittests pass, check for sufficient test coverage using
+``tox -e cover``, and then check for code style with ``tox -e lint`` (all files)
+or ``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a time).
 
-- ``tox -e cover`` checks the test coverage only. Calling the
-  ``./tox.cover.sh`` script directly (or even ``./tox.cover.sh $pkg1
-  $pkg2 ...`` for any subpackages) might be a bit quicker, though.
+Once all of the above is successful, you may run the full test suite,
+including integration tests, using ``tox``. We recommend running the
+commands above first, because running all tests with ``tox`` is very
+slow, and the large amount of ``tox`` output can make it hard to find
+specific failures when they happen. Also note that the full test suite
+will attempt to modify your system's Apache config if your user has sudo
+permissions, so it should not be run on a production Apache server.
 
-- ``tox -e lint`` checks the style of the whole project, while
-  ``pylint --rcfile=.pylintrc path`` will check a single file or
-  specific directory only.
-
-- For debugging, we recommend ``pip install ipdb`` and putting
-  ``import ipdb; ipdb.set_trace()`` statement inside the source
-  code. Alternatively, you can use Python's standard library `pdb`,
-  but you won't get TAB completion...
-
+If you have trouble getting the full ``tox`` suite to run locally, it is
+generally sufficient to open a pull request and let Github and Travis run
+integration tests for you.
 
 .. _integration:
 
-Integration testing with the boulder CA
+Integration testing with the Boulder CA
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Generally it is sufficient to open a pull request and let Github and Travis run
-integration tests for you.
-
-However, if you prefer to run tests, you can use Vagrant, using the Vagrantfile
-in Certbot's repository. To execute the tests on a Vagrant box, the only
-command you are required to run is::
-
-  ./tests/boulder-integration.sh
-
-Otherwise, please follow the following instructions.
-
-Mac OS X users: Run ``./tests/mac-bootstrap.sh`` instead of
-``boulder-start.sh`` to install dependencies, configure the
-environment, and start boulder.
-
-Otherwise, install `Go`_ 1.5, ``libtool-ltdl``, ``mariadb-server`` and
-``rabbitmq-server`` and then start Boulder_, an ACME CA server.
-
-If you can't get packages of Go 1.5 for your Linux system,
-you can execute the following commands to install it:
+To run integration tests locally, you need Docker and docker-compose installed
+and working. Fetch and start Boulder using:
 
 .. code-block:: shell
 
-  wget https://storage.googleapis.com/golang/go1.5.3.linux-amd64.tar.gz -P /tmp/
-  sudo tar -C /usr/local -xzf /tmp/go1.5.3.linux-amd64.tar.gz
-  if ! grep -Fxq "export GOROOT=/usr/local/go" ~/.profile ; then echo "export GOROOT=/usr/local/go" >> ~/.profile; fi
-  if ! grep -Fxq "export PATH=\\$GOROOT/bin:\\$PATH" ~/.profile ; then echo "export PATH=\\$GOROOT/bin:\\$PATH" >> ~/.profile; fi
+  ./tests/boulder-fetch.sh
 
-These commands download `Go`_ 1.5.3 to ``/tmp/``, extracts to ``/usr/local``,
-and then adds the export lines required to execute ``boulder-start.sh`` to
-``~/.profile`` if they were not previously added
+If you have problems with Docker, you may want to try `removing all containers and
+volumes`_ and making sure you have at least 1GB of memory.
 
-Make sure you execute the following command after `Go`_ finishes installing::
+Run the integration tests using:
 
-  if ! grep -Fxq "export GOPATH=\\$HOME/go" ~/.profile ; then echo "export GOPATH=\\$HOME/go" >> ~/.profile; fi
+.. code-block:: shell
 
-Afterwards, you'd be able to start Boulder_ using the following command::
+  ./tests/boulder-integration.sh
 
-  ./tests/boulder-start.sh
-
-The script will download, compile and run the executable; please be
-patient - it will take some time... Once its ready, you will see
-``Server running, listening on 127.0.0.1:4000...``. Add ``/etc/hosts``
-entries pointing ``le.wtf``, ``le1.wtf``, ``le2.wtf``, ``le3.wtf``
-and ``nginx.wtf`` to 127.0.0.1.  You may now run (in a separate terminal)::
-
-  ./tests/boulder-integration.sh && echo OK || echo FAIL
-
-If you would like to test `certbot_nginx` plugin (highly
-encouraged) make sure to install prerequisites as listed in
-``certbot-nginx/tests/boulder-integration.sh`` and rerun
-the integration tests suite.
-
-.. _Boulder: https://github.com/letsencrypt/boulder
-.. _Go: https://golang.org
-
+.. _removing all containers and volumes: https://www.digitalocean.com/community/tutorials/how-to-remove-docker-images-containers-and-volumes
 
 Code components and layout
 ==========================
@@ -159,7 +121,11 @@ Code components and layout
 acme
   contains all protocol specific code
 certbot
-  all client code
+  main client code
+certbot-apache and certbot-nginx
+  client code to configure specific web servers
+certbot.egg-info
+  configuration for packaging Certbot
 
 
 Plugin-architecture
@@ -246,9 +212,8 @@ configuration checkpoints and rollback.
 Display
 ~~~~~~~
 
-We currently offer a pythondialog and "text" mode for displays. Display
-plugins implement the `~certbot.interfaces.IDisplay`
-interface.
+We currently only offer a "text" mode for displays. Display plugins
+implement the `~certbot.interfaces.IDisplay` interface.
 
 .. _dev-plugin:
 
@@ -313,17 +278,57 @@ Steps:
 2. Make sure your environment is set up properly and that you're in your
    virtualenv. You can do this by running ``./tools/venv.sh``.
    (this is a **very important** step)
-3. Run ``./pep8.travis.sh`` to do a cursory check of your code style.
-   Fix any errors.
-4. Run ``tox -e lint`` to check for pylint errors. Fix any errors.
-5. Run ``tox --skip-missing-interpreters`` to run the entire test suite
+3. Run ``tox -e lint`` to check for pylint errors. Fix any errors.
+4. Run ``tox --skip-missing-interpreters`` to run the entire test suite
    including coverage. The ``--skip-missing-interpreters`` argument ignores
    missing versions of Python needed for running the tests. Fix any errors.
-6. If your code touches communication with an ACME server/Boulder, you
+5. If your code touches communication with an ACME server/Boulder, you
    should run the integration tests, see `integration`_. See `Known Issues`_
    for some common failures that have nothing to do with your code.
-7. Submit the PR.
-8. Did your tests pass on Travis? If they didn't, fix any errors.
+6. Submit the PR.
+7. Did your tests pass on Travis? If they didn't, fix any errors.
+
+
+Updating certbot-auto and letsencrypt-auto
+==========================================
+Updating the scripts
+--------------------
+Developers should *not* modify the ``certbot-auto`` and ``letsencrypt-auto`` files
+in the root directory of the repository.  Rather, modify the
+``letsencrypt-auto.template`` and associated platform-specific shell scripts in
+the ``letsencrypt-auto-source`` and
+``letsencrypt-auto-source/pieces/bootstrappers`` directory, respectively.
+
+Building letsencrypt-auto-source/letsencrypt-auto
+-------------------------------------------------
+Once changes to any of the aforementioned files have been made, the
+``letsencrypt-auto-source/letsencrypt-auto`` script should be updated.  In lieu of
+manually updating this script, run the build script, which lives at
+``letsencrypt-auto-source/build.py``:
+
+.. code-block:: shell
+
+   python letsencrypt-auto-source/build.py
+
+Running ``build.py`` will update the ``letsencrypt-auto-source/letsencrypt-auto``
+script.  Note that the ``certbot-auto`` and ``letsencrypt-auto`` scripts in the root
+directory of the repository will remain **unchanged** after this script is run.
+Your changes will be propagated to these files during the next release of
+Certbot.
+
+Opening a PR
+------------
+When opening a PR, ensure that the following files are committed:
+
+1. ``letsencrypt-auto-source/letsencrypt-auto.template`` and
+   ``letsencrypt-auto-source/pieces/bootstrappers/*``
+2. ``letsencrypt-auto-source/letsencrypt-auto`` (generated by ``build.py``)
+
+It might also be a good idea to double check that **no** changes were
+inadvertently made to the ``certbot-auto`` or ``letsencrypt-auto`` scripts in the
+root of the repository.  These scripts will be updated by the core developers
+during the next release.
+
 
 Updating the documentation
 ==========================

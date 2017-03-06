@@ -111,7 +111,7 @@ class JWK(json_util.TypedJSONObjectWithFields):
         try:
             key = cls._load_cryptography_key(data, password, backend)
         except errors.Error as error:
-            logger.debug('Loading symmetric key, assymentric failed: %s', error)
+            logger.debug('Loading symmetric key, asymmetric failed: %s', error)
             return JWKOct(key=data)
 
         if cls.typ is not NotImplemented and not isinstance(

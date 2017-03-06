@@ -17,16 +17,16 @@ class ErrorTest(unittest.TestCase):
     """Tests for acme.messages.Error."""
 
     def setUp(self):
-        from acme.messages import Error
+        from acme.messages import Error, ERROR_PREFIX
         self.error = Error(
-            detail='foo', typ='urn:acme:error:malformed', title='title')
+            detail='foo', typ=ERROR_PREFIX + 'malformed', title='title')
         self.jobj = {
             'detail': 'foo',
             'title': 'some title',
-            'type': 'urn:acme:error:malformed',
+            'type': ERROR_PREFIX + 'malformed',
         }
         self.error_custom = Error(typ='custom', detail='bar')
-        self.jobj_cusom = {'type': 'custom', 'detail': 'bar'}
+        self.jobj_custom = {'type': 'custom', 'detail': 'bar'}
 
     def test_default_typ(self):
         from acme.messages import Error
@@ -47,9 +47,26 @@ class ErrorTest(unittest.TestCase):
 
     def test_str(self):
         self.assertEqual(
-            'urn:acme:error:malformed :: The request message was '
+            'urn:ietf:params:acme:error:malformed :: The request message was '
             'malformed :: foo :: title', str(self.error))
         self.assertEqual('custom :: bar', str(self.error_custom))
+
+    def test_code(self):
+        from acme.messages import Error
+        self.assertEqual('malformed', self.error.code)
+        self.assertEqual(None, self.error_custom.code)
+        self.assertEqual(None, Error().code)
+
+    def test_is_acme_error(self):
+        from acme.messages import is_acme_error
+        self.assertTrue(is_acme_error(self.error))
+        self.assertTrue(is_acme_error(str(self.error)))
+        self.assertFalse(is_acme_error(self.error_custom))
+
+    def test_with_code(self):
+        from acme.messages import Error, is_acme_error
+        self.assertTrue(is_acme_error(Error.with_code('badCSR')))
+        self.assertRaises(ValueError, Error.with_code, 'not an ACME error code')
 
 
 class ConstantTest(unittest.TestCase):
@@ -240,7 +257,7 @@ class ChallengeBodyTest(unittest.TestCase):
         from acme.messages import Error
         from acme.messages import STATUS_INVALID
         self.status = STATUS_INVALID
-        error = Error(typ='urn:acme:error:serverInternal',
+        error = Error(typ='urn:ietf:params:acme:error:serverInternal',
                       detail='Unable to communicate with DNS server')
         self.challb = ChallengeBody(
             uri='http://challb', chall=self.chall, status=self.status,
@@ -256,7 +273,7 @@ class ChallengeBodyTest(unittest.TestCase):
         self.jobj_from = self.jobj_to.copy()
         self.jobj_from['status'] = 'invalid'
         self.jobj_from['error'] = {
-            'type': 'urn:acme:error:serverInternal',
+            'type': 'urn:ietf:params:acme:error:serverInternal',
             'detail': 'Unable to communicate with DNS server',
         }
 

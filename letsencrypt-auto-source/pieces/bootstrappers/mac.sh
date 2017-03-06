@@ -15,7 +15,6 @@ BootstrapMac() {
   fi
 
   $pkgcmd augeas
-  $pkgcmd dialog
   if [ "$(which python)" = "/System/Library/Frameworks/Python.framework/Versions/2.7/bin/python" \
       -o "$(which python)" = "/usr/bin/python" ]; then
     # We want to avoid using the system Python because it requires root to use pip.
@@ -24,7 +23,7 @@ BootstrapMac() {
     $pkgcmd python
   fi
 
-  # Workaround for _dlopen not finding augeas on OS X
+  # Workaround for _dlopen not finding augeas on macOS
   if [ "$pkgman" = "port" ] && ! [ -e "/usr/local/lib/libaugeas.dylib" ] && [ -e "/opt/local/lib/libaugeas.dylib" ]; then
     echo "Applying augeas workaround"
     $SUDO mkdir -p /usr/local/lib/
@@ -32,14 +31,14 @@ BootstrapMac() {
   fi
 
   if ! hash pip 2>/dev/null; then
-      echo "pip not installed"
-      echo "Installing pip..."
-      curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | python
+    echo "pip not installed"
+    echo "Installing pip..."
+    curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | python
   fi
 
   if ! hash virtualenv 2>/dev/null; then
-      echo "virtualenv not installed."
-      echo "Installing with pip..."
-      pip install virtualenv
+    echo "virtualenv not installed."
+    echo "Installing with pip..."
+    pip install virtualenv
   fi
 }

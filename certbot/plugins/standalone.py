@@ -3,6 +3,7 @@ import argparse
 import collections
 import logging
 import socket
+import sys
 import threading
 
 import OpenSSL
@@ -12,11 +13,11 @@ import zope.interface
 from acme import challenges
 from acme import standalone as acme_standalone
 
+from certbot import cli
 from certbot import errors
 from certbot import interfaces
 
 from certbot.plugins import common
-from certbot.plugins import util
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +120,11 @@ def supported_challenges_validator(data):
     It should be passed as `type` argument to `add_argument`.
 
     """
+    if cli.set_by_cli("standalone_supported_challenges"):
+        sys.stderr.write(
+            "WARNING: The standalone specific "
+            "supported challenges flag is deprecated.\n"
+            "Please use the --preferred-challenges flag instead.\n")
     challs = data.split(",")
 
     # tls-sni-01 was dvsni during private beta
@@ -177,7 +183,7 @@ class Authenticator(common.Plugin):
     @classmethod
     def add_parser_arguments(cls, add):
         add("supported-challenges",
-            help="Supported challenges. Preferred in the order they are listed.",
+            help=argparse.SUPPRESS,
             type=supported_challenges_validator,
             default=",".join(chall.typ for chall in SUPPORTED_CHALLENGES))
 
@@ -186,15 +192,6 @@ class Authenticator(common.Plugin):
         """Challenges supported by this plugin."""
         return [challenges.Challenge.TYPES[name] for name in
                 self.conf("supported-challenges").split(",")]
-
-    @property
-    def _necessary_ports(self):
-        necessary_ports = set()
-        if challenges.HTTP01 in self.supported_challenges:
-            necessary_ports.add(self.config.http01_port)
-        if challenges.TLSSNI01 in self.supported_challenges:
-            necessary_ports.add(self.config.tls_sni_01_port)
-        return necessary_ports
 
     def more_info(self):  # pylint: disable=missing-docstring
         return("This authenticator creates its own ephemeral TCP listener "
@@ -211,55 +208,37 @@ class Authenticator(common.Plugin):
         return self.supported_challenges
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
-        renewer = self.config.verb == "renew"
-        if any(util.already_listening(port, renewer) for port in self._necessary_ports):
-            raise errors.MisconfigurationError(
-                "At least one of the (possibly) required ports is "
-                "already taken.")
+        return [self._try_perform_single(achall) for achall in achalls]
 
-        try:
-            return self.perform2(achalls)
-        except errors.StandaloneBindError as error:
-            display = zope.component.getUtility(interfaces.IDisplay)
+    def _try_perform_single(self, achall):
+        while True:
+            try:
+                return self._perform_single(achall)
+            except errors.StandaloneBindError as error:
+                _handle_perform_error(error)
 
-            if error.socket_error.errno == socket.errno.EACCES:
-                display.notification(
-                    "Could not bind TCP port {0} because you don't have "
-                    "the appropriate permissions (for example, you "
-                    "aren't running this program as "
-                    "root).".format(error.port))
-            elif error.socket_error.errno == socket.errno.EADDRINUSE:
-                display.notification(
-                    "Could not bind TCP port {0} because it is already in "
-                    "use by another process on this system (such as a web "
-                    "server). Please stop the program in question and then "
-                    "try again.".format(error.port))
-            else:
-                raise  # XXX: How to handle unknown errors in binding?
+    def _perform_single(self, achall):
+        if isinstance(achall.chall, challenges.HTTP01):
+            server, response = self._perform_http_01(achall)
+        else:  # tls-sni-01
+            server, response = self._perform_tls_sni_01(achall)
+        self.served[server].add(achall)
+        return response
 
-    def perform2(self, achalls):
-        """Perform achallenges without IDisplay interaction."""
-        responses = []
+    def _perform_http_01(self, achall):
+        server = self.servers.run(self.config.http01_port, challenges.HTTP01)
+        response, validation = achall.response_and_validation()
+        resource = acme_standalone.HTTP01RequestHandler.HTTP01Resource(
+            chall=achall.chall, response=response, validation=validation)
+        self.http_01_resources.add(resource)
+        return server, response
 
-        for achall in achalls:
-            if isinstance(achall.chall, challenges.HTTP01):
-                server = self.servers.run(
-                    self.config.http01_port, challenges.HTTP01)
-                response, validation = achall.response_and_validation()
-                self.http_01_resources.add(
-                    acme_standalone.HTTP01RequestHandler.HTTP01Resource(
-                        chall=achall.chall, response=response,
-                        validation=validation))
-            else:  # tls-sni-01
-                server = self.servers.run(
-                    self.config.tls_sni_01_port, challenges.TLSSNI01)
-                response, (cert, _) = achall.response_and_validation(
-                    cert_key=self.key)
-                self.certs[response.z_domain] = (self.key, cert)
-            self.served[server].add(achall)
-            responses.append(response)
-
-        return responses
+    def _perform_tls_sni_01(self, achall):
+        port = self.config.tls_sni_01_port
+        server = self.servers.run(port, challenges.TLSSNI01)
+        response, (cert, _) = achall.response_and_validation(cert_key=self.key)
+        self.certs[response.z_domain] = (self.key, cert)
+        return server, response
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         # reduce self.served and close servers if none challenges are served
@@ -270,3 +249,25 @@ class Authenticator(common.Plugin):
         for port, server in six.iteritems(self.servers.running()):
             if not self.served[server]:
                 self.servers.stop(port)
+
+
+def _handle_perform_error(error):
+    if error.socket_error.errno == socket.errno.EACCES:
+        raise errors.PluginError(
+            "Could not bind TCP port {0} because you don't have "
+            "the appropriate permissions (for example, you "
+            "aren't running this program as "
+            "root).".format(error.port))
+    elif error.socket_error.errno == socket.errno.EADDRINUSE:
+        display = zope.component.getUtility(interfaces.IDisplay)
+        msg = (
+            "Could not bind TCP port {0} because it is already in "
+            "use by another process on this system (such as a web "
+            "server). Please stop the program in question and "
+            "then try again.".format(error.port))
+        should_retry = display.yesno(msg, "Retry",
+                                     "Cancel", default=False)
+        if not should_retry:
+            raise errors.PluginError(msg)
+    else:
+        raise

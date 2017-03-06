@@ -15,8 +15,6 @@ from certbot import errors
 from certbot import interfaces
 from certbot import util
 
-from certbot.display import util as display_util
-
 
 logger = logging.getLogger(__name__)
 
@@ -183,7 +181,7 @@ class Reverter(object):
         if for_logging:
             return os.linesep.join(output)
         zope.component.getUtility(interfaces.IDisplay).notification(
-            os.linesep.join(output), display_util.HEIGHT)
+            os.linesep.join(output), force_interactive=True)
 
     def add_to_temp_checkpoint(self, save_files, save_notes):
         """Add files to temporary checkpoint.

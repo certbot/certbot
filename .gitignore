@@ -24,6 +24,7 @@ tags
 *.sw?
 \#*#
 .idea
+.ropeproject
 
 # auth --cert-path --chain-path
 /*.pem
@@ -32,3 +33,5 @@ tags
 tests/letstest/letest-*/
 tests/letstest/*.pem
 tests/letstest/venv/
+
+.venv

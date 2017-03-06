@@ -105,7 +105,7 @@ class TlsSniPerformTest(util.ApacheTest):
         for achall in self.achalls:
             self.sni.add_chall(achall)
             z_domain = achall.response(self.auth_key).z_domain
-            z_domains.append(set([z_domain]))
+            z_domains.append(set([z_domain.decode('ascii')]))
 
         self.sni._mod_config()  # pylint: disable=protected-access
         self.sni.configurator.save()

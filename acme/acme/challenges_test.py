@@ -11,7 +11,6 @@ from acme import errors
 from acme import jose
 from acme import test_util
 
-
 CERT = test_util.load_comparable_cert('cert.pem')
 KEY = jose.JWKRSA(key=test_util.load_rsa_private_key('rsa512_key.pem'))
 
@@ -104,32 +103,16 @@ class DNS01ResponseTest(unittest.TestCase):
         from acme.challenges import DNS01Response
         hash(DNS01Response.from_json(self.jmsg))
 
-    def test_simple_verify_bad_key_authorization(self):
+    def test_simple_verify_failure(self):
         key2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
-        self.response.simple_verify(self.chall, "local", key2.public_key())
+        public_key = key2.public_key()
+        verified = self.response.simple_verify(self.chall, "local", public_key)
+        self.assertFalse(verified)
 
-    @mock.patch("acme.dns_resolver.txt_records_for_name")
-    def test_simple_verify_good_validation(self, mock_resolver):
-        mock_resolver.return_value = [self.chall.validation(KEY.public_key())]
-        self.assertTrue(self.response.simple_verify(
-            self.chall, "local", KEY.public_key()))
-        mock_resolver.assert_called_once_with(
-            self.chall.validation_domain_name("local"))
-
-    @mock.patch("acme.dns_resolver.txt_records_for_name")
-    def test_simple_verify_good_validation_multiple_txts(self, mock_resolver):
-        mock_resolver.return_value = [
-            "!", self.chall.validation(KEY.public_key())]
-        self.assertTrue(self.response.simple_verify(
-            self.chall, "local", KEY.public_key()))
-        mock_resolver.assert_called_once_with(
-            self.chall.validation_domain_name("local"))
-
-    @mock.patch("acme.dns_resolver.txt_records_for_name")
-    def test_simple_verify_bad_validation(self, mock_dns):
-        mock_dns.return_value = ["!"]
-        self.assertFalse(self.response.simple_verify(
-            self.chall, "local", KEY.public_key()))
+    def test_simple_verify_success(self):
+        public_key = KEY.public_key()
+        verified = self.response.simple_verify(self.chall, "local", public_key)
+        self.assertTrue(verified)
 
 
 class DNS01Test(unittest.TestCase):

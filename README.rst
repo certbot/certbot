@@ -32,7 +32,7 @@ Installation
 
 The easiest way to install Certbot is by visiting `certbot.eff.org`_, where you can
 find the correct installation instructions for many web server and OS combinations.
-For more information, see the `User Guide <https://certbot.eff.org/docs/using.html#getting-certbot>`_.
+For more information, see `Get Certbot <https://certbot.eff.org/docs/install.html>`_.
 
 .. _certbot.eff.org: https://certbot.eff.org/
 
@@ -76,15 +76,19 @@ the User Guide.
 Links
 =====
 
+.. Do not modify this comment unless you know what you're doing. tag:links-begin
+
 Documentation: https://certbot.eff.org/docs
 
 Software project: https://github.com/certbot/certbot
 
 Notes for developers: https://certbot.eff.org/docs/contributing.html
 
-Main Website: https://letsencrypt.org/
+Main Website: https://certbot.eff.org
 
-IRC Channel: #letsencrypt on `Freenode`_ or #certbot on `OFTC`_
+Let's Encrypt Website: https://letsencrypt.org
+
+IRC Channel: #letsencrypt on `Freenode`_
 
 Community: https://community.letsencrypt.org
 
@@ -96,13 +100,13 @@ ACME working area in github: https://github.com/ietf-wg-acme/acme
 Mailing list: `client-dev`_ (to subscribe without a Google account, send an
 email to client-dev+subscribe@letsencrypt.org)
 
-.. _Freenode: https://webchat.freenode.net?channels=%23letsencrypt
-.. _OFTC: https://webchat.oftc.net?channels=%23certbot
-.. _client-dev: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev
-
 |build-status| |coverage| |docs| |container|
 
+.. _Freenode: https://webchat.freenode.net?channels=%23letsencrypt
 
+.. _OFTC: https://webchat.oftc.net?channels=%23certbot
+
+.. _client-dev: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev
 
 .. |build-status| image:: https://travis-ci.org/certbot/certbot.svg?branch=master
    :target: https://travis-ci.org/certbot/certbot
@@ -120,10 +124,7 @@ email to client-dev+subscribe@letsencrypt.org)
    :target: https://quay.io/repository/letsencrypt/letsencrypt
    :alt: Docker Repository on Quay.io
 
-.. _`installation instructions`:
-   https://letsencrypt.readthedocs.org/en/latest/using.html#getting-certbot
-
-.. _watch demo video: https://www.youtube.com/watch?v=Gas_sSB-5SU
+.. Do not modify this comment unless you know what you're doing. tag:links-end
 
 System Requirements
 ===================
@@ -151,11 +152,12 @@ Current Features
 
 * Supports multiple web servers:
 
-  - apache/2.x (working on Debian 8+ and Ubuntu 12.04+)
-  - standalone (runs its own simple webserver to prove you control a domain)
+  - apache/2.x (beta support for auto-configuration)
+  - nginx/0.8.48+ (alpha support for auto-configuration)
   - webroot (adds files to webroot directories in order to prove control of
     domains and obtain certs)
-  - nginx/0.8.48+ (highly experimental, not included in certbot-auto)
+  - standalone (runs its own simple webserver to prove you control a domain)
+  - other server software via `third party plugins <https://certbot.eff.org/docs/using.html#third-party-plugins>`_
 
 * The private key is generated locally on your system.
 * Can talk to the Let's Encrypt CA or optionally to other ACME

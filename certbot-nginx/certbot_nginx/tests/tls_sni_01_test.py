@@ -31,7 +31,7 @@ class TlsSniPerformTest(util.NginxTest):
                     token="\xba\xa9\xda?<m\xaewmx\xea\xad\xadv\xf4\x02\xc9y"
                           "\x80\xe2_X\t\xe7\xc7\xa4\t\xca\xf7&\x945"
                 ), "pending"),
-            domain="blah", account_key=account_key),
+            domain="another.alias", account_key=account_key),
         achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
                 challenges.TLSSNI01(
@@ -39,6 +39,10 @@ class TlsSniPerformTest(util.NginxTest):
                           "\xeb9\xf1\xf5\xb9\xefVM\xc9w\xa4u\x9c\xe1\x87\xb4"
                 ), "pending"),
             domain="www.example.org", account_key=account_key),
+        achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.chall_to_challb(
+                challenges.TLSSNI01(token="kNdwjxOeX0I_A8DXt9Msmg"), "pending"),
+            domain="sslon.com", account_key=account_key),
     ]
 
     def setUp(self):
@@ -100,7 +104,7 @@ class TlsSniPerformTest(util.NginxTest):
 
         sni_responses = self.sni.perform()
 
-        self.assertEqual(mock_setup_cert.call_count, 3)
+        self.assertEqual(mock_setup_cert.call_count, 4)
 
         for index, achall in enumerate(self.achalls):
             self.assertEqual(
@@ -109,11 +113,11 @@ class TlsSniPerformTest(util.NginxTest):
         http = self.sni.configurator.parser.parsed[
             self.sni.configurator.parser.loc["root"]][-1]
         self.assertTrue(['include', self.sni.challenge_conf] in http[1])
-        self.assertTrue(
-            util.contains_at_depth(http, ['server_name', 'blah'], 3))
+        self.assertFalse(
+            util.contains_at_depth(http, ['server_name', 'another.alias'], 3))
 
-        self.assertEqual(len(sni_responses), 3)
-        for i in xrange(3):
+        self.assertEqual(len(sni_responses), 4)
+        for i in xrange(4):
             self.assertEqual(sni_responses[i], acme_responses[i])
 
     def test_mod_config(self):
@@ -123,6 +127,7 @@ class TlsSniPerformTest(util.NginxTest):
         v_addr1 = [obj.Addr("69.50.225.155", "9000", True, False),
                    obj.Addr("127.0.0.1", "", False, False)]
         v_addr2 = [obj.Addr("myhost", "", False, True)]
+        v_addr2_print = [obj.Addr("myhost", "", False, False)]
         ll_addr = [v_addr1, v_addr2]
         self.sni._mod_config(ll_addr)  # pylint: disable=protected-access
 
@@ -142,7 +147,7 @@ class TlsSniPerformTest(util.NginxTest):
                 response = self.achalls[0].response(self.account_key)
             else:
                 response = self.achalls[2].response(self.account_key)
-                self.assertEqual(vhost.addrs, set(v_addr2))
+                self.assertEqual(vhost.addrs, set(v_addr2_print))
             self.assertEqual(vhost.names, set([response.z_domain]))
 
         self.assertEqual(len(vhs), 2)

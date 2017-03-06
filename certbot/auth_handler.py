@@ -33,14 +33,17 @@ class AuthHandler(object):
         and values are :class:`acme.messages.AuthorizationResource`
     :ivar list achalls: DV challenges in the form of
         :class:`certbot.achallenges.AnnotatedChallenge`
+    :ivar list pref_challs: sorted user specified preferred challenges
+        type strings with the most preferred challenge listed first
 
     """
-    def __init__(self, auth, acme, account):
+    def __init__(self, auth, acme, account, pref_challs):
         self.auth = auth
         self.acme = acme
 
         self.account = account
         self.authzr = dict()
+        self.pref_challs = pref_challs
 
         # List must be used to keep responses straight.
         self.achalls = []
@@ -244,9 +247,20 @@ class AuthHandler(object):
         :param str domain: domain for which you are requesting preferences
 
         """
-        # Make sure to make a copy...
         chall_prefs = []
-        chall_prefs.extend(self.auth.get_chall_pref(domain))
+        # Make sure to make a copy...
+        plugin_pref = self.auth.get_chall_pref(domain)
+        if self.pref_challs:
+            plugin_pref_types = set(chall.typ for chall in plugin_pref)
+            for typ in self.pref_challs:
+                if typ in plugin_pref_types:
+                    chall_prefs.append(challenges.Challenge.TYPES[typ])
+            if chall_prefs:
+                return chall_prefs
+            raise errors.AuthorizationError(
+                "None of the preferred challenges "
+                "are supported by the selected plugin")
+        chall_prefs.extend(plugin_pref)
         return chall_prefs
 
     def _cleanup_challenges(self, achall_list=None):
@@ -424,9 +438,6 @@ def _report_no_chall_path():
     raise errors.AuthorizationError(msg)
 
 
-_ACME_PREFIX = "urn:acme:error:"
-
-
 _ERROR_HELP_COMMON = (
     "To fix these errors, please make sure that your domain name was entered "
     "correctly and the DNS A record(s) for that domain contain(s) the "
@@ -488,9 +499,10 @@ def _generate_failed_chall_msg(failed_achalls):
     :rtype: str
 
     """
-    typ = failed_achalls[0].error.typ
-    if typ.startswith(_ACME_PREFIX):
-        typ = typ[len(_ACME_PREFIX):]
+    error = failed_achalls[0].error
+    typ = error.typ
+    if messages.is_acme_error(error):
+        typ = error.code
     msg = ["The following errors were reported by the server:"]
 
     for achall in failed_achalls:

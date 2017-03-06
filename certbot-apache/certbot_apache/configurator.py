@@ -1,6 +1,7 @@
 """Apache Configuration based off of Augeas Configurator."""
 # pylint: disable=too-many-lines
 import filecmp
+import fnmatch
 import logging
 import os
 import re
@@ -363,18 +364,24 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return vhost
 
     def included_in_wildcard(self, names, target_name):
-        """Helper function to see if alias is covered by wildcard"""
-        target_name = target_name.split(".")[::-1]
-        wildcards = [domain.split(".")[1:] for domain in
-                     names if domain.startswith("*")]
-        for wildcard in wildcards:
-            if len(wildcard) > len(target_name):
-                continue
-            for idx, segment in enumerate(wildcard[::-1]):
-                if segment != target_name[idx]:
-                    break
-            else:
-                # https://docs.python.org/2/tutorial/controlflow.html#break-and-continue-statements-and-else-clauses-on-loops
+        """Is target_name covered by a wildcard?
+
+        :param names: server aliases
+        :type names: `collections.Iterable` of `str`
+        :param str target_name: name to compare with wildcards
+
+        :returns: True if target_name is covered by a wildcard,
+            otherwise, False
+        :rtype: bool
+
+        """
+        # use lowercase strings because fnmatch can be case sensitive
+        target_name = target_name.lower()
+        for name in names:
+            name = name.lower()
+            # fnmatch treats "[seq]" specially and [ or ] characters aren't
+            # valid in Apache but Apache doesn't error out if they are present
+            if "[" not in name and fnmatch.fnmatch(target_name, name):
                 return True
         return False
 
@@ -464,9 +471,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             zope.component.getUtility(interfaces.IDisplay).notification(
                 "Apache mod_macro seems to be in use in file(s):\n{0}"
                 "\n\nUnfortunately mod_macro is not yet supported".format(
-                    "\n  ".join(vhost_macro)))
+                    "\n  ".join(vhost_macro)), force_interactive=True)
 
-        return all_names
+        return util.get_filtered_names(all_names)
 
     def get_name_from_ip(self, addr):  # pylint: disable=no-self-use
         """Returns a reverse dns name if available.
@@ -575,7 +582,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 ("/files%s//*[label()=~regexp('%s')]" %
                     (vhost_path, parser.case_i("VirtualHost"))))
             paths = [path for path in paths if
-                     "virtualhost" in os.path.basename(path).lower()]
+                     os.path.basename(path.lower()) == "virtualhost"]
+            for path in paths:
+                new_vhost = self._create_vhost(path)
+                if not new_vhost:
             for path in paths:
                 new_vhost = self._create_vhost(path)
                 if not new_vhost:
@@ -1071,12 +1081,30 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.parser.find_dir("ServerAlias", target_name,
                                  start=vh_path, exclude=False)):
             return
+        if self._has_matching_wildcard(vh_path, target_name):
+            return
         if not self.parser.find_dir("ServerName", None,
                                     start=vh_path, exclude=False):
             self.parser.add_dir(vh_path, "ServerName", target_name)
         else:
             self.parser.add_dir(vh_path, "ServerAlias", target_name)
         self._add_servernames(vhost)
+
+    def _has_matching_wildcard(self, vh_path, target_name):
+        """Is target_name already included in a wildcard in the vhost?
+
+        :param str vh_path: Augeas path to the vhost
+        :param str target_name: name to compare with wildcards
+
+        :returns: True if there is a wildcard covering target_name in
+            the vhost in vhost_path, otherwise, False
+        :rtype: bool
+
+        """
+        matches = self.parser.find_dir(
+            "ServerAlias", start=vh_path, exclude=False)
+        aliases = (self.aug.get(match) for match in matches)
+        return self.included_in_wildcard(aliases, target_name)
 
     def _add_name_vhost_if_necessary(self, vhost):
         """Add NameVirtualHost Directives if necessary for new vhost.
@@ -1349,18 +1377,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             #     even with save() and load()
             if not self._is_rewrite_engine_on(general_vh):
                 self.parser.add_dir(general_vh.path, "RewriteEngine", "on")
+
             names = ssl_vhost.get_names()
             for idx, name in enumerate(names):
                 args = ["%{SERVER_NAME}", "={0}".format(name), "[OR]"]
                 if idx == len(names) - 1:
                     args.pop()
                 self.parser.add_dir(general_vh.path, "RewriteCond", args)
-            if self.get_version() >= (2, 3, 9):
-                self.parser.add_dir(general_vh.path, "RewriteRule",
-                                    constants.REWRITE_HTTPS_ARGS_WITH_END)
-            else:
-                self.parser.add_dir(general_vh.path, "RewriteRule",
-                                    constants.REWRITE_HTTPS_ARGS)
+
+            self._set_https_redirection_rewrite_rule(general_vh)
 
             self.save_notes += ("Redirecting host in %s to ssl vhost in %s\n" %
                                 (general_vh.filep, ssl_vhost.filep))
@@ -1370,11 +1395,23 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             logger.info("Redirecting vhost in %s to ssl vhost in %s",
                         general_vh.filep, ssl_vhost.filep)
 
+    def _set_https_redirection_rewrite_rule(self, vhost):
+        if self.get_version() >= (2, 3, 9):
+            self.parser.add_dir(vhost.path, "RewriteRule",
+                    constants.REWRITE_HTTPS_ARGS_WITH_END)
+        else:
+            self.parser.add_dir(vhost.path, "RewriteRule",
+                    constants.REWRITE_HTTPS_ARGS)
+
+
     def _verify_no_certbot_redirect(self, vhost):
         """Checks to see if a redirect was already installed by certbot.
 
         Checks to see if virtualhost already contains a rewrite rule that is
         identical to Certbot's redirection rewrite rule.
+
+        For graceful transition to new rewrite rules for HTTPS redireciton we
+        delete certbot's old rewrite rules and set the new one instead.
 
         :param vhost: vhost to check
         :type vhost: :class:`~certbot_apache.obj.VirtualHost`
@@ -1389,19 +1426,29 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # rewrite_args_dict keys are directive ids and the corresponding value
         # for each is a list of arguments to that directive.
         rewrite_args_dict = defaultdict(list)
-        pat = r'.*(directive\[\d+\]).*'
+        pat = r'(.*directive\[\d+\]).*'
         for match in rewrite_path:
             m = re.match(pat, match)
             if m:
-                dir_id = m.group(1)
-                rewrite_args_dict[dir_id].append(match)
+                dir_path = m.group(1)
+                rewrite_args_dict[dir_path].append(match)
 
         if rewrite_args_dict:
             redirect_args = [constants.REWRITE_HTTPS_ARGS,
                              constants.REWRITE_HTTPS_ARGS_WITH_END]
 
-            for matches in rewrite_args_dict.values():
-                if [self.aug.get(x) for x in matches] in redirect_args:
+            for dir_path, args_paths in rewrite_args_dict.items():
+                arg_vals = [self.aug.get(x) for x in args_paths]
+
+                # Search for past redirection rule, delete it, set the new one
+                if arg_vals in constants.OLD_REWRITE_HTTPS_ARGS:
+                    self.aug.remove(dir_path)
+                    self._set_https_redirection_rewrite_rule(vhost)
+                    self.save()
+                    raise errors.PluginEnhancementAlreadyPresent(
+                        "Certbot has already enabled redirection")
+
+                if arg_vals in redirect_args:
                     raise errors.PluginEnhancementAlreadyPresent(
                         "Certbot has already enabled redirection")
 
@@ -1554,38 +1601,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             redirects.add(addr.get_addr_obj(port))
 
         return redirects
-
-    def get_all_certs_keys(self):
-        """Find all existing keys, certs from configuration.
-
-        Retrieve all certs and keys set in VirtualHosts on the Apache server
-
-        :returns: list of tuples with form [(cert, key, path)]
-            cert - str path to certificate file
-            key - str path to associated key file
-            path - File path to configuration file.
-        :rtype: list
-
-        """
-        c_k = set()
-
-        for vhost in self.vhosts:
-            if vhost.ssl:
-                cert_path = self.parser.find_dir(
-                    "SSLCertificateFile", None,
-                    start=vhost.path, exclude=False)
-                key_path = self.parser.find_dir(
-                    "SSLCertificateKeyFile", None,
-                    start=vhost.path, exclude=False)
-
-                if cert_path and key_path:
-                    cert = os.path.abspath(self.parser.get_arg(cert_path[-1]))
-                    key = os.path.abspath(self.parser.get_arg(key_path[-1]))
-                    c_k.add((cert, key, get_file_path(cert_path[-1])))
-                else:
-                    logger.warning(
-                        "Invalid VirtualHost configuration - %s", vhost.filep)
-        return c_k
 
     def is_site_enabled(self, avail_fp):
         """Checks to see if the given site is enabled.
@@ -1868,7 +1883,14 @@ def get_file_path(vhost_path):
     :rtype: str
 
     """
-    if vhost_path is None or not vhost_path.startswith("/files/"):
+    # Strip off /files/
+    try:
+        if vhost_path.startswith("/files/"):
+            avail_fp = vhost_path[7:].split("/")
+        else:
+            return None
+    except AttributeError:
+        # If we received a None path
         return None
 
     return _split_aug_path(vhost_path)[0]

@@ -4,11 +4,12 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.9.0.dev0'
+version = '0.13.0.dev0'
 
 install_requires = [
     'certbot',
     'certbot-apache',
+    'six',
     'requests',
     'zope.interface',
 ]

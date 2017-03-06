@@ -31,6 +31,9 @@ changes = read_file(os.path.join(here, 'CHANGES.rst'))
 version = meta['version']
 
 # Please update tox.ini when modifying dependency version requirements
+# This package relies on requests, however, it isn't specified here to avoid
+# masking the more specific request requirements in acme. See
+# https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
     'acme=={0}'.format(version),
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
@@ -51,12 +54,6 @@ install_requires = [
     'zope.interface',
 ]
 
-# Debian squeeze support, cf. #280
-if sys.version_info[0] == 2:
-    install_requires.append('python2-pythondialog>=3.2.2rc1')
-else:
-    install_requires.append('pythondialog>=3.2.2rc1')
-
 # env markers in extras_require cause problems with older pip: #517
 # Keep in sync with conditional_requirements.py.
 if sys.version_info < (2, 7):
@@ -72,9 +69,8 @@ dev_extras = [
     # Pin astroid==1.3.5, pylint==1.4.2 as a workaround for #289
     'astroid==1.3.5',
     'coverage',
+    'ipdb',
     'nose',
-    'pep8',
-    'psutil>=2.2.1',  # for tests, optional
     'pylint==1.4.2',  # upstream #248
     'tox',
     'twine',
@@ -85,7 +81,6 @@ docs_extras = [
     'repoze.sphinx.autointerface',
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
     'sphinx_rtd_theme',
-    'sphinxcontrib-programoutput',
 ]
 
 setup(

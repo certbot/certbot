@@ -13,6 +13,8 @@ from certbot_apache.tests import util
 class AugeasConfiguratorTest(util.ApacheTest):
     """Test for Augeas Configurator base class."""
 
+    _multiprocess_can_split_ = True
+
     def setUp(self):  # pylint: disable=arguments-differ
         super(AugeasConfiguratorTest, self).setUp()
 
