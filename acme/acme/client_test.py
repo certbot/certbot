@@ -516,6 +516,11 @@ class ClientNetworkTest(unittest.TestCase):
             self.assertEqual(
                 self.response, self.net._check_response(self.response))
 
+    def test_check_response_conflict(self):
+        self.response.ok = False
+        self.response.status_code = 409
+        self.assertRaises(errors.ConflictError, self.net._check_response, self.response)
+
     def test_check_response_jobj(self):
         self.response.json.return_value = {}
         for response_ct in [self.net.JSON_CONTENT_TYPE, 'foo']:
