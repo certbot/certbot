@@ -228,8 +228,8 @@ class TestRawNginxParser(unittest.TestCase):
              '@nocache']
         ])
 
-    def test_blocks(self):
-        test = """
+    def test_weird_blocks(self):
+        test = r"""
             if ($http_user_agent ~ MSIE) {
                 rewrite ^(.*)$ /msie/$1 break;
             }
