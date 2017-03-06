@@ -228,6 +228,43 @@ class TestRawNginxParser(unittest.TestCase):
              '@nocache']
         ])
 
+    def test_blocks(self):
+        test = """
+            if ($http_user_agent ~ MSIE) {
+                rewrite ^(.*)$ /msie/$1 break;
+            }
+
+            if ($http_cookie ~* "id=([^;]+)(?:;|$)") {
+               set $id $1;
+            }
+
+            if ($request_method = POST) {
+               return 405;
+            }
+
+            if ($request_method) {
+               return 403;
+            }
+
+            if ($args ~ post=140){
+              rewrite ^ http://example.com/;
+            }
+
+            location ~ ^/users/(.+\.(?:gif|jpe?g|png))$ {
+              alias /data/w3/images/$1;
+            }
+        """
+        parsed = loads(test)
+        self.assertEqual(parsed, [[['if', '($http_user_agent ~ MSIE)'],
+            [['rewrite', '^(.*)$', '/msie/$1', 'break']]],
+            [['if', '($http_cookie ~* "id=([^;]+)(?:;|$)")'], [['set', '$id', '$1']]],
+            [['if', '($request_method = POST)'], [['return', '405']]], [['if', '($request_method)'],
+            [['return', '403']]], [['if', '($args ~ post=140)'],
+            [['rewrite', '^', 'http://example.com/']]],
+            [['location', '~', '^/users/(.+\\.(?:gif|jpe?g|png))$'],
+            [['alias', '/data/w3/images/$1']]]]
+        )
+
 class TestUnspacedList(unittest.TestCase):
     """Test the UnspacedList data structure"""
     def setUp(self):

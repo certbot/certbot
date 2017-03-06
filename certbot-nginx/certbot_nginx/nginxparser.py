@@ -32,6 +32,8 @@ class RawNginxParser(object):
     whitespace_token_group = space + OneOrMore(token + space)
     assignment = whitespace_token_group + semicolon
 
+    # whitespace_token_group will parse this fine, but we need to know about
+    # if statements for redirects, so let's explicitly parse this.
     condition = Regex(r"\(.+\)")
     if_statement = space + Literal("if") + space + condition + space
 
