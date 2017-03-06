@@ -223,7 +223,9 @@ class TestRawNginxParser(unittest.TestCase):
             '$host${request_uri}index.html @nocache;')
 
         self.assertEqual(parsed, [
-            ['try_files', '/typo3temp/tx_ncstaticfilecache/$host${request_uri}index.html', '@nocache']
+            ['try_files',
+             '/typo3temp/tx_ncstaticfilecache/$host${request_uri}index.html',
+             '@nocache']
         ])
 
 class TestUnspacedList(unittest.TestCase):
