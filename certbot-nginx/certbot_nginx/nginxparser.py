@@ -25,7 +25,7 @@ class RawNginxParser(object):
     squoted = Regex(r"(\'.*\')")
     tokenchars = Regex(r"[^\{\};\s\$]+")
     variable = Regex(r"(\$\{\w*\})") | Regex(r"(\$\w*)")
-    unquoted = Combine(OneOrMore( variable | tokenchars))
+    unquoted = Combine(OneOrMore(variable | tokenchars))
 
     token = squoted | dquoted | unquoted
 
