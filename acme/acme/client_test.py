@@ -519,6 +519,7 @@ class ClientNetworkTest(unittest.TestCase):
     def test_check_response_conflict(self):
         self.response.ok = False
         self.response.status_code = 409
+        # pylint: disable=protected-access
         self.assertRaises(errors.ConflictError, self.net._check_response, self.response)
 
     def test_check_response_jobj(self):

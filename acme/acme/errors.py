@@ -91,5 +91,5 @@ class ConflictError(ClientError):
     """
     def __init__(self, location):
         self.location = location
-        super(ClientError, self).__init__()
+        super(ConflictError, self).__init__()
 
