@@ -11,7 +11,7 @@ from acme import jose
 
 from certbot import configuration
 
-from certbot.tests import test_util
+from certbot.tests import util as test_util
 
 from certbot.plugins import common
 

@@ -7,10 +7,13 @@ from acme import challenges
 from acme import jose
 from acme import messages
 
-from certbot.tests import test_util
+from certbot import auth_handler
+
+from certbot.tests import util
 
 
-KEY = test_util.load_rsa_private_key('rsa512_key.pem')
+JWK = jose.JWK.load(util.load_vector('rsa512_key.pem'))
+KEY = util.load_rsa_private_key('rsa512_key.pem')
 
 # Challenges
 HTTP01 = challenges.HTTP01(
@@ -48,6 +51,14 @@ HTTP01_P = chall_to_challb(HTTP01, messages.STATUS_PENDING)
 DNS01_P = chall_to_challb(DNS01, messages.STATUS_PENDING)
 
 CHALLENGES_P = [HTTP01_P, TLSSNI01_P, DNS01_P]
+
+
+# AnnotatedChallenge objects
+HTTP01_A = auth_handler.challb_to_achall(HTTP01_P, JWK, "example.com")
+TLSSNI01_A = auth_handler.challb_to_achall(TLSSNI01_P, JWK, "example.net")
+DNS01_A = auth_handler.challb_to_achall(DNS01_P, JWK, "example.org")
+
+ACHALLENGES = [HTTP01_A, TLSSNI01_A, DNS01_A]
 
 
 def gen_authzr(authz_status, domain, challs, statuses, combos=True):

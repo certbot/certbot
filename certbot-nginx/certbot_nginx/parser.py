@@ -82,21 +82,28 @@ class NginxParser(object):
         else:
             return path
 
-    def get_vhosts(self):
-        # pylint: disable=cell-var-from-loop
-        """Gets list of all 'virtual hosts' found in Nginx configuration.
-        Technically this is a misnomer because Nginx does not have virtual
-        hosts, it has 'server blocks'.
-
-        :returns: List of :class:`~certbot_nginx.obj.VirtualHost`
-            objects found in configuration
-        :rtype: list
-
+    def _build_addr_to_ssl(self):
+        """Builds a map from address to whether it listens on ssl in any server block
         """
-        enabled = True  # We only look at enabled vhosts for now
-        vhosts = []
-        servers = {}
+        servers = self._get_raw_servers()
 
+        addr_to_ssl = {}
+        for filename in servers:
+            for server, _ in servers[filename]:
+                # Parse the server block to save addr info
+                parsed_server = _parse_server_raw(server)
+                for addr in parsed_server['addrs']:
+                    addr_tuple = addr.normalized_tuple()
+                    if addr_tuple not in addr_to_ssl:
+                        addr_to_ssl[addr_tuple] = addr.ssl
+                    addr_to_ssl[addr_tuple] = addr.ssl or addr_to_ssl[addr_tuple]
+        return addr_to_ssl
+
+    def _get_raw_servers(self):
+        # pylint: disable=cell-var-from-loop
+        """Get a map of unparsed all server blocks
+        """
+        servers = {}
         for filename in self.parsed:
             tree = self.parsed[filename]
             servers[filename] = []
@@ -110,12 +117,28 @@ class NginxParser(object):
             for i, (server, path) in enumerate(servers[filename]):
                 new_server = self._get_included_directives(server)
                 servers[filename][i] = (new_server, path)
+        return servers
 
+    def get_vhosts(self):
+        # pylint: disable=cell-var-from-loop
+        """Gets list of all 'virtual hosts' found in Nginx configuration.
+        Technically this is a misnomer because Nginx does not have virtual
+        hosts, it has 'server blocks'.
+
+        :returns: List of :class:`~certbot_nginx.obj.VirtualHost`
+            objects found in configuration
+        :rtype: list
+
+        """
+        enabled = True  # We only look at enabled vhosts for now
+        servers = self._get_raw_servers()
+
+        vhosts = []
         for filename in servers:
             for server, path in servers[filename]:
                 # Parse the server block into a VirtualHost object
 
-                parsed_server = parse_server(server)
+                parsed_server = _parse_server_raw(server)
                 vhost = obj.VirtualHost(filename,
                                         parsed_server['addrs'],
                                         parsed_server['ssl'],
@@ -125,7 +148,19 @@ class NginxParser(object):
                                         path)
                 vhosts.append(vhost)
 
+        self._update_vhosts_addrs_ssl(vhosts)
+
         return vhosts
+
+    def _update_vhosts_addrs_ssl(self, vhosts):
+        """Update a list of raw parsed vhosts to include global address sslishness
+        """
+        addr_to_ssl = self._build_addr_to_ssl()
+        for vhost in vhosts:
+            for addr in vhost.addrs:
+                addr.ssl = addr_to_ssl[addr.normalized_tuple()]
+                if addr.ssl:
+                    vhost.ssl = True
 
     def _get_included_directives(self, block):
         """Returns array with the "include" directives expanded out by
@@ -170,8 +205,8 @@ class NginxParser(object):
                     trees.append(parsed)
             except IOError:
                 logger.warning("Could not open file: %s", item)
-            except pyparsing.ParseException:
-                logger.debug("Could not parse file: %s", item)
+            except pyparsing.ParseException as err:
+                logger.debug("Could not parse file: %s due to %s", item, err)
         return trees
 
     def _parse_ssl_options(self, ssl_options):
@@ -181,8 +216,8 @@ class NginxParser(object):
                     return nginxparser.load(_file).spaced
             except IOError:
                 logger.warn("Missing NGINX TLS options file: %s", ssl_options)
-            except pyparsing.ParseBaseException:
-                logger.debug("Could not parse file: %s", ssl_options)
+            except pyparsing.ParseBaseException as err:
+                logger.debug("Could not parse file: %s due to %s", ssl_options, err)
         return []
 
     def _set_locations(self, ssl_options):
@@ -241,6 +276,17 @@ class NginxParser(object):
             except IOError:
                 logger.error("Could not open file for writing: %s", filename)
 
+    def parse_server(self, server):
+        """Parses a list of server directives, accounting for global address sslishness.
+
+        :param list server: list of directives in a server block
+        :rtype: dict
+        """
+        addr_to_ssl = self._build_addr_to_ssl()
+        parsed_server = _parse_server_raw(server)
+        _apply_global_addr_ssl(addr_to_ssl, parsed_server)
+        return parsed_server
+
     def has_ssl_on_directive(self, vhost):
         """Does vhost have ssl on for all ports?
 
@@ -290,40 +336,13 @@ class NginxParser(object):
 
             # update vhost based on new directives
             new_server = self._get_included_directives(result)
-            parsed_server = parse_server(new_server)
+            parsed_server = self.parse_server(new_server)
             vhost.addrs = parsed_server['addrs']
             vhost.ssl = parsed_server['ssl']
             vhost.names = parsed_server['names']
             vhost.raw = new_server
         except errors.MisconfigurationError as err:
             raise errors.MisconfigurationError("Problem in %s: %s" % (filename, err.message))
-
-    def get_all_certs_keys(self):
-        """Gets all certs and keys in the nginx config.
-
-        :returns: list of tuples with form [(cert, key, path)]
-            cert - str path to certificate file
-            key - str path to associated key file
-            path - File path to configuration file.
-        :rtype: set
-
-        """
-        c_k = set()
-        vhosts = self.get_vhosts()
-        for vhost in vhosts:
-            tup = [None, None, vhost.filep]
-            if vhost.ssl:
-                for directive in vhost.raw:
-                    # A directive can be an empty list to preserve whitespace
-                    if not directive:
-                        continue
-                    if directive[0] == 'ssl_certificate':
-                        tup[0] = directive[1]
-                    elif directive[0] == 'ssl_certificate_key':
-                        tup[1] = directive[1]
-            if tup[0] is not None and tup[1] is not None:
-                c_k.add(tuple(tup))
-        return c_k
 
 
 def _do_for_subarray(entry, condition, func, path=None):
@@ -461,42 +480,6 @@ def _get_servernames(names):
     names = re.sub(whitespace_re, ' ', names)
     return names.split(' ')
 
-
-def parse_server(server):
-    """Parses a list of server directives.
-
-    :param list server: list of directives in a server block
-    :rtype: dict
-
-    """
-    parsed_server = {'addrs': set(),
-                     'ssl': False,
-                     'names': set()}
-
-    apply_ssl_to_all_addrs = False
-
-    for directive in server:
-        if not directive:
-            continue
-        if directive[0] == 'listen':
-            addr = obj.Addr.fromstring(directive[1])
-            parsed_server['addrs'].add(addr)
-            if not parsed_server['ssl'] and addr.ssl:
-                parsed_server['ssl'] = True
-        elif directive[0] == 'server_name':
-            parsed_server['names'].update(
-                _get_servernames(directive[1]))
-        elif directive[0] == 'ssl' and directive[1] == 'on':
-            parsed_server['ssl'] = True
-            apply_ssl_to_all_addrs = True
-
-    if apply_ssl_to_all_addrs:
-        for addr in parsed_server['addrs']:
-            addr.ssl = True
-
-    return parsed_server
-
-
 def _add_directives(block, directives, replace):
     """Adds or replaces directives in a config block.
 
@@ -577,3 +560,45 @@ def _add_directive(block, directive, replace):
                 'tried to insert directive "{0}" but found '
                 'conflicting "{1}".'.format(directive, block[location]))
 
+def _apply_global_addr_ssl(addr_to_ssl, parsed_server):
+    """Apply global sslishness information to the parsed server block
+    """
+    for addr in parsed_server['addrs']:
+        addr.ssl = addr_to_ssl[addr.normalized_tuple()]
+        if addr.ssl:
+            parsed_server['ssl'] = True
+
+def _parse_server_raw(server):
+    """Parses a list of server directives.
+
+    :param list server: list of directives in a server block
+    :rtype: dict
+
+    """
+    parsed_server = {'addrs': set(),
+                     'ssl': False,
+                     'names': set()}
+
+    apply_ssl_to_all_addrs = False
+
+    for directive in server:
+        if not directive:
+            continue
+        if directive[0] == 'listen':
+            addr = obj.Addr.fromstring(directive[1])
+            if addr:
+                parsed_server['addrs'].add(addr)
+                if addr.ssl:
+                    parsed_server['ssl'] = True
+        elif directive[0] == 'server_name':
+            parsed_server['names'].update(
+                _get_servernames(directive[1]))
+        elif directive[0] == 'ssl' and directive[1] == 'on':
+            parsed_server['ssl'] = True
+            apply_ssl_to_all_addrs = True
+
+    if apply_ssl_to_all_addrs:
+        for addr in parsed_server['addrs']:
+            addr.ssl = True
+
+    return parsed_server

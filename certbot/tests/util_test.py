@@ -11,7 +11,7 @@ import mock
 import six
 
 from certbot import errors
-from certbot.tests import test_util
+import certbot.tests.util as test_util
 
 
 class RunScriptTest(unittest.TestCase):
@@ -195,6 +195,7 @@ except NameError:
     import io
     file_type = io.TextIOWrapper
 
+
 class UniqueLineageNameTest(unittest.TestCase):
     """Tests for certbot.util.unique_lineage_name."""
 
@@ -372,6 +373,49 @@ class EnforceDomainSanityTest(unittest.TestCase):
     def test_nonascii_unicode(self):
         self.assertRaises(errors.ConfigurationError, self._call,
                           u"eichh\u00f6rnchen.example.com")
+
+    def test_too_long(self):
+        long_domain = u"a"*256
+        self.assertRaises(errors.ConfigurationError, self._call,
+                          long_domain)
+
+    def test_not_too_long(self):
+        not_too_long_domain = u"{0}.{1}.{2}.{3}".format("a"*63, "b"*63, "c"*63, "d"*63)
+        self._call(not_too_long_domain)
+
+    def test_empty_label(self):
+        empty_label_domain = u"fizz..example.com"
+        self.assertRaises(errors.ConfigurationError, self._call,
+                          empty_label_domain)
+
+    def test_empty_trailing_label(self):
+        empty_trailing_label_domain = u"example.com.."
+        self.assertRaises(errors.ConfigurationError, self._call,
+                          empty_trailing_label_domain)
+
+    def test_long_label_1(self):
+        long_label_domain = u"a"*64
+        self.assertRaises(errors.ConfigurationError, self._call,
+                          long_label_domain)
+
+    def test_long_label_2(self):
+        long_label_domain = u"{0}.{1}.com".format(u"a"*64, u"b"*63)
+        self.assertRaises(errors.ConfigurationError, self._call,
+                          long_label_domain)
+
+    def test_not_long_label(self):
+        not_too_long_label_domain = u"{0}.{1}.com".format(u"a"*63, u"b"*63)
+        self._call(not_too_long_label_domain)
+
+    def test_empty_domain(self):
+        empty_domain = u""
+        self.assertRaises(errors.ConfigurationError, self._call,
+                          empty_domain)
+
+    def test_punycode_ok(self):
+        # Punycode is now legal, so no longer an error; instead check
+        # that it's _not_ an error (at the initial sanity check stage)
+        self._call('this.is.xn--ls8h.tld')
 
 
 class OsInfoTest(unittest.TestCase):

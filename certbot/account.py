@@ -3,6 +3,7 @@ import datetime
 import hashlib
 import logging
 import os
+import shutil
 import socket
 
 from cryptography.hazmat.primitives import serialization
@@ -81,7 +82,7 @@ class Account(object):  # pylint: disable=too-few-public-methods
                 self.meta == other.meta)
 
 
-def report_new_account(acc, config):
+def report_new_account(config):
     """Informs the user about their new ACME account."""
     reporter = zope.component.queryUtility(interfaces.IReporter)
     if reporter is None:
@@ -94,12 +95,6 @@ def report_new_account(acc, config):
         "so making regular backups of this folder is ideal.".format(
             config.config_dir),
         reporter.MEDIUM_PRIORITY)
-
-    if acc.regr.body.emails:
-        recovery_msg = ("If you lose your account credentials, you can "
-                        "recover through e-mails sent to {0}.".format(
-                            ", ".join(acc.regr.body.emails)))
-        reporter.add_message(recovery_msg, reporter.MEDIUM_PRIORITY)
 
 
 class AccountMemoryStorage(interfaces.AccountStorage):
@@ -196,6 +191,18 @@ class AccountFileStorage(interfaces.AccountStorage):
 
         """
         self._save(account, regr_only=True)
+
+    def delete(self, account_id):
+        """Delete registration info from disk
+
+        :param account_id: id of account which should be deleted
+
+        """
+        account_dir_path = self._account_dir_path(account_id)
+        if not os.path.isdir(account_dir_path):
+            raise errors.AccountNotFound(
+                "Account at %s does not exist" % account_dir_path)
+        shutil.rmtree(account_dir_path)
 
     def _save(self, account, regr_only):
         account_dir_path = self._account_dir_path(account.id)

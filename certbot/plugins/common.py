@@ -127,17 +127,18 @@ class Addr(object):
             return "%s:%s" % self.tup
         return self.tup[0]
 
+    def normalized_tuple(self):
+        """Normalized representation of addr/port tuple
+        """
+        if self.ipv6:
+            return (self._normalize_ipv6(self.tup[0]), self.tup[1])
+        return self.tup
+
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            if self.ipv6:
-                # compare normalized to take different
-                # styles of representation into account
-                return (other.ipv6 and
-                        self._normalize_ipv6(self.tup[0]) ==
-                        self._normalize_ipv6(other.tup[0]) and
-                        self.tup[1] == other.tup[1])
-            else:
-                return self.tup == other.tup
+            # compare normalized to take different
+            # styles of representation into account
+            return self.normalized_tuple() == other.normalized_tuple()
 
         return False
 

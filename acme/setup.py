@@ -4,20 +4,22 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.10.0.dev0'
+version = '0.13.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
     # load_pem_private/public_key (>=0.6)
     # rsa_recover_prime_factors (>=0.8)
     'cryptography>=0.8',
-    'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
-    'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
     # Connection.set_tlsext_host_name (>=0.13)
     'PyOpenSSL>=0.13',
     'pyrfc3339',
     'pytz',
-    'requests',
+    # requests>=2.10 is required to fix
+    # https://github.com/shazow/urllib3/issues/556. This requirement can be
+    # relaxed to 'requests[security]>=2.4.1', however, less useful errors
+    # will be raised for some network/SSL errors.
+    'requests[security]>=2.10',
     # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
     # will tolerate; see #2599:
     'setuptools>=1.0',
@@ -35,21 +37,14 @@ if sys.version_info < (2, 7):
 else:
     install_requires.append('mock')
 
-# dnspython 1.12 is required to support both Python 2 and Python 3.
-dns_extras = [
-    'dnspython>=1.12',
-]
-
 dev_extras = [
     'nose',
-    'pep8',
     'tox',
 ]
 
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
     'sphinx_rtd_theme',
-    'sphinxcontrib-programoutput',
 ]
 
 
@@ -81,7 +76,6 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     extras_require={
-        'dns': dns_extras,
         'dev': dev_extras,
         'docs': docs_extras,
     },

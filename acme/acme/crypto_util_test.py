@@ -18,9 +18,11 @@ from acme import test_util
 class SSLSocketAndProbeSNITest(unittest.TestCase):
     """Tests for acme.crypto_util.SSLSocket/probe_sni."""
 
+    _multiprocess_can_split_ = True
+
     def setUp(self):
-        self.cert = test_util.load_comparable_cert('cert.pem')
-        key = test_util.load_pyopenssl_private_key('rsa512_key.pem')
+        self.cert = test_util.load_comparable_cert('rsa2048_cert.pem')
+        key = test_util.load_pyopenssl_private_key('rsa2048_key.pem')
         # pylint: disable=protected-access
         certs = {b'foo': (key, self.cert.wrapped)}
 
@@ -57,7 +59,7 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
     def test_probe_not_recognized_name(self):
         self.assertRaises(errors.Error, self._probe, b'bar')
 
-    # TODO: py33/py34 tox hangs forever on do_hendshake in second probe
+    # TODO: py33/py34 tox hangs forever on do_handshake in second probe
     #def probe_connection_error(self):
     #    self._probe(b'foo')
     #    #time.sleep(1)  # TODO: avoid race conditions in other way
@@ -66,6 +68,8 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
 
 class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
     """Test for acme.crypto_util._pyopenssl_cert_or_req_san."""
+
+    _multiprocess_can_split_ = True
 
     @classmethod
     def _call(cls, loader, name):
@@ -130,6 +134,8 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
 
 class RandomSnTest(unittest.TestCase):
     """Test for random certificate serial numbers."""
+
+    _multiprocess_can_split_ = True
 
     def setUp(self):
         self.cert_count = 5

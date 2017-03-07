@@ -8,7 +8,7 @@ class Addr(common.Addr):
     """Represents an Apache address."""
 
     def __eq__(self, other):
-        """This is defined as equalivalent within Apache.
+        """This is defined as equivalent within Apache.
 
         ip_addr:* == ip_addr
 
@@ -24,6 +24,11 @@ class Addr(common.Addr):
 
     def __repr__(self):
         return "certbot_apache.obj.Addr(" + repr(self.tup) + ")"
+
+    def __hash__(self):
+        # Python 3 requires explicit overridden for __hash__ if __eq__ or
+        # __cmp__ is overridden. See https://bugs.python.org/issue2235
+        return super(Addr, self).__hash__()
 
     def _addr_less_specific(self, addr):
         """Returns if addr.get_addr() is more specific than self.get_addr()."""
@@ -173,6 +178,11 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash((self.filep, self.path,
+                     tuple(self.addrs), tuple(self.get_names()),
+                     self.ssl, self.enabled, self.modmacro))
 
     def conflicts(self, addrs):
         """See if vhost conflicts with any of the addrs.

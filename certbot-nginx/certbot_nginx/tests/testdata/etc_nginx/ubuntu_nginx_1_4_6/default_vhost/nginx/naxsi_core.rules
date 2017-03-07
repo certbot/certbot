@@ -67,7 +67,7 @@ MainRule "rx:%[2|3]."  "msg:double encoding !" "mz:ARGS|URL|BODY|$HEADERS_VAR:Co
 ####################################
 MainRule "str:&#" "msg: utf7/8 encoding" "mz:ARGS|BODY|URL|$HEADERS_VAR:Cookie" "s:$EVADE:4" id:1400;
 MainRule "str:%U" "msg: M$ encoding" "mz:ARGS|BODY|URL|$HEADERS_VAR:Cookie" "s:$EVADE:4" id:1401;
-MainRule negative "rx:multipart/form-data|application/x-www-form-urlencoded" "msg:Content is neither mulipart/x-www-form.." "mz:$HEADERS_VAR:Content-type" "s:$EVADE:4" id:1402;
+MainRule negative "rx:multipart/form-data|application/x-www-form-urlencoded" "msg:Content is neither multipart/x-www-form.." "mz:$HEADERS_VAR:Content-type" "s:$EVADE:4" id:1402;
 
 #############################
 ## File uploads: 1500-1600 ##

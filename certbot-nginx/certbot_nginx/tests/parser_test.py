@@ -49,7 +49,8 @@ class NginxParserTest(util.NginxTest):
                                'sites-enabled/default',
                                'sites-enabled/example.com',
                                'sites-enabled/migration.com',
-                               'sites-enabled/sslon.com']]),
+                               'sites-enabled/sslon.com',
+                               'sites-enabled/globalssl.com']]),
                          set(nparser.parsed.keys()))
         self.assertEqual([['server_name', 'somename  alias  another.alias']],
                          nparser.parsed[nparser.abs_path('server.conf')])
@@ -73,7 +74,7 @@ class NginxParserTest(util.NginxTest):
         parsed = nparser._parse_files(nparser.abs_path(
             'sites-enabled/example.com.test'))
         self.assertEqual(3, len(glob.glob(nparser.abs_path('*.test'))))
-        self.assertEqual(4, len(
+        self.assertEqual(5, len(
             glob.glob(nparser.abs_path('sites-enabled/*.test'))))
         self.assertEqual([[['server'], [['listen', '69.50.225.155:9000'],
                                         ['listen', '127.0.0.1'],
@@ -104,6 +105,16 @@ class NginxParserTest(util.NginxTest):
                                     lambda x, y, pts=paths: pts.append(y))
             self.assertEqual(paths, result)
 
+    def test_get_vhosts_global_ssl(self):
+        nparser = parser.NginxParser(self.config_path, self.ssl_options)
+        vhosts = nparser.get_vhosts()
+
+        vhost = obj.VirtualHost(nparser.abs_path('sites-enabled/globalssl.com'),
+                                [obj.Addr('4.8.2.6', '57', True, False)],
+                                True, True, set(['globalssl.com']), [], [0])
+
+        globalssl_com = [x for x in vhosts if 'globalssl.com' in x.filep][0]
+        self.assertEqual(vhost, globalssl_com)
 
     def test_get_vhosts(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
@@ -137,7 +148,7 @@ class NginxParserTest(util.NginxTest):
                                                   '*.www.example.com']),
                                  [], [2, 1, 0])
 
-        self.assertEqual(8, len(vhosts))
+        self.assertEqual(10, len(vhosts))
         example_com = [x for x in vhosts if 'example.com' in x.filep][0]
         self.assertEqual(vhost3, example_com)
         default = [x for x in vhosts if 'default' in x.filep][0]
@@ -291,44 +302,37 @@ class NginxParserTest(util.NginxTest):
             COMMENT_BLOCK,
             ["\n", "e", " ", "f"]])
 
-    def test_get_all_certs_keys(self):
-        nparser = parser.NginxParser(self.config_path, self.ssl_options)
-        filep = nparser.abs_path('sites-enabled/example.com')
-        mock_vhost = obj.VirtualHost(filep,
-                                     None, None, None,
-                                     set(['.example.com', 'example.*']),
-                                     None, [0])
-        nparser.add_server_directives(mock_vhost,
-                                      [['ssl_certificate', 'foo.pem'],
-                                       ['ssl_certificate_key', 'bar.key'],
-                                       ['listen', '443 ssl']],
-                                      replace=False)
-        c_k = nparser.get_all_certs_keys()
-        migration_file = nparser.abs_path('sites-enabled/migration.com')
-        sslon_file = nparser.abs_path('sites-enabled/sslon.com')
-        self.assertEqual(set([('foo.pem', 'bar.key', filep),
-                              ('cert.pem', 'cert.key', migration_file),
-                              ('snakeoil.cert', 'snakeoil.key', sslon_file)
-                             ]), c_k)
-
-    def test_parse_server_ssl(self):
-        server = parser.parse_server([
+    def test_parse_server_raw_ssl(self):
+        server = parser._parse_server_raw([ #pylint: disable=protected-access
             ['listen', '443']
         ])
         self.assertFalse(server['ssl'])
 
-        server = parser.parse_server([
+        server = parser._parse_server_raw([ #pylint: disable=protected-access
             ['listen', '443 ssl']
         ])
         self.assertTrue(server['ssl'])
 
-        server = parser.parse_server([
+        server = parser._parse_server_raw([ #pylint: disable=protected-access
             ['listen', '443'], ['ssl', 'off']
         ])
         self.assertFalse(server['ssl'])
 
-        server = parser.parse_server([
+        server = parser._parse_server_raw([ #pylint: disable=protected-access
             ['listen', '443'], ['ssl', 'on']
+        ])
+        self.assertTrue(server['ssl'])
+
+    def test_parse_server_raw_unix(self):
+        server = parser._parse_server_raw([ #pylint: disable=protected-access
+            ['listen', 'unix:/var/run/nginx.sock']
+        ])
+        self.assertEqual(len(server['addrs']), 0)
+
+    def test_parse_server_global_ssl_applied(self):
+        nparser = parser.NginxParser(self.config_path, self.ssl_options)
+        server = nparser.parse_server([
+            ['listen', '443']
         ])
         self.assertTrue(server['ssl'])
 

@@ -177,14 +177,14 @@ class ApacheTlsSni01(common.TLSSNI01):
         ips = " ".join(str(i) for i in ip_addrs)
         document_root = os.path.join(
             self.configurator.config.work_dir, "tls_sni_01_page/")
-        # TODO: Python docs is not clear how mutliline string literal
+        # TODO: Python docs is not clear how multiline string literal
         # newlines are parsed on different platforms. At least on
         # Linux (Debian sid), when source file uses CRLF, Python still
         # parses it as "\n"... c.f.:
         # https://docs.python.org/2.7/reference/lexical_analysis.html
         return self.VHOST_TEMPLATE.format(
             vhost=ips,
-            server_name=achall.response(achall.account_key).z_domain,
+            server_name=achall.response(achall.account_key).z_domain.decode('ascii'),
             ssl_options_conf_path=self.configurator.mod_ssl_conf,
             cert_path=self.get_cert_path(achall),
             key_path=self.get_key_path(achall),

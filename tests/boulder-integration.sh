@@ -1,7 +1,7 @@
 #!/bin/sh -xe
 # Simple integration test. Make sure to activate virtualenv beforehand
 # (source venv/bin/activate) and that you are running Boulder test
-# instance (see ./boulder-start.sh).
+# instance (see ./boulder-fetch.sh).
 #
 # Environment variables:
 #   SERVER: Passed as "certbot --server" argument.
@@ -9,7 +9,7 @@
 # Note: this script is called by Boulder integration test suite!
 
 . ./tests/integration/_common.sh
-export PATH="/usr/sbin:$PATH"  # /usr/sbin/nginx
+export PATH="$PATH:/usr/sbin"  # /usr/sbin/nginx
 
 export GOPATH="${GOPATH:-/tmp/go}"
 export PATH="$GOPATH/bin:$PATH"
@@ -19,6 +19,18 @@ if [ `uname` = "Darwin" ];then
 else
   readlink="readlink"
 fi
+
+cleanup_and_exit() {
+    EXIT_STATUS=$?
+    if SERVER_STILL_RUNNING=`ps -p $python_server_pid -o pid=`
+    then
+        echo Kill server subprocess, left running by abnormal exit
+        kill $SERVER_STILL_RUNNING
+    fi
+    exit $EXIT_STATUS
+}
+
+trap cleanup_and_exit EXIT
 
 common_no_force_renew() {
     certbot_test_no_force_renew \
@@ -33,18 +45,62 @@ common() {
         "$@"
 }
 
+export HOOK_TEST="/tmp/hook$$"
+CheckHooks() {
+    EXPECTED="/tmp/expected$$"
+    if [ $(head -n1 $HOOK_TEST) = "wtf.pre" ]; then
+        echo "wtf.pre" > "$EXPECTED"
+        echo "wtf2.pre" >> "$EXPECTED"
+        echo "renew" >> "$EXPECTED"
+        echo "renew" >> "$EXPECTED"
+        echo "wtf.post" >> "$EXPECTED"
+        echo "wtf2.post" >> "$EXPECTED"
+    else
+        echo "wtf2.pre" > "$EXPECTED"
+        echo "wtf.pre" >> "$EXPECTED"
+        echo "renew" >> "$EXPECTED"
+        echo "renew" >> "$EXPECTED"
+        echo "wtf2.post" >> "$EXPECTED"
+        echo "wtf.post" >> "$EXPECTED"
+    fi
+
+    if ! cmp --quiet "$EXPECTED" "$HOOK_TEST" ; then
+        echo Hooks did not run as expected\; got
+        cat "$HOOK_TEST"
+        echo Expected
+        cat "$EXPECTED"
+    fi
+    rm "$HOOK_TEST"
+}
+
 # We start a server listening on the port for the
 # unrequested challenge to prevent regressions in #3601.
 python -m SimpleHTTPServer $http_01_port &
 python_server_pid=$!
-common --domains le1.wtf --preferred-challenges tls-sni-01 auth
+
+common --domains le1.wtf --preferred-challenges tls-sni-01 auth \
+       --pre-hook 'echo wtf.pre >> "$HOOK_TEST"' \
+       --post-hook 'echo wtf.post >> "$HOOK_TEST"'\
+       --renew-hook 'echo renew >> "$HOOK_TEST"'
 kill $python_server_pid
 python -m SimpleHTTPServer $tls_sni_01_port &
 python_server_pid=$!
-common --domains le2.wtf --preferred-challenges http-01 run
+common --domains le2.wtf --preferred-challenges http-01 run \
+       --pre-hook 'echo wtf.pre >> "$HOOK_TEST"' \
+       --post-hook 'echo wtf.post >> "$HOOK_TEST"'\
+       --renew-hook 'echo renew >> "$HOOK_TEST"'
 kill $python_server_pid
 
-common -a manual -d le.wtf auth --rsa-key-size 4096
+common certonly -a manual -d le.wtf --rsa-key-size 4096 \
+    --manual-auth-hook ./tests/manual-http-auth.sh \
+    --manual-cleanup-hook ./tests/manual-http-cleanup.sh \
+    --pre-hook 'echo wtf2.pre >> "$HOOK_TEST"' \
+    --post-hook 'echo wtf2.post >> "$HOOK_TEST"'
+
+common certonly -a manual -d dns.le.wtf --preferred-challenges dns,tls-sni \
+    --manual-auth-hook ./tests/manual-dns-auth.sh
+
+common certonly --cert-name newname -d newname.le.wtf
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
        OPENSSL_CNF=examples/openssl.cnf
@@ -60,28 +116,32 @@ common --domains le3.wtf install \
        --key-path "${root}/csr/key.pem"
 
 CheckCertCount() {
-    CERTCOUNT=`ls "${root}/conf/archive/le.wtf/cert"* | wc -l`
-    if [ "$CERTCOUNT" -ne "$1" ] ; then
-        echo Wrong cert count, not "$1" `ls "${root}/conf/archive/le.wtf/"*`
+    CERTCOUNT=`ls "${root}/conf/archive/$1/cert"* | wc -l`
+    if [ "$CERTCOUNT" -ne "$2" ] ; then
+        echo Wrong cert count, not "$2" `ls "${root}/conf/archive/$1/"*`
         exit 1
     fi
 }
 
-CheckCertCount 1
+CheckCertCount "le.wtf" 1
 # This won't renew (because it's not time yet)
 common_no_force_renew renew
-CheckCertCount 1
+CheckCertCount "le.wtf" 1
 
-# --renew-by-default is used, so renewal should occur
-common renew
-CheckCertCount 2
+# renew using HTTP manual auth hooks
+common renew --cert-name le.wtf --authenticator manual
+CheckCertCount "le.wtf" 2
+
+# renew using DNS manual auth hooks
+common renew --cert-name dns.le.wtf --authenticator manual
+CheckCertCount "dns.le.wtf" 2
 
 # This will renew because the expiry is less than 10 years from now
 sed -i "4arenew_before_expiry = 4 years" "$root/conf/renewal/le.wtf.conf"
 common_no_force_renew renew --rsa-key-size 2048
-CheckCertCount 3
+CheckCertCount "le.wtf" 3
 
-# The 4096 bit setting should persist to the first renewal, but be overriden in the second
+# The 4096 bit setting should persist to the first renewal, but be overridden in the second
 
 size1=`wc -c ${root}/conf/archive/le.wtf/privkey1.pem | cut -d" " -f1`
 size2=`wc -c ${root}/conf/archive/le.wtf/privkey2.pem | cut -d" " -f1`
@@ -92,6 +152,12 @@ if [ "$size1" -lt 3000 ] || [ "$size2" -lt 3000 ] || [ "$size3" -gt 1800 ] ; the
     ls -l "${root}/conf/archive/le.wtf/privkey"*
     exit 1
 fi
+
+# --renew-by-default is used, so renewal should occur
+[ -f "$HOOK_TEST" ] && rm -f "$HOOK_TEST"
+common renew
+CheckCertCount "le.wtf" 4
+CheckHooks
 
 # ECDSA
 openssl ecparam -genkey -name secp384r1 -out "${root}/privkey-p384.pem"
@@ -117,7 +183,18 @@ common revoke --cert-path "$root/conf/live/le.wtf/cert.pem"
 common revoke --cert-path "$root/conf/live/le1.wtf/cert.pem"
 # revoke by cert key
 common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
-       --key-path "$root/conf/live/le2.wtf/privkey.pem"
+    --key-path "$root/conf/live/le2.wtf/privkey.pem"
+
+# Get new certs to test revoke with a reason, by account and by cert key
+common --domains le1.wtf
+common revoke --cert-path "$root/conf/live/le1.wtf/cert.pem" \
+    --reason cessationOfOperation
+common --domains le2.wtf
+common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
+    --key-path "$root/conf/live/le2.wtf/privkey.pem" \
+    --reason keyCompromise
+
+common unregister
 
 if type nginx;
 then

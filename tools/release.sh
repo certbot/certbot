@@ -72,7 +72,7 @@ pip install -U virtualenv
 root_without_le="$version.$$"
 root="./releases/le.$root_without_le"
 
-echo "Cloning into fresh copy at $root"  # clean repo = no artificats
+echo "Cloning into fresh copy at $root"  # clean repo = no artifacts
 git clone . $root
 git rev-parse HEAD
 cd $root
@@ -147,6 +147,7 @@ cd ~-
 
 # get a snapshot of the CLI help for the docs
 certbot --help all > docs/cli-help.txt
+jws --help > acme/docs/jws-help.txt
 
 cd ..
 # freeze before installing anything else, so that we know end-user KGS
@@ -195,7 +196,7 @@ done
 # This signature is not quite as strong, but easier for people to verify out of band
 gpg -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign letsencrypt-auto-source/letsencrypt-auto
 # We can't rename the openssl letsencrypt-auto.sig for compatibility reasons,
-# but we can use the right name for cerbot-auto.asc from day one
+# but we can use the right name for certbot-auto.asc from day one
 mv letsencrypt-auto-source/letsencrypt-auto.asc letsencrypt-auto-source/certbot-auto.asc
 
 # copy leauto to the root, overwriting the previous release version

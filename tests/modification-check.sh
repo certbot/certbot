@@ -1,35 +1,61 @@
 #!/bin/bash
 
 temp_dir=`mktemp -d`
+trap "rm -rf $temp_dir" EXIT
 
-# Script should be run from Certbot's root directory
-cp letsencrypt-auto ${temp_dir}/letsencrypt-to-be-checked
-cp certbot-auto ${temp_dir}/certbot-to-be-checked
+# cd to repo root
+cd $(dirname $(dirname $(readlink -f $0)))
+FLAG=false
 
-cp letsencrypt-auto-source/pieces/fetch.py ${temp_dir}/fetch.py
-cd ${temp_dir}
-
-LATEST_VERSION=`python fetch.py --latest-version`
-python fetch.py --le-auto-script v${LATEST_VERSION}
-
-cmp -s letsencrypt-auto letsencrypt-to-be-checked
-
-if [ $? != 0 ]; then
-	echo "Root letsencrypt-auto has changed."
-	rm -rf temp_dir
-	exit 1
+if ! cmp -s certbot-auto letsencrypt-auto; then
+    echo "Root certbot-auto and letsencrypt-auto differ."
+    FLAG=true
 else
-	echo "Root letsencrypt-auto is unchanged."
+    cp certbot-auto "$temp_dir/local-auto"
+    cp letsencrypt-auto-source/pieces/fetch.py "$temp_dir/fetch.py"
+    cd $temp_dir
+
+    # Compare file against current version in the target branch
+    BRANCH=${TRAVIS_BRANCH:-master}
+    URL="https://raw.githubusercontent.com/certbot/certbot/$BRANCH/certbot-auto"
+    curl -sS $URL > certbot-auto
+    if cmp -s certbot-auto local-auto; then
+        echo "Root *-auto were unchanged."
+    else
+        # Compare file against the latest released version
+        python fetch.py --le-auto-script "v$(python fetch.py --latest-version)"
+        if cmp -s letsencrypt-auto local-auto; then
+            echo "Root *-auto were updated to the latest version."
+        else
+            echo "Root *-auto have unexpected changes."
+            FLAG=true
+        fi
+    fi
+    cd ~-
 fi
 
-cmp -s letsencrypt-auto certbot-to-be-checked
+# Compare letsencrypt-auto-source/letsencrypt-auto with output of build.py
+
+cp letsencrypt-auto-source/letsencrypt-auto ${temp_dir}/original-lea
+python letsencrypt-auto-source/build.py
+cp letsencrypt-auto-source/letsencrypt-auto ${temp_dir}/build-lea
+cp ${temp_dir}/original-lea letsencrypt-auto-source/letsencrypt-auto
+
+cd $temp_dir
+
+cmp -s original-lea build-lea
 
 if [ $? != 0 ]; then
-	echo "Root certbot-auto has changed."
-	rm -rf temp_dir
-	exit 1
+	echo "letsencrypt-auto-source/letsencrypt-auto doesn't match output of \
+build.py."
+	FLAG=true
 else
-	echo "Root certbot-auto is unchanged."
+	echo "letsencrypt-auto-source/letsencrypt-auto matches output of \
+build.py."
 fi
 
-rm -rf temp_dir
+rm -rf $temp_dir
+
+if $FLAG ; then
+	exit 1
+fi
