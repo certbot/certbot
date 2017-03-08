@@ -1,0 +1,33 @@
+server {
+    server_name random18267.example.org;
+    gzip             on;
+    gzip_min_length  2000;
+    gzip_proxied     any;
+    gzip_types       application/json; 
+
+    client_max_body_size 30M;
+
+    root /srv/http/random23264/data;
+    
+    # Security
+    satisfy any;
+    include /etc/nginx/allow_ytec_ips_params;
+    deny all;
+
+    # try serving docs and (md5/immutable) directly
+    location ~ \+(f|doc)/ {
+        try_files $uri @proxy_to_app;
+    }
+    location / {
+        # XXX how to tell nginx to just refer to @proxy_to_app here?
+        try_files /.lqkwje @proxy_to_app;
+    }   
+    location @proxy_to_app {
+        proxy_pass http://random20604.example.org:4040;
+        proxy_set_header  X-outside-url $scheme://$host;
+        proxy_set_header  X-Real-IP $remote_addr;
+    }   
+
+    access_log /var/log/nginx/random23264/access.log combined_plus;
+    error_log /var/log/nginx/random23264/error.log;
+} 

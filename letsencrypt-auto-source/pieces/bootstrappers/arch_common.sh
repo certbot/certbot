@@ -4,13 +4,12 @@ BootstrapArchCommon() {
   #
   # "python-virtualenv" is Python3, but "python2-virtualenv" provides
   # only "virtualenv2" binary, not "virtualenv" necessary in
-  # ./bootstrap/dev/_common_venv.sh
+  # ./tools/_venv_common.sh
 
   deps="
     python2
     python-virtualenv
     gcc
-    dialog
     augeas
     openssl
     libffi
@@ -18,9 +17,18 @@ BootstrapArchCommon() {
     pkg-config
   "
 
-  missing=$("$SUDO" pacman -T $deps)
+  # pacman -T exits with 127 if there are missing dependencies
+  missing=$($SUDO pacman -T $deps) || true
+
+  if [ "$ASSUME_YES" = 1 ]; then
+    noconfirm="--noconfirm"
+  fi
 
   if [ "$missing" ]; then
-    "$SUDO" pacman -S --needed $missing
+    if [ "$QUIET" = 1]; then
+      $SUDO pacman -S --needed $missing $noconfirm > /dev/null
+    else
+      $SUDO pacman -S --needed $missing $noconfirm
+    fi
   fi
 }

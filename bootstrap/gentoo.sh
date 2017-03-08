@@ -1,1 +1,0 @@
-_gentoo_common.sh

@@ -6,24 +6,24 @@ Developer Guide
    :local:
 
 
-.. _hacking:
+.. _getting_started:
 
-Hacking
+Getting Started
 =======
 
 Running a local copy of the client
 ----------------------------------
 
 Running the client in developer mode from your local tree is a little
-different than running ``letsencrypt-auto``.  To get set up, do these things
+different than running ``certbot-auto``.  To get set up, do these things
 once:
 
 .. code-block:: shell
 
-   git clone https://github.com/letsencrypt/letsencrypt
-   cd letsencrypt
+   git clone https://github.com/certbot/certbot
+   cd certbot
    ./letsencrypt-auto-source/letsencrypt-auto --os-packages-only
-   ./bootstrap/dev/venv.sh
+   ./tools/venv.sh
 
 Then in each shell where you're working on the client, do:
 
@@ -36,7 +36,7 @@ client by typing:
 
 .. code-block:: shell
 
-   letsencrypt
+   certbot
 
 Activating a shell in this way makes it easier to run unit tests
 with ``tox`` and integration tests, as described below. To reverse this, you
@@ -54,99 +54,98 @@ where appropriate.
 
 Once you've got a working branch, you can open a pull request.  All changes in
 your pull request must have thorough unit test coverage, pass our
-`integration`_ tests, and be compliant with the :ref:`coding style
-<coding-style>`.
+tests, and be compliant with the :ref:`coding style <coding-style>`.
 
-.. _github issue tracker: https://github.com/letsencrypt/letsencrypt/issues
-.. _Good Volunteer Task: https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aopen+is%3Aissue+label%3A%22Good+Volunteer+Task%22
+.. _github issue tracker: https://github.com/certbot/certbot/issues
+.. _Good Volunteer Task: https://github.com/certbot/certbot/issues?q=is%3Aopen+is%3Aissue+label%3A%22Good+Volunteer+Task%22
+
+.. _testing:
 
 Testing
 -------
 
-The following tools are there to help you:
+When you are working in a file ``foo.py``, there should also be a file ``foo_test.py``
+either in the same directory as ``foo.py`` or in the ``tests`` subdirectory
+(if there isn't, make one). While you are working on your code and tests, run
+``python foo_test.py`` to run the relevant tests.
 
-- ``tox`` starts a full set of tests. Please note that it includes
-  apacheconftest, which uses the system's Apache install to test config file
-  parsing, so it should only be run on systems that have an
-  experimental, non-production Apache2 install on them.  ``tox -e
-  apacheconftest`` can be used to run those specific Apache conf tests.
+For debugging, we recommend putting
+``import ipdb; ipdb.set_trace()`` statements inside the source code.
 
-- ``tox -e py27``, ``tox -e py26`` etc, run unit tests for specific Python
-  versions.
+Once you are done with your code changes, and the tests in ``foo_test.py`` pass,
+run all of the unittests for Certbot with ``tox -e py27`` (this uses Python
+2.7).
 
-- ``tox -e cover`` checks the test coverage only. Calling the
-  ``./tox.cover.sh`` script directly (or even ``./tox.cover.sh $pkg1
-  $pkg2 ...`` for any subpackages) might be a bit quicker, though.
+Once all the unittests pass, check for sufficient test coverage using
+``tox -e cover``, and then check for code style with ``tox -e lint`` (all files)
+or ``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a time).
 
-- ``tox -e lint`` checks the style of the whole project, while
-  ``pylint --rcfile=.pylintrc path`` will check a single file or
-  specific directory only.
+Once all of the above is successful, you may run the full test suite,
+including integration tests, using ``tox``. We recommend running the
+commands above first, because running all tests with ``tox`` is very
+slow, and the large amount of ``tox`` output can make it hard to find
+specific failures when they happen. Also note that the full test suite
+will attempt to modify your system's Apache config if your user has sudo
+permissions, so it should not be run on a production Apache server.
 
-- For debugging, we recommend ``pip install ipdb`` and putting
-  ``import ipdb; ipdb.set_trace()`` statement inside the source
-  code. Alternatively, you can use Python's standard library `pdb`,
-  but you won't get TAB completion...
-
+If you have trouble getting the full ``tox`` suite to run locally, it is
+generally sufficient to open a pull request and let Github and Travis run
+integration tests for you.
 
 .. _integration:
 
-Integration testing with the boulder CA
+Integration testing with the Boulder CA
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Generally it is sufficient to open a pull request and let Github and Travis run
-integration tests for you.
+To run integration tests locally, you need Docker and docker-compose installed
+and working. Fetch and start Boulder using:
 
-Mac OS X users: Run `./tests/mac-bootstrap.sh` instead of `boulder-start.sh` to
-install dependencies, configure the environment, and start boulder.
+.. code-block:: shell
 
-Otherwise, install `Go`_ 1.5, libtool-ltdl, mariadb-server and
-rabbitmq-server and then start Boulder_, an ACME CA server::
+  ./tests/boulder-fetch.sh
 
-  ./tests/boulder-start.sh
+If you have problems with Docker, you may want to try `removing all containers and
+volumes`_ and making sure you have at least 1GB of memory.
 
-The script will download, compile and run the executable; please be
-patient - it will take some time... Once its ready, you will see
-``Server running, listening on 127.0.0.1:4000...``. Add an
-``/etc/hosts`` entry pointing ``le.wtf`` to 127.0.0.1.  You may now
-run (in a separate terminal)::
+Run the integration tests using:
 
-  ./tests/boulder-integration.sh && echo OK || echo FAIL
+.. code-block:: shell
 
-If you would like to test `letsencrypt_nginx` plugin (highly
-encouraged) make sure to install prerequisites as listed in
-``letsencrypt-nginx/tests/boulder-integration.sh`` and rerun
-the integration tests suite.
+  ./tests/boulder-integration.sh
 
-.. _Boulder: https://github.com/letsencrypt/boulder
-.. _Go: https://golang.org
-
+.. _removing all containers and volumes: https://www.digitalocean.com/community/tutorials/how-to-remove-docker-images-containers-and-volumes
 
 Code components and layout
 ==========================
 
 acme
   contains all protocol specific code
-letsencrypt
-  all client code
+certbot
+  main client code
+certbot-apache and certbot-nginx
+  client code to configure specific web servers
+certbot.egg-info
+  configuration for packaging Certbot
 
 
 Plugin-architecture
 -------------------
 
-Let's Encrypt has a plugin architecture to facilitate support for
+Certbot has a plugin architecture to facilitate support for
 different webservers, other TLS servers, and operating systems.
 The interfaces available for plugins to implement are defined in
-`interfaces.py`_.
+`interfaces.py`_ and `plugins/common.py`_.
 
 The most common kind of plugin is a "Configurator", which is likely to
-implement the `~letsencrypt.interfaces.IAuthenticator` and
-`~letsencrypt.interfaces.IInstaller` interfaces (though some
+implement the `~certbot.interfaces.IAuthenticator` and
+`~certbot.interfaces.IInstaller` interfaces (though some
 Configurators may implement just one of those).
 
-There are also `~letsencrypt.interfaces.IDisplay` plugins,
+There are also `~certbot.interfaces.IDisplay` plugins,
 which implement bindings to alternative UI libraries.
 
-.. _interfaces.py: https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/interfaces.py
+.. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/interfaces.py
+.. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/plugins/common.py#L34
 
 
 Authenticators
@@ -202,7 +201,7 @@ Installer Development
 ---------------------
 
 There are a few existing classes that may be beneficial while
-developing a new `~letsencrypt.interfaces.IInstaller`.
+developing a new `~certbot.interfaces.IInstaller`.
 Installers aimed to reconfigure UNIX servers may use Augeas for
 configuration parsing and can inherit from `~.AugeasConfigurator` class
 to handle much of the interface. Installers that are unable to use
@@ -213,19 +212,18 @@ configuration checkpoints and rollback.
 Display
 ~~~~~~~
 
-We currently offer a pythondialog and "text" mode for displays. Display
-plugins implement the `~letsencrypt.interfaces.IDisplay`
-interface.
+We currently only offer a "text" mode for displays. Display plugins
+implement the `~certbot.interfaces.IDisplay` interface.
 
 .. _dev-plugin:
 
 Writing your own plugin
 =======================
 
-Let's Encrypt client supports dynamic discovery of plugins through the
+Certbot client supports dynamic discovery of plugins through the
 `setuptools entry points`_. This way you can, for example, create a
-custom implementation of `~letsencrypt.interfaces.IAuthenticator` or
-the `~letsencrypt.interfaces.IInstaller` without having to merge it
+custom implementation of `~certbot.interfaces.IAuthenticator` or
+the `~certbot.interfaces.IInstaller` without having to merge it
 with the core upstream source code. An example is provided in
 ``examples/plugins/`` directory.
 
@@ -236,8 +234,7 @@ with the core upstream source code. An example is provided in
    it with any necessary API changes.
 
 .. _`setuptools entry points`:
-  https://pythonhosted.org/setuptools/setuptools.html#dynamic-discovery-of-services-and-plugins
-
+    http://setuptools.readthedocs.io/en/latest/pkg_resources.html#entry-points
 
 .. _coding-style:
 
@@ -267,7 +264,7 @@ Please:
 4. Remember to use ``pylint``.
 
 .. _Google Python Style Guide:
-  https://google-styleguide.googlecode.com/svn/trunk/pyguide.html
+  https://google.github.io/styleguide/pyguide.html
 .. _Sphinx-style: http://sphinx-doc.org/
 .. _PEP 8 - Style Guide for Python Code:
   https://www.python.org/dev/peps/pep-0008
@@ -279,21 +276,58 @@ Steps:
 
 1. Write your code!
 2. Make sure your environment is set up properly and that you're in your
-   virtualenv. You can do this by running ``./bootstrap/dev/venv.sh``.
+   virtualenv. You can do this by running ``./tools/venv.sh``.
    (this is a **very important** step)
-3. Run ``./pep8.travis.sh`` to do a cursory check of your code style.
-   Fix any errors.
-4. Run ``tox -e lint`` to check for pylint errors. Fix any errors.
-5. Run ``tox`` to run the entire test suite including coverage. Fix any errors.
-6. If your code touches communication with an ACME server/Boulder, you
-   should run the integration tests, see `integration`_. See `Known Issues`_
-   for some common failures that have nothing to do with your code.
-7. Submit the PR.
-8. Did your tests pass on Travis? If they didn't, it might not be your fault!
-   See `Known Issues`_. If it's not a known issue, fix any errors.
+3. Run ``tox -e lint`` to check for pylint errors. Fix any errors.
+4. Run ``tox --skip-missing-interpreters`` to run the entire test suite
+   including coverage. The ``--skip-missing-interpreters`` argument ignores
+   missing versions of Python needed for running the tests. Fix any errors.
+5. If your code touches communication with an ACME server/Boulder, you
+   should run the integration tests, see `integration`_.
+6. Submit the PR.
+7. Did your tests pass on Travis? If they didn't, fix any errors.
 
-.. _Known Issues:
-  https://github.com/letsencrypt/letsencrypt/wiki/Known-issues
+
+Updating certbot-auto and letsencrypt-auto
+==========================================
+Updating the scripts
+--------------------
+Developers should *not* modify the ``certbot-auto`` and ``letsencrypt-auto`` files
+in the root directory of the repository.  Rather, modify the
+``letsencrypt-auto.template`` and associated platform-specific shell scripts in
+the ``letsencrypt-auto-source`` and
+``letsencrypt-auto-source/pieces/bootstrappers`` directory, respectively.
+
+Building letsencrypt-auto-source/letsencrypt-auto
+-------------------------------------------------
+Once changes to any of the aforementioned files have been made, the
+``letsencrypt-auto-source/letsencrypt-auto`` script should be updated.  In lieu of
+manually updating this script, run the build script, which lives at
+``letsencrypt-auto-source/build.py``:
+
+.. code-block:: shell
+
+   python letsencrypt-auto-source/build.py
+
+Running ``build.py`` will update the ``letsencrypt-auto-source/letsencrypt-auto``
+script.  Note that the ``certbot-auto`` and ``letsencrypt-auto`` scripts in the root
+directory of the repository will remain **unchanged** after this script is run.
+Your changes will be propagated to these files during the next release of
+Certbot.
+
+Opening a PR
+------------
+When opening a PR, ensure that the following files are committed:
+
+1. ``letsencrypt-auto-source/letsencrypt-auto.template`` and
+   ``letsencrypt-auto-source/pieces/bootstrappers/*``
+2. ``letsencrypt-auto-source/letsencrypt-auto`` (generated by ``build.py``)
+
+It might also be a good idea to double check that **no** changes were
+inadvertently made to the ``certbot-auto`` or ``letsencrypt-auto`` scripts in the
+root of the repository.  These scripts will be updated by the core developers
+during the next release.
+
 
 Updating the documentation
 ==========================
@@ -303,7 +337,7 @@ commands:
 
 .. code-block:: shell
 
-   make -C docs clean html
+   make -C docs clean html man
 
 This should generate documentation in the ``docs/_build/html``
 directory.
@@ -315,7 +349,7 @@ Other methods for running the client
 Vagrant
 -------
 
-If you are a Vagrant user, Let's Encrypt comes with a Vagrantfile that
+If you are a Vagrant user, Certbot comes with a Vagrantfile that
 automates setting up a development environment in an Ubuntu 14.04
 LTS VM. To set it up, simply run ``vagrant up``. The repository is
 synced to ``/vagrant``, so you can get started with:
@@ -324,7 +358,7 @@ synced to ``/vagrant``, so you can get started with:
 
   vagrant ssh
   cd /vagrant
-  sudo ./venv/bin/letsencrypt
+  sudo ./venv/bin/certbot
 
 Support for other Linux distributions coming soon.
 
@@ -343,19 +377,19 @@ Docker
 ------
 
 OSX users will probably find it easiest to set up a Docker container for
-development. Let's Encrypt comes with a Dockerfile (``Dockerfile-dev``)
+development. Certbot comes with a Dockerfile (``Dockerfile-dev``)
 for doing so. To use Docker on OSX, install and setup docker-machine using the
 instructions at https://docs.docker.com/installation/mac/.
 
 To build the development Docker image::
 
-  docker build -t letsencrypt -f Dockerfile-dev .
+  docker build -t certbot -f Dockerfile-dev .
 
 Now run tests inside the Docker image:
 
 .. code-block:: shell
 
-  docker run -it letsencrypt bash
+  docker run -it certbot bash
   cd src
   tox -e py27
 

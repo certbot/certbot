@@ -1,27 +1,8 @@
 ChangeLog
 =========
 
-Please note:
-the change log will only get updated after first release - for now please use the
-`commit log <https://github.com/letsencrypt/letsencrypt/commits/master>`_.
+To see the changes in a given release, view the issues closed in a given
+release's GitHub milestone:
 
-
-Release 0.1.0 (not released yet)
---------------------------------
-
-New Features:
-
-* ...
-
-Fixes:
-
-* ...
-
-Other changes:
-
-* ...
-
-Release 0.0.0 (not released yet)
---------------------------------
-
-Initial release.
+ - `Past releases <https://github.com/certbot/certbot/milestones?state=closed>`_
+ - `Upcoming releases <https://github.com/certbot/certbot/milestones>`_

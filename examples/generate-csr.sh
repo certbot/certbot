@@ -25,4 +25,4 @@ SAN="$domains" openssl req -config "${OPENSSL_CNF:-openssl.cnf}" \
   -outform DER
 # 512 or 1024 too low for Boulder, 2048 is smallest for tests
 
-echo "You can now run: letsencrypt auth --csr ${CSR_PATH:-csr.der}"
+echo "You can now run: certbot auth --csr ${CSR_PATH:-csr.der}"

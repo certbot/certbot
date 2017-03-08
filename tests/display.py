@@ -1,8 +1,8 @@
 """Manual test of display functions."""
 import sys
 
-from letsencrypt.display import util
-from letsencrypt.tests.display import util_test
+from certbot.display import util
+from certbot.tests.display import util_test
 
 
 def test_visual(displayer, choices):
@@ -18,5 +18,5 @@ def test_visual(displayer, choices):
 
 
 if __name__ == "__main__":
-    for displayer in util.NcursesDisplay(), util.FileDisplay(sys.stdout):
-        test_visual(displayer, util_test.CHOICES)
+    displayer = util.FileDisplay(sys.stdout, False)
+    test_visual(displayer, util_test.CHOICES)

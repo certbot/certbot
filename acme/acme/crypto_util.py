@@ -1,4 +1,5 @@
 """Crypto utilities."""
+import binascii
 import contextlib
 import logging
 import re
@@ -62,6 +63,8 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
                          server_name)
             return
         new_context = OpenSSL.SSL.Context(self.method)
+        new_context.set_options(OpenSSL.SSL.OP_NO_SSLv2)
+        new_context.set_options(OpenSSL.SSL.OP_NO_SSLv3)
         new_context.use_privatekey(key)
         new_context.use_certificate(cert)
         connection.set_context(new_context)
@@ -85,6 +88,8 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
         sock, addr = self.sock.accept()
 
         context = OpenSSL.SSL.Context(self.method)
+        context.set_options(OpenSSL.SSL.OP_NO_SSLv2)
+        context.set_options(OpenSSL.SSL.OP_NO_SSLv3)
         context.set_tlsext_servername_callback(self._pick_certificate_cb)
 
         ssl_sock = self.FakeConnection(OpenSSL.SSL.Connection(context, sock))
@@ -203,7 +208,7 @@ def gen_ss_cert(key, domains, not_before=None,
     """
     assert domains, "Must provide one or more hostnames for the cert."
     cert = OpenSSL.crypto.X509()
-    cert.set_serial_number(1337)
+    cert.set_serial_number(int(binascii.hexlify(OpenSSL.rand.bytes(16)), 16))
     cert.set_version(2)
 
     extensions = [

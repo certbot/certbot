@@ -1,0 +1,111 @@
+upstream django_server_random20374.nl {
+    server unix:/srv/http/random20374/live/website.sock;
+}
+
+server {
+    listen 80;
+
+    # Main domain
+    server_name random9123.example.org;
+
+    # So called mini-sites, resulting in landing pages for Google.
+    server_name random16942.example.org;
+    server_name random23560.example.org;
+    server_name random17636.example.org;
+    server_name random13969.example.org;
+    server_name random4892.example.org;
+    server_name random24240.example.org;
+    server_name random25863.example.org;
+    server_name random26503.example.org;
+    server_name random5090.example.org;
+    server_name random1856.example.org;
+    server_name random2911.example.org;
+    server_name random16405.example.org;
+
+    location /media/ {
+        alias /srv/http/random20374/live/dynamic/public/;
+        expires 7d;
+    }
+    location /static/ {
+        alias /srv/http/random20374/live/static_collected/;
+        expires 7d;
+    }
+
+    location / {
+        proxy_pass http://django_server_random20374.nl;
+        include          /etc/nginx/proxy_params;
+    }
+
+    access_log /var/log/nginx/random20374/live/access.log combined_plus;
+    error_log  /var/log/nginx/random20374/live/error.log;
+}
+
+server {
+    server_name www.random9123.example.org;
+    return 301 $scheme://random9123.example.org$request_uri;
+}
+
+server {
+    server_name www.random1825.example.org random1825.example.org;
+    return 301 $scheme://random9123.example.org$request_uri;
+}
+
+server {
+    server_name www.random16942.example.org;
+    return 301 $scheme://random16942.example.org;
+}
+
+server {
+    server_name www.random23560.example.org;
+    return 301 $scheme://random23560.example.org;
+}
+
+server {
+    server_name www.random17636.example.org;
+    return 301 $scheme://random17636.example.org;
+}
+
+server {
+    server_name www.random13969.example.org;
+    return 301 $scheme://random13969.example.org;
+}
+
+server {
+    server_name www.random4892.example.org;
+    return 301 $scheme://random4892.example.org;
+}
+
+server {
+    server_name www.random24240.example.org;
+    return 301 $scheme://random24240.example.org;
+}
+
+server {
+    server_name www.random25863.example.org;
+    return 301 $scheme://random25863.example.org;
+}
+
+server {
+    server_name www.random26503.example.org;
+    return 301 $scheme://random26503.example.org;
+}
+
+server {
+    server_name www.random5090.example.org;
+    return 301 $scheme://random5090.example.org;
+}
+
+server {
+    server_name www.random1856.example.org;
+    return 301 $scheme://random1856.example.org;
+}
+
+server {
+    server_name www.random2911.example.org;
+    return 301 $scheme://random2911.example.org;
+}
+
+server {
+    server_name www.random16405.example.org;
+    return 301 $scheme://random16405.example.org;
+}

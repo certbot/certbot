@@ -1,0 +1,7 @@
+NAME="SystemdOS"
+VERSION="42.42.42 LTS, Unreal"
+ID=systemdos
+ID_LIKE="something nonexistent debian"
+VERSION_ID="42"
+HOME_URL="http://www.example.com/"
+SUPPORT_URL="http://help.example.com/"

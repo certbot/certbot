@@ -4,89 +4,134 @@ cache:
     directories:
         - $HOME/.cache/pip
 
-services:
-  - rabbitmq
-  - mariadb
-  # apacheconftest
-  #- apache2
-
-# http://docs.travis-ci.com/user/ci-environment/#CI-environment-OS
-# gimme has to be kept in sync with Boulder's Go version setting in .travis.yml
 before_install:
   - 'dpkg -s libaugeas0'
-  - '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || eval "$(gimme 1.5.1)"'
 
 # using separate envs with different TOXENVs creates 4x1 Travis build
 # matrix, which allows us to clearly distinguish which component under
 # test has failed
-env:
-  global:
-    - GOPATH=/tmp/go
-    - PATH=$GOPATH/bin:$PATH
 matrix:
   include:
-    - python: "2.6"
-      env: TOXENV=py26 BOULDER_INTEGRATION=1
-    - python: "2.6"
-      env: TOXENV=py26-oldest BOULDER_INTEGRATION=1
-# Disabled for now due to requiring sudo -> causing more boulder integration
-# DNS timeouts :(
-#   - python: "2.7"
-#     env: TOXENV=apacheconftest
-    - python: "2.7"
-      env: TOXENV=py27 BOULDER_INTEGRATION=1
-    - python: "2.7"
-      env: TOXENV=py27-oldest BOULDER_INTEGRATION=1
     - python: "2.7"
       env: TOXENV=cover
     - python: "2.7"
       env: TOXENV=lint
+    - python: "2.7"
+      env: TOXENV=py27-oldest BOULDER_INTEGRATION=1
+      sudo: required
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
+      services: docker
+    - python: "2.6"
+      env: TOXENV=py26 BOULDER_INTEGRATION=1
+      sudo: required
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
+      services: docker
+    - python: "2.6"
+      env: TOXENV=py26-oldest BOULDER_INTEGRATION=1
+      sudo: required
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
+      services: docker
+    - python: "2.7"
+      env: TOXENV=py27_install BOULDER_INTEGRATION=1
+      sudo: required
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
+      services: docker
+    - sudo: required
+      env: TOXENV=apache_compat
+      services: docker
+      before_install:
+      addons:
+    - sudo: required
+      env: TOXENV=nginx_compat
+      services: docker
+      before_install:
+      addons:
+    - sudo: required
+      env: TOXENV=le_auto_precise
+      services: docker
+      before_install:
+      addons:
+    - sudo: required
+      env: TOXENV=le_auto_trusty
+      services: docker
+      before_install:
+      addons:
+    - sudo: required
+      env: TOXENV=le_auto_wheezy
+      services: docker
+      before_install:
+      addons:
+    - sudo: required
+      env: TOXENV=le_auto_centos6
+      services: docker
+      before_install:
+      addons:
+    - python: "2.7"
+      env: TOXENV=apacheconftest
+      sudo: required
     - python: "3.3"
       env: TOXENV=py33
     - python: "3.4"
       env: TOXENV=py34
     - python: "3.5"
       env: TOXENV=py35
+    - python: "3.6"
+      env: TOXENV=py36
+    - python: "2.7"
+      env: TOXENV=nginxroundtrip
+
 
 # Only build pushes to the master branch, PRs, and branches beginning with
-# `test-`. This reduces the number of simultaneous Travis runs, which speeds
-# turnaround time on review since there is a cap of 5 simultaneous runs.
+# `test-` or of the form `digit(s).digit(s).x`. This reduces the number of
+# simultaneous Travis runs, which speeds turnaround time on review since there
+# is a cap of on the number of simultaneous runs.
 branches:
   only:
     - master
+    - /^\d+\.\d+\.x$/
     - /^test-.*$/
 
 # container-based infrastructure
 sudo: false
 
 addons:
-  # make sure simplehttp simple verification works (custom /etc/hosts)
+  # Custom /etc/hosts required for simple verification of http-01
+  # and tls-sni-01, and for certbot_test_nginx
   hosts:
     - le.wtf
-  mariadb: "10.0"
+    - le1.wtf
+    - le2.wtf
+    - le3.wtf
+    - nginx.wtf
+    - boulder
+    - boulder-mysql
+    - boulder-rabbitmq
   apt:
     sources:
     - augeas
-    packages:  # keep in sync with bootstrap/ubuntu.sh and Boulder
+    packages:  # Keep in sync with letsencrypt-auto-source/pieces/bootstrappers/deb_common.sh and Boulder.
     - python-dev
     - python-virtualenv
     - gcc
-    - dialog
     - libaugeas0
     - libssl-dev
     - libffi-dev
     - ca-certificates
-    # For letsencrypt-nginx integration testing
+    # For certbot-nginx integration testing
     - nginx-light
     - openssl
-    # For Boulder integration testing
-    - rsyslog
     # for apacheconftest
-    #- realpath
-    #- apache2
-    #- libapache2-mod-wsgi
-    #- libapache2-mod-macro
-    #- sudo
+    - apache2
+    - libapache2-mod-wsgi
+    - libapache2-mod-macro
 
 install: "travis_retry pip install tox coveralls"
 script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/travis-integration.sh)'

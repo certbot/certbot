@@ -1,0 +1,26 @@
+server {
+    listen 80;
+    server_name www.random25446.example.org random25446.example.org;
+
+        if ($host != 'random25446.example.org') {
+                rewrite  ^/(.*)$  http://random25446.example.org/$1  permanent;
+        }
+    
+    location ^~ /media {
+        alias /srv/http/random17476/internal/dynamic/public/;
+        expires 7d;
+        include upload_folder_security_params;
+    }
+    location ^~ /static {
+        alias /srv/http/random17476/internal/static_collected/;
+        expires 7d;
+    }
+    
+    location / {
+        include fastcgi_params;
+        fastcgi_pass unix:/srv/http/random17476/internal/website.sock;
+    }
+
+  access_log /var/log/nginx/random17476/internal/access.log combined_plus;
+  error_log /var/log/nginx/random17476/internal/error.log;
+}

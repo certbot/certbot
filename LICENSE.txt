@@ -1,4 +1,4 @@
-Let's Encrypt Python Client
+Certbot ACME Client
 Copyright (c) Electronic Frontier Foundation and others
 Licensed Apache Version 2.0
 

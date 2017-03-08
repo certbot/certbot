@@ -7,6 +7,37 @@ from acme import fields
 from acme import jose
 from acme import util
 
+OLD_ERROR_PREFIX = "urn:acme:error:"
+ERROR_PREFIX = "urn:ietf:params:acme:error:"
+
+ERROR_CODES = {
+    'badCSR': 'The CSR is unacceptable (e.g., due to a short key)',
+    'badNonce': 'The client sent an unacceptable anti-replay nonce',
+    'connection': ('The server could not connect to the client to verify the'
+                   ' domain'),
+    'dnssec': 'The server could not validate a DNSSEC signed domain',
+    # deprecate invalidEmail
+    'invalidEmail': 'The provided email for a registration was invalid',
+    'invalidContact': 'The provided contact URI was invalid',
+    'malformed': 'The request message was malformed',
+    'rateLimited': 'There were too many requests of a given type',
+    'serverInternal': 'The server experienced an internal error',
+    'tls': 'The server experienced a TLS error during domain verification',
+    'unauthorized': 'The client lacks sufficient authorization',
+    'unknownHost': 'The server could not resolve a domain name',
+}
+
+ERROR_TYPE_DESCRIPTIONS = dict(
+    (ERROR_PREFIX + name, desc) for name, desc in ERROR_CODES.items())
+
+ERROR_TYPE_DESCRIPTIONS.update(dict(  # add errors with old prefix, deprecate me
+    (OLD_ERROR_PREFIX + name, desc) for name, desc in ERROR_CODES.items()))
+
+
+def is_acme_error(err):
+    """Check if argument is an ACME error."""
+    return (ERROR_PREFIX in str(err)) or (OLD_ERROR_PREFIX in str(err))
+
 
 class Error(jose.JSONObjectWithFields, errors.Error):
     """ACME error.
@@ -18,28 +49,23 @@ class Error(jose.JSONObjectWithFields, errors.Error):
     :ivar unicode detail:
 
     """
-    ERROR_TYPE_DESCRIPTIONS = dict(
-        ('urn:acme:error:' + name, description) for name, description in (
-            ('badCSR', 'The CSR is unacceptable (e.g., due to a short key)'),
-            ('badNonce', 'The client sent an unacceptable anti-replay nonce'),
-            ('connection', 'The server could not connect to the client to '
-             'verify the domain'),
-            ('dnssec', 'The server could not validate a DNSSEC signed domain'),
-            ('invalidEmail',
-             'The provided email for a registration was invalid'),
-            ('malformed', 'The request message was malformed'),
-            ('rateLimited', 'There were too many requests of a given type'),
-            ('serverInternal', 'The server experienced an internal error'),
-            ('tls', 'The server experienced a TLS error during domain '
-             'verification'),
-            ('unauthorized', 'The client lacks sufficient authorization'),
-            ('unknownHost', 'The server could not resolve a domain name'),
-        )
-    )
-
-    typ = jose.Field('type')
+    typ = jose.Field('type', omitempty=True, default='about:blank')
     title = jose.Field('title', omitempty=True)
-    detail = jose.Field('detail')
+    detail = jose.Field('detail', omitempty=True)
+
+    @classmethod
+    def with_code(cls, code, **kwargs):
+        """Create an Error instance with an ACME Error code.
+
+        :unicode code: An ACME error code, like 'dnssec'.
+        :kwargs: kwargs to pass to Error.
+
+        """
+        if code not in ERROR_CODES:
+            raise ValueError("The supplied code: %s is not a known ACME error"
+                             " code" % code)
+        typ = ERROR_PREFIX + code
+        return cls(typ=typ, **kwargs)
 
     @property
     def description(self):
@@ -49,7 +75,21 @@ class Error(jose.JSONObjectWithFields, errors.Error):
         :rtype: unicode
 
         """
-        return self.ERROR_TYPE_DESCRIPTIONS.get(self.typ)
+        return ERROR_TYPE_DESCRIPTIONS.get(self.typ)
+
+    @property
+    def code(self):
+        """ACME error code.
+
+        Basically self.typ without the ERROR_PREFIX.
+
+        :returns: error code if standard ACME code or ``None``.
+        :rtype: unicode
+
+        """
+        code = str(self.typ).split(':')[-1]
+        if code in ERROR_CODES:
+            return code
 
     def __str__(self):
         return ' :: '.join(
@@ -123,6 +163,12 @@ class Directory(jose.JSONDeSerializable):
 
     _REGISTERED_TYPES = {}
 
+    class Meta(jose.JSONObjectWithFields):
+        """Directory Meta."""
+        terms_of_service = jose.Field('terms-of-service', omitempty=True)
+        website = jose.Field('website', omitempty=True)
+        caa_identities = jose.Field('caa-identities', omitempty=True)
+
     @classmethod
     def _canon_key(cls, key):
         return getattr(key, 'resource_type', key)
@@ -137,11 +183,6 @@ class Directory(jose.JSONDeSerializable):
 
     def __init__(self, jobj):
         canon_jobj = util.map_keys(jobj, self._canon_key)
-        if not set(canon_jobj).issubset(self._REGISTERED_TYPES):
-            # TODO: acme-spec is not clear about this: 'It is a JSON
-            # dictionary, whose keys are the "resource" values listed
-            # in {{https-requests}}'z
-            raise ValueError('Wrong directory fields')
         # TODO: check that everything is an absolute URL; acme-spec is
         # not clear on that
         self._jobj = canon_jobj
@@ -163,10 +204,8 @@ class Directory(jose.JSONDeSerializable):
 
     @classmethod
     def from_json(cls, jobj):
-        try:
-            return cls(jobj)
-        except ValueError as error:
-            raise jose.DeserializationError(str(error))
+        jobj['meta'] = cls.Meta.from_json(jobj.pop('meta', {}))
+        return cls(jobj)
 
 
 class Resource(jose.JSONObjectWithFields):
@@ -211,6 +250,7 @@ class Registration(ResourceBody):
     agreement = jose.Field('agreement', omitempty=True)
     authorizations = jose.Field('authorizations', omitempty=True)
     certificates = jose.Field('certificates', omitempty=True)
+    status = jose.Field('status', omitempty=True)
 
     class Authorizations(jose.JSONObjectWithFields):
         """Authorizations granted to Account in the process of registration.
@@ -430,3 +470,4 @@ class Revocation(jose.JSONObjectWithFields):
     resource = fields.Resource(resource_type)
     certificate = jose.Field(
         'certificate', decoder=jose.decode_cert, encoder=jose.encode_cert)
+    reason = jose.Field('reason')

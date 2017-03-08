@@ -1,61 +1,59 @@
-.. notice for github users
+.. This file contains a series of comments that are used to include sections of this README in other files. Do not modify these comments unless you know what you are doing. tag:intro-begin
 
-Disclaimer
-==========
+Certbot is part of EFF’s effort to encrypt the entire Internet. Secure communication over the Web relies on HTTPS, which requires the use of a digital certificate that lets browsers verify the identify of web servers (e.g., is that really google.com?). Web servers obtain their certificates from trusted third parties called certificate authorities (CAs). Certbot is an easy-to-use client that fetches a certificate from Let’s Encrypt—an open certificate authority launched by the EFF, Mozilla, and others—and deploys it to a web server.
 
-The Let's Encrypt Client is **BETA SOFTWARE**. It contains plenty of bugs and
-rough edges, and should be tested thoroughly in staging environments before use
-on production systems.
+Anyone who has gone through the trouble of setting up a secure website knows what a hassle getting and maintaining a certificate is. Certbot and Let’s Encrypt can automate away the pain and let you turn on and manage HTTPS with simple commands. Using Certbot and Let's Encrypt is free, so there’s no need to arrange payment.
 
-For more information regarding the status of the project, please see
-https://letsencrypt.org. Be sure to checkout the
-`Frequently Asked Questions (FAQ) <https://community.letsencrypt.org/t/frequently-asked-questions-faq/26#topic-title>`_.
+How you use Certbot depends on the configuration of your web server. The best way to get started is to use our `interactive guide <https://certbot.eff.org>`_. It generates instructions based on your configuration settings. In most cases, you’ll need `root or administrator access <https://certbot.eff.org/faq/#does-certbot-require-root-privileges>`_ to your web server to run Certbot.
 
-About the Let's Encrypt Client
-==============================
+If you’re using a hosted service and don’t have direct access to your web server, you might not be able to use Certbot. Check with your hosting provider for documentation about uploading certificates or using certificates issues by Let’s Encrypt.
 
-The Let's Encrypt Client is a fully-featured, extensible client for the Let's
+Certbot is a fully-featured, extensible client for the Let's
 Encrypt CA (or any other CA that speaks the `ACME
 <https://github.com/ietf-wg-acme/acme/blob/master/draft-ietf-acme-acme.md>`_
 protocol) that can automate the tasks of obtaining certificates and
-configuring webservers to use them.
+configuring webservers to use them. This client runs on Unix-based operating
+systems.
+
+Until May 2016, Certbot was named simply ``letsencrypt`` or ``letsencrypt-auto``,
+depending on install method. Instructions on the Internet, and some pieces of the
+software, may still refer to this older name.
+
+Contributing
+------------
+
+If you'd like to contribute to this project please read `Developer Guide
+<https://certbot.eff.org/docs/contributing.html>`_.
+
+.. _installation:
 
 Installation
 ------------
 
-If ``letsencrypt`` is packaged for your OS, you can install it from there, and
-run it by typing ``letsencrypt``.  Because not all operating systems have
-packages yet, we provide a temporary solution via the ``letsencrypt-auto``
-wrapper script, which obtains some dependencies from your OS and puts others
-in a python virtual environment::
+The easiest way to install Certbot is by visiting `certbot.eff.org`_, where you can
+find the correct installation instructions for many web server and OS combinations.
+For more information, see `Get Certbot <https://certbot.eff.org/docs/install.html>`_.
 
-  user@webserver:~$ git clone https://github.com/letsencrypt/letsencrypt
-  user@webserver:~$ cd letsencrypt
-  user@webserver:~/letsencrypt$ ./letsencrypt-auto --help
-
-Or for full command line help, type::
-
-  ./letsencrypt-auto --help all
-
-``letsencrypt-auto`` updates to the latest client release automatically.  And
-since ``letsencrypt-auto`` is a wrapper to ``letsencrypt``, it accepts exactly
-the same command line flags and arguments.  More details about this script and
-other installation methods can be found `in the User Guide
-<https://letsencrypt.readthedocs.org/en/latest/using.html#installation>`_.
+.. _certbot.eff.org: https://certbot.eff.org/
 
 How to run the client
 ---------------------
 
-In many cases, you can just run ``letsencrypt-auto`` or ``letsencrypt``, and the
+In many cases, you can just run ``certbot-auto`` or ``certbot``, and the
 client will guide you through the process of obtaining and installing certs
 interactively.
 
+For full command line help, you can type::
+
+  ./certbot-auto --help all
+
+
 You can also tell it exactly what you want it to do from the command line.
-For instance, if you want to obtain a cert for ``thing.com``,
-``www.thing.com``, and ``otherthing.net``, using the Apache plugin to both
+For instance, if you want to obtain a cert for ``example.com``,
+``www.example.com``, and ``other.example.net``, using the Apache plugin to both
 obtain and install the certs, you could do this::
 
-  ./letsencrypt-auto --apache -d thing.com -d www.thing.com -d otherthing.net
+  ./certbot-auto --apache -d example.com -d www.example.com -d other.example.net
 
 (The first time you run the command, it will make an account, and ask for an
 email and agreement to the Let's Encrypt Subscriber Agreement; you can
@@ -64,7 +62,7 @@ automate those with ``--email`` and ``--agree-tos``)
 If you want to use a webserver that doesn't have full plugin support yet, you
 can still use "standalone" or "webroot" plugins to obtain a certificate::
 
-  ./letsencrypt-auto certonly --standalone --email admin@thing.com -d thing.com -d www.thing.com -d otherthing.net
+  ./certbot-auto certonly --standalone --email admin@example.com -d example.com -d www.example.com -d other.example.net
 
 
 Understanding the client in more depth
@@ -72,37 +70,50 @@ Understanding the client in more depth
 
 To understand what the client is doing in detail, it's important to
 understand the way it uses plugins.  Please see the `explanation of
-plugins <https://letsencrypt.readthedocs.org/en/latest/using.html#plugins>`_ in
+plugins <https://certbot.eff.org/docs/using.html#plugins>`_ in
 the User Guide.
 
 Links
 =====
 
-Documentation: https://letsencrypt.readthedocs.org
+.. Do not modify this comment unless you know what you're doing. tag:links-begin
 
-Software project: https://github.com/letsencrypt/letsencrypt
+Documentation: https://certbot.eff.org/docs
 
-Notes for developers: https://letsencrypt.readthedocs.org/en/latest/contributing.html
+Software project: https://github.com/certbot/certbot
 
-Main Website: https://letsencrypt.org/
+Notes for developers: https://certbot.eff.org/docs/contributing.html
+
+Main Website: https://certbot.eff.org
+
+Let's Encrypt Website: https://letsencrypt.org
 
 IRC Channel: #letsencrypt on `Freenode`_
 
 Community: https://community.letsencrypt.org
+
+ACME spec: http://ietf-wg-acme.github.io/acme/
+
+ACME working area in github: https://github.com/ietf-wg-acme/acme
+
 
 Mailing list: `client-dev`_ (to subscribe without a Google account, send an
 email to client-dev+subscribe@letsencrypt.org)
 
 |build-status| |coverage| |docs| |container|
 
+.. _Freenode: https://webchat.freenode.net?channels=%23letsencrypt
 
+.. _OFTC: https://webchat.oftc.net?channels=%23certbot
 
-.. |build-status| image:: https://travis-ci.org/letsencrypt/letsencrypt.svg?branch=master
-   :target: https://travis-ci.org/letsencrypt/letsencrypt
+.. _client-dev: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev
+
+.. |build-status| image:: https://travis-ci.org/certbot/certbot.svg?branch=master
+   :target: https://travis-ci.org/certbot/certbot
    :alt: Travis CI status
 
-.. |coverage| image:: https://coveralls.io/repos/letsencrypt/letsencrypt/badge.svg?branch=master
-   :target: https://coveralls.io/r/letsencrypt/letsencrypt
+.. |coverage| image:: https://coveralls.io/repos/certbot/certbot/badge.svg?branch=master
+   :target: https://coveralls.io/r/certbot/certbot
    :alt: Coverage status
 
 .. |docs| image:: https://readthedocs.org/projects/letsencrypt/badge/
@@ -113,43 +124,43 @@ email to client-dev+subscribe@letsencrypt.org)
    :target: https://quay.io/repository/letsencrypt/letsencrypt
    :alt: Docker Repository on Quay.io
 
-.. _`installation instructions`:
-   https://letsencrypt.readthedocs.org/en/latest/using.html
-
-.. _watch demo video: https://www.youtube.com/watch?v=Gas_sSB-5SU
+.. Do not modify this comment unless you know what you're doing. tag:links-end
 
 System Requirements
 ===================
 
 The Let's Encrypt Client presently only runs on Unix-ish OSes that include
-Python 2.6 or 2.7; Python 3.x support will be added after the Public Beta
-launch. The client requires root access in order to write to
-``/etc/letsencrypt``, ``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to
-bind to ports 80 and 443 (if you use the ``standalone`` plugin) and to read and
-modify webserver configurations (if you use the ``apache`` or ``nginx``
-plugins).  If none of these apply to you, it is theoretically possible to run
-without root privileges, but for most users who want to avoid running an ACME
-client as root, either `letsencrypt-nosudo
-<https://github.com/diafygi/letsencrypt-nosudo>`_ or `simp_le
-<https://github.com/kuba/simp_le>`_ are more appropriate choices.
+Python 2.6 or 2.7; Python 3.x support will hopefully be added in the future. The
+client requires root access in order to write to ``/etc/letsencrypt``,
+``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to bind to ports 80 and 443
+(if you use the ``standalone`` plugin) and to read and modify webserver
+configurations (if you use the ``apache`` or ``nginx`` plugins).  If none of
+these apply to you, it is theoretically possible to run without root privileges,
+but for most users who want to avoid running an ACME client as root, either
+`letsencrypt-nosudo <https://github.com/diafygi/letsencrypt-nosudo>`_ or
+`simp_le <https://github.com/kuba/simp_le>`_ are more appropriate choices.
 
 The Apache plugin currently requires a Debian-based OS with augeas version
 1.0; this includes Ubuntu 12.04+ and Debian 7+.
 
+.. Do not modify this comment unless you know what you're doing. tag:intro-end
+
+.. Do not modify this comment unless you know what you're doing. tag:features-begin
 
 Current Features
-================
+=====================
 
 * Supports multiple web servers:
 
-  - apache/2.x (working on Debian 8+ and Ubuntu 12.04+)
-  - standalone (runs its own simple webserver to prove you control a domain)
+  - apache/2.x (beta support for auto-configuration)
+  - nginx/0.8.48+ (alpha support for auto-configuration)
   - webroot (adds files to webroot directories in order to prove control of
     domains and obtain certs)
-  - nginx/0.8.48+ (highly experimental, not included in letsencrypt-auto)
+  - standalone (runs its own simple webserver to prove you control a domain)
+  - other server software via `third party plugins <https://certbot.eff.org/docs/using.html#third-party-plugins>`_
 
 * The private key is generated locally on your system.
-* Can talk to the Let's Encrypt  CA or optionally to other ACME
+* Can talk to the Let's Encrypt CA or optionally to other ACME
   compliant services.
 * Can get domain-validated (DV) certificates.
 * Can revoke certificates.
@@ -162,6 +173,6 @@ Current Features
   command line.
 * Free and Open Source Software, made with Python.
 
+.. Do not modify this comment unless you know what you're doing. tag:features-end
 
-.. _Freenode: https://webchat.freenode.net?channels=%23letsencrypt
-.. _client-dev: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev
+For extensive documentation on using and contributing to Certbot, go to https://certbot.eff.org/docs. If you would like to contribute to the project or run the latest code from git, you should read our `developer guide <https://certbot.eff.org/docs/contributing.html>`_.

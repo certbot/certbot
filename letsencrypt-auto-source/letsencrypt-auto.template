@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Download and run the latest release version of the Let's Encrypt client.
+# Download and run the latest release version of the Certbot client.
 #
 # NOTE: THIS SCRIPT IS AUTO-GENERATED AND SELF-UPDATING
 #
@@ -15,64 +15,149 @@ set -e  # Work even if somebody does "sh thisscript.sh".
 
 # Note: you can set XDG_DATA_HOME or VENV_PATH before running this script,
 # if you want to change where the virtual environment will be installed
-XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
+if [ -z "$XDG_DATA_HOME" ]; then
+  XDG_DATA_HOME=~/.local/share
+fi
 VENV_NAME="letsencrypt"
-VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
-VENV_BIN=${VENV_PATH}/bin
+if [ -z "$VENV_PATH" ]; then
+  VENV_PATH="$XDG_DATA_HOME/$VENV_NAME"
+fi
+VENV_BIN="$VENV_PATH/bin"
 LE_AUTO_VERSION="{{ LE_AUTO_VERSION }}"
+BASENAME=$(basename $0)
+USAGE="Usage: $BASENAME [OPTIONS]
+A self-updating wrapper script for the Certbot ACME client. When run, updates
+to both this script and certbot will be downloaded and installed. After
+ensuring you have the latest versions installed, certbot will be invoked with
+all arguments you have provided.
 
-# This script takes the same arguments as the main letsencrypt program, but it
-# additionally responds to --verbose (more output) and --debug (allow support
-# for experimental platforms)
+Help for certbot itself cannot be provided until it is installed.
+
+  --debug                                   attempt experimental installation
+  -h, --help                                print this help
+  -n, --non-interactive, --noninteractive   run without asking for user input
+  --no-self-upgrade                         do not download updates
+  --os-packages-only                        install OS dependencies and exit
+  -v, --verbose                             provide more output
+  -q, --quiet                               provide only update/error output;
+                                            implies --non-interactive
+
+All arguments are accepted and forwarded to the Certbot client when run."
+
 for arg in "$@" ; do
-  # This first clause is redundant with the third, but hedging on portability
-  if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- "-v+$" ; then
-    VERBOSE=1
-  elif [ "$arg" = "--no-self-upgrade" ] ; then
-    # Do not upgrade this script (also prevents client upgrades, because each
-    # copy of the script pins a hash of the python client)
-    NO_SELF_UPGRADE=1
-  elif [ "$arg" = "--os-packages-only" ] ; then
-    OS_PACKAGES_ONLY=1
-  elif [ "$arg" = "--debug" ]; then
-    DEBUG=1
-  fi
+  case "$arg" in
+    --debug)
+      DEBUG=1;;
+    --os-packages-only)
+      OS_PACKAGES_ONLY=1;;
+    --no-self-upgrade)
+      # Do not upgrade this script (also prevents client upgrades, because each
+      # copy of the script pins a hash of the python client)
+      NO_SELF_UPGRADE=1;;
+    --help)
+      HELP=1;;
+    --noninteractive|--non-interactive)
+      ASSUME_YES=1;;
+    --quiet)
+      QUIET=1;;
+    --verbose)
+      VERBOSE=1;;
+    -[!-]*)
+      OPTIND=1
+      while getopts ":hnvq" short_arg $arg; do
+        case "$short_arg" in
+          h)
+            HELP=1;;
+          n)
+            ASSUME_YES=1;;
+          q)
+            QUIET=1;;
+          v)
+            VERBOSE=1;;
+        esac
+      done;;
+  esac
 done
 
-# letsencrypt-auto needs root access to bootstrap OS dependencies, and
-# letsencrypt itself needs root access for almost all modes of operation
+if [ $BASENAME = "letsencrypt-auto" ]; then
+  # letsencrypt-auto does not respect --help or --yes for backwards compatibility
+  ASSUME_YES=1
+  HELP=0
+fi
+
+# Set ASSUME_YES to 1 if QUIET (i.e. --quiet implies --non-interactive)
+if [ "$QUIET" = 1 ]; then
+  ASSUME_YES=1
+fi
+
+# Support for busybox and others where there is no "command",
+# but "which" instead
+if command -v command > /dev/null 2>&1 ; then
+  export EXISTS="command -v"
+elif which which > /dev/null 2>&1 ; then
+  export EXISTS="which"
+else
+  echo "Cannot find command nor which... please install one!"
+  exit 1
+fi
+
+# certbot-auto needs root access to bootstrap OS dependencies, and
+# certbot itself needs root access for almost all modes of operation
 # The "normal" case is that sudo is used for the steps that need root, but
 # this script *can* be run as root (not recommended), or fall back to using
-# `su`
-if test "`id -u`" -ne "0" ; then
-  if command -v sudo 1>/dev/null 2>&1; then
-    SUDO=sudo
-  else
-    echo \"sudo\" is not available, will use \"su\" for installation steps...
-    # Because the parameters in `su -c` has to be a string,
-    # we need properly escape it
-    su_sudo() {
-      args=""
-      # This `while` loop iterates over all parameters given to this function.
-      # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
-      # will be wrapped in a pair of `'`, then appended to `$args` string
-      # For example, `echo "It's only 1\$\!"` will be escaped to:
-      #   'echo' 'It'"'"'s only 1$!'
-      #     │       │└┼┘│
-      #     │       │ │ └── `'s only 1$!'` the literal string
-      #     │       │ └── `\"'\"` is a single quote (as a string)
-      #     │       └── `'It'`, to be concatenated with the strings following it
-      #     └── `echo` wrapped in a pair of `'`, it's totally fine for the shell command itself
-      while [ $# -ne 0 ]; do
-        args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
-        shift
-      done
-      su root -c "$args"
-    }
-    SUDO=su_sudo
-  fi
+# `su`. Auto-detection can be overridden by explicitly setting the
+# environment variable LE_AUTO_SUDO to 'sudo', 'sudo_su' or '' as used below.
+
+# Because the parameters in `su -c` has to be a string,
+# we need to properly escape it.
+su_sudo() {
+  args=""
+  # This `while` loop iterates over all parameters given to this function.
+  # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
+  # will be wrapped in a pair of `'`, then appended to `$args` string
+  # For example, `echo "It's only 1\$\!"` will be escaped to:
+  #   'echo' 'It'"'"'s only 1$!'
+  #     │       │└┼┘│
+  #     │       │ │ └── `'s only 1$!'` the literal string
+  #     │       │ └── `\"'\"` is a single quote (as a string)
+  #     │       └── `'It'`, to be concatenated with the strings following it
+  #     └── `echo` wrapped in a pair of `'`, it's totally fine for the shell command itself
+  while [ $# -ne 0 ]; do
+    args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
+    shift
+  done
+  su root -c "$args"
+}
+
+SUDO_ENV=""
+export CERTBOT_AUTO="$0"
+if [ -n "${LE_AUTO_SUDO+x}" ]; then
+  case "$LE_AUTO_SUDO" in
+    su_sudo|su)
+      SUDO=su_sudo
+      ;;
+    sudo)
+      SUDO=sudo
+      SUDO_ENV="CERTBOT_AUTO=$0"
+      ;;
+    '') ;; # Nothing to do for plain root method.
+    *)
+      echo "Error: unknown root authorization mechanism '$LE_AUTO_SUDO'."
+      exit 1
+  esac
+  echo "Using preset root authorization mechanism '$LE_AUTO_SUDO'."
 else
-  SUDO=
+  if test "`id -u`" -ne "0" ; then
+    if $EXISTS sudo 1>/dev/null 2>&1; then
+      SUDO=sudo
+      SUDO_ENV="CERTBOT_AUTO=$0"
+    else
+      echo \"sudo\" is not available, will use \"su\" for installation steps...
+      SUDO=su_sudo
+    fi
+  else
+    SUDO=
+  fi
 fi
 
 ExperimentalBootstrap() {
@@ -83,7 +168,7 @@ ExperimentalBootstrap() {
       $2
     fi
   else
-    echo "WARNING: $1 support is very experimental at present..."
+    echo "FATAL: $1 support is very experimental at present..."
     echo "if you would like to work on improving it, please ensure you have backups"
     echo "and then run this script again with the --debug flag!"
     exit 1
@@ -91,23 +176,18 @@ ExperimentalBootstrap() {
 }
 
 DeterminePythonVersion() {
-  if command -v python2.7 > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python2.7}
-  elif command -v python27 > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python27}
-  elif command -v python2 > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python2}
-  elif command -v python > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python}
-  else
-    echo "Cannot find any Pythons... please install one!"
+  for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
+    # Break (while keeping the LE_PYTHON value) if found.
+    $EXISTS "$LE_PYTHON" > /dev/null && break
+  done
+  if [ "$?" != "0" ]; then
+    echo "Cannot find any Pythons; please install one!"
     exit 1
   fi
+  export LE_PYTHON
 
-  PYVER=`"$LE_PYTHON" --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
-  if [ $PYVER -eq 26 ]; then
-    ExperimentalBootstrap "Python 2.6"
-  elif [ $PYVER -lt 26 ]; then
+  PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
+  if [ "$PYVER" -lt 26 ]; then
     echo "You have an ancient version of Python entombed in your operating system..."
     echo "This isn't going to work; you'll need at least version 2.6."
     exit 1
@@ -121,16 +201,21 @@ DeterminePythonVersion() {
 {{ bootstrappers/gentoo_common.sh }}
 {{ bootstrappers/free_bsd.sh }}
 {{ bootstrappers/mac.sh }}
+{{ bootstrappers/smartos.sh }}
+{{ bootstrappers/mageia_common.sh }}
 
 # Install required OS packages:
 Bootstrap() {
   if [ -f /etc/debian_version ]; then
     echo "Bootstrapping dependencies for Debian-based OSes..."
     BootstrapDebCommon
+  elif [ -f /etc/mageia-release ] ; then
+    # Mageia has both /etc/mageia-release and /etc/redhat-release
+    ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
   elif [ -f /etc/redhat-release ]; then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
     BootstrapRpmCommon
-  elif `grep -q openSUSE /etc/os-release` ; then
+  elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
     echo "Bootstrapping dependencies for openSUSE-based OSes..."
     BootstrapSuseCommon
   elif [ -f /etc/arch-release ]; then
@@ -139,7 +224,7 @@ Bootstrap() {
       BootstrapArchCommon
     else
       echo "Please use pacman to install letsencrypt packages:"
-      echo "# pacman -S letsencrypt letsencrypt-apache"
+      echo "# pacman -S certbot certbot-apache"
       echo
       echo "If you would like to use the virtualenv way, please run the script again with the"
       echo "--debug flag."
@@ -152,29 +237,40 @@ Bootstrap() {
   elif uname | grep -iq FreeBSD ; then
     ExperimentalBootstrap "FreeBSD" BootstrapFreeBsd
   elif uname | grep -iq Darwin ; then
-    ExperimentalBootstrap "Mac OS X" BootstrapMac
-  elif grep -iq "Amazon Linux" /etc/issue ; then
+    ExperimentalBootstrap "macOS" BootstrapMac
+  elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
     ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
+  elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
+    ExperimentalBootstrap "Joyent SmartOS Zone" BootstrapSmartOS
   else
-    echo "Sorry, I don't know how to bootstrap Let's Encrypt on your operating system!"
+    echo "Sorry, I don't know how to bootstrap Certbot on your operating system!"
     echo
-    echo "You will need to bootstrap, configure virtualenv, and run a peep install manually."
+    echo "You will need to bootstrap, configure virtualenv, and run pip install manually."
     echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
     echo "for more info."
+    exit 1
   fi
 }
 
 TempDir() {
-  mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || OS X
+  mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || macOS
 }
 
 
 
-if [ "$NO_SELF_UPGRADE" = 1 ]; then
+if [ "$1" = "--le-auto-phase2" ]; then
   # Phase 2: Create venv, install LE, and run.
 
+  shift 1  # the --le-auto-phase2 arg
   if [ -f "$VENV_BIN/letsencrypt" ]; then
-    INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | cut -d " " -f 2)
+    # --version output ran through grep due to python-cryptography DeprecationWarnings
+    # grep for both certbot and letsencrypt until certbot and shim packages have been released
+    INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | grep "^certbot\|^letsencrypt" | cut -d " " -f 2)
+    if [ -z "$INSTALLED_VERSION" ]; then
+        echo "Error: couldn't get currently installed version for $VENV_BIN/letsencrypt: " 1>&2
+        "$VENV_BIN/letsencrypt" --version
+        exit 1
+    fi
   else
     INSTALLED_VERSION="none"
   fi
@@ -190,40 +286,87 @@ if [ "$NO_SELF_UPGRADE" = 1 ]; then
 
     echo "Installing Python packages..."
     TEMP_DIR=$(TempDir)
+    trap 'rm -rf "$TEMP_DIR"' EXIT
     # There is no $ interpolation due to quotes on starting heredoc delimiter.
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/letsencrypt-auto-requirements.txt"
 {{ letsencrypt-auto-requirements.txt }}
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
-    cat << "UNLIKELY_EOF" > "$TEMP_DIR/peep.py"
-{{ peep.py }}
+    cat << "UNLIKELY_EOF" > "$TEMP_DIR/pipstrap.py"
+{{ pipstrap.py }}
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
+    # Set PATH so pipstrap upgrades the right (v)env:
+    PATH="$VENV_BIN:$PATH" "$VENV_BIN/python" "$TEMP_DIR/pipstrap.py"
     set +e
-    PEEP_OUT=`"$VENV_BIN/python" "$TEMP_DIR/peep.py" install -r "$TEMP_DIR/letsencrypt-auto-requirements.txt"`
-    PEEP_STATUS=$?
+    if [ "$VERBOSE" = 1 ]; then
+      "$VENV_BIN/pip" install --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt"
+    else
+      PIP_OUT=`"$VENV_BIN/pip" install --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt" 2>&1`
+    fi
+    PIP_STATUS=$?
     set -e
-    rm -rf "$TEMP_DIR"
-    if [ "$PEEP_STATUS" != 0 ]; then
+    if [ "$PIP_STATUS" != 0 ]; then
       # Report error. (Otherwise, be quiet.)
-      echo "Had a problem while downloading and verifying Python packages:"
-      echo "$PEEP_OUT"
+      echo "Had a problem while installing Python packages."
+      if [ "$VERBOSE" != 1 ]; then
+        echo
+        echo "pip prints the following errors: "
+        echo "====================================================="
+        echo "$PIP_OUT"
+        echo "====================================================="
+        echo
+        echo "Certbot has problem setting up the virtual environment."
+
+        if `echo $PIP_OUT | grep -q Killed` || `echo $PIP_OUT | grep -q "allocate memory"` ; then
+          echo
+          echo "Based on your pip output, the problem can likely be fixed by "
+          echo "increasing the available memory."
+        else
+          echo
+          echo "We were not be able to guess the right solution from your pip "
+          echo "output."
+        fi
+
+        echo
+        echo "Consult https://certbot.eff.org/docs/install.html#problems-with-python-virtual-environment"
+        echo "for possible solutions."
+        echo "You may also find some support resources at https://certbot.eff.org/support/ ."
+      fi
+      rm -rf "$VENV_PATH"
       exit 1
     fi
+    echo "Installation succeeded."
   fi
-  echo "Requesting root privileges to run letsencrypt..."
-  echo "  " $SUDO "$VENV_BIN/letsencrypt" "$@"
-  $SUDO "$VENV_BIN/letsencrypt" "$@"
+  if [ -n "$SUDO" ]; then
+    # SUDO is su wrapper or sudo
+    if [  "$QUIET" != 1 ]; then
+      echo "Requesting root privileges to run certbot..."
+      echo "  $VENV_BIN/letsencrypt" "$@"
+    fi
+  fi
+  if [ -z "$SUDO_ENV" ] ; then
+    # SUDO is su wrapper / noop
+    $SUDO "$VENV_BIN/letsencrypt" "$@"
+  else
+    # sudo
+    $SUDO "$SUDO_ENV" "$VENV_BIN/letsencrypt" "$@"
+  fi
+
 else
-  # Phase 1: Upgrade letsencrypt-auto if neceesary, then self-invoke.
+  # Phase 1: Upgrade certbot-auto if necessary, then self-invoke.
   #
   # Each phase checks the version of only the thing it is responsible for
   # upgrading. Phase 1 checks the version of the latest release of
-  # letsencrypt-auto (which is always the same as that of the letsencrypt
-  # package). Phase 2 checks the version of the locally installed letsencrypt.
+  # certbot-auto (which is always the same as that of the certbot
+  # package). Phase 2 checks the version of the locally installed certbot.
 
   if [ ! -f "$VENV_BIN/letsencrypt" ]; then
+    if [ "$HELP" = 1 ]; then
+      echo "$USAGE"
+      exit 0
+    fi
     # If it looks like we've never bootstrapped before, bootstrap:
     Bootstrap
   fi
@@ -232,31 +375,39 @@ else
     exit 0
   fi
 
-  echo "Checking for new version..."
-  TEMP_DIR=$(TempDir)
-  # ---------------------------------------------------------------------------
-  cat << "UNLIKELY_EOF" > "$TEMP_DIR/fetch.py"
+  if [ "$NO_SELF_UPGRADE" != 1 ]; then
+    TEMP_DIR=$(TempDir)
+    trap 'rm -rf "$TEMP_DIR"' EXIT
+    # ---------------------------------------------------------------------------
+    cat << "UNLIKELY_EOF" > "$TEMP_DIR/fetch.py"
 {{ fetch.py }}
 UNLIKELY_EOF
-  # ---------------------------------------------------------------------------
-  DeterminePythonVersion
-  REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version`
-  if [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
-    echo "Upgrading letsencrypt-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
+    # ---------------------------------------------------------------------------
+    DeterminePythonVersion
+    if ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then
+      echo "WARNING: unable to check for updates."
+    elif [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
+      echo "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
 
-    # Now we drop into Python so we don't have to install even more
-    # dependencies (curl, etc.), for better flow control, and for the option of
-    # future Windows compatibility.
-    "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
+      # Now we drop into Python so we don't have to install even more
+      # dependencies (curl, etc.), for better flow control, and for the option of
+      # future Windows compatibility.
+      "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
 
-    # Install new copy of letsencrypt-auto. This preserves permissions and
-    # ownership from the old copy.
-    # TODO: Deal with quotes in pathnames.
-    echo "Replacing letsencrypt-auto..."
-    echo "  " $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$0"
-    $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$0"
-    # TODO: Clean up temp dir safely, even if it has quotes in its path.
-    rm -rf "$TEMP_DIR"
-  fi  # should upgrade
-  "$0" --no-self-upgrade "$@"
+      # Install new copy of certbot-auto.
+      # TODO: Deal with quotes in pathnames.
+      echo "Replacing certbot-auto..."
+      # Clone permissions with cp. chmod and chown don't have a --reference
+      # option on macOS or BSD, and stat -c on Linux is stat -f on macOS and BSD:
+      $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      # Using mv rather than cp leaves the old file descriptor pointing to the
+      # original copy so the shell can continue to read it unmolested. mv across
+      # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
+      # cp is unlikely to fail (esp. under sudo) if the rm doesn't.
+      $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
+    fi  # A newer version is available.
+  fi  # Self-upgrading is allowed.
+
+  "$0" --le-auto-phase2 "$@"
 fi

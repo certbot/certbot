@@ -1,14 +1,18 @@
-production:
-  build: .
-  ports:
-    - "443:443"
+version: '2'
+services:
+  production:
+    build: .
+    ports:
+      - "443:443"
 
-# For development, mount git root to /opt/letsencrypt/src in order to
+# For development, mount git root to /opt/certbot/src in order to
 # make the dev workflow more vagrant-like.
-development:
-  build: .
-  ports:
-    - "443:443"
-  volumes:
-    - .:/opt/letsencrypt/src
-    - /opt/letsencrypt/venv
+  development:
+    build:
+      context: .
+      dockerfile: Dockerfile-dev
+    ports:
+      - "443:443"
+    volumes:
+      - .:/opt/certbot/src
+      - /opt/certbot/venv

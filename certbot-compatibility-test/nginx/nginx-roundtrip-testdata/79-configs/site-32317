@@ -1,0 +1,32 @@
+upstream django_server_random21989.example.org {
+    server unix:/srv/http/random28136/acceptance/website.sock;
+}
+
+server {
+    listen 80;
+    server_name random21989.example.org;
+
+    location ~ /static/(.*)$ {
+        alias /srv/http/random28136/acceptance/website/static/$1;
+        expires 7d;
+    } 
+
+    location / {
+        proxy_pass http://django_server_random21989.example.org;
+        include          /etc/nginx/proxy_params;
+
+        satisfy any;
+        auth_basic           'acceptance for random28136';
+        auth_basic_user_file /srv/http/random28136/acceptance/htpasswords;
+        include              /etc/nginx/allow_ytec_ips_params;
+        deny all;
+    }
+
+    access_log /var/log/nginx/random28136/acceptance/access.log combined_plus;
+    error_log  /var/log/nginx/random28136/acceptance/error.log;
+}
+
+server {
+    server_name www.random21989.example.org;
+    rewrite ^ http://random21989.example.org$request_uri permanent;
+}

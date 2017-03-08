@@ -17,16 +17,24 @@ class ErrorTest(unittest.TestCase):
     """Tests for acme.messages.Error."""
 
     def setUp(self):
-        from acme.messages import Error
+        from acme.messages import Error, ERROR_PREFIX
         self.error = Error(
-            detail='foo', typ='urn:acme:error:malformed', title='title')
+            detail='foo', typ=ERROR_PREFIX + 'malformed', title='title')
         self.jobj = {
             'detail': 'foo',
             'title': 'some title',
-            'type': 'urn:acme:error:malformed',
+            'type': ERROR_PREFIX + 'malformed',
         }
         self.error_custom = Error(typ='custom', detail='bar')
-        self.jobj_cusom = {'type': 'custom', 'detail': 'bar'}
+        self.jobj_custom = {'type': 'custom', 'detail': 'bar'}
+
+    def test_default_typ(self):
+        from acme.messages import Error
+        self.assertEqual(Error().typ, 'about:blank')
+
+    def test_from_json_empty(self):
+        from acme.messages import Error
+        self.assertEqual(Error(), Error.from_json('{}'))
 
     def test_from_json_hashable(self):
         from acme.messages import Error
@@ -39,9 +47,26 @@ class ErrorTest(unittest.TestCase):
 
     def test_str(self):
         self.assertEqual(
-            'urn:acme:error:malformed :: The request message was '
+            'urn:ietf:params:acme:error:malformed :: The request message was '
             'malformed :: foo :: title', str(self.error))
         self.assertEqual('custom :: bar', str(self.error_custom))
+
+    def test_code(self):
+        from acme.messages import Error
+        self.assertEqual('malformed', self.error.code)
+        self.assertEqual(None, self.error_custom.code)
+        self.assertEqual(None, Error().code)
+
+    def test_is_acme_error(self):
+        from acme.messages import is_acme_error
+        self.assertTrue(is_acme_error(self.error))
+        self.assertTrue(is_acme_error(str(self.error)))
+        self.assertFalse(is_acme_error(self.error_custom))
+
+    def test_with_code(self):
+        from acme.messages import Error, is_acme_error
+        self.assertTrue(is_acme_error(Error.with_code('badCSR')))
+        self.assertRaises(ValueError, Error.with_code, 'not an ACME error code')
 
 
 class ConstantTest(unittest.TestCase):
@@ -90,11 +115,16 @@ class DirectoryTest(unittest.TestCase):
         self.dir = Directory({
             'new-reg': 'reg',
             mock.MagicMock(resource_type='new-cert'): 'cert',
+            'meta': Directory.Meta(
+                terms_of_service='https://example.com/acme/terms',
+                website='https://www.example.com/',
+                caa_identities=['example.com'],
+            ),
         })
 
-    def test_init_wrong_key_value_error(self):
+    def test_init_wrong_key_value_success(self):  # pylint: disable=no-self-use
         from acme.messages import Directory
-        self.assertRaises(ValueError, Directory, {'foo': 'bar'})
+        Directory({'foo': 'bar'})
 
     def test_getitem(self):
         self.assertEqual('reg', self.dir['new-reg'])
@@ -111,14 +141,20 @@ class DirectoryTest(unittest.TestCase):
     def test_getattr_fails_with_attribute_error(self):
         self.assertRaises(AttributeError, self.dir.__getattr__, 'foo')
 
-    def test_to_partial_json(self):
-        self.assertEqual(
-            self.dir.to_partial_json(), {'new-reg': 'reg', 'new-cert': 'cert'})
+    def test_to_json(self):
+        self.assertEqual(self.dir.to_json(), {
+            'new-reg': 'reg',
+            'new-cert': 'cert',
+            'meta': {
+                'terms-of-service': 'https://example.com/acme/terms',
+                'website': 'https://www.example.com/',
+                'caa-identities': ['example.com'],
+            },
+        })
 
-    def test_from_json_deserialization_error_on_wrong_key(self):
+    def test_from_json_deserialization_unknown_key_success(self):  # pylint: disable=no-self-use
         from acme.messages import Directory
-        self.assertRaises(
-            jose.DeserializationError, Directory.from_json, {'foo': 'bar'})
+        Directory.from_json({'foo': 'bar'})
 
 
 class RegistrationTest(unittest.TestCase):
@@ -221,7 +257,7 @@ class ChallengeBodyTest(unittest.TestCase):
         from acme.messages import Error
         from acme.messages import STATUS_INVALID
         self.status = STATUS_INVALID
-        error = Error(typ='urn:acme:error:serverInternal',
+        error = Error(typ='urn:ietf:params:acme:error:serverInternal',
                       detail='Unable to communicate with DNS server')
         self.challb = ChallengeBody(
             uri='http://challb', chall=self.chall, status=self.status,
@@ -237,7 +273,7 @@ class ChallengeBodyTest(unittest.TestCase):
         self.jobj_from = self.jobj_to.copy()
         self.jobj_from['status'] = 'invalid'
         self.jobj_from['error'] = {
-            'type': 'urn:acme:error:serverInternal',
+            'type': 'urn:ietf:params:acme:error:serverInternal',
             'detail': 'Unable to communicate with DNS server',
         }
 
@@ -271,10 +307,8 @@ class AuthorizationTest(unittest.TestCase):
             ChallengeBody(uri='http://challb2', status=STATUS_VALID,
                           chall=challenges.DNS(
                               token=b'DGyRejmCefe7v4NfDGDKfA')),
-            ChallengeBody(uri='http://challb3', status=STATUS_VALID,
-                          chall=challenges.RecoveryContact()),
         )
-        combinations = ((0, 2), (1, 2))
+        combinations = ((0,), (1,))
 
         from acme.messages import Authorization
         from acme.messages import Identifier
@@ -300,8 +334,8 @@ class AuthorizationTest(unittest.TestCase):
 
     def test_resolved_combinations(self):
         self.assertEqual(self.authz.resolved_combinations, (
-            (self.challbs[0], self.challbs[2]),
-            (self.challbs[1], self.challbs[2]),
+            (self.challbs[0],),
+            (self.challbs[1],),
         ))
 
 

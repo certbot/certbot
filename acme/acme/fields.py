@@ -24,7 +24,7 @@ class Fixed(jose.Field):
 
     def encode(self, value):
         if value != self.value:
-            logger.warn(
+            logger.warning(
                 'Overriding fixed field (%s) with %r', self.json_name, value)
         return value
 

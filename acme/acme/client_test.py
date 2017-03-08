@@ -38,6 +38,8 @@ class ClientTest(unittest.TestCase):
                 'https://www.letsencrypt-demo.org/acme/new-reg',
             messages.Revocation:
                 'https://www.letsencrypt-demo.org/acme/revoke-cert',
+            messages.NewAuthorization:
+                'https://www.letsencrypt-demo.org/acme/new-authz',
         })
 
         from acme.client import Client
@@ -79,6 +81,9 @@ class ClientTest(unittest.TestCase):
             uri='https://www.letsencrypt-demo.org/acme/cert/1',
             cert_chain_uri='https://www.letsencrypt-demo.org/ca')
 
+        # Reason code for revocation
+        self.rsn = 1
+
     def test_init_downloads_directory(self):
         uri = 'http://www.letsencrypt-demo.org/directory'
         from acme.client import Client
@@ -100,12 +105,6 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(self.regr, self.client.register(self.new_reg))
         # TODO: test POST call arguments
 
-        # TODO: split here and separate test
-        reg_wrong_key = self.regr.body.update(key=KEY2.public_key())
-        self.response.json.return_value = reg_wrong_key.to_json()
-        self.assertRaises(
-            errors.UnexpectedUpdate, self.client.register, self.new_reg)
-
     def test_register_missing_next(self):
         self.response.status_code = http_client.CREATED
         self.assertRaises(
@@ -122,8 +121,12 @@ class ClientTest(unittest.TestCase):
         # TODO: split here and separate test
         self.response.json.return_value = self.regr.body.update(
             contact=()).to_json()
-        self.assertRaises(
-            errors.UnexpectedUpdate, self.client.update_registration, self.regr)
+
+    def test_deactivate_account(self):
+        self.response.headers['Location'] = self.regr.uri
+        self.response.json.return_value = self.regr.body.to_json()
+        self.assertEqual(self.regr,
+                         self.client.deactivate_registration(self.regr))
 
     def test_query_registration(self):
         self.response.json.return_value = self.regr.body.to_json()
@@ -142,7 +145,7 @@ class ClientTest(unittest.TestCase):
         regr = self.client.update_registration.call_args[0][0]
         self.assertEqual(self.regr.terms_of_service, regr.body.agreement)
 
-    def test_request_challenges(self):
+    def _prepare_response_for_request_challenges(self):
         self.response.status_code = http_client.CREATED
         self.response.headers['Location'] = self.authzr.uri
         self.response.json.return_value = self.authz.to_json()
@@ -150,10 +153,20 @@ class ClientTest(unittest.TestCase):
             'next': {'url': self.authzr.new_cert_uri},
         }
 
-        self.client.request_challenges(self.identifier, self.authzr.uri)
-        # TODO: test POST call arguments
+    def test_request_challenges(self):
+        self._prepare_response_for_request_challenges()
+        self.client.request_challenges(self.identifier)
+        self.net.post.assert_called_once_with(
+            self.directory.new_authz,
+            messages.NewAuthorization(identifier=self.identifier))
 
-        # TODO: split here and separate test
+    def test_request_challenges_custom_uri(self):
+        self._prepare_response_for_request_challenges()
+        self.client.request_challenges(self.identifier, 'URI')
+        self.net.post.assert_called_once_with('URI', mock.ANY)
+
+    def test_request_challenges_unexpected_update(self):
+        self._prepare_response_for_request_challenges()
         self.response.json.return_value = self.authz.update(
             identifier=self.identifier.update(value='foo')).to_json()
         self.assertRaises(
@@ -162,15 +175,20 @@ class ClientTest(unittest.TestCase):
 
     def test_request_challenges_missing_next(self):
         self.response.status_code = http_client.CREATED
-        self.assertRaises(
-            errors.ClientError, self.client.request_challenges,
-            self.identifier, self.regr)
+        self.assertRaises(errors.ClientError, self.client.request_challenges,
+                          self.identifier)
 
     def test_request_domain_challenges(self):
         self.client.request_challenges = mock.MagicMock()
         self.assertEqual(
             self.client.request_challenges(self.identifier),
-            self.client.request_domain_challenges('example.com', self.regr))
+            self.client.request_domain_challenges('example.com'))
+
+    def test_request_domain_challenges_custom_uri(self):
+        self.client.request_challenges = mock.MagicMock()
+        self.assertEqual(
+            self.client.request_challenges(self.identifier, 'URI'),
+            self.client.request_domain_challenges('example.com', 'URI'))
 
     def test_answer_challenge(self):
         self.response.links['up'] = {'url': self.challr.authzr_uri}
@@ -201,6 +219,17 @@ class ClientTest(unittest.TestCase):
         dt_mock.timedelta = datetime.timedelta
 
         self.response.headers['Retry-After'] = 'foooo'
+        self.assertEqual(
+            datetime.datetime(2015, 3, 27, 0, 0, 10),
+            self.client.retry_after(response=self.response, default=10))
+
+    @mock.patch('acme.client.datetime')
+    def test_retry_after_overflow(self, dt_mock):
+        dt_mock.datetime.now.return_value = datetime.datetime(2015, 3, 27)
+        dt_mock.timedelta = datetime.timedelta
+        dt_mock.datetime.side_effect = datetime.datetime
+
+        self.response.headers['Retry-After'] = "Tue, 116 Feb 2016 11:50:00 MST"
         self.assertEqual(
             datetime.datetime(2015, 3, 27, 0, 0, 10),
             self.client.retry_after(response=self.response, default=10))
@@ -349,7 +378,7 @@ class ClientTest(unittest.TestCase):
             errors.PollError, self.client.poll_and_request_issuance,
             csr, authzrs=(invalid_authzr,), mintime=mintime)
 
-        # exceeded max_attemps | TODO: move to a separate test
+        # exceeded max_attempts | TODO: move to a separate test
         self.assertRaises(
             errors.PollError, self.client.poll_and_request_issuance,
             csr, authzrs, mintime=mintime, max_attempts=2)
@@ -405,13 +434,22 @@ class ClientTest(unittest.TestCase):
         self.assertRaises(errors.Error, self.client.fetch_chain, self.certr)
 
     def test_revoke(self):
-        self.client.revoke(self.certr.body)
+        self.client.revoke(self.certr.body, self.rsn)
         self.net.post.assert_called_once_with(
             self.directory[messages.Revocation], mock.ANY, content_type=None)
 
+    def test_revocation_payload(self):
+        obj = messages.Revocation(certificate=self.certr.body, reason=self.rsn)
+        self.assertTrue('reason' in obj.to_partial_json().keys())
+        self.assertEquals(self.rsn, obj.to_partial_json()['reason'])
+
     def test_revoke_bad_status_raises_error(self):
         self.response.status_code = http_client.METHOD_NOT_ALLOWED
-        self.assertRaises(errors.ClientError, self.client.revoke, self.certr)
+        self.assertRaises(
+            errors.ClientError,
+            self.client.revoke,
+            self.certr,
+            self.rsn)
 
 
 class ClientNetworkTest(unittest.TestCase):
@@ -456,9 +494,11 @@ class ClientNetworkTest(unittest.TestCase):
     def test_check_response_not_ok_jobj_no_error(self):
         self.response.ok = False
         self.response.json.return_value = {}
-        # pylint: disable=protected-access
-        self.assertRaises(
-            errors.ClientError, self.net._check_response, self.response)
+        with mock.patch('acme.client.messages.Error.from_json') as from_json:
+            from_json.side_effect = jose.DeserializationError
+            # pylint: disable=protected-access
+            self.assertRaises(
+                errors.ClientError, self.net._check_response, self.response)
 
     def test_check_response_not_ok_jobj_error(self):
         self.response.ok = False
@@ -500,40 +540,84 @@ class ClientNetworkTest(unittest.TestCase):
             self.assertEqual(
                 self.response, self.net._check_response(self.response))
 
-    @mock.patch('acme.client.requests')
-    def test_send_request(self, mock_requests):
-        mock_requests.request.return_value = self.response
+    def test_send_request(self):
+        self.net.session = mock.MagicMock()
+        self.net.session.request.return_value = self.response
         # pylint: disable=protected-access
         self.assertEqual(self.response, self.net._send_request(
-            'HEAD', 'url', 'foo', bar='baz'))
-        mock_requests.request.assert_called_once_with(
-            'HEAD', 'url', 'foo', verify=mock.ANY, bar='baz', headers=mock.ANY)
+            'HEAD', 'http://example.com/', 'foo', bar='baz'))
+        self.net.session.request.assert_called_once_with(
+            'HEAD', 'http://example.com/', 'foo',
+            headers=mock.ANY, verify=mock.ANY, timeout=mock.ANY, bar='baz')
 
-    @mock.patch('acme.client.requests')
-    def test_send_request_verify_ssl(self, mock_requests):
+    @mock.patch('acme.client.logger')
+    def test_send_request_get_der(self, mock_logger):
+        self.net.session = mock.MagicMock()
+        self.net.session.request.return_value = mock.MagicMock(
+            ok=True, status_code=http_client.OK,
+            headers={"Content-Type": "application/pkix-cert"},
+            content=b"hi")
+        # pylint: disable=protected-access
+        self.net._send_request('HEAD', 'http://example.com/', 'foo',
+          timeout=mock.ANY, bar='baz')
+        mock_logger.debug.assert_called_with(
+            'Received response:\nHTTP %d\n%s\n\n%s', 200,
+            'Content-Type: application/pkix-cert', b'aGk=')
+
+    def test_send_request_post(self):
+        self.net.session = mock.MagicMock()
+        self.net.session.request.return_value = self.response
+        # pylint: disable=protected-access
+        self.assertEqual(self.response, self.net._send_request(
+            'POST', 'http://example.com/', 'foo', data='qux', bar='baz'))
+        self.net.session.request.assert_called_once_with(
+            'POST', 'http://example.com/', 'foo',
+            headers=mock.ANY, verify=mock.ANY, timeout=mock.ANY, data='qux', bar='baz')
+
+    def test_send_request_verify_ssl(self):
         # pylint: disable=protected-access
         for verify in True, False:
-            mock_requests.request.reset_mock()
-            mock_requests.request.return_value = self.response
+            self.net.session = mock.MagicMock()
+            self.net.session.request.return_value = self.response
             self.net.verify_ssl = verify
             # pylint: disable=protected-access
             self.assertEqual(
-                self.response, self.net._send_request('GET', 'url'))
-            mock_requests.request.assert_called_once_with(
-                'GET', 'url', verify=verify, headers=mock.ANY)
+                self.response,
+                self.net._send_request('GET', 'http://example.com/'))
+            self.net.session.request.assert_called_once_with(
+                'GET', 'http://example.com/', verify=verify,
+                timeout=mock.ANY, headers=mock.ANY)
 
-    @mock.patch('acme.client.requests')
-    def test_send_request_user_agent(self, mock_requests):
-        mock_requests.request.return_value = self.response
+    def test_send_request_user_agent(self):
+        self.net.session = mock.MagicMock()
         # pylint: disable=protected-access
-        self.net._send_request('GET', 'url', headers={'bar': 'baz'})
-        mock_requests.request.assert_called_once_with(
-            'GET', 'url', verify=mock.ANY,
+        self.net._send_request('GET', 'http://example.com/',
+                               headers={'bar': 'baz'})
+        self.net.session.request.assert_called_once_with(
+            'GET', 'http://example.com/', verify=mock.ANY,
+            timeout=mock.ANY,
             headers={'User-Agent': 'acme-python-test', 'bar': 'baz'})
 
-        self.net._send_request('GET', 'url', headers={'User-Agent': 'foo2'})
-        mock_requests.request.assert_called_with(
-            'GET', 'url', verify=mock.ANY, headers={'User-Agent': 'foo2'})
+        self.net._send_request('GET', 'http://example.com/',
+                               headers={'User-Agent': 'foo2'})
+        self.net.session.request.assert_called_with(
+            'GET', 'http://example.com/',
+            verify=mock.ANY, timeout=mock.ANY, headers={'User-Agent': 'foo2'})
+
+    def test_send_request_timeout(self):
+        self.net.session = mock.MagicMock()
+        # pylint: disable=protected-access
+        self.net._send_request('GET', 'http://example.com/',
+                               headers={'bar': 'baz'})
+        self.net.session.request.assert_called_once_with(
+            mock.ANY, mock.ANY, verify=mock.ANY, headers=mock.ANY,
+            timeout=45)
+
+    def test_del(self):
+        sess = mock.MagicMock()
+        self.net.session = sess
+        del self.net
+        sess.close.assert_called_once_with()
 
     @mock.patch('acme.client.requests')
     def test_requests_error_passthrough(self, mock_requests):
@@ -560,7 +644,9 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.wrapped_obj = mock.MagicMock()
         self.content_type = mock.sentinel.content_type
 
-        self.all_nonces = [jose.b64encode(b'Nonce'), jose.b64encode(b'Nonce2')]
+        self.all_nonces = [
+            jose.b64encode(b'Nonce'),
+            jose.b64encode(b'Nonce2'), jose.b64encode(b'Nonce3')]
         self.available_nonces = self.all_nonces[:]
 
         def send_request(*args, **kwargs):
@@ -586,14 +672,20 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         return self.checked_response
 
     def test_head(self):
-        self.assertEqual(self.response, self.net.head('url', 'foo', bar='baz'))
+        self.assertEqual(self.response, self.net.head(
+            'http://example.com/', 'foo', bar='baz'))
         self.send_request.assert_called_once_with(
-            'HEAD', 'url', 'foo', bar='baz')
+            'HEAD', 'http://example.com/', 'foo', bar='baz')
 
     def test_get(self):
         self.assertEqual(self.checked_response, self.net.get(
-            'url', content_type=self.content_type, bar='baz'))
-        self.send_request.assert_called_once_with('GET', 'url', bar='baz')
+            'http://example.com/', content_type=self.content_type, bar='baz'))
+        self.send_request.assert_called_once_with(
+            'GET', 'http://example.com/', bar='baz')
+
+    def test_post_no_content_type(self):
+        self.content_type = self.net.JOSE_CONTENT_TYPE
+        self.assertEqual(self.checked_response, self.net.post('uri', self.obj))
 
     def test_post(self):
         # pylint: disable=protected-access
@@ -602,7 +694,7 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.net._wrap_in_jws.assert_called_once_with(
             self.obj, jose.b64decode(self.all_nonces.pop()))
 
-        assert not self.available_nonces
+        self.available_nonces = []
         self.assertRaises(errors.MissingNonce, self.net.post,
                           'uri', self.obj, content_type=self.content_type)
         self.net._wrap_in_jws.assert_called_with(
@@ -617,6 +709,35 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.available_nonces = [jose.b64encode(b'good'), b'f']
         self.assertRaises(errors.BadNonce, self.net.post, 'uri',
                           self.obj, content_type=self.content_type)
+
+    def test_post_failed_retry(self):
+        check_response = mock.MagicMock()
+        check_response.side_effect = messages.Error.with_code('badNonce')
+
+        # pylint: disable=protected-access
+        self.net._check_response = check_response
+        self.assertRaises(messages.Error, self.net.post, 'uri',
+                          self.obj, content_type=self.content_type)
+
+    def test_post_not_retried(self):
+        check_response = mock.MagicMock()
+        check_response.side_effect = [messages.Error.with_code('malformed'),
+                                      self.checked_response]
+
+        # pylint: disable=protected-access
+        self.net._check_response = check_response
+        self.assertRaises(messages.Error, self.net.post, 'uri',
+                          self.obj, content_type=self.content_type)
+
+    def test_post_successful_retry(self):
+        check_response = mock.MagicMock()
+        check_response.side_effect = [messages.Error.with_code('badNonce'),
+                                      self.checked_response]
+
+        # pylint: disable=protected-access
+        self.net._check_response = check_response
+        self.assertEqual(self.checked_response, self.net.post(
+            'uri', self.obj, content_type=self.content_type))
 
     def test_head_get_post_error_passthrough(self):
         self.send_request.side_effect = requests.exceptions.RequestException

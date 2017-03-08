@@ -1,4 +1,4 @@
-"""Let's Encrypt ACME PyLint plugin.
+"""Certbot ACME PyLint plugin.
 
 http://docs.pylint.org/plugins.html
 

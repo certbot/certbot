@@ -60,7 +60,7 @@ class Field(object):
 
     @classmethod
     def _empty(cls, value):
-        """Is the provided value cosidered "empty" for this field?
+        """Is the provided value considered "empty" for this field?
 
         This is useful for subclasses that might want to override the
         definition of being empty, e.g. for some more exotic data types.
@@ -253,10 +253,6 @@ class JSONObjectWithFields(util.ImmutableMap, interfaces.JSONDeSerializable):
                     raise errors.SerializationError(
                         'Could not encode {0} ({1}): {2}'.format(
                             slot, value, error))
-        if omitted:
-            # pylint: disable=star-args
-            logger.debug('Omitted empty fields: %s', ', '.join(
-                '{0!s}={1!r}'.format(*field) for field in omitted))
         return jobj
 
     def to_partial_json(self):

@@ -1,0 +1,36 @@
+upstream django_server_intern.random20374.nl {
+    server unix:/srv/http/random20374/internal/website.sock;
+}
+
+server {
+    listen 80;
+    server_name random23818.example.org;
+
+    location ^~ /media/ {
+        alias /srv/http/random20374/internal/dynamic/public/;
+        expires 7d;
+    }
+    location ^~ /static/ {
+        alias /srv/http/random20374/internal/static_collected/;
+        expires 7d;
+    }
+
+    location / {
+        proxy_pass http://django_server_intern.random20374.nl;
+        include          /etc/nginx/proxy_params;
+
+        satisfy any;
+        auth_basic           'internal for random20374';
+        auth_basic_user_file /srv/http/random20374/internal/htpasswords;
+        include              /etc/nginx/allow_ytec_ips_params;
+        deny all;
+    }
+
+    access_log /var/log/nginx/random20374/internal/access.log combined_plus;
+    error_log  /var/log/nginx/random20374/internal/error.log;
+}
+
+server {
+    server_name www.random23818.example.org;
+    rewrite ^ http://random23818.example.org$request_uri permanent;
+}

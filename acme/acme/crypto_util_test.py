@@ -8,6 +8,8 @@ import unittest
 import six
 from six.moves import socketserver  # pylint: disable=import-error
 
+import OpenSSL
+
 from acme import errors
 from acme import jose
 from acme import test_util
@@ -16,9 +18,11 @@ from acme import test_util
 class SSLSocketAndProbeSNITest(unittest.TestCase):
     """Tests for acme.crypto_util.SSLSocket/probe_sni."""
 
+    _multiprocess_can_split_ = True
+
     def setUp(self):
-        self.cert = test_util.load_comparable_cert('cert.pem')
-        key = test_util.load_pyopenssl_private_key('rsa512_key.pem')
+        self.cert = test_util.load_comparable_cert('rsa2048_cert.pem')
+        key = test_util.load_pyopenssl_private_key('rsa2048_key.pem')
         # pylint: disable=protected-access
         certs = {b'foo': (key, self.cert.wrapped)}
 
@@ -55,7 +59,7 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
     def test_probe_not_recognized_name(self):
         self.assertRaises(errors.Error, self._probe, b'bar')
 
-    # TODO: py33/py34 tox hangs forever on do_hendshake in second probe
+    # TODO: py33/py34 tox hangs forever on do_handshake in second probe
     #def probe_connection_error(self):
     #    self._probe(b'foo')
     #    #time.sleep(1)  # TODO: avoid race conditions in other way
@@ -64,6 +68,8 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
 
 class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
     """Test for acme.crypto_util._pyopenssl_cert_or_req_san."""
+
+    _multiprocess_can_split_ = True
 
     @classmethod
     def _call(cls, loader, name):
@@ -124,6 +130,26 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
     def test_csr_idn_sans(self):
         self.assertEqual(self._call_csr('csr-idnsans.pem'),
                          self._get_idn_names())
+
+
+class RandomSnTest(unittest.TestCase):
+    """Test for random certificate serial numbers."""
+
+    _multiprocess_can_split_ = True
+
+    def setUp(self):
+        self.cert_count = 5
+        self.serial_num = []
+        self.key = OpenSSL.crypto.PKey()
+        self.key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
+
+    def test_sn_collisions(self):
+        from acme.crypto_util import gen_ss_cert
+
+        for _ in range(self.cert_count):
+            cert = gen_ss_cert(self.key, ['dummy'], force_san=True)
+            self.serial_num.append(cert.get_serial_number())
+        self.assertTrue(len(set(self.serial_num)) > 1)
 
 
 if __name__ == '__main__':

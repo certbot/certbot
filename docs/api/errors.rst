@@ -1,5 +1,5 @@
-:mod:`letsencrypt.errors`
+:mod:`certbot.errors`
 -------------------------
 
-.. automodule:: letsencrypt.errors
+.. automodule:: certbot.errors
    :members:

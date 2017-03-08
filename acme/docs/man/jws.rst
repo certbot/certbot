@@ -1,1 +1,1 @@
-.. program-output:: jws --help all
+.. literalinclude:: ../jws-help.txt

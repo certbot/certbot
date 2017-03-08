@@ -1,5 +1,5 @@
-:mod:`letsencrypt.plugins.disco`
+:mod:`certbot.plugins.disco`
 --------------------------------
 
-.. automodule:: letsencrypt.plugins.disco
+.. automodule:: certbot.plugins.disco
    :members:

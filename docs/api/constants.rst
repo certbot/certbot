@@ -1,5 +1,5 @@
-:mod:`letsencrypt.constants`
+:mod:`certbot.constants`
 -----------------------------------
 
-.. automodule:: letsencrypt.constants
+.. automodule:: certbot.constants
    :members:

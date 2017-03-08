@@ -1,0 +1,7 @@
+include LICENSE.txt
+include README.rst
+recursive-include docs *
+include certbot_compatibility_test/configurators/apache/a2enmod.sh
+include certbot_compatibility_test/configurators/apache/a2dismod.sh
+include certbot_compatibility_test/configurators/apache/Dockerfile
+recursive-include certbot_compatibility_test/testdata *

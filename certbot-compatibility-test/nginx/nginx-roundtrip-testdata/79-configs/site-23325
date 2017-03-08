@@ -1,0 +1,74 @@
+upstream django_server_random15255_live {
+  server unix:/srv/http/random15255/live/website.sock fail_timeout=5;
+}
+
+server {
+    listen 443;
+    server_name random7381.example.org;
+
+    ssl on;
+    ssl_certificate     /etc/ssl/public/random7381.example.org_chained.crt;
+    ssl_certificate_key /etc/ssl/private/random7381.example.org.key;
+
+    location /media/ {
+        alias /srv/http/random15255/live/dynamic/public/;
+        expires 7d;
+        include upload_folder_security_params;
+    } 
+    
+    location /static/ {
+        alias /srv/http/random15255/live/static_collected/;
+        expires 7d;
+    }
+    
+    location / {
+        proxy_pass http://django_server_random15255_live;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Protocol $scheme;
+    }
+
+  access_log /var/log/nginx/random15255/live/access.log combined_plus;
+  error_log /var/log/nginx/random15255/live/error.log;
+}
+
+server {
+  listen 80; 
+  server_name random7381.example.org www.random7381.example.org;
+
+  return 301 https://random7381.example.org$request_uri;
+}
+
+server {
+  listen 8445;
+  server_name random7381.example.org www.random7381.example.org;
+
+  ssl on;
+  ssl_certificate     /etc/ssl/public/random7381.example.org_chained.crt;
+  ssl_certificate_key /etc/ssl/private/random7381.example.org.key;
+
+  return 301 https://random7381.example.org$request_uri;
+}
+
+server {
+  listen 1000;
+  server_name random7381.example.org www.random7381.example.org;
+
+  ssl on;
+  ssl_certificate     /etc/ssl/public/random7381.example.org_chained.crt;
+  ssl_certificate_key /etc/ssl/private/random7381.example.org.key;
+
+  return 301 https://random7381.example.org$request_uri;
+}
+
+server {
+  listen 443;
+  server_name www.random7381.example.org;
+
+  ssl on;
+  ssl_certificate     /etc/ssl/public/random7381.example.org_chained.crt;
+  ssl_certificate_key /etc/ssl/private/random7381.example.org.key;
+
+  return 301 https://random7381.example.org$request_uri;
+}

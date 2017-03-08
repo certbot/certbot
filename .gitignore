@@ -6,7 +6,10 @@ dist*/
 /venv*/
 /kgs/
 /.tox/
+/releases/
 letsencrypt.log
+certbot.log
+letsencrypt-auto-source/letsencrypt-auto.sig.lzma.base64
 
 # coverage
 .coverage
@@ -14,11 +17,14 @@ letsencrypt.log
 
 /.vagrant
 
+tags
+
 # editor temporary files
 *~
-*.swp
+*.sw?
 \#*#
 .idea
+.ropeproject
 
 # auth --cert-path --chain-path
 /*.pem
@@ -26,3 +32,6 @@ letsencrypt.log
 # letstest
 tests/letstest/letest-*/
 tests/letstest/*.pem
+tests/letstest/venv/
+
+.venv

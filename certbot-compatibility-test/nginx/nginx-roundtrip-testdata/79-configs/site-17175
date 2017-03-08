@@ -1,0 +1,14 @@
+server {
+    listen 80;
+    server_name random25647.example.org www.random25647.example.org random10963.example.org www.random10963.example.org;
+
+    if ($host != 'random25647.example.org') {
+        rewrite  ^/(.*)$  http://random25647.example.org/$1  permanent;
+    }
+    
+    index index.html index.htm;
+    root /srv/http/random11461/countdown/;
+
+    access_log /var/log/nginx/random11461/live/access.log combined_plus;
+    error_log  /var/log/nginx/random11461/live/error.log;
+}

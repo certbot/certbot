@@ -1,0 +1,38 @@
+upstream django_server_random6822.example.org {
+    server unix:/srv/http/random7047/live/website.sock;
+}
+
+server {
+    listen 8443;
+    server_name random6822.example.org;
+
+    ssl on;
+    ssl_certificate       /etc/ssl/public/random6822.example.org.complete-bundle.crt;
+    ssl_certificate_key   /etc/ssl/private/random6822.example.org.key;
+
+    location /media/ {
+        alias /srv/http/random7047/live/dynamic/public/;
+        expires 7d;
+    }
+    location /static/ {
+        alias /srv/http/random7047/live/static_collected/;
+        expires 7d;
+    }
+
+    location / {
+        proxy_pass http://django_server_random6822.example.org;
+        include          /etc/nginx/proxy_params;
+    }
+
+    access_log /var/log/nginx/random7047/live/access.log combined_plus;
+    error_log  /var/log/nginx/random7047/live/error.log;
+}
+
+server {
+    listen 80;
+    server_name random6822.example.org;
+
+    rewrite ^/(.*) https://random6822.example.org:8443/$1;
+}
+
+

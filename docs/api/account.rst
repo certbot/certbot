@@ -1,5 +1,5 @@
-:mod:`letsencrypt.account`
+:mod:`certbot.account`
 --------------------------
 
-.. automodule:: letsencrypt.account
+.. automodule:: certbot.account
    :members:

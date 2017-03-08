@@ -2,7 +2,7 @@
 
     # Print latest released version of LE to stdout:
     python fetch.py --latest-version
-    
+
     # Download letsencrypt-auto script from git tag v1.2.3 into the folder I'm
     # in, and make sure its signature verifies:
     python fetch.py --le-auto-script v1.2.3
@@ -10,6 +10,9 @@
 On failure, return non-zero.
 
 """
+
+from __future__ import print_function
+
 from distutils.version import LooseVersion
 from json import loads
 from os import devnull, environ
@@ -68,7 +71,7 @@ def latest_stable_version(get):
     """Return the latest stable release of letsencrypt."""
     metadata = loads(get(
         environ.get('LE_AUTO_JSON_URL',
-                    'https://pypi.python.org/pypi/letsencrypt/json')))
+                    'https://pypi.python.org/pypi/certbot/json')))
     # metadata['info']['version'] actually returns the latest of any kind of
     # release release, contrary to https://wiki.python.org/moin/PyPIJSON.
     # The regex is a sufficient regex for picking out prereleases for most
@@ -87,7 +90,7 @@ def verified_new_le_auto(get, tag, temp_dir):
     """
     le_auto_dir = environ.get(
         'LE_AUTO_DIR_TEMPLATE',
-        'https://raw.githubusercontent.com/letsencrypt/letsencrypt/%s/'
+        'https://raw.githubusercontent.com/certbot/certbot/%s/'
         'letsencrypt-auto-source/') % tag
     write(get(le_auto_dir + 'letsencrypt-auto'), temp_dir, 'letsencrypt-auto')
     write(get(le_auto_dir + 'letsencrypt-auto.sig'), temp_dir, 'letsencrypt-auto.sig')
@@ -103,7 +106,7 @@ def verified_new_le_auto(get, tag, temp_dir):
                        stderr=dev_null)
     except CalledProcessError as exc:
         raise ExpectedError("Couldn't verify signature of downloaded "
-                            "letsencrypt-auto.", exc)
+                            "certbot-auto.", exc)
 
 
 def main():
@@ -111,12 +114,12 @@ def main():
     flag = argv[1]
     try:
         if flag == '--latest-version':
-            print latest_stable_version(get)
+            print(latest_stable_version(get))
         elif flag == '--le-auto-script':
             tag = argv[2]
             verified_new_le_auto(get, tag, dirname(argv[0]))
     except ExpectedError as exc:
-        print exc.args[0], exc.args[1]
+        print(exc.args[0], exc.args[1])
         return 1
     else:
         return 0

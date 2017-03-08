@@ -13,8 +13,6 @@ from acme import errors
 from acme import crypto_util
 from acme import fields
 from acme import jose
-from acme import other
-
 
 logger = logging.getLogger(__name__)
 
@@ -34,14 +32,6 @@ class Challenge(jose.TypedJSONObjectWithFields):
         except jose.UnrecognizedTypeError as error:
             logger.debug(error)
             return UnrecognizedChallenge.from_json(jobj)
-
-
-class ContinuityChallenge(Challenge):  # pylint: disable=abstract-method
-    """Client validation challenges."""
-
-
-class DVChallenge(Challenge):  # pylint: disable=abstract-method
-    """Domain validation challenges."""
 
 
 class ChallengeResponse(jose.TypedJSONObjectWithFields):
@@ -78,8 +68,8 @@ class UnrecognizedChallenge(Challenge):
         return cls(jobj)
 
 
-class _TokenDVChallenge(DVChallenge):
-    """DV Challenge with token.
+class _TokenChallenge(Challenge):
+    """Challenge with token.
 
     :ivar bytes token:
 
@@ -149,7 +139,7 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
         return True
 
 
-class KeyAuthorizationChallenge(_TokenDVChallenge):
+class KeyAuthorizationChallenge(_TokenChallenge):
     # pylint: disable=abstract-class-little-used,too-many-ancestors
     """Challenge based on Key Authorization.
 
@@ -192,7 +182,7 @@ class KeyAuthorizationChallenge(_TokenDVChallenge):
 
         Subclasses must implement this method, but they are likely to
         return completely different data structures, depending on what's
-        necessary to complete the challenge. Interepretation of that
+        necessary to complete the challenge. Interpretation of that
         return value must be known to the caller.
 
         :param JWK account_key:
@@ -213,6 +203,62 @@ class KeyAuthorizationChallenge(_TokenDVChallenge):
         """
         return (self.response(account_key),
                 self.validation(account_key, *args, **kwargs))
+
+
+@ChallengeResponse.register
+class DNS01Response(KeyAuthorizationChallengeResponse):
+    """ACME dns-01 challenge response."""
+    typ = "dns-01"
+
+    def simple_verify(self, chall, domain, account_public_key):
+        """Simple verify.
+
+        This method no longer checks DNS records and is a simple wrapper
+        around `KeyAuthorizationChallengeResponse.verify`.
+
+        :param challenges.DNS01 chall: Corresponding challenge.
+        :param unicode domain: Domain name being verified.
+        :param JWK account_public_key: Public key for the key pair
+            being authorized.
+
+        :return: ``True`` iff verification of the key authorization was
+            successful.
+        :rtype: bool
+
+        """
+        # pylint: disable=unused-argument
+        verified = self.verify(chall, account_public_key)
+        if not verified:
+            logger.debug("Verification of key authorization in response failed")
+        return verified
+
+
+@Challenge.register  # pylint: disable=too-many-ancestors
+class DNS01(KeyAuthorizationChallenge):
+    """ACME dns-01 challenge."""
+    response_cls = DNS01Response
+    typ = response_cls.typ
+
+    LABEL = "_acme-challenge"
+    """Label clients prepend to the domain name being validated."""
+
+    def validation(self, account_key, **unused_kwargs):
+        """Generate validation.
+
+        :param JWK account_key:
+        :rtype: unicode
+
+        """
+        return jose.b64encode(hashlib.sha256(self.key_authorization(
+            account_key).encode("utf-8")).digest()).decode()
+
+    def validation_domain_name(self, name):
+        """Domain name for TXT validation record.
+
+        :param unicode name: Domain name being validated.
+
+        """
+        return "{0}.{1}".format(self.LABEL, name)
 
 
 @ChallengeResponse.register
@@ -240,8 +286,8 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
             being authorized.
         :param int port: Port used in the validation.
 
-        :returns: ``True`` iff validation is successful, ``False``
-            otherwise.
+        :returns: ``True`` iff validation with the files currently served by the
+            HTTP server is successful.
         :rtype: bool
 
         """
@@ -379,7 +425,7 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
         # TODO: domain is not necessary if host is provided
         if "host" not in kwargs:
             host = socket.gethostbyname(domain)
-            logging.debug('%s resolved to %s', domain, host)
+            logger.debug('%s resolved to %s', domain, host)
             kwargs["host"] = host
 
         kwargs.setdefault("port", self.PORT)
@@ -399,7 +445,7 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
         """
         # pylint: disable=protected-access
         sans = crypto_util._pyopenssl_cert_or_req_san(cert)
-        logging.debug('Certificate %s. SANs: %s', cert.digest('sha1'), sans)
+        logger.debug('Certificate %s. SANs: %s', cert.digest('sha256'), sans)
         return self.z_domain.decode() in sans
 
     def simple_verify(self, chall, domain, account_public_key,
@@ -419,7 +465,7 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
 
 
         :returns: ``True`` iff client's control of the domain has been
-            verified, ``False`` otherwise.
+            verified.
         :rtype: bool
 
         """
@@ -460,108 +506,8 @@ class TLSSNI01(KeyAuthorizationChallenge):
         return self.response(account_key).gen_cert(key=kwargs.get('cert_key'))
 
 
-@Challenge.register
-class RecoveryContact(ContinuityChallenge):
-    """ACME "recoveryContact" challenge.
-
-    :ivar unicode activation_url:
-    :ivar unicode success_url:
-    :ivar unicode contact:
-
-    """
-    typ = "recoveryContact"
-
-    activation_url = jose.Field("activationURL", omitempty=True)
-    success_url = jose.Field("successURL", omitempty=True)
-    contact = jose.Field("contact", omitempty=True)
-
-
-@ChallengeResponse.register
-class RecoveryContactResponse(ChallengeResponse):
-    """ACME "recoveryContact" challenge response.
-
-    :ivar unicode token:
-
-    """
-    typ = "recoveryContact"
-    token = jose.Field("token", omitempty=True)
-
-
-@Challenge.register
-class ProofOfPossession(ContinuityChallenge):
-    """ACME "proofOfPossession" challenge.
-
-    :ivar .JWAAlgorithm alg:
-    :ivar bytes nonce: Random data, **not** base64-encoded.
-    :ivar hints: Various clues for the client (:class:`Hints`).
-
-    """
-    typ = "proofOfPossession"
-
-    NONCE_SIZE = 16
-
-    class Hints(jose.JSONObjectWithFields):
-        """Hints for "proofOfPossession" challenge.
-
-        :ivar JWK jwk: JSON Web Key
-        :ivar tuple cert_fingerprints: `tuple` of `unicode`
-        :ivar tuple certs: Sequence of :class:`acme.jose.ComparableX509`
-            certificates.
-        :ivar tuple subject_key_identifiers: `tuple` of `unicode`
-        :ivar tuple issuers: `tuple` of `unicode`
-        :ivar tuple authorized_for: `tuple` of `unicode`
-
-        """
-        jwk = jose.Field("jwk", decoder=jose.JWK.from_json)
-        cert_fingerprints = jose.Field(
-            "certFingerprints", omitempty=True, default=())
-        certs = jose.Field("certs", omitempty=True, default=())
-        subject_key_identifiers = jose.Field(
-            "subjectKeyIdentifiers", omitempty=True, default=())
-        serial_numbers = jose.Field("serialNumbers", omitempty=True, default=())
-        issuers = jose.Field("issuers", omitempty=True, default=())
-        authorized_for = jose.Field("authorizedFor", omitempty=True, default=())
-
-        @certs.encoder
-        def certs(value):  # pylint: disable=missing-docstring,no-self-argument
-            return tuple(jose.encode_cert(cert) for cert in value)
-
-        @certs.decoder
-        def certs(value):  # pylint: disable=missing-docstring,no-self-argument
-            return tuple(jose.decode_cert(cert) for cert in value)
-
-    alg = jose.Field("alg", decoder=jose.JWASignature.from_json)
-    nonce = jose.Field(
-        "nonce", encoder=jose.encode_b64jose, decoder=functools.partial(
-            jose.decode_b64jose, size=NONCE_SIZE))
-    hints = jose.Field("hints", decoder=Hints.from_json)
-
-
-@ChallengeResponse.register
-class ProofOfPossessionResponse(ChallengeResponse):
-    """ACME "proofOfPossession" challenge response.
-
-    :ivar bytes nonce: Random data, **not** base64-encoded.
-    :ivar acme.other.Signature signature: Sugnature of this message.
-
-    """
-    typ = "proofOfPossession"
-
-    NONCE_SIZE = ProofOfPossession.NONCE_SIZE
-
-    nonce = jose.Field(
-        "nonce", encoder=jose.encode_b64jose, decoder=functools.partial(
-            jose.decode_b64jose, size=NONCE_SIZE))
-    signature = jose.Field("signature", decoder=other.Signature.from_json)
-
-    def verify(self):
-        """Verify the challenge."""
-        # self.signature is not Field | pylint: disable=no-member
-        return self.signature.verify(self.nonce)
-
-
 @Challenge.register  # pylint: disable=too-many-ancestors
-class DNS(_TokenDVChallenge):
+class DNS(_TokenChallenge):
     """ACME "dns" challenge."""
     typ = "dns"
 
@@ -609,7 +555,7 @@ class DNS(_TokenDVChallenge):
 
         """
         return DNSResponse(validation=self.gen_validation(
-            self, account_key, **kwargs))
+            account_key, **kwargs))
 
     def validation_domain_name(self, name):
         """Domain name for TXT validation record.

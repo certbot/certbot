@@ -1,5 +1,5 @@
-:mod:`letsencrypt.interfaces`
+:mod:`certbot.interfaces`
 -----------------------------
 
-.. automodule:: letsencrypt.interfaces
+.. automodule:: certbot.interfaces
    :members:

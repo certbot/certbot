@@ -9,11 +9,11 @@ MAINTAINER Yan <yan@eff.org>
 EXPOSE 443
 
 # TODO: make sure --config-dir and --work-dir cannot be changed
-# through the CLI (letsencrypt-docker wrapper that uses standalone
+# through the CLI (certbot-docker wrapper that uses standalone
 # authenticator and text mode only?)
 VOLUME /etc/letsencrypt /var/lib/letsencrypt
 
-WORKDIR /opt/letsencrypt
+WORKDIR /opt/certbot
 
 # no need to mkdir anything:
 # https://docs.docker.com/reference/builder/#copy
@@ -22,8 +22,8 @@ WORKDIR /opt/letsencrypt
 
 # TODO: Install non-default Python versions for tox.
 # TODO: Install Apache/Nginx for plugin development.
-COPY letsencrypt-auto-source/letsencrypt-auto /opt/letsencrypt/src/letsencrypt-auto
-RUN /opt/letsencrypt/src/letsencrypt-auto --os-packages-only && \
+COPY letsencrypt-auto-source/letsencrypt-auto /opt/certbot/src/letsencrypt-auto-source/letsencrypt-auto
+RUN /opt/certbot/src/letsencrypt-auto-source/letsencrypt-auto --os-packages-only && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* \
            /tmp/* \
@@ -32,7 +32,7 @@ RUN /opt/letsencrypt/src/letsencrypt-auto --os-packages-only && \
 # the above is not likely to change, so by putting it further up the
 # Dockerfile we make sure we cache as much as possible
 
-COPY setup.py README.rst CHANGES.rst MANIFEST.in linter_plugin.py tox.cover.sh tox.ini pep8.travis.sh .pep8 .pylintrc /opt/letsencrypt/src/
+COPY setup.py README.rst CHANGES.rst MANIFEST.in linter_plugin.py tox.cover.sh tox.ini .pylintrc /opt/certbot/src/
 
 # all above files are necessary for setup.py, however, package source
 # code directory has to be copied separately to a subdirectory...
@@ -42,27 +42,28 @@ COPY setup.py README.rst CHANGES.rst MANIFEST.in linter_plugin.py tox.cover.sh t
 # copied, just its contents." Order again matters, three files are far
 # more likely to be cached than the whole project directory
 
-COPY letsencrypt /opt/letsencrypt/src/letsencrypt/
-COPY acme /opt/letsencrypt/src/acme/
-COPY letsencrypt-apache /opt/letsencrypt/src/letsencrypt-apache/
-COPY letsencrypt-nginx /opt/letsencrypt/src/letsencrypt-nginx/
-COPY letshelp-letsencrypt /opt/letsencrypt/src/letshelp-letsencrypt/
-COPY letsencrypt-compatibility-test /opt/letsencrypt/src/letsencrypt-compatibility-test/
-COPY tests /opt/letsencrypt/src/tests/
+COPY certbot /opt/certbot/src/certbot/
+COPY acme /opt/certbot/src/acme/
+COPY certbot-apache /opt/certbot/src/certbot-apache/
+COPY certbot-nginx /opt/certbot/src/certbot-nginx/
+COPY letshelp-certbot /opt/certbot/src/letshelp-certbot/
+COPY certbot-compatibility-test /opt/certbot/src/certbot-compatibility-test/
+COPY tests /opt/certbot/src/tests/
 
-RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv && \
-    /opt/letsencrypt/venv/bin/pip install \
-    -e /opt/letsencrypt/src/acme \
-    -e /opt/letsencrypt/src \
-    -e /opt/letsencrypt/src/letsencrypt-apache \
-    -e /opt/letsencrypt/src/letsencrypt-nginx \
-    -e /opt/letsencrypt/src/letshelp-letsencrypt \
-    -e /opt/letsencrypt/src/letsencrypt-compatibility-test \
-    -e /opt/letsencrypt/src[dev,docs,testing]
+RUN virtualenv --no-site-packages -p python2 /opt/certbot/venv && \
+    /opt/certbot/venv/bin/pip install \
+    -e /opt/certbot/src/acme \
+    -e /opt/certbot/src \
+    -e /opt/certbot/src/certbot-apache \
+    -e /opt/certbot/src/certbot-nginx \
+    -e /opt/certbot/src/letshelp-certbot \
+    -e /opt/certbot/src/certbot-compatibility-test \
+    -e /opt/certbot/src[dev,docs] && \
+    /opt/certbot/venv/bin/pip install -U setuptools
 
 # install in editable mode (-e) to save space: it's not possible to
-# "rm -rf /opt/letsencrypt/src" (it's stays in the underlaying image);
+# "rm -rf /opt/certbot/src" (it's stays in the underlaying image);
 # this might also help in debugging: you can "docker run --entrypoint
 # bash" and investigate, apply patches, etc.
 
-ENV PATH /opt/letsencrypt/venv/bin:$PATH
+ENV PATH /opt/certbot/venv/bin:$PATH

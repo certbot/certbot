@@ -28,7 +28,7 @@ if [ "$1" = "--production" ] ; then
     CheckVersion "Next version" "$nextversion"
     RELEASE_BRANCH="candidate-$version"
 else
-    version=`grep "__version__" letsencrypt/__init__.py | cut -d\' -f2 | sed s/\.dev0//`
+    version=`grep "__version__" certbot/__init__.py | cut -d\' -f2 | sed s/\.dev0//`
     version="$version.dev$(date +%Y%m%d)1"
     RELEASE_BRANCH="dev-release"
     echo Releasing developer version "$version"...
@@ -45,10 +45,10 @@ export GPG_TTY=$(tty)
 PORT=${PORT:-1234}
 
 # subpackages to be released
-SUBPKGS=${SUBPKGS:-"acme letsencrypt-apache letsencrypt-nginx letshelp-letsencrypt"}
+SUBPKGS=${SUBPKGS:-"acme certbot-apache certbot-nginx"}
 subpkgs_modules="$(echo $SUBPKGS | sed s/-/_/g)"
-# letsencrypt_compatibility_test is not packaged because:
-# - it is not meant to be used by anyone else than Let's Encrypt devs
+# certbot_compatibility_test is not packaged because:
+# - it is not meant to be used by anyone else than Certbot devs
 # - it causes problems when running nosetests - the latter tries to
 #   run everything that matches test*, while there are no unittests
 #   there
@@ -72,7 +72,7 @@ pip install -U virtualenv
 root_without_le="$version.$$"
 root="./releases/le.$root_without_le"
 
-echo "Cloning into fresh copy at $root"  # clean repo = no artificats
+echo "Cloning into fresh copy at $root"  # clean repo = no artifacts
 git clone . $root
 git rev-parse HEAD
 cd $root
@@ -81,38 +81,20 @@ if [ "$RELEASE_BRANCH" != "candidate-$version" ] ; then
 fi
 git checkout "$RELEASE_BRANCH"
 
-# ensure we have the latest built version of leauto
-letsencrypt-auto-source/build.py
-
-# and that it's signed correctly
-if ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
-        letsencrypt-auto-source/letsencrypt-auto.sig \
-        letsencrypt-auto-source/letsencrypt-auto            ; then
-   echo Failed letsencrypt-auto signature check on "$RELEASE_BRANCH"
-   echo please fix that and re-run
-   exit 1
-else
-    echo Signature check on letsencrypt-auto successful
-fi
-
-
 SetVersion() {
     ver="$1"
-    for pkg_dir in $SUBPKGS letsencrypt-compatibility-test
+    for pkg_dir in $SUBPKGS certbot-compatibility-test
     do
       sed -i "s/^version.*/version = '$ver'/" $pkg_dir/setup.py
     done
-    sed -i "s/^__version.*/__version__ = '$ver'/" letsencrypt/__init__.py
+    sed -i "s/^__version.*/__version__ = '$ver'/" certbot/__init__.py
     
     # interactive user input
-    git add -p letsencrypt $SUBPKGS letsencrypt-compatibility-test 
+    git add -p certbot $SUBPKGS certbot-compatibility-test 
 
 }
 
 SetVersion "$version"
-git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"
-git tag --local-user "$RELEASE_GPG_KEY" \
-    --sign --message "Release $version" "$tag"
 
 echo "Preparing sdists and wheels"
 for pkg_dir in . $SUBPKGS
@@ -135,7 +117,7 @@ done
 
 
 mkdir "dist.$version"
-mv dist "dist.$version/letsencrypt"
+mv dist "dist.$version/certbot"
 for pkg_dir in $SUBPKGS
 do
   mv $pkg_dir/dist "dist.$version/$pkg_dir/"
@@ -151,29 +133,80 @@ virtualenv --no-site-packages ../venv
 . ../venv/bin/activate
 pip install -U setuptools
 pip install -U pip
-# Now, use our local PyPI
+# Now, use our local PyPI. Disable cache so we get the correct KGS even if we
+# (or our dependencies) have conditional dependencies implemented with if
+# statements in setup.py and we have cached wheels lying around that would
+# cause those ifs to not be evaluated.
 pip install \
+  --no-cache-dir \
   --extra-index-url http://localhost:$PORT \
-  letsencrypt $SUBPKGS
+  certbot $SUBPKGS
 # stop local PyPI
 kill $!
 cd ~-
 
+# get a snapshot of the CLI help for the docs
+certbot --help all > docs/cli-help.txt
+jws --help > acme/docs/jws-help.txt
+
+cd ..
 # freeze before installing anything else, so that we know end-user KGS
 # make sure "twine upload" doesn't catch "kgs"
-if [ -d ../kgs ] ; then
+if [ -d kgs ] ; then
     echo Deleting old kgs...
-    rm -rf ../kgs
+    rm -rf kgs
 fi
-mkdir ../kgs
-kgs="../kgs/$version"
+mkdir kgs
+kgs="kgs/$version"
 pip freeze | tee $kgs
 pip install nose
-for module in letsencrypt $subpkgs_modules ; do
+for module in certbot $subpkgs_modules ; do
     echo testing $module
     nosetests $module
 done
+cd ~-
+
+# pin pip hashes of the things we just built
+for pkg in acme certbot certbot-apache certbot-nginx ; do
+    echo $pkg==$version \\
+    pip hash dist."$version/$pkg"/*.{whl,gz} | grep "^--hash" | python2 -c 'from sys import stdin; input = stdin.read(); print "   ", input.replace("\n--hash", " \\\n    --hash"),'
+done > /tmp/hashes.$$
 deactivate
+
+if ! wc -l /tmp/hashes.$$ | grep -qE "^\s*12 " ; then
+    echo Unexpected pip hash output
+    exit 1
+fi
+
+# perform hideous surgery on requirements.txt...
+head -n -12 letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt > /tmp/req.$$
+cat /tmp/hashes.$$ >> /tmp/req.$$
+cp /tmp/req.$$ letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt
+
+# ensure we have the latest built version of leauto
+letsencrypt-auto-source/build.py
+
+# and that it's signed correctly
+while ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
+        letsencrypt-auto-source/letsencrypt-auto.sig \
+        letsencrypt-auto-source/letsencrypt-auto            ; do
+   read -p "Please correctly sign letsencrypt-auto with offline-signrequest.sh"
+done
+
+# This signature is not quite as strong, but easier for people to verify out of band
+gpg -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign letsencrypt-auto-source/letsencrypt-auto
+# We can't rename the openssl letsencrypt-auto.sig for compatibility reasons,
+# but we can use the right name for certbot-auto.asc from day one
+mv letsencrypt-auto-source/letsencrypt-auto.asc letsencrypt-auto-source/certbot-auto.asc
+
+# copy leauto to the root, overwriting the previous release version
+cp -p letsencrypt-auto-source/letsencrypt-auto certbot-auto
+cp -p letsencrypt-auto-source/letsencrypt-auto letsencrypt-auto
+
+git add certbot-auto letsencrypt-auto letsencrypt-auto-source docs/cli-help.txt
+git diff --cached
+git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"
+git tag --local-user "$RELEASE_GPG_KEY" --sign --message "Release $version" "$tag"
 
 cd ..
 echo Now in $PWD
@@ -185,7 +218,6 @@ echo gpg -U $RELEASE_GPG_KEY --detach-sign --armor $name.$rev.tar.xz
 cd ~-
 
 echo "New root: $root"
-echo "KGS is at $root/kgs"
 echo "Test commands (in the letstest repo):"
 echo 'python multitester.py targets.yaml $AWS_KEY $USERNAME scripts/test_leauto_upgrades.sh --alt_pip $YOUR_PIP_REPO --branch public-beta'
 echo 'python multitester.py  targets.yaml $AWK_KEY $USERNAME scripts/test_letsencrypt_auto_certonly_standalone.sh --branch candidate-0.1.1'
@@ -195,6 +227,8 @@ echo twine upload "$root/dist.$version/*/*"
 
 if [ "$RELEASE_BRANCH" = candidate-"$version" ] ; then
     SetVersion "$nextversion".dev0
+    letsencrypt-auto-source/build.py
+    git add letsencrypt-auto-source/letsencrypt-auto
     git diff
     git commit -m "Bump version to $nextversion"
 fi

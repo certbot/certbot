@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Download and run the latest release version of the Let's Encrypt client.
+# Download and run the latest release version of the Certbot client.
 #
 # NOTE: THIS SCRIPT IS AUTO-GENERATED AND SELF-UPDATING
 #
@@ -15,64 +15,149 @@ set -e  # Work even if somebody does "sh thisscript.sh".
 
 # Note: you can set XDG_DATA_HOME or VENV_PATH before running this script,
 # if you want to change where the virtual environment will be installed
-XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
+if [ -z "$XDG_DATA_HOME" ]; then
+  XDG_DATA_HOME=~/.local/share
+fi
 VENV_NAME="letsencrypt"
-VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
-VENV_BIN=${VENV_PATH}/bin
-LE_AUTO_VERSION="0.2.0.dev0"
+if [ -z "$VENV_PATH" ]; then
+  VENV_PATH="$XDG_DATA_HOME/$VENV_NAME"
+fi
+VENV_BIN="$VENV_PATH/bin"
+LE_AUTO_VERSION="0.13.0.dev0"
+BASENAME=$(basename $0)
+USAGE="Usage: $BASENAME [OPTIONS]
+A self-updating wrapper script for the Certbot ACME client. When run, updates
+to both this script and certbot will be downloaded and installed. After
+ensuring you have the latest versions installed, certbot will be invoked with
+all arguments you have provided.
 
-# This script takes the same arguments as the main letsencrypt program, but it
-# additionally responds to --verbose (more output) and --debug (allow support
-# for experimental platforms)
+Help for certbot itself cannot be provided until it is installed.
+
+  --debug                                   attempt experimental installation
+  -h, --help                                print this help
+  -n, --non-interactive, --noninteractive   run without asking for user input
+  --no-self-upgrade                         do not download updates
+  --os-packages-only                        install OS dependencies and exit
+  -v, --verbose                             provide more output
+  -q, --quiet                               provide only update/error output;
+                                            implies --non-interactive
+
+All arguments are accepted and forwarded to the Certbot client when run."
+
 for arg in "$@" ; do
-  # This first clause is redundant with the third, but hedging on portability
-  if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- "-v+$" ; then
-    VERBOSE=1
-  elif [ "$arg" = "--no-self-upgrade" ] ; then
-    # Do not upgrade this script (also prevents client upgrades, because each
-    # copy of the script pins a hash of the python client)
-    NO_SELF_UPGRADE=1
-  elif [ "$arg" = "--os-packages-only" ] ; then
-    OS_PACKAGES_ONLY=1
-  elif [ "$arg" = "--debug" ]; then
-    DEBUG=1
-  fi
+  case "$arg" in
+    --debug)
+      DEBUG=1;;
+    --os-packages-only)
+      OS_PACKAGES_ONLY=1;;
+    --no-self-upgrade)
+      # Do not upgrade this script (also prevents client upgrades, because each
+      # copy of the script pins a hash of the python client)
+      NO_SELF_UPGRADE=1;;
+    --help)
+      HELP=1;;
+    --noninteractive|--non-interactive)
+      ASSUME_YES=1;;
+    --quiet)
+      QUIET=1;;
+    --verbose)
+      VERBOSE=1;;
+    -[!-]*)
+      OPTIND=1
+      while getopts ":hnvq" short_arg $arg; do
+        case "$short_arg" in
+          h)
+            HELP=1;;
+          n)
+            ASSUME_YES=1;;
+          q)
+            QUIET=1;;
+          v)
+            VERBOSE=1;;
+        esac
+      done;;
+  esac
 done
 
-# letsencrypt-auto needs root access to bootstrap OS dependencies, and
-# letsencrypt itself needs root access for almost all modes of operation
+if [ $BASENAME = "letsencrypt-auto" ]; then
+  # letsencrypt-auto does not respect --help or --yes for backwards compatibility
+  ASSUME_YES=1
+  HELP=0
+fi
+
+# Set ASSUME_YES to 1 if QUIET (i.e. --quiet implies --non-interactive)
+if [ "$QUIET" = 1 ]; then
+  ASSUME_YES=1
+fi
+
+# Support for busybox and others where there is no "command",
+# but "which" instead
+if command -v command > /dev/null 2>&1 ; then
+  export EXISTS="command -v"
+elif which which > /dev/null 2>&1 ; then
+  export EXISTS="which"
+else
+  echo "Cannot find command nor which... please install one!"
+  exit 1
+fi
+
+# certbot-auto needs root access to bootstrap OS dependencies, and
+# certbot itself needs root access for almost all modes of operation
 # The "normal" case is that sudo is used for the steps that need root, but
 # this script *can* be run as root (not recommended), or fall back to using
-# `su`
-if test "`id -u`" -ne "0" ; then
-  if command -v sudo 1>/dev/null 2>&1; then
-    SUDO=sudo
-  else
-    echo \"sudo\" is not available, will use \"su\" for installation steps...
-    # Because the parameters in `su -c` has to be a string,
-    # we need properly escape it
-    su_sudo() {
-      args=""
-      # This `while` loop iterates over all parameters given to this function.
-      # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
-      # will be wrapped in a pair of `'`, then appended to `$args` string
-      # For example, `echo "It's only 1\$\!"` will be escaped to:
-      #   'echo' 'It'"'"'s only 1$!'
-      #     │       │└┼┘│
-      #     │       │ │ └── `'s only 1$!'` the literal string
-      #     │       │ └── `\"'\"` is a single quote (as a string)
-      #     │       └── `'It'`, to be concatenated with the strings following it
-      #     └── `echo` wrapped in a pair of `'`, it's totally fine for the shell command itself
-      while [ $# -ne 0 ]; do
-        args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
-        shift
-      done
-      su root -c "$args"
-    }
-    SUDO=su_sudo
-  fi
+# `su`. Auto-detection can be overridden by explicitly setting the
+# environment variable LE_AUTO_SUDO to 'sudo', 'sudo_su' or '' as used below.
+
+# Because the parameters in `su -c` has to be a string,
+# we need to properly escape it.
+su_sudo() {
+  args=""
+  # This `while` loop iterates over all parameters given to this function.
+  # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
+  # will be wrapped in a pair of `'`, then appended to `$args` string
+  # For example, `echo "It's only 1\$\!"` will be escaped to:
+  #   'echo' 'It'"'"'s only 1$!'
+  #     │       │└┼┘│
+  #     │       │ │ └── `'s only 1$!'` the literal string
+  #     │       │ └── `\"'\"` is a single quote (as a string)
+  #     │       └── `'It'`, to be concatenated with the strings following it
+  #     └── `echo` wrapped in a pair of `'`, it's totally fine for the shell command itself
+  while [ $# -ne 0 ]; do
+    args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
+    shift
+  done
+  su root -c "$args"
+}
+
+SUDO_ENV=""
+export CERTBOT_AUTO="$0"
+if [ -n "${LE_AUTO_SUDO+x}" ]; then
+  case "$LE_AUTO_SUDO" in
+    su_sudo|su)
+      SUDO=su_sudo
+      ;;
+    sudo)
+      SUDO=sudo
+      SUDO_ENV="CERTBOT_AUTO=$0"
+      ;;
+    '') ;; # Nothing to do for plain root method.
+    *)
+      echo "Error: unknown root authorization mechanism '$LE_AUTO_SUDO'."
+      exit 1
+  esac
+  echo "Using preset root authorization mechanism '$LE_AUTO_SUDO'."
 else
-  SUDO=
+  if test "`id -u`" -ne "0" ; then
+    if $EXISTS sudo 1>/dev/null 2>&1; then
+      SUDO=sudo
+      SUDO_ENV="CERTBOT_AUTO=$0"
+    else
+      echo \"sudo\" is not available, will use \"su\" for installation steps...
+      SUDO=su_sudo
+    fi
+  else
+    SUDO=
+  fi
 fi
 
 ExperimentalBootstrap() {
@@ -83,7 +168,7 @@ ExperimentalBootstrap() {
       $2
     fi
   else
-    echo "WARNING: $1 support is very experimental at present..."
+    echo "FATAL: $1 support is very experimental at present..."
     echo "if you would like to work on improving it, please ensure you have backups"
     echo "and then run this script again with the --debug flag!"
     exit 1
@@ -91,23 +176,18 @@ ExperimentalBootstrap() {
 }
 
 DeterminePythonVersion() {
-  if command -v python2.7 > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python2.7}
-  elif command -v python27 > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python27}
-  elif command -v python2 > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python2}
-  elif command -v python > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python}
-  else
-    echo "Cannot find any Pythons... please install one!"
+  for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
+    # Break (while keeping the LE_PYTHON value) if found.
+    $EXISTS "$LE_PYTHON" > /dev/null && break
+  done
+  if [ "$?" != "0" ]; then
+    echo "Cannot find any Pythons; please install one!"
     exit 1
   fi
+  export LE_PYTHON
 
-  PYVER=`"$LE_PYTHON" --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
-  if [ $PYVER -eq 26 ]; then
-    ExperimentalBootstrap "Python 2.6"
-  elif [ $PYVER -lt 26 ]; then
+  PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
+  if [ "$PYVER" -lt 26 ]; then
     echo "You have an ancient version of Python entombed in your operating system..."
     echo "This isn't going to work; you'll need at least version 2.6."
     exit 1
@@ -133,14 +213,21 @@ BootstrapDebCommon() {
   #
   # - Debian 6.0.10 "squeeze" (x64)
 
-  $SUDO apt-get update || echo apt-get update hit problems but continuing anyway...
+  if [ "$QUIET" = 1 ]; then
+    QUIET_FLAG='-qq'
+  fi
+
+  $SUDO apt-get $QUIET_FLAG update || echo apt-get update hit problems but continuing anyway...
 
   # virtualenv binary can be found in different packages depending on
   # distro version (#346)
 
   virtualenv=
-  if apt-cache show virtualenv > /dev/null 2>&1; then
-    virtualenv="virtualenv"
+  # virtual env is known to apt and is installable
+  if apt-cache show virtualenv > /dev/null 2>&1 ; then
+    if ! LC_ALL=C apt-cache --quiet=0 show virtualenv 2>&1 | grep -q 'No packages found'; then
+      virtualenv="virtualenv"
+    fi
   fi
 
   if apt-cache show python-virtualenv > /dev/null 2>&1; then
@@ -148,62 +235,76 @@ BootstrapDebCommon() {
   fi
 
   augeas_pkg="libaugeas0 augeas-lenses"
-  AUGVERSION=`apt-cache show --no-all-versions libaugeas0 | grep ^Version: | cut -d" " -f2`
+  AUGVERSION=`LC_ALL=C apt-cache show --no-all-versions libaugeas0 | grep ^Version: | cut -d" " -f2`
+
+  if [ "$ASSUME_YES" = 1 ]; then
+    YES_FLAG="-y"
+  fi
 
   AddBackportRepo() {
-      # ARGS:
-      BACKPORT_NAME="$1"
-      BACKPORT_SOURCELINE="$2"
-      if ! grep -v -e ' *#' /etc/apt/sources.list | grep -q "$BACKPORT_NAME" ; then
-          # This can theoretically error if sources.list.d is empty, but in that case we don't care.
-          if ! grep -v -e ' *#' /etc/apt/sources.list.d/* 2>/dev/null | grep -q "$BACKPORT_NAME"; then
-              /bin/echo -n "Installing augeas from $BACKPORT_NAME in 3 seconds..."
-              sleep 1s
-              /bin/echo -ne "\e[0K\rInstalling augeas from $BACKPORT_NAME in 2 seconds..."
-              sleep 1s
-              /bin/echo -e "\e[0K\rInstalling augeas from $BACKPORT_NAME in 1 second ..."
-              sleep 1s
-              if echo $BACKPORT_NAME | grep -q wheezy ; then
-                  /bin/echo '(Backports are only installed if explicitly requested via "apt-get install -t wheezy-backports")'
-              fi
-
-              sudo sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
-              $SUDO apt-get update
-          fi
+    # ARGS:
+    BACKPORT_NAME="$1"
+    BACKPORT_SOURCELINE="$2"
+    echo "To use the Apache Certbot plugin, augeas needs to be installed from $BACKPORT_NAME."
+    if ! grep -v -e ' *#' /etc/apt/sources.list | grep -q "$BACKPORT_NAME" ; then
+      # This can theoretically error if sources.list.d is empty, but in that case we don't care.
+      if ! grep -v -e ' *#' /etc/apt/sources.list.d/* 2>/dev/null | grep -q "$BACKPORT_NAME"; then
+        if [ "$ASSUME_YES" = 1 ]; then
+          /bin/echo -n "Installing augeas from $BACKPORT_NAME in 3 seconds..."
+          sleep 1s
+          /bin/echo -ne "\e[0K\rInstalling augeas from $BACKPORT_NAME in 2 seconds..."
+          sleep 1s
+          /bin/echo -e "\e[0K\rInstalling augeas from $BACKPORT_NAME in 1 second ..."
+          sleep 1s
+          add_backports=1
+        else
+          read -p "Would you like to enable the $BACKPORT_NAME repository [Y/n]? " response
+          case $response in
+            [yY][eE][sS]|[yY]|"")
+              add_backports=1;;
+            *)
+              add_backports=0;;
+          esac
+        fi
+        if [ "$add_backports" = 1 ]; then
+          $SUDO sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
+          $SUDO apt-get $QUIET_FLAG update
+        fi
       fi
-      $SUDO apt-get install -y --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
+    fi
+    if [ "$add_backports" != 0 ]; then
+      $SUDO apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
       augeas_pkg=
-
+    fi
   }
 
 
   if dpkg --compare-versions 1.0 gt "$AUGVERSION" ; then
-      if lsb_release -a | grep -q wheezy ; then
-          AddBackportRepo wheezy-backports "deb http://http.debian.net/debian wheezy-backports main"
-      elif lsb_release -a | grep -q precise ; then
-          # XXX add ARM case
-          AddBackportRepo precise-backports "deb http://archive.ubuntu.com/ubuntu precise-backports main restricted universe multiverse"
-      else
-          echo "No libaugeas0 version is available that's new enough to run the"
-          echo "Let's Encrypt apache plugin..."
-      fi
-      # XXX add a case for ubuntu PPAs
+    if lsb_release -a | grep -q wheezy ; then
+      AddBackportRepo wheezy-backports "deb http://http.debian.net/debian wheezy-backports main"
+    elif lsb_release -a | grep -q precise ; then
+      # XXX add ARM case
+      AddBackportRepo precise-backports "deb http://archive.ubuntu.com/ubuntu precise-backports main restricted universe multiverse"
+    else
+      echo "No libaugeas0 version is available that's new enough to run the"
+      echo "Certbot apache plugin..."
+    fi
+    # XXX add a case for ubuntu PPAs
   fi
 
-  $SUDO apt-get install -y --no-install-recommends \
+  $SUDO apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends \
     python \
     python-dev \
     $virtualenv \
     gcc \
-    dialog \
     $augeas_pkg \
     libssl-dev \
+    openssl \
     libffi-dev \
     ca-certificates \
 
 
-
-  if ! command -v virtualenv > /dev/null ; then
+  if ! $EXISTS virtualenv > /dev/null ; then
     echo Failed to install a working \"virtualenv\" command, exiting
     exit 1
   fi
@@ -211,8 +312,10 @@ BootstrapDebCommon() {
 
 BootstrapRpmCommon() {
   # Tested with:
-  #   - Fedora 22, 23 (x64)
+  #   - Fedora 20, 21, 22, 23 (x64)
   #   - Centos 7 (x64: on DigitalOcean droplet)
+  #   - CentOS 7 Minimal install in a Hyper-V VM
+  #   - CentOS 6 (EPEL must be installed manually)
 
   if type dnf 2>/dev/null
   then
@@ -226,55 +329,92 @@ BootstrapRpmCommon() {
     exit 1
   fi
 
+  if [ "$ASSUME_YES" = 1 ]; then
+    yes_flag="-y"
+  fi
+  if [ "$QUIET" = 1 ]; then
+    QUIET_FLAG='--quiet'
+  fi
+
+  if ! $SUDO $tool list *virtualenv >/dev/null 2>&1; then
+    echo "To use Certbot, packages from the EPEL repository need to be installed."
+    if ! $SUDO $tool list epel-release >/dev/null 2>&1; then
+      echo "Please enable this repository and try running Certbot again."
+      exit 1
+    fi
+    if [ "$ASSUME_YES" = 1 ]; then
+      /bin/echo -n "Enabling the EPEL repository in 3 seconds..."
+      sleep 1s
+      /bin/echo -ne "\e[0K\rEnabling the EPEL repository in 2 seconds..."
+      sleep 1s
+      /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 seconds..."
+      sleep 1s
+    fi
+    if ! $SUDO $tool install $yes_flag $QUIET_FLAG epel-release; then
+      echo "Could not enable EPEL. Aborting bootstrap!"
+      exit 1
+    fi
+  fi
+
+  pkgs="
+    gcc
+    augeas-libs
+    openssl
+    openssl-devel
+    libffi-devel
+    redhat-rpm-config
+    ca-certificates
+  "
+
   # Some distros and older versions of current distros use a "python27"
   # instead of "python" naming convention. Try both conventions.
-  if ! $SUDO $tool install -y \
-         python \
-         python-devel \
-         python-virtualenv
-  then
-    if ! $SUDO $tool install -y \
-           python27 \
-           python27-devel \
-           python27-virtualenv
-    then
-      echo "Could not install Python dependencies. Aborting bootstrap!"
-      exit 1
-    fi
+  if $SUDO $tool list python >/dev/null 2>&1; then
+    pkgs="$pkgs
+      python
+      python-devel
+      python-virtualenv
+      python-tools
+      python-pip
+    "
+  else
+    pkgs="$pkgs
+      python27
+      python27-devel
+      python27-virtualenv
+      python27-tools
+      python27-pip
+    "
   fi
-
-  if ! $SUDO $tool install -y \
-         gcc \
-         dialog \
-         augeas-libs \
-         openssl \
-         openssl-devel \
-         libffi-devel \
-         redhat-rpm-config \
-         ca-certificates
-  then
-      echo "Could not install additional dependencies. Aborting bootstrap!"
-      exit 1
-  fi
-
 
   if $SUDO $tool list installed "httpd" >/dev/null 2>&1; then
-    if ! $SUDO $tool install -y mod_ssl
-    then
-      echo "Apache found, but mod_ssl could not be installed."
-    fi
+    pkgs="$pkgs
+      mod_ssl
+    "
+  fi
+
+  if ! $SUDO $tool install $yes_flag $QUIET_FLAG $pkgs; then
+    echo "Could not install OS dependencies. Aborting bootstrap!"
+    exit 1
   fi
 }
 
 BootstrapSuseCommon() {
   # SLE12 don't have python-virtualenv
 
-  $SUDO zypper -nq in -l \
+  if [ "$ASSUME_YES" = 1 ]; then
+    zypper_flags="-nq"
+    install_flags="-l"
+  fi
+
+  if [ "$QUIET" = 1 ]; then
+    QUIET_FLAG='-qq'
+  fi
+
+  $SUDO zypper $QUIET_FLAG $zypper_flags in $install_flags \
     python \
     python-devel \
     python-virtualenv \
     gcc \
-    dialog \
     augeas-lenses \
     libopenssl-devel \
     libffi-devel \
@@ -287,13 +427,12 @@ BootstrapArchCommon() {
   #
   # "python-virtualenv" is Python3, but "python2-virtualenv" provides
   # only "virtualenv2" binary, not "virtualenv" necessary in
-  # ./bootstrap/dev/_common_venv.sh
+  # ./tools/_venv_common.sh
 
   deps="
     python2
     python-virtualenv
     gcc
-    dialog
     augeas
     openssl
     libffi
@@ -301,10 +440,19 @@ BootstrapArchCommon() {
     pkg-config
   "
 
-  missing=$("$SUDO" pacman -T $deps)
+  # pacman -T exits with 127 if there are missing dependencies
+  missing=$($SUDO pacman -T $deps) || true
+
+  if [ "$ASSUME_YES" = 1 ]; then
+    noconfirm="--noconfirm"
+  fi
 
   if [ "$missing" ]; then
-    "$SUDO" pacman -S --needed $missing
+    if [ "$QUIET" = 1]; then
+      $SUDO pacman -S --needed $missing $noconfirm > /dev/null
+    else
+      $SUDO pacman -S --needed $missing $noconfirm
+    fi
   fi
 }
 
@@ -312,28 +460,36 @@ BootstrapGentooCommon() {
   PACKAGES="
     dev-lang/python:2.7
     dev-python/virtualenv
-    dev-util/dialog
     app-admin/augeas
     dev-libs/openssl
     dev-libs/libffi
     app-misc/ca-certificates
     virtual/pkgconfig"
 
+  ASK_OPTION="--ask"
+  if [ "$ASSUME_YES" = 1 ]; then
+    ASK_OPTION=""
+  fi
+
   case "$PACKAGE_MANAGER" in
     (paludis)
-      "$SUDO" cave resolve --keep-targets if-possible $PACKAGES -x
+      $SUDO cave resolve --preserve-world --keep-targets if-possible $PACKAGES -x
       ;;
     (pkgcore)
-      "$SUDO" pmerge --noreplace $PACKAGES
+      $SUDO pmerge --noreplace --oneshot $ASK_OPTION $PACKAGES
       ;;
     (portage|*)
-      "$SUDO" emerge --noreplace $PACKAGES
+      $SUDO emerge --noreplace --oneshot $ASK_OPTION $PACKAGES
       ;;
   esac
 }
 
 BootstrapFreeBsd() {
-  "$SUDO" pkg install -Ay \
+  if [ "$QUIET" = 1 ]; then
+    QUIET_FLAG="--quiet"
+  fi
+
+  $SUDO pkg install -Ay $QUIET_FLAG \
     python \
     py27-virtualenv \
     augeas \
@@ -341,23 +497,80 @@ BootstrapFreeBsd() {
 }
 
 BootstrapMac() {
-  if ! hash brew 2>/dev/null; then
-      echo "Homebrew Not Installed\nDownloading..."
-      ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+  if hash brew 2>/dev/null; then
+    echo "Using Homebrew to install dependencies..."
+    pkgman=brew
+    pkgcmd="brew install"
+  elif hash port 2>/dev/null; then
+    echo "Using MacPorts to install dependencies..."
+    pkgman=port
+    pkgcmd="$SUDO port install"
+  else
+    echo "No Homebrew/MacPorts; installing Homebrew..."
+    ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    pkgman=brew
+    pkgcmd="brew install"
   fi
 
-  brew install augeas
-  brew install dialog
+  $pkgcmd augeas
+  if [ "$(which python)" = "/System/Library/Frameworks/Python.framework/Versions/2.7/bin/python" \
+      -o "$(which python)" = "/usr/bin/python" ]; then
+    # We want to avoid using the system Python because it requires root to use pip.
+    # python.org, MacPorts or HomeBrew Python installations should all be OK.
+    echo "Installing python..."
+    $pkgcmd python
+  fi
+
+  # Workaround for _dlopen not finding augeas on macOS
+  if [ "$pkgman" = "port" ] && ! [ -e "/usr/local/lib/libaugeas.dylib" ] && [ -e "/opt/local/lib/libaugeas.dylib" ]; then
+    echo "Applying augeas workaround"
+    $SUDO mkdir -p /usr/local/lib/
+    $SUDO ln -s /opt/local/lib/libaugeas.dylib /usr/local/lib/
+  fi
 
   if ! hash pip 2>/dev/null; then
-      echo "pip Not Installed\nInstalling python from Homebrew..."
-      brew install python
+    echo "pip not installed"
+    echo "Installing pip..."
+    curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | python
   fi
 
   if ! hash virtualenv 2>/dev/null; then
-      echo "virtualenv Not Installed\nInstalling with pip"
-      pip install virtualenv
+    echo "virtualenv not installed."
+    echo "Installing with pip..."
+    pip install virtualenv
   fi
+}
+
+BootstrapSmartOS() {
+  pkgin update
+  pkgin -y install 'gcc49' 'py27-augeas' 'py27-virtualenv'
+}
+
+BootstrapMageiaCommon() {
+  if [ "$QUIET" = 1 ]; then
+    QUIET_FLAG='--quiet'
+  fi
+
+  if ! $SUDO urpmi --force $QUIET_FLAG \
+      python \
+      libpython-devel \
+      python-virtualenv
+    then
+      echo "Could not install Python dependencies. Aborting bootstrap!"
+      exit 1
+  fi
+
+  if ! $SUDO urpmi --force $QUIET_FLAG \
+      git \
+      gcc \
+      python-augeas \
+      libopenssl-devel \
+      libffi-devel \
+      rootcerts
+    then
+      echo "Could not install additional dependencies. Aborting bootstrap!"
+      exit 1
+    fi
 }
 
 
@@ -366,10 +579,13 @@ Bootstrap() {
   if [ -f /etc/debian_version ]; then
     echo "Bootstrapping dependencies for Debian-based OSes..."
     BootstrapDebCommon
+  elif [ -f /etc/mageia-release ] ; then
+    # Mageia has both /etc/mageia-release and /etc/redhat-release
+    ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
   elif [ -f /etc/redhat-release ]; then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
     BootstrapRpmCommon
-  elif `grep -q openSUSE /etc/os-release` ; then
+  elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
     echo "Bootstrapping dependencies for openSUSE-based OSes..."
     BootstrapSuseCommon
   elif [ -f /etc/arch-release ]; then
@@ -378,7 +594,7 @@ Bootstrap() {
       BootstrapArchCommon
     else
       echo "Please use pacman to install letsencrypt packages:"
-      echo "# pacman -S letsencrypt letsencrypt-apache"
+      echo "# pacman -S certbot certbot-apache"
       echo
       echo "If you would like to use the virtualenv way, please run the script again with the"
       echo "--debug flag."
@@ -391,29 +607,40 @@ Bootstrap() {
   elif uname | grep -iq FreeBSD ; then
     ExperimentalBootstrap "FreeBSD" BootstrapFreeBsd
   elif uname | grep -iq Darwin ; then
-    ExperimentalBootstrap "Mac OS X" BootstrapMac
-  elif grep -iq "Amazon Linux" /etc/issue ; then
+    ExperimentalBootstrap "macOS" BootstrapMac
+  elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
     ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
+  elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
+    ExperimentalBootstrap "Joyent SmartOS Zone" BootstrapSmartOS
   else
-    echo "Sorry, I don't know how to bootstrap Let's Encrypt on your operating system!"
+    echo "Sorry, I don't know how to bootstrap Certbot on your operating system!"
     echo
-    echo "You will need to bootstrap, configure virtualenv, and run a peep install manually."
+    echo "You will need to bootstrap, configure virtualenv, and run pip install manually."
     echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
     echo "for more info."
+    exit 1
   fi
 }
 
 TempDir() {
-  mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || OS X
+  mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || macOS
 }
 
 
 
-if [ "$NO_SELF_UPGRADE" = 1 ]; then
+if [ "$1" = "--le-auto-phase2" ]; then
   # Phase 2: Create venv, install LE, and run.
 
+  shift 1  # the --le-auto-phase2 arg
   if [ -f "$VENV_BIN/letsencrypt" ]; then
-    INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | cut -d " " -f 2)
+    # --version output ran through grep due to python-cryptography DeprecationWarnings
+    # grep for both certbot and letsencrypt until certbot and shim packages have been released
+    INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | grep "^certbot\|^letsencrypt" | cut -d " " -f 2)
+    if [ -z "$INSTALLED_VERSION" ]; then
+        echo "Error: couldn't get currently installed version for $VENV_BIN/letsencrypt: " 1>&2
+        "$VENV_BIN/letsencrypt" --version
+        exit 1
+    fi
   else
     INSTALLED_VERSION="none"
   fi
@@ -429,229 +656,211 @@ if [ "$NO_SELF_UPGRADE" = 1 ]; then
 
     echo "Installing Python packages..."
     TEMP_DIR=$(TempDir)
+    trap 'rm -rf "$TEMP_DIR"' EXIT
     # There is no $ interpolation due to quotes on starting heredoc delimiter.
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/letsencrypt-auto-requirements.txt"
-# This is the flattened list of packages letsencrypt-auto installs. To generate
-# this, do `pip install -r -e acme -e . -e letsencrypt-apache`, `pip freeze`,
-# and then gather the hashes.
+# This is the flattened list of packages certbot-auto installs. To generate
+# this, do
+# `pip install --no-cache-dir -e acme -e . -e certbot-apache -e certbot-nginx`,
+# and then use `hashin` or a more secure method to gather the hashes.
 
-# sha256: wxZH7baf09RlqEfqMVfTe-0flfGXYLEaR6qRwEtmYxQ
-# sha256: YrCJpVvh2JSc0rx-DfC9254Cj678jDIDjMhIYq791uQ
-argparse==1.4.0
+# Hashin example:
+# pip install hashin
+# hashin -r letsencrypt-auto-requirements.txt cryptography==1.5.2
+# sets the new certbot-auto pinned version of cryptography to 1.5.2
 
-# sha256: U8HJ3bMEMVE-t_PN7wo-BrDxJSGIqqd0SvD1pM1F268
-# sha256: pWj0nfyhKo2fNwGHJX78WKOBCeHu5xTZKFYdegGKZPg
-# sha256: gJxsqM-8ruv71DK0V2ABtA04_yRjdzy1dXfXXhoCC8M
-# sha256: hs3KLNnLpBQiIwOQ3xff6qnzRKkR45dci-naV7NVSOk
-# sha256: JLE9uErsOFyiPHuN7YPvi7QXe8GB0UdY-fl1vl0CDYY
-# sha256: lprv_XwOCX9r4e_WgsFWriJlkaB5OpS2wtXkKT9MjU4
-# sha256: AA81jUsPokn-qrnBzn1bL-fgLnvfaAbCZBhQX8aF4mg
-# sha256: qdhvRgu9g1ii1ROtd54_P8h447k6ALUAL66_YW_-a5w
-# sha256: MSezqzPrI8ysBx-aCAJ0jlz3xcvNAkgrsGPjW0HbsLA
-# sha256: 4rLUIjZGmkAiTTnntsYFdfOIsvQj81TH7pClt_WMgGU
-# sha256: jC3Mr-6JsbQksL7GrS3ZYiyUnSAk6Sn12h7YAerHXx0
-# sha256: pN56TRGu1Ii6tPsU9JiFh6gpvs5aIEM_eA1uM7CAg8s
-# sha256: XKj-MEJSZaSSdOSwITobyY9LE0Sa5elvmEdx5dg-WME
-# sha256: pP04gC9Z5xTrqBoCT2LbcQsn2-J6fqEukRU3MnqoTTA
-# sha256: hs1pErvIPpQF1Kc81_S07oNTZS0tvHyCAQbtW00bqzo
-# sha256: jx0XfTZOo1kAQVriTKPkcb49UzTtBBkpQGjEn0WROZg
-cffi==1.4.2
+argparse==1.4.0 \
+    --hash=sha256:c31647edb69fd3d465a847ea3157d37bed1f95f19760b11a47aa91c04b666314 \
+    --hash=sha256:62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4
 
-# sha256: O1CoPdWBSd_O6Yy2VlJl0QtT6cCivKfu73-19VJIkKc
-ConfigArgParse==0.10.0
+# This comes before cffi because cffi will otherwise install an unchecked
+# version via setup_requires.
+pycparser==2.14 \
+    --hash=sha256:7959b4a74abdc27b312fed1c21e6caf9309ce0b29ea86b591fd2e99ecdf27f73 \
+    --no-binary pycparser
 
-# sha256: ovVlB3DhyH-zNa8Zqbfrc_wFzPIhROto230AzSvLCQI
-configobj==5.0.6
+cffi==1.4.2 \
+    --hash=sha256:53c1c9ddb30431513eb7f3cdef0a3e06b0f1252188aaa7744af0f5a4cd45dbaf \
+    --hash=sha256:a568f49dfca12a8d9f370187257efc58a38109e1eee714d928561d7a018a64f8 \
+    --hash=sha256:809c6ca8cfbcaeebfbd432b4576001b40d38ff2463773cb57577d75e1a020bc3 \
+    --hash=sha256:86cdca2cd9cba41422230390df17dfeaa9f344a911e3975c8be9da57b35548e9 \
+    --hash=sha256:24b13db84aec385ca23c7b8ded83ef8bb4177bc181d14758f9f975be5d020d86 \
+    --hash=sha256:969aeffd7c0e097f6be1efd682c156ae226591a0793a94b6c2d5e4293f4c8d4e \
+    --hash=sha256:000f358d4b0fa249feaab9c1ce7d5b2fe7e02e7bdf6806c26418505fc685e268 \
+    --hash=sha256:a9d86f460bbd8358a2d513ad779e3f3fc878e3b93a00b5002faebf616ffe6b9c \
+    --hash=sha256:3127b3ab33eb23ccac071f9a0802748e5cf7c5cbcd02482bb063e35b41dbb0b0 \
+    --hash=sha256:e2b2d42236469a40224d39e7b6c60575f388b2f423f354c7ee90a5b7f58c8065 \
+    --hash=sha256:8c2dccafee89b1b424b0bec6ad2dd9622c949d2024e929f5da1ed801eac75f1d \
+    --hash=sha256:a4de7a4d11aed488bab4fb14f4988587a829bece5a20433f780d6e33b08083cb \
+    --hash=sha256:5ca8fe30425265a49274e4b0213a1bc98f4b13449ae5e96f984771e5d83e58c1 \
+    --hash=sha256:a4fd38802f59e714eba81a024f62db710b27dbe27a7ea12e911537327aa84d30 \
+    --hash=sha256:86cd6912bbc83e9405d4a73cd7f4b4ee8353652d2dbc7c820106ed5b4d1bab3a \
+    --hash=sha256:8f1d177d364ea35900415ae24ca3e471be3d5334ed0419294068c49f45913998
+ConfigArgParse==0.10.0 \
+    --hash=sha256:3b50a83dd58149dfcee98cb6565265d10b53e9c0a2bca7eeef7fb5f5524890a7
+configobj==5.0.6 \
+    --hash=sha256:a2f5650770e1c87fb335af19a9b7eb73fc05ccf22144eb68db7d00cd2bcb0902
+cryptography==1.5.3 \
+    --hash=sha256:e514d92086246b53ae9b048df652cf3036b462e50a6ce9fac6b6253502679991 \
+    --hash=sha256:10ee414f4b5af403a0d8f20dfa80f7dad1fc7ae5452ec5af03712d5b6e78c664 \
+    --hash=sha256:7234456d1f4345a144ed07af2416c7c0659d4bb599dd1a963103dc8c183b370e \
+    --hash=sha256:d3b9587406f94642bd70b3d666b813f446e95f84220c9e416ad94cbfb6be2eaa \
+    --hash=sha256:b15fc6b59f1474eef62207c85888afada8acc47fae8198ba2b0197d54538961a \
+    --hash=sha256:3b62d65d342704fc07ed171598db2a2775bdf587b1b6abd2cba2261bfe3ccde3 \
+    --hash=sha256:059343022ec904c867a13bc55d2573e36c8cfb2c250e30d8a2e9825f253b07ba \
+    --hash=sha256:c7897cf13bc8b4ee0215d83cbd51766d87c06b277fcca1f9108595508e5bcfb4 \
+    --hash=sha256:9b69e983e5bf83039ddd52e52a28c7faedb2b22bdfb5876377b95aac7d3be63e \
+    --hash=sha256:61e40905c426d02b3fae38088dc66ce4ef84830f7eb223dec6b3ac3ccdc676fb \
+    --hash=sha256:00783a32bcd91a12177230d35bfcf70a2333ade4a6b607fac94a633a7971c671 \
+    --hash=sha256:d11973f49b648cde1ea1a30e496d7557dbfeccd08b3cd9ba58d286a9c274ff8e \
+    --hash=sha256:f24bedf28b81932ba6063aec9a826669f5237ea3b755efe04d98b072faa053a5 \
+    --hash=sha256:3ab5725367239e3deb9b92e917aa965af3fef008f25b96a3000821869e208181 \
+    --hash=sha256:8a53209de822e22b5f73bf4b99e68ac4ccc91051fd6751c8252982983e86a77d \
+    --hash=sha256:5a07439d4b1e4197ac202b7eea45e26a6fd65757652dc50f1a63367f711df933 \
+    --hash=sha256:26b1c4b40aec7b0074bceabe6e06565aa28176eca7323a31df66ebf89fe916d3 \
+    --hash=sha256:eaa4a7b5a6682adcf8d6ebb2a08a008802657643655bb527c95c8a3860253d8e \
+    --hash=sha256:8156927dcf8da274ff205ad0612f75c380df45385bacf98531a5b3348c88d135 \
+    --hash=sha256:61ec0d792749d0e91e84b1d58b6dfd204806b10b5811f846c2ceca0de028c53a \
+    --hash=sha256:26330c88041569ca621cc42274d0ea2667a48b6deab41467272c3aba0b6e8f07 \
+    --hash=sha256:cf82ddac919b587f5e44247579b433224cc2e03332d2ea4d89aa70d7e6b64ae5
+enum34==1.1.2 \
+    --hash=sha256:2475d7fcddf5951e92ff546972758802de5260bf409319a9f1934e6bbc8b1dc7 \
+    --hash=sha256:35907defb0f992b75ab7788f65fedc1cf20ffa22688e0e6f6f12afc06b3ea501
+funcsigs==0.4 \
+    --hash=sha256:ff5ad9e2f8d9e5d1e8bbfbcf47722ab527cf0d51caeeed9da6d0f40799383fde \
+    --hash=sha256:d83ce6df0b0ea6618700fe1db353526391a8a3ada1b7aba52fed7a61da772033
+idna==2.0 \
+    --hash=sha256:9b2fc50bd3c4ba306b9651b69411ef22026d4d8335b93afc2214cef1246ce707 \
+    --hash=sha256:16199aad938b290f5be1057c0e1efc6546229391c23cea61ca940c115f7d3d3b
+ipaddress==1.0.16 \
+    --hash=sha256:935712800ce4760701d89ad677666cd52691fd2f6f0b340c8b4239a3c17988a5 \
+    --hash=sha256:5a3182b322a706525c46282ca6f064d27a02cffbd449f9f47416f1dc96aa71b0
+linecache2==1.0.0 \
+    --hash=sha256:e78be9c0a0dfcbac712fe04fbf92b96cddae80b1b842f24248214c8496f006ef \
+    --hash=sha256:4b26ff4e7110db76eeb6f5a7b64a82623839d595c2038eeda662f2a2db78e97c
+ordereddict==1.1 \
+    --hash=sha256:1c35b4ac206cef2d24816c89f89cf289dd3d38cf7c449bb3fab7bf6d43f01b1f
+parsedatetime==2.1 \
+    --hash=sha256:ce9d422165cf6e963905cd5f74f274ebf7cc98c941916169178ef93f0e557838 \
+    --hash=sha256:17c578775520c99131634e09cfca5a05ea9e1bd2a05cd06967ebece10df7af2d
+pbr==1.8.1 \
+    --hash=sha256:46c8db75ae75a056bd1cc07fa21734fe2e603d11a07833ecc1eeb74c35c72e0c \
+    --hash=sha256:e2127626a91e6c885db89668976db31020f0af2da728924b56480fc7ccf09649
+pyasn1==0.1.9 \
+    --hash=sha256:61f9d99e3cef65feb1bfe3a2eef7a93eb93819d345bf54bcd42f4e63d5204dae \
+    --hash=sha256:1802a6dd32045e472a419db1441aecab469d33e0d2749e192abdec52101724af \
+    --hash=sha256:35025cd9422c96504912f04e2f15fe79390a8597b430c2ca5d0534cf9309ffa0 \
+    --hash=sha256:2f96ed5a0c329ca16230b326ca12b7461ec8f65e0be3e4f997516f36bf82a345 \
+    --hash=sha256:28fee44217991cfad9e6a0b9f7e3f26041e21ebc96629e94e585ccd05d49fa65 \
+    --hash=sha256:326e7a854a17fab07691204747695f8f692d674588a355c441fb14f660bf4e68 \
+    --hash=sha256:cda5a90485709ca6795c86056c3e5fe7266028b05e53f1d527fdf93a6365a6b8 \
+    --hash=sha256:0cb2a14742b543fdd68f931a14ce3829186ed2b1b2267a06787388c96b2dd9be \
+    --hash=sha256:5191ff6b9126d2c039dd87f8ff025bed274baf07fa78afa46f556b1ad7265d6e \
+    --hash=sha256:8323e03637b2d072cc7041300bac6ec448c3c28950ab40376036788e9a1af629 \
+    --hash=sha256:853cacd96d1f701ddd67aa03ecc05f51890135b7262e922710112f12a2ed2a7f
+pyOpenSSL==16.2.0 \
+    --hash=sha256:26ca380ddf272f7556e48064bbcd5bd71f83dfc144f3583501c7ddbd9434ee17 \
+    --hash=sha256:7779a3bbb74e79db234af6a08775568c6769b5821faecf6e2f4143edb227516e
+pyparsing==2.1.8 \
+    --hash=sha256:2f0f5ceb14eccd5aef809d6382e87df22ca1da583c79f6db01675ce7d7f49c18 \
+    --hash=sha256:03a4869b9f3493807ee1f1cb405e6d576a1a2ca4d81a982677c0c1ad6177c56b \
+    --hash=sha256:ab09aee814c0241ff0c503cff30018219fe1fc14501d89f406f4664a0ec9fbcd \
+    --hash=sha256:6e9a7f052f8e26bcf749e4033e3115b6dc7e3c85aafcb794b9a88c9d9ef13c97 \
+    --hash=sha256:9f463a6bcc4eeb6c08f1ed84439b17818e2085937c0dee0d7674ac127c67c12b \
+    --hash=sha256:3626b4d81cfb300dad57f52f2f791caaf7b06c09b368c0aa7b868e53a5775424 \
+    --hash=sha256:367b90cc877b46af56d4580cd0ae278062903f02b8204ab631f5a2c0f50adfd0 \
+    --hash=sha256:9f1ea360086cd68681e7f4ca8f1f38df47bf81942a0d76a9673c2d23eff35b13
+pyRFC3339==1.0 \
+    --hash=sha256:eea31835c56e2096af4363a5745a784878a61d043e247d3a6d6a0a32a9741f56 \
+    --hash=sha256:8dfbc6c458b8daba1c0f3620a8c78008b323a268b27b7359e92a4ae41325f535
+python-augeas==0.5.0 \
+    --hash=sha256:67d59d66cdba8d624e0389b87b2a83a176f21f16a87553b50f5703b23f29bac2
+pytz==2015.7 \
+    --hash=sha256:3abe6a6d3fc2fbbe4c60144211f45da2edbe3182a6f6511af6bbba0598b1f992 \
+    --hash=sha256:939ef9c1e1224d980405689a97ffcf7828c56d1517b31d73464356c1f2b7769e \
+    --hash=sha256:ead4aefa7007249e05e51b01095719d5a8dd95760089f5730aac5698b1932918 \
+    --hash=sha256:3cca0df08bd0ed98432390494ce3ded003f5e661aa460be7a734bffe35983605 \
+    --hash=sha256:3ede470d3d17ba3c07638dfa0d10452bc1b6e5ad326127a65ba77e6aaeb11bec \
+    --hash=sha256:68c47964f7186eec306b13629627722b9079cd4447ed9e5ecaecd4eac84ca734 \
+    --hash=sha256:dd5d3991950aae40a6c81de1578942e73d629808cefc51d12cd157980e6cfc18 \
+    --hash=sha256:a77c52062c07eb7c7b30545dbc73e32995b7e117eea750317b5cb5c7a4618f14 \
+    --hash=sha256:81af9aec4bc960a9a0127c488f18772dae4634689233f06f65443e7b11ebeb51 \
+    --hash=sha256:e079b1dadc5c06246cc1bb6fe1b23a50b1d1173f2edd5104efd40bb73a28f406 \
+    --hash=sha256:fbd26746772c24cb93c8b97cbdad5cb9e46c86bbdb1b9d8a743ee00e2fb1fc5d \
+    --hash=sha256:99266ef30a37e43932deec2b7ca73e83c8dbc3b9ff703ec73eca6b1dae6befea \
+    --hash=sha256:8b6ce1c993909783bc96e0b4f34ea223bff7a4df2c90bdb9c4e0f1ac928689e3
+requests==2.12.1 \
+    --hash=sha256:3f3f27a9d0f9092935efc78054ef324eb9f8166718270aefe036dfa1e4f68e1e \
+    --hash=sha256:2109ecea94df90980be040490ff1d879971b024861539abb00054062388b612e
+six==1.10.0 \
+    --hash=sha256:0ff78c403d9bccf5a425a6d31a12aa6b47f1c21ca4dc2573a7e2f32a97335eb1 \
+    --hash=sha256:105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a
+traceback2==1.4.0 \
+    --hash=sha256:8253cebec4b19094d67cc5ed5af99bf1dba1285292226e98a31929f87a5d6b23 \
+    --hash=sha256:05acc67a09980c2ecfedd3423f7ae0104839eccb55fc645773e1caa0951c3030
+unittest2==1.1.0 \
+    --hash=sha256:13f77d0875db6d9b435e1d4f41e74ad4cc2eb6e1d5c824996092b3430f088bb8 \
+    --hash=sha256:22882a0e418c284e1f718a822b3b022944d53d2d908e1690b319a9d3eb2c0579
+zope.component==4.2.2 \
+    --hash=sha256:282c112b55dd8e3c869a3571f86767c150ab1284a9ace2bdec226c592acaf81a
+zope.event==4.1.0 \
+    --hash=sha256:dc7a59a2fd91730d3793131a5d261b29e93ec4e2a97f1bc487ce8defee2fe786
+zope.interface==4.1.3 \
+    --hash=sha256:f07b631f7a601cd8cbd3332d54f43142c7088a83299f859356f08d1d4d4259b3 \
+    --hash=sha256:de5cca083b9439d8002fb76bbe6b4998c5a5a721fab25b84298967f002df4c94 \
+    --hash=sha256:6788416f7ea7f5b8a97be94825377aa25e8bdc73463e07baaf9858b29e737077 \
+    --hash=sha256:6f3230f7254518201e5a3708cbb2de98c848304f06e3ded8bfb39e5825cba2e1 \
+    --hash=sha256:5fa575a5240f04200c3088427d0d4b7b737f6e9018818a51d8d0f927a6a2517a \
+    --hash=sha256:522194ad6a545735edd75c8a83f48d65d1af064e432a7d320d64f56bafc12e99 \
+    --hash=sha256:e8c7b2d40943f71c99148c97f66caa7f5134147f57423f8db5b4825099ce9a09 \
+    --hash=sha256:279024f0208601c3caa907c53876e37ad88625f7eaf1cb3842dbe360b2287017 \
+    --hash=sha256:2e221a9eec7ccc58889a278ea13dcfed5ef939d80b07819a9a8b3cb1c681484f \
+    --hash=sha256:69118965410ec86d44dc6b9017ee3ddbd582e0c0abeef62b3a19dbf6c8ad132b \
+    --hash=sha256:d04df8686ec864d0cade8cf199f7f83aecd416109a20834d568f8310ded12dea \
+    --hash=sha256:e75a947e15ee97e7e71e02ea302feb2fc62d3a2bb4668bf9dfbed43a506ac7e7 \
+    --hash=sha256:4e45d22fb883222a5ab9f282a116fec5ee2e8d1a568ccff6a2d75bbd0eb6bcfc \
+    --hash=sha256:bce9339bb3c7a55e0803b63d21c5839e8e479bc85c4adf42ae415b72f94facb2 \
+    --hash=sha256:928138365245a0e8869a5999fbcc2a45475a0a6ed52a494d60dbdc540335fedd \
+    --hash=sha256:0d841ba1bb840eea0e6489dc5ecafa6125554971f53b5acb87764441e61bceba \
+    --hash=sha256:b09c8c1d47b3531c400e0195697f1414a63221de6ef478598a4f1460f7d9a392
+mock==1.0.1 \
+    --hash=sha256:b839dd2d9c117c701430c149956918a423a9863b48b09c90e30a6013e7d2f44f \
+    --hash=sha256:8f83080daa249d036cbccfb8ae5cc6ff007b88d6d937521371afabe7b19badbc
+letsencrypt==0.7.0 \
+    --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
+    --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-# sha256: 1U_hszrB4J8cEj4vl0948z6V1h1PSALdISIKXD6MEX0
-# sha256: B1X2aE4RhSAFs2MTdh7ctbqEOmTNAizhrC3L1JqTYG0
-# sha256: zjhNo4lZlluh90VKJfVp737yqxRd8ueiml4pS3TgRnc
-# sha256: GvQDkV3LmWHDB2iuZRr6tpKC0dpaut-mN1IhrBGHdQM
-# sha256: ag08d91PH-W8ZfJ--3fsjQSjiNpesl66DiBAwJgZ30o
-# sha256: KdelgcO6_wTh--IAaltHjZ7cfPmib8ijWUkkf09lA3k
-# sha256: IPAWEKpAh_bVadjMIMR4uB8DhIYnWqqx3Dx12VAsZ-A
-# sha256: l9hGUIulDVomml82OK4cFmWbNTFaH0B_oVF2cH2j0Jc
-# sha256: djfqRMLL1NsvLKccsmtmPRczORqnafi8g2xZVilbd5g
-# sha256: gR-eqJVbPquzLgQGU0XDB4Ui5rPuPZLz0n08fNcWpjM
-# sha256: DXCMjYz97Qm4fCoLqHY856ZjWG4EPmrEL9eDHpKQHLY
-# sha256: Efnq11YqPgATWGytM5o_em9Yg8zhw7S5jhrGnft3p_Y
-# sha256: dNhnm55-0ePs-wq1NNyTUruxz3PTYsmQkJTAlyivqJY
-# sha256: z1Hd-123eBaiB1OKZgEUuC4w4IAD_uhJmwILi4SA2sU
-# sha256: 47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU
-# sha256: dITvgYGUFB3_eUdf-74vd6-FHiw7v-Lk1ZEjEi-KTjM
-# sha256: 7gLB6J7l7pUBV6VK1YTXN8Ec83putMCFPozz8n6WLcA
-# sha256: pfGPaxhQpVVKV9v2YsrSUSpGBW5paHJqmFjngN1bnQo
-# sha256: 26GA8xrb5xi6qdbPirY0hJSwlLK4GAL_8zvVDSfRPnM
-# sha256: 5RinlLjzjoOC9_B3kUGBPOtIE6z9MRVBwNsOGJ69eN4
-# sha256: f1FFn4TWcERCdeYVg59FQsk1R6Euk4oKSQba_l994VM
-cryptography==1.1.2
+# THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT; ADD ALL DEPENDENCIES ABOVE.
 
-# sha256: JHXX_N31lR6S_1RpcnWIAt5SYL9Akxmp8ZNOa7yLHcc
-# sha256: NZB977D5krdat3iPZf7cHPIP-iJojg5vbxKvwGs-pQE
-enum34==1.1.2
-
-# sha256: _1rZ4vjZ5dHou_vPR3IqtSfPDVHK7u2dptD0B5k4P94
-# sha256: 2Dzm3wsOpmGHAP4ds1NSY5Goo62ht6ulL-16Ydp3IDM
-funcsigs==0.4
-
-# sha256: my_FC9PEujBrllG2lBHvIgJtTYM1uTr8IhTO8SRs5wc
-# sha256: FhmarZOLKQ9b4QV8Dh78ZUYik5HCPOphypQMEV99PTs
-idna==2.0
-
-# sha256: k1cSgAzkdgcB2JrWd2Zs1SaR_S9vCzQMi0I5o8F5iKU
-# sha256: WjGCsyKnBlJcRigspvBk0noCz_vUSfn0dBbx3JaqcbA
-ipaddress==1.0.16
-
-# sha256: 6MFV_evZxLywgQtO0BrhmHVUse4DTddTLXuP2uOKYnQ
-ndg-httpsclient==0.4.0
-
-# sha256: OnTxAPkNZZGDFf5kkHca0gi8PxOv0y01_P5OjQs7gSs
-# sha256: Paa-K-UG9ZzOMuGeMOIBBT4btNB-JWaJGOAPikmtQKs
-parsedatetime==1.5
-
-# sha256: Rsjbda51oFa9HMB_ohc0_i5gPRGgeDPswe63TDXHLgw
-# sha256: 4hJ2JqkebIhduJZol22zECDwry2nKJJLVkgPx8zwlkk
-pbr==1.8.1
-
-# sha256: WE8LKfzF1SO0M8uJGLL8dNZ-MO4LRKlbrwMVKPQkYZ8
-# sha256: KMoLbp2Zqo3Chuh0ekRxNitpgSolKR3im2qNcKFUWg0
-# sha256: FnrV__UqZyxN3BwaCyUUbWgT67CKmqsKOsRfiltmnDs
-# sha256: 5t6mFzqYhye7Ij00lzSa1c3vXAsoLv8tg-X5BlxT-F8
-# sha256: KvXgpKrWYEmVXQc0qk49yMqhep6vi0waJ6Xx7m5A9vw
-# sha256: 2YhNwNwuVeJEjklXeNyYmcHIvzeusvQ0wb6nSvk8JoM
-# sha256: 4nwv5t_Mhzi-PSxaAi94XrcpcQV-Gp4eNPunO86KcaY
-# sha256: Za_W_syPOu0J7kvmNYO8jrRy8GzqpP4kxNHVoaPA4T8
-# sha256: uhxVj7_N-UUVwjlLEVXB3FbivCqcF9MDSYJ8ntimfkY
-# sha256: upXqACLctk028MEzXAYF-uNb3z4P6o2S9dD2RWo15Vs
-# sha256: QhtlkdFrUJqqjYwVgh1mu5TLSo3EOFytXFG4XUoJbYU
-# sha256: MmswXL22-U2vv-LCaxHaiLCrB7igf4GIq511_wxuhBo
-# sha256: mu3lsrb-RrN0jqjlIURDiQ0WNAJ77z0zt9rRZVaDAng
-# sha256: c77R24lNGqnDx-YR0wLN6reuig3A7q92cnh42xrFzYc
-# sha256: k1td1tVYr1EvQlAafAj0HXr_E5rxuzlZ2qOruFkjTWw
-# sha256: TKARHPFX3MDy9poyPFtUeHGNaNRfyUNdhL4OwPGGIVs
-# sha256: tvE8lTmKP88CJsTc-kSFYLpYZSWc2W7CgQZYZR6TIYk
-# sha256: 7mvjDRY1u96kxDJdUH3IoNu95-HBmL1i3bn0MZi54hQ
-# sha256: 36eGhYwmjX-74bYXXgAewCc418-uCnzne_m2Ua9nZyk
-# sha256: qnf53nKvnBbMKIzUokz1iCQ4j1fXqB5ADEYWRXYphw4
-# sha256: 9QAJM1fQTagUDYeTLKwuVO9ZKlTKinQ6uyhQ9gwsIus
-psutil==3.3.0
-
-# sha256: YfnZnjzvZf6xv-Oi7vepPrk4GdNFv1S81C9OY9UgTa4
-# sha256: GAKm3TIEXkcqQZ2xRBrsq0adM-DSdJ4ZKr3sUhAXJK8
-# sha256: NQJc2UIsllBJEvBOLxX-eTkKhZe0MMLKXQU0z5MJ_6A
-# sha256: L5btWgwynKFiMLMmyhK3Rh7I9l4L4-T5l1FvNr-Co0U
-# sha256: KP7kQheZHPrZ5qC59-PyYEHiHryWYp6U5YXM0F1J-mU
-# sha256: Mm56hUoX-rB2kSBHR2lfj2ktZ0WIo1XEQfsU9mC_Tmg
-# sha256: zaWpBIVwnKZ5XIYFbD5f5yZgKLBeU_HVJ_35OmNlprg
-# sha256: DLKhR0K1Q_3Wj5MaFM44KRhu0rGyJnoGeHOIyWst2b4
-# sha256: UZH_a5Em0sA53Yf4_wJb7SdLrwf6eK-kb1VrGtcmXW4
-# sha256: gyPgNjey0HLMcEEwC6xuxEjDwolQq0A3YDZ4jpoa9ik
-# sha256: hTys2W0fcB3dZ6oD7MBfUYkBNbcmLpInEBEvEqLtKn8
-pyasn1==0.1.9
-
-# sha256: eVm0p0q9wnsxL-0cIebK-TCc4LKeqGtZH9Lpns3yf3M
-pycparser==2.14
-
-# sha256: iORea7Jd_tJyoe8ucoRh1EtjTCzWiemJtuVqNJxaOuU
-# sha256: 8KJgcNbbCIHei8x4RpNLfDyTDY-cedRYg-5ImEvA1nI
-pyOpenSSL==0.15.1
-
-# sha256: 7qMYNcVuIJavQ2OldFp4SHimHQQ-JH06bWoKMql0H1Y
-# sha256: jfvGxFi42rocDzYgqMeACLMjomiye3NZ6SpK5BMl9TU
-pyRFC3339==1.0
-
-# sha256: Z9WdZs26jWJOA4m4eyqDoXbyHxaodVO1D1cDsj8pusI
-python-augeas==0.5.0
-
-# sha256: BOk_JJlcQ92Q8zjV2GXKcs4_taU1jU2qSWVXHbNfw-w
-# sha256: Pm9ZP-rZj4pSa8PjBpM1MyNuM3KfVS9SiW6lBPVTE_o
-python2-pythondialog==3.3.0
-
-# sha256: Or5qbT_C-75MYBRCEfRdou2-MYKm9lEa9ru6BZix-ZI
-# sha256: k575weEiTZgEBWial__PeCjFbRUXsx1zRkNWwfK3dp4
-# sha256: 6tSu-nAHJJ4F5RsBCVcZ1ajdlXYAifVzCqxWmLGTKRg
-# sha256: PMoN8IvQ7ZhDI5BJTOPe0AP15mGqRgvnpzS__jWYNgU
-# sha256: Pt5HDT0XujwHY436DRBFK8G25a0yYSemW6d-aq6xG-w
-# sha256: aMR5ZPcYbuwwaxNilidyK5B5zURH7Z5eyuzU6shMpzQ
-# sha256: 3V05kZUKrkCmyB3hV4lC5z1imAjO_FHRLNFXmA5s_Bg
-# sha256: p3xSBiwH63x7MFRdvHPjKZW34Rfup1Axe1y1x6RhjxQ
-# sha256: ga-a7EvJYKmgEnxIjxh3La5GNGiSM_BvZUQ-exHr61E
-# sha256: 4Hmx2txcBiRswbtv4bI6ULHRFz8u3VEE79QLtzoo9AY
-# sha256: -9JnRncsJMuTyLl8va1cueRshrvbG52KdD7gDi-x_F0
-# sha256: mSZu8wo35Dky3uwrfKc-g8jbw7n_cD7HPsprHa5r7-o
-# sha256: i2zhyZOQl4O8luC0806iI7_3pN8skL25xODxrJKGieM
-pytz==2015.7
-
-# sha256: ET-7pVManjSUW302szoIToul0GZLcDyBp8Vy2RkZpbg
-# sha256: xXeBXdAPE5QgP8ROuXlySwmPiCZKnviY7kW45enPWH8
-requests==2.9.1
-
-# sha256: D_eMQD2bzPWkJabTGhKqa0fxwhyk3CVzp-LzKpczXrE
-# sha256: EF-NaGFvgkjiS_DpNy7wTTzBAQTxmA9U1Xss5zpa1Wo
-six==1.10.0
-
-# sha256: aUkbUwUVfDxuDwSnAZhNaud_1yn8HJrNJQd_HfOFMms
-# sha256: 619wCpv8lkILBVY1r5AC02YuQ9gMP_0x8iTCW8DV9GI
-Werkzeug==0.11.3
-
-# sha256: KCwRK1XdjjyGmjVx-GdnwVCrEoSprOK97CJsWSrK-Bo
-zope.component==4.2.2
-
-# sha256: 3HpZov2Rcw03kxMaXSYbKek-xOKpfxvEh86N7-4v54Y
-zope.event==4.1.0
-
-# sha256: 8HtjH3pgHNjL0zMtVPQxQscIioMpn4WTVvCNHU1CWbM
-# sha256: 3lzKCDuUOdgAL7drvmtJmMWlpyH6sluEKYln8ALfTJQ
-# sha256: Z4hBb36n9bipe-lIJTd6ol6L3HNGPge6r5hYsp5zcHc
-# sha256: bzIw9yVFGCAeWjcIy7LemMhIME8G497Yv7OeWCXLouE
-# sha256: X6V1pSQPBCAMMIhCfQ1Le3N_bpAYgYpR2ND5J6aiUXo
-# sha256: UiGUrWpUVzXt11yKg_SNZdGvBk5DKn0yDWT1a6_BLpk
-# sha256: 6Mey1AlD9xyZFIyX9myqf1E0FH9XQj-NtbSCUJnOmgk
-# sha256: J5Ak8CCGAcPKqQfFOHbjetiGJffq8cs4QtvjYLIocBc
-# sha256: LiIanux8zFiImieOoT3P7V75OdgLB4Gamos8scaBSE8
-# sha256: aRGJZUEOyG1E3GuQF-4929WC4MCr7vYrOhnb9sitEys
-# sha256: 0E34aG7IZNDK3ozxmff4OuzUFhCaIINNVo-DEN7RLeo
-# sha256: 51qUfhXul-fnHgLqMC_rL8YtOiu0Zov5377UOlBqx-c
-# sha256: TkXSL7iDIipaufKCoRb-xe4ujRpWjM_2otdbvQ62vPw
-# sha256: vOkzm7PHpV4IA7Y9IcWDno5Hm8hcSt9CrkFbcvlPrLI
-# sha256: koE4NlJFoOiGmlmZ-8wqRUdaCm7VKklNYNvcVAM1_t0
-# sha256: DYQbobuEDuoOZIncXsr6YSVVSXH1O1rLh3ZEQeYbzro
-# sha256: sJyMHUezUxxADgGVaX8UFKYyId5u9HhZik8UYPfZo5I
-zope.interface==4.1.3
-
-# sha256: fYwCUXn3Wd_tKYHuPfufzDQZuDNng0HZb_th3xepC7U
-# sha256: dKkCf9CZnKaDTFOof-KoazoewjKTSAVxZUJmnj_3i_U
-acme==0.2.0
-
-# sha256: 4x7K5lzKwm_GjYMojvUh053qL4EfIC5hGFmW370-7jI
-# sha256: kcm3VmxXIGNS7ShcKFnYdA9AfXnqcbV_otMsADr1p2A
-letsencrypt==0.2.0
-
-# sha256: AKuIT6b7gXXD2Cs7Qoem8ZrxcqBjABz1IgxhHGxmwX0
-# sha256: Cak7i4RaDsZixQMXWWpW-blTHaak09l94aLi9v7lljs
-letsencrypt-apache==0.2.0
-
-# sha256: uDndLZwRfHAUMMFJlWkYpCOphjtIsJyQ4wpgE-fS9E8
-# sha256: j4MIDaoknQNsvM-4rlzG_wB7iNbZN1ITca-r57Gbrbw
-mock==1.0.1
+acme==0.12.0 \
+    --hash=sha256:a6050619b3e07b41d197992bb15b32c755dfa0665cfa1c20faa82806a798265b \
+    --hash=sha256:a05cba6b5b0fffdfa246b32492a44769011d45205f3ee8efde1f37ee9843fbdf
+certbot==0.12.0 \
+    --hash=sha256:d018d13665eb4cfe7038c2df636e3f4928742b83769b95edfdb0311277f0eb48 \
+    --hash=sha256:4a71925c035b62dfb7c3343c619ee090add76188b47225272b57798ad63388b7
+certbot-apache==0.12.0 \
+    --hash=sha256:de86907ea60e7bc35d252b87dec04eab3c7f3a1ea768774876e7ff582d89d640 \
+    --hash=sha256:77dde63cf97292b09da8ae09ef8a7a6d83a3b1ee0f8d1fefe513fc77a6292509
+certbot-nginx==0.12.0 \
+    --hash=sha256:c66d848c4577f1f91a06a8119b40f1ab90af1546addea27905434bd070f3924d \
+    --hash=sha256:4dab2c93304c80d8d0d2e5214939f016804fd46859dd7a39b892d8b7195ab5ec
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
-    cat << "UNLIKELY_EOF" > "$TEMP_DIR/peep.py"
+    cat << "UNLIKELY_EOF" > "$TEMP_DIR/pipstrap.py"
 #!/usr/bin/env python
-"""peep ("prudently examine every package") verifies that packages conform to a
-trusted, locally stored hash and only then installs them::
+"""A small script that can act as a trust root for installing pip 8
 
-    peep install -r requirements.txt
-
-This makes your deployments verifiably repeatable without having to maintain a
-local PyPI mirror or use a vendor lib. Just update the version numbers and
-hashes in requirements.txt, and you're all set.
+Embed this in your project, and your VCS checkout is all you have to trust. In
+a post-peep era, this lets you claw your way to a hash-checking version of pip,
+with which you can install the rest of your dependencies safely. All it assumes
+is Python 2.6 or better and *some* version of pip already installed. If
+anything goes wrong, it will exit with a non-zero status code.
 
 """
-# This is here so embedded copies of peep.py are MIT-compliant:
-# Copyright (c) 2013 Erik Rose
+# This is here so embedded copies are MIT-compliant:
+# Copyright (c) 2016 Erik Rose
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -663,968 +872,202 @@ hashes in requirements.txt, and you're all set.
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
 from __future__ import print_function
-try:
-    xrange = xrange
-except NameError:
-    xrange = range
-from base64 import urlsafe_b64encode, urlsafe_b64decode
-from binascii import hexlify
-import cgi
-from collections import defaultdict
-from functools import wraps
 from hashlib import sha256
-from itertools import chain, islice
-import mimetypes
-from optparse import OptionParser
-from os.path import join, basename, splitext, isdir
-from pickle import dumps, loads
-import re
-import sys
-from shutil import rmtree, copy
-from sys import argv, exit
-from tempfile import mkdtemp
-import traceback
+from os.path import join
+from pipes import quote
+from shutil import rmtree
 try:
-    from urllib2 import build_opener, HTTPHandler, HTTPSHandler, HTTPError
+    from subprocess import check_output
+except ImportError:
+    from subprocess import CalledProcessError, PIPE, Popen
+
+    def check_output(*popenargs, **kwargs):
+        if 'stdout' in kwargs:
+            raise ValueError('stdout argument not allowed, it will be '
+                             'overridden.')
+        process = Popen(stdout=PIPE, *popenargs, **kwargs)
+        output, unused_err = process.communicate()
+        retcode = process.poll()
+        if retcode:
+            cmd = kwargs.get("args")
+            if cmd is None:
+                cmd = popenargs[0]
+            raise CalledProcessError(retcode, cmd)
+        return output
+from sys import exit, version_info
+from tempfile import mkdtemp
+try:
+    from urllib2 import build_opener, HTTPHandler, HTTPSHandler
 except ImportError:
     from urllib.request import build_opener, HTTPHandler, HTTPSHandler
-    from urllib.error import HTTPError
 try:
     from urlparse import urlparse
 except ImportError:
     from urllib.parse import urlparse  # 3.4
-# TODO: Probably use six to make urllib stuff work across 2/3.
-
-from pkg_resources import require, VersionConflict, DistributionNotFound
-
-# We don't admit our dependency on pip in setup.py, lest a naive user simply
-# say `pip install peep.tar.gz` and thus pull down an untrusted copy of pip
-# from PyPI. Instead, we make sure it's installed and new enough here and spit
-# out an error message if not:
 
 
-def activate(specifier):
-    """Make a compatible version of pip importable. Raise a RuntimeError if we
-    couldn't."""
-    try:
-        for distro in require(specifier):
-            distro.activate()
-    except (VersionConflict, DistributionNotFound):
-        raise RuntimeError('The installed version of pip is too old; peep '
-                           'requires ' + specifier)
-
-# Before 0.6.2, the log module wasn't there, so some
-# of our monkeypatching fails. It probably wouldn't be
-# much work to support even earlier, though.
-activate('pip>=0.6.2')
-
-import pip
-from pip.commands.install import InstallCommand
-try:
-    from pip.download import url_to_path  # 1.5.6
-except ImportError:
-    try:
-        from pip.util import url_to_path  # 0.7.0
-    except ImportError:
-        from pip.util import url_to_filename as url_to_path  # 0.6.2
-from pip.index import PackageFinder, Link
-try:
-    from pip.log import logger
-except ImportError:
-    from pip import logger  # 6.0
-from pip.req import parse_requirements
-try:
-    from pip.utils.ui import DownloadProgressBar, DownloadProgressSpinner
-except ImportError:
-    class NullProgressBar(object):
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def iter(self, ret, *args, **kwargs):
-            return ret
-
-    DownloadProgressBar = DownloadProgressSpinner = NullProgressBar
-
-__version__ = 2, 5, 0
-
-try:
-    from pip.index import FormatControl  # noqa
-    FORMAT_CONTROL_ARG = 'format_control'
-
-    # The line-numbering bug will be fixed in pip 8. All 7.x releases had it.
-    PIP_MAJOR_VERSION = int(pip.__version__.split('.')[0])
-    PIP_COUNTS_COMMENTS = PIP_MAJOR_VERSION >= 8
-except ImportError:
-    FORMAT_CONTROL_ARG = 'use_wheel'  # pre-7
-    PIP_COUNTS_COMMENTS = True
+__version__ = 1, 1, 1
 
 
-ITS_FINE_ITS_FINE = 0
-SOMETHING_WENT_WRONG = 1
-# "Traditional" for command-line errors according to optparse docs:
-COMMAND_LINE_ERROR = 2
-
-ARCHIVE_EXTENSIONS = ('.tar.bz2', '.tar.gz', '.tgz', '.tar', '.zip')
-
-MARKER = object()
+# wheel has a conditional dependency on argparse:
+maybe_argparse = (
+    [('https://pypi.python.org/packages/source/a/argparse/'
+      'argparse-1.4.0.tar.gz',
+      '62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4')]
+    if version_info < (2, 7, 0) else [])
 
 
-class PipException(Exception):
-    """When I delegated to pip, it exited with an error."""
+PACKAGES = maybe_argparse + [
+    # Pip has no dependencies, as it vendors everything:
+    ('https://pypi.python.org/packages/source/p/pip/pip-8.0.3.tar.gz',
+     '30f98b66f3fe1069c529a491597d34a1c224a68640c82caf2ade5f88aa1405e8'),
+    # This version of setuptools has only optional dependencies:
+    ('https://pypi.python.org/packages/source/s/setuptools/'
+     'setuptools-20.2.2.tar.gz',
+     '24fcfc15364a9fe09a220f37d2dcedc849795e3de3e4b393ee988e66a9cbd85a'),
+    ('https://pypi.python.org/packages/source/w/wheel/wheel-0.29.0.tar.gz',
+     '1ebb8ad7e26b448e9caa4773d2357849bf80ff9e313964bcaf79cbf0201a1648')
+]
 
-    def __init__(self, error_code):
-        self.error_code = error_code
 
-
-class UnsupportedRequirementError(Exception):
-    """An unsupported line was encountered in a requirements file."""
-
-
-class DownloadError(Exception):
-    def __init__(self, link, exc):
-        self.link = link
-        self.reason = str(exc)
-
+class HashError(Exception):
     def __str__(self):
-        return 'Downloading %s failed: %s' % (self.link, self.reason)
+        url, path, actual, expected = self.args
+        return ('{url} did not match the expected hash {expected}. Instead, '
+                'it was {actual}. The file (left at {path}) may have been '
+                'tampered with.'.format(**locals()))
 
 
-def encoded_hash(sha):
-    """Return a short, 7-bit-safe representation of a hash.
+def hashed_download(url, temp, digest):
+    """Download ``url`` to ``temp``, make sure it has the SHA-256 ``digest``,
+    and return its path."""
+    # Based on pip 1.4.1's URLOpener but with cert verification removed. Python
+    # >=2.7.9 verifies HTTPS certs itself, and, in any case, the cert
+    # authenticity has only privacy (not arbitrary code execution)
+    # implications, since we're checking hashes.
+    def opener():
+        opener = build_opener(HTTPSHandler())
+        # Strip out HTTPHandler to prevent MITM spoof:
+        for handler in opener.handlers:
+            if isinstance(handler, HTTPHandler):
+                opener.handlers.remove(handler)
+        return opener
 
-    If you pass a sha256, this results in the hash algorithm that the Wheel
-    format (PEP 427) uses, except here it's intended to be run across the
-    downloaded archive before unpacking.
-
-    """
-    return urlsafe_b64encode(sha.digest()).decode('ascii').rstrip('=')
-
-
-def path_and_line(req):
-    """Return the path and line number of the file from which an
-    InstallRequirement came.
-
-    """
-    path, line = (re.match(r'-r (.*) \(line (\d+)\)$',
-                           req.comes_from).groups())
-    return path, int(line)
-
-
-def hashes_above(path, line_number):
-    """Yield hashes from contiguous comment lines before line ``line_number``.
-
-    """
-    def hash_lists(path):
-        """Yield lists of hashes appearing between non-comment lines.
-
-        The lists will be in order of appearance and, for each non-empty
-        list, their place in the results will coincide with that of the
-        line number of the corresponding result from `parse_requirements`
-        (which changed in pip 7.0 to not count comments).
-
-        """
-        hashes = []
-        with open(path) as file:
-            for lineno, line in enumerate(file, 1):
-                match = HASH_COMMENT_RE.match(line)
-                if match:  # Accumulate this hash.
-                    hashes.append(match.groupdict()['hash'])
-                if not IGNORED_LINE_RE.match(line):
-                    yield hashes  # Report hashes seen so far.
-                    hashes = []
-                elif PIP_COUNTS_COMMENTS:
-                    # Comment: count as normal req but have no hashes.
-                    yield []
-
-    return next(islice(hash_lists(path), line_number - 1, None))
-
-
-def run_pip(initial_args):
-    """Delegate to pip the given args (starting with the subcommand), and raise
-    ``PipException`` if something goes wrong."""
-    status_code = pip.main(initial_args)
-
-    # Clear out the registrations in the pip "logger" singleton. Otherwise,
-    # loggers keep getting appended to it with every run. Pip assumes only one
-    # command invocation will happen per interpreter lifetime.
-    logger.consumers = []
-
-    if status_code:
-        raise PipException(status_code)
-
-
-def hash_of_file(path):
-    """Return the hash of a downloaded file."""
-    with open(path, 'rb') as archive:
-        sha = sha256()
+    def read_chunks(response, chunk_size):
         while True:
-            data = archive.read(2 ** 20)
-            if not data:
+            chunk = response.read(chunk_size)
+            if not chunk:
                 break
-            sha.update(data)
-    return encoded_hash(sha)
-
-
-def is_git_sha(text):
-    """Return whether this is probably a git sha"""
-    # Handle both the full sha as well as the 7-character abbreviation
-    if len(text) in (40, 7):
-        try:
-            int(text, 16)
-            return True
-        except ValueError:
-            pass
-    return False
-
-
-def filename_from_url(url):
-    parsed = urlparse(url)
-    path = parsed.path
-    return path.split('/')[-1]
-
-
-def requirement_args(argv, want_paths=False, want_other=False):
-    """Return an iterable of filtered arguments.
-
-    :arg argv: Arguments, starting after the subcommand
-    :arg want_paths: If True, the returned iterable includes the paths to any
-        requirements files following a ``-r`` or ``--requirement`` option.
-    :arg want_other: If True, the returned iterable includes the args that are
-        not a requirement-file path or a ``-r`` or ``--requirement`` flag.
-
-    """
-    was_r = False
-    for arg in argv:
-        # Allow for requirements files named "-r", don't freak out if there's a
-        # trailing "-r", etc.
-        if was_r:
-            if want_paths:
-                yield arg
-            was_r = False
-        elif arg in ['-r', '--requirement']:
-            was_r = True
-        else:
-            if want_other:
-                yield arg
-
-# any line that is a comment or just whitespace
-IGNORED_LINE_RE = re.compile(r'^(\s*#.*)?\s*$')
-
-HASH_COMMENT_RE = re.compile(
-    r"""
-    \s*\#\s+                   # Lines that start with a '#'
-    (?P<hash_type>sha256):\s+  # Hash type is hardcoded to be sha256 for now.
-    (?P<hash>[^\s]+)           # Hashes can be anything except '#' or spaces.
-    \s*                        # Suck up whitespace before the comment or
-                               #   just trailing whitespace if there is no
-                               #   comment. Also strip trailing newlines.
-    (?:\#(?P<comment>.*))?     # Comments can be anything after a whitespace+#
-                               #   and are optional.
-    $""", re.X)
-
-
-def peep_hash(argv):
-    """Return the peep hash of one or more files, returning a shell status code
-    or raising a PipException.
-
-    :arg argv: The commandline args, starting after the subcommand
-
-    """
-    parser = OptionParser(
-        usage='usage: %prog hash file [file ...]',
-        description='Print a peep hash line for one or more files: for '
-                    'example, "# sha256: '
-                    'oz42dZy6Gowxw8AelDtO4gRgTW_xPdooH484k7I5EOY".')
-    _, paths = parser.parse_args(args=argv)
-    if paths:
-        for path in paths:
-            print('# sha256:', hash_of_file(path))
-        return ITS_FINE_ITS_FINE
-    else:
-        parser.print_usage()
-        return COMMAND_LINE_ERROR
-
-
-class EmptyOptions(object):
-    """Fake optparse options for compatibility with pip<1.2
-
-    pip<1.2 had a bug in parse_requirements() in which the ``options`` kwarg
-    was required. We work around that by passing it a mock object.
-
-    """
-    default_vcs = None
-    skip_requirements_regex = None
-    isolated_mode = False
-
-
-def memoize(func):
-    """Memoize a method that should return the same result every time on a
-    given instance.
-
-    """
-    @wraps(func)
-    def memoizer(self):
-        if not hasattr(self, '_cache'):
-            self._cache = {}
-        if func.__name__ not in self._cache:
-            self._cache[func.__name__] = func(self)
-        return self._cache[func.__name__]
-    return memoizer
-
-
-def package_finder(argv):
-    """Return a PackageFinder respecting command-line options.
-
-    :arg argv: Everything after the subcommand
-
-    """
-    # We instantiate an InstallCommand and then use some of its private
-    # machinery--its arg parser--for our own purposes, like a virus. This
-    # approach is portable across many pip versions, where more fine-grained
-    # ones are not. Ignoring options that don't exist on the parser (for
-    # instance, --use-wheel) gives us a straightforward method of backward
-    # compatibility.
-    try:
-        command = InstallCommand()
-    except TypeError:
-        # This is likely pip 1.3.0's "__init__() takes exactly 2 arguments (1
-        # given)" error. In that version, InstallCommand takes a top=level
-        # parser passed in from outside.
-        from pip.baseparser import create_main_parser
-        command = InstallCommand(create_main_parser())
-    # The downside is that it essentially ruins the InstallCommand class for
-    # further use. Calling out to pip.main() within the same interpreter, for
-    # example, would result in arguments parsed this time turning up there.
-    # Thus, we deepcopy the arg parser so we don't trash its singletons. Of
-    # course, deepcopy doesn't work on these objects, because they contain
-    # uncopyable regex patterns, so we pickle and unpickle instead. Fun!
-    options, _ = loads(dumps(command.parser)).parse_args(argv)
-
-    # Carry over PackageFinder kwargs that have [about] the same names as
-    # options attr names:
-    possible_options = [
-        'find_links', FORMAT_CONTROL_ARG, 'allow_external', 'allow_unverified',
-        'allow_all_external', ('allow_all_prereleases', 'pre'),
-        'process_dependency_links']
-    kwargs = {}
-    for option in possible_options:
-        kw, attr = option if isinstance(option, tuple) else (option, option)
-        value = getattr(options, attr, MARKER)
-        if value is not MARKER:
-            kwargs[kw] = value
-
-    # Figure out index_urls:
-    index_urls = [options.index_url] + options.extra_index_urls
-    if options.no_index:
-        index_urls = []
-    index_urls += getattr(options, 'mirrors', [])
-
-    # If pip is new enough to have a PipSession, initialize one, since
-    # PackageFinder requires it:
-    if hasattr(command, '_build_session'):
-        kwargs['session'] = command._build_session(options)
-
-    return PackageFinder(index_urls=index_urls, **kwargs)
-
-
-class DownloadedReq(object):
-    """A wrapper around InstallRequirement which offers additional information
-    based on downloading and examining a corresponding package archive
-
-    These are conceptually immutable, so we can get away with memoizing
-    expensive things.
-
-    """
-    def __init__(self, req, argv, finder):
-        """Download a requirement, compare its hashes, and return a subclass
-        of DownloadedReq depending on its state.
-
-        :arg req: The InstallRequirement I am based on
-        :arg argv: The args, starting after the subcommand
-
-        """
-        self._req = req
-        self._argv = argv
-        self._finder = finder
-
-        # We use a separate temp dir for each requirement so requirements
-        # (from different indices) that happen to have the same archive names
-        # don't overwrite each other, leading to a security hole in which the
-        # latter is a hash mismatch, the former has already passed the
-        # comparison, and the latter gets installed.
-        self._temp_path = mkdtemp(prefix='peep-')
-        # Think of DownloadedReq as a one-shot state machine. It's an abstract
-        # class that ratchets forward to being one of its own subclasses,
-        # depending on its package status. Then it doesn't move again.
-        self.__class__ = self._class()
-
-    def dispose(self):
-        """Delete temp files and dirs I've made. Render myself useless.
-
-        Do not call further methods on me after calling dispose().
-
-        """
-        rmtree(self._temp_path)
-
-    def _version(self):
-        """Deduce the version number of the downloaded package from its filename."""
-        # TODO: Can we delete this method and just print the line from the
-        # reqs file verbatim instead?
-        def version_of_archive(filename, package_name):
-            # Since we know the project_name, we can strip that off the left, strip
-            # any archive extensions off the right, and take the rest as the
-            # version.
-            for ext in ARCHIVE_EXTENSIONS:
-                if filename.endswith(ext):
-                    filename = filename[:-len(ext)]
-                    break
-            # Handle github sha tarball downloads.
-            if is_git_sha(filename):
-                filename = package_name + '-' + filename
-            if not filename.lower().replace('_', '-').startswith(package_name.lower()):
-                # TODO: Should we replace runs of [^a-zA-Z0-9.], not just _, with -?
-                give_up(filename, package_name)
-            return filename[len(package_name) + 1:]  # Strip off '-' before version.
-
-        def version_of_wheel(filename, package_name):
-            # For Wheel files (http://legacy.python.org/dev/peps/pep-0427/#file-
-            # name-convention) we know the format bits are '-' separated.
-            whl_package_name, version, _rest = filename.split('-', 2)
-            # Do the alteration to package_name from PEP 427:
-            our_package_name = re.sub(r'[^\w\d.]+', '_', package_name, re.UNICODE)
-            if whl_package_name != our_package_name:
-                give_up(filename, whl_package_name)
-            return version
-
-        def give_up(filename, package_name):
-            raise RuntimeError("The archive '%s' didn't start with the package name "
-                               "'%s', so I couldn't figure out the version number. "
-                               "My bad; improve me." %
-                               (filename, package_name))
-
-        get_version = (version_of_wheel
-                       if self._downloaded_filename().endswith('.whl')
-                       else version_of_archive)
-        return get_version(self._downloaded_filename(), self._project_name())
-
-    def _is_always_unsatisfied(self):
-        """Returns whether this requirement is always unsatisfied
-
-        This would happen in cases where we can't determine the version
-        from the filename.
-
-        """
-        # If this is a github sha tarball, then it is always unsatisfied
-        # because the url has a commit sha in it and not the version
-        # number.
-        url = self._url()
-        if url:
-            filename = filename_from_url(url)
-            if filename.endswith(ARCHIVE_EXTENSIONS):
-                filename, ext = splitext(filename)
-                if is_git_sha(filename):
-                    return True
-        return False
-
-    @memoize  # Avoid hitting the file[cache] over and over.
-    def _expected_hashes(self):
-        """Return a list of known-good hashes for this package."""
-        return hashes_above(*path_and_line(self._req))
-
-    def _download(self, link):
-        """Download a file, and return its name within my temp dir.
-
-        This does no verification of HTTPS certs, but our checking hashes
-        makes that largely unimportant. It would be nice to be able to use the
-        requests lib, which can verify certs, but it is guaranteed to be
-        available only in pip >= 1.5.
-
-        This also drops support for proxies and basic auth, though those could
-        be added back in.
-
-        """
-        # Based on pip 1.4.1's URLOpener but with cert verification removed
-        def opener(is_https):
-            if is_https:
-                opener = build_opener(HTTPSHandler())
-                # Strip out HTTPHandler to prevent MITM spoof:
-                for handler in opener.handlers:
-                    if isinstance(handler, HTTPHandler):
-                        opener.handlers.remove(handler)
-            else:
-                opener = build_opener()
-            return opener
-
-        # Descended from unpack_http_url() in pip 1.4.1
-        def best_filename(link, response):
-            """Return the most informative possible filename for a download,
-            ideally with a proper extension.
-
-            """
-            content_type = response.info().get('content-type', '')
-            filename = link.filename  # fallback
-            # Have a look at the Content-Disposition header for a better guess:
-            content_disposition = response.info().get('content-disposition')
-            if content_disposition:
-                type, params = cgi.parse_header(content_disposition)
-                # We use ``or`` here because we don't want to use an "empty" value
-                # from the filename param:
-                filename = params.get('filename') or filename
-            ext = splitext(filename)[1]
-            if not ext:
-                ext = mimetypes.guess_extension(content_type)
-                if ext:
-                    filename += ext
-            if not ext and link.url != response.geturl():
-                ext = splitext(response.geturl())[1]
-                if ext:
-                    filename += ext
-            return filename
-
-        # Descended from _download_url() in pip 1.4.1
-        def pipe_to_file(response, path, size=0):
-            """Pull the data off an HTTP response, shove it in a new file, and
-            show progress.
-
-            :arg response: A file-like object to read from
-            :arg path: The path of the new file
-            :arg size: The expected size, in bytes, of the download. 0 for
-                unknown or to suppress progress indication (as for cached
-                downloads)
-
-            """
-            def response_chunks(chunk_size):
-                while True:
-                    chunk = response.read(chunk_size)
-                    if not chunk:
-                        break
-                    yield chunk
-
-            print('Downloading %s%s...' % (
-                self._req.req,
-                (' (%sK)' % (size / 1000)) if size > 1000 else ''))
-            progress_indicator = (DownloadProgressBar(max=size).iter if size
-                                  else DownloadProgressSpinner().iter)
-            with open(path, 'wb') as file:
-                for chunk in progress_indicator(response_chunks(4096), 4096):
-                    file.write(chunk)
-
-        url = link.url.split('#', 1)[0]
-        try:
-            response = opener(urlparse(url).scheme != 'http').open(url)
-        except (HTTPError, IOError) as exc:
-            raise DownloadError(link, exc)
-        filename = best_filename(link, response)
-        try:
-            size = int(response.headers['content-length'])
-        except (ValueError, KeyError, TypeError):
-            size = 0
-        pipe_to_file(response, join(self._temp_path, filename), size=size)
-        return filename
-
-    # Based on req_set.prepare_files() in pip bb2a8428d4aebc8d313d05d590f386fa3f0bbd0f
-    @memoize  # Avoid re-downloading.
-    def _downloaded_filename(self):
-        """Download the package's archive if necessary, and return its
-        filename.
-
-        --no-deps is implied, as we have reimplemented the bits that would
-        ordinarily do dependency resolution.
-
-        """
-        # Peep doesn't support requirements that don't come down as a single
-        # file, because it can't hash them. Thus, it doesn't support editable
-        # requirements, because pip itself doesn't support editable
-        # requirements except for "local projects or a VCS url". Nor does it
-        # support VCS requirements yet, because we haven't yet come up with a
-        # portable, deterministic way to hash them. In summary, all we support
-        # is == requirements and tarballs/zips/etc.
-
-        # TODO: Stop on reqs that are editable or aren't ==.
-
-        # If the requirement isn't already specified as a URL, get a URL
-        # from an index:
-        link = self._link() or self._finder.find_requirement(self._req, upgrade=False)
-
-        if link:
-            lower_scheme = link.scheme.lower()  # pip lower()s it for some reason.
-            if lower_scheme == 'http' or lower_scheme == 'https':
-                file_path = self._download(link)
-                return basename(file_path)
-            elif lower_scheme == 'file':
-                # The following is inspired by pip's unpack_file_url():
-                link_path = url_to_path(link.url_without_fragment)
-                if isdir(link_path):
-                    raise UnsupportedRequirementError(
-                        "%s: %s is a directory. So that it can compute "
-                        "a hash, peep supports only filesystem paths which "
-                        "point to files" %
-                        (self._req, link.url_without_fragment))
-                else:
-                    copy(link_path, self._temp_path)
-                    return basename(link_path)
-            else:
-                raise UnsupportedRequirementError(
-                    "%s: The download link, %s, would not result in a file "
-                    "that can be hashed. Peep supports only == requirements, "
-                    "file:// URLs pointing to files (not folders), and "
-                    "http:// and https:// URLs pointing to tarballs, zips, "
-                    "etc." % (self._req, link.url))
-        else:
-            raise UnsupportedRequirementError(
-                "%s: couldn't determine where to download this requirement from."
-                % (self._req,))
-
-    def install(self):
-        """Install the package I represent, without dependencies.
-
-        Obey typical pip-install options passed in on the command line.
-
-        """
-        other_args = list(requirement_args(self._argv, want_other=True))
-        archive_path = join(self._temp_path, self._downloaded_filename())
-        # -U so it installs whether pip deems the requirement "satisfied" or
-        # not. This is necessary for GitHub-sourced zips, which change without
-        # their version numbers changing.
-        run_pip(['install'] + other_args + ['--no-deps', '-U', archive_path])
-
-    @memoize
-    def _actual_hash(self):
-        """Download the package's archive if necessary, and return its hash."""
-        return hash_of_file(join(self._temp_path, self._downloaded_filename()))
-
-    def _project_name(self):
-        """Return the inner Requirement's "unsafe name".
-
-        Raise ValueError if there is no name.
-
-        """
-        name = getattr(self._req.req, 'project_name', '')
-        if name:
-            return name
-        raise ValueError('Requirement has no project_name.')
-
-    def _name(self):
-        return self._req.name
-
-    def _link(self):
-        try:
-            return self._req.link
-        except AttributeError:
-            # The link attribute isn't available prior to pip 6.1.0, so fall
-            # back to the now deprecated 'url' attribute.
-            return Link(self._req.url) if self._req.url else None
-
-    def _url(self):
-        link = self._link()
-        return link.url if link else None
-
-    @memoize  # Avoid re-running expensive check_if_exists().
-    def _is_satisfied(self):
-        self._req.check_if_exists()
-        return (self._req.satisfied_by and
-                not self._is_always_unsatisfied())
-
-    def _class(self):
-        """Return the class I should be, spanning a continuum of goodness."""
-        try:
-            self._project_name()
-        except ValueError:
-            return MalformedReq
-        if self._is_satisfied():
-            return SatisfiedReq
-        if not self._expected_hashes():
-            return MissingReq
-        if self._actual_hash() not in self._expected_hashes():
-            return MismatchedReq
-        return InstallableReq
-
-    @classmethod
-    def foot(cls):
-        """Return the text to be printed once, after all of the errors from
-        classes of my type are printed.
-
-        """
-        return ''
-
-
-class MalformedReq(DownloadedReq):
-    """A requirement whose package name could not be determined"""
-
-    @classmethod
-    def head(cls):
-        return 'The following requirements could not be processed:\n'
-
-    def error(self):
-        return '* Unable to determine package name from URL %s; add #egg=' % self._url()
-
-
-class MissingReq(DownloadedReq):
-    """A requirement for which no hashes were specified in the requirements file"""
-
-    @classmethod
-    def head(cls):
-        return ('The following packages had no hashes specified in the requirements file, which\n'
-                'leaves them open to tampering. Vet these packages to your satisfaction, then\n'
-                'add these "sha256" lines like so:\n\n')
-
-    def error(self):
-        if self._url():
-            # _url() always contains an #egg= part, or this would be a
-            # MalformedRequest.
-            line = self._url()
-        else:
-            line = '%s==%s' % (self._name(), self._version())
-        return '# sha256: %s\n%s\n' % (self._actual_hash(), line)
-
-
-class MismatchedReq(DownloadedReq):
-    """A requirement for which the downloaded file didn't match any of my hashes."""
-    @classmethod
-    def head(cls):
-        return ("THE FOLLOWING PACKAGES DIDN'T MATCH THE HASHES SPECIFIED IN THE REQUIREMENTS\n"
-                "FILE. If you have updated the package versions, update the hashes. If not,\n"
-                "freak out, because someone has tampered with the packages.\n\n")
-
-    def error(self):
-        preamble = '    %s: expected' % self._project_name()
-        if len(self._expected_hashes()) > 1:
-            preamble += ' one of'
-        padding = '\n' + ' ' * (len(preamble) + 1)
-        return '%s %s\n%s got %s' % (preamble,
-                                     padding.join(self._expected_hashes()),
-                                     ' ' * (len(preamble) - 4),
-                                     self._actual_hash())
-
-    @classmethod
-    def foot(cls):
-        return '\n'
-
-
-class SatisfiedReq(DownloadedReq):
-    """A requirement which turned out to be already installed"""
-
-    @classmethod
-    def head(cls):
-        return ("These packages were already installed, so we didn't need to download or build\n"
-                "them again. If you installed them with peep in the first place, you should be\n"
-                "safe. If not, uninstall them, then re-attempt your install with peep.\n")
-
-    def error(self):
-        return '   %s' % (self._req,)
-
-
-class InstallableReq(DownloadedReq):
-    """A requirement whose hash matched and can be safely installed"""
-
-
-# DownloadedReq subclasses that indicate an error that should keep us from
-# going forward with installation, in the order in which their errors should
-# be reported:
-ERROR_CLASSES = [MismatchedReq, MissingReq, MalformedReq]
-
-
-def bucket(things, key):
-    """Return a map of key -> list of things."""
-    ret = defaultdict(list)
-    for thing in things:
-        ret[key(thing)].append(thing)
-    return ret
-
-
-def first_every_last(iterable, first, every, last):
-    """Execute something before the first item of iter, something else for each
-    item, and a third thing after the last.
-
-    If there are no items in the iterable, don't execute anything.
-
-    """
-    did_first = False
-    for item in iterable:
-        if not did_first:
-            did_first = True
-            first(item)
-        every(item)
-    if did_first:
-        last(item)
-
-
-def _parse_requirements(path, finder):
-    try:
-        # list() so the generator that is parse_requirements() actually runs
-        # far enough to report a TypeError
-        return list(parse_requirements(
-            path, options=EmptyOptions(), finder=finder))
-    except TypeError:
-        # session is a required kwarg as of pip 6.0 and will raise
-        # a TypeError if missing. It needs to be a PipSession instance,
-        # but in older versions we can't import it from pip.download
-        # (nor do we need it at all) so we only import it in this except block
-        from pip.download import PipSession
-        return list(parse_requirements(
-            path, options=EmptyOptions(), session=PipSession(), finder=finder))
-
-
-def downloaded_reqs_from_path(path, argv):
-    """Return a list of DownloadedReqs representing the requirements parsed
-    out of a given requirements file.
-
-    :arg path: The path to the requirements file
-    :arg argv: The commandline args, starting after the subcommand
-
-    """
-    finder = package_finder(argv)
-    return [DownloadedReq(req, argv, finder) for req in
-            _parse_requirements(path, finder)]
-
-
-def peep_install(argv):
-    """Perform the ``peep install`` subcommand, returning a shell status code
-    or raising a PipException.
-
-    :arg argv: The commandline args, starting after the subcommand
-
-    """
-    output = []
-    out = output.append
-    reqs = []
-    try:
-        req_paths = list(requirement_args(argv, want_paths=True))
-        if not req_paths:
-            out("You have to specify one or more requirements files with the -r option, because\n"
-                "otherwise there's nowhere for peep to look up the hashes.\n")
-            return COMMAND_LINE_ERROR
-
-        # We're a "peep install" command, and we have some requirement paths.
-        reqs = list(chain.from_iterable(
-            downloaded_reqs_from_path(path, argv)
-            for path in req_paths))
-        buckets = bucket(reqs, lambda r: r.__class__)
-
-        # Skip a line after pip's "Cleaning up..." so the important stuff
-        # stands out:
-        if any(buckets[b] for b in ERROR_CLASSES):
-            out('\n')
-
-        printers = (lambda r: out(r.head()),
-                    lambda r: out(r.error() + '\n'),
-                    lambda r: out(r.foot()))
-        for c in ERROR_CLASSES:
-            first_every_last(buckets[c], *printers)
-
-        if any(buckets[b] for b in ERROR_CLASSES):
-            out('-------------------------------\n'
-                'Not proceeding to installation.\n')
-            return SOMETHING_WENT_WRONG
-        else:
-            for req in buckets[InstallableReq]:
-                req.install()
-
-            first_every_last(buckets[SatisfiedReq], *printers)
-
-        return ITS_FINE_ITS_FINE
-    except (UnsupportedRequirementError, DownloadError) as exc:
-        out(str(exc))
-        return SOMETHING_WENT_WRONG
-    finally:
-        for req in reqs:
-            req.dispose()
-        print(''.join(output))
-
-
-def peep_port(paths):
-    """Convert a peep requirements file to one compatble with pip-8 hashing.
-
-    Loses comments and tromps on URLs, so the result will need a little manual
-    massaging, but the hard part--the hash conversion--is done for you.
-
-    """
-    if not paths:
-        print('Please specify one or more requirements files so I have '
-              'something to port.\n')
-        return COMMAND_LINE_ERROR
-    for req in chain.from_iterable(
-            _parse_requirements(path, package_finder(argv)) for path in paths):
-        hashes = [hexlify(urlsafe_b64decode((hash + '=').encode('ascii'))).decode('ascii')
-                  for hash in hashes_above(*path_and_line(req))]
-        if not hashes:
-            print(req.req)
-        elif len(hashes) == 1:
-            print('%s --hash=sha256:%s' % (req.req, hashes[0]))
-        else:
-            print('%s' % req.req, end='')
-            for hash in hashes:
-                print(' \\')
-                print('    --hash=sha256:%s' % hash, end='')
-            print()
+            yield chunk
+
+    response = opener().open(url)
+    path = join(temp, urlparse(url).path.split('/')[-1])
+    actual_hash = sha256()
+    with open(path, 'wb') as file:
+        for chunk in read_chunks(response, 4096):
+            file.write(chunk)
+            actual_hash.update(chunk)
+
+    actual_digest = actual_hash.hexdigest()
+    if actual_digest != digest:
+        raise HashError(url, path, actual_digest, digest)
+    return path
 
 
 def main():
-    """Be the top-level entrypoint. Return a shell status code."""
-    commands = {'hash': peep_hash,
-                'install': peep_install,
-                'port': peep_port}
+    temp = mkdtemp(prefix='pipstrap-')
     try:
-        if len(argv) >= 2 and argv[1] in commands:
-            return commands[argv[1]](argv[2:])
-        else:
-            # Fall through to top-level pip main() for everything else:
-            return pip.main()
-    except PipException as exc:
-        return exc.error_code
-
-
-def exception_handler(exc_type, exc_value, exc_tb):
-    print('Oh no! Peep had a problem while trying to do stuff. Please write up a bug report')
-    print('with the specifics so we can fix it:')
-    print()
-    print('https://github.com/erikrose/peep/issues/new')
-    print()
-    print('Here are some particulars you can copy and paste into the bug report:')
-    print()
-    print('---')
-    print('peep:', repr(__version__))
-    print('python:', repr(sys.version))
-    print('pip:', repr(getattr(pip, '__version__', 'no __version__ attr')))
-    print('Command line: ', repr(sys.argv))
-    print(
-        ''.join(traceback.format_exception(exc_type, exc_value, exc_tb)))
-    print('---')
+        downloads = [hashed_download(url, temp, digest)
+                     for url, digest in PACKAGES]
+        check_output('pip install --no-index --no-deps -U ' +
+                     ' '.join(quote(d) for d in downloads),
+                     shell=True)
+    except HashError as exc:
+        print(exc)
+    except Exception:
+        rmtree(temp)
+        raise
+    else:
+        rmtree(temp)
+        return 0
+    return 1
 
 
 if __name__ == '__main__':
-    try:
-        exit(main())
-    except Exception:
-        exception_handler(*sys.exc_info())
-        exit(SOMETHING_WENT_WRONG)
+    exit(main())
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
+    # Set PATH so pipstrap upgrades the right (v)env:
+    PATH="$VENV_BIN:$PATH" "$VENV_BIN/python" "$TEMP_DIR/pipstrap.py"
     set +e
-    PEEP_OUT=`"$VENV_BIN/python" "$TEMP_DIR/peep.py" install -r "$TEMP_DIR/letsencrypt-auto-requirements.txt"`
-    PEEP_STATUS=$?
+    if [ "$VERBOSE" = 1 ]; then
+      "$VENV_BIN/pip" install --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt"
+    else
+      PIP_OUT=`"$VENV_BIN/pip" install --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt" 2>&1`
+    fi
+    PIP_STATUS=$?
     set -e
-    rm -rf "$TEMP_DIR"
-    if [ "$PEEP_STATUS" != 0 ]; then
+    if [ "$PIP_STATUS" != 0 ]; then
       # Report error. (Otherwise, be quiet.)
-      echo "Had a problem while downloading and verifying Python packages:"
-      echo "$PEEP_OUT"
+      echo "Had a problem while installing Python packages."
+      if [ "$VERBOSE" != 1 ]; then
+        echo
+        echo "pip prints the following errors: "
+        echo "====================================================="
+        echo "$PIP_OUT"
+        echo "====================================================="
+        echo
+        echo "Certbot has problem setting up the virtual environment."
+
+        if `echo $PIP_OUT | grep -q Killed` || `echo $PIP_OUT | grep -q "allocate memory"` ; then
+          echo
+          echo "Based on your pip output, the problem can likely be fixed by "
+          echo "increasing the available memory."
+        else
+          echo
+          echo "We were not be able to guess the right solution from your pip "
+          echo "output."
+        fi
+
+        echo
+        echo "Consult https://certbot.eff.org/docs/install.html#problems-with-python-virtual-environment"
+        echo "for possible solutions."
+        echo "You may also find some support resources at https://certbot.eff.org/support/ ."
+      fi
+      rm -rf "$VENV_PATH"
       exit 1
     fi
+    echo "Installation succeeded."
   fi
-  echo "Requesting root privileges to run letsencrypt..."
-  echo "  " $SUDO "$VENV_BIN/letsencrypt" "$@"
-  $SUDO "$VENV_BIN/letsencrypt" "$@"
+  if [ -n "$SUDO" ]; then
+    # SUDO is su wrapper or sudo
+    if [  "$QUIET" != 1 ]; then
+      echo "Requesting root privileges to run certbot..."
+      echo "  $VENV_BIN/letsencrypt" "$@"
+    fi
+  fi
+  if [ -z "$SUDO_ENV" ] ; then
+    # SUDO is su wrapper / noop
+    $SUDO "$VENV_BIN/letsencrypt" "$@"
+  else
+    # sudo
+    $SUDO "$SUDO_ENV" "$VENV_BIN/letsencrypt" "$@"
+  fi
+
 else
-  # Phase 1: Upgrade letsencrypt-auto if neceesary, then self-invoke.
+  # Phase 1: Upgrade certbot-auto if necessary, then self-invoke.
   #
   # Each phase checks the version of only the thing it is responsible for
   # upgrading. Phase 1 checks the version of the latest release of
-  # letsencrypt-auto (which is always the same as that of the letsencrypt
-  # package). Phase 2 checks the version of the locally installed letsencrypt.
+  # certbot-auto (which is always the same as that of the certbot
+  # package). Phase 2 checks the version of the locally installed certbot.
 
   if [ ! -f "$VENV_BIN/letsencrypt" ]; then
+    if [ "$HELP" = 1 ]; then
+      echo "$USAGE"
+      exit 0
+    fi
     # If it looks like we've never bootstrapped before, bootstrap:
     Bootstrap
   fi
@@ -1633,15 +1076,16 @@ else
     exit 0
   fi
 
-  echo "Checking for new version..."
-  TEMP_DIR=$(TempDir)
-  # ---------------------------------------------------------------------------
-  cat << "UNLIKELY_EOF" > "$TEMP_DIR/fetch.py"
+  if [ "$NO_SELF_UPGRADE" != 1 ]; then
+    TEMP_DIR=$(TempDir)
+    trap 'rm -rf "$TEMP_DIR"' EXIT
+    # ---------------------------------------------------------------------------
+    cat << "UNLIKELY_EOF" > "$TEMP_DIR/fetch.py"
 """Do downloading and JSON parsing without additional dependencies. ::
 
     # Print latest released version of LE to stdout:
     python fetch.py --latest-version
-    
+
     # Download letsencrypt-auto script from git tag v1.2.3 into the folder I'm
     # in, and make sure its signature verifies:
     python fetch.py --le-auto-script v1.2.3
@@ -1649,6 +1093,9 @@ else
 On failure, return non-zero.
 
 """
+
+from __future__ import print_function
+
 from distutils.version import LooseVersion
 from json import loads
 from os import devnull, environ
@@ -1707,7 +1154,7 @@ def latest_stable_version(get):
     """Return the latest stable release of letsencrypt."""
     metadata = loads(get(
         environ.get('LE_AUTO_JSON_URL',
-                    'https://pypi.python.org/pypi/letsencrypt/json')))
+                    'https://pypi.python.org/pypi/certbot/json')))
     # metadata['info']['version'] actually returns the latest of any kind of
     # release release, contrary to https://wiki.python.org/moin/PyPIJSON.
     # The regex is a sufficient regex for picking out prereleases for most
@@ -1726,7 +1173,7 @@ def verified_new_le_auto(get, tag, temp_dir):
     """
     le_auto_dir = environ.get(
         'LE_AUTO_DIR_TEMPLATE',
-        'https://raw.githubusercontent.com/letsencrypt/letsencrypt/%s/'
+        'https://raw.githubusercontent.com/certbot/certbot/%s/'
         'letsencrypt-auto-source/') % tag
     write(get(le_auto_dir + 'letsencrypt-auto'), temp_dir, 'letsencrypt-auto')
     write(get(le_auto_dir + 'letsencrypt-auto.sig'), temp_dir, 'letsencrypt-auto.sig')
@@ -1742,7 +1189,7 @@ def verified_new_le_auto(get, tag, temp_dir):
                        stderr=dev_null)
     except CalledProcessError as exc:
         raise ExpectedError("Couldn't verify signature of downloaded "
-                            "letsencrypt-auto.", exc)
+                            "certbot-auto.", exc)
 
 
 def main():
@@ -1750,12 +1197,12 @@ def main():
     flag = argv[1]
     try:
         if flag == '--latest-version':
-            print latest_stable_version(get)
+            print(latest_stable_version(get))
         elif flag == '--le-auto-script':
             tag = argv[2]
             verified_new_le_auto(get, tag, dirname(argv[0]))
     except ExpectedError as exc:
-        print exc.args[0], exc.args[1]
+        print(exc.args[0], exc.args[1])
         return 1
     else:
         return 0
@@ -1765,25 +1212,32 @@ if __name__ == '__main__':
     exit(main())
 
 UNLIKELY_EOF
-  # ---------------------------------------------------------------------------
-  DeterminePythonVersion
-  REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version`
-  if [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
-    echo "Upgrading letsencrypt-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
+    # ---------------------------------------------------------------------------
+    DeterminePythonVersion
+    if ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then
+      echo "WARNING: unable to check for updates."
+    elif [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
+      echo "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
 
-    # Now we drop into Python so we don't have to install even more
-    # dependencies (curl, etc.), for better flow control, and for the option of
-    # future Windows compatibility.
-    "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
+      # Now we drop into Python so we don't have to install even more
+      # dependencies (curl, etc.), for better flow control, and for the option of
+      # future Windows compatibility.
+      "$LE_PYTHON" "$TEMP_DIR/fetch.py" --le-auto-script "v$REMOTE_VERSION"
 
-    # Install new copy of letsencrypt-auto. This preserves permissions and
-    # ownership from the old copy.
-    # TODO: Deal with quotes in pathnames.
-    echo "Replacing letsencrypt-auto..."
-    echo "  " $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$0"
-    $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$0"
-    # TODO: Clean up temp dir safely, even if it has quotes in its path.
-    rm -rf "$TEMP_DIR"
-  fi  # should upgrade
-  "$0" --no-self-upgrade "$@"
+      # Install new copy of certbot-auto.
+      # TODO: Deal with quotes in pathnames.
+      echo "Replacing certbot-auto..."
+      # Clone permissions with cp. chmod and chown don't have a --reference
+      # option on macOS or BSD, and stat -c on Linux is stat -f on macOS and BSD:
+      $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      # Using mv rather than cp leaves the old file descriptor pointing to the
+      # original copy so the shell can continue to read it unmolested. mv across
+      # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
+      # cp is unlikely to fail (esp. under sudo) if the rm doesn't.
+      $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
+    fi  # A newer version is available.
+  fi  # Self-upgrading is allowed.
+
+  "$0" --le-auto-phase2 "$@"
 fi
