@@ -1,5 +1,6 @@
 """Tests for certbot.account."""
 import datetime
+import json
 import os
 import shutil
 import stat
@@ -133,6 +134,14 @@ class AccountFileStorageTest(unittest.TestCase):
 
         # restore
         self.assertEqual(self.acc, self.storage.load(self.acc.id))
+
+    def test_save_and_restore_old_version(self):
+        """Saved regr should include a new_authzr_uri for older Cerbots"""
+        self.storage.save(self.acc, self.mock_client)
+        path = os.path.join(self.config.accounts_dir, self.acc.id, "regr.json")
+        with open(path, "r") as f:
+            regr = json.load(f)
+        self.assertTrue("new_authzr_uri" in regr)
 
     def test_save_regr(self):
         self.storage.save_regr(self.acc, self.mock_client)
