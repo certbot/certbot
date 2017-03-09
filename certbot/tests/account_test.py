@@ -110,7 +110,7 @@ class AccountFileStorageTest(unittest.TestCase):
         from certbot.account import Account
         self.acc = Account(
             regr=messages.RegistrationResource(
-                uri=None, body=messages.Registration()),
+                uri=None, new_authzr_uri=None, body=messages.Registration()),
             key=KEY)
 
     def tearDown(self):

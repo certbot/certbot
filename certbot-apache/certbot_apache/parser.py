@@ -1,10 +1,12 @@
 """ApacheParser is a member object of the ApacheConfigurator class."""
 import fnmatch
-import itertools
 import logging
 import os
 import re
 import subprocess
+import sys
+
+import six
 
 from certbot import errors
 
@@ -88,7 +90,7 @@ class ApacheParser(object):
         while len(self.modules) != prev_size:
             prev_size = len(self.modules)
 
-            for match_name, match_filename in itertools.izip(
+            for match_name, match_filename in six.moves.zip(
                     iterator, iterator):
                 self.modules.add(self.get_arg(match_name))
                 self.modules.add(
@@ -461,8 +463,12 @@ class ApacheParser(object):
         :rtype: str
 
         """
-        # This strips off final /Z(?ms)
-        return fnmatch.translate(clean_fn_match)[:-7]
+        if sys.version_info < (3, 6):
+            # This strips off final /Z(?ms)
+            return fnmatch.translate(clean_fn_match)[:-7]
+        else:  # pragma: no cover
+            # Since Python 3.6, it returns a different pattern like (?s:.*\.load)\Z
+            return fnmatch.translate(clean_fn_match)[4:-3]
 
     def parse_file(self, filepath):
         """Parse file with Augeas

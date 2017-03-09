@@ -630,7 +630,7 @@ class NginxConfigurator(common.Plugin):
                 stderr=subprocess.PIPE)
             text = proc.communicate()[1]  # nginx prints output to stderr
         except (OSError, ValueError) as error:
-            logging.debug(error, exc_info=True)
+            logger.debug(error, exc_info=True)
             raise errors.PluginError(
                 "Unable to run %s -V" % self.conf('ctl'))
 

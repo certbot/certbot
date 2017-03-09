@@ -36,6 +36,7 @@ version = meta['version']
 # https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
     'acme=={0}'.format(version),
+    'argparse',
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
     # saying so here causes a runtime error against our temporary fork of 0.9.3
     # in which we added 2.6 support (see #2243), so we relax the requirement.
@@ -58,8 +59,6 @@ install_requires = [
 # Keep in sync with conditional_requirements.py.
 if sys.version_info < (2, 7):
     install_requires.extend([
-        # only some distros recognize stdlib argparse as already satisfying
-        'argparse',
         'mock<1.1.0',
     ])
 else:
@@ -69,6 +68,7 @@ dev_extras = [
     # Pin astroid==1.3.5, pylint==1.4.2 as a workaround for #289
     'astroid==1.3.5',
     'coverage',
+    'ipdb',
     'nose',
     'pylint==1.4.2',  # upstream #248
     'tox',

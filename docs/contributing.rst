@@ -69,10 +69,8 @@ either in the same directory as ``foo.py`` or in the ``tests`` subdirectory
 (if there isn't, make one). While you are working on your code and tests, run
 ``python foo_test.py`` to run the relevant tests.
 
-For debugging, we recommend running ``pip install ipdb`` and putting
-``import ipdb; ipdb.set_trace()`` statements inside the source
-code. Alternatively, you can use Python's standard library `pdb`,
-but you won't get TAB completion.
+For debugging, we recommend putting
+``import ipdb; ipdb.set_trace()`` statements inside the source code.
 
 Once you are done with your code changes, and the tests in ``foo_test.py`` pass,
 run all of the unittests for Certbot with ``tox -e py27`` (this uses Python
@@ -285,8 +283,7 @@ Steps:
    including coverage. The ``--skip-missing-interpreters`` argument ignores
    missing versions of Python needed for running the tests. Fix any errors.
 5. If your code touches communication with an ACME server/Boulder, you
-   should run the integration tests, see `integration`_. See `Known Issues`_
-   for some common failures that have nothing to do with your code.
+   should run the integration tests, see `integration`_.
 6. Submit the PR.
 7. Did your tests pass on Travis? If they didn't, fix any errors.
 

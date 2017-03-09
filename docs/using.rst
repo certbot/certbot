@@ -144,6 +144,10 @@ the ``--nginx`` flag on the commandline.
 Standalone
 ----------
 
+Use standalone mode to obtain a cert if you don't want to use (or don't currently have)
+existing server software. The standalone plugin does not rely on any other server
+software running on the machine where you obtain the cert.
+
 To obtain a cert using a "standalone" webserver, you can use the
 standalone plugin by including ``certonly`` and ``--standalone``
 on the command line. This plugin needs to bind to port 80 or 443 in
@@ -151,13 +155,11 @@ order to perform domain validation, so you may need to stop your
 existing webserver. To control which port the plugin uses, include
 one of the options shown below on the command line.
 
-    * ``--standalone-supported-challenges http-01`` to use port 80
-    * ``--standalone-supported-challenges tls-sni-01`` to use port 443
+    * ``--preferred-challenges http-01`` to use port 80
+    * ``--preferred-challenges tls-sni-01`` to use port 443
 
-The standalone plugin does not rely on any other server software running
-on the machine where you obtain the certificate. It must still be possible
-for that machine to accept inbound connections from the Internet on the
-specified port using each requested domain name.
+It must still be possible for your machine to accept inbound connections from
+the Internet on the specified port using each requested domain name.
 
 Manual
 ------
@@ -408,6 +410,13 @@ you provide if you do not renew certificates that are about to expire.
 Certbot is working hard to improve the renewal process, and we
 apologize for any inconvenience you encounter in integrating these
 commands into your individual environment.
+
+.. note:: ``certbot renew`` exit status will only be 1 if a renewal attempt failed.
+  This means ``certbot renew`` exit status will be 0 if no cert needs to be updated.
+  If you write a custom script and expect to run a command only after a cert was actually renewed
+  you will need to use the ``--post-hook`` since the exit status will be 0 both on successful renewal
+  and when renewal is not necessary.
+
 
 Modifying the Renewal Configuration File
 ----------------------------------------
