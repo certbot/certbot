@@ -13,6 +13,7 @@ install_requires = [
     # rsa_recover_prime_factors (>=0.8)
     'cryptography>=0.8',
     # Connection.set_tlsext_host_name (>=0.13)
+    'mock',
     'PyOpenSSL>=0.13',
     'pyrfc3339',
     'pytz',
@@ -26,15 +27,6 @@ install_requires = [
     'setuptools>=1.0',
     'six',
 ]
-
-# env markers in extras_require cause problems with older pip: #517
-# Keep in sync with conditional_requirements.py.
-if sys.version_info < (2, 7):
-    install_requires.extend([
-        'mock<1.1.0',
-    ])
-else:
-    install_requires.append('mock')
 
 dev_extras = [
     'nose',
