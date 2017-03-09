@@ -7,12 +7,9 @@ from setuptools import find_packages
 version = '0.7.0.dev0'
 
 install_requires = [
+    'mock',
     'setuptools',  # pkg_resources
 ]
-if sys.version_info < (2, 7):
-    install_requires.append('mock<1.1.0')
-else:
-    install_requires.append('mock')
 
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
