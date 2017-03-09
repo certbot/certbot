@@ -151,7 +151,57 @@ def cert_path_to_lineage(config):
             if candidate_lineage.fullchain == config.cert_path[0]:
                 return candidate_lineage.lineagename
 
-    return _search_lineages(config, update_cert_name_for_cert_path_match, None) 
+    cert_path_match = _search_lineages(config, update_cert_name_for_cert_path_match, None) 
+    if not cert_path_match:
+        raise errors.Error("Could not find a matching lineage for the cert_path {0}".format(config.cert_path[0]))
+    else:
+        return cert_path_match
+
+def human_readable_cert_info(config, cert):
+    """ Returns a human readable description of info about a RenewablCert object""" 
+    
+    checker = ocsp.RevocationChecker()
+
+    if config.certname and cert.lineagename != config.certname:
+        #continue
+        pass
+    if config.domains and not set(config.domains).issubset(cert.names()):
+        #continue
+        pass
+    now = pytz.UTC.fromutc(datetime.datetime.utcnow())
+
+    reasons = []
+    if cert.is_test_cert:
+        reasons.append('TEST_CERT')
+    if cert.target_expiry <= now:
+        reasons.append('EXPIRED')
+    if checker.ocsp_revoked(cert.cert, cert.chain):
+        reasons.append('REVOKED')
+
+    if reasons:
+        status = "INVALID: " + ", ".join(reasons)
+    else:
+        diff = cert.target_expiry - now
+        if diff.days == 1:
+            status = "VALID: 1 day"
+        elif diff.days < 1:
+            status = "VALID: {0} hour(s)".format(diff.seconds // 3600)
+        else:
+            status = "VALID: {0} days".format(diff.days)
+
+    valid_string = "{0} ({1})".format(cert.target_expiry, status)
+    cert_info = """  Certificate Name: {0}\n
+                    Domains: {1}\n
+                    Expiry Date: {2}\n
+                    Certificate Path: {3}\n
+                    Private Key Path: {4}""".format(
+                        cert.lineagename,
+                        " ".join(cert.names()),
+                        valid_string,
+                        cert.fullchain,
+                        cert.privkey)
+    
+    return cert_info
 
 ###################
 # Private Helpers
@@ -184,42 +234,7 @@ def _report_human_readable(config, parsed_certs):
     certinfo = []
     checker = ocsp.RevocationChecker()
     for cert in parsed_certs:
-        if config.certname and cert.lineagename != config.certname:
-            continue
-        if config.domains and not set(config.domains).issubset(cert.names()):
-            continue
-        now = pytz.UTC.fromutc(datetime.datetime.utcnow())
-
-        reasons = []
-        if cert.is_test_cert:
-            reasons.append('TEST_CERT')
-        if cert.target_expiry <= now:
-            reasons.append('EXPIRED')
-        if checker.ocsp_revoked(cert.cert, cert.chain):
-            reasons.append('REVOKED')
-
-        if reasons:
-            status = "INVALID: " + ", ".join(reasons)
-        else:
-            diff = cert.target_expiry - now
-            if diff.days == 1:
-                status = "VALID: 1 day"
-            elif diff.days < 1:
-                status = "VALID: {0} hour(s)".format(diff.seconds // 3600)
-            else:
-                status = "VALID: {0} days".format(diff.days)
-
-        valid_string = "{0} ({1})".format(cert.target_expiry, status)
-        certinfo.append("  Certificate Name: {0}\n"
-                        "    Domains: {1}\n"
-                        "    Expiry Date: {2}\n"
-                        "    Certificate Path: {3}\n"
-                        "    Private Key Path: {4}".format(
-                            cert.lineagename,
-                            " ".join(cert.names()),
-                            valid_string,
-                            cert.fullchain,
-                            cert.privkey))
+        certinfo.append(human_readable_cert_info(config, cert))
     return "\n".join(certinfo)
 
 def _describe_certs(config, parsed_certs, parse_failures):
