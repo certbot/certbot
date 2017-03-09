@@ -43,6 +43,14 @@ def fullchain_for_renewal_conf(conf_file):
         fullchain = re.findall('fullchain = (.*?)\n', f.read())[0]
     return fullchain
 
+def cert_path_for_cert_name(config, cert_name):
+    """ If --cert-name was specified, but you need a value for --cert-path."""
+    cert_name_implied_conf = renewal_file_for_certname(config, cert_name)
+    fullchain_path = fullchain_for_renewal_conf(cert_name_implied_conf)
+    with open(fullchain_path) as f:
+        cert_path = (fullchain_path, f.read()) 
+    return cert_path
+
 def config_with_defaults(config=None):
     """Merge supplied config, if provided, on top of builtin defaults."""
     defaults_copy = configobj.ConfigObj(constants.RENEWER_DEFAULTS)
