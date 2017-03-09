@@ -229,11 +229,16 @@ class IConfig(zope.interface.Interface):
         "Port used during tls-sni-01 challenge. "
         "This only affects the port Certbot listens on. "
         "A conforming ACME server will still attempt to connect on port 443.")
+    tls_sni_01_addr = zope.interface.Attribute(
+        "The address the server listens to during tls-sni-01 challenge.")
 
     http01_port = zope.interface.Attribute(
         "Port used in the http-01 challenge. "
         "This only affects the port Certbot listens on. "
         "A conforming ACME server will still attempt to connect on port 80.")
+
+    http01_addr = zope.interface.Attribute(
+        "The address the server listens to during http-01 challenge.")
 
     pref_challs = zope.interface.Attribute(
         "Sorted user specified preferred challenges"
@@ -250,7 +255,6 @@ class IConfig(zope.interface.Interface):
         "Require that all configuration files are owned by the current "
         "user; only needed if your config is somewhere unsafe like /tmp/."
         "This is a boolean")
-
 
 class IInstaller(IPlugin):
     """Generic Certbot Installer Interface.
