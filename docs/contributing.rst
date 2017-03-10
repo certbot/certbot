@@ -343,29 +343,17 @@ This should generate documentation in the ``docs/_build/html``
 directory.
 
 
-Other methods for running the client
-====================================
+Running the client with Docker
+==============================
 
-Docker
-------
+macOS users will probably find it easiest to use Docker Compose for
+development. To install Docker Compose on macOS, follow the instructions at
+https://docs.docker.com/docker-for-mac/install/.
 
-OSX users will probably find it easiest to set up a Docker container for
-development. Certbot comes with a Dockerfile (``Dockerfile-dev``)
-for doing so. To use Docker on OSX, install and setup docker-machine using the
-instructions at https://docs.docker.com/installation/mac/.
+Now you can develop locally and run Certbot and test your changes in Docker.
+For example, to check for linting errors you can run::
 
-To build the development Docker image::
-
-  docker build -t certbot -f Dockerfile-dev .
-
-Now run tests inside the Docker image:
-
-.. code-block:: shell
-
-  docker run -it certbot bash
-  cd src
-  tox -e py27
-
+  docker-compose run --rm --service-ports development bash -c 'cd src;tox -e lint'
 
 .. _prerequisites:
 
