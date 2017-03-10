@@ -46,6 +46,7 @@ def rename_lineage(config):
 
     certname = _get_certname(config, "rename")
 
+    # what is the new name we want to use?
     new_certname = config.new_certname
     if not new_certname:
         code, new_certname = disp.input(
@@ -54,12 +55,11 @@ def rename_lineage(config):
         if code != display_util.OK or not new_certname:
             raise errors.Error("User ended interaction.")
 
-    lineage = lineage_for_certname(config, certname)
-    if not lineage:
-        raise errors.ConfigurationError("No existing certificate with name "
-            "{0} found.".format(certname))
-    storage.rename_renewal_config(certname, new_certname, config)
-    disp.notification("Successfully renamed {0} to {1}."
+    storage.rename_files(config, certname, new_certname)
+    update_live_symlinks(config)
+    # TODO: reinstall cert
+
+    disp.notification("Renamed files for {0} to {1}."
         .format(certname, new_certname), pause=False)
 
 def certificates(config):
