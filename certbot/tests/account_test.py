@@ -109,12 +109,14 @@ class AccountFileStorageTest(unittest.TestCase):
         self.storage = AccountFileStorage(self.config)
 
         from certbot.account import Account
+        new_authzr_uri = "hi"
         self.acc = Account(
             regr=messages.RegistrationResource(
-                uri=None, body=messages.Registration()),
+                uri=None, body=messages.Registration(),
+                new_authzr_uri=new_authzr_uri),
             key=KEY)
         self.mock_client = mock.MagicMock()
-        self.mock_client.directory.new_authz = "hi"
+        self.mock_client.directory.new_authz = new_authzr_uri
 
     def tearDown(self):
         shutil.rmtree(self.tmp)
@@ -133,10 +135,11 @@ class AccountFileStorageTest(unittest.TestCase):
             account_path, "private_key.json"))[stat.ST_MODE] & 0o777) in ("0400", "0o400"))
 
         # restore
-        self.assertEqual(self.acc, self.storage.load(self.acc.id))
+        loaded = self.storage.load(self.acc.id)
+        self.assertEqual(self.acc, loaded)
 
     def test_save_and_restore_old_version(self):
-        """Saved regr should include a new_authzr_uri for older Cerbots"""
+        """Saved regr should include a new_authzr_uri for older Certbots"""
         self.storage.save(self.acc, self.mock_client)
         path = os.path.join(self.config.accounts_dir, self.acc.id, "regr.json")
         with open(path, "r") as f:
