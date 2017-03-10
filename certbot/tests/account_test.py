@@ -52,10 +52,7 @@ class AccountTest(unittest.TestCase):
             self.acc.slug, "test.certbot.org@2015-07-04T14:04:10Z (bca5)")
 
     def test_repr(self):
-        self.assertEqual(
-            repr(self.acc),
-            "<Account(bca5889f66457d5b62fbba7b25f9ab6f)>")
-
+        self.assertTrue("<Account(bca5889f66457d5b62fbba7b25f9ab6f" in repr(self.acc))
 
 class ReportNewAccountTest(unittest.TestCase):
     """Tests for certbot.account.report_new_account."""
