@@ -12,10 +12,14 @@ from acme import messages
 
 from certbot import achallenges
 from certbot import errors
+from certbot import interfaces
 from certbot import util
 
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
+
+from zope.interface import classImplements
+from zope.interface.verify import verifyObject
 
 
 class ChallengeFactoryTest(unittest.TestCase):
@@ -191,6 +195,62 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.handler.pref_challs.append(challenges.HTTP01.typ)
         self.assertRaises(
             errors.AuthorizationError, self.handler.get_authorizations, ["0"])
+
+    @mock.patch("certbot.auth_handler.AuthHandler._poll_challenges")
+    def test_challenge_provider(self, mock_poll):
+        # Mock domain challenge loading by auth plugin
+        def get_domain_chal(domain, acme=None, account=None):
+            # pylint: disable=missing-docstring, unused-argument
+            if domain == '0':
+                # domain 0 -> simulate loading by plugin
+                return gen_dom_authzr(domain, challs=acme_util.CHALLENGES)
+
+            else:
+                # domain 1 -> signalize challenge not found
+                raise errors.NoChallengeError('Challenge not found')
+
+        mock_auth = mock.MagicMock(name="ChallengeProvider")
+        mock_auth.get_chall_pref.return_value = [challenges.TLSSNI01]
+        mock_auth.perform.side_effect = gen_auth_resp
+        mock_auth.request_domain_challenges.side_effect = get_domain_chal
+
+        mock_auth.__implemented__ = []
+        mock_auth.__provides__ = lambda x: True
+        classImplements(mock_auth, interfaces.IChallengeProvider, interfaces.IAuthenticator)
+
+        self.handler.auth = mock_auth
+        self.assertTrue(verifyObject(interfaces.IChallengeProvider, self.handler.auth))
+
+        self.mock_net.request_domain_challenges.side_effect = functools.partial(
+            gen_dom_authzr, challs=acme_util.CHALLENGES)
+
+        mock_poll.side_effect = self._validate_all
+
+        authzr = self.handler.get_authorizations(["0", "1"])
+
+        # Plugin implements the interface, 2 invocations, each for one domain.
+        self.assertEqual(self.handler.auth.
+                         request_domain_challenges.call_count, 2)
+
+        # Only one invocation of the acme client, for domain "1"
+        # which was not provided by the plugin
+        self.assertEqual(self.mock_net.
+                         request_domain_challenges.call_count, 1)
+
+        # Only one call to domain loaded, for domain "1", NoChallengeError
+        # was raised for.
+        self.assertEqual(self.handler.auth.
+                         on_domain_challenge_loaded.call_count, 1)
+
+        self.assertEqual(mock_poll.call_count, 1)
+        chall_update = mock_poll.call_args[0][0]
+        self.assertEqual(sorted(list(six.iterkeys(chall_update))), ["0", "1"])
+        self.assertEqual(len(chall_update.values()), 2)
+
+        self.assertEqual(mock_auth.cleanup.call_count, 1)
+        self.assertEqual(
+            mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
+        self.assertEqual(len(authzr), 2)
 
     def _validate_all(self, unused_1, unused_2):
         for dom in six.iterkeys(self.handler.authzr):

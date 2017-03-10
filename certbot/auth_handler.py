@@ -5,6 +5,9 @@ import time
 import six
 import zope.component
 
+from zope.interface.exceptions import DoesNotImplement
+from zope.interface.verify import verifyObject
+
 from acme import challenges
 from acme import messages
 
@@ -62,9 +65,7 @@ class AuthHandler(object):
             authorizations
 
         """
-        for domain in domains:
-            self.authzr[domain] = self.acme.request_domain_challenges(domain)
-
+        self._request_challenges(domains)
         self._choose_challenges(domains)
 
         # While there are still challenges remaining...
@@ -87,6 +88,44 @@ class AuthHandler(object):
                 "Challenges failed for all domains")
 
         return retVal
+
+    def _request_challenges(self, domains):
+        """Request challenges for domains, uses acme or the plugin"""
+
+        # If plugin does not implement challenge provider, ask ACME directly.
+        try:
+            return self._request_challenges_authenticator(domains)
+        except DoesNotImplement:
+            return self._request_challenges_directly(domains)
+
+    def _request_challenges_authenticator(self, domains):
+        """Uses auth plugin to load domain challenges.
+
+        :raises DoesNotImplement if self.auth does not implement
+        IChallengeProvider
+        """
+        verifyObject(interfaces.IChallengeProvider, self.auth)
+
+        # Ask provider for challenge, if there is none (NoChallengeError)
+        # ask ACME, then inform challenge provider
+        for domain in domains:
+            try:
+                self.authzr[domain] = self.auth.request_domain_challenges(
+                    domain, self.acme, self.account)
+
+            except errors.NoChallengeError:
+                self.authzr[domain] = self._request_domain_challenge(domain)
+                self.auth.on_domain_challenge_loaded(
+                    domain, self.authzr[domain])
+
+    def _request_challenges_directly(self, domains):
+        """Uses ACME client to request domain challenges"""
+        for domain in domains:
+            self.authzr[domain] = self._request_domain_challenge(domain)
+
+    def _request_domain_challenge(self, domain):
+        """Asks ACME for domain challenge"""
+        return self.acme.request_domain_challenges(domain)
 
     def _choose_challenges(self, domains):
         """Retrieve necessary challenges to satisfy server."""
