@@ -8,6 +8,7 @@ version = '0.13.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
+    'argparse',
     # load_pem_private/public_key (>=0.6)
     # rsa_recover_prime_factors (>=0.8)
     'cryptography>=0.8',
@@ -30,8 +31,6 @@ install_requires = [
 # Keep in sync with conditional_requirements.py.
 if sys.version_info < (2, 7):
     install_requires.extend([
-        # only some distros recognize stdlib argparse as already satisfying
-        'argparse',
         'mock<1.1.0',
     ])
 else:
