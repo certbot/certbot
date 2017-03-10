@@ -230,6 +230,7 @@ class RegistrationResourceTest(unittest.TestCase):
     def test_to_partial_json(self):
         self.assertEqual(self.regr.to_json(), {
             'body': mock.sentinel.body,
+            'new_authzr_uri': None,
             'uri': mock.sentinel.uri,
             'terms_of_service': mock.sentinel.terms_of_service,
         })

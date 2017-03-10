@@ -315,10 +315,12 @@ class RegistrationResource(ResourceWithURI):
     """Registration Resource.
 
     :ivar acme.messages.Registration body:
+    :ivar unicode new_authzr_uri: Deprecated. Do not use.
     :ivar unicode terms_of_service: URL for the CA TOS.
 
     """
     body = jose.Field('body', decoder=Registration.from_json)
+    new_authzr_uri = jose.Field('new_authzr_uri')
     terms_of_service = jose.Field('terms_of_service', omitempty=True)
 
 
@@ -423,9 +425,11 @@ class AuthorizationResource(ResourceWithURI):
     """Authorization Resource.
 
     :ivar acme.messages.Authorization body:
+    :ivar unicode new_cert_uri: Deprecated. Do not use.
 
     """
     body = jose.Field('body', decoder=Authorization.from_json)
+    new_cert_uri = jose.Field('new_cert_uri')
 
 
 @Directory.register
