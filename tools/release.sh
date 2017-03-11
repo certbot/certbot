@@ -7,7 +7,7 @@ Usage() {
     exit 1
 }
 
-if [ "`dirname $0`" != "./tools" ] ; then
+if [ "`dirname $0`" != "tools" ] ; then
     echo Please run this script from the repo root
     exit 1
 fi
