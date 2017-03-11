@@ -1,1 +1,1 @@
-"""Let's Encrypt Route53 plugin."""
+"""Certbot Route53 plugin."""
