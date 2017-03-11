@@ -357,15 +357,31 @@ directory.
 Running the client with Docker
 ==============================
 
-macOS users will probably find it easiest to use Docker Compose for
-development. To install Docker Compose on macOS, follow the instructions at
-https://docs.docker.com/docker-for-mac/install/.
+You can use Docker Compose to quickly set up an environment for running and
+testing Certbot. This is especially useful for macOS users. To install Docker
+Compose, follow the instructions at https://docs.docker.com/compose/install/.
+
+.. note:: Linux users can simply run ``pip install docker-compose`` to get
+  Docker Compose after installing Docker Engine and activating your shell as
+  described in the :ref:`Getting Started <getting_started>` section.
 
 Now you can develop on your host machine, but run Certbot and test your changes
-in Docker. For example, from anywhere inside your clone of the Certbot
-repository you can run the following to check for linting errors::
+in Docker. When using ``docker-compose`` make sure you are inside your clone of
+the Certbot repository. As an example, you can run the following command to
+check for linting errors::
 
   docker-compose run --rm --service-ports development bash -c 'tox -e lint'
+
+You can also leave a terminal open running a shell in the Docker container and
+modify Certbot code in another window. The Certbot repo on your host machine is
+mounted inside of the container so any changes you make immediately take
+effect. To do this, run::
+
+  docker-compose run --rm --service-ports development bash
+
+Now running the check for linting errors described above is as easy as::
+
+  tox -e lint
 
 .. _prerequisites:
 
