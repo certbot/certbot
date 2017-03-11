@@ -144,6 +144,13 @@ class ClientTest(unittest.TestCase):
             self.directory.new_authz,
             messages.NewAuthorization(identifier=self.identifier))
 
+    def test_request_challenges_deprecated_arg(self):
+        self._prepare_response_for_request_challenges()
+        self.client.request_challenges(self.identifier, new_authzr_uri="hi")
+        self.net.post.assert_called_once_with(
+            self.directory.new_authz,
+            messages.NewAuthorization(identifier=self.identifier))
+
     def test_request_challenges_custom_uri(self):
         self._prepare_response_for_request_challenges()
         self.client.request_challenges(self.identifier)
