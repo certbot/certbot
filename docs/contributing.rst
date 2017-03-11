@@ -31,7 +31,7 @@ Certbot. You only need to do this once.
 .. code-block:: shell
 
    cd certbot
-   ./letsencrypt-auto-source/letsencrypt-auto --os-packages-only
+   ./certbot-auto --os-packages-only
    ./tools/venv.sh
 
 Then in each shell where you're working on the client, do:
