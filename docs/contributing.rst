@@ -14,13 +14,22 @@ Getting Started
 Running a local copy of the client
 ----------------------------------
 
-Running the client in developer mode from your local tree is a little
-different than running ``certbot-auto``.  To get set up, do these things
-once:
+Running the client in developer mode from your local tree is a little different
+than running Certbot as a user. To get set up, clone our git repository by
+running:
 
 .. code-block:: shell
 
    git clone https://github.com/certbot/certbot
+
+If you're on macOS, we recommend you skip the rest of this section and instead
+run Certbot in Docker. You can find instructions for how to do this :ref:`here
+<docker>`. If you're running on Linux, you can run the following commands to
+install dependencies and set up a virtual environment where you can run
+Certbot. You only need to do this once.
+
+.. code-block:: shell
+
    cd certbot
    ./letsencrypt-auto-source/letsencrypt-auto --os-packages-only
    ./tools/venv.sh
@@ -342,6 +351,8 @@ commands:
 This should generate documentation in the ``docs/_build/html``
 directory.
 
+
+.. _docker:
 
 Running the client with Docker
 ==============================
