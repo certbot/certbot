@@ -351,7 +351,8 @@ development. To install Docker Compose on macOS, follow the instructions at
 https://docs.docker.com/docker-for-mac/install/.
 
 Now you can develop locally and run Certbot and test your changes in Docker.
-For example, to check for linting errors you can run::
+For example, from anywhere inside your clone of the Certbot repository you can
+run the following to check for linting errors::
 
   docker-compose run --rm --service-ports development bash -c 'cd src;tox -e lint'
 
