@@ -836,15 +836,23 @@ def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx.conf"):
 
         if proc.returncode != 0:
             # Maybe Nginx isn't running
-            nginx_proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf],
-                                          stdout=subprocess.PIPE,
-                                          stderr=subprocess.PIPE)
-            stdout, stderr = nginx_proc.communicate()
+            # HACK: try it once without piping out because when it starts correctly,
+            # this call hangs on Arch if you catch output
+            # https://github.com/certbot/certbot/issues/4324
+            nginx_proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf])
+            nginx_proc.communicate()
 
             if nginx_proc.returncode != 0:
-                # Enter recovery routine...
-                raise errors.MisconfigurationError(
-                    "nginx restart failed:\n%s\n%s" % (stdout, stderr))
+                # try again, but catch output this time
+                nginx_proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf],
+                                              stdout=subprocess.PIPE,
+                                              stderr=subprocess.PIPE)
+                stdout, stderr = nginx_proc.communicate()
+
+                if nginx_proc.returncode != 0:
+                    # Enter recovery routine...
+                    raise errors.MisconfigurationError(
+                        "nginx restart failed:\n%s\n%s" % (stdout, stderr))
 
     except (OSError, ValueError):
         raise errors.MisconfigurationError("nginx restart failed")
