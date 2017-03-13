@@ -155,8 +155,8 @@ order to perform domain validation, so you may need to stop your
 existing webserver. To control which port the plugin uses, include
 one of the options shown below on the command line.
 
-    * ``--standalone-supported-challenges http-01`` to use port 80
-    * ``--standalone-supported-challenges tls-sni-01`` to use port 443
+    * ``--preferred-challenges http-01`` to use port 80
+    * ``--preferred-challenges tls-sni-01`` to use port 443
 
 It must still be possible for your machine to accept inbound connections from
 the Internet on the specified port using each requested domain name.

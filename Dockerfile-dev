@@ -13,7 +13,7 @@ EXPOSE 443
 # authenticator and text mode only?)
 VOLUME /etc/letsencrypt /var/lib/letsencrypt
 
-WORKDIR /opt/certbot
+WORKDIR /opt/certbot/src
 
 # no need to mkdir anything:
 # https://docs.docker.com/reference/builder/#copy
