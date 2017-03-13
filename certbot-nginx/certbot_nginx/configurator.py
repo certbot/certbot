@@ -5,6 +5,7 @@ import re
 import shutil
 import socket
 import subprocess
+import tempfile
 import time
 
 import OpenSSL
@@ -834,20 +835,27 @@ def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx.conf"):
 
         if proc.returncode != 0:
             # Maybe Nginx isn't running
-            nginx_proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf],
-                                          stdout=subprocess.PIPE,
-                                          stderr=subprocess.PIPE)
+            with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
+                nginx_proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf],
+                                              stdout=out,
+                                              stderr=err)
+                nginx_proc.communicate()
+                # stdout, stderr = out.read(), err.read()
+                if nginx_proc.returncode != 0:
+                    # Enter recovery routine...
+                    raise errors.MisconfigurationError(
+                        "nginx restart failed:\n%s\n%s" % (out.read(), err.read()))
             # Minor hack: don't call communicate(), because it hangs on Arch
             # if nginx_proc.poll() == 0
             # https://github.com/certbot/certbot/issues/4324
             # and we can't use wait() here, because that is known to block with piped output
-            while nginx_proc.poll() is None:
-                time.sleep(.1)
-            if nginx_proc.poll() != 0:
-                # Enter recovery routine...
-                raise errors.MisconfigurationError(
-                    "nginx restart failed:\n%s\n%s" % (nginx_proc.stdout.read(),
-                        nginx_proc.stderr.read()))
+            # while nginx_proc.poll() is None:
+            #     time.sleep(.1)
+            # if nginx_proc.poll() != 0:
+            #     # Enter recovery routine...
+            #     raise errors.MisconfigurationError(
+            #         "nginx restart failed:\n%s\n%s" % (nginx_proc.stdout.read(),
+            #             nginx_proc.stderr.read()))
 
     except (OSError, ValueError):
         raise errors.MisconfigurationError("nginx restart failed")
