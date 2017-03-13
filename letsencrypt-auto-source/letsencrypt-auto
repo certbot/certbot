@@ -23,7 +23,7 @@ if [ -z "$VENV_PATH" ]; then
   VENV_PATH="$XDG_DATA_HOME/$VENV_NAME"
 fi
 VENV_BIN="$VENV_PATH/bin"
-LE_AUTO_VERSION="0.12.0.dev0"
+LE_AUTO_VERSION="0.13.0.dev0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -833,18 +833,18 @@ letsencrypt==0.7.0 \
 
 # THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT; ADD ALL DEPENDENCIES ABOVE.
 
-acme==0.11.1 \
-    --hash=sha256:9f4efac6dc4477a3baa7eb2392d4f7583f974e4ad336439aa1961ef805622a77 \
-    --hash=sha256:db35258edfc13dfe5839215898fe2d5d3caafc9a084f631a032f3fdf712c694e
-certbot==0.11.1 \
-    --hash=sha256:ba80552df0f390dbc5fcd14b4ea4b1499ea866f5f78c8c1a375abc25101dedf1 \
-    --hash=sha256:6c1724486d500c5163c9313d6a14af5af9f4515f79553627303a6b86df2c3af2
-certbot-apache==0.11.1 \
-    --hash=sha256:70132d9013509011b9edeba64fc208961f50ef78457f58d3b80a61094102efcd \
-    --hash=sha256:efe2224b531595edee366423c115e2874a3c9011890321d3ccda0367efc776c0
-certbot-nginx==0.11.1 \
-    --hash=sha256:1895eea1de92ab3dfd762998a4be7868ec3ec4d42cce7772995e4e9b2e488e6a \
-    --hash=sha256:e5e5ffe8930ba10139bb61c2a05a30e84d9a69a7d8fc6a7b391f707eae8bfce5
+acme==0.12.0 \
+    --hash=sha256:a6050619b3e07b41d197992bb15b32c755dfa0665cfa1c20faa82806a798265b \
+    --hash=sha256:a05cba6b5b0fffdfa246b32492a44769011d45205f3ee8efde1f37ee9843fbdf
+certbot==0.12.0 \
+    --hash=sha256:d018d13665eb4cfe7038c2df636e3f4928742b83769b95edfdb0311277f0eb48 \
+    --hash=sha256:4a71925c035b62dfb7c3343c619ee090add76188b47225272b57798ad63388b7
+certbot-apache==0.12.0 \
+    --hash=sha256:de86907ea60e7bc35d252b87dec04eab3c7f3a1ea768774876e7ff582d89d640 \
+    --hash=sha256:77dde63cf97292b09da8ae09ef8a7a6d83a3b1ee0f8d1fefe513fc77a6292509
+certbot-nginx==0.12.0 \
+    --hash=sha256:c66d848c4577f1f91a06a8119b40f1ab90af1546addea27905434bd070f3924d \
+    --hash=sha256:4dab2c93304c80d8d0d2e5214939f016804fd46859dd7a39b892d8b7195ab5ec
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1093,6 +1093,9 @@ else
 On failure, return non-zero.
 
 """
+
+from __future__ import print_function
+
 from distutils.version import LooseVersion
 from json import loads
 from os import devnull, environ
@@ -1194,12 +1197,12 @@ def main():
     flag = argv[1]
     try:
         if flag == '--latest-version':
-            print latest_stable_version(get)
+            print(latest_stable_version(get))
         elif flag == '--le-auto-script':
             tag = argv[2]
             verified_new_le_auto(get, tag, dirname(argv[0]))
     except ExpectedError as exc:
-        print exc.args[0], exc.args[1]
+        print(exc.args[0], exc.args[1])
         return 1
     else:
         return 0

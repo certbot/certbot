@@ -586,9 +586,10 @@ def _parse_server_raw(server):
             continue
         if directive[0] == 'listen':
             addr = obj.Addr.fromstring(directive[1])
-            parsed_server['addrs'].add(addr)
-            if addr.ssl:
-                parsed_server['ssl'] = True
+            if addr:
+                parsed_server['addrs'].add(addr)
+                if addr.ssl:
+                    parsed_server['ssl'] = True
         elif directive[0] == 'server_name':
             parsed_server['names'].update(
                 _get_servernames(directive[1]))

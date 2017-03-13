@@ -267,7 +267,7 @@ class JSONObjectWithFields(util.ImmutableMap, interfaces.JSONDeSerializable):
 
         if missing:
             raise errors.DeserializationError(
-                'The following fields are required: {0}'.format(
+                'The following field are required: {0}'.format(
                     ','.join(missing)))
 
     @classmethod

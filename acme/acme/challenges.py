@@ -425,7 +425,7 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
         # TODO: domain is not necessary if host is provided
         if "host" not in kwargs:
             host = socket.gethostbyname(domain)
-            logging.debug('%s resolved to %s', domain, host)
+            logger.debug('%s resolved to %s', domain, host)
             kwargs["host"] = host
 
         kwargs.setdefault("port", self.PORT)
@@ -445,7 +445,7 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
         """
         # pylint: disable=protected-access
         sans = crypto_util._pyopenssl_cert_or_req_san(cert)
-        logging.debug('Certificate %s. SANs: %s', cert.digest('sha1'), sans)
+        logger.debug('Certificate %s. SANs: %s', cert.digest('sha256'), sans)
         return self.z_domain.decode() in sans
 
     def simple_verify(self, chall, domain, account_public_key,

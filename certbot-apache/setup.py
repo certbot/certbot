@@ -4,12 +4,13 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.12.0.dev0'
+version = '0.13.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
     'acme=={0}'.format(version),
     'certbot=={0}'.format(version),
+    'mock',
     'python-augeas',
     # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
     # will tolerate; see #2599:
@@ -17,11 +18,6 @@ install_requires = [
     'zope.component',
     'zope.interface',
 ]
-
-if sys.version_info < (2, 7):
-    install_requires.append('mock<1.1.0')
-else:
-    install_requires.append('mock')
 
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags

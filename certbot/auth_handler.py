@@ -63,7 +63,8 @@ class AuthHandler(object):
 
         """
         for domain in domains:
-            self.authzr[domain] = self.acme.request_domain_challenges(domain)
+            self.authzr[domain] = self.acme.request_domain_challenges(
+                domain, self.account.regr.new_authzr_uri)
 
         self._choose_challenges(domains)
 

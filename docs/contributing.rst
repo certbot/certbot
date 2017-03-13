@@ -14,15 +14,24 @@ Getting Started
 Running a local copy of the client
 ----------------------------------
 
-Running the client in developer mode from your local tree is a little
-different than running ``certbot-auto``.  To get set up, do these things
-once:
+Running the client in developer mode from your local tree is a little different
+than running Certbot as a user. To get set up, clone our git repository by
+running:
 
 .. code-block:: shell
 
    git clone https://github.com/certbot/certbot
+
+If you're on macOS, we recommend you skip the rest of this section and instead
+run Certbot in Docker. You can find instructions for how to do this :ref:`here
+<docker>`. If you're running on Linux, you can run the following commands to
+install dependencies and set up a virtual environment where you can run
+Certbot. You only need to do this once.
+
+.. code-block:: shell
+
    cd certbot
-   ./letsencrypt-auto-source/letsencrypt-auto --os-packages-only
+   ./certbot-auto --os-packages-only
    ./tools/venv.sh
 
 Then in each shell where you're working on the client, do:
@@ -69,10 +78,8 @@ either in the same directory as ``foo.py`` or in the ``tests`` subdirectory
 (if there isn't, make one). While you are working on your code and tests, run
 ``python foo_test.py`` to run the relevant tests.
 
-For debugging, we recommend running ``pip install ipdb`` and putting
-``import ipdb; ipdb.set_trace()`` statements inside the source
-code. Alternatively, you can use Python's standard library `pdb`,
-but you won't get TAB completion.
+For debugging, we recommend putting
+``import ipdb; ipdb.set_trace()`` statements inside the source code.
 
 Once you are done with your code changes, and the tests in ``foo_test.py`` pass,
 run all of the unittests for Certbot with ``tox -e py27`` (this uses Python
@@ -285,8 +292,7 @@ Steps:
    including coverage. The ``--skip-missing-interpreters`` argument ignores
    missing versions of Python needed for running the tests. Fix any errors.
 5. If your code touches communication with an ACME server/Boulder, you
-   should run the integration tests, see `integration`_. See `Known Issues`_
-   for some common failures that have nothing to do with your code.
+   should run the integration tests, see `integration`_.
 6. Submit the PR.
 7. Did your tests pass on Travis? If they didn't, fix any errors.
 
@@ -346,56 +352,36 @@ This should generate documentation in the ``docs/_build/html``
 directory.
 
 
-Other methods for running the client
-====================================
+.. _docker:
 
-Vagrant
--------
+Running the client with Docker
+==============================
 
-If you are a Vagrant user, Certbot comes with a Vagrantfile that
-automates setting up a development environment in an Ubuntu 14.04
-LTS VM. To set it up, simply run ``vagrant up``. The repository is
-synced to ``/vagrant``, so you can get started with:
+You can use Docker Compose to quickly set up an environment for running and
+testing Certbot. This is especially useful for macOS users. To install Docker
+Compose, follow the instructions at https://docs.docker.com/compose/install/.
 
-.. code-block:: shell
+.. note:: Linux users can simply run ``pip install docker-compose`` to get
+  Docker Compose after installing Docker Engine and activating your shell as
+  described in the :ref:`Getting Started <getting_started>` section.
 
-  vagrant ssh
-  cd /vagrant
-  sudo ./venv/bin/certbot
+Now you can develop on your host machine, but run Certbot and test your changes
+in Docker. When using ``docker-compose`` make sure you are inside your clone of
+the Certbot repository. As an example, you can run the following command to
+check for linting errors::
 
-Support for other Linux distributions coming soon.
+  docker-compose run --rm --service-ports development bash -c 'tox -e lint'
 
-.. note::
-   Unfortunately, Python distutils and, by extension, setup.py and
-   tox, use hard linking quite extensively. Hard linking is not
-   supported by the default sync filesystem in Vagrant. As a result,
-   all actions with these commands are *significantly slower* in
-   Vagrant. One potential fix is to `use NFS`_ (`related issue`_).
+You can also leave a terminal open running a shell in the Docker container and
+modify Certbot code in another window. The Certbot repo on your host machine is
+mounted inside of the container so any changes you make immediately take
+effect. To do this, run::
 
-.. _use NFS: http://docs.vagrantup.com/v2/synced-folders/nfs.html
-.. _related issue: https://github.com/ClusterHQ/flocker/issues/516
+  docker-compose run --rm --service-ports development bash
 
+Now running the check for linting errors described above is as easy as::
 
-Docker
-------
-
-OSX users will probably find it easiest to set up a Docker container for
-development. Certbot comes with a Dockerfile (``Dockerfile-dev``)
-for doing so. To use Docker on OSX, install and setup docker-machine using the
-instructions at https://docs.docker.com/installation/mac/.
-
-To build the development Docker image::
-
-  docker build -t certbot -f Dockerfile-dev .
-
-Now run tests inside the Docker image:
-
-.. code-block:: shell
-
-  docker run -it certbot bash
-  cd src
-  tox -e py27
-
+  tox -e lint
 
 .. _prerequisites:
 
