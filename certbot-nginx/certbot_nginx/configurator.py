@@ -829,10 +829,8 @@ def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx.conf"):
 
     """
     try:
-        proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf, "-s", "reload"],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-        stdout, stderr = proc.communicate()
+        proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf, "-s", "reload"])
+        proc.communicate()
 
         if proc.returncode != 0:
             # Maybe Nginx isn't running
