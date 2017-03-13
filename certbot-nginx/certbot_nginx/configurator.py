@@ -839,7 +839,6 @@ def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx.conf"):
             nginx_proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf],
                                           stdout=subprocess.PIPE,
                                           stderr=subprocess.PIPE)
-            # Maybe Nginx isn't running
             # Minor hack: don't call communicate(), because it hangs on Arch
             # if nginx_proc.poll() == 0
             # https://github.com/certbot/certbot/issues/4324
