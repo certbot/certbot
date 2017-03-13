@@ -311,8 +311,8 @@ def rename_files(config, certname, new_certname):
     """
 
     # rename renewal config file
-    prev_filename = renewal_filename_for_lineagename(cli_config, prev_name)
-    new_filename = renewal_filename_for_lineagename(cli_config, new_name)
+    prev_filename = renewal_filename_for_lineagename(config, certname)
+    new_filename = renewal_filename_for_lineagename(config, new_certname)
     if os.path.exists(new_filename):
         raise errors.ConfigurationError("The new certificate name "
             "is already in use.")
@@ -321,7 +321,7 @@ def rename_files(config, certname, new_certname):
     except OSError:
         raise errors.ConfigurationError("Please specify a valid filename "
             "for the new certificate name.")
-    logger.debug("Renamed {0} to {1}", certname, new_certname)
+    logger.debug("Renamed %s to %s", certname, new_certname)
 
     # load config file
     try:
@@ -333,15 +333,16 @@ def rename_files(config, certname, new_certname):
         raise errors.CertStorageError(
             "error parsing {0}".format(new_filename))
 
-    def move_to_new_dir(prev_dir, new_dir, description):
+    def move_to_new_dir(prev_dir, description):
+        """Replace certname with new_certname in prev_dir"""
         new_dir = prev_dir.replace(certname, new_certname)
         # make dir iff it doesn't exist
         if os.path.exists(new_dir):
-            logger.warning("{0} directory named {1} already exists. Not renaming {2}",
+            logger.warning("%s directory named %s already exists. Not renaming %s",
                 description, new_dir, prev_dir)
         else:
             shutil.move(prev_dir, new_dir)
-            logger.debug("Renamed {0} to {1}", prev_dir, new_dir)
+            logger.debug("Renamed %s to %s", prev_dir, new_dir)
         return new_dir
 
     # archive dir
@@ -351,19 +352,18 @@ def rename_files(config, certname, new_certname):
         logger.warning("Archive directory does not conform to defaults and has "
             "not been renamed.")
     else:
-        new_archive_dir = move_to_new_dir(prev_archive_dir, new_dir, "Archive")
+        new_archive_dir = move_to_new_dir(prev_archive_dir, "Archive")
 
     # live dir
     # if things aren't in their default places, don't try to change things.
-    standard_live_dir = _full_live_path(config, certname)
-    new_live_dir = prev_live_dir
+    prev_live_dir = _full_live_path(config, certname)
     new_links = dict((kind, renewal_config.get(kind)) for kind in ALL_FOUR)
-    if not certname in prev_live_dir or
-            len(set(os.path.dirname(renewal_config.get(kind)) for kind in ALL_FOUR)) != 1:
+    if (not certname in prev_live_dir or
+            len(set(os.path.dirname(renewal_config.get(kind)) for kind in ALL_FOUR)) != 1):
         logger.warning("Live directory does not conform to defaults and has "
             "not been renamed.")
     else:
-        new_live_dir = move_to_new_dir(prev_live_dir, new_live_dir, "Live")
+        move_to_new_dir(prev_live_dir, "Live")
         new_links = dict((k, new_links[k].replace(certname, new_certname)) for k in new_links)
 
     # Update renewal config file
