@@ -495,6 +495,7 @@ class OrderResource(ResourceWithURI):
 
     """
     body = jose.Field('body', decoder=Order.from_json)
+    authorizations = jose.Field('authorizations')
 
 
 @Directory.register

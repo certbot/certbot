@@ -176,8 +176,10 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         return authzr
 
     @classmethod
-    def _order_resource_from_response(cls, response):
-        return messages.OrderResource(body=messages.Order.from_json(response.json()))
+    def _order_resource_from_response(cls, response, authorizations):
+        return messages.OrderResource(
+            body=messages.Order.from_json(response.json()),
+            authorizations=authorizations)
 
     def new_order(self, csr_pem):
         """Request challenges.
