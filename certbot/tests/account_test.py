@@ -90,10 +90,10 @@ class AccountMemoryStorageTest(unittest.TestCase):
         account = mock.Mock(id="x")
         self.assertEqual([], self.storage.find_all())
         self.assertRaises(errors.AccountNotFound, self.storage.load, "x")
-        self.storage.save(account)
+        self.storage.save(account, None)
         self.assertEqual([account], self.storage.find_all())
         self.assertEqual(account, self.storage.load("x"))
-        self.storage.save(account)
+        self.storage.save(account, None)
         self.assertEqual([account], self.storage.find_all())
 
 
@@ -112,6 +112,8 @@ class AccountFileStorageTest(unittest.TestCase):
             regr=messages.RegistrationResource(
                 uri=None, new_authzr_uri=None, body=messages.Registration()),
             key=KEY)
+        self.mock_client = mock.MagicMock()
+        self.mock_client.directory.new_authz = "hi"
 
     def tearDown(self):
         shutil.rmtree(self.tmp)
@@ -120,7 +122,7 @@ class AccountFileStorageTest(unittest.TestCase):
         self.assertTrue(os.path.isdir(self.config.accounts_dir))
 
     def test_save_and_restore(self):
-        self.storage.save(self.acc)
+        self.storage.save(self.acc, self.mock_client)
         account_path = os.path.join(self.config.accounts_dir, self.acc.id)
         self.assertTrue(os.path.exists(account_path))
         for file_name in "regr.json", "meta.json", "private_key.json":
@@ -133,7 +135,7 @@ class AccountFileStorageTest(unittest.TestCase):
         self.assertEqual(self.acc, self.storage.load(self.acc.id))
 
     def test_save_regr(self):
-        self.storage.save_regr(self.acc)
+        self.storage.save_regr(self.acc, self.mock_client)
         account_path = os.path.join(self.config.accounts_dir, self.acc.id)
         self.assertTrue(os.path.exists(account_path))
         self.assertTrue(os.path.exists(os.path.join(
@@ -143,7 +145,7 @@ class AccountFileStorageTest(unittest.TestCase):
                 os.path.join(account_path, file_name)))
 
     def test_find_all(self):
-        self.storage.save(self.acc)
+        self.storage.save(self.acc, self.mock_client)
         self.assertEqual([self.acc], self.storage.find_all())
 
     def test_find_all_none_empty_list(self):
@@ -164,14 +166,14 @@ class AccountFileStorageTest(unittest.TestCase):
         self.assertRaises(errors.AccountNotFound, self.storage.load, "missing")
 
     def test_load_id_mismatch_raises_error(self):
-        self.storage.save(self.acc)
+        self.storage.save(self.acc, self.mock_client)
         shutil.move(os.path.join(self.config.accounts_dir, self.acc.id),
                     os.path.join(self.config.accounts_dir, "x" + self.acc.id))
         self.assertRaises(errors.AccountStorageError, self.storage.load,
                           "x" + self.acc.id)
 
     def test_load_ioerror(self):
-        self.storage.save(self.acc)
+        self.storage.save(self.acc, self.mock_client)
         mock_open = mock.mock_open()
         mock_open.side_effect = IOError
         with mock.patch("six.moves.builtins.open", mock_open):
@@ -183,10 +185,11 @@ class AccountFileStorageTest(unittest.TestCase):
         mock_open.side_effect = IOError  # TODO: [None, None, IOError]
         with mock.patch("six.moves.builtins.open", mock_open):
             self.assertRaises(
-                errors.AccountStorageError, self.storage.save, self.acc)
+                errors.AccountStorageError, self.storage.save,
+                    self.acc, self.mock_client)
 
     def test_delete(self):
-        self.storage.save(self.acc)
+        self.storage.save(self.acc, self.mock_client)
         self.storage.delete(self.acc.id)
         self.assertRaises(errors.AccountNotFound, self.storage.load, self.acc.id)
 
