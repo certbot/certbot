@@ -167,32 +167,33 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         return self.update_registration(
             regr.update(body=regr.body.update(agreement=regr.terms_of_service)))
 
-    def _authzr_from_response(self, response, identifier, uri=None):
+    def _authzr_from_response(self, response, identifier=None, uri=None):
         authzr = messages.AuthorizationResource(
             body=messages.Authorization.from_json(response.json()),
             uri=response.headers.get('Location', uri))
-        if authzr.body.identifier != identifier:
+        if identifier is not None and authzr.body.identifier != identifier:
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
-        @classmethod
-        def _order_resource_from_response(cls, response):
-            return messages.OrderResource(body=messages.Order.from_json(response.json()))
+    @classmethod
+    def _order_resource_from_response(cls, response):
+        return messages.OrderResource(body=messages.Order.from_json(response.json()))
 
-        def new_order(self, csr_pem):
-            """Request challenges.
+    def new_order(self, csr_pem):
+        """Request challenges.
 
-            :returns: List of Authorization Resources.
-            :rtype: `list` of `.AuthorizationResource`
-            """
-            csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
-            order = messages.NewOrder(csr=jose.ComparableX509(csr))
-            response = self.net.post(
-                self.directory.new_order,
-                order)
-            order_response = self._order_resource_from_response( response)
-            print order_response
-
+        :returns: List of Authorization Resources.
+        :rtype: `list` of `.AuthorizationResource`
+        """
+        csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+        order = messages.NewOrder(csr=jose.ComparableX509(csr))
+        response = self.net.post(self.directory.new_order, order)
+        authorizations = []
+        for authz_uri in response.json()["authorizations"]:
+            authz_response = self.net.get(authz_uri)
+            authorizations.append(self._authzr_from_response(authz_response))
+        order_response = self._order_resource_from_response(response, authorizations)
+        return order_response
 
     def request_challenges(self, identifier, new_authzr_uri=None):
         """Request challenges.
