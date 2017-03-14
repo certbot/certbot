@@ -472,3 +472,33 @@ class Revocation(jose.JSONObjectWithFields):
     certificate = jose.Field(
         'certificate', decoder=jose.decode_cert, encoder=jose.encode_cert)
     reason = jose.Field('reason')
+
+
+class Order(ResourceBody):
+    """Order Resource Body.
+
+    :ivar buffer csr: CSR in pem format.
+    :ivar string status:
+    :ivar list of string authorizations:
+    :ivar datetime.datetime expires:
+
+    """
+    csr = jose.Field('csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
+    status = jose.Field('status', omitempty=True)
+    authorizations = jose.Field('authorizations', omitempty=True)
+    expires = fields.RFC3339Field('expires', omitempty=True)
+
+class OrderResource(ResourceWithURI):
+    """Order Resource.
+
+    :ivar acme.messages.Order body:
+
+    """
+    body = jose.Field('body', decoder=Order.from_json)
+
+
+@Directory.register
+class NewOrder(Order):
+    """New order."""
+    resource_type = 'new-order'
+    resource = fields.Resource(resource_type)

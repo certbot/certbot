@@ -175,6 +175,25 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
+        @classmethod
+        def _order_resource_from_response(cls, response):
+            return messages.OrderResource(body=messages.Order.from_json(response.json()))
+
+        def new_order(self, csr_pem):
+            """Request challenges.
+
+            :returns: List of Authorization Resources.
+            :rtype: `list` of `.AuthorizationResource`
+            """
+            csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+            order = messages.NewOrder(csr=jose.ComparableX509(csr))
+            response = self.net.post(
+                self.directory.new_order,
+                order)
+            order_response = self._order_resource_from_response( response)
+            print order_response
+
+
     def request_challenges(self, identifier, new_authzr_uri=None):
         """Request challenges.
 
