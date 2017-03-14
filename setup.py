@@ -43,6 +43,7 @@ install_requires = [
     'ConfigArgParse>=0.9.3',
     'configobj',
     'cryptography>=0.7',  # load_pem_x509_certificate
+    'mock',
     'parsedatetime>=1.3',  # Calendar.parseDT
     'PyOpenSSL',
     'pyrfc3339',
@@ -54,15 +55,6 @@ install_requires = [
     'zope.component',
     'zope.interface',
 ]
-
-# env markers in extras_require cause problems with older pip: #517
-# Keep in sync with conditional_requirements.py.
-if sys.version_info < (2, 7):
-    install_requires.extend([
-        'mock<1.1.0',
-    ])
-else:
-    install_requires.append('mock')
 
 dev_extras = [
     # Pin astroid==1.3.5, pylint==1.4.2 as a workaround for #289
