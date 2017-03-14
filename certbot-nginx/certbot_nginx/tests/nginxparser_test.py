@@ -265,6 +265,10 @@ class TestRawNginxParser(unittest.TestCase):
             [['alias', '/data/w3/images/$1']]]]
         )
 
+    def test_quotes(self):
+        parsed = loads(r'"hello\""; # blah "heh heh"')
+        self.assertEqual(parsed, [['"hello\\""'], ['#', ' blah "heh heh"']])
+
 class TestUnspacedList(unittest.TestCase):
     """Test the UnspacedList data structure"""
     def setUp(self):
