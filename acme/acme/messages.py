@@ -251,6 +251,7 @@ class Registration(ResourceBody):
     authorizations = jose.Field('authorizations', omitempty=True)
     certificates = jose.Field('certificates', omitempty=True)
     status = jose.Field('status', omitempty=True)
+    terms_of_service_agreed = jose.Field('terms-of-service-agreed', omitempty=True)
 
     class Authorizations(jose.JSONObjectWithFields):
         """Authorizations granted to Account in the process of registration.
