@@ -9,6 +9,8 @@ class Header(jose.Header):
 
     """
     nonce = jose.Field('nonce', omitempty=True, encoder=jose.encode_b64jose)
+    kid = jose.Field('kid', omitempty=True)
+    url = jose.Field('url', omitempty=True)
 
     @nonce.decoder
     def nonce(value):  # pylint: disable=missing-docstring,no-self-argument
@@ -39,6 +41,7 @@ class JWS(jose.JWS):
     __slots__ = jose.JWS._orig_slots  # pylint: disable=no-member
 
     @classmethod
-    def sign(cls, payload, key, alg, nonce):  # pylint: disable=arguments-differ
+    def sign(cls, payload, key, alg, nonce, url=None, kid=None):  # pylint: disable=arguments-differ
         return super(JWS, cls).sign(payload, key=key, alg=alg,
-                                    protect=frozenset(['nonce']), nonce=nonce)
+                                    protect=frozenset(['nonce', 'url', 'kid']),
+                                    nonce=nonce, url=url, kid=kid)
