@@ -45,6 +45,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
     :ivar messages.Directory directory:
     :ivar key: `.JWK` (private)
+    :ivar account: `.Account` (private)
     :ivar alg: `.JWASignature`
     :ivar bool verify_ssl: Verify SSL certificates?
     :ivar .ClientNetwork net: Client network. Useful for testing. If not
@@ -53,7 +54,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
     """
 
-    def __init__(self, directory, key, alg=jose.RS256, verify_ssl=True,
+    def __init__(self, directory, key, account=None, alg=jose.RS256, verify_ssl=True,
                  net=None):
         """Initialize.
 
@@ -62,7 +63,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         """
         self.key = key
-        self.net = ClientNetwork(key, alg, verify_ssl) if net is None else net
+        self.account = account
+        self.net = ClientNetwork(key, account=account, alg=alg, verify_ssl=verify_ssl) if net is None else net
 
         if isinstance(directory, six.string_types):
             self.directory = messages.Directory.from_json(
@@ -502,9 +504,10 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
     REPLAY_NONCE_HEADER = 'Replay-Nonce'
 
-    def __init__(self, key, alg=jose.RS256, verify_ssl=True,
+    def __init__(self, key, account=None, alg=jose.RS256, verify_ssl=True,
                  user_agent='acme-python'):
         self.key = key
+        self.account = account
         self.alg = alg
         self.verify_ssl = verify_ssl
         self._nonces = set()
@@ -514,7 +517,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     def __del__(self):
         self.session.close()
 
-    def _wrap_in_jws(self, obj, nonce):
+    def _wrap_in_jws(self, obj, nonce, url):
         """Wrap `JSONDeSerializable` object in JWS.
 
         .. todo:: Implement ``acmePath``.
@@ -526,9 +529,19 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         """
         jobj = obj.json_dumps(indent=2).encode()
         logger.debug('JWS payload:\n%s', jobj)
-        return jws.JWS.sign(
-            payload=jobj, key=self.key, alg=self.alg,
-            nonce=nonce).json_dumps(indent=2)
+        kwargs = {
+            "alg": self.alg,
+            "nonce": nonce
+        }
+        # New ACME spec
+        kwargs["url"] = url
+        if self.account is not None:
+            kwargs["kid"] = self.account.uri
+            kwargs["url"] = url
+        else:
+            # old-style ACME spec
+            kwargs["key"] = self.key
+        return jws.JWS.sign(jobj, **kwargs).json_dumps(indent=2)
 
     @classmethod
     def _check_response(cls, response, content_type=None):
@@ -673,7 +686,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
                 raise
 
     def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE, **kwargs):
-        data = self._wrap_in_jws(obj, self._get_nonce(url))
+        data = self._wrap_in_jws(obj, self._get_nonce(url), url)
         kwargs.setdefault('headers', {'Content-Type': content_type})
         response = self._send_request('POST', url, data=data, **kwargs)
         self._add_nonce(response)
