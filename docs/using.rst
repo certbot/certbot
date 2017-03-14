@@ -155,11 +155,14 @@ order to perform domain validation, so you may need to stop your
 existing webserver. To control which port the plugin uses, include
 one of the options shown below on the command line.
 
-    * ``--preferred-challenges http-01`` to use port 80
-    * ``--preferred-challenges tls-sni-01`` to use port 443
+    * ``--preferred-challenges http`` to use port 80
+    * ``--preferred-challenges tls-sni`` to use port 443
 
 It must still be possible for your machine to accept inbound connections from
 the Internet on the specified port using each requested domain name.
+
+.. note:: The ``--standalone-supported-challenges`` option has been
+   deprecated since ``certbot`` version 0.9.0.
 
 Manual
 ------
@@ -171,6 +174,23 @@ the UI, you can use the plugin to obtain a cert by specifying
 ``certonly`` and ``--manual`` on the command line. This requires you
 to copy and paste commands into another terminal session, which may
 be on a different computer.
+
+The manual plugin can use either the ``http`` or the ``dns`` challenge. You 
+can use the ``--preferred-challenges`` option to chose the challenge of your 
+preference.
+The ``http`` challenge will ask you to place a file with a specific name and 
+specific content in the ``/.well-known/acme-challenge/`` directory directly 
+in the top-level directory (“web root”) containing the files served by your 
+webserver. In essence it's the same as the webroot_ plugin, but not automated.
+When using the ``dns`` plugin, ``certbot`` will ask you to place a TXT DNS 
+record with specific contents under the domain name consisting of the hostname 
+for which you want a certificate issued, prepended by ``_acme-challenge``.
+
+For example, for the domain ``example.com``, a zone file entry would look like:
+
+::
+
+        _acme-challenge.example.com. 300 IN TXT "gfj9Xq...Rg85nM"
 
 Additionally you can specify scripts to prepare for validation and perform the
 authentication procedure  and/or clean up after it by using the
