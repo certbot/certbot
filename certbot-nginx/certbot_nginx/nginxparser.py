@@ -29,8 +29,8 @@ class RawNginxParser(object):
     # any chars in single or double quotes
     # All of these COULD be upgraded to something like
     # https://stackoverflow.com/a/16130746
-    dquoted = QuotedString('"', multiline=True)
-    squoted = QuotedString("'", multiline=True)
+    dquoted = QuotedString('"', multiline=True, unquoteResults=False)
+    squoted = QuotedString("'", multiline=True, unquoteResults=False)
     nonspecial = Regex(r"[^\{\};,]")
     varsub = Regex(r"(\$\{\w+\})")
     # nonspecial nibbles one character at a time, but the other objects take
