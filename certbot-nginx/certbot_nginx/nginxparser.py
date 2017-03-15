@@ -6,7 +6,7 @@ import string
 
 from pyparsing import (
     Literal, White, Word, alphanums, CharsNotIn, Combine, Forward, Group,
-    Optional, OneOrMore, Regex, ZeroOrMore)
+    Optional, OneOrMore, QuotedString, Regex, ZeroOrMore)
 from pyparsing import stringEnd
 from pyparsing import restOfLine
 
@@ -29,8 +29,8 @@ class RawNginxParser(object):
     # any chars in single or double quotes
     # All of these COULD be upgraded to something like
     # https://stackoverflow.com/a/16130746
-    dquoted = Regex(r'(\".*\")')
-    squoted = Regex(r"(\'.*\')")
+    dquoted = QuotedString('"', multiline=True)
+    squoted = QuotedString("'", multiline=True)
     nonspecial = Regex(r"[^\{\};,]")
     varsub = Regex(r"(\$\{\w+\})")
     # nonspecial nibbles one character at a time, but the other objects take
