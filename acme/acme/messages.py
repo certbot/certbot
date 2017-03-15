@@ -320,7 +320,7 @@ class RegistrationResource(ResourceWithURI):
 
     """
     body = jose.Field('body', decoder=Registration.from_json)
-    new_authzr_uri = jose.Field('new_authzr_uri')
+    new_authzr_uri = jose.Field('new_authzr_uri', omitempty=True)
     terms_of_service = jose.Field('terms_of_service', omitempty=True)
 
 

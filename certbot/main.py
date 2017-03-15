@@ -466,7 +466,7 @@ def register(config, unused_plugins):
     # We rely on an exception to interrupt this process if it didn't work.
     acc.regr = acme_client.acme.update_registration(acc.regr.update(
         body=acc.regr.body.update(contact=('mailto:' + config.email,))))
-    account_storage.save_regr(acc, acme_client)
+    account_storage.save_regr(acc, acme_client.acme)
     eff.handle_subscription(config)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
 
