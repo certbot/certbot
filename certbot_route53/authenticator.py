@@ -17,10 +17,9 @@ from certbot.plugins import common
 logger = logging.getLogger(__name__)
 
 INSTRUCTIONS = (
-    "To use, create an IAM user and attach the AmazonRoute53FullAccess policy, then store "
-    "the access key ID and secret key in ~/.aws/credentials or in "
-    "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, as described at "
-    "https://boto3.readthedocs.io/en/latest/guide/configuration.html")
+    "To use, configure credentials as described at "
+    "https://boto3.readthedocs.io/en/latest/guide/configuration.html#best-practices-for-configuring-credentials "
+    "and add the necessary permissions for Route53 access")
 
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
