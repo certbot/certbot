@@ -429,7 +429,7 @@ class AuthorizationResource(ResourceWithURI):
 
     """
     body = jose.Field('body', decoder=Authorization.from_json)
-    new_cert_uri = jose.Field('new_cert_uri')
+    new_cert_uri = jose.Field('new_cert_uri', omitempty=True)
 
 
 @Directory.register
