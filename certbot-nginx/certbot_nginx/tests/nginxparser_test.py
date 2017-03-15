@@ -119,10 +119,13 @@ class TestRawNginxParser(unittest.TestCase):
                     [['listen', '*:443'],
                     [['location', '/'],
                         [['body_filter_by_lua',
-                          'ngx.ctx.buffered = (ngx.ctx.buffered or "") .. string.sub(ngx.arg[1], 1, 1000)\n'
-                          '                            if ngx.arg[2] then\n'
-                          '                              ngx.var.resp_body = ngx.ctx.buffered\n'
-                          '                            end']]]]]]]])
+                          '\'ngx.ctx.buffered = (ngx.ctx.buffered or "")'
+                          ' .. string.sub(ngx.arg[1], 1, 1000)\n'
+                          '                            '
+                          'if ngx.arg[2] then\n'
+                          '                              '
+                          'ngx.var.resp_body = ngx.ctx.buffered\n'
+                          '                            end\'']]]]]]]])
 
     def test_abort_on_parse_failure(self):
         with open(util.get_data_filename('broken.conf')) as handle:
