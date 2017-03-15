@@ -16,26 +16,26 @@ class RawNginxParser(object):
     """A class that parses nginx configuration with pyparsing."""
 
     # constants
-    space = Optional(White())
+    space = Optional(White()).leaveWhitespace()
+    required_space = White().leaveWhitespace()
 
     left_bracket = Literal("{").suppress()
-    right_bracket = space.leaveWhitespace() + Literal("}").suppress()
+    right_bracket = space + Literal("}").suppress()
     semicolon = Literal(";").suppress()
     dquoted = Regex(r'("(\\"|[^"])*")')
     squoted = Regex(r"('(\\'|[^'])*')")
-    tokenchars = Regex(r"[^\{\};\s\$]+")
-    variable = Regex(r"(\$\{\w*\})") | Regex(r"(\$\w*)")
+    head_tokenchars = Regex(r"[^\{\};\s\$\'\"]")
+    tail_tokenchars = Regex(r"[^\{\};\s\$]")
+    tokenchars = Combine(OneOrMore(head_tokenchars) + ZeroOrMore(tail_tokenchars))
+    variable = Regex(r"(\$\{\w+\})") | Regex(r"(\$\w*)")
     unquoted = Combine(OneOrMore(variable | tokenchars))
+    quoted = squoted | dquoted
+    paren_quote_extend = Combine(quoted + Literal(')') + Combine(ZeroOrMore(tail_tokenchars)))
 
-    token = squoted | dquoted | unquoted
+    token = paren_quote_extend | unquoted | quoted
 
-    whitespace_token_group = space + OneOrMore(token + space)
+    whitespace_token_group = space + token + ZeroOrMore(required_space + token) + space
     assignment = whitespace_token_group + semicolon
-
-    # whitespace_token_group will parse this fine, but we need to know about
-    # if statements for redirects, so let's explicitly parse this.
-    condition = Regex(r"\(.+\)")
-    if_statement = space + Literal("if") + space + condition + space
 
     comment = space + Literal('#') + restOfLine
 
@@ -44,7 +44,7 @@ class RawNginxParser(object):
     # order matters! see issue 518, and also http { # server { \n}
     contents = Group(comment) | Group(block) | Group(assignment)
 
-    block_begin = Group(if_statement) | Group(whitespace_token_group)
+    block_begin = Group(whitespace_token_group)
     block_innards = Group(ZeroOrMore(contents) + space).leaveWhitespace()
     block << block_begin + left_bracket + block_innards + right_bracket
 

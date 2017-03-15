@@ -97,7 +97,7 @@ class TestRawNginxParser(unittest.TestCase):
              [['server'],
               [['server_name', 'with.if'],
                [['location', '~', '^/services/.+$'],
-                [[['if', '($request_filename ~* \\.(ttf|woff)$)'],
+                [[['if', '($request_filename', '~*', '\\.(ttf|woff)$)'],
                   [['add_header', 'Access-Control-Allow-Origin', '"*"']]]]]]],
              [['server'],
               [['server_name', 'with.complicated.headers'],
@@ -161,7 +161,7 @@ class TestRawNginxParser(unittest.TestCase):
         parsed = loads('if ($http_accept ~* "webp") { set $webp "true"; }')
 
         self.assertEqual(parsed, [
-            [['if', '($http_accept ~* "webp")'],
+            [['if', '($http_accept', '~*', '"webp")'],
              [['set', '$webp', '"true"']]]
         ])
 
@@ -255,11 +255,12 @@ class TestRawNginxParser(unittest.TestCase):
             }
         """
         parsed = loads(test)
-        self.assertEqual(parsed, [[['if', '($http_user_agent ~ MSIE)'],
+        self.assertEqual(parsed, [[['if', '($http_user_agent', '~', 'MSIE)'],
             [['rewrite', '^(.*)$', '/msie/$1', 'break']]],
-            [['if', '($http_cookie ~* "id=([^;]+)(?:;|$)")'], [['set', '$id', '$1']]],
-            [['if', '($request_method = POST)'], [['return', '405']]], [['if', '($request_method)'],
-            [['return', '403']]], [['if', '($args ~ post=140)'],
+            [['if', '($http_cookie', '~*', '"id=([^;]+)(?:;|$)")'], [['set', '$id', '$1']]],
+            [['if', '($request_method', '=', 'POST)'], [['return', '405']]],
+            [['if', '($request_method)'],
+            [['return', '403']]], [['if', '($args', '~', 'post=140)'],
             [['rewrite', '^', 'http://example.com/']]],
             [['location', '~', '^/users/(.+\\.(?:gif|jpe?g|png))$'],
             [['alias', '/data/w3/images/$1']]]]
@@ -268,6 +269,43 @@ class TestRawNginxParser(unittest.TestCase):
     def test_quotes(self):
         parsed = loads(r'"hello\""; # blah "heh heh"')
         self.assertEqual(parsed, [['"hello\\""'], ['#', ' blah "heh heh"']])
+
+    def test_empty_var_as_block(self):
+        parsed = loads(r"${}")
+        self.assertEqual(parsed, [[['$'], []]])
+
+    def test_if_with_comment(self):
+        parsed = loads("""if ($http_cookie ~* "id=([^;]+)(?:;|$)") { # blah )
+            }""")
+        self.assertEqual(parsed, [[['if', '($http_cookie', '~*', '"id=([^;]+)(?:;|$)")'],
+            [['#', ' blah )']]]])
+
+    def test_end_paren(self):
+        test = """
+            one"test";
+            ("test");
+            "test")one;
+            "test")"two";
+            "test")"three;
+            (one"test")one;
+            one";
+            one"test;
+            one"test"one;
+        """
+        parsed = loads(test)
+        self.assertEqual(parsed, [
+            ['one"test"'],
+            ['("test")'],
+            ['"test")one'],
+            ['"test")"two"'],
+            ['"test")"three'],
+            ['(one"test")one'],
+            ['one"'],
+            ['one"test'],
+            ['one"test"one']
+        ])
+        self.assertRaises(ParseException, loads, r'"test"one;') # fails
+        self.assertRaises(ParseException, loads, r'"test;') # fails
 
 class TestUnspacedList(unittest.TestCase):
     """Test the UnspacedList data structure"""
