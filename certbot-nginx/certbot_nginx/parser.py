@@ -469,7 +469,7 @@ def _is_include_directive(entry):
             isinstance(entry[1], str))
 
 def _is_ssl_on_directive(entry):
-    """Checks if an nginx parsed entry is an 'include' directive.
+    """Checks if an nginx parsed entry is an 'ssl on' directive.
 
     :param list entry: the parsed entry
     :returns: Whether it's an 'ssl on' directive
