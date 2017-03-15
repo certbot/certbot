@@ -53,6 +53,11 @@ class Authenticator(common.Plugin):
     def perform(self, achalls):  # pylint: disable=missing-docstring
         try:
             change_ids = [self._create_single(achall) for achall in achalls]
+            # Sleep for at least the TTL, to ensure that any records cached by
+            # the ACME server after previous validation attempts are gone. In
+            # most cases we'll need to wait at least this long for the Route53
+            # records to propagate, so this doesn't delay us much.
+            time.sleep(TTL)
             for change_id in change_ids:
                 self._wait_for_change(change_id)
             return [achall.response(achall.account_key) for achall in achalls]
@@ -131,13 +136,9 @@ class Authenticator(common.Plugin):
         return response["ChangeInfo"]["Id"]
 
     def _wait_for_change(self, change_id):
-        """Wait for TTL of any previous attempt to expire, then for INSYNC.
-
-           Once Route53 returns INSYNC, challenge record is ready on all Route53
-           DNS servers:
+        """Wait for a change to be propagated to all Route53 DNS servers.
            https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetChange.html
         """
-        time.sleep(TTL)
         client = boto3.client("route53")
         for n in range(0, 120):
             response = client.get_change(Id=change_id)
