@@ -38,8 +38,6 @@ class Authenticator(common.Plugin):
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        session = boto3.Session()
-        self.route53_client = session.client("route53")
         # A list of (dns name, TXT value) tuples, for cleanup.
         self.txt_records = []
 
@@ -64,25 +62,34 @@ class Authenticator(common.Plugin):
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         for name, value in self.txt_records:
-            self._delete_txt_record(name, value)
+            self._change_txt_record("DELETE", name, value)
 
     def _create_single(self, achall):
         """Create a TXT record, return a change_id"""
-        name, value = (achall.validation_domain_name(achall.domain),
-            achall.validation(achall.account_key))
-        change_id = self._create_txt_record(name, value)
+        name = achall.validation_domain_name(achall.domain)
+        value = achall.validation(achall.account_key)
+        change_id = self._change_txt_record("UPSERT", name, value)
         self.txt_records.append((name, value))
         return change_id
 
     def _find_zone_id_for_domain(self, domain):
-        paginator = self.route53_client.get_paginator("list_hosted_zones")
+        """Find the zone id responsible a given FQDN.
+
+           That is, the id for the zone whose name is the longest parent of the
+           domain.
+
+           domain should not have a trailing dot.
+        """
+        client = boto3.client("route53")
+        paginator = client.get_paginator("list_hosted_zones")
         zones = []
+        target_labels = domain.split(".")
         for page in paginator.paginate():
             for zone in page["HostedZones"]:
-                if (
-                    domain.endswith(zone["Name"]) or
-                    (domain + ".").endswith(zone["Name"])
-                ) and not zone["Config"]["PrivateZone"]:
+                if zone["Config"]["PrivateZone"]:
+                    continue
+                candidate_labels = zone["Name"].rstrip(".").split(".")
+                if candidate_labels == target_labels[-len(candidate_labels):]:
                     zones.append((zone["Name"], zone["Id"]))
 
         if not zones:
@@ -97,8 +104,10 @@ class Authenticator(common.Plugin):
         zones.sort(key=lambda z: len(z[0]), reverse=True)
         return zones[0][1]
 
-    def _change_txt_record(self, action, zone_id, domain, value):
-        response = self.route53_client.change_resource_record_sets(
+    def _change_txt_record(self, action, domain, value):
+        zone_id = self._find_zone_id_for_domain(domain)
+        client = boto3.client("route53")
+        response = client.change_resource_record_sets(
             HostedZoneId=zone_id,
             ChangeBatch={
                 "Comment": "certbot-route53 certificate validation " + action,
@@ -108,7 +117,7 @@ class Authenticator(common.Plugin):
                         "ResourceRecordSet": {
                             "Name": domain,
                             "Type": "TXT",
-                            "TTL": 0,
+                            "TTL": 10,
                             "ResourceRecords": [
                                 # For some reason TXT records need to be
                                 # manually quoted.
@@ -121,20 +130,10 @@ class Authenticator(common.Plugin):
         )
         return response["ChangeInfo"]["Id"]
 
-    def _create_txt_record(self, host, value):
-        zone_id = self._find_zone_id_for_domain(host)
-        change_id = self._change_txt_record("UPSERT", zone_id, host, value)
-        return change_id
-
-    def _delete_txt_record(self, host, value):
-        zone_id = self._find_zone_id_for_domain(host)
-        change_id = self._change_txt_record("DELETE", zone_id, host, value)
-        return change_id
-
     def _wait_for_change(self, change_id):
-        deadline = datetime.datetime.now() + datetime.timedelta(minutes=10)
-        while datetime.datetime.now() < deadline:
-            response = self.route53_client.get_change(Id=change_id)
+        for n in range(0, 120):
+            client = boto3.client("route53")
+            response = client.get_change(Id=change_id)
             if response["ChangeInfo"]["Status"] == "INSYNC":
                 return
             time.sleep(5)
