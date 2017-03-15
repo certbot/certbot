@@ -480,17 +480,6 @@ def _is_ssl_on_directive(entry):
             len(entry) == 2 and entry[0] == 'ssl' and
             entry[1] == 'on')
 
-def _get_servernames(names):
-    """Turns a server_name string into a list of server names
-
-    :param str names: server names
-    :rtype: list
-
-    """
-    whitespace_re = re.compile(r'\s+')
-    names = re.sub(whitespace_re, ' ', names)
-    return names.split(' ')
-
 def _add_directives(block, directives, replace):
     """Adds or replaces directives in a config block.
 
@@ -601,8 +590,7 @@ def _parse_server_raw(server):
                 if addr.ssl:
                     parsed_server['ssl'] = True
         elif directive[0] == 'server_name':
-            parsed_server['names'].update(
-                _get_servernames(" ".join(directive[1:])))
+            parsed_server['names'].update(directive[1:])
         elif _is_ssl_on_directive(directive):
             parsed_server['ssl'] = True
             apply_ssl_to_all_addrs = True

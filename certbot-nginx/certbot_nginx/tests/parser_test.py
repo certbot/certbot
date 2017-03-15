@@ -168,16 +168,16 @@ class NginxParserTest(util.NginxTest):
                [['location', '/'], [['root', 'html'], ['index', 'index.html index.htm']]]
                ], None)
         self.assertFalse(nparser.has_ssl_on_directive(mock_vhost))
-        mock_vhost.raw = [['listen', '*:80 default_server ssl'],
-                          ['server_name', '*.www.foo.com *.www.example.com'],
+        mock_vhost.raw = [['listen', '*:80', 'default_server', 'ssl'],
+                          ['server_name', '*.www.foo.com', '*.www.example.com'],
                           ['root', '/home/ubuntu/sites/foo/']]
         self.assertFalse(nparser.has_ssl_on_directive(mock_vhost))
         mock_vhost.raw = [['listen', '80 ssl'],
-                          ['server_name', '*.www.foo.com *.www.example.com']]
+                          ['server_name', '*.www.foo.com', '*.www.example.com']]
         self.assertFalse(nparser.has_ssl_on_directive(mock_vhost))
         mock_vhost.raw = [['listen', '80'],
                           ['ssl', 'on'],
-                          ['server_name', '*.www.foo.com *.www.example.com']]
+                          ['server_name', '*.www.foo.com', '*.www.example.com']]
         self.assertTrue(nparser.has_ssl_on_directive(mock_vhost))
 
     def test_add_server_directives(self):
@@ -309,7 +309,7 @@ class NginxParserTest(util.NginxTest):
         self.assertFalse(server['ssl'])
 
         server = parser._parse_server_raw([ #pylint: disable=protected-access
-            ['listen', '443 ssl']
+            ['listen', '443', 'ssl']
         ])
         self.assertTrue(server['ssl'])
 

@@ -93,7 +93,7 @@ class NginxConfiguratorTest(util.NginxTest):
                                      None, [0])
         self.config.parser.add_server_directives(
             mock_vhost,
-            [['listen', ' ', '5001 ssl']],
+            [['listen', ' ', '5001', ' ', 'ssl']],
             replace=False)
         self.config.save()
 
@@ -407,8 +407,8 @@ class NginxConfiguratorTest(util.NginxTest):
         # Test that we successfully add a redirect when there is
         # a listen directive
         expected = [
-            ['if', '($scheme != "https") '],
-            [['return', '301 https://$host$request_uri']]
+            ['if', '($scheme', '!=', '"https") '],
+            [['return', '301', 'https://$host$request_uri']]
         ]
 
         example_conf = self.config.parser.abs_path('sites-enabled/example.com')
