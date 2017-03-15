@@ -6,7 +6,7 @@ import datetime
 import zope.interface
 
 import boto3
-from botocore.exceptions import NoCredentialsError
+from botocore.exceptions import NoCredentialsError, ClientError
 
 from acme import challenges
 
@@ -16,10 +16,12 @@ from certbot.plugins import common
 
 logger = logging.getLogger(__name__)
 
+TTL = 10
+
 INSTRUCTIONS = (
-    "To use, configure credentials as described at "
+    "To use certbot-route53, configure credentials as described at "
     "https://boto3.readthedocs.io/en/latest/guide/configuration.html#best-practices-for-configuring-credentials "
-    "and add the necessary permissions for Route53 access")
+    "and add the necessary permissions for Route53 access.")
 
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -37,8 +39,6 @@ class Authenticator(common.Plugin):
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        # A list of (dns name, TXT value) tuples, for cleanup.
-        self.txt_records = []
 
     def prepare(self):  # pylint: disable=missing-docstring,no-self-use
         pass  # pragma: no cover
@@ -58,9 +58,13 @@ class Authenticator(common.Plugin):
             return [achall.response(achall.account_key) for achall in achalls]
         except NoCredentialsError:
             raise Exception("No AWS Route53 credentials found. " + INSTRUCTIONS)
+        except ClientError as e:
+            raise Exception(str(e) + "\n" + INSTRUCTIONS)
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
-        for name, value in self.txt_records:
+        for achall in achalls:
+            name = achall.validation_domain_name(achall.domain)
+            value = achall.validation(achall.account_key)
             self._change_txt_record("DELETE", name, value)
 
     def _create_single(self, achall):
@@ -68,7 +72,6 @@ class Authenticator(common.Plugin):
         name = achall.validation_domain_name(achall.domain)
         value = achall.validation(achall.account_key)
         change_id = self._change_txt_record("UPSERT", name, value)
-        self.txt_records.append((name, value))
         return change_id
 
     def _find_zone_id_for_domain(self, domain):
@@ -76,13 +79,11 @@ class Authenticator(common.Plugin):
 
            That is, the id for the zone whose name is the longest parent of the
            domain.
-
-           domain should not have a trailing dot.
         """
         client = boto3.client("route53")
         paginator = client.get_paginator("list_hosted_zones")
         zones = []
-        target_labels = domain.split(".")
+        target_labels = domain.rstrip(".").split(".")
         for page in paginator.paginate():
             for zone in page["HostedZones"]:
                 if zone["Config"]["PrivateZone"]:
@@ -116,7 +117,7 @@ class Authenticator(common.Plugin):
                         "ResourceRecordSet": {
                             "Name": domain,
                             "Type": "TXT",
-                            "TTL": 10,
+                            "TTL": TTL,
                             "ResourceRecords": [
                                 # For some reason TXT records need to be
                                 # manually quoted.
@@ -130,8 +131,15 @@ class Authenticator(common.Plugin):
         return response["ChangeInfo"]["Id"]
 
     def _wait_for_change(self, change_id):
+        """Wait for TTL of any previous attempt to expire, then for INSYNC.
+
+           Once Route53 returns INSYNC, challenge record is ready on all Route53
+           DNS servers:
+           https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetChange.html
+        """
+        time.sleep(TTL)
+        client = boto3.client("route53")
         for n in range(0, 120):
-            client = boto3.client("route53")
             response = client.get_change(Id=change_id)
             if response["ChangeInfo"]["Status"] == "INSYNC":
                 return
