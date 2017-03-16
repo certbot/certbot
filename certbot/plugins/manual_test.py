@@ -24,6 +24,7 @@ class AuthenticatorTest(unittest.TestCase):
             http01_port=0, manual_auth_hook=None, manual_cleanup_hook=None,
             manual_public_ip_logging_ok=False, noninteractive_mode=False,
             validate_hooks=False)
+        self.config.namespace.manual_public_ip_logging_ok = False
 
         from certbot.plugins.manual import Authenticator
         self.auth = Authenticator(self.config, name='manual')
@@ -53,7 +54,7 @@ class AuthenticatorTest(unittest.TestCase):
     def test_ip_logging_ok(self, mock_get_utility):
         mock_get_utility().yesno.return_value = True
         self.auth.perform([])
-        self.assertTrue(self.config.manual_public_ip_logging_ok)
+        self.assertTrue(self.config.namespace.manual_public_ip_logging_ok)
 
     def test_script_perform(self):
         self.config.manual_public_ip_logging_ok = True

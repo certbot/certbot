@@ -124,7 +124,8 @@ s.serve_forever()" """
                    'Are you OK with your IP being logged?')
             display = zope.component.getUtility(interfaces.IDisplay)
             if display.yesno(msg, cli_flag=cli_flag, force_interactive=True):
-                setattr(self.config, self.dest('public-ip-logging-ok'), True)
+                dest = self.dest('public-ip-logging-ok')
+                setattr(self.config.namespace, dest, True)
             else:
                 raise errors.PluginError('Must agree to IP logging to proceed')
 
