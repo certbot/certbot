@@ -225,6 +225,10 @@ def _find_cert(config, domains, certname):
               RenewableCert instance or None.
     """
     action, lineage = _find_lineage_for_domains_and_certname(config, domains, certname)
+    if action == "renew":
+        config.renewing = True
+    elif action == "newcert":
+        config.renewing = False
     if action == "reinstall":
         logger.info("Keeping the existing certificate")
     return (action != "reinstall"), lineage
@@ -595,11 +599,11 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     except errors.PluginSelectionError as e:
         return e.message
 
-    # TODO: Handle errors from _init_le_client?
-    le_client = _init_le_client(config, authenticator, installer)
-
     domains, certname = _find_domains_or_certname(config, installer)
     should_get_cert, lineage = _find_cert(config, domains, certname)
+
+    # TODO: Handle errors from _init_le_client?
+    le_client = _init_le_client(config, authenticator, installer)
 
     new_lineage = lineage
     if should_get_cert:
@@ -673,9 +677,9 @@ def certonly(config, plugins):
     except errors.PluginSelectionError as e:
         logger.info("Could not choose appropriate plugin: %s", e)
         raise
-    le_client = _init_le_client(config, auth, installer)
 
     if config.csr:
+        le_client = _init_le_client(config, auth, installer)
         cert_path, fullchain_path = _csr_get_and_save_cert(config, le_client)
         _report_new_cert(config, cert_path, fullchain_path)
         _suggest_donation_if_appropriate(config)
@@ -683,6 +687,7 @@ def certonly(config, plugins):
 
     domains, certname = _find_domains_or_certname(config, installer)
     should_get_cert, lineage = _find_cert(config, domains, certname)
+    le_client = _init_le_client(config, auth, installer) # run after _find_cert for config.renewing if possible
 
     if not should_get_cert:
         notify = zope.component.getUtility(interfaces.IDisplay).notification
