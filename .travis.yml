@@ -78,13 +78,33 @@ matrix:
       env: TOXENV=apacheconftest
       sudo: required
     - python: "3.3"
-      env: TOXENV=py33
+      env: TOXENV=py33 BOULDER_INTEGRATION=1
+      sudo: required
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
+      services: docker
     - python: "3.4"
-      env: TOXENV=py34
+      env: TOXENV=py34 BOULDER_INTEGRATION=1
+      sudo: required
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
+      services: docker
     - python: "3.5"
-      env: TOXENV=py35
+      env: TOXENV=py35 BOULDER_INTEGRATION=1
+      sudo: required
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
+      services: docker
     - python: "3.6"
-      env: TOXENV=py36
+      env: TOXENV=py36 BOULDER_INTEGRATION=1
+      sudo: required
+      after_failure:
+        - sudo cat /var/log/mysql/error.log
+        - ps aux | grep mysql
+      services: docker
     - python: "2.7"
       env: TOXENV=nginxroundtrip
 
