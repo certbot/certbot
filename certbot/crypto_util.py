@@ -13,6 +13,8 @@ import pyrfc3339
 import six
 import zope.component
 
+from getpass import getpass
+
 from acme import crypto_util as acme_crypto_util
 from acme import jose
 
@@ -43,13 +45,14 @@ def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
     :raises ValueError: If unable to generate the key given key_size.
 
     """
+    config = zope.component.getUtility(interfaces.IConfig)
+
     try:
-        key_pem = make_key(key_size)
+        key_pem = make_key(key_size, config.cipher)
     except ValueError as err:
         logger.exception(err)
         raise err
 
-    config = zope.component.getUtility(interfaces.IConfig)
     # Save file
     util.make_or_verify_dir(key_dir, 0o700, os.geteuid(),
                             config.strict_permissions)
@@ -80,7 +83,7 @@ def init_save_csr(privkey, names, path, csrname="csr-certbot.pem"):
     config = zope.component.getUtility(interfaces.IConfig)
 
     csr_pem, csr_der = make_csr(privkey.pem, names,
-        must_staple=config.must_staple)
+        must_staple=config.must_staple, passphrase=config.passphrase)
 
     # Save CSR
     util.make_or_verify_dir(path, 0o755, os.geteuid(),
@@ -96,11 +99,12 @@ def init_save_csr(privkey, names, path, csrname="csr-certbot.pem"):
 
 
 # Lower level functions
-def make_csr(key_str, domains, must_staple=False):
+def make_csr(key_str, domains, must_staple=False, passphrase=None):
     """Generate a CSR.
 
     :param str key_str: PEM-encoded RSA key.
     :param list domains: Domains included in the certificate.
+    :param str passphrase: (optional) The passphrase used to encrypt the private key
 
     .. todo:: Detect duplicates in `domains`? Using a set doesn't
               preserve order...
@@ -110,7 +114,8 @@ def make_csr(key_str, domains, must_staple=False):
 
     """
     assert domains, "Must provide one or more hostnames for the CSR."
-    pkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, key_str)
+    pkey = _load_privkey(key_str, passphrase)
+
     req = OpenSSL.crypto.X509Req()
     req.get_subject().CN = domains[0]
     # TODO: what to put into req.get_subject()?
@@ -161,11 +166,12 @@ def valid_csr(csr):
         return False
 
 
-def csr_matches_pubkey(csr, privkey):
+def csr_matches_pubkey(csr, privkey, passphrase=None):
     """Does private key correspond to the subject public key in the CSR?
 
     :param str csr: CSR in PEM.
     :param str privkey: Private key file contents (PEM)
+    :param str passphrase: (optional) The passphrase used to encrypt the private key
 
     :returns: Correspondence of private key to CSR subject public key.
     :rtype: bool
@@ -173,7 +179,8 @@ def csr_matches_pubkey(csr, privkey):
     """
     req = OpenSSL.crypto.load_certificate_request(
         OpenSSL.crypto.FILETYPE_PEM, csr)
-    pkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, privkey)
+    pkey = _load_privkey(privkey, passphrase)
+
     try:
         return req.verify(pkey)
     except OpenSSL.crypto.Error as error:
@@ -205,10 +212,11 @@ def import_csr_file(csrfile, data):
     raise errors.Error("Failed to parse CSR file: {0}".format(csrfile))
 
 
-def make_key(bits):
+def make_key(bits, cipher=None):
     """Generate PEM encoded RSA key.
 
     :param int bits: Number of bits, at least 1024.
+    :param str passphrase: (optional) The passphrase to be used to encrypt the private key
 
     :returns: new RSA key in PEM form with specified number of bits
     :rtype: str
@@ -217,21 +225,49 @@ def make_key(bits):
     assert bits >= 1024  # XXX
     key = OpenSSL.crypto.PKey()
     key.generate_key(OpenSSL.crypto.TYPE_RSA, bits)
-    return OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
+    #if cipher is None:
+    #py27 tests workaround
+    if not isinstance(cipher, str):
+        return OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
+    else:
+        try:
+            return OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key,
+                                                  cipher, ask_for_passphrase)
+        except ValueError:
+            raise errors.Error("Invalid cipher supplied!")
 
+def ask_for_passphrase(flags):
+    """Asks for private key passphrase, if needed."""
 
-def valid_privkey(privkey):
+    # Argument passed by the callback, here so lint does not complain.
+    _flags = flags
+
+    pass1 = getpass("Enter private key passphrase: ")
+    pass2 = getpass("Reenter passphrase to confirm: ")
+
+    if pass1 != pass2:
+        raise errors.Error("Provided passwords do not match")
+
+    # Save password not to query the user again afterwards
+    config = zope.component.getUtility(interfaces.IConfig)
+    config.passphrase = pass1
+
+    # Encode the passphrase, otherwise OpenSSL will complain
+    return pass1.encode('utf-8')
+
+def valid_privkey(privkey, passphrase=None):
     """Is valid RSA private key?
 
     :param str privkey: Private key file contents in PEM
+    :param str passphrase: (optional) The passphrase used to encrypt the private key
 
     :returns: Validity of private key.
     :rtype: bool
 
     """
     try:
-        return OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, privkey).check()
+        pkey = _load_privkey(privkey, passphrase)
+        return pkey.check()
     except (TypeError, OpenSSL.crypto.Error):
         return False
 
@@ -253,6 +289,18 @@ def pyopenssl_load_certificate(data):
     raise errors.Error("Unable to load: {0}".format(",".join(
         str(error) for error in openssl_errors)))
 
+def _load_privkey(key, passphrase):
+    if passphrase is None:
+        pkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
+    else:
+        try:
+            pkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, key, passphrase)
+        except OpenSSL.crypto.Error:
+            # Maybe the key used to encrypt the key and the current one do not correspond?
+            #   Try to call again the same function, OpenSSL will prompt for the password.
+            pkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
+
+    return pkey
 
 def _load_cert_or_req(cert_or_req_str, load_func,
                       typ=OpenSSL.crypto.FILETYPE_PEM):

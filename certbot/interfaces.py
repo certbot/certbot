@@ -208,6 +208,9 @@ class IConfig(zope.interface.Interface):
         "Autoconfigures OCSP Stapling for supported setups "
         "(Apache version >= 2.3.3 ).")
 
+    encrypt_private_key = zope.interface.Attribute(
+		"Encrypt private keys. (Default: False)")
+
     config_dir = zope.interface.Attribute("Configuration directory.")
     work_dir = zope.interface.Attribute("Working directory.")
 
