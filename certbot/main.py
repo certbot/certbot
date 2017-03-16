@@ -8,6 +8,7 @@ import sys
 import time
 import traceback
 
+import fasteners
 import zope.component
 
 from acme import jose
@@ -893,7 +894,15 @@ def main(cli_args=sys.argv[1:]):
     zope.component.provideUtility(report)
     atexit.register(report.atexit_print_messages)
 
-    return config.func(config, plugins)
+    lock = fasteners.InterProcessLock(constants.LOCK_FILE)
+    logger.debug("Attempting to acquire lock file %s", constants.LOCK_FILE)
+    if not lock.acquire(blocking=False):
+        raise errors.Error("Another instance of Certbot is already running.")
+
+    try:
+        return config.func(config, plugins)
+    finally:
+        lock.release()
 
 
 if __name__ == "__main__":
