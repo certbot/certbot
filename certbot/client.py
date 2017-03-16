@@ -1,6 +1,7 @@
 """Certbot client API."""
 import logging
 import os
+import platform
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -52,10 +53,11 @@ def determine_user_agent(config):
     """
 
     if config.user_agent is None:
-        auto = "" if cli.cli_command == "certbot" else "auto"
-        ua = "CertbotACMEClient{4}/{0} ({1}) Authenticator/{2} Installer/{3}"
+        auto = "no" if cli.cli_command == "certbot" else "yes"
+        ua = "CertbotACMEClient/{0} ({1}) Authenticator/{2} Installer/{3} Verb/{4} Auto/{5} Py/{6}"
         ua = ua.format(certbot.__version__, util.get_os_info_ua(),
-                       config.authenticator, config.installer, auto)
+                       config.authenticator, config.installer, config.verb, auto,
+                       platform.python_version())
     else:
         ua = config.user_agent
     return ua
@@ -68,6 +70,7 @@ def sample_user_agent():
             self.authenticator = "XXX"
             self.installer = "YYY"
             self.user_agent = None
+            self.verb = "SUBCOMMAND"
     return determine_user_agent(DummyConfig())
 
 

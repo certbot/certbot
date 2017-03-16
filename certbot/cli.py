@@ -1082,8 +1082,9 @@ def _create_subparsers(helpful):
     helpful.add(
         None, "--user-agent", default=None,
         help="Set a custom user agent string for the client. User agent strings allow "
-             "the CA to collect high level statistics about success rates by OS and "
-             "plugin. If you wish to hide your server OS version from the Let's "
+             "the CA to collect high level statistics about success rates by OS, "
+             "plugin and use case, and to know when to deprecate support for past Python "
+             "versions. If you wish to hide this information from the Let's "
              'Encrypt server, set this to "". '
              '(default: {0})'.format(sample_user_agent()))
     helpful.add("certonly",
