@@ -52,9 +52,10 @@ def determine_user_agent(config):
     """
 
     if config.user_agent is None:
-        ua = "CertbotACMEClient/{0} ({1}) Authenticator/{2} Installer/{3}"
+        auto = "" if cli.cli_command == "certbot" else "auto"
+        ua = "CertbotACMEClient{4}/{0} ({1}) Authenticator/{2} Installer/{3}"
         ua = ua.format(certbot.__version__, util.get_os_info_ua(),
-                       config.authenticator, config.installer)
+                       config.authenticator, config.installer, auto)
     else:
         ua = config.user_agent
     return ua
