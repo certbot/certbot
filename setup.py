@@ -48,6 +48,7 @@ install_requires = [
     'parsedatetime>=1.3',  # Calendar.parseDT
     'PyOpenSSL',
     'pyrfc3339',
+    'python-digitalocean>=1.11',
     'pytz',
     # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
     # will tolerate; see #2599:
@@ -126,6 +127,7 @@ setup(
             'standalone = certbot.plugins.standalone:Authenticator',
             'webroot = certbot.plugins.webroot:Authenticator',
             'dns-cloudflare = certbot.plugins.dns_cloudflare:Authenticator',
+            'dns-digitalocean = certbot.plugins.dns_digitalocean:Authenticator',
         ],
     },
 )
