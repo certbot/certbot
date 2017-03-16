@@ -687,7 +687,8 @@ def certonly(config, plugins):
 
     domains, certname = _find_domains_or_certname(config, installer)
     should_get_cert, lineage = _find_cert(config, domains, certname)
-    le_client = _init_le_client(config, auth, installer) # run after _find_cert for config.renewing if possible
+    # _init_le_client needs to run after _find_cert for config.renewing if possible
+    le_client = _init_le_client(config, auth, installer)
 
     if not should_get_cert:
         notify = zope.component.getUtility(interfaces.IDisplay).notification
