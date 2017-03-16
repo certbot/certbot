@@ -5,19 +5,8 @@
         {
             "Effect": "Allow",
             "Action": [
-                "iam:UploadServerCertificate",
-                "iam:UpdateServerCertificate",
-                "iam:DeleteServerCertificate"
-            ],
-            "Resource": [
-                "*"
-            ]
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "route53:List*",
-                "route53:Get*",
+                "route53:ListHostedZones",
+                "route53:GetChange"
             ],
             "Resource": [
                 "*"
