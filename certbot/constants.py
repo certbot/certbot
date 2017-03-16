@@ -109,3 +109,6 @@ FORCE_INTERACTIVE_FLAG = "--force-interactive"
 
 EFF_SUBSCRIBE_URI = "https://supporters.eff.org/subscribe/certbot"
 """EFF URI used to submit the e-mail address of users who opt-in."""
+
+LOCK_FILE = "/tmp/.certbot.lock"
+"""Global lockfile to stop multiple Certbot instances from running at once."""
