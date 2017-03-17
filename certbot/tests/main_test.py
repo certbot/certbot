@@ -452,7 +452,8 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         os.mkdir(self.logs_dir)
         self.standard_args = ['--config-dir', self.config_dir,
                               '--work-dir', self.work_dir,
-                              '--logs-dir', self.logs_dir, '--text']
+                              '--logs-dir', self.logs_dir, '--text',
+                              '--lock-file', os.path.join(self.tmp_dir, 'certbot.lock')]
 
     def tearDown(self):
         # Reset globals in cli
