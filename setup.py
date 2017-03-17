@@ -6,24 +6,10 @@ from setuptools import find_packages
 version = '0.1.5'
 
 install_requires = [
-    'acme>=0.9.0.dev0',
-    'certbot>=0.9.0.dev0',
-    'PyOpenSSL',
-    'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
-    'setuptools',  # pkg_resources
+    'acme>=0.9.0',
+    'certbot>=0.9.0',
     'zope.interface',
     'boto3',
-    'dnspython',
-]
-
-if sys.version_info < (2, 7):
-    install_requires.append('mock<1.1.0')
-else:
-    install_requires.append('mock')
-
-docs_extras = [
-    'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
-    'sphinx_rtd_theme',
 ]
 
 setup(
@@ -51,7 +37,6 @@ setup(
         'Topic :: Utilities',
     ],
     packages=find_packages(),
-    include_package_data=True,
     install_requires=install_requires,
     keywords=['certbot', 'route53', 'aws'],
     entry_points={

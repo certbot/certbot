@@ -1,4 +1,2 @@
-include LICENSE.txt
-include README.md
-recursive-include docs *
-recursive-include certbot_route53/tests/testdata *
+include LICENSE
+include README
