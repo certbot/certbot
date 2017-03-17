@@ -881,6 +881,9 @@ def acquire_file_lock(lock_path):
     lock = fasteners.InterProcessLock(lock_path)
     logger.debug("Attempting to acquire lock file %s", lock_path)
 
+    print("ABOUT TO ACQUIRE LOCK")
+    traceback.print_stack()
+    print(os.getpid())
     try:
         lock.acquire(blocking=False)
     except IOError as err:
