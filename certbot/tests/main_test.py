@@ -1308,5 +1308,13 @@ class TestHandleException(unittest.TestCase):
             traceback.format_exception_only(KeyboardInterrupt, interrupt)))
 
 
+class TestAcquireFileLock(unittest.TestCase):
+    """Test main.acquire_file_lock."""
+
+    def test_bad_path(self):
+        lock = main.acquire_file_lock(os.getcwd())
+        self.assertFalse(lock.acquired)
+
+
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
