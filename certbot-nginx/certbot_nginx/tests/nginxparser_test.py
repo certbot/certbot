@@ -128,7 +128,7 @@ class TestRawNginxParser(unittest.TestCase):
                                  [['root', ' ', 'html'],
                                   ['index', ' ', 'index.html index.htm']]]]]))
 
-        with tempfile.TemporaryFile() as f:
+        with tempfile.TemporaryFile(mode='w+t') as f:
             dump(parsed, f)
             f.seek(0)
             parsed_new = load(f)
@@ -138,7 +138,7 @@ class TestRawNginxParser(unittest.TestCase):
         with open(util.get_data_filename('minimalistic_comments.conf')) as handle:
             parsed = load(handle)
 
-        with tempfile.TemporaryFile() as f:
+        with tempfile.TemporaryFile(mode='w+t') as f:
             dump(parsed, f)
             f.seek(0)
             parsed_new = load(f)
