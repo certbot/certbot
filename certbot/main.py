@@ -867,6 +867,27 @@ def _post_logging_setup(config, plugins, cli_args):
     logger.debug("Discovered plugins: %r", plugins)
 
 
+def _run_subcommand(config, plugins):
+    """Executes the Certbot subcommand specified in the configuration.
+
+    :param .IConfig config: parsed configuration object
+    :param .PluginsRegistry plugins: available plugins
+
+    :returns: return value from the specified subcommand
+    :rtype: str or int
+
+    """
+    lock = fasteners.InterProcessLock(constants.LOCK_FILE)
+    logger.debug("Attempting to acquire lock file %s", constants.LOCK_FILE)
+    if not lock.acquire(blocking=False):
+        raise errors.Error("Another instance of Certbot is already running.")
+
+    try:
+        return config.func(config, plugins)
+    finally:
+        lock.release()
+
+
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     sys.excepthook = functools.partial(_handle_exception, config=None)
@@ -894,15 +915,7 @@ def main(cli_args=sys.argv[1:]):
     zope.component.provideUtility(report)
     atexit.register(report.atexit_print_messages)
 
-    lock = fasteners.InterProcessLock(constants.LOCK_FILE)
-    logger.debug("Attempting to acquire lock file %s", constants.LOCK_FILE)
-    if not lock.acquire(blocking=False):
-        raise errors.Error("Another instance of Certbot is already running.")
-
-    try:
-        return config.func(config, plugins)
-    finally:
-        lock.release()
+    return _run_subcommand(config, plugins)
 
 
 if __name__ == "__main__":
