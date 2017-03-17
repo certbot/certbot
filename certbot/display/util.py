@@ -122,8 +122,8 @@ class FileDisplay(object):
         return code, selection - 1
 
     def input(self, message, default=None,
-              cli_flag=None, force_interactive=False, **unused_kwargs):
-        # pylint: disable=no-self-use
+              cli_flag=None, force_interactive=False, validator=None,
+              **unused_kwargs):
         """Accept input from the user.
 
         :param str message: message to display to the user
@@ -131,6 +131,9 @@ class FileDisplay(object):
         :param str cli_flag: option used to set this value with the CLI
         :param bool force_interactive: True if it's safe to prompt the user
             because it won't cause any workflow regressions
+        :param function validator: A method which will be called on the
+            supplied input. If the method raises a `errors.PluginError`, its
+            text will be displayed and the user will be re-prompted.
 
         :returns: tuple of (`code`, `input`) where
             `code` - str display exit code
@@ -141,17 +144,23 @@ class FileDisplay(object):
         if self._return_default(message, default, cli_flag, force_interactive):
             return OK, default
 
-        ans = six.moves.input(
-            textwrap.fill(
-                "%s (Enter 'c' to cancel): " % message,
-                80,
-                break_long_words=False,
-                break_on_hyphens=False))
+        while True:
+            ans = six.moves.input(
+                textwrap.fill(
+                    "%s (Enter 'c' to cancel): " % message,
+                    80,
+                    break_long_words=False,
+                    break_on_hyphens=False))
 
-        if ans == "c" or ans == "C":
-            return CANCEL, "-1"
-        else:
-            return OK, ans
+            if ans == "c" or ans == "C":
+                return CANCEL, "-1"
+            else:
+                try:
+                    if validator:
+                        validator(ans)
+                    return OK, ans
+                except errors.PluginError as error:
+                    self.notification(str(error), pause=False)
 
     def yesno(self, message, yes_label="Yes", no_label="No", default=None,
               cli_flag=None, force_interactive=False, **unused_kwargs):
@@ -292,7 +301,8 @@ class FileDisplay(object):
         return False
 
     def directory_select(self, message, default=None, cli_flag=None,
-                         force_interactive=False, **unused_kwargs):
+                         force_interactive=False, validator=None,
+                         **unused_kwargs):
         """Display a directory selection screen.
 
         :param str message: prompt to give the user
@@ -300,6 +310,9 @@ class FileDisplay(object):
         :param str cli_flag: option used to set this value with the CLI
         :param bool force_interactive: True if it's safe to prompt the user
             because it won't cause any workflow regressions
+        :param function validator: A method which will be called on the
+            supplied input. If the method raises a `errors.PluginError`, its
+            text will be displayed and the user will be re-prompted.
 
         :returns: tuple of the form (`code`, `string`) where
             `code` - display exit code
@@ -307,7 +320,7 @@ class FileDisplay(object):
 
         """
         with completer.Completer():
-            return self.input(message, default, cli_flag, force_interactive)
+            return self.input(message, default, cli_flag, force_interactive, validator)
 
     def _scrub_checklist_input(self, indices, tags):
         # pylint: disable=no-self-use

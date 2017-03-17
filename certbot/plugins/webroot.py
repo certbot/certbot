@@ -138,6 +138,8 @@ to serve all files under specified web root ({0})."""
     def _prompt_for_new_webroot(self, domain):
         display = zope.component.getUtility(interfaces.IDisplay)
 
+
+
         while True:
             code, webroot = display.directory_select(
                 "Input the webroot for {0}:".format(domain),
