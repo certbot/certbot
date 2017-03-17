@@ -196,6 +196,7 @@ DeterminePythonVersion() {
 
 {{ bootstrappers/deb_common.sh }}
 {{ bootstrappers/rpm_common.sh }}
+{{ bootstrappers/alpine_common.sh }}
 {{ bootstrappers/suse_common.sh }}
 {{ bootstrappers/arch_common.sh }}
 {{ bootstrappers/gentoo_common.sh }}
@@ -209,6 +210,9 @@ Bootstrap() {
   if [ -f /etc/debian_version ]; then
     echo "Bootstrapping dependencies for Debian-based OSes..."
     BootstrapDebCommon
+  elif [ -f /etc/alpine-release ]; then
+    echo "Bootstrapping dependencies for Alpine linux..."
+    BootstrapAlpineCommon
   elif [ -f /etc/mageia-release ] ; then
     # Mageia has both /etc/mageia-release and /etc/redhat-release
     ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
