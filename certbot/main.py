@@ -867,6 +867,37 @@ def _post_logging_setup(config, plugins, cli_args):
     logger.debug("Discovered plugins: %r", plugins)
 
 
+def acquire_file_lock(lock_path):
+    """Obtain a lock on the file at the specified path.
+
+    :param str lock_path: path to the file to be locked
+
+    :returns: lock file object representing the acquired lock
+    :rtype: fasteners.InterProcessLock
+
+    :raises .Error: if the lock is held by another process
+
+    """
+    lock = fasteners.InterProcessLock(lock_path)
+    logger.debug("Attempting to acquire lock file %s", lock_path)
+
+    try:
+        lock.acquire(blocking=False)
+    except IOError as err:
+        logger.debug(err)
+        logger.warning(
+            "Unable to access lock file %s. You should set --lock-file "
+            "to a writeable path to ensure multiple instances of "
+            "Certbot don't attempt modify your configuration "
+            "simultaneously.", lock_path)
+    else:
+        if not lock.acquired:
+            raise errors.Error(
+                "Another instance of Certbot is already running.")
+
+    return lock
+
+
 def _run_subcommand(config, plugins):
     """Executes the Certbot subcommand specified in the configuration.
 
@@ -877,15 +908,13 @@ def _run_subcommand(config, plugins):
     :rtype: str or int
 
     """
-    lock = fasteners.InterProcessLock(constants.LOCK_FILE)
-    logger.debug("Attempting to acquire lock file %s", constants.LOCK_FILE)
-    if not lock.acquire(blocking=False):
-        raise errors.Error("Another instance of Certbot is already running.")
+    lock = acquire_file_lock(config.lock_path)
 
     try:
         return config.func(config, plugins)
     finally:
-        lock.release()
+        if lock.acquired:
+            lock.release()
 
 
 def main(cli_args=sys.argv[1:]):
