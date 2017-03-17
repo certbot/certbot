@@ -32,6 +32,7 @@ CLI_DEFAULTS = dict(
     auth_cert_path="./cert.pem",
     auth_chain_path="./chain.pem",
     strict_permissions=False,
+    lock_path="/tmp/.certbot.lock",
 )
 STAGING_URI = "https://acme-staging.api.letsencrypt.org/directory"
 
@@ -109,6 +110,3 @@ FORCE_INTERACTIVE_FLAG = "--force-interactive"
 
 EFF_SUBSCRIBE_URI = "https://supporters.eff.org/subscribe/certbot"
 """EFF URI used to submit the e-mail address of users who opt-in."""
-
-LOCK_FILE = "/tmp/.certbot.lock"
-"""Global lockfile to stop multiple Certbot instances from running at once."""
