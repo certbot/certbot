@@ -53,18 +53,17 @@ class Authenticator(common.Plugin):
     def perform(self, achalls):  # pylint: disable=missing-docstring
         try:
             change_ids = [self._create_single(achall) for achall in achalls]
+            for change_id in change_ids:
+                self._wait_for_change(change_id)
             # Sleep for at least the TTL, to ensure that any records cached by
             # the ACME server after previous validation attempts are gone. In
             # most cases we'll need to wait at least this long for the Route53
             # records to propagate, so this doesn't delay us much.
             time.sleep(TTL)
-            for change_id in change_ids:
-                self._wait_for_change(change_id)
             return [achall.response(achall.account_key) for achall in achalls]
-        except NoCredentialsError:
-            raise Exception("No AWS Route53 credentials found. " + INSTRUCTIONS)
-        except ClientError as e:
-            raise Exception(str(e) + "\n" + INSTRUCTIONS)
+        except (NoCredentialsError, ClientError) as e:
+            e.args = ("\n".join([str(e), INSTRUCTIONS]),)
+            raise
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         for achall in achalls:
