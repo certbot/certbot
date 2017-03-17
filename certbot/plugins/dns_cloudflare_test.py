@@ -128,18 +128,6 @@ class AuthenticatorInputTest(unittest.TestCase):
         self.assertEqual(auth.conf('api-key'), self.supplied_api_key)
 
     @test_util.patch_get_utility()
-    def test_user_input_retrying(self, mock_get_utility):
-        auth = self._setUp(api_key=API_KEY)
-
-        mock_display = mock_get_utility()
-        mock_display.input.side_effect = [(display_util.OK, "",),
-                                          (display_util.OK, self.supplied_email,)]
-
-        auth.perform([])
-
-        self.assertEqual(auth.email, self.supplied_email)
-
-    @test_util.patch_get_utility()
     def test_user_input_email_cancel(self, mock_get_utility):
         auth = self._setUp(api_key=API_KEY)
 

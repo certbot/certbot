@@ -10,6 +10,7 @@ from acme import challenges
 from certbot import errors
 from certbot import interfaces
 
+from certbot.display import ops
 from certbot.display import util as display_util
 
 from certbot.plugins import common
@@ -154,22 +155,19 @@ class Authenticator(common.Plugin):
         :rtype: string
         """
 
-        display = zope.component.getUtility(interfaces.IDisplay)
+        def __validator(i):
+            if not i:
+                raise errors.PluginError('Please enter an {0}.'.format(label))
 
-        while True:
-            code, response = display.input(
-                'Input Cloudflare account {0}'.format(label),
-                force_interactive=True)
-            if code == display_util.HELP:
-                # Displaying help is not currently implemented
-                return None
-            elif code == display_util.CANCEL:
-                return None
-            else:  # code == display_util.OK
-                if not response:
-                    display.notification('Please enter an {0}.'.format(label), pause=False)
-                else:
-                    return response
+        code, response = ops.validated_input(
+            __validator,
+            'Input Cloudflare account {0}'.format(label),
+            force_interactive=True)
+
+        if code == display_util.OK:
+            return response
+        else:
+            return None
 
     def _get_cloudflare_client(self):
         """
