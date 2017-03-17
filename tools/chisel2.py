@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import sys
+import signal
 import threading
 import time
 import urllib2
@@ -27,10 +28,12 @@ from acme import jose
 from acme import messages
 from acme import standalone
 
+logging.basicConfig()
 logger = logging.getLogger()
-logger.setLevel(int(os.getenv('LOGLEVEL', 20)))
+logger.setLevel(int(os.getenv('LOGLEVEL', 0)))
 
-DIRECTORY = os.getenv('DIRECTORY', 'http://localhost:4000/directory')
+DIRECTORY = os.getenv('DIRECTORY', 'http://localhost:14000/dir')
+#DIRECTORY = os.getenv('DIRECTORY', 'http://localhost:4000/directory')
 
 def make_client(email=None):
     """Build an acme.Client and register a new account with a random key."""
@@ -40,8 +43,12 @@ def make_client(email=None):
                                     user_agent="Boulder integration tester")
 
     client = acme_client.Client(DIRECTORY, key=key, net=net)
-    account = client.register(messages.NewRegistration.from_data(email=email))
-    client.agree_to_tos(account)
+    tos = client.directory.meta.terms_of_service
+    if tos is not None and "Do%20what%20thou%20wilt" in tos:
+        client.register(messages.NewRegistration.from_data(email=email,
+            terms_of_service_agreed=True))
+    else:
+        raise Exception("Unrecognized terms of service URL %s" % tos)
     return client
 
 def get_chall(authz, typ):
@@ -60,13 +67,7 @@ class ValidationError(Exception):
     def __str__(self):
         return "%s: %s: %s" % (self.domain, self.problem_type, self.detail)
 
-def issue(client, authzs, cert_output=None):
-    """Given a list of authzs that are being processed by the server,
-       wait for them to be ready, then request issuance of a cert with a random
-       key for the given domains.
-
-       If cert_output is provided, write the cert as a PEM file to that path."""
-    domains = [authz.body.identifier.value for authz in authzs]
+def make_csr(domains):
     pkey = OpenSSL.crypto.PKey()
     pkey.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
     csr = OpenSSL.crypto.X509Req()
@@ -80,6 +81,15 @@ def issue(client, authzs, cert_output=None):
     csr.set_pubkey(pkey)
     csr.set_version(2)
     csr.sign(pkey, 'sha256')
+    return OpenSSL.crypto.dump_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr)
+
+def issue(client, authzs, cert_output=None):
+    """Given a list of authzs that are being processed by the server,
+       wait for them to be ready, then request issuance of a cert with a random
+       key for the given domains.
+
+       If cert_output is provided, write the cert as a PEM file to that path."""
+    csr = make_csr([authz.body.identifier.value for authz in authzs])
 
     cert_resource = None
     try:
@@ -110,6 +120,25 @@ def http_01_answer(client, chall_body):
           chall=chall_body.chall, response=response,
           validation=validation)
 
+def auth_and_issue(domains, chall_type="http-01", email=None, cert_output=None, client=None):
+    """Make authzs for each of the given domains, set up a server to answer the
+       challenges in those authzs, tell the ACME server to validate the challenges,
+       then poll for the authzs to be ready and issue a cert."""
+    if client is None:
+        client = make_client(email)
+
+    csr_pem = make_csr(domains)
+    order = client.new_order(csr_pem)
+    authzs = order.authorizations
+
+    if chall_type == "http-01":
+        cleanup = do_http_challenges(client, authzs)
+    #elif chall_type == "dns-01":
+        #cleanup = do_dns_challenges(client, authzs)
+    else:
+        raise Exception("invalid challenge type %s" % chall_type)
+    cleanup()
+
 def do_dns_challenges(client, authzs):
     for a in authzs:
         c = get_chall(a, challenges.DNS01)
@@ -133,43 +162,29 @@ def do_http_challenges(client, authzs):
     thread = threading.Thread(target=server.serve_forever)
     thread.start()
 
-    # Loop until the HTTP01Server is ready.
-    while True:
-        try:
-            urllib2.urlopen("http://localhost:%d" % port)
-            break
-        except urllib2.URLError:
-            time.sleep(0.1)
-
-    for chall_body in challs:
-        client.answer_challenge(chall_body, chall_body.response(client.key))
-
+    # cleanup has to be called on any exception, or when validation is done.
+    # Otherwise the process won't terminate.
     def cleanup():
         server.shutdown()
         server.server_close()
         thread.join()
-    return cleanup
-
-def auth_and_issue(domains, chall_type="http-01", email=None, cert_output=None, client=None):
-    """Make authzs for each of the given domains, set up a server to answer the
-       challenges in those authzs, tell the ACME server to validate the challenges,
-       then poll for the authzs to be ready and issue a cert."""
-    if client is None:
-        client = make_client(email)
-    authzs = [client.request_domain_challenges(d) for d in domains]
-
-    if chall_type == "http-01":
-        cleanup = do_dns_challenges(client, authzs)
-    elif chall_type == "dns-01":
-        cleanup = do_http_challenges(client, authzs)
-    else:
-        raise Exception("invalid challenge type %s" % chall_type)
 
     try:
-        cert_resource = issue(client, authzs, cert_output)
-        return cert_resource
-    finally:
+        # Loop until the HTTP01Server is ready.
+        while True:
+            try:
+                urllib2.urlopen("http://localhost:%d" % port)
+                break
+            except urllib2.URLError:
+                time.sleep(0.1)
+
+        for chall_body in challs:
+            client.answer_challenge(chall_body, chall_body.response(client.key))
+    except Exception:
         cleanup()
+        raise
+
+    return cleanup
 
 def expect_problem(problem_type, func):
     """Run a function. If it raises a ValidationError or messages.Error that
@@ -192,6 +207,8 @@ def expect_problem(problem_type, func):
         raise Exception('Expected %s, got no error' % problem_type)
 
 if __name__ == "__main__":
+    # Die on SIGINT
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
     domains = sys.argv[1:]
     if len(domains) == 0:
         print __doc__
