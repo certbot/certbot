@@ -39,6 +39,7 @@ class Authenticator(common.Plugin):
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
+        self.r53 = boto3.client("route53")
 
     def prepare(self):  # pylint: disable=missing-docstring,no-self-use
         pass  # pragma: no cover
@@ -52,7 +53,11 @@ class Authenticator(common.Plugin):
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
         try:
-            change_ids = [self._create_single(achall) for achall in achalls]
+            change_ids = [
+                self._change_txt_record("UPSERT", achall)
+                for achall in achalls
+            ]
+
             for change_id in change_ids:
                 self._wait_for_change(change_id)
             # Sleep for at least the TTL, to ensure that any records cached by
@@ -67,16 +72,7 @@ class Authenticator(common.Plugin):
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         for achall in achalls:
-            name = achall.validation_domain_name(achall.domain)
-            value = achall.validation(achall.account_key)
-            self._change_txt_record("DELETE", name, value)
-
-    def _create_single(self, achall):
-        """Create a TXT record, return a change_id"""
-        name = achall.validation_domain_name(achall.domain)
-        value = achall.validation(achall.account_key)
-        change_id = self._change_txt_record("UPSERT", name, value)
-        return change_id
+            self._change_txt_record("DELETE", achall)
 
     def _find_zone_id_for_domain(self, domain):
         """Find the zone id responsible a given FQDN.
@@ -84,14 +80,14 @@ class Authenticator(common.Plugin):
            That is, the id for the zone whose name is the longest parent of the
            domain.
         """
-        client = boto3.client("route53")
-        paginator = client.get_paginator("list_hosted_zones")
+        paginator = self.r53.get_paginator("list_hosted_zones")
         zones = []
         target_labels = domain.rstrip(".").split(".")
         for page in paginator.paginate():
             for zone in page["HostedZones"]:
                 if zone["Config"]["PrivateZone"]:
                     continue
+
                 candidate_labels = zone["Name"].rstrip(".").split(".")
                 if candidate_labels == target_labels[-len(candidate_labels):]:
                     zones.append((zone["Name"], zone["Id"]))
@@ -108,10 +104,13 @@ class Authenticator(common.Plugin):
         zones.sort(key=lambda z: len(z[0]), reverse=True)
         return zones[0][1]
 
-    def _change_txt_record(self, action, domain, value):
+    def _change_txt_record(self, action, achall):
+        domain = achall.validation_domain_name(achall.domain)
+        value = achall.validation(achall.account_key)
+
         zone_id = self._find_zone_id_for_domain(domain)
-        client = boto3.client("route53")
-        response = client.change_resource_record_sets(
+
+        response = self.r53.change_resource_record_sets(
             HostedZoneId=zone_id,
             ChangeBatch={
                 "Comment": "certbot-route53 certificate validation " + action,
