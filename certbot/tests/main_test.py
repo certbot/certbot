@@ -1311,8 +1311,10 @@ class TestHandleException(unittest.TestCase):
 class TestAcquireFileLock(unittest.TestCase):
     """Test main.acquire_file_lock."""
 
-    def test_bad_path(self):
+    @mock.patch('certbot.main.logger')
+    def test_bad_path(self, mock_logger):
         lock = main.acquire_file_lock(os.getcwd())
+        self.assertTrue(mock_logger.warning.called)
         self.assertFalse(lock.acquired)
 
 
