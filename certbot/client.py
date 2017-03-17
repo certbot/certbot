@@ -168,7 +168,7 @@ def perform_registration(acme, config):
                        "registration again." % config.email)
                 raise errors.Error(msg)
             else:
-                config.namespace.email = display_ops.get_email(invalid=True)
+                config.email = display_ops.get_email(invalid=True)
                 return perform_registration(acme, config)
         else:
             raise
