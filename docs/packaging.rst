@@ -44,6 +44,7 @@ Arch
 ----
 
 From our official releases:
+
 - https://www.archlinux.org/packages/community/any/python2-acme
 - https://www.archlinux.org/packages/community/any/certbot
 - https://www.archlinux.org/packages/community/any/certbot-apache
@@ -55,9 +56,9 @@ From ``master``: https://aur.archlinux.org/packages/certbot-git
 Debian (and its derivatives, including Ubuntu)
 ------
 
-https://packages.debian.org/sid/certbot
-https://packages.debian.org/sid/python-certbot
-https://packages.debian.org/sid/python-certbot-apache
+- https://packages.debian.org/sid/certbot
+- https://packages.debian.org/sid/python-certbot
+- https://packages.debian.org/sid/python-certbot-apache
 
 Fedora
 ------
@@ -71,7 +72,17 @@ In Fedora 23+.
 FreeBSD
 -------
 
-https://svnweb.freebsd.org/ports/head/security/py-certbot/
+- https://svnweb.freebsd.org/ports/head/security/py-certbot/
+
+Gentoo
+------
+
+Currently, all ``certbot`` related packages are in the testing branch:
+
+- https://packages.gentoo.org/packages/app-crypt/certbot
+- https://packages.gentoo.org/packages/app-crypt/certbot-apache
+- https://packages.gentoo.org/packages/app-crypt/certbot-nginx
+- https://packages.gentoo.org/packages/app-crypt/acme
 
 GNU Guix
 --------
