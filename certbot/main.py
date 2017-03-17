@@ -226,9 +226,9 @@ def _find_cert(config, domains, certname):
     """
     action, lineage = _find_lineage_for_domains_and_certname(config, domains, certname)
     if action == "renew":
-        config.renewing = True
+        config.renewing = "Yes"
     elif action == "newcert":
-        config.renewing = False
+        config.renewing = "No"
     if action == "reinstall":
         logger.info("Keeping the existing certificate")
     return (action != "reinstall"), lineage
