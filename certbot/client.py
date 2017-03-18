@@ -290,10 +290,10 @@ class Client(object):
         key = crypto_util.init_save_key(
             self.config.rsa_key_size, self.config.key_dir)
         csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
-        certz, chain = self.obtain_certificate_from_csr(
+        certr, chain = self.obtain_certificate_from_csr(
             domains, csr, authzr=authzr)
 
-        return certz, chain, key, csr
+        return certr, chain, key, csr
 
     def obtain_and_enroll_certificate(self, domains, certname):
         """Obtain and enroll certificate.
