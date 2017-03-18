@@ -56,7 +56,7 @@ class InitSaveKeyTest(unittest.TestCase):
         mock_make.return_value = b'key_pem'
         key = self._call(1024, self.key_dir)
         self.assertEqual(key.pem, b'key_pem')
-        self.assertIsNone(key.file)
+        self.assertTrue(key.file is None)
 
     @mock.patch('certbot.crypto_util.make_key')
     def test_key_failure(self, mock_make):
@@ -105,7 +105,7 @@ class InitSaveCSRTest(unittest.TestCase):
             'csr-certbot.pem')
 
         self.assertEqual(csr.data, b'csr_der')
-        self.assertIsNone(csr.file)
+        self.assertTrue(csr.file is None)
 
 
 class MakeCSRTest(unittest.TestCase):
