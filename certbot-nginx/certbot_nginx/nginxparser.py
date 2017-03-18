@@ -24,12 +24,12 @@ class RawNginxParser(object):
     semicolon = Literal(";").suppress()
     dquoted = QuotedString('"', multiline=True, unquoteResults=False, escChar='\\')
     squoted = QuotedString("'", multiline=True, unquoteResults=False, escChar='\\')
+    quoted = dquoted | squoted
     head_tokenchars = Regex(r"[^\{\};\s\$\'\"]")
     tail_tokenchars = Regex(r"[^\{\};\s\$]")
     tokenchars = Combine(OneOrMore(head_tokenchars) + ZeroOrMore(tail_tokenchars))
     variable = Regex(r"(\$\{\w+\})") | Regex(r"(\$\w*)")
     unquoted = Combine(OneOrMore(variable | tokenchars))
-    quoted = squoted | dquoted
     paren_quote_extend = Combine(quoted + Literal(')') + Combine(ZeroOrMore(tail_tokenchars)))
 
     token = paren_quote_extend | unquoted | quoted
