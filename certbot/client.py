@@ -138,7 +138,7 @@ def register(config, account_storage, tos_cb=None):
 
     acc = account.Account(regr, key)
     account.report_new_account(config)
-    account_storage.save(acc)
+    account_storage.save(acc, acme)
 
     eff.handle_subscription(config)
 
@@ -166,7 +166,7 @@ def perform_registration(acme, config):
                        "registration again." % config.email)
                 raise errors.Error(msg)
             else:
-                config.namespace.email = display_ops.get_email(invalid=True)
+                config.email = display_ops.get_email(invalid=True)
                 return perform_registration(acme, config)
         else:
             raise

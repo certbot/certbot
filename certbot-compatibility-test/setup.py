@@ -9,15 +9,11 @@ version = '0.13.0.dev0'
 install_requires = [
     'certbot',
     'certbot-apache',
+    'mock',
     'six',
     'requests',
     'zope.interface',
 ]
-
-if sys.version_info < (2, 7):
-    install_requires.append('mock<1.1.0')
-else:
-    install_requires.append('mock')
 
 if sys.version_info < (2, 7, 9):
     # For secure SSL connexion with Python 2.7 (InsecurePlatformWarning)

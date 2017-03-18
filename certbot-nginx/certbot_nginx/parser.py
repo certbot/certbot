@@ -342,7 +342,7 @@ class NginxParser(object):
             vhost.names = parsed_server['names']
             vhost.raw = new_server
         except errors.MisconfigurationError as err:
-            raise errors.MisconfigurationError("Problem in %s: %s" % (filename, err.message))
+            raise errors.MisconfigurationError("Problem in %s: %s" % (filename, str(err)))
 
 
 def _do_for_subarray(entry, condition, func, path=None):

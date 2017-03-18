@@ -359,7 +359,7 @@ def _determine_account(config):
             acc = accounts[0]
         else:  # no account registered yet
             if config.email is None and not config.register_unsafely_without_email:
-                config.namespace.email = display_ops.get_email()
+                config.email = display_ops.get_email()
 
             def _tos_cb(regr):
                 if config.tos:
@@ -382,7 +382,7 @@ def _determine_account(config):
                 raise errors.Error(
                     "Unable to register an account with ACME server")
 
-    config.namespace.account = acc.id
+    config.account = acc.id
     return acc, acme
 
 
@@ -459,14 +459,14 @@ def register(config, unused_plugins):
             return ("--register-unsafely-without-email provided, however, a "
                     "new e-mail address must\ncurrently be provided when "
                     "updating a registration.")
-        config.namespace.email = display_ops.get_email(optional=False)
+        config.email = display_ops.get_email(optional=False)
 
     acc, acme = _determine_account(config)
     acme_client = client.Client(config, acc, None, None, acme=acme)
     # We rely on an exception to interrupt this process if it didn't work.
     acc.regr = acme_client.acme.update_registration(acc.regr.update(
         body=acc.regr.body.update(contact=('mailto:' + config.email,))))
-    account_storage.save_regr(acc)
+    account_storage.save_regr(acc, acme_client.acme)
     eff.handle_subscription(config)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
 
@@ -565,7 +565,7 @@ def certificates(config, unused_plugins):
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
     """Revoke a previously obtained certificate."""
     # For user-agent construction
-    config.namespace.installer = config.namespace.authenticator = "None"
+    config.installer = config.authenticator = "None"
     if config.key_path is not None:  # revocation by cert key
         logger.debug("Revoking %s using cert key %s",
                      config.cert_path[0], config.key_path[0])

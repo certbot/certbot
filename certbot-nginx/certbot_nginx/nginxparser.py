@@ -4,7 +4,7 @@ import copy
 import logging
 
 from pyparsing import (
-    Literal, White, Forward, Group, Optional, OneOrMore, Regex, ZeroOrMore, Combine)
+    Literal, White, Forward, Group, Optional, OneOrMore, QuotedString, Regex, ZeroOrMore, Combine)
 from pyparsing import stringEnd
 from pyparsing import restOfLine
 
@@ -22,8 +22,8 @@ class RawNginxParser(object):
     left_bracket = Literal("{").suppress()
     right_bracket = space + Literal("}").suppress()
     semicolon = Literal(";").suppress()
-    dquoted = Regex(r'("(\\"|[^"])*")')
-    squoted = Regex(r"('(\\'|[^'])*')")
+    dquoted = QuotedString('"', multiline=True, unquoteResults=False, escChar='\\')
+    squoted = QuotedString("'", multiline=True, unquoteResults=False, escChar='\\')
     head_tokenchars = Regex(r"[^\{\};\s\$\'\"]")
     tail_tokenchars = Regex(r"[^\{\};\s\$]")
     tokenchars = Combine(OneOrMore(head_tokenchars) + ZeroOrMore(tail_tokenchars))

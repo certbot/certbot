@@ -27,12 +27,13 @@ class NginxConfiguratorTest(util.NginxTest):
         super(NginxConfiguratorTest, self).setUp()
 
         self.config = util.get_nginx_configurator(
-            self.config_path, self.config_dir, self.work_dir)
+            self.config_path, self.config_dir, self.work_dir, self.logs_dir)
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
+        shutil.rmtree(self.logs_dir)
 
     @mock.patch("certbot_nginx.configurator.util.exe_exists")
     def test_prepare_no_install(self, mock_exe_exists):
@@ -261,13 +262,13 @@ class NginxConfiguratorTest(util.NginxTest):
         # Note: As more challenges are offered this will have to be expanded
         achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=messages.ChallengeBody(
-                chall=challenges.TLSSNI01(token="kNdwjwOeX0I_A8DXt9Msmg"),
+                chall=challenges.TLSSNI01(token=b"kNdwjwOeX0I_A8DXt9Msmg"),
                 uri="https://ca.org/chall0_uri",
                 status=messages.Status("pending"),
             ), domain="localhost", account_key=self.rsa512jwk)
         achall2 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=messages.ChallengeBody(
-                chall=challenges.TLSSNI01(token="m8TdO1qik4JVFtgPPurJmg"),
+                chall=challenges.TLSSNI01(token=b"m8TdO1qik4JVFtgPPurJmg"),
                 uri="https://ca.org/chall1_uri",
                 status=messages.Status("pending"),
             ), domain="example.com", account_key=self.rsa512jwk)

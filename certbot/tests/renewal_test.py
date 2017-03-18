@@ -52,7 +52,7 @@ class RestoreRequiredConfigElementsTest(unittest.TestCase):
     def test_allow_subset_of_names_success(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         self._call(self.config, {'allow_subset_of_names': 'True'})
-        self.assertTrue(self.config.namespace.allow_subset_of_names is True)
+        self.assertTrue(self.config.allow_subset_of_names is True)
 
     @mock.patch('certbot.renewal.cli.set_by_cli')
     def test_allow_subset_of_names_failure(self, mock_set_by_cli):
@@ -68,7 +68,7 @@ class RestoreRequiredConfigElementsTest(unittest.TestCase):
         self._call(self.config, renewalparams)
         expected = [challenges.TLSSNI01.typ,
                     challenges.HTTP01.typ, challenges.DNS01.typ]
-        self.assertEqual(self.config.namespace.pref_challs, expected)
+        self.assertEqual(self.config.pref_challs, expected)
 
     @mock.patch('certbot.renewal.cli.set_by_cli')
     def test_pref_challs_str(self, mock_set_by_cli):
@@ -76,7 +76,7 @@ class RestoreRequiredConfigElementsTest(unittest.TestCase):
         renewalparams = {'pref_challs': 'dns'}
         self._call(self.config, renewalparams)
         expected = [challenges.DNS01.typ]
-        self.assertEqual(self.config.namespace.pref_challs, expected)
+        self.assertEqual(self.config.pref_challs, expected)
 
     @mock.patch('certbot.renewal.cli.set_by_cli')
     def test_pref_challs_failure(self, mock_set_by_cli):
@@ -88,7 +88,7 @@ class RestoreRequiredConfigElementsTest(unittest.TestCase):
     def test_must_staple_success(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
         self._call(self.config, {'must_staple': 'True'})
-        self.assertTrue(self.config.namespace.must_staple is True)
+        self.assertTrue(self.config.must_staple is True)
 
     @mock.patch('certbot.renewal.cli.set_by_cli')
     def test_must_staple_failure(self, mock_set_by_cli):

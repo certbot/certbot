@@ -10,6 +10,7 @@ version = '0.13.0.dev0'
 install_requires = [
     'acme=={0}'.format(version),
     'certbot=={0}'.format(version),
+    'mock',
     'PyOpenSSL',
     'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
     # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
@@ -17,11 +18,6 @@ install_requires = [
     'setuptools>=1.0',
     'zope.interface',
 ]
-
-if sys.version_info < (2, 7):
-    install_requires.append('mock<1.1.0')
-else:
-    install_requires.append('mock')
 
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
