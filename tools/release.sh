@@ -109,7 +109,7 @@ do
   echo "Signing ($pkg_dir)"
   for x in dist/*.tar.gz dist/*.whl
   do
-      gpg2 -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign $x
+      gpg2 -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign --digest-algo sha256 $x
   done
 
   cd -
@@ -194,7 +194,7 @@ while ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
 done
 
 # This signature is not quite as strong, but easier for people to verify out of band
-gpg2 -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign letsencrypt-auto-source/letsencrypt-auto
+gpg2 -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign --digest-algo sha256 letsencrypt-auto-source/letsencrypt-auto
 # We can't rename the openssl letsencrypt-auto.sig for compatibility reasons,
 # but we can use the right name for certbot-auto.asc from day one
 mv letsencrypt-auto-source/letsencrypt-auto.asc letsencrypt-auto-source/certbot-auto.asc
