@@ -284,26 +284,27 @@ class TestRawNginxParser(unittest.TestCase):
             [['alias', '/data/w3/images/$1']]]]
         )
 
-    def test_quotes(self):
+    def test_edge_cases(self):
+        # quotes
         parsed = loads(r'"hello\""; # blah "heh heh"')
         self.assertEqual(parsed, [['"hello\\""'], ['#', ' blah "heh heh"']])
 
-    def test_empty_var_as_block(self):
+        # empty var as block
         parsed = loads(r"${}")
         self.assertEqual(parsed, [[['$'], []]])
 
-    def test_if_with_comment(self):
+        # if with comment
         parsed = loads("""if ($http_cookie ~* "id=([^;]+)(?:;|$)") { # blah )
             }""")
         self.assertEqual(parsed, [[['if', '($http_cookie', '~*', '"id=([^;]+)(?:;|$)")'],
             [['#', ' blah )']]]])
 
-    def test_end_paren(self):
+        # end paren
         test = """
             one"test";
-            ("test");
-            "test")one;
-            "test")"two";
+            ("two");
+            "test")red;
+            "test")"blue";
             "test")"three;
             (one"test")one;
             one";
@@ -313,9 +314,9 @@ class TestRawNginxParser(unittest.TestCase):
         parsed = loads(test)
         self.assertEqual(parsed, [
             ['one"test"'],
-            ['("test")'],
-            ['"test")one'],
-            ['"test")"two"'],
+            ['("two")'],
+            ['"test")red'],
+            ['"test")"blue"'],
             ['"test")"three'],
             ['(one"test")one'],
             ['one"'],
@@ -324,6 +325,22 @@ class TestRawNginxParser(unittest.TestCase):
         ])
         self.assertRaises(ParseException, loads, r'"test"one;') # fails
         self.assertRaises(ParseException, loads, r'"test;') # fails
+
+        # newlines
+        test = """
+            server_name foo.example.com bar.example.com \
+                        baz.example.com qux.example.com;
+            server_name foo.example.com bar.example.com
+                        baz.example.com qux.example.com;
+        """
+        parsed = loads(test)
+        self.assertEqual(parsed, [
+            ['server_name', 'foo.example.com', 'bar.example.com',
+                'baz.example.com', 'qux.example.com'],
+            ['server_name', 'foo.example.com', 'bar.example.com',
+                'baz.example.com', 'qux.example.com']
+        ])
+
 
 class TestUnspacedList(unittest.TestCase):
     """Test the UnspacedList data structure"""
