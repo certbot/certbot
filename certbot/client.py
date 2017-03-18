@@ -256,6 +256,7 @@ class Client(object):
                 chain = self.acme.fetch_chain(certr)
                 break
             except acme_errors.Error:
+                logger.debug('Failed to fetch chain', exc_info=True)
                 retries += 1
 
         if chain is None:
@@ -295,6 +296,7 @@ class Client(object):
 
         return certr, chain, key, csr
 
+    # pylint: disable=no-member
     def obtain_and_enroll_certificate(self, domains, certname):
         """Obtain and enroll certificate.
 
@@ -325,7 +327,6 @@ class Client(object):
                         new_name)
             return None
         else:
-            # pylint: disable=no-member
             return storage.RenewableCert.new_lineage(
                 new_name, OpenSSL.crypto.dump_certificate(
                     OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped),
