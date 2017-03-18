@@ -487,7 +487,7 @@ def install(config, plugins):
     try:
         installer, _ = plug_sel.choose_configurator_plugins(config, plugins, "install")
     except errors.PluginSelectionError as e:
-        return e.message
+        return str(e)
 
     domains, _ = _find_domains_or_certname(config, installer)
     le_client = _init_le_client(config, authenticator=None, installer=installer)

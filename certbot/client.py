@@ -8,6 +8,7 @@ import OpenSSL
 import zope.component
 
 from acme import client as acme_client
+from acme import errors as acme_errors
 from acme import jose
 from acme import messages
 
@@ -242,7 +243,27 @@ class Client(object):
             jose.ComparableX509(
                 OpenSSL.crypto.load_certificate_request(typ, csr.data)),
                 authzr)
-        return certr, self.acme.fetch_chain(certr)
+
+        notify = zope.component.getUtility(interfaces.IDisplay).notification
+        retries = 0
+        chain = None
+
+        while retries <= 1:
+            if retries:
+                notify('Failed to fetch chain, please check your network '
+                       'and continue', pause=True)
+            try:
+                chain = self.acme.fetch_chain(certr)
+                break
+            except acme_errors.Error:
+                retries += 1
+
+        if chain is None:
+            raise acme_errors.Error(
+                'Failed to fetch chain. You should not deploy the generated '
+                'certificate, please rerun the command for a new one.')
+
+        return certr, chain
 
     def obtain_certificate(self, domains):
         """Obtains a certificate from the ACME server.
@@ -289,6 +310,7 @@ class Client(object):
             be obtained, or None if doing a successful dry run.
 
         """
+        # pylint: disable=unbalanced-tuple-unpacking
         certr, chain, key, _ = self.obtain_certificate(domains)
 
         if (self.config.config_dir != constants.CLI_DEFAULTS["config_dir"] or
