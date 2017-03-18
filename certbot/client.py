@@ -290,9 +290,10 @@ class Client(object):
         key = crypto_util.init_save_key(
             self.config.rsa_key_size, self.config.key_dir)
         csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
+        certz, chain = self.obtain_certificate_from_csr(
+            domains, csr, authzr=authzr)
 
-        return (self.obtain_certificate_from_csr(domains, csr, authzr=authzr)
-                                                                + (key, csr))
+        return certz, chain, key, csr
 
     def obtain_and_enroll_certificate(self, domains, certname):
         """Obtain and enroll certificate.
@@ -310,7 +311,6 @@ class Client(object):
             be obtained, or None if doing a successful dry run.
 
         """
-        # pylint: disable=unbalanced-tuple-unpacking
         certr, chain, key, _ = self.obtain_certificate(domains)
 
         if (self.config.config_dir != constants.CLI_DEFAULTS["config_dir"] or
