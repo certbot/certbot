@@ -325,6 +325,7 @@ class Client(object):
                         new_name)
             return None
         else:
+            # pylint: disable=no-member
             return storage.RenewableCert.new_lineage(
                 new_name, OpenSSL.crypto.dump_certificate(
                     OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped),
