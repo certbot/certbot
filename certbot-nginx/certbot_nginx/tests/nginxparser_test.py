@@ -341,6 +341,12 @@ class TestRawNginxParser(unittest.TestCase):
                 'baz.example.com', 'qux.example.com']
         ])
 
+        # variable weirdness
+        parsed = loads("directive $var;")
+        self.assertEqual(parsed, [['directive', '$var']])
+        self.assertRaises(ParseException, loads, "server {server_name test.com};")
+        self.assertRaises(ParseException, loads, "directive ${var};")
+
 
 class TestUnspacedList(unittest.TestCase):
     """Test the UnspacedList data structure"""
