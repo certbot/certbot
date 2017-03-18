@@ -26,11 +26,13 @@ install_requires = [
     # will tolerate; see #2599:
     'setuptools>=1.0',
     'six',
+    'typing',
 ]
 
 dev_extras = [
     'nose',
     'tox',
+    'mypy',
 ]
 
 docs_extras = [

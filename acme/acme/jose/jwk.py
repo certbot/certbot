@@ -6,12 +6,13 @@ import logging
 
 import cryptography.exceptions
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hashes  # type: ignore
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import ec  # type: ignore
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 import six
+from typing import Dict, Tuple, Union
 
 from acme.jose import errors
 from acme.jose import json_util
@@ -25,8 +26,8 @@ class JWK(json_util.TypedJSONObjectWithFields):
     # pylint: disable=too-few-public-methods
     """JSON Web Key."""
     type_field_name = 'kty'
-    TYPES = {}
-    cryptography_key_types = ()
+    TYPES = {}  # type: Dict
+    cryptography_key_types = ()  # type: Tuple
     """Subclasses should override."""
 
     required = NotImplemented

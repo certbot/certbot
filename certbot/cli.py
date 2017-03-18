@@ -207,7 +207,7 @@ def set_by_cli(var):
 
     return False
 # static housekeeping var
-set_by_cli.detector = None
+set_by_cli.detector = None  # type: ignore
 
 
 def has_default_value(option, value):

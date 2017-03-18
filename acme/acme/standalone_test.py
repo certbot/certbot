@@ -7,7 +7,7 @@ import time
 import unittest
 
 from six.moves import http_client  # pylint: disable=import-error
-from six.moves import socketserver  # pylint: disable=import-error
+from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
 
 import requests
 
