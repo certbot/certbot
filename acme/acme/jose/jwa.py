@@ -6,7 +6,7 @@ https://tools.ietf.org/html/draft-ietf-jose-json-web-algorithms-40
 import abc
 import collections
 import logging
-from typing import Dict
+from typing import Dict  # pylint: disable=unused-import
 
 import cryptography.exceptions
 from cryptography.hazmat.backends import default_backend

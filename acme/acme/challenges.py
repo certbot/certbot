@@ -4,7 +4,7 @@ import functools
 import hashlib
 import logging
 import socket
-from typing import Dict
+from typing import Dict  # pylint: disable=unused-import
 
 from cryptography.hazmat.primitives import hashes  # type: ignore
 import OpenSSL

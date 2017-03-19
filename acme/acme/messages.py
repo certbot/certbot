@@ -1,6 +1,6 @@
 """ACME protocol messages."""
 import collections
-from typing import Dict
+from typing import Dict  # pylint: disable=unused-import
 
 from acme import challenges
 from acme import errors

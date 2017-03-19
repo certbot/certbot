@@ -12,7 +12,7 @@ from cryptography.hazmat.primitives.asymmetric import ec  # type: ignore
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 import six
-from typing import Dict, Tuple, Union
+from typing import Dict, Tuple  # pylint: disable=unused-import
 
 from acme.jose import errors
 from acme.jose import json_util
