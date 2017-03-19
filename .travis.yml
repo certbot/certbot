@@ -76,6 +76,7 @@ matrix:
       addons:
     - os: osx
       env: TOXENV=osx
+      addons:
     - python: "2.7"
       env: TOXENV=apacheconftest
       sudo: required
