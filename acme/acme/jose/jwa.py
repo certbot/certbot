@@ -9,9 +9,9 @@ import logging
 
 import cryptography.exceptions
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives import hmac
-from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import hashes  # type: ignore
+from cryptography.hazmat.primitives import hmac  # type: ignore
+from cryptography.hazmat.primitives.asymmetric import padding  # type: ignore
 
 from acme.jose import errors
 from acme.jose import interfaces
@@ -28,9 +28,9 @@ class JWA(interfaces.JSONDeSerializable):  # pylint: disable=abstract-method
     """JSON Web Algorithm."""
 
 
-class JWASignature(JWA, collections.Hashable):
+class JWASignature(JWA, collections.Hashable):  # type: ignore
     """JSON Web Signature Algorithm."""
-    SIGNATURES = {}
+    SIGNATURES = {}  # type: dict
 
     def __init__(self, name):
         self.name = name
