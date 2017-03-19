@@ -54,7 +54,6 @@ install_requires = [
     'six',
     'zope.component',
     'zope.interface',
-    'typing',
 ]
 
 dev_extras = [

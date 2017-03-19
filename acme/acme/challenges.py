@@ -4,7 +4,6 @@ import functools
 import hashlib
 import logging
 import socket
-from typing import Dict  # pylint: disable=unused-import
 
 from cryptography.hazmat.primitives import hashes  # type: ignore
 import OpenSSL
@@ -24,7 +23,7 @@ logger = logging.getLogger(__name__)
 class Challenge(jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json | pylint: disable=abstract-method
     """ACME challenge."""
-    TYPES = {}  # type: Dict
+    TYPES = {}  # type: dict
 
     @classmethod
     def from_json(cls, jobj):
@@ -38,7 +37,7 @@ class Challenge(jose.TypedJSONObjectWithFields):
 class ChallengeResponse(jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json | pylint: disable=abstract-method
     """ACME challenge response."""
-    TYPES = {}  # type: Dict
+    TYPES = {}  # type: dict
     resource_type = 'challenge'
     resource = fields.Resource(resource_type)
 

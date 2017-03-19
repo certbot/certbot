@@ -12,7 +12,6 @@ from cryptography.hazmat.primitives.asymmetric import ec  # type: ignore
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 import six
-from typing import Dict, Tuple  # pylint: disable=unused-import
 
 from acme.jose import errors
 from acme.jose import json_util
@@ -26,8 +25,8 @@ class JWK(json_util.TypedJSONObjectWithFields):
     # pylint: disable=too-few-public-methods
     """JSON Web Key."""
     type_field_name = 'kty'
-    TYPES = {}  # type: Dict
-    cryptography_key_types = ()  # type: Tuple
+    TYPES = {}  # type: dict
+    cryptography_key_types = ()  # type: tuple
     """Subclasses should override."""
 
     required = NotImplemented

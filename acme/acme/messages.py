@@ -1,6 +1,5 @@
 """ACME protocol messages."""
 import collections
-from typing import Dict  # pylint: disable=unused-import
 
 from acme import challenges
 from acme import errors
@@ -133,7 +132,7 @@ class _Constant(jose.JSONDeSerializable, collections.Hashable):  # type: ignore
 
 class Status(_Constant):
     """ACME "status" field."""
-    POSSIBLE_NAMES = {}  # type: Dict
+    POSSIBLE_NAMES = {}  # type: dict
 STATUS_UNKNOWN = Status('unknown')
 STATUS_PENDING = Status('pending')
 STATUS_PROCESSING = Status('processing')
@@ -144,7 +143,7 @@ STATUS_REVOKED = Status('revoked')
 
 class IdentifierType(_Constant):
     """ACME identifier type."""
-    POSSIBLE_NAMES = {}  # type: Dict
+    POSSIBLE_NAMES = {}  # type: dict
 IDENTIFIER_FQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
 
 
@@ -162,7 +161,7 @@ class Identifier(jose.JSONObjectWithFields):
 class Directory(jose.JSONDeSerializable):
     """Directory."""
 
-    _REGISTERED_TYPES = {}  # type: Dict
+    _REGISTERED_TYPES = {}  # type: dict
 
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""
