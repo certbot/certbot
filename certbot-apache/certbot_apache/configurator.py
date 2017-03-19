@@ -174,6 +174,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Set Version
         if self.version is None:
             self.version = self.get_version()
+            logger.debug('Apache version is %s',
+                         '.'.join(str(i) for i in self.version))
         if self.version < (2, 2):
             raise errors.NotSupportedError(
                 "Apache Version %s not supported.", str(self.version))
