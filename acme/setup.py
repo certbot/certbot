@@ -32,7 +32,6 @@ install_requires = [
 dev_extras = [
     'nose',
     'tox',
-    'mypy',
 ]
 
 docs_extras = [
