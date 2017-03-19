@@ -74,6 +74,8 @@ matrix:
       services: docker
       before_install:
       addons:
+    - os: osx
+      env: TOXENV=osx
     - python: "2.7"
       env: TOXENV=apacheconftest
       sudo: required
