@@ -193,7 +193,7 @@ try:
     file_type = file
 except NameError:
     import io
-    file_type = io.TextIOWrapper
+    file_type = io.TextIOWrapper  # type: ignore
 
 
 class UniqueLineageNameTest(unittest.TestCase):

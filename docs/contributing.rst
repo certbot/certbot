@@ -145,13 +145,15 @@ different webservers, other TLS servers, and operating systems.
 The interfaces available for plugins to implement are defined in
 `interfaces.py`_ and `plugins/common.py`_.
 
-The most common kind of plugin is a "Configurator", which is likely to
-implement the `~certbot.interfaces.IAuthenticator` and
-`~certbot.interfaces.IInstaller` interfaces (though some
-Configurators may implement just one of those).
+The main two plugin interfaces are `~certbot.interfaces.IAuthenticator`, which
+implements various ways of proving domain control to a certificate authority,
+and `~certbot.interfaces.IInstaller`, which configures a server to use a
+certificate once it is issued. Some plugins, like the built-in Apache and Nginx
+plugins, implement both interfaces and perform both tasks. Others, like the
+built-in Standalone authenticator, implement just one interface.
 
 There are also `~certbot.interfaces.IDisplay` plugins,
-which implement bindings to alternative UI libraries.
+which can change how prompts are displayed to a user.
 
 .. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/interfaces.py
 .. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/plugins/common.py#L34
@@ -160,27 +162,20 @@ which implement bindings to alternative UI libraries.
 Authenticators
 --------------
 
-Authenticators are plugins designed to prove that this client deserves a
-certificate for some domain name by solving challenges received from
-the ACME server. From the protocol, there are essentially two
-different types of challenges. Challenges that must be solved by
-individual plugins in order to satisfy domain validation (subclasses
-of `~.DVChallenge`, i.e. `~.challenges.TLSSNI01`,
-`~.challenges.HTTP01`, `~.challenges.DNS`) and continuity specific
-challenges (subclasses of `~.ContinuityChallenge`,
-i.e. `~.challenges.RecoveryToken`, `~.challenges.RecoveryContact`,
-`~.challenges.ProofOfPossession`). Continuity challenges are
-always handled by the `~.ContinuityAuthenticator`, while plugins are
-expected to handle `~.DVChallenge` types.
-Right now, we have two authenticator plugins, the `~.ApacheConfigurator`
-and the `~.StandaloneAuthenticator`. The Standalone and Apache
-authenticators only solve the `~.challenges.TLSSNI01` challenge currently.
-(You can set which challenges your authenticator can handle through the
-:meth:`~.IAuthenticator.get_chall_pref`.
+Authenticators are plugins that prove control of a domain name by solving a
+challenge provided by the ACME server. ACME currently defines three types of
+challenges: HTTP, TLS-SNI, and DNS, represented by classes in `acme.challenges`.
+An authenticator plugin should implement support for at least one challenge type.
 
-(FYI: We also have a partial implementation for a `~.DNSAuthenticator`
-in a separate branch).
+An Authenticator indicates which challenges it supports by implementing
+get_chall_pref(domain) to return a sorted list of challenge types in preference
+order.
 
+An Authenticator must also implement `perform(achalls)`, which "performs" a list
+of challenges by, for instance, provisioning a file on an HTTP server, or
+setting a TXT record in DNS. Once all challenges have succeeded or failed,
+Certbot will call the plugin's `cleanup(achalls)` method to remove any files or
+DNS records that were needed only during authentication.
 
 Installer
 ---------
@@ -218,16 +213,10 @@ Augeas may still find the `~.Reverter` class helpful in handling
 configuration checkpoints and rollback.
 
 
-Display
-~~~~~~~
-
-We currently only offer a "text" mode for displays. Display plugins
-implement the `~certbot.interfaces.IDisplay` interface.
-
 .. _dev-plugin:
 
 Writing your own plugin
-=======================
+~~~~~~~~~~~~~~~~~~~~~~~
 
 Certbot client supports dynamic discovery of plugins through the
 `setuptools entry points`_. This way you can, for example, create a
@@ -235,6 +224,26 @@ custom implementation of `~certbot.interfaces.IAuthenticator` or
 the `~certbot.interfaces.IInstaller` without having to merge it
 with the core upstream source code. An example is provided in
 ``examples/plugins/`` directory.
+
+While developing, you can install your plugin into a Certbot development
+virtualenv like this:
+
+.. code-block:: shell
+  . venv/bin/activate
+  . tests/integration/_common.sh
+  pip install -e examples/plugins/
+  certbot_test plugins
+
+Your plugin should show up in the output of the last command. If not,
+it was not installed properly.
+
+Once you've finished your plugin and published it, you can have your
+users install it system-wide with `pip install`. Note that this will
+only work for users who have Certbot installed from OS packages or via
+pip. Users who run `certbot-auto` are currently unable to use third-party
+plugins. It's technically possible to install third-party plugins into
+the virtualenv used by `certbot-auto`, but they will be wiped away when
+`certbot-auto` upgrades.
 
 .. warning:: Please be aware though that as this client is still in a
    developer-preview stage, the API may undergo a few changes. If you

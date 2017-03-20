@@ -6,9 +6,9 @@ import logging
 import os
 import sys
 
-from six.moves import BaseHTTPServer  # pylint: disable=import-error
+from six.moves import BaseHTTPServer  # type: ignore  # pylint: disable=import-error
 from six.moves import http_client  # pylint: disable=import-error
-from six.moves import socketserver  # pylint: disable=import-error
+from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
 
 import OpenSSL
 

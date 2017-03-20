@@ -109,6 +109,24 @@ class TestRawNginxParser(unittest.TestCase):
                  ['blah', '"hello;world"'],
                  ['try_files', '$uri @rewrites']]]]]])
 
+    def test_parse_from_file3(self):
+        with open(util.get_data_filename('multiline_quotes.conf')) as handle:
+            parsed = util.filter_comments(load(handle))
+        self.assertEqual(
+            parsed,
+            [[['http'],
+                [[['server'],
+                    [['listen', '*:443'],
+                    [['location', '/'],
+                        [['body_filter_by_lua',
+                          '\'ngx.ctx.buffered = (ngx.ctx.buffered or "")'
+                          ' .. string.sub(ngx.arg[1], 1, 1000)\n'
+                          '                            '
+                          'if ngx.arg[2] then\n'
+                          '                              '
+                          'ngx.var.resp_body = ngx.ctx.buffered\n'
+                          '                            end\'']]]]]]]])
+
     def test_abort_on_parse_failure(self):
         with open(util.get_data_filename('broken.conf')) as handle:
             self.assertRaises(ParseException, load, handle)
@@ -128,7 +146,7 @@ class TestRawNginxParser(unittest.TestCase):
                                  [['root', ' ', 'html'],
                                   ['index', ' ', 'index.html index.htm']]]]]))
 
-        with tempfile.TemporaryFile() as f:
+        with tempfile.TemporaryFile(mode='w+t') as f:
             dump(parsed, f)
             f.seek(0)
             parsed_new = load(f)
@@ -138,7 +156,7 @@ class TestRawNginxParser(unittest.TestCase):
         with open(util.get_data_filename('minimalistic_comments.conf')) as handle:
             parsed = load(handle)
 
-        with tempfile.TemporaryFile() as f:
+        with tempfile.TemporaryFile(mode='w+t') as f:
             dump(parsed, f)
             f.seek(0)
             parsed_new = load(f)

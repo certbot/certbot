@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
 if sys.version_info < (2, 7, 9):  # pragma: no cover
     try:
-        requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
+        requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()  # type: ignore
     except AttributeError:
         import urllib3.contrib.pyopenssl  # pylint: disable=import-error
         urllib3.contrib.pyopenssl.inject_into_urllib3()
