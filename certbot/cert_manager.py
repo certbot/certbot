@@ -160,6 +160,7 @@ def cert_path_to_lineage(config):
 def human_readable_cert_info(config, cert):
     """ Returns a human readable description of info about a RenewablCert object""" 
     
+    certinfo = []
     checker = ocsp.RevocationChecker()
 
     if config.certname and cert.lineagename != config.certname:
@@ -190,18 +191,17 @@ def human_readable_cert_info(config, cert):
             status = "VALID: {0} days".format(diff.days)
 
     valid_string = "{0} ({1})".format(cert.target_expiry, status)
-    cert_info = """  Certificate Name: {0}\n
-                    Domains: {1}\n
-                    Expiry Date: {2}\n
-                    Certificate Path: {3}\n
-                    Private Key Path: {4}""".format(
-                        cert.lineagename,
-                        " ".join(cert.names()),
-                        valid_string,
-                        cert.fullchain,
-                        cert.privkey)
-    
-    return cert_info
+    certinfo.append("  Certificate Name: {0}\n"
+                    "    Domains: {1}\n"
+                    "    Expiry Date: {2}\n"
+                    "    Certificate Path: {3}\n"
+                    "    Private Key Path: {4}".format(
+                         cert.lineagename,
+                         " ".join(cert.names()),
+                         valid_string,
+                         cert.fullchain,
+                         cert.privkey))
+    return "".join(certinfo)
 
 ###################
 # Private Helpers
