@@ -495,6 +495,32 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return ""
 
+    def _get_vhost_names(self, path):
+        """Helper method for getting the ServerName and
+        ServerAlias values from vhost in path
+
+        :param path: Path to read ServerName and ServerAliases from
+
+        :returns: Tuple including ServerName and `list` of ServerAlias strings
+        """
+
+        servername_match = self.parser.find_dir(
+            "ServerName", None, start=path, exclude=False)
+        serveralias_match = self.parser.find_dir(
+            "ServerAlias", None, start=path, exclude=False)
+
+        serveraliases = []
+        for alias in serveralias_match:
+            serveralias = self.parser.get_arg(alias)
+            serveraliases.append(serveralias)
+
+        servername = ""
+        if servername_match:
+            # Get last ServerName as each overwrites the previous
+            servername = self.parser.get_arg(servername_match[-1])
+
+        return (servername, serveraliases)
+
     def _add_servernames(self, host):
         """Helper function for get_virtual_hosts().
 
@@ -502,22 +528,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :type host: :class:`~certbot_apache.obj.VirtualHost`
 
         """
-        # Take the final ServerName as each overrides the previous
-        servername_match = self.parser.find_dir(
-            "ServerName", None, start=host.path, exclude=False)
-        serveralias_match = self.parser.find_dir(
-            "ServerAlias", None, start=host.path, exclude=False)
 
-        for alias in serveralias_match:
-            serveralias = self.parser.get_arg(alias)
-            if not host.modmacro:
-                host.aliases.add(serveralias)
+        servername, serveraliases = self._get_vhost_names(host.path)
 
-        if servername_match:
-            # Get last ServerName as each overwrites the previous
-            servername = self.parser.get_arg(servername_match[-1])
+        for alias in serveraliases:
             if not host.modmacro:
-                host.name = servername
+                host.aliases.add(alias)
+
+        if not host.modmacro:
+            host.name = servername
 
     def _create_vhost(self, path):
         """Used by get_virtual_hosts to create vhost objects
@@ -787,6 +806,24 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                              "based virtual host", addr)
                 self.add_name_vhost(addr)
 
+    def _vhost_names_match(self, path, vhost):
+        """Helper method for make_vhost_ssl that checks if the vhost on path
+        has matching ServerName and ServerAlias values to the original vhost"""
+
+        servername, serveraliases = self._get_vhost_names(path)
+
+        for alias in vhost.aliases:
+            if alias not in serveraliases:
+                return False
+
+        if servername != vhost.name:
+            return False
+
+        if len(vhost.aliases) == len(serveraliases):
+            return True
+
+        return False
+
     def make_vhost_ssl(self, nonssl_vhost):  # pylint: disable=too-many-locals
         """Makes an ssl_vhost version of a nonssl_vhost.
 
@@ -809,23 +846,22 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         avail_fp = nonssl_vhost.filep
         ssl_fp = self._get_ssl_vhost_path(avail_fp)
 
-        vhost_num = -1
-        if nonssl_vhost.path.endswith("]"):
-            # augeas doesn't zero index for whatever reason
-            vhost_num = int(nonssl_vhost.path[-2]) - 1
+        vhost_num = int(nonssl_vhost.vh_index)
         self._copy_create_ssl_vhost_skeleton(avail_fp, ssl_fp, vhost_num)
 
         # Reload augeas to take into account the new vhost
         self.aug.load()
         # Get Vhost augeas path for new vhost
         matches = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
-                                (self._escape(ssl_fp), parser.case_i("VirtualHost")))
-        skels = self._skeletons[ssl_fp]
-        vh_p = matches[len(skels) - 1] if skels else matches[0]
+                                 (self._escape(ssl_fp),
+                                  parser.case_i("VirtualHost")))
+        for match in matches:
+            # Make sure we have the correct ssl vhost
+            if self._vhost_names_match(match, nonssl_vhost):
+                vh_p = match
 
         # Update Addresses
         self._update_ssl_vhosts_addrs(vh_p)
-
         # Add directives
         self._add_dummy_ssl_directives(vh_p)
         self.save()
@@ -917,6 +953,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         "param int vhost_num: Which vhost the vhost is in the origin multivhost file.
 
         """
+        # Augeas indices start from 1
+        vhost_num = vhost_num-1
         blocks = [idx for idx, line in enumerate(orig_file_list)
                      if line.lower().lstrip().startswith("<virtualhost")
                      or line.lower().lstrip().startswith("</virtualhost")]
@@ -944,12 +982,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 orig_file_list = [line for line in orig_file]
                 if vhost_num != -1:
                     orig_file_list = self._create_block_segments(orig_file_list, vhost_num)
-
             if ssl_fp in self._skeletons:
                 bit = "a"
                 self._skeletons[ssl_fp].append(avail_fp)
             else:
-                bit = "w"
+                bit = "a"
                 self._skeletons[ssl_fp] = [avail_fp]
 
             with open(ssl_fp, bit) as new_file:

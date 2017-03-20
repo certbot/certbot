@@ -129,6 +129,10 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         """Initialize a VH."""
         self.filep = filep
         self.path = path
+        self.vh_path, self.vh_index = self._parsepath(path)
+        if not self.vh_index:
+            self.vh_index = '1'
+        self.path = self.vh_path + "["+self.vh_index+"]"
         self.addrs = addrs
         self.name = name
         self.aliases = aliases if aliases is not None else set()
@@ -184,6 +188,23 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         return hash((self.filep, self.path,
                      tuple(self.addrs), tuple(self.get_names()),
                      self.ssl, self.enabled, self.modmacro))
+
+    def _parsepath(self, path):
+        """Split augeas VirtualHost path to path and index values"""
+
+        # Groups:
+        # 1) path including VirtualHost
+        # 2) index (optional, (?: )? ) from inside [ ]
+
+        vh_index_re = "(.*?virtualhost)(?:\[(.*?)\])?"
+
+        vh_parts = re.findall(vh_index_re, path, re.IGNORECASE)
+        if vh_parts:
+            if not vh_parts[0][1]:
+                # No index found (single vhost in file)
+                return(vh_parts[0][0], '1')
+            return vh_parts[0]
+        return ('', '')
 
     def conflicts(self, addrs):
         """See if vhost conflicts with any of the addrs.
