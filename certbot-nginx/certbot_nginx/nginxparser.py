@@ -25,14 +25,13 @@ class RawNginxParser(object):
     dquoted = QuotedString('"', multiline=True, unquoteResults=False, escChar='\\')
     squoted = QuotedString("'", multiline=True, unquoteResults=False, escChar='\\')
     quoted = dquoted | squoted
-    head_tokenchars = Regex(r"[^\{\};\s\$\'\"]")
-    tail_tokenchars = Regex(r"[^\{\};\s\$]")
-    tokenchars = Combine(OneOrMore(head_tokenchars) + ZeroOrMore(tail_tokenchars))
-    variable = Regex(r"(\$\{\w+\})") | Regex(r"(\$\w*)")
-    unquoted = Combine(OneOrMore(variable | tokenchars))
+    head_tokenchars = Regex(r"[^{};\s'\"]")
+    tail_tokenchars = Regex(r"(\$\{)|[^{;\s]")
+    tokenchars = Combine(head_tokenchars + ZeroOrMore(tail_tokenchars))
     paren_quote_extend = Combine(quoted + Literal(')') + Combine(ZeroOrMore(tail_tokenchars)))
+    # check: is this right with new tail token chars?
 
-    token = paren_quote_extend | unquoted | quoted
+    token = paren_quote_extend | tokenchars | quoted
 
     whitespace_token_group = space + token + ZeroOrMore(required_space + token) + space
     assignment = whitespace_token_group + semicolon
