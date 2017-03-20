@@ -164,11 +164,9 @@ def human_readable_cert_info(config, cert):
     checker = ocsp.RevocationChecker()
 
     if config.certname and cert.lineagename != config.certname:
-        #continue
-        pass
+        return ""
     if config.domains and not set(config.domains).issubset(cert.names()):
-        #continue
-        pass
+        return ""
     now = pytz.UTC.fromutc(datetime.datetime.utcnow())
 
     reasons = []
