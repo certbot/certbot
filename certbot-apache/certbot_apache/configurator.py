@@ -174,6 +174,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Set Version
         if self.version is None:
             self.version = self.get_version()
+            logger.debug('Apache version is %s',
+                         '.'.join(str(i) for i in self.version))
         if self.version < (2, 2):
             raise errors.NotSupportedError(
                 "Apache Version %s not supported.", str(self.version))
@@ -254,9 +256,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise errors.PluginError(
                 "Unable to find cert and/or key directives")
 
-        logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
-        logger.debug("Apache version is %s",
-                     ".".join(str(i) for i in self.version))
+        logger.info("Deploying Certificate for %s to VirtualHost %s", domain, vhost.filep)
 
         if self.version < (2, 4, 8) or (chain_path and not fullchain_path):
             # install SSLCertificateFile, SSLCertificateKeyFile,
