@@ -96,6 +96,5 @@ def gen_authzr(authz_status, domain, challs, statuses, combos=True):
     # pylint: disable=star-args
     return messages.AuthorizationResource(
         uri="https://trusted.ca/new-authz-resource",
-        new_cert_uri="https://trusted.ca/new-cert",
         body=messages.Authorization(**authz_kwargs)
     )

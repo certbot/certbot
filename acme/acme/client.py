@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
 if sys.version_info < (2, 7, 9):  # pragma: no cover
     try:
-        requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
+        requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()  # type: ignore
     except AttributeError:
         import urllib3.contrib.pyopenssl  # pylint: disable=import-error
         urllib3.contrib.pyopenssl.inject_into_urllib3()
@@ -71,20 +71,13 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             self.directory = directory
 
     @classmethod
-    def _regr_from_response(cls, response, uri=None, new_authzr_uri=None,
-                            terms_of_service=None):
+    def _regr_from_response(cls, response, uri=None, terms_of_service=None):
         if 'terms-of-service' in response.links:
             terms_of_service = response.links['terms-of-service']['url']
-        if 'next' in response.links:
-            new_authzr_uri = response.links['next']['url']
-
-        if new_authzr_uri is None:
-            raise errors.ClientError('"next" link missing')
 
         return messages.RegistrationResource(
             body=messages.Registration.from_json(response.json()),
             uri=response.headers.get('Location', uri),
-            new_authzr_uri=new_authzr_uri,
             terms_of_service=terms_of_service)
 
     def register(self, new_reg=None):
@@ -117,7 +110,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         # (c.f. acme-spec #94)
 
         return self._regr_from_response(
-            response, uri=regr.uri, new_authzr_uri=regr.new_authzr_uri,
+            response, uri=regr.uri,
             terms_of_service=regr.terms_of_service)
 
     def update_registration(self, regr, update=None):
@@ -172,19 +165,10 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         return self.update_registration(
             regr.update(body=regr.body.update(agreement=regr.terms_of_service)))
 
-    def _authzr_from_response(self, response, identifier,
-                              uri=None, new_cert_uri=None):
-        # pylint: disable=no-self-use
-        if new_cert_uri is None:
-            try:
-                new_cert_uri = response.links['next']['url']
-            except KeyError:
-                raise errors.ClientError('"next" link missing')
-
+    def _authzr_from_response(self, response, identifier, uri=None):
         authzr = messages.AuthorizationResource(
             body=messages.Authorization.from_json(response.json()),
-            uri=response.headers.get('Location', uri),
-            new_cert_uri=new_cert_uri)
+            uri=response.headers.get('Location', uri))
         if authzr.body.identifier != identifier:
             raise errors.UnexpectedUpdate(authzr)
         return authzr
@@ -193,17 +177,16 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         """Request challenges.
 
         :param .messages.Identifier identifier: Identifier to be challenged.
-        :param str new_authzr_uri: ``new-authorization`` URI. If omitted,
-            will default to value found in ``directory``.
+        :param str new_authzr_uri: Deprecated. Do not use.
 
         :returns: Authorization Resource.
         :rtype: `.AuthorizationResource`
 
         """
+        if new_authzr_uri is not None:
+            logger.debug("request_challenges with new_authzr_uri deprecated.")
         new_authz = messages.NewAuthorization(identifier=identifier)
-        response = self.net.post(self.directory.new_authz
-                                 if new_authzr_uri is None else new_authzr_uri,
-                                 new_authz)
+        response = self.net.post(self.directory.new_authz, new_authz)
         # TODO: handle errors
         assert response.status_code == http_client.CREATED
         return self._authzr_from_response(response, identifier)
@@ -217,6 +200,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         documentation.
 
         :param str domain: Domain name to be challenged.
+        :param str new_authzr_uri: Deprecated. Do not use.
 
         :returns: Authorization Resource.
         :rtype: `.AuthorizationResource`
@@ -298,7 +282,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         """
         response = self.net.get(authzr.uri)
         updated_authzr = self._authzr_from_response(
-            response, authzr.body.identifier, authzr.uri, authzr.new_cert_uri)
+            response, authzr.body.identifier, authzr.uri)
         return updated_authzr, response
 
     def request_issuance(self, csr, authzrs):
@@ -321,7 +305,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         content_type = DER_CONTENT_TYPE  # TODO: add 'cert_type 'argument
         response = self.net.post(
-            authzrs[0].new_cert_uri,  # TODO: acme-spec #90
+            self.directory.new_cert,
             req,
             content_type=content_type,
             headers={'Accept': content_type})
