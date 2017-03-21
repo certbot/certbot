@@ -514,7 +514,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             serveralias = self.parser.get_arg(alias)
             serveraliases.append(serveralias)
 
-        servername = ""
+        servername = None
         if servername_match:
             # Get last ServerName as each overwrites the previous
             servername = self.parser.get_arg(servername_match[-1])
@@ -855,11 +855,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         matches = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
                                  (self._escape(ssl_fp),
                                   parser.case_i("VirtualHost")))
+        vh_p = None
         for match in matches:
             # Make sure we have the correct ssl vhost
             if self._vhost_names_match(match, nonssl_vhost):
                 vh_p = match
 
+        # Fallback to at least something
+        if not vh_p and matches:
+            vh_p = matches[0]
         # Update Addresses
         self._update_ssl_vhosts_addrs(vh_p)
         # Add directives
@@ -974,7 +978,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         # First register the creation so that it is properly removed if
         # configuration is rolled back
-        self.reverter.register_file_creation(False, ssl_fp)
+        if os.path.exists(ssl_fp):
+            notes = "Appended new VirtualHost directive to file {}".format(
+                ssl_fp)
+            files = set()
+            files.add(ssl_fp)
+            self.reverter.add_to_checkpoint(files, notes)
+        else:
+            self.reverter.register_file_creation(False, ssl_fp)
         sift = False
 
         try:
@@ -983,13 +994,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 if vhost_num != -1:
                     orig_file_list = self._create_block_segments(orig_file_list, vhost_num)
             if ssl_fp in self._skeletons:
-                bit = "a"
                 self._skeletons[ssl_fp].append(avail_fp)
             else:
-                bit = "a"
                 self._skeletons[ssl_fp] = [avail_fp]
 
-            with open(ssl_fp, bit) as new_file:
+            with open(ssl_fp, "a") as new_file:
                 new_file.write("<IfModule mod_ssl.c>\n")
 
                 comment = ("# Some rewrite rules in this file were "
@@ -1110,10 +1119,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def _add_servername_alias(self, target_name, vhost):
         vh_path = vhost.path
-        if (self.parser.find_dir("ServerName", target_name,
-                                 start=vh_path, exclude=False) or
-            self.parser.find_dir("ServerAlias", target_name,
-                                 start=vh_path, exclude=False)):
+        sname, saliases = self._get_vhost_names(vh_path)
+        if target_name == sname or target_name in saliases:
             return
         if self._has_matching_wildcard(vh_path, target_name):
             return
@@ -1917,14 +1924,7 @@ def get_file_path(vhost_path):
     :rtype: str
 
     """
-    # Strip off /files/
-    try:
-        if vhost_path.startswith("/files/"):
-            avail_fp = vhost_path[7:].split("/")
-        else:
-            return None
-    except AttributeError:
-        # If we received a None path
+    if not vhost_path or not vhost_path.startswith("/files/"):
         return None
 
     return _split_aug_path(vhost_path)[0]

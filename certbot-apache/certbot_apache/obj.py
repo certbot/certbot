@@ -132,7 +132,8 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         self.vh_path, self.vh_index = self._parsepath(path)
         if not self.vh_index:
             self.vh_index = '1'
-        self.path = self.vh_path + "["+self.vh_index+"]"
+        if self.vh_path:
+            self.path = self.vh_path + "["+self.vh_index+"]"
         self.addrs = addrs
         self.name = name
         self.aliases = aliases if aliases is not None else set()
@@ -196,6 +197,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         # 1) path including VirtualHost
         # 2) index (optional, (?: )? ) from inside [ ]
 
+        # pylint: disable=anomalous-backslash-in-string
         vh_index_re = "(.*?virtualhost)(?:\[(.*?)\])?"
 
         vh_parts = re.findall(vh_index_re, path, re.IGNORECASE)

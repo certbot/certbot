@@ -147,7 +147,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
         for i, internal_path in enumerate(internal_paths):
             self.assertEqual(
-                get_internal_aug_path(self.vh_truth[i].path), internal_path)
+                get_internal_aug_path(self.vh_truth[i].path[:-3]), internal_path)
 
     def test_bad_servername_alias(self):
         ssl_vh1 = obj.VirtualHost(
@@ -580,6 +580,28 @@ class MultipleVhostsTest(util.ApacheTest):
         # already listens to the correct port
         self.assertEqual(mock_add_dir.call_count, 0)
 
+
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator._get_vhost_names")
+    def test_vhost_names_match(self, getnames_mock):
+        """ Tests vhost matching per ServerName and ServerAliases """
+
+        # pylint: disable=protected-access
+        getnames_mock.return_value = ("whatevername", set())
+        self.assertFalse(self.config._vhost_names_match("irrelevant",
+                         self.vh_truth[6]))
+
+        getnames_mock.return_value = (self.vh_truth[6].name,
+                                      self.vh_truth[6].aliases)
+        self.assertTrue(self.config._vhost_names_match("irrelevant",
+                        self.vh_truth[6]))
+
+        aliases = self.vh_truth[6].aliases[:]
+        aliases.append("something_extra")
+        getnames_mock.return_value = (self.vh_truth[6].name,
+                                      aliases)
+        self.assertFalse(self.config._vhost_names_match("irrelevant",
+                        self.vh_truth[6]))
+
     def test_make_vhost_ssl(self):
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
 
@@ -589,7 +611,7 @@ class MultipleVhostsTest(util.ApacheTest):
                          "encryption-example-le-ssl.conf"))
 
         self.assertEqual(ssl_vhost.path,
-                         "/files" + ssl_vhost.filep + "/IfModule/VirtualHost")
+                         "/files" + ssl_vhost.filep + "/IfModule/VirtualHost[1]")
         self.assertEqual(len(ssl_vhost.addrs), 1)
         self.assertEqual(set([obj.Addr.fromstring("*:443")]), ssl_vhost.addrs)
         self.assertEqual(ssl_vhost.name, "encryption-example.demo")
@@ -800,6 +822,15 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_supported_enhancements(self):
         self.assertTrue(isinstance(self.config.supported_enhancements(), list))
 
+    def test_find_http_vhost_without_ancestor(self):
+        # pylint: disable=protected-access
+        vhost = self.vh_truth[0]
+        vhost.ssl = True
+        vhost.ancestor = None
+        res = self.config._get_http_vhost(vhost)
+        self.assertEqual(self.vh_truth[0].name, res.name)
+        self.assertEqual(self.vh_truth[0].aliases, res.aliases)
+
     @mock.patch("certbot_apache.configurator.ApacheConfigurator._get_http_vhost")
     @mock.patch("certbot_apache.display_ops.select_vhost")
     @mock.patch("certbot.util.exe_exists")
@@ -999,8 +1030,9 @@ class MultipleVhostsTest(util.ApacheTest):
         # three args to rw_rule
         self.assertEqual(len(rw_rule), 3)
 
-        self.assertTrue(rw_engine[0].startswith(self.vh_truth[3].path))
-        self.assertTrue(rw_rule[0].startswith(self.vh_truth[3].path))
+        # [:-3] to remove the vhost index number
+        self.assertTrue(rw_engine[0].startswith(self.vh_truth[3].path[:-3]))
+        self.assertTrue(rw_rule[0].startswith(self.vh_truth[3].path[:-3]))
 
         self.assertTrue("rewrite_module" in self.config.parser.modules)
 
@@ -1048,9 +1080,9 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(len(rw_engine), 1)
         # three args to rw_rule + 1 arg for the pre existing rewrite
         self.assertEqual(len(rw_rule), 5)
-
-        self.assertTrue(rw_engine[0].startswith(self.vh_truth[3].path))
-        self.assertTrue(rw_rule[0].startswith(self.vh_truth[3].path))
+        # [:-3] to remove the vhost index number
+        self.assertTrue(rw_engine[0].startswith(self.vh_truth[3].path[:-3]))
+        self.assertTrue(rw_rule[0].startswith(self.vh_truth[3].path[:-3]))
 
         self.assertTrue("rewrite_module" in self.config.parser.modules)
 
@@ -1158,6 +1190,7 @@ class MultipleVhostsTest(util.ApacheTest):
         not_rewriterule = "NotRewriteRule ^ ..."
         self.assertFalse(self.config._sift_rewrite_rule(not_rewriterule))
 
+
     @certbot_util.patch_get_utility()
     def test_make_vhost_ssl_with_existing_rewrite_rule(self, mock_get_utility):
         self.config.parser.modules.add("rewrite_module")
@@ -1185,7 +1218,6 @@ class MultipleVhostsTest(util.ApacheTest):
                                   "[L,NE,R=permanent]")
         self.assertTrue(commented_rewrite_rule in conf_text)
         mock_get_utility().add_message.assert_called_once_with(mock.ANY,
-
                                                                mock.ANY)
     @certbot_util.patch_get_utility()
     def test_make_vhost_ssl_with_existing_rewrite_conds(self, mock_get_utility):
@@ -1383,7 +1415,7 @@ class MultiVhostsTest(util.ApacheTest):
                          "default-le-ssl.conf"))
 
         self.assertEqual(ssl_vhost.path,
-                         "/files" + ssl_vhost.filep + "/IfModule/VirtualHost")
+                         "/files" + ssl_vhost.filep + "/IfModule/VirtualHost[1]")
         self.assertEqual(len(ssl_vhost.addrs), 1)
         self.assertEqual(set([obj.Addr.fromstring("*:443")]), ssl_vhost.addrs)
         self.assertEqual(ssl_vhost.name, "banana.vomit.com")
@@ -1402,14 +1434,8 @@ class MultiVhostsTest(util.ApacheTest):
         _ = self.config.make_vhost_ssl(self.vh_truth[0])
         _ = self.config.make_vhost_ssl(self.vh_truth[1])
         self.assertEqual(
-          len(self.config._skeletons[self.config._get_ssl_vhost_path(self.vh_truth[0].filep)]), 2)
-
-    def test_cover_is_stupid_and_I_hate_it(self):
-        http_vhost = obj.VirtualHost(None, None, None, False, False, name="Noah")
-        ssl_vhost = obj.VirtualHost(None, None, None, False, False, name="Noah")
-        self.config.vhosts.append(http_vhost)
-        self.assertEqual(self.config._get_http_vhost(ssl_vhost), http_vhost)
-
+            len(self.config._skeletons[self.config._get_ssl_vhost_path(
+                self.vh_truth[0].filep)]), 2)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
