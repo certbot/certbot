@@ -25,11 +25,11 @@ class RawNginxParser(object):
     dquoted = QuotedString('"', multiline=True, unquoteResults=False, escChar='\\')
     squoted = QuotedString("'", multiline=True, unquoteResults=False, escChar='\\')
     quoted = dquoted | squoted
-    head_tokenchars = Regex(r"[^{};\s'\"]")
-    tail_tokenchars = Regex(r"(\$\{)|[^{;\s]")
+    head_tokenchars = Regex(r"[^{};\s'\"]") # if (last_space)
+    tail_tokenchars = Regex(r"(\$\{)|[^{;\s]") # else
     tokenchars = Combine(head_tokenchars + ZeroOrMore(tail_tokenchars))
-    paren_quote_extend = Combine(quoted + Literal(')') + Combine(ZeroOrMore(tail_tokenchars)))
-    # check: is this right with new tail token chars?
+    paren_quote_extend = Combine(quoted + Literal(')') + ZeroOrMore(tail_tokenchars))
+    # note: ')' allows extension, but then we fall into else, not last_space.
 
     token = paren_quote_extend | tokenchars | quoted
 
