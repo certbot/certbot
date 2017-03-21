@@ -979,8 +979,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # First register the creation so that it is properly removed if
         # configuration is rolled back
         if os.path.exists(ssl_fp):
-            notes = "Appended new VirtualHost directive to file {}".format(
-                ssl_fp)
+            notes = "Appended new VirtualHost directive to file %s" % ssl_fp
             files = set()
             files.add(ssl_fp)
             self.reverter.add_to_checkpoint(files, notes)
