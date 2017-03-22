@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import itertools
 import mock
+import multiprocessing
 import os
 import shutil
 import tempfile
@@ -448,7 +449,8 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         os.mkdir(self.logs_dir)
         self.standard_args = ['--config-dir', self.config_dir,
                               '--work-dir', self.work_dir,
-                              '--logs-dir', self.logs_dir, '--text']
+                              '--logs-dir', self.logs_dir, '--text',
+                              '--lock-path', os.path.join(self.tmp_dir, 'certbot.lock')]
 
     def tearDown(self):
         # Reset globals in cli
@@ -1303,6 +1305,55 @@ class TestHandleException(unittest.TestCase):
             KeyboardInterrupt, exc_value=interrupt, trace=None, config=None)
         mock_sys.exit.assert_called_with(''.join(
             traceback.format_exception_only(KeyboardInterrupt, interrupt)))
+
+
+class TestAcquireFileLock(unittest.TestCase):
+    """Test main.acquire_file_lock."""
+
+    def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+        self.lock_path = os.path.join(self.tempdir, 'certbot.lock')
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+
+    @mock.patch('certbot.main.logger')
+    def test_bad_path(self, mock_logger):
+        lock = main.acquire_file_lock(os.getcwd())
+        self.assertTrue(mock_logger.warning.called)
+        self.assertFalse(lock.acquired)
+
+    def test_held_lock(self):
+        # start child and wait for it to grab the lock
+        cv = multiprocessing.Condition()
+        cv.acquire()
+        child_args = (cv, self.lock_path,)
+        child = multiprocessing.Process(target=_hold_lock, args=child_args)
+        child.start()
+        cv.wait()
+
+        # assert we can't grab lock and terminate the child
+        self.assertRaises(errors.Error, main.acquire_file_lock, self.lock_path)
+        cv.notify()
+        cv.release()
+        child.join()
+        self.assertEqual(child.exitcode, 0)
+
+
+def _hold_lock(cv, lock_path):
+    """Acquire a file lock at lock_path and wait to release it.
+
+    :param multiprocessing.Condition cv: condition for syncronization
+    :param str lock_path: path to the file lock
+
+    """
+    import fasteners
+    lock = fasteners.InterProcessLock(lock_path)
+    lock.acquire()
+    cv.acquire()
+    cv.notify()
+    cv.wait()
+    lock.release()
 
 
 if __name__ == '__main__':
