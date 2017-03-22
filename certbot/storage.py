@@ -1081,18 +1081,18 @@ class RenewableCert(object):
         else:
             with open(target["privkey"], "w") as f:
                 logger.debug("Writing new private key to %s.", target["privkey"])
-                f.write(new_privkey)
+                f.write(new_privkey.decode('utf-8'))
 
         # Save everything else
         with open(target["cert"], "w") as f:
             logger.debug("Writing certificate to %s.", target["cert"])
-            f.write(new_cert)
+            f.write(new_cert.decode('utf-8'))
         with open(target["chain"], "w") as f:
             logger.debug("Writing chain to %s.", target["chain"])
-            f.write(new_chain)
+            f.write(new_chain.decode('utf-8'))
         with open(target["fullchain"], "w") as f:
             logger.debug("Writing full chain to %s.", target["fullchain"])
-            f.write(new_cert + new_chain)
+            f.write((new_cert + new_chain).decode('utf-8'))
 
         symlinks = dict((kind, self.configuration[kind]) for kind in ALL_FOUR)
         # Update renewal config file
