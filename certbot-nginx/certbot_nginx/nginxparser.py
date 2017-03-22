@@ -23,6 +23,7 @@ class RawNginxParser(object):
     right_bracket = space.leaveWhitespace() + Literal("}").suppress()
     semicolon = Literal(";").suppress()
     key = Word(alphanums + "_/+-.")
+    regex = Word(alphanums + "_/+-.'\"~*")
     dollar_var = Combine(Literal('$') + Regex(r"[^\{\};,\s]+"))
     condition = Regex(r"\(.+\)")
     # Matches anything that is not a special character, and ${SHELL_VARS}, AND
@@ -50,7 +51,7 @@ class RawNginxParser(object):
     if_statement = space + Literal("if") + space + condition + space
     charset_map_statement = space + Literal("charset_map") + space + value + space + value
 
-    map_statement = space + Literal("map") + space + nonspace + space + dollar_var + space
+    map_statement = Group(space + Literal("map") + space + nonspace + space + dollar_var + space)
     # This is NOT an accurate way to parse nginx map entries; it's almost
     # certainly too permissive and may be wrong in other ways, but it should
     # preserve things correctly in mmmmost or all cases.
@@ -58,13 +59,10 @@ class RawNginxParser(object):
     #    - I can neither prove nor disprove that it is correct wrt all escaped
     #      semicolon situations
     # Addresses https://github.com/fatiherikli/nginxparser/issues/19
-    map_pattern = Regex(r'".*"') | Regex(r"'.*'") | nonspace
-    map_entry = space + map_pattern + space + value + space + semicolon
-    map_block = Group(
-        Group(map_statement).leaveWhitespace() +
-        left_bracket +
-        Group(ZeroOrMore(Group(comment | map_entry)) + space).leaveWhitespace() +
-        right_bracket)
+    map_entry = space + regex + space + value + space + semicolon
+    map_innards = Group(ZeroOrMore(Group(comment | map_entry)) + space).leaveWhitespace()
+
+    map_block = Group(map_statement + left_bracket + map_innards + right_bracket)
 
     block = Forward()
 
