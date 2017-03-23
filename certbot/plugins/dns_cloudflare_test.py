@@ -1,33 +1,25 @@
 """Tests for certbot.plugins.dns_cloudflare."""
 
 import mock
-import six
 import unittest
 
-from acme import challenges
-from acme import jose
-
-from certbot import achallenges
 from certbot import errors
 
 from certbot.display import util as display_util
 
-from certbot.tests import acme_util
+from certbot.plugins import dns_test_common
+from certbot.plugins.dns_test_common import DOMAIN
+
 from certbot.tests import util as test_util
 
 import CloudFlare
 
 API_ERROR = CloudFlare.exceptions.CloudFlareAPIError(1000, '', '')
 API_KEY = 'an-api-key'
-DOMAIN = 'example.com'
 EMAIL = 'example@example.com'
-KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
-class AuthenticatorTest(unittest.TestCase):
-
-    achall = achallenges.KeyAuthorizationAnnotatedChallenge(
-        challb=acme_util.DNS01, domain=DOMAIN, account_key=KEY)
+class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest):
 
     def setUp(self):
         from certbot.plugins.dns_cloudflare import Authenticator
@@ -37,21 +29,15 @@ class AuthenticatorTest(unittest.TestCase):
 
         self.auth = Authenticator(self.config, "cloudflare")
 
-        self.cfc = mock.MagicMock()
+        self.mock_client = mock.MagicMock()
         # _get_cloudflare_client | pylint: disable=protected-access
-        self.auth._get_cloudflare_client = mock.MagicMock(return_value=self.cfc)
-
-    def test_more_info(self):
-        self.assertTrue(isinstance(self.auth.more_info(), six.string_types))
-
-    def test_get_chall_pref(self):
-        self.assertEqual(self.auth.get_chall_pref(None), [challenges.DNS01])
+        self.auth._get_cloudflare_client = mock.MagicMock(return_value=self.mock_client)
 
     def test_perform(self):
         self.auth.perform([self.achall])
 
         expected = [mock.call.add_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY, mock.ANY)]
-        self.assertEqual(expected, self.cfc.mock_calls)
+        self.assertEqual(expected, self.mock_client.mock_calls)
 
     def test_cleanup(self):
         # _attempt_cleanup | pylint: disable=protected-access
@@ -59,7 +45,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.cleanup([self.achall])
 
         expected = [mock.call.del_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY)]
-        self.assertEqual(expected, self.cfc.mock_calls)
+        self.assertEqual(expected, self.mock_client.mock_calls)
 
 
 class AuthenticatorInputTest(unittest.TestCase):
