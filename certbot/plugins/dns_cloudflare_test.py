@@ -23,6 +23,7 @@ DOMAIN = 'example.com'
 EMAIL = 'example@example.com'
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
+
 class AuthenticatorTest(unittest.TestCase):
 
     achall = achallenges.KeyAuthorizationAnnotatedChallenge(
@@ -92,8 +93,6 @@ class AuthenticatorInputTest(unittest.TestCase):
 
         auth.perform([])
 
-        self.assertEqual(auth.email, self.supplied_email)
-
         self.assertEqual(auth.conf('email'), self.supplied_email)
         self.assertEqual(auth.conf('api-key'), API_KEY)
 
@@ -105,8 +104,6 @@ class AuthenticatorInputTest(unittest.TestCase):
         mock_display.input.return_value = (display_util.OK, self.supplied_api_key,)
 
         auth.perform([])
-
-        self.assertEqual(auth.api_key, self.supplied_api_key)
 
         self.assertEqual(auth.conf('email'), EMAIL)
         self.assertEqual(auth.conf('api-key'), self.supplied_api_key)
@@ -120,9 +117,6 @@ class AuthenticatorInputTest(unittest.TestCase):
                                           (display_util.OK, self.supplied_api_key,)]
 
         auth.perform([])
-
-        self.assertEqual(auth.email, self.supplied_email)
-        self.assertEqual(auth.api_key, self.supplied_api_key)
 
         self.assertEqual(auth.conf('email'), self.supplied_email)
         self.assertEqual(auth.conf('api-key'), self.supplied_api_key)
@@ -265,24 +259,6 @@ class CloudflareClientTest(unittest.TestCase):
 
         self.assertEqual(expected, self.cf.mock_calls)
 
-    def test_zone_name_guesses(self):
-        self.assertTrue(
-            'example.com' in
-            # _zone_name_guesses | pylint: disable=protected-access
-            self.cloudflare_client._zone_name_guesses("example.com")
-        )
-
-        self.assertTrue(
-            'example.com' in
-            # _zone_name_guesses | pylint: disable=protected-access
-            self.cloudflare_client._zone_name_guesses("foo.bar.baz.example.com")
-        )
-
-        self.assertTrue(
-            'example.co.uk' in
-            # _zone_name_guesses | pylint: disable=protected-access
-            self.cloudflare_client._zone_name_guesses("foo.bar.baz.example.co.uk")
-        )
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

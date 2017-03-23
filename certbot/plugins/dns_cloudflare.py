@@ -3,17 +3,10 @@ import logging
 
 import zope.interface
 
-from time import sleep
-
-from acme import challenges
-
 from certbot import errors
 from certbot import interfaces
 
-from certbot.display import ops
-from certbot.display import util as display_util
-
-from certbot.plugins import common
+from certbot.plugins import dns_common
 
 import CloudFlare
 
@@ -22,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
-class Authenticator(common.Plugin):
+class Authenticator(dns_common.DNSAuthenticator):
     """DNS  Authenticator for Cloudflare
 
     This Authenticator uses the Cloudflare API to fulfill a dns-01 challenge.
@@ -30,156 +23,36 @@ class Authenticator(common.Plugin):
 
     description = 'Obtain certs using a DNS TXT record (if you are using Cloudflare for DNS).'
 
-    _attempt_cleanup = False
+    ttl = 120
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
 
-        self.email = None
-        self.api_key = None
-
     @classmethod
     def add_parser_arguments(cls, add):
-        add('propagation-seconds',
-            default=10,
-            type=int,
-            help='The number of seconds to wait for DNS to propagate before asking the ACME server '
-                 'to verify the DNS record.')
+        super(Authenticator, cls).add_parser_arguments(add)
         add('email',
             help='Email address associated with Cloudflare account.')
         add('api-key',
             help='API key for Cloudflare account. ' +
                  '(Which can be obtained from https://www.cloudflare.com/a/account/my-account)')
 
-    def prepare(self): # pylint: disable=missing-docstring
-        pass
-
-    def more_info(self): # pylint: disable=missing-docstring,no-self-use
+    def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
                'the Cloudflare API.'
 
-    def get_chall_pref(self, unused_domain): # pylint: disable=missing-docstring,no-self-use
-        return [challenges.DNS01]
-
-    def perform(self, achalls): # pylint: disable=missing-docstring
-        self._setup_credentials()
-
-        self._attempt_cleanup = True
-
-        responses = []
-        for achall in achalls:
-            self._perform_achall(achall)
-            responses.append(achall.response(achall.account_key))
-
-        # DNS updates take time to propagate and checking to see if the update has occurred is not
-        # reliable (the machine this code is running on might be able to see an update before
-        # the ACME server). So: we sleep for a short amount of time we believe to be long enough.
-        sleep(self.conf('propagation-seconds'))
-
-        return responses
-
-    def _perform_achall(self, achall):
-        """
-        Performs a dns-01 challenge by creating a DNS TXT record.
-
-        :param `~certbot.achallenges.AnnotatedChallenge` achall: the challenge to perform
-        :raises errors.PluginError: If the challenge cannot be performed
-        """
-
-        domain = achall.domain
-        record_name = achall.validation_domain_name(domain)
-        record_content = achall.validation(achall.account_key)
-        ttl = 120
-
-        self._get_cloudflare_client().add_txt_record(domain, record_name, record_content, ttl)
-
-    def cleanup(self, achalls):  # pylint: disable=missing-docstring
-        if self._attempt_cleanup:
-            for achall in achalls:
-                self._cleanup_achall(achall)
-
-    def _cleanup_achall(self, achall):
-        """
-        Deletes the DNS TXT record which would have been created by `_perform_achall`.
-
-        Fails gracefully if no such record exists.
-
-        :param `~certbot.achallenge s.AnnotatedChallenge` achall: the challenge to clean up after
-        """
-
-        domain = achall.domain
-        record_name = achall.validation_domain_name(domain)
-        record_content = achall.validation(achall.account_key)
-
-        self._get_cloudflare_client().del_txt_record(domain, record_name, record_content)
-
     def _setup_credentials(self):
-        """
-        Establish credentials, prompting if necessary.
-        """
+        self._configure('email', 'Cloudflare account email address')
+        self._configure('api-key', 'Cloudflare account API key')
 
-        # XXX: We could make these optional and let CloudFlare.CloudFlare attempt to read them from
-        #      .cloudflare.cfg or ~/.cloudflare.cfg or ~/.cloudflare/cloudflare.cfg
-        #
-        #      Marking them as required seems to provide for a better user experience.
+    def _perform(self, domain, validation_name, validation):
+        self._get_cloudflare_client().add_txt_record(domain, validation_name, validation, self.ttl)
 
-        configured_email = self.conf('email')
-        if configured_email:
-            self.email = configured_email
-        else:
-            self.email = self._prompt_for_data('email address')
-
-        if self.email:
-            setattr(self.config, self.dest('email'), self.email)
-        else:
-            raise errors.PluginError('Cloudflare account email address required to proceed.')
-
-        configured_api_key = self.conf('api-key')
-        if configured_api_key:
-            self.api_key = configured_api_key
-        else:
-            self.api_key = self._prompt_for_data('API key')
-
-        if self.api_key:
-            setattr(self.config, self.dest('api-key'), self.api_key)
-        else:
-            raise errors.PluginError('Cloudflare account API key required to proceed.')
-
-    @staticmethod
-    def _prompt_for_data(label):
-        """
-        Prompt the user for a piece of information.
-
-        :param string label: The user-friendly label for this piece of information.
-        :returns: The user's response (guaranteed non-empty).
-        :rtype: string
-        """
-
-        def __validator(i):
-            if not i:
-                raise errors.PluginError('Please enter an {0}.'.format(label))
-
-        code, response = ops.validated_input(
-            __validator,
-            'Input Cloudflare account {0}'.format(label),
-            force_interactive=True)
-
-        if code == display_util.OK:
-            return response
-        else:
-            return None
+    def _cleanup(self, domain, validation_name, validation):
+        self._get_cloudflare_client().del_txt_record(domain, validation_name, validation)
 
     def _get_cloudflare_client(self):
-        """
-        Helper method to construct a `_CloudflareClient`.
-
-        Uses configured credentials.
-
-        :return: a new
-        :rtype: `_CloudflareClient`
-        """
-
-        return _CloudflareClient(self.email, self.api_key)
+        return _CloudflareClient(self.conf('email'), self.conf('api_key'))
 
 
 class _CloudflareClient(object):
@@ -262,7 +135,7 @@ class _CloudflareClient(object):
         :raises: errors.PluginError if no zone_id is found.
         """
 
-        zone_name_guesses = self._zone_name_guesses(domain)
+        zone_name_guesses = dns_common.base_domain_name_guesses(domain)
 
         for zone_name in zone_name_guesses:
             params = {'name': zone_name,
@@ -321,22 +194,3 @@ class _CloudflareClient(object):
             return records[0]['id']
         else:
             logger.debug('Unable to find TXT record.')
-
-    @staticmethod
-    def _zone_name_guesses(domain):
-        """Return a list of progressively less-specific domain names.
-
-        One of these will probably be the Cloudflare zone name.
-
-        :Example:
-
-        >>> _zone_name_guesses('foo.bar.baz.example.com')
-        ['foo.bar.baz.example.com', 'bar.baz.example.com', 'baz.example.com', 'example.com', 'com']
-
-        :param string domain: The domain for which to return guesses.
-        :returns: The a list of less specific domain names.
-        :rtype: list
-        """
-
-        fragments = domain.split('.')
-        return ['.'.join(fragments[i:]) for i in range(0, len(fragments))]
