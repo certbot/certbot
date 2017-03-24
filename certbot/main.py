@@ -878,8 +878,7 @@ def acquire_lock_file(lock_path):
     The file is opened in append mode and created with 0666 permissions
     if it doesn't already exist. If lock_path cannot be accessed
     securely, a warning is logged and the lock is not acquired. The lock
-    is automatically released when the file is closed. This lock cannot
-    be used for synchronization between threads.
+    is automatically released when the file is closed.
 
     :param str lock_path: path to the file to be locked
 
