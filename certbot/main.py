@@ -9,6 +9,7 @@ import time
 import traceback
 
 import fasteners
+import portalocker
 import zope.component
 
 from acme import jose
@@ -915,6 +916,43 @@ def _run_subcommand(config, plugins):
     finally:
         if lock.acquired:
             lock.release()
+
+
+def acquire_lock_file(lock_path):
+    """Open a file at the specified path and place a lock on it.
+
+    The file is opened in append mode and created with 0666 permissions
+    if it doesn't already exist. If lock_path cannot be accessed
+    securely, a warning is logged and the lock is not acquired. The lock
+    is automatically released when the file is closed. This lock cannot
+    be used for synchronization between threads.
+
+    :param str lock_path: path to the file to be locked
+
+    :returns: locked file or `None` if lock_path cannot be accessed
+    :rtype: `file` or `None`
+
+    :raises errors.Error: if the lock is held by another process
+
+    """
+    try:
+        f = util.safe_permissive_open(lock_path, 0o666, "a")
+    except OSError:
+        logger.debug("Encountered exception opening lock file.", exc_info=True)
+        logger.warning(
+            "Unable to access lock file %s. You should set --lock-file "
+            "to a writeable path to ensure multiple instances of "
+            "Certbot don't attempt modify your configuration "
+            "simultaneously.", lock_path)
+        return None
+
+    try:
+        portalocker.lock(f, portalocker.LOCK_EX | portalocker.LOCK_NB)
+    except portalocker.LockException:
+        logger.debug("Encountered exception acquiring lock", exc_info=True)
+        raise errors.Error("Another instance of Certbot is already running.")
+
+    return f
 
 
 def main(cli_args=sys.argv[1:]):
