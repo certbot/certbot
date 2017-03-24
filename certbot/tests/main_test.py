@@ -452,8 +452,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         os.mkdir(self.logs_dir)
         self.standard_args = ['--config-dir', self.config_dir,
                               '--work-dir', self.work_dir,
-                              '--logs-dir', self.logs_dir, '--text',
-                              '--lock-path', os.path.join(self.tmp_dir, 'certbot.lock')]
+                              '--logs-dir', self.logs_dir, '--text']
 
     def tearDown(self):
         # Reset globals in cli
@@ -473,7 +472,8 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         toy_stdout = stdout if stdout else six.StringIO()
         with mock.patch('certbot.main.sys.stdout', new=toy_stdout):
             with mock.patch('certbot.main.sys.stderr') as stderr:
-                ret = main.main(args[:])  # NOTE: parser can alter its args!
+                with mock.patch('certbot.main.acquire_lock_file'):
+                    ret = main.main(args[:])  # NOTE: parser can alter its args!
         return ret, toy_stdout, stderr
 
     def test_no_flags(self):
@@ -486,13 +486,15 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         toy_err = six.StringIO()
         with mock.patch('certbot.main.sys.stdout', new=toy_out):
             with mock.patch('certbot.main.sys.stderr', new=toy_err):
-                try:
-                    main.main(["--version"])
-                except SystemExit:
-                    pass
-                finally:
-                    output = toy_out.getvalue() or toy_err.getvalue()
-                    self.assertTrue("certbot" in output, "Output is {0}".format(output))
+                with mock.patch('certbot.main.acquire_lock_file'):
+                    try:
+                        main.main(["--version"])
+                    except SystemExit:
+                        pass
+                    finally:
+                        output = toy_out.getvalue() or toy_err.getvalue()
+                        self.assertTrue("certbot" in output,
+                                        "Output is {0}".format(output))
         toy_out.close()
         toy_err.close()
 
@@ -501,7 +503,9 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         exc = None
         try:
             with mock.patch('certbot.main.sys.stderr'):
-                main.main(self.standard_args + args[:])  # NOTE: parser can alter its args!
+                with mock.patch('certbot.main.acquire_lock_file'):
+                    # NOTE: parser can alter its args!
+                    main.main(self.standard_args + args[:])
         except errors.MissingCommandlineFlag as exc_:
             exc = exc_
             self.assertTrue(message in str(exc))
