@@ -146,12 +146,29 @@ def safe_open(path, mode="w", chmod=None, buffering=None):
         defaults if ``None``.
 
     """
+    flags = os.O_CREAT | os.O_EXCL | os.O_RDWR
+    return controlled_open(path, flags, mode, chmod, buffering)
+
+
+def controlled_open(path, flags, mode="r", chmod=None, buffering=None):
+    """Open a file with lower level control.
+
+    :param str path: Path to a file.
+    :param int flags: Same as `flags` for `os.open`
+    :param str mode: Same os `mode` for `open`.
+    :param int chmod: Same as `mode` for `os.open`, uses Python defaults
+        if ``None``.
+    :param int buffering: Same as `bufsize` for `os.fdopen`, uses Python
+        defaults if ``None``.
+
+    :returns: the opened file
+    :rtype: `file`
+
+    """
     # pylint: disable=star-args
     open_args = () if chmod is None else (chmod,)
     fdopen_args = () if buffering is None else (buffering,)
-    return os.fdopen(
-        os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args),
-        mode, *fdopen_args)
+    return os.fdopen(os.open(path, flags, *open_args), mode, *fdopen_args)
 
 
 def _unique_file(path, filename_pat, count, chmod, mode):
