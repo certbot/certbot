@@ -74,7 +74,7 @@ def certificates(config):
     for renewal_file in storage.renewal_conf_files(config):
         try:
             renewal_candidate = storage.RenewableCert(renewal_file, config)
-            crypto_util.verify_renewable_cert_sig(renewal_candidate) 
+            crypto_util.verify_renewable_cert(renewal_candidate)
             parsed_certs.append(renewal_candidate)
         except Exception as e:  # pylint: disable=broad-except
             logger.warning("Renewal configuration file %s produced an "
