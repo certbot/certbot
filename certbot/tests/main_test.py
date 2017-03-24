@@ -4,7 +4,6 @@ from __future__ import print_function
 
 import itertools
 import mock
-import multiprocessing
 import os
 import shutil
 import tempfile
@@ -1331,34 +1330,9 @@ class TestAcquireLockFile(unittest.TestCase):
         self.assertEqual(f, None)
 
     def test_held_lock(self):
-        # start child and wait for it to grab the lock
-        cv = multiprocessing.Condition()
-        cv.acquire()
-        child_args = (cv, self.lock_path,)
-        child = multiprocessing.Process(target=_hold_lock, args=child_args)
-        child.start()
-        cv.wait()
-
-        # assert we can't grab lock and terminate the child
+        f = main.acquire_lock_file(self.lock_path)
         self.assertRaises(errors.Error, main.acquire_lock_file, self.lock_path)
-        cv.notify()
-        cv.release()
-        child.join()
-        self.assertEqual(child.exitcode, 0)
-
-
-def _hold_lock(cv, lock_path):
-    """Acquire a file lock at lock_path and wait to release it.
-
-    :param multiprocessing.Condition cv: condition for syncronization
-    :param str lock_path: path to the file lock
-
-    """
-    import portalocker
-    with portalocker.Lock(lock_path):
-        cv.acquire()
-        cv.notify()
-        cv.wait()
+        f.close()
 
 
 if __name__ == '__main__':
