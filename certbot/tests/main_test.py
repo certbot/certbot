@@ -1310,8 +1310,8 @@ class TestHandleException(unittest.TestCase):
             traceback.format_exception_only(KeyboardInterrupt, interrupt)))
 
 
-class TestAcquireFileLock(unittest.TestCase):
-    """Test main.acquire_file_lock."""
+class TestAcquireLockFile(unittest.TestCase):
+    """Test main.acquire_lock_file."""
 
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
@@ -1322,9 +1322,9 @@ class TestAcquireFileLock(unittest.TestCase):
 
     @mock.patch('certbot.main.logger')
     def test_bad_path(self, mock_logger):
-        lock = main.acquire_file_lock(os.getcwd())
+        f = main.acquire_lock_file(os.getcwd())
         self.assertTrue(mock_logger.warning.called)
-        self.assertFalse(lock.acquired)
+        self.assertEqual(f, None)
 
     def test_held_lock(self):
         # start child and wait for it to grab the lock
@@ -1336,7 +1336,7 @@ class TestAcquireFileLock(unittest.TestCase):
         cv.wait()
 
         # assert we can't grab lock and terminate the child
-        self.assertRaises(errors.Error, main.acquire_file_lock, self.lock_path)
+        self.assertRaises(errors.Error, main.acquire_lock_file, self.lock_path)
         cv.notify()
         cv.release()
         child.join()
@@ -1350,13 +1350,11 @@ def _hold_lock(cv, lock_path):
     :param str lock_path: path to the file lock
 
     """
-    import fasteners
-    lock = fasteners.InterProcessLock(lock_path)
-    lock.acquire()
-    cv.acquire()
-    cv.notify()
-    cv.wait()
-    lock.release()
+    import portalocker
+    with portalocker.Lock(lock_path):
+        cv.acquire()
+        cv.notify()
+        cv.wait()
 
 
 if __name__ == '__main__':

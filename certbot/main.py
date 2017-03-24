@@ -947,12 +947,10 @@ def acquire_lock_file(lock_path):
         return None
 
     try:
-        portalocker.lock(f, portalocker.LOCK_EX | portalocker.LOCK_NB)
+        return portalocker.lock(f, portalocker.LOCK_EX | portalocker.LOCK_NB)
     except portalocker.LockException:
         logger.debug("Encountered exception acquiring lock", exc_info=True)
         raise errors.Error("Another instance of Certbot is already running.")
-
-    return f
 
 
 def main(cli_args=sys.argv[1:]):
