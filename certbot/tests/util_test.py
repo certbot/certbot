@@ -189,6 +189,60 @@ class UniqueFileTest(unittest.TestCase):
         self.assertTrue(basename3.endswith("foo.txt"))
 
 
+class SafePermissiveOpenTest(unittest.TestCase):
+    """Tests for certbot.util.safe_permissive_open."""
+
+    def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+        self.path = os.path.join(self.tempdir, "foo")
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+
+    def _call(self, *args, **kwargs):
+        from certbot.util import safe_permissive_open
+        return safe_permissive_open(self.path, *args, **kwargs)
+
+    def _check_permissions(self, mode):
+        from certbot.util import check_permissions
+        return check_permissions(self.path, mode, os.geteuid())
+
+    @mock.patch("certbot.util.logger")
+    def test_failure(self, mock_logger):
+        os.symlink(self.path + "2", self.path)
+        self.assertRaises(OSError, self._call, 0o777)
+        self.assertTrue(mock_logger.debug.called)
+
+    def test_success(self):
+        mode = 0o600
+        f = self._call(mode, "w")
+        f.write("hi")  # file is open for writing
+        self.assertTrue(self._check_permissions(mode))
+        f.close()
+
+        f = self._call(0o777, "w")
+        f.write("hi")  # file is open for writing
+        self.assertTrue(self._check_permissions(mode))
+        f.close()
+
+    @mock.patch("certbot.util.logger")
+    @mock.patch("certbot.util.os", spec=os)
+    def test_failure_with_mock_nofollow(self, mock_os, mock_logger):
+        mock_os.O_NOFOLLOW = mock.MagicMock()
+        mock_os.open.side_effect = OSError
+        self.assertRaises(OSError, self._call, 0o777)
+        self.assertTrue(mock_logger.debug.called)
+
+    @mock.patch("certbot.util.logger")
+    @mock.patch("certbot.util.os", spec=os)
+    def test_failure_with_mock_no_nofollow(self, mock_os, mock_logger):
+        if hasattr(mock_os, "O_NOFOLLOW"):
+            del mock_os.O_NOFOLLOW
+        mock_os.open.side_effect = OSError
+        self.assertRaises(OSError, self._call, 0o777)
+        self.assertTrue(mock_logger.debug.called)
+
+
 try:
     file_type = file
 except NameError:
