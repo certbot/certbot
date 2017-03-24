@@ -85,6 +85,9 @@ parsedatetime==2.1 \
 pbr==1.8.1 \
     --hash=sha256:46c8db75ae75a056bd1cc07fa21734fe2e603d11a07833ecc1eeb74c35c72e0c \
     --hash=sha256:e2127626a91e6c885db89668976db31020f0af2da728924b56480fc7ccf09649
+portalocker==1.1.0 \
+    --hash=sha256:3773cb40ccb690900920ac529c554bb49e69e2b396a7ffe20dd3f29c8bbbb497 \
+    --hash=sha256:b955d6197c7cd3206500d3237a2dd6cc899ceebb13460cc97e658cbab70df11b
 pyasn1==0.1.9 \
     --hash=sha256:61f9d99e3cef65feb1bfe3a2eef7a93eb93819d345bf54bcd42f4e63d5204dae \
     --hash=sha256:1802a6dd32045e472a419db1441aecab469d33e0d2749e192abdec52101724af \
