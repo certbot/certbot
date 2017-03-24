@@ -46,6 +46,7 @@ install_requires = [
     'fasteners',
     'mock',
     'parsedatetime>=1.3',  # Calendar.parseDT
+    'portalocker',
     'PyOpenSSL',
     'pyrfc3339',
     'pytz',
