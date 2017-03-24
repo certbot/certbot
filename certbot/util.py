@@ -135,21 +135,6 @@ def check_permissions(filepath, mode, uid=0):
     return stat.S_IMODE(file_stat.st_mode) == mode and file_stat.st_uid == uid
 
 
-def safe_open(path, mode="w", chmod=None, buffering=None):
-    """Safely open a file.
-
-    :param str path: Path to a file.
-    :param str mode: Same os `mode` for `open`.
-    :param int chmod: Same as `mode` for `os.open`, uses Python defaults
-        if ``None``.
-    :param int buffering: Same as `bufsize` for `os.fdopen`, uses Python
-        defaults if ``None``.
-
-    """
-    flags = os.O_CREAT | os.O_EXCL | os.O_RDWR
-    return controlled_open(path, flags, mode, chmod, buffering)
-
-
 def controlled_open(path, flags, mode="r", chmod=None, buffering=None):
     """Open a file with lower level control.
 
@@ -169,6 +154,21 @@ def controlled_open(path, flags, mode="r", chmod=None, buffering=None):
     open_args = () if chmod is None else (chmod,)
     fdopen_args = () if buffering is None else (buffering,)
     return os.fdopen(os.open(path, flags, *open_args), mode, *fdopen_args)
+
+
+def safe_open(path, mode="w", chmod=None, buffering=None):
+    """Safely open a file.
+
+    :param str path: Path to a file.
+    :param str mode: Same os `mode` for `open`.
+    :param int chmod: Same as `mode` for `os.open`, uses Python defaults
+        if ``None``.
+    :param int buffering: Same as `bufsize` for `os.fdopen`, uses Python
+        defaults if ``None``.
+
+    """
+    flags = os.O_CREAT | os.O_EXCL | os.O_RDWR
+    return controlled_open(path, flags, mode, chmod, buffering)
 
 
 def _unique_file(path, filename_pat, count, chmod, mode):
