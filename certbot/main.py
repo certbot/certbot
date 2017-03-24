@@ -8,7 +8,6 @@ import sys
 import time
 import traceback
 
-import fasteners
 import portalocker
 import zope.component
 
@@ -46,6 +45,11 @@ _PERM_ERR_FMT = os.linesep.join((
 
 USER_CANCELLED = ("User chose to cancel the operation and may "
                   "reinvoke the client.")
+
+
+# Stores the locked file handle to prevent it from being garbage
+# collected during exception handling and released.
+_LOCK_FILE = None
 
 
 logger = logging.getLogger(__name__)
@@ -868,56 +872,6 @@ def _post_logging_setup(config, plugins, cli_args):
     logger.debug("Discovered plugins: %r", plugins)
 
 
-def acquire_file_lock(lock_path):
-    """Obtain a lock on the file at the specified path.
-
-    :param str lock_path: path to the file to be locked
-
-    :returns: lock file object representing the acquired lock
-    :rtype: fasteners.InterProcessLock
-
-    :raises .Error: if the lock is held by another process
-
-    """
-    lock = fasteners.InterProcessLock(lock_path)
-    logger.debug("Attempting to acquire lock file %s", lock_path)
-
-    try:
-        lock.acquire(blocking=False)
-    except IOError as err:
-        logger.debug(err)
-        logger.warning(
-            "Unable to access lock file %s. You should set --lock-file "
-            "to a writeable path to ensure multiple instances of "
-            "Certbot don't attempt modify your configuration "
-            "simultaneously.", lock_path)
-    else:
-        if not lock.acquired:
-            raise errors.Error(
-                "Another instance of Certbot is already running.")
-
-    return lock
-
-
-def _run_subcommand(config, plugins):
-    """Executes the Certbot subcommand specified in the configuration.
-
-    :param .IConfig config: parsed configuration object
-    :param .PluginsRegistry plugins: available plugins
-
-    :returns: return value from the specified subcommand
-    :rtype: str or int
-
-    """
-    lock = acquire_file_lock(config.lock_path)
-
-    try:
-        return config.func(config, plugins)
-    finally:
-        if lock.acquired:
-            lock.release()
-
-
 def acquire_lock_file(lock_path):
     """Open a file at the specified path and place a lock on it.
 
@@ -963,6 +917,10 @@ def main(cli_args=sys.argv[1:]):
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
 
+    # Setup lock file ASAP
+    global _LOCK_FILE  # pylint: disable=global-statement
+    _LOCK_FILE = acquire_lock_file(config.lock_path)
+
     make_or_verify_needed_dirs(config)
 
     # Setup logging ASAP, otherwise "No handlers could be found for
@@ -980,7 +938,7 @@ def main(cli_args=sys.argv[1:]):
     zope.component.provideUtility(report)
     atexit.register(report.atexit_print_messages)
 
-    return _run_subcommand(config, plugins)
+    return config.func(config, plugins)
 
 
 if __name__ == "__main__":
