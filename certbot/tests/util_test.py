@@ -207,11 +207,9 @@ class SafePermissiveOpenTest(unittest.TestCase):
         from certbot.util import check_permissions
         return check_permissions(self.path, mode, os.geteuid())
 
-    @mock.patch("certbot.util.logger")
-    def test_failure(self, mock_logger):
+    def test_failure(self):
         os.symlink(self.path + "2", self.path)
         self.assertRaises(OSError, self._call, 0o777)
-        self.assertTrue(mock_logger.debug.called)
 
     def test_success(self):
         mode = 0o600

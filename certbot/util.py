@@ -193,7 +193,6 @@ def safe_permissive_open(path, chmod, mode="w"):
         return safe_open(path, mode, chmod=chmod)
     except OSError as err:
         if err.errno == errno.EEXIST:
-            logger.debug("%s already exists", path, exc_info=True)
             return controlled_open(path, os.O_RDWR, mode)
         raise
     finally:
