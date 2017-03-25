@@ -1,6 +1,7 @@
 """Tests for acme.client."""
 import datetime
 import json
+import locale
 import unittest
 
 from six.moves import http_client  # pylint: disable=import-error
@@ -531,6 +532,14 @@ class ClientNetworkTest(unittest.TestCase):
             'HEAD', 'http://example.com/', 'foo',
             headers=mock.ANY, verify=mock.ANY, timeout=mock.ANY, bar='baz')
 
+    def test_lang(self):
+        from acme.client import lang
+        locale.setlocale(locale.LC_ALL, 'es_CU')
+        # pylint: disable=protected-access
+        self.assertEqual(lang(), "es-CU")
+        locale.setlocale(locale.LC_ALL, 'C')
+        self.assertEqual(lang(), "en")
+
     @mock.patch('acme.client.logger')
     def test_send_request_get_der(self, mock_logger):
         self.net.session = mock.MagicMock()
@@ -577,13 +586,21 @@ class ClientNetworkTest(unittest.TestCase):
         self.net.session.request.assert_called_once_with(
             'GET', 'http://example.com/', verify=mock.ANY,
             timeout=mock.ANY,
-            headers={'User-Agent': 'acme-python-test', 'bar': 'baz'})
+            headers={
+                'User-Agent': 'acme-python-test',
+                'Accept-Language': mock.ANY,
+                'bar': 'baz'
+            })
 
         self.net._send_request('GET', 'http://example.com/',
                                headers={'User-Agent': 'foo2'})
         self.net.session.request.assert_called_with(
             'GET', 'http://example.com/',
-            verify=mock.ANY, timeout=mock.ANY, headers={'User-Agent': 'foo2'})
+            headers={
+                'User-Agent': 'foo2',
+                'Accept-Language': mock.ANY,
+            },
+            verify=mock.ANY, timeout=mock.ANY)
 
     def test_send_request_timeout(self):
         self.net.session = mock.MagicMock()

@@ -5,7 +5,9 @@ import datetime
 from email.utils import parsedate_tz
 import heapq
 import logging
+import string
 import time
+import locale
 
 import six
 from six.moves import http_client  # pylint: disable=import-error
@@ -34,6 +36,37 @@ if sys.version_info < (2, 7, 9):  # pragma: no cover
         urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 DER_CONTENT_TYPE = 'application/pkix-cert'
+
+# Set locale once on startup based on environment.
+# https://docs.python.org/2/library/locale.html
+locale.setlocale(locale.LC_ALL, '')
+
+
+def lang():
+    # pylint: disable=line-too-long
+    """Return a language tag suitable for HTTP Accept-Language header.
+
+    We may have a Posix locale name[1] available to us. If so, attempt to
+    turn it into an RFC 1766 language tag[2], as expected by HTTP[3].
+
+    Language tags are equivalent to Posix locale names, except they use
+    dashes instead of underscores, and do not allow a ".<encoding>" suffix.
+
+    [1] https://www.gnu.org/software/gettext/manual/html_node/Locale-Names.html#Locale-Names
+    [2] https://www.ietf.org/rfc/rfc1766.txt
+    [3] https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.10, so
+
+    :returns: Language tag
+    :rtype: str
+    """
+    accept_lang = locale.setlocale(locale.LC_MESSAGES)  # Get locale
+    if accept_lang == "C":  # The default
+        return "en"
+    # Remove optional ".<encoding>" suffix
+    accept_lang = string.split(accept_lang, ".")[0]
+    # Underscores take flight to become dashes.
+    accept_lang = string.replace(accept_lang, '_', '-')
+    return accept_lang
 
 
 class Client(object):  # pylint: disable=too-many-instance-attributes
@@ -608,6 +641,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         kwargs['verify'] = self.verify_ssl
         kwargs.setdefault('headers', {})
         kwargs['headers'].setdefault('User-Agent', self.user_agent)
+        kwargs['headers'].setdefault('Accept-Language', lang())
         kwargs.setdefault('timeout', 45) # timeout after 45 seconds
         response = self.session.request(method, url, *args, **kwargs)
         # If content is DER, log the base64 of it instead of raw bytes, to keep
