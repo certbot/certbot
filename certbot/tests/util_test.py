@@ -225,23 +225,6 @@ class SafePermissiveOpenTest(unittest.TestCase):
         self.assertTrue(self._check_permissions(mode))
         f.close()
 
-    @mock.patch("certbot.util.logger")
-    @mock.patch("certbot.util.os", spec=os)
-    def test_failure_with_mock_nofollow(self, mock_os, mock_logger):
-        mock_os.O_NOFOLLOW = mock.MagicMock()
-        mock_os.open.side_effect = OSError
-        self.assertRaises(OSError, self._call, 0o777)
-        self.assertTrue(mock_logger.debug.called)
-
-    @mock.patch("certbot.util.logger")
-    @mock.patch("certbot.util.os", spec=os)
-    def test_failure_with_mock_no_nofollow(self, mock_os, mock_logger):
-        if hasattr(mock_os, "O_NOFOLLOW"):
-            del mock_os.O_NOFOLLOW
-        mock_os.open.side_effect = OSError
-        self.assertRaises(OSError, self._call, 0o777)
-        self.assertTrue(mock_logger.debug.called)
-
 
 try:
     file_type = file

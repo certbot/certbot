@@ -5,7 +5,6 @@ import collections
 # For more info, see: https://github.com/PyCQA/pylint/issues/73
 import distutils.version  # pylint: disable=import-error,no-name-in-module
 import errno
-import functools
 import logging
 import os
 import platform
@@ -172,34 +171,6 @@ def safe_open(path, mode="w", chmod=None, buffering=None):
     return controlled_open(path, flags, mode, chmod, buffering)
 
 
-def _safe_permissive_open(path, chmod, mode):
-    """Try to safely open a file with the specified permissions.
-
-    This will fail if there is a symlink at path or O_NOFOLLOW is not
-    supported by the OS and there is an existing file at path.
-
-    :param str path: Path to a file.
-    :param int chmod: Same as `mode` for `os.open`, uses Python defaults
-        if ``None``.
-    :param str mode: Same os `mode` for `open`.
-
-    :returns: the opened file
-    :rtype: `file`
-
-    """
-    if hasattr(os, "O_NOFOLLOW"):
-        flags = os.O_CREAT | os.O_NOFOLLOW | os.O_RDWR
-        open_func = functools.partial(controlled_open, flags=flags)
-    else:
-        open_func = safe_open
-
-    old_umask = os.umask(0o000)
-    try:
-        return open_func(path, mode=mode, chmod=chmod)
-    finally:
-        os.umask(old_umask)
-
-
 def safe_permissive_open(path, chmod, mode="w"):
     """Safely open a file with the specified permissions.
 
@@ -217,12 +188,16 @@ def safe_permissive_open(path, chmod, mode="w"):
     :rtype: `file`
 
     """
+    old_umask = os.umask(0o000)
     try:
-        return _safe_permissive_open(path, chmod, mode)
-    except OSError:
-        logger.debug(
-            "Encountered exception creating/opening %s", path, exc_info=True)
-    return controlled_open(path, os.O_RDWR, mode)
+        return safe_open(path, mode, chmod=chmod)
+    except OSError as err:
+        if err.errno == errno.EEXIST:
+            logger.debug("%s already exists", path, exc_info=True)
+            return controlled_open(path, os.O_RDWR, mode)
+        raise
+    finally:
+        os.umask(old_umask)
 
 
 def _unique_file(path, filename_pat, count, chmod, mode):
