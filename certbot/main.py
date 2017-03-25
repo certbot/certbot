@@ -582,7 +582,7 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
     try:
         acme.revoke(jose.ComparableX509(cert), config.reason)
     except acme_errors.ClientError as e:
-        return e.message
+        return str(e)
 
     display_ops.success_revocation(config.cert_path[0])
 
@@ -594,7 +594,7 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     try:
         installer, authenticator = plug_sel.choose_configurator_plugins(config, plugins, "run")
     except errors.PluginSelectionError as e:
-        return e.message
+        return str(e)
 
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(config, authenticator, installer)
