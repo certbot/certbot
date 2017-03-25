@@ -19,6 +19,9 @@ from certbot import errors
 from certbot import error_handler
 from certbot import util
 
+from certbot.plugins import common as plugins_common
+from certbot.plugins import disco as plugins_disco
+
 logger = logging.getLogger(__name__)
 
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
@@ -179,13 +182,12 @@ def _relevant(option):
 
     :rtype: bool
     """
-    # The list() here produces a list of the plugin names as strings.
     from certbot import renewal
-    from certbot.plugins import disco as plugins_disco
-    plugins = list(plugins_disco.PluginsRegistry.find_all())
+    plugins = plugins_disco.PluginsRegistry.find_all()
+    namespaces = [plugins_common.dest_namespace(plugin) for plugin in plugins]
 
     return (option in renewal.CONFIG_ITEMS or
-            any(option.startswith(x + "_") for x in plugins))
+            any(option.startswith(namespace) for namespace in namespaces))
 
 
 def relevant_values(all_values):
