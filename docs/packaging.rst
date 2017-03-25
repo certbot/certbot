@@ -28,7 +28,7 @@ Notes for package maintainers
 
 1. Do not package ``certbot-compatibility-test`` or ``letshelp-certbot`` - it's only used internally.
 
-2. If you'd like to include automated renewal in your package ``certbot renew -q`` should be added to crontab or systemd timer. Add a random per-system offset to avoid having a large number of clients hit Let's Encrypt's servers simultaneously.
+2. If you'd like to include automated renewal in your package ``certbot renew -q`` should be added to crontab or systemd timer. Additionally you should include a random per-machine time offset to avoid having a large number of your clients hit Let's Encrypt's servers simultaneously.
 
 3. ``jws`` is an internal script for ``acme`` module and it doesn't have to be packaged - it's mostly for debugging: you can use it as ``echo foo | jws sign | jws verify``.
 
