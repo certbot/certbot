@@ -249,8 +249,8 @@ def verify_renewable_cert_sig(renewable_cert):
 
     :raises OpenSSL.crypto.Error if signature verification fails
     """
-    with open(renewable_cert.chain) as chain:
-        with open(renewable_cert.cert) as cert:
+    with open(renewable_cert.chain, 'rb') as chain:
+        with open(renewable_cert.cert, 'rb') as cert:
             chain = pyopenssl_load_certificate(chain.read())[0]
             cert = x509.load_pem_x509_certificate(cert.read(), default_backend())
             hash_name = cert.signature_hash_algorithm.name
@@ -277,7 +277,7 @@ def verify_fullchain(renewable_cert):
 
     :param typ: `storage.RenewableCert`
 
-    :raises AssertionError if they don't match
+    :raises errors.Error if they don't match
     """
     try:
         with open(renewable_cert.chain) as chain:
@@ -306,7 +306,7 @@ def verify_renewable_cert(renewable_cert):
         verify_cert_matches_priv_key(renewable_cert)
         return
     except Exception as error:
-            verification_errors.append(error)
+        verification_errors.append(error)
     raise errors.Error("it seems your cert is corrupted. Details: {0}".format(",".join(str(error) for error in verification_errors)))
 
 def pyopenssl_load_certificate(data):
