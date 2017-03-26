@@ -101,6 +101,7 @@ class RegisterTest(unittest.TestCase):
                     self.config.email = None
                     self.config.register_unsafely_without_email = True
                     self.config.dry_run = False
+                    self.config.quiet = False
                     self._call()
                     mock_logger.warning.assert_called_once_with(mock.ANY)
                     self.assertTrue(mock_handle.called)
