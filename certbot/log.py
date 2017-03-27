@@ -5,7 +5,7 @@ import sys
 from certbot import util
 
 
-class StreamHandler(logging.StreamHandler):
+class ColoredStreamHandler(logging.StreamHandler):
     """Sends colored logging output to a stream.
 
     If the specified stream is not a tty, the class works like the
@@ -22,7 +22,7 @@ class StreamHandler(logging.StreamHandler):
             # pylint: disable=non-parent-init-called
             logging.StreamHandler.__init__(self, stream)
         else:
-            super(StreamHandler, self).__init__(stream)
+            super(ColoredStreamHandler, self).__init__(stream)
         self.colored = (sys.stderr.isatty() if stream is None else
                         stream.isatty())
         self.red_level = logging.WARNING
@@ -38,7 +38,7 @@ class StreamHandler(logging.StreamHandler):
         """
         out = (logging.StreamHandler.format(self, record)
                if sys.version_info < (2, 7)
-               else super(StreamHandler, self).format(record))
+               else super(ColoredStreamHandler, self).format(record))
         if self.colored and record.levelno >= self.red_level:
             return ''.join((util.ANSI_SGR_RED, out, util.ANSI_SGR_RESET))
         else:
