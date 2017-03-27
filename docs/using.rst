@@ -378,10 +378,15 @@ then restart it after the plugin is finished. Example::
 
   certbot renew --pre-hook "service nginx stop" --post-hook "service nginx start"
 
-The hooks will only be
-run if a certificate is due for renewal, so you can run this command
-frequently without unnecessarily stopping your webserver. More
-information about renewal hooks can be found by running
+If a hook exits with a non-zero exit code, the error will be printed
+to ``stderr`` but renewal will be attempted anyway. A failing hook
+doesn't directly cause Certbot to exit with a non-zero exit code, but
+if it causes renewal to fail it will have the same effect. Hooks will
+only be run if a certificate is due for renewal, so you can run the
+above command frequently without unnecessarily stopping your
+webserver.
+
+ More information about renewal hooks can be found by running
 ``certbot --help renew``.
 
 If you're sure that this command executes successfully without human
