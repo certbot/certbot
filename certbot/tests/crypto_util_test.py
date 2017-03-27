@@ -280,16 +280,6 @@ class VerifyRenewableCertTest(unittest.TestCase):
 
         self.assertRaises(errors.Error, self._verify_fullchain, bad_renewable_cert)
 
-    def test_cert_sig_match(self):
-        self.assertEqual(None,self._verify_renewable_cert_sig(self.renewable_cert))
-
-    def test_cert_sig_mismatch(self):
-        bad_renewable_cert = mock.MagicMock()
-        bad_renewable_cert.chain = SS_CERT_PATH
-        bad_renewable_cert.cert = test_util.vector_path('self_signed_cert_bad.pem')
- 
-        self.assertRaises(OpenSSL.crypto.Error, self._verify_renewable_cert_sig, bad_renewable_cert)
-
     def test_cert_priv_key_match(self):
         self.assertEqual(None,self._verify_cert_matches_priv_key(self.renewable_cert))
 
@@ -300,14 +290,22 @@ class VerifyRenewableCertTest(unittest.TestCase):
 
         self.assertRaises(OpenSSL.SSL.Error, self._verify_cert_matches_priv_key, bad_renewable_cert)
 
+    def test_cert_sig_match(self): #TODO
+        self.assertEqual(None,self._verify_renewable_cert_sig(self.renewable_cert))
+
+    def test_cert_sig_mismatch(self):
+        bad_renewable_cert = mock.MagicMock()
+        bad_renewable_cert.chain = SS_CERT_PATH
+        bad_renewable_cert.cert = test_util.vector_path('self_signed_cert_bad.pem')
+ 
+        self.assertRaises(OpenSSL.crypto.Error, self._verify_renewable_cert_sig, bad_renewable_cert)
+
     def test_verify_renewable_cert(self):
         self.assertEqual(None,self._verify_renewable_cert(self.renewable_cert))
- 
-    def test_verify_renewable_cert_failure(self):
-        bad_renewable_cert = mock.MagicMock()
-        bad_renewable_cert.privkey = RSA256_KEY_PATH
-        bad_renewable_cert.cert = SS_CERT_PATH
 
+    @mock.patch('certbot.crypto_util.verify_renewable_cert_sig', side_effect=errors.Error(""))
+    def test_verify_renewable_cert_failure(self, mock_verify_renewable_cert_sig):
+        bad_renewable_cert = mock.MagicMock()
         self.assertRaises(errors.Error, self._verify_renewable_cert, bad_renewable_cert)
 
 class ValidPrivkeyTest(unittest.TestCase):
