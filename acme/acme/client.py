@@ -33,6 +33,8 @@ if sys.version_info < (2, 7, 9):  # pragma: no cover
         import urllib3.contrib.pyopenssl  # pylint: disable=import-error
         urllib3.contrib.pyopenssl.inject_into_urllib3()
 
+DEFAULT_NETWORK_TIMEOUT = 45
+
 DER_CONTENT_TYPE = 'application/pkix-cert'
 
 
@@ -503,13 +505,14 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     REPLAY_NONCE_HEADER = 'Replay-Nonce'
 
     def __init__(self, key, alg=jose.RS256, verify_ssl=True,
-                 user_agent='acme-python'):
+                 user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT):
         self.key = key
         self.alg = alg
         self.verify_ssl = verify_ssl
         self._nonces = set()
         self.user_agent = user_agent
         self.session = requests.Session()
+        self._default_timeout = timeout
 
     def __del__(self):
         self.session.close()
@@ -608,7 +611,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         kwargs['verify'] = self.verify_ssl
         kwargs.setdefault('headers', {})
         kwargs['headers'].setdefault('User-Agent', self.user_agent)
-        kwargs.setdefault('timeout', 45) # timeout after 45 seconds
+        kwargs.setdefault('timeout', self._default_timeout)
         response = self.session.request(method, url, *args, **kwargs)
         # If content is DER, log the base64 of it instead of raw bytes, to keep
         # binary data out of the logs.
