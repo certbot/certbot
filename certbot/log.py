@@ -1,4 +1,4 @@
-"""A formatter and StreamHandler for colorizing logging output."""
+"""Logging utilities for Certbot."""
 import logging
 import sys
 
