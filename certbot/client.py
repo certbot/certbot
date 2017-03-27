@@ -117,7 +117,7 @@ def register(config, account_storage, tos_cb=None):
                    "--register-unsafely-without-email was not present.")
             logger.warning(msg)
             raise errors.Error(msg)
-        if not config.dry_run:
+        if not config.dry_run and not config.quiet:
             logger.warning("Registering without email!")
 
     # Each new registration shall use a fresh new key
