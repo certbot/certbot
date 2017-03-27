@@ -19,11 +19,11 @@ from acme import jose
 
 from certbot import account
 from certbot import cli
-from certbot import colored_logging
-from certbot import constants
 from certbot import configuration
+from certbot import constants
 from certbot import crypto_util
 from certbot import errors
+from certbot import log
 from certbot import main
 from certbot import renewal
 from certbot import storage
@@ -332,7 +332,7 @@ class SetupLoggingTest(test_util.TempDirTestCase):
         cli_handler = mock_get_logger().addHandler.call_args_list[0][0][0]
         self.assertEqual(cli_handler.level, -self.config.verbose_count * 10)
         self.assertTrue(
-            isinstance(cli_handler, colored_logging.StreamHandler))
+            isinstance(cli_handler, log.ColoredStreamHandler))
 
     @mock.patch('certbot.main.logging.getLogger')
     def test_quiet_mode(self, mock_get_logger):
@@ -342,7 +342,7 @@ class SetupLoggingTest(test_util.TempDirTestCase):
         cli_handler = mock_get_logger().addHandler.call_args_list[0][0][0]
         self.assertEqual(cli_handler.level, constants.QUIET_LOGGING_LEVEL)
         self.assertTrue(
-            isinstance(cli_handler, colored_logging.StreamHandler))
+            isinstance(cli_handler, log.ColoredStreamHandler))
 
 
 class MakeOrVerifyCoreDirTest(test_util.TempDirTestCase):

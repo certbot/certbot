@@ -1,4 +1,4 @@
-"""Tests for certbot.colored_logging."""
+"""Tests for certbot.log."""
 import logging
 import unittest
 
@@ -7,15 +7,15 @@ import six
 from certbot import util
 
 
-class StreamHandlerTest(unittest.TestCase):
-    """Tests for certbot.colored_logging."""
+class ColoredStreamHandlerTest(unittest.TestCase):
+    """Tests for certbot.log."""
 
     def setUp(self):
-        from certbot import colored_logging
+        from certbot import log
 
         self.stream = six.StringIO()
         self.stream.isatty = lambda: True
-        self.handler = colored_logging.StreamHandler(self.stream)
+        self.handler = log.ColoredStreamHandler(self.stream)
 
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)

@@ -19,19 +19,19 @@ import certbot
 
 from certbot import account
 from certbot import cert_manager
-from certbot import client
 from certbot import cli
-from certbot import crypto_util
-from certbot import colored_logging
+from certbot import client
 from certbot import configuration
 from certbot import constants
+from certbot import crypto_util
 from certbot import eff
 from certbot import errors
 from certbot import hooks
 from certbot import interfaces
-from certbot import util
-from certbot import reporter
+from certbot import log
 from certbot import renewal
+from certbot import reporter
+from certbot import util
 
 from certbot.display import util as display_util, ops as display_ops
 from certbot.plugins import disco as plugins_disco
@@ -725,7 +725,7 @@ def setup_log_file_handler(config, logfile, fmt):
 
 
 def _cli_log_handler(level, fmt):
-    handler = colored_logging.StreamHandler()
+    handler = log.ColoredStreamHandler()
     handler.setFormatter(logging.Formatter(fmt))
     handler.setLevel(level)
     return handler
