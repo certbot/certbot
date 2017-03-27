@@ -1,6 +1,5 @@
 """Certbot main entry point."""
 from __future__ import print_function
-import atexit
 import functools
 import logging.handlers
 import os
@@ -942,7 +941,7 @@ def main(cli_args=sys.argv[1:]):
     # Reporter
     report = reporter.Reporter(config)
     zope.component.provideUtility(report)
-    atexit.register(report.atexit_print_messages)
+    util.atexit_register(report.print_messages)
 
     return _run_subcommand(config, plugins)
 
