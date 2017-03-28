@@ -4,13 +4,6 @@
 # are dynamically set at execution
 
 cd letsencrypt
-#git checkout v0.1.0     use --branch instead
-SAVE="$PIP_EXTRA_INDEX_URL"
-unset PIP_EXTRA_INDEX_URL
-export PIP_INDEX_URL="https://isnot.org/pip/0.1.0/"
-
-#OLD_LEAUTO="https://raw.githubusercontent.com/letsencrypt/letsencrypt/5747ab7fd9641986833bad474d71b46a8c589247/letsencrypt-auto"
-
 
 if ! command -v git ; then
     if [ "$OS_TYPE" = "ubuntu" ] ; then
@@ -22,15 +15,18 @@ if ! command -v git ; then
     fi
 fi
 BRANCH=`git rev-parse --abbrev-ref HEAD`
-git checkout -f v0.1.0
-./letsencrypt-auto -v --debug --version
-unset PIP_INDEX_URL
-
-export PIP_EXTRA_INDEX_URL="$SAVE"
+# 0.4.1 is the oldest version of letsencrypt-auto that can be used because
+# it's the first version that both pins package versions and properly supports
+# --no-self-upgrade.
+git checkout -f v0.4.1
+if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | grep 0.4.1 ; then
+    echo initial installation appeared to fail
+    exit 1
+fi
 
 git checkout -f "$BRANCH"
 EXPECTED_VERSION=$(grep -m1 LE_AUTO_VERSION letsencrypt-auto | cut -d\" -f2)
-if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade | grep $EXPECTED_VERSION ; then
+if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | grep $EXPECTED_VERSION ; then
     echo upgrade appeared to fail
     exit 1
 fi

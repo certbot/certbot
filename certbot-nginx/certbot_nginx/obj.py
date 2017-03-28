@@ -1,6 +1,8 @@
 """Module contains classes used by the Nginx Configurator."""
 import re
 
+import six
+
 from certbot.plugins import common
 
 REDIRECT_DIRECTIVES = ['return', 'rewrite']
@@ -97,6 +99,11 @@ class Addr(common.Addr):
     def __repr__(self):
         return "Addr(" + self.__str__() + ")"
 
+    def __hash__(self):
+        # Python 3 requires explicit overridden for __hash__
+        # See certbot-apache/certbot_apache/obj.py for more information
+        return super(Addr, self).__hash__()
+
     def super_eq(self, other):
         """Check ip/port equality, with IPv6 support.
         """
@@ -147,13 +154,15 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         self.path = path
 
     def __str__(self):
-        addr_str = ", ".join(str(addr) for addr in self.addrs)
+        addr_str = ", ".join(str(addr) for addr in sorted(self.addrs, key=str))
+        # names might be a set, and it has different representations in Python
+        # 2 and 3. Force it to be a list here for consistent outputs
         return ("file: %s\n"
                 "addrs: %s\n"
                 "names: %s\n"
                 "ssl: %s\n"
                 "enabled: %s" % (self.filep, addr_str,
-                                 self.names, self.ssl, self.enabled))
+                                 list(self.names), self.ssl, self.enabled))
 
     def __repr__(self):
         return "VirtualHost(" + self.__str__().replace("\n", ", ") + ")\n"
@@ -161,7 +170,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return (self.filep == other.filep and
-                    list(self.addrs) == list(other.addrs) and
+                    sorted(self.addrs, key=str) == sorted(other.addrs, key=str) and
                     self.names == other.names and
                     self.ssl == other.ssl and
                     self.enabled == other.enabled and
@@ -181,7 +190,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     def contains_list(self, test):
         """Determine if raw server block contains test list at top level
         """
-        for i in xrange(0, len(self.raw) - len(test)):
+        for i in six.moves.range(0, len(self.raw) - len(test)):
             if self.raw[i:i + len(test)] == test:
                 return True
         return False

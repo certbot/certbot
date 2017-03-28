@@ -207,7 +207,7 @@ def set_by_cli(var):
 
     return False
 # static housekeeping var
-set_by_cli.detector = None
+set_by_cli.detector = None  # type: ignore
 
 
 def has_default_value(option, value):
@@ -412,8 +412,8 @@ class HelpfulArgumentParser(object):
     def __init__(self, args, plugins, detect_defaults=False):
         from certbot import main
         self.VERBS = {
-            "auth": main.obtain_cert,
-            "certonly": main.obtain_cert,
+            "auth": main.certonly,
+            "certonly": main.certonly,
             "config_changes": main.config_changes,
             "run": main.run,
             "install": main.install,
@@ -956,6 +956,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Show tracebacks in case of errors, and allow certbot-auto "
              "execution on experimental platforms")
     helpful.add(
+        [None, "certonly", "renew", "run"], "--debug-challenges", action="store_true",
+        default=flag_default("debug_challenges"),
+        help="After setting up challenges, wait for user input before "
+             "submitting to CA")
+    helpful.add(
         "testing", "--no-verify-ssl", action="store_true",
         help=config_help("no_verify_ssl"),
         default=flag_default("no_verify_ssl"))
@@ -1150,7 +1155,7 @@ def _paths_parser(helpful):
     default_cp = None
     if verb == "certonly":
         default_cp = flag_default("auth_chain_path")
-    add(["install", "paths"], "--fullchain-path", default=default_cp, type=os.path.abspath,
+    add(["paths", "install"], "--fullchain-path", default=default_cp, type=os.path.abspath,
         help="Accompanying path to a full certificate chain (cert plus chain).")
     add("paths", "--chain-path", default=default_cp, type=os.path.abspath,
         help="Accompanying path to a certificate chain.")
@@ -1162,6 +1167,8 @@ def _paths_parser(helpful):
         help="Logs directory.")
     add("paths", "--server", default=flag_default("server"),
         help=config_help("server"))
+    add("paths", "--lock-path", default=flag_default("lock_path"),
+        help=config_help('lock_path'))
 
 
 def _plugins_parsing(helpful, plugins):

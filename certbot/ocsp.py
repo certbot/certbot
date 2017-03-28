@@ -16,7 +16,7 @@ class RevocationChecker(object):
         self.broken = False
 
         if not util.exe_exists("openssl"):
-            logging.info("openssl not installed, can't check revocation")
+            logger.info("openssl not installed, can't check revocation")
             self.broken = True
             return
 
@@ -61,7 +61,7 @@ class RevocationChecker(object):
         logger.debug("Querying OCSP for %s", cert_path)
         logger.debug(" ".join(cmd))
         try:
-            output, err = util.run_script(cmd, log=logging.debug)
+            output, err = util.run_script(cmd, log=logger.debug)
         except errors.SubprocessError:
             logger.info("OCSP check failed for %s (are we offline?)", cert_path)
             return False
@@ -80,7 +80,7 @@ class RevocationChecker(object):
         try:
             url, _err = util.run_script(
                 ["openssl", "x509", "-in", cert_path, "-noout", "-ocsp_uri"],
-                log=logging.debug)
+                log=logger.debug)
         except errors.SubprocessError:
             logger.info("Cannot extract OCSP URI from %s", cert_path)
             return None, None

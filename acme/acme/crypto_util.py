@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 # https://www.openssl.org/docs/ssl/SSLv23_method.html). _serve_sni
 # should be changed to use "set_options" to disable SSLv2 and SSLv3,
 # in case it's used for things other than probing/serving!
-_DEFAULT_TLSSNI01_SSL_METHOD = OpenSSL.SSL.SSLv23_METHOD
+_DEFAULT_TLSSNI01_SSL_METHOD = OpenSSL.SSL.SSLv23_METHOD  # type: ignore
 
 
 class SSLSocket(object):  # pylint: disable=too-few-public-methods

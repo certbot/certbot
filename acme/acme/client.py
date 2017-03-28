@@ -28,10 +28,12 @@ logger = logging.getLogger(__name__)
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
 if sys.version_info < (2, 7, 9):  # pragma: no cover
     try:
-        requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
+        requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()  # type: ignore
     except AttributeError:
         import urllib3.contrib.pyopenssl  # pylint: disable=import-error
         urllib3.contrib.pyopenssl.inject_into_urllib3()
+
+DEFAULT_NETWORK_TIMEOUT = 45
 
 DER_CONTENT_TYPE = 'application/pkix-cert'
 
@@ -127,8 +129,6 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         update = regr.body if update is None else update
         body = messages.UpdateRegistration(**dict(update))
         updated_regr = self._send_recv_regr(regr, body=body)
-        if updated_regr != regr:
-            raise errors.UnexpectedUpdate(regr)
         return updated_regr
 
     def deactivate_registration(self, regr):
@@ -175,22 +175,25 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
-    def request_challenges(self, identifier):
+    def request_challenges(self, identifier, new_authzr_uri=None):
         """Request challenges.
 
         :param .messages.Identifier identifier: Identifier to be challenged.
+        :param str new_authzr_uri: Deprecated. Do not use.
 
         :returns: Authorization Resource.
         :rtype: `.AuthorizationResource`
 
         """
+        if new_authzr_uri is not None:
+            logger.debug("request_challenges with new_authzr_uri deprecated.")
         new_authz = messages.NewAuthorization(identifier=identifier)
         response = self.net.post(self.directory.new_authz, new_authz)
         # TODO: handle errors
         assert response.status_code == http_client.CREATED
         return self._authzr_from_response(response, identifier)
 
-    def request_domain_challenges(self, domain):
+    def request_domain_challenges(self, domain, new_authzr_uri=None):
         """Request challenges for domain names.
 
         This is simply a convenience function that wraps around
@@ -199,13 +202,14 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         documentation.
 
         :param str domain: Domain name to be challenged.
+        :param str new_authzr_uri: Deprecated. Do not use.
 
         :returns: Authorization Resource.
         :rtype: `.AuthorizationResource`
 
         """
         return self.request_challenges(messages.Identifier(
-            typ=messages.IDENTIFIER_FQDN, value=domain))
+            typ=messages.IDENTIFIER_FQDN, value=domain), new_authzr_uri)
 
     def answer_challenge(self, challb, response):
         """Answer challenge.
@@ -281,7 +285,6 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         response = self.net.get(authzr.uri)
         updated_authzr = self._authzr_from_response(
             response, authzr.body.identifier, authzr.uri)
-        # TODO: check and raise UnexpectedUpdate
         return updated_authzr, response
 
     def request_issuance(self, csr, authzrs):
@@ -502,13 +505,14 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     REPLAY_NONCE_HEADER = 'Replay-Nonce'
 
     def __init__(self, key, alg=jose.RS256, verify_ssl=True,
-                 user_agent='acme-python'):
+                 user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT):
         self.key = key
         self.alg = alg
         self.verify_ssl = verify_ssl
         self._nonces = set()
         self.user_agent = user_agent
         self.session = requests.Session()
+        self._default_timeout = timeout
 
     def __del__(self):
         self.session.close()
@@ -600,13 +604,14 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
         """
         if method == "POST":
-            logging.debug('Sending POST request to %s:\n%s',
+            logger.debug('Sending POST request to %s:\n%s',
                           url, kwargs['data'])
         else:
-            logging.debug('Sending %s request to %s.', method, url)
+            logger.debug('Sending %s request to %s.', method, url)
         kwargs['verify'] = self.verify_ssl
         kwargs.setdefault('headers', {})
         kwargs['headers'].setdefault('User-Agent', self.user_agent)
+        kwargs.setdefault('timeout', self._default_timeout)
         response = self.session.request(method, url, *args, **kwargs)
         # If content is DER, log the base64 of it instead of raw bytes, to keep
         # binary data out of the logs.
@@ -650,7 +655,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
     def _get_nonce(self, url):
         if not self._nonces:
-            logging.debug('Requesting fresh nonce')
+            logger.debug('Requesting fresh nonce')
             self._add_nonce(self.head(url))
         return self._nonces.pop()
 

@@ -14,15 +14,24 @@ Getting Started
 Running a local copy of the client
 ----------------------------------
 
-Running the client in developer mode from your local tree is a little
-different than running ``certbot-auto``.  To get set up, do these things
-once:
+Running the client in developer mode from your local tree is a little different
+than running Certbot as a user. To get set up, clone our git repository by
+running:
 
 .. code-block:: shell
 
    git clone https://github.com/certbot/certbot
+
+If you're on macOS, we recommend you skip the rest of this section and instead
+run Certbot in Docker. You can find instructions for how to do this :ref:`here
+<docker>`. If you're running on Linux, you can run the following commands to
+install dependencies and set up a virtual environment where you can run
+Certbot. You only need to do this once.
+
+.. code-block:: shell
+
    cd certbot
-   ./letsencrypt-auto-source/letsencrypt-auto --os-packages-only
+   ./certbot-auto --os-packages-only
    ./tools/venv.sh
 
 Then in each shell where you're working on the client, do:
@@ -54,104 +63,66 @@ where appropriate.
 
 Once you've got a working branch, you can open a pull request.  All changes in
 your pull request must have thorough unit test coverage, pass our
-`integration`_ tests, and be compliant with the :ref:`coding style
-<coding-style>`.
+tests, and be compliant with the :ref:`coding style <coding-style>`.
 
 .. _github issue tracker: https://github.com/certbot/certbot/issues
 .. _Good Volunteer Task: https://github.com/certbot/certbot/issues?q=is%3Aopen+is%3Aissue+label%3A%22Good+Volunteer+Task%22
 
+.. _testing:
+
 Testing
 -------
 
-The following tools are there to help you:
+When you are working in a file ``foo.py``, there should also be a file ``foo_test.py``
+either in the same directory as ``foo.py`` or in the ``tests`` subdirectory
+(if there isn't, make one). While you are working on your code and tests, run
+``python foo_test.py`` to run the relevant tests.
 
-- ``tox`` starts a full set of tests. Please note that it includes
-  apacheconftest, which uses the system's Apache install to test config file
-  parsing, so it should only be run on systems that have an
-  experimental, non-production Apache2 install on them.  ``tox -e
-  apacheconftest`` can be used to run those specific Apache conf tests.
+For debugging, we recommend putting
+``import ipdb; ipdb.set_trace()`` statements inside the source code.
 
-- ``tox --skip-missing-interpreters`` runs tox while ignoring missing versions
-  of Python needed for running the tests.
+Once you are done with your code changes, and the tests in ``foo_test.py`` pass,
+run all of the unittests for Certbot with ``tox -e py27`` (this uses Python
+2.7).
 
-- ``tox -e py27``, ``tox -e py26`` etc, run unit tests for specific Python
-  versions.
+Once all the unittests pass, check for sufficient test coverage using
+``tox -e cover``, and then check for code style with ``tox -e lint`` (all files)
+or ``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a time).
 
-- ``tox -e cover`` checks the test coverage only. Calling the
-  ``./tox.cover.sh`` script directly (or even ``./tox.cover.sh $pkg1
-  $pkg2 ...`` for any subpackages) might be a bit quicker, though.
+Once all of the above is successful, you may run the full test suite,
+including integration tests, using ``tox``. We recommend running the
+commands above first, because running all tests with ``tox`` is very
+slow, and the large amount of ``tox`` output can make it hard to find
+specific failures when they happen. Also note that the full test suite
+will attempt to modify your system's Apache config if your user has sudo
+permissions, so it should not be run on a production Apache server.
 
-- ``tox -e lint`` checks the style of the whole project, while
-  ``pylint --rcfile=.pylintrc path`` will check a single file or
-  specific directory only.
-
-- For debugging, we recommend ``pip install ipdb`` and putting
-  ``import ipdb; ipdb.set_trace()`` statement inside the source
-  code. Alternatively, you can use Python's standard library `pdb`,
-  but you won't get TAB completion...
-
+If you have trouble getting the full ``tox`` suite to run locally, it is
+generally sufficient to open a pull request and let Github and Travis run
+integration tests for you.
 
 .. _integration:
 
-Integration testing with the boulder CA
+Integration testing with the Boulder CA
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Generally it is sufficient to open a pull request and let Github and Travis run
-integration tests for you.
-
-However, if you prefer to run tests, you can use Vagrant, using the Vagrantfile
-in Certbot's repository. To execute the tests on a Vagrant box, the only
-command you are required to run is::
-
-  ./tests/boulder-integration.sh
-
-Otherwise, please follow the following instructions.
-
-macOS users: Run ``./tests/mac-bootstrap.sh`` instead of
-``boulder-start.sh`` to install dependencies, configure the
-environment, and start boulder.
-
-Otherwise, install `Go`_ 1.5, ``libtool-ltdl``, ``mariadb-server`` and
-``rabbitmq-server`` and then start Boulder_, an ACME CA server.
-
-If you can't get packages of Go 1.5 for your Linux system,
-you can execute the following commands to install it:
+To run integration tests locally, you need Docker and docker-compose installed
+and working. Fetch and start Boulder using:
 
 .. code-block:: shell
 
-  wget https://storage.googleapis.com/golang/go1.5.3.linux-amd64.tar.gz -P /tmp/
-  sudo tar -C /usr/local -xzf /tmp/go1.5.3.linux-amd64.tar.gz
-  if ! grep -Fxq "export GOROOT=/usr/local/go" ~/.profile ; then echo "export GOROOT=/usr/local/go" >> ~/.profile; fi
-  if ! grep -Fxq "export PATH=\\$GOROOT/bin:\\$PATH" ~/.profile ; then echo "export PATH=\\$GOROOT/bin:\\$PATH" >> ~/.profile; fi
+  ./tests/boulder-fetch.sh
 
-These commands download `Go`_ 1.5.3 to ``/tmp/``, extracts to ``/usr/local``,
-and then adds the export lines required to execute ``boulder-start.sh`` to
-``~/.profile`` if they were not previously added
+If you have problems with Docker, you may want to try `removing all containers and
+volumes`_ and making sure you have at least 1GB of memory.
 
-Make sure you execute the following command after `Go`_ finishes installing::
+Run the integration tests using:
 
-  if ! grep -Fxq "export GOPATH=\\$HOME/go" ~/.profile ; then echo "export GOPATH=\\$HOME/go" >> ~/.profile; fi
+.. code-block:: shell
 
-Afterwards, you'd be able to start Boulder_ using the following command::
+  ./tests/boulder-integration.sh
 
-  ./tests/boulder-start.sh
-
-The script will download, compile and run the executable; please be
-patient - it will take some time... Once its ready, you will see
-``Server running, listening on 127.0.0.1:4000...``. Add ``/etc/hosts``
-entries pointing ``le.wtf``, ``le1.wtf``, ``le2.wtf``, ``le3.wtf``
-and ``nginx.wtf`` to 127.0.0.1.  You may now run (in a separate terminal)::
-
-  ./tests/boulder-integration.sh && echo OK || echo FAIL
-
-If you would like to test `certbot_nginx` plugin (highly
-encouraged) make sure to install prerequisites as listed in
-``certbot-nginx/tests/boulder-integration.sh`` and rerun
-the integration tests suite.
-
-.. _Boulder: https://github.com/letsencrypt/boulder
-.. _Go: https://golang.org
-
+.. _removing all containers and volumes: https://www.digitalocean.com/community/tutorials/how-to-remove-docker-images-containers-and-volumes
 
 Code components and layout
 ==========================
@@ -159,7 +130,11 @@ Code components and layout
 acme
   contains all protocol specific code
 certbot
-  all client code
+  main client code
+certbot-apache and certbot-nginx
+  client code to configure specific web servers
+certbot.egg-info
+  configuration for packaging Certbot
 
 
 Plugin-architecture
@@ -170,13 +145,15 @@ different webservers, other TLS servers, and operating systems.
 The interfaces available for plugins to implement are defined in
 `interfaces.py`_ and `plugins/common.py`_.
 
-The most common kind of plugin is a "Configurator", which is likely to
-implement the `~certbot.interfaces.IAuthenticator` and
-`~certbot.interfaces.IInstaller` interfaces (though some
-Configurators may implement just one of those).
+The main two plugin interfaces are `~certbot.interfaces.IAuthenticator`, which
+implements various ways of proving domain control to a certificate authority,
+and `~certbot.interfaces.IInstaller`, which configures a server to use a
+certificate once it is issued. Some plugins, like the built-in Apache and Nginx
+plugins, implement both interfaces and perform both tasks. Others, like the
+built-in Standalone authenticator, implement just one interface.
 
 There are also `~certbot.interfaces.IDisplay` plugins,
-which implement bindings to alternative UI libraries.
+which can change how prompts are displayed to a user.
 
 .. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/interfaces.py
 .. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/plugins/common.py#L34
@@ -185,27 +162,20 @@ which implement bindings to alternative UI libraries.
 Authenticators
 --------------
 
-Authenticators are plugins designed to prove that this client deserves a
-certificate for some domain name by solving challenges received from
-the ACME server. From the protocol, there are essentially two
-different types of challenges. Challenges that must be solved by
-individual plugins in order to satisfy domain validation (subclasses
-of `~.DVChallenge`, i.e. `~.challenges.TLSSNI01`,
-`~.challenges.HTTP01`, `~.challenges.DNS`) and continuity specific
-challenges (subclasses of `~.ContinuityChallenge`,
-i.e. `~.challenges.RecoveryToken`, `~.challenges.RecoveryContact`,
-`~.challenges.ProofOfPossession`). Continuity challenges are
-always handled by the `~.ContinuityAuthenticator`, while plugins are
-expected to handle `~.DVChallenge` types.
-Right now, we have two authenticator plugins, the `~.ApacheConfigurator`
-and the `~.StandaloneAuthenticator`. The Standalone and Apache
-authenticators only solve the `~.challenges.TLSSNI01` challenge currently.
-(You can set which challenges your authenticator can handle through the
-:meth:`~.IAuthenticator.get_chall_pref`.
+Authenticators are plugins that prove control of a domain name by solving a
+challenge provided by the ACME server. ACME currently defines three types of
+challenges: HTTP, TLS-SNI, and DNS, represented by classes in `acme.challenges`.
+An authenticator plugin should implement support for at least one challenge type.
 
-(FYI: We also have a partial implementation for a `~.DNSAuthenticator`
-in a separate branch).
+An Authenticator indicates which challenges it supports by implementing
+get_chall_pref(domain) to return a sorted list of challenge types in preference
+order.
 
+An Authenticator must also implement `perform(achalls)`, which "performs" a list
+of challenges by, for instance, provisioning a file on an HTTP server, or
+setting a TXT record in DNS. Once all challenges have succeeded or failed,
+Certbot will call the plugin's `cleanup(achalls)` method to remove any files or
+DNS records that were needed only during authentication.
 
 Installer
 ---------
@@ -243,16 +213,10 @@ Augeas may still find the `~.Reverter` class helpful in handling
 configuration checkpoints and rollback.
 
 
-Display
-~~~~~~~
-
-We currently only offer a "text" mode for displays. Display plugins
-implement the `~certbot.interfaces.IDisplay` interface.
-
 .. _dev-plugin:
 
 Writing your own plugin
-=======================
+~~~~~~~~~~~~~~~~~~~~~~~
 
 Certbot client supports dynamic discovery of plugins through the
 `setuptools entry points`_. This way you can, for example, create a
@@ -260,6 +224,26 @@ custom implementation of `~certbot.interfaces.IAuthenticator` or
 the `~certbot.interfaces.IInstaller` without having to merge it
 with the core upstream source code. An example is provided in
 ``examples/plugins/`` directory.
+
+While developing, you can install your plugin into a Certbot development
+virtualenv like this:
+
+.. code-block:: shell
+  . venv/bin/activate
+  . tests/integration/_common.sh
+  pip install -e examples/plugins/
+  certbot_test plugins
+
+Your plugin should show up in the output of the last command. If not,
+it was not installed properly.
+
+Once you've finished your plugin and published it, you can have your
+users install it system-wide with `pip install`. Note that this will
+only work for users who have Certbot installed from OS packages or via
+pip. Users who run `certbot-auto` are currently unable to use third-party
+plugins. It's technically possible to install third-party plugins into
+the virtualenv used by `certbot-auto`, but they will be wiped away when
+`certbot-auto` upgrades.
 
 .. warning:: Please be aware though that as this client is still in a
    developer-preview stage, the API may undergo a few changes. If you
@@ -317,8 +301,7 @@ Steps:
    including coverage. The ``--skip-missing-interpreters`` argument ignores
    missing versions of Python needed for running the tests. Fix any errors.
 5. If your code touches communication with an ACME server/Boulder, you
-   should run the integration tests, see `integration`_. See `Known Issues`_
-   for some common failures that have nothing to do with your code.
+   should run the integration tests, see `integration`_.
 6. Submit the PR.
 7. Did your tests pass on Travis? If they didn't, fix any errors.
 
@@ -378,56 +361,36 @@ This should generate documentation in the ``docs/_build/html``
 directory.
 
 
-Other methods for running the client
-====================================
+.. _docker:
 
-Vagrant
--------
+Running the client with Docker
+==============================
 
-If you are a Vagrant user, Certbot comes with a Vagrantfile that
-automates setting up a development environment in an Ubuntu 14.04
-LTS VM. To set it up, simply run ``vagrant up``. The repository is
-synced to ``/vagrant``, so you can get started with:
+You can use Docker Compose to quickly set up an environment for running and
+testing Certbot. This is especially useful for macOS users. To install Docker
+Compose, follow the instructions at https://docs.docker.com/compose/install/.
 
-.. code-block:: shell
+.. note:: Linux users can simply run ``pip install docker-compose`` to get
+  Docker Compose after installing Docker Engine and activating your shell as
+  described in the :ref:`Getting Started <getting_started>` section.
 
-  vagrant ssh
-  cd /vagrant
-  sudo ./venv/bin/certbot
+Now you can develop on your host machine, but run Certbot and test your changes
+in Docker. When using ``docker-compose`` make sure you are inside your clone of
+the Certbot repository. As an example, you can run the following command to
+check for linting errors::
 
-Support for other Linux distributions coming soon.
+  docker-compose run --rm --service-ports development bash -c 'tox -e lint'
 
-.. note::
-   Unfortunately, Python distutils and, by extension, setup.py and
-   tox, use hard linking quite extensively. Hard linking is not
-   supported by the default sync filesystem in Vagrant. As a result,
-   all actions with these commands are *significantly slower* in
-   Vagrant. One potential fix is to `use NFS`_ (`related issue`_).
+You can also leave a terminal open running a shell in the Docker container and
+modify Certbot code in another window. The Certbot repo on your host machine is
+mounted inside of the container so any changes you make immediately take
+effect. To do this, run::
 
-.. _use NFS: http://docs.vagrantup.com/v2/synced-folders/nfs.html
-.. _related issue: https://github.com/ClusterHQ/flocker/issues/516
+  docker-compose run --rm --service-ports development bash
 
+Now running the check for linting errors described above is as easy as::
 
-Docker
-------
-
-OSX users will probably find it easiest to set up a Docker container for
-development. Certbot comes with a Dockerfile (``Dockerfile-dev``)
-for doing so. To use Docker on OSX, install and setup docker-machine using the
-instructions at https://docs.docker.com/installation/mac/.
-
-To build the development Docker image::
-
-  docker build -t certbot -f Dockerfile-dev .
-
-Now run tests inside the Docker image:
-
-.. code-block:: shell
-
-  docker run -it certbot bash
-  cd src
-  tox -e py27
-
+  tox -e lint
 
 .. _prerequisites:
 

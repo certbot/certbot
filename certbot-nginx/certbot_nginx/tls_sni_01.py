@@ -1,8 +1,9 @@
 """A class that performs TLS-SNI-01 challenges for Nginx"""
 
-import itertools
 import logging
 import os
+
+import six
 
 from certbot import errors
 from certbot.plugins import common
@@ -95,11 +96,12 @@ class NginxTlsSni01(common.TLSSNI01):
         bucket_directive = ['\n', 'server_names_hash_bucket_size', ' ', '128']
 
         main = self.configurator.parser.parsed[root]
-        for key, body in main:
-            if key == ['http']:
+        for line in main:
+            if line[0] == ['http']:
+                body = line[1]
                 found_bucket = False
-                for k, _ in body:
-                    if k == bucket_directive[1]:
+                for inner_line in body:
+                    if inner_line[0] == bucket_directive[1]:
                         found_bucket = True
                 if not found_bucket:
                     body.insert(0, bucket_directive)
@@ -113,7 +115,7 @@ class NginxTlsSni01(common.TLSSNI01):
                 'TLS-SNI-01 challenges in %s.' % root)
 
         config = [self._make_server_block(pair[0], pair[1])
-                  for pair in itertools.izip(self.achalls, ll_addrs)]
+                  for pair in six.moves.zip(self.achalls, ll_addrs)]
         config = nginxparser.UnspacedList(config)
 
         self.configurator.reverter.register_file_creation(
@@ -142,7 +144,7 @@ class NginxTlsSni01(common.TLSSNI01):
         block = [['listen', ' ', addr.to_string(include_default=False)] for addr in addrs]
 
         block.extend([['server_name', ' ',
-                       achall.response(achall.account_key).z_domain],
+                       achall.response(achall.account_key).z_domain.decode('ascii')],
                       # access and error logs necessary for
                       # integration testing (non-root)
                       ['access_log', ' ', os.path.join(

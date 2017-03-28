@@ -98,7 +98,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
             if part is not None)
 
 
-class _Constant(jose.JSONDeSerializable, collections.Hashable):
+class _Constant(jose.JSONDeSerializable, collections.Hashable):  # type: ignore
     """ACME constant."""
     __slots__ = ('name',)
     POSSIBLE_NAMES = NotImplemented
@@ -132,7 +132,7 @@ class _Constant(jose.JSONDeSerializable, collections.Hashable):
 
 class Status(_Constant):
     """ACME "status" field."""
-    POSSIBLE_NAMES = {}
+    POSSIBLE_NAMES = {}  # type: dict
 STATUS_UNKNOWN = Status('unknown')
 STATUS_PENDING = Status('pending')
 STATUS_PROCESSING = Status('processing')
@@ -143,7 +143,7 @@ STATUS_REVOKED = Status('revoked')
 
 class IdentifierType(_Constant):
     """ACME identifier type."""
-    POSSIBLE_NAMES = {}
+    POSSIBLE_NAMES = {}  # type: dict
 IDENTIFIER_FQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
 
 
@@ -161,7 +161,7 @@ class Identifier(jose.JSONObjectWithFields):
 class Directory(jose.JSONDeSerializable):
     """Directory."""
 
-    _REGISTERED_TYPES = {}
+    _REGISTERED_TYPES = {}  # type: dict
 
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""
@@ -315,10 +315,12 @@ class RegistrationResource(ResourceWithURI):
     """Registration Resource.
 
     :ivar acme.messages.Registration body:
+    :ivar unicode new_authzr_uri: Deprecated. Do not use.
     :ivar unicode terms_of_service: URL for the CA TOS.
 
     """
     body = jose.Field('body', decoder=Registration.from_json)
+    new_authzr_uri = jose.Field('new_authzr_uri', omitempty=True)
     terms_of_service = jose.Field('terms_of_service', omitempty=True)
 
 
@@ -423,9 +425,11 @@ class AuthorizationResource(ResourceWithURI):
     """Authorization Resource.
 
     :ivar acme.messages.Authorization body:
+    :ivar unicode new_cert_uri: Deprecated. Do not use.
 
     """
     body = jose.Field('body', decoder=Authorization.from_json)
+    new_cert_uri = jose.Field('new_cert_uri', omitempty=True)
 
 
 @Directory.register

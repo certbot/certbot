@@ -4,7 +4,7 @@ import glob
 try:
     import readline
 except ImportError:
-    import certbot.display.dummy_readline as readline
+    import certbot.display.dummy_readline as readline  # type: ignore
 
 
 class Completer(object):
