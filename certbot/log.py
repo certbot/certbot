@@ -1,5 +1,6 @@
 """Logging utilities for Certbot."""
 import logging
+import logging.handlers
 import sys
 
 from certbot import util
@@ -17,9 +18,7 @@ class ColoredStreamHandler(logging.StreamHandler):
     """
 
     def __init__(self, stream=None):
-        if sys.version_info < (2, 7):
-            # pragma: no cover
-            # pylint: disable=non-parent-init-called
+        if sys.version_info < (2, 7):  # pragma: no cover
             logging.StreamHandler.__init__(self, stream)
         else:
             super(ColoredStreamHandler, self).__init__(stream)
@@ -43,3 +42,31 @@ class ColoredStreamHandler(logging.StreamHandler):
             return ''.join((util.ANSI_SGR_RED, out, util.ANSI_SGR_RESET))
         else:
             return out
+
+
+class MemoryHandler(logging.handlers.MemoryHandler):
+    """Buffers logging messages in memory until the buffer is flushed.
+
+    This differs from logging.handlers.MemoryHandler in that flushing
+    only happens when it is done explicitly.
+
+    """
+    def __init__(self, target=None):
+        # capacity doesn't matter because should_flush() is overridden
+        capacity = float('inf')
+        if sys.version_info < (2, 7):  # pragma: no cover
+            logging.handlers.MemoryHandler.__init__(
+                self, capacity, target=target)
+        else:
+            super(MemoryHandler, self).__init__(capacity, target=target)
+
+    def shouldFlush(self, record):
+        """Should the buffer be automatically flushed?
+
+        :param logging.LogRecord record: log record to be considered
+
+        :returns: False because the buffer should never be auto-flushed
+        :rtype: bool
+
+        """
+        return False
