@@ -489,5 +489,37 @@ class OsInfoTest(unittest.TestCase):
                                      ("windows", "95"))
 
 
+class AtexitRegisterTest(unittest.TestCase):
+    """Tests for certbot.util.atexit_register."""
+    def setUp(self):
+        self.func = mock.MagicMock()
+        self.args = ('hi',)
+        self.kwargs = {'answer': 42}
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.util import atexit_register
+        return atexit_register(*args, **kwargs)
+
+    def test_called(self):
+        self._test_common(os.getpid())
+        self.func.assert_called_with(*self.args, **self.kwargs)
+
+    def test_not_called(self):
+        self._test_common(initial_pid=-1)
+        self.assertFalse(self.func.called)
+
+    def _test_common(self, initial_pid):
+        with mock.patch('certbot.util._INITIAL_PID', initial_pid):
+            with mock.patch('certbot.util.atexit') as mock_atexit:
+                self._call(self.func, *self.args, **self.kwargs)
+
+            # _INITAL_PID must be mocked when calling atexit_func
+            self.assertTrue(mock_atexit.register.called)
+            args, kwargs = mock_atexit.register.call_args
+            atexit_func = args[0]
+            atexit_func(*args[1:], **kwargs)  # pylint: disable=star-args
+
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
