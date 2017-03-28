@@ -430,8 +430,8 @@ class HelpfulArgumentParser(object):
         }
 
         # List of topics for which additional help can be provided
-        HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
-        HELP_TOPICS += self.COMMANDS_TOPICS + ["manage"]
+        HELP_TOPICS = ["all", "security", "paths", "logging", "automation", "testing"]
+        HELP_TOPICS += list(self.VERBS) + self.COMMANDS_TOPICS + ["manage"]
 
         plugin_names = list(plugins)
         self.help_topics = HELP_TOPICS + plugin_names + [None]
@@ -791,6 +791,7 @@ def _add_all_groups(helpful):
     helpful.add_group("manage",
         description="Various subcommands and flags are available for managing your certificates:",
         verbs=["certificates", "delete", "renew", "revoke", "update_symlinks"])
+    helpful.add_group("logging", description="Arguments for controlling how logging is handled")
 
     # VERBS
     for verb, docs in VERB_HELP:
@@ -823,6 +824,18 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         None, "-t", "--text", dest="text_mode", action="store_true",
         help=argparse.SUPPRESS)
+    helpful.add(
+        [None, "logging", "paths"],
+        "--disable-log-rotation", dest="disable_log_rotation",
+        action="store_true", default=False,
+        help="Disable per-run rotation of the log. This results in a single "
+        "log file.")
+    helpful.add(
+        [None, "logging", "paths"],
+        "--max-log-count", dest="max_log_count",
+        type=int, default=1000,
+        help="Specifies the maximum number of certbot log files "
+        "that will be kept.")
     helpful.add(
         [None, "automation", "run", "certonly"], "-n", "--non-interactive", "--noninteractive",
         dest="noninteractive_mode", action="store_true",

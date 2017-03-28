@@ -292,8 +292,11 @@ class SetupLogFileHandlerTest(unittest.TestCase):
     """Tests for certbot.main.setup_log_file_handler."""
 
     def setUp(self):
-        self.config = mock.Mock(spec_set=['logs_dir'],
-                                logs_dir=tempfile.mkdtemp())
+        self.config = mock.Mock(spec_set=['logs_dir',
+                      'disable_log_rotation', 'max_log_count'],
+                                logs_dir=tempfile.mkdtemp(),
+                                disable_log_rotation=False,
+                                max_log_count=1)
 
     def tearDown(self):
         shutil.rmtree(self.config.logs_dir)
