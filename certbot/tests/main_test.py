@@ -55,6 +55,8 @@ class TestHandleIdenticalCerts(unittest.TestCase):
 class RunTest(unittest.TestCase):
     """Tests for certbot.main.run."""
 
+    _multiprocess_can_split_ = True
+
     def setUp(self):
         self.domain = 'example.org'
         self.patches = [
@@ -108,6 +110,8 @@ class RunTest(unittest.TestCase):
 
 class CertonlyTest(unittest.TestCase):
     """Tests for certbot.main.certonly."""
+
+    _multiprocess_can_split_ = True
 
     def setUp(self):
         self.get_utility_patch = test_util.patch_get_utility()
@@ -223,6 +227,8 @@ class FindDomainsOrCertnameTest(unittest.TestCase):
 class RevokeTest(unittest.TestCase):
     """Tests for certbot.main.revoke."""
 
+    _multiprocess_can_split_ = True
+
     def setUp(self):
         self.tempdir_path = tempfile.mkdtemp()
         shutil.copy(CERT_PATH, self.tempdir_path)
@@ -312,6 +318,8 @@ class SetupLogFileHandlerTest(unittest.TestCase):
 class SetupLoggingTest(unittest.TestCase):
     """Tests for certbot.main.setup_logging."""
 
+    _multiprocess_can_split_ = True
+
     def setUp(self):
         self.config = mock.Mock(
             logs_dir=tempfile.mkdtemp(),
@@ -349,6 +357,8 @@ class SetupLoggingTest(unittest.TestCase):
 class MakeOrVerifyCoreDirTest(unittest.TestCase):
     """Tests for certbot.main.make_or_verify_core_dir."""
 
+    _multiprocess_can_split_ = True
+
     def setUp(self):
         self.dir = tempfile.mkdtemp()
 
@@ -373,6 +383,8 @@ class MakeOrVerifyCoreDirTest(unittest.TestCase):
 
 class DetermineAccountTest(unittest.TestCase):
     """Tests for certbot.main._determine_account."""
+
+    _multiprocess_can_split_ = True
 
     def setUp(self):
         self.args = mock.MagicMock(account=None, email=None,
@@ -443,6 +455,8 @@ class DetermineAccountTest(unittest.TestCase):
 
 class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     """Tests for different commands."""
+
+    _multiprocess_can_split_ = True
 
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
@@ -1258,6 +1272,9 @@ class UnregisterTest(unittest.TestCase):
 
 class TestHandleException(unittest.TestCase):
     """Test main._handle_exception"""
+
+    _multiprocess_can_split_ = True
+
     @mock.patch('certbot.main.sys')
     def test_handle_exception(self, mock_sys):
         # pylint: disable=protected-access
@@ -1304,10 +1321,11 @@ class TestHandleException(unittest.TestCase):
         self.assertTrue('alpha' in error_msg)
 
         interrupt = KeyboardInterrupt('detail')
+        mock_sys.exit.call_args_list = []
         main._handle_exception(
             KeyboardInterrupt, exc_value=interrupt, trace=None, config=None)
-        mock_sys.exit.assert_called_with(''.join(
-            traceback.format_exception_only(KeyboardInterrupt, interrupt)))
+        self.assertEqual(mock_sys.exit.call_args_list[0][0][0],
+            traceback.format_exception_only(KeyboardInterrupt, interrupt)[0])
 
 
 class TestAcquireFileLock(unittest.TestCase):
