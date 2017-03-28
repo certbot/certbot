@@ -139,6 +139,42 @@ class ColoredStreamHandlerTest(unittest.TestCase):
                                               util.ANSI_SGR_RESET))
 
 
+class MemoryHandlerTest(unittest.TestCase):
+    def setUp(self):
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
+        self.msg = 'hi there'
+        self.stream = six.StringIO()
+
+        stream_handler = logging.StreamHandler(self.stream)
+        from certbot.log import MemoryHandler
+        self.handler = MemoryHandler(stream_handler)
+        self.logger.addHandler(self.handler)
+
+    def test_flush(self):
+        self._test_log_debug()
+        self.handler.flush()
+        self.assertEqual(self.stream.getvalue(), self.msg + '\n')
+
+    def test_not_flushed(self):
+        # By default, logging.ERROR messages and higher are flushed
+        self.logger.critical(self.msg)
+        self.assertEqual(self.stream.getvalue(), '')
+
+    def test_target_reset(self):
+        self._test_log_debug()
+
+        new_stream = six.StringIO()
+        stream_handler = logging.StreamHandler(new_stream)
+        self.handler.setTarget(stream_handler)
+        self.handler.flush()
+        self.assertEqual(self.stream.getvalue(), '')
+        self.assertEqual(new_stream.getvalue(), self.msg + '\n')
+
+    def _test_log_debug(self):
+        self.logger.debug(self.msg)
+
+
 class ExceptHookTest(unittest.TestCase):
     """Tests for certbot.log.except_hook."""
     @classmethod
