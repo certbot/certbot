@@ -241,7 +241,7 @@ class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 
 class VerifyRenewableCertTest(unittest.TestCase):
     """Tests for certbot.crypto_util.verify_renewable_cert."""
- 
+
     def setUp(self):
         self.renewable_cert = mock.MagicMock()
         self.renewable_cert.chain = SS_CERT_PATH
@@ -270,7 +270,7 @@ class VerifyRenewableCertTest(unittest.TestCase):
         return verify_renewable_cert(renewable_cert)
 
     def test_fullchain_matches(self):
-        self.assertEqual(None,self._verify_fullchain(self.renewable_cert))
+        self.assertEqual(None, self._verify_fullchain(self.renewable_cert))
 
     def test_fullchain_mismatch(self):
         bad_renewable_cert = mock.MagicMock()
@@ -291,17 +291,17 @@ class VerifyRenewableCertTest(unittest.TestCase):
         self.assertRaises(OpenSSL.SSL.Error, self._verify_cert_matches_priv_key, bad_renewable_cert)
 
     def test_cert_sig_match(self): #TODO
-        self.assertEqual(None,self._verify_renewable_cert_sig(self.renewable_cert))
+        self.assertEqual(None, self._verify_renewable_cert_sig(self.renewable_cert))
 
     def test_cert_sig_mismatch(self):
         bad_renewable_cert = mock.MagicMock()
         bad_renewable_cert.chain = SS_CERT_PATH
         bad_renewable_cert.cert = test_util.vector_path('self_signed_cert_bad.pem')
- 
+
         self.assertRaises(OpenSSL.crypto.Error, self._verify_renewable_cert_sig, bad_renewable_cert)
 
     def test_verify_renewable_cert(self):
-        self.assertEqual(None,self._verify_renewable_cert(self.renewable_cert))
+        self.assertEqual(None, self._verify_renewable_cert(self.renewable_cert))
 
     @mock.patch('certbot.crypto_util.verify_renewable_cert_sig', side_effect=errors.Error(""))
     def test_verify_renewable_cert_failure(self, mock_verify_renewable_cert_sig):
