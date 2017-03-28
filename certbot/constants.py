@@ -18,6 +18,7 @@ CLI_DEFAULTS = dict(
         os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"),
                      "letsencrypt", "cli.ini"),
     ],
+    dry_run=False,
     verbose_count=-int(logging.INFO / 10),
     server="https://acme-v01.api.letsencrypt.org/directory",
     rsa_key_size=2048,
@@ -32,6 +33,8 @@ CLI_DEFAULTS = dict(
     auth_cert_path="./cert.pem",
     auth_chain_path="./chain.pem",
     strict_permissions=False,
+    lock_path="/tmp/.certbot.lock",
+    debug_challenges=False,
 )
 STAGING_URI = "https://acme-staging.api.letsencrypt.org/directory"
 
@@ -106,3 +109,6 @@ RENEWAL_CONFIGS_DIR = "renewal"
 
 FORCE_INTERACTIVE_FLAG = "--force-interactive"
 """Flag to disable TTY checking in IDisplay."""
+
+EFF_SUBSCRIBE_URI = "https://supporters.eff.org/subscribe/certbot"
+"""EFF URI used to submit the e-mail address of users who opt-in."""

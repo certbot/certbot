@@ -55,12 +55,15 @@ def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
     # Save file
     util.make_or_verify_dir(key_dir, 0o700, os.geteuid(),
                             config.strict_permissions)
-    key_f, key_path = util.unique_file(
-        os.path.join(key_dir, keyname), 0o600, "wb")
-    with key_f:
-        key_f.write(key_pem)
-
-    logger.info("Generating key (%d bits): %s", key_size, key_path)
+    if config.dry_run:
+        key_path = None
+        logger.info("Generating key (%d bits), not saving to file", key_size)
+    else:
+        key_f, key_path = util.unique_file(
+            os.path.join(key_dir, keyname), 0o600, "wb")
+        with key_f:
+            key_f.write(key_pem)
+        logger.info("Generating key (%d bits): %s", key_size, key_path)
 
     return util.Key(key_path, key_pem)
 
@@ -87,12 +90,15 @@ def init_save_csr(privkey, names, path, csrname="csr-certbot.pem"):
     # Save CSR
     util.make_or_verify_dir(path, 0o755, os.geteuid(),
                                config.strict_permissions)
-    csr_f, csr_filename = util.unique_file(
-        os.path.join(path, csrname), 0o644, "wb")
-    csr_f.write(csr_pem)
-    csr_f.close()
-
-    logger.info("Creating CSR: %s", csr_filename)
+    if config.dry_run:
+        csr_filename = None
+        logger.info("Creating CSR: not saving to file")
+    else:
+        csr_f, csr_filename = util.unique_file(
+            os.path.join(path, csrname), 0o644, "wb")
+        with csr_f:
+            csr_f.write(csr_pem)
+        logger.info("Creating CSR: %s", csr_filename)
 
     return util.CSR(csr_filename, csr_der, "der")
 

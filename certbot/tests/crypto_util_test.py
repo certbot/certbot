@@ -1,5 +1,6 @@
 """Tests for certbot.crypto_util."""
 import logging
+import os
 import shutil
 import tempfile
 import unittest
@@ -29,7 +30,8 @@ class InitSaveKeyTest(unittest.TestCase):
     def setUp(self):
         logging.disable(logging.CRITICAL)
         zope.component.provideUtility(
-            mock.Mock(strict_permissions=True), interfaces.IConfig)
+            mock.Mock(strict_permissions=True, dry_run=False),
+            interfaces.IConfig)
         self.key_dir = tempfile.mkdtemp('key_dir')
 
     def tearDown(self):
@@ -47,6 +49,17 @@ class InitSaveKeyTest(unittest.TestCase):
         key = self._call(1024, self.key_dir)
         self.assertEqual(key.pem, b'key_pem')
         self.assertTrue('key-certbot.pem' in key.file)
+        self.assertTrue(os.path.exists(os.path.join(self.key_dir, key.file)))
+
+    @mock.patch('certbot.crypto_util.make_key')
+    def test_success_dry_run(self, mock_make):
+        zope.component.provideUtility(
+            mock.Mock(strict_permissions=True, dry_run=True),
+            interfaces.IConfig)
+        mock_make.return_value = b'key_pem'
+        key = self._call(1024, self.key_dir)
+        self.assertEqual(key.pem, b'key_pem')
+        self.assertTrue(key.file is None)
 
     @mock.patch('certbot.crypto_util.make_key')
     def test_key_failure(self, mock_make):
@@ -59,7 +72,8 @@ class InitSaveCSRTest(unittest.TestCase):
 
     def setUp(self):
         zope.component.provideUtility(
-            mock.Mock(strict_permissions=True), interfaces.IConfig)
+            mock.Mock(strict_permissions=True, dry_run=False),
+            interfaces.IConfig)
         self.csr_dir = tempfile.mkdtemp('csr_dir')
 
     def tearDown(self):
@@ -67,7 +81,7 @@ class InitSaveCSRTest(unittest.TestCase):
 
     @mock.patch('certbot.crypto_util.make_csr')
     @mock.patch('certbot.crypto_util.util.make_or_verify_dir')
-    def test_it(self, unused_mock_verify, mock_csr):
+    def test_success(self, unused_mock_verify, mock_csr):
         from certbot.crypto_util import init_save_csr
 
         mock_csr.return_value = (b'csr_pem', b'csr_der')
@@ -78,6 +92,23 @@ class InitSaveCSRTest(unittest.TestCase):
 
         self.assertEqual(csr.data, b'csr_der')
         self.assertTrue('csr-certbot.pem' in csr.file)
+
+    @mock.patch('certbot.crypto_util.make_csr')
+    @mock.patch('certbot.crypto_util.util.make_or_verify_dir')
+    def test_success_dry_run(self, unused_mock_verify, mock_csr):
+        from certbot.crypto_util import init_save_csr
+
+        zope.component.provideUtility(
+            mock.Mock(strict_permissions=True, dry_run=True),
+            interfaces.IConfig)
+        mock_csr.return_value = (b'csr_pem', b'csr_der')
+
+        csr = init_save_csr(
+            mock.Mock(pem='dummy_key'), 'example.com', self.csr_dir,
+            'csr-certbot.pem')
+
+        self.assertEqual(csr.data, b'csr_der')
+        self.assertTrue(csr.file is None)
 
 
 class MakeCSRTest(unittest.TestCase):
@@ -407,8 +438,8 @@ class CertLoaderTest(unittest.TestCase):
         from certbot.crypto_util import pyopenssl_load_certificate
 
         cert, file_type = pyopenssl_load_certificate(CERT)
-        self.assertEqual(cert.digest('sha1'),
-                         OpenSSL.crypto.load_certificate(file_type, CERT).digest('sha1'))
+        self.assertEqual(cert.digest('sha256'),
+                         OpenSSL.crypto.load_certificate(file_type, CERT).digest('sha256'))
 
     def test_load_invalid_cert(self):
         from certbot.crypto_util import pyopenssl_load_certificate

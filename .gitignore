@@ -33,3 +33,5 @@ tags
 tests/letstest/letest-*/
 tests/letstest/*.pem
 tests/letstest/venv/
+
+.venv

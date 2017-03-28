@@ -206,7 +206,7 @@ or a family of enhancements, one per selectable ciphersuite configuration.
 
 Feedback
 ========
-We recieve lots of feedback on the type of ciphersuites that Let's Encrypt supports and list some coallated feedback below. This section aims to track suggestions and references that people have offered or identified to improve the ciphersuites that Let's Encrypt enables when configuring TLS on servers.
+We receive lots of feedback on the type of ciphersuites that Let's Encrypt supports and list some collated feedback below. This section aims to track suggestions and references that people have offered or identified to improve the ciphersuites that Let's Encrypt enables when configuring TLS on servers.
 
 Because of the Chatham House Rule applicable to some of the discussions, people are *not* individually credited for their suggestions, but most suggestions here were made or found by other people, and I thank them for their contributions.
 
@@ -255,7 +255,7 @@ I have access to an English-language summary of the recommendations.
 Keylength.com
 ~~~~~~~~~~~~~
 
-Damien Giry collects recommendations by academic researchers and standards organizations about keylengths for particular cryptoperiods, years, or security levels.  The keylength recommendations of the various sources are summarized in a chart.  This site has been updated over time and includes expert guidance from eight sources published between 2000 and 2015.
+Damien Giry collects recommendations by academic researchers and standards organizations about keylengths for particular cryptoperiods, years, or security levels.  The keylength recommendations of the various sources are summarized in a chart.  This site has been updated over time and includes expert guidance from eight sources published between 2000 and 2017.
 
 http://www.keylength.com/
 
