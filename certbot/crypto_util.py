@@ -249,8 +249,8 @@ def verify_renewable_cert_sig(renewable_cert):
 
     :raises OpenSSL.crypto.Error if signature verification fails
     """
-    with open(renewable_cert.chain, 'rb') as chain:
-        with open(renewable_cert.cert, 'rb') as cert:
+    with open(renewable_cert.chain) as chain:
+        with open(renewable_cert.cert) as cert:
             chain = pyopenssl_load_certificate(chain.read())[0]
             cert = x509.load_pem_x509_certificate(cert.read(), default_backend())
             hash_name = cert.signature_hash_algorithm.name
