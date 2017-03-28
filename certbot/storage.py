@@ -19,6 +19,9 @@ from certbot import errors
 from certbot import error_handler
 from certbot import util
 
+from certbot.plugins import common as plugins_common
+from certbot.plugins import disco as plugins_disco
+
 logger = logging.getLogger(__name__)
 
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
@@ -179,13 +182,12 @@ def _relevant(option):
 
     :rtype: bool
     """
-    # The list() here produces a list of the plugin names as strings.
     from certbot import renewal
-    from certbot.plugins import disco as plugins_disco
-    plugins = list(plugins_disco.PluginsRegistry.find_all())
+    plugins = plugins_disco.PluginsRegistry.find_all()
+    namespaces = [plugins_common.dest_namespace(plugin) for plugin in plugins]
 
     return (option in renewal.CONFIG_ITEMS or
-            any(option.startswith(x + "_") for x in plugins))
+            any(option.startswith(namespace) for namespace in namespaces))
 
 
 def relevant_values(all_values):
@@ -390,6 +392,26 @@ class RenewableCert(object):
         if update_symlinks:
             self._update_symlinks()
         self._check_symlinks()
+
+    @property
+    def key_path(self):
+        """Duck type for self.privkey"""
+        return self.privkey
+
+    @property
+    def cert_path(self):
+        """Duck type for self.cert"""
+        return self.cert
+
+    @property
+    def chain_path(self):
+        """Duck type for self.chain"""
+        return self.chain
+
+    @property
+    def fullchain_path(self):
+        """Duck type for self.fullchain"""
+        return self.fullchain
 
     @property
     def target_expiry(self):
@@ -716,7 +738,7 @@ class RenewableCert(object):
 
         :returns: ``True`` if there is a complete version of this
             lineage with a larger version number than the current
-            version, and ``False`` otherwis
+            version, and ``False`` otherwise
         :rtype: bool
 
         """

@@ -581,6 +581,15 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertEqual(
             self._test_relevant_values_common(values), values)
 
+    @mock.patch("certbot.cli.set_by_cli")
+    @mock.patch("certbot.plugins.disco.PluginsRegistry.find_all")
+    def test_relevant_values_namespace(self, mock_find_all, mock_set_by_cli):
+        mock_set_by_cli.return_value = True
+        mock_find_all.return_value = ["certbot-foo:bar"]
+        values = {"certbot_foo:bar_baz": 42}
+        self.assertEqual(
+            self._test_relevant_values_common(values), values)
+
     @mock.patch("certbot.storage.relevant_values")
     def test_new_lineage(self, mock_rv):
         """Test for new_lineage() class method."""

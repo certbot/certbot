@@ -13,11 +13,13 @@ from certbot.plugins import util as plug_util
 
 logger = logging.getLogger(__name__)
 
+
 def validate_hooks(config):
     """Check hook commands are executable."""
     validate_hook(config.pre_hook, "pre")
     validate_hook(config.post_hook, "post")
     validate_hook(config.renew_hook, "renew")
+
 
 def _prog(shell_cmd):
     """Extract the program run by a shell command.
@@ -44,9 +46,14 @@ def validate_hook(shell_cmd, hook_name):
         cmd = shell_cmd.split(None, 1)[0]
         if not _prog(cmd):
             path = os.environ["PATH"]
-            msg = "Unable to find {2}-hook command {0} in the PATH.\n(PATH is {1})".format(
-                cmd, path, hook_name)
+            if os.path.exists(cmd):
+                msg = "{1}-hook command {0} exists, but is not executable.".format(cmd, hook_name)
+            else:
+                msg = "Unable to find {2}-hook command {0} in the PATH.\n(PATH is {1})".format(
+                    cmd, path, hook_name)
+
             raise errors.HookCommandNotFound(msg)
+
 
 def pre_hook(config):
     "Run pre-hook if it's defined and hasn't been run."
@@ -58,7 +65,7 @@ def pre_hook(config):
     elif cmd:
         logger.info("Pre-hook command already run, skipping: %s", cmd)
 
-pre_hook.already = set()
+pre_hook.already = set()  # type: ignore
 
 
 def post_hook(config):
@@ -78,7 +85,8 @@ def post_hook(config):
         logger.info("Running post-hook command: %s", cmd)
         _run_hook(cmd)
 
-post_hook.eventually = []
+post_hook.eventually = []  # type: ignore
+
 
 def run_saved_post_hooks():
     """Run any post hooks that were saved up in the course of the 'renew' verb"""

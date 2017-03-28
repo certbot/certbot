@@ -60,7 +60,7 @@ class Field(object):
 
     @classmethod
     def _empty(cls, value):
-        """Is the provided value cosidered "empty" for this field?
+        """Is the provided value considered "empty" for this field?
 
         This is useful for subclasses that might want to override the
         definition of being empty, e.g. for some more exotic data types.
@@ -267,7 +267,7 @@ class JSONObjectWithFields(util.ImmutableMap, interfaces.JSONDeSerializable):
 
         if missing:
             raise errors.DeserializationError(
-                'The following field are required: {0}'.format(
+                'The following fields are required: {0}'.format(
                     ','.join(missing)))
 
     @classmethod

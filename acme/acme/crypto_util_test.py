@@ -6,7 +6,7 @@ import time
 import unittest
 
 import six
-from six.moves import socketserver  # pylint: disable=import-error
+from six.moves import socketserver  #type: ignore  # pylint: disable=import-error
 
 import OpenSSL
 
@@ -59,7 +59,7 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
     def test_probe_not_recognized_name(self):
         self.assertRaises(errors.Error, self._probe, b'bar')
 
-    # TODO: py33/py34 tox hangs forever on do_hendshake in second probe
+    # TODO: py33/py34 tox hangs forever on do_handshake in second probe
     #def probe_connection_error(self):
     #    self._probe(b'foo')
     #    #time.sleep(1)  # TODO: avoid race conditions in other way

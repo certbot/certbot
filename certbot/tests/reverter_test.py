@@ -394,7 +394,7 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         self.assertTrue(mock_logger.info.call_count > 0)
 
     def test_view_config_changes_bad_backups_dir(self):
-        # There shouldn't be any "in progess directories when this is called
+        # There shouldn't be any "in progress directories when this is called
         # It must just be clean checkpoints
         os.makedirs(os.path.join(self.config.backup_dir, "in_progress"))
 
