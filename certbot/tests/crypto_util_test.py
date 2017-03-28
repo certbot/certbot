@@ -89,7 +89,7 @@ class InitSaveCSRTest(unittest.TestCase):
         self.assertEqual(csr.data, b'csr_pem')
         self.assertTrue('csr-certbot.pem' in csr.file)
 
-    @mock.patch('certbot.crypto_util.make_csr')
+    @mock.patch('acme.crypto_util.make_csr')
     @mock.patch('certbot.crypto_util.util.make_or_verify_dir')
     def test_success_dry_run(self, unused_mock_verify, mock_csr):
         from certbot.crypto_util import init_save_csr
@@ -97,13 +97,12 @@ class InitSaveCSRTest(unittest.TestCase):
         zope.component.provideUtility(
             mock.Mock(strict_permissions=True, dry_run=True),
             interfaces.IConfig)
-        mock_csr.return_value = (b'csr_pem', b'csr_der')
+        mock_csr.return_value = b'csr_pem'
 
         csr = init_save_csr(
-            mock.Mock(pem='dummy_key'), 'example.com', self.csr_dir,
-            'csr-certbot.pem')
+            mock.Mock(pem='dummy_key'), 'example.com', self.csr_dir)
 
-        self.assertEqual(csr.data, b'csr_der')
+        self.assertEqual(csr.data, b'csr_pem')
         self.assertTrue(csr.file is None)
 
 
