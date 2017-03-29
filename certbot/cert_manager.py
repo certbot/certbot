@@ -56,15 +56,28 @@ def rename_lineage(config):
         if code != display_util.OK or not new_certname:
             raise errors.Error("User ended interaction.")
 
-    new_lineage = storage.duplicate_lineage(config, certname, new_certname)
+    try:
+        # copy files to new name
+        new_lineage = storage.duplicate_lineage(config, certname, new_certname)
 
-    config.certname = new_certname
-    plugins = plugins_disco.PluginsRegistry.find_all()
-    from certbot.main import install
-    install(config, plugins, new_lineage, False)
+        # install the new name's files
+        config.certname = new_certname
+        plugins = plugins_disco.PluginsRegistry.find_all()
+        from certbot.main import install
+        install(config, plugins, new_lineage, False)
+    except:
+        # delete the new files
+        config.certname = new_certname
+        storage.delete_files(config, new_certname)
+        reporter = zope.component.getUtility(interfaces.IReporter)
+        reporter.add_message("Unable to rename certificate", reporter.HIGH_PRIORITY)
+    else:
+        # delete old files
+        config.certname = certname
+        storage.delete_files(config, certname)
 
-    disp.notification("Renamed files for {0} to {1}."
-        .format(certname, new_certname), pause=False)
+        disp.notification("Renamed files for {0} to {1}."
+            .format(certname, new_certname), pause=False)
 
 def certificates(config):
     """Display information about certs configured with Certbot
