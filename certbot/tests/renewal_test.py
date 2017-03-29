@@ -2,8 +2,6 @@
 import os
 import mock
 import unittest
-import shutil
-import tempfile
 
 from acme import challenges
 
@@ -14,13 +12,11 @@ from certbot import storage
 from certbot.tests import util
 
 
-class RenewalTest(unittest.TestCase):
+class RenewalTest(util.TempDirTestCase):
     def setUp(self):
-        self.tmp_dir = tempfile.mkdtemp()
-        self.config_dir = os.path.join(self.tmp_dir, 'config')
+        super(RenewalTest, self).setUp()
 
-    def tearDown(self):
-        shutil.rmtree(self.tmp_dir)
+        self.config_dir = os.path.join(self.tempdir, 'config')
 
     @mock.patch('certbot.cli.set_by_cli')
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
