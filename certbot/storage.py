@@ -149,7 +149,7 @@ def update_configuration(lineagename, archive_dir, target, cli_config):
     """
     config_filename = renewal_filename_for_lineagename(cli_config, lineagename)
 
-    def _save_renewal_values(config, temp_filename):
+    def _save_renewal_values(unused_config, temp_filename):
         # Save only the config items that are relevant to renewal
         values = relevant_values(vars(cli_config.namespace))
         write_renewal_config(config_filename, temp_filename, archive_dir, target, values)
@@ -341,7 +341,7 @@ def duplicate_lineage(config, certname, new_certname):
         raise errors.CertStorageError(
             "error parsing {0}".format(new_filename))
 
-    def copy_to_new_dir(prev_dir, description):
+    def copy_to_new_dir(prev_dir):
         """Replace certname with new_certname in prev_dir"""
         new_dir = prev_dir.replace(certname, new_certname)
         # make dir iff it doesn't exist
@@ -355,7 +355,7 @@ def duplicate_lineage(config, certname, new_certname):
     if not certname in prev_archive_dir:
         raise errors.CertStorageError("Archive directory does not conform to defaults.")
     else:
-        new_archive_dir = copy_to_new_dir(prev_archive_dir, "Archive")
+        new_archive_dir = copy_to_new_dir(prev_archive_dir)
 
     # live dir
     # if things aren't in their default places, don't try to change things.
@@ -365,7 +365,7 @@ def duplicate_lineage(config, certname, new_certname):
             len(set(os.path.dirname(renewal_config.get(kind)) for kind in ALL_FOUR)) != 1):
         raise errors.CertStorageError("Live directory does not conform to defaults.")
     else:
-        copy_to_new_dir(prev_live_dir, "Live")
+        copy_to_new_dir(prev_live_dir)
         new_links = dict((k, prev_links[k].replace(certname, new_certname)) for k in prev_links)
 
     # Update renewal config file
