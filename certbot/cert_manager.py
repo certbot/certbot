@@ -13,6 +13,7 @@ from certbot import storage
 from certbot import util
 
 from certbot.display import util as display_util
+from certbot.plugins import disco as plugins_disco
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +56,12 @@ def rename_lineage(config):
         if code != display_util.OK or not new_certname:
             raise errors.Error("User ended interaction.")
 
-    storage.rename_files(config, certname, new_certname)
-    update_live_symlinks(config)
-    # TODO: reinstall cert
+    new_lineage = storage.duplicate_lineage(config, certname, new_certname)
+
+    config.certname = new_certname
+    plugins = plugins_disco.PluginsRegistry.find_all()
+    from certbot.main import install
+    install(config, plugins, new_lineage, False)
 
     disp.notification("Renamed files for {0} to {1}."
         .format(certname, new_certname), pause=False)
