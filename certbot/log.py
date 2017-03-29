@@ -1,6 +1,7 @@
 """Logging utilities for Certbot."""
 import logging
 import logging.handlers
+import os
 import sys
 
 from certbot import util
@@ -70,3 +71,21 @@ class MemoryHandler(logging.handlers.MemoryHandler):
 
         """
         return False
+
+
+def exit_with_log_path(log_path):
+    """Print a message about the log location and exit.
+
+    The message is printed to stderr and the program will exit with a
+    nonzero status.
+
+    :param str log_path: path to file or directory containing the log
+
+    """
+    msg = "Please see the "
+    if os.path.isdir(log_path):
+        msg += "logfiles in {0} ".format(log_path)
+    else:
+        msg += "logfile '{0}' ".format(log_path)
+    msg += "for more details."
+    sys.exit(msg)
