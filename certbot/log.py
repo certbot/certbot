@@ -1,8 +1,10 @@
 """Logging utilities for Certbot."""
 from __future__ import print_function
+import functools
 import logging
 import os
 import sys
+import tempfile
 import traceback
 
 from acme import messages
@@ -11,7 +13,17 @@ from certbot import cli
 from certbot import errors
 from certbot import util
 
+# Logging format
+CLI_FMT = "%(message)s"
+FILE_FMT = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+
+
 logger = logging.getLogger(__name__)
+
+
+def pre_arg_setup():
+    """Ensures fatal exceptions are logged and reported to the user."""
+    sys.excepthook = functools.partial(except_hook, config=None)
 
 
 class ColoredStreamHandler(logging.StreamHandler):

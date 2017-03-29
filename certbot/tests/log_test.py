@@ -12,6 +12,23 @@ from certbot import errors
 from certbot import util
 
 
+class PreArgSetupTest(unittest.TestCase):
+    """Tests for certbot.log.pre_arg_setup."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.log import pre_arg_setup
+        return pre_arg_setup(*args, **kwargs)
+
+    def test_it(self):
+        with mock.patch('certbot.log.except_hook') as mock_except_hook:
+            with mock.patch('certbot.log.sys') as mock_sys:
+                self._call()
+
+        mock_sys.excepthook(1, 2, 3)
+        mock_except_hook.assert_called_once_with(1, 2, 3, config=None)
+
+
 class ColoredStreamHandlerTest(unittest.TestCase):
     """Tests for certbot.log."""
 
@@ -43,14 +60,14 @@ class ColoredStreamHandlerTest(unittest.TestCase):
 
 
 class ExceptHookTest(unittest.TestCase):
-    """Test log.except_hook"""
+    """Tests for certbot.log.except_hook."""
     @classmethod
     def _call(cls, *args, **kwargs):
         from certbot.log import except_hook
         return except_hook(*args, **kwargs)
 
     @mock.patch('certbot.log.sys')
-    def test_handle_exception(self, mock_sys):
+    def test_except_hook(self, mock_sys):
         config = mock.MagicMock()
         mock_open = mock.mock_open()
 
