@@ -1,5 +1,6 @@
 """Tests for certbot.log."""
 import logging
+import logging.handlers
 import os
 import sys
 import unittest
@@ -12,6 +13,43 @@ from acme import messages
 from certbot import errors
 from certbot import util
 from certbot.tests import util as test_util
+
+
+class PreArgSetupTest(unittest.TestCase):
+    """Tests for certbot.log.pre_arg_setup."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.log import pre_arg_setup
+        return pre_arg_setup(*args, **kwargs)
+
+    def test_it(self):
+        with mock.patch('certbot.log.util.atexit_register') as mock_register:
+            with mock.patch('certbot.log.logging.getLogger') as mock_get:
+                with mock.patch('certbot.log.except_hook') as mock_except_hook:
+                    with mock.patch('certbot.log.sys') as mock_sys:
+                        mock_sys.argv = ['--debug']
+                        self._call()
+
+        mock_register.assert_called_once_with(logging.shutdown)
+        mock_sys.excepthook(1, 2, 3)
+        mock_except_hook.assert_called_once_with(
+            1, 2, 3, debug=True, log_path=mock.ANY)
+
+        mock_root_logger = mock_get()
+        mock_root_logger.setLevel.assert_called_once_with(logging.DEBUG)
+        self.assertEqual(mock_root_logger.addHandler.call_count, 2)
+
+        MemoryHandler = logging.handlers.MemoryHandler
+        memory_handler = None
+        for call in mock_root_logger.addHandler.call_args_list:
+            handler = call[0][0]
+            if memory_handler is None and isinstance(handler, MemoryHandler):
+                memory_handler = handler
+            else:
+                self.assertTrue(isinstance(handler, logging.StreamHandler))
+        self.assertTrue(
+            isinstance(memory_handler.target, logging.StreamHandler))
 
 
 class ColoredStreamHandlerTest(unittest.TestCase):
@@ -80,7 +118,7 @@ class MemoryHandlerTest(unittest.TestCase):
         self.logger.debug(self.msg)
 
 
-class TextExceptHook(unittest.TestCase):
+class ExceptHookTest(unittest.TestCase):
     """Tests for certbot.log.except_hook."""
     @classmethod
     def _call(cls, *args, **kwargs):
@@ -153,7 +191,7 @@ class TextExceptHook(unittest.TestCase):
         self.assertTrue(self.error_msg in output)
 
 
-class TestExitWithLogPath(test_util.TempDirTestCase):
+class ExitWithLogPathTest(test_util.TempDirTestCase):
     """Tests for certbot.log.exit_with_log_path."""
     @classmethod
     def _call(cls, *args, **kwargs):

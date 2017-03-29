@@ -1,9 +1,11 @@
 """Logging utilities for Certbot."""
 from __future__ import print_function
+import functools
 import logging
 import logging.handlers
 import os
 import sys
+import tempfile
 import traceback
 
 from acme import messages
@@ -12,7 +14,48 @@ from certbot import constants
 from certbot import errors
 from certbot import util
 
+# Logging format
+CLI_FMT = "%(message)s"
+FILE_FMT = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+
+
 logger = logging.getLogger(__name__)
+
+
+def pre_arg_setup():
+    """Setup logging before command line arguments are parsed.
+
+    Terminal logging is setup using
+    certbot.constants.QUIET_LOGGING_LEVEL so Certbot is as quiet as
+    possible. File logging is setup so that logging messages are
+    buffered in memory so they can either be written to a temporary
+    file before Certbot exits or to the normal logfiles once command
+    line arguments are parsed.
+
+    This function also sets logging.shutdown to be called on program
+    exit which automatically flushes logging handlers and sys.excepthook
+    to properly log/display fatal exceptions.
+
+    """
+    temp_fd, temp_path = tempfile.mkstemp()
+    temp_fd = os.fdopen(temp_fd, 'w')
+    temp_handler = logging.StreamHandler(temp_fd)
+    temp_handler.setFormatter(logging.Formatter(FILE_FMT))
+    temp_handler.setLevel(logging.DEBUG)
+    memory_handler = MemoryHandler(temp_handler)
+
+    stream_handler = ColoredStreamHandler()
+    stream_handler.setFormatter(logging.Formatter(CLI_FMT))
+    stream_handler.setLevel(constants.QUIET_LOGGING_LEVEL)
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)  # send all records to handlers
+    root_logger.addHandler(memory_handler)
+    root_logger.addHandler(stream_handler)
+
+    util.atexit_register(logging.shutdown)
+    sys.excepthook = functools.partial(
+        except_hook, debug='--debug' in sys.argv, log_path=temp_path)
 
 
 class ColoredStreamHandler(logging.StreamHandler):
