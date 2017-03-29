@@ -8,7 +8,7 @@
 #
 # Note: this script is called by Boulder integration test suite!
 
-set -eux
+set -ex
 
 . ./tests/integration/_common.sh
 export PATH="$PATH:/usr/sbin"  # /usr/sbin/nginx
