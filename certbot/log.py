@@ -205,3 +205,21 @@ def except_hook(exc_type, exc_value, trace, config):
             sys.exit(msg)
     else:
         sys.exit(tb_str)
+
+
+def exit_with_log_path(log_path):
+    """Print a message about the log location and exit.
+
+    The message is printed to stderr and the program will exit with a
+    nonzero status.
+
+    :param str log_path: path to file or directory containing the log
+
+    """
+    msg = "Please see the "
+    if os.path.isdir(log_path):
+        msg += "logfiles in {0} ".format(log_path)
+    else:
+        msg += "logfile '{0}' ".format(log_path)
+    msg += "for more details."
+    sys.exit(msg)

@@ -1,7 +1,7 @@
 """Tests for certbot.log."""
 import logging
-import traceback
 import logging.handlers
+import traceback
 import os
 import sys
 import time
@@ -110,17 +110,16 @@ class SetupLogFileHandlerTest(test_util.TempDirTestCase):
 
 
 class ColoredStreamHandlerTest(unittest.TestCase):
-    """Tests for certbot.log."""
+    """Tests for certbot.log.ColoredStreamHandler"""
 
     def setUp(self):
-        from certbot import log
-
         self.stream = six.StringIO()
         self.stream.isatty = lambda: True
-        self.handler = log.ColoredStreamHandler(self.stream)
-
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)
+
+        from certbot.log import ColoredStreamHandler
+        self.handler = ColoredStreamHandler(self.stream)
         self.logger.addHandler(self.handler)
 
     def test_format(self):
@@ -140,6 +139,7 @@ class ColoredStreamHandlerTest(unittest.TestCase):
 
 
 class MemoryHandlerTest(unittest.TestCase):
+    """Tests for certbot.log.MemoryHandler"""
     def setUp(self):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
@@ -229,6 +229,35 @@ class ExceptHookTest(unittest.TestCase):
             KeyboardInterrupt, exc_value=interrupt, trace=None, config=None)
         mock_sys.exit.assert_called_with(''.join(
             traceback.format_exception_only(KeyboardInterrupt, interrupt)))
+
+
+class TestExitWithLogPath(test_util.TempDirTestCase):
+    """Tests for certbot.log.exit_with_log_path."""
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.log import exit_with_log_path
+        return exit_with_log_path(*args, **kwargs)
+
+    def test_log_file(self):
+        log_file = os.path.join(self.tempdir, 'test.log')
+        open(log_file, 'w').close()
+
+        err_str = self._test_common(log_file)
+        self.assertTrue('logfiles' not in err_str)
+        self.assertTrue(log_file in err_str)
+
+    def test_log_dir(self):
+        err_str = self._test_common(self.tempdir)
+        self.assertTrue('logfiles' in err_str)
+        self.assertTrue(self.tempdir in err_str)
+
+    def _test_common(self, *args, **kwargs):
+        try:
+            self._call(*args, **kwargs)
+        except SystemExit as err:
+            return str(err)
+        else:  # pragma: no cover
+            self.fail('SystemExit was not raised.')
 
 
 if __name__ == "__main__":
