@@ -8,7 +8,7 @@ import sys
 import time
 import traceback
 
-import fasteners
+import portalocker
 import zope.component
 
 from acme import jose
@@ -45,6 +45,11 @@ _PERM_ERR_FMT = os.linesep.join((
 
 USER_CANCELLED = ("User chose to cancel the operation and may "
                   "reinvoke the client.")
+
+
+# Stores the locked file handle to prevent it from being garbage
+# collected during exception handling and released.
+_LOCK_FILE = None
 
 
 logger = logging.getLogger(__name__)
@@ -867,54 +872,40 @@ def _post_logging_setup(config, plugins, cli_args):
     logger.debug("Discovered plugins: %r", plugins)
 
 
-def acquire_file_lock(lock_path):
-    """Obtain a lock on the file at the specified path.
+def acquire_lock_file(lock_path):
+    """Open a file at the specified path and place a lock on it.
+
+    The file is opened in append mode and created with 0666 permissions
+    if it doesn't already exist. If lock_path cannot be accessed
+    securely, a warning is logged and the lock is not acquired. The lock
+    is automatically released when the file is closed.
 
     :param str lock_path: path to the file to be locked
 
-    :returns: lock file object representing the acquired lock
-    :rtype: fasteners.InterProcessLock
+    :returns: locked file or `None` if lock_path cannot be accessed
+    :rtype: `file` or `None`
 
-    :raises .Error: if the lock is held by another process
+    :raises errors.Error: if the lock is held by another process
 
     """
-    lock = fasteners.InterProcessLock(lock_path)
-    logger.debug("Attempting to acquire lock file %s", lock_path)
-
     try:
-        lock.acquire(blocking=False)
-    except IOError as err:
-        logger.debug(err)
+        f = util.safe_permissive_open(lock_path, 0o666, "a")
+    except OSError:
+        logger.debug("Encountered exception opening lock file.", exc_info=True)
         logger.warning(
             "Unable to access lock file %s. You should set --lock-file "
             "to a writeable path to ensure multiple instances of "
             "Certbot don't attempt modify your configuration "
             "simultaneously.", lock_path)
-    else:
-        if not lock.acquired:
-            raise errors.Error(
-                "Another instance of Certbot is already running.")
-
-    return lock
-
-
-def _run_subcommand(config, plugins):
-    """Executes the Certbot subcommand specified in the configuration.
-
-    :param .IConfig config: parsed configuration object
-    :param .PluginsRegistry plugins: available plugins
-
-    :returns: return value from the specified subcommand
-    :rtype: str or int
-
-    """
-    lock = acquire_file_lock(config.lock_path)
+        return None
 
     try:
-        return config.func(config, plugins)
-    finally:
-        if lock.acquired:
-            lock.release()
+        portalocker.lock(f, portalocker.LOCK_EX | portalocker.LOCK_NB)
+    except portalocker.LockException:
+        logger.debug("Encountered exception acquiring lock", exc_info=True)
+        raise errors.Error("Another instance of Certbot is already running.")
+
+    return f
 
 
 def main(cli_args=sys.argv[1:]):
@@ -926,6 +917,10 @@ def main(cli_args=sys.argv[1:]):
     args = cli.prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
+
+    # Setup lock file ASAP
+    global _LOCK_FILE  # pylint: disable=global-statement
+    _LOCK_FILE = acquire_lock_file(config.lock_path)
 
     make_or_verify_needed_dirs(config)
 
@@ -944,7 +939,7 @@ def main(cli_args=sys.argv[1:]):
     zope.component.provideUtility(report)
     atexit.register(report.atexit_print_messages)
 
-    return _run_subcommand(config, plugins)
+    return config.func(config, plugins)
 
 
 if __name__ == "__main__":

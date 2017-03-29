@@ -4,7 +4,6 @@ from __future__ import print_function
 
 import itertools
 import mock
-import multiprocessing
 import os
 import shutil
 import tempfile
@@ -452,8 +451,7 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         os.mkdir(self.logs_dir)
         self.standard_args = ['--config-dir', self.config_dir,
                               '--work-dir', self.work_dir,
-                              '--logs-dir', self.logs_dir, '--text',
-                              '--lock-path', os.path.join(self.tmp_dir, 'certbot.lock')]
+                              '--logs-dir', self.logs_dir, '--text']
 
     def tearDown(self):
         # Reset globals in cli
@@ -473,7 +471,8 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         toy_stdout = stdout if stdout else six.StringIO()
         with mock.patch('certbot.main.sys.stdout', new=toy_stdout):
             with mock.patch('certbot.main.sys.stderr') as stderr:
-                ret = main.main(args[:])  # NOTE: parser can alter its args!
+                with mock.patch('certbot.main.acquire_lock_file'):
+                    ret = main.main(args[:])  # NOTE: parser can alter its args!
         return ret, toy_stdout, stderr
 
     def test_no_flags(self):
@@ -486,13 +485,15 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         toy_err = six.StringIO()
         with mock.patch('certbot.main.sys.stdout', new=toy_out):
             with mock.patch('certbot.main.sys.stderr', new=toy_err):
-                try:
-                    main.main(["--version"])
-                except SystemExit:
-                    pass
-                finally:
-                    output = toy_out.getvalue() or toy_err.getvalue()
-                    self.assertTrue("certbot" in output, "Output is {0}".format(output))
+                with mock.patch('certbot.main.acquire_lock_file'):
+                    try:
+                        main.main(["--version"])
+                    except SystemExit:
+                        pass
+                    finally:
+                        output = toy_out.getvalue() or toy_err.getvalue()
+                        self.assertTrue("certbot" in output,
+                                        "Output is {0}".format(output))
         toy_out.close()
         toy_err.close()
 
@@ -501,7 +502,9 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         exc = None
         try:
             with mock.patch('certbot.main.sys.stderr'):
-                main.main(self.standard_args + args[:])  # NOTE: parser can alter its args!
+                with mock.patch('certbot.main.acquire_lock_file'):
+                    # NOTE: parser can alter its args!
+                    main.main(self.standard_args + args[:])
         except errors.MissingCommandlineFlag as exc_:
             exc = exc_
             self.assertTrue(message in str(exc))
@@ -1310,8 +1313,8 @@ class TestHandleException(unittest.TestCase):
             traceback.format_exception_only(KeyboardInterrupt, interrupt)))
 
 
-class TestAcquireFileLock(unittest.TestCase):
-    """Test main.acquire_file_lock."""
+class TestAcquireLockFile(unittest.TestCase):
+    """Test main.acquire_lock_file."""
 
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
@@ -1322,41 +1325,14 @@ class TestAcquireFileLock(unittest.TestCase):
 
     @mock.patch('certbot.main.logger')
     def test_bad_path(self, mock_logger):
-        lock = main.acquire_file_lock(os.getcwd())
+        f = main.acquire_lock_file(os.getcwd())
         self.assertTrue(mock_logger.warning.called)
-        self.assertFalse(lock.acquired)
+        self.assertEqual(f, None)
 
     def test_held_lock(self):
-        # start child and wait for it to grab the lock
-        cv = multiprocessing.Condition()
-        cv.acquire()
-        child_args = (cv, self.lock_path,)
-        child = multiprocessing.Process(target=_hold_lock, args=child_args)
-        child.start()
-        cv.wait()
-
-        # assert we can't grab lock and terminate the child
-        self.assertRaises(errors.Error, main.acquire_file_lock, self.lock_path)
-        cv.notify()
-        cv.release()
-        child.join()
-        self.assertEqual(child.exitcode, 0)
-
-
-def _hold_lock(cv, lock_path):
-    """Acquire a file lock at lock_path and wait to release it.
-
-    :param multiprocessing.Condition cv: condition for syncronization
-    :param str lock_path: path to the file lock
-
-    """
-    import fasteners
-    lock = fasteners.InterProcessLock(lock_path)
-    lock.acquire()
-    cv.acquire()
-    cv.notify()
-    cv.wait()
-    lock.release()
+        f = main.acquire_lock_file(self.lock_path)
+        self.assertRaises(errors.Error, main.acquire_lock_file, self.lock_path)
+        f.close()
 
 
 if __name__ == '__main__':

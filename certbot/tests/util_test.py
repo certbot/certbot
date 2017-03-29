@@ -189,6 +189,41 @@ class UniqueFileTest(unittest.TestCase):
         self.assertTrue(basename3.endswith("foo.txt"))
 
 
+class SafePermissiveOpenTest(unittest.TestCase):
+    """Tests for certbot.util.safe_permissive_open."""
+
+    def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+        self.path = os.path.join(self.tempdir, "foo")
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+
+    def _call(self, *args, **kwargs):
+        from certbot.util import safe_permissive_open
+        return safe_permissive_open(self.path, *args, **kwargs)
+
+    def _check_permissions(self, mode):
+        from certbot.util import check_permissions
+        return check_permissions(self.path, mode, os.geteuid())
+
+    def test_failure(self):
+        os.symlink(self.path + "2", self.path)
+        self.assertRaises(OSError, self._call, 0o777)
+
+    def test_success(self):
+        mode = 0o600
+        f = self._call(mode, "w")
+        f.write("hi")  # file is open for writing
+        self.assertTrue(self._check_permissions(mode))
+        f.close()
+
+        f = self._call(0o777, "w")
+        f.write("hi")  # file is open for writing
+        self.assertTrue(self._check_permissions(mode))
+        f.close()
+
+
 try:
     file_type = file
 except NameError:

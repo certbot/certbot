@@ -135,6 +135,27 @@ def check_permissions(filepath, mode, uid=0):
     return stat.S_IMODE(file_stat.st_mode) == mode and file_stat.st_uid == uid
 
 
+def controlled_open(path, flags, mode="w", chmod=None, buffering=None):
+    """Open a file with lower level control.
+
+    :param str path: Path to a file.
+    :param int flags: Same as `flags` for `os.open`
+    :param str mode: Same os `mode` for `open`.
+    :param int chmod: Same as `mode` for `os.open`, uses Python defaults
+        if ``None``.
+    :param int buffering: Same as `bufsize` for `os.fdopen`, uses Python
+        defaults if ``None``.
+
+    :returns: the opened file
+    :rtype: `file`
+
+    """
+    # pylint: disable=star-args
+    open_args = () if chmod is None else (chmod,)
+    fdopen_args = () if buffering is None else (buffering,)
+    return os.fdopen(os.open(path, flags, *open_args), mode, *fdopen_args)
+
+
 def safe_open(path, mode="w", chmod=None, buffering=None):
     """Safely open a file.
 
@@ -146,12 +167,36 @@ def safe_open(path, mode="w", chmod=None, buffering=None):
         defaults if ``None``.
 
     """
-    # pylint: disable=star-args
-    open_args = () if chmod is None else (chmod,)
-    fdopen_args = () if buffering is None else (buffering,)
-    return os.fdopen(
-        os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args),
-        mode, *fdopen_args)
+    flags = os.O_CREAT | os.O_EXCL | os.O_RDWR
+    return controlled_open(path, flags, mode, chmod, buffering)
+
+
+def safe_permissive_open(path, chmod, mode="w"):
+    """Safely open a file with the specified permissions.
+
+    This function can be used to safely create a file with greater than
+    normal permissions. If the file already exists, its permissions are
+    unchanged. If it doesn't exist, it is created with the permissions
+    chmod if it can be done so safely (e.g. without following symlinks).
+
+    :param str path: Path to a file.
+    :param int chmod: Same as `mode` for `os.open`, uses Python defaults
+        if ``None``.
+    :param str mode: Same os `mode` for `open`.
+
+    :returns: the opened file
+    :rtype: `file`
+
+    """
+    old_umask = os.umask(0o000)
+    try:
+        return safe_open(path, mode, chmod=chmod)
+    except OSError as err:
+        if err.errno == errno.EEXIST:
+            return controlled_open(path, os.O_RDWR, mode)
+        raise
+    finally:
+        os.umask(old_umask)
 
 
 def _unique_file(path, filename_pat, count, chmod, mode):
