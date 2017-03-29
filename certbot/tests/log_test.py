@@ -1,10 +1,15 @@
 """Tests for certbot.log."""
 import logging
 import os
+import sys
 import unittest
 
+import mock
 import six
 
+from acme import messages
+
+from certbot import errors
 from certbot import util
 from certbot.tests import util as test_util
 
@@ -73,6 +78,79 @@ class MemoryHandlerTest(unittest.TestCase):
 
     def _test_log_debug(self):
         self.logger.debug(self.msg)
+
+
+class TextExceptHook(unittest.TestCase):
+    """Tests for certbot.log.except_hook."""
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.log import except_hook
+        return except_hook(*args, **kwargs)
+
+    def setUp(self):
+        self.error_msg = 'test error message'
+        self.log_path = 'foo.log'
+
+    def test_base_exception(self):
+        mock_logger, output = self._test_common(KeyboardInterrupt, debug=False)
+        self.assertTrue(mock_logger.exception.called)
+        self._assert_logfile_output(output)
+
+    def test_debug(self):
+        mock_logger, output = self._test_common(ValueError, debug=True)
+        self.assertTrue(mock_logger.exception.called)
+        self._assert_logfile_output(output)
+
+    def test_custom_error(self):
+        mock_logger, output = self._test_common(
+            errors.PluginError, debug=False)
+        self._assert_quiet_output(mock_logger, output)
+
+    def test_acme_error(self):
+        # Get an arbitrary error code
+        acme_code = next(six.iterkeys(messages.ERROR_CODES))
+
+        def get_acme_error(msg):
+            """Wraps ACME errors so the constructor takes only a msg."""
+            return messages.Error.with_code(acme_code, detail=msg)
+
+        mock_logger, output = self._test_common(get_acme_error, debug=False)
+        self._assert_quiet_output(mock_logger, output)
+        self.assertFalse(messages.ERROR_PREFIX in output)
+
+    def test_other_error(self):
+        mock_logger, output = self._test_common(ValueError, debug=False)
+        self._assert_quiet_output(mock_logger, output)
+
+    def _test_common(self, error_type, debug):
+        """Returns the mocked logger and stderr output."""
+        mock_err = six.StringIO()
+        try:
+            raise error_type(self.error_msg)
+        except BaseException:
+            exc_info = sys.exc_info()
+            with mock.patch('certbot.log.logger') as mock_logger:
+                with mock.patch('certbot.log.sys.stderr', mock_err):
+                    try:
+                        # pylint: disable=star-args
+                        self._call(
+                            *exc_info, debug=debug, log_path=self.log_path)
+                    except SystemExit as exit_err:
+                        mock_err.write(str(exit_err))
+                    else:  # pragma: no cover
+                        self.fail('SystemExit not raised.')
+
+        output = mock_err.getvalue()
+        return mock_logger, output
+
+    def _assert_logfile_output(self, output):
+        self.assertTrue('Please see the logfile' in output)
+        self.assertTrue(self.log_path in output)
+
+    def _assert_quiet_output(self, mock_logger, output):
+        self.assertFalse(mock_logger.exception.called)
+        self.assertTrue(mock_logger.debug.called)
+        self.assertTrue(self.error_msg in output)
 
 
 class TestExitWithLogPath(test_util.TempDirTestCase):

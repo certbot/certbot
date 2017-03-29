@@ -1,10 +1,18 @@
 """Logging utilities for Certbot."""
+from __future__ import print_function
 import logging
 import logging.handlers
 import os
 import sys
+import traceback
 
+from acme import messages
+
+from certbot import constants
+from certbot import errors
 from certbot import util
+
+logger = logging.getLogger(__name__)
 
 
 class ColoredStreamHandler(logging.StreamHandler):
@@ -73,6 +81,39 @@ class MemoryHandler(logging.handlers.MemoryHandler):
         return False
 
 
+def except_hook(exc_type, exc_value, unused_trace, debug, log_path):
+    """Logs fatal exceptions and reports them to the user.
+
+    If debug is True, the full exception and traceback is shown to the
+    user, otherwise, it is suppressed. sys.exit is always called with a
+    nonzero status.
+
+    :param type exc_type: type of the raised exception
+    :param BaseException exc_value: raised exception
+    :param bool debug: True if the traceback should be shown to the user
+    :param str log_path: path to file or directory containing the log
+
+    """
+    # constants.QUIET_LOGGING_LEVEL or higher should be used to
+    # display message the user, otherwise, a lower level like
+    # logger.DEBUG should be used
+    if debug or not issubclass(exc_type, Exception):
+        assert constants.QUIET_LOGGING_LEVEL <= logging.ERROR
+        logger.exception('Exiting abnormally:')
+    else:
+        logger.debug('Exiting abnormally:', exc_info=True)
+        if issubclass(exc_type, errors.Error):
+            sys.exit(exc_value)
+        print('An unexpected error occurred:', file=sys.stderr)
+        if messages.is_acme_error(exc_value):
+            # Remove the ACME error prefix from the exception
+            _, _, exc_str = str(exc_value).partition(':: ')
+            print(exc_str, file=sys.stderr)
+        else:
+            traceback.print_exception(exc_type, exc_value, None)
+    exit_with_log_path(log_path)
+
+
 def exit_with_log_path(log_path):
     """Print a message about the log location and exit.
 
@@ -82,10 +123,10 @@ def exit_with_log_path(log_path):
     :param str log_path: path to file or directory containing the log
 
     """
-    msg = "Please see the "
+    msg = 'Please see the '
     if os.path.isdir(log_path):
-        msg += "logfiles in {0} ".format(log_path)
+        msg += 'logfiles in {0} '.format(log_path)
     else:
         msg += "logfile '{0}' ".format(log_path)
-    msg += "for more details."
+    msg += 'for more details.'
     sys.exit(msg)
