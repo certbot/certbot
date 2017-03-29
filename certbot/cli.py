@@ -1155,7 +1155,7 @@ def _paths_parser(helpful):
     default_cp = None
     if verb == "certonly":
         default_cp = flag_default("auth_chain_path")
-    add(["install", "paths"], "--fullchain-path", default=default_cp, type=os.path.abspath,
+    add(["paths", "install"], "--fullchain-path", default=default_cp, type=os.path.abspath,
         help="Accompanying path to a full certificate chain (cert plus chain).")
     add("paths", "--chain-path", default=default_cp, type=os.path.abspath,
         help="Accompanying path to a certificate chain.")

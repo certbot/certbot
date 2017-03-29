@@ -15,17 +15,18 @@ from certbot import constants
 from certbot import errors
 from certbot.plugins import disco
 
+from certbot.tests.util import TempDirTestCase
+
 PLUGINS = disco.PluginsRegistry.find_all()
 
 
-class TestReadFile(unittest.TestCase):
+class TestReadFile(TempDirTestCase):
     '''Test cli.read_file'''
 
     _multiprocess_can_split_ = True
 
     def test_read_file(self):
-        tmp_dir = tempfile.mkdtemp()
-        rel_test_path = os.path.relpath(os.path.join(tmp_dir, 'foo'))
+        rel_test_path = os.path.relpath(os.path.join(self.tempdir, 'foo'))
         self.assertRaises(
             argparse.ArgumentTypeError, cli.read_file, rel_test_path)
 

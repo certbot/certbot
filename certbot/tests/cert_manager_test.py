@@ -18,11 +18,14 @@ from certbot.storage import ALL_FOUR
 from certbot.tests import storage_test
 from certbot.tests import util as test_util
 
-class BaseCertManagerTest(unittest.TestCase):
+from certbot.tests.util import TempDirTestCase
+
+
+class BaseCertManagerTest(TempDirTestCase):
     """Base class for setting up Cert Manager tests.
     """
     def setUp(self):
-        self.tempdir = tempfile.mkdtemp()
+        super(BaseCertManagerTest, self).setUp()
 
         os.makedirs(os.path.join(self.tempdir, "renewal"))
 
@@ -67,9 +70,6 @@ class BaseCertManagerTest(unittest.TestCase):
                                        domain + ".conf")
         config.write()
         return config
-
-    def tearDown(self):
-        shutil.rmtree(self.tempdir)
 
 
 class UpdateLiveSymlinksTest(BaseCertManagerTest):
@@ -436,9 +436,6 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
         super(DuplicativeCertsTest, self).setUp()
         self.config.write()
         self._write_out_ex_kinds()
-
-    def tearDown(self):
-        shutil.rmtree(self.tempdir)
 
     @mock.patch('certbot.util.make_or_verify_dir')
     def test_find_duplicative_names(self, unused_makedir):

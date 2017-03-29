@@ -102,7 +102,7 @@ class RegisterTest(unittest.TestCase):
                     self.config.register_unsafely_without_email = True
                     self.config.dry_run = False
                     self._call()
-                    mock_logger.warning.assert_called_once_with(mock.ANY)
+                    mock_logger.info.assert_called_once_with(mock.ANY)
                     self.assertTrue(mock_handle.called)
 
     def test_unsupported_error(self):
