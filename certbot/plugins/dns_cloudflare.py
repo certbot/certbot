@@ -29,7 +29,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         super(Authenticator, self).__init__(*args, **kwargs)
 
     @classmethod
-    def add_parser_arguments(cls, add):
+    def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
         super(Authenticator, cls).add_parser_arguments(add)
         add('email',
             help='Email address associated with Cloudflare account.')

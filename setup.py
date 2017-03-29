@@ -44,6 +44,8 @@ install_requires = [
     'ConfigArgParse>=0.9.3',
     'configobj',
     'cryptography>=0.7',  # load_pem_x509_certificate
+    'fasteners',
+    'google-api-python-client',
     'mock',
     'parsedatetime>=1.3',  # Calendar.parseDT
     'PyOpenSSL',
@@ -128,6 +130,7 @@ setup(
             'webroot = certbot.plugins.webroot:Authenticator',
             'dns-cloudflare = certbot.plugins.dns_cloudflare:Authenticator',
             'dns-digitalocean = certbot.plugins.dns_digitalocean:Authenticator',
+            'dns-google = certbot.plugins.dns_google:Authenticator',
         ],
     },
 )

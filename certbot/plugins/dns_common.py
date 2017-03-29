@@ -25,9 +25,9 @@ class DNSAuthenticator(common.Plugin):
     _attempt_cleanup = False
 
     @classmethod
-    def add_parser_arguments(cls, add):
+    def add_parser_arguments(cls, add, default_propagation_seconds=10):  # pylint: disable=arguments-differ
         add('propagation-seconds',
-            default=10,
+            default=default_propagation_seconds,
             type=int,
             help='The number of seconds to wait for DNS to propagate before asking the ACME server '
                  'to verify the DNS record.')
