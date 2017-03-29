@@ -252,8 +252,11 @@ class RevokeTest(unittest.TestCase):
         from certbot.main import revoke
         revoke(config, plugins)
 
+    @mock.patch('certbot.main._delete_if_appropriate')
     @mock.patch('certbot.main.client.acme_client')
-    def test_revoke_with_reason(self, mock_acme_client):
+    def test_revoke_with_reason(self, mock_acme_client,
+            mock_delete_if_appropriate):
+        mock_delete_if_appropriate.return_value = False
         mock_revoke = mock_acme_client.Client().revoke
         expected = []
         for reason, code in constants.REVOCATION_REASONS.items():
@@ -263,7 +266,9 @@ class RevokeTest(unittest.TestCase):
             expected.append(mock.call(mock.ANY, code))
         self.assertEqual(expected, mock_revoke.call_args_list)
 
-    def test_revocation_success(self):
+    @mock.patch('certbot.main._delete_if_appropriate')
+    def test_revocation_success(self, mock_delete_if_appropriate):
+        mock_delete_if_appropriate.return_value = False
         self._call()
         self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
 
@@ -273,19 +278,15 @@ class RevokeTest(unittest.TestCase):
         self.assertRaises(acme_errors.ClientError, self._call)
         self.mock_success_revoke.assert_not_called()
 
+    @mock.patch('certbot.main._delete_if_appropriate')
     @mock.patch('certbot.cert_manager.delete')
     @test_util.patch_get_utility()
-    def test_revocation_with_prompt(self, mock_get_utility, mock_delete):
+    def test_revocation_with_prompt(self, mock_get_utility,
+            mock_delete, mock_delete_if_appropriate):
         mock_get_utility().yesno.return_value = False
+        mock_delete_if_appropriate.return_value = False
         self._call()
         self.assertFalse(mock_delete.called)
-
-    @mock.patch('certbot.cert_manager.delete')
-    @test_util.patch_get_utility()
-    def test_revocation_with_prompt_other(self, mock_get_utility, mock_delete):
-        mock_get_utility().yesno.return_value = True
-        self._call()
-        self.assertTrue(mock_delete.called)
 
 class SetupLogFileHandlerTest(unittest.TestCase):
     """Tests for certbot.main.setup_log_file_handler."""
@@ -1077,8 +1078,11 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue(
             'dry run' in mock_get_utility().add_message.call_args[0][0])
 
+    @mock.patch('certbot.main._delete_if_appropriate')
     @mock.patch('certbot.main.client.acme_client')
-    def test_revoke_with_key(self, mock_acme_client):
+    def test_revoke_with_key(self, mock_acme_client,
+            mock_delete_if_appropriate):
+        mock_delete_if_appropriate.return_value = False
         server = 'foo.bar'
         self._call_no_clientmock(['--cert-path', CERT, '--key-path', KEY,
                                  '--server', server, 'revoke'])
@@ -1092,8 +1096,11 @@ class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                     jose.ComparableX509(cert),
                     mock.ANY)
 
+    @mock.patch('certbot.main._delete_if_appropriate')
     @mock.patch('certbot.main._determine_account')
-    def test_revoke_without_key(self, mock_determine_account):
+    def test_revoke_without_key(self, mock_determine_account,
+            mock_delete_if_appropriate):
+        mock_delete_if_appropriate.return_value = False
         mock_determine_account.return_value = (mock.MagicMock(), None)
         _, _, _, client = self._call(['--cert-path', CERT, 'revoke'])
         with open(CERT) as f:
