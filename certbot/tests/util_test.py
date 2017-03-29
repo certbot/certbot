@@ -2,9 +2,7 @@
 import argparse
 import errno
 import os
-import shutil
 import stat
-import tempfile
 import unittest
 
 import mock
@@ -75,7 +73,7 @@ class ExeExistsTest(unittest.TestCase):
         self.assertFalse(self._call("exe"))
 
 
-class MakeOrVerifyDirTest(unittest.TestCase):
+class MakeOrVerifyDirTest(test_util.TempDirTestCase):
     """Tests for certbot.util.make_or_verify_dir.
 
     Note that it is not possible to test for a wrong directory owner,
@@ -84,21 +82,19 @@ class MakeOrVerifyDirTest(unittest.TestCase):
     """
 
     def setUp(self):
-        self.root_path = tempfile.mkdtemp()
-        self.path = os.path.join(self.root_path, "foo")
+        super(MakeOrVerifyDirTest, self).setUp()
+
+        self.path = os.path.join(self.tempdir, "foo")
         os.mkdir(self.path, 0o400)
 
         self.uid = os.getuid()
-
-    def tearDown(self):
-        shutil.rmtree(self.root_path, ignore_errors=True)
 
     def _call(self, directory, mode):
         from certbot.util import make_or_verify_dir
         return make_or_verify_dir(directory, mode, self.uid, strict=True)
 
     def test_creates_dir_when_missing(self):
-        path = os.path.join(self.root_path, "bar")
+        path = os.path.join(self.tempdir, "bar")
         self._call(path, 0o650)
         self.assertTrue(os.path.isdir(path))
         self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o650)
@@ -116,7 +112,7 @@ class MakeOrVerifyDirTest(unittest.TestCase):
             self.assertRaises(OSError, self._call, "bar", 12312312)
 
 
-class CheckPermissionsTest(unittest.TestCase):
+class CheckPermissionsTest(test_util.TempDirTestCase):
     """Tests for certbot.util.check_permissions.
 
     Note that it is not possible to test for a wrong file owner,
@@ -125,34 +121,30 @@ class CheckPermissionsTest(unittest.TestCase):
     """
 
     def setUp(self):
-        _, self.path = tempfile.mkstemp()
-        self.uid = os.getuid()
+        super(CheckPermissionsTest, self).setUp()
 
-    def tearDown(self):
-        os.remove(self.path)
+        self.uid = os.getuid()
 
     def _call(self, mode):
         from certbot.util import check_permissions
-        return check_permissions(self.path, mode, self.uid)
+        return check_permissions(self.tempdir, mode, self.uid)
 
     def test_ok_mode(self):
-        os.chmod(self.path, 0o600)
+        os.chmod(self.tempdir, 0o600)
         self.assertTrue(self._call(0o600))
 
     def test_wrong_mode(self):
-        os.chmod(self.path, 0o400)
+        os.chmod(self.tempdir, 0o400)
         self.assertFalse(self._call(0o600))
 
 
-class UniqueFileTest(unittest.TestCase):
+class UniqueFileTest(test_util.TempDirTestCase):
     """Tests for certbot.util.unique_file."""
 
     def setUp(self):
-        self.root_path = tempfile.mkdtemp()
-        self.default_name = os.path.join(self.root_path, "foo.txt")
+        super(UniqueFileTest, self).setUp()
 
-    def tearDown(self):
-        shutil.rmtree(self.root_path, ignore_errors=True)
+        self.default_name = os.path.join(self.tempdir, "foo.txt")
 
     def _call(self, mode=0o600):
         from certbot.util import unique_file
@@ -177,9 +169,9 @@ class UniqueFileTest(unittest.TestCase):
         self.assertNotEqual(name1, name3)
         self.assertNotEqual(name2, name3)
 
-        self.assertEqual(os.path.dirname(name1), self.root_path)
-        self.assertEqual(os.path.dirname(name2), self.root_path)
-        self.assertEqual(os.path.dirname(name3), self.root_path)
+        self.assertEqual(os.path.dirname(name1), self.tempdir)
+        self.assertEqual(os.path.dirname(name2), self.tempdir)
+        self.assertEqual(os.path.dirname(name3), self.tempdir)
 
         basename1 = os.path.basename(name2)
         self.assertTrue(basename1.endswith("foo.txt"))
@@ -193,26 +185,20 @@ try:
     file_type = file
 except NameError:
     import io
-    file_type = io.TextIOWrapper
+    file_type = io.TextIOWrapper  # type: ignore
 
 
-class UniqueLineageNameTest(unittest.TestCase):
+class UniqueLineageNameTest(test_util.TempDirTestCase):
     """Tests for certbot.util.unique_lineage_name."""
-
-    def setUp(self):
-        self.root_path = tempfile.mkdtemp()
-
-    def tearDown(self):
-        shutil.rmtree(self.root_path, ignore_errors=True)
 
     def _call(self, filename, mode=0o777):
         from certbot.util import unique_lineage_name
-        return unique_lineage_name(self.root_path, filename, mode)
+        return unique_lineage_name(self.tempdir, filename, mode)
 
     def test_basic(self):
         f, path = self._call("wow")
         self.assertTrue(isinstance(f, file_type))
-        self.assertEqual(os.path.join(self.root_path, "wow.conf"), path)
+        self.assertEqual(os.path.join(self.tempdir, "wow.conf"), path)
 
     def test_multiple(self):
         for _ in six.moves.range(10):
@@ -237,15 +223,13 @@ class UniqueLineageNameTest(unittest.TestCase):
         self.assertRaises(OSError, self._call, "wow")
 
 
-class SafelyRemoveTest(unittest.TestCase):
+class SafelyRemoveTest(test_util.TempDirTestCase):
     """Tests for certbot.util.safely_remove."""
 
     def setUp(self):
-        self.tmp = tempfile.mkdtemp()
-        self.path = os.path.join(self.tmp, "foo")
+        super(SafelyRemoveTest, self).setUp()
 
-    def tearDown(self):
-        shutil.rmtree(self.tmp)
+        self.path = os.path.join(self.tempdir, "foo")
 
     def _call(self):
         from certbot.util import safely_remove

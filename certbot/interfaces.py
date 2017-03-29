@@ -99,7 +99,7 @@ class IPluginFactory(zope.interface.Interface):
 class IPlugin(zope.interface.Interface):
     """Certbot plugin."""
 
-    def prepare():
+    def prepare():  # type: ignore
         """Prepare the plugin.
 
         Finish up any additional initialization.
@@ -118,7 +118,7 @@ class IPlugin(zope.interface.Interface):
 
         """
 
-    def more_info():
+    def more_info():  # type: ignore
         """Human-readable string to help the user.
 
         Should describe the steps taken and any relevant info to help the user
@@ -222,6 +222,9 @@ class IConfig(zope.interface.Interface):
     key_dir = zope.interface.Attribute("Keys storage.")
     temp_checkpoint_dir = zope.interface.Attribute(
         "Temporary checkpoint directory.")
+    lock_path = zope.interface.Attribute(
+        "Path to the lock file used to prevent multiple instances of "
+        "Certbot from modifying your server's configuration at once.")
 
     no_verify_ssl = zope.interface.Attribute(
         "Disable verification of the ACME server's certificate.")
@@ -251,7 +254,7 @@ class IInstaller(IPlugin):
 
     """
 
-    def get_all_names():
+    def get_all_names():  # type: ignore
         """Returns all names that may be authenticated.
 
         :rtype: `collections.Iterable` of `str`
@@ -288,7 +291,7 @@ class IInstaller(IPlugin):
 
         """
 
-    def supported_enhancements():
+    def supported_enhancements():  # type: ignore
         """Returns a `collections.Iterable` of supported enhancements.
 
         :returns: supported enhancements which should be a subset of
@@ -326,7 +329,7 @@ class IInstaller(IPlugin):
 
         """
 
-    def recovery_routine():
+    def recovery_routine():  # type: ignore
         """Revert configuration to most recent finalized checkpoint.
 
         Remove all changes (temporary and permanent) that have not been
@@ -337,21 +340,21 @@ class IInstaller(IPlugin):
 
         """
 
-    def view_config_changes():
+    def view_config_changes():  # type: ignore
         """Display all of the LE config changes.
 
         :raises .PluginError: when config changes cannot be parsed
 
         """
 
-    def config_test():
+    def config_test():  # type: ignore
         """Make sure the configuration is valid.
 
         :raises .MisconfigurationError: when the config is not in a usable state
 
         """
 
-    def restart():
+    def restart():  # type: ignore
         """Restart or refresh the server content.
 
         :raises .PluginError: when server cannot be restarted

@@ -2,7 +2,6 @@
 """Test certbot.display.ops."""
 import os
 import sys
-import tempfile
 import unittest
 
 import mock
@@ -87,18 +86,19 @@ class GetEmailTest(unittest.TestCase):
             self.assertTrue(invalid_txt in mock_input.call_args[0][0])
 
 
-class ChooseAccountTest(unittest.TestCase):
+class ChooseAccountTest(test_util.TempDirTestCase):
     """Tests for certbot.display.ops.choose_account."""
     def setUp(self):
+        super(ChooseAccountTest, self).setUp()
+
         zope.component.provideUtility(display_util.FileDisplay(sys.stdout,
                                                                False))
 
-        self.accounts_dir = tempfile.mkdtemp("accounts")
-        self.account_keys_dir = os.path.join(self.accounts_dir, "keys")
+        self.account_keys_dir = os.path.join(self.tempdir, "keys")
         os.makedirs(self.account_keys_dir, 0o700)
 
         self.config = mock.MagicMock(
-            accounts_dir=self.accounts_dir,
+            accounts_dir=self.tempdir,
             account_keys_dir=self.account_keys_dir,
             server="certbot-demo.org")
         self.key = KEY

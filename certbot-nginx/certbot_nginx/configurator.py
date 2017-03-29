@@ -9,6 +9,7 @@ import tempfile
 import time
 
 import OpenSSL
+import six
 import zope.interface
 
 from acme import challenges
@@ -31,16 +32,16 @@ from certbot_nginx import parser
 logger = logging.getLogger(__name__)
 
 REDIRECT_BLOCK = [[
-    ['\n    ', 'if', ' ', '($scheme != "https") '],
-    [['\n        ', 'return', ' ', '301 https://$host$request_uri'],
+    ['\n    ', 'if', ' ', '($scheme', ' ', '!=', ' ', '"https") '],
+    [['\n        ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
      '\n    ']
 ], ['\n']]
 
 TEST_REDIRECT_BLOCK = [
     [
-        ['if', '($scheme != "https")'],
+        ['if', '($scheme', '!=', '"https")'],
         [
-            ['return', '301 https://$host$request_uri']
+            ['return', '301', 'https://$host$request_uri']
         ]
     ],
     ['#', ' managed by Certbot']
@@ -263,7 +264,7 @@ class NginxConfigurator(common.Plugin):
         """
         if not matches:
             return None
-        elif matches[0]['rank'] in xrange(2, 6):
+        elif matches[0]['rank'] in six.moves.range(2, 6):
             # Wildcard match - need to find the longest one
             rank = matches[0]['rank']
             wildcards = [x for x in matches if x['rank'] == rank]

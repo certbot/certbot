@@ -8,6 +8,7 @@ import sys
 import time
 import traceback
 
+import fasteners
 import zope.component
 
 from acme import jose
@@ -359,7 +360,7 @@ def _determine_account(config):
             acc = accounts[0]
         else:  # no account registered yet
             if config.email is None and not config.register_unsafely_without_email:
-                config.namespace.email = display_ops.get_email()
+                config.email = display_ops.get_email()
 
             def _tos_cb(regr):
                 if config.tos:
@@ -382,7 +383,7 @@ def _determine_account(config):
                 raise errors.Error(
                     "Unable to register an account with ACME server")
 
-    config.namespace.account = acc.id
+    config.account = acc.id
     return acc, acme
 
 
@@ -459,7 +460,7 @@ def register(config, unused_plugins):
             return ("--register-unsafely-without-email provided, however, a "
                     "new e-mail address must\ncurrently be provided when "
                     "updating a registration.")
-        config.namespace.email = display_ops.get_email(optional=False)
+        config.email = display_ops.get_email(optional=False)
 
     acc, acme = _determine_account(config)
     acme_client = client.Client(config, acc, None, None, acme=acme)
@@ -487,7 +488,7 @@ def install(config, plugins):
     try:
         installer, _ = plug_sel.choose_configurator_plugins(config, plugins, "install")
     except errors.PluginSelectionError as e:
-        return e.message
+        return str(e)
 
     domains, _ = _find_domains_or_certname(config, installer)
     le_client = _init_le_client(config, authenticator=None, installer=installer)
@@ -565,7 +566,7 @@ def certificates(config, unused_plugins):
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
     """Revoke a previously obtained certificate."""
     # For user-agent construction
-    config.namespace.installer = config.namespace.authenticator = "None"
+    config.installer = config.authenticator = "None"
     if config.key_path is not None:  # revocation by cert key
         logger.debug("Revoking %s using cert key %s",
                      config.cert_path[0], config.key_path[0])
@@ -866,6 +867,56 @@ def _post_logging_setup(config, plugins, cli_args):
     logger.debug("Discovered plugins: %r", plugins)
 
 
+def acquire_file_lock(lock_path):
+    """Obtain a lock on the file at the specified path.
+
+    :param str lock_path: path to the file to be locked
+
+    :returns: lock file object representing the acquired lock
+    :rtype: fasteners.InterProcessLock
+
+    :raises .Error: if the lock is held by another process
+
+    """
+    lock = fasteners.InterProcessLock(lock_path)
+    logger.debug("Attempting to acquire lock file %s", lock_path)
+
+    try:
+        lock.acquire(blocking=False)
+    except IOError as err:
+        logger.debug(err)
+        logger.warning(
+            "Unable to access lock file %s. You should set --lock-file "
+            "to a writeable path to ensure multiple instances of "
+            "Certbot don't attempt modify your configuration "
+            "simultaneously.", lock_path)
+    else:
+        if not lock.acquired:
+            raise errors.Error(
+                "Another instance of Certbot is already running.")
+
+    return lock
+
+
+def _run_subcommand(config, plugins):
+    """Executes the Certbot subcommand specified in the configuration.
+
+    :param .IConfig config: parsed configuration object
+    :param .PluginsRegistry plugins: available plugins
+
+    :returns: return value from the specified subcommand
+    :rtype: str or int
+
+    """
+    lock = acquire_file_lock(config.lock_path)
+
+    try:
+        return config.func(config, plugins)
+    finally:
+        if lock.acquired:
+            lock.release()
+
+
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     sys.excepthook = functools.partial(_handle_exception, config=None)
@@ -893,7 +944,7 @@ def main(cli_args=sys.argv[1:]):
     zope.component.provideUtility(report)
     atexit.register(report.atexit_print_messages)
 
-    return config.func(config, plugins)
+    return _run_subcommand(config, plugins)
 
 
 if __name__ == "__main__":

@@ -4,9 +4,9 @@ from __future__ import print_function
 
 import itertools
 import mock
+import multiprocessing
 import os
 import shutil
-import tempfile
 import traceback
 import unittest
 import datetime
@@ -219,13 +219,14 @@ class FindDomainsOrCertnameTest(unittest.TestCase):
             (["one.com", "two.com"], "one.com"))
 
 
-class RevokeTest(unittest.TestCase):
+class RevokeTest(test_util.TempDirTestCase):
     """Tests for certbot.main.revoke."""
 
     def setUp(self):
-        self.tempdir_path = tempfile.mkdtemp()
-        shutil.copy(CERT_PATH, self.tempdir_path)
-        self.tmp_cert_path = os.path.abspath(os.path.join(self.tempdir_path,
+        super(RevokeTest, self).setUp()
+
+        shutil.copy(CERT_PATH, self.tempdir)
+        self.tmp_cert_path = os.path.abspath(os.path.join(self.tempdir,
             'cert.pem'))
 
         self.patches = [
@@ -251,7 +252,8 @@ class RevokeTest(unittest.TestCase):
         self.mock_determine_account.return_value = (self.acc, None)
 
     def tearDown(self):
-        shutil.rmtree(self.tempdir_path)
+        super(RevokeTest, self).tearDown()
+
         for patch in self.patches:
             patch.stop()
 
@@ -287,15 +289,14 @@ class RevokeTest(unittest.TestCase):
         self.mock_success_revoke.assert_not_called()
 
 
-class SetupLogFileHandlerTest(unittest.TestCase):
+class SetupLogFileHandlerTest(test_util.TempDirTestCase):
     """Tests for certbot.main.setup_log_file_handler."""
 
     def setUp(self):
-        self.config = mock.Mock(spec_set=['logs_dir'],
-                                logs_dir=tempfile.mkdtemp())
+        super(SetupLogFileHandlerTest, self).setUp()
 
-    def tearDown(self):
-        shutil.rmtree(self.config.logs_dir)
+        self.config = mock.Mock(spec_set=['logs_dir'],
+                                logs_dir=self.tempdir)
 
     def _call(self, *args, **kwargs):
         from certbot.main import setup_log_file_handler
@@ -308,17 +309,16 @@ class SetupLogFileHandlerTest(unittest.TestCase):
                           self.config, "test.log", "%s")
 
 
-class SetupLoggingTest(unittest.TestCase):
+class SetupLoggingTest(test_util.TempDirTestCase):
     """Tests for certbot.main.setup_logging."""
 
     def setUp(self):
+        super(SetupLoggingTest, self).setUp()
+
         self.config = mock.Mock(
-            logs_dir=tempfile.mkdtemp(),
+            logs_dir=self.tempdir,
             noninteractive_mode=False, quiet=False,
             verbose_count=constants.CLI_DEFAULTS['verbose_count'])
-
-    def tearDown(self):
-        shutil.rmtree(self.config.logs_dir)
 
     @classmethod
     def _call(cls, *args, **kwargs):
@@ -345,21 +345,15 @@ class SetupLoggingTest(unittest.TestCase):
             isinstance(cli_handler, colored_logging.StreamHandler))
 
 
-class MakeOrVerifyCoreDirTest(unittest.TestCase):
+class MakeOrVerifyCoreDirTest(test_util.TempDirTestCase):
     """Tests for certbot.main.make_or_verify_core_dir."""
-
-    def setUp(self):
-        self.dir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        shutil.rmtree(self.dir)
 
     def _call(self, *args, **kwargs):
         from certbot.main import make_or_verify_core_dir
         return make_or_verify_core_dir(*args, **kwargs)
 
     def test_success(self):
-        new_dir = os.path.join(self.dir, 'new')
+        new_dir = os.path.join(self.tempdir, 'new')
         self._call(new_dir, 0o700, os.geteuid(), False)
         self.assertTrue(os.path.exists(new_dir))
 
@@ -367,7 +361,7 @@ class MakeOrVerifyCoreDirTest(unittest.TestCase):
     def test_failure(self, mock_make_or_verify):
         mock_make_or_verify.side_effect = OSError
         self.assertRaises(errors.Error, self._call,
-                          self.dir, 0o700, os.geteuid(), False)
+                          self.tempdir, 0o700, os.geteuid(), False)
 
 
 class DetermineAccountTest(unittest.TestCase):
@@ -440,23 +434,26 @@ class DetermineAccountTest(unittest.TestCase):
         self.assertEqual('other email', self.config.email)
 
 
-class MainTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
+class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-methods
     """Tests for different commands."""
 
     def setUp(self):
-        self.tmp_dir = tempfile.mkdtemp()
-        self.config_dir = os.path.join(self.tmp_dir, 'config')
-        self.work_dir = os.path.join(self.tmp_dir, 'work')
-        self.logs_dir = os.path.join(self.tmp_dir, 'logs')
+        super(MainTest, self).setUp()
+
+        self.config_dir = os.path.join(self.tempdir, 'config')
+        self.work_dir = os.path.join(self.tempdir, 'work')
+        self.logs_dir = os.path.join(self.tempdir, 'logs')
         os.mkdir(self.logs_dir)
         self.standard_args = ['--config-dir', self.config_dir,
                               '--work-dir', self.work_dir,
-                              '--logs-dir', self.logs_dir, '--text']
+                              '--logs-dir', self.logs_dir, '--text',
+                              '--lock-path', os.path.join(self.tempdir, 'certbot.lock')]
 
     def tearDown(self):
         # Reset globals in cli
         reload_module(cli)
-        shutil.rmtree(self.tmp_dir)
+
+        super(MainTest, self).tearDown()
 
     def _call(self, args, stdout=None):
         "Run the cli with output streams and actual client mocked out"
@@ -1306,6 +1303,53 @@ class TestHandleException(unittest.TestCase):
             KeyboardInterrupt, exc_value=interrupt, trace=None, config=None)
         mock_sys.exit.assert_called_with(''.join(
             traceback.format_exception_only(KeyboardInterrupt, interrupt)))
+
+
+class TestAcquireFileLock(test_util.TempDirTestCase):
+    """Test main.acquire_file_lock."""
+
+    def setUp(self):
+        super(TestAcquireFileLock, self).setUp()
+
+        self.lock_path = os.path.join(self.tempdir, 'certbot.lock')
+
+    @mock.patch('certbot.main.logger')
+    def test_bad_path(self, mock_logger):
+        lock = main.acquire_file_lock(os.getcwd())
+        self.assertTrue(mock_logger.warning.called)
+        self.assertFalse(lock.acquired)
+
+    def test_held_lock(self):
+        # start child and wait for it to grab the lock
+        cv = multiprocessing.Condition()
+        cv.acquire()
+        child_args = (cv, self.lock_path,)
+        child = multiprocessing.Process(target=_hold_lock, args=child_args)
+        child.start()
+        cv.wait()
+
+        # assert we can't grab lock and terminate the child
+        self.assertRaises(errors.Error, main.acquire_file_lock, self.lock_path)
+        cv.notify()
+        cv.release()
+        child.join()
+        self.assertEqual(child.exitcode, 0)
+
+
+def _hold_lock(cv, lock_path):
+    """Acquire a file lock at lock_path and wait to release it.
+
+    :param multiprocessing.Condition cv: condition for syncronization
+    :param str lock_path: path to the file lock
+
+    """
+    import fasteners
+    lock = fasteners.InterProcessLock(lock_path)
+    lock.acquire()
+    cv.acquire()
+    cv.notify()
+    cv.wait()
+    lock.release()
 
 
 if __name__ == '__main__':
