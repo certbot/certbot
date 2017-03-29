@@ -1,6 +1,9 @@
 """Tests for certbot.log."""
 import logging
 import traceback
+import logging.handlers
+import os
+import time
 import unittest
 
 import mock
@@ -10,6 +13,7 @@ from acme import messages
 
 from certbot import errors
 from certbot import util
+from certbot.tests import util as test_util
 
 
 class PreArgSetupTest(unittest.TestCase):
@@ -27,6 +31,41 @@ class PreArgSetupTest(unittest.TestCase):
 
         mock_sys.excepthook(1, 2, 3)
         mock_except_hook.assert_called_once_with(1, 2, 3, config=None)
+
+
+class SetupLogFileHandlerTest(test_util.TempDirTestCase):
+    """Tests for certbot.log.setup_log_file_handler."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.log import setup_log_file_handler
+        return setup_log_file_handler(*args, **kwargs)
+
+    def setUp(self):
+        super(SetupLogFileHandlerTest, self).setUp()
+
+        self.config = mock.Mock(spec_set=['logs_dir'],
+                                logs_dir=self.tempdir)
+
+    def test_failure(self):
+        self.config.logs_dir = os.path.join(self.config.logs_dir, 'test.log')
+        open(self.config.logs_dir, 'w').close()
+
+        try:
+            self._call(self.config, 'test.log', '%(message)s')
+        except errors.Error as err:
+            self.assertTrue('--logs-dir' in str(err))
+        else:  # pragma: no cover
+            self.fail('Error not raised.')
+
+    def test_success(self):
+        log_file = 'test.log'
+        handler, log_path = self._call(self.config, log_file, '%(message)s')
+        self.assertEqual(handler.level, logging.DEBUG)
+        self.assertEqual(handler.formatter.converter, time.gmtime)
+
+        expected_path = os.path.join(self.config.logs_dir, log_file)
+        self.assertEqual(log_path, expected_path)
 
 
 class ColoredStreamHandlerTest(unittest.TestCase):

@@ -4,7 +4,6 @@ import functools
 import logging.handlers
 import os
 import sys
-import time
 import traceback
 
 import fasteners
@@ -36,11 +35,6 @@ from certbot.display import util as display_util, ops as display_ops
 from certbot.plugins import disco as plugins_disco
 from certbot.plugins import selection as plug_sel
 
-
-_PERM_ERR_FMT = os.linesep.join((
-    "The following error was encountered:", "{0}",
-    "If running as non-root, set --config-dir, "
-    "--work-dir, and --logs-dir to writeable paths."))
 
 USER_CANCELLED = ("User chose to cancel the operation and may "
                   "reinvoke the client.")
@@ -706,21 +700,7 @@ def renew(config, unused_plugins):
 
 def setup_log_file_handler(config, logfile, fmt):
     """Setup file debug logging."""
-    log_file_path = os.path.join(config.logs_dir, logfile)
-    try:
-        handler = logging.handlers.RotatingFileHandler(
-            log_file_path, maxBytes=2 ** 20, backupCount=1000)
-    except IOError as error:
-        raise errors.Error(_PERM_ERR_FMT.format(error))
-    # rotate on each invocation, rollover only possible when maxBytes
-    # is nonzero and backupCount is nonzero, so we set maxBytes as big
-    # as possible not to overrun in single CLI invocation (1MB).
-    handler.doRollover()  # TODO: creates empty letsencrypt.log.1 file
-    handler.setLevel(logging.DEBUG)
-    handler_formatter = logging.Formatter(fmt=fmt)
-    handler_formatter.converter = time.gmtime  # don't use localtime
-    handler.setFormatter(handler_formatter)
-    return handler, log_file_path
+    return log.setup_log_file_handler(config, logfile, fmt)
 
 
 def _cli_log_handler(level, fmt):
@@ -825,7 +805,7 @@ def make_or_verify_core_dir(directory, mode, uid, strict):
     try:
         util.make_or_verify_dir(directory, mode, uid, strict)
     except OSError as error:
-        raise errors.Error(_PERM_ERR_FMT.format(error))
+        raise errors.Error(util.PERM_ERR_FMT.format(error))
 
 def make_or_verify_needed_dirs(config):
     """Create or verify existence of config, work, or logs directories"""

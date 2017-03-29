@@ -4,7 +4,7 @@ import functools
 import logging
 import os
 import sys
-import tempfile
+import time
 import traceback
 
 from acme import messages
@@ -24,6 +24,34 @@ logger = logging.getLogger(__name__)
 def pre_arg_setup():
     """Ensures fatal exceptions are logged and reported to the user."""
     sys.excepthook = functools.partial(except_hook, config=None)
+
+
+def setup_log_file_handler(config, logfile, fmt):
+    """Setup file debug logging.
+
+    :param certbot.interface.IConfig config: Configuration object
+    :param str logfile: basename for the log file
+    :param str fmt: logging format string
+
+    :returns: file handler and absolute path to the log file
+    :rtype: tuple
+
+    """
+    log_file_path = os.path.join(config.logs_dir, logfile)
+    try:
+        handler = logging.handlers.RotatingFileHandler(
+            log_file_path, maxBytes=2 ** 20, backupCount=1000)
+    except IOError as error:
+        raise errors.Error(util.PERM_ERR_FMT.format(error))
+    # rotate on each invocation, rollover only possible when maxBytes
+    # is nonzero and backupCount is nonzero, so we set maxBytes as big
+    # as possible not to overrun in single CLI invocation (1MB).
+    handler.doRollover()  # TODO: creates empty letsencrypt.log.1 file
+    handler.setLevel(logging.DEBUG)
+    handler_formatter = logging.Formatter(fmt=fmt)
+    handler_formatter.converter = time.gmtime  # don't use localtime
+    handler.setFormatter(handler_formatter)
+    return handler, log_file_path
 
 
 class ColoredStreamHandler(logging.StreamHandler):
