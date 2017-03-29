@@ -1,7 +1,6 @@
 """Tests for certbot.log."""
 import logging
 import logging.handlers
-import traceback
 import os
 import sys
 import time
@@ -27,12 +26,33 @@ class PreArgParseSetupTest(unittest.TestCase):
         return pre_arg_parse_setup(*args, **kwargs)
 
     def test_it(self):
-        with mock.patch('certbot.log.except_hook') as mock_except_hook:
-            with mock.patch('certbot.log.sys') as mock_sys:
-                self._call()
+        with mock.patch('certbot.log.util.atexit_register') as mock_register:
+            with mock.patch('certbot.log.logging.getLogger') as mock_get:
+                with mock.patch('certbot.log.except_hook') as mock_except_hook:
+                    with mock.patch('certbot.log.sys') as mock_sys:
+                        mock_sys.argv = ['--debug']
+                        mock_sys.version_info = sys.version_info
+                        self._call()
 
+        mock_register.assert_called_once_with(logging.shutdown)
         mock_sys.excepthook(1, 2, 3)
-        mock_except_hook.assert_called_once_with(1, 2, 3, config=None)
+        mock_except_hook.assert_called_once_with(
+            1, 2, 3, debug=True, log_path=mock.ANY)
+
+        mock_root_logger = mock_get()
+        mock_root_logger.setLevel.assert_called_once_with(logging.DEBUG)
+        self.assertEqual(mock_root_logger.addHandler.call_count, 2)
+
+        MemoryHandler = logging.handlers.MemoryHandler
+        memory_handler = None
+        for call in mock_root_logger.addHandler.call_args_list:
+            handler = call[0][0]
+            if memory_handler is None and isinstance(handler, MemoryHandler):
+                memory_handler = handler
+            else:
+                self.assertTrue(isinstance(handler, logging.StreamHandler))
+        self.assertTrue(
+            isinstance(memory_handler.target, logging.StreamHandler))
 
 
 class PostArgParseSetupTest(test_util.TempDirTestCase):
@@ -182,62 +202,6 @@ class ExceptHookTest(unittest.TestCase):
         from certbot.log import except_hook
         return except_hook(*args, **kwargs)
 
-    @mock.patch('certbot.log.sys')
-    def test_except_hook(self, mock_sys):
-        config = mock.MagicMock()
-        mock_open = mock.mock_open()
-
-        with mock.patch('certbot.log.open', mock_open, create=True):
-            exception = Exception('detail')
-            config.verbose_count = 1
-            self._call(
-                Exception, exc_value=exception, trace=None, config=None)
-            mock_open().write.assert_any_call(''.join(
-                traceback.format_exception_only(Exception, exception)))
-            error_msg = mock_sys.exit.call_args_list[0][0][0]
-            self.assertTrue('unexpected error' in error_msg)
-
-        with mock.patch('certbot.log.open', mock_open, create=True):
-            mock_open.side_effect = [KeyboardInterrupt]
-            error = errors.Error('detail')
-            self._call(
-                errors.Error, exc_value=error, trace=None, config=None)
-            # assert_any_call used because sys.exit doesn't exit in cli.py
-            mock_sys.exit.assert_any_call(''.join(
-                traceback.format_exception_only(errors.Error, error)))
-
-        bad_typ = messages.ERROR_PREFIX + 'triffid'
-        exception = messages.Error(detail='alpha', typ=bad_typ, title='beta')
-        config = mock.MagicMock(debug=False, verbose_count=-3)
-        self._call(
-            messages.Error, exc_value=exception, trace=None, config=config)
-        error_msg = mock_sys.exit.call_args_list[-1][0][0]
-        self.assertTrue('unexpected error' in error_msg)
-        self.assertTrue('acme:error' not in error_msg)
-        self.assertTrue('alpha' in error_msg)
-        self.assertTrue('beta' in error_msg)
-        config = mock.MagicMock(debug=False, verbose_count=1)
-        self._call(
-            messages.Error, exc_value=exception, trace=None, config=config)
-        error_msg = mock_sys.exit.call_args_list[-1][0][0]
-        self.assertTrue('unexpected error' in error_msg)
-        self.assertTrue('acme:error' in error_msg)
-        self.assertTrue('alpha' in error_msg)
-
-        interrupt = KeyboardInterrupt('detail')
-        self._call(
-            KeyboardInterrupt, exc_value=interrupt, trace=None, config=None)
-        mock_sys.exit.assert_called_with(''.join(
-            traceback.format_exception_only(KeyboardInterrupt, interrupt)))
-
-
-class NewExceptHookTest(unittest.TestCase):
-    """Tests for certbot.log.new_except_hook."""
-    @classmethod
-    def _call(cls, *args, **kwargs):
-        from certbot.log import new_except_hook
-        return new_except_hook(*args, **kwargs)
-
     def setUp(self):
         self.error_msg = 'test error message'
         self.log_path = 'foo.log'
@@ -304,7 +268,7 @@ class NewExceptHookTest(unittest.TestCase):
         self.assertTrue(self.error_msg in output)
 
 
-class TestExitWithLogPath(test_util.TempDirTestCase):
+class ExitWithLogPathTest(test_util.TempDirTestCase):
     """Tests for certbot.log.exit_with_log_path."""
     @classmethod
     def _call(cls, *args, **kwargs):

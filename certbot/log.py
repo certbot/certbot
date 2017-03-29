@@ -6,11 +6,11 @@ import logging.handlers
 import os
 import sys
 import time
+import tempfile
 import traceback
 
 from acme import messages
 
-from certbot import cli
 from certbot import constants
 from certbot import errors
 from certbot import util
@@ -24,8 +24,39 @@ logger = logging.getLogger(__name__)
 
 
 def pre_arg_parse_setup():
-    """Ensures fatal exceptions are logged and reported to the user."""
-    sys.excepthook = functools.partial(except_hook, config=None)
+    """Setup logging before command line arguments are parsed.
+
+    Terminal logging is setup using
+    certbot.constants.QUIET_LOGGING_LEVEL so Certbot is as quiet as
+    possible. File logging is setup so that logging messages are
+    buffered in memory so they can either be written to a temporary
+    file before Certbot exits or to the normal logfiles once command
+    line arguments are parsed.
+
+    This function also sets logging.shutdown to be called on program
+    exit which automatically flushes logging handlers and sys.excepthook
+    to properly log/display fatal exceptions.
+
+    """
+    temp_fd, temp_path = tempfile.mkstemp()
+    temp_fd = os.fdopen(temp_fd, 'w')
+    temp_handler = logging.StreamHandler(temp_fd)
+    temp_handler.setFormatter(logging.Formatter(FILE_FMT))
+    temp_handler.setLevel(logging.DEBUG)
+    memory_handler = MemoryHandler(temp_handler)
+
+    stream_handler = ColoredStreamHandler()
+    stream_handler.setFormatter(logging.Formatter(CLI_FMT))
+    stream_handler.setLevel(constants.QUIET_LOGGING_LEVEL)
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)  # send all records to handlers
+    root_logger.addHandler(memory_handler)
+    root_logger.addHandler(stream_handler)
+
+    util.atexit_register(logging.shutdown)
+    sys.excepthook = functools.partial(
+        except_hook, debug='--debug' in sys.argv, log_path=temp_path)
 
 
 def post_arg_parse_setup(config):
@@ -154,60 +185,7 @@ class MemoryHandler(logging.handlers.MemoryHandler):
         return False
 
 
-def except_hook(exc_type, exc_value, trace, config):
-    """Logs exceptions and reports them to the user.
-
-    Config is used to determine how to display exceptions to the user. In
-    general, if config.debug is True, then the full exception and traceback is
-    shown to the user, otherwise it is suppressed. If config itself is None,
-    then the traceback and exception is attempted to be written to a logfile.
-    If this is successful, the traceback is suppressed, otherwise it is shown
-    to the user. sys.exit is always called with a nonzero status.
-
-    """
-    tb_str = "".join(traceback.format_exception(exc_type, exc_value, trace))
-    logger.debug("Exiting abnormally:%s%s", os.linesep, tb_str)
-
-    if issubclass(exc_type, Exception) and (config is None or not config.debug):
-        if config is None:
-            logfile = "certbot.log"
-            try:
-                with open(logfile, "w") as logfd:
-                    traceback.print_exception(
-                        exc_type, exc_value, trace, file=logfd)
-                assert "--debug" not in sys.argv  # config is None if this explodes
-            except:  # pylint: disable=bare-except
-                sys.exit(tb_str)
-            if "--debug" in sys.argv:
-                sys.exit(tb_str)
-
-        if issubclass(exc_type, errors.Error):
-            sys.exit(exc_value)
-        else:
-            # Here we're passing a client or ACME error out to the client at the shell
-            # Tell the user a bit about what happened, without overwhelming
-            # them with a full traceback
-            err = traceback.format_exception_only(exc_type, exc_value)[0]
-            # Typical error from the ACME module:
-            # acme.messages.Error: urn:ietf:params:acme:error:malformed :: The
-            # request message was malformed :: Error creating new registration
-            # :: Validation of contact mailto:none@longrandomstring.biz failed:
-            # Server failure at resolver
-            if (messages.is_acme_error(err) and ":: " in err and
-                 config.verbose_count <= cli.flag_default("verbose_count")):
-                # prune ACME error code, we have a human description
-                _code, _sep, err = err.partition(":: ")
-            msg = "An unexpected error occurred:\n" + err + "Please see the "
-            if config is None:
-                msg += "logfile '{0}' for more details.".format(logfile)
-            else:
-                msg += "logfiles in {0} for more details.".format(config.logs_dir)
-            sys.exit(msg)
-    else:
-        sys.exit(tb_str)
-
-
-def new_except_hook(exc_type, exc_value, unused_trace, debug, log_path):
+def except_hook(exc_type, exc_value, unused_trace, debug, log_path):
     """Logs fatal exceptions and reports them to the user.
 
     If debug is True, the full exception and traceback is shown to the
