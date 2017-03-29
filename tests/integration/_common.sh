@@ -1,5 +1,3 @@
-#!/bin/sh
-
 # The -t is required on macOS. It provides a template file path for
 # the kernel to use.
 root=${root:-$(mktemp -d -t leitXXXX)}
