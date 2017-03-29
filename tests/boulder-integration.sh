@@ -1,4 +1,4 @@
-#!/bin/sh -xe
+#!/bin/bash
 # Simple integration test. Make sure to activate virtualenv beforehand
 # (source venv/bin/activate) and that you are running Boulder test
 # instance (see ./boulder-fetch.sh).
@@ -8,11 +8,10 @@
 #
 # Note: this script is called by Boulder integration test suite!
 
+set -eux
+
 . ./tests/integration/_common.sh
 export PATH="$PATH:/usr/sbin"  # /usr/sbin/nginx
-
-export GOPATH="${GOPATH:-/tmp/go}"
-export PATH="$GOPATH/bin:$PATH"
 
 if [ `uname` = "Darwin" ];then
   readlink="greadlink"
@@ -27,6 +26,14 @@ cleanup_and_exit() {
         echo Kill server subprocess, left running by abnormal exit
         kill $SERVER_STILL_RUNNING
     fi
+    echo "------------------ ------------------ ------------------"
+    echo "------------------ begin boulder logs ------------------"
+    echo "------------------ ------------------ ------------------"
+    # Dump boulder logs in case they contain useful debugging information.
+    docker logs boulder_boulder_1
+    echo "------------------ ------------------ ------------------"
+    echo "------------------  end boulder logs  ------------------"
+    echo "------------------ ------------------ ------------------"
     exit $EXIT_STATUS
 }
 
