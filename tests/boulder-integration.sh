@@ -8,7 +8,7 @@
 #
 # Note: this script is called by Boulder integration test suite!
 
-set -ex
+set -eux
 
 . ./tests/integration/_common.sh
 export PATH="$PATH:/usr/sbin"  # /usr/sbin/nginx
@@ -26,14 +26,14 @@ cleanup_and_exit() {
         echo Kill server subprocess, left running by abnormal exit
         kill $SERVER_STILL_RUNNING
     fi
-    echo "------------------ ------------------ ------------------"
-    echo "------------------ begin boulder logs ------------------"
-    echo "------------------ ------------------ ------------------"
     # Dump boulder logs in case they contain useful debugging information.
+    : "------------------ ------------------ ------------------"
+    : "------------------ begin boulder logs ------------------"
+    : "------------------ ------------------ ------------------"
     docker logs boulder_boulder_1
-    echo "------------------ ------------------ ------------------"
-    echo "------------------  end boulder logs  ------------------"
-    echo "------------------ ------------------ ------------------"
+    : "------------------ ------------------ ------------------"
+    : "------------------  end boulder logs  ------------------"
+    : "------------------ ------------------ ------------------"
     exit $EXIT_STATUS
 }
 
