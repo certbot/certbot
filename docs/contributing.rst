@@ -39,7 +39,7 @@ Then in each shell where you're working on the client, do:
 .. code-block:: shell
 
    source ./venv/bin/activate
-   . tests/integration/_common.sh
+   source tests/integration/_common.sh
 
 After that, your shell will be using the virtual environment, and you run the
 client by typing `certbot` or `certbot_test`. The latter is an alias that
