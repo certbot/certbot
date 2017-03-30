@@ -3,6 +3,7 @@ import logging
 import logging.handlers
 import os
 import sys
+import tempfile
 import time
 import unittest
 
@@ -66,9 +67,22 @@ class PostArgParseSetupTest(test_util.TempDirTestCase):
     def setUp(self):
         super(PostArgParseSetupTest, self).setUp()
         self.config = mock.MagicMock(
-            logs_dir=self.tempdir, quiet=False,
+            debug=False, logs_dir=self.tempdir, quiet=False,
             verbose_count=constants.CLI_DEFAULTS['verbose_count'])
-        self.root_logger = mock.MagicMock()
+        self.devnull = open(os.devnull, 'w')
+
+        self.temp_file = tempfile.NamedTemporaryFile('w', delete=False)
+        temp_handler = logging.StreamHandler(self.temp_file)
+
+        from certbot.log import ColoredStreamHandler, MemoryHandler
+        self.memory_handler = MemoryHandler(temp_handler)
+        self.stream_handler = ColoredStreamHandler(self.devnull)
+        self.root_logger = mock.MagicMock(
+            handlers=[self.memory_handler, self.stream_handler])
+
+    def tearDown(self):
+        self.devnull.close()
+        super(PostArgSetupTest, self).tearDown()
 
     def test_common(self):
         with mock.patch('certbot.log.logging.getLogger') as mock_get_logger:
@@ -78,21 +92,32 @@ class PostArgParseSetupTest(test_util.TempDirTestCase):
                     mock_sys.version_info = sys.version_info
                     self._call(self.config)
 
-        self.assertEqual(self.root_logger.addHandler.call_count, 2)
+        self.root_logger.removeHandler.assert_called_once_with(
+            self.memory_handler)
+        self.assertTrue(self.root_logger.addHandler.called)
         self.assertTrue(os.path.exists(os.path.join(
             self.config.logs_dir, 'letsencrypt.log')))
+        self.assertFalse(os.path.exists(self.temp_file.name))
         mock_sys.excepthook(1, 2, 3)
-        mock_except_hook.assert_called_once_with(1, 2, 3, config=self.config)
+        mock_except_hook.assert_called_once_with(
+            1, 2, 3, debug=self.config.debug, log_path=self.tempdir)
 
-        stderr_handler = self.root_logger.addHandler.call_args_list[0][0][0]
-        level = stderr_handler.level
+        level = self.stream_handler.level
         if self.config.quiet:
             self.assertEqual(level, constants.QUIET_LOGGING_LEVEL)
         else:
             self.assertEqual(level, -self.config.verbose_count * 10)
 
+    def test_debug(self):
+        self.config.debug = True
+        self.test_common()
+
     def test_quiet(self):
         self.config.quiet = True
+        self.test_common()
+
+    def test_reversed(self):
+        self.root_logger.handlers.reverse()
         self.test_common()
 
 

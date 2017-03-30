@@ -38,9 +38,8 @@ def pre_arg_parse_setup():
     to properly log/display fatal exceptions.
 
     """
-    temp_fd, temp_path = tempfile.mkstemp()
-    temp_fd = os.fdopen(temp_fd, 'w')
-    temp_handler = logging.StreamHandler(temp_fd)
+    temp_log = tempfile.NamedTemporaryFile('w', delete=False)
+    temp_handler = logging.StreamHandler(temp_log)
     temp_handler.setFormatter(logging.Formatter(FILE_FMT))
     temp_handler.setLevel(logging.DEBUG)
     memory_handler = MemoryHandler(temp_handler)
@@ -56,35 +55,54 @@ def pre_arg_parse_setup():
 
     util.atexit_register(logging.shutdown)
     sys.excepthook = functools.partial(
-        except_hook, debug='--debug' in sys.argv, log_path=temp_path)
+        except_hook, debug='--debug' in sys.argv, log_path=temp_log)
 
 
 def post_arg_parse_setup(config):
     """Setup logging after command line arguments are parsed.
+
+    This function assumes pre_arg_setup() was called earlier and the
+    root logging configuration has not been modified. A rotating file
+    logging handler is created and the buffered log messages are sent
+    to that handler. Terminal logging output is set the level requested
+    by the user.
 
     :param certbot.interface.IConfig config: Configuration object
 
     """
     file_handler, file_path = setup_log_file_handler(
         config, 'letsencrypt.log', FILE_FMT)
+    logs_dir = os.path.dirname(file_path)
+
+    root_logger = logging.getLogger()
+    assert len(root_logger.handlers) == 2, "Expected handlers not found!"
+    # pylint: disable=unbalanced-tuple-unpacking
+    if isinstance(root_logger.handlers[0], MemoryHandler):
+        memory_handler, stderr_handler = root_logger.handlers
+    else:
+        stderr_handler, memory_handler = root_logger.handlers
+    assert isinstance(memory_handler, MemoryHandler)
+    assert isinstance(stderr_handler, ColoredStreamHandler)
+
+    root_logger.addHandler(file_handler)
+    root_logger.removeHandler(memory_handler)
+    temp_file_handler = memory_handler.target
+    temp_file_path = temp_file_handler.stream.name
+    temp_file_handler.stream.close()
+    os.remove(temp_file_path)
+    memory_handler.setTarget(file_handler)
+    memory_handler.close()
 
     if config.quiet:
         level = constants.QUIET_LOGGING_LEVEL
     else:
         level = -config.verbose_count * 10
-    stderr_handler = ColoredStreamHandler()
-    stderr_handler.setFormatter(logging.Formatter(CLI_FMT))
     stderr_handler.setLevel(level)
+    logger.debug("Root logging level set at %d", level)
+    logger.info("Saving debug log to %s", file_path)
 
-    root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)  # send all records to handlers
-    root_logger.addHandler(stderr_handler)
-    root_logger.addHandler(file_handler)
-
-    logger.debug('Root logging level set at %d', level)
-    logger.info('Saving debug log to %s', file_path)
-
-    sys.excepthook = functools.partial(except_hook, config=config)
+    sys.excepthook = functools.partial(
+        except_hook, debug=config.debug, log_path=logs_dir)
 
 
 def setup_log_file_handler(config, logfile, fmt):
