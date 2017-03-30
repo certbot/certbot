@@ -387,10 +387,9 @@ class RenameLineageTest(BaseCertManagerTest):
         mock_config = mock.Mock(certname="one", new_certname="two",
             renewal_configs_dir="/tmp/etc/letsencrypt/renewal/")
         mock_lineage_for_certname.return_value = None
-        self.assertRaises(errors.ConfigurationError,
-            self._call, mock_config)
+        self.assertRaises(errors.ConfigurationError, self._call, mock_config)
 
-    @mock.patch("certbot.cert_manager.update_live_symlinks")
+    @mock.patch("certbot.storage.RenewableCert._update_symlinks")
     @test_util.patch_get_utility()
     @mock.patch("certbot.storage.RenewableCert._check_symlinks")
     @mock.patch("certbot.storage.relevant_values")
@@ -406,7 +405,7 @@ class RenameLineageTest(BaseCertManagerTest):
         self.assertTrue(updated_lineage is not None)
         self.assertEqual(updated_lineage.lineagename, mock_config.new_certname)
 
-    @mock.patch("certbot.cert_manager.update_live_symlinks")
+    @mock.patch("certbot.storage.RenewableCert._update_symlinks")
     @test_util.patch_get_utility()
     @mock.patch("certbot.storage.RenewableCert._check_symlinks")
     @mock.patch("certbot.storage.relevant_values")

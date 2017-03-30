@@ -34,7 +34,9 @@ def renewal_conf_files(config):
     return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
 
 def renewal_file_for_certname(config, certname):
-    """Return /path/to/certname.conf in the renewal conf directory"""
+    """Return /path/to/certname.conf in the renewal conf directory
+    :raises .CertStorageError: if file is missing
+    """
     path = os.path.join(config.renewal_configs_dir, "{0}.conf".format(certname))
     if not os.path.exists(path):
         raise errors.CertStorageError("No certificate found with name {0} (expected "
@@ -251,6 +253,7 @@ def delete_files(config, certname):
     """Delete all files related to the certificate.
 
     If some files are not found, ignore them and continue.
+    :raises .CertStorageError: if lineage is missing
     """
     renewal_filename = renewal_file_for_certname(config, certname)
     # file exists
@@ -315,7 +318,10 @@ def delete_files(config, certname):
 def duplicate_lineage(config, certname, new_certname):
     """Create a duplicate of certname with name new_certname
 
-    Throws an error if problems are encountered
+    :raises .CertStorageError: for storage errors
+    :raises .ConfigurationError: for cli and renewal configuration errors
+    :raises IOError: for filename errors
+    :raises OSError: for OS errors
     """
 
     # copy renewal config file
@@ -326,7 +332,7 @@ def duplicate_lineage(config, certname, new_certname):
             "is already in use.")
     try:
         shutil.copy2(prev_filename, new_filename)
-    except OSError:
+    except (OSError, IOError):
         raise errors.ConfigurationError("Please specify a valid filename "
             "for the new certificate name.")
     logger.debug("Copied %s to %s", prev_filename, new_filename)

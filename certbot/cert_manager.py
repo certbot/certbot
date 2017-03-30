@@ -65,19 +65,25 @@ def rename_lineage(config):
         plugins = plugins_disco.PluginsRegistry.find_all()
         from certbot.main import install
         install(config, plugins, new_lineage, False)
-    except: #pylint: disable=bare-except
+    except (errors.CertStorageError, errors.ConfigurationError, IOError, OSError) as e:
         # delete the new files
         config.certname = new_certname
-        storage.delete_files(config, new_certname)
+        # we might not have created anything to delete
+        try:
+            storage.delete_files(config, new_certname)
+        except errors.CertStorageError:
+            pass
         reporter = zope.component.getUtility(interfaces.IReporter)
         reporter.add_message("Unable to rename certificate", reporter.HIGH_PRIORITY)
+        raise e
     else:
         # delete old files
         config.certname = certname
         storage.delete_files(config, certname)
-
         disp.notification("Renamed files for {0} to {1}."
             .format(certname, new_certname), pause=False)
+    finally:
+        config.certname = certname
 
 def certificates(config):
     """Display information about certs configured with Certbot
