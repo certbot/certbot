@@ -3,7 +3,6 @@ import logging
 import logging.handlers
 import os
 import sys
-import tempfile
 import time
 import unittest
 
@@ -54,9 +53,6 @@ class PreArgParseSetupTest(unittest.TestCase):
                 self.assertTrue(isinstance(handler, logging.StreamHandler))
         self.assertTrue(
             isinstance(memory_handler.target, logging.StreamHandler))
-        temp_file = memory_handler.target.stream.name
-        self.assertTrue(
-            util.check_permissions(temp_file, 0o600, os.getuid()))
 
 
 class PostArgParseSetupTest(test_util.TempDirTestCase):
@@ -74,17 +70,19 @@ class PostArgParseSetupTest(test_util.TempDirTestCase):
             verbose_count=constants.CLI_DEFAULTS['verbose_count'])
         self.devnull = open(os.devnull, 'w')
 
-        self.temp_file = tempfile.NamedTemporaryFile('w', delete=False)
-        temp_handler = logging.StreamHandler(self.temp_file)
-
-        from certbot.log import ColoredStreamHandler, MemoryHandler
-        self.memory_handler = MemoryHandler(temp_handler)
-        self.stream_handler = ColoredStreamHandler(self.devnull)
+        from certbot.log import ColoredStreamHandler
+        self.stream_handler = ColoredStreamHandler(six.StringIO())
+        from certbot.log import MemoryHandler, TempHandler
+        self.temp_handler = TempHandler()
+        self.temp_path = self.temp_handler.path
+        self.memory_handler = MemoryHandler(self.temp_handler)
         self.root_logger = mock.MagicMock(
             handlers=[self.memory_handler, self.stream_handler])
 
     def tearDown(self):
-        self.devnull.close()
+        self.memory_handler.close()
+        self.stream_handler.close()
+        self.temp_handler.close()
         super(PostArgParseSetupTest, self).tearDown()
 
     def test_common(self):
@@ -100,7 +98,7 @@ class PostArgParseSetupTest(test_util.TempDirTestCase):
         self.assertTrue(self.root_logger.addHandler.called)
         self.assertTrue(os.path.exists(os.path.join(
             self.config.logs_dir, 'letsencrypt.log')))
-        self.assertFalse(os.path.exists(self.temp_file.name))
+        self.assertFalse(os.path.exists(self.temp_path))
         mock_sys.excepthook(1, 2, 3)
         mock_except_hook.assert_called_once_with(
             1, 2, 3, debug=self.config.debug, log_path=self.tempdir)
@@ -151,6 +149,7 @@ class SetupLogFileHandlerTest(test_util.TempDirTestCase):
 
         expected_path = os.path.join(self.config.logs_dir, log_file)
         self.assertEqual(log_path, expected_path)
+        handler.close()
 
 
 class ColoredStreamHandlerTest(unittest.TestCase):
@@ -165,6 +164,9 @@ class ColoredStreamHandlerTest(unittest.TestCase):
         from certbot.log import ColoredStreamHandler
         self.handler = ColoredStreamHandler(self.stream)
         self.logger.addHandler(self.handler)
+
+    def tearDown(self):
+        self.handler.close()
 
     def test_format(self):
         msg = 'I did a thing'
@@ -190,10 +192,14 @@ class MemoryHandlerTest(unittest.TestCase):
         self.msg = 'hi there'
         self.stream = six.StringIO()
 
-        stream_handler = logging.StreamHandler(self.stream)
+        self.stream_handler = logging.StreamHandler(self.stream)
         from certbot.log import MemoryHandler
-        self.handler = MemoryHandler(stream_handler)
+        self.handler = MemoryHandler(self.stream_handler)
         self.logger.addHandler(self.handler)
+
+    def tearDown(self):
+        self.handler.close()
+        self.stream_handler.close()
 
     def test_flush(self):
         self._test_log_debug()
@@ -209,14 +215,42 @@ class MemoryHandlerTest(unittest.TestCase):
         self._test_log_debug()
 
         new_stream = six.StringIO()
-        stream_handler = logging.StreamHandler(new_stream)
-        self.handler.setTarget(stream_handler)
+        new_stream_handler = logging.StreamHandler(new_stream)
+        self.handler.setTarget(new_stream_handler)
         self.handler.flush()
         self.assertEqual(self.stream.getvalue(), '')
         self.assertEqual(new_stream.getvalue(), self.msg + '\n')
+        new_stream_handler.close()
 
     def _test_log_debug(self):
         self.logger.debug(self.msg)
+
+
+class TempHandlerTest(unittest.TestCase):
+    """Tests for certbot.log.TempHandler."""
+    def setUp(self):
+        self.closed = False
+        from certbot.log import TempHandler
+        self.handler = TempHandler()
+
+    def tearDown(self):
+        if not self.closed:
+            self.handler.delete_and_close()
+
+    def test_permissions(self):
+        self.assertTrue(
+            util.check_permissions(self.handler.path, 0o600, os.getuid()))
+
+    def test_delete(self):
+        self.handler.delete_and_close()
+        self.closed = True
+        self.assertFalse(os.path.exists(self.handler.path))
+
+    def test_no_delete(self):
+        self.handler.close()
+        self.closed = True
+        self.assertTrue(os.path.exists(self.handler.path))
+        os.remove(self.handler.path)
 
 
 class ExceptHookTest(unittest.TestCase):
