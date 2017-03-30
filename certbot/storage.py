@@ -359,7 +359,8 @@ def duplicate_lineage(config, certname, new_certname):
     prev_archive_dir = _full_archive_path(renewal_config, config, certname)
     new_archive_dir = prev_archive_dir
     if not certname in prev_archive_dir:
-        raise errors.CertStorageError("Archive directory does not conform to defaults.")
+        raise errors.CertStorageError("Archive directory does not conform to defaults: "
+            "{0} not in {1}", certname, prev_archive_dir)
     else:
         new_archive_dir = copy_to_new_dir(prev_archive_dir)
 
