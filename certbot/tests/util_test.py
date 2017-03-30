@@ -73,6 +73,25 @@ class ExeExistsTest(unittest.TestCase):
         self.assertFalse(self._call("exe"))
 
 
+class MakeOrVerifyCoreDirTest(test_util.TempDirTestCase):
+    """Tests for certbot.util.make_or_verify_core_dir."""
+
+    def _call(self, *args, **kwargs):
+        from certbot.util import make_or_verify_core_dir
+        return make_or_verify_core_dir(*args, **kwargs)
+
+    def test_success(self):
+        new_dir = os.path.join(self.tempdir, 'new')
+        self._call(new_dir, 0o700, os.geteuid(), False)
+        self.assertTrue(os.path.exists(new_dir))
+
+    @mock.patch('certbot.main.util.make_or_verify_dir')
+    def test_failure(self, mock_make_or_verify):
+        mock_make_or_verify.side_effect = OSError
+        self.assertRaises(errors.Error, self._call,
+                          self.tempdir, 0o700, os.geteuid(), False)
+
+
 class MakeOrVerifyDirTest(test_util.TempDirTestCase):
     """Tests for certbot.util.make_or_verify_dir.
 

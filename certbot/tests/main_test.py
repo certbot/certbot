@@ -2,7 +2,7 @@
 # pylint: disable=too-many-lines
 from __future__ import print_function
 
-import itertools
+import logging
 import mock
 import multiprocessing
 import os
@@ -23,7 +23,6 @@ from certbot import configuration
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
-from certbot import log
 from certbot import main
 from certbot import renewal
 from certbot import storage
@@ -289,81 +288,6 @@ class RevokeTest(test_util.TempDirTestCase):
         self.mock_success_revoke.assert_not_called()
 
 
-class SetupLogFileHandlerTest(test_util.TempDirTestCase):
-    """Tests for certbot.main.setup_log_file_handler."""
-
-    def setUp(self):
-        super(SetupLogFileHandlerTest, self).setUp()
-
-        self.config = mock.Mock(spec_set=['logs_dir'],
-                                logs_dir=self.tempdir)
-
-    def _call(self, *args, **kwargs):
-        from certbot.main import setup_log_file_handler
-        return setup_log_file_handler(*args, **kwargs)
-
-    @mock.patch('certbot.main.logging.handlers.RotatingFileHandler')
-    def test_ioerror(self, mock_handler):
-        mock_handler.side_effect = IOError
-        self.assertRaises(errors.Error, self._call,
-                          self.config, "test.log", "%s")
-
-
-class SetupLoggingTest(test_util.TempDirTestCase):
-    """Tests for certbot.main.setup_logging."""
-
-    def setUp(self):
-        super(SetupLoggingTest, self).setUp()
-
-        self.config = mock.Mock(
-            logs_dir=self.tempdir,
-            noninteractive_mode=False, quiet=False,
-            verbose_count=constants.CLI_DEFAULTS['verbose_count'])
-
-    @classmethod
-    def _call(cls, *args, **kwargs):
-        from certbot.main import setup_logging
-        return setup_logging(*args, **kwargs)
-
-    @mock.patch('certbot.main.logging.getLogger')
-    def test_defaults(self, mock_get_logger):
-        self._call(self.config)
-
-        cli_handler = mock_get_logger().addHandler.call_args_list[0][0][0]
-        self.assertEqual(cli_handler.level, -self.config.verbose_count * 10)
-        self.assertTrue(
-            isinstance(cli_handler, log.ColoredStreamHandler))
-
-    @mock.patch('certbot.main.logging.getLogger')
-    def test_quiet_mode(self, mock_get_logger):
-        self.config.quiet = self.config.noninteractive_mode = True
-        self._call(self.config)
-
-        cli_handler = mock_get_logger().addHandler.call_args_list[0][0][0]
-        self.assertEqual(cli_handler.level, constants.QUIET_LOGGING_LEVEL)
-        self.assertTrue(
-            isinstance(cli_handler, log.ColoredStreamHandler))
-
-
-class MakeOrVerifyCoreDirTest(test_util.TempDirTestCase):
-    """Tests for certbot.main.make_or_verify_core_dir."""
-
-    def _call(self, *args, **kwargs):
-        from certbot.main import make_or_verify_core_dir
-        return make_or_verify_core_dir(*args, **kwargs)
-
-    def test_success(self):
-        new_dir = os.path.join(self.tempdir, 'new')
-        self._call(new_dir, 0o700, os.geteuid(), False)
-        self.assertTrue(os.path.exists(new_dir))
-
-    @mock.patch('certbot.main.util.make_or_verify_dir')
-    def test_failure(self, mock_make_or_verify):
-        mock_make_or_verify.side_effect = OSError
-        self.assertRaises(errors.Error, self._call,
-                          self.tempdir, 0o700, os.geteuid(), False)
-
-
 class DetermineAccountTest(unittest.TestCase):
     """Tests for certbot.main._determine_account."""
 
@@ -449,6 +373,12 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
                               '--logs-dir', self.logs_dir, '--text',
                               '--lock-path', os.path.join(self.tempdir, 'certbot.lock')]
 
+        # The Python logging module uses global state for configuring
+        # the root logger. Let's reset it before calling main.
+        root_logger = logging.getLogger()
+        for handler in list(root_logger.handlers):
+            root_logger.removeHandler(handler)
+
     def tearDown(self):
         # Reset globals in cli
         reload_module(cli)
@@ -505,11 +435,16 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
     def test_noninteractive(self):
         args = ['-n', 'certonly']
         self._cli_missing_flag(args, "specify a plugin")
-        args.extend(['--standalone', '-d', 'eg.is'])
+
+    def test_noninteractive2(self):
+        args = ['-n', 'certonly', '--standalone', '-d', 'eg.is']
         self._cli_missing_flag(args, "register before running")
+
+    def test_noninteractive3(self):
+        args = ['-n', 'certonly', '--standalone',
+                '-d', 'eg.is', '--email', 'io@io.is']
         with mock.patch('certbot.main._get_and_save_cert'):
             with mock.patch('certbot.main.client.acme_from_config_key'):
-                args.extend(['--email', 'io@io.is'])
                 self._cli_missing_flag(args, "--agree-tos")
 
     @mock.patch('certbot.main._report_new_cert')
@@ -535,6 +470,20 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
             if "linux" in plat.lower():
                 self.assertTrue(util.get_os_info_ua() in ua)
 
+    @mock.patch('certbot.main._report_new_cert')
+    @mock.patch('certbot.main.client.acme_client.Client')
+    @mock.patch('certbot.main._determine_account')
+    @mock.patch('certbot.main.client.Client.obtain_and_enroll_certificate')
+    @mock.patch('certbot.main._get_and_save_cert')
+    def test_user_agent2(self, gsc, _obt, det, _client, unused_report):
+        # Normally the client is totally mocked out, but here we need more
+        # arguments to automate it...
+        ua = "bandersnatch"
+        args = ["--standalone", "certonly", "-m", "none@none.com",
+                "-d", "example.com", "--agree-tos", "--user-agent", ua]
+        args += self.standard_args
+        det.return_value = mock.MagicMock(), None
+        gsc.return_value = mock.MagicMock()
         with mock.patch('certbot.main.client.acme_client.ClientNetwork') as acme_net:
             ua = "bandersnatch"
             args += ["--user-agent", ua]
@@ -550,7 +499,7 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
 
     @mock.patch('certbot.main._report_new_cert')
     @mock.patch('certbot.util.exe_exists')
-    def test_configurator_selection(self, mock_exe_exists, unused_report):
+    def test_nginx_selection(self, mock_exe_exists, unused_report):
         mock_exe_exists.return_value = True
         real_plugins = disco.PluginsRegistry.find_all()
         args = ['--apache', '--authenticator', 'standalone']
@@ -573,8 +522,9 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
             self.assertTrue("The nginx plugin is not working" in ret)
             self.assertTrue("MisconfigurationError" in ret)
 
-        self._cli_missing_flag(["--standalone"], "With the standalone plugin, you probably")
 
+    @mock.patch('certbot.main._report_new_cert')
+    def test_manual_selection(self, unused_report):
         with mock.patch("certbot.main._init_le_client") as mock_init:
             with mock.patch("certbot.main._get_and_save_cert") as mock_gsc:
                 mock_gsc.return_value = mock.MagicMock()
@@ -582,14 +532,19 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
                 unused_config, auth, unused_installer = mock_init.call_args[0]
                 self.assertTrue(isinstance(auth, manual.Authenticator))
 
+    def test_standalone_selection(self):
         with mock.patch('certbot.main.certonly') as mock_certonly:
             self._call(["auth", "--standalone"])
             self.assertEqual(1, mock_certonly.call_count)
+
+    def test_standalone_selection2(self):
+        self._cli_missing_flag(["--standalone"], "With the standalone plugin, you probably")
 
     def test_rollback(self):
         _, _, _, client = self._call(['rollback'])
         self.assertEqual(1, client.rollback.call_count)
 
+    def test_rollback2(self):
         _, _, _, client = self._call(['rollback', '--checkpoints', '123'])
         client.rollback.assert_called_once_with(
             mock.ANY, 123, mock.ANY, mock.ANY)
@@ -614,11 +569,49 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         self.assertEqual(1, mock_cert_manager.call_count)
 
     def test_plugins(self):
-        flags = ['--init', '--prepare', '--authenticators', '--installers']
-        for args in itertools.chain(
-                *(itertools.combinations(flags, r)
-                  for r in six.moves.range(len(flags)))):
-            self._call(['plugins'] + list(args))
+        self._call(['plugins'])
+
+    def test_plugins2(self):
+        self._call(['plugins', '--init'])
+
+    def test_plugins3(self):
+        self._call(['plugins', '--prepare'])
+
+    def test_plugins4(self):
+        self._call(['plugins', '--authenticators'])
+
+    def test_plugins5(self):
+        self._call(['plugins', '--installers'])
+
+    def test_plugins6(self):
+        self._call(['plugins', '--init', '--prepare'])
+
+    def test_plugins7(self):
+        self._call(['plugins', '--init', '--authenticators'])
+
+    def test_plugins8(self):
+        self._call(['plugins', '--init', '--installers'])
+
+    def test_plugins9(self):
+        self._call(['plugins', '--prepare', '--authenticators'])
+
+    def test_plugins10(self):
+        self._call(['plugins', '--prepare', '--installers'])
+
+    def test_plugins11(self):
+        self._call(['plugins', '--authenticators', '--installers'])
+
+    def test_plugins12(self):
+        self._call(['plugins', '--init', '--prepare', '--authenticators'])
+
+    def test_plugins13(self):
+        self._call(['plugins', '--init', '--prepare', '--installers'])
+
+    def test_plugins14(self):
+        self._call(['plugins', '--prepare', '--authenticators', '--installers'])
+
+    def test_plugins15(self):
+        self._call(['plugins', '--init', '--prepare', '--authenticators', '--installers'])
 
     @mock.patch('certbot.main.plugins_disco')
     @mock.patch('certbot.main.cli.HelpfulArgumentParser.determine_help_topics')
@@ -855,12 +848,18 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         self.assertEqual(get_utility().add_message.call_count, 1)
         self.assertTrue('dry run' in get_utility().add_message.call_args[0][0])
 
-        self._test_renewal_common(False, ['--renew-by-default', '-tvv', '--debug'],
-                                  log_out="Auto-renewal forced")
-        self.assertEqual(get_utility().add_message.call_count, 1)
+    @mock.patch('certbot.crypto_util.notAfter')
+    def test_certonly_renewal_triggers2(self, unused_notafter):
+        _, get_utility, _ = self._test_renewal_common(
+            False, ['--renew-by-default', '-tvv', '--debug'],
+            log_out="Auto-renewal forced")
+        self.assertEqual(get_utility().add_message.call_count, 2)
 
-        self._test_renewal_common(False, ['-tvv', '--debug', '--keep'],
-                                  log_out="not yet due", should_renew=False)
+    @mock.patch('certbot.crypto_util.notAfter')
+    def test_certonly_renewal_triggers3(self, unused_notafter):
+        self._test_renewal_common(
+            False, ['-tvv', '--debug', '--keep'],
+            log_out="not yet due", should_renew=False)
 
     def _dump_log(self):
         print("Logs:")
@@ -881,6 +880,8 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         out = stdout.getvalue()
         self.assertTrue("renew" in out)
 
+    def test_quiet_renew2(self):
+        test_util.make_lineage(self, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "-q"]
         _, _, stdout = self._test_renewal_common(True, [], args=args, should_renew=True)
         out = stdout.getvalue()
@@ -1128,7 +1129,10 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
             # TODO: It would be more correct to explicitly check that
             #       _determine_account() gets called in the above case,
             #       but coverage statistics should also show that it did.
-            with mock.patch('certbot.main.account') as mocked_account:
+
+    def test_register2(self):
+        with mock.patch('certbot.main.account') as mocked_account:
+            with mock.patch('certbot.main.client'):
                 mocked_storage = mock.MagicMock()
                 mocked_account.AccountFileStorage.return_value = mocked_storage
                 mocked_storage.find_all.return_value = ["an account"]
@@ -1249,60 +1253,6 @@ class UnregisterTest(unittest.TestCase):
         m = "Could not find existing account to deactivate."
         self.assertEqual(res, m)
         self.assertFalse(acme_client.acme.deactivate_registration.called)
-
-
-class TestHandleException(unittest.TestCase):
-    """Test main._handle_exception"""
-    @mock.patch('certbot.main.sys')
-    def test_handle_exception(self, mock_sys):
-        # pylint: disable=protected-access
-        from acme import messages
-
-        config = mock.MagicMock()
-        mock_open = mock.mock_open()
-
-        with mock.patch('certbot.main.open', mock_open, create=True):
-            exception = Exception('detail')
-            config.verbose_count = 1
-            main._handle_exception(
-                Exception, exc_value=exception, trace=None, config=None)
-            mock_open().write.assert_any_call(''.join(
-                traceback.format_exception_only(Exception, exception)))
-            error_msg = mock_sys.exit.call_args_list[0][0][0]
-            self.assertTrue('unexpected error' in error_msg)
-
-        with mock.patch('certbot.main.open', mock_open, create=True):
-            mock_open.side_effect = [KeyboardInterrupt]
-            error = errors.Error('detail')
-            main._handle_exception(
-                errors.Error, exc_value=error, trace=None, config=None)
-            # assert_any_call used because sys.exit doesn't exit in cli.py
-            mock_sys.exit.assert_any_call(''.join(
-                traceback.format_exception_only(errors.Error, error)))
-
-        bad_typ = messages.ERROR_PREFIX + 'triffid'
-        exception = messages.Error(detail='alpha', typ=bad_typ, title='beta')
-        config = mock.MagicMock(debug=False, verbose_count=-3)
-        main._handle_exception(
-            messages.Error, exc_value=exception, trace=None, config=config)
-        error_msg = mock_sys.exit.call_args_list[-1][0][0]
-        self.assertTrue('unexpected error' in error_msg)
-        self.assertTrue('acme:error' not in error_msg)
-        self.assertTrue('alpha' in error_msg)
-        self.assertTrue('beta' in error_msg)
-        config = mock.MagicMock(debug=False, verbose_count=1)
-        main._handle_exception(
-            messages.Error, exc_value=exception, trace=None, config=config)
-        error_msg = mock_sys.exit.call_args_list[-1][0][0]
-        self.assertTrue('unexpected error' in error_msg)
-        self.assertTrue('acme:error' in error_msg)
-        self.assertTrue('alpha' in error_msg)
-
-        interrupt = KeyboardInterrupt('detail')
-        main._handle_exception(
-            KeyboardInterrupt, exc_value=interrupt, trace=None, config=None)
-        mock_sys.exit.assert_called_with(''.join(
-            traceback.format_exception_only(KeyboardInterrupt, interrupt)))
 
 
 class TestAcquireFileLock(test_util.TempDirTestCase):
