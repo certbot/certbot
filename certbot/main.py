@@ -1,16 +1,13 @@
 """Certbot main entry point."""
 from __future__ import print_function
-import functools
 import logging.handlers
 import os
 import sys
-import traceback
 
 import fasteners
 import zope.component
 
 from acme import jose
-from acme import messages
 from acme import errors as acme_errors
 
 import certbot
@@ -698,124 +695,11 @@ def renew(config, unused_plugins):
         hooks.run_saved_post_hooks()
 
 
-def setup_log_file_handler(config, logfile, fmt):
-    """Setup file debug logging."""
-    return log.setup_log_file_handler(config, logfile, fmt)
-
-
-def _cli_log_handler(level, fmt):
-    handler = log.ColoredStreamHandler()
-    handler.setFormatter(logging.Formatter(fmt))
-    handler.setLevel(level)
-    return handler
-
-
-def setup_logging(config):
-    """Sets up logging to logfiles and the terminal.
-
-    :param certbot.interface.IConfig config: Configuration object
-
-    """
-    cli_fmt = "%(message)s"
-    file_fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
-    logfile = "letsencrypt.log"
-    if config.quiet:
-        level = constants.QUIET_LOGGING_LEVEL
-    else:
-        level = -config.verbose_count * 10
-    file_handler, log_file_path = setup_log_file_handler(
-        config, logfile=logfile, fmt=file_fmt)
-    cli_handler = _cli_log_handler(level, cli_fmt)
-
-    # TODO: use fileConfig?
-
-    root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)  # send all records to handlers
-    root_logger.addHandler(cli_handler)
-    root_logger.addHandler(file_handler)
-
-    logger.debug("Root logging level set at %d", level)
-    logger.info("Saving debug log to %s", log_file_path)
-
-
-def _handle_exception(exc_type, exc_value, trace, config):
-    """Logs exceptions and reports them to the user.
-
-    Config is used to determine how to display exceptions to the user. In
-    general, if config.debug is True, then the full exception and traceback is
-    shown to the user, otherwise it is suppressed. If config itself is None,
-    then the traceback and exception is attempted to be written to a logfile.
-    If this is successful, the traceback is suppressed, otherwise it is shown
-    to the user. sys.exit is always called with a nonzero status.
-
-    """
-    tb_str = "".join(traceback.format_exception(exc_type, exc_value, trace))
-    logger.debug("Exiting abnormally:%s%s", os.linesep, tb_str)
-
-    if issubclass(exc_type, Exception) and (config is None or not config.debug):
-        if config is None:
-            logfile = "certbot.log"
-            try:
-                with open(logfile, "w") as logfd:
-                    traceback.print_exception(
-                        exc_type, exc_value, trace, file=logfd)
-                assert "--debug" not in sys.argv  # config is None if this explodes
-            except:  # pylint: disable=bare-except
-                sys.exit(tb_str)
-            if "--debug" in sys.argv:
-                sys.exit(tb_str)
-
-        if issubclass(exc_type, errors.Error):
-            sys.exit(exc_value)
-        else:
-            # Here we're passing a client or ACME error out to the client at the shell
-            # Tell the user a bit about what happened, without overwhelming
-            # them with a full traceback
-            err = traceback.format_exception_only(exc_type, exc_value)[0]
-            # Typical error from the ACME module:
-            # acme.messages.Error: urn:ietf:params:acme:error:malformed :: The
-            # request message was malformed :: Error creating new registration
-            # :: Validation of contact mailto:none@longrandomstring.biz failed:
-            # Server failure at resolver
-            if (messages.is_acme_error(err) and ":: " in err and
-                 config.verbose_count <= cli.flag_default("verbose_count")):
-                # prune ACME error code, we have a human description
-                _code, _sep, err = err.partition(":: ")
-            msg = "An unexpected error occurred:\n" + err + "Please see the "
-            if config is None:
-                msg += "logfile '{0}' for more details.".format(logfile)
-            else:
-                msg += "logfiles in {0} for more details.".format(config.logs_dir)
-            sys.exit(msg)
-    else:
-        sys.exit(tb_str)
-
-
-def make_or_verify_core_dir(directory, mode, uid, strict):
-    """Make sure directory exists with proper permissions.
-
-    :param str directory: Path to a directory.
-    :param int mode: Directory mode.
-    :param int uid: Directory owner.
-    :param bool strict: require directory to be owned by current user
-
-    :raises .errors.Error: if the directory cannot be made or verified
-
-    """
-    try:
-        util.make_or_verify_dir(directory, mode, uid, strict)
-    except OSError as error:
-        raise errors.Error(util.PERM_ERR_FMT.format(error))
-
 def make_or_verify_needed_dirs(config):
-    """Create or verify existence of config, work, or logs directories"""
-    make_or_verify_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
+    """Create or verify existence of config and work directories"""
+    util.make_or_verify_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
                             os.geteuid(), config.strict_permissions)
-    make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
-                            os.geteuid(), config.strict_permissions)
-    # TODO: logs might contain sensitive data such as contents of the
-    # private key! #525
-    make_or_verify_core_dir(config.logs_dir, 0o700,
+    util.make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
                             os.geteuid(), config.strict_permissions)
 
 
@@ -898,7 +782,7 @@ def _run_subcommand(config, plugins):
 
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
-    sys.excepthook = functools.partial(_handle_exception, config=None)
+    log.pre_arg_setup()
     plugins = plugins_disco.PluginsRegistry.find_all()
 
     # note: arg parser internally handles --help (and exits afterwards)
@@ -908,13 +792,9 @@ def main(cli_args=sys.argv[1:]):
 
     make_or_verify_needed_dirs(config)
 
-    # Setup logging ASAP, otherwise "No handlers could be found for
-    # logger ..." TODO: this should be done before plugins discovery
-    setup_logging(config)
+    log.post_arg_setup(config)
 
     _post_logging_setup(config, plugins, cli_args)
-
-    sys.excepthook = functools.partial(_handle_exception, config=config)
 
     set_displayer(config)
 

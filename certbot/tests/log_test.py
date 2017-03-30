@@ -86,13 +86,11 @@ class SetupLogFileHandlerTest(test_util.TempDirTestCase):
 
     def setUp(self):
         super(SetupLogFileHandlerTest, self).setUp()
+        self.config = mock.MagicMock(logs_dir=self.tempdir)
 
-        self.config = mock.Mock(spec_set=['logs_dir'],
-                                logs_dir=self.tempdir)
-
-    def test_failure(self):
-        self.config.logs_dir = os.path.join(self.config.logs_dir, 'test.log')
-        open(self.config.logs_dir, 'w').close()
+    @mock.patch('certbot.main.logging.handlers.RotatingFileHandler')
+    def test_failure(self, mock_handler):
+        mock_handler.side_effect = IOError
 
         try:
             self._call(self.config, 'test.log', '%(message)s')

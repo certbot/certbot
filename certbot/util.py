@@ -103,6 +103,23 @@ def exe_exists(exe):
     return False
 
 
+def make_or_verify_core_dir(directory, mode, uid, strict):
+    """Make sure directory exists with proper permissions.
+
+    :param str directory: Path to a directory.
+    :param int mode: Directory mode.
+    :param int uid: Directory owner.
+    :param bool strict: require directory to be owned by current user
+
+    :raises .errors.Error: if the directory cannot be made or verified
+
+    """
+    try:
+        make_or_verify_dir(directory, mode, uid, strict)
+    except OSError as error:
+        raise errors.Error(PERM_ERR_FMT.format(error))
+
+
 def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
     """Make sure directory exists with proper permissions.
 
