@@ -32,6 +32,7 @@ class PreArgSetupTest(unittest.TestCase):
                 with mock.patch('certbot.log.except_hook') as mock_except_hook:
                     with mock.patch('certbot.log.sys') as mock_sys:
                         mock_sys.argv = ['--debug']
+                        mock_sys.version_info = sys.version_info
                         self._call()
 
         mock_register.assert_called_once_with(logging.shutdown)
