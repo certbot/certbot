@@ -235,18 +235,21 @@ class ExceptHookTest(unittest.TestCase):
         self.log_path = 'foo.log'
 
     def test_base_exception(self):
-        mock_logger, output = self._test_common(KeyboardInterrupt, debug=False)
-        self.assertTrue(mock_logger.exception.called)
+        exc_type = KeyboardInterrupt
+        mock_logger, output = self._test_common(exc_type, debug=False)
+        self._assert_exception_logged(mock_logger.error, exc_type)
         self._assert_logfile_output(output)
 
     def test_debug(self):
-        mock_logger, output = self._test_common(ValueError, debug=True)
-        self.assertTrue(mock_logger.exception.called)
+        exc_type = ValueError
+        mock_logger, output = self._test_common(exc_type, debug=True)
+        self._assert_exception_logged(mock_logger.error, exc_type)
         self._assert_logfile_output(output)
 
     def test_custom_error(self):
-        mock_logger, output = self._test_common(
-            errors.PluginError, debug=False)
+        exc_type = errors.PluginError
+        mock_logger, output = self._test_common(exc_type, debug=False)
+        self._assert_exception_logged(mock_logger.debug, exc_type)
         self._assert_quiet_output(mock_logger, output)
 
     def test_acme_error(self):
@@ -258,11 +261,14 @@ class ExceptHookTest(unittest.TestCase):
             return messages.Error.with_code(acme_code, detail=msg)
 
         mock_logger, output = self._test_common(get_acme_error, debug=False)
+        self._assert_exception_logged(mock_logger.debug, messages.Error)
         self._assert_quiet_output(mock_logger, output)
         self.assertFalse(messages.ERROR_PREFIX in output)
 
     def test_other_error(self):
-        mock_logger, output = self._test_common(ValueError, debug=False)
+        exc_type = ValueError
+        mock_logger, output = self._test_common(exc_type, debug=False)
+        self._assert_exception_logged(mock_logger.debug, exc_type)
         self._assert_quiet_output(mock_logger, output)
 
     def _test_common(self, error_type, debug):
@@ -285,6 +291,15 @@ class ExceptHookTest(unittest.TestCase):
 
         output = mock_err.getvalue()
         return mock_logger, output
+
+    def _assert_exception_logged(self, log_func, exc_type):
+        self.assertTrue(log_func.called)
+        call_kwargs = log_func.call_args[1]
+        self.assertTrue('exc_info' in call_kwargs)
+
+        actual_exc_info = call_kwargs['exc_info']
+        expected_exc_info = (exc_type, mock.ANY, mock.ANY)
+        self.assertEqual(actual_exc_info, expected_exc_info)
 
     def _assert_logfile_output(self, output):
         self.assertTrue('Please see the logfile' in output)
