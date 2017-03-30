@@ -19,7 +19,6 @@ from acme import jose
 
 from certbot import account
 from certbot import cli
-from certbot import colored_logging
 from certbot import constants
 from certbot import configuration
 from certbot import crypto_util
@@ -287,81 +286,6 @@ class RevokeTest(test_util.TempDirTestCase):
         self.mock_acme_client.side_effect = acme_errors.ClientError()
         self.assertRaises(acme_errors.ClientError, self._call)
         self.mock_success_revoke.assert_not_called()
-
-
-class SetupLogFileHandlerTest(test_util.TempDirTestCase):
-    """Tests for certbot.main.setup_log_file_handler."""
-
-    def setUp(self):
-        super(SetupLogFileHandlerTest, self).setUp()
-
-        self.config = mock.Mock(spec_set=['logs_dir'],
-                                logs_dir=self.tempdir)
-
-    def _call(self, *args, **kwargs):
-        from certbot.main import setup_log_file_handler
-        return setup_log_file_handler(*args, **kwargs)
-
-    @mock.patch('certbot.main.logging.handlers.RotatingFileHandler')
-    def test_ioerror(self, mock_handler):
-        mock_handler.side_effect = IOError
-        self.assertRaises(errors.Error, self._call,
-                          self.config, "test.log", "%s")
-
-
-class SetupLoggingTest(test_util.TempDirTestCase):
-    """Tests for certbot.main.setup_logging."""
-
-    def setUp(self):
-        super(SetupLoggingTest, self).setUp()
-
-        self.config = mock.Mock(
-            logs_dir=self.tempdir,
-            noninteractive_mode=False, quiet=False,
-            verbose_count=constants.CLI_DEFAULTS['verbose_count'])
-
-    @classmethod
-    def _call(cls, *args, **kwargs):
-        from certbot.main import setup_logging
-        return setup_logging(*args, **kwargs)
-
-    @mock.patch('certbot.main.logging.getLogger')
-    def test_defaults(self, mock_get_logger):
-        self._call(self.config)
-
-        cli_handler = mock_get_logger().addHandler.call_args_list[0][0][0]
-        self.assertEqual(cli_handler.level, -self.config.verbose_count * 10)
-        self.assertTrue(
-            isinstance(cli_handler, colored_logging.StreamHandler))
-
-    @mock.patch('certbot.main.logging.getLogger')
-    def test_quiet_mode(self, mock_get_logger):
-        self.config.quiet = self.config.noninteractive_mode = True
-        self._call(self.config)
-
-        cli_handler = mock_get_logger().addHandler.call_args_list[0][0][0]
-        self.assertEqual(cli_handler.level, constants.QUIET_LOGGING_LEVEL)
-        self.assertTrue(
-            isinstance(cli_handler, colored_logging.StreamHandler))
-
-
-class MakeOrVerifyCoreDirTest(test_util.TempDirTestCase):
-    """Tests for certbot.main.make_or_verify_core_dir."""
-
-    def _call(self, *args, **kwargs):
-        from certbot.main import make_or_verify_core_dir
-        return make_or_verify_core_dir(*args, **kwargs)
-
-    def test_success(self):
-        new_dir = os.path.join(self.tempdir, 'new')
-        self._call(new_dir, 0o700, os.geteuid(), False)
-        self.assertTrue(os.path.exists(new_dir))
-
-    @mock.patch('certbot.main.util.make_or_verify_dir')
-    def test_failure(self, mock_make_or_verify):
-        mock_make_or_verify.side_effect = OSError
-        self.assertRaises(errors.Error, self._call,
-                          self.tempdir, 0o700, os.geteuid(), False)
 
 
 class DetermineAccountTest(unittest.TestCase):
@@ -1249,60 +1173,6 @@ class UnregisterTest(unittest.TestCase):
         m = "Could not find existing account to deactivate."
         self.assertEqual(res, m)
         self.assertFalse(acme_client.acme.deactivate_registration.called)
-
-
-class TestHandleException(unittest.TestCase):
-    """Test main._handle_exception"""
-    @mock.patch('certbot.main.sys')
-    def test_handle_exception(self, mock_sys):
-        # pylint: disable=protected-access
-        from acme import messages
-
-        config = mock.MagicMock()
-        mock_open = mock.mock_open()
-
-        with mock.patch('certbot.main.open', mock_open, create=True):
-            exception = Exception('detail')
-            config.verbose_count = 1
-            main._handle_exception(
-                Exception, exc_value=exception, trace=None, config=None)
-            mock_open().write.assert_any_call(''.join(
-                traceback.format_exception_only(Exception, exception)))
-            error_msg = mock_sys.exit.call_args_list[0][0][0]
-            self.assertTrue('unexpected error' in error_msg)
-
-        with mock.patch('certbot.main.open', mock_open, create=True):
-            mock_open.side_effect = [KeyboardInterrupt]
-            error = errors.Error('detail')
-            main._handle_exception(
-                errors.Error, exc_value=error, trace=None, config=None)
-            # assert_any_call used because sys.exit doesn't exit in cli.py
-            mock_sys.exit.assert_any_call(''.join(
-                traceback.format_exception_only(errors.Error, error)))
-
-        bad_typ = messages.ERROR_PREFIX + 'triffid'
-        exception = messages.Error(detail='alpha', typ=bad_typ, title='beta')
-        config = mock.MagicMock(debug=False, verbose_count=-3)
-        main._handle_exception(
-            messages.Error, exc_value=exception, trace=None, config=config)
-        error_msg = mock_sys.exit.call_args_list[-1][0][0]
-        self.assertTrue('unexpected error' in error_msg)
-        self.assertTrue('acme:error' not in error_msg)
-        self.assertTrue('alpha' in error_msg)
-        self.assertTrue('beta' in error_msg)
-        config = mock.MagicMock(debug=False, verbose_count=1)
-        main._handle_exception(
-            messages.Error, exc_value=exception, trace=None, config=config)
-        error_msg = mock_sys.exit.call_args_list[-1][0][0]
-        self.assertTrue('unexpected error' in error_msg)
-        self.assertTrue('acme:error' in error_msg)
-        self.assertTrue('alpha' in error_msg)
-
-        interrupt = KeyboardInterrupt('detail')
-        main._handle_exception(
-            KeyboardInterrupt, exc_value=interrupt, trace=None, config=None)
-        mock_sys.exit.assert_called_with(''.join(
-            traceback.format_exception_only(KeyboardInterrupt, interrupt)))
 
 
 class TestAcquireFileLock(test_util.TempDirTestCase):
