@@ -98,8 +98,8 @@ def post_arg_parse_setup(config):
     else:
         level = -config.verbose_count * 10
     stderr_handler.setLevel(level)
-    logger.debug("Root logging level set at %d", level)
-    logger.info("Saving debug log to %s", file_path)
+    logger.debug('Root logging level set at %d', level)
+    logger.info('Saving debug log to %s', file_path)
 
     sys.excepthook = functools.partial(
         except_hook, debug=config.debug, log_path=logs_dir)
@@ -147,7 +147,6 @@ class ColoredStreamHandler(logging.StreamHandler):
     :ivar bool red_level: The level at which to output
 
     """
-
     def __init__(self, stream=None):
         if sys.version_info < (2, 7):  # pragma: no cover
             logging.StreamHandler.__init__(self, stream)

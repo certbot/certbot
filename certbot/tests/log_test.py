@@ -85,7 +85,7 @@ class PostArgParseSetupTest(test_util.TempDirTestCase):
 
     def tearDown(self):
         self.devnull.close()
-        super(PostArgSetupTest, self).tearDown()
+        super(PostArgParseSetupTest, self).tearDown()
 
     def test_common(self):
         with mock.patch('certbot.log.logging.getLogger') as mock_get_logger:
