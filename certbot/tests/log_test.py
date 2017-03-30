@@ -3,6 +3,7 @@ import logging
 import traceback
 import logging.handlers
 import os
+import sys
 import time
 import unittest
 
@@ -11,6 +12,7 @@ import six
 
 from acme import messages
 
+from certbot import constants
 from certbot import errors
 from certbot import util
 from certbot.tests import util as test_util
@@ -31,6 +33,47 @@ class PreArgSetupTest(unittest.TestCase):
 
         mock_sys.excepthook(1, 2, 3)
         mock_except_hook.assert_called_once_with(1, 2, 3, config=None)
+
+
+class PostArgSetupTest(test_util.TempDirTestCase):
+    """Tests for certbot.log.post_arg_setup."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.log import post_arg_setup
+        return post_arg_setup(*args, **kwargs)
+
+    def setUp(self):
+        super(PostArgSetupTest, self).setUp()
+        self.config = mock.MagicMock(
+            logs_dir=self.tempdir, quiet=False,
+            verbose_count=constants.CLI_DEFAULTS['verbose_count'])
+        self.root_logger = mock.MagicMock()
+
+    def test_common(self):
+        with mock.patch('certbot.log.logging.getLogger') as mock_get_logger:
+            mock_get_logger.return_value = self.root_logger
+            with mock.patch('certbot.log.except_hook') as mock_except_hook:
+                with mock.patch('certbot.log.sys') as mock_sys:
+                    mock_sys.version_info = sys.version_info
+                    self._call(self.config)
+
+        self.assertEqual(self.root_logger.addHandler.call_count, 2)
+        self.assertTrue(os.path.exists(os.path.join(
+            self.config.logs_dir, 'letsencrypt.log')))
+        mock_sys.excepthook(1, 2, 3)
+        mock_except_hook.assert_called_once_with(1, 2, 3, config=self.config)
+
+        stderr_handler = self.root_logger.addHandler.call_args_list[0][0][0]
+        level = stderr_handler.level
+        if self.config.quiet:
+            self.assertEqual(level, constants.QUIET_LOGGING_LEVEL)
+        else:
+            self.assertEqual(level, -self.config.verbose_count * 10)
+
+    def test_quiet(self):
+        self.config.quiet = True
+        self.test_common()
 
 
 class SetupLogFileHandlerTest(test_util.TempDirTestCase):

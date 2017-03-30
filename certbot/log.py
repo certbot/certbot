@@ -10,6 +10,7 @@ import traceback
 from acme import messages
 
 from certbot import cli
+from certbot import constants
 from certbot import errors
 from certbot import util
 
@@ -24,6 +25,34 @@ logger = logging.getLogger(__name__)
 def pre_arg_setup():
     """Ensures fatal exceptions are logged and reported to the user."""
     sys.excepthook = functools.partial(except_hook, config=None)
+
+
+def post_arg_setup(config):
+    """Setup logging after command line arguments are parsed.
+
+    :param certbot.interface.IConfig config: Configuration object
+
+    """
+    file_handler, file_path = setup_log_file_handler(
+        config, 'letsencrypt.log', FILE_FMT)
+
+    if config.quiet:
+        level = constants.QUIET_LOGGING_LEVEL
+    else:
+        level = -config.verbose_count * 10
+    stderr_handler = ColoredStreamHandler()
+    stderr_handler.setFormatter(logging.Formatter(CLI_FMT))
+    stderr_handler.setLevel(level)
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)  # send all records to handlers
+    root_logger.addHandler(stderr_handler)
+    root_logger.addHandler(file_handler)
+
+    logger.debug('Root logging level set at %d', level)
+    logger.info('Saving debug log to %s', file_path)
+
+    sys.excepthook = functools.partial(except_hook, config=config)
 
 
 def setup_log_file_handler(config, logfile, fmt):
