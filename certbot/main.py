@@ -731,7 +731,7 @@ def _post_logging_setup(config, plugins, cli_args):
 
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
-    log.pre_arg_setup()
+    log.pre_arg_parse_setup()
     plugins = plugins_disco.PluginsRegistry.find_all()
 
     # note: arg parser internally handles --help (and exits afterwards)

@@ -18,13 +18,13 @@ from certbot import util
 from certbot.tests import util as test_util
 
 
-class PreArgSetupTest(unittest.TestCase):
-    """Tests for certbot.log.pre_arg_setup."""
+class PreArgParseSetupTest(unittest.TestCase):
+    """Tests for certbot.log.pre_arg_parse_setup."""
 
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot.log import pre_arg_setup
-        return pre_arg_setup(*args, **kwargs)
+        from certbot.log import pre_arg_parse_setup
+        return pre_arg_parse_setup(*args, **kwargs)
 
     def test_it(self):
         with mock.patch('certbot.log.except_hook') as mock_except_hook:

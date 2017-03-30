@@ -22,7 +22,7 @@ FILE_FMT = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
 logger = logging.getLogger(__name__)
 
 
-def pre_arg_setup():
+def pre_arg_parse_setup():
     """Ensures fatal exceptions are logged and reported to the user."""
     sys.excepthook = functools.partial(except_hook, config=None)
 
