@@ -204,7 +204,7 @@ class MemoryHandler(logging.handlers.MemoryHandler):
         return False
 
 
-def except_hook(exc_type, exc_value, unused_trace, debug, log_path):
+def except_hook(exc_type, exc_value, trace, debug, log_path):
     """Logs fatal exceptions and reports them to the user.
 
     If debug is True, the full exception and traceback is shown to the
@@ -213,18 +213,20 @@ def except_hook(exc_type, exc_value, unused_trace, debug, log_path):
 
     :param type exc_type: type of the raised exception
     :param BaseException exc_value: raised exception
+    :param traceback trace: traceback of where the exception was raised
     :param bool debug: True if the traceback should be shown to the user
     :param str log_path: path to file or directory containing the log
 
     """
+    exc_info = (exc_type, exc_value, trace)
     # constants.QUIET_LOGGING_LEVEL or higher should be used to
     # display message the user, otherwise, a lower level like
     # logger.DEBUG should be used
     if debug or not issubclass(exc_type, Exception):
         assert constants.QUIET_LOGGING_LEVEL <= logging.ERROR
-        logger.exception('Exiting abnormally:')
+        logger.error('Exiting abnormally:', exc_info=exc_info)
     else:
-        logger.debug('Exiting abnormally:', exc_info=True)
+        logger.debug('Exiting abnormally:', exc_info=exc_info)
         if issubclass(exc_type, errors.Error):
             sys.exit(exc_value)
         print('An unexpected error occurred:', file=sys.stderr)
