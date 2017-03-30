@@ -411,6 +411,8 @@ class RenameLineageTest(BaseCertManagerTest):
     @mock.patch("certbot.storage.relevant_values")
     def test_rename_cert_interactive_certname(self, mock_rv, mock_check, mock_get_utility,
         unused_update_symlinks):
+        # python 3.4 and 3.5 order things differently, so remove other.com for this test
+        os.remove(self.configs["other.com"].filename)
         mock_rv.side_effect = lambda x: x
         mock_check.return_value = True
         mock_config = self.mock_config
