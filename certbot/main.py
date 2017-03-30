@@ -715,20 +715,6 @@ def set_displayer(config):
                                              config.force_interactive)
     zope.component.provideUtility(displayer)
 
-def _post_logging_setup(config, plugins, cli_args):
-    """Perform any setup or configuration tasks that require a logger."""
-
-    # This needs logging, but would otherwise be in HelpfulArgumentParser
-    if config.validate_hooks:
-        hooks.validate_hooks(config)
-
-    cli.possible_deprecation_warning(config)
-
-    logger.debug("certbot version: %s", certbot.__version__)
-    # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
-    logger.debug("Arguments: %r", cli_args)
-    logger.debug("Discovered plugins: %r", plugins)
-
 
 def acquire_file_lock(lock_path):
     """Obtain a lock on the file at the specified path.
@@ -783,19 +769,20 @@ def _run_subcommand(config, plugins):
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     log.pre_arg_setup()
+
     plugins = plugins_disco.PluginsRegistry.find_all()
+    logger.debug("certbot version: %s", certbot.__version__)
+    # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
+    logger.debug("Arguments: %r", cli_args)
+    logger.debug("Discovered plugins: %r", plugins)
 
     # note: arg parser internally handles --help (and exits afterwards)
     args = cli.prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
 
-    make_or_verify_needed_dirs(config)
-
     log.post_arg_setup(config)
-
-    _post_logging_setup(config, plugins, cli_args)
-
+    make_or_verify_needed_dirs(config)
     set_displayer(config)
 
     # Reporter
