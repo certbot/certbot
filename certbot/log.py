@@ -55,7 +55,7 @@ def pre_arg_parse_setup():
 
     util.atexit_register(logging.shutdown)
     sys.excepthook = functools.partial(
-        except_hook, debug='--debug' in sys.argv, log_path=temp_log)
+        except_hook, debug='--debug' in sys.argv, log_path=temp_log.name)
 
 
 def post_arg_parse_setup(config):
