@@ -1167,8 +1167,6 @@ def _paths_parser(helpful):
         help="Logs directory.")
     add("paths", "--server", default=flag_default("server"),
         help=config_help("server"))
-    add("paths", "--lock-path", default=flag_default("lock_path"),
-        help=config_help('lock_path'))
 
 
 def _plugins_parsing(helpful, plugins):

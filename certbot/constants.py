@@ -33,7 +33,6 @@ CLI_DEFAULTS = dict(
     auth_cert_path="./cert.pem",
     auth_chain_path="./chain.pem",
     strict_permissions=False,
-    lock_path="/tmp/.certbot.lock",
     debug_challenges=False,
 )
 STAGING_URI = "https://acme-staging.api.letsencrypt.org/directory"

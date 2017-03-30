@@ -222,9 +222,6 @@ class IConfig(zope.interface.Interface):
     key_dir = zope.interface.Attribute("Keys storage.")
     temp_checkpoint_dir = zope.interface.Attribute(
         "Temporary checkpoint directory.")
-    lock_path = zope.interface.Attribute(
-        "Path to the lock file used to prevent multiple instances of "
-        "Certbot from modifying your server's configuration at once.")
 
     no_verify_ssl = zope.interface.Attribute(
         "Disable verification of the ACME server's certificate.")
