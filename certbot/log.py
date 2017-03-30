@@ -5,8 +5,8 @@ import logging
 import logging.handlers
 import os
 import sys
-import time
 import tempfile
+import time
 import traceback
 
 from acme import messages
