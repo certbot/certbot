@@ -741,7 +741,7 @@ def main(cli_args=sys.argv[1:]):
 
     make_or_verify_needed_dirs(config)
 
-    log.post_arg_setup(config)
+    log.post_arg_parse_setup(config)
 
     _post_logging_setup(config, plugins, cli_args)
 

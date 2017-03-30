@@ -35,16 +35,16 @@ class PreArgParseSetupTest(unittest.TestCase):
         mock_except_hook.assert_called_once_with(1, 2, 3, config=None)
 
 
-class PostArgSetupTest(test_util.TempDirTestCase):
-    """Tests for certbot.log.post_arg_setup."""
+class PostArgParseSetupTest(test_util.TempDirTestCase):
+    """Tests for certbot.log.post_arg_parse_setup."""
 
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot.log import post_arg_setup
-        return post_arg_setup(*args, **kwargs)
+        from certbot.log import post_arg_parse_setup
+        return post_arg_parse_setup(*args, **kwargs)
 
     def setUp(self):
-        super(PostArgSetupTest, self).setUp()
+        super(PostArgParseSetupTest, self).setUp()
         self.config = mock.MagicMock(
             logs_dir=self.tempdir, quiet=False,
             verbose_count=constants.CLI_DEFAULTS['verbose_count'])

@@ -27,7 +27,7 @@ def pre_arg_parse_setup():
     sys.excepthook = functools.partial(except_hook, config=None)
 
 
-def post_arg_setup(config):
+def post_arg_parse_setup(config):
     """Setup logging after command line arguments are parsed.
 
     :param certbot.interface.IConfig config: Configuration object
