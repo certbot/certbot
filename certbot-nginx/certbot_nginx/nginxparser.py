@@ -2,11 +2,9 @@
 # Forked from https://github.com/fatiherikli/nginxparser (MIT Licensed)
 import copy
 import logging
-import string
 
 from pyparsing import (
-    Literal, White, Word, alphanums, CharsNotIn, Combine, Forward, Group,
-    Optional, OneOrMore, Regex, ZeroOrMore)
+    Literal, White, Forward, Group, Optional, OneOrMore, QuotedString, Regex, ZeroOrMore, Combine)
 from pyparsing import stringEnd
 from pyparsing import restOfLine
 
@@ -14,73 +12,42 @@ logger = logging.getLogger(__name__)
 
 class RawNginxParser(object):
     # pylint: disable=expression-not-assigned
+    # pylint: disable=pointless-statement
     """A class that parses nginx configuration with pyparsing."""
 
     # constants
-    space = Optional(White())
-    nonspace = Regex(r"\S+")
+    space = Optional(White()).leaveWhitespace()
+    required_space = White().leaveWhitespace()
+
     left_bracket = Literal("{").suppress()
-    right_bracket = space.leaveWhitespace() + Literal("}").suppress()
+    right_bracket = space + Literal("}").suppress()
     semicolon = Literal(";").suppress()
-    key = Word(alphanums + "_/+-.")
-    dollar_var = Combine(Literal('$') + Regex(r"[^\{\};,\s]+"))
-    condition = Regex(r"\(.+\)")
-    # Matches anything that is not a special character, and ${SHELL_VARS}, AND
-    # any chars in single or double quotes
-    # All of these COULD be upgraded to something like
-    # https://stackoverflow.com/a/16130746
-    dquoted = Regex(r'(\".*\")')
-    squoted = Regex(r"(\'.*\')")
-    nonspecial = Regex(r"[^\{\};,]")
-    varsub = Regex(r"(\$\{\w+\})")
-    # nonspecial nibbles one character at a time, but the other objects take
-    # precedence.  We use ZeroOrMore to allow entries like "break ;" to be
-    # parsed as assignments
-    value = Combine(ZeroOrMore(dquoted | squoted | varsub | nonspecial))
+    dquoted = QuotedString('"', multiline=True, unquoteResults=False, escChar='\\')
+    squoted = QuotedString("'", multiline=True, unquoteResults=False, escChar='\\')
+    quoted = dquoted | squoted
+    head_tokenchars = Regex(r"[^{};\s'\"]") # if (last_space)
+    tail_tokenchars = Regex(r"(\$\{)|[^{;\s]") # else
+    tokenchars = Combine(head_tokenchars + ZeroOrMore(tail_tokenchars))
+    paren_quote_extend = Combine(quoted + Literal(')') + ZeroOrMore(tail_tokenchars))
+    # note: ')' allows extension, but then we fall into else, not last_space.
 
-    location = CharsNotIn("{};," + string.whitespace)
-    # modifier for location uri [ = | ~ | ~* | ^~ ]
-    modifier = Literal("=") | Literal("~*") | Literal("~") | Literal("^~")
+    token = paren_quote_extend | tokenchars | quoted
 
-    # rules
+    whitespace_token_group = space + token + ZeroOrMore(required_space + token) + space
+    assignment = whitespace_token_group + semicolon
+
     comment = space + Literal('#') + restOfLine
-
-    assignment = space + key + Optional(space + value, default=None) + semicolon
-    location_statement = space + Optional(modifier) + Optional(space + location + space)
-    if_statement = space + Literal("if") + space + condition + space
-    charset_map_statement = space + Literal("charset_map") + space + value + space + value
-
-    map_statement = space + Literal("map") + space + nonspace + space + dollar_var + space
-    # This is NOT an accurate way to parse nginx map entries; it's almost
-    # certainly too permissive and may be wrong in other ways, but it should
-    # preserve things correctly in mmmmost or all cases.
-    #
-    #    - I can neither prove nor disprove that it is correct wrt all escaped
-    #      semicolon situations
-    # Addresses https://github.com/fatiherikli/nginxparser/issues/19
-    map_pattern = Regex(r'".*"') | Regex(r"'.*'") | nonspace
-    map_entry = space + map_pattern + space + value + space + semicolon
-    map_block = Group(
-        Group(map_statement).leaveWhitespace() +
-        left_bracket +
-        Group(ZeroOrMore(Group(comment | map_entry)) + space).leaveWhitespace() +
-        right_bracket)
 
     block = Forward()
 
-    # key could for instance be "server" or "http", or "location" (in which case
-    # location_statement needs to have a non-empty location)
+    # order matters! see issue 518, and also http { # server { \n}
+    contents = Group(comment) | Group(block) | Group(assignment)
 
-    block_begin = (Group(space + key + location_statement) ^
-                   Group(if_statement) ^
-                   Group(charset_map_statement)).leaveWhitespace()
+    block_begin = Group(whitespace_token_group)
+    block_innards = Group(ZeroOrMore(contents) + space).leaveWhitespace()
+    block << block_begin + left_bracket + block_innards + right_bracket
 
-    block_innards = Group(ZeroOrMore(Group(comment | assignment) | block | map_block)
-                          + space).leaveWhitespace()
-
-    block << Group(block_begin + left_bracket + block_innards + right_bracket)
-
-    script = OneOrMore(Group(comment | assignment) ^ block ^ map_block) + space + stringEnd
+    script = OneOrMore(contents) + space + stringEnd
     script.parseWithTabs().leaveWhitespace()
 
     def __init__(self, source):
@@ -107,30 +74,23 @@ class RawNginxDumper(object):
             if isinstance(b0, str):
                 yield b0
                 continue
-            b = copy.deepcopy(b0)
-            if spacey(b[0]):
-                yield b.pop(0) # indentation
-                if not b:
+            item = copy.deepcopy(b0)
+            if spacey(item[0]):
+                yield item.pop(0) # indentation
+                if not item:
                     continue
-            key, values = b.pop(0), b.pop(0)
 
-            if isinstance(key, list):
-                yield "".join(key) + '{'
-                for parameter in values:
+            if isinstance(item[0], list): # block
+                yield "".join(item.pop(0)) + '{'
+                for parameter in item.pop(0):
                     for line in self.__iter__([parameter]): # negate "for b0 in blocks"
                         yield line
                 yield '}'
-            else:
-                if isinstance(key, str) and key.strip() == '#':  # comment
-                    yield key + values
-                else:                                            # assignment
-                    gap = ""
-                    # Sometimes the parser has stuck some gap whitespace in here;
-                    # if so rotate it into gap
-                    if values and spacey(values):
-                        gap = values
-                        values = b.pop(0)
-                    yield key + gap + values + ';'
+            else: # not a block - list of strings
+                semicolon = ";"
+                if isinstance(item[0], str) and item[0].strip() == '#': # comment
+                    semicolon = ""
+                yield "".join(item) + semicolon
 
     def __str__(self):
         """Return the parsed block as a string."""

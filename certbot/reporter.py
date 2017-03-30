@@ -7,7 +7,7 @@ import os
 import sys
 import textwrap
 
-from six.moves import queue  # pylint: disable=import-error
+from six.moves import queue  # type: ignore  # pylint: disable=import-error
 import zope.interface
 
 from certbot import interfaces

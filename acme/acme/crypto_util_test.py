@@ -6,7 +6,7 @@ import time
 import unittest
 
 import six
-from six.moves import socketserver  # pylint: disable=import-error
+from six.moves import socketserver  #type: ignore  # pylint: disable=import-error
 
 import OpenSSL
 
