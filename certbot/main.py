@@ -4,7 +4,6 @@ import logging.handlers
 import os
 import sys
 
-import fasteners
 import zope.component
 
 from acme import jose
@@ -730,56 +729,6 @@ def _post_logging_setup(config, plugins, cli_args):
     logger.debug("Discovered plugins: %r", plugins)
 
 
-def acquire_file_lock(lock_path):
-    """Obtain a lock on the file at the specified path.
-
-    :param str lock_path: path to the file to be locked
-
-    :returns: lock file object representing the acquired lock
-    :rtype: fasteners.InterProcessLock
-
-    :raises .Error: if the lock is held by another process
-
-    """
-    lock = fasteners.InterProcessLock(lock_path)
-    logger.debug("Attempting to acquire lock file %s", lock_path)
-
-    try:
-        lock.acquire(blocking=False)
-    except IOError as err:
-        logger.debug(err)
-        logger.warning(
-            "Unable to access lock file %s. You should set --lock-file "
-            "to a writeable path to ensure multiple instances of "
-            "Certbot don't attempt modify your configuration "
-            "simultaneously.", lock_path)
-    else:
-        if not lock.acquired:
-            raise errors.Error(
-                "Another instance of Certbot is already running.")
-
-    return lock
-
-
-def _run_subcommand(config, plugins):
-    """Executes the Certbot subcommand specified in the configuration.
-
-    :param .IConfig config: parsed configuration object
-    :param .PluginsRegistry plugins: available plugins
-
-    :returns: return value from the specified subcommand
-    :rtype: str or int
-
-    """
-    lock = acquire_file_lock(config.lock_path)
-
-    try:
-        return config.func(config, plugins)
-    finally:
-        if lock.acquired:
-            lock.release()
-
-
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     log.pre_arg_setup()
@@ -803,7 +752,7 @@ def main(cli_args=sys.argv[1:]):
     zope.component.provideUtility(report)
     util.atexit_register(report.print_messages)
 
-    return _run_subcommand(config, plugins)
+    return config.func(config, plugins)
 
 
 if __name__ == "__main__":
