@@ -38,8 +38,7 @@ def pre_arg_setup():
     to properly log/display fatal exceptions.
 
     """
-    temp_log = tempfile.NamedTemporaryFile('w', delete=False)
-    temp_handler = logging.StreamHandler(temp_log)
+    temp_handler = TempHandler()
     temp_handler.setFormatter(logging.Formatter(FILE_FMT))
     temp_handler.setLevel(logging.DEBUG)
     memory_handler = MemoryHandler(temp_handler)
@@ -55,7 +54,7 @@ def pre_arg_setup():
 
     util.atexit_register(logging.shutdown)
     sys.excepthook = functools.partial(
-        except_hook, debug='--debug' in sys.argv, log_path=temp_log.name)
+        except_hook, debug='--debug' in sys.argv, log_path=temp_handler.path)
 
 
 def post_arg_setup(config):
@@ -86,12 +85,10 @@ def post_arg_setup(config):
 
     root_logger.addHandler(file_handler)
     root_logger.removeHandler(memory_handler)
-    temp_file_handler = memory_handler.target
-    temp_file_path = temp_file_handler.stream.name
-    temp_file_handler.stream.close()
-    os.remove(temp_file_path)
+    temp_handler = memory_handler.target
     memory_handler.setTarget(file_handler)
     memory_handler.close()
+    temp_handler.delete_and_close()
 
     if config.quiet:
         level = constants.QUIET_LOGGING_LEVEL
@@ -200,6 +197,49 @@ class MemoryHandler(logging.handlers.MemoryHandler):
 
         """
         return False
+
+
+class TempHandler(logging.StreamHandler):
+    """Safely logs messages to a temporary file.
+
+    The file is created with permissions 600.
+
+    :ivar str path: file system path to the temporary log file
+
+    """
+    def __init__(self):
+        stream = tempfile.NamedTemporaryFile('w', delete=False)
+        if sys.version_info < (2, 7):  # pragma: no cover
+            logging.StreamHandler.__init__(self, stream)
+        else:
+            super(TempHandler, self).__init__(stream)
+        self.path = stream.name
+
+    def delete_and_close(self):
+        """Close the handler and delete the temporary log file."""
+        self._close(delete=True)
+
+    def close(self):
+        """Close the handler and the temporary log file."""
+        self._close(delete=False)
+
+    def _close(self, delete):
+        """Close the handler and the temporary log file.
+
+        :param bool delete: True if the log file should be deleted
+
+        """
+        self.acquire()
+        try:
+            self.stream.close()
+            if delete:
+                os.remove(self.path)
+            if sys.version_info < (2, 7):  # pragma: no cover
+                logging.StreamHandler.close(self)
+            else:
+                super(TempHandler, self).close()
+        finally:
+            self.release()
 
 
 def except_hook(exc_type, exc_value, trace, debug, log_path):
