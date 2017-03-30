@@ -54,6 +54,9 @@ class PreArgParseSetupTest(unittest.TestCase):
                 self.assertTrue(isinstance(handler, logging.StreamHandler))
         self.assertTrue(
             isinstance(memory_handler.target, logging.StreamHandler))
+        temp_file = memory_handler.target.stream.name
+        self.assertTrue(
+            util.check_permissions(temp_file, 0o600, os.getuid()))
 
 
 class PostArgParseSetupTest(test_util.TempDirTestCase):
