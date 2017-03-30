@@ -75,7 +75,7 @@ def post_arg_parse_setup(config):
     logs_dir = os.path.dirname(file_path)
 
     root_logger = logging.getLogger()
-    assert len(root_logger.handlers) == 2, "Expected handlers not found!"
+    assert len(root_logger.handlers) == 2, "Unexpected handlers found!"
     # pylint: disable=unbalanced-tuple-unpacking
     if isinstance(root_logger.handlers[0], MemoryHandler):
         memory_handler, stderr_handler = root_logger.handlers

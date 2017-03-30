@@ -2,7 +2,7 @@
 # pylint: disable=too-many-lines
 from __future__ import print_function
 
-import itertools
+import logging
 import mock
 import os
 import shutil
@@ -371,6 +371,12 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
                               '--work-dir', self.work_dir,
                               '--logs-dir', self.logs_dir, '--text']
 
+        # The Python logging module uses global state for configuring
+        # the root logger. Let's reset it before calling main.
+        root_logger = logging.getLogger()
+        for handler in list(root_logger.handlers):
+            root_logger.removeHandler(handler)
+
     def tearDown(self):
         # Reset globals in cli
         reload_module(cli)
@@ -427,11 +433,16 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
     def test_noninteractive(self):
         args = ['-n', 'certonly']
         self._cli_missing_flag(args, "specify a plugin")
-        args.extend(['--standalone', '-d', 'eg.is'])
+
+    def test_noninteractive2(self):
+        args = ['-n', 'certonly', '--standalone', '-d', 'eg.is']
         self._cli_missing_flag(args, "register before running")
+
+    def test_noninteractive3(self):
+        args = ['-n', 'certonly', '--standalone',
+                '-d', 'eg.is', '--email', 'io@io.is']
         with mock.patch('certbot.main._get_and_save_cert'):
             with mock.patch('certbot.main.client.acme_from_config_key'):
-                args.extend(['--email', 'io@io.is'])
                 self._cli_missing_flag(args, "--agree-tos")
 
     @mock.patch('certbot.main._report_new_cert')
@@ -457,6 +468,20 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
             if "linux" in plat.lower():
                 self.assertTrue(util.get_os_info_ua() in ua)
 
+    @mock.patch('certbot.main._report_new_cert')
+    @mock.patch('certbot.main.client.acme_client.Client')
+    @mock.patch('certbot.main._determine_account')
+    @mock.patch('certbot.main.client.Client.obtain_and_enroll_certificate')
+    @mock.patch('certbot.main._get_and_save_cert')
+    def test_user_agent2(self, gsc, _obt, det, _client, unused_report):
+        # Normally the client is totally mocked out, but here we need more
+        # arguments to automate it...
+        ua = "bandersnatch"
+        args = ["--standalone", "certonly", "-m", "none@none.com",
+                "-d", "example.com", "--agree-tos", "--user-agent", ua]
+        args += self.standard_args
+        det.return_value = mock.MagicMock(), None
+        gsc.return_value = mock.MagicMock()
         with mock.patch('certbot.main.client.acme_client.ClientNetwork') as acme_net:
             ua = "bandersnatch"
             args += ["--user-agent", ua]
@@ -472,7 +497,7 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
 
     @mock.patch('certbot.main._report_new_cert')
     @mock.patch('certbot.util.exe_exists')
-    def test_configurator_selection(self, mock_exe_exists, unused_report):
+    def test_nginx_selection(self, mock_exe_exists, unused_report):
         mock_exe_exists.return_value = True
         real_plugins = disco.PluginsRegistry.find_all()
         args = ['--apache', '--authenticator', 'standalone']
@@ -495,8 +520,9 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
             self.assertTrue("The nginx plugin is not working" in ret)
             self.assertTrue("MisconfigurationError" in ret)
 
-        self._cli_missing_flag(["--standalone"], "With the standalone plugin, you probably")
 
+    @mock.patch('certbot.main._report_new_cert')
+    def test_manual_selection(self, unused_report):
         with mock.patch("certbot.main._init_le_client") as mock_init:
             with mock.patch("certbot.main._get_and_save_cert") as mock_gsc:
                 mock_gsc.return_value = mock.MagicMock()
@@ -504,14 +530,19 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
                 unused_config, auth, unused_installer = mock_init.call_args[0]
                 self.assertTrue(isinstance(auth, manual.Authenticator))
 
+    def test_standalone_selection(self):
         with mock.patch('certbot.main.certonly') as mock_certonly:
             self._call(["auth", "--standalone"])
             self.assertEqual(1, mock_certonly.call_count)
+
+    def test_standalone_selection2(self):
+        self._cli_missing_flag(["--standalone"], "With the standalone plugin, you probably")
 
     def test_rollback(self):
         _, _, _, client = self._call(['rollback'])
         self.assertEqual(1, client.rollback.call_count)
 
+    def test_rollback2(self):
         _, _, _, client = self._call(['rollback', '--checkpoints', '123'])
         client.rollback.assert_called_once_with(
             mock.ANY, 123, mock.ANY, mock.ANY)
@@ -536,11 +567,49 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         self.assertEqual(1, mock_cert_manager.call_count)
 
     def test_plugins(self):
-        flags = ['--init', '--prepare', '--authenticators', '--installers']
-        for args in itertools.chain(
-                *(itertools.combinations(flags, r)
-                  for r in six.moves.range(len(flags)))):
-            self._call(['plugins'] + list(args))
+        self._call(['plugins'])
+
+    def test_plugins2(self):
+        self._call(['plugins', '--init'])
+
+    def test_plugins3(self):
+        self._call(['plugins', '--prepare'])
+
+    def test_plugins4(self):
+        self._call(['plugins', '--authenticators'])
+
+    def test_plugins5(self):
+        self._call(['plugins', '--installers'])
+
+    def test_plugins6(self):
+        self._call(['plugins', '--init', '--prepare'])
+
+    def test_plugins7(self):
+        self._call(['plugins', '--init', '--authenticators'])
+
+    def test_plugins8(self):
+        self._call(['plugins', '--init', '--installers'])
+
+    def test_plugins9(self):
+        self._call(['plugins', '--prepare', '--authenticators'])
+
+    def test_plugins10(self):
+        self._call(['plugins', '--prepare', '--installers'])
+
+    def test_plugins11(self):
+        self._call(['plugins', '--authenticators', '--installers'])
+
+    def test_plugins12(self):
+        self._call(['plugins', '--init', '--prepare', '--authenticators'])
+
+    def test_plugins13(self):
+        self._call(['plugins', '--init', '--prepare', '--installers'])
+
+    def test_plugins14(self):
+        self._call(['plugins', '--prepare', '--authenticators', '--installers'])
+
+    def test_plugins15(self):
+        self._call(['plugins', '--init', '--prepare', '--authenticators', '--installers'])
 
     @mock.patch('certbot.main.plugins_disco')
     @mock.patch('certbot.main.cli.HelpfulArgumentParser.determine_help_topics')
@@ -777,12 +846,18 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         self.assertEqual(get_utility().add_message.call_count, 1)
         self.assertTrue('dry run' in get_utility().add_message.call_args[0][0])
 
-        self._test_renewal_common(False, ['--renew-by-default', '-tvv', '--debug'],
-                                  log_out="Auto-renewal forced")
-        self.assertEqual(get_utility().add_message.call_count, 1)
+    @mock.patch('certbot.crypto_util.notAfter')
+    def test_certonly_renewal_triggers2(self, unused_notafter):
+        _, get_utility, _ = self._test_renewal_common(
+            False, ['--renew-by-default', '-tvv', '--debug'],
+            log_out="Auto-renewal forced")
+        self.assertEqual(get_utility().add_message.call_count, 2)
 
-        self._test_renewal_common(False, ['-tvv', '--debug', '--keep'],
-                                  log_out="not yet due", should_renew=False)
+    @mock.patch('certbot.crypto_util.notAfter')
+    def test_certonly_renewal_triggers3(self, unused_notafter):
+        self._test_renewal_common(
+            False, ['-tvv', '--debug', '--keep'],
+            log_out="not yet due", should_renew=False)
 
     def _dump_log(self):
         print("Logs:")
@@ -803,6 +878,8 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         out = stdout.getvalue()
         self.assertTrue("renew" in out)
 
+    def test_quiet_renew2(self):
+        test_util.make_lineage(self, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "-q"]
         _, _, stdout = self._test_renewal_common(True, [], args=args, should_renew=True)
         out = stdout.getvalue()
@@ -1050,7 +1127,10 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
             # TODO: It would be more correct to explicitly check that
             #       _determine_account() gets called in the above case,
             #       but coverage statistics should also show that it did.
-            with mock.patch('certbot.main.account') as mocked_account:
+
+    def test_register2(self):
+        with mock.patch('certbot.main.account') as mocked_account:
+            with mock.patch('certbot.main.client'):
                 mocked_storage = mock.MagicMock()
                 mocked_account.AccountFileStorage.return_value = mocked_storage
                 mocked_storage.find_all.return_value = ["an account"]
