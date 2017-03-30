@@ -75,15 +75,14 @@ def post_arg_setup(config):
     logs_dir = os.path.dirname(file_path)
 
     root_logger = logging.getLogger()
-    assert_msg = "Unexpected logging handlers found!"
-    assert len(root_logger.handlers) == 2, assert_msg
-    # pylint: disable=unbalanced-tuple-unpacking
-    if isinstance(root_logger.handlers[0], MemoryHandler):
-        memory_handler, stderr_handler = root_logger.handlers
-    else:
-        stderr_handler, memory_handler = root_logger.handlers
-    assert isinstance(memory_handler, MemoryHandler), assert_msg
-    assert isinstance(stderr_handler, ColoredStreamHandler), assert_msg
+    memory_handler = stderr_handler = None
+    for handler in root_logger.handlers:
+        if isinstance(handler, ColoredStreamHandler):
+            stderr_handler = handler
+        elif isinstance(handler, MemoryHandler):
+            memory_handler = handler
+    msg = 'Previously configured logging handlers have been removed!'
+    assert memory_handler is not None and stderr_handler is not None, msg
 
     root_logger.addHandler(file_handler)
     root_logger.removeHandler(memory_handler)

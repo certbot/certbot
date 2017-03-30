@@ -117,10 +117,6 @@ class PostArgSetupTest(test_util.TempDirTestCase):
         self.config.quiet = True
         self.test_common()
 
-    def test_reversed(self):
-        self.root_logger.handlers.reverse()
-        self.test_common()
-
 
 class SetupLogFileHandlerTest(test_util.TempDirTestCase):
     """Tests for certbot.log.setup_log_file_handler."""
