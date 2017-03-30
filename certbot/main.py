@@ -408,8 +408,10 @@ def _init_le_client(config, authenticator, installer):
 
 def _delete_if_appropriate(config):
     """Does the user want to delete their now-revoked certs?"""
-
     display = zope.component.getUtility(interfaces.IDisplay)
+
+    if config.namespace.noninteractive_mode:
+        return
 
     if not (config.certname or config.cert_path):
         raise errors.Error('At least one of --cert-path or --cert-name must be specified.')
