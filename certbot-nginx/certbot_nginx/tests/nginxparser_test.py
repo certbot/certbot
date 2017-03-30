@@ -346,6 +346,8 @@ class TestRawNginxParser(unittest.TestCase):
         self.assertEqual(parsed, [['directive', '$var']])
         self.assertRaises(ParseException, loads, "server {server_name test.com};")
         self.assertRaises(ParseException, loads, "directive ${var};")
+        self.assertEqual(loads("blag${dfgdfg};"), [['blag${dfgdfg}']])
+        self.assertRaises(ParseException, loads, "blag${dfgdf{g};")
 
 
 class TestUnspacedList(unittest.TestCase):
