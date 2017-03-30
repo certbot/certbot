@@ -820,7 +820,7 @@ class NginxConfigurator(common.Plugin):
             self.restart()
 
 
-def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx.conf"):
+def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx/nginx.conf"):
     """Restarts the Nginx Server.
 
     .. todo:: Nginx restart is fatal if the configuration references
