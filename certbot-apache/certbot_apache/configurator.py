@@ -197,6 +197,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         install_ssl_options_conf(self.mod_ssl_conf)
 
+        # Prevent two Apache plugins from modifying a config at once
+        try:
+            util.lock_dir_until_exit(self.conf("server-root"))
+        except errors.LockError:
+            logger.debug("Encountered error:", exc_info=True)
+            raise errors.PluginError(
+                "Unable to lock %s", self.conf("server-root"))
+
     def _check_aug_version(self):
         """ Checks that we have recent enough version of libaugeas.
         If augeas version is recent enough, it will support case insensitive
