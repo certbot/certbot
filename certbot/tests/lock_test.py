@@ -39,20 +39,10 @@ class LockFileTest(test_util.TempDirTestCase):
             self.assertRaises, errors.LockError, self._call, self.lock_path)
         test_util.lock_and_call(assert_raises, self.lock_path)
 
-    def test_race(self):
-        should_delete = [True, False]
-        stat = os.stat
-
-        def delete_and_stat(path):
-            """Wrap os.stat and maybe delete the file first."""
-            if path == self.lock_path and should_delete.pop(0):
-                os.remove(path)
-            return stat(path)
-
-        with mock.patch('certbot.lock.os.stat') as mock_stat:
-            mock_stat.side_effect = delete_and_stat
-            self._call(self.lock_path)
-        self.assertFalse(should_delete)
+    @mock.patch('certbot.lock.os.open')
+    def test_failed_open(self, mock_open):
+        mock_open.side_effect = OSError
+        self.assertRaises(errors.LockError, self._call, self.lock_path)
 
     def test_locked_repr(self):
         lock_file = self._call(self.lock_path)
@@ -70,6 +60,21 @@ class LockFileTest(test_util.TempDirTestCase):
     def _test_repr_common(self, lock_file, lock_repr):
         self.assertTrue(lock_file.__class__.__name__ in lock_repr)
         self.assertTrue(self.lock_path in lock_repr)
+
+    def test_race(self):
+        should_delete = [True, False]
+        stat = os.stat
+
+        def delete_and_stat(path):
+            """Wrap os.stat and maybe delete the file first."""
+            if path == self.lock_path and should_delete.pop(0):
+                os.remove(path)
+            return stat(path)
+
+        with mock.patch('certbot.lock.os.stat') as mock_stat:
+            mock_stat.side_effect = delete_and_stat
+            self._call(self.lock_path)
+        self.assertFalse(should_delete)
 
     def test_removed(self):
         lock_file = self._call(self.lock_path)

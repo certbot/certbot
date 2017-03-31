@@ -20,7 +20,7 @@ def lock_dir(dir_path):
     :returns: the locked LockFile object
     :rtype: LockFile
 
-    :raises errors.LockFile: if the lock is held by another process
+    :raises errors.LockError: if unable to acquire the lock
 
     """
     return LockFile(os.path.join(dir_path, '.certbot.lock'))
@@ -39,7 +39,7 @@ class LockFile(object):
 
         :param str path: path to the file to lock
 
-        :raises errors.LockFile: if the lock is held by another process
+        :raises errors.LockError: if unable to acquire the lock
 
         """
         super(LockFile, self).__init__()
@@ -51,12 +51,16 @@ class LockFile(object):
     def acquire(self):
         """Acquire the lock file.
 
-        :raises errors.LockFile: if the lock is held by another process
+        :raises errors.LockError: if unable to acquire the lock
 
         """
         while self._fd is None:
             # Open the file
-            fd = os.open(self._path, os.O_CREAT | os.O_WRONLY, 0o600)
+            try:
+                fd = os.open(self._path, os.O_CREAT | os.O_WRONLY, 0o600)
+            except OSError:
+                logger.debug("Exception was:", exc_info=True)
+                raise errors.LockError("Unable to open {0}".format(self._path))
             try:
                 self._try_lock(fd)
                 if self._lock_success(fd):
