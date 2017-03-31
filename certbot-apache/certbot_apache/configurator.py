@@ -138,7 +138,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._enhance_func = {"redirect": self._enable_redirect,
                               "ensure-http-header": self._set_http_header,
                               "staple-ocsp": self._enable_ocsp_stapling}
-        self._skeletons = {}
 
     @property
     def mod_ssl_conf(self):
@@ -992,10 +991,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 orig_file_list = [line for line in orig_file]
                 if vhost_num != -1:
                     orig_file_list = self._create_block_segments(orig_file_list, vhost_num)
-            if ssl_fp in self._skeletons:
-                self._skeletons[ssl_fp].append(avail_fp)
-            else:
-                self._skeletons[ssl_fp] = [avail_fp]
 
             with open(ssl_fp, "a") as new_file:
                 new_file.write("<IfModule mod_ssl.c>\n")
