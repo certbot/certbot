@@ -1155,7 +1155,7 @@ def _paths_parser(helpful):
     default_cp = None
     if verb == "certonly":
         default_cp = flag_default("auth_chain_path")
-    add(["install", "paths"], "--fullchain-path", default=default_cp, type=os.path.abspath,
+    add(["paths", "install"], "--fullchain-path", default=default_cp, type=os.path.abspath,
         help="Accompanying path to a full certificate chain (cert plus chain).")
     add("paths", "--chain-path", default=default_cp, type=os.path.abspath,
         help="Accompanying path to a certificate chain.")
@@ -1167,8 +1167,6 @@ def _paths_parser(helpful):
         help="Logs directory.")
     add("paths", "--server", default=flag_default("server"),
         help=config_help("server"))
-    add("paths", "--lock-path", default=flag_default("lock_path"),
-        help=config_help('lock_path'))
 
 
 def _plugins_parsing(helpful, plugins):

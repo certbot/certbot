@@ -32,16 +32,16 @@ from certbot_nginx import parser
 logger = logging.getLogger(__name__)
 
 REDIRECT_BLOCK = [[
-    ['\n    ', 'if', ' ', '($scheme != "https") '],
-    [['\n        ', 'return', ' ', '301 https://$host$request_uri'],
+    ['\n    ', 'if', ' ', '($scheme', ' ', '!=', ' ', '"https") '],
+    [['\n        ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
      '\n    ']
 ], ['\n']]
 
 TEST_REDIRECT_BLOCK = [
     [
-        ['if', '($scheme != "https")'],
+        ['if', '($scheme', '!=', '"https")'],
         [
-            ['return', '301 https://$host$request_uri']
+            ['return', '301', 'https://$host$request_uri']
         ]
     ],
     ['#', ' managed by Certbot']
@@ -820,7 +820,7 @@ class NginxConfigurator(common.Plugin):
             self.restart()
 
 
-def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx.conf"):
+def nginx_restart(nginx_ctl, nginx_conf):
     """Restarts the Nginx Server.
 
     .. todo:: Nginx restart is fatal if the configuration references
