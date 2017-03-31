@@ -20,6 +20,7 @@ import configargparse
 
 from certbot import constants
 from certbot import errors
+from certbot import lock
 
 
 logger = logging.getLogger(__name__)
@@ -47,6 +48,10 @@ PERM_ERR_FMT = os.linesep.join((
 
 # Stores importing process ID to be used by atexit_register()
 _INITIAL_PID = os.getpid()
+# Contains the list of locks to cleanup at program exit. If the program
+# exits before the lock is cleaned up, it is automatically released, but
+# the file isn't deleted.
+_LOCKS = []
 
 
 def run_script(params, log=logger.error):
@@ -103,14 +108,38 @@ def exe_exists(exe):
     return False
 
 
-def make_or_verify_core_dir(directory, mode, uid, strict):
-    """Make sure directory exists with proper permissions.
+def lock_dir_until_exit(dir_path):
+    """Lock the directory at dir_path until program exit.
+
+    :param str dir_path: path to directory
+
+    :raises errors.LockFile: if the lock is held by another process
+
+    """
+    dir_lock = lock.lock_dir(dir_path)
+    if not _LOCKS:  # this is the first lock to be released at exit
+        atexit_register(_release_locks)
+    _LOCKS.append(dir_lock)
+
+
+def _release_locks():
+    for dir_lock in _LOCKS:
+        try:
+            dir_lock.release()
+        except:  # pylint: disable=bare-except
+            msg = 'Exception occurred releasing lock: {0!r}'.format(dir_lock)
+            logger.debug(msg, exc_info=True)
+
+
+def set_up_core_dir(directory, mode, uid, strict):
+    """Ensure directory exists with proper permissions and is locked.
 
     :param str directory: Path to a directory.
     :param int mode: Directory mode.
     :param int uid: Directory owner.
     :param bool strict: require directory to be owned by current user
 
+    :raises .errors.LockError: if the directory cannot be locked
     :raises .errors.Error: if the directory cannot be made or verified
 
     """
@@ -118,6 +147,7 @@ def make_or_verify_core_dir(directory, mode, uid, strict):
         make_or_verify_dir(directory, mode, uid, strict)
     except OSError as error:
         raise errors.Error(PERM_ERR_FMT.format(error))
+    lock_dir_until_exit(directory)
 
 
 def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):

@@ -5,39 +5,8 @@ import logging
 import os
 
 from certbot import errors
-from certbot import util
-
 
 logger = logging.getLogger(__name__)
-
-
-# Contains the list of locks to cleanup at program exit. If the program
-# exits before the lock is cleaned up, it is automatically released, but
-# the file isn't deleted.
-_LOCKS = []
-
-
-def lock_dir_until_exit(dir_path):
-    """Lock the directory at dir_path until program exit.
-
-    :param str dir_path: path to directory
-
-    :raises errors.LockFile: if the lock is held by another process
-
-    """
-    lock = lock_dir(dir_path)
-    if not _LOCKS:  # this is the first lock to be released at exit
-        util.atexit_register(_release_locks)
-    _LOCKS.append(lock)
-
-
-def _release_locks():
-    for lock in _LOCKS:
-        try:
-            lock.release()
-        except:  # pylint: disable=bare-except
-            msg = 'Encountered exception releasing lock: {0!r}'.format(lock)
-            logger.debug(msg, exc_info=True)
 
 
 def lock_dir(dir_path):

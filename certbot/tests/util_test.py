@@ -2,11 +2,13 @@
 import argparse
 import errno
 import os
+import shutil
 import stat
 import unittest
 
 import mock
 import six
+from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import errors
 import certbot.tests.util as test_util
@@ -73,19 +75,47 @@ class ExeExistsTest(unittest.TestCase):
         self.assertFalse(self._call("exe"))
 
 
-class MakeOrVerifyCoreDirTest(test_util.TempDirTestCase):
+class LockDirUntilExit(test_util.TempDirTestCase):
+    """Tests for certbot.util.lock_dir_until_exit."""
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.util import lock_dir_until_exit
+        return lock_dir_until_exit(*args, **kwargs)
+
+    def setUp(self):
+        super(LockDirUntilExit, self).setUp()
+        # reset global state from other tests
+        import certbot.util
+        reload_module(certbot.util)
+
+    @mock.patch('certbot.util.atexit_register')
+    def test_it(self, mock_register):
+        subdir = os.path.join(self.tempdir, 'subdir')
+        os.mkdir(subdir)
+        self._call(self.tempdir)
+        self._call(subdir)
+
+        self.assertEqual(mock_register.call_count, 1)
+        registered_func = mock_register.call_args[0][0]
+        shutil.rmtree(subdir)
+        registered_func()  # exception not raised
+
+
+class SetUpCoreDirTest(test_util.TempDirTestCase):
     """Tests for certbot.util.make_or_verify_core_dir."""
 
     def _call(self, *args, **kwargs):
-        from certbot.util import make_or_verify_core_dir
-        return make_or_verify_core_dir(*args, **kwargs)
+        from certbot.util import set_up_core_dir
+        return set_up_core_dir(*args, **kwargs)
 
-    def test_success(self):
+    @mock.patch('certbot.util.lock_dir_until_exit')
+    def test_success(self, mock_lock):
         new_dir = os.path.join(self.tempdir, 'new')
         self._call(new_dir, 0o700, os.geteuid(), False)
         self.assertTrue(os.path.exists(new_dir))
+        self.assertEqual(mock_lock.call_count, 1)
 
-    @mock.patch('certbot.main.util.make_or_verify_dir')
+    @mock.patch('certbot.util.make_or_verify_dir')
     def test_failure(self, mock_make_or_verify):
         mock_make_or_verify.side_effect = OSError
         self.assertRaises(errors.Error, self._call,
