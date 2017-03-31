@@ -162,6 +162,14 @@ class NginxConfigurator(common.Plugin):
         if self.version is None:
             self.version = self.get_version()
 
+        # Prevent two Nginx plugins from modifying a config at once
+        try:
+            util.lock_dir_until_exit(self.conf('server-root'))
+        except errors.LockError:
+            logger.debug('Encountered error:', exc_info=True)
+            raise errors.PluginError(
+                'Unable to lock %s', self.conf('server-root'))
+
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path,
                     chain_path=None, fullchain_path=None):
