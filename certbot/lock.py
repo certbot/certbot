@@ -11,9 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 class LockFile(object):
-    """A UNIX lock file
+    """A UNIX lock file.
 
-    This lock file is based on the lock_file package by Martin Horcicka.
+    This lock file cannot be used to provide synchronization between
+    threads. It is based on the lock_file package by Martin Horcicka.
 
     """
     def __init__(self, path):
@@ -38,7 +39,7 @@ class LockFile(object):
         """
         while self._fd is None:
             # Open the file
-            fd = os.open(self._path, os.O_CREAT | os.O_WRONLY, 0600)
+            fd = os.open(self._path, os.O_CREAT | os.O_WRONLY, 0o600)
             try:
                 self._try_lock(fd)
                 if self._lock_success(fd):
@@ -79,8 +80,8 @@ class LockFile(object):
         """
         try:
             stat1 = os.stat(self._path)
-        except OSError, e:
-            if e.errno == errno.ENOENT:
+        except OSError as err:
+            if err.errno == errno.ENOENT:
                 return False
             raise
 
@@ -90,7 +91,7 @@ class LockFile(object):
         return stat1.st_dev == stat2.st_dev and stat1.st_ino == stat2.st_ino
 
     def __repr__(self):
-        repr_str = '{0}({1}) <'.format(self.__class__.__name__, self._fd)
+        repr_str = '{0}({1}) <'.format(self.__class__.__name__, self._path)
         if self._fd is None:
             repr_str += 'released>'
         else:
