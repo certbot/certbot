@@ -1,4 +1,5 @@
 """Tests for certbot.lock."""
+import functools
 import os
 import multiprocessing
 import unittest
@@ -7,6 +8,20 @@ import mock
 
 from certbot import errors
 from certbot.tests import util as test_util
+
+
+class LockDirTest(test_util.TempDirTestCase):
+    """Tests for certbot.lock.lock_dir."""
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.lock import lock_dir
+        return lock_dir(*args, **kwargs)
+
+    def test_it(self):
+        assert_raises = functools.partial(
+            self.assertRaises, errors.LockError, self._call, self.tempdir)
+        lock_path = os.path.join(self.tempdir, '.certbot.lock')
+        lock_and_call(assert_raises, lock_path)
 
 
 class LockFileTest(test_util.TempDirTestCase):
@@ -21,21 +36,9 @@ class LockFileTest(test_util.TempDirTestCase):
         self.lock_path = os.path.join(self.tempdir, 'test.lock')
 
     def test_contention(self):
-        # start child and wait for it to grab the lock
-        cv = multiprocessing.Condition()
-        cv.acquire()
-        child_args = (cv, self.lock_path,)
-        child = multiprocessing.Process(target=hold_lock, args=child_args)
-        child.start()
-        cv.wait()
-
-        # assert we can't grab lock and terminate the child
-        self.assertRaises(
-            errors.LockError, self._call, self.lock_path)
-        cv.notify()
-        cv.release()
-        child.join()
-        self.assertEqual(child.exitcode, 0)
+        assert_raises = functools.partial(
+            self.assertRaises, errors.LockError, self._call, self.lock_path)
+        lock_and_call(assert_raises, self.lock_path)
 
     def test_race(self):
         should_delete = [True, False]
@@ -95,6 +98,29 @@ class LockFileTest(test_util.TempDirTestCase):
             self.assertTrue(msg in str(err))
         else:  # pragma: no cover
             self.fail('OSError not raised')
+
+
+def lock_and_call(func, lock_path):
+    """Grab a lock at lock_path and call func.
+
+    :param callable func: object to call after acquiring the lock
+    :param str lock_path: path to the lock file to acquire
+
+    """
+    # start child and wait for it to grab the lock
+    cv = multiprocessing.Condition()
+    cv.acquire()
+    child_args = (cv, lock_path,)
+    child = multiprocessing.Process(target=hold_lock, args=child_args)
+    child.start()
+    cv.wait()
+
+    # call func and terminate the child
+    func()
+    cv.notify()
+    cv.release()
+    child.join()
+    assert child.exitcode == 0
 
 
 def hold_lock(cv, lock_path):  # pragma: no cover
