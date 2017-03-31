@@ -1,6 +1,5 @@
 """Tests for certbot.lock."""
 import functools
-import multiprocessing
 import os
 import unittest
 
@@ -21,7 +20,7 @@ class LockDirTest(test_util.TempDirTestCase):
         assert_raises = functools.partial(
             self.assertRaises, errors.LockError, self._call, self.tempdir)
         lock_path = os.path.join(self.tempdir, '.certbot.lock')
-        lock_and_call(assert_raises, lock_path)
+        test_util.lock_and_call(assert_raises, lock_path)
 
 
 class LockFileTest(test_util.TempDirTestCase):
@@ -38,7 +37,7 @@ class LockFileTest(test_util.TempDirTestCase):
     def test_contention(self):
         assert_raises = functools.partial(
             self.assertRaises, errors.LockError, self._call, self.lock_path)
-        lock_and_call(assert_raises, self.lock_path)
+        test_util.lock_and_call(assert_raises, self.lock_path)
 
     def test_race(self):
         should_delete = [True, False]
@@ -98,44 +97,6 @@ class LockFileTest(test_util.TempDirTestCase):
             self.assertTrue(msg in str(err))
         else:  # pragma: no cover
             self.fail('OSError not raised')
-
-
-def lock_and_call(func, lock_path):
-    """Grab a lock at lock_path and call func.
-
-    :param callable func: object to call after acquiring the lock
-    :param str lock_path: path to the lock file to acquire
-
-    """
-    # start child and wait for it to grab the lock
-    cv = multiprocessing.Condition()
-    cv.acquire()
-    child_args = (cv, lock_path,)
-    child = multiprocessing.Process(target=hold_lock, args=child_args)
-    child.start()
-    cv.wait()
-
-    # call func and terminate the child
-    func()
-    cv.notify()
-    cv.release()
-    child.join()
-    assert child.exitcode == 0
-
-
-def hold_lock(cv, lock_path):  # pragma: no cover
-    """Acquire a file lock at lock_path and wait to release it.
-
-    :param multiprocessing.Condition cv: condition for syncronization
-    :param str lock_path: path to the file lock
-
-    """
-    from certbot.lock import LockFile
-    lock_file = LockFile(lock_path)
-    cv.acquire()
-    cv.notify()
-    cv.wait()
-    lock_file.release()
 
 
 if __name__ == "__main__":

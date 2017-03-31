@@ -3,6 +3,7 @@
 .. warning:: This module is not part of the public API.
 
 """
+import multiprocessing
 import os
 import pkg_resources
 import shutil
@@ -241,3 +242,44 @@ class TempDirTestCase(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
+
+
+def lock_and_call(func, lock_path):
+    """Grab a lock for lock_path and call func.
+
+    :param callable func: object to call after acquiring the lock
+    :param str lock_path: path to file or directory to lock
+
+    """
+    # start child and wait for it to grab the lock
+    cv = multiprocessing.Condition()
+    cv.acquire()
+    child_args = (cv, lock_path,)
+    child = multiprocessing.Process(target=hold_lock, args=child_args)
+    child.start()
+    cv.wait()
+
+    # call func and terminate the child
+    func()
+    cv.notify()
+    cv.release()
+    child.join()
+    assert child.exitcode == 0
+
+
+def hold_lock(cv, lock_path):  # pragma: no cover
+    """Acquire a file lock at lock_path and wait to release it.
+
+    :param multiprocessing.Condition cv: condition for syncronization
+    :param str lock_path: path to the file lock
+
+    """
+    from certbot import lock
+    if os.path.isdir(lock_path):
+        my_lock = lock.lock_dir(lock_path)
+    else:
+        my_lock = lock.LockFile(lock_path)
+    cv.acquire()
+    cv.notify()
+    cv.wait()
+    my_lock.release()
