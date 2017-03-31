@@ -1,13 +1,41 @@
 """Tests for certbot.lock."""
 import functools
-import os
 import multiprocessing
+import os
+import shutil
 import unittest
 
 import mock
+from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import errors
 from certbot.tests import util as test_util
+
+
+class LockDirUntilExit(test_util.TempDirTestCase):
+    """Tests for certbot.lock.lock_dir_until_exit."""
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.lock import lock_dir_until_exit
+        return lock_dir_until_exit(*args, **kwargs)
+
+    def setUp(self):
+        super(LockDirUntilExit, self).setUp()
+        # reset global state from other tests
+        import certbot.lock
+        reload_module(certbot.lock)
+
+    @mock.patch('certbot.lock.util.atexit_register')
+    def test_it(self, mock_register):
+        subdir = os.path.join(self.tempdir, 'subdir')
+        os.mkdir(subdir)
+        self._call(self.tempdir)
+        self._call(subdir)
+
+        self.assertEqual(mock_register.call_count, 1)
+        registered_func = mock_register.call_args[0][0]
+        shutil.rmtree(subdir)
+        registered_func()  # exception not raised
 
 
 class LockDirTest(test_util.TempDirTestCase):
