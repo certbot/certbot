@@ -805,24 +805,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                              "based virtual host", addr)
                 self.add_name_vhost(addr)
 
-    def _vhost_names_match(self, path, vhost):
-        """Helper method for make_vhost_ssl that checks if the vhost on path
-        has matching ServerName and ServerAlias values to the original vhost"""
-
-        servername, serveraliases = self._get_vhost_names(path)
-
-        for alias in vhost.aliases:
-            if alias not in serveraliases:
-                return False
-
-        if servername != vhost.name:
-            return False
-
-        if len(vhost.aliases) == len(serveraliases):
-            return True
-
-        return False
-
     def make_vhost_ssl(self, nonssl_vhost):  # pylint: disable=too-many-locals
         """Makes an ssl_vhost version of a nonssl_vhost.
 
@@ -846,23 +828,29 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         ssl_fp = self._get_ssl_vhost_path(avail_fp)
 
         vhost_num = int(nonssl_vhost.vh_index)
+
+        orig_matches = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
+                                      (self._escape(ssl_fp),
+                                       parser.case_i("VirtualHost")))
+
+        orig_matches = [i.replace("[1]", "") for i in orig_matches]
+
         self._copy_create_ssl_vhost_skeleton(avail_fp, ssl_fp, vhost_num)
 
         # Reload augeas to take into account the new vhost
         self.aug.load()
         # Get Vhost augeas path for new vhost
-        matches = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
-                                 (self._escape(ssl_fp),
-                                  parser.case_i("VirtualHost")))
-        vh_p = None
-        for match in matches:
-            # Make sure we have the correct ssl vhost
-            if self._vhost_names_match(match, nonssl_vhost):
-                vh_p = match
+        new_matches = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
+                                     (self._escape(ssl_fp),
+                                      parser.case_i("VirtualHost")))
 
-        # Fallback to at least something
-        if not vh_p and matches:
-            vh_p = matches[0]
+        vh_p = self._get_new_vh_path(orig_matches, new_matches)
+
+        # Raise error if we wrote something but can't map it back
+        if not vh_p and len(new_matches) != len(orig_matches):
+            raise errors.PluginError(
+                "Could not reverse map the HTTPS VirtualHost to the original")
+
         # Update Addresses
         self._update_ssl_vhosts_addrs(vh_p)
         # Add directives
@@ -890,6 +878,17 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._add_name_vhost_if_necessary(ssl_vhost)
 
         return ssl_vhost
+
+    def _get_new_vh_path(self, orig_matches, new_matches):
+        """ Helper method for make_vhost_ssl for matching augeas paths
+        while ignoring index[1] of augeas path fragment """
+
+        orig_matches = [i.replace("[1]", "") for i in orig_matches]
+        for match in new_matches:
+            if match.replace("[1]", "") not in orig_matches:
+                # Return the unmodified path
+                return match
+        return None
 
     def _get_ssl_vhost_path(self, non_ssl_vh_fp):
         # Get filepath of new ssl_vhost

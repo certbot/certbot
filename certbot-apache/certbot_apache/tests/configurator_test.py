@@ -581,27 +581,6 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(mock_add_dir.call_count, 0)
 
 
-    @mock.patch("certbot_apache.configurator.ApacheConfigurator._get_vhost_names")
-    def test_vhost_names_match(self, getnames_mock):
-        """ Tests vhost matching per ServerName and ServerAliases """
-
-        # pylint: disable=protected-access
-        getnames_mock.return_value = ("whatevername", set())
-        self.assertFalse(self.config._vhost_names_match("irrelevant",
-                         self.vh_truth[6]))
-
-        getnames_mock.return_value = (self.vh_truth[6].name,
-                                      self.vh_truth[6].aliases)
-        self.assertTrue(self.config._vhost_names_match("irrelevant",
-                        self.vh_truth[6]))
-
-        aliases = self.vh_truth[6].aliases[:]
-        aliases.append("something_extra")
-        getnames_mock.return_value = (self.vh_truth[6].name,
-                                      aliases)
-        self.assertFalse(self.config._vhost_names_match("irrelevant",
-                        self.vh_truth[6]))
-
     def test_make_vhost_ssl(self):
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
 
@@ -1429,6 +1408,27 @@ class MultiVhostsTest(util.ApacheTest):
 
         self.assertEqual(self.config.is_name_vhost(self.vh_truth[1]),
                          self.config.is_name_vhost(ssl_vhost))
+
+        mock_path = "certbot_apache.configurator.ApacheConfigurator._get_new_vh_path"
+        with mock.patch(mock_path) as mock_getpath:
+            mock_getpath.return_value = None
+            self.assertRaises(errors.PluginError, self.config.make_vhost_ssl,
+                              self.vh_truth[1])
+
+    def test_get_new_path(self):
+        with_index_1 = ["/path[1]/section[1]"]
+        without_index = ["/path/section"]
+        with_index_2 = ["/path[2]/section[2]"]
+        self.assertEqual(self.config._get_new_vh_path(without_index,
+                                                      with_index_1),
+                         None)
+        self.assertEqual(self.config._get_new_vh_path(without_index,
+                                                      with_index_2),
+                         with_index_2[0])
+
+        both = with_index_1 + with_index_2
+        self.assertEqual(self.config._get_new_vh_path(without_index, both),
+                         with_index_2[0])
 
 
 if __name__ == "__main__":
