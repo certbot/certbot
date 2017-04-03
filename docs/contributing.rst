@@ -231,6 +231,7 @@ While developing, you can install your plugin into a Certbot development
 virtualenv like this:
 
 .. code-block:: shell
+
   . venv/bin/activate
   . tests/integration/_common.sh
   pip install -e examples/plugins/
