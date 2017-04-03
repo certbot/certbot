@@ -368,7 +368,7 @@ def duplicate_lineage(config, certname, new_certname):
     # if things aren't in their default places, don't try to change things.
     prev_live_dir = _full_live_path(config, certname)
     prev_links = dict((kind, renewal_config.get(kind)) for kind in ALL_FOUR)
-    if (not certname in prev_live_dir or
+    if (certname not in prev_live_dir or
             len(set(os.path.dirname(renewal_config.get(kind)) for kind in ALL_FOUR)) != 1):
         raise errors.CertStorageError("Live directory does not conform to defaults.")
     else:
