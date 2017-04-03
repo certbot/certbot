@@ -101,6 +101,13 @@ More detailed help:
    subcommands or plugins (certonly, renew, install, register, nginx,
    apache, standalone, webroot, etc.)
 """
+TOPIC_NOT_FOUND_USAGE = """
+        Available topics are:
+
+   all, automation, commands, paths, security, testing, or any of the
+   subcommands or plugins (certonly, renew, install, register, nginx,
+   apache, standalone, webroot, etc.)
+"""
 
 
 # These argparse parameters should be removed when detecting defaults.
@@ -485,10 +492,11 @@ class HelpfulArgumentParser(object):
         """Make usage strings late so that plugins can be initialised late
 
         :param plugins: all discovered plugins
-        :param help_arg: False for none; True for --help; "TOPIC" for --help TOPIC
+        :param help_arg: False for none; True for --help or -h; "TOPIC" for --help TOPIC
         :rtype: str
         :returns: a short usage string for the top of --help TOPIC)
         """
+
         if "nginx" in plugins:
             nginx_doc = "--nginx           Use the Nginx plugin for authentication & installation"
         else:
@@ -499,10 +507,17 @@ class HelpfulArgumentParser(object):
             apache_doc = "(the certbot apache plugin is not installed)"
 
         usage = SHORT_USAGE
+
+        if self.args[-1] not in self.help_topics:
+            print('Could not find {a} ...'.format(a=self.args[-1]))
+            print(TOPIC_NOT_FOUND_USAGE)
+            sys.exit(0)
+
         if help_arg == True:
             print(usage + COMMAND_OVERVIEW % (apache_doc, nginx_doc) + HELP_USAGE)
             sys.exit(0)
         elif help_arg in self.COMMANDS_TOPICS:
+            print('help_arg is in self.COMMANDS_TOPICS')
             print(usage + self._list_subcommands())
             sys.exit(0)
         elif help_arg == "all":
@@ -526,7 +541,6 @@ class HelpfulArgumentParser(object):
         parsed_args = self.parser.parse_args(self.args)
         parsed_args.func = self.VERBS[self.verb]
         parsed_args.verb = self.verb
-
         if self.detect_defaults:
             return parsed_args
 
@@ -639,6 +653,10 @@ class HelpfulArgumentParser(object):
     def prescan_for_flag(self, flag, possible_arguments):
         """Checks cli input for flags.
 
+        :param flag: str either -h or --help
+        :param possible_arguments: list[str] passed in copy of self.args for
+                                   iterating through
+
         Check for a flag, which accepts a fixed set of possible arguments, in
         the command line; we will use this information to configure argparse's
         help correctly.  Return the flag's argument, if it has one that matches
@@ -646,6 +664,7 @@ class HelpfulArgumentParser(object):
         present.
 
         """
+
         if flag not in self.args:
             return False
         pos = self.args.index(flag)
@@ -810,7 +829,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     """
 
     # pylint: disable=too-many-statements
-
     helpful = HelpfulArgumentParser(args, plugins, detect_defaults)
     _add_all_groups(helpful)
 
