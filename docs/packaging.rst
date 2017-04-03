@@ -70,6 +70,16 @@ FreeBSD
 
 - https://svnweb.freebsd.org/ports/head/security/py-certbot/
 
+Gentoo
+------
+
+Currently, all ``certbot`` related packages are in the testing branch:
+
+- https://packages.gentoo.org/packages/app-crypt/certbot
+- https://packages.gentoo.org/packages/app-crypt/certbot-apache
+- https://packages.gentoo.org/packages/app-crypt/certbot-nginx
+- https://packages.gentoo.org/packages/app-crypt/acme
+
 GNU Guix
 --------
 
