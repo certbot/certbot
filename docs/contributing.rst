@@ -220,9 +220,10 @@ Writing your own plugin
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 Certbot client supports dynamic discovery of plugins through the
-`setuptools entry points`_. This way you can, for example, create a
-custom implementation of `~certbot.interfaces.IAuthenticator` or
-the `~certbot.interfaces.IInstaller` without having to merge it
+`setuptools entry points`_ using the `certbot.plugins` group. This
+way you can, for example, create a custom implementation of
+`~certbot.interfaces.IAuthenticator` or the
+`~certbot.interfaces.IInstaller` without having to merge it
 with the core upstream source code. An example is provided in
 ``examples/plugins/`` directory.
 
