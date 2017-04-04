@@ -281,7 +281,7 @@ class VerifyRenewableCertTest(unittest.TestCase):
         self.assertRaises(errors.Error, self._verify_fullchain, bad_renewable_cert)
 
     def test_cert_priv_key_match(self):
-        self.assertEqual(None,self._verify_cert_matches_priv_key(self.renewable_cert))
+        self.assertEqual(None, self._verify_cert_matches_priv_key(self.renewable_cert))
 
     def test_cert_priv_key_mismatch(self):
         bad_renewable_cert = mock.MagicMock()
@@ -303,8 +303,7 @@ class VerifyRenewableCertTest(unittest.TestCase):
     def test_verify_renewable_cert(self):
         self.assertEqual(None, self._verify_renewable_cert(self.renewable_cert))
 
-    @mock.patch('certbot.crypto_util.verify_renewable_cert_sig', side_effect=errors.Error(""))
-    def test_verify_renewable_cert_failure(self, mock_verify_renewable_cert_sig):
+    def test_verify_renewable_cert_failure(self):
         bad_renewable_cert = mock.MagicMock()
         self.assertRaises(errors.Error, self._verify_renewable_cert, bad_renewable_cert)
 

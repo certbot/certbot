@@ -243,6 +243,7 @@ def valid_privkey(privkey):
     except (TypeError, OpenSSL.crypto.Error):
         return False
 
+
 def verify_renewable_cert_sig(renewable_cert):
     """ Verifies the signature of a `storage.RenewableCert` object.
     :param typ: `storage.RenewableCert`
@@ -254,7 +255,9 @@ def verify_renewable_cert_sig(renewable_cert):
             chain = pyopenssl_load_certificate(chain.read())[0]
             cert = x509.load_pem_x509_certificate(cert.read(), default_backend())
             hash_name = cert.signature_hash_algorithm.name
-            return OpenSSL.crypto.verify(chain, cert.signature, cert.tbs_certificate_bytes, hash_name)
+            return OpenSSL.crypto.verify(chain, cert.signature, 
+                    cert.tbs_certificate_bytes, hash_name)
+
 
 def verify_cert_matches_priv_key(renewable_cert):
     """Do the private key and cert match?
@@ -265,12 +268,15 @@ def verify_cert_matches_priv_key(renewable_cert):
     """
     with open(renewable_cert.cert) as cert:
         with open(renewable_cert.privkey) as privkey:
-            privkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, privkey.read())
-            cert = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, cert.read())
+            privkey = OpenSSL.crypto.load_privatekey(
+                    OpenSSL.crypto.FILETYPE_PEM, privkey.read())
+            cert = OpenSSL.crypto.load_certificate(
+                    OpenSSL.crypto.FILETYPE_PEM, cert.read())
             context = OpenSSL.SSL.Context(OpenSSL.SSL.SSLv23_METHOD)
             context.use_privatekey(privkey)
             context.use_certificate(cert)
             context.check_privatekey()
+
 
 def verify_fullchain(renewable_cert):
     """Check that fullchain is indeed cert concatenated with chain
@@ -285,8 +291,10 @@ def verify_fullchain(renewable_cert):
                 with open(renewable_cert.fullchain) as fullchain:
                     assert (cert.read() + chain.read()) == fullchain.read()
     except AssertionError:
-        error_str = "fullchain does not match cert + chain for {0}!".format(renewable_cert.lineagename)
+        error_str = "fullchain does not match cert + chain for {0}!"
+        error_str = error_str.format(renewable_cert.lineagename)
         raise errors.Error(error_str)
+
 
 def verify_renewable_cert(renewable_cert):
     """For checking that your certs were not corrupted on disk.
@@ -307,7 +315,8 @@ def verify_renewable_cert(renewable_cert):
         return
     except Exception as error:
         verification_errors.append(error)
-    raise errors.Error("it seems your cert is corrupted. Details: {0}".format(",".join(str(error) for error in verification_errors)))
+    raise errors.Error("it seems your cert is corrupted. Details: \
+            {0}".format(",".join(str(error) for error in verification_errors)))
 
 def pyopenssl_load_certificate(data):
     """Load PEM/DER certificate.
