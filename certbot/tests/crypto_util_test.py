@@ -305,6 +305,7 @@ class VerifyRenewableCertTest(unittest.TestCase):
 
     @mock.patch('certbot.crypto_util.verify_renewable_cert_sig', side_effect=errors.Error(""))
     def test_verify_renewable_cert_failure(self, mock_verify_renewable_cert_sign):
+        #pylint: disable=unused-argument
         bad_renewable_cert = mock.MagicMock()
         self.assertRaises(errors.Error, self._verify_renewable_cert, bad_renewable_cert)
 
