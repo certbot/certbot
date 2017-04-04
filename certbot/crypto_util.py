@@ -289,7 +289,7 @@ def verify_cert_matches_priv_key(renewable_cert):
                         renewable_cert.privkey, e)
         logger.exception(error_str)
         raise e
- 
+
 
 def verify_fullchain(renewable_cert):
     """Check that fullchain is indeed cert concatenated with chain
@@ -496,6 +496,7 @@ def _notAfterBefore(cert_path, method):
     :rtype: :class:`datetime.datetime`
 
     """
+    # pylint: disable=redefined-outer-name
     with open(cert_path) as f:
         x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
                                                f.read())
