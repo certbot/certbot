@@ -427,8 +427,12 @@ For squeeze you will need to:
 FreeBSD
 -------
 
-Package installation for FreeBSD uses ``pkg``, not ports.
+The package can be installed FreeBSD using ``pkg`` (e.g. ``pkg install py27-certbot``), 
+or any other port-management tool (``portupgrade``, ``portmanager``, etc.) 
+from the pre-compiled package or can be built and installed from ports. 
+Either way will ensure proper installation of all the dependencies required 
+to run ``certbot``.
 
 FreeBSD by default uses ``tcsh``. In order to activate virtualenv (see
-below), you will need a compatible shell, e.g. ``pkg install bash &&
+above), you will need a compatible shell, e.g. ``pkg install bash &&
 bash``.
