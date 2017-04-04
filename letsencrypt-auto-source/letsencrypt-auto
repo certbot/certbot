@@ -398,6 +398,37 @@ BootstrapRpmCommon() {
   fi
 }
 
+BootstrapAlpineCommon() {
+  # Tested with:
+  #   - Alpine 3.4
+
+  $SUDO apk update || echo apk update hit problems but continuing anyway...
+
+  $SUDO apk add --no-progress --virtual .virtualenv-deps \
+            python \
+            python-dev \
+            py-pip \
+            build-base
+
+  $SUDO pip install virtualenv
+
+  $SUDO apk add --no-progress --virtual .certbot-deps \
+           dialog \
+           augeas-libs \
+           libffi \
+           libssl1.0 \
+           wget \
+           ca-certificates \
+           binutils
+
+  $SUDO apk add --no-progress --virtual .build-deps \
+           gcc \
+           linux-headers \
+           openssl-dev \
+           musl-dev \
+           libffi-dev
+
+}
 BootstrapSuseCommon() {
   # SLE12 don't have python-virtualenv
 
@@ -579,6 +610,9 @@ Bootstrap() {
   if [ -f /etc/debian_version ]; then
     echo "Bootstrapping dependencies for Debian-based OSes..."
     BootstrapDebCommon
+  elif [ -f /etc/alpine-release ]; then
+    echo "Bootstrapping dependencies for Alpine linux..."
+    BootstrapAlpineCommon
   elif [ -f /etc/mageia-release ] ; then
     # Mageia has both /etc/mageia-release and /etc/redhat-release
     ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
@@ -1231,6 +1265,10 @@ UNLIKELY_EOF
       # option on macOS or BSD, and stat -c on Linux is stat -f on macOS and BSD:
       $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
       $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      # TODO Fails in alpine, details at https://github.com/certbot/certbot/pull/3929 - find workaround
+      if [ -f /etc/alpine-release ]; then
+        $SUDO chmod +x "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      fi
       # Using mv rather than cp leaves the old file descriptor pointing to the
       # original copy so the shell can continue to read it unmolested. mv across
       # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the

@@ -196,6 +196,7 @@ DeterminePythonVersion() {
 
 {{ bootstrappers/deb_common.sh }}
 {{ bootstrappers/rpm_common.sh }}
+{{ bootstrappers/alpine_common.sh }}
 {{ bootstrappers/suse_common.sh }}
 {{ bootstrappers/arch_common.sh }}
 {{ bootstrappers/gentoo_common.sh }}
@@ -209,6 +210,9 @@ Bootstrap() {
   if [ -f /etc/debian_version ]; then
     echo "Bootstrapping dependencies for Debian-based OSes..."
     BootstrapDebCommon
+  elif [ -f /etc/alpine-release ]; then
+    echo "Bootstrapping dependencies for Alpine linux..."
+    BootstrapAlpineCommon
   elif [ -f /etc/mageia-release ] ; then
     # Mageia has both /etc/mageia-release and /etc/redhat-release
     ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
@@ -405,6 +409,12 @@ UNLIKELY_EOF
       # original copy so the shell can continue to read it unmolested. mv across
       # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
       # cp is unlikely to fail (esp. under sudo) if the rm doesn't.
+
+      # TODO cp fails to reserve permissions in alpine, details at https://github.com/certbot/certbot/pull/3929
+      if [ -f /etc/alpine-release ]; then
+        $SUDO chmod +x "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      fi
+
       $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
     fi  # A newer version is available.
   fi  # Self-upgrading is allowed.
