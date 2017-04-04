@@ -256,7 +256,7 @@ def verify_renewable_cert_sig(renewable_cert):
                 chain, _ = pyopenssl_load_certificate(chain.read())
                 cert = x509.load_pem_x509_certificate(cert.read(), default_backend())
                 hash_name = cert.signature_hash_algorithm.name
-                return OpenSSL.crypto.verify(chain, cert.signature, 
+                return OpenSSL.crypto.verify(chain, cert.signature,
                         cert.tbs_certificate_bytes, hash_name)
     except (IOError, ValueError, OpenSSL.crypto.Error) as e:
         error_str = "verifying the signature of the cert located at {0} has failed. \
@@ -285,11 +285,11 @@ def verify_cert_matches_priv_key(renewable_cert):
     except OpenSSL.SSL.Error as e:
         error_str = "verifying the cert located at {0} matches the \
                 private key located at {1} has failed. \
-                Details: {2}".format(renewable_cert.cert, 
+                Details: {2}".format(renewable_cert.cert,
                         renewable_cert.privkey, e)
         logger.exception(error_str)
         raise e
-        
+ 
 
 def verify_fullchain(renewable_cert):
     """Check that fullchain is indeed cert concatenated with chain
@@ -304,7 +304,7 @@ def verify_fullchain(renewable_cert):
                 with open(renewable_cert.fullchain) as fullchain:
                     assert (cert.read() + chain.read()) == fullchain.read()
     except IOError as e:
-        error_str = "reading one of cert, chain, or fullchain has failed: {0}".format(e) 
+        error_str = "reading one of cert, chain, or fullchain has failed: {0}".format(e)
         logger.exception(error_str)
         raise e
     except AssertionError as e:
@@ -326,7 +326,7 @@ def verify_renewable_cert(renewable_cert):
     :raises errors.Error is verification fails
     """
     verification_errors = []
-    possible_exceptions = (IOError, ValueError, AssertionError, 
+    possible_exceptions = (IOError, ValueError, AssertionError,
             OpenSSL.crypto.Error, OpenSSL.SSL.Error, errors.Error)
     try:
         verify_renewable_cert_sig(renewable_cert)
