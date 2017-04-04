@@ -250,14 +250,19 @@ def verify_renewable_cert_sig(renewable_cert):
 
     :raises OpenSSL.crypto.Error if signature verification fails
     """
-    with open(renewable_cert.chain, 'rb') as chain:
-        with open(renewable_cert.cert, 'rb') as cert:
-            chain = pyopenssl_load_certificate(chain.read())[0]
-            cert = x509.load_pem_x509_certificate(cert.read(), default_backend())
-            hash_name = cert.signature_hash_algorithm.name
-            return OpenSSL.crypto.verify(chain, cert.signature, 
-                    cert.tbs_certificate_bytes, hash_name)
-
+    try:
+        with open(renewable_cert.chain, 'rb') as chain:
+            with open(renewable_cert.cert, 'rb') as cert:
+                chain, _ = pyopenssl_load_certificate(chain.read())
+                cert = x509.load_pem_x509_certificate(cert.read(), default_backend())
+                hash_name = cert.signature_hash_algorithm.name
+                return OpenSSL.crypto.verify(chain, cert.signature, 
+                        cert.tbs_certificate_bytes, hash_name)
+    except (IOError, ValueError, OpenSSL.crypto.Error) as e:
+        error_str = "verifying the signature of the cert located at {0} has failed. \
+                Details: {1}".format(renewable_cert.cert, e)
+        logger.exception(error_str)
+        raise e
 
 def verify_cert_matches_priv_key(renewable_cert):
     """Do the private key and cert match?
@@ -266,17 +271,25 @@ def verify_cert_matches_priv_key(renewable_cert):
 
     :raises OpenSSL.SSL.Error if they don't match
     """
-    with open(renewable_cert.cert) as cert:
-        with open(renewable_cert.privkey) as privkey:
-            privkey = OpenSSL.crypto.load_privatekey(
-                    OpenSSL.crypto.FILETYPE_PEM, privkey.read())
-            cert = OpenSSL.crypto.load_certificate(
-                    OpenSSL.crypto.FILETYPE_PEM, cert.read())
-            context = OpenSSL.SSL.Context(OpenSSL.SSL.SSLv23_METHOD)
-            context.use_privatekey(privkey)
-            context.use_certificate(cert)
-            context.check_privatekey()
-
+    try:
+        with open(renewable_cert.cert) as cert:
+            with open(renewable_cert.privkey) as privkey:
+                privkey = OpenSSL.crypto.load_privatekey(
+                        OpenSSL.crypto.FILETYPE_PEM, privkey.read())
+                cert = OpenSSL.crypto.load_certificate(
+                        OpenSSL.crypto.FILETYPE_PEM, cert.read())
+                context = OpenSSL.SSL.Context(OpenSSL.SSL.SSLv23_METHOD)
+                context.use_privatekey(privkey)
+                context.use_certificate(cert)
+                context.check_privatekey()
+    except OpenSSL.SSL.Error as e:
+        error_str = "verifying the cert located at {0} matches the \
+                private key located at {1} has failed. \
+                Details: {2}".format(renewable_cert.cert, 
+                        renewable_cert.privkey, e)
+        logger.exception(error_str)
+        raise e
+        
 
 def verify_fullchain(renewable_cert):
     """Check that fullchain is indeed cert concatenated with chain
@@ -290,10 +303,15 @@ def verify_fullchain(renewable_cert):
             with open(renewable_cert.cert) as cert:
                 with open(renewable_cert.fullchain) as fullchain:
                     assert (cert.read() + chain.read()) == fullchain.read()
-    except AssertionError:
+    except IOError as e:
+        error_str = "reading one of cert, chain, or fullchain has failed: {0}".format(e) 
+        logger.exception(error_str)
+        raise e
+    except AssertionError as e:
         error_str = "fullchain does not match cert + chain for {0}!"
         error_str = error_str.format(renewable_cert.lineagename)
-        raise errors.Error(error_str)
+        logger.exception(e)
+        raise e
 
 
 def verify_renewable_cert(renewable_cert):
@@ -308,12 +326,14 @@ def verify_renewable_cert(renewable_cert):
     :raises errors.Error is verification fails
     """
     verification_errors = []
+    possible_exceptions = (IOError, ValueError, AssertionError, 
+            OpenSSL.crypto.Error, OpenSSL.SSL.Error, errors.Error)
     try:
         verify_renewable_cert_sig(renewable_cert)
         verify_fullchain(renewable_cert)
         verify_cert_matches_priv_key(renewable_cert)
         return
-    except Exception as error:
+    except possible_exceptions as error:
         verification_errors.append(error)
     raise errors.Error("it seems your cert is corrupted. Details: \
             {0}".format(",".join(str(error) for error in verification_errors)))
