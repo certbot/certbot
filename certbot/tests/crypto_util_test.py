@@ -1,8 +1,6 @@
 """Tests for certbot.crypto_util."""
 import logging
 import os
-import shutil
-import tempfile
 import unittest
 
 import OpenSSL
@@ -25,18 +23,20 @@ SAN_CERT = test_util.load_vector('cert-san.pem')
 SS_CERT_PATH = test_util.vector_path('self_signed_cert.pem')
 SS_CERT = test_util.load_vector('self_signed_cert.pem')
 
-class InitSaveKeyTest(unittest.TestCase):
+class InitSaveKeyTest(test_util.TempDirTestCase):
     """Tests for certbot.crypto_util.init_save_key."""
     def setUp(self):
+        super(InitSaveKeyTest, self).setUp()
+
         logging.disable(logging.CRITICAL)
         zope.component.provideUtility(
             mock.Mock(strict_permissions=True, dry_run=False),
             interfaces.IConfig)
-        self.key_dir = tempfile.mkdtemp('key_dir')
 
     def tearDown(self):
+        super(InitSaveKeyTest, self).tearDown()
+
         logging.disable(logging.NOTSET)
-        shutil.rmtree(self.key_dir)
 
     @classmethod
     def _call(cls, key_size, key_dir):
@@ -46,10 +46,10 @@ class InitSaveKeyTest(unittest.TestCase):
     @mock.patch('certbot.crypto_util.make_key')
     def test_success(self, mock_make):
         mock_make.return_value = b'key_pem'
-        key = self._call(1024, self.key_dir)
+        key = self._call(1024, self.tempdir)
         self.assertEqual(key.pem, b'key_pem')
         self.assertTrue('key-certbot.pem' in key.file)
-        self.assertTrue(os.path.exists(os.path.join(self.key_dir, key.file)))
+        self.assertTrue(os.path.exists(os.path.join(self.tempdir, key.file)))
 
     @mock.patch('certbot.crypto_util.make_key')
     def test_success_dry_run(self, mock_make):
@@ -57,27 +57,25 @@ class InitSaveKeyTest(unittest.TestCase):
             mock.Mock(strict_permissions=True, dry_run=True),
             interfaces.IConfig)
         mock_make.return_value = b'key_pem'
-        key = self._call(1024, self.key_dir)
+        key = self._call(1024, self.tempdir)
         self.assertEqual(key.pem, b'key_pem')
         self.assertTrue(key.file is None)
 
     @mock.patch('certbot.crypto_util.make_key')
     def test_key_failure(self, mock_make):
         mock_make.side_effect = ValueError
-        self.assertRaises(ValueError, self._call, 431, self.key_dir)
+        self.assertRaises(ValueError, self._call, 431, self.tempdir)
 
 
-class InitSaveCSRTest(unittest.TestCase):
+class InitSaveCSRTest(test_util.TempDirTestCase):
     """Tests for certbot.crypto_util.init_save_csr."""
 
     def setUp(self):
+        super(InitSaveCSRTest, self).setUp()
+
         zope.component.provideUtility(
             mock.Mock(strict_permissions=True, dry_run=False),
             interfaces.IConfig)
-        self.csr_dir = tempfile.mkdtemp('csr_dir')
-
-    def tearDown(self):
-        shutil.rmtree(self.csr_dir)
 
     @mock.patch('certbot.crypto_util.make_csr')
     @mock.patch('certbot.crypto_util.util.make_or_verify_dir')
@@ -87,7 +85,7 @@ class InitSaveCSRTest(unittest.TestCase):
         mock_csr.return_value = (b'csr_pem', b'csr_der')
 
         csr = init_save_csr(
-            mock.Mock(pem='dummy_key'), 'example.com', self.csr_dir,
+            mock.Mock(pem='dummy_key'), 'example.com', self.tempdir,
             'csr-certbot.pem')
 
         self.assertEqual(csr.data, b'csr_der')
@@ -104,7 +102,7 @@ class InitSaveCSRTest(unittest.TestCase):
         mock_csr.return_value = (b'csr_pem', b'csr_der')
 
         csr = init_save_csr(
-            mock.Mock(pem='dummy_key'), 'example.com', self.csr_dir,
+            mock.Mock(pem='dummy_key'), 'example.com', self.tempdir,
             'csr-certbot.pem')
 
         self.assertEqual(csr.data, b'csr_der')

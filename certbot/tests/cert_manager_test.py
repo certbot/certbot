@@ -18,11 +18,14 @@ from certbot.storage import ALL_FOUR
 from certbot.tests import storage_test
 from certbot.tests import util as test_util
 
-class BaseCertManagerTest(unittest.TestCase):
+from certbot.tests.util import TempDirTestCase
+
+
+class BaseCertManagerTest(TempDirTestCase):
     """Base class for setting up Cert Manager tests.
     """
     def setUp(self):
-        self.tempdir = tempfile.mkdtemp()
+        super(BaseCertManagerTest, self).setUp()
 
         os.makedirs(os.path.join(self.tempdir, "renewal"))
 
@@ -67,9 +70,6 @@ class BaseCertManagerTest(unittest.TestCase):
                                        domain + ".conf")
         config.write()
         return config
-
-    def tearDown(self):
-        shutil.rmtree(self.tempdir)
 
 
 class UpdateLiveSymlinksTest(BaseCertManagerTest):
@@ -386,14 +386,19 @@ class RenameLineageTest(BaseCertManagerTest):
     @test_util.patch_get_utility()
     @mock.patch('certbot.cert_manager.lineage_for_certname')
     def test_no_existing_certname(self, mock_lineage_for_certname, unused_get_utility):
-        mock_config = mock.Mock(certname="one", new_certname="two")
+        mock_config = mock.Mock(certname="one", new_certname="two",
+            renewal_configs_dir="/tmp/etc/letsencrypt/renewal/")
         mock_lineage_for_certname.return_value = None
-        self.assertRaises(errors.ConfigurationError,
-            self._call, mock_config)
+        self.assertRaises(errors.ConfigurationError, self._call, mock_config)
 
+    @mock.patch("certbot.storage.RenewableCert._update_symlinks")
     @test_util.patch_get_utility()
     @mock.patch("certbot.storage.RenewableCert._check_symlinks")
-    def test_rename_cert(self, mock_check, unused_get_utility):
+    @mock.patch("certbot.storage.relevant_values")
+    def test_rename_cert(self, mock_rv, mock_check, unused_get_utility, unused_update_symlinks):
+        # Mock relevant_values() to claim that all values are relevant here
+        # (to avoid instantiating parser)
+        mock_rv.side_effect = lambda x: x
         mock_check.return_value = True
         mock_config = self.mock_config
         self._call(mock_config)
@@ -402,9 +407,15 @@ class RenameLineageTest(BaseCertManagerTest):
         self.assertTrue(updated_lineage is not None)
         self.assertEqual(updated_lineage.lineagename, mock_config.new_certname)
 
+    @mock.patch("certbot.storage.RenewableCert._update_symlinks")
     @test_util.patch_get_utility()
     @mock.patch("certbot.storage.RenewableCert._check_symlinks")
-    def test_rename_cert_interactive_certname(self, mock_check, mock_get_utility):
+    @mock.patch("certbot.storage.relevant_values")
+    def test_rename_cert_interactive_certname(self, mock_rv, mock_check, mock_get_utility,
+        unused_update_symlinks):
+        # python 3.4 and 3.5 order things differently, so remove other.com for this test
+        os.remove(self.configs["other.com"].filename)
+        mock_rv.side_effect = lambda x: x
         mock_check.return_value = True
         mock_config = self.mock_config
         mock_config.certname = None
@@ -438,9 +449,6 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
         super(DuplicativeCertsTest, self).setUp()
         self.config.write()
         self._write_out_ex_kinds()
-
-    def tearDown(self):
-        shutil.rmtree(self.tempdir)
 
     @mock.patch('certbot.util.make_or_verify_dir')
     def test_find_duplicative_names(self, unused_makedir):
