@@ -13,6 +13,7 @@ from certbot import storage
 from certbot import util
 
 from certbot.display import util as display_util
+from certbot.plugins import disco as plugins_disco
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,7 @@ def rename_lineage(config):
 
     certname = _get_certname(config, "rename")
 
+    # what is the new name we want to use?
     new_certname = config.new_certname
     if not new_certname:
         code, new_certname = disp.input(
@@ -54,13 +56,34 @@ def rename_lineage(config):
         if code != display_util.OK or not new_certname:
             raise errors.Error("User ended interaction.")
 
-    lineage = lineage_for_certname(config, certname)
-    if not lineage:
-        raise errors.ConfigurationError("No existing certificate with name "
-            "{0} found.".format(certname))
-    storage.rename_renewal_config(certname, new_certname, config)
-    disp.notification("Successfully renamed {0} to {1}."
-        .format(certname, new_certname), pause=False)
+    try:
+        # copy files to new name
+        new_lineage = storage.duplicate_lineage(config, certname, new_certname)
+
+        # install the new name's files
+        config.certname = new_certname
+        plugins = plugins_disco.PluginsRegistry.find_all()
+        from certbot.main import install
+        install(config, plugins, new_lineage, False)
+    except (errors.CertStorageError, errors.ConfigurationError, IOError, OSError) as e:
+        # delete the new files
+        config.certname = new_certname
+        # we might not have created anything to delete
+        try:
+            storage.delete_files(config, new_certname)
+        except errors.CertStorageError:
+            pass
+        reporter = zope.component.getUtility(interfaces.IReporter)
+        reporter.add_message("Unable to rename certificate", reporter.HIGH_PRIORITY)
+        raise e
+    else:
+        # delete old files
+        config.certname = certname
+        storage.delete_files(config, certname)
+        disp.notification("Renamed files for {0} to {1}."
+            .format(certname, new_certname), pause=False)
+    finally:
+        config.certname = certname
 
 def certificates(config):
     """Display information about certs configured with Certbot

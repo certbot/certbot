@@ -34,7 +34,9 @@ def renewal_conf_files(config):
     return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
 
 def renewal_file_for_certname(config, certname):
-    """Return /path/to/certname.conf in the renewal conf directory"""
+    """Return /path/to/certname.conf in the renewal conf directory
+    :raises .CertStorageError: if file is missing
+    """
     path = os.path.join(config.renewal_configs_dir, "{0}.conf".format(certname))
     if not os.path.exists(path):
         raise errors.CertStorageError("No certificate found with name {0} (expected "
@@ -130,6 +132,8 @@ def rename_renewal_config(prev_name, new_name, cli_config):
     except OSError:
         raise errors.ConfigurationError("Please specify a valid filename "
             "for the new certificate name.")
+    else:
+        return new_filename
 
 
 def update_configuration(lineagename, archive_dir, target, cli_config):
@@ -146,19 +150,25 @@ def update_configuration(lineagename, archive_dir, target, cli_config):
 
     """
     config_filename = renewal_filename_for_lineagename(cli_config, lineagename)
-    temp_filename = config_filename + ".new"
+
+    def _save_renewal_values(unused_config, temp_filename):
+        # Save only the config items that are relevant to renewal
+        values = relevant_values(vars(cli_config.namespace))
+        write_renewal_config(config_filename, temp_filename, archive_dir, target, values)
+    _modify_config_with_tempfile(config_filename, _save_renewal_values)
+
+    return configobj.ConfigObj(config_filename)
+
+def _modify_config_with_tempfile(filename, function):
+    temp_filename = filename + ".new"
 
     # If an existing tempfile exists, delete it
     if os.path.exists(temp_filename):
         os.unlink(temp_filename)
 
-    # Save only the config items that are relevant to renewal
-    values = relevant_values(vars(cli_config.namespace))
-    write_renewal_config(config_filename, temp_filename, archive_dir, target, values)
-    os.rename(temp_filename, config_filename)
-
-    return configobj.ConfigObj(config_filename)
-
+    config = configobj.ConfigObj(filename)
+    function(config, temp_filename)
+    os.rename(temp_filename, filename)
 
 def get_link_target(link):
     """Get an absolute path to the target of link.
@@ -243,6 +253,7 @@ def delete_files(config, certname):
     """Delete all files related to the certificate.
 
     If some files are not found, ignore them and continue.
+    :raises .CertStorageError: if lineage is missing
     """
     renewal_filename = renewal_file_for_certname(config, certname)
     # file exists
@@ -303,6 +314,79 @@ def delete_files(config, certname):
         logger.debug("Removed %s", archive_path)
     except OSError:
         logger.debug("Unable to remove %s", archive_path)
+
+def duplicate_lineage(config, certname, new_certname):
+    """Create a duplicate of certname with name new_certname
+
+    :raises .CertStorageError: for storage errors
+    :raises .ConfigurationError: for cli and renewal configuration errors
+    :raises IOError: for filename errors
+    :raises OSError: for OS errors
+    """
+
+    # copy renewal config file
+    prev_filename = renewal_filename_for_lineagename(config, certname)
+    new_filename = renewal_filename_for_lineagename(config, new_certname)
+    if os.path.exists(new_filename):
+        raise errors.ConfigurationError("The new certificate name "
+            "is already in use.")
+    try:
+        shutil.copy2(prev_filename, new_filename)
+    except (OSError, IOError):
+        raise errors.ConfigurationError("Please specify a valid filename "
+            "for the new certificate name.")
+    logger.debug("Copied %s to %s", prev_filename, new_filename)
+
+    # load config file
+    try:
+        renewal_config = configobj.ConfigObj(new_filename)
+    except configobj.ConfigObjError:
+        # config is corrupted
+        logger.warning("Could not parse %s. Only the certificate has been renamed.",
+            new_filename)
+        raise errors.CertStorageError(
+            "error parsing {0}".format(new_filename))
+
+    def copy_to_new_dir(prev_dir):
+        """Replace certname with new_certname in prev_dir"""
+        new_dir = prev_dir.replace(certname, new_certname)
+        # make dir iff it doesn't exist
+        shutil.copytree(prev_dir, new_dir, symlinks=True)
+        logger.debug("Copied %s to %s", prev_dir, new_dir)
+        return new_dir
+
+    # archive dir
+    prev_archive_dir = _full_archive_path(renewal_config, config, certname)
+    new_archive_dir = prev_archive_dir
+    if not certname in prev_archive_dir:
+        raise errors.CertStorageError("Archive directory does not conform to defaults: "
+            "{0} not in {1}", certname, prev_archive_dir)
+    else:
+        new_archive_dir = copy_to_new_dir(prev_archive_dir)
+
+    # live dir
+    # if things aren't in their default places, don't try to change things.
+    prev_live_dir = _full_live_path(config, certname)
+    prev_links = dict((kind, renewal_config.get(kind)) for kind in ALL_FOUR)
+    if (certname not in prev_live_dir or
+            len(set(os.path.dirname(renewal_config.get(kind)) for kind in ALL_FOUR)) != 1):
+        raise errors.CertStorageError("Live directory does not conform to defaults.")
+    else:
+        copy_to_new_dir(prev_live_dir)
+        new_links = dict((k, prev_links[k].replace(certname, new_certname)) for k in prev_links)
+
+    # Update renewal config file
+    def _update_and_write(renewal_config, temp_filename):
+        renewal_config["archive_dir"] = new_archive_dir
+        renewal_config["version"] = certbot.__version__
+        for kind in ALL_FOUR:
+            renewal_config[kind] = new_links[kind]
+        with open(temp_filename, "wb") as f:
+            renewal_config.write(outfile=f)
+    _modify_config_with_tempfile(new_filename, _update_and_write)
+
+    # Update symlinks
+    return RenewableCert(new_filename, config, update_symlinks=True)
 
 
 class RenewableCert(object):
