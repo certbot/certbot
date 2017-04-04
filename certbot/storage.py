@@ -1079,18 +1079,18 @@ class RenewableCert(object):
             logger.debug("Writing symlink to old private key, %s.", old_privkey)
             os.symlink(old_privkey, target["privkey"])
         else:
-            with open(target["privkey"], "w") as f:
+            with open(target["privkey"], "wb") as f:
                 logger.debug("Writing new private key to %s.", target["privkey"])
                 f.write(new_privkey)
 
         # Save everything else
-        with open(target["cert"], "w") as f:
+        with open(target["cert"], "wb") as f:
             logger.debug("Writing certificate to %s.", target["cert"])
             f.write(new_cert)
-        with open(target["chain"], "w") as f:
+        with open(target["chain"], "wb") as f:
             logger.debug("Writing chain to %s.", target["chain"])
             f.write(new_chain)
-        with open(target["fullchain"], "w") as f:
+        with open(target["fullchain"], "wb") as f:
             logger.debug("Writing full chain to %s.", target["fullchain"])
             f.write(new_cert + new_chain)
 
