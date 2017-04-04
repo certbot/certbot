@@ -212,6 +212,11 @@ For the time being, this is the only way for the Apache plugin to recognise
 the appropriate directives when installing the certificate.
 Note: this change is not required for the other plugins.
 
+**NetBSD**
+
+  * Build from source: ``cd /usr/pkgsrc/security/py-certbot && make install clean``
+  * Install pre-compiled package: ``pkg_add py27-certbot``
+
 **OpenBSD**
 
   * Port: ``cd /usr/ports/security/letsencrypt/client && make install clean``
