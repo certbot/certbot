@@ -1040,10 +1040,10 @@ class RenewableCert(object):
             is regarded as a successor (used to choose a privkey, if the
             key has not changed, but otherwise this information is not
             permanently recorded anywhere)
-        :param str new_cert: the new certificate, in PEM format
-        :param str new_privkey: the new private key, in PEM format,
+        :param bytes new_cert: the new certificate, in PEM format
+        :param bytes new_privkey: the new private key, in PEM format,
             or ``None``, if the private key has not changed
-        :param str new_chain: the new chain, in PEM format
+        :param bytes new_chain: the new chain, in PEM format
         :param .NamespaceConfig cli_config: parsed command line
             arguments
 
