@@ -53,12 +53,15 @@ def determine_user_agent(config):
     """
 
     if config.user_agent is None:
-        auto = "no" if cli.cli_command == "certbot" else "yes"
-        ua = ("CertbotACMEClient/{0} ({1}) Authenticator/{2} Installer/{3} Verb/{4} "
-              "Renewing/{5} Auto/{6} Py/{7}")
-        ua = ua.format(certbot.__version__, util.get_os_info_ua(),
+        if cli.cli_command in ["certbot", "letsencrypt", "certbot-auto", "letsencrypt-auto"]:
+            auto = cli.cli_command
+        else:
+            auto = "other"
+        ua = ("CertbotACMEClient/{0} ({1}; {2}) Authenticator/{3} Installer/{4} "
+              "({5}; renewing:{6}) Py/{7}")
+        ua = ua.format(certbot.__version__, auto, util.get_os_info_ua(),
                        config.authenticator, config.installer, config.verb, config.renewing,
-                       auto, platform.python_version())
+                       platform.python_version())
     else:
         ua = config.user_agent
     return ua
