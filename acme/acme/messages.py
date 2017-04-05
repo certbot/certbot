@@ -98,7 +98,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
             if part is not None)
 
 
-class _Constant(jose.JSONDeSerializable, collections.Hashable):
+class _Constant(jose.JSONDeSerializable, collections.Hashable):  # type: ignore
     """ACME constant."""
     __slots__ = ('name',)
     POSSIBLE_NAMES = NotImplemented
@@ -132,7 +132,7 @@ class _Constant(jose.JSONDeSerializable, collections.Hashable):
 
 class Status(_Constant):
     """ACME "status" field."""
-    POSSIBLE_NAMES = {}
+    POSSIBLE_NAMES = {}  # type: dict
 STATUS_UNKNOWN = Status('unknown')
 STATUS_PENDING = Status('pending')
 STATUS_PROCESSING = Status('processing')
@@ -143,7 +143,7 @@ STATUS_REVOKED = Status('revoked')
 
 class IdentifierType(_Constant):
     """ACME identifier type."""
-    POSSIBLE_NAMES = {}
+    POSSIBLE_NAMES = {}  # type: dict
 IDENTIFIER_FQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
 
 
@@ -161,7 +161,7 @@ class Identifier(jose.JSONObjectWithFields):
 class Directory(jose.JSONDeSerializable):
     """Directory."""
 
-    _REGISTERED_TYPES = {}
+    _REGISTERED_TYPES = {}  # type: dict
 
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""

@@ -3,11 +3,10 @@ from __future__ import print_function
 
 import collections
 import logging
-import os
 import sys
 import textwrap
 
-from six.moves import queue  # pylint: disable=import-error
+from six.moves import queue  # type: ignore  # pylint: disable=import-error
 import zope.interface
 
 from certbot import interfaces
@@ -15,11 +14,6 @@ from certbot import util
 
 
 logger = logging.getLogger(__name__)
-
-# Store the pid of the process that first imported this module so that
-# atexit_print_messages side-effects such as error reporting can be limited to
-# this process and not any fork()'d children.
-INITIAL_PID = os.getpid()
 
 
 @zope.interface.implementer(interfaces.IReporter)
@@ -59,19 +53,6 @@ class Reporter(object):
         assert self.HIGH_PRIORITY <= priority <= self.LOW_PRIORITY
         self.messages.put(self._msg_type(priority, msg, on_crash))
         logger.debug("Reporting to user: %s", msg)
-
-    def atexit_print_messages(self, pid=None):
-        """Function to be registered with atexit to print messages.
-
-        :param int pid: Process ID
-
-        """
-        if pid is None:
-            pid = INITIAL_PID
-        # This ensures that messages are only printed from the process that
-        # created the Reporter.
-        if pid == os.getpid():
-            self.print_messages()
 
     def print_messages(self):
         """Prints messages to the user and clears the message queue.

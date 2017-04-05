@@ -42,7 +42,7 @@ class NamespaceConfig(object):
     """
 
     def __init__(self, namespace):
-        self.namespace = namespace
+        object.__setattr__(self, 'namespace', namespace)
 
         self.namespace.config_dir = os.path.abspath(self.namespace.config_dir)
         self.namespace.work_dir = os.path.abspath(self.namespace.work_dir)
@@ -53,6 +53,9 @@ class NamespaceConfig(object):
 
     def __getattr__(self, name):
         return getattr(self.namespace, name)
+
+    def __setattr__(self, name, value):
+        setattr(self.namespace, name, value)
 
     @property
     def server_path(self):

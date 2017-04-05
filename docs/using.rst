@@ -175,15 +175,15 @@ the UI, you can use the plugin to obtain a cert by specifying
 to copy and paste commands into another terminal session, which may
 be on a different computer.
 
-The manual plugin can use either the ``http`` or the ``dns`` challenge. You 
-can use the ``--preferred-challenges`` option to chose the challenge of your 
+The manual plugin can use either the ``http`` or the ``dns`` challenge. You
+can use the ``--preferred-challenges`` option to choose the challenge of your
 preference.
-The ``http`` challenge will ask you to place a file with a specific name and 
-specific content in the ``/.well-known/acme-challenge/`` directory directly 
-in the top-level directory (“web root”) containing the files served by your 
+The ``http`` challenge will ask you to place a file with a specific name and
+specific content in the ``/.well-known/acme-challenge/`` directory directly
+in the top-level directory (“web root”) containing the files served by your
 webserver. In essence it's the same as the webroot_ plugin, but not automated.
-When using the ``dns`` plugin, ``certbot`` will ask you to place a TXT DNS 
-record with specific contents under the domain name consisting of the hostname 
+When using the ``dns`` plugin, ``certbot`` will ask you to place a TXT DNS
+record with specific contents under the domain name consisting of the hostname
 for which you want a certificate issued, prepended by ``_acme-challenge``.
 
 For example, for the domain ``example.com``, a zone file entry would look like:

@@ -9,6 +9,8 @@ import tempfile
 import unittest
 
 import mock
+# six is used in mock.patch()
+import six  # pylint: disable=unused-import
 
 import letshelp_certbot.apache as letshelp_le_apache
 
@@ -63,7 +65,7 @@ class LetsHelpApacheTest(unittest.TestCase):
     def test_make_and_verify_selection(self, mock_copy_config):
         mock_copy_config.return_value = (["apache2.conf"], ["apache2"])
 
-        with mock.patch("__builtin__.raw_input") as mock_input:
+        with mock.patch("six.moves.input") as mock_input:
             with mock.patch(_MODULE_NAME + ".sys.stdout"):
                 mock_input.side_effect = ["Yes", "No"]
                 letshelp_le_apache.make_and_verify_selection("root", "temp")
