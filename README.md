@@ -1,6 +1,5 @@
 ## Route53 plugin for Let's Encrypt client
 
-
 ### Before you start
 
 It's expected that the root hosted zone for the domain in question already
@@ -25,7 +24,7 @@ for example).
 
 Make sure you have access to AWS's Route53 service, either through IAM roles or
 via `.aws/credentials`. Check out
-(sample-aws-policy.json)[sample-aws-policy.json].
+[sample-aws-policy.json](sample-aws-policy.json) for the necessary permissions.
 
 To generate a certificate:
 ```
