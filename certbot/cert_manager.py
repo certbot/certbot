@@ -157,13 +157,13 @@ def cert_path_to_lineage(config):
     else:
         return cert_path_match
 
-def human_readable_cert_info(config, cert):
+def human_readable_cert_info(config, cert, skip_filter_checks = False):
     """ Returns a human readable description of info about a RenewablCert object""" 
     
     certinfo = []
     checker = ocsp.RevocationChecker()
 
-    if config.certname and cert.lineagename != config.certname:
+    if config.certname and cert.lineagename != config.certname and not skip_filter_checks:
         return ""
     if config.domains and not set(config.domains).issubset(cert.names()):
         return ""

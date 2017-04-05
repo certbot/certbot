@@ -411,6 +411,12 @@ def _delete_if_appropriate(config):
     display = zope.component.getUtility(interfaces.IDisplay)
 
     if config.namespace.noninteractive_mode:
+        reporter = zope.component.getUtility(interfaces.IReporter)
+        msg = ('Warning: did not prompt to delete revoked certs due to '
+                'non-interactive mode being enabled. Revoked certs could be '
+                'autorenewed! Please see  "certbot --help delete" to delete '
+                'them yourself.')
+        reporter.add_message(''.join(msg), reporter.MEDIUM_PRIORITY)
         return
 
     if not (config.certname or config.cert_path):
@@ -418,25 +424,22 @@ def _delete_if_appropriate(config):
 
     if config.certname and config.cert_path:
         # first, check if certname and cert_path imply the same certs
-        cert_path_implied_cert_name = cert_manager.cert_path_to_lineage(config)
+        cert_name_implied_cert_path = cert_manager.lineage_for_certname(config, config.certname)
 
-        if cert_path_implied_cert_name != config.certname:
+        if cert_name_implied_cert_path != config.cert_path:
+            cert_path_implied_cert_name = cert_manager.cert_path_to_lineage(config)
             cert_path_implied_conf = storage.renewal_file_for_certname(config, cert_path_implied_cert_name)
             cert_path_cert = storage.RenewableCert(cert_path_implied_conf, config)
-            cert_path_info = cert_manager.human_readable_cert_info(config, cert_path_cert)
+            cert_path_info = cert_manager.human_readable_cert_info(config, cert_path_cert, skip_filter_checks=True)
 
             cert_name_implied_conf = storage.renewal_file_for_certname(config, config.certname)
             cert_name_cert = storage.RenewableCert(cert_name_implied_conf, config)
             cert_name_info = cert_manager.human_readable_cert_info(config, cert_name_cert)
 
-            msg = "You specified conflicting values for --cert-path and --cert-name.\
-                   For --cert-path you specified $0, which implies the following cert info: $1.\
-                   For --cert-name you specified $2, which implies the following cert info: $3."\
-                   .format(config.cert_path, cert_path_info,
-                           config.certname, cert_name_info)
+            msg = "You specified conflicting values for --cert-path and --cert-name. Which did you mean to select?"
             choices = [cert_path_info, cert_name_info]
             try:
-                code, index = display.menu("Which did you mean to select?",
+                code, index = display.menu(msg,
                         choices, ok_label="Select", force_interactive=True)
             except errors.MissingCommandlineFlag:
                 error_msg = ('To run in non-interactive mode, you must either specify only one of ' 
@@ -451,22 +454,22 @@ def _delete_if_appropriate(config):
             else:
                 config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
 
-            msg = 'Are you sure you want to delete all files related to the {0} lineage?'.format(config.certname)
-            if not display.yesno(msg, default=False):
-                reporter = zope.component.getUtility(interfaces.IReporter)
-                msg = ('Not deleting revoked certificate lineage {0}. '
-                        'Warning: revoked certs could be autorenewed! '
-                        "For deletion at a later date, please see the `delete` subcommand's documentation.".format(config.certname))
-                reporter.add_message(''.join(msg), reporter.MEDIUM_PRIORITY)
-                return
-
     elif config.cert_path:
         config.certname = cert_manager.cert_path_to_lineage(config)
 
     else: # if only config.certname was specified
         config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
 
-    cert_manager.delete(config)
+    msg = 'Are you sure you want to delete all files related to the {0} lineage?'.format(config.certname)
+    if not display.yesno(msg, default=False):
+        reporter = zope.component.getUtility(interfaces.IReporter)
+        msg = ('Not deleting revoked certificate lineage {0}. '
+                'Warning: revoked certs could be autorenewed! '
+                "For deletion at a later time, please see the `delete` subcommand's documentation.".format(config.certname))
+        reporter.add_message(''.join(msg), reporter.MEDIUM_PRIORITY)
+        return
+    else:
+        cert_manager.delete(config)
 
 def register(config, unused_plugins):
     """Create or modify accounts on the server."""
