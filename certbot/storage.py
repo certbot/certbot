@@ -116,25 +116,6 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
         config.write(outfile=f)
     return config
 
-def rename_renewal_config(prev_name, new_name, cli_config):
-    """Renames cli_config.certname's config to cli_config.new_certname.
-
-    :param .NamespaceConfig cli_config: parsed command line
-        arguments
-    """
-    prev_filename = renewal_filename_for_lineagename(cli_config, prev_name)
-    new_filename = renewal_filename_for_lineagename(cli_config, new_name)
-    if os.path.exists(new_filename):
-        raise errors.ConfigurationError("The new certificate name "
-            "is already in use.")
-    try:
-        os.rename(prev_filename, new_filename)
-    except OSError:
-        raise errors.ConfigurationError("Please specify a valid filename "
-            "for the new certificate name.")
-    else:
-        return new_filename
-
 
 def update_configuration(lineagename, archive_dir, target, cli_config):
     """Modifies lineagename's config to contain the specified values.
@@ -326,6 +307,8 @@ def duplicate_lineage(config, certname, new_certname):
 
     # copy renewal config file
     prev_filename = renewal_filename_for_lineagename(config, certname)
+    if not os.path.exists(prev_filename):
+        raise errors.ConfigurationError("Certificate does not exist.")
     new_filename = renewal_filename_for_lineagename(config, new_certname)
     if os.path.exists(new_filename):
         raise errors.ConfigurationError("The new certificate name "
