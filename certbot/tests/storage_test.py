@@ -3,7 +3,6 @@
 import datetime
 import os
 import shutil
-import tempfile
 import unittest
 
 import configobj
@@ -36,7 +35,7 @@ def fill_with_sample_data(rc_object):
             f.write(kind)
 
 
-class BaseRenewableCertTest(unittest.TestCase):
+class BaseRenewableCertTest(util.TempDirTestCase):
     """Base class for setting up Renewable Cert tests.
 
     .. note:: It may be required to write out self.config for
@@ -47,7 +46,8 @@ class BaseRenewableCertTest(unittest.TestCase):
 
     def setUp(self):
         from certbot import storage
-        self.tempdir = tempfile.mkdtemp()
+
+        super(BaseRenewableCertTest, self).setUp()
 
         self.cli_config = configuration.NamespaceConfig(
             namespace=mock.MagicMock(
@@ -90,9 +90,6 @@ class BaseRenewableCertTest(unittest.TestCase):
         with mock.patch("certbot.storage.RenewableCert._check_symlinks") as check:
             check.return_value = True
             self.test_rc = storage.RenewableCert(config.filename, self.cli_config)
-
-    def tearDown(self):
-        shutil.rmtree(self.tempdir)
 
     def _write_out_kind(self, kind, ver, value=None):
         link = getattr(self.test_rc, kind)
@@ -581,6 +578,15 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertEqual(
             self._test_relevant_values_common(values), values)
 
+    @mock.patch("certbot.cli.set_by_cli")
+    @mock.patch("certbot.plugins.disco.PluginsRegistry.find_all")
+    def test_relevant_values_namespace(self, mock_find_all, mock_set_by_cli):
+        mock_set_by_cli.return_value = True
+        mock_find_all.return_value = ["certbot-foo:bar"]
+        values = {"certbot_foo:bar_baz": 42}
+        self.assertEqual(
+            self._test_relevant_values_common(values), values)
+
     @mock.patch("certbot.storage.relevant_values")
     def test_new_lineage(self, mock_rv):
         """Test for new_lineage() class method."""
@@ -789,6 +795,7 @@ class DeleteFilesTest(BaseRenewableCertTest):
     """Tests for certbot.storage.delete_files"""
     def setUp(self):
         super(DeleteFilesTest, self).setUp()
+
         for kind in ALL_FOUR:
             kind_path = os.path.join(self.tempdir, "live", "example.org",
                                         kind + ".pem")

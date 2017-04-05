@@ -66,11 +66,16 @@ class AuthHandler(object):
             self.authzr[domain] = self.acme.request_domain_challenges(domain)
 
         self._choose_challenges(domains)
+        config = zope.component.getUtility(interfaces.IConfig)
+        notify = zope.component.getUtility(interfaces.IDisplay).notification
 
         # While there are still challenges remaining...
         while self.achalls:
             resp = self._solve_challenges()
             logger.info("Waiting for verification...")
+            if config.debug_challenges:
+                notify('Challenges loaded. Press continue to submit to CA. '
+                       'Pass "-v" for more info about challenges.', pause=True)
 
             # Send all Responses - this modifies achalls
             self._respond(resp, best_effort)

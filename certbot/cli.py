@@ -81,6 +81,7 @@ obtain, install, and renew certificates:
 manage certificates:
     certificates    Display information about certs you have from Certbot
     revoke          Revoke a certificate (supply --cert-path)
+    rename          Rename a certificate
     delete          Delete a certificate
 
 manage your account with Let's Encrypt:
@@ -207,7 +208,7 @@ def set_by_cli(var):
 
     return False
 # static housekeeping var
-set_by_cli.detector = None
+set_by_cli.detector = None  # type: ignore
 
 
 def has_default_value(option, value):
@@ -363,6 +364,10 @@ VERB_HELP = [
         "opts": "Options for revocation of certs",
         "usage": "\n\n  certbot revoke --cert-path /path/to/fullchain.pem [options]\n\n"
     }),
+    ("rename", {
+        "short": "Change a certificate's name (for management purposes)",
+        "opts": "Options for changing certificate names"
+    }),
     ("register", {
         "short": "Register for account with Let's Encrypt / other ACME server",
         "opts": "Options for account registration & modification"
@@ -420,6 +425,7 @@ class HelpfulArgumentParser(object):
             "plugins": main.plugins_cmd,
             "register": main.register,
             "unregister": main.unregister,
+            "rename": main.rename,
             "renew": main.renew,
             "revoke": main.revoke,
             "rollback": main.rollback,
@@ -791,7 +797,7 @@ def _add_all_groups(helpful):
     helpful.add_group("paths", description="Arguments changing execution paths & servers")
     helpful.add_group("manage",
         description="Various subcommands and flags are available for managing your certificates:",
-        verbs=["certificates", "delete", "renew", "revoke", "update_symlinks"])
+        verbs=["certificates", "delete", "rename", "renew", "revoke", "update_symlinks"])
 
     # VERBS
     for verb, docs in VERB_HELP:
@@ -844,12 +850,17 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "multiple -d flags or enter a comma separated list of domains "
              "as a parameter. (default: Ask)")
     helpful.add(
-        [None, "run", "certonly", "manage", "delete", "certificates"],
+        [None, "run", "certonly", "manage", "rename", "delete", "certificates"],
         "--cert-name", dest="certname",
         metavar="CERTNAME", default=None,
         help="Certificate name to apply. Only one certificate name can be used "
              "per Certbot run. To see certificate names, run 'certbot certificates'. "
              "When creating a new certificate, specifies the new certificate's name.")
+    helpful.add(
+        ["rename", "manage"],
+        "--updated-cert-name", dest="new_certname",
+        metavar="NEW_CERTNAME", default=None,
+        help="New name for the certificate. Must be a valid filename.")
     helpful.add(
         [None, "testing", "renew", "certonly"],
         "--dry-run", action="store_true", dest="dry_run",
@@ -956,6 +967,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "testing", "--debug", action="store_true",
         help="Show tracebacks in case of errors, and allow certbot-auto "
              "execution on experimental platforms")
+    helpful.add(
+        [None, "certonly", "renew", "run"], "--debug-challenges", action="store_true",
+        default=flag_default("debug_challenges"),
+        help="After setting up challenges, wait for user input before "
+             "submitting to CA")
     helpful.add(
         "testing", "--no-verify-ssl", action="store_true",
         help=config_help("no_verify_ssl"),
@@ -1152,7 +1168,7 @@ def _paths_parser(helpful):
     default_cp = None
     if verb == "certonly":
         default_cp = flag_default("auth_chain_path")
-    add(["install", "paths"], "--fullchain-path", default=default_cp, type=os.path.abspath,
+    add(["paths", "install"], "--fullchain-path", default=default_cp, type=os.path.abspath,
         help="Accompanying path to a full certificate chain (cert plus chain).")
     add("paths", "--chain-path", default=default_cp, type=os.path.abspath,
         help="Accompanying path to a certificate chain.")
