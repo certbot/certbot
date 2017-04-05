@@ -460,16 +460,15 @@ def register(config, unused_plugins):
     eff.handle_subscription(config)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
 
-def _install_cert(config, le_client, domains, lineage=None, enhance=True):
+def _install_cert(config, le_client, domains, lineage=None):
     path_provider = lineage if lineage else config
     assert path_provider.cert_path is not None
 
     le_client.deploy_certificate(domains, path_provider.key_path,
         path_provider.cert_path, path_provider.chain_path, path_provider.fullchain_path)
-    if enhance:
-        le_client.enhance_config(domains, path_provider.chain_path)
+    le_client.enhance_config(domains, path_provider.chain_path)
 
-def install(config, plugins, lineage=None, enhance=True):
+def install(config, plugins):
     """Install a previously obtained cert in a server."""
     # XXX: Update for renewer/RenewableCert
     # FIXME: be consistent about whether errors are raised or returned from
@@ -482,7 +481,7 @@ def install(config, plugins, lineage=None, enhance=True):
 
     domains, _ = _find_domains_or_certname(config, installer)
     le_client = _init_le_client(config, authenticator=None, installer=installer)
-    _install_cert(config, le_client, domains, lineage, enhance)
+    _install_cert(config, le_client, domains)
 
 
 def plugins_cmd(config, plugins):  # TODO: Use IDisplay rather than print

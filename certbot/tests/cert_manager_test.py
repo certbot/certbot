@@ -384,19 +384,14 @@ class RenameLineageTest(BaseCertManagerTest):
     @test_util.patch_get_utility()
     @mock.patch('certbot.cert_manager.lineage_for_certname')
     def test_no_existing_certname(self, mock_lineage_for_certname, unused_get_utility):
-        mock_config = mock.Mock(certname="one", new_certname="two",
-            renewal_configs_dir="/tmp/etc/letsencrypt/renewal/")
+        mock_config = mock.Mock(certname="one", new_certname="two")
         mock_lineage_for_certname.return_value = None
-        self.assertRaises(errors.ConfigurationError, self._call, mock_config)
+        self.assertRaises(errors.ConfigurationError,
+            self._call, mock_config)
 
-    @mock.patch("certbot.storage.RenewableCert._update_symlinks")
     @test_util.patch_get_utility()
     @mock.patch("certbot.storage.RenewableCert._check_symlinks")
-    @mock.patch("certbot.storage.relevant_values")
-    def test_rename_cert(self, mock_rv, mock_check, unused_get_utility, unused_update_symlinks):
-        # Mock relevant_values() to claim that all values are relevant here
-        # (to avoid instantiating parser)
-        mock_rv.side_effect = lambda x: x
+    def test_rename_cert(self, mock_check, unused_get_utility):
         mock_check.return_value = True
         mock_config = self.mock_config
         self._call(mock_config)
@@ -405,15 +400,9 @@ class RenameLineageTest(BaseCertManagerTest):
         self.assertTrue(updated_lineage is not None)
         self.assertEqual(updated_lineage.lineagename, mock_config.new_certname)
 
-    @mock.patch("certbot.storage.RenewableCert._update_symlinks")
     @test_util.patch_get_utility()
     @mock.patch("certbot.storage.RenewableCert._check_symlinks")
-    @mock.patch("certbot.storage.relevant_values")
-    def test_rename_cert_interactive_certname(self, mock_rv, mock_check, mock_get_utility,
-        unused_update_symlinks):
-        # python 3.4 and 3.5 order things differently, so remove other.com for this test
-        os.remove(self.configs["other.com"].filename)
-        mock_rv.side_effect = lambda x: x
+    def test_rename_cert_interactive_certname(self, mock_check, mock_get_utility):
         mock_check.return_value = True
         mock_config = self.mock_config
         mock_config.certname = None
