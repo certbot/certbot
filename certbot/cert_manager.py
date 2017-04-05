@@ -65,7 +65,7 @@ def rename_lineage(config):
         plugins = plugins_disco.PluginsRegistry.find_all()
         from certbot.main import install
         install(config, plugins, new_lineage, False)
-    except (errors.CertStorageError, errors.ConfigurationError, IOError, OSError) as e:
+    except Exception as e:
         # delete the new files
         config.certname = new_certname
         # we might not have created anything to delete
