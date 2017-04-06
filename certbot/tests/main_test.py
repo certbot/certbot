@@ -351,7 +351,6 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         mock_delete.assert_not_called()
 
     @mock.patch('certbot.cert_manager.delete')
-    @mock.patch('certbot.cert_manager.human_readable_cert_info')
     @mock.patch('certbot.storage.RenewableCert')
     @mock.patch('certbot.storage.renewal_file_for_certname')
     @mock.patch('certbot.cert_manager.cert_path_to_lineage')
@@ -360,36 +359,15 @@ class DeleteIfAppropriateTest(unittest.TestCase):
     def test_certname_and_cert_path_match(self, mock_get_utility, 
             mock_lineage_for_certname, cert_path_to_lineage,
             mock_renewal_file_for_certname, mock_RenewableCert,
-            mock_human_readable_cert_info, mock_delete):
+            mock_delete):
         config = self.config
         config.certname = "example.com"
         config.cert_path = "/some/reasonable/path"
         mock_lineage_for_certname.return_value = config.cert_path
-        #mock_human_readable_cert_info.return_value = ""
-        mock_RenewableCert.return_value = ""
+        #mock_RenewableCert.return_value = ""
         mock_get_utility.menu.return_value = (0, 0)
         self._simple_call(config)
         mock_delete.assert_called_once()
-   
-class SetupLogFileHandlerTest(unittest.TestCase):
-    """Tests for certbot.main.setup_log_file_handler."""
-
-    def setUp(self):
-        self.config = mock.Mock(spec_set=['logs_dir'],
-                                logs_dir=tempfile.mkdtemp())
-
-    def tearDown(self):
-        shutil.rmtree(self.config.logs_dir)
-
-    def _call(self, *args, **kwargs):
-        from certbot.main import setup_log_file_handler
-        return setup_log_file_handler(*args, **kwargs)
-
-    @mock.patch('certbot.main.logging.handlers.RotatingFileHandler')
-    def test_ioerror(self, mock_handler):
-        mock_handler.side_effect = IOError
-        self.assertRaises(errors.Error, self._call,
-                          self.config, "test.log", "%s")
 
 
 class DetermineAccountTest(unittest.TestCase):
