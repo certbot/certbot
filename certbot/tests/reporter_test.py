@@ -38,18 +38,6 @@ class ReporterTest(unittest.TestCase):
             self.reporter.print_messages()
         self.assertEqual(sys.stdout.getvalue(), "")
 
-    @mock.patch('certbot.reporter.os.getpid')
-    def test_atexit_print_messages(self, mock_getpid):
-        self._add_messages()
-        mock_getpid.return_value = 42
-        with mock.patch('certbot.reporter.INITIAL_PID', 42):
-            self.reporter.atexit_print_messages()
-        output = sys.stdout.getvalue()
-        self.assertTrue("IMPORTANT NOTES:" in output)
-        self.assertTrue("High" in output)
-        self.assertTrue("Med" in output)
-        self.assertTrue("Low" in output)
-
     def test_tty_successful_exit(self):
         sys.stdout.isatty = lambda: True
         self._successful_exit_common()

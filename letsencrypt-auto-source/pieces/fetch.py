@@ -10,6 +10,9 @@
 On failure, return non-zero.
 
 """
+
+from __future__ import print_function
+
 from distutils.version import LooseVersion
 from json import loads
 from os import devnull, environ
@@ -111,12 +114,12 @@ def main():
     flag = argv[1]
     try:
         if flag == '--latest-version':
-            print latest_stable_version(get)
+            print(latest_stable_version(get))
         elif flag == '--le-auto-script':
             tag = argv[2]
             verified_new_le_auto(get, tag, dirname(argv[0]))
     except ExpectedError as exc:
-        print exc.args[0], exc.args[1]
+        print(exc.args[0], exc.args[1])
         return 1
     else:
         return 0

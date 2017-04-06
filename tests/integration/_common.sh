@@ -1,12 +1,7 @@
-#!/bin/sh
-
-if [ "xxx$root" = "xxx" ];
-then
-    # The -t is required on macOS. It provides a template file path for
-    # the kernel to use.
-    root="$(mktemp -d -t leitXXXX)"
-    echo "Root integration tests directory: $root"
-fi
+# The -t is required on macOS. It provides a template file path for
+# the kernel to use.
+root=${root:-$(mktemp -d -t leitXXXX)}
+echo "Root integration tests directory: $root"
 store_flags="--config-dir $root/conf --work-dir $root/work"
 store_flags="$store_flags --logs-dir $root/logs"
 tls_sni_01_port=5001

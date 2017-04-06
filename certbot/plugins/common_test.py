@@ -1,4 +1,7 @@
 """Tests for certbot.plugins.common."""
+import os
+import shutil
+import tempfile
 import unittest
 
 import mock
@@ -170,8 +173,16 @@ class TLSSNI01Test(unittest.TestCase):
     ]
 
     def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+        configurator = mock.MagicMock()
+        configurator.config.config_dir = os.path.join(self.tempdir, "config")
+        configurator.config.work_dir = os.path.join(self.tempdir, "work")
+
         from certbot.plugins.common import TLSSNI01
-        self.sni = TLSSNI01(configurator=mock.MagicMock())
+        self.sni = TLSSNI01(configurator=configurator)
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
 
     def test_add_chall(self):
         self.sni.add_chall(self.achalls[0], 0)
@@ -187,6 +198,7 @@ class TLSSNI01Test(unittest.TestCase):
 
         response = challenges.TLSSNI01Response()
         achall = mock.MagicMock()
+        achall.chall.encode.return_value = "token"
         key = test_util.load_pyopenssl_private_key("rsa512_key.pem")
         achall.response_and_validation.return_value = (
             response, (test_util.load_cert("cert.pem"), key))

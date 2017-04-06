@@ -6,6 +6,7 @@
 import os
 import pkg_resources
 import shutil
+import tempfile
 import unittest
 
 from cryptography.hazmat.backends import default_backend
@@ -13,9 +14,7 @@ from cryptography.hazmat.primitives import serialization
 import mock
 import OpenSSL
 
-from acme import errors
 from acme import jose
-from acme import util
 
 from certbot import constants
 from certbot import interfaces
@@ -84,20 +83,6 @@ def load_pyopenssl_private_key(*names):
     loader = _guess_loader(
         names[-1], OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1)
     return OpenSSL.crypto.load_privatekey(loader, load_vector(*names))
-
-
-def requirement_available(requirement):
-    """Checks if requirement can be imported.
-
-    :rtype: bool
-    :returns: ``True`` iff requirement can be imported
-
-    """
-    try:
-        util.activate(requirement)
-    except errors.DependencyError:  # pragma: no cover
-        return False
-    return True  # pragma: no cover
 
 
 def skip_unless(condition, reason):  # pragma: no cover
@@ -246,3 +231,13 @@ def _assert_valid_call(*args, **kwargs):
 
     # pylint: disable=star-args
     display_util.assert_valid_call(*assert_args, **assert_kwargs)
+
+
+class TempDirTestCase(unittest.TestCase):
+    """Base test class which sets up and tears down a temporary directory"""
+
+    def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)

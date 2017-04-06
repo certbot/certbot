@@ -1,31 +1,30 @@
 """Test certbot.display.completer."""
 import os
 import readline
-import shutil
 import string
 import sys
-import tempfile
 import unittest
 
 import mock
 from six.moves import reload_module  # pylint: disable=import-error
 
+from certbot.tests.util import TempDirTestCase
 
-class CompleterTest(unittest.TestCase):
+class CompleterTest(TempDirTestCase):
     """Test certbot.display.completer.Completer."""
 
     def setUp(self):
-        self.temp_dir = tempfile.mkdtemp()
+        super(CompleterTest, self).setUp()
 
         # directories must end with os.sep for completer to
         # search inside the directory for possible completions
-        if self.temp_dir[-1] != os.sep:
-            self.temp_dir += os.sep
+        if self.tempdir[-1] != os.sep:
+            self.tempdir += os.sep
 
         self.paths = []
         # create some files and directories in temp_dir
         for c in string.ascii_lowercase:
-            path = os.path.join(self.temp_dir, c)
+            path = os.path.join(self.tempdir, c)
             self.paths.append(path)
             if ord(c) % 2:
                 os.mkdir(path)
@@ -33,21 +32,18 @@ class CompleterTest(unittest.TestCase):
                 with open(path, 'w'):
                     pass
 
-    def tearDown(self):
-        shutil.rmtree(self.temp_dir)
-
     def test_complete(self):
         from certbot.display import completer
         my_completer = completer.Completer()
         num_paths = len(self.paths)
 
         for i in range(num_paths):
-            completion = my_completer.complete(self.temp_dir, i)
+            completion = my_completer.complete(self.tempdir, i)
             self.assertTrue(completion in self.paths)
             self.paths.remove(completion)
 
         self.assertFalse(self.paths)
-        completion = my_completer.complete(self.temp_dir, num_paths)
+        completion = my_completer.complete(self.tempdir, num_paths)
         self.assertEqual(completion, None)
 
     def test_import_error(self):

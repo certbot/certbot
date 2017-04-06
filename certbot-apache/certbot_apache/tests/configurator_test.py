@@ -6,6 +6,8 @@ import socket
 import unittest
 
 import mock
+# six is used in mock.patch()
+import six  # pylint: disable=unused-import
 
 from acme import challenges
 
@@ -16,6 +18,7 @@ from certbot.tests import acme_util
 from certbot.tests import util as certbot_util
 
 from certbot_apache import configurator
+from certbot_apache import constants
 from certbot_apache import parser
 from certbot_apache import obj
 
@@ -103,8 +106,8 @@ class MultipleVhostsTest(util.ApacheTest):
         mock_getutility.notification = mock.MagicMock(return_value=True)
         names = self.config.get_all_names()
         self.assertEqual(names, set(
-            ["certbot.demo", "ocspvhost.com", "encryption-example.demo",
-                "ip-172-30-0-17", "*.blue.purple.com"]))
+            ["certbot.demo", "ocspvhost.com", "encryption-example.demo"]
+        ))
 
     @certbot_util.patch_get_utility()
     @mock.patch("certbot_apache.configurator.socket.gethostbyaddr")
@@ -123,7 +126,8 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.vhosts.append(vhost)
 
         names = self.config.get_all_names()
-        self.assertEqual(len(names), 7)
+        # Names get filtered, only 5 are returned
+        self.assertEqual(len(names), 5)
         self.assertTrue("zombo.com" in names)
         self.assertTrue("google.com" in names)
         self.assertTrue("certbot.demo" in names)
@@ -516,12 +520,12 @@ class MultipleVhostsTest(util.ApacheTest):
         # Test
         self.config.prepare_server_https("8080", temp=True)
         self.assertEqual(mock_add_dir.call_count, 3)
-        self.assertEqual(mock_add_dir.call_args_list[0][0][2],
-                         ["1.2.3.4:8080", "https"])
-        self.assertEqual(mock_add_dir.call_args_list[1][0][2],
-                         ["[::1]:8080", "https"])
-        self.assertEqual(mock_add_dir.call_args_list[2][0][2],
-                         ["1.1.1.1:8080", "https"])
+        call_args_list = [mock_add_dir.call_args_list[i][0][2] for i in range(3)]
+        self.assertEqual(
+            sorted(call_args_list),
+            sorted([["1.2.3.4:8080", "https"],
+                    ["[::1]:8080", "https"],
+                    ["1.1.1.1:8080", "https"]]))
 
         # mock_get.side_effect = ["1.2.3.4:80", "[::1]:80"]
         # mock_find.return_value = ["test1", "test2", "test3"]
@@ -661,7 +665,7 @@ class MultipleVhostsTest(util.ApacheTest):
         # This calls open
         self.config.reverter.register_file_creation = mock.Mock()
         mock_open.side_effect = IOError
-        with mock.patch("__builtin__.open", mock_open):
+        with mock.patch("six.moves.builtins.open", mock_open):
             self.assertRaises(
                 errors.PluginError,
                 self.config.make_vhost_ssl, self.vh_truth[0])
@@ -1044,6 +1048,36 @@ class MultipleVhostsTest(util.ApacheTest):
 
         self.assertTrue("rewrite_module" in self.config.parser.modules)
 
+    @mock.patch("certbot.util.run_script")
+    @mock.patch("certbot.util.exe_exists")
+    def test_redirect_with_old_https_redirection(self, mock_exe, _):
+        self.config.parser.update_runtime_variables = mock.Mock()
+        mock_exe.return_value = True
+        self.config.get_version = mock.Mock(return_value=(2, 2, 0))
+
+        ssl_vhost = self.config.choose_vhost("certbot.demo")
+
+        # pylint: disable=protected-access
+        http_vhost = self.config._get_http_vhost(ssl_vhost)
+
+        # Create an old (previously suppoorted) https redirectoin rewrite rule
+        self.config.parser.add_dir(
+            http_vhost.path, "RewriteRule",
+            ["^",
+             "https://%{SERVER_NAME}%{REQUEST_URI}",
+             "[L,QSA,R=permanent]"])
+
+        self.config.save()
+
+        try:
+            self.config.enhance("certbot.demo", "redirect")
+        except errors.PluginEnhancementAlreadyPresent:
+            args_paths = self.config.parser.find_dir(
+                "RewriteRule", None, http_vhost.path, False)
+            arg_vals = [self.config.aug.get(x) for x in args_paths]
+            self.assertEqual(arg_vals, constants.REWRITE_HTTPS_ARGS)
+
+
     def test_redirect_with_conflict(self):
         self.config.parser.modules.add("rewrite_module")
         ssl_vh = obj.VirtualHost(
@@ -1131,7 +1165,7 @@ class MultipleVhostsTest(util.ApacheTest):
             http_vhost.path, "RewriteRule",
             ["^",
              "https://%{SERVER_NAME}%{REQUEST_URI}",
-             "[L,QSA,R=permanent]"])
+             "[L,NE,R=permanent]"])
         self.config.save()
 
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
@@ -1142,7 +1176,7 @@ class MultipleVhostsTest(util.ApacheTest):
         conf_text = open(ssl_vhost.filep).read()
         commented_rewrite_rule = ("# RewriteRule ^ "
                                   "https://%{SERVER_NAME}%{REQUEST_URI} "
-                                  "[L,QSA,R=permanent]")
+                                  "[L,NE,R=permanent]")
         self.assertTrue(commented_rewrite_rule in conf_text)
         mock_get_utility().add_message.assert_called_once_with(mock.ANY,
 
@@ -1161,7 +1195,7 @@ class MultipleVhostsTest(util.ApacheTest):
                 "RewriteCond", ["%{DOCUMENT_ROOT}/%{REQUEST_FILENAME}", "!-f"])
         self.config.parser.add_dir(
             http_vhost.path, "RewriteRule",
-            ["^(.*)$", "b://u%{REQUEST_URI}", "[P,QSA,L]"])
+            ["^(.*)$", "b://u%{REQUEST_URI}", "[P,NE,L]"])
 
         # Add a chunk that should be commented out.
         self.config.parser.add_dir(http_vhost.path,
@@ -1172,7 +1206,7 @@ class MultipleVhostsTest(util.ApacheTest):
             http_vhost.path, "RewriteRule",
             ["^",
              "https://%{SERVER_NAME}%{REQUEST_URI}",
-             "[L,QSA,R=permanent]"])
+             "[L,NE,R=permanent]"])
 
         self.config.save()
 
@@ -1183,13 +1217,13 @@ class MultipleVhostsTest(util.ApacheTest):
         not_commented_cond1 = ("RewriteCond "
                 "%{DOCUMENT_ROOT}/%{REQUEST_FILENAME} !-f")
         not_commented_rewrite_rule = ("RewriteRule "
-            "^(.*)$ b://u%{REQUEST_URI} [P,QSA,L]")
+            "^(.*)$ b://u%{REQUEST_URI} [P,NE,L]")
 
         commented_cond1 = "# RewriteCond %{HTTPS} !=on"
         commented_cond2 = "# RewriteCond %{HTTPS} !^$"
         commented_rewrite_rule = ("# RewriteRule ^ "
                                   "https://%{SERVER_NAME}%{REQUEST_URI} "
-                                  "[L,QSA,R=permanent]")
+                                  "[L,NE,R=permanent]")
 
         self.assertTrue(not_commented_cond1 in conf_line_set)
         self.assertTrue(not_commented_rewrite_rule in conf_line_set)
@@ -1207,13 +1241,13 @@ class MultipleVhostsTest(util.ApacheTest):
         achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
                 challenges.TLSSNI01(
-                    token="jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q"),
+                    token=b"jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q"),
                 "pending"),
             domain="encryption-example.demo", account_key=account_key)
         achall2 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
                 challenges.TLSSNI01(
-                    token="uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU"),
+                    token=b"uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU"),
                 "pending"),
             domain="certbot.demo", account_key=account_key)
 
