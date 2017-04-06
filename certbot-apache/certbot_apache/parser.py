@@ -136,7 +136,8 @@ class ApacheParser(object):
             proc = subprocess.Popen(
                 constants.os_constant("define_cmd"),
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
+                stderr=subprocess.PIPE,
+                universal_newlines=True)
             stdout, stderr = proc.communicate()
 
         except (OSError, ValueError):

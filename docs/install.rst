@@ -22,9 +22,8 @@ your system.
 System Requirements
 ===================
 
-The Let's Encrypt Client presently only runs on Unix-ish OSes that include
-Python 2.6 or 2.7; Python 3.x support will hopefully be added in the future. The
-client requires root access in order to write to ``/etc/letsencrypt``,
+Certbot currently requires Python 2.6 or 2.7. By default, it requires root
+access in order to write to ``/etc/letsencrypt``,
 ``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to bind to ports 80 and 443
 (if you use the ``standalone`` plugin) and to read and modify webserver
 configurations (if you use the ``apache`` or ``nginx`` plugins).  If none of
@@ -33,10 +32,15 @@ but for most users who want to avoid running an ACME client as root, either
 `letsencrypt-nosudo <https://github.com/diafygi/letsencrypt-nosudo>`_ or
 `simp_le <https://github.com/kuba/simp_le>`_ are more appropriate choices.
 
-The Apache plugin currently requires OS with augeas version 1.0; currently `it
+The Apache plugin currently requires an OS with augeas version 1.0; currently `it
 supports
 <https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/constants.py>`_
 modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
+
+Installing with ``certbot-auto`` requires 512MB of RAM in order to build some
+of the dependencies. Installing from pre-built OS packages avoids this
+requirement. You can also temporarily set a swap file. See "Problems with
+Python virtual environment" below for details.
 
 Alternate installation methods
 ================================
@@ -76,7 +80,7 @@ For full command line help, you can type::
 Problems with Python virtual environment
 ----------------------------------------
 
-On a low memory system such as VPS with only 256MB of RAM, the required dependencies of Certbot will failed to build.
+On a low memory system such as VPS with less than 512MB of RAM, the required dependencies of Certbot will failed to build.
 This can be identified if the pip outputs contains something like ``internal compiler error: Killed (program cc1)``.
 You can workaround this restriction by creating a temporary swapfile::
 

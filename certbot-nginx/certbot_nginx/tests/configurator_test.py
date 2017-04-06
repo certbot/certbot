@@ -27,12 +27,13 @@ class NginxConfiguratorTest(util.NginxTest):
         super(NginxConfiguratorTest, self).setUp()
 
         self.config = util.get_nginx_configurator(
-            self.config_path, self.config_dir, self.work_dir)
+            self.config_path, self.config_dir, self.work_dir, self.logs_dir)
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
+        shutil.rmtree(self.logs_dir)
 
     @mock.patch("certbot_nginx.configurator.util.exe_exists")
     def test_prepare_no_install(self, mock_exe_exists):
@@ -93,7 +94,7 @@ class NginxConfiguratorTest(util.NginxTest):
                                      None, [0])
         self.config.parser.add_server_directives(
             mock_vhost,
-            [['listen', ' ', '5001 ssl']],
+            [['listen', ' ', '5001', ' ', 'ssl']],
             replace=False)
         self.config.save()
 
@@ -104,7 +105,7 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['listen', '127.0.0.1'],
                             ['server_name', '.example.com'],
                             ['server_name', 'example.*'],
-                            ['listen', '5001 ssl'],
+                            ['listen', '5001', 'ssl'],
                             ['#', parser.COMMENT]]]],
                          parsed[0])
 
@@ -204,13 +205,13 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['server_name', '.example.com'],
                             ['server_name', 'example.*'],
 
-                            ['listen', '5001 ssl'],
+                            ['listen', '5001', 'ssl'],
                             ['ssl_certificate', 'example/fullchain.pem'],
                             ['ssl_certificate_key', 'example/key.pem']] +
                             util.filter_comments(self.config.parser.loc["ssl_options"])
                             ]],
                          parsed_example_conf)
-        self.assertEqual([['server_name', 'somename  alias  another.alias']],
+        self.assertEqual([['server_name', 'somename', 'alias', 'another.alias']],
                          parsed_server_conf)
         self.assertTrue(util.contains_at_depth(
             parsed_nginx_conf,
@@ -221,8 +222,8 @@ class NginxConfiguratorTest(util.NginxTest):
               ['include', 'server.conf'],
               [['location', '/'],
                [['root', 'html'],
-                ['index', 'index.html index.htm']]],
-              ['listen', '5001 ssl'],
+                ['index', 'index.html', 'index.htm']]],
+              ['listen', '5001', 'ssl'],
               ['ssl_certificate', '/etc/nginx/fullchain.pem'],
               ['ssl_certificate_key', '/etc/nginx/key.pem']] +
              util.filter_comments(self.config.parser.loc["ssl_options"])
@@ -246,7 +247,7 @@ class NginxConfiguratorTest(util.NginxTest):
                            ['server_name', 'summer.com'],
 
                            ['listen', '80'],
-                           ['listen', '5001 ssl'],
+                           ['listen', '5001', 'ssl'],
                            ['ssl_certificate', 'summer/fullchain.pem'],
                            ['ssl_certificate_key', 'summer/key.pem']] +
                            util.filter_comments(self.config.parser.loc["ssl_options"])
@@ -261,13 +262,13 @@ class NginxConfiguratorTest(util.NginxTest):
         # Note: As more challenges are offered this will have to be expanded
         achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=messages.ChallengeBody(
-                chall=challenges.TLSSNI01(token="kNdwjwOeX0I_A8DXt9Msmg"),
+                chall=challenges.TLSSNI01(token=b"kNdwjwOeX0I_A8DXt9Msmg"),
                 uri="https://ca.org/chall0_uri",
                 status=messages.Status("pending"),
             ), domain="localhost", account_key=self.rsa512jwk)
         achall2 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=messages.ChallengeBody(
-                chall=challenges.TLSSNI01(token="m8TdO1qik4JVFtgPPurJmg"),
+                chall=challenges.TLSSNI01(token=b"m8TdO1qik4JVFtgPPurJmg"),
                 uri="https://ca.org/chall1_uri",
                 status=messages.Status("pending"),
             ), domain="example.com", account_key=self.rsa512jwk)
@@ -407,8 +408,8 @@ class NginxConfiguratorTest(util.NginxTest):
         # Test that we successfully add a redirect when there is
         # a listen directive
         expected = [
-            ['if', '($scheme != "https") '],
-            [['return', '301 https://$host$request_uri']]
+            ['if', '($scheme', '!=', '"https") '],
+            [['return', '301', 'https://$host$request_uri']]
         ]
 
         example_conf = self.config.parser.abs_path('sites-enabled/example.com')
