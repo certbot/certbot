@@ -532,7 +532,7 @@ class HelpfulArgumentParser(object):
         parsed_args = self.parser.parse_args(self.args)
         parsed_args.func = self.VERBS[self.verb]
         parsed_args.verb = self.verb
-        parsed_args.renewing = "unknown"  # an important config property we don't know until later
+        parsed_args.renewing = "unknown"  # used for the User Agent; not known until later
 
         if self.detect_defaults:
             return parsed_args
