@@ -23,7 +23,7 @@ if [ -z "$VENV_PATH" ]; then
   VENV_PATH="$XDG_DATA_HOME/$VENV_NAME"
 fi
 VENV_BIN="$VENV_PATH/bin"
-LE_AUTO_VERSION="0.12.0"
+LE_AUTO_VERSION="0.13.0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -36,6 +36,7 @@ Help for certbot itself cannot be provided until it is installed.
   --debug                                   attempt experimental installation
   -h, --help                                print this help
   -n, --non-interactive, --noninteractive   run without asking for user input
+  --no-bootstrap                            do not install OS dependencies
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
   -v, --verbose                             provide more output
@@ -54,6 +55,8 @@ for arg in "$@" ; do
       # Do not upgrade this script (also prevents client upgrades, because each
       # copy of the script pins a hash of the python client)
       NO_SELF_UPGRADE=1;;
+    --no-bootstrap)
+      NO_BOOTSTRAP=1;;
     --help)
       HELP=1;;
     --noninteractive|--non-interactive)
@@ -160,17 +163,24 @@ else
   fi
 fi
 
+BootstrapMessage() {
+  # Arguments: Platform name
+  echo "Bootstrapping dependencies for $1... (you can skip this with --no-bootstrap)"
+}
+
 ExperimentalBootstrap() {
   # Arguments: Platform name, bootstrap function name
   if [ "$DEBUG" = 1 ]; then
     if [ "$2" != "" ]; then
-      echo "Bootstrapping dependencies via $1..."
+      BootstrapMessage $1
       $2
     fi
   else
     echo "FATAL: $1 support is very experimental at present..."
     echo "if you would like to work on improving it, please ensure you have backups"
     echo "and then run this script again with the --debug flag!"
+    echo "Alternatively, you can install OS dependencies yourself and run this script"
+    echo "again with --no-bootstrap."
     exit 1
   fi
 }
@@ -576,21 +586,23 @@ BootstrapMageiaCommon() {
 
 # Install required OS packages:
 Bootstrap() {
-  if [ -f /etc/debian_version ]; then
-    echo "Bootstrapping dependencies for Debian-based OSes..."
+  if [ "$NO_BOOTSTRAP" = 1 ]; then
+      return
+  elif [ -f /etc/debian_version ]; then
+    BootstrapMessage "Debian-based OSes"
     BootstrapDebCommon
-  elif [ -f /etc/mageia-release ] ; then
+  elif [ -f /etc/mageia-release ]; then
     # Mageia has both /etc/mageia-release and /etc/redhat-release
     ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
   elif [ -f /etc/redhat-release ]; then
-    echo "Bootstrapping dependencies for RedHat-based OSes..."
+    BootstrapMessage "RedHat-based OSes"
     BootstrapRpmCommon
   elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
-    echo "Bootstrapping dependencies for openSUSE-based OSes..."
+    BootstrapMessage "openSUSE-based OSes"
     BootstrapSuseCommon
   elif [ -f /etc/arch-release ]; then
     if [ "$DEBUG" = 1 ]; then
-      echo "Bootstrapping dependencies for Archlinux..."
+      BootstrapMessage "Archlinux"
       BootstrapArchCommon
     else
       echo "Please use pacman to install letsencrypt packages:"
@@ -615,7 +627,7 @@ Bootstrap() {
   else
     echo "Sorry, I don't know how to bootstrap Certbot on your operating system!"
     echo
-    echo "You will need to bootstrap, configure virtualenv, and run pip install manually."
+    echo "You will need to install OS dependencies, configure virtualenv, and run pip install manually."
     echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
     echo "for more info."
     exit 1
@@ -833,18 +845,18 @@ letsencrypt==0.7.0 \
 
 # THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT; ADD ALL DEPENDENCIES ABOVE.
 
-acme==0.12.0 \
-    --hash=sha256:a6050619b3e07b41d197992bb15b32c755dfa0665cfa1c20faa82806a798265b \
-    --hash=sha256:a05cba6b5b0fffdfa246b32492a44769011d45205f3ee8efde1f37ee9843fbdf
-certbot==0.12.0 \
-    --hash=sha256:d018d13665eb4cfe7038c2df636e3f4928742b83769b95edfdb0311277f0eb48 \
-    --hash=sha256:4a71925c035b62dfb7c3343c619ee090add76188b47225272b57798ad63388b7
-certbot-apache==0.12.0 \
-    --hash=sha256:de86907ea60e7bc35d252b87dec04eab3c7f3a1ea768774876e7ff582d89d640 \
-    --hash=sha256:77dde63cf97292b09da8ae09ef8a7a6d83a3b1ee0f8d1fefe513fc77a6292509
-certbot-nginx==0.12.0 \
-    --hash=sha256:c66d848c4577f1f91a06a8119b40f1ab90af1546addea27905434bd070f3924d \
-    --hash=sha256:4dab2c93304c80d8d0d2e5214939f016804fd46859dd7a39b892d8b7195ab5ec
+acme==0.13.0 \
+    --hash=sha256:103ce8bed43aad1a9655ed815df09bbeab86ee16cc82137b44d9dac68faa394f \
+    --hash=sha256:7489b3e20d02da0a389aedb82408ffb6b76294e41d833db85591b9f779539815
+certbot==0.13.0 \
+    --hash=sha256:65d0d9d158972aff7746d4ef80a20465a14c54ae8bcb879216970c2a1b34503c \
+    --hash=sha256:f63ad7747edaca2fb7d60c28882e44d2f48ff1cca9b9c7c251ad47e2189c00f3
+certbot-apache==0.13.0 \
+    --hash=sha256:22f7c1dc93439384c0874960081d66957910c6dc737a9facbd9fcbc46c545874 \
+    --hash=sha256:b43b04b53005e7218a09a0ba4d97581fab369e929472fa49fb55d29d0ab54589
+certbot-nginx==0.13.0 \
+    --hash=sha256:9d0ab4eeb98b0ebad70ba116b32268342ad343d82d64990a652ff8072959b044 \
+    --hash=sha256:f026a8faee8397a22c5d4a7623a6ef7c7e780ed63a3bdf9940f43f7823aa2a72
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1093,6 +1105,9 @@ else
 On failure, return non-zero.
 
 """
+
+from __future__ import print_function
+
 from distutils.version import LooseVersion
 from json import loads
 from os import devnull, environ
@@ -1194,12 +1209,12 @@ def main():
     flag = argv[1]
     try:
         if flag == '--latest-version':
-            print latest_stable_version(get)
+            print(latest_stable_version(get))
         elif flag == '--le-auto-script':
             tag = argv[2]
             verified_new_le_auto(get, tag, dirname(argv[0]))
     except ExpectedError as exc:
-        print exc.args[0], exc.args[1]
+        print(exc.args[0], exc.args[1])
         return 1
     else:
         return 0
