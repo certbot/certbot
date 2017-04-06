@@ -350,6 +350,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         self._simple_call(config)
         mock_delete.assert_not_called()
 
+    @mock.patch('certbot.cert_manager.delete')
     @mock.patch('certbot.cert_manager.human_readable_cert_info')
     @mock.patch('certbot.storage.RenewableCert')
     @mock.patch('certbot.storage.renewal_file_for_certname')
@@ -359,7 +360,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
     def test_certname_and_cert_path_match(self, mock_get_utility, 
             mock_lineage_for_certname, cert_path_to_lineage,
             mock_renewal_file_for_certname, mock_RenewableCert,
-            mock_human_readable_cert_info):
+            mock_human_readable_cert_info, mock_delete):
         config = self.config
         config.certname = "example.com"
         config.cert_path = "/some/reasonable/path"
@@ -368,6 +369,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         mock_RenewableCert.return_value = ""
         mock_get_utility.menu.return_value = (0, 0)
         self._simple_call(config)
+        mock_delete.assert_called_once()
    
 class SetupLogFileHandlerTest(unittest.TestCase):
     """Tests for certbot.main.setup_log_file_handler."""
@@ -388,68 +390,6 @@ class SetupLogFileHandlerTest(unittest.TestCase):
         mock_handler.side_effect = IOError
         self.assertRaises(errors.Error, self._call,
                           self.config, "test.log", "%s")
-
-
-class SetupLoggingTest(unittest.TestCase):
-    """Tests for certbot.main.setup_logging."""
-
-    def setUp(self):
-        self.config = mock.Mock(
-            logs_dir=tempfile.mkdtemp(),
-            noninteractive_mode=False, quiet=False,
-            verbose_count=constants.CLI_DEFAULTS['verbose_count'])
-
-    def tearDown(self):
-        shutil.rmtree(self.config.logs_dir)
-
-    @classmethod
-    def _call(cls, *args, **kwargs):
-        from certbot.main import setup_logging
-        return setup_logging(*args, **kwargs)
-
-    @mock.patch('certbot.main.logging.getLogger')
-    def test_defaults(self, mock_get_logger):
-        self._call(self.config)
-
-        cli_handler = mock_get_logger().addHandler.call_args_list[0][0][0]
-        self.assertEqual(cli_handler.level, -self.config.verbose_count * 10)
-        self.assertTrue(
-            isinstance(cli_handler, colored_logging.StreamHandler))
-
-    @mock.patch('certbot.main.logging.getLogger')
-    def test_quiet_mode(self, mock_get_logger):
-        self.config.quiet = self.config.noninteractive_mode = True
-        self._call(self.config)
-
-        cli_handler = mock_get_logger().addHandler.call_args_list[0][0][0]
-        self.assertEqual(cli_handler.level, constants.QUIET_LOGGING_LEVEL)
-        self.assertTrue(
-            isinstance(cli_handler, colored_logging.StreamHandler))
-
-
-class MakeOrVerifyCoreDirTest(unittest.TestCase):
-    """Tests for certbot.main.make_or_verify_core_dir."""
-
-    def setUp(self):
-        self.dir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        shutil.rmtree(self.dir)
-
-    def _call(self, *args, **kwargs):
-        from certbot.main import make_or_verify_core_dir
-        return make_or_verify_core_dir(*args, **kwargs)
-
-    def test_success(self):
-        new_dir = os.path.join(self.dir, 'new')
-        self._call(new_dir, 0o700, os.geteuid(), False)
-        self.assertTrue(os.path.exists(new_dir))
-
-    @mock.patch('certbot.main.util.make_or_verify_dir')
-    def test_failure(self, mock_make_or_verify):
-        mock_make_or_verify.side_effect = OSError
-        self.assertRaises(errors.Error, self._call,
-                          self.dir, 0o700, os.geteuid(), False)
 
 
 class DetermineAccountTest(unittest.TestCase):
