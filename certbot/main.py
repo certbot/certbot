@@ -407,10 +407,10 @@ def unregister(config, unused_plugins):
         return "Deactivation aborted."
 
     acc, acme = _determine_account(config)
-    acme_client = client.Client(config, acc, None, None, acme=acme)
+    cb_client = client.Client(config, acc, None, None, acme=acme)
 
     # delete on boulder
-    acme_client.acme.deactivate_registration(acc.regr)
+    cb_client.acme.deactivate_registration(acc.regr)
     account_files = account.AccountFileStorage(config)
     # delete local account files
     account_files.delete(config.account)
@@ -452,11 +452,11 @@ def register(config, unused_plugins):
         config.email = display_ops.get_email(optional=False)
 
     acc, acme = _determine_account(config)
-    acme_client = client.Client(config, acc, None, None, acme=acme)
+    cb_client = client.Client(config, acc, None, None, acme=acme)
     # We rely on an exception to interrupt this process if it didn't work.
-    acc.regr = acme_client.acme.update_registration(acc.regr.update(
+    acc.regr = cb_client.acme.update_registration(acc.regr.update(
         body=acc.regr.body.update(contact=('mailto:' + config.email,))))
-    account_storage.save_regr(acc, acme_client.acme)
+    account_storage.save_regr(acc, cb_client.acme)
     eff.handle_subscription(config)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
 
