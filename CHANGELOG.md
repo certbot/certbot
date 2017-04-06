@@ -2,7 +2,27 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
-## 0.12.0 - 2017-02-03
+## 0.13.0 - 2017-04-06
+
+### Added
+
+* `--debug-challenges` pauses Certbot after setting up challenges for debugging.
+* The Nginx parser can handle all valid directives in configuration files.
+* Nginx ciphersuites changed to Mozilla Intermediate.
+* `certbot-auto --no-bootstrap` won't install OS dependencies.
+
+### Fixed
+
+* `--register-unsafely-without-email` respects `--quiet`.
+* Hyphenated renewalparams are now saved in renewal config files.
+* `--dry-run` no longer persists keys and csrs.
+* No longer hangs when trying to start Nginx in Arch Linux.
+* Apache rewrite rules no longer double-encode characters.
+
+A full list of changes is available on GitHub:
+https://github.com/certbot/certbot/issues?q=is%3Aissue%20milestone%3A0.13.0%20is%3Aclosed%20
+
+## 0.12.0 - 2017-03-02
 
 ### Added
 
