@@ -144,22 +144,23 @@ def cert_path_to_lineage(config):
     """ If config.cert_path is defined, find an appropriate value for config.certname
     by searching through available files in config.renewal_configs_dir, and finding
     one with an appropriate value for 'fullchain'."""
-    
+
+    # pylint: disable=unused-argument
     def update_cert_name_for_cert_path_match(candidate_lineage, rv):
-            """ Return the lineagename or return None. """
+        """ Return the lineagename or return None. """
 
-            if candidate_lineage.fullchain == config.cert_path[0]:
-                return candidate_lineage.lineagename
+        if candidate_lineage.fullchain == config.cert_path[0]:
+            return candidate_lineage.lineagename
 
-    cert_path_match = _search_lineages(config, update_cert_name_for_cert_path_match, None) 
+    cert_path_match = _search_lineages(config, update_cert_name_for_cert_path_match, None)
     if not cert_path_match:
         raise errors.Error("Could not find a matching lineage for the cert_path {0}".format(config.cert_path[0]))
     else:
         return cert_path_match
 
-def human_readable_cert_info(config, cert, skip_filter_checks = False):
-    """ Returns a human readable description of info about a RenewablCert object""" 
-    
+def human_readable_cert_info(config, cert, skip_filter_checks=False):
+    """ Returns a human readable description of info about a RenewablCert object"""
+
     certinfo = []
     checker = ocsp.RevocationChecker()
 
