@@ -309,7 +309,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         self.config.namespace = mock.Mock()
         self.config.namespace.noninteractive_mode = False
 
-    def _simple_call(self, mock_config):
+    def _call(self, mock_config):
         from certbot.main import _delete_if_appropriate
         _delete_if_appropriate(mock_config)
 
@@ -323,7 +323,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         config.cert_path = ""
         mock_cert_path_for_cert_name.return_value = "/some/reasonable/path"
         mock_get_utility().yesno.return_value = True
-        self._simple_call(config)
+        self._call(config)
         mock_delete.assert_called_once()
 
     @mock.patch('certbot.cert_manager.delete')
@@ -336,7 +336,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         config.certname = ""
         mock_cert_path_to_lineage.return_value = "example.com"
         mock_get_utility().yesno.return_value = True
-        self._simple_call(config)
+        self._call(config)
         mock_delete.assert_called_once()
 
     @mock.patch('certbot.cert_manager.delete')
@@ -347,28 +347,47 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         config.namespace.noninteractive_mode = True
         config.certname = ""
         config.cert_path = ""
-        self._simple_call(config)
+        self._call(config)
         mock_delete.assert_not_called()
 
     @mock.patch('certbot.cert_manager.delete')
+    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @test_util.patch_get_utility()
+    def test_certname_and_cert_path_match(self, mock_get_utility, 
+            mock_lineage_for_certname, mock_delete):
+        config = self.config
+        config.certname = "example.com"
+        config.cert_path = "/some/reasonable/path"
+        mock_lineage_for_certname.return_value = config.cert_path
+        mock_get_utility.yesno.return_value = True
+        self._call(config)
+        mock_delete.assert_called_once()
+
+    @mock.patch('certbot.cert_manager.delete')
+    @mock.patch('certbot.cert_manager.human_readable_cert_info')
     @mock.patch('certbot.storage.RenewableCert')
     @mock.patch('certbot.storage.renewal_file_for_certname')
     @mock.patch('certbot.cert_manager.cert_path_to_lineage')
     @mock.patch('certbot.cert_manager.lineage_for_certname')
     @test_util.patch_get_utility()
-    def test_certname_and_cert_path_match(self, mock_get_utility, 
+    def test_certname_and_cert_path_mismatch(self, mock_get_utility, 
             mock_lineage_for_certname, cert_path_to_lineage,
             mock_renewal_file_for_certname, mock_RenewableCert,
-            mock_delete):
+            mock_human_readable_cert_info, mock_delete):
         config = self.config
         config.certname = "example.com"
         config.cert_path = "/some/reasonable/path"
-        mock_lineage_for_certname.return_value = config.cert_path
-        #mock_RenewableCert.return_value = ""
-        mock_get_utility.menu.return_value = (0, 0)
-        self._simple_call(config)
+        mock_lineage_for_certname.return_value = "some-reasonable-path.com"
+        mock_RenewableCert.return_value = mock.Mock()
+        mock_human_readable_cert_info.return_value = ""
+        from certbot.display import util as display_util
+        util_mock = mock.Mock()
+        util_mock.menu.return_value = (display_util.OK, 0)
+        util_mock.yesno.return_value = True
+        mock_get_utility.return_value = util_mock
+        self._call(config)
         mock_delete.assert_called_once()
-
+ 
 
 class DetermineAccountTest(unittest.TestCase):
     """Tests for certbot.main._determine_account."""
