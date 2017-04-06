@@ -340,7 +340,8 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         mock_delete.assert_called_once()
 
     @mock.patch('certbot.cert_manager.delete')
-    def test_noninteractive_deletion_is_disabled(self, mock_delete):
+    @test_util.patch_get_utility()
+    def test_noninteractive_deletion_is_disabled(self, mock_get_utility, mock_delete):
         config = self.config
         config.namespace.noninteractive_mode = True
         config.certname = ""
