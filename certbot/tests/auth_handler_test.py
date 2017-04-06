@@ -5,6 +5,7 @@ import unittest
 
 import mock
 import six
+import zope.component
 
 from acme import challenges
 from acme import client as acme_client
@@ -12,6 +13,7 @@ from acme import messages
 
 from certbot import achallenges
 from certbot import errors
+from certbot import interfaces
 from certbot import util
 
 from certbot.tests import acme_util
@@ -64,6 +66,12 @@ class GetAuthorizationsTest(unittest.TestCase):
 
     def setUp(self):
         from certbot.auth_handler import AuthHandler
+
+        self.mock_display = mock.Mock()
+        zope.component.provideUtility(
+            self.mock_display, interfaces.IDisplay)
+        zope.component.provideUtility(
+            mock.Mock(debug_challenges=False), interfaces.IConfig)
 
         self.mock_auth = mock.MagicMock(name="ApacheConfigurator")
 
@@ -157,6 +165,20 @@ class GetAuthorizationsTest(unittest.TestCase):
 
         self.assertEqual(len(authzr), 3)
 
+    @mock.patch("certbot.auth_handler.AuthHandler._poll_challenges")
+    def test_debug_challenges(self, mock_poll):
+        zope.component.provideUtility(
+            mock.Mock(debug_challenges=True), interfaces.IConfig)
+        self.mock_net.request_domain_challenges.side_effect = functools.partial(
+            gen_dom_authzr, challs=acme_util.CHALLENGES)
+
+        mock_poll.side_effect = self._validate_all
+
+        self.handler.get_authorizations(["0"])
+
+        self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
+        self.assertEqual(self.mock_display.notification.call_count, 1)
+
     def test_perform_failure(self):
         self.mock_net.request_domain_challenges.side_effect = functools.partial(
             gen_dom_authzr, challs=acme_util.CHALLENGES)
@@ -176,7 +198,8 @@ class GetAuthorizationsTest(unittest.TestCase):
         mock_poll.side_effect = self._validate_all
         self.mock_auth.get_chall_pref.return_value.append(challenges.HTTP01)
 
-        self.handler.pref_challs.extend((challenges.HTTP01, challenges.DNS01,))
+        self.handler.pref_challs.extend((challenges.HTTP01.typ,
+                                         challenges.DNS01.typ,))
 
         self.handler.get_authorizations(["0"])
 
@@ -187,7 +210,7 @@ class GetAuthorizationsTest(unittest.TestCase):
     def test_preferred_challenges_not_supported(self):
         self.mock_net.request_domain_challenges.side_effect = functools.partial(
             gen_dom_authzr, challs=acme_util.CHALLENGES)
-        self.handler.pref_challs.append(challenges.HTTP01)
+        self.handler.pref_challs.append(challenges.HTTP01.typ)
         self.assertRaises(
             errors.AuthorizationError, self.handler.get_authorizations, ["0"])
 
@@ -308,7 +331,6 @@ class PollChallengesTest(unittest.TestCase):
 
         new_authzr = messages.AuthorizationResource(
             uri=authzr.uri,
-            new_cert_uri=authzr.new_cert_uri,
             body=messages.Authorization(
                 identifier=authzr.body.identifier,
                 challenges=new_challbs,
@@ -436,7 +458,7 @@ def gen_auth_resp(chall_list):
             for chall in chall_list]
 
 
-def gen_dom_authzr(domain, unused_new_authzr_uri, challs, combos=True):
+def gen_dom_authzr(domain, challs, combos=True):
     """Generates new authzr for domains."""
     return acme_util.gen_authzr(
         messages.STATUS_PENDING, domain, challs,

@@ -147,7 +147,7 @@ def test_deploy_cert(plugin, temp_dir, domains):
             plugin.deploy_cert(domain, cert_path, util.KEY_PATH, cert_path, cert_path)
             plugin.save()  # Needed by the Apache plugin
         except le_errors.Error as error:
-            logger.error("Plugin failed to deploy ceritificate for %s:", domain)
+            logger.error("Plugin failed to deploy certificate for %s:", domain)
             logger.exception(error)
             return False
 
@@ -202,7 +202,7 @@ def test_enhancements(plugin, domains):
             success = False
 
     if success:
-        logger.info("Enhancments test succeeded")
+        logger.info("Enhancements test succeeded")
 
     return success
 

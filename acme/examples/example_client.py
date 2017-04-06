@@ -32,8 +32,7 @@ acme.agree_to_tos(regr)
 logging.debug(regr)
 
 authzr = acme.request_challenges(
-    identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value=DOMAIN),
-    new_authzr_uri=regr.new_authzr_uri)
+    identifier=messages.Identifier(typ=messages.IDENTIFIER_FQDN, value=DOMAIN))
 logging.debug(authzr)
 
 authzr, authzr_response = acme.poll(authzr)

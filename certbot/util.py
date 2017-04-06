@@ -1,5 +1,6 @@
 """Utilities for all Certbot."""
 import argparse
+import atexit
 import collections
 # distutils.version under virtualenv confuses pylint
 # For more info, see: https://github.com/PyCQA/pylint/issues/73
@@ -36,6 +37,16 @@ ANSI_SGR_BOLD = '\033[1m'
 ANSI_SGR_RED = "\033[31m"
 # Resets output format
 ANSI_SGR_RESET = "\033[0m"
+
+
+PERM_ERR_FMT = os.linesep.join((
+    "The following error was encountered:", "{0}",
+    "If running as non-root, set --config-dir, "
+    "--work-dir, and --logs-dir to writeable paths."))
+
+
+# Stores importing process ID to be used by atexit_register()
+_INITIAL_PID = os.getpid()
 
 
 def run_script(params, log=logger.error):
@@ -90,6 +101,23 @@ def exe_exists(exe):
                 return True
 
     return False
+
+
+def make_or_verify_core_dir(directory, mode, uid, strict):
+    """Make sure directory exists with proper permissions.
+
+    :param str directory: Path to a directory.
+    :param int mode: Directory mode.
+    :param int uid: Directory owner.
+    :param bool strict: require directory to be owned by current user
+
+    :raises .errors.Error: if the directory cannot be made or verified
+
+    """
+    try:
+        make_or_verify_dir(directory, mode, uid, strict)
+    except OSError as error:
+        raise errors.Error(PERM_ERR_FMT.format(error))
 
 
 def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
@@ -217,6 +245,25 @@ def safely_remove(path):
     except OSError as err:
         if err.errno != errno.ENOENT:
             raise
+
+
+def get_filtered_names(all_names):
+    """Removes names that aren't considered valid by Let's Encrypt.
+
+    :param set all_names: all names found in the configuration
+
+    :returns: all found names that are considered valid by LE
+    :rtype: set
+
+    """
+    filtered_names = set()
+    for name in all_names:
+        try:
+            filtered_names.add(enforce_le_validity(name))
+        except errors.ConfigurationError as error:
+            logger.debug('Not suggesting name "%s"', name)
+            logger.debug(error)
+    return filtered_names
 
 
 def get_os_info(filepath="/etc/os-release"):
@@ -514,3 +561,20 @@ def is_staging(srv):
     :rtype bool:
     """
     return srv == constants.STAGING_URI or "staging" in srv
+
+
+def atexit_register(func, *args, **kwargs):
+    """Sets func to be called before the program exits.
+
+    Special care is taken to ensure func is only called when the process
+    that first imports this module exits rather than any child processes.
+
+    :param function func: function to be called in case of an error
+
+    """
+    atexit.register(_atexit_call, func, *args, **kwargs)
+
+
+def _atexit_call(func, *args, **kwargs):
+    if _INITIAL_PID == os.getpid():
+        func(*args, **kwargs)
