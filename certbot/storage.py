@@ -44,9 +44,9 @@ def renewal_file_for_certname(config, certname):
 def cert_path_for_cert_name(config, cert_name):
     """ If --cert-name was specified, but you need a value for --cert-path."""
     cert_name_implied_conf = renewal_file_for_certname(config, cert_name)
-    fullchain_path = configobj.ConfigObj(conf_file)["fullchain"]
+    fullchain_path = configobj.ConfigObj(cert_name_implied_conf)["fullchain"]
     with open(fullchain_path) as f:
-        cert_path = (fullchain_path, f.read()) 
+        cert_path = (fullchain_path, f.read())
     return cert_path
 
 def config_with_defaults(config=None):

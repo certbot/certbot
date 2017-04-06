@@ -411,21 +411,24 @@ def _delete_if_appropriate(config):
 
         if cert_name_implied_cert_path != config.cert_path:
             cert_path_implied_cert_name = cert_manager.cert_path_to_lineage(config)
-            cert_path_implied_conf = storage.renewal_file_for_certname(config, cert_path_implied_cert_name)
+            cert_path_implied_conf = storage.renewal_file_for_certname(config, 
+                    cert_path_implied_cert_name)
             cert_path_cert = storage.RenewableCert(cert_path_implied_conf, config)
-            cert_path_info = cert_manager.human_readable_cert_info(config, cert_path_cert, skip_filter_checks=True)
+            cert_path_info = cert_manager.human_readable_cert_info(config, cert_path_cert, 
+                    skip_filter_checks=True)
 
             cert_name_implied_conf = storage.renewal_file_for_certname(config, config.certname)
             cert_name_cert = storage.RenewableCert(cert_name_implied_conf, config)
             cert_name_info = cert_manager.human_readable_cert_info(config, cert_name_cert)
 
-            msg = "You specified conflicting values for --cert-path and --cert-name. Which did you mean to select?"
+            msg = ("You specified conflicting values for --cert-path and --cert-name. "
+                    "Which did you mean to select?")
             choices = [cert_path_info, cert_name_info]
             try:
                 code, index = display.menu(msg,
                         choices, ok_label="Select", force_interactive=True)
             except errors.MissingCommandlineFlag:
-                error_msg = ('To run in non-interactive mode, you must either specify only one of ' 
+                error_msg = ('To run in non-interactive mode, you must either specify only one of '
                 '--cert-path or --cert-name, or both must point to the same certificate lineages.')
                 raise errors.Error(error_msg)
 
@@ -433,7 +436,7 @@ def _delete_if_appropriate(config):
                 raise errors.Error("User ended interaction.")
 
             if index == 0:
-                config.certname = cert_path_implied_cert_name 
+                config.certname = cert_path_implied_cert_name
             else:
                 config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
 
@@ -443,12 +446,14 @@ def _delete_if_appropriate(config):
     else: # if only config.certname was specified
         config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
 
-    msg = 'Are you sure you want to delete all files related to the {0} lineage?'.format(config.certname)
+    msg = ("Are you sure you want to delete all"
+            "files related to the {0} lineage?").format(config.certname)
     if not display.yesno(msg, default=False):
         reporter = zope.component.getUtility(interfaces.IReporter)
         msg = ('Not deleting revoked certificate lineage {0}. '
                 'Warning: revoked certs could be autorenewed! '
-                "For deletion at a later time, please see the `delete` subcommand's documentation.".format(config.certname))
+                "For deletion at a later time, please see the `delete`"
+                "subcommand's documentation.".format(config.certname))
         reporter.add_message(''.join(msg), reporter.MEDIUM_PRIORITY)
         return
     else:

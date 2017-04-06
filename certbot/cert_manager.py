@@ -153,13 +153,13 @@ def cert_path_to_lineage(config):
 
     cert_path_match = _search_lineages(config, update_cert_name_for_cert_path_match, None)
     if not cert_path_match:
-        raise errors.Error("Could not find a matching lineage for the cert_path {0}".format(config.cert_path[0]))
+        error_msg = "Could not find a matching lineage for the cert_path {0}"
+        raise errors.Error(error_msg.format(config.cert_path[0]))
     else:
         return cert_path_match
 
 def human_readable_cert_info(config, cert, skip_filter_checks=False):
     """ Returns a human readable description of info about a RenewablCert object"""
-
     certinfo = []
     checker = ocsp.RevocationChecker()
 
@@ -230,7 +230,6 @@ def _report_lines(msgs):
 def _report_human_readable(config, parsed_certs):
     """Format a results report for a parsed cert"""
     certinfo = []
-    checker = ocsp.RevocationChecker()
     for cert in parsed_certs:
         certinfo.append(human_readable_cert_info(config, cert))
     return "\n".join(certinfo)
