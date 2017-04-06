@@ -36,6 +36,7 @@ Help for certbot itself cannot be provided until it is installed.
   --debug                                   attempt experimental installation
   -h, --help                                print this help
   -n, --non-interactive, --noninteractive   run without asking for user input
+  --no-bootstrap                            do not install OS dependencies
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
   -v, --verbose                             provide more output
@@ -54,6 +55,8 @@ for arg in "$@" ; do
       # Do not upgrade this script (also prevents client upgrades, because each
       # copy of the script pins a hash of the python client)
       NO_SELF_UPGRADE=1;;
+    --no-bootstrap)
+      NO_BOOTSTRAP=1;;
     --help)
       HELP=1;;
     --noninteractive|--non-interactive)
@@ -160,17 +163,24 @@ else
   fi
 fi
 
+BootstrapMessage() {
+  # Arguments: Platform name
+  echo "Bootstrapping dependencies for $1... (you can skip this with --no-bootstrap)"
+}
+
 ExperimentalBootstrap() {
   # Arguments: Platform name, bootstrap function name
   if [ "$DEBUG" = 1 ]; then
     if [ "$2" != "" ]; then
-      echo "Bootstrapping dependencies via $1..."
+      BootstrapMessage $1
       $2
     fi
   else
     echo "FATAL: $1 support is very experimental at present..."
     echo "if you would like to work on improving it, please ensure you have backups"
     echo "and then run this script again with the --debug flag!"
+    echo "Alternatively, you can install OS dependencies yourself and run this script"
+    echo "again with --no-bootstrap."
     exit 1
   fi
 }
@@ -206,21 +216,23 @@ DeterminePythonVersion() {
 
 # Install required OS packages:
 Bootstrap() {
-  if [ -f /etc/debian_version ]; then
-    echo "Bootstrapping dependencies for Debian-based OSes..."
+  if [ "$NO_BOOTSTRAP" = 1 ]; then
+      return
+  elif [ -f /etc/debian_version ]; then
+    BootstrapMessage "Debian-based OSes"
     BootstrapDebCommon
-  elif [ -f /etc/mageia-release ] ; then
+  elif [ -f /etc/mageia-release ]; then
     # Mageia has both /etc/mageia-release and /etc/redhat-release
     ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
   elif [ -f /etc/redhat-release ]; then
-    echo "Bootstrapping dependencies for RedHat-based OSes..."
+    BootstrapMessage "RedHat-based OSes"
     BootstrapRpmCommon
   elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
-    echo "Bootstrapping dependencies for openSUSE-based OSes..."
+    BootstrapMessage "openSUSE-based OSes"
     BootstrapSuseCommon
   elif [ -f /etc/arch-release ]; then
     if [ "$DEBUG" = 1 ]; then
-      echo "Bootstrapping dependencies for Archlinux..."
+      BootstrapMessage "Archlinux"
       BootstrapArchCommon
     else
       echo "Please use pacman to install letsencrypt packages:"
@@ -245,7 +257,7 @@ Bootstrap() {
   else
     echo "Sorry, I don't know how to bootstrap Certbot on your operating system!"
     echo
-    echo "You will need to bootstrap, configure virtualenv, and run pip install manually."
+    echo "You will need to install OS dependencies, configure virtualenv, and run pip install manually."
     echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
     echo "for more info."
     exit 1

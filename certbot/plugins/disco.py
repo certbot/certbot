@@ -27,7 +27,7 @@ class PluginEntryPoint(object):
     """Distributions for which prefix will be omitted."""
 
     # this object is mutable, don't allow it to be hashed!
-    __hash__ = None
+    __hash__ = None  # type: ignore
 
     def __init__(self, entry_point):
         self.name = self.entry_point_to_plugin_name(entry_point)

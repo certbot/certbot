@@ -121,12 +121,12 @@ class Header(json_util.JSONObjectWithFields):
 
     # x5c does NOT use JOSE Base64 (4.1.6)
 
-    @x5c.encoder
+    @x5c.encoder  # type: ignore
     def x5c(value):  # pylint: disable=missing-docstring,no-self-argument
         return [base64.b64encode(OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_ASN1, cert.wrapped)) for cert in value]
 
-    @x5c.decoder
+    @x5c.decoder  # type: ignore
     def x5c(value):  # pylint: disable=missing-docstring,no-self-argument
         try:
             return tuple(util.ComparableX509(OpenSSL.crypto.load_certificate(
@@ -157,12 +157,12 @@ class Signature(json_util.JSONObjectWithFields):
         'signature', decoder=json_util.decode_b64jose,
         encoder=json_util.encode_b64jose)
 
-    @protected.encoder
+    @protected.encoder  # type: ignore
     def protected(value):  # pylint: disable=missing-docstring,no-self-argument
         # wrong type guess (Signature, not bytes) | pylint: disable=no-member
         return json_util.encode_b64jose(value.encode('utf-8'))
 
-    @protected.decoder
+    @protected.decoder  # type: ignore
     def protected(value):  # pylint: disable=missing-docstring,no-self-argument
         return json_util.decode_b64jose(value).decode('utf-8')
 
