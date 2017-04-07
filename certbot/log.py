@@ -66,6 +66,8 @@ def pre_arg_parse_setup():
     root_logger.addHandler(memory_handler)
     root_logger.addHandler(stream_handler)
 
+    # logging.shutdown will flush the memory handler because flush() and
+    # close() are explicitly called
     util.atexit_register(logging.shutdown)
     sys.excepthook = functools.partial(
         except_hook, debug='--debug' in sys.argv, log_path=temp_handler.path)
