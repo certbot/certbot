@@ -389,17 +389,17 @@ def _init_le_client(config, authenticator, installer):
 
     return client.Client(config, acc, authenticator, installer, acme=acme)
 
-def _delete_if_appropriate(config):
+def _delete_if_appropriate(config): # pylint: disable=too-many-locals
     """Does the user want to delete their now-revoked certs?"""
     display = zope.component.getUtility(interfaces.IDisplay)
 
     if config.namespace.noninteractive_mode:
-        reporter = zope.component.getUtility(interfaces.IReporter)
+        reporter_util = zope.component.getUtility(interfaces.IReporter)
         msg = ('Warning: did not prompt to delete revoked certs due to '
                 'non-interactive mode being enabled. Revoked certs could be '
                 'autorenewed! Please see  "certbot --help delete" to delete '
                 'them yourself.')
-        reporter.add_message(''.join(msg), reporter.MEDIUM_PRIORITY)
+        reporter_util.add_message(''.join(msg), reporter_util.MEDIUM_PRIORITY)
         return
 
     if not (config.certname or config.cert_path):
@@ -449,12 +449,12 @@ def _delete_if_appropriate(config):
     msg = ("Are you sure you want to delete all"
             "files related to the {0} lineage?").format(config.certname)
     if not display.yesno(msg, default=False):
-        reporter = zope.component.getUtility(interfaces.IReporter)
+        reporter_util = zope.component.getUtility(interfaces.IReporter)
         msg = ('Not deleting revoked certificate lineage {0}. '
                 'Warning: revoked certs could be autorenewed! '
                 "For deletion at a later time, please see the `delete`"
                 "subcommand's documentation.".format(config.certname))
-        reporter.add_message(''.join(msg), reporter.MEDIUM_PRIORITY)
+        reporter_util.add_message(''.join(msg), reporter_util.MEDIUM_PRIORITY)
         return
     else:
         cert_manager.delete(config)

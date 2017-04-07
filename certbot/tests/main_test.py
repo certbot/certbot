@@ -342,6 +342,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
     @mock.patch('certbot.cert_manager.delete')
     @test_util.patch_get_utility()
     def test_noninteractive_deletion_is_disabled(self, mock_get_utility, mock_delete):
+        # pylint: disable = unused-argument
         config = self.config
         config.namespace.noninteractive_mode = True
         config.certname = ""
@@ -363,7 +364,6 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         mock_delete.assert_called_once()
 
     # pylint: disable=too-many-arguments
-    # pylint: disable=unused-argument
     @mock.patch('certbot.cert_manager.delete')
     @mock.patch('certbot.cert_manager.human_readable_cert_info')
     @mock.patch('certbot.storage.RenewableCert')
@@ -375,6 +375,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
             mock_lineage_for_certname, cert_path_to_lineage,
             mock_renewal_file_for_certname, mock_RenewableCert,
             mock_human_readable_cert_info, mock_delete):
+        # pylint: disable=unused-argument
         config = self.config
         config.certname = "example.com"
         config.cert_path = "/some/reasonable/path"
