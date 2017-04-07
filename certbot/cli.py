@@ -104,7 +104,7 @@ More detailed help:
 
 
 # These argparse parameters should be removed when detecting defaults.
-ARGPARSE_PARAMS_TO_REMOVE = ("const", "nargs", "type",)
+ARGPARSE_PARAMS_TO_REMOVE = ("const", "type",)
 
 
 # These sets are used when to help detect options set by the user.
@@ -556,6 +556,8 @@ class HelpfulArgumentParser(object):
         if parsed_args.must_staple:
             parsed_args.staple = True
 
+        parsed_args.passphrase = None
+
         return parsed_args
 
     def set_test_server(self, parsed_args):
@@ -610,7 +612,6 @@ class HelpfulArgumentParser(object):
             raise errors.ConfigurationError(
                 "Inconsistent domain requests:\nFrom the CSR: {0}\nFrom command line/config: {1}"
                 .format(", ".join(csr_domains), ", ".join(config_domains)))
-
 
     def determine_verb(self):
         """Determines the verb/subcommand provided by the user.
@@ -984,6 +985,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         "security", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
+    helpful.add(
+        "security", "--encrypt-private-key", metavar="CIPHER",
+        dest="cipher", nargs='?', const='sha256', default=None,
+        help="Use a passphrase to encrypt the private key (default: False)")
     helpful.add(
         "security", "--must-staple", action="store_true",
         help=config_help("must_staple"), dest="must_staple", default=False)
