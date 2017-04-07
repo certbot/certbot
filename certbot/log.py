@@ -1,4 +1,17 @@
-"""Logging utilities for Certbot."""
+"""Logging utilities for Certbot.
+
+The best way to use this module is through `pre_arg_parse_setup` and
+`post_arg_parse_setup`. `pre_arg_parse_setup` configures a minimal
+terminal logger and ensures a detailed log is written to a secure
+temporary file if Certbot exits before `post_arg_parse_setup` is called.
+`post_arg_parse_setup` relies on the parsed command line arguments and
+does the full logging setup with terminal and rotating file handling as
+configured by the user. Any logged messages before
+`post_arg_parse_setup` is called are sent to the rotating file handler.
+Special care is taken by both methods to ensure all errors are logged
+and properly flushed before program exit.
+
+"""
 from __future__ import print_function
 import functools
 import logging
@@ -27,15 +40,16 @@ def pre_arg_parse_setup():
     """Setup logging before command line arguments are parsed.
 
     Terminal logging is setup using
-    certbot.constants.QUIET_LOGGING_LEVEL so Certbot is as quiet as
+    `certbot.constants.QUIET_LOGGING_LEVEL` so Certbot is as quiet as
     possible. File logging is setup so that logging messages are
-    buffered in memory so they can either be written to a temporary
-    file before Certbot exits or to the normal logfiles once command
-    line arguments are parsed.
+    buffered in memory. If Certbot exits before `post_arg_parse_setup`
+    is called, these buffered messages are written to a temporary file.
+    If Certbot doesn't exit, `post_arg_parse_setup` writes the messages
+    to the normal log files.
 
-    This function also sets logging.shutdown to be called on program
-    exit which automatically flushes logging handlers and sys.excepthook
-    to properly log/display fatal exceptions.
+    This function also sets `logging.shutdown` to be called on program
+    exit which automatically flushes logging handlers and
+    `sys.excepthook` to properly log/display fatal exceptions.
 
     """
     temp_handler = TempHandler()
@@ -60,11 +74,11 @@ def pre_arg_parse_setup():
 def post_arg_parse_setup(config):
     """Setup logging after command line arguments are parsed.
 
-    This function assumes pre_arg_setup() was called earlier and the
-    root logging configuration has not been modified. A rotating file
-    logging handler is created and the buffered log messages are sent
-    to that handler. Terminal logging output is set the level requested
-    by the user.
+    This function assumes `pre_arg_parse_setup` was called earlier and
+    the root logging configuration has not been modified. A rotating
+    file logging handler is created and the buffered log messages are
+    sent to that handler. Terminal logging output is set to the level
+    requested by the user.
 
     :param certbot.interface.IConfig config: Configuration object
 
@@ -138,13 +152,16 @@ class ColoredStreamHandler(logging.StreamHandler):
     """Sends colored logging output to a stream.
 
     If the specified stream is not a tty, the class works like the
-    standard logging.StreamHandler. Default red_level is logging.WARNING.
+    standard `logging.StreamHandler`. Default red_level is
+    `logging.WARNING`.
 
     :ivar bool colored: True if output should be colored
     :ivar bool red_level: The level at which to output
 
     """
     def __init__(self, stream=None):
+        # logging handlers use old style classes in Python 2.6 so
+        # super() cannot be used
         if sys.version_info < (2, 7):  # pragma: no cover
             logging.StreamHandler.__init__(self, stream)
         else:
@@ -174,13 +191,16 @@ class ColoredStreamHandler(logging.StreamHandler):
 class MemoryHandler(logging.handlers.MemoryHandler):
     """Buffers logging messages in memory until the buffer is flushed.
 
-    This differs from logging.handlers.MemoryHandler in that flushing
-    only happens when it is done explicitly.
+    This differs from `logging.handlers.MemoryHandler` in that flushing
+    only happens when it is done explicitly by calling flush() or
+    close().
 
     """
     def __init__(self, target=None):
         # capacity doesn't matter because should_flush() is overridden
         capacity = float('inf')
+        # logging handlers use old style classes in Python 2.6 so
+        # super() cannot be used
         if sys.version_info < (2, 7):  # pragma: no cover
             logging.handlers.MemoryHandler.__init__(
                 self, capacity, target=target)
@@ -209,6 +229,8 @@ class TempHandler(logging.StreamHandler):
     """
     def __init__(self):
         stream = tempfile.NamedTemporaryFile('w', delete=False)
+        # logging handlers use old style classes in Python 2.6 so
+        # super() cannot be used
         if sys.version_info < (2, 7):  # pragma: no cover
             logging.StreamHandler.__init__(self, stream)
         else:
@@ -231,6 +253,8 @@ class TempHandler(logging.StreamHandler):
         """
         self.acquire()
         try:
+            # StreamHandler.close() doesn't close the stream to allow a
+            # stream like stderr to be used
             self.stream.close()
             if delete:
                 os.remove(self.path)
