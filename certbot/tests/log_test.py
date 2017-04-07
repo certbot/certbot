@@ -25,14 +25,14 @@ class PreArgParseSetupTest(unittest.TestCase):
         from certbot.log import pre_arg_parse_setup
         return pre_arg_parse_setup(*args, **kwargs)
 
-    def test_it(self):
-        with mock.patch('certbot.log.util.atexit_register') as mock_register:
-            with mock.patch('certbot.log.logging.getLogger') as mock_get:
-                with mock.patch('certbot.log.except_hook') as mock_except_hook:
-                    with mock.patch('certbot.log.sys') as mock_sys:
-                        mock_sys.argv = ['--debug']
-                        mock_sys.version_info = sys.version_info
-                        self._call()
+    @mock.patch('certbot.log.sys')
+    @mock.patch('certbot.log.except_hook')
+    @mock.patch('certbot.log.logging.getLogger')
+    @mock.patch('certbot.log.util.atexit_register')
+    def test_it(self, mock_register, mock_get, mock_except_hook, mock_sys):
+        mock_sys.argv = ['--debug']
+        mock_sys.version_info = sys.version_info
+        self._call()
 
         mock_register.assert_called_once_with(logging.shutdown)
         mock_sys.excepthook(1, 2, 3)
