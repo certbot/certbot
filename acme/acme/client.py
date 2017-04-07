@@ -360,14 +360,18 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         # priority queue with datetime.datetime (based on Retry-After) as key,
         # and original Authorization Resource as value
-        waiting = [(datetime.datetime.now(), authzr) for authzr in authzrs]
+        waiting = [
+            (datetime.datetime.now(), index, authzr)
+            for index, authzr in enumerate(authzrs)
+        ]
+        heapq.heapify(waiting)
         # mapping between original Authorization Resource and the most
         # recently updated one
         updated = dict((authzr, authzr) for authzr in authzrs)
 
         while waiting:
             # find the smallest Retry-After, and sleep if necessary
-            when, authzr = heapq.heappop(waiting)
+            when, index, authzr = heapq.heappop(waiting)
             now = datetime.datetime.now()
             if when > now:
                 seconds = (when - now).seconds
@@ -386,7 +390,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                 if attempts[authzr] < max_attempts:
                     # push back to the priority queue, with updated retry_after
                     heapq.heappush(waiting, (self.retry_after(
-                        response, default=mintime), authzr))
+                        response, default=mintime), index, authzr))
                 else:
                     exhausted.add(authzr)
 
