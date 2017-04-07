@@ -942,6 +942,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              " upgrading itself to newer released versions (default: Upgrade"
              " automatically)")
     helpful.add(
+        "automation", "--no-bootstrap", action="store_true",
+        help="(certbot-auto only) prevent the certbot-auto script from"
+             " installing OS-level dependencies (default: Prompt to install "
+             " OS-wide dependencies, but exit if the user says 'No')")
+    helpful.add(
         ["automation", "renew", "certonly", "run"],
         "-q", "--quiet", dest="quiet", action="store_true",
         help="Silence all output except errors. Useful for automation via cron."
@@ -1167,8 +1172,6 @@ def _paths_parser(helpful):
         help="Logs directory.")
     add("paths", "--server", default=flag_default("server"),
         help=config_help("server"))
-    add("paths", "--lock-path", default=flag_default("lock_path"),
-        help=config_help('lock_path'))
 
 
 def _plugins_parsing(helpful, plugins):

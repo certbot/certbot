@@ -1,47 +1,36 @@
 """Certbot main entry point."""
 from __future__ import print_function
-import atexit
-import functools
 import logging.handlers
 import os
 import sys
-import time
-import traceback
 
-import fasteners
 import zope.component
 
 from acme import jose
-from acme import messages
 from acme import errors as acme_errors
 
 import certbot
 
 from certbot import account
 from certbot import cert_manager
-from certbot import client
 from certbot import cli
-from certbot import crypto_util
-from certbot import colored_logging
+from certbot import client
 from certbot import configuration
 from certbot import constants
+from certbot import crypto_util
 from certbot import eff
 from certbot import errors
 from certbot import hooks
 from certbot import interfaces
-from certbot import util
-from certbot import reporter
+from certbot import log
 from certbot import renewal
+from certbot import reporter
+from certbot import util
 
 from certbot.display import util as display_util, ops as display_ops
 from certbot.plugins import disco as plugins_disco
 from certbot.plugins import selection as plug_sel
 
-
-_PERM_ERR_FMT = os.linesep.join((
-    "The following error was encountered:", "{0}",
-    "If running as non-root, set --config-dir, "
-    "--work-dir, and --logs-dir to writeable paths."))
 
 USER_CANCELLED = ("User chose to cancel the operation and may "
                   "reinvoke the client.")
@@ -418,10 +407,10 @@ def unregister(config, unused_plugins):
         return "Deactivation aborted."
 
     acc, acme = _determine_account(config)
-    acme_client = client.Client(config, acc, None, None, acme=acme)
+    cb_client = client.Client(config, acc, None, None, acme=acme)
 
     # delete on boulder
-    acme_client.acme.deactivate_registration(acc.regr)
+    cb_client.acme.deactivate_registration(acc.regr)
     account_files = account.AccountFileStorage(config)
     # delete local account files
     account_files.delete(config.account)
@@ -463,11 +452,11 @@ def register(config, unused_plugins):
         config.email = display_ops.get_email(optional=False)
 
     acc, acme = _determine_account(config)
-    acme_client = client.Client(config, acc, None, None, acme=acme)
+    cb_client = client.Client(config, acc, None, None, acme=acme)
     # We rely on an exception to interrupt this process if it didn't work.
-    acc.regr = acme_client.acme.update_registration(acc.regr.update(
+    acc.regr = cb_client.acme.update_registration(acc.regr.update(
         body=acc.regr.body.update(contact=('mailto:' + config.email,))))
-    account_storage.save_regr(acc, acme_client.acme)
+    account_storage.save_regr(acc, cb_client.acme)
     eff.handle_subscription(config)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
 
@@ -705,138 +694,11 @@ def renew(config, unused_plugins):
         hooks.run_saved_post_hooks()
 
 
-def setup_log_file_handler(config, logfile, fmt):
-    """Setup file debug logging."""
-    log_file_path = os.path.join(config.logs_dir, logfile)
-    try:
-        handler = logging.handlers.RotatingFileHandler(
-            log_file_path, maxBytes=2 ** 20, backupCount=1000)
-    except IOError as error:
-        raise errors.Error(_PERM_ERR_FMT.format(error))
-    # rotate on each invocation, rollover only possible when maxBytes
-    # is nonzero and backupCount is nonzero, so we set maxBytes as big
-    # as possible not to overrun in single CLI invocation (1MB).
-    handler.doRollover()  # TODO: creates empty letsencrypt.log.1 file
-    handler.setLevel(logging.DEBUG)
-    handler_formatter = logging.Formatter(fmt=fmt)
-    handler_formatter.converter = time.gmtime  # don't use localtime
-    handler.setFormatter(handler_formatter)
-    return handler, log_file_path
-
-
-def _cli_log_handler(level, fmt):
-    handler = colored_logging.StreamHandler()
-    handler.setFormatter(logging.Formatter(fmt))
-    handler.setLevel(level)
-    return handler
-
-
-def setup_logging(config):
-    """Sets up logging to logfiles and the terminal.
-
-    :param certbot.interface.IConfig config: Configuration object
-
-    """
-    cli_fmt = "%(message)s"
-    file_fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
-    logfile = "letsencrypt.log"
-    if config.quiet:
-        level = constants.QUIET_LOGGING_LEVEL
-    else:
-        level = -config.verbose_count * 10
-    file_handler, log_file_path = setup_log_file_handler(
-        config, logfile=logfile, fmt=file_fmt)
-    cli_handler = _cli_log_handler(level, cli_fmt)
-
-    # TODO: use fileConfig?
-
-    root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)  # send all records to handlers
-    root_logger.addHandler(cli_handler)
-    root_logger.addHandler(file_handler)
-
-    logger.debug("Root logging level set at %d", level)
-    logger.info("Saving debug log to %s", log_file_path)
-
-
-def _handle_exception(exc_type, exc_value, trace, config):
-    """Logs exceptions and reports them to the user.
-
-    Config is used to determine how to display exceptions to the user. In
-    general, if config.debug is True, then the full exception and traceback is
-    shown to the user, otherwise it is suppressed. If config itself is None,
-    then the traceback and exception is attempted to be written to a logfile.
-    If this is successful, the traceback is suppressed, otherwise it is shown
-    to the user. sys.exit is always called with a nonzero status.
-
-    """
-    tb_str = "".join(traceback.format_exception(exc_type, exc_value, trace))
-    logger.debug("Exiting abnormally:%s%s", os.linesep, tb_str)
-
-    if issubclass(exc_type, Exception) and (config is None or not config.debug):
-        if config is None:
-            logfile = "certbot.log"
-            try:
-                with open(logfile, "w") as logfd:
-                    traceback.print_exception(
-                        exc_type, exc_value, trace, file=logfd)
-                assert "--debug" not in sys.argv  # config is None if this explodes
-            except:  # pylint: disable=bare-except
-                sys.exit(tb_str)
-            if "--debug" in sys.argv:
-                sys.exit(tb_str)
-
-        if issubclass(exc_type, errors.Error):
-            sys.exit(exc_value)
-        else:
-            # Here we're passing a client or ACME error out to the client at the shell
-            # Tell the user a bit about what happened, without overwhelming
-            # them with a full traceback
-            err = traceback.format_exception_only(exc_type, exc_value)[0]
-            # Typical error from the ACME module:
-            # acme.messages.Error: urn:ietf:params:acme:error:malformed :: The
-            # request message was malformed :: Error creating new registration
-            # :: Validation of contact mailto:none@longrandomstring.biz failed:
-            # Server failure at resolver
-            if (messages.is_acme_error(err) and ":: " in err and
-                 config.verbose_count <= cli.flag_default("verbose_count")):
-                # prune ACME error code, we have a human description
-                _code, _sep, err = err.partition(":: ")
-            msg = "An unexpected error occurred:\n" + err + "Please see the "
-            if config is None:
-                msg += "logfile '{0}' for more details.".format(logfile)
-            else:
-                msg += "logfiles in {0} for more details.".format(config.logs_dir)
-            sys.exit(msg)
-    else:
-        sys.exit(tb_str)
-
-
-def make_or_verify_core_dir(directory, mode, uid, strict):
-    """Make sure directory exists with proper permissions.
-
-    :param str directory: Path to a directory.
-    :param int mode: Directory mode.
-    :param int uid: Directory owner.
-    :param bool strict: require directory to be owned by current user
-
-    :raises .errors.Error: if the directory cannot be made or verified
-
-    """
-    try:
-        util.make_or_verify_dir(directory, mode, uid, strict)
-    except OSError as error:
-        raise errors.Error(_PERM_ERR_FMT.format(error))
-
 def make_or_verify_needed_dirs(config):
-    """Create or verify existence of config, work, or logs directories"""
-    make_or_verify_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
+    """Create or verify existence of config and work directories"""
+    util.make_or_verify_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
                             os.geteuid(), config.strict_permissions)
-    make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
-                            os.geteuid(), config.strict_permissions)
-    # TODO: logs might contain sensitive data such as contents of the
-    # private key! #525
-    make_or_verify_core_dir(config.logs_dir, 0o700,
+    util.make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
                             os.geteuid(), config.strict_permissions)
 
 
@@ -867,59 +729,9 @@ def _post_logging_setup(config, plugins, cli_args):
     logger.debug("Discovered plugins: %r", plugins)
 
 
-def acquire_file_lock(lock_path):
-    """Obtain a lock on the file at the specified path.
-
-    :param str lock_path: path to the file to be locked
-
-    :returns: lock file object representing the acquired lock
-    :rtype: fasteners.InterProcessLock
-
-    :raises .Error: if the lock is held by another process
-
-    """
-    lock = fasteners.InterProcessLock(lock_path)
-    logger.debug("Attempting to acquire lock file %s", lock_path)
-
-    try:
-        lock.acquire(blocking=False)
-    except IOError as err:
-        logger.debug(err)
-        logger.warning(
-            "Unable to access lock file %s. You should set --lock-file "
-            "to a writeable path to ensure multiple instances of "
-            "Certbot don't attempt modify your configuration "
-            "simultaneously.", lock_path)
-    else:
-        if not lock.acquired:
-            raise errors.Error(
-                "Another instance of Certbot is already running.")
-
-    return lock
-
-
-def _run_subcommand(config, plugins):
-    """Executes the Certbot subcommand specified in the configuration.
-
-    :param .IConfig config: parsed configuration object
-    :param .PluginsRegistry plugins: available plugins
-
-    :returns: return value from the specified subcommand
-    :rtype: str or int
-
-    """
-    lock = acquire_file_lock(config.lock_path)
-
-    try:
-        return config.func(config, plugins)
-    finally:
-        if lock.acquired:
-            lock.release()
-
-
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
-    sys.excepthook = functools.partial(_handle_exception, config=None)
+    log.pre_arg_parse_setup()
     plugins = plugins_disco.PluginsRegistry.find_all()
 
     # note: arg parser internally handles --help (and exits afterwards)
@@ -929,22 +741,18 @@ def main(cli_args=sys.argv[1:]):
 
     make_or_verify_needed_dirs(config)
 
-    # Setup logging ASAP, otherwise "No handlers could be found for
-    # logger ..." TODO: this should be done before plugins discovery
-    setup_logging(config)
+    log.post_arg_parse_setup(config)
 
     _post_logging_setup(config, plugins, cli_args)
-
-    sys.excepthook = functools.partial(_handle_exception, config=config)
 
     set_displayer(config)
 
     # Reporter
     report = reporter.Reporter(config)
     zope.component.provideUtility(report)
-    atexit.register(report.atexit_print_messages)
+    util.atexit_register(report.print_messages)
 
-    return _run_subcommand(config, plugins)
+    return config.func(config, plugins)
 
 
 if __name__ == "__main__":
