@@ -617,8 +617,8 @@ def _csr_get_and_save_cert(config, le_client):
     have the privkey, and therefore can't construct the files for a lineage.
     So we just save the cert & chain to disk :/
     """
-    csr, typ = config.actual_csr
-    certr, chain = le_client.obtain_certificate_from_csr(config.domains, csr, typ)
+    csr, _ = config.actual_csr
+    certr, chain = le_client.obtain_certificate_from_csr(config.domains, csr)
     if config.dry_run:
         logger.debug(
             "Dry run: skipping saving certificate to %s", config.cert_path)
