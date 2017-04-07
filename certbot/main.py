@@ -411,10 +411,10 @@ def _delete_if_appropriate(config):
 
         if cert_name_implied_cert_path != config.cert_path:
             cert_path_implied_cert_name = cert_manager.cert_path_to_lineage(config)
-            cert_path_implied_conf = storage.renewal_file_for_certname(config, 
+            cert_path_implied_conf = storage.renewal_file_for_certname(config,
                     cert_path_implied_cert_name)
             cert_path_cert = storage.RenewableCert(cert_path_implied_conf, config)
-            cert_path_info = cert_manager.human_readable_cert_info(config, cert_path_cert, 
+            cert_path_info = cert_manager.human_readable_cert_info(config, cert_path_cert,
                     skip_filter_checks=True)
 
             cert_name_implied_conf = storage.renewal_file_for_certname(config, config.certname)

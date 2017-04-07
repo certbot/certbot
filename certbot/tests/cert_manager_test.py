@@ -467,5 +467,15 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
         self.assertEqual(result, (None, None))
 
 
+class CertPathToLineageTest(BaseCertManagerTest):
+    """Test for certbot.cert_manager.cert_path_to_lineage"""
+
+    @mock.patch('certbot.cert_manager._search_lineages')
+    def test_cert_path_to_lineage_error(self, mock_search_lineages):
+        mock_search_lineages.return_value = None
+        from certbot.cert_manager import cert_path_to_lineage
+        self.assertRaises(errors.Error, cert_path_to_lineage, self.cli_config)
+
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

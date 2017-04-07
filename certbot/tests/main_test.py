@@ -363,6 +363,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         mock_delete.assert_called_once()
 
     # pylint: disable=too-many-arguments
+    # pylint: disable=unused-argument
     @mock.patch('certbot.cert_manager.delete')
     @mock.patch('certbot.cert_manager.human_readable_cert_info')
     @mock.patch('certbot.storage.RenewableCert')
