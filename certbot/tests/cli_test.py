@@ -64,8 +64,9 @@ class ParseTest(unittest.TestCase):
 
     @mock.patch("certbot.cli.flag_default")
     def test_cli_ini_domains(self, mock_flag_default):
-        tmp = tempfile.NamedTemporaryFile()
-        shim = lambda name: constants.CLI_DEFAULTS[name] if name != "config_files" else [tmp.name]
+        tmp_config = tempfile.NamedTemporaryFile()
+        # use a shim to get ConfigArgParse to pick up tmp_config
+        shim = lambda v: constants.CLI_DEFAULTS[v] if v != "config_files" else [tmp_config.name]
         mock_flag_default.side_effect = shim
 
         namespace = self.parse(["certonly"])
