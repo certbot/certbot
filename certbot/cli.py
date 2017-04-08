@@ -515,6 +515,12 @@ class HelpfulArgumentParser(object):
 
         return usage
 
+    def remove_config_file_domains_for_renewal(self, parsed_args):
+        """Make "certbot renew" safe if domains are set in cli.ini."""
+        if self.verb == "renew":
+            for source, flags in self.parser._source_to_settings.items(): # pylint: disable=protected-access
+                if source.startswith("config_file") and "domains" in flags:
+                    parsed_args.domains = _Default() if self.detect_defaults else []
 
     def parse_args(self):
         """Parses command line arguments and returns the result.
@@ -526,6 +532,8 @@ class HelpfulArgumentParser(object):
         parsed_args = self.parser.parse_args(self.args)
         parsed_args.func = self.VERBS[self.verb]
         parsed_args.verb = self.verb
+
+        self.remove_config_file_domains_for_renewal(parsed_args)
 
         if self.detect_defaults:
             return parsed_args
