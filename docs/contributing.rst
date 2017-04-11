@@ -39,17 +39,18 @@ Then in each shell where you're working on the client, do:
 .. code-block:: shell
 
    source ./venv/bin/activate
+   export SERVER=https://acme-staging.api.letsencrypt.org/directory
+   source tests/integration/_common.sh
 
 After that, your shell will be using the virtual environment, and you run the
-client by typing:
+client by typing `certbot` or `certbot_test`. The latter is an alias that
+includes several flags useful for testing. For instance, it sets various output
+directories to point to /tmp/, and uses non-privileged ports for challenges, so
+root privileges are not required.
 
-.. code-block:: shell
-
-   certbot
-
-Activating a shell in this way makes it easier to run unit tests
-with ``tox`` and integration tests, as described below. To reverse this, you
-can type ``deactivate``.  More information can be found in the `virtualenv docs`_.
+Activating a shell with `venv/bin/activate` sets environment variables so that
+Python pulls in the correct versions of various packages needed by Certbot.
+More information can be found in the `virtualenv docs`_.
 
 .. _`virtualenv docs`: https://virtualenv.pypa.io
 
@@ -115,6 +116,14 @@ and working. Fetch and start Boulder using:
 
 If you have problems with Docker, you may want to try `removing all containers and
 volumes`_ and making sure you have at least 1GB of memory.
+
+Set up a certbot_test alias that enables easily running against the local
+Boulder:
+
+.. code-block:: shell
+
+   export SERVER=http://localhost:4000/directory
+   source tests/integration/_common.sh
 
 Run the integration tests using:
 
