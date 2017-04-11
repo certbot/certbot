@@ -6,17 +6,17 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-* `--debug-challenges` pauses Certbot after setting up challenges for debugging.
-* The Nginx parser can handle all valid directives in configuration files.
-* Nginx ciphersuites changed to Mozilla Intermediate.
-* `certbot-auto --no-bootstrap` won't install OS dependencies.
+* `--debug-challenges` now pauses Certbot after setting up challenges for debugging.
+* The Nginx parser can now handle all valid directives in configuration files.
+* Nginx ciphersuites have changed to Mozilla Intermediate.
+* `certbot-auto --no-bootstrap` provides the option to not install OS dependencies.
 
 ### Fixed
 
-* `--register-unsafely-without-email` respects `--quiet`.
-* Hyphenated renewalparams are now saved in renewal config files.
+* `--register-unsafely-without-email` now respects `--quiet`.
+* Hyphenated renewal parameters are now saved in renewal config files.
 * `--dry-run` no longer persists keys and csrs.
-* No longer hangs when trying to start Nginx in Arch Linux.
+* Certbot no longer hangs when trying to start Nginx in Arch Linux.
 * Apache rewrite rules no longer double-encode characters.
 
 A full list of changes is available on GitHub:
@@ -26,12 +26,12 @@ https://github.com/certbot/certbot/issues?q=is%3Aissue%20milestone%3A0.13.0%20is
 
 ### Added
 
-* Allow non-camelcase Apache VirtualHost names
-* Allow more log messages to be silenced
+* Certbot now allows non-camelcase Apache VirtualHost names.
+* Certbot now allows more log messages to be silenced.
 
 ### Fixed
 
-* Fix a regression around using `--cert-name` when getting new certificates
+* Fixed a regression around using `--cert-name` when getting new certificates
 
 More information about these changes can be found on our GitHub repo:
 https://github.com/certbot/certbot/issues?q=is%3Aissue%20milestone%3A0.12.0
@@ -40,9 +40,9 @@ https://github.com/certbot/certbot/issues?q=is%3Aissue%20milestone%3A0.12.0
 
 ### Fixed
 
-* Resolve a problem where Certbot would crash while parsing command line
+* Resolved a problem where Certbot would crash while parsing command line
 arguments in some cases.
-* Fix a typo.
+* Fixed a typo.
 
 More details about these changes can be found on our GitHub repo:
 https://github.com/certbot/certbot/pulls?q=is%3Apr%20milestone%3A0.11.1%20is%3Aclosed
@@ -51,10 +51,9 @@ https://github.com/certbot/certbot/pulls?q=is%3Apr%20milestone%3A0.11.1%20is%3Ac
 
 ### Added
 
-* The UI has been improved in the standalone plugin. When using the
-plugin while running Certbot interactively and a required port is bound
-by another process, Certbot will give you the option to retry to grab
-the port rather than immediately exiting.
+* When using the standalone plugin while running Certbot interactively 
+and a required port is bound by another process, Certbot will give you
+the option to retry to grab the port rather than immediately exiting.
 * You are now able to deactivate your account with the Let's Encrypt
 server using the `unregister` subcommand.
 * When revoking a certificate using the `revoke` subcommand, you now
@@ -67,7 +66,7 @@ to Let's Encrypt with `--reason`.
 
 ### Removed
 
-* Removal of the optional `dnspython` dependency in our `acme` package.
+* Removed the optional `dnspython` dependency in our `acme` package.
 Now the library does not support client side verification of the DNS
 challenge.
 
@@ -78,17 +77,17 @@ https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.11.0+is%3Ac
 
 ### Added
 
-* If Certbot receives a request with a `badNonce` error, we
-automatically retry the request. Since nonces from Let's Encrypt expire,
+* If Certbot receives a request with a `badNonce` error, it now
+automatically retries the request. Since nonces from Let's Encrypt expire,
 this helps people performing the DNS challenge with the `manual` plugin
 who may have to wait an extended period of time for their DNS changes to
 propagate.
 
 ### Fixed
 
-* We now save `--preferred-challenges` values for renewal. Previously
-these values were discarded causing a different challenge type to be
-used when renewing certs in some cases.
+* Certbot now saves the `--preferred-challenges` values for renewal. Previously
+these values were discarded causing a different challenge type to be used when
+renewing certs in some cases.
 
 More details about these changes can be found on our GitHub repo:
 https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.10.2+is%3Aclosed
@@ -126,9 +125,9 @@ certificate with the `certonly` and `run` subcommands so a full list of
 domains in the certificate does not have to be provided.
 * Added subcommand `certificates` for listing the certificates managed by
 Certbot and their properties.
-* Added `delete` subcommand for removing certificates managed by Certbot
+* Added the `delete` subcommand for removing certificates managed by Certbot
 from the configuration directory.
-* Support requesting internationalized domain names (IDNs).
+* Certbot now supports requesting internationalized domain names (IDNs).
 * Hooks provided to Certbot are now saved to be reused during renewal.
 If you run Certbot with `--pre-hook`, `--renew-hook`, or `--post-hook`
 flags when obtaining a certificate, the provided commands will
@@ -171,7 +170,7 @@ as the tests were failing in some cases.
 
 ### Changed
 
-* Adopt more conservative behavior about reporting a needed port as
+* Certbot adopted more conservative behavior about reporting a needed port as
 unavailable when using the standalone plugin.
 
 More details about these changes can be found on our GitHub repo:
@@ -181,17 +180,17 @@ https://github.com/certbot/certbot/milestone/27?closed=1
 
 ### Added
 
-* Stop requiring that all possibly required ports are available when
-using the standalone plugin. Only verify the ports are available when
-you know they are necessary.
+* Certbot stoped requiring that all possibly required ports are available when
+using the standalone plugin. It now only verifies that the ports are available
+when they are necessary.
 
 ### Fixed
 
-* Verify that our optional dependencies version matches what is
+* Certbot now verifies that our optional dependencies version matches what is
 required by Certbot.
-* Ensure we properly copy `ssl on;` directives as necessary when
+* Certnot now properly copies the `ssl on;` directives as necessary when
 performing domain validation in the Nginx plugin.
-* Fix problems where symlinks were becoming files when they were
+* Fixed problem where symlinks were becoming files when they were
 packaged, causing errors during testing and OS packaging.
 
 More details about these changes can be found on our GitHub repo:
@@ -201,7 +200,7 @@ https://github.com/certbot/certbot/milestone/26?closed=1
 
 ### Fixed
 
-* Fix a bug that was introduced in version 0.9.0 where the command
+* Fixed a bug that was introduced in version 0.9.0 where the command
 line flag -q/--quiet wasn't respected in some cases.
 
 More details about these changes can be found on our GitHub repo:
@@ -211,7 +210,7 @@ https://github.com/certbot/certbot/milestone/25?closed=1
 
 ### Added
 
-* Add an alpha version of the Nginx plugin. This plugin fully automates the
+* Added an alpha version of the Nginx plugin. This plugin fully automates the
 process of obtaining and installing certificates with Nginx.
 Additionally, it is able to automatically configure security
 enhancements such as an HTTP to HTTPS redirect and OCSP stapling. To use
@@ -220,12 +219,12 @@ is installed automatically when using `certbot-auto`) and provide
 `--nginx` on the command line. This plugin is still in its early stages
 so we recommend you use it with some caution and make sure you have a
 backup of your Nginx configuration.
-* Support the `DNS` challenge in the `acme` library and `DNS` in
+* Added support for the `DNS` challenge in the `acme` library and `DNS` in
 Certbot's `manual` plugin. This allows you to create DNS records to
 prove to Let's Encrypt you control the requested domain name. To use
 this feature, include `--manual --preferred-challenges dns` on the
 command line.
-* Help with enabling Extra Packages for Enterprise Linux (EPEL) on
+* Certbot now helps with enabling Extra Packages for Enterprise Linux (EPEL) on
 CentOS 6 when using `certbot-auto`. To use `certbot-auto` on CentOS 6,
 the EPEL repository has to be enabled. `certbot-auto` will now prompt
 users asking them if they would like the script to enable this for them
@@ -240,14 +239,14 @@ https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.9.0+is%3Acl
 
 ### Added
 
-* Preserve a certificate's common name when using `renew`
-* Save webroot values for renewal when they are entered interactively
-* Gracefully report the Apache plugin isn't usable when Augeas is not installed
-* Experimental support for Mageia has been added to `certbot-auto`
+* Certbot now preserves a certificate's common name when using `renew`.
+* Certbot now saves webroot values for renewal when they are entered interactively.
+* Certbot now gracefully reports that the Apache plugin isn't usable when Augeas is not installed.
+* Added experimental support for Mageia has been added to `certbot-auto`.
 
 ### Fixed
 
-* Fix problems with an invalid user-agent string on OS X
+* Fixed problems with an invalid user-agent string on OS X.
 
 More details about these changes can be found on our GitHub repo:
 https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.8.1+
@@ -256,9 +255,9 @@ https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.8.1+
 
 ### Added
 
-* The main new feature in this release is the `register` subcommand which
-can be used to register an account with the Let's Encrypt CA.
-* Additionally, you can run `certbot register --update-registration` to
+* Added the `register` subcommand which can be used to register an account
+with the Let's Encrypt CA.
+* You can now run `certbot register --update-registration` to
 change the e-mail address associated with your registration.
 
 More details about these changes can be found on our GitHub repo:
@@ -269,14 +268,14 @@ https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.8.0+
 ### Added
 
 * Added `--must-staple` to request certificates from Let's Encrypt
-with the OCSP must staple extension
-* Automatically configure OSCP stapling for Apache
-* Allow requesting certificates for domains found in the common name
-of a custom CSR
+with the OCSP must staple extension.
+* Certbot now automatically configures OSCP stapling for Apache.
+* Certbot now allows requesting certificates for domains found in the common name
+of a custom CSR.
 
 ### Fixed
 
-* Miscellaneous bug fixes
+* Fixed a number of miscellaneous bugs
 
 More details about these changes can be found on our GitHub repo:
 https://github.com/certbot/certbot/issues?q=milestone%3A0.7.0+is%3Aissue
@@ -285,17 +284,17 @@ https://github.com/certbot/certbot/issues?q=milestone%3A0.7.0+is%3Aissue
 
 ### Added
 
-* Versioned the datetime dependency in setup.py
+* Versioned the datetime dependency in setup.py.
 
 ### Changed
 
-* Renamed the client from `letsencrypt` to `certbot`
+* Renamed the client from `letsencrypt` to `certbot`.
 
 ### Fixed
 
-* Fixed a small json deserialization error
-* Preserve domain order in generated CSRs
-* Some minor bug fixes
+* Fixed a small json deserialization error.
+* Certbot now preserves domain order in generated CSRs.
+* Fixed some minor bugs.
 
 More details about these changes can be found on our GitHub repo:
 https://github.com/certbot/certbot/issues?q=is%3Aissue%20milestone%3A0.6.0%20is%3Aclosed%20
@@ -304,21 +303,21 @@ https://github.com/certbot/certbot/issues?q=is%3Aissue%20milestone%3A0.6.0%20is%
 
 ### Added
 
-* Add the ability to use the webroot plugin interactively.
-* The flags --pre-hook, --post-hook, and --renew-hook can be used with
+* Added the ability to use the webroot plugin interactively.
+* Added the flags --pre-hook, --post-hook, and --renew-hook which can be used with
 the renew subcommand to register shell commands to run in response to
 renewal events. Pre-hook commands will be run before any certs are
 renewed, post-hook commands will be run after any certs are renewed,
 and renew-hook commands will be run after each cert is renewed. If no
 certs are due for renewal, no command is run.
-* A -q/--quiet flag which silences all output except errors.
-* An --allow-subset-of-domains flag which can be used with the renew
+* Added a -q/--quiet flag which silences all output except errors.
+* Added an --allow-subset-of-domains flag which can be used with the renew
 command to prevent renewal failures for a subset of the requested
 domains from causing the client to exit.
 
 ### Changed
 
-* Use cleaner renewal configuration files. In /etc/letsencrypt/renewal
+* Certbot now uses renewal configuration files. In /etc/letsencrypt/renewal
 by default, these files can be used to control what parameters are
 used when renewing a specific certificate.
 
@@ -329,10 +328,10 @@ https://github.com/letsencrypt/letsencrypt/issues?q=milestone%3A0.5.0+is%3Aissue
 
 ### Fixed
 
-* Resolves problems encountered when compiling letsencrypt
+* Resolved problems encountered when compiling letsencrypt
 against the new OpenSSL release.
-* A patch fixing problems of using `letsencrypt renew` with configuration files
-from private beta has been added.
+* Fixed problems encountered when using `letsencrypt renew` with configuration files
+from the private beta.
 
 More details about these changes can be found on our GitHub repo:
 https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aissue+milestone%3A0.4.2
@@ -341,10 +340,10 @@ https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aissue+milestone%3A0.4.2
 
 ### Fixed
 
-* Fix Apache parsing errors with some configurations
-* Fix Werkzeug dependency problems on some Red Hat systems
-* Fix bootstrapping failures when using letsencrypt-auto with --no-self-upgrade
-* Fix problems with parsing renewal config files from private beta
+* Fixed Apache parsing errors encountered with some configurations.
+* Fixed Werkzeug dependency problems encountered on some Red Hat systems.
+* Fixed bootstrapping failures when using letsencrypt-auto with --no-self-upgrade.
+* Fixed problems with parsing renewal config files from private beta.
 
 More details about these changes can be found on our GitHub repo:
 https://github.com/letsencrypt/letsencrypt/issues?q=is:issue+milestone:0.4.1
@@ -353,23 +352,23 @@ https://github.com/letsencrypt/letsencrypt/issues?q=is:issue+milestone:0.4.1
 
 ### Added
 
-* The new verb/subcommand `renew` can be used to renew your existing
+* Added the verb/subcommand `renew` which can be used to renew your existing
 certificates as they approach expiration. Running `letsencrypt renew`
 will examine all existing certificate lineages and determine if any are
 less than 30 days from expiration. If so, the client will use the
 settings provided when you previously obtained the certificate to renew
 it. The subcommand finishes by printing a summary of which renewals were
 successful, failed, or not yet due.
-* A `--dry-run` flag has been added to help with testing configuration
+* Added a `--dry-run` flag to help with testing configuration
 without affecting production rate limits. Currently supported by the
 `renew` and `certonly` subcommands, providing `--dry-run` on the command
 line will obtain certificates from the staging server without saving the
 resulting certificates to disk.
-* Major improvements have been added to letsencrypt-auto. This script
+* Added major improvements to letsencrypt-auto. This script
 has been rewritten to include full support for Python 2.6, the ability
 for letsencrypt-auto to update itself, and improvements to the
 stability, security, and performance of the script.
-* Support for Apache 2.2 has been added to the Apache plugin.
+* Added support for Apache 2.2 to the Apache plugin.
 
 More details about these changes can be found on our GitHub repo:
 https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aissue+milestone%3A0.4.0
@@ -378,10 +377,10 @@ https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aissue+milestone%3A0.4.0
 
 ### Added
 
-* Add a non-interactive mode which can be enabled by including `-n` or
+* Added a non-interactive mode which can be enabled by including `-n` or
 `--non-interactive` on the command line. This can be used to guarantee
 the client will not prompt when run automatically using cron/systemd.
-* Preparation for the new letsencrypt-auto script. Over the past
+* Added preparation for the new letsencrypt-auto script. Over the past
 couple months, we've been working on increasing the reliability and
 security of letsencrypt-auto. A number of changes landed in this
 release to prepare for the new version of this script.
@@ -393,7 +392,7 @@ https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aissue+milestone%3A0.3.0
 
 ### Added
 
-* Apache plugin support for non-Debian based systems. Support has been
+* Added Apache plugin support for non-Debian based systems. Support has been
 added for modern Red Hat based systems such as Fedora 23, Red Hat 7,
 and CentOS 7 running Apache 2.4. In theory, this plugin should be
 able to be configured to run on any Unix-like OS running Apache 2.4.
@@ -403,7 +402,7 @@ with PyOpenSSL versions 0.13 or 0.14.
 
 ### Fixed
 
-* Resolves issues with the Apache plugin enabling an HTTP to HTTPS
+* Resolved issues with the Apache plugin enabling an HTTP to HTTPS
 redirect on some systems.
 
 More details about these changes can be found on our GitHub repo:
@@ -413,16 +412,16 @@ https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aissue+milestone%3A0.2.0
 
 ### Added
 
-* Avoids attempting to issue for unqualified domain names like
-"localhost"
+* Added a check that avoids attempting to issue for unqualified domain names like
+"localhost".
 
 ### Fixed
 
-* Fix a confusing UI path that caused some users to repeatedly renew
+* Fixed a confusing UI path that caused some users to repeatedly renew
 their certs while experimenting with the client, in some cases hitting
-issuance rate limits
-* Fix numerous Apache configuration parser problems
-* Fix --webroot permission handling for non-root users
+issuance rate limits.
+* Fixed numerous Apache configuration parser problems
+* Fixed --webroot permission handling for non-root users
 
 More details about these changes can be found on our GitHub repo:
 https://github.com/letsencrypt/letsencrypt/issues?q=milestone%3A0.1.1
