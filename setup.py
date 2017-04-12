@@ -36,24 +36,25 @@ version = meta['version']
 # https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
     'acme=={0}'.format(version),
-    'argparse',
+    'argparse<2.0',
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
     # saying so here causes a runtime error against our temporary fork of 0.9.3
     # in which we added 2.6 support (see #2243), so we relax the requirement.
-    'ConfigArgParse>=0.9.3',
-    'configobj',
-    'cryptography>=0.7',  # load_pem_x509_certificate
-    'mock',
-    'parsedatetime>=1.3',  # Calendar.parseDT
-    'PyOpenSSL',
-    'pyrfc3339',
+    'ConfigArgParse>=0.9.3,<0.12',
+    'configobj<6.0',
+    'cryptography>=0.7,<2.0',  # load_pem_x509_certificate
+    'mock<3.0',
+    'parsedatetime>=1.3,<3.0',  # Calendar.parseDT
+    'PyOpenSSL<17.0',
+    'pyrfc3339<2.0',
+    # pytz provides a dataset that changes over time, so we don't pin it:
     'pytz',
     # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
     # will tolerate; see #2599:
     'setuptools>=1.0',
-    'six',
-    'zope.component',
-    'zope.interface',
+    'six<2.0',
+    'zope.component<5.0',
+    'zope.interface<5.0',
 ]
 
 dev_extras = [

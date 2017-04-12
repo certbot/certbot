@@ -10,13 +10,13 @@ version = '0.14.0.dev0'
 install_requires = [
     'acme=={0}'.format(version),
     'certbot=={0}'.format(version),
-    'mock',
+    'mock<3.0',
     'python-augeas<=0.5.0',
     # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
     # will tolerate; see #2599:
     'setuptools>=1.0',
-    'zope.component',
-    'zope.interface',
+    'zope.component<5.0',
+    'zope.interface<5.0',
 ]
 
 docs_extras = [

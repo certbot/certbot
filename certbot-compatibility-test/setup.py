@@ -9,16 +9,16 @@ version = '0.14.0.dev0'
 install_requires = [
     'certbot',
     'certbot-apache',
-    'mock',
-    'six',
-    'requests',
-    'zope.interface',
+    'mock<3.0',
+    'six<2.0',
+    'requests>=2.0,<3.0',
+    'zope.interface<5.0',
 ]
 
 if sys.version_info < (2, 7, 9):
     # For secure SSL connexion with Python 2.7 (InsecurePlatformWarning)
-    install_requires.append('ndg-httpsclient')
-    install_requires.append('pyasn1')
+    install_requires.append('ndg-httpsclient<0.5')
+    install_requires.append('pyasn1<0.3')
 
 docs_extras = [
     'repoze.sphinx.autointerface',
