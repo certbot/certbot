@@ -15,6 +15,7 @@ import tarfile
 import tempfile
 import textwrap
 
+import six
 
 _DESCRIPTION = """
 Let's Help is a simple script you can run to help out the Certbot
@@ -69,7 +70,7 @@ def make_and_verify_selection(server_root, temp_dir):
 
     sys.stdout.write("\nIs it safe to submit these files? ")
     while True:
-        ans = raw_input("(Y)es/(N)o: ").lower()
+        ans = six.moves.input("(Y)es/(N)o: ").lower()
         if ans.startswith("y"):
             return
         elif ans.startswith("n"):
@@ -144,7 +145,8 @@ def safe_config_file(config_file):
         return False
 
     proc = subprocess.Popen(["file", config_file],
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            universal_newlines=True)
     file_output, _ = proc.communicate()
 
     if "ASCII" in file_output:

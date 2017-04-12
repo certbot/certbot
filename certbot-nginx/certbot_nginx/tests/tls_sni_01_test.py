@@ -3,6 +3,7 @@ import unittest
 import shutil
 
 import mock
+import six
 
 from acme import challenges
 
@@ -23,25 +24,25 @@ class TlsSniPerformTest(util.NginxTest):
     achalls = [
         achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
-                challenges.TLSSNI01(token="kNdwjwOeX0I_A8DXt9Msmg"), "pending"),
+                challenges.TLSSNI01(token=b"kNdwjwOeX0I_A8DXt9Msmg"), "pending"),
             domain="www.example.com", account_key=account_key),
         achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
                 challenges.TLSSNI01(
-                    token="\xba\xa9\xda?<m\xaewmx\xea\xad\xadv\xf4\x02\xc9y"
-                          "\x80\xe2_X\t\xe7\xc7\xa4\t\xca\xf7&\x945"
+                    token=b"\xba\xa9\xda?<m\xaewmx\xea\xad\xadv\xf4\x02\xc9y"
+                          b"\x80\xe2_X\t\xe7\xc7\xa4\t\xca\xf7&\x945"
                 ), "pending"),
             domain="another.alias", account_key=account_key),
         achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
                 challenges.TLSSNI01(
-                    token="\x8c\x8a\xbf_-f\\cw\xee\xd6\xf8/\xa5\xe3\xfd"
-                          "\xeb9\xf1\xf5\xb9\xefVM\xc9w\xa4u\x9c\xe1\x87\xb4"
+                    token=b"\x8c\x8a\xbf_-f\\cw\xee\xd6\xf8/\xa5\xe3\xfd"
+                          b"\xeb9\xf1\xf5\xb9\xefVM\xc9w\xa4u\x9c\xe1\x87\xb4"
                 ), "pending"),
             domain="www.example.org", account_key=account_key),
         achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
-                challenges.TLSSNI01(token="kNdwjxOeX0I_A8DXt9Msmg"), "pending"),
+                challenges.TLSSNI01(token=b"kNdwjxOeX0I_A8DXt9Msmg"), "pending"),
             domain="sslon.com", account_key=account_key),
     ]
 
@@ -49,7 +50,7 @@ class TlsSniPerformTest(util.NginxTest):
         super(TlsSniPerformTest, self).setUp()
 
         config = util.get_nginx_configurator(
-            self.config_path, self.config_dir, self.work_dir)
+            self.config_path, self.config_dir, self.work_dir, self.logs_dir)
 
         from certbot_nginx import tls_sni_01
         self.sni = tls_sni_01.NginxTlsSni01(config)
@@ -117,7 +118,7 @@ class TlsSniPerformTest(util.NginxTest):
             util.contains_at_depth(http, ['server_name', 'another.alias'], 3))
 
         self.assertEqual(len(sni_responses), 4)
-        for i in xrange(4):
+        for i in six.moves.range(4):
             self.assertEqual(sni_responses[i], acme_responses[i])
 
     def test_mod_config(self):
@@ -148,7 +149,7 @@ class TlsSniPerformTest(util.NginxTest):
             else:
                 response = self.achalls[2].response(self.account_key)
                 self.assertEqual(vhost.addrs, set(v_addr2_print))
-            self.assertEqual(vhost.names, set([response.z_domain]))
+            self.assertEqual(vhost.names, set([response.z_domain.decode('ascii')]))
 
         self.assertEqual(len(vhs), 2)
 

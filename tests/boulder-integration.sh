@@ -1,18 +1,17 @@
-#!/bin/sh -xe
+#!/bin/bash
 # Simple integration test. Make sure to activate virtualenv beforehand
 # (source venv/bin/activate) and that you are running Boulder test
-# instance (see ./boulder-start.sh).
+# instance (see ./boulder-fetch.sh).
 #
 # Environment variables:
 #   SERVER: Passed as "certbot --server" argument.
 #
 # Note: this script is called by Boulder integration test suite!
 
+set -eux
+
 . ./tests/integration/_common.sh
 export PATH="$PATH:/usr/sbin"  # /usr/sbin/nginx
-
-export GOPATH="${GOPATH:-/tmp/go}"
-export PATH="$GOPATH/bin:$PATH"
 
 if [ `uname` = "Darwin" ];then
   readlink="greadlink"
@@ -27,6 +26,14 @@ cleanup_and_exit() {
         echo Kill server subprocess, left running by abnormal exit
         kill $SERVER_STILL_RUNNING
     fi
+    # Dump boulder logs in case they contain useful debugging information.
+    : "------------------ ------------------ ------------------"
+    : "------------------ begin boulder logs ------------------"
+    : "------------------ ------------------ ------------------"
+    docker logs boulder_boulder_1
+    : "------------------ ------------------ ------------------"
+    : "------------------  end boulder logs  ------------------"
+    : "------------------ ------------------ ------------------"
     exit $EXIT_STATUS
 }
 
@@ -99,6 +106,8 @@ common certonly -a manual -d le.wtf --rsa-key-size 4096 \
 
 common certonly -a manual -d dns.le.wtf --preferred-challenges dns,tls-sni \
     --manual-auth-hook ./tests/manual-dns-auth.sh
+
+common certonly --cert-name newname -d newname.le.wtf
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
        OPENSSL_CNF=examples/openssl.cnf

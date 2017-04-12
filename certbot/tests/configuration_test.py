@@ -120,6 +120,12 @@ class NamespaceConfigTest(unittest.TestCase):
         self.assertTrue(os.path.isabs(config.live_dir))
         self.assertTrue(os.path.isabs(config.renewal_configs_dir))
 
+    def test_get_and_set_attr(self):
+        self.config.foo = 42
+        self.assertEqual(self.config.namespace.foo, 42)
+        self.config.namespace.bar = 1337
+        self.assertEqual(self.config.bar, 1337)
+
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
