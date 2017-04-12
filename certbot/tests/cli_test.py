@@ -71,8 +71,8 @@ class ParseTest(unittest.TestCase):
 
         namespace = self.parse(["certonly"])
         self.assertEqual(namespace.domains, [])
-        tmp.write("domains = example.com")
-        tmp.flush()
+        tmp_config.write("domains = example.com")
+        tmp_config.flush()
         namespace = self.parse(["certonly"])
         self.assertEqual(namespace.domains, ["example.com"])
         namespace = self.parse(["renew"])
