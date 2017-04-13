@@ -262,6 +262,7 @@ using the ``--cert-name`` flag to specify a particular certificate for the ``run
 
   certbot certonly --cert-name example.com
 
+.. _updating_certs:
 
 Re-creating and Updating Existing Certificates
 ----------------------------------------------
@@ -311,7 +312,7 @@ abuse of the ACME protocol, as described
 `here <https://community.letsencrypt.org/t/rate-limits-for-lets-encrypt/6769>`__.
 
 Changing a Certificate's Domains
---------------------------------
+================================
 
 The ``--cert-name`` flag can also be used to modify the domains a certificate contains,
 by specifying new domains using the ``-d`` or ``--domains`` flag. If certificate ``example.com``
