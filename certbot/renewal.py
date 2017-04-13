@@ -79,7 +79,7 @@ def _reconstitute(config, full_path):
     except (ValueError, errors.Error) as error:
         logger.warning(
             "An error occurred while parsing %s. The error was %s. "
-            "Skipping the file.", full_path, error.message)
+            "Skipping the file.", full_path, str(error))
         logger.debug("Traceback was:\n%s", traceback.format_exc())
         return None
 

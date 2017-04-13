@@ -378,10 +378,59 @@ then restart it after the plugin is finished. Example::
 
   certbot renew --pre-hook "service nginx stop" --post-hook "service nginx start"
 
-The hooks will only be
-run if a certificate is due for renewal, so you can run this command
-frequently without unnecessarily stopping your webserver. More
-information about renewal hooks can be found by running
+If a hook exits with a non-zero exit code, the error will be printed
+to ``stderr`` but renewal will be attempted anyway. A failing hook
+doesn't directly cause Certbot to exit with a non-zero exit code, but
+since Certbot exits with a non-zero exit code when renewals fail, a
+failed hook causing renewal failures will indirectly result in a
+non-zero exit code. Hooks will only be run if a certificate is due for
+renewal, so you can run the above command frequently without
+unnecessarily stopping your webserver.
+
+``--pre-hook`` and ``--post-hook`` hooks run before and after every renewal
+attempt. If you want your hook to run only after a successful renewal, use
+``--renew-hook`` in a command like this.
+
+``certbot renew --renew-hook /path/to/renew-hook-script``
+
+For example, if you have a daemon that does not read its certificates as the
+root user, a renew hook like this can copy them to the correct location and
+apply appropriate file permissions.
+
+/path/to/renew-hook-script
+
+.. code-block:: none
+
+   #!/bin/sh
+
+   set -e
+
+   for domain in $RENEWED_DOMAINS; do
+           case $domain in
+           example.com)
+                   daemon_cert_root=/etc/some-daemon/certs
+
+                   # Make sure the certificate and private key files are
+                   # never world readable, even just for an instant while
+                   # we're copying them into daemon_cert_root.
+                   umask 077
+
+                   cp "$RENEWED_LINEAGE/fullchain.pem" "$daemon_cert_root/$domain.cert"
+                   cp "$RENEWED_LINEAGE/privkey.pem" "$daemon_cert_root/$domain.key"
+
+                   # Apply the proper file ownership and permissions for
+                   # the daemon to read its certificate and key.
+                   chown some-daemon "$daemon_cert_root/$domain.cert" \
+                           "$daemon_cert_root/$domain.key"
+                   chmod 400 "$daemon_cert_root/$domain.cert" \
+                           "$daemon_cert_root/$domain.key"
+
+                   service some-daemon restart >/dev/null
+                   ;;
+           esac
+   done
+
+ More information about renewal hooks can be found by running
 ``certbot --help renew``.
 
 If you're sure that this command executes successfully without human
