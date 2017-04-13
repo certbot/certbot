@@ -904,7 +904,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "'run' subcommand this means reinstall the existing cert). (default: Ask)")
     helpful.add(
         "automation", "--expand", action="store_true",
-        help="If an existing cert covers some subset of the requested names, "
+        help="If an existing cert is a strict subset of the requested names, "
              "always expand and replace it with the additional names. (default: Ask)")
     helpful.add(
         "automation", "--version", action="version",

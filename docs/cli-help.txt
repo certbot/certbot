@@ -99,7 +99,7 @@ automation:
                         keep the existing one until it is due for renewal (for
                         the 'run' subcommand this means reinstall the existing
                         cert). (default: Ask)
-  --expand              If an existing cert covers some subset of the
+  --expand              If an existing cert is a strict subset of the
                         requested names, always expand and replace it with the
                         additional names. (default: Ask)
   --version             show program's version number and exit
