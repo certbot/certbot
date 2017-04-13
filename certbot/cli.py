@@ -19,6 +19,7 @@ import certbot
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
+from certbot import hooks
 from certbot import interfaces
 from certbot import util
 
@@ -564,6 +565,11 @@ class HelpfulArgumentParser(object):
 
         if parsed_args.must_staple:
             parsed_args.staple = True
+
+        if parsed_args.validate_hooks:
+            hooks.validate_hooks(parsed_args)
+
+        possible_deprecation_warning(parsed_args)
 
         return parsed_args
 
