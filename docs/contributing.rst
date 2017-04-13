@@ -26,7 +26,8 @@ If you're on macOS, we recommend you skip the rest of this section and instead
 run Certbot in Docker. You can find instructions for how to do this :ref:`here
 <docker>`. If you're running on Linux, you can run the following commands to
 install dependencies and set up a virtual environment where you can run
-Certbot. You only need to do this once.
+Certbot. You will need to repeat this when Certbot's dependencies change or when
+a new plugin is introduced.
 
 .. code-block:: shell
 
@@ -177,8 +178,8 @@ challenges: HTTP, TLS-SNI, and DNS, represented by classes in `acme.challenges`.
 An authenticator plugin should implement support for at least one challenge type.
 
 An Authenticator indicates which challenges it supports by implementing
-get_chall_pref(domain) to return a sorted list of challenge types in preference
-order.
+`get_chall_pref(domain)` to return a sorted list of challenge types in
+preference order.
 
 An Authenticator must also implement `perform(achalls)`, which "performs" a list
 of challenges by, for instance, provisioning a file on an HTTP server, or
@@ -228,9 +229,10 @@ Writing your own plugin
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 Certbot client supports dynamic discovery of plugins through the
-`setuptools entry points`_. This way you can, for example, create a
-custom implementation of `~certbot.interfaces.IAuthenticator` or
-the `~certbot.interfaces.IInstaller` without having to merge it
+`setuptools entry points`_ using the `certbot.plugins` group. This
+way you can, for example, create a custom implementation of
+`~certbot.interfaces.IAuthenticator` or the
+`~certbot.interfaces.IInstaller` without having to merge it
 with the core upstream source code. An example is provided in
 ``examples/plugins/`` directory.
 
@@ -238,6 +240,7 @@ While developing, you can install your plugin into a Certbot development
 virtualenv like this:
 
 .. code-block:: shell
+
   . venv/bin/activate
   . tests/integration/_common.sh
   pip install -e examples/plugins/
