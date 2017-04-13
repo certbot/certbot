@@ -30,7 +30,14 @@ CURRENT_VERSION = util.get_strict_version(certbot.__version__)
 
 
 def renewal_conf_files(config):
-    """Return /path/to/*.conf in the renewal conf directory"""
+    """Build a list of all renewal configuration files.
+
+    :param certbot.interfaces.IConfig config: Configuration object
+
+    :returns: list of renewal configuration files
+    :rtype: `list` of `str`
+
+    """
     return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
 
 def renewal_file_for_certname(config, certname):
