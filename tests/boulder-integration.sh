@@ -82,7 +82,7 @@ CheckHooks() {
 
 # We start a server listening on the port for the
 # unrequested challenge to prevent regressions in #3601.
-python -m SimpleHTTPServer $http_01_port &
+python ./tests/run_http_server.py $http_01_port &
 python_server_pid=$!
 
 common --domains le1.wtf --preferred-challenges tls-sni-01 auth \
@@ -90,7 +90,7 @@ common --domains le1.wtf --preferred-challenges tls-sni-01 auth \
        --post-hook 'echo wtf.post >> "$HOOK_TEST"'\
        --renew-hook 'echo renew >> "$HOOK_TEST"'
 kill $python_server_pid
-python -m SimpleHTTPServer $tls_sni_01_port &
+python ./tests/run_http_server.py $tls_sni_01_port &
 python_server_pid=$!
 common --domains le2.wtf --preferred-challenges http-01 run \
        --pre-hook 'echo wtf.pre >> "$HOOK_TEST"' \
