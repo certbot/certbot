@@ -427,7 +427,7 @@ For squeeze you will need to:
 FreeBSD
 -------
 
-Packages can be installed FreeBSD using ``pkg``, 
+Packages can be installed on FreeBSD using ``pkg``, 
 or any other port-management tool (``portupgrade``, ``portmanager``, etc.) 
 from the pre-built package or can be built and installed from ports. 
 Either way will ensure proper installation of all the dependencies required 
