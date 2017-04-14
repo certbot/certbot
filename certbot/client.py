@@ -59,9 +59,9 @@ def determine_user_agent(config):
         else:
             auto = "other"
         ua = ("CertbotACMEClient/{0} ({1}; {2}) Authenticator/{3} Installer/{4} "
-              "({5}; renewing:{6}) Py/{7}")
+              "({5}) Py/{7}")
         ua = ua.format(certbot.__version__, auto, util.get_os_info_ua(),
-                       config.authenticator, config.installer, config.verb, config.renewing,
+                       config.authenticator, config.installer, config.verb,
                        platform.python_version())
     else:
         ua = config.user_agent
@@ -76,7 +76,6 @@ def sample_user_agent():
             self.installer = "YYY"
             self.user_agent = None
             self.verb = "SUBCOMMAND"
-            self.renewing = "YESNOMAYBE"
     return determine_user_agent(DummyConfig())
 
 
