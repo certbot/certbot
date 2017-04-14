@@ -20,7 +20,7 @@ Certificates and Lineages
 =========================
 
 Certbot introduces the concept of a *lineage,* which is a collection of all the versions of a certificate
-plus additional information that Certbot uses to maintain the configuration of your webserver from
+plus Certbot configuration information maintained for that certificate from
 renewal to renewal. Whenever you renew a certificate, Certbot keeps the same configuration unless
 you explicitly change it. If you add domains, you can either add them to an existing lineage or create
 a new one. 
