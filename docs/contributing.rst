@@ -439,8 +439,12 @@ For squeeze you will need to:
 FreeBSD
 -------
 
-Package installation for FreeBSD uses ``pkg``, not ports.
+Packages can be installed on FreeBSD using ``pkg``, 
+or any other port-management tool (``portupgrade``, ``portmanager``, etc.) 
+from the pre-built package or can be built and installed from ports. 
+Either way will ensure proper installation of all the dependencies required 
+for the package.
 
 FreeBSD by default uses ``tcsh``. In order to activate virtualenv (see
-below), you will need a compatible shell, e.g. ``pkg install bash &&
+above), you will need a compatible shell, e.g. ``pkg install bash &&
 bash``.
