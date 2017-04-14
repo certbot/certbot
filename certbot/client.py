@@ -58,10 +58,13 @@ def determine_user_agent(config):
             auto = cli.cli_command
         else:
             auto = "other"
+        flags = "dup" if config.duplicate else ""
+        flags += "force" if config.renew_by_default else ""
+
         ua = ("CertbotACMEClient/{0} ({1}; {2}) Authenticator/{3} Installer/{4} "
-              "({5}) Py/{7}")
+              "({5}; flags: {6}) Py/{7}")
         ua = ua.format(certbot.__version__, auto, util.get_os_info_ua(),
-                       config.authenticator, config.installer, config.verb,
+                       config.authenticator, config.installer, config.verb, flags,
                        platform.python_version())
     else:
         ua = config.user_agent
