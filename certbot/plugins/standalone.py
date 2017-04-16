@@ -37,10 +37,11 @@ class ServerManager(object):
     """
     _Instance = collections.namedtuple("_Instance", "server thread")
 
-    def __init__(self, certs, http_01_resources):
+    def __init__(self, certs, http_01_resources, config):
         self._instances = {}
         self.certs = certs
         self.http_01_resources = http_01_resources
+        self.config = config
 
     def run(self, port, challenge_type):
         """Run ACME server on specified ``port``.
@@ -65,8 +66,12 @@ class ServerManager(object):
             if challenge_type is challenges.TLSSNI01:
                 server = acme_standalone.TLSSNI01Server(address, self.certs)
             else:  # challenges.HTTP01
-                server = acme_standalone.HTTP01Server(
-                    address, self.http_01_resources)
+                if not self.config.http01_use_tls:
+                    server = acme_standalone.HTTP01Server(
+                        address, self.http_01_resources)
+                else:  # HTTP01 with TLS
+                    server = acme_standalone.HTTP01TLSServer(
+                        address, self.http_01_resources)
         except socket.error as error:
             raise errors.StandaloneBindError(error, port)
 
@@ -178,7 +183,8 @@ class Authenticator(common.Plugin):
         self.certs = {}
         self.http_01_resources = set()
 
-        self.servers = ServerManager(self.certs, self.http_01_resources)
+        self.servers = ServerManager(
+            self.certs, self.http_01_resources, self.config)
 
     @classmethod
     def add_parser_arguments(cls, add):

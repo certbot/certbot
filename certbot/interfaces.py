@@ -235,6 +235,12 @@ class IConfig(zope.interface.Interface):
         "This only affects the port Certbot listens on. "
         "A conforming ACME server will still attempt to connect on port 80.")
 
+    http01_use_tls = zope.interface.Attribute(
+        "Runs the standalone server with a self signed certificate. "
+        "Useful for when you need to validate an http-01 challenge with "
+        "an https endpoint or if you have an upstream proxy redirecting "
+        "all http traffic to https.")
+
 
 class IInstaller(IPlugin):
     """Generic Certbot Installer Interface.

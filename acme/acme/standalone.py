@@ -4,6 +4,7 @@ import collections
 import functools
 import logging
 import os
+import ssl
 import sys
 
 from six.moves import BaseHTTPServer  # type: ignore  # pylint: disable=import-error
@@ -79,6 +80,29 @@ class HTTP01Server(BaseHTTPServer.HTTPServer, ACMEServerMixin):
                 simple_http_resources=resources))
 
 
+class HTTP01TLSServer(socketserver.TCPServer, ACMEServerMixin):
+    """HTTP01 TLS challenge handler."""
+
+    def __init__(self, server_address, resources):
+        self.cert_path = self.cert_descriptor = None
+
+        socketserver.TCPServer.__init__(self, server_address,
+                                        HTTP01RequestHandler.partial_init(
+                                            simple_http_resources=resources))
+
+        self.cert_descriptor, self.cert_path = (
+            crypto_util.create_bogus_certificate())
+
+        self.socket = ssl.wrap_socket(  # create the tls socket
+            self.socket, certfile=self.cert_path, server_side=True)
+
+    def __del__(self):
+        if self.cert_descriptor is not None:
+            os.close(self.cert_descriptor)
+        if self.cert_path is not None:
+            os.remove(self.cert_path)
+
+
 class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     """HTTP01 challenge handler.
 
@@ -116,13 +140,16 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         """Handle index page."""
         self.send_response(200)
         self.send_header("Content-Type", "text/html")
+        self.send_header("Content-Length",
+                         str(len(self.server.server_version.encode())))
         self.end_headers()
         self.wfile.write(self.server.server_version.encode())
 
     def handle_404(self):
         """Handler 404 Not Found errors."""
         self.send_response(http_client.NOT_FOUND, message="Not Found")
-        self.send_header("Content-type", "text/html")
+        self.send_header("Content-Type", "text/html")
+        self.send_header("Content-Length", str(len(b"404")))
         self.end_headers()
         self.wfile.write(b"404")
 
@@ -133,6 +160,8 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 self.log_message("Serving HTTP01 with token %r",
                                  resource.chall.encode("token"))
                 self.send_response(http_client.OK)
+                self.send_header("Content-Length",
+                                 str(len(resource.validation.encode())))
                 self.end_headers()
                 self.wfile.write(resource.validation.encode())
                 return

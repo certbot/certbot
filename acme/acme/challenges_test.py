@@ -185,7 +185,7 @@ class HTTP01ResponseTest(unittest.TestCase):
         mock_get.return_value = mock.MagicMock(text=validation)
         self.assertTrue(self.response.simple_verify(
             self.chall, "local", KEY.public_key()))
-        mock_get.assert_called_once_with(self.chall.uri("local"))
+        mock_get.assert_called_once_with(self.chall.uri("local"), verify=False)
 
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_bad_validation(self, mock_get):
@@ -201,7 +201,7 @@ class HTTP01ResponseTest(unittest.TestCase):
                   HTTP01Response.WHITESPACE_CUTSET))
         self.assertTrue(self.response.simple_verify(
             self.chall, "local", KEY.public_key()))
-        mock_get.assert_called_once_with(self.chall.uri("local"))
+        mock_get.assert_called_once_with(self.chall.uri("local"), verify=False)
 
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_connection_error(self, mock_get):

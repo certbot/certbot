@@ -28,6 +28,7 @@ CLI_DEFAULTS = dict(
     logs_dir="/var/log/letsencrypt",
     no_verify_ssl=False,
     http01_port=challenges.HTTP01Response.PORT,
+    http01_use_tls=False,
     tls_sni_01_port=challenges.TLSSNI01Response.PORT,
 
     auth_cert_path="./cert.pem",

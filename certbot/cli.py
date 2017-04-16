@@ -993,6 +993,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         dest="http01_port",
         default=flag_default("http01_port"), help=config_help("http01_port"))
     helpful.add(
+        ["certonly", "renew"], "--http-01-use-tls", action="store_true",
+        dest="http01_use_tls", default=flag_default("http01_use_tls"),
+        help=config_help("http01_use_tls"))
+    helpful.add(
         "testing", "--break-my-certs", action="store_true",
         help="Be willing to replace or renew valid certs with invalid "
              "(testing/staging) certs")

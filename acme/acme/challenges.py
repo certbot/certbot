@@ -306,7 +306,7 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
         uri = chall.uri(domain)
         logger.debug("Verifying %s at %s...", chall.typ, uri)
         try:
-            http_response = requests.get(uri)
+            http_response = requests.get(uri, verify=False)
         except requests.exceptions.RequestException as error:
             logger.error("Unable to reach %s: %s", uri, error)
             return False

@@ -6,6 +6,7 @@ import tempfile
 import time
 import unittest
 
+from six.moves import BaseHTTPServer  # pylint: disable=import-error
 from six.moves import http_client  # pylint: disable=import-error
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
 
@@ -110,6 +111,63 @@ class HTTP01ServerTest(unittest.TestCase):
 
     def test_http01_not_found(self):
         self.assertFalse(self._test_http01(add=False))
+
+
+#  pylint: disable=no-init
+class RedirectHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+    """Creates a simple http -> https redirect for testing"""
+    port = None
+
+    def do_GET(self):  # pylint: disable=invalid-name,missing-docstring
+        # pylint: disable=no-member
+        self.send_response(301)
+        self.send_header(
+            'Location', 'https://localhost:{0}{1}'.format(self.port, self.path))
+        self.end_headers()
+
+    def log_message(self, fmt, *args):  # pylint: disable=missing-docstring
+        pass
+
+
+class HTTP01TLSServerTest(HTTP01ServerTest):
+    """Tests for acme.standalone.HTTP01Server."""
+
+    def setUp(self):
+        # disable insecure requests warning, obviously they are not secure!
+        from requests.packages.urllib3.exceptions import InsecureRequestWarning
+        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+        self.account_key = jose.JWK.load(
+            test_util.load_vector('rsa1024_key.pem'))
+        self.resources = set()
+
+        # pylint: disable=no-member
+        self.redirect_server = socketserver.TCPServer(('', 0), RedirectHandler)
+        self.port = self.redirect_server.socket.getsockname()[1]
+        self.redirect_thread = threading.Thread(
+            target=self.redirect_server.serve_forever)
+        self.redirect_thread.start()
+
+        from acme.standalone import HTTP01TLSServer
+        self.server = HTTP01TLSServer(('', 0), self.resources)
+        self.thread = threading.Thread(target=self.server.serve_forever)
+        self.thread.start()
+
+        # make sure the redirect server directs to the port where the TLS
+        # server is running
+        RedirectHandler.port = self.server.socket.getsockname()[1]
+
+    def tearDown(self):
+        self.redirect_server.shutdown()  # pylint: disable=no-member
+        self.redirect_thread.join()
+
+        self.server.shutdown()  # pylint: disable=no-member
+        self.thread.join()
+
+    def test__del__(self):
+        certificate_file = self.server.certificate_file
+        self.server.__del__()
+        self.assertFalse(os.path.exists(certificate_file))
 
 
 class TestSimpleTLSSNI01Server(unittest.TestCase):

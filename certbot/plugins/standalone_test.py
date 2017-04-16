@@ -21,9 +21,12 @@ class ServerManagerTest(unittest.TestCase):
 
     def setUp(self):
         from certbot.plugins.standalone import ServerManager
+        from certbot.configuration import NamespaceConfig
         self.certs = {}
         self.http_01_resources = {}
-        self.mgr = ServerManager(self.certs, self.http_01_resources)
+        self.mgr = ServerManager(self.certs, self.http_01_resources,
+                                 NamespaceConfig(mock.MagicMock(
+                                     http01_use_tls=False)))
 
     def test_init(self):
         self.assertTrue(self.mgr.certs is self.certs)
@@ -42,6 +45,16 @@ class ServerManagerTest(unittest.TestCase):
 
     def test_run_stop_http_01(self):
         self._test_run_stop(challenges.HTTP01)
+
+    def test_run_stop_http_01_use_tls(self):
+        from certbot.plugins.standalone import ServerManager
+        from certbot.configuration import NamespaceConfig
+        old_mgr = self.mgr
+        self.mgr = ServerManager(self.certs, self.http_01_resources,
+                                 NamespaceConfig(mock.MagicMock(
+                                     http01_use_tls=True)))
+        self._test_run_stop(challenges.HTTP01)
+        self.mgr = old_mgr
 
     def test_run_idempotent(self):
         server = self.mgr.run(port=0, challenge_type=challenges.HTTP01)
