@@ -18,7 +18,7 @@ set -e  # Work even if somebody does "sh thisscript.sh".
 
 # HOME might not be defined when being run through something like systemd
 if [ -z "$HOME" ]; then
-  HOME=/root
+  HOME=~root
 fi
 if [ -z "$XDG_DATA_HOME" ]; then
   XDG_DATA_HOME=~/.local/share
