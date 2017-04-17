@@ -180,7 +180,7 @@ https://github.com/certbot/certbot/milestone/27?closed=1
 
 ### Added
 
-* Certbot stoped requiring that all possibly required ports are available when
+* Certbot stopped requiring that all possibly required ports are available when
 using the standalone plugin. It now only verifies that the ports are available
 when they are necessary.
 
