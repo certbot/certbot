@@ -5,9 +5,11 @@ import re
 import shutil
 import socket
 import subprocess
+import tempfile
 import time
 
 import OpenSSL
+import six
 import zope.interface
 
 from acme import challenges
@@ -30,16 +32,16 @@ from certbot_nginx import parser
 logger = logging.getLogger(__name__)
 
 REDIRECT_BLOCK = [[
-    ['\n    ', 'if', ' ', '($scheme != "https") '],
-    [['\n        ', 'return', ' ', '301 https://$host$request_uri'],
+    ['\n    ', 'if', ' ', '($scheme', ' ', '!=', ' ', '"https") '],
+    [['\n        ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
      '\n    ']
 ], ['\n']]
 
 TEST_REDIRECT_BLOCK = [
     [
-        ['if', '($scheme != "https")'],
+        ['if', '($scheme', '!=', '"https")'],
         [
-            ['return', '301 https://$host$request_uri']
+            ['return', '301', 'https://$host$request_uri']
         ]
     ],
     ['#', ' managed by Certbot']
@@ -262,7 +264,7 @@ class NginxConfigurator(common.Plugin):
         """
         if not matches:
             return None
-        elif matches[0]['rank'] in xrange(2, 6):
+        elif matches[0]['rank'] in six.moves.range(2, 6):
             # Wildcard match - need to find the longest one
             rank = matches[0]['rank']
             wildcards = [x for x in matches if x['rank'] == rank]
@@ -627,10 +629,11 @@ class NginxConfigurator(common.Plugin):
             proc = subprocess.Popen(
                 [self.conf('ctl'), "-c", self.nginx_conf, "-V"],
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
+                stderr=subprocess.PIPE,
+                universal_newlines=True)
             text = proc.communicate()[1]  # nginx prints output to stderr
         except (OSError, ValueError) as error:
-            logging.debug(error, exc_info=True)
+            logger.debug(error, exc_info=True)
             raise errors.PluginError(
                 "Unable to run %s -V" % self.conf('ctl'))
 
@@ -818,7 +821,7 @@ class NginxConfigurator(common.Plugin):
             self.restart()
 
 
-def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx.conf"):
+def nginx_restart(nginx_ctl, nginx_conf):
     """Restarts the Nginx Server.
 
     .. todo:: Nginx restart is fatal if the configuration references
@@ -829,22 +832,22 @@ def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx.conf"):
 
     """
     try:
-        proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf, "-s", "reload"],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-        stdout, stderr = proc.communicate()
+        proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf, "-s", "reload"])
+        proc.communicate()
 
         if proc.returncode != 0:
             # Maybe Nginx isn't running
-            nginx_proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf],
-                                          stdout=subprocess.PIPE,
-                                          stderr=subprocess.PIPE)
-            stdout, stderr = nginx_proc.communicate()
-
-            if nginx_proc.returncode != 0:
-                # Enter recovery routine...
-                raise errors.MisconfigurationError(
-                    "nginx restart failed:\n%s\n%s" % (stdout, stderr))
+            # Write to temporary files instead of piping because of communication issues on Arch
+            # https://github.com/certbot/certbot/issues/4324
+            with tempfile.TemporaryFile() as out:
+                with tempfile.TemporaryFile() as err:
+                    nginx_proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf],
+                        stdout=out, stderr=err)
+                    nginx_proc.communicate()
+                    if nginx_proc.returncode != 0:
+                        # Enter recovery routine...
+                        raise errors.MisconfigurationError(
+                            "nginx restart failed:\n%s\n%s" % (out.read(), err.read()))
 
     except (OSError, ValueError):
         raise errors.MisconfigurationError("nginx restart failed")

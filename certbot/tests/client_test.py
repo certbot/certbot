@@ -7,6 +7,7 @@ import unittest
 import OpenSSL
 import mock
 
+from acme import errors as acme_errors
 from acme import jose
 
 from certbot import account
@@ -17,7 +18,7 @@ import certbot.tests.util as test_util
 
 
 KEY = test_util.load_vector("rsa512_key.pem")
-CSR_SAN = test_util.load_vector("csr-san.der")
+CSR_SAN = test_util.load_vector("csr-san.pem")
 
 
 class ConfigHelper(object):
@@ -101,7 +102,7 @@ class RegisterTest(unittest.TestCase):
                     self.config.register_unsafely_without_email = True
                     self.config.dry_run = False
                     self._call()
-                    mock_logger.warning.assert_called_once_with(mock.ANY)
+                    mock_logger.info.assert_called_once_with(mock.ANY)
                     self.assertTrue(mock_handle.called)
 
     def test_unsupported_error(self):
@@ -164,15 +165,17 @@ class ClientTest(ClientTestCommon):
 
         self.acme.request_issuance.assert_called_once_with(
             jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
-                OpenSSL.crypto.FILETYPE_ASN1, CSR_SAN)),
+                OpenSSL.crypto.FILETYPE_PEM, CSR_SAN)),
             authzr)
 
         self.acme.fetch_chain.assert_called_once_with(mock.sentinel.certr)
 
     @mock.patch("certbot.client.logger")
-    def test_obtain_certificate_from_csr(self, mock_logger):
+    @test_util.patch_get_utility()
+    def test_obtain_certificate_from_csr(self, unused_mock_get_utility,
+                                         mock_logger):
         self._mock_obtain_certificate()
-        test_csr = util.CSR(form="der", file=None, data=CSR_SAN)
+        test_csr = util.CSR(form="pem", file=None, data=CSR_SAN)
         auth_handler = self.client.auth_handler
 
         authzr = auth_handler.get_authorizations(self.eg_domains, False)
@@ -203,11 +206,47 @@ class ClientTest(ClientTestCommon):
             test_csr)
         mock_logger.warning.assert_called_once_with(mock.ANY)
 
+    @test_util.patch_get_utility()
+    def test_obtain_certificate_from_csr_retry_succeeded(
+            self, mock_get_utility):
+        self._mock_obtain_certificate()
+        self.acme.fetch_chain.side_effect = [acme_errors.Error,
+                                             mock.sentinel.chain]
+        test_csr = util.CSR(form="der", file=None, data=CSR_SAN)
+        auth_handler = self.client.auth_handler
+
+        authzr = auth_handler.get_authorizations(self.eg_domains, False)
+        self.assertEqual(
+            (mock.sentinel.certr, mock.sentinel.chain),
+            self.client.obtain_certificate_from_csr(
+                self.eg_domains,
+                test_csr,
+                authzr=authzr))
+        self.assertEqual(1, mock_get_utility().notification.call_count)
+
+    @test_util.patch_get_utility()
+    def test_obtain_certificate_from_csr_retry_failed(self, mock_get_utility):
+        self._mock_obtain_certificate()
+        self.acme.fetch_chain.side_effect = acme_errors.Error
+        test_csr = util.CSR(form="der", file=None, data=CSR_SAN)
+        auth_handler = self.client.auth_handler
+
+        authzr = auth_handler.get_authorizations(self.eg_domains, False)
+        self.assertRaises(
+            acme_errors.Error,
+            self.client.obtain_certificate_from_csr,
+            self.eg_domains,
+            test_csr,
+            authzr=authzr)
+        self.assertEqual(1, mock_get_utility().notification.call_count)
+
     @mock.patch("certbot.client.crypto_util")
-    def test_obtain_certificate(self, mock_crypto_util):
+    @test_util.patch_get_utility()
+    def test_obtain_certificate(self, unused_mock_get_utility,
+                                mock_crypto_util):
         self._mock_obtain_certificate()
 
-        csr = util.CSR(form="der", file=None, data=CSR_SAN)
+        csr = util.CSR(form="pem", file=None, data=CSR_SAN)
         mock_crypto_util.init_save_csr.return_value = csr
         mock_crypto_util.init_save_key.return_value = mock.sentinel.key
         domains = ["example.com", "www.example.com"]

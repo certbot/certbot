@@ -174,6 +174,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Set Version
         if self.version is None:
             self.version = self.get_version()
+            logger.debug('Apache version is %s',
+                         '.'.join(str(i) for i in self.version))
         if self.version < (2, 2):
             raise errors.NotSupportedError(
                 "Apache Version %s not supported.", str(self.version))
@@ -254,9 +256,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise errors.PluginError(
                 "Unable to find cert and/or key directives")
 
-        logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
-        logger.debug("Apache version is %s",
-                     ".".join(str(i) for i in self.version))
+        logger.info("Deploying Certificate for %s to VirtualHost %s", domain, vhost.filep)
 
         if self.version < (2, 4, 8) or (chain_path and not fullchain_path):
             # install SSLCertificateFile, SSLCertificateKeyFile,
@@ -580,7 +580,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 ("/files%s//*[label()=~regexp('%s')]" %
                     (vhost_path, parser.case_i("VirtualHost"))))
             paths = [path for path in paths if
-                     os.path.basename(path) == "VirtualHost"]
+                     os.path.basename(path.lower()) == "virtualhost"]
             for path in paths:
                 new_vhost = self._create_vhost(path)
                 if not new_vhost:
@@ -1315,18 +1315,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             #     even with save() and load()
             if not self._is_rewrite_engine_on(general_vh):
                 self.parser.add_dir(general_vh.path, "RewriteEngine", "on")
+
             names = ssl_vhost.get_names()
             for idx, name in enumerate(names):
                 args = ["%{SERVER_NAME}", "={0}".format(name), "[OR]"]
                 if idx == len(names) - 1:
                     args.pop()
                 self.parser.add_dir(general_vh.path, "RewriteCond", args)
-            if self.get_version() >= (2, 3, 9):
-                self.parser.add_dir(general_vh.path, "RewriteRule",
-                                    constants.REWRITE_HTTPS_ARGS_WITH_END)
-            else:
-                self.parser.add_dir(general_vh.path, "RewriteRule",
-                                    constants.REWRITE_HTTPS_ARGS)
+
+            self._set_https_redirection_rewrite_rule(general_vh)
 
             self.save_notes += ("Redirecting host in %s to ssl vhost in %s\n" %
                                 (general_vh.filep, ssl_vhost.filep))
@@ -1336,11 +1333,23 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             logger.info("Redirecting vhost in %s to ssl vhost in %s",
                         general_vh.filep, ssl_vhost.filep)
 
+    def _set_https_redirection_rewrite_rule(self, vhost):
+        if self.get_version() >= (2, 3, 9):
+            self.parser.add_dir(vhost.path, "RewriteRule",
+                    constants.REWRITE_HTTPS_ARGS_WITH_END)
+        else:
+            self.parser.add_dir(vhost.path, "RewriteRule",
+                    constants.REWRITE_HTTPS_ARGS)
+
+
     def _verify_no_certbot_redirect(self, vhost):
         """Checks to see if a redirect was already installed by certbot.
 
         Checks to see if virtualhost already contains a rewrite rule that is
         identical to Certbot's redirection rewrite rule.
+
+        For graceful transition to new rewrite rules for HTTPS redireciton we
+        delete certbot's old rewrite rules and set the new one instead.
 
         :param vhost: vhost to check
         :type vhost: :class:`~certbot_apache.obj.VirtualHost`
@@ -1355,19 +1364,29 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # rewrite_args_dict keys are directive ids and the corresponding value
         # for each is a list of arguments to that directive.
         rewrite_args_dict = defaultdict(list)
-        pat = r'.*(directive\[\d+\]).*'
+        pat = r'(.*directive\[\d+\]).*'
         for match in rewrite_path:
             m = re.match(pat, match)
             if m:
-                dir_id = m.group(1)
-                rewrite_args_dict[dir_id].append(match)
+                dir_path = m.group(1)
+                rewrite_args_dict[dir_path].append(match)
 
         if rewrite_args_dict:
             redirect_args = [constants.REWRITE_HTTPS_ARGS,
                              constants.REWRITE_HTTPS_ARGS_WITH_END]
 
-            for matches in rewrite_args_dict.values():
-                if [self.aug.get(x) for x in matches] in redirect_args:
+            for dir_path, args_paths in rewrite_args_dict.items():
+                arg_vals = [self.aug.get(x) for x in args_paths]
+
+                # Search for past redirection rule, delete it, set the new one
+                if arg_vals in constants.OLD_REWRITE_HTTPS_ARGS:
+                    self.aug.remove(dir_path)
+                    self._set_https_redirection_rewrite_rule(vhost)
+                    self.save()
+                    raise errors.PluginEnhancementAlreadyPresent(
+                        "Certbot has already enabled redirection")
+
+                if arg_vals in redirect_args:
                     raise errors.PluginEnhancementAlreadyPresent(
                         "Certbot has already enabled redirection")
 

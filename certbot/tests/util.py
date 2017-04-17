@@ -6,6 +6,7 @@
 import os
 import pkg_resources
 import shutil
+import tempfile
 import unittest
 
 from cryptography.hazmat.backends import default_backend
@@ -230,3 +231,13 @@ def _assert_valid_call(*args, **kwargs):
 
     # pylint: disable=star-args
     display_util.assert_valid_call(*assert_args, **assert_kwargs)
+
+
+class TempDirTestCase(unittest.TestCase):
+    """Base test class which sets up and tears down a temporary directory"""
+
+    def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)

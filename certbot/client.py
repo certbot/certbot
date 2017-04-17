@@ -8,6 +8,7 @@ import OpenSSL
 import zope.component
 
 from acme import client as acme_client
+from acme import errors as acme_errors
 from acme import jose
 from acme import messages
 
@@ -117,7 +118,7 @@ def register(config, account_storage, tos_cb=None):
             logger.warning(msg)
             raise errors.Error(msg)
         if not config.dry_run:
-            logger.warning("Registering without email!")
+            logger.info("Registering without email!")
 
     # Each new registration shall use a fresh new key
     key = jose.JWKRSA(key=jose.ComparableRSAKey(
@@ -137,8 +138,8 @@ def register(config, account_storage, tos_cb=None):
         regr = acme.agree_to_tos(regr)
 
     acc = account.Account(regr, key)
-    account.report_new_account(acc, config)
-    account_storage.save(acc)
+    account.report_new_account(config)
+    account_storage.save(acc, acme)
 
     eff.handle_subscription(config)
 
@@ -155,8 +156,6 @@ def perform_registration(acme, config):
 
     :returns: Registration Resource.
     :rtype: `acme.messages.RegistrationResource`
-
-    :raises .UnexpectedUpdate:
     """
     try:
         return acme.register(messages.NewRegistration.from_data(email=config.email))
@@ -168,7 +167,7 @@ def perform_registration(acme, config):
                        "registration again." % config.email)
                 raise errors.Error(msg)
             else:
-                config.namespace.email = display_ops.get_email(invalid=True)
+                config.email = display_ops.get_email(invalid=True)
                 return perform_registration(acme, config)
         else:
             raise
@@ -208,15 +207,14 @@ class Client(object):
         else:
             self.auth_handler = None
 
-    def obtain_certificate_from_csr(self, domains, csr,
-        typ=OpenSSL.crypto.FILETYPE_ASN1, authzr=None):
+    def obtain_certificate_from_csr(self, domains, csr, authzr=None):
         """Obtain certificate.
 
         Internal function with precondition that `domains` are
         consistent with identifiers present in the `csr`.
 
         :param list domains: Domain names.
-        :param .util.CSR csr: DER-encoded Certificate Signing
+        :param .util.CSR csr: PEM-encoded Certificate Signing
             Request. The key used to generate this CSR can be different
             than `authkey`.
         :param list authzr: List of
@@ -242,9 +240,30 @@ class Client(object):
 
         certr = self.acme.request_issuance(
             jose.ComparableX509(
-                OpenSSL.crypto.load_certificate_request(typ, csr.data)),
+                OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr.data)),
                 authzr)
-        return certr, self.acme.fetch_chain(certr)
+
+        notify = zope.component.getUtility(interfaces.IDisplay).notification
+        retries = 0
+        chain = None
+
+        while retries <= 1:
+            if retries:
+                notify('Failed to fetch chain, please check your network '
+                       'and continue', pause=True)
+            try:
+                chain = self.acme.fetch_chain(certr)
+                break
+            except acme_errors.Error:
+                logger.debug('Failed to fetch chain', exc_info=True)
+                retries += 1
+
+        if chain is None:
+            raise acme_errors.Error(
+                'Failed to fetch chain. You should not deploy the generated '
+                'certificate, please rerun the command for a new one.')
+
+        return certr, chain
 
     def obtain_certificate(self, domains):
         """Obtains a certificate from the ACME server.
@@ -271,10 +290,12 @@ class Client(object):
         key = crypto_util.init_save_key(
             self.config.rsa_key_size, self.config.key_dir)
         csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
+        certr, chain = self.obtain_certificate_from_csr(
+            domains, csr, authzr=authzr)
 
-        return (self.obtain_certificate_from_csr(domains, csr, authzr=authzr)
-                                                                + (key, csr))
+        return certr, chain, key, csr
 
+    # pylint: disable=no-member
     def obtain_and_enroll_certificate(self, domains, certname):
         """Obtain and enroll certificate.
 
