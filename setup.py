@@ -42,7 +42,7 @@ install_requires = [
     # in which we added 2.6 support (see #2243), so we relax the requirement.
     'ConfigArgParse>=0.9.3',
     'configobj',
-    'cryptography>=0.7',  # load_pem_x509_certificate
+    'cryptography>=1.2',  # load_pem_x509_certificate
     'mock',
     'parsedatetime>=1.3',  # Calendar.parseDT
     'PyOpenSSL',
