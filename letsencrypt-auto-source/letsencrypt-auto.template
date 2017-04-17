@@ -59,7 +59,7 @@ for arg in "$@" ; do
       NO_BOOTSTRAP=1;;
     --help)
       HELP=1;;
-    --noninteractive|--non-interactive)
+    --noninteractive|--non-interactive|renew)
       ASSUME_YES=1;;
     --quiet)
       QUIET=1;;
