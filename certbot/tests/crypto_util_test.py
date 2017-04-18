@@ -280,8 +280,10 @@ class VerifyRenewableCertTest(unittest.TestCase):
 
         self.assertRaises(AssertionError, self._verify_fullchain, bad_renewable_cert)
 
-#        bad_renewable_cert.chain = "dog"
-#        self.assertRaises(IOError, self._verify_fullchain, bad_renewable_cert)
+    def test_fullchain_ioerror(self):
+        bad_renewable_cert = mock.MagicMock()
+        bad_renewable_cert.chain = "dog"
+        self.assertRaises(IOError, self._verify_fullchain, bad_renewable_cert)
 
     def test_cert_priv_key_match(self):
         self.assertEqual(None, self._verify_cert_matches_priv_key(self.renewable_cert))
