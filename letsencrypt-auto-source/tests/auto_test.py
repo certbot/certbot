@@ -296,7 +296,7 @@ class AutoTests(TestCase):
                 set_le_script_version(venv_dir, '0.0.1')
                 out, err = run_letsencrypt_auto()
                 self.assertFalse('Upgrading certbot-auto ' in out)
-                self.assertTrue('Creating virtual environment...' in out)
+                self.assertTrue('Updating virtual environment...' in out)
 
     def test_openssl_failure(self):
         """Make sure we stop if the openssl signature check fails."""
