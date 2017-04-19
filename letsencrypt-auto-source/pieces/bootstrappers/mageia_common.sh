@@ -8,7 +8,7 @@ BootstrapMageiaCommon() {
       libpython-devel \
       python-virtualenv
     then
-      echo "Could not install Python dependencies. Aborting bootstrap!"
+      error "Could not install Python dependencies. Aborting bootstrap!"
       exit 1
   fi
 
@@ -20,7 +20,7 @@ BootstrapMageiaCommon() {
       libffi-devel \
       rootcerts
     then
-      echo "Could not install additional dependencies. Aborting bootstrap!"
+      error "Could not install additional dependencies. Aborting bootstrap!"
       exit 1
     fi
 }
