@@ -1069,8 +1069,8 @@ UNLIKELY_EOF
   fi
   if [ -n "$SUDO" ]; then
     # SUDO is su wrapper or sudo
-    echo "Requesting root privileges to run certbot..."
-    echo "  $VENV_BIN/letsencrypt" "$@"
+    say "Requesting root privileges to run certbot..."
+    say "  $VENV_BIN/letsencrypt" "$@"
   fi
   if [ -z "$SUDO_ENV" ] ; then
     # SUDO is su wrapper / noop
