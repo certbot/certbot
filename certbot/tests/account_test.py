@@ -33,6 +33,7 @@ class AccountTest(unittest.TestCase):
             creation_dt=datetime.datetime(
                 2015, 7, 4, 14, 4, 10, tzinfo=pytz.UTC))
         self.acc = Account(self.regr, KEY, self.meta)
+        self.regr.__repr__ = mock.MagicMock(return_value="i_am_a_regr")
 
         with mock.patch("certbot.account.socket") as mock_socket:
             mock_socket.getfqdn.return_value = "test.certbot.org"
@@ -54,10 +55,8 @@ class AccountTest(unittest.TestCase):
             self.acc.slug, "test.certbot.org@2015-07-04T14:04:10Z (bca5)")
 
     def test_repr(self):
-        self.assertEqual(
-            repr(self.acc),
-            "<Account(bca5889f66457d5b62fbba7b25f9ab6f)>")
-
+        self.assertTrue(repr(self.acc).startswith(
+          "<Account(i_am_a_regr, bca5889f66457d5b62fbba7b25f9ab6f, Meta("))
 
 class ReportNewAccountTest(unittest.TestCase):
     """Tests for certbot.account.report_new_account."""
