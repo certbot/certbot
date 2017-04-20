@@ -13,7 +13,7 @@ BootstrapRpmCommon() {
     tool=yum
 
   else
-    echo "Neither yum nor dnf found. Aborting bootstrap!"
+    error "Neither yum nor dnf found. Aborting bootstrap!"
     exit 1
   fi
 
@@ -27,7 +27,7 @@ BootstrapRpmCommon() {
   if ! $SUDO $tool list *virtualenv >/dev/null 2>&1; then
     echo "To use Certbot, packages from the EPEL repository need to be installed."
     if ! $SUDO $tool list epel-release >/dev/null 2>&1; then
-      echo "Please enable this repository and try running Certbot again."
+      error "Enable the EPEL repository and try running Certbot again."
       exit 1
     fi
     if [ "$ASSUME_YES" = 1 ]; then
@@ -39,7 +39,7 @@ BootstrapRpmCommon() {
       sleep 1s
     fi
     if ! $SUDO $tool install $yes_flag $QUIET_FLAG epel-release; then
-      echo "Could not enable EPEL. Aborting bootstrap!"
+      error "Could not enable EPEL. Aborting bootstrap!"
       exit 1
     fi
   fi
@@ -81,7 +81,7 @@ BootstrapRpmCommon() {
   fi
 
   if ! $SUDO $tool install $yes_flag $QUIET_FLAG $pkgs; then
-    echo "Could not install OS dependencies. Aborting bootstrap!"
+    error "Could not install OS dependencies. Aborting bootstrap!"
     exit 1
   fi
 }
