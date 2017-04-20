@@ -12,6 +12,12 @@ from certbot import constants
 from certbot import errors
 from certbot import interfaces
 
+try:
+    from collections import OrderedDict
+except ImportError:  # pragma: no cover
+    # OrderedDict was added in Python 2.7
+    from ordereddict import OrderedDict  # pylint: disable=import-error
+
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +174,9 @@ class PluginsRegistry(collections.Mapping):
     """Plugins registry."""
 
     def __init__(self, plugins):
-        self._plugins = plugins
+        # plugins are sorted so the same order is used between runs.
+        # This prevents deadlock caused by plugins acquiring a lock.
+        self._plugins = OrderedDict(sorted(six.iteritems(plugins)))
 
     @classmethod
     def find_all(cls):

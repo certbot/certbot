@@ -182,12 +182,17 @@ class PluginEntryPointTest(unittest.TestCase):
 class PluginsRegistryTest(unittest.TestCase):
     """Tests for certbot.plugins.disco.PluginsRegistry."""
 
-    def setUp(self):
+    @classmethod
+    def _create_new_registry(cls, plugins):
         from certbot.plugins.disco import PluginsRegistry
-        self.plugin_ep = mock.MagicMock(name="mock")
+        return PluginsRegistry(plugins)
+
+    def setUp(self):
+        self.plugin_ep = mock.MagicMock()
+        self.plugin_ep.name = "mock"
         self.plugin_ep.__hash__.side_effect = TypeError
-        self.plugins = {"mock": self.plugin_ep}
-        self.reg = PluginsRegistry(self.plugins)
+        self.plugins = {self.plugin_ep.name: self.plugin_ep}
+        self.reg = self._create_new_registry(self.plugins)
 
     def test_find_all(self):
         from certbot.plugins.disco import PluginsRegistry
@@ -207,9 +212,8 @@ class PluginsRegistryTest(unittest.TestCase):
         self.assertEqual(["mock"], list(self.reg))
 
     def test_len(self):
+        self.assertEqual(0, len(self._create_new_registry({})))
         self.assertEqual(1, len(self.reg))
-        self.plugins.clear()
-        self.assertEqual(0, len(self.reg))
 
     def test_init(self):
         self.plugin_ep.init.return_value = "baz"
@@ -217,14 +221,11 @@ class PluginsRegistryTest(unittest.TestCase):
         self.plugin_ep.init.assert_called_once_with("bar")
 
     def test_filter(self):
-        self.plugins.update({
-            "foo": "bar",
-            "bar": "foo",
-            "baz": "boo",
-        })
         self.assertEqual(
-            {"foo": "bar", "baz": "boo"},
-            self.reg.filter(lambda p_ep: str(p_ep).startswith("b")))
+            self.plugins,
+            self.reg.filter(lambda p_ep: p_ep.name.startswith("m")))
+        self.assertEqual(
+            {}, self.reg.filter(lambda p_ep: p_ep.name.startswith("b")))
 
     def test_ifaces(self):
         self.plugin_ep.ifaces.return_value = True
@@ -265,11 +266,12 @@ class PluginsRegistryTest(unittest.TestCase):
                          repr(self.reg))
 
     def test_str(self):
+        self.assertEqual("No plugins", str(self._create_new_registry({})))
         self.plugin_ep.__str__ = lambda _: "Mock"
-        self.plugins["foo"] = "Mock"
-        self.assertEqual("Mock\n\nMock", str(self.reg))
-        self.plugins.clear()
-        self.assertEqual("No plugins", str(self.reg))
+        self.assertEqual("Mock", str(self.reg))
+        plugins = {self.plugin_ep.name: self.plugin_ep, "foo": "Bar"}
+        reg = self._create_new_registry(plugins)
+        self.assertEqual("Bar\n\nMock", str(reg))
 
 
 if __name__ == "__main__":
