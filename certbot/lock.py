@@ -51,7 +51,8 @@ class LockFile(object):
     def acquire(self):
         """Acquire the lock file.
 
-        :raises errors.LockError: if unable to acquire the lock
+        :raises errors.LockError: if lock is already held
+        :raises OSError: if unable to open or stat the lock file
 
         """
         while self._fd is None:

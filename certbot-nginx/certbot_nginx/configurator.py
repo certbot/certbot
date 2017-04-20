@@ -165,7 +165,7 @@ class NginxConfigurator(common.Plugin):
         # Prevent two Nginx plugins from modifying a config at once
         try:
             util.lock_dir_until_exit(self.conf('server-root'))
-        except errors.LockError:
+        except (OSError, errors.LockError):
             logger.debug('Encountered error:', exc_info=True)
             raise errors.PluginError(
                 'Unable to lock %s', self.conf('server-root'))
