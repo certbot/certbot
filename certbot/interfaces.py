@@ -422,7 +422,7 @@ class IDisplay(zope.interface.Interface):
 
         """
 
-    def input(message, default=None, cli_args=None, force_interactive=False, validator=None):
+    def input(message, default=None, cli_args=None, force_interactive=False):
         """Accept input from the user.
 
         When not setting force_interactive=True, you must provide a
@@ -432,9 +432,6 @@ class IDisplay(zope.interface.Interface):
         :param str default: default (non-interactive) response to prompt
         :param bool force_interactive: True if it's safe to prompt the user
             because it won't cause any workflow regressions
-        :param function validator: A method which will be called on the
-            supplied input. If the method raises a `errors.PluginError`, its
-            text will be displayed and the user will be re-prompted.
 
         :returns: tuple of (`code`, `input`) where
             `code` - str display exit code
@@ -495,7 +492,7 @@ class IDisplay(zope.interface.Interface):
         """
 
     def directory_select(self, message, default=None,
-                         cli_flag=None, force_interactive=False, validator=None):
+                         cli_flag=None, force_interactive=False):
         """Display a directory selection screen.
 
         When not setting force_interactive=True, you must provide a
@@ -509,9 +506,6 @@ class IDisplay(zope.interface.Interface):
             NoninteractiveDisplay
         :param bool force_interactive: True if it's safe to prompt the user
             because it won't cause any workflow regressions
-        :param function validator: A method which will be called on the
-            supplied input. If the method raises a `errors.PluginError`, its
-            text will be displayed and the user will be re-prompted.
 
         :returns: tuple of the form (`code`, `string`) where
             `code` - int display exit code

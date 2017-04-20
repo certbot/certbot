@@ -84,25 +84,6 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.assertEqual(code, display_util.OK)
         self.assertEqual(input_, "domain.com")
 
-    def test_input_blank_no_validator(self):
-        with mock.patch("six.moves.input", return_value=""):
-            code, input_ = self.displayer.input("message", force_interactive=True)
-
-        self.assertEqual(code, display_util.OK)
-        self.assertEqual(input_, "")
-
-    def test_input_blank_with_validator(self):
-        def __validator(m):
-            if m == "":
-                raise errors.PluginError("Must be non-empty")
-
-        with mock.patch("six.moves.input", side_effect=["", "", "", "asdf"]):
-            code, input_ = self.displayer.input("message", force_interactive=True,
-                                                validator=__validator)
-
-        self.assertEqual(code, display_util.OK)
-        self.assertEqual(input_, "asdf")
-
     def test_input_noninteractive(self):
         default = "foo"
         code, input_ = self._force_noninteractive(
@@ -209,26 +190,6 @@ class FileOutputDisplayTest(unittest.TestCase):
         mock_input.return_value = user_input
 
         returned = self.displayer.directory_select(*args)
-        self.assertEqual(returned, (display_util.OK, user_input))
-
-    @mock.patch("certbot.display.util.six.moves.input")
-    def test_directory_select_validation(self, mock_input):
-        error = "Must be non-empty"
-
-        def __validator(m):
-            if m == "":
-                raise errors.PluginError(error)
-
-        # pylint: disable=star-args
-        args = ["msg", "/var/www/html", "--flag", True, __validator]
-        user_input = "/var/www/html"
-        mock_input.side_effect = ["", user_input]
-
-        with mock.patch("certbot.display.util.FileDisplay.notification"):
-            returned = self.displayer.directory_select(*args)
-
-            self.assertEqual(error, self.displayer.notification.call_args[0][0])
-
         self.assertEqual(returned, (display_util.OK, user_input))
 
     def test_directory_select_noninteractive(self):

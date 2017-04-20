@@ -102,10 +102,12 @@ class AuthenticatorTest(unittest.TestCase):
 
         mock_display = mock_get_utility()
         mock_display.menu.return_value = (display_util.OK, 0,)
-        mock_display.directory_select.side_effect = (
-            (display_util.HELP, -1,), (display_util.CANCEL, -1,), (display_util.OK, self.path,),)
+        with mock.patch('certbot.display.ops.validated_directory') as m:
+            m.side_effect = ((display_util.HELP, -1),
+                             (display_util.CANCEL, -1),
+                             (display_util.OK, self.path,))
 
-        self.auth.perform([self.achall])
+            self.auth.perform([self.achall])
 
         self.assertEqual(self.config.webroot_map[self.achall.domain], self.path)
 
