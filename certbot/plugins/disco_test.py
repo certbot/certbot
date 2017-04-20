@@ -1,4 +1,6 @@
 """Tests for certbot.plugins.disco."""
+import functools
+import string
 import unittest
 
 import mock
@@ -246,6 +248,17 @@ class PluginsRegistryTest(unittest.TestCase):
         self.plugin_ep.prepare.return_value = "baz"
         self.assertEqual(["baz"], self.reg.prepare())
         self.plugin_ep.prepare.assert_called_once_with()
+
+    def test_prepare_order(self):
+        order = []
+        plugins = dict(
+            (c, mock.MagicMock(prepare=functools.partial(order.append, c)))
+            for c in string.ascii_letters)
+        reg = self._create_new_registry(plugins)
+        reg.prepare()
+        # order of prepare calls must be sorted to prevent deadlock
+        # caused by plugins acquiring locks during prepare
+        self.assertEqual(order, sorted(string.ascii_letters))
 
     def test_available(self):
         self.plugin_ep.available = True
