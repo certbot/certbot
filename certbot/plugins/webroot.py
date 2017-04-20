@@ -16,6 +16,7 @@ from certbot import cli
 from certbot import errors
 from certbot import interfaces
 from certbot.display import util as display_util
+from certbot.display import ops
 from certbot.plugins import common
 
 
@@ -136,11 +137,10 @@ to serve all files under specified web root ({0})."""
                 return None if index == 0 else known_webroots[index - 1]
 
     def _prompt_for_new_webroot(self, domain):
-        display = zope.component.getUtility(interfaces.IDisplay)
-
-        code, webroot = display.directory_select(
+        code, webroot = ops.validated_directory(
+            _validate_webroot,
             "Input the webroot for {0}:".format(domain),
-            force_interactive=True, valdator=_validate_webroot)
+            force_interactive=True)
         if code == display_util.HELP:
             # Displaying help is not currently implemented
             return None
