@@ -145,9 +145,10 @@ def set_up_core_dir(directory, mode, uid, strict):
     """
     try:
         make_or_verify_dir(directory, mode, uid, strict)
+        lock_dir_until_exit(directory)
     except OSError as error:
+        logger.debug("Exception was:", exc_info=True)
         raise errors.Error(PERM_ERR_FMT.format(error))
-    lock_dir_until_exit(directory)
 
 
 def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):

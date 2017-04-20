@@ -56,11 +56,7 @@ class LockFile(object):
         """
         while self._fd is None:
             # Open the file
-            try:
-                fd = os.open(self._path, os.O_CREAT | os.O_WRONLY, 0o600)
-            except OSError:
-                logger.debug("Exception was:", exc_info=True)
-                raise errors.LockError("Unable to open {0}".format(self._path))
+            fd = os.open(self._path, os.O_CREAT | os.O_WRONLY, 0o600)
             try:
                 self._try_lock(fd)
                 if self._lock_success(fd):
