@@ -40,7 +40,7 @@ class JWSTest(unittest.TestCase):
         self.url = 'hi'
         self.kid = 'baaaaa'
 
-    def test_it(self):
+    def test_kid_serialize(self):
         from acme.jws import JWS
         jws = JWS.sign(payload=b'foo', key=self.privkey,
                        alg=jose.RS256, nonce=self.nonce,
@@ -48,9 +48,18 @@ class JWSTest(unittest.TestCase):
         self.assertEqual(jws.signature.combined.nonce, self.nonce)
         self.assertEqual(jws.signature.combined.url, self.url)
         self.assertEqual(jws.signature.combined.kid, self.kid)
+        self.assertEqual(jws.signature.combined.jwk, None)
         # TODO: check that nonce is in protected header
 
         self.assertEqual(jws, JWS.from_json(jws.to_json()))
+
+    def test_jwk_serialize(self):
+        from acme.jws import JWS
+        jws = JWS.sign(payload=b'foo', key=self.privkey,
+                       alg=jose.RS256, nonce=self.nonce,
+                       url=self.url)
+        self.assertEqual(jws.signature.combined.kid, None)
+        self.assertEqual(jws.signature.combined.jwk, self.pubkey)
 
 
 if __name__ == '__main__':

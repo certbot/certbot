@@ -45,6 +45,10 @@ class JWS(jose.JWS):
     @classmethod
     # pylint: disable=arguments-differ,too-many-arguments
     def sign(cls, payload, key, alg, nonce, url=None, kid=None):
+        # Per ACME spec, jwk and kid are mutually exclusive, so only include a
+        # jwk field if kid is not provided.
+        include_jwk = kid is None
         return super(JWS, cls).sign(payload, key=key, alg=alg,
                                     protect=frozenset(['nonce', 'url', 'kid']),
-                                    nonce=nonce, url=url, kid=kid)
+                                    nonce=nonce, url=url, kid=kid,
+                                    include_jwk=include_jwk)
