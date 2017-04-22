@@ -47,7 +47,9 @@ class AugeasConfigurator(common.Plugin):
             loadpath=constants.AUGEAS_LENS_DIR,
             # Do not save backup (we do it ourselves), do not load
             # anything by default
-            flags=(augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD))
+            flags=(augeas.Augeas.NONE |
+                   augeas.Augeas.NO_MODL_AUTOLOAD |
+                   augeas.Augeas.ENABLE_SPAN))
         self.recovery_routine()
 
     def check_parsing_errors(self, lens):
