@@ -1170,87 +1170,6 @@ class MultipleVhostsTest(util.ApacheTest):
         not_rewriterule = "NotRewriteRule ^ ..."
         self.assertFalse(self.config._sift_rewrite_rule(not_rewriterule))
 
-
-    @certbot_util.patch_get_utility()
-    def test_make_vhost_ssl_with_existing_rewrite_rule(self, mock_get_utility):
-        self.config.parser.modules.add("rewrite_module")
-
-        http_vhost = self.vh_truth[0]
-
-        self.config.parser.add_dir(
-            http_vhost.path, "RewriteEngine", "on")
-
-        self.config.parser.add_dir(
-            http_vhost.path, "RewriteRule",
-            ["^",
-             "https://%{SERVER_NAME}%{REQUEST_URI}",
-             "[L,NE,R=permanent]"])
-        self.config.save()
-
-        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
-
-        self.assertTrue(self.config.parser.find_dir(
-            "RewriteEngine", "on", ssl_vhost.path, False))
-
-        conf_text = open(ssl_vhost.filep).read()
-        commented_rewrite_rule = ("# RewriteRule ^ "
-                                  "https://%{SERVER_NAME}%{REQUEST_URI} "
-                                  "[L,NE,R=permanent]")
-        self.assertTrue(commented_rewrite_rule in conf_text)
-        mock_get_utility().add_message.assert_called_once_with(mock.ANY,
-                                                               mock.ANY)
-    @certbot_util.patch_get_utility()
-    def test_make_vhost_ssl_with_existing_rewrite_conds(self, mock_get_utility):
-        self.config.parser.modules.add("rewrite_module")
-
-        http_vhost = self.vh_truth[0]
-
-        self.config.parser.add_dir(
-            http_vhost.path, "RewriteEngine", "on")
-
-        # Add a chunk that should not be commented out.
-        self.config.parser.add_dir(http_vhost.path,
-                "RewriteCond", ["%{DOCUMENT_ROOT}/%{REQUEST_FILENAME}", "!-f"])
-        self.config.parser.add_dir(
-            http_vhost.path, "RewriteRule",
-            ["^(.*)$", "b://u%{REQUEST_URI}", "[P,NE,L]"])
-
-        # Add a chunk that should be commented out.
-        self.config.parser.add_dir(http_vhost.path,
-                "RewriteCond", ["%{HTTPS}", "!=on"])
-        self.config.parser.add_dir(http_vhost.path,
-                "RewriteCond", ["%{HTTPS}", "!^$"])
-        self.config.parser.add_dir(
-            http_vhost.path, "RewriteRule",
-            ["^",
-             "https://%{SERVER_NAME}%{REQUEST_URI}",
-             "[L,NE,R=permanent]"])
-        self.config.save()
-
-        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
-
-        conf_line_set = set(open(ssl_vhost.filep).read().splitlines())
-        not_commented_cond1 = ("RewriteCond "
-                "%{DOCUMENT_ROOT}/%{REQUEST_FILENAME} !-f")
-        not_commented_rewrite_rule = ("RewriteRule "
-            "^(.*)$ b://u%{REQUEST_URI} [P,NE,L]")
-
-        commented_cond1 = "# RewriteCond %{HTTPS} !=on"
-        commented_cond2 = "# RewriteCond %{HTTPS} !^$"
-        commented_rewrite_rule = ("# RewriteRule ^ "
-                                  "https://%{SERVER_NAME}%{REQUEST_URI} "
-                                  "[L,NE,R=permanent]")
-
-        self.assertTrue(not_commented_cond1 in conf_line_set)
-        self.assertTrue(not_commented_rewrite_rule in conf_line_set)
-
-        self.assertTrue(commented_cond1 in conf_line_set)
-        self.assertTrue(commented_cond2 in conf_line_set)
-        self.assertTrue(commented_rewrite_rule in conf_line_set)
-        mock_get_utility().add_message.assert_called_once_with(mock.ANY,
-                                                               mock.ANY)
-
-
     def get_achalls(self):
         """Return testing achallenges."""
         account_key = self.rsa512jwk
@@ -1428,6 +1347,54 @@ class MultiVhostsTest(util.ApacheTest):
         both = with_index_1 + with_index_2
         self.assertEqual(self.config._get_new_vh_path(without_index, both),
                          with_index_2[0])
+
+    @certbot_util.patch_get_utility()
+    def test_make_vhost_ssl_with_existing_rewrite_rule(self, mock_get_utility):
+        self.config.parser.modules.add("rewrite_module")
+
+        http_vhost = self.vh_truth[3]
+
+
+        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[3])
+
+        self.assertTrue(self.config.parser.find_dir(
+            "RewriteEngine", "on", ssl_vhost.path, False))
+
+        conf_text = open(ssl_vhost.filep).read()
+        commented_rewrite_rule = ("# RewriteRule ^ "
+                                  "https://%{SERVER_NAME}%{REQUEST_URI} "
+                                  "[L,NE,R=permanent]")
+        self.assertTrue(commented_rewrite_rule in conf_text)
+        mock_get_utility().add_message.assert_called_once_with(mock.ANY,
+                                                               mock.ANY)
+
+    @certbot_util.patch_get_utility()
+    def test_make_vhost_ssl_with_existing_rewrite_conds(self, mock_get_utility):
+        self.config.parser.modules.add("rewrite_module")
+
+        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[3])
+
+        conf_lines = open(ssl_vhost.filep).readlines()
+        conf_line_set = [l.strip() for l in conf_lines]
+        not_commented_cond1 = ("RewriteCond "
+                "%{DOCUMENT_ROOT}/%{REQUEST_FILENAME} !-f")
+        not_commented_rewrite_rule = ("RewriteRule "
+            "^(.*)$ b://u%{REQUEST_URI} [P,NE,L]")
+
+        commented_cond1 = "# RewriteCond %{HTTPS} !=on"
+        commented_cond2 = "# RewriteCond %{HTTPS} !^$"
+        commented_rewrite_rule = ("# RewriteRule ^ "
+                                  "https://%{SERVER_NAME}%{REQUEST_URI} "
+                                  "[L,NE,R=permanent]")
+
+        self.assertTrue(not_commented_cond1 in conf_line_set)
+        self.assertTrue(not_commented_rewrite_rule in conf_line_set)
+
+        self.assertTrue(commented_cond1 in conf_line_set)
+        self.assertTrue(commented_cond2 in conf_line_set)
+        self.assertTrue(commented_rewrite_rule in conf_line_set)
+        mock_get_utility().add_message.assert_called_once_with(mock.ANY,
+                                                               mock.ANY)
 
 
 if __name__ == "__main__":

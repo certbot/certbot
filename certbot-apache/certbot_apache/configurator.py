@@ -1029,11 +1029,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                         result.append(comment)
                         sift = True
 
-                    result.append(''.join(
+                    result.append('\n'.join(
                         ['# ' + l for l in chunk]))
                     continue
                 else:
-                    result.append(''.join(chunk))
+                    result.append('\n'.join(chunk))
                     continue
         return result, sift
 

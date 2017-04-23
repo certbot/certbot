@@ -178,8 +178,21 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(prefix, "default.conf"),
                 os.path.join(aug_pre, "default.conf/VirtualHost[2]"),
                 set([obj.Addr.fromstring("*:80")]),
-                False, True, "banana.vomit.com")]
+                False, True, "banana.vomit.com"),
+            obj.VirtualHost(
+                os.path.join(prefix, "multi-vhost.conf"),
+                os.path.join(aug_pre, "multi-vhost.conf/VirtualHost[1]"),
+                set([obj.Addr.fromstring("*:80")]),
+                False, True, "1.multi.vhost.tld"),
+            obj.VirtualHost(
+                os.path.join(prefix, "multi-vhost.conf"),
+                os.path.join(aug_pre, "multi-vhost.conf/IfModule/VirtualHost"),
+                set([obj.Addr.fromstring("*:80")]),
+                False, True, "2.multi.vhost.tld"),
+            obj.VirtualHost(
+                os.path.join(prefix, "multi-vhost.conf"),
+                os.path.join(aug_pre, "multi-vhost.conf/VirtualHost[2]"),
+                set([obj.Addr.fromstring("*:80")]),
+                False, True, "3.multi.vhost.tld")]
         return vh_truth
-
-
     return None  # pragma: no cover
