@@ -26,7 +26,8 @@ If you're on macOS, we recommend you skip the rest of this section and instead
 run Certbot in Docker. You can find instructions for how to do this :ref:`here
 <docker>`. If you're running on Linux, you can run the following commands to
 install dependencies and set up a virtual environment where you can run
-Certbot. You only need to do this once.
+Certbot. You will need to repeat this when Certbot's dependencies change or when
+a new plugin is introduced.
 
 .. code-block:: shell
 
@@ -39,17 +40,18 @@ Then in each shell where you're working on the client, do:
 .. code-block:: shell
 
    source ./venv/bin/activate
+   export SERVER=https://acme-staging.api.letsencrypt.org/directory
+   source tests/integration/_common.sh
 
 After that, your shell will be using the virtual environment, and you run the
-client by typing:
+client by typing `certbot` or `certbot_test`. The latter is an alias that
+includes several flags useful for testing. For instance, it sets various output
+directories to point to /tmp/, and uses non-privileged ports for challenges, so
+root privileges are not required.
 
-.. code-block:: shell
-
-   certbot
-
-Activating a shell in this way makes it easier to run unit tests
-with ``tox`` and integration tests, as described below. To reverse this, you
-can type ``deactivate``.  More information can be found in the `virtualenv docs`_.
+Activating a shell with `venv/bin/activate` sets environment variables so that
+Python pulls in the correct versions of various packages needed by Certbot.
+More information can be found in the `virtualenv docs`_.
 
 .. _`virtualenv docs`: https://virtualenv.pypa.io
 
@@ -116,6 +118,14 @@ and working. Fetch and start Boulder using:
 If you have problems with Docker, you may want to try `removing all containers and
 volumes`_ and making sure you have at least 1GB of memory.
 
+Set up a certbot_test alias that enables easily running against the local
+Boulder:
+
+.. code-block:: shell
+
+   export SERVER=http://localhost:4000/directory
+   source tests/integration/_common.sh
+
 Run the integration tests using:
 
 .. code-block:: shell
@@ -168,8 +178,8 @@ challenges: HTTP, TLS-SNI, and DNS, represented by classes in `acme.challenges`.
 An authenticator plugin should implement support for at least one challenge type.
 
 An Authenticator indicates which challenges it supports by implementing
-get_chall_pref(domain) to return a sorted list of challenge types in preference
-order.
+`get_chall_pref(domain)` to return a sorted list of challenge types in
+preference order.
 
 An Authenticator must also implement `perform(achalls)`, which "performs" a list
 of challenges by, for instance, provisioning a file on an HTTP server, or
@@ -219,9 +229,10 @@ Writing your own plugin
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 Certbot client supports dynamic discovery of plugins through the
-`setuptools entry points`_. This way you can, for example, create a
-custom implementation of `~certbot.interfaces.IAuthenticator` or
-the `~certbot.interfaces.IInstaller` without having to merge it
+`setuptools entry points`_ using the `certbot.plugins` group. This
+way you can, for example, create a custom implementation of
+`~certbot.interfaces.IAuthenticator` or the
+`~certbot.interfaces.IInstaller` without having to merge it
 with the core upstream source code. An example is provided in
 ``examples/plugins/`` directory.
 
@@ -229,6 +240,7 @@ While developing, you can install your plugin into a Certbot development
 virtualenv like this:
 
 .. code-block:: shell
+
   . venv/bin/activate
   . tests/integration/_common.sh
   pip install -e examples/plugins/
@@ -427,8 +439,12 @@ For squeeze you will need to:
 FreeBSD
 -------
 
-Package installation for FreeBSD uses ``pkg``, not ports.
+Packages can be installed on FreeBSD using ``pkg``, 
+or any other port-management tool (``portupgrade``, ``portmanager``, etc.) 
+from the pre-built package or can be built and installed from ports. 
+Either way will ensure proper installation of all the dependencies required 
+for the package.
 
 FreeBSD by default uses ``tcsh``. In order to activate virtualenv (see
-below), you will need a compatible shell, e.g. ``pkg install bash &&
+above), you will need a compatible shell, e.g. ``pkg install bash &&
 bash``.

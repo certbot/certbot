@@ -629,7 +629,8 @@ class NginxConfigurator(common.Plugin):
             proc = subprocess.Popen(
                 [self.conf('ctl'), "-c", self.nginx_conf, "-V"],
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
+                stderr=subprocess.PIPE,
+                universal_newlines=True)
             text = proc.communicate()[1]  # nginx prints output to stderr
         except (OSError, ValueError) as error:
             logger.debug(error, exc_info=True)

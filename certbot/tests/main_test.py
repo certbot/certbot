@@ -1093,8 +1093,8 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
                         mocked_account.AccountFileStorage.return_value = mocked_storage
                         mocked_storage.find_all.return_value = ["an account"]
                         mocked_det.return_value = (mock.MagicMock(), "foo")
-                        acme_client = mock.MagicMock()
-                        mocked_client.Client.return_value = acme_client
+                        cb_client = mock.MagicMock()
+                        mocked_client.Client.return_value = cb_client
                         x = self._call_no_clientmock(
                             ["register", "--update-registration"])
                         # When registration change succeeds, the return value
@@ -1103,7 +1103,7 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
                         # and we got supposedly did update the registration from
                         # the server
                         self.assertTrue(
-                            acme_client.acme.update_registration.called)
+                            cb_client.acme.update_registration.called)
                         # and we saved the updated registration on disk
                         self.assertTrue(mocked_storage.save_regr.called)
                         self.assertTrue(
@@ -1143,8 +1143,8 @@ class UnregisterTest(unittest.TestCase):
         self.mocks['account'].AccountFileStorage.return_value = mocked_storage
         self.mocks['_determine_account'].return_value = (mock.MagicMock(), "foo")
 
-        acme_client = mock.MagicMock()
-        self.mocks['client'].Client.return_value = acme_client
+        cb_client = mock.MagicMock()
+        self.mocks['client'].Client.return_value = cb_client
 
         config = mock.MagicMock()
         unused_plugins = mock.MagicMock()
@@ -1152,7 +1152,7 @@ class UnregisterTest(unittest.TestCase):
         res = main.unregister(config, unused_plugins)
 
         self.assertTrue(res is None)
-        self.assertTrue(acme_client.acme.deactivate_registration.called)
+        self.assertTrue(cb_client.acme.deactivate_registration.called)
         m = "Account deactivated."
         self.assertTrue(m in self.mocks['get_utility']().add_message.call_args[0][0])
 
@@ -1161,8 +1161,8 @@ class UnregisterTest(unittest.TestCase):
         mocked_storage.find_all.return_value = []
         self.mocks['account'].AccountFileStorage.return_value = mocked_storage
 
-        acme_client = mock.MagicMock()
-        self.mocks['client'].Client.return_value = acme_client
+        cb_client = mock.MagicMock()
+        self.mocks['client'].Client.return_value = cb_client
 
         config = mock.MagicMock()
         unused_plugins = mock.MagicMock()
@@ -1170,7 +1170,7 @@ class UnregisterTest(unittest.TestCase):
         res = main.unregister(config, unused_plugins)
         m = "Could not find existing account to deactivate."
         self.assertEqual(res, m)
-        self.assertFalse(acme_client.acme.deactivate_registration.called)
+        self.assertFalse(cb_client.acme.deactivate_registration.called)
 
 
 if __name__ == '__main__':

@@ -151,6 +151,53 @@ class RandomSnTest(unittest.TestCase):
             self.serial_num.append(cert.get_serial_number())
         self.assertTrue(len(set(self.serial_num)) > 1)
 
+class MakeCSRTest(unittest.TestCase):
+    """Test for standalone functions."""
+
+    @classmethod
+    def _call_with_key(cls, *args, **kwargs):
+        privkey = OpenSSL.crypto.PKey()
+        privkey.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
+        privkey_pem = OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, privkey)
+        from acme.crypto_util import make_csr
+        return make_csr(privkey_pem, *args, **kwargs)
+
+    def test_make_csr(self):
+        csr_pem = self._call_with_key(["a.example", "b.example"])
+        self.assertTrue(b'--BEGIN CERTIFICATE REQUEST--' in csr_pem)
+        self.assertTrue(b'--END CERTIFICATE REQUEST--' in csr_pem)
+        csr = OpenSSL.crypto.load_certificate_request(
+            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+        # In pyopenssl 0.13 (used with TOXENV=py26-oldest and py27-oldest), csr
+        # objects don't have a get_extensions() method, so we skip this test if
+        # the method isn't available.
+        if hasattr(csr, 'get_extensions'):
+            self.assertEquals(len(csr.get_extensions()), 1)
+            self.assertEquals(csr.get_extensions()[0].get_data(),
+                OpenSSL.crypto.X509Extension(
+                    b'subjectAltName',
+                    critical=False,
+                    value=b'DNS:a.example, DNS:b.example',
+                ).get_data(),
+            )
+
+    def test_make_csr_must_staple(self):
+        csr_pem = self._call_with_key(["a.example"], must_staple=True)
+        csr = OpenSSL.crypto.load_certificate_request(
+            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+
+        # In pyopenssl 0.13 (used with TOXENV=py26-oldest and py27-oldest), csr
+        # objects don't have a get_extensions() method, so we skip this test if
+        # the method isn't available.
+        if hasattr(csr, 'get_extensions'):
+            self.assertEquals(len(csr.get_extensions()), 2)
+            # NOTE: Ideally we would filter by the TLS Feature OID, but
+            # OpenSSL.crypto.X509Extension doesn't give us the extension's raw OID,
+            # and the shortname field is just "UNDEF"
+            must_staple_exts = [e for e in csr.get_extensions()
+                if e.get_data() == b"0\x03\x02\x01\x05"]
+            self.assertEqual(len(must_staple_exts), 1,
+                "Expected exactly one Must Staple extension")
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover

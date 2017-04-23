@@ -140,16 +140,6 @@ of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`.
 Operating System Packages
 -------------------------
 
-**FreeBSD**
-
-  * Port: ``cd /usr/ports/security/py-certbot && make install clean``
-  * Package: ``pkg install py27-certbot``
-
-**OpenBSD**
-
-  * Port: ``cd /usr/ports/security/letsencrypt/client && make install clean``
-  * Package: ``pkg_add letsencrypt``
-
 **Arch Linux**
 
 .. code-block:: shell
@@ -181,6 +171,11 @@ repo, if you have not already done so. Then run:
 .. code-block:: shell
 
     sudo dnf install certbot python2-certbot-apache
+
+**FreeBSD**
+
+  * Port: ``cd /usr/ports/security/py-certbot && make install clean``
+  * Package: ``pkg install py27-certbot``
 
 **Gentoo**
 
@@ -216,6 +211,16 @@ to
 For the time being, this is the only way for the Apache plugin to recognise
 the appropriate directives when installing the certificate.
 Note: this change is not required for the other plugins.
+
+**NetBSD**
+
+  * Build from source: ``cd /usr/pkgsrc/security/py-certbot && make install clean``
+  * Install pre-compiled package: ``pkg_add py27-certbot``
+
+**OpenBSD**
+
+  * Port: ``cd /usr/ports/security/letsencrypt/client && make install clean``
+  * Package: ``pkg_add letsencrypt``
 
 **Other Operating Systems**
 

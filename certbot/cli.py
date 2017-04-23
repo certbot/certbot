@@ -19,6 +19,7 @@ import certbot
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
+from certbot import hooks
 from certbot import interfaces
 from certbot import util
 
@@ -515,6 +516,13 @@ class HelpfulArgumentParser(object):
 
         return usage
 
+    def remove_config_file_domains_for_renewal(self, parsed_args):
+        """Make "certbot renew" safe if domains are set in cli.ini."""
+        # Works around https://github.com/certbot/certbot/issues/4096
+        if self.verb == "renew":
+            for source, flags in self.parser._source_to_settings.items(): # pylint: disable=protected-access
+                if source.startswith("config_file") and "domains" in flags:
+                    parsed_args.domains = _Default() if self.detect_defaults else []
 
     def parse_args(self):
         """Parses command line arguments and returns the result.
@@ -526,6 +534,8 @@ class HelpfulArgumentParser(object):
         parsed_args = self.parser.parse_args(self.args)
         parsed_args.func = self.VERBS[self.verb]
         parsed_args.verb = self.verb
+
+        self.remove_config_file_domains_for_renewal(parsed_args)
 
         if self.detect_defaults:
             return parsed_args
@@ -555,6 +565,11 @@ class HelpfulArgumentParser(object):
 
         if parsed_args.must_staple:
             parsed_args.staple = True
+
+        if parsed_args.validate_hooks:
+            hooks.validate_hooks(parsed_args)
+
+        possible_deprecation_warning(parsed_args)
 
         return parsed_args
 
@@ -895,7 +910,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "'run' subcommand this means reinstall the existing cert). (default: Ask)")
     helpful.add(
         "automation", "--expand", action="store_true",
-        help="If an existing cert covers some subset of the requested names, "
+        help="If an existing cert is a strict subset of the requested names, "
              "always expand and replace it with the additional names. (default: Ask)")
     helpful.add(
         "automation", "--version", action="version",
@@ -941,6 +956,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="(certbot-auto only) prevent the certbot-auto script from"
              " upgrading itself to newer released versions (default: Upgrade"
              " automatically)")
+    helpful.add(
+        "automation", "--no-bootstrap", action="store_true",
+        help="(certbot-auto only) prevent the certbot-auto script from"
+             " installing OS-level dependencies (default: Prompt to install "
+             " OS-wide dependencies, but exit if the user says 'No')")
     helpful.add(
         ["automation", "renew", "certonly", "run"],
         "-q", "--quiet", dest="quiet", action="store_true",
@@ -1050,9 +1070,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "renew", "--renew-hook",
         help="Command to be run in a shell once for each successfully renewed"
         " certificate. For this command, the shell variable $RENEWED_LINEAGE"
-        " will point to the config live subdirectory containing the new certs"
+        " will point to the config live subdirectory (for example,"
+        " \"/etc/letsencrypt/live/example.com\") containing the new certs"
         " and keys; the shell variable $RENEWED_DOMAINS will contain a"
-        " space-delimited list of renewed cert domains")
+        " space-delimited list of renewed cert domains (for example,"
+        " \"example.com www.example.com\"")
     helpful.add(
         "renew", "--disable-hook-validation",
         action='store_false', dest='validate_hooks', default=True,
