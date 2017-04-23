@@ -4,7 +4,6 @@ import os
 import shutil
 import socket
 import unittest
-import time
 
 import mock
 # six is used in mock.patch()
@@ -1280,6 +1279,11 @@ class AugeasVhostsTest(util.ApacheTest):
                 self.config.choose_vhost(name)
                 self.assertEqual(mock_select.call_count, 0)
 
+    def test_augeas_span_error(self):
+        broken_vhost = self.config.vhosts[0]
+        broken_vhost.path = broken_vhost.path + "/nonexistent"
+        self.assertRaises(errors.PluginError, self.config.make_vhost_ssl,
+                          broken_vhost)
 
 class MultiVhostsTest(util.ApacheTest):
     """Test vhosts with illegal names dependant on augeas version."""
@@ -1352,19 +1356,18 @@ class MultiVhostsTest(util.ApacheTest):
     def test_make_vhost_ssl_with_existing_rewrite_rule(self, mock_get_utility):
         self.config.parser.modules.add("rewrite_module")
 
-        http_vhost = self.vh_truth[3]
-
-
-        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[3])
+        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[4])
 
         self.assertTrue(self.config.parser.find_dir(
             "RewriteEngine", "on", ssl_vhost.path, False))
 
         conf_text = open(ssl_vhost.filep).read()
-        commented_rewrite_rule = ("# RewriteRule ^ "
-                                  "https://%{SERVER_NAME}%{REQUEST_URI} "
-                                  "[L,NE,R=permanent]")
+        commented_rewrite_rule = ("# RewriteRule \"^/secrets/(.+)\" "
+                                  "\"https://new.example.com/docs/$1\" [R,L]")
+        uncommented_rewrite_rule = ("RewriteRule \"^/docs/(.+)\"  "
+                                    "\"http://new.example.com/docs/$1\"  [R,L]")
         self.assertTrue(commented_rewrite_rule in conf_text)
+        self.assertTrue(uncommented_rewrite_rule in conf_text)
         mock_get_utility().add_message.assert_called_once_with(mock.ANY,
                                                                mock.ANY)
 

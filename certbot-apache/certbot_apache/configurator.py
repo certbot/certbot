@@ -1050,18 +1050,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             span_filep = span_val[0]
             span_start = span_val[5]
             span_end = span_val[6]
-            vh_contents = None
+            vh_contents = ""
             with open(span_filep, 'r') as fh:
                 fh.seek(span_start)
                 vh_contents = fh.read(span_end-span_start)
-            if vh_contents:
-                return vh_contents.split("\n")
+            return vh_contents.split("\n")
 
         except ValueError:
             logger.fatal("Error while reading the VirtualHost %s from "
                          "file %s", vhost.name, vhost.filep)
             raise errors.PluginError("Unable to read VirtualHost from file")
-        return []
 
 
 
