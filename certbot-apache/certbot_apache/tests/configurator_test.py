@@ -4,6 +4,7 @@ import os
 import shutil
 import socket
 import unittest
+import time
 
 import mock
 # six is used in mock.patch()
@@ -147,7 +148,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
         for i, internal_path in enumerate(internal_paths):
             self.assertEqual(
-                get_internal_aug_path(self.vh_truth[i].path[:-3]), internal_path)
+                get_internal_aug_path(self.vh_truth[i].path), internal_path)
 
     def test_bad_servername_alias(self):
         ssl_vh1 = obj.VirtualHost(
@@ -590,7 +591,7 @@ class MultipleVhostsTest(util.ApacheTest):
                          "encryption-example-le-ssl.conf"))
 
         self.assertEqual(ssl_vhost.path,
-                         "/files" + ssl_vhost.filep + "/IfModule/VirtualHost[1]")
+                         "/files" + ssl_vhost.filep + "/IfModule/VirtualHost")
         self.assertEqual(len(ssl_vhost.addrs), 1)
         self.assertEqual(set([obj.Addr.fromstring("*:443")]), ssl_vhost.addrs)
         self.assertEqual(ssl_vhost.name, "encryption-example.demo")
@@ -1224,13 +1225,11 @@ class MultipleVhostsTest(util.ApacheTest):
             ["^",
              "https://%{SERVER_NAME}%{REQUEST_URI}",
              "[L,NE,R=permanent]"])
-
         self.config.save()
 
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
 
         conf_line_set = set(open(ssl_vhost.filep).read().splitlines())
-
         not_commented_cond1 = ("RewriteCond "
                 "%{DOCUMENT_ROOT}/%{REQUEST_FILENAME} !-f")
         not_commented_rewrite_rule = ("RewriteRule "
@@ -1394,7 +1393,7 @@ class MultiVhostsTest(util.ApacheTest):
                          "default-le-ssl.conf"))
 
         self.assertEqual(ssl_vhost.path,
-                         "/files" + ssl_vhost.filep + "/IfModule/VirtualHost[1]")
+                         "/files" + ssl_vhost.filep + "/IfModule/VirtualHost")
         self.assertEqual(len(ssl_vhost.addrs), 1)
         self.assertEqual(set([obj.Addr.fromstring("*:443")]), ssl_vhost.addrs)
         self.assertEqual(ssl_vhost.name, "banana.vomit.com")
