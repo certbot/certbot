@@ -68,7 +68,8 @@ In Fedora 23+.
 FreeBSD
 -------
 
-- https://svnweb.freebsd.org/ports/head/security/py-certbot/
+- https://www.freshports.org/security/py-acme/
+- https://www.freshports.org/security/py-certbot/
 
 Gentoo
 ------
