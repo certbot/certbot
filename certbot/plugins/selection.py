@@ -113,9 +113,10 @@ def choose_plugin(prepared, question):
     while True:
         disp = z_util(interfaces.IDisplay)
         if names == set(("apache", "nginx")):
-            # The possibility of being offered exactly apache and nginx here was
-            # new interactivity, so if the user doesn't have an interactive
-            # terminal, we default to the previous behaviour in this situation
+            # The possibility of being offered exactly apache and nginx here
+            # is new interactivity brought by https://github.com/certbot/certbot/issues/4079,
+            # so set apache as a default for those kinds of non-interactive use
+            # (the user will get a warning to set --non-interactive or --force-interactive)
             apache_idx = [n for n, p in enumerate(prepared) if p.name == "apache"][0]
             code, index = disp.menu(question, opts, help_label="More Info", default=apache_idx)
         else:

@@ -160,7 +160,7 @@ class ChoosePluginTest(unittest.TestCase):
         self.plugins[1] = mock_nginx
         mock_util().menu.return_value = (display_util.CANCEL, 0)
         self._call()
-        self.assertTrue(mock_util().menu.call_args[1].has_key("default"))
+        self.assertTrue("default" in mock_util().menu.call_args[1])
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
