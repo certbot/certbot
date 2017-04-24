@@ -115,6 +115,7 @@ class ChoosePluginTest(unittest.TestCase):
                                                                False))
         self.mock_apache = mock.Mock(
             description_with_name="a", misconfigured=True)
+        self.mock_apache.name = "apache"
         self.mock_stand = mock.Mock(
             description_with_name="s", misconfigured=False)
         self.mock_stand.init().more_info.return_value = "standalone"
@@ -149,3 +150,17 @@ class ChoosePluginTest(unittest.TestCase):
     def test_no_choice(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, 0)
         self.assertTrue(self._call() is None)
+
+    @test_util.patch_get_utility("certbot.plugins.selection.z_util")
+    def test_new_interaction_avoidance(self, mock_util):
+        mock_nginx = mock.Mock(
+            description_with_name="n", misconfigured=False)
+        mock_nginx.init().more_info.return_value = "nginx plugin"
+        mock_nginx.name = "nginx"
+        self.plugins[1] = mock_nginx
+        mock_util().menu.return_value = (display_util.CANCEL, 0)
+        self._call()
+        self.assertTrue(mock_util().menu.call_args[1].has_key("default"))
+
+if __name__ == "__main__":
+    unittest.main()  # pragma: no cover

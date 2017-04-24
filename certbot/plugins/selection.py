@@ -108,11 +108,18 @@ def choose_plugin(prepared, question):
     opts = [plugin_ep.description_with_name +
             (" [Misconfigured]" if plugin_ep.misconfigured else "")
             for plugin_ep in prepared]
+    names = set(plugin_ep.name for plugin_ep in prepared)
 
     while True:
         disp = z_util(interfaces.IDisplay)
-        code, index = disp.menu(
-            question, opts, help_label="More Info", force_interactive=True)
+        if names == set(("apache", "nginx")):
+            # The possibility of being offered exactly apache and nginx here was
+            # new interactivity, so if the user doesn't have an interactive
+            # terminal, we default to the previous behaviour in this situation
+            apache_idx = [n for n, p in enumerate(prepared) if p.name == "apache"][0]
+            code, index = disp.menu(question, opts, help_label="More Info", default=apache_idx)
+        else:
+            code, index = disp.menu(question, opts, help_label="More Info", force_interactive=True)
 
         if code == display_util.OK:
             plugin_ep = prepared[index]
