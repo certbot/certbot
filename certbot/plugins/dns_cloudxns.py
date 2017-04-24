@@ -1,10 +1,8 @@
 """DNS Authenticator for CloudXNS DNS."""
 import logging
-from requests.exceptions import HTTPError, RequestException
 
 import zope.interface
 
-from certbot import errors
 from certbot import interfaces
 
 from certbot.plugins import dns_common
@@ -54,7 +52,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         return _CloudXNSLexiconClient(self.conf('api-key'), self.conf('secret-key'), self.ttl)
 
 
-class _CloudXNSLexiconClient(object):
+class _CloudXNSLexiconClient(dns_common.LexiconClient):
     """
     Encapsulates all communication with the CloudXNS via Lexicon.
     """
@@ -66,75 +64,8 @@ class _CloudXNSLexiconClient(object):
             'ttl': ttl,
         })
 
-    def add_txt_record(self, domain, record_name, record_content):
-        """
-        Add a TXT record using the supplied information.
+    def determine_error_hint(self, e):
+        if str(e).startswith('400 Client Error:'):
+            return 'Are your API key and Secret key values correct?'
 
-        :param string domain: The domain to use to look up the managed zone.
-        :param string record_name: The record name (typically beginning with '_acme-challenge.').
-        :param string record_content: The record content (typically the challenge validation).
-        :raises: errors.PluginError if an error occurs communicating with the CloudXNS API
-        """
-        self._find_domain_id(domain)
-
-        try:
-            self.provider.create_record(type='TXT', name=record_name, content=record_content)
-        except RequestException as e:
-            logger.debug('Encountered error adding TXT record: %s', e, exc_info=True)
-            raise errors.PluginError('Error adding TXT record: {0}'.format(e))
-
-    def del_txt_record(self, domain, record_name, record_content):
-        """
-        Delete a TXT record using the supplied information.
-
-        :param string domain: The domain to use to look up the managed zone.
-        :param string record_name: The record name (typically beginning with '_acme-challenge.').
-        :param string record_content: The record content (typically the challenge validation).
-        :raises: errors.PluginError if an error occurs communicating with the CloudXNS API
-        """
-        try:
-            self._find_domain_id(domain)
-        except errors.PluginError as e:
-            logger.debug('Encountered error finding domain_id during deletion: %s', e,
-                         exc_info=True)
-            return
-
-        try:
-            self.provider.delete_record(type='TXT', name=record_name, content=record_content)
-        except RequestException as e:
-            logger.debug('Encountered error deleting TXT record: %s', e, exc_info=True)
-            raise errors.PluginError('Error deleting TXT record: {0}'.format(e))
-
-    def _find_domain_id(self, domain):
-        """
-        Find the domain_id for a given domain.
-
-        :param string domain: The domain for which to find the domain_id.
-        :raises: errors.PluginError if the domain_id cannot be found.
-        """
-
-        domain_name_guesses = dns_common.base_domain_name_guesses(domain)
-
-        for domain_name in domain_name_guesses:
-            try:
-                self.provider.options['domain'] = domain_name
-
-                self.provider.authenticate()
-
-                return  # If `authenticate` doesn't throw an exception, we've found the right name
-            except HTTPError as e:
-                hint = None
-
-                if str(e).startswith('400 Client Error:'):
-                    hint = 'Are your API key and Secret key values correct?'
-
-                raise errors.PluginError('Error determining domain_id: {0}.{1}'
-                                         .format(e, ' ({0})'.format(hint) if hint else ''))
-            except Exception as e:  # pylint: disable=broad-except
-                if str(e).startswith('No domain found'):
-                    pass
-                else:
-                    raise errors.PluginError('Unexpected error determining zone_id: {0}'.format(e))
-
-        raise errors.PluginError('Unable to determine zone_id for {0} using zone names: {1}'
-                                 .format(domain, domain_name_guesses))
+        return None

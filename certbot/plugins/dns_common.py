@@ -1,7 +1,8 @@
 """Common code for DNS Authenticator Plugins."""
 
 import abc
-
+import logging
+from requests.exceptions import HTTPError, RequestException
 from time import sleep
 
 import zope.interface
@@ -15,6 +16,8 @@ from certbot.display import ops
 from certbot.display import util as display_util
 
 from certbot.plugins import common
+
+logger = logging.getLogger(__name__)
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)
@@ -142,6 +145,97 @@ class DNSAuthenticator(common.Plugin):
             return response
         else:
             return None
+
+
+class LexiconClient(object):
+    """
+    Encapsulates all communication with a DNS provider via Lexicon.
+    """
+
+    provider = None
+
+    def add_txt_record(self, domain, record_name, record_content):
+        """
+        Add a TXT record using the supplied information.
+
+        :param string domain: The domain to use to look up the managed zone.
+        :param string record_name: The record name (typically beginning with '_acme-challenge.').
+        :param string record_content: The record content (typically the challenge validation).
+        :raises: errors.PluginError if an error occurs communicating with the DNS Provider API
+        """
+        self._find_domain_id(domain)
+
+        try:
+            self.provider.create_record(type='TXT', name=record_name, content=record_content)
+        except RequestException as e:
+            logger.debug('Encountered error adding TXT record: %s', e, exc_info=True)
+            raise errors.PluginError('Error adding TXT record: {0}'.format(e))
+
+    def del_txt_record(self, domain, record_name, record_content):
+        """
+        Delete a TXT record using the supplied information.
+
+        :param string domain: The domain to use to look up the managed zone.
+        :param string record_name: The record name (typically beginning with '_acme-challenge.').
+        :param string record_content: The record content (typically the challenge validation).
+        :raises: errors.PluginError if an error occurs communicating with the DNS Provider  API
+        """
+        try:
+            self._find_domain_id(domain)
+        except errors.PluginError as e:
+            logger.debug('Encountered error finding domain_id during deletion: %s', e,
+                         exc_info=True)
+            return
+
+        try:
+            self.provider.delete_record(type='TXT', name=record_name, content=record_content)
+        except RequestException as e:
+            logger.debug('Encountered error deleting TXT record: %s', e, exc_info=True)
+
+    def _find_domain_id(self, domain):
+        """
+        Find the domain_id for a given domain.
+
+        :param string domain: The domain for which to find the domain_id.
+        :raises: errors.PluginError if the domain_id cannot be found.
+        """
+
+        domain_name_guesses = base_domain_name_guesses(domain)
+
+        for domain_name in domain_name_guesses:
+            try:
+                self.provider.options['domain'] = domain_name
+
+                self.provider.authenticate()
+
+                return  # If `authenticate` doesn't throw an exception, we've found the right name
+            except HTTPError as e:
+                hint = self.determine_error_hint(e)
+
+                raise errors.PluginError('Error determining domain_id: {0}.{1}'
+                                         .format(e, ' ({0})'.format(hint) if hint else ''))
+            except Exception as e:  # pylint: disable=broad-except
+                if str(e).startswith('No domain found'):
+                    pass
+                else:
+                    raise errors.PluginError('Unexpected error determining zone_id: {0}'.format(e))
+
+        raise errors.PluginError('Unable to determine zone_id for {0} using zone names: {1}'
+                                 .format(domain, domain_name_guesses))
+
+    @abc.abstractmethod
+    def determine_error_hint(self, e):  # pragma: no cover
+        """
+        Examine an error and determine what hint, if any, should be displayed to the user.
+
+        Allows Certbot to provide better error messages than the libraries it uses.
+
+        :param exc e: The exception to examine.
+        :return: A hint to return to the user or `None`.
+        :rtype string:
+        """
+        raise NotImplementedError()
+
 
 
 def base_domain_name_guesses(domain):
