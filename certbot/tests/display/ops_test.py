@@ -14,6 +14,7 @@ from certbot import account
 from certbot import errors
 
 from certbot.display import util as display_util
+from certbot.display import ops
 
 import certbot.tests.util as test_util
 
@@ -112,7 +113,6 @@ class ChooseAccountTest(test_util.TempDirTestCase):
 
     @classmethod
     def _call(cls, accounts):
-        from certbot.display import ops
         return ops.choose_account(accounts)
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
@@ -404,6 +404,78 @@ class SuccessRevocationTest(unittest.TestCase):
                 path,
                 os.linesep), pause=False)
         self.assertTrue(path in mock_util().notification.call_args[0][0])
+
+
+class ValidatorTests(unittest.TestCase):
+    """Tests for `validated_input` and `validated_directory`."""
+
+    __ERROR = "Must be non-empty"
+
+    valid_input = "asdf"
+    valid_directory = "/var/www/html"
+
+    @staticmethod
+    def __validator(m):
+        if m == "":
+            raise errors.PluginError(ValidatorTests.__ERROR)
+
+    @test_util.patch_get_utility()
+    def test_input_blank_with_validator(self, mock_util):
+        mock_util().input.side_effect = [(display_util.OK, ""),
+                                         (display_util.OK, ""),
+                                         (display_util.OK, ""),
+                                         (display_util.OK, self.valid_input)]
+
+        returned = ops.validated_input(self.__validator, "message", force_interactive=True)
+        self.assertEqual(ValidatorTests.__ERROR, mock_util().notification.call_args[0][0])
+        self.assertEqual(returned, (display_util.OK, self.valid_input))
+
+    @test_util.patch_get_utility()
+    def test_input_validation_with_default(self, mock_util):
+        mock_util().input.side_effect = [(display_util.OK, self.valid_input)]
+
+        returned = ops.validated_input(self.__validator, "msg", default="other")
+        self.assertEqual(returned, (display_util.OK, self.valid_input))
+
+    @test_util.patch_get_utility()
+    def test_input_validation_with_bad_default(self, mock_util):
+        mock_util().input.side_effect = [(display_util.OK, self.valid_input)]
+
+        self.assertRaises(AssertionError,
+                          ops.validated_input,
+                          self.__validator, "msg", default="")
+
+    @test_util.patch_get_utility()
+    def test_input_cancel_with_validator(self, mock_util):
+        mock_util().input.side_effect = [(display_util.CANCEL, "")]
+
+        code, unused_raw = ops.validated_input(self.__validator, "message", force_interactive=True)
+        self.assertEqual(code, display_util.CANCEL)
+
+    @test_util.patch_get_utility()
+    def test_directory_select_validation(self, mock_util):
+        mock_util().directory_select.side_effect = [(display_util.OK, ""),
+                                                    (display_util.OK, self.valid_directory)]
+
+        returned = ops.validated_directory(self.__validator, "msg", force_interactive=True)
+        self.assertEqual(ValidatorTests.__ERROR, mock_util().notification.call_args[0][0])
+        self.assertEqual(returned, (display_util.OK, self.valid_directory))
+
+    @test_util.patch_get_utility()
+    def test_directory_select_validation_with_default(self, mock_util):
+        mock_util().directory_select.side_effect = [(display_util.OK, self.valid_directory)]
+
+        returned = ops.validated_directory(self.__validator, "msg", default="other")
+        self.assertEqual(returned, (display_util.OK, self.valid_directory))
+
+    @test_util.patch_get_utility()
+    def test_directory_select_validation_with_bad_default(self, mock_util):
+        mock_util().directory_select.side_effect = [(display_util.OK, self.valid_directory)]
+
+        self.assertRaises(AssertionError,
+                          ops.validated_directory,
+                          self.__validator, "msg", default="")
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
