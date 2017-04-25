@@ -207,15 +207,14 @@ class Client(object):
         else:
             self.auth_handler = None
 
-    def obtain_certificate_from_csr(self, domains, csr,
-        typ=OpenSSL.crypto.FILETYPE_ASN1, authzr=None):
+    def obtain_certificate_from_csr(self, domains, csr, authzr=None):
         """Obtain certificate.
 
         Internal function with precondition that `domains` are
         consistent with identifiers present in the `csr`.
 
         :param list domains: Domain names.
-        :param .util.CSR csr: DER-encoded Certificate Signing
+        :param .util.CSR csr: PEM-encoded Certificate Signing
             Request. The key used to generate this CSR can be different
             than `authkey`.
         :param list authzr: List of
@@ -241,7 +240,7 @@ class Client(object):
 
         certr = self.acme.request_issuance(
             jose.ComparableX509(
-                OpenSSL.crypto.load_certificate_request(typ, csr.data)),
+                OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr.data)),
                 authzr)
 
         notify = zope.component.getUtility(interfaces.IDisplay).notification
