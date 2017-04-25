@@ -137,7 +137,16 @@ def auth_and_issue(domains, chall_type="http-01", email=None, cert_output=None, 
         #cleanup = do_dns_challenges(client, authzs)
     else:
         raise Exception("invalid challenge type %s" % chall_type)
-    cleanup()
+
+    try:
+        while True:
+            order, response = client.poll_order(order)
+            print order.to_json()
+            if order.body.status != "pending":
+                break
+            time.sleep(1)
+    finally:
+        cleanup()
 
 def do_dns_challenges(client, authzs):
     for a in authzs:

@@ -177,10 +177,14 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
-    @classmethod
-    def _order_resource_from_response(cls, response, authorizations):
+    def _order_resource_from_response(self, response, uri=None):
+        authorizations = []
+        for authz_uri in response.json()["authorizations"]:
+            authz_response = self.net.get(authz_uri)
+            authorizations.append(self._authzr_from_response(authz_response))
         return messages.OrderResource(
             body=messages.Order.from_json(response.json()),
+            uri=response.headers.get('Location', uri),
             authorizations=authorizations)
 
     def new_order(self, csr_pem):
@@ -192,11 +196,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
         order = messages.NewOrder(csr=jose.ComparableX509(csr))
         response = self.net.post(self.directory.new_order, order)
-        authorizations = []
-        for authz_uri in response.json()["authorizations"]:
-            authz_response = self.net.get(authz_uri)
-            authorizations.append(self._authzr_from_response(authz_response))
-        order_response = self._order_resource_from_response(response, authorizations)
+        order_response = self._order_resource_from_response(response)
         return order_response
 
     def request_challenges(self, identifier, new_authzr_uri=None):
@@ -310,6 +310,23 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         updated_authzr = self._authzr_from_response(
             response, authzr.body.identifier, authzr.uri)
         return updated_authzr, response
+
+    def poll_order(self, orderr):
+        """Poll Order Resource for status.
+
+        :param orderr: Order Resource
+        :type orderr: `.OrderResource`
+
+        :returns: Updated Order Resource and HTTP response.
+
+        :rtype: (`.OrderResource`, `requests.Response`)
+
+        """
+        response = self.net.get(orderr.uri)
+        updated_orderr = self._order_resource_from_response(
+            response, uri=orderr.uri)
+        return updated_orderr, response
+
 
     def request_issuance(self, csr, authzrs):
         """Request issuance.
