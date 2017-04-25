@@ -22,6 +22,12 @@ from certbot import constants
 from certbot import errors
 from certbot import lock
 
+try:
+    from collections import OrderedDict
+except ImportError:  # pragma: no cover
+    # OrderedDict was added in Python 2.7
+    from ordereddict import OrderedDict  # pylint: disable=import-error
+
 
 logger = logging.getLogger(__name__)
 
@@ -48,10 +54,11 @@ PERM_ERR_FMT = os.linesep.join((
 
 # Stores importing process ID to be used by atexit_register()
 _INITIAL_PID = os.getpid()
-# Contains the list of locks to cleanup at program exit. If the program
-# exits before the lock is cleaned up, it is automatically released, but
-# the file isn't deleted.
-_LOCKS = []
+# Maps paths to locked directories to their lock object. All locks in
+# the dict are attempted to be cleaned up at program exit. If the
+# program exits before the lock is cleaned up, it is automatically
+# released, but the file isn't deleted.
+_LOCKS = OrderedDict()
 
 
 def run_script(params, log=logger.error):
@@ -113,17 +120,18 @@ def lock_dir_until_exit(dir_path):
 
     :param str dir_path: path to directory
 
-    :raises errors.LockFile: if the lock is held by another process
+    :raises errors.LockError: if the lock is held by another process
 
     """
-    dir_lock = lock.lock_dir(dir_path)
     if not _LOCKS:  # this is the first lock to be released at exit
         atexit_register(_release_locks)
-    _LOCKS.append(dir_lock)
+
+    if dir_path not in _LOCKS:
+        _LOCKS[dir_path] = lock.lock_dir(dir_path)
 
 
 def _release_locks():
-    for dir_lock in _LOCKS:
+    for dir_lock in six.itervalues(_LOCKS):
         try:
             dir_lock.release()
         except:  # pylint: disable=bare-except

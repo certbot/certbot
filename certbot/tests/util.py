@@ -14,12 +14,14 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import mock
 import OpenSSL
+from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import jose
 
 from certbot import constants
 from certbot import interfaces
 from certbot import storage
+from certbot import util
 
 from certbot.display import util as display_util
 
@@ -251,6 +253,9 @@ def lock_and_call(func, lock_path):
     :param str lock_path: path to file or directory to lock
 
     """
+    # Reload module to reset internal _LOCKS dictionary
+    reload_module(util)
+
     # start child and wait for it to grab the lock
     cv = multiprocessing.Condition()
     cv.acquire()

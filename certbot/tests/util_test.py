@@ -88,17 +88,22 @@ class LockDirUntilExit(test_util.TempDirTestCase):
         import certbot.util
         reload_module(certbot.util)
 
+    @mock.patch('certbot.util.logger')
     @mock.patch('certbot.util.atexit_register')
-    def test_it(self, mock_register):
+    def test_it(self, mock_register, mock_logger):
         subdir = os.path.join(self.tempdir, 'subdir')
         os.mkdir(subdir)
         self._call(self.tempdir)
+        self._call(subdir)
         self._call(subdir)
 
         self.assertEqual(mock_register.call_count, 1)
         registered_func = mock_register.call_args[0][0]
         shutil.rmtree(subdir)
         registered_func()  # exception not raised
+        # logger.debug is only called once because the second call
+        # to lock subdir was ignored because it was already locked
+        self.assertEqual(mock_logger.debug.call_count, 1)
 
 
 class SetUpCoreDirTest(test_util.TempDirTestCase):
