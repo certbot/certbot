@@ -115,22 +115,12 @@ class ClientTest(unittest.TestCase):
         # TODO: split here and separate test
         self.response.json.return_value = self.regr.body.update(
             contact=()).to_json()
-        self.assertRaises(
-            errors.UnexpectedUpdate, self.client.update_registration, self.regr)
 
     def test_deactivate_account(self):
         self.response.headers['Location'] = self.regr.uri
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr,
                          self.client.deactivate_registration(self.regr))
-
-    def test_deactivate_account_bad_registration_returned(self):
-        self.response.headers['Location'] = self.regr.uri
-        self.response.json.return_value = "some wrong registration thing"
-        self.assertRaises(
-            errors.UnexpectedUpdate,
-            self.client.deactivate_registration,
-            self.regr)
 
     def test_query_registration(self):
         self.response.json.return_value = self.regr.body.to_json()
@@ -150,6 +140,13 @@ class ClientTest(unittest.TestCase):
     def test_request_challenges(self):
         self._prepare_response_for_request_challenges()
         self.client.request_challenges(self.identifier)
+        self.net.post.assert_called_once_with(
+            self.directory.new_authz,
+            messages.NewAuthorization(identifier=self.identifier))
+
+    def test_request_challenges_deprecated_arg(self):
+        self._prepare_response_for_request_challenges()
+        self.client.request_challenges(self.identifier, new_authzr_uri="hi")
         self.net.post.assert_called_once_with(
             self.directory.new_authz,
             messages.NewAuthorization(identifier=self.identifier))
@@ -532,7 +529,7 @@ class ClientNetworkTest(unittest.TestCase):
             'HEAD', 'http://example.com/', 'foo', bar='baz'))
         self.net.session.request.assert_called_once_with(
             'HEAD', 'http://example.com/', 'foo',
-            headers=mock.ANY, verify=mock.ANY, bar='baz')
+            headers=mock.ANY, verify=mock.ANY, timeout=mock.ANY, bar='baz')
 
     @mock.patch('acme.client.logger')
     def test_send_request_get_der(self, mock_logger):
@@ -542,8 +539,9 @@ class ClientNetworkTest(unittest.TestCase):
             headers={"Content-Type": "application/pkix-cert"},
             content=b"hi")
         # pylint: disable=protected-access
-        self.net._send_request('HEAD', 'http://example.com/', 'foo', bar='baz')
-        mock_logger.debug.assert_called_once_with(
+        self.net._send_request('HEAD', 'http://example.com/', 'foo',
+          timeout=mock.ANY, bar='baz')
+        mock_logger.debug.assert_called_with(
             'Received response:\nHTTP %d\n%s\n\n%s', 200,
             'Content-Type: application/pkix-cert', b'aGk=')
 
@@ -555,7 +553,7 @@ class ClientNetworkTest(unittest.TestCase):
             'POST', 'http://example.com/', 'foo', data='qux', bar='baz'))
         self.net.session.request.assert_called_once_with(
             'POST', 'http://example.com/', 'foo',
-            headers=mock.ANY, verify=mock.ANY, data='qux', bar='baz')
+            headers=mock.ANY, verify=mock.ANY, timeout=mock.ANY, data='qux', bar='baz')
 
     def test_send_request_verify_ssl(self):
         # pylint: disable=protected-access
@@ -568,7 +566,8 @@ class ClientNetworkTest(unittest.TestCase):
                 self.response,
                 self.net._send_request('GET', 'http://example.com/'))
             self.net.session.request.assert_called_once_with(
-                'GET', 'http://example.com/', verify=verify, headers=mock.ANY)
+                'GET', 'http://example.com/', verify=verify,
+                timeout=mock.ANY, headers=mock.ANY)
 
     def test_send_request_user_agent(self):
         self.net.session = mock.MagicMock()
@@ -577,13 +576,23 @@ class ClientNetworkTest(unittest.TestCase):
                                headers={'bar': 'baz'})
         self.net.session.request.assert_called_once_with(
             'GET', 'http://example.com/', verify=mock.ANY,
+            timeout=mock.ANY,
             headers={'User-Agent': 'acme-python-test', 'bar': 'baz'})
 
         self.net._send_request('GET', 'http://example.com/',
                                headers={'User-Agent': 'foo2'})
         self.net.session.request.assert_called_with(
             'GET', 'http://example.com/',
-            verify=mock.ANY, headers={'User-Agent': 'foo2'})
+            verify=mock.ANY, timeout=mock.ANY, headers={'User-Agent': 'foo2'})
+
+    def test_send_request_timeout(self):
+        self.net.session = mock.MagicMock()
+        # pylint: disable=protected-access
+        self.net._send_request('GET', 'http://example.com/',
+                               headers={'bar': 'baz'})
+        self.net.session.request.assert_called_once_with(
+            mock.ANY, mock.ANY, verify=mock.ANY, headers=mock.ANY,
+            timeout=45)
 
     def test_del(self):
         sess = mock.MagicMock()

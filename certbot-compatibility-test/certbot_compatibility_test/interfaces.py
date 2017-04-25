@@ -20,20 +20,20 @@ class IPluginProxy(zope.interface.Interface):
     def __init__(args):
         """Initializes the plugin with the given command line args"""
 
-    def cleanup_from_tests():
+    def cleanup_from_tests():  # type: ignore
         """Performs any necessary cleanup from running plugin tests.
 
         This is guaranteed to be called before the program exits.
 
         """
 
-    def has_more_configs():
+    def has_more_configs():  # type: ignore
         """Returns True if there are more configs to test"""
 
-    def load_config():
+    def load_config():  # type: ignore
         """Loads the next config and returns its name"""
 
-    def get_testable_domain_names():
+    def get_testable_domain_names():  # type: ignore
         """Returns the domain names that can be used in testing"""
 
 
@@ -44,7 +44,7 @@ class IAuthenticatorProxy(IPluginProxy, certbot.interfaces.IAuthenticator):
 class IInstallerProxy(IPluginProxy, certbot.interfaces.IInstaller):
     """Wraps a Certbot installer"""
 
-    def get_all_names_answer():
+    def get_all_names_answer():  # type: ignore
         """Returns all names that should be found by the installer"""
 
 

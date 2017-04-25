@@ -3,7 +3,6 @@
 import datetime
 import os
 import shutil
-import tempfile
 import unittest
 
 import configobj
@@ -36,7 +35,7 @@ def fill_with_sample_data(rc_object):
             f.write(kind)
 
 
-class BaseRenewableCertTest(unittest.TestCase):
+class BaseRenewableCertTest(util.TempDirTestCase):
     """Base class for setting up Renewable Cert tests.
 
     .. note:: It may be required to write out self.config for
@@ -47,7 +46,8 @@ class BaseRenewableCertTest(unittest.TestCase):
 
     def setUp(self):
         from certbot import storage
-        self.tempdir = tempfile.mkdtemp()
+
+        super(BaseRenewableCertTest, self).setUp()
 
         self.cli_config = configuration.NamespaceConfig(
             namespace=mock.MagicMock(
@@ -90,9 +90,6 @@ class BaseRenewableCertTest(unittest.TestCase):
         with mock.patch("certbot.storage.RenewableCert._check_symlinks") as check:
             check.return_value = True
             self.test_rc = storage.RenewableCert(config.filename, self.cli_config)
-
-    def tearDown(self):
-        shutil.rmtree(self.tempdir)
 
     def _write_out_kind(self, kind, ver, value=None):
         link = getattr(self.test_rc, kind)
@@ -492,8 +489,8 @@ class RenewableCertTests(BaseRenewableCertTest):
                 self._write_out_kind(kind, ver)
         self.test_rc.update_all_links_to(3)
         self.assertEqual(
-            6, self.test_rc.save_successor(3, "new cert", None,
-                                           "new chain", self.cli_config))
+            6, self.test_rc.save_successor(3, b'new cert', None,
+                                           b'new chain', self.cli_config))
         with open(self.test_rc.version("cert", 6)) as f:
             self.assertEqual(f.read(), "new cert")
         with open(self.test_rc.version("chain", 6)) as f:
@@ -505,11 +502,11 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(os.path.islink(self.test_rc.version("privkey", 6)))
         # Let's try two more updates
         self.assertEqual(
-            7, self.test_rc.save_successor(6, "again", None,
-                                           "newer chain", self.cli_config))
+            7, self.test_rc.save_successor(6, b'again', None,
+                                           b'newer chain', self.cli_config))
         self.assertEqual(
-            8, self.test_rc.save_successor(7, "hello", None,
-                                           "other chain", self.cli_config))
+            8, self.test_rc.save_successor(7, b'hello', None,
+                                           b'other chain', self.cli_config))
         # All of the subsequent versions should link directly to the original
         # privkey.
         for i in (6, 7, 8):
@@ -523,8 +520,8 @@ class RenewableCertTests(BaseRenewableCertTest):
         # Test updating from latest version rather than old version
         self.test_rc.update_all_links_to(8)
         self.assertEqual(
-            9, self.test_rc.save_successor(8, "last", None,
-                                           "attempt", self.cli_config))
+            9, self.test_rc.save_successor(8, b'last', None,
+                                           b'attempt', self.cli_config))
         for kind in ALL_FOUR:
             self.assertEqual(self.test_rc.available_versions(kind),
                              list(six.moves.range(1, 10)))
@@ -538,8 +535,8 @@ class RenewableCertTests(BaseRenewableCertTest):
         # Test updating when providing a new privkey.  The key should
         # be saved in a new file rather than creating a new symlink.
         self.assertEqual(
-            10, self.test_rc.save_successor(9, "with", "a",
-                                            "key", self.cli_config))
+            10, self.test_rc.save_successor(9, b'with', b'a',
+                                            b'key', self.cli_config))
         self.assertTrue(os.path.exists(self.test_rc.version("privkey", 10)))
         self.assertFalse(os.path.islink(self.test_rc.version("privkey", 10)))
         self.assertFalse(os.path.exists(temp_config_file))
@@ -578,6 +575,15 @@ class RenewableCertTests(BaseRenewableCertTest):
 
     def test_relevant_values_str(self):
         values = {"authenticator": "apache"}
+        self.assertEqual(
+            self._test_relevant_values_common(values), values)
+
+    @mock.patch("certbot.cli.set_by_cli")
+    @mock.patch("certbot.plugins.disco.PluginsRegistry.find_all")
+    def test_relevant_values_namespace(self, mock_find_all, mock_set_by_cli):
+        mock_set_by_cli.return_value = True
+        mock_find_all.return_value = ["certbot-foo:bar"]
+        values = {"certbot_foo:bar_baz": 42}
         self.assertEqual(
             self._test_relevant_values_common(values), values)
 
@@ -789,6 +795,7 @@ class DeleteFilesTest(BaseRenewableCertTest):
     """Tests for certbot.storage.delete_files"""
     def setUp(self):
         super(DeleteFilesTest, self).setUp()
+
         for kind in ALL_FOUR:
             kind_path = os.path.join(self.tempdir, "live", "example.org",
                                         kind + ".pem")

@@ -14,15 +14,25 @@ Getting Started
 Running a local copy of the client
 ----------------------------------
 
-Running the client in developer mode from your local tree is a little
-different than running ``certbot-auto``.  To get set up, do these things
-once:
+Running the client in developer mode from your local tree is a little different
+than running Certbot as a user. To get set up, clone our git repository by
+running:
 
 .. code-block:: shell
 
    git clone https://github.com/certbot/certbot
+
+If you're on macOS, we recommend you skip the rest of this section and instead
+run Certbot in Docker. You can find instructions for how to do this :ref:`here
+<docker>`. If you're running on Linux, you can run the following commands to
+install dependencies and set up a virtual environment where you can run
+Certbot. You will need to repeat this when Certbot's dependencies change or when
+a new plugin is introduced.
+
+.. code-block:: shell
+
    cd certbot
-   ./letsencrypt-auto-source/letsencrypt-auto --os-packages-only
+   ./certbot-auto --os-packages-only
    ./tools/venv.sh
 
 Then in each shell where you're working on the client, do:
@@ -30,17 +40,18 @@ Then in each shell where you're working on the client, do:
 .. code-block:: shell
 
    source ./venv/bin/activate
+   export SERVER=https://acme-staging.api.letsencrypt.org/directory
+   source tests/integration/_common.sh
 
 After that, your shell will be using the virtual environment, and you run the
-client by typing:
+client by typing `certbot` or `certbot_test`. The latter is an alias that
+includes several flags useful for testing. For instance, it sets various output
+directories to point to /tmp/, and uses non-privileged ports for challenges, so
+root privileges are not required.
 
-.. code-block:: shell
-
-   certbot
-
-Activating a shell in this way makes it easier to run unit tests
-with ``tox`` and integration tests, as described below. To reverse this, you
-can type ``deactivate``.  More information can be found in the `virtualenv docs`_.
+Activating a shell with `venv/bin/activate` sets environment variables so that
+Python pulls in the correct versions of various packages needed by Certbot.
+More information can be found in the `virtualenv docs`_.
 
 .. _`virtualenv docs`: https://virtualenv.pypa.io
 
@@ -69,10 +80,8 @@ either in the same directory as ``foo.py`` or in the ``tests`` subdirectory
 (if there isn't, make one). While you are working on your code and tests, run
 ``python foo_test.py`` to run the relevant tests.
 
-For debugging, we recommend running ``pip install ipdb`` and putting
-``import ipdb; ipdb.set_trace()`` statements inside the source
-code. Alternatively, you can use Python's standard library `pdb`,
-but you won't get TAB completion.
+For debugging, we recommend putting
+``import ipdb; ipdb.set_trace()`` statements inside the source code.
 
 Once you are done with your code changes, and the tests in ``foo_test.py`` pass,
 run all of the unittests for Certbot with ``tox -e py27`` (this uses Python
@@ -109,6 +118,14 @@ and working. Fetch and start Boulder using:
 If you have problems with Docker, you may want to try `removing all containers and
 volumes`_ and making sure you have at least 1GB of memory.
 
+Set up a certbot_test alias that enables easily running against the local
+Boulder:
+
+.. code-block:: shell
+
+   export SERVER=http://localhost:4000/directory
+   source tests/integration/_common.sh
+
 Run the integration tests using:
 
 .. code-block:: shell
@@ -138,13 +155,15 @@ different webservers, other TLS servers, and operating systems.
 The interfaces available for plugins to implement are defined in
 `interfaces.py`_ and `plugins/common.py`_.
 
-The most common kind of plugin is a "Configurator", which is likely to
-implement the `~certbot.interfaces.IAuthenticator` and
-`~certbot.interfaces.IInstaller` interfaces (though some
-Configurators may implement just one of those).
+The main two plugin interfaces are `~certbot.interfaces.IAuthenticator`, which
+implements various ways of proving domain control to a certificate authority,
+and `~certbot.interfaces.IInstaller`, which configures a server to use a
+certificate once it is issued. Some plugins, like the built-in Apache and Nginx
+plugins, implement both interfaces and perform both tasks. Others, like the
+built-in Standalone authenticator, implement just one interface.
 
 There are also `~certbot.interfaces.IDisplay` plugins,
-which implement bindings to alternative UI libraries.
+which can change how prompts are displayed to a user.
 
 .. _interfaces.py: https://github.com/certbot/certbot/blob/master/certbot/interfaces.py
 .. _plugins/common.py: https://github.com/certbot/certbot/blob/master/certbot/plugins/common.py#L34
@@ -153,27 +172,20 @@ which implement bindings to alternative UI libraries.
 Authenticators
 --------------
 
-Authenticators are plugins designed to prove that this client deserves a
-certificate for some domain name by solving challenges received from
-the ACME server. From the protocol, there are essentially two
-different types of challenges. Challenges that must be solved by
-individual plugins in order to satisfy domain validation (subclasses
-of `~.DVChallenge`, i.e. `~.challenges.TLSSNI01`,
-`~.challenges.HTTP01`, `~.challenges.DNS`) and continuity specific
-challenges (subclasses of `~.ContinuityChallenge`,
-i.e. `~.challenges.RecoveryToken`, `~.challenges.RecoveryContact`,
-`~.challenges.ProofOfPossession`). Continuity challenges are
-always handled by the `~.ContinuityAuthenticator`, while plugins are
-expected to handle `~.DVChallenge` types.
-Right now, we have two authenticator plugins, the `~.ApacheConfigurator`
-and the `~.StandaloneAuthenticator`. The Standalone and Apache
-authenticators only solve the `~.challenges.TLSSNI01` challenge currently.
-(You can set which challenges your authenticator can handle through the
-:meth:`~.IAuthenticator.get_chall_pref`.
+Authenticators are plugins that prove control of a domain name by solving a
+challenge provided by the ACME server. ACME currently defines three types of
+challenges: HTTP, TLS-SNI, and DNS, represented by classes in `acme.challenges`.
+An authenticator plugin should implement support for at least one challenge type.
 
-(FYI: We also have a partial implementation for a `~.DNSAuthenticator`
-in a separate branch).
+An Authenticator indicates which challenges it supports by implementing
+`get_chall_pref(domain)` to return a sorted list of challenge types in
+preference order.
 
+An Authenticator must also implement `perform(achalls)`, which "performs" a list
+of challenges by, for instance, provisioning a file on an HTTP server, or
+setting a TXT record in DNS. Once all challenges have succeeded or failed,
+Certbot will call the plugin's `cleanup(achalls)` method to remove any files or
+DNS records that were needed only during authentication.
 
 Installer
 ---------
@@ -211,23 +223,39 @@ Augeas may still find the `~.Reverter` class helpful in handling
 configuration checkpoints and rollback.
 
 
-Display
-~~~~~~~
-
-We currently only offer a "text" mode for displays. Display plugins
-implement the `~certbot.interfaces.IDisplay` interface.
-
 .. _dev-plugin:
 
 Writing your own plugin
-=======================
+~~~~~~~~~~~~~~~~~~~~~~~
 
 Certbot client supports dynamic discovery of plugins through the
-`setuptools entry points`_. This way you can, for example, create a
-custom implementation of `~certbot.interfaces.IAuthenticator` or
-the `~certbot.interfaces.IInstaller` without having to merge it
+`setuptools entry points`_ using the `certbot.plugins` group. This
+way you can, for example, create a custom implementation of
+`~certbot.interfaces.IAuthenticator` or the
+`~certbot.interfaces.IInstaller` without having to merge it
 with the core upstream source code. An example is provided in
 ``examples/plugins/`` directory.
+
+While developing, you can install your plugin into a Certbot development
+virtualenv like this:
+
+.. code-block:: shell
+
+  . venv/bin/activate
+  . tests/integration/_common.sh
+  pip install -e examples/plugins/
+  certbot_test plugins
+
+Your plugin should show up in the output of the last command. If not,
+it was not installed properly.
+
+Once you've finished your plugin and published it, you can have your
+users install it system-wide with `pip install`. Note that this will
+only work for users who have Certbot installed from OS packages or via
+pip. Users who run `certbot-auto` are currently unable to use third-party
+plugins. It's technically possible to install third-party plugins into
+the virtualenv used by `certbot-auto`, but they will be wiped away when
+`certbot-auto` upgrades.
 
 .. warning:: Please be aware though that as this client is still in a
    developer-preview stage, the API may undergo a few changes. If you
@@ -285,8 +313,7 @@ Steps:
    including coverage. The ``--skip-missing-interpreters`` argument ignores
    missing versions of Python needed for running the tests. Fix any errors.
 5. If your code touches communication with an ACME server/Boulder, you
-   should run the integration tests, see `integration`_. See `Known Issues`_
-   for some common failures that have nothing to do with your code.
+   should run the integration tests, see `integration`_.
 6. Submit the PR.
 7. Did your tests pass on Travis? If they didn't, fix any errors.
 
@@ -346,56 +373,36 @@ This should generate documentation in the ``docs/_build/html``
 directory.
 
 
-Other methods for running the client
-====================================
+.. _docker:
 
-Vagrant
--------
+Running the client with Docker
+==============================
 
-If you are a Vagrant user, Certbot comes with a Vagrantfile that
-automates setting up a development environment in an Ubuntu 14.04
-LTS VM. To set it up, simply run ``vagrant up``. The repository is
-synced to ``/vagrant``, so you can get started with:
+You can use Docker Compose to quickly set up an environment for running and
+testing Certbot. This is especially useful for macOS users. To install Docker
+Compose, follow the instructions at https://docs.docker.com/compose/install/.
 
-.. code-block:: shell
+.. note:: Linux users can simply run ``pip install docker-compose`` to get
+  Docker Compose after installing Docker Engine and activating your shell as
+  described in the :ref:`Getting Started <getting_started>` section.
 
-  vagrant ssh
-  cd /vagrant
-  sudo ./venv/bin/certbot
+Now you can develop on your host machine, but run Certbot and test your changes
+in Docker. When using ``docker-compose`` make sure you are inside your clone of
+the Certbot repository. As an example, you can run the following command to
+check for linting errors::
 
-Support for other Linux distributions coming soon.
+  docker-compose run --rm --service-ports development bash -c 'tox -e lint'
 
-.. note::
-   Unfortunately, Python distutils and, by extension, setup.py and
-   tox, use hard linking quite extensively. Hard linking is not
-   supported by the default sync filesystem in Vagrant. As a result,
-   all actions with these commands are *significantly slower* in
-   Vagrant. One potential fix is to `use NFS`_ (`related issue`_).
+You can also leave a terminal open running a shell in the Docker container and
+modify Certbot code in another window. The Certbot repo on your host machine is
+mounted inside of the container so any changes you make immediately take
+effect. To do this, run::
 
-.. _use NFS: http://docs.vagrantup.com/v2/synced-folders/nfs.html
-.. _related issue: https://github.com/ClusterHQ/flocker/issues/516
+  docker-compose run --rm --service-ports development bash
 
+Now running the check for linting errors described above is as easy as::
 
-Docker
-------
-
-OSX users will probably find it easiest to set up a Docker container for
-development. Certbot comes with a Dockerfile (``Dockerfile-dev``)
-for doing so. To use Docker on OSX, install and setup docker-machine using the
-instructions at https://docs.docker.com/installation/mac/.
-
-To build the development Docker image::
-
-  docker build -t certbot -f Dockerfile-dev .
-
-Now run tests inside the Docker image:
-
-.. code-block:: shell
-
-  docker run -it certbot bash
-  cd src
-  tox -e py27
-
+  tox -e lint
 
 .. _prerequisites:
 
@@ -432,8 +439,12 @@ For squeeze you will need to:
 FreeBSD
 -------
 
-Package installation for FreeBSD uses ``pkg``, not ports.
+Packages can be installed on FreeBSD using ``pkg``, 
+or any other port-management tool (``portupgrade``, ``portmanager``, etc.) 
+from the pre-built package or can be built and installed from ports. 
+Either way will ensure proper installation of all the dependencies required 
+for the package.
 
 FreeBSD by default uses ``tcsh``. In order to activate virtualenv (see
-below), you will need a compatible shell, e.g. ``pkg install bash &&
+above), you will need a compatible shell, e.g. ``pkg install bash &&
 bash``.

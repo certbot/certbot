@@ -19,6 +19,9 @@ from certbot import errors
 from certbot import error_handler
 from certbot import util
 
+from certbot.plugins import common as plugins_common
+from certbot.plugins import disco as plugins_disco
+
 logger = logging.getLogger(__name__)
 
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
@@ -27,7 +30,14 @@ CURRENT_VERSION = util.get_strict_version(certbot.__version__)
 
 
 def renewal_conf_files(config):
-    """Return /path/to/*.conf in the renewal conf directory"""
+    """Build a list of all renewal configuration files.
+
+    :param certbot.interfaces.IConfig config: Configuration object
+
+    :returns: list of renewal configuration files
+    :rtype: `list` of `str`
+
+    """
     return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
 
 def renewal_file_for_certname(config, certname):
@@ -179,13 +189,12 @@ def _relevant(option):
 
     :rtype: bool
     """
-    # The list() here produces a list of the plugin names as strings.
     from certbot import renewal
-    from certbot.plugins import disco as plugins_disco
-    plugins = list(plugins_disco.PluginsRegistry.find_all())
+    plugins = plugins_disco.PluginsRegistry.find_all()
+    namespaces = [plugins_common.dest_namespace(plugin) for plugin in plugins]
 
     return (option in renewal.CONFIG_ITEMS or
-            any(option.startswith(x + "_") for x in plugins))
+            any(option.startswith(namespace) for namespace in namespaces))
 
 
 def relevant_values(all_values):
@@ -1038,10 +1047,10 @@ class RenewableCert(object):
             is regarded as a successor (used to choose a privkey, if the
             key has not changed, but otherwise this information is not
             permanently recorded anywhere)
-        :param str new_cert: the new certificate, in PEM format
-        :param str new_privkey: the new private key, in PEM format,
+        :param bytes new_cert: the new certificate, in PEM format
+        :param bytes new_privkey: the new private key, in PEM format,
             or ``None``, if the private key has not changed
-        :param str new_chain: the new chain, in PEM format
+        :param bytes new_chain: the new chain, in PEM format
         :param .NamespaceConfig cli_config: parsed command line
             arguments
 
@@ -1077,18 +1086,18 @@ class RenewableCert(object):
             logger.debug("Writing symlink to old private key, %s.", old_privkey)
             os.symlink(old_privkey, target["privkey"])
         else:
-            with open(target["privkey"], "w") as f:
+            with open(target["privkey"], "wb") as f:
                 logger.debug("Writing new private key to %s.", target["privkey"])
                 f.write(new_privkey)
 
         # Save everything else
-        with open(target["cert"], "w") as f:
+        with open(target["cert"], "wb") as f:
             logger.debug("Writing certificate to %s.", target["cert"])
             f.write(new_cert)
-        with open(target["chain"], "w") as f:
+        with open(target["chain"], "wb") as f:
             logger.debug("Writing chain to %s.", target["chain"])
             f.write(new_chain)
-        with open(target["fullchain"], "w") as f:
+        with open(target["fullchain"], "wb") as f:
             logger.debug("Writing full chain to %s.", target["fullchain"])
             f.write(new_cert + new_chain)
 
