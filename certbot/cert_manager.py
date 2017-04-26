@@ -147,8 +147,7 @@ def cert_path_to_lineage(config):
     # pylint: disable=unused-argument
     def update_cert_name_for_cert_path_match(candidate_lineage, rv):
         """ Return the lineagename or return None. """
-
-        if candidate_lineage.fullchain == config.cert_path[0]:
+        if candidate_lineage.fullchain_path == config.cert_path[0]:
             return candidate_lineage.lineagename
 
     cert_path_match = _search_lineages(config, update_cert_name_for_cert_path_match, None)
