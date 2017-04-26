@@ -170,8 +170,7 @@ class RegistrationTest(unittest.TestCase):
 
         from acme.messages import Registration
         self.reg = Registration(key=key, contact=contact, agreement=agreement)
-        self.reg_none = Registration(authorizations='uri/authorizations',
-                                     certificates='uri/certificates')
+        self.reg_none = Registration()
 
         self.jobj_to = {
             'contact': contact,

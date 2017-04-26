@@ -21,7 +21,7 @@ BootstrapDebCommon() {
     QUIET_FLAG='-qq'
   fi
 
-  $SUDO apt-get $QUIET_FLAG update || echo apt-get update hit problems but continuing anyway...
+  $SUDO apt-get $QUIET_FLAG update || error apt-get update hit problems but continuing anyway...
 
   # virtualenv binary can be found in different packages depending on
   # distro version (#346)
@@ -49,7 +49,7 @@ BootstrapDebCommon() {
     # ARGS:
     BACKPORT_NAME="$1"
     BACKPORT_SOURCELINE="$2"
-    echo "To use the Apache Certbot plugin, augeas needs to be installed from $BACKPORT_NAME."
+    say "To use the Apache Certbot plugin, augeas needs to be installed from $BACKPORT_NAME."
     if ! grep -v -e ' *#' /etc/apt/sources.list | grep -q "$BACKPORT_NAME" ; then
       # This can theoretically error if sources.list.d is empty, but in that case we don't care.
       if ! grep -v -e ' *#' /etc/apt/sources.list.d/* 2>/dev/null | grep -q "$BACKPORT_NAME"; then
@@ -109,7 +109,7 @@ BootstrapDebCommon() {
 
 
   if ! $EXISTS virtualenv > /dev/null ; then
-    echo Failed to install a working \"virtualenv\" command, exiting
+    error Failed to install a working \"virtualenv\" command, exiting
     exit 1
   fi
 }

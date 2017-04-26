@@ -70,6 +70,8 @@ optional arguments:
                         because they may be necessary to accurately simulate
                         renewal. --renew-hook commands are not called.
                         (default: False)
+  --debug-challenges    After setting up challenges, wait for user input
+                        before submitting to CA (default: False)
   --preferred-challenges PREF_CHALLS
                         A sorted, comma delimited list of the preferred
                         challenge to use during authorization with the most
@@ -86,7 +88,7 @@ optional arguments:
                         statistics about success rates by OS and plugin. If
                         you wish to hide your server OS version from the Let's
                         Encrypt server, set this to "". (default:
-                        CertbotACMEClient/0.12.0 (Ubuntu 16.04.2 LTS)
+                        CertbotACMEClient/0.13.0 (Ubuntu 16.04.2 LTS)
                         Authenticator/XXX Installer/YYY)
 
 automation:
@@ -97,7 +99,7 @@ automation:
                         keep the existing one until it is due for renewal (for
                         the 'run' subcommand this means reinstall the existing
                         cert). (default: Ask)
-  --expand              If an existing cert covers some subset of the
+  --expand              If an existing cert is a strict subset of the
                         requested names, always expand and replace it with the
                         additional names. (default: Ask)
   --version             show program's version number and exit
@@ -128,6 +130,10 @@ automation:
   --no-self-upgrade     (certbot-auto only) prevent the certbot-auto script
                         from upgrading itself to newer released versions
                         (default: Upgrade automatically)
+  --no-bootstrap        (certbot-auto only) prevent the certbot-auto script
+                        from installing OS-level dependencies (default: Prompt
+                        to install OS-wide dependencies, but exit if the user
+                        says 'No')
   -q, --quiet           Silence all output except errors. Useful for
                         automation via cron. Implies --non-interactive.
                         (default: False)
@@ -193,6 +199,9 @@ paths:
                         installed from, or revoked. (default: None)
   --key-path KEY_PATH   Path to private key for cert installation or
                         revocation (if account key is missing) (default: None)
+  --fullchain-path FULLCHAIN_PATH
+                        Accompanying path to a full certificate chain (cert
+                        plus chain). (default: None)
   --chain-path CHAIN_PATH
                         Accompanying path to a certificate chain. (default:
                         None)
@@ -256,10 +265,12 @@ renew:
                         Command to be run in a shell once for each
                         successfully renewed certificate. For this command,
                         the shell variable $RENEWED_LINEAGE will point to the
-                        config live subdirectory containing the new certs and
-                        keys; the shell variable $RENEWED_DOMAINS will contain
-                        a space-delimited list of renewed cert domains
-                        (default: None)
+                        config live subdirectory (for example,
+                        "/etc/letsencrypt/live/example.com") containing the
+                        new certs and keys; the shell variable
+                        $RENEWED_DOMAINS will contain a space-delimited list
+                        of renewed cert domains (for example,
+                        "example.com www.example.com") (default: None)
   --disable-hook-validation
                         Ordinarily the commands specified for --pre-hook
                         /--post-hook/--renew-hook will be checked for
@@ -314,10 +325,6 @@ unregister:
 
 install:
   Options for modifying how a cert is deployed
-
-  --fullchain-path FULLCHAIN_PATH
-                        Accompanying path to a full certificate chain (cert
-                        plus chain). (default: None)
 
 config_changes:
   Options for controlling which changes are displayed
