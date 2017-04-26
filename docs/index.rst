@@ -10,7 +10,6 @@ Welcome to the Certbot documentation!
    contributing
    packaging
    resources
-   contributors
 
 .. toctree::
    :maxdepth: 1
