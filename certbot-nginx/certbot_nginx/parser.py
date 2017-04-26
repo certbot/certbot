@@ -110,7 +110,7 @@ class NginxParser(object):
             srv = servers[filename]  # workaround undefined loop var in lambdas
 
             # Find all the server blocks
-            _do_for_subarray(tree, lambda x: x[0] == ['server'],
+            _do_for_subarray(tree, lambda x: len(x) >= 2 and x[0] == ['server'],
                              lambda x, y: srv.append((x[1], y)))
 
             # Find 'include' statements in server blocks and append their trees
