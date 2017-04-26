@@ -165,7 +165,7 @@ Authors
 * [Michal Papis](https://github.com/mpapis)
 * [Minn Soe](https://github.com/MinnSoe)
 * [Min RK](https://github.com/minrk)
-* Miquel Ruiz
+* [Miquel Ruiz](https://github.com/miquelruiz)
 * [Môshe van der Sterre](https://github.com/moshevds)
 * [mrstanwell](https://github.com/mrstanwell)
 * [Nav Aulakh](https://github.com/Nav)
