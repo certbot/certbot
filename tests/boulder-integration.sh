@@ -205,7 +205,7 @@ common unregister
 
 # Most CI systems set this variable to true.
 # If the tests are running as part of CI, Nginx should be available.
-if $CI || type nginx;
+if ${CI:-false} || type nginx;
 then
     . ./certbot-nginx/tests/boulder-integration.sh
 fi
