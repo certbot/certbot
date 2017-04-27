@@ -3,26 +3,26 @@ usage:
 
 Certbot can obtain and install HTTPS/TLS/SSL certificates.  By default,
 it will attempt to use a webserver both for obtaining and installing the
-cert. The most common SUBCOMMANDS and flags are:
+certificate. The most common SUBCOMMANDS and flags are:
 
 obtain, install, and renew certificates:
-    (default) run   Obtain & install a cert in your current webserver
-    certonly        Obtain or renew a cert, but do not install it
-    renew           Renew all previously obtained certs that are near expiry
-   -d DOMAINS       Comma-separated list of domains to obtain a cert for
+    (default) run   Obtain & install a certificate in your current webserver
+    certonly        Obtain or renew a certificate, but do not install it
+    renew           Renew all previously obtained certificates that are near expiry
+   -d DOMAINS       Comma-separated list of domains to obtain a certificate for
 
   --apache          Use the Apache plugin for authentication & installation
   --standalone      Run a standalone webserver for authentication
   --nginx           Use the Nginx plugin for authentication & installation
   --webroot         Place files in a server's webroot folder for authentication
-  --manual          Obtain certs interactively, or using shell script hooks
+  --manual          Obtain certificates interactively, or using shell script hooks
 
    -n               Run non-interactively
-  --test-cert       Obtain a test cert from a staging server
-  --dry-run         Test "renew" or "certonly" without saving any certs to disk
+  --test-cert       Obtain a test certificate from a staging server
+  --dry-run         Test "renew" or "certonly" without saving any certificates to disk
 
 manage certificates:
-    certificates    Display information about certs you have from Certbot
+    certificates    Display information about certificates you have from Certbot
     revoke          Revoke a certificate (supply --cert-path)
     delete          Delete a certificate
 
@@ -57,14 +57,14 @@ optional arguments:
                         certificate, specifies the new certificate's name.
                         (default: None)
   --dry-run             Perform a test run of the client, obtaining test
-                        (invalid) certs but not saving them to disk. This can
+                        (invalid) certificates but not saving them to disk. This can
                         currently only be used with the 'certonly' and 'renew'
                         subcommands. Note: Although --dry-run tries to avoid
                         making any persistent changes on a system, it is not
                         completely side-effect free: if used with webserver
                         authenticator plugins like apache and nginx, it makes
                         and then reverts temporary config changes in order to
-                        obtain test certs, and reloads webservers to deploy
+                        obtain test certificates, and reloads webservers to deploy
                         and then roll back those changes. It also calls --pre-
                         hook and --post-hook commands if they are defined
                         because they may be necessary to accurately simulate
@@ -95,11 +95,11 @@ automation:
   Arguments for automating execution & other tweaks
 
   --keep-until-expiring, --keep, --reinstall
-                        If the requested cert matches an existing cert, always
-                        keep the existing one until it is due for renewal (for
-                        the 'run' subcommand this means reinstall the existing
-                        cert). (default: Ask)
-  --expand              If an existing cert is a strict subset of the
+                        If the requested certificate matches an existing
+                        certificate, always keep the existing one until it is
+                        due for renewal (for the 'run' subcommand this means
+                        reinstall the existing certificate). (default: Ask)
+  --expand              If an existing certificate is a strict subset of the
                         requested names, always expand and replace it with the
                         additional names. (default: Ask)
   --version             show program's version number and exit
@@ -171,8 +171,9 @@ testing:
 
   --test-cert, --staging
                         Use the staging server to obtain or revoke test
-                        (invalid) certs; equivalent to --server https://acme-
-                        staging.api.letsencrypt.org/directory (default: False)
+                        (invalid) certificates; equivalent to --server
+                        https://acme-staging.api.letsencrypt.org/directory
+                        (default: False)
   --debug               Show tracebacks in case of errors, and allow certbot-
                         auto execution on experimental platforms (default:
                         False)
@@ -188,20 +189,20 @@ testing:
                         the port Certbot listens on. A conforming ACME server
                         will still attempt to connect on port 80. (default:
                         80)
-  --break-my-certs      Be willing to replace or renew valid certs with
-                        invalid (testing/staging) certs (default: False)
+  --break-my-certs      Be willing to replace or renew valid certificates with
+                        invalid (testing/staging) certificates (default: False)
 
 paths:
   Arguments changing execution paths & servers
 
   --cert-path CERT_PATH
-                        Path to where cert is saved (with auth --csr),
+                        Path to where certificate is saved (with auth --csr),
                         installed from, or revoked. (default: None)
-  --key-path KEY_PATH   Path to private key for cert installation or
+  --key-path KEY_PATH   Path to private key for certificate installation or
                         revocation (if account key is missing) (default: None)
   --fullchain-path FULLCHAIN_PATH
-                        Accompanying path to a full certificate chain (cert
-                        plus chain). (default: None)
+                        Accompanying path to a full certificate chain
+                        (certificate plus chain). (default: None)
   --chain-path CHAIN_PATH
                         Accompanying path to a certificate chain. (default:
                         None)
@@ -225,10 +226,10 @@ manage:
                         directory
 
 run:
-  Options for obtaining & installing certs
+  Options for obtaining & installing certificates
 
 certonly:
-  Options for modifying how a cert is obtained
+  Options for modifying how a certificate is obtained
 
   --csr CSR             Path to a Certificate Signing Request (CSR) in DER or
                         PEM format. Currently --csr only works with the
@@ -267,9 +268,9 @@ renew:
                         the shell variable $RENEWED_LINEAGE will point to the
                         config live subdirectory (for example,
                         "/etc/letsencrypt/live/example.com") containing the
-                        new certs and keys; the shell variable
+                        new certificates and keys; the shell variable
                         $RENEWED_DOMAINS will contain a space-delimited list
-                        of renewed cert domains (for example,
+                        of renewed certificate domains (for example,
                         "example.com www.example.com") (default: None)
   --disable-hook-validation
                         Ordinarily the commands specified for --pre-hook
@@ -288,7 +289,7 @@ delete:
   Options for deleting a certificate
 
 revoke:
-  Options for revocation of certs
+  Options for revocation of certificates
 
   --reason {keycompromise,affiliationchanged,superseded,unspecified,cessationofoperation}
                         Specify reason for revoking certificate. (default: 0)
@@ -324,7 +325,7 @@ unregister:
   --account ACCOUNT_ID  Account ID to use (default: None)
 
 install:
-  Options for modifying how a cert is deployed
+  Options for modifying how a certificate is deployed
 
 config_changes:
   Options for controlling which changes are displayed
@@ -347,7 +348,7 @@ plugins:
   --installers          Limit to installer plugins only. (default: None)
 
 update_symlinks:
-  Recreates cert and key symlinks in /etc/letsencrypt/live, if you changed
+  Recreates certificate and key symlinks in /etc/letsencrypt/live, if you changed
   them by hand or edited a renewal configuration file
 
 plugins:
@@ -366,13 +367,13 @@ plugins:
   -i INSTALLER, --installer INSTALLER
                         Installer plugin name (also used to find domains).
                         (default: None)
-  --apache              Obtain and install certs using Apache (default: False)
-  --nginx               Obtain and install certs using Nginx (default: False)
-  --standalone          Obtain certs using a "standalone" webserver. (default:
+  --apache              Obtain and install certificates using Apache (default: False)
+  --nginx               Obtain and install certificates using Nginx (default: False)
+  --standalone          Obtain certificates using a "standalone" webserver. (default:
                         False)
   --manual              Provide laborious manual instructions for obtaining a
-                        cert (default: False)
-  --webroot             Obtain certs by placing files in a webroot directory.
+                        certificate (default: False)
+  --webroot             Obtain certificates by placing files in a webroot directory.
                         (default: False)
 
 nginx:
