@@ -175,7 +175,9 @@ class PluginsRegistry(collections.Mapping):
 
     def __init__(self, plugins):
         # plugins are sorted so the same order is used between runs.
-        # This prevents deadlock caused by plugins acquiring a lock.
+        # This prevents deadlock caused by plugins acquiring a lock
+        # and ensures at least one concurrent Certbot instance will run
+        # successfully.
         self._plugins = OrderedDict(sorted(six.iteritems(plugins)))
 
     @classmethod
