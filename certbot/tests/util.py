@@ -109,12 +109,13 @@ def skip_unless(condition, reason):  # pragma: no cover
         return lambda cls: None
 
 
-def make_lineage(self, testfile):
+def make_lineage(config_dir, testfile):
     """Creates a lineage defined by testfile.
 
     This creates the archive, live, and renewal directories if
     necessary and creates a simple lineage.
 
+    :param str config_dir: path to the configuration directory
     :param str testfile: configuration file to base the lineage on
 
     :returns: path to the renewal conf file for the created lineage
@@ -124,11 +125,11 @@ def make_lineage(self, testfile):
     lineage_name = testfile[:-len('.conf')]
 
     conf_dir = os.path.join(
-        self.config_dir, constants.RENEWAL_CONFIGS_DIR)
+        config_dir, constants.RENEWAL_CONFIGS_DIR)
     archive_dir = os.path.join(
-        self.config_dir, constants.ARCHIVE_DIR, lineage_name)
+        config_dir, constants.ARCHIVE_DIR, lineage_name)
     live_dir = os.path.join(
-        self.config_dir, constants.LIVE_DIR, lineage_name)
+        config_dir, constants.LIVE_DIR, lineage_name)
 
     for directory in (archive_dir, conf_dir, live_dir,):
         if not os.path.exists(directory):
@@ -143,11 +144,11 @@ def make_lineage(self, testfile):
         os.symlink(os.path.join(archive_dir, '{0}1.pem'.format(kind)),
                    os.path.join(live_dir, '{0}.pem'.format(kind)))
 
-    conf_path = os.path.join(self.config_dir, conf_dir, testfile)
+    conf_path = os.path.join(config_dir, conf_dir, testfile)
     with open(vector_path(testfile)) as src:
         with open(conf_path, 'w') as dst:
             dst.writelines(
-                line.replace('MAGICDIR', self.config_dir) for line in src)
+                line.replace('MAGICDIR', config_dir) for line in src)
 
     return conf_path
 
