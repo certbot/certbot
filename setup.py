@@ -37,6 +37,7 @@ version = meta['version']
 install_requires = [
     'acme=={0}'.format(version),
     'argparse',
+    'cloudflare>=1.5.1',
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
     # saying so here causes a runtime error against our temporary fork of 0.9.3
     # in which we added 2.6 support (see #2243), so we relax the requirement.
@@ -124,6 +125,7 @@ setup(
             'null = certbot.plugins.null:Installer',
             'standalone = certbot.plugins.standalone:Authenticator',
             'webroot = certbot.plugins.webroot:Authenticator',
+            'dns-cloudflare = certbot.plugins.dns_cloudflare:Authenticator',
         ],
     },
 )
