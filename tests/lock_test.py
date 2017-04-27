@@ -1,5 +1,6 @@
 """Tests to ensure the lock order is preserved."""
-import contextlib
+import atexit
+import functools
 import logging
 import os
 import re
@@ -9,6 +10,7 @@ import sys
 import tempfile
 
 from certbot import lock
+from certbot import util
 
 from certbot.tests import util as test_util
 
@@ -18,75 +20,73 @@ logger = logging.getLogger(__name__)
 
 def main():
     """Run the lock tests."""
+    dirs, base_cmd = set_up()
+    for subcommand in ('certonly', 'install', 'renew', 'run',):
+        logger.info('Testing subcommand: %s', subcommand)
+        test_command(base_cmd + [subcommand], dirs)
+
+
+def set_up():
+    """Prepare tests to be run.
+
+    Logging is set up and temporary directories are set up to contain a
+    basic Certbot and Nginx configuration. The directories are returned
+    in the order they should be locked by Certbot. If the Nginx plugin
+    is expected to work on the system, the Nginx directory is included,
+    otherwise, it is not.
+
+    A Certbot command is also created that uses the temporary
+    directories. The returned command can be used to test different
+    subcommands by appending the desired command to the end.
+
+    :returns: directories and command
+    :rtype: `tuple` of `list`
+
+    """
     logging.basicConfig(format='%(message)s', level=logging.INFO)
-    with temporary_dir() as temp_dir:
-        subdirs = create_subdirs(temp_dir)
-        base_cmd = set_up_certbot_cmd(subdirs)
-        for subcommand in ('certonly', 'install', 'run'):
-            cmd = base_cmd + [subcommand]
-            logger.info('Testing command: %s', ' '.join(cmd))
-            test_command(cmd, subdirs)
-    logger.info('Lock test ran successfully.')
+    config_dir, logs_dir, work_dir, nginx_dir = set_up_dirs()
+    command = set_up_command(config_dir, logs_dir, work_dir, nginx_dir)
+
+    dirs = [logs_dir, config_dir, work_dir]
+    # Travis and Circle CI set CI to true so we
+    # will always test Nginx's lock during CI
+    if os.environ.get('CI') == 'true' or util.exe_exists('nginx'):
+        dirs.append(nginx_dir)
+    else:
+        logger.warning('Skipping Nginx lock tests')
+
+    return dirs, command
 
 
-@contextlib.contextmanager
-def temporary_dir():
-    """Context manager for creating and destroying a temp directory."""
+def set_up_dirs():
+    """Set up directories for tests.
+
+    A temporary directory is created to contain the config, log, work,
+    and nginx directories. A sample renewal configuration is created in
+    the config directory and a basic Nginx config is placed in the Nginx
+    directory. The temporary directory containing all of these
+    directories is deleted when the program exits.
+
+    :return value: config, log, work, and nginx directories
+    :rtype: `tuple` of `str`
+
+    """
     temp_dir = tempfile.mkdtemp()
     logger.debug('Created temporary directory: %s', temp_dir)
-    yield temp_dir
-    shutil.rmtree(temp_dir)
+    atexit.register(functools.partial(shutil.rmtree, temp_dir))
 
+    config_dir = os.path.join(temp_dir, 'config')
+    logs_dir = os.path.join(temp_dir, 'logs')
+    work_dir = os.path.join(temp_dir, 'work')
+    nginx_dir = os.path.join(temp_dir, 'nginx')
 
-def create_subdirs(parent_dir):
-    """Creates four subdirectories for Certbot and the chosen plugin.
+    for directory in (config_dir, logs_dir, work_dir, nginx_dir,):
+        os.mkdir(directory)
 
-    These directories are created under parent_dir.
-
-    :param str parent_dir: path to create directories in
-
-    :returns: paths to four directories created under paren_dir
-    :rtype: `list` of `str`
-
-    """
-    created = []
-    for name in ('foo', 'bar', 'baz', 'qux',):
-        full_path = os.path.join(parent_dir, name)
-        os.mkdir(full_path)
-        created.append(full_path)
-    return created
-
-
-def set_up_certbot_cmd(dirs):
-    """Build the Certbot command to run for testing.
-
-    The directory paths in dirs are used in the order that locks are
-    acquired. If you run the returned command when all locks are held,
-    Certbot should error trying to acquire the first directory in dirs.
-    If you release the lock on that directory, it should then error
-    trying to acquire the lock on the second directory. This continues
-    until all directories in dirs has been used. If dirs contains too
-    many or too few directories, this function raises an error.
-
-    The resulting command is set up so Nginx can be used and a basic
-    Nginx configuration is placed in that directory by this function.
-
-    :param iterable dirs: directories to be used
-
-    :returns: certbot command to execute for testing
-    :rtype: `list` of `str`
-
-    """
-    assert len(dirs) == 4, 'Unexpected number of directories!'
-    logs_dir, config_dir, work_dir, nginx_dir = dirs
+    test_util.make_lineage(config_dir, 'sample-renewal.conf')
     set_up_nginx_dir(nginx_dir)
-    cmd = 'certbot --cert-path {0} '.format(test_util.vector_path('cert.pem'))
-    cmd += '--key-path {0} '.format(test_util.vector_path('rsa512_key.pem'))
-    cmd += '--logs-dir {0} --config-dir {1} '.format(logs_dir, config_dir)
-    cmd += '--work-dir {} '.format(work_dir)
-    cmd += '--nginx-server-root {} '.format(nginx_dir)
-    cmd += '--debug --nginx --verbose '
-    return cmd.split()
+
+    return config_dir, logs_dir, work_dir, nginx_dir
 
 
 def set_up_nginx_dir(root_path):
@@ -99,10 +99,36 @@ def set_up_nginx_dir(root_path):
     repo_root = check_call('git rev-parse --show-toplevel'.split()).strip()
     conf_script = os.path.join(
         repo_root, 'certbot-nginx', 'tests', 'boulder-integration.conf.sh')
+    # boulder-integration.conf.sh uses the root environment variable as
+    # the Nginx server root when writing paths
     os.environ['root'] = root_path
     with open(os.path.join(root_path, 'nginx.conf'), 'w') as f:
         f.write(check_call(['/bin/sh', conf_script]))
     del os.environ['root']
+
+
+def set_up_command(config_dir, logs_dir, work_dir, nginx_dir):
+    """Build the Certbot command to run for testing.
+
+    You can test different subcommands by appending the desired command
+    to the returned list.
+
+    :param str config_dir: path to the configuration directory
+    :param str logs_dir: path to the logs directory
+    :param str work_dir: path to the work directory
+    :param str nginx_dir: path to the nginx directory
+
+    :returns: certbot command to execute for testing
+    :rtype: `list` of `str`
+
+    """
+    return (
+        'certbot --cert-path {0} --key-path {1} --config-dir {2} '
+        '--logs-dir {3} --work-dir {4} --nginx-server-root {5} --debug '
+        '--force-renewal --nginx --verbose '.format(
+            test_util.vector_path('cert.pem'),
+            test_util.vector_path('rsa512_key.pem'),
+            config_dir, logs_dir, work_dir, nginx_dir).split())
 
 
 def test_command(command, directories):
@@ -142,7 +168,7 @@ def check_error(command, dir_path):
 
     pattern = 'A lock on {}.* is held by another process'.format(dir_path)
     if not re.search(pattern, err):
-        err_msg = 'Directory path {} not error output!'.format(dir_path)
+        err_msg = 'Directory path {} not in error output!'.format(dir_path)
         report_failure(err_msg, out, err)
 
 
