@@ -203,7 +203,9 @@ common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
 
 common unregister
 
-if type nginx;
+# Most CI systems set this variable to true.
+# If the tests are running as part of CI, Nginx should be available.
+if $CI || type nginx;
 then
     . ./certbot-nginx/tests/boulder-integration.sh
 fi
