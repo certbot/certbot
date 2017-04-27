@@ -24,6 +24,7 @@ def main():
     for subcommand in ('certonly', 'install', 'renew', 'run',):
         logger.info('Testing subcommand: %s', subcommand)
         test_command(base_cmd + [subcommand], dirs)
+    logger.info('Lock test ran successfully.')
 
 
 def set_up():
