@@ -24,10 +24,10 @@ class NginxParser(object):
 
     """
 
-    def __init__(self, root, ssl_options):
+    def __init__(self, root):
         self.parsed = {}
         self.root = os.path.abspath(root)
-        self.loc = self._set_locations(ssl_options)
+        self.config_root = self._find_config_root()
 
         # Parse nginx.conf and included files.
         # TODO: Check sites-available/ as well. For now, the configurator does
@@ -39,7 +39,7 @@ class NginxParser(object):
 
         """
         self.parsed = {}
-        self._parse_recursively(self.loc["root"])
+        self._parse_recursively(self.config_root)
 
     def _parse_recursively(self, filepath):
         """Parses nginx config files recursively by looking at 'include'
@@ -220,29 +220,8 @@ class NginxParser(object):
                 logger.debug("Could not parse file: %s due to %s", ssl_options, err)
         return []
 
-    def _set_locations(self, ssl_options):
-        """Set default location for directives.
-
-        Locations are given as file_paths
-        .. todo:: Make sure that files are included
-
-        """
-        root = self._find_config_root()
-        default = root
-
-        nginx_temp = os.path.join(self.root, "nginx_ports.conf")
-        if os.path.isfile(nginx_temp):
-            listen = nginx_temp
-            name = nginx_temp
-        else:
-            listen = default
-            name = default
-
-        return {"root": root, "default": default, "listen": listen,
-                "name": name, "ssl_options": self._parse_ssl_options(ssl_options)}
-
     def _find_config_root(self):
-        """Find the Nginx Configuration Root file."""
+        """Return the Nginx Configuration Root file."""
         location = ['nginx.conf']
 
         for name in location:
