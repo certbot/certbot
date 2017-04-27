@@ -6,7 +6,7 @@ setup(
     package='certbot_example_plugins.py',
     install_requires=[
         'certbot',
-        'zope.interface',
+        'zope.interface<5.0',
     ],
     entry_points={
         'certbot.plugins': [

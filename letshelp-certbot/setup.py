@@ -7,7 +7,7 @@ from setuptools import find_packages
 version = '0.7.0.dev0'
 
 install_requires = [
-    'mock',
+    'mock<3.0',
     'setuptools',  # pkg_resources
 ]
 
