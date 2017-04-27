@@ -444,8 +444,6 @@ class NginxConfigurator(common.Plugin):
 
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
 
-        # the options file doesn't have a newline at the beginning, but there
-        # needs to be one when it's dropped into the file
         ssl_block = (
             [['\n    ', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
              ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
