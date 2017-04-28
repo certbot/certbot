@@ -1223,6 +1223,8 @@ def _plugins_parsing(helpful, plugins):
                 help='Obtain certs by placing files in a webroot directory.')
     helpful.add(["plugins", "certonly"], "--dns-cloudflare", action="store_true",
                 help='Obtain certs using a DNS TXT record (if you are using Cloudflare for DNS).')
+    helpful.add(["plugins", "certonly"], "--dns-digitalocean", action="store_true",
+                help='Obtain certs using a DNS TXT record (if you are using DigitalOcean for DNS).')
 
     # things should not be reorder past/pre this comment:
     # plugins_group should be displayed in --help before plugin
