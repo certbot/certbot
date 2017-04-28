@@ -701,7 +701,6 @@ def make_or_verify_needed_dirs(config):
     util.make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
                             os.geteuid(), config.strict_permissions)
 
-
 def set_displayer(config):
     """Set the displayer"""
     if config.quiet:
@@ -712,6 +711,10 @@ def set_displayer(config):
     else:
         displayer = display_util.FileDisplay(sys.stdout,
                                              config.force_interactive)
+
+    if config.json:
+        displayer = display_util.MachineReadableDisplay(sys.stdout)
+
     zope.component.provideUtility(displayer)
 
 

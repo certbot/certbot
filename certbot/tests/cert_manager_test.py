@@ -5,10 +5,13 @@ import re
 import shutil
 import tempfile
 import unittest
+import datetime, pytz
 
 import configobj
+import json
 import mock
 
+from certbot import cert_manager
 from certbot import configuration
 from certbot import errors
 
@@ -79,7 +82,6 @@ class UpdateLiveSymlinksTest(BaseCertManagerTest):
         """Test update_live_symlinks"""
         # pylint: disable=too-many-statements
         # create files with incorrect symlinks
-        from certbot import cert_manager
         archive_paths = {}
         for domain in self.domains:
             custom_archive = self.domains[domain]
@@ -122,7 +124,6 @@ class DeleteTest(storage_test.BaseRenewableCertTest):
         """Test delete"""
         mock_lineage_for_certname.return_value = self.test_rc
         self.cli_config.certname = "example.org"
-        from certbot import cert_manager
         cert_manager.delete(self.cli_config)
         self.assertTrue(mock_delete_files.called)
 
@@ -152,7 +153,7 @@ class CertificatesTest(BaseCertManagerTest):
     @mock.patch('certbot.cert_manager.logger')
     @test_util.patch_get_utility()
     @mock.patch("certbot.storage.RenewableCert")
-    @mock.patch('certbot.cert_manager._report_human_readable')
+    @mock.patch('certbot.cert_manager.HumanReadableCertOutputFormatter.report')
     def test_certificates_parse_success(self, mock_report, mock_renewable_cert,
         mock_utility, mock_logger):
         mock_report.return_value = ""
@@ -183,8 +184,6 @@ class CertificatesTest(BaseCertManagerTest):
     @mock.patch('certbot.cert_manager.ocsp.RevocationChecker.ocsp_revoked')
     def test_report_human_readable(self, mock_revoked):
         mock_revoked.return_value = None
-        from certbot import cert_manager
-        import datetime, pytz
         expiry = pytz.UTC.fromutc(datetime.datetime.utcnow())
 
         cert = mock.MagicMock(lineagename="nameone")
@@ -225,26 +224,182 @@ class CertificatesTest(BaseCertManagerTest):
         out = get_report()
         self.assertTrue('INVALID: TEST_CERT, REVOKED' in out)
 
-        cert = mock.MagicMock(lineagename="indescribable")
+        cert = mock.MagicMock(lineagename="lineagename")
         cert.target_expiry = expiry
-        cert.names.return_value = ["nameone", "thrice.named"]
+        cert.names.return_value = ["nameone", "name.two"]
         cert.is_test_cert = True
         parsed_certs.append(cert)
 
         out = get_report()
         self.assertEqual(len(re.findall("INVALID:", out)), 2)
-        mock_config.domains = ["thrice.named"]
+        mock_config.domains = ["name.two"]
         out = get_report()
         self.assertEqual(len(re.findall("INVALID:", out)), 1)
         mock_config.domains = ["nameone"]
         out = get_report()
         self.assertEqual(len(re.findall("INVALID:", out)), 2)
-        mock_config.certname = "indescribable"
+        mock_config.certname = "lineagename"
         out = get_report()
         self.assertEqual(len(re.findall("INVALID:", out)), 1)
-        mock_config.certname = "horror"
+        mock_config.certname = "namethree"
         out = get_report()
         self.assertEqual(len(re.findall("INVALID:", out)), 0)
+
+
+class FormattersTest(CertificatesTest):
+    """Tests for certbot.cert_manager.*CertOutputFormatter classes"""
+
+    @mock.patch('certbot.cert_manager.logger')
+    @mock.patch('zope.component.getUtility')
+    @mock.patch("certbot.storage.RenewableCert")
+    @mock.patch('certbot.cert_manager.BaseCertificateOutputFormatter.report')
+    def test_certificates_formatters_parse_success(self, mock_report,
+        mock_renewable_cert, mock_utility, mock_logger):
+        mock_report.return_value = ""
+        self._certificates(self.cli_config)
+        self.assertFalse(mock_logger.warning.called) #pylint: disable=no-member
+        self.assertTrue(mock_report.called)
+        self.assertTrue(mock_utility.called)
+        self.assertTrue(mock_renewable_cert.called)
+
+    @mock.patch('certbot.cert_manager.ocsp.RevocationChecker.ocsp_revoked')
+    def test_report_human_readable_formatter(self, mock_revoked):
+        mock_revoked.return_value = None
+        expiry = pytz.UTC.fromutc(datetime.datetime.utcnow())
+
+        cert = mock.MagicMock(lineagename="nameone")
+        cert.target_expiry = expiry
+        cert.names.return_value = ["nameone", "nametwo"]
+        cert.is_test_cert = False
+        parsed_certs = [cert]
+
+        # pylint: disable=protected-access
+        get_report = lambda: cert_manager._report_human_readable(mock_config, parsed_certs)
+
+        mock_config = mock.MagicMock(certname=None, lineagename=None)
+        # pylint: disable=protected-access
+        out = get_report()
+        self.assertTrue("INVALID: EXPIRED" in out)
+
+        cert.target_expiry += datetime.timedelta(hours=2)
+        # pylint: disable=protected-access
+        out = get_report()
+        self.assertTrue('1 hour(s)' in out)
+        self.assertTrue('VALID' in out and not 'INVALID' in out)
+
+        cert.target_expiry += datetime.timedelta(days=1)
+        # pylint: disable=protected-access
+        out = get_report()
+        self.assertTrue('1 day' in out)
+        self.assertFalse('under' in out)
+        self.assertTrue('VALID' in out and not 'INVALID' in out)
+
+        cert.target_expiry += datetime.timedelta(days=2)
+        # pylint: disable=protected-access
+        out = get_report()
+        self.assertTrue('3 days' in out)
+        self.assertTrue('VALID' in out and not 'INVALID' in out)
+
+        cert.is_test_cert = True
+        mock_revoked.return_value = True
+        out = get_report()
+        self.assertTrue('INVALID: TEST_CERT, REVOKED' in out)
+
+        cert = mock.MagicMock(lineagename="lineagename")
+        cert.target_expiry = expiry
+        cert.names.return_value = ["nameone", "name.two"]
+        cert.is_test_cert = True
+        parsed_certs.append(cert)
+
+        out = get_report()
+        self.assertEqual(len(re.findall("INVALID:", out)), 2)
+        mock_config.domains = ["name.two"]
+        out = get_report()
+        self.assertEqual(len(re.findall("INVALID:", out)), 1)
+        mock_config.domains = ["nameone"]
+        out = get_report()
+        self.assertEqual(len(re.findall("INVALID:", out)), 2)
+        mock_config.certname = "lineagename"
+        out = get_report()
+        self.assertEqual(len(re.findall("INVALID:", out)), 1)
+        mock_config.certname = "namethree"
+        out = get_report()
+        self.assertEqual(len(re.findall("INVALID:", out)), 0)
+
+    def test_report_json(self):
+        expiry = pytz.UTC.fromutc(datetime.datetime.utcnow())
+
+        cert = test_util.MockCert("nameone", ["nameone", "nametwo"], expiry,
+                "/path/fullchain", "/path/privkey")
+        parsed_certs = [cert]
+        # pylint: disable=protected-access
+        mock_config = mock.MagicMock(certname=None, lineagename=None)
+        formatter = cert_manager.JSONCertificateOutputFormatter(
+            mock_config,
+            parsed_certs,
+            None)
+        out = formatter.report()
+
+        try:
+            json.dumps(out)
+        except ValueError as e:
+            self.fail(e)
+
+    def test_json_formatter(self):
+        expiry = pytz.UTC.fromutc(datetime.datetime.utcnow())
+
+        cert = test_util.MockCert("nameone", ["nameone", "nametwo"], expiry,
+                "/path/fullchain", "/path/privkey")
+        parsed_certs = [cert]
+        mock_config = mock.MagicMock(certname=None, lineagename=None)
+        formatter = cert_manager.JSONCertificateOutputFormatter(
+            mock_config,
+            parsed_certs,
+            None)
+        out = formatter.report_successes('Found certs')
+
+        try:
+            out = json.dumps(out)
+        except ValueError as e:
+            self.fail(e)
+
+        self.assertTrue(cert.lineagename in out)
+        for name in cert.names():
+            self.assertTrue(name in out)
+        self.assertTrue(cert.fullchain in out)
+        self.assertTrue(cert.privkey in out)
+
+        parse_failures = ["/path/to/failure1", "/path/to/failure2"]
+
+        formatter = cert_manager.JSONCertificateOutputFormatter(
+            None,
+            None,
+            parse_failures)
+
+        out = formatter.report_failures()
+
+        try:
+            out = json.dumps(out)
+        except ValueError as e:
+            self.fail(e)
+
+        for path in parse_failures:
+            self.assertTrue(path in out)
+
+    def test_json_report_missing_certificates(self):
+        mock_config = mock.MagicMock(certname=None, lineagename=None)
+        formatter = cert_manager.JSONCertificateOutputFormatter(
+            mock_config,
+            None,
+            None)
+        out = formatter.report_missing()
+
+        try:
+            out = json.dumps(out)
+        except ValueError as e:
+            self.fail(e)
+
+        self.assertTrue('No certs found' in out)
 
 
 class SearchLineagesTest(BaseCertManagerTest):
@@ -257,7 +412,6 @@ class SearchLineagesTest(BaseCertManagerTest):
         mock_make_or_verify_dir):
         mock_renewal_conf_files.return_value = ["badfile"]
         mock_renewable_cert.side_effect = errors.CertStorageError
-        from certbot import cert_manager
         # pylint: disable=protected-access
         self.assertEqual(cert_manager._search_lineages(self.cli_config, lambda x: x, "check"),
             "check")
@@ -275,7 +429,6 @@ class LineageForCertnameTest(BaseCertManagerTest):
         mock_renewal_conf_file.return_value = "somefile.conf"
         mock_match = mock.Mock(lineagename="example.com")
         mock_renewable_cert.return_value = mock_match
-        from certbot import cert_manager
         self.assertEqual(cert_manager.lineage_for_certname(self.cli_config, "example.com"),
             mock_match)
         self.assertTrue(mock_make_or_verify_dir.called)
@@ -285,7 +438,6 @@ class LineageForCertnameTest(BaseCertManagerTest):
     def test_no_match(self, mock_renewal_conf_file,
         mock_make_or_verify_dir):
         mock_renewal_conf_file.return_value = "other.com.conf"
-        from certbot import cert_manager
         self.assertEqual(cert_manager.lineage_for_certname(self.cli_config, "example.com"),
             None)
         self.assertTrue(mock_make_or_verify_dir.called)
@@ -314,7 +466,6 @@ class DomainsForCertnameTest(BaseCertManagerTest):
         domains = ["example.com", "example.org"]
         mock_match.names.return_value = domains
         mock_renewable_cert.return_value = mock_match
-        from certbot import cert_manager
         self.assertEqual(cert_manager.domains_for_certname(self.cli_config, "example.com"),
             domains)
         self.assertTrue(mock_make_or_verify_dir.called)
@@ -324,7 +475,6 @@ class DomainsForCertnameTest(BaseCertManagerTest):
     def test_no_match(self, mock_renewal_conf_file,
         mock_make_or_verify_dir):
         mock_renewal_conf_file.return_value = "somefile.conf"
-        from certbot import cert_manager
         self.assertEqual(cert_manager.domains_for_certname(self.cli_config, "other.com"),
             None)
         self.assertTrue(mock_make_or_verify_dir.called)
@@ -346,7 +496,6 @@ class RenameLineageTest(BaseCertManagerTest):
         )
 
     def _call(self, *args, **kwargs):
-        from certbot import cert_manager
         return cert_manager.rename_lineage(*args, **kwargs)
 
     @mock.patch('certbot.storage.renewal_conf_files')
@@ -395,7 +544,6 @@ class RenameLineageTest(BaseCertManagerTest):
         mock_check.return_value = True
         mock_config = self.mock_config
         self._call(mock_config)
-        from certbot import cert_manager
         updated_lineage = cert_manager.lineage_for_certname(mock_config, mock_config.new_certname)
         self.assertTrue(updated_lineage is not None)
         self.assertEqual(updated_lineage.lineagename, mock_config.new_certname)
@@ -410,7 +558,6 @@ class RenameLineageTest(BaseCertManagerTest):
         util_mock.menu.return_value = (display_util.OK, 0)
         mock_get_utility.return_value = util_mock
         self._call(mock_config)
-        from certbot import cert_manager
         updated_lineage = cert_manager.lineage_for_certname(mock_config, mock_config.new_certname)
         self.assertTrue(updated_lineage is not None)
         self.assertEqual(updated_lineage.lineagename, mock_config.new_certname)

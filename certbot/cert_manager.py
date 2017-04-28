@@ -80,8 +80,8 @@ def certificates(config):
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             parse_failures.append(renewal_file)
 
-    # Describe all the certs
     _describe_certs(config, parsed_certs, parse_failures)
+
 
 def delete(config):
     """Delete Certbot files associated with a certificate lineage."""
@@ -144,6 +144,149 @@ def find_duplicative_certs(config, domains):
 # Private Helpers
 ###################
 
+
+class BaseCertificateOutputFormatter(object):
+    """Base class for formatting output of certificate information. """
+
+    def __init__(self, config, parsed_certs, parse_failures):
+        self.parsed_certs = parsed_certs
+        self.parse_failures = parse_failures
+        self.config = config
+
+    def report(self, notify, out):
+        """Produce a report of certificate information. """
+        if not self.parsed_certs and not self.parse_failures:
+            notify(self.report_missing())
+        else:
+            if self.parsed_certs:
+                match = "matching " if self.config.certname or self.config.domains else ""
+                preface = "Found the following {0}certs:\n".format(match)
+                notify(self.report_successes(preface))
+            if self.parse_failures:
+                notify(self.report_failures())
+        return out
+
+    def report_successes(self, preface):
+        """Stub method to be implemented by subclasses."""
+        pass
+
+    def report_failures(self):
+        """Stub method to be implemented by subclasses."""
+        pass
+
+    def report_missing(self):
+        """Stub method to be implemented by subclasses."""
+        pass
+
+    def _cert_validity(self, cert, checker):
+        now = pytz.UTC.fromutc(datetime.datetime.utcnow())
+
+        reasons = []
+        if cert.is_test_cert:
+            reasons.append('TEST_CERT')
+        if cert.target_expiry <= now:
+            reasons.append('EXPIRED')
+        if checker.ocsp_revoked(cert.cert, cert.chain):
+            reasons.append('REVOKED')
+
+        if reasons:
+            status = "INVALID: " + ", ".join(reasons)
+        else:
+            diff = cert.target_expiry - now
+            if diff.days == 1:
+                status = "VALID: 1 day"
+            elif diff.days < 1:
+                status = "VALID: {0} hour(s)".format(diff.seconds // 3600)
+            else:
+                status = "VALID: {0} days".format(diff.days)
+        valid_string = "{0} ({1})".format(cert.target_expiry, status)
+        return valid_string
+
+
+class HumanReadableCertOutputFormatter(BaseCertificateOutputFormatter):
+    """Extract certificate information and format it to be human readable. """
+
+    def report(self):  # pylint: disable=arguments-differ
+        """Produce a human readable report of certificate information. """
+        out = []
+        notify = out.append
+        return "\n".join(super(HumanReadableCertOutputFormatter, self).report(
+            notify, out))
+
+    def report_successes(self, preface):
+        """Format a human readable report of certificate information. """
+        certinfo = []
+        checker = ocsp.RevocationChecker()
+        for cert in self.parsed_certs:
+            if self.config.certname and cert.lineagename != self.config.certname:
+                continue
+            if self.config.domains and not set(self.config.domains).issubset(cert.names()):
+                continue
+            valid_string = self._cert_validity(cert, checker)
+            certinfo.append("  Certificate Name: {0}\n"
+                            "    Domains: {1}\n"
+                            "    Expiry Date: {2}\n"
+                            "    Certificate Path: {3}\n"
+                            "    Private Key Path: {4}".format(
+                                cert.lineagename,
+                                " ".join(cert.names()),
+                                valid_string,
+                                cert.fullchain,
+                                cert.privkey))
+            successes = "\n".join(certinfo)
+        return preface + successes
+
+    def report_failures(self):
+        """Format a results report for a category of single-line renewal outcomes"""
+        preface = "\nThe following renewal configuration files were invalid: \n"
+        failures = "\n".join(str(path) for path in self.parse_failures)
+        return  preface + failures
+
+    def report_missing(self):
+        return "No certs found."
+
+
+class JSONCertificateOutputFormatter(BaseCertificateOutputFormatter):
+    """Extract certificate information and format it for JSON. """
+
+    def report(self):  # pylint: disable=arguments-differ
+        """Produce a JSON report of certificate information. """
+        import json
+        out = {}
+        notify = out.update
+        return json.dumps(super(JSONCertificateOutputFormatter, self).report(
+            notify, out),
+            indent=4)
+
+    def report_successes(self, preface):
+        """Format a JSON report of certificate information. """
+        certs = []
+        checker = ocsp.RevocationChecker()
+        for cert in self.parsed_certs:
+            if self.config.certname and cert.lineagename != self.config.certname:
+                continue
+            if self.config.domains and not set(self.config.domains).issubset(cert.names()):
+                continue
+            valid_string = self._cert_validity(cert, checker)
+            certs.append({
+                "certificate_name": cert.lineagename,
+                "domains": cert.names(),
+                "expiry_date": valid_string,
+                "certificate_path": cert.fullchain,
+                "private_key_path": cert.privkey})
+        return {"found": certs}
+
+    def report_failures(self):
+        """Format a JSON report of problem conf files. """
+        report = []
+        for path in self.parse_failures:
+            report.append(path)
+        return {"failures": report}
+
+    def report_missing(self):
+        return {"No certs found": "Please check config dir"}
+
+
 def _get_certname(config, verb):
     """Get certname from flag, interactively, or error out.
     """
@@ -162,9 +305,9 @@ def _get_certname(config, verb):
         certname = choices[index]
     return certname
 
-def _report_lines(msgs):
-    """Format a results report for a category of single-line renewal outcomes"""
-    return "  " + "\n  ".join(str(msg) for msg in msgs)
+#def _report_lines(msgs):
+#    """Format a results report for a category of single-line renewal outcomes"""
+#    return "  " + "\n  ".join(str(msg) for msg in msgs)
 
 def _report_human_readable(config, parsed_certs):
     """Format a results report for a parsed cert"""
@@ -211,24 +354,15 @@ def _report_human_readable(config, parsed_certs):
 
 def _describe_certs(config, parsed_certs, parse_failures):
     """Print information about the certs we know about"""
-    out = []
-
-    notify = out.append
-
-    if not parsed_certs and not parse_failures:
-        notify("No certs found.")
+    if config.json is True:
+        Formatter = JSONCertificateOutputFormatter
     else:
-        if parsed_certs:
-            match = "matching " if config.certname or config.domains else ""
-            notify("Found the following {0}certs:".format(match))
-            notify(_report_human_readable(config, parsed_certs))
-        if parse_failures:
-            notify("\nThe following renewal configuration files "
-               "were invalid:")
-            notify(_report_lines(parse_failures))
+        Formatter = HumanReadableCertOutputFormatter
 
+    formatter = Formatter(config, parsed_certs, parse_failures)
+    out = formatter.report()
     disp = zope.component.getUtility(interfaces.IDisplay)
-    disp.notification("\n".join(out), pause=False, wrap=False)
+    disp.notification(out, pause=False, wrap=False)
 
 def _search_lineages(cli_config, func, initial_rv):
     """Iterate func over unbroken lineages, allowing custom return conditions.

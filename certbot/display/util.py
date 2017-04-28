@@ -555,6 +555,19 @@ class NoninteractiveDisplay(object):
         return self.input(message, default, cli_flag)
 
 
+@zope.interface.implementer(interfaces.IDisplay)
+class MachineReadableDisplay(NoninteractiveDisplay):
+    """An iDisplay implementation that produces machine readable output. """
+
+    def __init__(self, outfile):
+        super(MachineReadableDisplay, self).__init__(outfile)
+
+    def notification(self, message, **unused_kwargs):
+        """Displays output for consumption by another program.
+        :param str message: Message to display to stdout
+        """
+        self.outfile.write(message + "\n")
+
 def separate_list_input(input_):
     """Separate a comma or space separated list.
 
