@@ -589,14 +589,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 if realpath not in vhost_paths.keys():
                     vhs.append(new_vhost)
                     vhost_paths[realpath] = new_vhost.filep
-                elif realpath == new_vhost.filep:
+                elif not os.path.islink(new_vhost.filep):
                     # Prefer "real" vhost paths instead of symlinked ones
                     # ex: sites-enabled/vh.conf -> sites-available/vh.conf
 
                     # remove old (most likely) symlinked one
                     vhs = [v for v in vhs if v.filep != vhost_paths[realpath]]
                     vhs.append(new_vhost)
-                    vhost_paths[realpath] = realpath
+                    vhost_paths[realpath] = new_vhost.filep
 
         return vhs
 
