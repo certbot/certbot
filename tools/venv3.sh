@@ -15,6 +15,7 @@ fi
   -e certbot-apache \
   -e certbot-dns-cloudflare \
   -e certbot-dns-digitalocean \
+  -e certbot-dns-google \
   -e certbot-nginx \
   -e letshelp-certbot \
   -e certbot-compatibility-test
