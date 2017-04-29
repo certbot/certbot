@@ -532,7 +532,6 @@ class HelpfulArgumentParser(object):
         parsed_args = self.parser.parse_args(self.args)
         parsed_args.func = self.VERBS[self.verb]
         parsed_args.verb = self.verb
-        parsed_args.renewing = "unknown"  # used for the User Agent; not known until later
 
         if self.detect_defaults:
             return parsed_args
@@ -1106,7 +1105,7 @@ def _create_subparsers(helpful):
         help="Set a custom user agent string for the client. User agent strings allow "
              "the CA to collect high level statistics about success rates by OS, "
              "plugin and use case, and to know when to deprecate support for past Python "
-             "versions. If you wish to hide this information from the Let's "
+             "versions and flags. If you wish to hide this information from the Let's "
              'Encrypt server, set this to "". '
              '(default: {0}). The flags encoded in the user agent are: '
              '--duplicate, --force-renew, --allow-subset-of-names, -n, and '
