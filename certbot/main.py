@@ -690,7 +690,6 @@ def certonly(config, plugins):
 def renew(config, unused_plugins):
     """Renew previously-obtained certificates."""
     try:
-        config.renewing = "yes"
         renewal.handle_renewal_request(config)
     finally:
         hooks.run_saved_post_hooks()
