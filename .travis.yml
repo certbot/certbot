@@ -5,7 +5,7 @@ cache:
         - $HOME/.cache/pip
 
 before_install:
-  - 'dpkg -s libaugeas0'
+  - '[ $TRAVIS_OS_NAME == linux ] && dpkg -s libaugeas0 || brew install augeas'
 
 # using separate envs with different TOXENVs creates 4x1 Travis build
 # matrix, which allows us to clearly distinguish which component under
@@ -112,6 +112,9 @@ matrix:
       services: docker
     - python: "2.7"
       env: TOXENV=nginxroundtrip
+    - language: generic
+      env: TOXENV=py27
+      os: osx
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
