@@ -14,6 +14,7 @@ fi
   -e .[dev,docs] \
   -e certbot-apache \
   -e certbot-dns-cloudflare \
+  -e certbot-dns-cloudxns \
   -e certbot-dns-digitalocean \
   -e certbot-dns-google \
   -e certbot-nginx \
