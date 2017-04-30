@@ -125,13 +125,13 @@ class NginxParserTest(util.NginxTest):
                                  False, True,
                                  set(['localhost',
                                       r'~^(www\.)?(example|bar)\.']),
-                                 [], [9, 1, 9])
+                                 [], [10, 1, 9])
         vhost2 = obj.VirtualHost(nparser.abs_path('nginx.conf'),
                                  [obj.Addr('somename', '8080', False, False),
                                   obj.Addr('', '8000', False, False)],
                                  False, True,
                                  set(['somename', 'another.alias', 'alias']),
-                                 [], [9, 1, 12])
+                                 [], [10, 1, 12])
         vhost3 = obj.VirtualHost(nparser.abs_path('sites-enabled/example.com'),
                                  [obj.Addr('69.50.225.155', '9000',
                                            False, False),
@@ -186,7 +186,7 @@ class NginxParserTest(util.NginxTest):
                                      None, None, None,
                                      set(['localhost',
                                            r'~^(www\.)?(example|bar)\.']),
-                                     None, [9, 1, 9])
+                                     None, [10, 1, 9])
         nparser.add_server_directives(mock_vhost,
                                       [['foo', 'bar'], ['\n ', 'ssl_certificate', ' ',
                                                         '/etc/ssl/cert.pem']],

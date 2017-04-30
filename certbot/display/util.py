@@ -123,7 +123,6 @@ class FileDisplay(object):
 
     def input(self, message, default=None,
               cli_flag=None, force_interactive=False, **unused_kwargs):
-        # pylint: disable=no-self-use
         """Accept input from the user.
 
         :param str message: message to display to the user

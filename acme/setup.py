@@ -8,7 +8,6 @@ version = '0.14.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
-    'argparse',
     # load_pem_private/public_key (>=0.6)
     # rsa_recover_prime_factors (>=0.8)
     'cryptography>=0.8',
@@ -27,6 +26,10 @@ install_requires = [
     'setuptools>=1.0',
     'six',
 ]
+
+# env markers cause problems with older pip and setuptools
+if sys.version_info < (2, 7):
+    install_requires.append('argparse')
 
 dev_extras = [
     'nose',
@@ -59,6 +62,7 @@ setup(
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
     ],

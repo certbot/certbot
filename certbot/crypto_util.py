@@ -50,13 +50,13 @@ def save_key(key_pem, key_dir, keyname="key-certbot.pem"):
                             config.strict_permissions)
     if config.dry_run:
         key_path = None
-        logger.info("Dry run, not saving private key to file")
+        logger.debug("Dry run, not saving private key to file")
     else:
         key_f, key_path = util.unique_file(
             os.path.join(key_dir, keyname), 0o600, "wb")
         with key_f:
             key_f.write(key_pem)
-        logger.info("Saving private key: %s", key_path)
+        logger.debug("Saving private key: %s", key_path)
 
     return util.Key(key_path, key_pem)
 
@@ -85,13 +85,13 @@ def init_save_csr(privkey, names, path):
                                config.strict_permissions)
     if config.dry_run:
         csr_filename = None
-        logger.info("Creating CSR: not saving to file")
+        logger.debug("Creating CSR: not saving to file")
     else:
         csr_f, csr_filename = util.unique_file(
             os.path.join(path, "csr-certbot.pem"), 0o644, "wb")
         with csr_f:
             csr_f.write(csr_pem)
-        logger.info("Creating CSR: %s", csr_filename)
+        logger.debug("Creating CSR: %s", csr_filename)
 
     return util.CSR(csr_filename, csr_pem, "pem")
 
