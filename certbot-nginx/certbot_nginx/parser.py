@@ -534,7 +534,6 @@ def _add_directive(block, directive, replace):
         # and there is already a copy of that directive with a different value
         # in the config file.
 
-
         # handle flat include files
 
         directive_name = directive[0]
@@ -554,7 +553,8 @@ def _add_directive(block, directive, replace):
             for included_directive in included_directives:
                 included_dir_loc = find_location(included_directive)
                 included_dir_name = included_directive[0]
-                if not can_append(included_dir_loc, included_dir_name):
+                if not can_append(included_dir_loc, included_dir_name) \
+                    and block[included_dir_loc] != included_directive:
                     raise errors.MisconfigurationError(err_fmt.format(included_directive,
                         block[included_dir_loc]))
 
