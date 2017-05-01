@@ -513,9 +513,10 @@ def _add_directive(block, directive, replace):
         block.append(directive)
         return
 
-    # Find the index of a config line where the name of the directive matches
-    # the name of the directive we want to add. If no line exists, use None.
     def find_location(direc):
+        """ Find the index of a config line where the name of the directive matches
+        the name of the directive we want to add. If no line exists, use None.
+        """
         return next((index for index, line in enumerate(block) \
             if line and line[0] == direc[0]), None)
 
@@ -538,6 +539,7 @@ def _add_directive(block, directive, replace):
 
         directive_name = directive[0]
         def can_append(loc, dir_name):
+            """ Can we append this directive to the block? """
             return loc is None or (isinstance(dir_name, str) and dir_name in REPEATABLE_DIRECTIVES)
 
         err_fmt = 'tried to insert directive "{0}" but found conflicting "{1}".'
