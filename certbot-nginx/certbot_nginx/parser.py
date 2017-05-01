@@ -312,7 +312,7 @@ class NginxParser(object):
         except errors.MisconfigurationError as err:
             raise errors.MisconfigurationError("Problem in %s: %s" % (filename, str(err)))
 
-def _parse_flat_file(ssl_options):
+def _parse_ssl_options(ssl_options):
     if ssl_options is not None:
         try:
             with open(ssl_options) as _file:
@@ -515,8 +515,10 @@ def _add_directive(block, directive, replace):
 
     # Find the index of a config line where the name of the directive matches
     # the name of the directive we want to add. If no line exists, use None.
-    find_location = lambda direc: next((index for index, line in enumerate(block) \
-                     if line and line[0] == direc[0]), None)
+    def find_location(direc):
+        return next((index for index, line in enumerate(block) \
+            if line and line[0] == direc[0]), None)
+
     location = find_location(directive)
 
     if replace:
@@ -535,31 +537,30 @@ def _add_directive(block, directive, replace):
         # handle flat include files
 
         directive_name = directive[0]
-        can_append = lambda loc, dir_name: loc is None or (isinstance(dir_name, str) \
-                                and dir_name in REPEATABLE_DIRECTIVES)
+        def can_append(loc, dir_name):
+            return loc is None or (isinstance(dir_name, str) and dir_name in REPEATABLE_DIRECTIVES)
 
-        cannot_append_error = lambda direc, loc: errors.MisconfigurationError( \
-                'tried to insert directive "{0}" but found ' \
-                'conflicting "{1}".'.format(direc, block[loc]))
+        err_fmt = 'tried to insert directive "{0}" but found conflicting "{1}".'
 
         # Give a better error message about the specific directive than Nginx's "fail to restart"
         if directive_name == INCLUDE:
             # in theory, we might want to do this recursively, but in practice, that's really not
             # necessary because we know what file we're talking about (and if we don't recurse, we
             # just give a worse error message)
-            included_directives = _parse_flat_file(directive[1])
+            included_directives = _parse_ssl_options(directive[1])
 
             for included_directive in included_directives:
                 included_dir_loc = find_location(included_directive)
                 included_dir_name = included_directive[0]
                 if not can_append(included_dir_loc, included_dir_name):
-                    raise cannot_append_error(included_directive, included_dir_loc)
+                    raise errors.MisconfigurationError(err_fmt.format(included_directive,
+                        block[included_dir_loc]))
 
         if can_append(location, directive_name):
             block.append(directive)
             _comment_directive(block, len(block) - 1)
         elif block[location] != directive:
-            raise cannot_append_error(directive, location)
+            raise errors.MisconfigurationError(err_fmt.format(directive, block[location]))
 
 def _apply_global_addr_ssl(addr_to_ssl, parsed_server):
     """Apply global sslishness information to the parsed server block
