@@ -1,8 +1,9 @@
 """Certbot display."""
 import logging
 import os
-import textwrap
+import select
 import sys
+import textwrap
 
 import six
 import zope.interface
@@ -50,6 +51,37 @@ def _wrap_lines(msg):
             break_on_hyphens=False))
 
     return os.linesep.join(fixed_l)
+
+
+def input_with_timeout(prompt=None, timeout=36000.0):
+    """Get user input with a timeout.
+
+    Behaves the same as six.moves.input, however, an error is raised if
+    a user doesn't answer after timeout seconds. The default timeout
+    value was chosen to place it just under 12 hours for users following
+    our advice and running Certbot twice a day.
+
+    :param str prompt: prompt to provide for input
+    :param float timeout: maximum number of seconds to wait for input
+
+    :returns: user response
+    :rtype: str
+
+    :raises errors.Error if no answer is given before the timeout
+
+    """
+    if prompt:
+        sys.stdout.write(prompt)
+        sys.stdout.flush()
+
+    # select can only be used like this on UNIX
+    rlist, _, _ = select.select([sys.stdin], [], [], timeout)
+    if not rlist:
+        raise errors.Error(
+            "Timed out waiting for answer to prompt '{0}'".format(prompt))
+
+    return rlist[0].readline().rstrip('\n')
+
 
 @zope.interface.implementer(interfaces.IDisplay)
 class FileDisplay(object):

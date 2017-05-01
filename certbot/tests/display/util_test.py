@@ -1,8 +1,10 @@
 """Test :mod:`certbot.display.util`."""
 import inspect
 import os
+import socket
 import unittest
 
+import six
 import mock
 
 from certbot import errors
@@ -14,6 +16,39 @@ from certbot.display import util as display_util
 CHOICES = [("First", "Description1"), ("Second", "Description2")]
 TAGS = ["tag1", "tag2", "tag3"]
 TAGS_CHOICES = [("1", "tag1"), ("2", "tag2"), ("3", "tag3")]
+
+
+class InputWithTimeoutTest(unittest.TestCase):
+    """Tests for certbot.display.util.input_with_timeout."""
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.display.util import input_with_timeout
+        return input_with_timeout(*args, **kwargs)
+
+    def setUp(self):
+        self.expected_msg = "foo bar"
+        self.stdin = six.StringIO(self.expected_msg + "\n")
+
+    def test_input(self, prompt=None):
+        with mock.patch("certbot.display.util.select.select") as mock_select:
+            mock_select.return_value = ([self.stdin], [], [],)
+            self.assertEqual(display_util.input_with_timeout(prompt),
+                             self.expected_msg)
+
+    @mock.patch("certbot.display.util.sys.stdout")
+    def test_input_with_prompt(self, mock_stdout):
+        prompt = "test prompt: "
+        self.test_input(prompt)
+        mock_stdout.write.assert_called_once_with(prompt)
+        mock_stdout.flush.assert_called_once_with()
+
+    def test_timeout(self):
+        stdin = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        stdin.bind(('', 0))
+        stdin.listen(1)
+        with mock.patch("certbot.display.util.sys.stdin", stdin):
+            self.assertRaises(errors.Error, self._call, timeout=0.001)
+
 
 class FileOutputDisplayTest(unittest.TestCase):
     """Test stdout display.
