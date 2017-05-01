@@ -1,10 +1,10 @@
 """Certbot display."""
 import logging
 import os
-import textwrap
+import select
 import sys
+import textwrap
 
-import six
 import zope.interface
 
 from certbot import constants
@@ -51,6 +51,37 @@ def _wrap_lines(msg):
 
     return os.linesep.join(fixed_l)
 
+
+def input_with_timeout(prompt=None, timeout=36000.0):
+    """Get user input with a timeout.
+
+    Behaves the same as six.moves.input, however, an error is raised if
+    a user doesn't answer after timeout seconds. The default timeout
+    value was chosen to place it just under 12 hours for users following
+    our advice and running Certbot twice a day.
+
+    :param str prompt: prompt to provide for input
+    :param float timeout: maximum number of seconds to wait for input
+
+    :returns: user response
+    :rtype: str
+
+    :raises errors.Error if no answer is given before the timeout
+
+    """
+    if prompt:
+        sys.stdout.write(prompt)
+        sys.stdout.flush()
+
+    # select can only be used like this on UNIX
+    rlist, _, _ = select.select([sys.stdin], [], [], timeout)
+    if not rlist:
+        raise errors.Error(
+            "Timed out waiting for answer to prompt '{0}'".format(prompt))
+
+    return rlist[0].readline().rstrip('\n')
+
+
 @zope.interface.implementer(interfaces.IDisplay)
 class FileDisplay(object):
     """File-based display."""
@@ -83,7 +114,7 @@ class FileDisplay(object):
                 line=os.linesep, frame=side_frame, msg=message))
         if pause:
             if self._can_interact(force_interactive):
-                six.moves.input("Press Enter to Continue")
+                input_with_timeout("Press Enter to Continue")
             else:
                 logger.debug("Not pausing for user confirmation")
 
@@ -140,7 +171,7 @@ class FileDisplay(object):
         if self._return_default(message, default, cli_flag, force_interactive):
             return OK, default
 
-        ans = six.moves.input(
+        ans = input_with_timeout(
             textwrap.fill(
                 "%s (Enter 'c' to cancel): " % message,
                 80,
@@ -182,7 +213,7 @@ class FileDisplay(object):
             os.linesep, frame=side_frame, msg=message))
 
         while True:
-            ans = six.moves.input("{yes}/{no}: ".format(
+            ans = input_with_timeout("{yes}/{no}: ".format(
                 yes=_parens_around_char(yes_label),
                 no=_parens_around_char(no_label)))
 
@@ -388,7 +419,7 @@ class FileDisplay(object):
             input_msg = ("Press 1 [enter] to confirm the selection "
                          "(press 'c' to cancel): ")
         while selection < 1:
-            ans = six.moves.input(input_msg)
+            ans = input_with_timeout(input_msg)
             if ans.startswith("c") or ans.startswith("C"):
                 return CANCEL, -1
             try:
