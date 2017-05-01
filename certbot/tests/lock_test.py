@@ -1,5 +1,6 @@
 """Tests for certbot.lock."""
 import functools
+import multiprocessing
 import os
 import unittest
 
@@ -33,6 +34,18 @@ class LockFileTest(test_util.TempDirTestCase):
     def setUp(self):
         super(LockFileTest, self).setUp()
         self.lock_path = os.path.join(self.tempdir, 'test.lock')
+
+    def test_acquire_without_deletion(self):
+        # acquire the lock in another process but don't delete the file
+        child = multiprocessing.Process(target=self._call,
+                                        args=(self.lock_path,))
+        child.start()
+        child.join()
+        self.assertEqual(child.exitcode, 0)
+        self.assertTrue(os.path.exists(self.lock_path))
+
+        # Test we're still able to properly acquire and release the lock
+        self.test_removed()
 
     def test_contention(self):
         assert_raises = functools.partial(
