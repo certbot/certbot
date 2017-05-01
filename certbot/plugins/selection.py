@@ -134,7 +134,7 @@ def choose_plugin(prepared, question):
             return None
 
 noninstaller_plugins = ["webroot", "manual", "standalone", "dns-cloudflare", "dns-cloudxns",
-                        "dns-digitalocean", "dns-dnsimple", "dns-google"]
+                        "dns-digitalocean", "dns-dnsimple", "dns-google", "dns-nsone"]
 
 def record_chosen_plugins(config, plugins, auth, inst):
     "Update the config entries to reflect the plugins we actually selected."
@@ -248,6 +248,8 @@ def cli_plugin_requests(config):
         req_auth = set_configurator(req_auth, "dns-dnsimple")
     if config.dns_google:
         req_auth = set_configurator(req_auth, "dns-google")
+    if config.dns_nsone:
+        req_auth = set_configurator(req_auth, "dns-nsone")
     logger.debug("Requested authenticator %s and installer %s", req_auth, req_inst)
     return req_auth, req_inst
 
