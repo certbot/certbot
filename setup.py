@@ -57,7 +57,10 @@ install_requires = [
 
 # env markers cause problems with older pip and setuptools
 if sys.version_info < (2, 7):
-    install_requires.append('argparse')
+    install_requires.extend([
+        'argparse',
+        'ordereddict',
+    ])
 
 dev_extras = [
     # Pin astroid==1.3.5, pylint==1.4.2 as a workaround for #289

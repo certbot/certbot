@@ -21,7 +21,8 @@ class RenewalTest(util.TempDirTestCase):
     @mock.patch('certbot.cli.set_by_cli')
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
-        rc_path = util.make_lineage(self, 'sample-renewal-ancient.conf')
+        rc_path = util.make_lineage(
+            self.config_dir, 'sample-renewal-ancient.conf')
         args = mock.MagicMock(account=None, config_dir=self.config_dir,
                               logs_dir="logs", work_dir="work",
                               email=None, webroot_path=None)

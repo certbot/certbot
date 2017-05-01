@@ -12,6 +12,7 @@ from acme import messages
 
 from certbot import achallenges
 from certbot import errors
+from certbot.tests import util as certbot_test_util
 
 from certbot_nginx import obj
 from certbot_nginx import parser
@@ -64,6 +65,23 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.config_test = mock.Mock()
         self.config.prepare()
         self.assertEqual((1, 6, 2), self.config.version)
+
+    def test_prepare_locked(self):
+        server_root = self.config.conf("server-root")
+        self.config.config_test = mock.Mock()
+        os.remove(os.path.join(server_root, ".certbot.lock"))
+        certbot_test_util.lock_and_call(self._test_prepare_locked, server_root)
+
+    @mock.patch("certbot_nginx.configurator.util.exe_exists")
+    def _test_prepare_locked(self, unused_exe_exists):
+        try:
+            self.config.prepare()
+        except errors.PluginError as err:
+            err_msg = str(err)
+            self.assertTrue("lock" in err_msg)
+            self.assertTrue(self.config.conf("server-root") in err_msg)
+        else:  # pragma: no cover
+            self.fail("Exception wasn't raised!")
 
     @mock.patch("certbot_nginx.configurator.socket.gethostbyaddr")
     def test_get_all_names(self, mock_gethostbyaddr):

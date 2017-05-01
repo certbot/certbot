@@ -29,7 +29,10 @@ install_requires = [
 
 # env markers cause problems with older pip and setuptools
 if sys.version_info < (2, 7):
-    install_requires.append('argparse')
+    install_requires.extend([
+        'argparse',
+        'ordereddict',
+    ])
 
 dev_extras = [
     'nose',
