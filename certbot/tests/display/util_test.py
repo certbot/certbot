@@ -70,7 +70,8 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.assertTrue("message" in string)
 
     def test_notification_pause(self):
-        with mock.patch("six.moves.input", return_value="enter"):
+        input_with_timeout = "certbot.display.util.input_with_timeout"
+        with mock.patch(input_with_timeout, return_value="enter"):
             self.displayer.notification("message", force_interactive=True)
 
         self.assertTrue("message" in self.mock_stdout.write.call_args[0][0])
@@ -107,13 +108,15 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.assertEqual(result, (display_util.OK, default))
 
     def test_input_cancel(self):
-        with mock.patch("six.moves.input", return_value="c"):
+        input_with_timeout = "certbot.display.util.input_with_timeout"
+        with mock.patch(input_with_timeout, return_value="c"):
             code, _ = self.displayer.input("message", force_interactive=True)
 
         self.assertTrue(code, display_util.CANCEL)
 
     def test_input_normal(self):
-        with mock.patch("six.moves.input", return_value="domain.com"):
+        input_with_timeout = "certbot.display.util.input_with_timeout"
+        with mock.patch(input_with_timeout, return_value="domain.com"):
             code, input_ = self.displayer.input("message", force_interactive=True)
 
         self.assertEqual(code, display_util.OK)
@@ -139,23 +142,24 @@ class FileOutputDisplayTest(unittest.TestCase):
                               self.displayer.input, "msg", cli_flag="--flag")
 
     def test_yesno(self):
-        with mock.patch("six.moves.input", return_value="Yes"):
+        input_with_timeout = "certbot.display.util.input_with_timeout"
+        with mock.patch(input_with_timeout, return_value="Yes"):
             self.assertTrue(self.displayer.yesno(
                 "message", force_interactive=True))
-        with mock.patch("six.moves.input", return_value="y"):
+        with mock.patch(input_with_timeout, return_value="y"):
             self.assertTrue(self.displayer.yesno(
                 "message", force_interactive=True))
-        with mock.patch("six.moves.input", side_effect=["maybe", "y"]):
+        with mock.patch(input_with_timeout, side_effect=["maybe", "y"]):
             self.assertTrue(self.displayer.yesno(
                 "message", force_interactive=True))
-        with mock.patch("six.moves.input", return_value="No"):
+        with mock.patch(input_with_timeout, return_value="No"):
             self.assertFalse(self.displayer.yesno(
                 "message", force_interactive=True))
-        with mock.patch("six.moves.input", side_effect=["cancel", "n"]):
+        with mock.patch(input_with_timeout, side_effect=["cancel", "n"]):
             self.assertFalse(self.displayer.yesno(
                 "message", force_interactive=True))
 
-        with mock.patch("six.moves.input", return_value="a"):
+        with mock.patch(input_with_timeout, return_value="a"):
             self.assertTrue(self.displayer.yesno(
                 "msg", yes_label="Agree", force_interactive=True))
 
@@ -163,7 +167,7 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.assertTrue(self._force_noninteractive(
             self.displayer.yesno, "message", default=True))
 
-    @mock.patch("certbot.display.util.six.moves.input")
+    @mock.patch("certbot.display.util.input_with_timeout")
     def test_checklist_valid(self, mock_input):
         mock_input.return_value = "2 1"
         code, tag_list = self.displayer.checklist(
@@ -171,21 +175,21 @@ class FileOutputDisplayTest(unittest.TestCase):
         self.assertEqual(
             (code, set(tag_list)), (display_util.OK, set(["tag1", "tag2"])))
 
-    @mock.patch("certbot.display.util.six.moves.input")
+    @mock.patch("certbot.display.util.input_with_timeout")
     def test_checklist_empty(self, mock_input):
         mock_input.return_value = ""
         code, tag_list = self.displayer.checklist("msg", TAGS, force_interactive=True)
         self.assertEqual(
             (code, set(tag_list)), (display_util.OK, set(["tag1", "tag2", "tag3"])))
 
-    @mock.patch("certbot.display.util.six.moves.input")
+    @mock.patch("certbot.display.util.input_with_timeout")
     def test_checklist_miss_valid(self, mock_input):
         mock_input.side_effect = ["10", "tag1 please", "1"]
 
         ret = self.displayer.checklist("msg", TAGS, force_interactive=True)
         self.assertEqual(ret, (display_util.OK, ["tag1"]))
 
-    @mock.patch("certbot.display.util.six.moves.input")
+    @mock.patch("certbot.display.util.input_with_timeout")
     def test_checklist_miss_quit(self, mock_input):
         mock_input.side_effect = ["10", "c"]
 
@@ -217,7 +221,7 @@ class FileOutputDisplayTest(unittest.TestCase):
                 self.displayer._scrub_checklist_input(list_, TAGS))
             self.assertEqual(set_tags, exp[i])
 
-    @mock.patch("certbot.display.util.six.moves.input")
+    @mock.patch("certbot.display.util.input_with_timeout")
     def test_directory_select(self, mock_input):
         # pylint: disable=star-args
         args = ["msg", "/var/www/html", "--flag", True]
@@ -281,11 +285,12 @@ class FileOutputDisplayTest(unittest.TestCase):
 
     def test_get_valid_int_ans_valid(self):
         # pylint: disable=protected-access
-        with mock.patch("six.moves.input", return_value="1"):
+        input_with_timeout = "certbot.display.util.input_with_timeout"
+        with mock.patch(input_with_timeout, return_value="1"):
             self.assertEqual(
                 self.displayer._get_valid_int_ans(1), (display_util.OK, 1))
         ans = "2"
-        with mock.patch("six.moves.input", return_value=ans):
+        with mock.patch(input_with_timeout, return_value=ans):
             self.assertEqual(
                 self.displayer._get_valid_int_ans(3),
                 (display_util.OK, int(ans)))
@@ -297,8 +302,9 @@ class FileOutputDisplayTest(unittest.TestCase):
             ["4", "one", "C"],
             ["c"],
         ]
+        input_with_timeout = "certbot.display.util.input_with_timeout"
         for ans in answers:
-            with mock.patch("six.moves.input", side_effect=ans):
+            with mock.patch(input_with_timeout, side_effect=ans):
                 self.assertEqual(
                     self.displayer._get_valid_int_ans(3),
                     (display_util.CANCEL, -1))

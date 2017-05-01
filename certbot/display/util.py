@@ -5,7 +5,6 @@ import select
 import sys
 import textwrap
 
-import six
 import zope.interface
 
 from certbot import constants
@@ -115,7 +114,7 @@ class FileDisplay(object):
                 line=os.linesep, frame=side_frame, msg=message))
         if pause:
             if self._can_interact(force_interactive):
-                six.moves.input("Press Enter to Continue")
+                input_with_timeout("Press Enter to Continue")
             else:
                 logger.debug("Not pausing for user confirmation")
 
@@ -172,7 +171,7 @@ class FileDisplay(object):
         if self._return_default(message, default, cli_flag, force_interactive):
             return OK, default
 
-        ans = six.moves.input(
+        ans = input_with_timeout(
             textwrap.fill(
                 "%s (Enter 'c' to cancel): " % message,
                 80,
@@ -214,7 +213,7 @@ class FileDisplay(object):
             os.linesep, frame=side_frame, msg=message))
 
         while True:
-            ans = six.moves.input("{yes}/{no}: ".format(
+            ans = input_with_timeout("{yes}/{no}: ".format(
                 yes=_parens_around_char(yes_label),
                 no=_parens_around_char(no_label)))
 
@@ -420,7 +419,7 @@ class FileDisplay(object):
             input_msg = ("Press 1 [enter] to confirm the selection "
                          "(press 'c' to cancel): ")
         while selection < 1:
-            ans = six.moves.input(input_msg)
+            ans = input_with_timeout(input_msg)
             if ans.startswith("c") or ans.startswith("C"):
                 return CANCEL, -1
             try:
