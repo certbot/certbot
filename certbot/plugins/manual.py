@@ -59,7 +59,7 @@ printf "%s" {validation} > {achall.URI_ROOT_PATH}/{encoded_token}
 cat > /tmp/certbot/certbot-acme.py << EOF
 from SocketServer import ThreadingMixIn
 from threading import Thread
-import time,socket, BaseHTTPServer, SimpleHTTPServer
+import time, socket, BaseHTTPServer, SimpleHTTPServer
 class ThreadingHTTPServer(ThreadingMixIn, BaseHTTPServer.HTTPServer):
  pass
 def serve_on_port(port):
@@ -67,8 +67,9 @@ def serve_on_port(port):
    ThreadingHTTPServer(('', port), SimpleHTTPServer.SimpleHTTPRequestHandler).serve_forever()
  except:
    pass
-BaseHTTPServer.HTTPServer.address_family = socket.AF_INET6
-ipv6=Thread(target=serve_on_port, args=({port},)); ipv6.daemon=True; ipv6.start();
+if socket.has_ipv6:
+ BaseHTTPServer.HTTPServer.address_family = socket.AF_INET6
+ ipv6=Thread(target=serve_on_port, args=({port},)); ipv6.daemon=True; ipv6.start();
 BaseHTTPServer.HTTPServer.address_family = socket.AF_INET
 ipv4=Thread(target=serve_on_port, args=({port},)); ipv4.daemon=True; ipv4.start();
 while True: time.sleep(1)
