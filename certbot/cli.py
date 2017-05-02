@@ -1258,6 +1258,9 @@ def _plugins_parsing(helpful, plugins):
     helpful.add(["plugins", "certonly"], "--dns-google", action="store_true",
                 help=('Obtain certificates using a DNS TXT record (if you are '
                       'using Google Cloud DNS).'))
+    helpful.add(["plugins", "certonly"], "--dns-luadns", action="store_true",
+                help=('Obtain certificates using a DNS TXT record (if you are '
+                      'using LuaDNS for DNS).'))
     helpful.add(["plugins", "certonly"], "--dns-nsone", action="store_true",
                 help=('Obtain certificates using a DNS TXT record (if you are '
                       'using NS1 for DNS).'))

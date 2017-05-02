@@ -1,0 +1,1 @@
+"""LuaDNS Authenticator"""
