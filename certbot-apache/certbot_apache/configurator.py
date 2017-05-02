@@ -831,8 +831,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                                       (self._escape(ssl_fp),
                                        parser.case_i("VirtualHost")))
 
-        orig_matches = [i.replace("[1]", "") for i in orig_matches]
-
         self._copy_create_ssl_vhost_skeleton(nonssl_vhost, ssl_fp)
 
         # Reload augeas to take into account the new vhost
@@ -844,8 +842,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         vh_p = self._get_new_vh_path(orig_matches, new_matches)
 
-        # Raise error if we wrote something but can't map it back
-        if not vh_p and len(new_matches) != len(orig_matches):
+        if not vh_p:
             raise errors.PluginError(
                 "Could not reverse map the HTTPS VirtualHost to the original")
 
@@ -878,8 +875,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return ssl_vhost
 
     def _get_new_vh_path(self, orig_matches, new_matches):
-        """ Helper method for make_vhost_ssl for matching augeas paths
-        while ignoring index[1] of augeas path fragment """
+        """ Helper method for make_vhost_ssl for matching augeas paths. Returns
+        VirtualHost path from new_matches that's not present in orig_matches.
+
+        Paths are normalized, because augeas leaves indices out for paths
+        with only single directive with a similar key """
 
         orig_matches = [i.replace("[1]", "") for i in orig_matches]
         for match in new_matches:
@@ -950,8 +950,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         try:
             orig_contents = self._get_vhost_block(vhost)
-            ssl_vh_contents, sift = self._prepare_ssl_skeleton_contents(
-                orig_contents)
+            ssl_vh_contents, sift = self._sift_rewrite_rules(orig_contents)
 
             with open(ssl_fp, "a") as new_file:
                 new_file.write("<IfModule mod_ssl.c>\n")
@@ -973,7 +972,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.aug.set("/augeas/files%s/mtime" % (self._escape(ssl_fp)), "0")
         self.aug.set("/augeas/files%s/mtime" % (self._escape(vhost.filep)), "0")
 
-    def _prepare_ssl_skeleton_contents(self, contents):
+    def _sift_rewrite_rules(self, contents):
         """ Helper function for _copy_create_ssl_vhost_skeleton to prepare the
         new HTTPS VirtualHost contents. Currently disabling the rewrites """
 
@@ -1047,21 +1046,17 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         try:
             span_val = self.aug.span(vhost.path)
-            span_filep = span_val[0]
-            span_start = span_val[5]
-            span_end = span_val[6]
-            vh_contents = ""
-            with open(span_filep, 'r') as fh:
-                fh.seek(span_start)
-                vh_contents = fh.read(span_end-span_start)
-            return vh_contents.split("\n")
-
         except ValueError:
             logger.fatal("Error while reading the VirtualHost %s from "
-                         "file %s", vhost.name, vhost.filep)
+                         "file %s", vhost.name, vhost.filep, exc_info=True)
             raise errors.PluginError("Unable to read VirtualHost from file")
-
-
+        span_filep = span_val[0]
+        span_start = span_val[5]
+        span_end = span_val[6]
+        with open(span_filep, 'r') as fh:
+            fh.seek(span_start)
+            vh_contents = fh.read(span_end-span_start)
+        return vh_contents.split("\n")
 
     def _update_ssl_vhosts_addrs(self, vh_path):
         ssl_addrs = set()
