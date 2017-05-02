@@ -56,11 +56,25 @@ mkdir -p /tmp/certbot/public_html/{achall.URI_ROOT_PATH}
 cd /tmp/certbot/public_html
 printf "%s" {validation} > {achall.URI_ROOT_PATH}/{encoded_token}
 # run only once per server:
-$(command -v python2 || command -v python2.7 || command -v python2.6) -c \\
-"import socket, BaseHTTPServer, SimpleHTTPServer; \\
-BaseHTTPServer.HTTPServer.address_family = socket.AF_INET6; \\
-s = BaseHTTPServer.HTTPServer(('::', {port}), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
-s.serve_forever()" """
+cat > /tmp/certbot/certbot-acme.py << EOF
+from SocketServer import ThreadingMixIn
+from threading import Thread
+import time,socket, BaseHTTPServer, SimpleHTTPServer
+class ThreadingHTTPServer(ThreadingMixIn, BaseHTTPServer.HTTPServer):
+ pass
+def serve_on_port(port):
+ try:
+   ThreadingHTTPServer(('', port), SimpleHTTPServer.SimpleHTTPRequestHandler).serve_forever()
+ except:
+   pass
+BaseHTTPServer.HTTPServer.address_family = socket.AF_INET6
+ipv6=Thread(target=serve_on_port, args=({port},)); ipv6.daemon=True; ipv6.start();
+BaseHTTPServer.HTTPServer.address_family = socket.AF_INET
+ipv4=Thread(target=serve_on_port, args=({port},)); ipv4.daemon=True; ipv4.start();
+while True: time.sleep(1)
+EOF
+$(command -v python2 || command -v python2.7 || command -v python2.6) /tmp/certbot/certbot-acme.py
+"""
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
