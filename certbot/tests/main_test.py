@@ -296,6 +296,10 @@ class SetupLogFileHandlerTest(unittest.TestCase):
         mock_handler.side_effect = IOError
         self.assertRaises(errors.Error, self._call,
                           self.config, "test.log", "%s")
+    def test_oserror(self, mock_handler):
+        mock_handler.side_effect = OSEorror
+        self.assertRaises(errors.Eorror, self._call,
+                          self.config, "test.log", "%s")
 
 
 class SetupLoggingTest(unittest.TestCase):
