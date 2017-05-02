@@ -693,22 +693,33 @@ def renew(config, unused_plugins):
 def setup_log_file_handler(config, logfile, fmt):
     """Setup file debug logging."""
     log_file_path = os.path.join(config.logs_dir, logfile)
-    try:
-        if config.disable_log_rotation:
-            handler = logging.handlers.RotatingFileHandler(
-                log_file_path, maxBytes=2 ** 20, backupCount=0)
-        else:
-            handler = logging.handlers.RotatingFileHandler(
-                log_file_path, maxBytes=2 ** 20, backupCount=config.max_log_count)
-    except IOError as error:
-        raise errors.Error(_PERM_ERR_FMT.format(error))
-    # rotate on each invocation, rollover only possible when maxBytes
-    # is nonzero and backupCount is nonzero, so we set maxBytes as big
-    # as possible not to overrun in single CLI invocation (1MB).
-    handler.doRollover()  # TODO: creates empty letsencrypt.log.1 file
+    if config.max_log_count == 0:
+        # New log entries are simply appended to the same log file
+        handler = logging.handlers.RotatingFileHandler(
+            log_file_path, maxBytes=2 ** 20, backupCount=config.max_log_count)
+    elif config.max_log_count == 1:
+        # Cause only log from current run to be kept
+        # Do this by simply deleting existing logs first
+        if os.path.isfile(log_file_path):
+            try:
+                os.remove(log_file_path)
+            except OSError, error:
+                errors.Error(_PERM_ERR_FMT.format(error))
+        # Now create new logging handler
+        handler = logging.handlers.RotatingFileHandler(
+            log_file_path, maxBytes=2 ** 20, backupCount=config.max_log_count)
+    else:
+        # Keep N logs, last run through filename.(N-1)
+        handler = logging.handlers.RotatingFileHandler(
+            log_file_path, maxBytes=2 ** 20, backupCount=config.max_log_count-1)
+        # rotate on each invocation, rollover only possible when maxBytes
+        # is nonzero and backupCount is nonzero, so we set maxBytes as big
+        # as possible not to overrun in single CLI invocation (1MB).
+        handler.doRollover() #TODO: creates empty letsencrypt.log.1 file
+
     handler.setLevel(logging.DEBUG)
     handler_formatter = logging.Formatter(fmt=fmt)
-    handler_formatter.converter = time.gmtime  # don't use localtime
+    handler_formatter.converter = time.gmtime  # don't use localtime # Why not?
     handler.setFormatter(handler_formatter)
     return handler, log_file_path
 
