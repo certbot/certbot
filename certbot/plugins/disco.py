@@ -28,6 +28,7 @@ class PluginEntryPoint(object):
     PREFIX_FREE_DISTRIBUTIONS = [
         "certbot",
         "certbot-apache",
+        "certbot-dns-cloudflare",
         "certbot-nginx",
     ]
     """Distributions for which prefix will be omitted."""
