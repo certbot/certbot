@@ -32,6 +32,7 @@ class PluginEntryPoint(object):
         "certbot-dns-cloudxns",
         "certbot-dns-digitalocean",
         "certbot-dns-dnsimple",
+        "certbot-dns-dnsmadeeasy",
         "certbot-dns-google",
         "certbot-dns-nsone",
         "certbot-dns-route53",
