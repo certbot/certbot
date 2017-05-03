@@ -79,7 +79,10 @@ def input_with_timeout(prompt=None, timeout=36000.0):
         raise errors.Error(
             "Timed out waiting for answer to prompt '{0}'".format(prompt))
 
-    return rlist[0].readline().rstrip('\n')
+    line = rlist[0].readline()
+    if not line:
+        raise EOFError
+    return line.rstrip('\n')
 
 
 @zope.interface.implementer(interfaces.IDisplay)
