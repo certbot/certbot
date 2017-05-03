@@ -2,6 +2,7 @@
 import inspect
 import os
 import socket
+import tempfile
 import unittest
 
 import six
@@ -24,6 +25,11 @@ class InputWithTimeoutTest(unittest.TestCase):
     def _call(cls, *args, **kwargs):
         from certbot.display.util import input_with_timeout
         return input_with_timeout(*args, **kwargs)
+
+    def test_eof(self):
+        with tempfile.TemporaryFile("r+") as f:
+            with mock.patch("certbot.display.util.sys.stdin", new=f):
+                self.assertRaises(EOFError, self._call)
 
     def test_input(self, prompt=None):
         expected = "foo bar"
