@@ -502,20 +502,25 @@ def _comment_directive(block, location):
 def _comment_out_directive(block, location, include_location):
     """Comment out the line at location, with a note of explanation."""
     comment_message = ' duplicated in {0}'.format(include_location)
+    # add the end comment
+    # create a dumpable object out of block[location] (so it includes the ;)
     directive = block[location]
-    new_dir_block = nginxparser.UnspacedList([])
+    new_dir_block = nginxparser.UnspacedList([]) # just a wrapper
     new_dir_block.append(directive)
     dumped = nginxparser.dumps(new_dir_block)
-    commented = dumped + ' #' + comment_message
-    new_dir = nginxparser.loads(commented)
+    commented = dumped + ' #' + comment_message # add the comment directly to the one-line string
+    new_dir = nginxparser.loads(commented) # reload into UnspacedList
+
+    # add the beginning comment
     insert_location = 0
-    if new_dir[0].spaced[0] != new_dir[0][0]:
+    if new_dir[0].spaced[0] != new_dir[0][0]: # if there's whitespace at the beginning
         insert_location = 1
-    new_dir[0].spaced.insert(insert_location, "# ")
-    new_dir[0].spaced.append(";")
+    new_dir[0].spaced.insert(insert_location, "# ") # comment out the line
+    new_dir[0].spaced.append(";") # directly add in the ;, because now dumping won't work properly
     dumped = nginxparser.dumps(new_dir)
-    new_dir = nginxparser.loads(dumped)
-    block[location] = new_dir[0]
+    new_dir = nginxparser.loads(dumped) # reload into an UnspacedList
+
+    block[location] = new_dir[0] # set the now-single-line-comment directive back in place
 
 def _add_directive(block, directive, replace):
     """Adds or replaces a single directive in a config block.
