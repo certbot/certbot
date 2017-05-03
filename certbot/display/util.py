@@ -69,6 +69,8 @@ def input_with_timeout(prompt=None, timeout=36000.0):
     :raises errors.Error if no answer is given before the timeout
 
     """
+    # use of sys.stdin and sys.stdout to mimic six.moves.input based on
+    # https://github.com/python/cpython/blob/baf7bb30a02aabde260143136bdf5b3738a1d409/Lib/getpass.py#L129
     if prompt:
         sys.stdout.write(prompt)
         sys.stdout.flush()
