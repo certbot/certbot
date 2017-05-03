@@ -302,6 +302,33 @@ class NginxParserTest(util.NginxTest):
             COMMENT_BLOCK,
             ["\n", "e", " ", "f"]])
 
+    def test_comment_out_directive(self):
+        server_block = nginxparser.loads("""
+            server {
+                listen 80;
+                root /var/www/html;
+                index star.html;
+
+                server_name *.functorkitten.xyz;
+                ssl_session_timeout 1440m; ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+
+                ssl_prefer_server_ciphers on;
+            }""")
+        block = server_block[0][1]
+        from certbot_nginx.parser import _comment_out_directive
+        _comment_out_directive(block, 4, "blah1")
+        _comment_out_directive(block, 5, "blah2")
+        _comment_out_directive(block, 6, "blah3")
+        self.assertEqual(block.spaced, [
+            ['\n                ', 'listen', ' ', '80'],
+            ['\n                ', 'root', ' ', '/var/www/html'],
+            ['\n                ', 'index', ' ', 'star.html'],
+            ['\n\n                ', 'server_name', ' ', '*.functorkitten.xyz'],
+            ['\n                ', '#', ' ssl_session_timeout 1440m; # duplicated in blah1'],
+            [' ', '#', ' ssl_protocols TLSv1 TLSv1.1 TLSv1.2; # duplicated in blah2'],
+            ['\n\n                ', '#', ' ssl_prefer_server_ciphers on; # duplicated in blah3'],
+            '\n            '])
+
     def test_parse_server_raw_ssl(self):
         server = parser._parse_server_raw([ #pylint: disable=protected-access
             ['listen', '443']
