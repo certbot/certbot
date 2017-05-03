@@ -484,7 +484,6 @@ REPEATABLE_DIRECTIVES = set(['server_name', 'listen', INCLUDE])
 COMMENT = ' managed by Certbot'
 COMMENT_BLOCK = [' ', '#', COMMENT]
 
-
 def _comment_directive(block, location):
     """Add a comment to the end of the line at location."""
     next_entry = block[location + 1] if location + 1 < len(block) else None
@@ -500,6 +499,23 @@ def _comment_directive(block, location):
     if next_entry is not None and "\n" not in next_entry:
         block.insert(location + 2, '\n')
 
+def _comment_out_directive(block, location, include_location):
+    """Comment out the line at location, with a note of explanation."""
+    comment_message = ' duplicated in {0}'.format(include_location)
+    directive = block[location]
+    new_dir_block = nginxparser.UnspacedList([])
+    new_dir_block.append(directive)
+    dumped = nginxparser.dumps(new_dir_block)
+    commented = dumped + ' #' + comment_message
+    new_dir = nginxparser.loads(commented)
+    insert_location = 0
+    if new_dir[0].spaced[0] != new_dir[0][0]:
+        insert_location = 1
+    new_dir[0].spaced.insert(insert_location, "# ")
+    new_dir[0].spaced.append(";")
+    dumped = nginxparser.dumps(new_dir)
+    new_dir = nginxparser.loads(dumped)
+    block[location] = new_dir[0]
 
 def _add_directive(block, directive, replace):
     """Adds or replaces a single directive in a config block.
@@ -553,10 +569,12 @@ def _add_directive(block, directive, replace):
             for included_directive in included_directives:
                 included_dir_loc = find_location(included_directive)
                 included_dir_name = included_directive[0]
-                if not can_append(included_dir_loc, included_dir_name) \
-                    and block[included_dir_loc] != included_directive:
-                    raise errors.MisconfigurationError(err_fmt.format(included_directive,
-                        block[included_dir_loc]))
+                if not can_append(included_dir_loc, included_dir_name):
+                    if block[included_dir_loc] != included_directive:
+                        raise errors.MisconfigurationError(err_fmt.format(included_directive,
+                            block[included_dir_loc]))
+                    else:
+                        _comment_out_directive(block, included_dir_loc, directive[1])
 
         if can_append(location, directive_name):
             block.append(directive)
