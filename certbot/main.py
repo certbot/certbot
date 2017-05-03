@@ -745,7 +745,6 @@ def main(cli_args=sys.argv[1:]):
 
 
 if __name__ == "__main__":
-    print("yo dog")
     err_string = main()
     if err_string:
         logger.warning("Exiting with message %s", err_string)
