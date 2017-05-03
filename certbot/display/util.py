@@ -69,6 +69,8 @@ def input_with_timeout(prompt=None, timeout=36000.0):
     :raises errors.Error if no answer is given before the timeout
 
     """
+    # use of sys.stdin and sys.stdout to mimic six.moves.input based on
+    # https://github.com/python/cpython/blob/baf7bb30a02aabde260143136bdf5b3738a1d409/Lib/getpass.py#L129
     if prompt:
         sys.stdout.write(prompt)
         sys.stdout.flush()
@@ -79,7 +81,10 @@ def input_with_timeout(prompt=None, timeout=36000.0):
         raise errors.Error(
             "Timed out waiting for answer to prompt '{0}'".format(prompt))
 
-    return rlist[0].readline().rstrip('\n')
+    line = rlist[0].readline()
+    if not line:
+        raise EOFError
+    return line.rstrip('\n')
 
 
 @zope.interface.implementer(interfaces.IDisplay)
