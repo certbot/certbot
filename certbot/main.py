@@ -79,7 +79,9 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
             # TREAT AS NEW REQUEST
             assert domains is not None
             logger.info("Obtaining a new certificate")
-            lineage = le_client.obtain_and_enroll_certificate(domains, certname)
+            # config.privkey_path determines whether or not a new private key
+            # will be generated.
+            lineage = le_client.obtain_and_enroll_certificate(domains, certname, config.privkey_path)
             if lineage is False:
                 raise errors.Error("Certificate could not be obtained")
     finally:
@@ -743,6 +745,7 @@ def main(cli_args=sys.argv[1:]):
 
 
 if __name__ == "__main__":
+    print("yo dog")
     err_string = main()
     if err_string:
         logger.warning("Exiting with message %s", err_string)

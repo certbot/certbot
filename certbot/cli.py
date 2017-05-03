@@ -865,6 +865,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "per Certbot run. To see certificate names, run 'certbot certificates'. "
              "When creating a new certificate, specifies the new certificate's name.")
     helpful.add(
+        [None, "run", "certonly"],
+        "--privkey-path", dest="privkey_path", default=None,
+        help="Location of an existing private key to use in this new certificate. "
+             "(If not specified, a new key pair will be created.)")
+    helpful.add(
         [None, "testing", "renew", "certonly"],
         "--dry-run", action="store_true", dest="dry_run",
         help="Perform a test run of the client, obtaining test (invalid) certs"
