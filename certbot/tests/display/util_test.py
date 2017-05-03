@@ -25,15 +25,12 @@ class InputWithTimeoutTest(unittest.TestCase):
         from certbot.display.util import input_with_timeout
         return input_with_timeout(*args, **kwargs)
 
-    def setUp(self):
-        self.expected_msg = "foo bar"
-        self.stdin = six.StringIO(self.expected_msg + "\n")
-
     def test_input(self, prompt=None):
+        expected = "foo bar"
+        stdin = six.StringIO(expected + "\n")
         with mock.patch("certbot.display.util.select.select") as mock_select:
-            mock_select.return_value = ([self.stdin], [], [],)
-            self.assertEqual(display_util.input_with_timeout(prompt),
-                             self.expected_msg)
+            mock_select.return_value = ([stdin], [], [],)
+            self.assertEqual(self._call(prompt), expected)
 
     @mock.patch("certbot.display.util.sys.stdout")
     def test_input_with_prompt(self, mock_stdout):
