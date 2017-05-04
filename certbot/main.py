@@ -389,7 +389,7 @@ def _init_le_client(config, authenticator, installer):
 
     return client.Client(config, acc, authenticator, installer, acme=acme)
 
-def _delete_if_appropriate(config): # pylint: disable=too-many-locals
+def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-branches
     """Does the user want to delete their now-revoked certs?"""
     display = zope.component.getUtility(interfaces.IDisplay)
 

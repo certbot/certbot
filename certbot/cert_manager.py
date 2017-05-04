@@ -180,6 +180,7 @@ def overlapping_archive_dirs(cli_config, archive_dir):
     :rtype: bool
     """
     def find_lineages(candidate_lineage, return_value):
+        """Returns a list of lineages using archive_dir."""
         if candidate_lineage.archive_dir == archive_dir:
             return_value.append(candidate_lineage)
         return return_value
