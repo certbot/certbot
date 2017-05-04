@@ -6,6 +6,8 @@ import pytz
 import traceback
 import zope.component
 
+import configobj
+
 from certbot import errors
 from certbot import interfaces
 from certbot import ocsp
@@ -95,6 +97,14 @@ def delete(config):
 # Public Helpers
 ###################
 
+def full_archive_dir_from_renewal_conf(cli_config):
+    """Normally the sane thing to do is to use storage.full_archive_path,
+    but this function exists to help perform consistency checks preventing
+    users who set multiple different lineages to use the same archive dir."""
+    renewal_conf = storage.renewal_file_for_certname(cli_config, cli_config.certname)
+    full_archive_dir = configobj.ConfigObj(renewal_conf)["archive_dir"]
+    return full_archive_dir
+
 def lineage_for_certname(cli_config, certname):
     """Find a lineage object with name certname."""
     configs_dir = cli_config.renewal_configs_dir
@@ -161,6 +171,24 @@ def cert_path_to_lineage(config):
         raise errors.Error(error_msg.format(config.cert_path[0]))
     else:
         return cert_path_match
+
+def overlapping_archive_dirs(cli_config, archive_dir):
+    """Check if >1 lineages are using the specified archive_dir.
+    :param str archive_dir: path to archive dir
+
+    :returns: True if >1 lineage uses archive_dir, False otherwise
+    :rtype: bool
+    """
+    def find_lineages(candidate_lineage, return_value):
+        if candidate_lineage.archive_dir == archive_dir:
+            return_value.append(candidate_lineage)
+        return return_value
+
+    lineages_using_archive_dir = _search_lineages(cli_config, find_lineages, [])
+    if len(lineages_using_archive_dir) > 1:
+        return True
+    else:
+        return False
 
 def human_readable_cert_info(config, cert, skip_filter_checks=False):
     """ Returns a human readable description of info about a RenewablCert object"""
