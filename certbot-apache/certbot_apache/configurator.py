@@ -603,7 +603,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         file_paths = {}
         internal_paths = defaultdict(set)
         vhs = []
-        for vhost_path in self.parser.parser_paths.keys():
+        # Make a list of parser paths because the parser_paths
+        # dictionary may be modified during the loop.
+        for vhost_path in list(self.parser.parser_paths):
             paths = self.aug.match(
                 ("/files%s//*[label()=~regexp('%s')]" %
                     (vhost_path, parser.case_i("VirtualHost"))))
