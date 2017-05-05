@@ -587,3 +587,32 @@ class DNSResponse(ChallengeResponse):
 
         """
         return chall.check_validation(self.validation, account_public_key)
+
+
+@ChallengeResponse.register
+class DNS01Response(KeyAuthorizationChallengeResponse):
+    """ACME dns-01 challenge response."""
+    typ = "dns-01"
+
+
+@Challenge.register  # pylint: disable=too-many-ancestors
+class DNS01(KeyAuthorizationChallenge):
+    """ACME dns-01 challenge."""
+    response_cls = DNS01Response
+    typ = response_cls.typ
+
+    RR_SUBDOMAIN = "_acme-challenge"
+    RR_TTL = 300
+    RR_CLS = "IN"
+    RR_TYP = "TXT"
+
+    def validation(self, account_key, **unused_kwargs):
+        """Generate validation.
+
+        :param JWK account_key:
+        :rtype: list of fields describing the DNS resource record
+
+        """
+        sha256hash = hashlib.sha256(self.key_authorization(account_key))
+        value = jose.encode_b64jose(sha256hash.digest()).encode('ascii')
+        return [self.RR_SUBDOMAIN, self.RR_TTL, self.RR_CLS, self.RR_TYP, value]
