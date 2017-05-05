@@ -122,6 +122,9 @@ branches:
 # container-based infrastructure
 sudo: false
 
+# enable apt packages caching in order to speed up builds
+cache: apt
+
 addons:
   # Custom /etc/hosts required for simple verification of http-01
   # and tls-sni-01, and for certbot_test_nginx
