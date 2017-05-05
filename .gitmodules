@@ -1,0 +1,3 @@
+[submodule "letsencrypt/client/plugins/iis"]
+	path = letsencrypt/client/plugins/iis
+	url = https://github.com/felixrieseberg/lets-encrypt-iis
