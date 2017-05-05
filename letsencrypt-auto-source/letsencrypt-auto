@@ -219,6 +219,15 @@ DeterminePythonVersion() {
   fi
 }
 
+# Check free memory before installing python packages and warn if memory is less than 2 GB
+memory=$(free -m|awk 'FNR == 2 { print $4}')
+if [ $memory -lt 2048 ]
+then
+	result=$(free -m|awk 'FNR == 2 { OFMT = "%.2f"
+	print $4/1024}')
+	printf "Warning your system only contains $result GB of memory which is less than the recommended 2.0 GB, you may not be able to build the proper dependencies needed. \n"
+fi
+
 BootstrapDebCommon() {
   # Current version tested with:
   #
