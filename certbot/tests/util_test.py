@@ -404,6 +404,9 @@ class EnforceDomainSanityTest(unittest.TestCase):
         from certbot.util import enforce_domain_sanity
         return enforce_domain_sanity(domain)
 
+    def test_valid_domain(self):
+        self._call('example.net')
+
     def test_nonascii_str(self):
         self.assertRaises(errors.ConfigurationError, self._call,
                           u"eichh\u00f6rnchen.example.com".encode("utf-8"))
@@ -411,6 +414,18 @@ class EnforceDomainSanityTest(unittest.TestCase):
     def test_nonascii_unicode(self):
         self.assertRaises(errors.ConfigurationError, self._call,
                           u"eichh\u00f6rnchen.example.com")
+
+    def test_localhost(self):
+        self.assertRaises(errors.ConfigurationError, self._call,
+                          u"localhost")
+
+    def test_two_dots(self):
+        self.assertRaises(errors.ConfigurationError, self._call,
+                          u"..")
+
+    def test_three_dots(self):
+        self.assertRaises(errors.ConfigurationError, self._call,
+                          u"...")
 
     def test_too_long(self):
         long_domain = u"a"*256

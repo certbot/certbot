@@ -568,6 +568,8 @@ def enforce_domain_sanity(domain):
     if len(domain) > 255:
         raise errors.ConfigurationError("{0} it is too long.".format(msg))
     labels = domain.split('.')
+    if len(labels) < 2:
+        raise errors.ConfigurationError("{0} it does not have enough labels.".format(msg))
     for l in labels:
         if not l:
             raise errors.ConfigurationError("{0} it contains an empty label.".format(msg))

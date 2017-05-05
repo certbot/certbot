@@ -299,9 +299,8 @@ class ChooseNamesTest(unittest.TestCase):
     def test_get_valid_domains(self):
         from certbot.display.ops import get_valid_domains
         all_valid = ["example.com", "second.example.com",
-                     "also.example.com", "under_score.example.com",
-                     "justtld"]
-        all_invalid = ["öóòps.net", "*.wildcard.com", "uniçodé.com"]
+                     "also.example.com", "under_score.example.com"]
+        all_invalid = ["öóòps.net", "*.wildcard.com", "uniçodé.com", "justtld"]
         two_valid = ["example.com", "úniçøde.com", "also.example.com"]
         self.assertEqual(get_valid_domains(all_valid), all_valid)
         self.assertEqual(get_valid_domains(all_invalid), [])
@@ -327,11 +326,10 @@ class ChooseNamesTest(unittest.TestCase):
         mock_util().input.return_value = (display_util.OK,
                                           ("example.com,"
                                            "under_score.example.com,"
-                                           "justtld,"
                                            "valid.example.com"))
         self.assertEqual(_choose_names_manually(),
                          ["example.com", "under_score.example.com",
-                          "justtld", "valid.example.com"])
+                          "valid.example.com"])
         # Three iterations
         mock_util().input.return_value = (display_util.OK,
                                           "uniçodé.com")
