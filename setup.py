@@ -6,6 +6,13 @@ import sys
 from setuptools import setup
 from setuptools import find_packages
 
+
+if not hasattr(sys, 'real_prefix'):
+    exit('Only supported on a Virtual Environment')
+
+if hasattr(os, 'geteuid') and os.geteuid() == 0:
+    exit("Not supported when running as 'root'")
+
 # Workaround for http://bugs.python.org/issue8876, see
 # http://bugs.python.org/issue8876#msg208792
 # This can be removed when using Python 2.7.9 or later:
