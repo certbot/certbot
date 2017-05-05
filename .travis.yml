@@ -120,7 +120,7 @@ branches:
     - /^test-.*$/
 
 # container-based infrastructure
-sudo: false
+sudo: required
 
 addons:
   # Custom /etc/hosts required for simple verification of http-01
