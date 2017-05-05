@@ -32,7 +32,9 @@ Notes for package maintainers
 
 3. ``jws`` is an internal script for ``acme`` module and it doesn't have to be packaged - it's mostly for debugging: you can use it as ``echo foo | jws sign | jws verify``.
 
-4. Do get in touch with us. We are happy to make any changes that will make packaging easier. If you need to apply some patches don't do it downstream - make a PR here.
+4. When packing certbot-nginx, ``certbot_nginx/options-ssl-nginx.conf`` should be copied into ``/etc/letsencrypt`` and updated on new releases. If a user has modified the file, they should be asked if they would like to override their local changes.
+
+5. Do get in touch with us. We are happy to make any changes that will make packaging easier. If you need to apply some patches don't do it downstream - make a PR here.
 
 Already ongoing efforts
 =======================
