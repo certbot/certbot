@@ -41,7 +41,8 @@ How to run the client
 
 In many cases, you can just run ``certbot-auto`` or ``certbot``, and the
 client will guide you through the process of obtaining and installing certs
-interactively.
+interactively. If you want to test your workflow, you may be interested by using
+a test server because production server is rate limited (More informations below)
 
 For full command line help, you can type::
 
@@ -63,6 +64,11 @@ If you want to use a webserver that doesn't have full plugin support yet, you
 can still use "standalone" or "webroot" plugins to obtain a certificate::
 
   ./certbot-auto certonly --standalone --email admin@example.com -d example.com -d www.example.com -d other.example.net
+
+If you want to use a test server, you can create a cli.ini file (more informations in documentation)
+or use this option in every command:
+
+   --server https://acme-staging.api.letsencrypt.org/directory
 
 
 Understanding the client in more depth
