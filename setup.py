@@ -72,6 +72,7 @@ dev_extras = [
     'tox',
     'twine',
     'wheel',
+    'dnspython',
 ]
 
 docs_extras = [
