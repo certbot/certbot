@@ -165,6 +165,11 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
             makedirs.side_effect = OSError()
             self.assertRaises(OSError, self._call, "bar", 12312312)
 
+    def test_raises_root_error(self):
+        with mock.patch.object(os, "makedirs") as makedirs:
+            makedirs.side_effect = OSError(errno.EACCES, "Permission denied")
+            self.assertRaises(errors.Error, self._call, "bar", 12312312)
+
 
 class CheckPermissionsTest(test_util.TempDirTestCase):
     """Tests for certbot.util.check_permissions.

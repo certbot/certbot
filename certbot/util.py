@@ -183,6 +183,10 @@ def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
                 raise errors.Error(
                     "%s exists, but it should be owned by user %d with"
                     "permissions %s" % (directory, uid, oct(mode)))
+        elif exception.errno == errno.EPERM or exception.errno == errno.EACCES:
+            raise errors.Error(
+                "You need to have root privileges to run certbot. "
+                "Please try again, this time using 'sudo'. Exiting.")
         else:
             raise
 
