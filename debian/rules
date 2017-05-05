@@ -1,0 +1,57 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+%:
+	dh $@ --with python2,sphinxdoc
+
+override_dh_clean:
+	dh_auto_clean
+	cd $(CURDIR)
+	rm -rf build/ acme/build/ letsencrypt-apache/build/ letsencrypt-nginx/build
+	rm -rf debian/python-acme/ debian/letsencrypt/ debian/letsencrypt-apache/ debian/letsencrypt-nginx/
+
+override_dh_auto_build:
+	# acme
+	cd $(CURDIR)/acme; \
+	python2.7 setup.py build; \
+	python2.7 setup.py install --single-version-externally-managed --root=$(CURDIR)/debian/python-acme --install-layout=deb
+	# letsencrypt
+	cd $(CURDIR); \
+	python2.7 setup.py build; \
+	python2.7 setup.py install --single-version-externally-managed --root=$(CURDIR)/debian/letsencrypt --install-layout=deb
+	# letsencrypt-apache
+	cd $(CURDIR)/letsencrypt-apache; \
+	python2.7 setup.py build; \
+	python2.7 setup.py install --single-version-externally-managed --root=$(CURDIR)/debian/letsencrypt-apache --install-layout=deb
+	# letsencrypt-nginx
+	cd $(CURDIR)/letsencrypt-nginx; \
+	python2.7 setup.py build; \
+	python2.7 setup.py install --single-version-externally-managed --root=$(CURDIR)/debian/letsencrypt-nginx --install-layout=deb
+	# Documentation
+	sphinx-build -N -b html docs $(CURDIR)/debian/doc-build/html
+	sphinx-build -N -b man docs $(CURDIR)/debian/doc-build/man
+
+TESTS=acme letsencrypt letsencrypt-apache letsencrypt-nginx
+override_dh_auto_test:
+	ln -s $(CURDIR)/acme/acme/testdata $(CURDIR)/debian/python-acme/usr/lib/python2.7/dist-packages/acme/
+	set -ex; for suite in $(TESTS) ; do \
+		cd $(CURDIR); \
+		PYTHONPATH=$(shell find $(CURDIR)/debian -type d -name dist-packages | tr "\n" ":") python /usr/bin/nosetests $$suite; \
+	done
+
+override_dh_prep:
+	# dh_prep will destroy the stuff we've already installed.
+	# As such, we need to clean it ourselves in dh_clean, and disable it.
+
+override_dh_auto_install:
+	# We already did the install during the build, so the
+	# tests would work.
+	dh_installdirs
+	touch $(CURDIR)/debian/letsencrypt/etc/letsencrypt/renewal/.keepdir
+	# Remove files we don't want to ship in Debian
+	find $(CURDIR)/debian -type d -name tests -print0 | xargs -0 rm -rf
+	rm $(CURDIR)/debian/python-acme/usr/lib/python2.7/dist-packages/acme/testdata
+	rm -f $(CURDIR)/debian/python-acme/usr/bin/jws
+	rm -f $(CURDIR)/debian/python-acme/usr/share/man/man1/jws.1

@@ -1,0 +1,65 @@
+Author: Harlan Lieberman-Berg <hlieberman@setec.io>
+Forwarded: not-needed
+Description: Drop the versioned dependency on mock < 1.1.0
+ Python 2.6 is not shipped in any version of Debian newer
+ than oldstable so it seems safe to push forward with modern
+ versions of mock.
+Last-Update: 2015-09-20
+
+--- a/acme/setup.py
++++ b/acme/setup.py
+@@ -8,7 +8,7 @@ install_requires = [
+     # load_pem_private/public_key (>=0.6)
+     # rsa_recover_prime_factors (>=0.8)
+     'cryptography>=0.8',
+-    'mock<1.1.0',  # py26
++    'mock',
+     'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
+     'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
+     # Connection.set_tlsext_host_name (>=0.13), X509Req.get_extensions (>=0.15)
+--- a/letsencrypt-apache/setup.py
++++ b/letsencrypt-apache/setup.py
+@@ -5,7 +5,7 @@ from setuptools import find_packages
+ install_requires = [
+     'acme',
+     'letsencrypt',
+-    'mock<1.1.0',  # py26
++    'mock',
+     'python-augeas',
+     'zope.component',
+     'zope.interface',
+--- a/letsencrypt-compatibility-test/setup.py
++++ b/letsencrypt-compatibility-test/setup.py
+@@ -7,7 +7,7 @@ install_requires = [
+     'letsencrypt-apache',
+     'letsencrypt-nginx',
+     'docker-py',
+-    'mock<1.1.0',  # py26
++    'mock',
+     'zope.interface',
+ ]
+
+--- a/letsencrypt-nginx/setup.py
++++ b/letsencrypt-nginx/setup.py
+@@ -5,9 +5,9 @@ install_requires = [
+ install_requires = [
+     'acme',
+     'letsencrypt',
+-    'mock<1.1.0',  # py26
++    'mock',
+     'PyOpenSSL',
+     'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
+     'zope.interface',
+ ]
+
+--- a/setup.py
++++ b/setup.py
+@@ -34,7 +34,7 @@ install_requires = [
+     'ConfigArgParse',
+     'configobj',
+     'cryptography>=0.7',  # load_pem_x509_certificate
+-    'mock<1.1.0',  # py26
++    'mock',
+     'parsedatetime',
+     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
+     'PyOpenSSL',

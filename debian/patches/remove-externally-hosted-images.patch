@@ -1,0 +1,42 @@
+Author: Harlan Lieberman-Berg <hlieberman@setec.io>
+Forwarded: not-needed
+Last-Update: 2015-08-20
+Description: Remove externally hosted images
+ For Debian, it is important that users can read the documentation
+ without fear that they are going to be monitored by a third-party.
+ As such, it is Debian policy to ensure all images, scripts, etc.,
+ are hosted in the package or removed.
+
+--- a/README.rst
++++ b/README.rst
+@@ -17,8 +17,6 @@ https://letsencrypt.org. Be sure to checkout the
+ About the Let's Encrypt Client
+ ==============================
+
+-|build-status| |coverage| |docs| |container|
+-
+ In short: getting and installing SSL/TLS certificates made easy (`watch demo video`_).
+
+ The Let's Encrypt Client is a tool to automatically receive and install
+@@ -51,22 +49,6 @@ server automatically!::
+ **Encrypt ALL the things!**
+
+
+-.. |build-status| image:: https://travis-ci.org/letsencrypt/letsencrypt.svg?branch=master
+-   :target: https://travis-ci.org/letsencrypt/letsencrypt
+-   :alt: Travis CI status
+-
+-.. |coverage| image:: https://coveralls.io/repos/letsencrypt/letsencrypt/badge.svg?branch=master
+-   :target: https://coveralls.io/r/letsencrypt/letsencrypt
+-   :alt: Coverage status
+-
+-.. |docs| image:: https://readthedocs.org/projects/letsencrypt/badge/
+-   :target: https://readthedocs.org/projects/letsencrypt/
+-   :alt: Documentation status
+-
+-.. |container| image:: https://quay.io/repository/letsencrypt/letsencrypt/status
+-   :target: https://quay.io/repository/letsencrypt/letsencrypt
+-   :alt: Docker Repository on Quay.io
+-
+ .. _`installation instructions`:
+    https://letsencrypt.readthedocs.org/en/latest/using.html

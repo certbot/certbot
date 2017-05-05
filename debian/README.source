@@ -1,0 +1,5 @@
+As upstream is not yet giving us releases, we are using the version
+0.<date of retrieval from git>-<debian revision>.  We will coordinate
+with upstream before upload to sid or experimental to ensure that
+their first version will be > 0.2, or change our version format to
+0.0.<date, etc>.

@@ -1,0 +1,10 @@
+letsencrypt (0.20150920-1) unstable; urgency=low
+
+  This code is a DEVELOPER PREVIEW, running from an arbitrary
+  git revision.  DO NOT RUN THIS CODE ON A PRODUCTION SERVER.
+  It will install certificates that are signed by a test CA,
+  and may do anything from causing warnings for your users
+  to making your website utterly inaccessible for your HSTS or
+  HPKP covered URL.
+
+ -- Harlan Lieberman-Berg <hlieberman@setec.io>  Mon, 07 Sep 2015 01:12:10 -0400

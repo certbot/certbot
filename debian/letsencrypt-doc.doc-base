@@ -1,0 +1,12 @@
+Document: letsencrypt-manual
+Title: letsencrypt Manual
+Author: Let's Encrypt (https://letsencrypt.org/)
+Abstract: This manual documents the letsencrypt client, a tool that can update
+ Apache configurations to make it possible to set up an HTTPS server and have
+ it automatically obtain a browser-trusted certificate, without any human
+ intervention.
+Section: System/Security
+
+Format: HTML
+Index: /usr/share/doc/letsencrypt-doc/html/index.html
+Files: /usr/share/doc/letsencrypt-doc/html/*
