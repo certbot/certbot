@@ -19,6 +19,7 @@ virtualenv --no-site-packages --setuptools $VENV_NAME $VENV_ARGS
 # invocations use latest
 pip install -U pip
 pip install -U setuptools
+pip install -r letsencrypt-auto-source/pieces/dependency-requirements.txt
 pip install "$@"
 
 set +x
