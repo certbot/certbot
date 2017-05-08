@@ -21,7 +21,8 @@ def build(version=None, requirements=None):
     :arg version: The version to attach to the script. Default: the version of
         the certbot package
     :arg requirements: The contents of the requirements file to embed. Default:
-        contents of dependency-requirements.txt and certbot-requirements.txt
+        contents of dependency-requirements.txt, letsencrypt-requirements.txt,
+        and certbot-requirements.txt
 
     """
     special_replacements = {
@@ -29,6 +30,7 @@ def build(version=None, requirements=None):
     }
     if requirements:
         special_replacements['dependency-requirements.txt'] = ''
+        special_replacements['letsencrypt-requirements.txt'] = ''
         special_replacements['certbot-requirements.txt'] = requirements
 
     def replacer(match):

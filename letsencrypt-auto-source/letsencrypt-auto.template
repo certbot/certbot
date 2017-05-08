@@ -318,6 +318,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/letsencrypt-auto-requirements.txt"
 {{ dependency-requirements.txt }}
+{{ letsencrypt-requirements.txt }}
 {{ certbot-requirements.txt }}
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
