@@ -5,7 +5,7 @@
 
 # Hashin example:
 # pip install hashin
-# hashin -r letsencrypt-auto-requirements.txt cryptography==1.5.2
+# hashin -r dependency-requirements.txt cryptography==1.5.2
 # sets the new certbot-auto pinned version of cryptography to 1.5.2
 
 argparse==1.4.0 \
