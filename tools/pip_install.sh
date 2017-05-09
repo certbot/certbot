@@ -10,4 +10,4 @@ trap "rm -f $constraints" EXIT
 sed -n -e 's/^\([^[:space:]]*==[^[:space:]]*\).*$/\1/p' $requirements > $constraints
 
 # install the requested packages using the pinned requirements as constraints
-pip install --constraint $constraints $@
+pip install --constraint $constraints "$@"
