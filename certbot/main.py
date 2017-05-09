@@ -392,9 +392,9 @@ def _init_le_client(config, authenticator, installer):
 def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-branches
     """Does the user want to delete their now-revoked certs?"""
     display = zope.component.getUtility(interfaces.IDisplay)
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
 
     if config.namespace.noninteractive_mode:
-        reporter_util = zope.component.getUtility(interfaces.IReporter)
         msg = ('Warning: did not prompt to delete revoked certs due to '
                 'non-interactive mode being enabled. Revoked certs could be '
                 'autorenewed! Please see  "certbot --help delete" to delete '
@@ -448,8 +448,10 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
 
     # don't delete if the archive_dir is used by some other lineage
     archive_dir = cert_manager.full_archive_dir_from_renewal_conf(config)
-    if cert_manager.overlapping_archive_dirs(config, archive_dir):
-        reporter_util = zope.component.getUtility(interfaces.IReporter)
+    try:
+        cert_manager.match_and_check_overlaps(config, [lambda x: archive_dir],
+            lambda x: x.archive_dir, lambda x: x)
+    except errors.OverlappingMatchFound:
         msg = ('Not deleting due to overlapping archive dirs. More than '
                 'one lineage is using {0}'.format(archive_dir))
         reporter_util.add_message(''.join(msg), reporter_util.MEDIUM_PRIORITY)
@@ -458,7 +460,6 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
     msg = ("Are you sure you want to delete all "
             "files related to the {0} lineage?").format(config.certname)
     if not display.yesno(msg, default=False):
-        reporter_util = zope.component.getUtility(interfaces.IReporter)
         msg = ('Not deleting revoked certificate lineage {0}. '
                 'Warning: revoked certs could be autorenewed! '
                 "For deletion at a later time, please see the `delete`"
