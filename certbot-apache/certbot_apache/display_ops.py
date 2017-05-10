@@ -91,7 +91,7 @@ def _vhost_menu(domain, vhosts):
         msg = ("Encountered vhost ambiguity but unable to ask for user guidance in "
                "non-interactive mode. Currently Certbot needs each vhost to be "
                "in its own conf file, and may need vhosts to be explicitly "
-               "labelled with ServerName or ServerAlias directories.")
+               "labelled with ServerName or ServerAlias directives.")
         logger.warning(msg)
         raise errors.MissingCommandlineFlag(msg)
 
