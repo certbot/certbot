@@ -343,7 +343,6 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         config.certname = "example.com"
         config.cert_path = ""
         mock_cert_path_for_cert_name.return_value = "/some/reasonable/path"
-        mock_get_utility().yesno.return_value = True
         mock_overlapping_archive_dirs.return_value = False
         self._call(config)
         mock_delete.assert_called_once()
@@ -361,21 +360,28 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         config.cert_path = "/some/reasonable/path"
         config.certname = ""
         mock_cert_path_to_lineage.return_value = "example.com"
-        mock_get_utility().yesno.return_value = True
         mock_overlapping_archive_dirs.return_value = False
         self._call(config)
         mock_delete.assert_called_once()
 
+    @mock.patch('certbot.cert_manager.match_and_check_overlaps')
+    @mock.patch('certbot.cert_manager.full_archive_dir_from_renewal_conf')
+    @mock.patch('certbot.cert_manager.cert_path_to_lineage')
     @mock.patch('certbot.cert_manager.delete')
     @test_util.patch_get_utility()
-    def test_noninteractive_deletion_is_disabled(self, mock_get_utility, mock_delete):
+    def test_noninteractive_deletion(self, mock_get_utility, mock_delete,
+            mock_cert_path_to_lineage, mock_full_archive_dir,
+            mock_match_and_check_overlaps):
         # pylint: disable = unused-argument
         config = self.config
         config.namespace.noninteractive_mode = True
+        config.cert_path = "/some/reasonable/path"
         config.certname = ""
-        config.cert_path = ""
+        mock_cert_path_to_lineage.return_value = "example.com"
+        mock_full_archive_dir.return_value = ""
+        mock_match_and_check_overlaps.return_value = ""
         self._call(config)
-        mock_delete.assert_not_called()
+        mock_delete.assert_called_once()
 
     @mock.patch('certbot.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot.cert_manager.full_archive_dir_from_renewal_conf')
@@ -390,7 +396,6 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         config.certname = "example.com"
         config.cert_path = "/some/reasonable/path"
         mock_lineage_for_certname.return_value = config.cert_path
-        mock_get_utility.yesno.return_value = True
         mock_overlapping_archive_dirs.return_value = False
         self._call(config)
         mock_delete.assert_called_once()
@@ -421,7 +426,6 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         from certbot.display import util as display_util
         util_mock = mock.Mock()
         util_mock.menu.return_value = (display_util.OK, 0)
-        util_mock.yesno.return_value = True
         mock_get_utility.return_value = util_mock
         self._call(config)
         mock_delete.assert_called_once()

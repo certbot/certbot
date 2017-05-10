@@ -1,9 +1,9 @@
 """Tools for managing certificates."""
 import datetime
-import glob
 import logging
 import os
 import pytz
+import re
 import traceback
 import zope.component
 
@@ -185,10 +185,11 @@ def cert_path_to_lineage(cli_config):
             /etc/letsencrypt/archive/example.com/chain1.pem"""
         archive_dir = os.path.join(candidate_lineage.archive_dir,
                 os.path.basename(candidate_lineage.cert_path[0]))
-        pattern = "{0}{1}[1-9].pem".format(archive_dir, filetype)
-        # Using [0] here, so make sure to check for overlapping archive dirs
-        # if you use this.
-        return glob.glob(pattern)[0]
+        pattern = [os.path.join(archive_dir, f) for f in os.listdir(archive_dir)
+                        if re.match("{0}[0-9]*.pem".format(filetype), f)]
+        # Using [0] here, so make sure to also check for overlapping archive dirs
+        # if you use this function.
+        return pattern[0]
 
     options = [lambda x: x.fullchain_path, lambda x: x.chain_path,
             lambda x: archive_files(x, "chain"), lambda x: archive_files(x, "fullchain")]

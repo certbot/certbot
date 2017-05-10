@@ -394,14 +394,6 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
     display = zope.component.getUtility(interfaces.IDisplay)
     reporter_util = zope.component.getUtility(interfaces.IReporter)
 
-    if config.namespace.noninteractive_mode:
-        msg = ('Warning: did not prompt to delete revoked certs due to '
-                'non-interactive mode being enabled. Revoked certs could be '
-                'autorenewed! Please see  "certbot --help delete" to delete '
-                'them yourself.')
-        reporter_util.add_message(''.join(msg), reporter_util.MEDIUM_PRIORITY)
-        return
-
     if not (config.certname or config.cert_path):
         raise errors.Error('At least one of --cert-path or --cert-name must be specified.')
 
@@ -457,17 +449,7 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
         reporter_util.add_message(''.join(msg), reporter_util.MEDIUM_PRIORITY)
         return
 
-    msg = ("Are you sure you want to delete all "
-            "files related to the {0} lineage?").format(config.certname)
-    if not display.yesno(msg, default=False):
-        msg = ('Not deleting revoked certificate lineage {0}. '
-                'Warning: revoked certs could be autorenewed! '
-                "For deletion at a later time, please see the `delete`"
-                "subcommand's documentation.".format(config.certname))
-        reporter_util.add_message(''.join(msg), reporter_util.MEDIUM_PRIORITY)
-        return
-    else:
-        cert_manager.delete(config)
+    cert_manager.delete(config)
 
 def unregister(config, unused_plugins):
     """Deactivate account on server"""
