@@ -80,8 +80,7 @@ STARTTLS by itself thwarts purely passive eavesdroppers. However, as currently d
 ## Motivating examples
 
 *   [Unnammed mobile broadband provider overwrites STARTTLS flag and commands to
-    prevent negotiating an encrypted connection]
-    (https://www.techdirt.com/articles/20141012/06344928801/revealed-isps-already-violating-net-neutrality-to-block-encryption-make-everyone-less-safe-online.shtml)
+    prevent negotiating an encrypted connection](https://www.techdirt.com/articles/20141012/06344928801/revealed-isps-already-violating-net-neutrality-to-block-encryption-make-everyone-less-safe-online.shtml)
 *   [Unknown party removes STARTTLS flag from all SMTP connections leaving
     Thailand](http://www.telecomasia.net/content/google-yahoo-smtp-email-severs-hit-thailand)
 
