@@ -754,9 +754,9 @@ cryptography==1.5.3 \
 enum34==1.1.2 \
     --hash=sha256:2475d7fcddf5951e92ff546972758802de5260bf409319a9f1934e6bbc8b1dc7 \
     --hash=sha256:35907defb0f992b75ab7788f65fedc1cf20ffa22688e0e6f6f12afc06b3ea501
-funcsigs==0.4 \
-    --hash=sha256:ff5ad9e2f8d9e5d1e8bbfbcf47722ab527cf0d51caeeed9da6d0f40799383fde \
-    --hash=sha256:d83ce6df0b0ea6618700fe1db353526391a8a3ada1b7aba52fed7a61da772033
+funcsigs==1.0.2 \
+    --hash=sha256:330cc27ccbf7f1e992e69fef78261dc7c6569012cf397db8d3de0234e6c937ca \
+    --hash=sha256:a7bb0f2cf3a3fd1ab2732cb49eba4252c2af4240442415b4abce3b87022a8f50
 idna==2.0 \
     --hash=sha256:9b2fc50bd3c4ba306b9651b69411ef22026d4d8335b93afc2214cef1246ce707 \
     --hash=sha256:16199aad938b290f5be1057c0e1efc6546229391c23cea61ca940c115f7d3d3b
@@ -851,9 +851,9 @@ zope.interface==4.1.3 \
     --hash=sha256:928138365245a0e8869a5999fbcc2a45475a0a6ed52a494d60dbdc540335fedd \
     --hash=sha256:0d841ba1bb840eea0e6489dc5ecafa6125554971f53b5acb87764441e61bceba \
     --hash=sha256:b09c8c1d47b3531c400e0195697f1414a63221de6ef478598a4f1460f7d9a392
-mock==1.0.1 \
-    --hash=sha256:b839dd2d9c117c701430c149956918a423a9863b48b09c90e30a6013e7d2f44f \
-    --hash=sha256:8f83080daa249d036cbccfb8ae5cc6ff007b88d6d937521371afabe7b19badbc
+mock==2.0.0 \
+    --hash=sha256:5ce3c71c5545b472da17b72268978914d0252980348636840bd34a00b5cc96c1 \
+    --hash=sha256:b158b6df76edd239b8208d481dc46b6afd45a846b7812ff0ce58971cf5bc8bba
 
 # Contains the requirements for the letsencrypt package.
 #
