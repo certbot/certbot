@@ -38,8 +38,8 @@ CLI_DEFAULTS = dict(
 STAGING_URI = "https://acme-staging.api.letsencrypt.org/directory"
 
 # for use with --certbot-dir
-WORK_SUBDIR=".internal"
-LOGS_SUBDIR="logs"
+WORK_SUBDIR = ".internal"
+LOGS_SUBDIR = "logs"
 
 # The set of reasons for revoking a certificate is defined in RFC 5280 in
 # section 5.3.1. The reasons that users are allowed to submit are restricted to
