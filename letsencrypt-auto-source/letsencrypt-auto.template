@@ -87,7 +87,7 @@ for arg in "$@" ; do
   esac
 done
 
-if [ $BASENAME = "letsencrypt-auto" ]; then
+if [ $BASENAME = "letsencrypt-auto" ] || [ $BASENAME = "certbot-auto" ]; then
   # letsencrypt-auto does not respect --help or --yes for backwards compatibility
   ASSUME_YES=1
   HELP=0
