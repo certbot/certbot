@@ -448,6 +448,9 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
                 'one lineage is using {0}'.format(archive_dir))
         reporter_util.add_message(''.join(msg), reporter_util.MEDIUM_PRIORITY)
         return
+    except Exception as e:
+        msg = "config.default_archive_dir: {0}, config.live_dir: {1}, archive_dir: {2}, original exception: {3}".format(config.archive_dir, config.live_dir, archive_dir, e)
+        raise errors.Error(msg)
 
     cert_manager.delete(config)
 
