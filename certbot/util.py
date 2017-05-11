@@ -48,8 +48,7 @@ ANSI_SGR_RESET = "\033[0m"
 
 PERM_ERR_FMT = os.linesep.join((
     "The following error was encountered:", "{0}",
-    "If running as non-root, set --config-dir, "
-    "--work-dir, and --logs-dir to writeable paths."))
+    "If running as non-root, set --certbot-dir to a writeable path"))
 
 
 # Stores importing process ID to be used by atexit_register()
