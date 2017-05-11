@@ -149,7 +149,7 @@ su_sudo() {
 
 SUDO_ENV=""
 export CERTBOT_AUTO="$0"
-if [ -n "${LE_AUTO_SUDO+x}" ]; then
+if [ -n "$LE_AUTO_SUDO" ]; then
   case "$LE_AUTO_SUDO" in
     su_sudo|su)
       SUDO=su_sudo
