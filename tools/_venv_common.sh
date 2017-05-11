@@ -19,7 +19,7 @@ virtualenv --no-site-packages --setuptools $VENV_NAME $VENV_ARGS
 # invocations use latest
 pip install -U pip
 pip install -U setuptools
-pip install "$@"
+./tools/pip_install.sh "$@"
 
 set +x
 echo "Please run the following command to activate developer environment:"

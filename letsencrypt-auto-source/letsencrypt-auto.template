@@ -317,7 +317,9 @@ if [ "$1" = "--le-auto-phase2" ]; then
     # There is no $ interpolation due to quotes on starting heredoc delimiter.
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/letsencrypt-auto-requirements.txt"
-{{ letsencrypt-auto-requirements.txt }}
+{{ dependency-requirements.txt }}
+{{ letsencrypt-requirements.txt }}
+{{ certbot-requirements.txt }}
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/pipstrap.py"
