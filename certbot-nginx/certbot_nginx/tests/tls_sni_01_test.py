@@ -89,7 +89,7 @@ class TlsSniPerformTest(util.NginxTest):
 
         # Make sure challenge config is included in main config
         http = self.sni.configurator.parser.parsed[
-            self.sni.configurator.parser.loc["root"]][-1]
+            self.sni.configurator.parser.config_root][-1]
         self.assertTrue(
             util.contains_at_depth(http, ['include', self.sni.challenge_conf], 1))
 
@@ -112,7 +112,7 @@ class TlsSniPerformTest(util.NginxTest):
                 mock_setup_cert.call_args_list[index], mock.call(achall))
 
         http = self.sni.configurator.parser.parsed[
-            self.sni.configurator.parser.loc["root"]][-1]
+            self.sni.configurator.parser.config_root][-1]
         self.assertTrue(['include', self.sni.challenge_conf] in http[1])
         self.assertFalse(
             util.contains_at_depth(http, ['server_name', 'another.alias'], 3))
@@ -137,7 +137,7 @@ class TlsSniPerformTest(util.NginxTest):
         self.sni.configurator.parser.load()
 
         http = self.sni.configurator.parser.parsed[
-            self.sni.configurator.parser.loc["root"]][-1]
+            self.sni.configurator.parser.config_root][-1]
         self.assertTrue(['include', self.sni.challenge_conf] in http[1])
 
         vhosts = self.sni.configurator.parser.get_vhosts()
@@ -154,7 +154,7 @@ class TlsSniPerformTest(util.NginxTest):
         self.assertEqual(len(vhs), 2)
 
     def test_mod_config_fail(self):
-        root = self.sni.configurator.parser.loc["root"]
+        root = self.sni.configurator.parser.config_root
         self.sni.configurator.parser.parsed[root] = [['include', 'foo.conf']]
         # pylint: disable=protected-access
         self.assertRaises(
