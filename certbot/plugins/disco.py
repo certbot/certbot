@@ -29,6 +29,7 @@ class PluginEntryPoint(object):
         "certbot",
         "certbot-apache",
         "certbot-dns-cloudflare",
+        "certbot-dns-digitalocean",
         "certbot-nginx",
     ]
     """Distributions for which prefix will be omitted."""
