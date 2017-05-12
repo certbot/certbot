@@ -153,8 +153,9 @@ addons:
     - libapache2-mod-wsgi
     - libapache2-mod-macro
 
+before_install: '[ -z "${BOULDER_INTEGRATION+x}" ] || ./tests/boulder-fetch.sh &'
 install: "travis_retry pip install tox coveralls"
-script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/travis-integration.sh)'
+script: 'travis_retry tox && ([ -z "${BOULDER_INTEGRATION+x}" ] || ./tests/travis-integration.sh)'
 
 after_success: '[ "$TOXENV" == "cover" ] && coveralls'
 
