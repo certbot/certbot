@@ -930,6 +930,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         action="store_true", dest="disable_renewal", help="Do not auto-renew "
              "a certificate.")
     helpful.add(
+        ["automation", "renew"],
+        "--enable-renewal",
+        action="store_false", dest="disable_renewal", help="Enables auto-renewing of "
+             "a certificate.")
+    helpful.add(
         "automation", "--renew-with-new-domains",
         action="store_true", dest="renew_with_new_domains", help="If a "
              "certificate already exists for the requested certificate name "
