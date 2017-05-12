@@ -877,6 +877,8 @@ PyYAML==3.12 \
     --hash=sha256:0c507b7f74b3d2dd4d1322ec8a94794927305ab4cebbe89cc47fe5e81541e6e8 \
     --hash=sha256:b4c423ab23291d3945ac61346feeb9a0dc4184999ede5e7c43e1ffb975130ae6 \
     --hash=sha256:5ac82e411044fb129bae5cfbeb3ba626acb2af31a8d17d175004b70862a741a7
+python-digitalocean==1.11 \
+    --hash=sha256:458e305bed02f887507d4801eb870bdb2d95b32a4fd0402209adcf2fc9072895
 
 # Contains the requirements for the letsencrypt package.
 #
