@@ -429,7 +429,8 @@ def get_python_os_info():
     elif os_type.startswith('darwin'):
         os_ver = subprocess.Popen(
             ["sw_vers", "-productVersion"],
-            stdout=subprocess.PIPE
+            stdout=subprocess.PIPE,
+            universal_newlines=True,
         ).communicate()[0].rstrip('\n')
     elif os_type.startswith('freebsd'):
         # eg "9.3-RC3-p1"

@@ -170,18 +170,13 @@ cd ~-
 for pkg in acme certbot certbot-apache certbot-nginx ; do
     echo $pkg==$version \\
     pip hash dist."$version/$pkg"/*.{whl,gz} | grep "^--hash" | python2 -c 'from sys import stdin; input = stdin.read(); print "   ", input.replace("\n--hash", " \\\n    --hash"),'
-done > /tmp/hashes.$$
+done > letsencrypt-auto-source/pieces/certbot-requirements.txt
 deactivate
 
-if ! wc -l /tmp/hashes.$$ | grep -qE "^\s*12 " ; then
+if ! wc -l letsencrypt-auto-source/pieces/certbot-requirements.txt | grep -qE "^\s*12 " ; then
     echo Unexpected pip hash output
     exit 1
 fi
-
-# perform hideous surgery on requirements.txt...
-head -n -12 letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt > /tmp/req.$$
-cat /tmp/hashes.$$ >> /tmp/req.$$
-cp /tmp/req.$$ letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt
 
 # ensure we have the latest built version of leauto
 letsencrypt-auto-source/build.py

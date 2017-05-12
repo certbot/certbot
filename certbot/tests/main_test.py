@@ -410,8 +410,6 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
                 finally:
                     output = toy_out.getvalue() or toy_err.getvalue()
                     self.assertTrue("certbot" in output, "Output is {0}".format(output))
-        toy_out.close()
-        toy_err.close()
 
     def _cli_missing_flag(self, args, message):
         "Ensure that a particular error raises a missing cli flag error containing message"

@@ -13,6 +13,8 @@ fi
   -e acme[dev] \
   -e .[dev,docs] \
   -e certbot-apache \
+  -e certbot-dns-cloudflare \
+  -e certbot-dns-digitalocean \
   -e certbot-nginx \
   -e letshelp-certbot \
   -e certbot-compatibility-test
