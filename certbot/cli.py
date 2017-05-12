@@ -925,6 +925,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "--keep-until-expiring is more appropriate). Also implies "
              "--expand.")
     helpful.add(
+        ["automation", "renew"],
+        "--disable-renewal",
+        action="store_true", dest="disable_renewal", help="Do not auto-renew "
+             "a certificate.")
+    helpful.add(
         "automation", "--renew-with-new-domains",
         action="store_true", dest="renew_with_new_domains", help="If a "
              "certificate already exists for the requested certificate name "

@@ -32,7 +32,7 @@ STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "standalone_supported_challenges", "renew_hook",
                     "pre_hook", "post_hook"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
-BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names"]
+BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names","disable_renewal"]
 
 CONFIG_ITEMS = set(itertools.chain(
     BOOL_CONFIG_ITEMS, INT_CONFIG_ITEMS, STR_CONFIG_ITEMS, ('pref_challs',)))
@@ -253,6 +253,9 @@ def _restore_str(unused_name, value):
 
 def should_renew(config, lineage):
     "Return true if any of the circumstances for automatic renewal apply."
+    if config.disable_renewal:
+        logger.debug("Auto-renewal disabled with --disable-renewal");
+        return False;
     if config.renew_by_default:
         logger.debug("Auto-renewal forced with --force-renewal...")
         return True
