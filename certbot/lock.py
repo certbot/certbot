@@ -80,7 +80,9 @@ class LockFile(object):
                 logger.debug(
                     "A lock on %s is held by another process.", self._path)
                 raise errors.LockError(
-                    "Another instance of Certbot is already running.")
+                    "Another instance of Certbot is already running.\n\n"
+                    "If you really need to run two Certbot instances at once, provide a "
+                    "distinct --config-dir, --work-dir, and --logs-dir to each of them.")
             raise
 
     def _lock_success(self, fd):
