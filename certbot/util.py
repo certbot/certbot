@@ -476,7 +476,12 @@ def add_deprecated_argument(add_argument, argument_name, nargs):
             sys.stderr.write(
                 "Use of {0} is deprecated.\n".format(option_string))
 
-    configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE.add(ShowWarning)
+    # In version 0.12.0 ACTION_TYPES_THAT_DONT_NEED_A_VALUE was changed from a set
+    # to a tuple.
+    if isinstance(configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE, set):
+        configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE.add(ShowWarning)
+    else:
+        configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE += (ShowWarning,)
     add_argument(argument_name, action=ShowWarning,
                  help=argparse.SUPPRESS, nargs=nargs)
 
