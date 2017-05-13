@@ -388,6 +388,7 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
         with mock.patch("certbot.util.configargparse") as mock_configargparse:
             mock_configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE = typ()
             self._call("--old-option", 1)
+            self._call("--old-option2", 2)
         self.assertEqual(
             len(mock_configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE), 1)
 
