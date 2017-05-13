@@ -6,6 +6,7 @@ import shutil
 import stat
 import unittest
 
+import configargparse
 import mock
 import six
 from six.moves import reload_module  # pylint: disable=import-error
@@ -367,6 +368,23 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
             except SystemExit:
                 pass
         self.assertTrue("--old-option" not in stdout.getvalue())
+
+    def test_set_constant(self):
+        self._test_constant_common(set)
+
+    def test_tuple_constant(self):
+        self._test_constant_common(tuple)
+
+    def _test_constant_common(self, new_value_type):
+        new_value = new_value_type(
+            configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE)
+        prev_len = len(new_value)
+        with mock.patch("certbot.util.configargparse") as mock_configargparse:
+            mock_configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE = new_value
+            self._call("--old-option", 0)
+            self._call("--old-option2", 0)
+        new_len = len(mock_configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE)
+        self.assertEqual(new_len, prev_len + 2)
 
 
 class EnforceLeValidity(unittest.TestCase):
