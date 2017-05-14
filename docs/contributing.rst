@@ -372,6 +372,15 @@ commands:
 This should generate documentation in the ``docs/_build/html``
 directory.
 
+Note that you will need to have the ``Sphinx``, ``sphinx_rtd_theme``, and
+``repoze.sphinx.autointerface`` packages installed to build the documentation.
+Install these packages by running:
+
+.. code-block:: shell
+
+    pip install -U Sphinx sphinx_rtd_theme
+    easy_install repoze.sphinx.autointerface
+
 
 .. _docker:
 
