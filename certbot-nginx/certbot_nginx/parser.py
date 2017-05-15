@@ -529,7 +529,10 @@ def _add_directive(block, directive, replace):
 
     """
     directive = nginxparser.UnspacedList(directive)
-    if len(directive) == 0 or directive[0] == '#':
+    def is_whitespace_or_comment(directive):
+        """Is this directive either a whitespace or comment directive?"""
+        return len(directive) == 0 or directive[0] == '#'
+    if is_whitespace_or_comment(directive):
         # whitespace or comment
         block.append(directive)
         return
@@ -574,7 +577,8 @@ def _add_directive(block, directive, replace):
             for included_directive in included_directives:
                 included_dir_loc = find_location(included_directive)
                 included_dir_name = included_directive[0]
-                if not can_append(included_dir_loc, included_dir_name):
+                if not is_whitespace_or_comment(included_directive) \
+                    and not can_append(included_dir_loc, included_dir_name):
                     if block[included_dir_loc] != included_directive:
                         raise errors.MisconfigurationError(err_fmt.format(included_directive,
                             block[included_dir_loc]))
