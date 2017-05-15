@@ -6,7 +6,6 @@ import shutil
 import stat
 import unittest
 
-import configargparse
 import mock
 import six
 from six.moves import reload_module  # pylint: disable=import-error
@@ -369,21 +368,28 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
                 pass
         self.assertTrue("--old-option" not in stdout.getvalue())
 
-    def test_when_configargparse_set(self):
-        '''In configargparse versions < 0.12.0 ACTION_TYPES_THAT_DONT_NEED_A_VALUE is a set.'''
-        orig = configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE
-        configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE = set()
-        self._call("--old-option", 1)
-        self.assertEqual(len(configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE), 1)
-        configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE = orig
+    def test_set_constant(self):
+        """Test when ACTION_TYPES_THAT_DONT_NEED_A_VALUE is a set.
 
-    def test_when_configargparse_tuple(self):
-        '''In configargparse versions >= 0.12.0 ACTION_TYPES_THAT_DONT_NEED_A_VALUE is a tuple.'''
-        orig = configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE
-        configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE = tuple()
-        self._call("--old-option", 1)
-        self.assertEqual(len(configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE), 1)
-        configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE = orig
+        This variable is a set in configargparse versions < 0.12.0.
+
+        """
+        self._test_constant_common(set)
+
+    def test_tuple_constant(self):
+        """Test when ACTION_TYPES_THAT_DONT_NEED_A_VALUE is a tuple.
+
+        This variable is a tuple in configargparse versions >= 0.12.0.
+
+        """
+        self._test_constant_common(tuple)
+
+    def _test_constant_common(self, typ):
+        with mock.patch("certbot.util.configargparse") as mock_configargparse:
+            mock_configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE = typ()
+            self._call("--old-option", 1)
+        self.assertEqual(
+            len(mock_configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE), 1)
 
 
 class EnforceLeValidity(unittest.TestCase):
