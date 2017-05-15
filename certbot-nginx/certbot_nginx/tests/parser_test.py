@@ -230,6 +230,31 @@ class NginxParserTest(util.NginxTest):
                            ['ssl_certificate', '/etc/ssl/cert2.pem']],
                           replace=False)
 
+    def test_comment_is_repeatable(self):
+        nparser = parser.NginxParser(self.config_path)
+        example_com = nparser.abs_path('sites-enabled/example.com')
+        mock_vhost = obj.VirtualHost(example_com,
+                                     None, None, None,
+                                     set(['.example.com', 'example.*']),
+                                     None, [0])
+        nparser.add_server_directives(mock_vhost,
+                                      [['\n  ', '#', ' ', 'what a nice comment']],
+                                      replace=False)
+        nparser.add_server_directives(mock_vhost,
+                                      [['\n  ', 'include', ' ',
+                                      nparser.abs_path('comment_in_file.conf')]],
+                                      replace=False)
+        self.assertEqual(nparser.parsed[example_com],
+            [[['server'], [['listen', '69.50.225.155:9000'],
+                           ['listen', '127.0.0.1'],
+                           ['server_name', '.example.com'],
+                           ['server_name', 'example.*'],
+                           ['#', ' ', 'what a nice comment'],
+                           [],
+                           ['#', ' another stellar comment'],
+                           []]]]
+)
+
     def test_replace_server_directives(self):
         nparser = parser.NginxParser(self.config_path)
         target = set(['.example.com', 'example.*'])
