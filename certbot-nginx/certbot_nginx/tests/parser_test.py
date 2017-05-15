@@ -244,6 +244,7 @@ class NginxParserTest(util.NginxTest):
                                       [['\n  ', 'include', ' ',
                                       nparser.abs_path('comment_in_file.conf')]],
                                       replace=False)
+        from certbot_nginx.parser import COMMENT
         self.assertEqual(nparser.parsed[example_com],
             [[['server'], [['listen', '69.50.225.155:9000'],
                            ['listen', '127.0.0.1'],
@@ -251,7 +252,8 @@ class NginxParserTest(util.NginxTest):
                            ['server_name', 'example.*'],
                            ['#', ' ', 'what a nice comment'],
                            [],
-                           ['#', ' another stellar comment'],
+                           ['include', nparser.abs_path('comment_in_file.conf')],
+                           ['#', COMMENT],
                            []]]]
 )
 
