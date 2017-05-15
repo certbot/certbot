@@ -530,6 +530,7 @@ def _add_directive(block, directive, replace):
     """
     directive = nginxparser.UnspacedList(directive)
     def is_whitespace_or_comment(directive):
+        """Is this directive either a whitespace or comment directive?"""
         return len(directive) == 0 or directive[0] == '#'
     if is_whitespace_or_comment(directive):
         # whitespace or comment
