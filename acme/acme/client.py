@@ -584,6 +584,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         if self.account is not None:
             kwargs["kid"] = self.account.uri
             kwargs["url"] = url
+            kwargs["key"] = self.key
         else:
             # old-style ACME spec
             kwargs["key"] = self.key
