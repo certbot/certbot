@@ -1065,8 +1065,28 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         span_end = span_val[6]
         with open(span_filep, 'r') as fh:
             fh.seek(span_start)
-            vh_contents = fh.read(span_end-span_start)
-        return vh_contents.split("\n")
+            vh_contents = fh.read(span_end-span_start).split("\n")
+        self._remove_closing_vhost_tag(vh_contents)
+        return vh_contents
+
+    def _remove_closing_vhost_tag(self, vh_contents):
+        """Removes the closing VirtualHost tag if it exists.
+
+        This method modifies vh_contents directly to remove the closing
+        tag. If the closing vhost tag is found, everything on the line
+        after it is also removed. Whether or not this tag is included
+        in the result of span depends on the Augeas version.
+
+        :param list vh_contents: VirtualHost block contents to check
+
+        """
+        for offset, line in enumerate(reversed(vh_contents)):
+            if line:
+                line_index = line.lower().find("</virtualhost>")
+                if line_index != -1:
+                    content_index = len(vh_contents) - offset - 1
+                    vh_contents[content_index] = line[:line_index]
+                break
 
     def _update_ssl_vhosts_addrs(self, vh_path):
         ssl_addrs = set()

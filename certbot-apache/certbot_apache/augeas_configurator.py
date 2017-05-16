@@ -120,8 +120,8 @@ class AugeasConfigurator(common.Plugin):
 
         # If the augeas tree didn't change, no files were saved and a backup
         # should not be created
+        save_files = set()
         if save_paths:
-            save_files = set()
             for path in save_paths:
                 save_files.add(self.aug.get(path)[6:])
 
@@ -140,6 +140,12 @@ class AugeasConfigurator(common.Plugin):
         self.save_notes = ""
         self.aug.save()
 
+        # Force reload if files were modified
+        # This is needed to recalculate augeas directive span
+        if save_files:
+            for sf in save_files:
+                self.aug.remove("/files/"+sf)
+            self.aug.load()
         if title and not temporary:
             try:
                 self.reverter.finalize_checkpoint(title)
