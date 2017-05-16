@@ -191,7 +191,7 @@ def cert_path_to_lineage(cli_config):
         # if you use this function.
         return pattern[0]
 
-    options = [lambda x: x.fullchain_path, lambda x: x.chain_path,
+    options = [lambda x: x.fullchain_path, lambda x: x.chain_path, lambda x: x.cert_path,
             lambda x: archive_files(x, "chain"), lambda x: archive_files(x, "fullchain")]
     match = match_and_check_overlaps(cli_config, options,
             lambda x: cli_config.cert_path[0], lambda x: x.lineagename)
