@@ -2,6 +2,19 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.14.1 - 2017-05-16
+
+### Fixed
+
+* Certbot now works with configargparse 0.12.0.
+* Issues with the Apache plugin and Augeas 1.7+ have been resolved.
+* A problem where the Nginx plugin would fail to install certificates on
+systems that had the plugin's SSL/TLS options file from 7+ months ago has been
+fixed.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.14.1+is%3Aclosed
+
 ## 0.14.0 - 2017-05-04
 
 ### Added
