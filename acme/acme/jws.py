@@ -41,4 +41,4 @@ class JWS(jose.JWS):
     @classmethod
     def sign(cls, payload, key, alg, nonce):  # pylint: disable=arguments-differ
         return super(JWS, cls).sign(payload, key=key, alg=alg,
-                                    protect=frozenset(['nonce']), nonce=nonce)
+                                    protect=frozenset(['nonce', 'jwk', 'alg']), nonce=nonce)
