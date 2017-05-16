@@ -79,7 +79,7 @@ def _reconstitute(config, full_path):
     except (ValueError, errors.Error) as error:
         logger.warning(
             "An error occurred while parsing %s. The error was %s. "
-            "Skipping the file.", full_path, error.message)
+            "Skipping the file.", full_path, str(error))
         logger.debug("Traceback was:\n%s", traceback.format_exc())
         return None
 
@@ -103,13 +103,13 @@ def _restore_webroot_config(config, renewalparams):
     """
     if "webroot_map" in renewalparams:
         if not cli.set_by_cli("webroot_map"):
-            config.namespace.webroot_map = renewalparams["webroot_map"]
+            config.webroot_map = renewalparams["webroot_map"]
     elif "webroot_path" in renewalparams:
         logger.debug("Ancient renewal conf file without webroot-map, restoring webroot-path")
         wp = renewalparams["webroot_path"]
         if isinstance(wp, str):  # prior to 0.1.0, webroot_path was a string
             wp = [wp]
-        config.namespace.webroot_path = wp
+        config.webroot_path = wp
 
 
 def _restore_plugin_configs(config, renewalparams):
@@ -148,10 +148,10 @@ def _restore_plugin_configs(config, renewalparams):
                 if config_value in ("None", "True", "False"):
                     # bool("False") == True
                     # pylint: disable=eval-used
-                    setattr(config.namespace, config_item, eval(config_value))
+                    setattr(config, config_item, eval(config_value))
                 else:
                     cast = cli.argparse_type(config_item)
-                    setattr(config.namespace, config_item, cast(config_value))
+                    setattr(config, config_item, cast(config_value))
 
 
 def restore_required_config_elements(config, renewalparams):
@@ -172,7 +172,7 @@ def restore_required_config_elements(config, renewalparams):
     for item_name, restore_func in required_items:
         if item_name in renewalparams and not cli.set_by_cli(item_name):
             value = restore_func(item_name, renewalparams[item_name])
-            setattr(config.namespace, item_name, value)
+            setattr(config, item_name, value)
 
 
 def _restore_pref_challs(unused_name, value):
@@ -410,7 +410,12 @@ def handle_renewal_request(config):
                 if should_renew(lineage_config, renewal_candidate):
                     plugins = plugins_disco.PluginsRegistry.find_all()
                     from certbot import main
-                    main.obtain_cert(lineage_config, plugins, renewal_candidate)
+                    # domains have been restored into lineage_config by reconstitute
+                    # but they're unnecessary anyway because renew_cert here
+                    # will just grab them from the certificate
+                    # we already know it's time to renew based on should_renew
+                    # and we have a lineage in renewal_candidate
+                    main.renew_cert(lineage_config, plugins, renewal_candidate)
                     renew_successes.append(renewal_candidate.fullchain)
                 else:
                     renew_skipped.append(renewal_candidate.fullchain)

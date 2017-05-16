@@ -42,6 +42,7 @@ install_requires = [
     'ConfigArgParse>=0.9.3',
     'configobj',
     'cryptography>=0.7',  # load_pem_x509_certificate
+    'mock',
     'parsedatetime>=1.3',  # Calendar.parseDT
     'PyOpenSSL',
     'pyrfc3339',
@@ -54,21 +55,18 @@ install_requires = [
     'zope.interface',
 ]
 
-# env markers in extras_require cause problems with older pip: #517
-# Keep in sync with conditional_requirements.py.
+# env markers cause problems with older pip and setuptools
 if sys.version_info < (2, 7):
     install_requires.extend([
-        # only some distros recognize stdlib argparse as already satisfying
         'argparse',
-        'mock<1.1.0',
+        'ordereddict',
     ])
-else:
-    install_requires.append('mock')
 
 dev_extras = [
     # Pin astroid==1.3.5, pylint==1.4.2 as a workaround for #289
     'astroid==1.3.5',
     'coverage',
+    'ipdb',
     'nose',
     'pylint==1.4.2',  # upstream #248
     'tox',
@@ -102,6 +100,11 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',

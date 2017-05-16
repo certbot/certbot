@@ -1,7 +1,6 @@
 """Tests for certbot.crypto_util."""
 import logging
-import shutil
-import tempfile
+import os
 import unittest
 
 import OpenSSL
@@ -21,17 +20,20 @@ CERT = test_util.load_vector('cert.pem')
 SAN_CERT = test_util.load_vector('cert-san.pem')
 
 
-class InitSaveKeyTest(unittest.TestCase):
+class InitSaveKeyTest(test_util.TempDirTestCase):
     """Tests for certbot.crypto_util.init_save_key."""
     def setUp(self):
+        super(InitSaveKeyTest, self).setUp()
+
         logging.disable(logging.CRITICAL)
         zope.component.provideUtility(
-            mock.Mock(strict_permissions=True), interfaces.IConfig)
-        self.key_dir = tempfile.mkdtemp('key_dir')
+            mock.Mock(strict_permissions=True, dry_run=False),
+            interfaces.IConfig)
 
     def tearDown(self):
+        super(InitSaveKeyTest, self).tearDown()
+
         logging.disable(logging.NOTSET)
-        shutil.rmtree(self.key_dir)
 
     @classmethod
     def _call(cls, key_size, key_dir):
@@ -41,79 +43,65 @@ class InitSaveKeyTest(unittest.TestCase):
     @mock.patch('certbot.crypto_util.make_key')
     def test_success(self, mock_make):
         mock_make.return_value = b'key_pem'
-        key = self._call(1024, self.key_dir)
+        key = self._call(1024, self.tempdir)
         self.assertEqual(key.pem, b'key_pem')
         self.assertTrue('key-certbot.pem' in key.file)
+        self.assertTrue(os.path.exists(os.path.join(self.tempdir, key.file)))
+
+    @mock.patch('certbot.crypto_util.make_key')
+    def test_success_dry_run(self, mock_make):
+        zope.component.provideUtility(
+            mock.Mock(strict_permissions=True, dry_run=True),
+            interfaces.IConfig)
+        mock_make.return_value = b'key_pem'
+        key = self._call(1024, self.tempdir)
+        self.assertEqual(key.pem, b'key_pem')
+        self.assertTrue(key.file is None)
 
     @mock.patch('certbot.crypto_util.make_key')
     def test_key_failure(self, mock_make):
         mock_make.side_effect = ValueError
-        self.assertRaises(ValueError, self._call, 431, self.key_dir)
+        self.assertRaises(ValueError, self._call, 431, self.tempdir)
 
 
-class InitSaveCSRTest(unittest.TestCase):
+class InitSaveCSRTest(test_util.TempDirTestCase):
     """Tests for certbot.crypto_util.init_save_csr."""
 
     def setUp(self):
+        super(InitSaveCSRTest, self).setUp()
+
         zope.component.provideUtility(
-            mock.Mock(strict_permissions=True), interfaces.IConfig)
-        self.csr_dir = tempfile.mkdtemp('csr_dir')
+            mock.Mock(strict_permissions=True, dry_run=False),
+            interfaces.IConfig)
 
-    def tearDown(self):
-        shutil.rmtree(self.csr_dir)
-
-    @mock.patch('certbot.crypto_util.make_csr')
+    @mock.patch('acme.crypto_util.make_csr')
     @mock.patch('certbot.crypto_util.util.make_or_verify_dir')
-    def test_it(self, unused_mock_verify, mock_csr):
+    def test_success(self, unused_mock_verify, mock_csr):
         from certbot.crypto_util import init_save_csr
 
-        mock_csr.return_value = (b'csr_pem', b'csr_der')
+        mock_csr.return_value = b'csr_pem'
 
         csr = init_save_csr(
-            mock.Mock(pem='dummy_key'), 'example.com', self.csr_dir,
-            'csr-certbot.pem')
+            mock.Mock(pem='dummy_key'), 'example.com', self.tempdir)
 
-        self.assertEqual(csr.data, b'csr_der')
+        self.assertEqual(csr.data, b'csr_pem')
         self.assertTrue('csr-certbot.pem' in csr.file)
 
+    @mock.patch('acme.crypto_util.make_csr')
+    @mock.patch('certbot.crypto_util.util.make_or_verify_dir')
+    def test_success_dry_run(self, unused_mock_verify, mock_csr):
+        from certbot.crypto_util import init_save_csr
 
-class MakeCSRTest(unittest.TestCase):
-    """Tests for certbot.crypto_util.make_csr."""
+        zope.component.provideUtility(
+            mock.Mock(strict_permissions=True, dry_run=True),
+            interfaces.IConfig)
+        mock_csr.return_value = b'csr_pem'
 
-    @classmethod
-    def _call(cls, *args, **kwargs):
-        from certbot.crypto_util import make_csr
-        return make_csr(*args, **kwargs)
+        csr = init_save_csr(
+            mock.Mock(pem='dummy_key'), 'example.com', self.tempdir)
 
-    def test_san(self):
-        from certbot.crypto_util import get_sans_from_csr
-        # TODO: Fails for RSA256_KEY
-        csr_pem, csr_der = self._call(
-            RSA512_KEY, ['example.com', 'www.example.com'])
-        self.assertEqual(
-            ['example.com', 'www.example.com'], get_sans_from_csr(csr_pem))
-        self.assertEqual(
-            ['example.com', 'www.example.com'], get_sans_from_csr(
-                csr_der, OpenSSL.crypto.FILETYPE_ASN1))
-
-    def test_must_staple(self):
-        # TODO: Fails for RSA256_KEY
-        csr_pem, _ = self._call(
-            RSA512_KEY, ['example.com', 'www.example.com'], must_staple=True)
-        csr = OpenSSL.crypto.load_certificate_request(
-            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
-
-        # In pyopenssl 0.13 (used with TOXENV=py26-oldest and py27-oldest), csr
-        # objects don't have a get_extensions() method, so we skip this test if
-        # the method isn't available.
-        if hasattr(csr, 'get_extensions'):
-            # NOTE: Ideally we would filter by the TLS Feature OID, but
-            # OpenSSL.crypto.X509Extension doesn't give us the extension's raw OID,
-            # and the shortname field is just "UNDEF"
-            must_staple_exts = [e for e in csr.get_extensions()
-                if e.get_data() == b"0\x03\x02\x01\x05"]
-            self.assertEqual(len(must_staple_exts), 1,
-                "Expected exactly one Must Staple extension")
+        self.assertEqual(csr.data, b'csr_pem')
+        self.assertTrue(csr.file is None)
 
 
 class ValidCSRTest(unittest.TestCase):
@@ -132,9 +120,6 @@ class ValidCSRTest(unittest.TestCase):
 
     def test_valid_der_false(self):
         self.assertFalse(self._call(test_util.load_vector('csr.der')))
-
-    def test_valid_der_san_false(self):
-        self.assertFalse(self._call(test_util.load_vector('csr-san.der')))
 
     def test_empty_false(self):
         self.assertFalse(self._call(''))
@@ -171,12 +156,13 @@ class ImportCSRFileTest(unittest.TestCase):
     def test_der_csr(self):
         csrfile = test_util.vector_path('csr.der')
         data = test_util.load_vector('csr.der')
+        data_pem = test_util.load_vector('csr.pem')
 
         self.assertEqual(
-            (OpenSSL.crypto.FILETYPE_ASN1,
+            (OpenSSL.crypto.FILETYPE_PEM,
              util.CSR(file=csrfile,
-                      data=data,
-                      form="der"),
+                      data=data_pem,
+                      form="pem"),
              ["example.com"],),
             self._call(csrfile, data))
 
@@ -243,36 +229,6 @@ class GetSANsFromCertTest(unittest.TestCase):
             self._call(test_util.load_vector('cert-san.pem')))
 
 
-class GetSANsFromCSRTest(unittest.TestCase):
-    """Tests for certbot.crypto_util.get_sans_from_csr."""
-
-    @classmethod
-    def _call(cls, *args, **kwargs):
-        from certbot.crypto_util import get_sans_from_csr
-        return get_sans_from_csr(*args, **kwargs)
-
-    def test_extract_one_san(self):
-        self.assertEqual(['example.com'], self._call(
-            test_util.load_vector('csr.pem')))
-
-    def test_extract_two_sans(self):
-        self.assertEqual(['example.com', 'www.example.com'], self._call(
-            test_util.load_vector('csr-san.pem')))
-
-    def test_extract_six_sans(self):
-        self.assertEqual(self._call(test_util.load_vector('csr-6sans.pem')),
-                         ["example.com", "example.org", "example.net",
-                          "example.info", "subdomain.example.com",
-                          "other.subdomain.example.com"])
-
-    def test_parse_non_csr(self):
-        self.assertRaises(OpenSSL.crypto.Error, self._call, "hello there")
-
-    def test_parse_no_sans(self):
-        self.assertEqual(
-            [], self._call(test_util.load_vector('csr-nosans.pem')))
-
-
 class GetNamesFromCertTest(unittest.TestCase):
     """Tests for certbot.crypto_util.get_names_from_cert."""
 
@@ -298,35 +254,8 @@ class GetNamesFromCertTest(unittest.TestCase):
             ['example.com'] + ['{0}.example.com'.format(c) for c in 'abcd'],
             self._call(test_util.load_vector('cert-5sans.pem')))
 
-
-class GetNamesFromCSRTest(unittest.TestCase):
-    """Tests for certbot.crypto_util.get_names_from_csr."""
-    @classmethod
-    def _call(cls, *args, **kwargs):
-        from certbot.crypto_util import get_names_from_csr
-        return get_names_from_csr(*args, **kwargs)
-
-    def test_extract_one_san(self):
-        self.assertEqual(['example.com'], self._call(
-            test_util.load_vector('csr.pem')))
-
-    def test_extract_two_sans(self):
-        self.assertEqual(set(('example.com', 'www.example.com',)), set(
-            self._call(test_util.load_vector('csr-san.pem'))))
-
-    def test_extract_six_sans(self):
-        self.assertEqual(
-            set(self._call(test_util.load_vector('csr-6sans.pem'))),
-            set(("example.com", "example.org", "example.net",
-                 "example.info", "subdomain.example.com",
-                 "other.subdomain.example.com",)))
-
-    def test_parse_non_csr(self):
+    def test_parse_non_cert(self):
         self.assertRaises(OpenSSL.crypto.Error, self._call, "hello there")
-
-    def test_parse_no_sans(self):
-        self.assertEqual(["example.org"],
-                         self._call(test_util.load_vector('csr-nosans.pem')))
 
 
 class CertLoaderTest(unittest.TestCase):
@@ -336,8 +265,8 @@ class CertLoaderTest(unittest.TestCase):
         from certbot.crypto_util import pyopenssl_load_certificate
 
         cert, file_type = pyopenssl_load_certificate(CERT)
-        self.assertEqual(cert.digest('sha1'),
-                         OpenSSL.crypto.load_certificate(file_type, CERT).digest('sha1'))
+        self.assertEqual(cert.digest('sha256'),
+                         OpenSSL.crypto.load_certificate(file_type, CERT).digest('sha256'))
 
     def test_load_invalid_cert(self):
         from certbot.crypto_util import pyopenssl_load_certificate

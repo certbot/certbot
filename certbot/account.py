@@ -74,7 +74,8 @@ class Account(object):  # pylint: disable=too-few-public-methods
             self.meta.creation_dt), self.meta.creation_host, self.id[:4])
 
     def __repr__(self):
-        return "<{0}({1})>".format(self.__class__.__name__, self.id)
+        return "<{0}({1}, {2}, {3})>".format(
+            self.__class__.__name__, self.regr, self.id, self.meta)
 
     def __eq__(self, other):
         return (isinstance(other, self.__class__) and
@@ -98,7 +99,7 @@ def report_new_account(config):
 
 
 class AccountMemoryStorage(interfaces.AccountStorage):
-    """In-memory account strage."""
+    """In-memory account storage."""
 
     def __init__(self, initial_accounts=None):
         self.accounts = initial_accounts if initial_accounts is not None else {}
@@ -106,7 +107,8 @@ class AccountMemoryStorage(interfaces.AccountStorage):
     def find_all(self):
         return list(six.itervalues(self.accounts))
 
-    def save(self, account):
+    def save(self, account, acme):
+        # pylint: disable=unused-argument
         if account.id in self.accounts:
             logger.debug("Overwriting account: %s", account.id)
         self.accounts[account.id] = account
@@ -117,6 +119,16 @@ class AccountMemoryStorage(interfaces.AccountStorage):
         except KeyError:
             raise errors.AccountNotFound(account_id)
 
+class RegistrationResourceWithNewAuthzrURI(messages.RegistrationResource):
+    """A backwards-compatible RegistrationResource with a new-authz URI.
+
+       Hack: Certbot versions pre-0.11.1 expect to load
+       new_authzr_uri as part of the account. Because people
+       sometimes switch between old and new versions, we will
+       continue to write out this field for some time so older
+       clients don't crash in that scenario.
+    """
+    new_authzr_uri = jose.Field('new_authzr_uri')
 
 class AccountFileStorage(interfaces.AccountStorage):
     """Accounts file storage.
@@ -181,16 +193,16 @@ class AccountFileStorage(interfaces.AccountStorage):
                     account_id, acc.id))
         return acc
 
-    def save(self, account):
-        self._save(account, regr_only=False)
+    def save(self, account, acme):
+        self._save(account, acme, regr_only=False)
 
-    def save_regr(self, account):
+    def save_regr(self, account, acme):
         """Save the registration resource.
 
         :param Account account: account whose regr should be saved
 
         """
-        self._save(account, regr_only=True)
+        self._save(account, acme, regr_only=True)
 
     def delete(self, account_id):
         """Delete registration info from disk
@@ -204,13 +216,19 @@ class AccountFileStorage(interfaces.AccountStorage):
                 "Account at %s does not exist" % account_dir_path)
         shutil.rmtree(account_dir_path)
 
-    def _save(self, account, regr_only):
+    def _save(self, account, acme, regr_only):
         account_dir_path = self._account_dir_path(account.id)
         util.make_or_verify_dir(account_dir_path, 0o700, os.geteuid(),
                                 self.config.strict_permissions)
         try:
             with open(self._regr_path(account_dir_path), "w") as regr_file:
-                regr_file.write(account.regr.json_dumps())
+                regr = account.regr
+                with_uri = RegistrationResourceWithNewAuthzrURI(
+                    new_authzr_uri=acme.directory.new_authz,
+                    body=regr.body,
+                    uri=regr.uri,
+                    terms_of_service=regr.terms_of_service)
+                regr_file.write(with_uri.json_dumps())
             if not regr_only:
                 with util.safe_open(self._key_path(account_dir_path),
                                     "w", chmod=0o400) as key_file:

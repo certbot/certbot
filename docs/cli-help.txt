@@ -70,6 +70,8 @@ optional arguments:
                         because they may be necessary to accurately simulate
                         renewal. --renew-hook commands are not called.
                         (default: False)
+  --debug-challenges    After setting up challenges, wait for user input
+                        before submitting to CA (default: False)
   --preferred-challenges PREF_CHALLS
                         A sorted, comma delimited list of the preferred
                         challenge to use during authorization with the most
@@ -83,11 +85,16 @@ optional arguments:
   --user-agent USER_AGENT
                         Set a custom user agent string for the client. User
                         agent strings allow the CA to collect high level
-                        statistics about success rates by OS and plugin. If
-                        you wish to hide your server OS version from the Let's
-                        Encrypt server, set this to "". (default:
-                        CertbotACMEClient/0.11.1 (Ubuntu 16.04.1 LTS)
-                        Authenticator/XXX Installer/YYY)
+                        statistics about success rates by OS, plugin and use
+                        case, and to know when to deprecate support for past
+                        Python versions and flags. If you wish to hide this
+                        information from the Let's Encrypt server, set this to
+                        "". (default: CertbotACMEClient/0.14.0 (certbot;
+                        Ubuntu 16.04.2 LTS) Authenticator/XXX Installer/YYY
+                        (SUBCOMMAND; flags: FLAGS) Py/2.7.12). The flags
+                        encoded in the user agent are: --duplicate, --force-
+                        renew, --allow-subset-of-names, -n, and whether any
+                        hooks are set.
 
 automation:
   Arguments for automating execution & other tweaks
@@ -97,7 +104,7 @@ automation:
                         keep the existing one until it is due for renewal (for
                         the 'run' subcommand this means reinstall the existing
                         cert). (default: Ask)
-  --expand              If an existing cert covers some subset of the
+  --expand              If an existing cert is a strict subset of the
                         requested names, always expand and replace it with the
                         additional names. (default: Ask)
   --version             show program's version number and exit
@@ -128,6 +135,10 @@ automation:
   --no-self-upgrade     (certbot-auto only) prevent the certbot-auto script
                         from upgrading itself to newer released versions
                         (default: Upgrade automatically)
+  --no-bootstrap        (certbot-auto only) prevent the certbot-auto script
+                        from installing OS-level dependencies (default: Prompt
+                        to install OS-wide dependencies, but exit if the user
+                        says 'No')
   -q, --quiet           Silence all output except errors. Useful for
                         automation via cron. Implies --non-interactive.
                         (default: False)
@@ -193,6 +204,9 @@ paths:
                         installed from, or revoked. (default: None)
   --key-path KEY_PATH   Path to private key for cert installation or
                         revocation (if account key is missing) (default: None)
+  --fullchain-path FULLCHAIN_PATH
+                        Accompanying path to a full certificate chain (cert
+                        plus chain). (default: None)
   --chain-path CHAIN_PATH
                         Accompanying path to a certificate chain. (default:
                         None)
@@ -256,10 +270,12 @@ renew:
                         Command to be run in a shell once for each
                         successfully renewed certificate. For this command,
                         the shell variable $RENEWED_LINEAGE will point to the
-                        config live subdirectory containing the new certs and
-                        keys; the shell variable $RENEWED_DOMAINS will contain
-                        a space-delimited list of renewed cert domains
-                        (default: None)
+                        config live subdirectory (for example,
+                        "/etc/letsencrypt/live/example.com") containing the
+                        new certs and keys; the shell variable
+                        $RENEWED_DOMAINS will contain a space-delimited list
+                        of renewed cert domains (for example, "example.com
+                        www.example.com" (default: None)
   --disable-hook-validation
                         Ordinarily the commands specified for --pre-hook
                         /--post-hook/--renew-hook will be checked for
@@ -315,10 +331,6 @@ unregister:
 install:
   Options for modifying how a cert is deployed
 
-  --fullchain-path FULLCHAIN_PATH
-                        Accompanying path to a full certificate chain (cert
-                        plus chain). (default: None)
-
 config_changes:
   Options for controlling which changes are displayed
 
@@ -368,59 +380,6 @@ plugins:
   --webroot             Obtain certs by placing files in a webroot directory.
                         (default: False)
 
-nginx:
-  Nginx Web Server plugin - Alpha
-
-  --nginx-server-root NGINX_SERVER_ROOT
-                        Nginx server root directory. (default: /etc/nginx)
-  --nginx-ctl NGINX_CTL
-                        Path to the 'nginx' binary, used for 'configtest' and
-                        retrieving nginx version number. (default: nginx)
-
-standalone:
-  Spin up a temporary webserver
-
-manual:
-  Authenticate through manual configuration or custom shell scripts. When
-  using shell scripts, an authenticator script must be provided. The
-  environment variables available to this script are $CERTBOT_DOMAIN which
-  contains the domain being authenticated, $CERTBOT_VALIDATION which is the
-  validation string, and $CERTBOT_TOKEN which is the filename of the
-  resource requested when performing an HTTP-01 challenge. An additional
-  cleanup script can also be provided and can use the additional variable
-  $CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth
-  script.
-
-  --manual-auth-hook MANUAL_AUTH_HOOK
-                        Path or command to execute for the authentication
-                        script (default: None)
-  --manual-cleanup-hook MANUAL_CLEANUP_HOOK
-                        Path or command to execute for the cleanup script
-                        (default: None)
-  --manual-public-ip-logging-ok
-                        Automatically allows public IP logging (default: Ask)
-
-webroot:
-  Place files in webroot directory
-
-  --webroot-path WEBROOT_PATH, -w WEBROOT_PATH
-                        public_html / webroot path. This can be specified
-                        multiple times to handle different domains; each
-                        domain will have the webroot path that preceded it.
-                        For instance: `-w /var/www/example -d example.com -d
-                        www.example.com -w /var/www/thing -d thing.net -d
-                        m.thing.net` (default: Ask)
-  --webroot-map WEBROOT_MAP
-                        JSON dictionary mapping domains to webroot paths; this
-                        implies -d for each entry. You may need to escape this
-                        from your shell. E.g.: --webroot-map
-                        '{"eg1.is,m.eg1.is":"/www/eg1/", "eg2.is":"/www/eg2"}'
-                        This option is merged with, but takes precedence over,
-                        -w / -d entries. At present, if you put webroot-map in
-                        a config file, it needs to be on a single line, like:
-                        webroot-map = {"example.com":"/var/www"}. (default:
-                        {})
-
 apache:
   Apache Web Server plugin - Beta
 
@@ -451,5 +410,58 @@ apache:
                         Let installer handle enabling sites for you.(Only
                         Ubuntu/Debian currently) (default: True)
 
+manual:
+  Authenticate through manual configuration or custom shell scripts. When
+  using shell scripts, an authenticator script must be provided. The
+  environment variables available to this script are $CERTBOT_DOMAIN which
+  contains the domain being authenticated, $CERTBOT_VALIDATION which is the
+  validation string, and $CERTBOT_TOKEN which is the filename of the
+  resource requested when performing an HTTP-01 challenge. An additional
+  cleanup script can also be provided and can use the additional variable
+  $CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth
+  script.
+
+  --manual-auth-hook MANUAL_AUTH_HOOK
+                        Path or command to execute for the authentication
+                        script (default: None)
+  --manual-cleanup-hook MANUAL_CLEANUP_HOOK
+                        Path or command to execute for the cleanup script
+                        (default: None)
+  --manual-public-ip-logging-ok
+                        Automatically allows public IP logging (default: Ask)
+
+nginx:
+  Nginx Web Server plugin - Alpha
+
+  --nginx-server-root NGINX_SERVER_ROOT
+                        Nginx server root directory. (default: /etc/nginx)
+  --nginx-ctl NGINX_CTL
+                        Path to the 'nginx' binary, used for 'configtest' and
+                        retrieving nginx version number. (default: nginx)
+
 null:
   Null Installer
+
+standalone:
+  Spin up a temporary webserver
+
+webroot:
+  Place files in webroot directory
+
+  --webroot-path WEBROOT_PATH, -w WEBROOT_PATH
+                        public_html / webroot path. This can be specified
+                        multiple times to handle different domains; each
+                        domain will have the webroot path that preceded it.
+                        For instance: `-w /var/www/example -d example.com -d
+                        www.example.com -w /var/www/thing -d thing.net -d
+                        m.thing.net` (default: Ask)
+  --webroot-map WEBROOT_MAP
+                        JSON dictionary mapping domains to webroot paths; this
+                        implies -d for each entry. You may need to escape this
+                        from your shell. E.g.: --webroot-map
+                        '{"eg1.is,m.eg1.is":"/www/eg1/", "eg2.is":"/www/eg2"}'
+                        This option is merged with, but takes precedence over,
+                        -w / -d entries. At present, if you put webroot-map in
+                        a config file, it needs to be on a single line, like:
+                        webroot-map = {"example.com":"/var/www"}. (default:
+                        {})

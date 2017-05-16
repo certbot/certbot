@@ -15,6 +15,11 @@ set -e  # Work even if somebody does "sh thisscript.sh".
 
 # Note: you can set XDG_DATA_HOME or VENV_PATH before running this script,
 # if you want to change where the virtual environment will be installed
+
+# HOME might not be defined when being run through something like systemd
+if [ -z "$HOME" ]; then
+  HOME=~root
+fi
 if [ -z "$XDG_DATA_HOME" ]; then
   XDG_DATA_HOME=~/.local/share
 fi
@@ -23,7 +28,7 @@ if [ -z "$VENV_PATH" ]; then
   VENV_PATH="$XDG_DATA_HOME/$VENV_NAME"
 fi
 VENV_BIN="$VENV_PATH/bin"
-LE_AUTO_VERSION="0.12.0.dev0"
+LE_AUTO_VERSION="0.15.0.dev0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -36,6 +41,7 @@ Help for certbot itself cannot be provided until it is installed.
   --debug                                   attempt experimental installation
   -h, --help                                print this help
   -n, --non-interactive, --noninteractive   run without asking for user input
+  --no-bootstrap                            do not install OS dependencies
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
   -v, --verbose                             provide more output
@@ -54,9 +60,11 @@ for arg in "$@" ; do
       # Do not upgrade this script (also prevents client upgrades, because each
       # copy of the script pins a hash of the python client)
       NO_SELF_UPGRADE=1;;
+    --no-bootstrap)
+      NO_BOOTSTRAP=1;;
     --help)
       HELP=1;;
-    --noninteractive|--non-interactive)
+    --noninteractive|--non-interactive|renew)
       ASSUME_YES=1;;
     --quiet)
       QUIET=1;;
@@ -90,6 +98,16 @@ if [ "$QUIET" = 1 ]; then
   ASSUME_YES=1
 fi
 
+say() {
+    if [  "$QUIET" != 1 ]; then
+        echo "$@"
+    fi
+}
+
+error() {
+    echo "$@"
+}
+
 # Support for busybox and others where there is no "command",
 # but "which" instead
 if command -v command > /dev/null 2>&1 ; then
@@ -97,7 +115,7 @@ if command -v command > /dev/null 2>&1 ; then
 elif which which > /dev/null 2>&1 ; then
   export EXISTS="which"
 else
-  echo "Cannot find command nor which... please install one!"
+  error "Cannot find command nor which... please install one!"
   exit 1
 fi
 
@@ -142,17 +160,17 @@ if [ -n "${LE_AUTO_SUDO+x}" ]; then
       ;;
     '') ;; # Nothing to do for plain root method.
     *)
-      echo "Error: unknown root authorization mechanism '$LE_AUTO_SUDO'."
+      error "Error: unknown root authorization mechanism '$LE_AUTO_SUDO'."
       exit 1
   esac
-  echo "Using preset root authorization mechanism '$LE_AUTO_SUDO'."
+  say "Using preset root authorization mechanism '$LE_AUTO_SUDO'."
 else
   if test "`id -u`" -ne "0" ; then
     if $EXISTS sudo 1>/dev/null 2>&1; then
       SUDO=sudo
       SUDO_ENV="CERTBOT_AUTO=$0"
     else
-      echo \"sudo\" is not available, will use \"su\" for installation steps...
+      say \"sudo\" is not available, will use \"su\" for installation steps...
       SUDO=su_sudo
     fi
   else
@@ -160,17 +178,24 @@ else
   fi
 fi
 
+BootstrapMessage() {
+  # Arguments: Platform name
+  say "Bootstrapping dependencies for $1... (you can skip this with --no-bootstrap)"
+}
+
 ExperimentalBootstrap() {
   # Arguments: Platform name, bootstrap function name
   if [ "$DEBUG" = 1 ]; then
     if [ "$2" != "" ]; then
-      echo "Bootstrapping dependencies via $1..."
+      BootstrapMessage $1
       $2
     fi
   else
-    echo "FATAL: $1 support is very experimental at present..."
-    echo "if you would like to work on improving it, please ensure you have backups"
-    echo "and then run this script again with the --debug flag!"
+    error "FATAL: $1 support is very experimental at present..."
+    error "if you would like to work on improving it, please ensure you have backups"
+    error "and then run this script again with the --debug flag!"
+    error "Alternatively, you can install OS dependencies yourself and run this script"
+    error "again with --no-bootstrap."
     exit 1
   fi
 }
@@ -181,15 +206,15 @@ DeterminePythonVersion() {
     $EXISTS "$LE_PYTHON" > /dev/null && break
   done
   if [ "$?" != "0" ]; then
-    echo "Cannot find any Pythons; please install one!"
+    error "Cannot find any Pythons; please install one!"
     exit 1
   fi
   export LE_PYTHON
 
   PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
   if [ "$PYVER" -lt 26 ]; then
-    echo "You have an ancient version of Python entombed in your operating system..."
-    echo "This isn't going to work; you'll need at least version 2.6."
+    error "You have an ancient version of Python entombed in your operating system..."
+    error "This isn't going to work; you'll need at least version 2.6."
     exit 1
   fi
 }
@@ -217,7 +242,7 @@ BootstrapDebCommon() {
     QUIET_FLAG='-qq'
   fi
 
-  $SUDO apt-get $QUIET_FLAG update || echo apt-get update hit problems but continuing anyway...
+  $SUDO apt-get $QUIET_FLAG update || error apt-get update hit problems but continuing anyway...
 
   # virtualenv binary can be found in different packages depending on
   # distro version (#346)
@@ -245,7 +270,7 @@ BootstrapDebCommon() {
     # ARGS:
     BACKPORT_NAME="$1"
     BACKPORT_SOURCELINE="$2"
-    echo "To use the Apache Certbot plugin, augeas needs to be installed from $BACKPORT_NAME."
+    say "To use the Apache Certbot plugin, augeas needs to be installed from $BACKPORT_NAME."
     if ! grep -v -e ' *#' /etc/apt/sources.list | grep -q "$BACKPORT_NAME" ; then
       # This can theoretically error if sources.list.d is empty, but in that case we don't care.
       if ! grep -v -e ' *#' /etc/apt/sources.list.d/* 2>/dev/null | grep -q "$BACKPORT_NAME"; then
@@ -305,7 +330,7 @@ BootstrapDebCommon() {
 
 
   if ! $EXISTS virtualenv > /dev/null ; then
-    echo Failed to install a working \"virtualenv\" command, exiting
+    error Failed to install a working \"virtualenv\" command, exiting
     exit 1
   fi
 }
@@ -325,7 +350,7 @@ BootstrapRpmCommon() {
     tool=yum
 
   else
-    echo "Neither yum nor dnf found. Aborting bootstrap!"
+    error "Neither yum nor dnf found. Aborting bootstrap!"
     exit 1
   fi
 
@@ -339,7 +364,7 @@ BootstrapRpmCommon() {
   if ! $SUDO $tool list *virtualenv >/dev/null 2>&1; then
     echo "To use Certbot, packages from the EPEL repository need to be installed."
     if ! $SUDO $tool list epel-release >/dev/null 2>&1; then
-      echo "Please enable this repository and try running Certbot again."
+      error "Enable the EPEL repository and try running Certbot again."
       exit 1
     fi
     if [ "$ASSUME_YES" = 1 ]; then
@@ -351,7 +376,7 @@ BootstrapRpmCommon() {
       sleep 1s
     fi
     if ! $SUDO $tool install $yes_flag $QUIET_FLAG epel-release; then
-      echo "Could not enable EPEL. Aborting bootstrap!"
+      error "Could not enable EPEL. Aborting bootstrap!"
       exit 1
     fi
   fi
@@ -393,7 +418,7 @@ BootstrapRpmCommon() {
   fi
 
   if ! $SUDO $tool install $yes_flag $QUIET_FLAG $pkgs; then
-    echo "Could not install OS dependencies. Aborting bootstrap!"
+    error "Could not install OS dependencies. Aborting bootstrap!"
     exit 1
   fi
 }
@@ -498,15 +523,15 @@ BootstrapFreeBsd() {
 
 BootstrapMac() {
   if hash brew 2>/dev/null; then
-    echo "Using Homebrew to install dependencies..."
+    say "Using Homebrew to install dependencies..."
     pkgman=brew
     pkgcmd="brew install"
   elif hash port 2>/dev/null; then
-    echo "Using MacPorts to install dependencies..."
+    say "Using MacPorts to install dependencies..."
     pkgman=port
     pkgcmd="$SUDO port install"
   else
-    echo "No Homebrew/MacPorts; installing Homebrew..."
+    say "No Homebrew/MacPorts; installing Homebrew..."
     ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     pkgman=brew
     pkgcmd="brew install"
@@ -517,26 +542,26 @@ BootstrapMac() {
       -o "$(which python)" = "/usr/bin/python" ]; then
     # We want to avoid using the system Python because it requires root to use pip.
     # python.org, MacPorts or HomeBrew Python installations should all be OK.
-    echo "Installing python..."
+    say "Installing python..."
     $pkgcmd python
   fi
 
   # Workaround for _dlopen not finding augeas on macOS
   if [ "$pkgman" = "port" ] && ! [ -e "/usr/local/lib/libaugeas.dylib" ] && [ -e "/opt/local/lib/libaugeas.dylib" ]; then
-    echo "Applying augeas workaround"
+    say "Applying augeas workaround"
     $SUDO mkdir -p /usr/local/lib/
     $SUDO ln -s /opt/local/lib/libaugeas.dylib /usr/local/lib/
   fi
 
   if ! hash pip 2>/dev/null; then
-    echo "pip not installed"
-    echo "Installing pip..."
+    say "pip not installed"
+    say "Installing pip..."
     curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | python
   fi
 
   if ! hash virtualenv 2>/dev/null; then
-    echo "virtualenv not installed."
-    echo "Installing with pip..."
+    say "virtualenv not installed."
+    say "Installing with pip..."
     pip install virtualenv
   fi
 }
@@ -556,7 +581,7 @@ BootstrapMageiaCommon() {
       libpython-devel \
       python-virtualenv
     then
-      echo "Could not install Python dependencies. Aborting bootstrap!"
+      error "Could not install Python dependencies. Aborting bootstrap!"
       exit 1
   fi
 
@@ -568,7 +593,7 @@ BootstrapMageiaCommon() {
       libffi-devel \
       rootcerts
     then
-      echo "Could not install additional dependencies. Aborting bootstrap!"
+      error "Could not install additional dependencies. Aborting bootstrap!"
       exit 1
     fi
 }
@@ -576,28 +601,30 @@ BootstrapMageiaCommon() {
 
 # Install required OS packages:
 Bootstrap() {
-  if [ -f /etc/debian_version ]; then
-    echo "Bootstrapping dependencies for Debian-based OSes..."
+  if [ "$NO_BOOTSTRAP" = 1 ]; then
+      return
+  elif [ -f /etc/debian_version ]; then
+    BootstrapMessage "Debian-based OSes"
     BootstrapDebCommon
-  elif [ -f /etc/mageia-release ] ; then
+  elif [ -f /etc/mageia-release ]; then
     # Mageia has both /etc/mageia-release and /etc/redhat-release
     ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
   elif [ -f /etc/redhat-release ]; then
-    echo "Bootstrapping dependencies for RedHat-based OSes..."
+    BootstrapMessage "RedHat-based OSes"
     BootstrapRpmCommon
   elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
-    echo "Bootstrapping dependencies for openSUSE-based OSes..."
+    BootstrapMessage "openSUSE-based OSes"
     BootstrapSuseCommon
   elif [ -f /etc/arch-release ]; then
     if [ "$DEBUG" = 1 ]; then
-      echo "Bootstrapping dependencies for Archlinux..."
+      BootstrapMessage "Archlinux"
       BootstrapArchCommon
     else
-      echo "Please use pacman to install letsencrypt packages:"
-      echo "# pacman -S certbot certbot-apache"
-      echo
-      echo "If you would like to use the virtualenv way, please run the script again with the"
-      echo "--debug flag."
+      error "Please use pacman to install letsencrypt packages:"
+      error "# pacman -S certbot certbot-apache"
+      error
+      error "If you would like to use the virtualenv way, please run the script again with the"
+      error "--debug flag."
       exit 1
     fi
   elif [ -f /etc/manjaro-release ]; then
@@ -613,11 +640,11 @@ Bootstrap() {
   elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
     ExperimentalBootstrap "Joyent SmartOS Zone" BootstrapSmartOS
   else
-    echo "Sorry, I don't know how to bootstrap Certbot on your operating system!"
-    echo
-    echo "You will need to bootstrap, configure virtualenv, and run pip install manually."
-    echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
-    echo "for more info."
+    error "Sorry, I don't know how to bootstrap Certbot on your operating system!"
+    error
+    error "You will need to install OS dependencies, configure virtualenv, and run pip install manually."
+    error "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
+    error "for more info."
     exit 1
   fi
 }
@@ -637,7 +664,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
     # grep for both certbot and letsencrypt until certbot and shim packages have been released
     INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | grep "^certbot\|^letsencrypt" | cut -d " " -f 2)
     if [ -z "$INSTALLED_VERSION" ]; then
-        echo "Error: couldn't get currently installed version for $VENV_BIN/letsencrypt: " 1>&2
+        error "Error: couldn't get currently installed version for $VENV_BIN/letsencrypt: " 1>&2
         "$VENV_BIN/letsencrypt" --version
         exit 1
     fi
@@ -645,7 +672,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
     INSTALLED_VERSION="none"
   fi
   if [ "$LE_AUTO_VERSION" != "$INSTALLED_VERSION" ]; then
-    echo "Creating virtual environment..."
+    say "Creating virtual environment..."
     DeterminePythonVersion
     rm -rf "$VENV_PATH"
     if [ "$VERBOSE" = 1 ]; then
@@ -654,7 +681,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
       virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" > /dev/null
     fi
 
-    echo "Installing Python packages..."
+    say "Installing Python packages..."
     TEMP_DIR=$(TempDir)
     trap 'rm -rf "$TEMP_DIR"' EXIT
     # There is no $ interpolation due to quotes on starting heredoc delimiter.
@@ -667,7 +694,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
 
 # Hashin example:
 # pip install hashin
-# hashin -r letsencrypt-auto-requirements.txt cryptography==1.5.2
+# hashin -r dependency-requirements.txt cryptography==1.5.2
 # sets the new certbot-auto pinned version of cryptography to 1.5.2
 
 argparse==1.4.0 \
@@ -727,9 +754,9 @@ cryptography==1.5.3 \
 enum34==1.1.2 \
     --hash=sha256:2475d7fcddf5951e92ff546972758802de5260bf409319a9f1934e6bbc8b1dc7 \
     --hash=sha256:35907defb0f992b75ab7788f65fedc1cf20ffa22688e0e6f6f12afc06b3ea501
-funcsigs==0.4 \
-    --hash=sha256:ff5ad9e2f8d9e5d1e8bbfbcf47722ab527cf0d51caeeed9da6d0f40799383fde \
-    --hash=sha256:d83ce6df0b0ea6618700fe1db353526391a8a3ada1b7aba52fed7a61da772033
+funcsigs==1.0.2 \
+    --hash=sha256:330cc27ccbf7f1e992e69fef78261dc7c6569012cf397db8d3de0234e6c937ca \
+    --hash=sha256:a7bb0f2cf3a3fd1ab2732cb49eba4252c2af4240442415b4abce3b87022a8f50
 idna==2.0 \
     --hash=sha256:9b2fc50bd3c4ba306b9651b69411ef22026d4d8335b93afc2214cef1246ce707 \
     --hash=sha256:16199aad938b290f5be1057c0e1efc6546229391c23cea61ca940c115f7d3d3b
@@ -824,27 +851,33 @@ zope.interface==4.1.3 \
     --hash=sha256:928138365245a0e8869a5999fbcc2a45475a0a6ed52a494d60dbdc540335fedd \
     --hash=sha256:0d841ba1bb840eea0e6489dc5ecafa6125554971f53b5acb87764441e61bceba \
     --hash=sha256:b09c8c1d47b3531c400e0195697f1414a63221de6ef478598a4f1460f7d9a392
-mock==1.0.1 \
-    --hash=sha256:b839dd2d9c117c701430c149956918a423a9863b48b09c90e30a6013e7d2f44f \
-    --hash=sha256:8f83080daa249d036cbccfb8ae5cc6ff007b88d6d937521371afabe7b19badbc
+mock==2.0.0 \
+    --hash=sha256:5ce3c71c5545b472da17b72268978914d0252980348636840bd34a00b5cc96c1 \
+    --hash=sha256:b158b6df76edd239b8208d481dc46b6afd45a846b7812ff0ce58971cf5bc8bba
+
+# Contains the requirements for the letsencrypt package.
+#
+# Since the letsencrypt package depends on certbot and using pip with hashes
+# requires that all installed packages have hashes listed, this allows
+# dependency-requirements.txt to be used without requiring a hash for a
+# (potentially unreleased) Certbot package.
+
 letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-# THE LINES BELOW ARE EDITED BY THE RELEASE SCRIPT; ADD ALL DEPENDENCIES ABOVE.
-
-acme==0.11.1 \
-    --hash=sha256:9f4efac6dc4477a3baa7eb2392d4f7583f974e4ad336439aa1961ef805622a77 \
-    --hash=sha256:db35258edfc13dfe5839215898fe2d5d3caafc9a084f631a032f3fdf712c694e
-certbot==0.11.1 \
-    --hash=sha256:ba80552df0f390dbc5fcd14b4ea4b1499ea866f5f78c8c1a375abc25101dedf1 \
-    --hash=sha256:6c1724486d500c5163c9313d6a14af5af9f4515f79553627303a6b86df2c3af2
-certbot-apache==0.11.1 \
-    --hash=sha256:70132d9013509011b9edeba64fc208961f50ef78457f58d3b80a61094102efcd \
-    --hash=sha256:efe2224b531595edee366423c115e2874a3c9011890321d3ccda0367efc776c0
-certbot-nginx==0.11.1 \
-    --hash=sha256:1895eea1de92ab3dfd762998a4be7868ec3ec4d42cce7772995e4e9b2e488e6a \
-    --hash=sha256:e5e5ffe8930ba10139bb61c2a05a30e84d9a69a7d8fc6a7b391f707eae8bfce5
+acme==0.14.0 \
+    --hash=sha256:fca8766a2596833e8886f7ef72cf82d1f6c6cffa895781a5676861c251b24b70 \
+    --hash=sha256:ce7d2bca31e85adac1030c944e0a9d96e8b0f85cdc616b78d40eb09c91803543
+certbot==0.14.0 \
+    --hash=sha256:071790b1ec4e5b94aa1688f8a62a10905c28438cd55d990cdb8c9f733d3a4a41 \
+    --hash=sha256:98add3721e1edaedb404879a9d39bd49020e94fc8eedbc46032a00ada51d7741
+certbot-apache==0.14.0 \
+    --hash=sha256:ab837efce7aa4c4e47a724a60dcbeacadb9dfe64bd1d32a4e854678c4fcd82a3 \
+    --hash=sha256:bbcd21d9f3fd8cdc4453ef94d0cb6033c3a19f879dcd314231501ebb7180168f
+certbot-nginx==0.14.0 \
+    --hash=sha256:608b2f6f2b04ce93c503a95ffba4f0e0ca2e0cb9ea587a8376368fa621b388e4 \
+    --hash=sha256:86e964b2a7818cc165d913e27e504f2ef2f60750ab0db6d39bfb3465d54c30db
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1010,42 +1043,40 @@ UNLIKELY_EOF
     set -e
     if [ "$PIP_STATUS" != 0 ]; then
       # Report error. (Otherwise, be quiet.)
-      echo "Had a problem while installing Python packages."
+      error "Had a problem while installing Python packages."
       if [ "$VERBOSE" != 1 ]; then
-        echo
-        echo "pip prints the following errors: "
-        echo "====================================================="
-        echo "$PIP_OUT"
-        echo "====================================================="
-        echo
-        echo "Certbot has problem setting up the virtual environment."
+        error
+        error "pip prints the following errors: "
+        error "====================================================="
+        error "$PIP_OUT"
+        error "====================================================="
+        error
+        error "Certbot has problem setting up the virtual environment."
 
         if `echo $PIP_OUT | grep -q Killed` || `echo $PIP_OUT | grep -q "allocate memory"` ; then
-          echo
-          echo "Based on your pip output, the problem can likely be fixed by "
-          echo "increasing the available memory."
+          error
+          error "Based on your pip output, the problem can likely be fixed by "
+          error "increasing the available memory."
         else
-          echo
-          echo "We were not be able to guess the right solution from your pip "
-          echo "output."
+          error
+          error "We were not be able to guess the right solution from your pip "
+          error "output."
         fi
 
-        echo
-        echo "Consult https://certbot.eff.org/docs/install.html#problems-with-python-virtual-environment"
-        echo "for possible solutions."
-        echo "You may also find some support resources at https://certbot.eff.org/support/ ."
+        error
+        error "Consult https://certbot.eff.org/docs/install.html#problems-with-python-virtual-environment"
+        error "for possible solutions."
+        error "You may also find some support resources at https://certbot.eff.org/support/ ."
       fi
       rm -rf "$VENV_PATH"
       exit 1
     fi
-    echo "Installation succeeded."
+    say "Installation succeeded."
   fi
   if [ -n "$SUDO" ]; then
     # SUDO is su wrapper or sudo
-    if [  "$QUIET" != 1 ]; then
-      echo "Requesting root privileges to run certbot..."
-      echo "  $VENV_BIN/letsencrypt" "$@"
-    fi
+    say "Requesting root privileges to run certbot..."
+    say "  $VENV_BIN/letsencrypt" "$@"
   fi
   if [ -z "$SUDO_ENV" ] ; then
     # SUDO is su wrapper / noop
@@ -1072,7 +1103,7 @@ else
     Bootstrap
   fi
   if [ "$OS_PACKAGES_ONLY" = 1 ]; then
-    echo "OS packages installed."
+    say "OS packages installed."
     exit 0
   fi
 
@@ -1093,6 +1124,9 @@ else
 On failure, return non-zero.
 
 """
+
+from __future__ import print_function
+
 from distutils.version import LooseVersion
 from json import loads
 from os import devnull, environ
@@ -1194,12 +1228,12 @@ def main():
     flag = argv[1]
     try:
         if flag == '--latest-version':
-            print latest_stable_version(get)
+            print(latest_stable_version(get))
         elif flag == '--le-auto-script':
             tag = argv[2]
             verified_new_le_auto(get, tag, dirname(argv[0]))
     except ExpectedError as exc:
-        print exc.args[0], exc.args[1]
+        print(exc.args[0], exc.args[1])
         return 1
     else:
         return 0
@@ -1212,9 +1246,9 @@ UNLIKELY_EOF
     # ---------------------------------------------------------------------------
     DeterminePythonVersion
     if ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then
-      echo "WARNING: unable to check for updates."
+      error "WARNING: unable to check for updates."
     elif [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
-      echo "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
+      say "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
 
       # Now we drop into Python so we don't have to install even more
       # dependencies (curl, etc.), for better flow control, and for the option of
@@ -1223,7 +1257,7 @@ UNLIKELY_EOF
 
       # Install new copy of certbot-auto.
       # TODO: Deal with quotes in pathnames.
-      echo "Replacing certbot-auto..."
+      say "Replacing certbot-auto..."
       # Clone permissions with cp. chmod and chown don't have a --reference
       # option on macOS or BSD, and stat -c on Linux is stat -f on macOS and BSD:
       $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"

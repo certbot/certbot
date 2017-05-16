@@ -6,7 +6,6 @@
 """
 import logging
 import os
-import traceback
 
 import OpenSSL
 import pyrfc3339
@@ -53,17 +52,20 @@ def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
     # Save file
     util.make_or_verify_dir(key_dir, 0o700, os.geteuid(),
                             config.strict_permissions)
-    key_f, key_path = util.unique_file(
-        os.path.join(key_dir, keyname), 0o600, "wb")
-    with key_f:
-        key_f.write(key_pem)
-
-    logger.info("Generating key (%d bits): %s", key_size, key_path)
+    if config.dry_run:
+        key_path = None
+        logger.debug("Generating key (%d bits), not saving to file", key_size)
+    else:
+        key_f, key_path = util.unique_file(
+            os.path.join(key_dir, keyname), 0o600, "wb")
+        with key_f:
+            key_f.write(key_pem)
+        logger.debug("Generating key (%d bits): %s", key_size, key_path)
 
     return util.Key(key_path, key_pem)
 
 
-def init_save_csr(privkey, names, path, csrname="csr-certbot.pem"):
+def init_save_csr(privkey, names, path):
     """Initialize a CSR with the given private key.
 
     :param privkey: Key to include in the CSR
@@ -79,61 +81,23 @@ def init_save_csr(privkey, names, path, csrname="csr-certbot.pem"):
     """
     config = zope.component.getUtility(interfaces.IConfig)
 
-    csr_pem, csr_der = make_csr(privkey.pem, names,
-        must_staple=config.must_staple)
+    csr_pem = acme_crypto_util.make_csr(
+        privkey.pem, names, must_staple=config.must_staple)
 
     # Save CSR
     util.make_or_verify_dir(path, 0o755, os.geteuid(),
                                config.strict_permissions)
-    csr_f, csr_filename = util.unique_file(
-        os.path.join(path, csrname), 0o644, "wb")
-    csr_f.write(csr_pem)
-    csr_f.close()
+    if config.dry_run:
+        csr_filename = None
+        logger.debug("Creating CSR: not saving to file")
+    else:
+        csr_f, csr_filename = util.unique_file(
+            os.path.join(path, "csr-certbot.pem"), 0o644, "wb")
+        with csr_f:
+            csr_f.write(csr_pem)
+        logger.debug("Creating CSR: %s", csr_filename)
 
-    logger.info("Creating CSR: %s", csr_filename)
-
-    return util.CSR(csr_filename, csr_der, "der")
-
-
-# Lower level functions
-def make_csr(key_str, domains, must_staple=False):
-    """Generate a CSR.
-
-    :param str key_str: PEM-encoded RSA key.
-    :param list domains: Domains included in the certificate.
-
-    .. todo:: Detect duplicates in `domains`? Using a set doesn't
-              preserve order...
-
-    :returns: new CSR in PEM and DER form containing all domains
-    :rtype: tuple
-
-    """
-    assert domains, "Must provide one or more hostnames for the CSR."
-    pkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, key_str)
-    req = OpenSSL.crypto.X509Req()
-    req.get_subject().CN = domains[0]
-    # TODO: what to put into req.get_subject()?
-    # TODO: put SAN if len(domains) > 1
-    extensions = [
-        OpenSSL.crypto.X509Extension(
-            b"subjectAltName",
-            critical=False,
-            value=", ".join("DNS:%s" % d for d in domains).encode('ascii')
-        )
-    ]
-    if must_staple:
-        extensions.append(OpenSSL.crypto.X509Extension(
-            b"1.3.6.1.5.5.7.1.24",
-            critical=False,
-            value=b"DER:30:03:02:01:05"))
-    req.add_extensions(extensions)
-    req.set_version(2)
-    req.set_pubkey(pkey)
-    req.sign(pkey, "sha256")
-    return tuple(OpenSSL.crypto.dump_certificate_request(method, req)
-                 for method in (OpenSSL.crypto.FILETYPE_PEM,
-                                OpenSSL.crypto.FILETYPE_ASN1))
+    return util.CSR(csr_filename, csr_pem, "pem")
 
 
 # WARNING: the csr and private key file are possible attack vectors for TOCTOU
@@ -187,22 +151,27 @@ def import_csr_file(csrfile, data):
     :param str csrfile: CSR filename
     :param str data: contents of the CSR file
 
-    :returns: (`OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`,
+    :returns: (`OpenSSL.crypto.FILETYPE_PEM`,
                util.CSR object representing the CSR,
                list of domains requested in the CSR)
     :rtype: tuple
 
     """
-    for form, typ in (("der", OpenSSL.crypto.FILETYPE_ASN1,),
-                      ("pem", OpenSSL.crypto.FILETYPE_PEM,),):
+    PEM = OpenSSL.crypto.FILETYPE_PEM
+    load = OpenSSL.crypto.load_certificate_request
+    try:
+        # Try to parse as DER first, then fall back to PEM.
+        csr = load(OpenSSL.crypto.FILETYPE_ASN1, data)
+    except OpenSSL.crypto.Error:
         try:
-            domains = get_names_from_csr(data, typ)
+            csr = load(PEM, data)
         except OpenSSL.crypto.Error:
-            logger.debug("CSR parse error (form=%s, typ=%s):", form, typ)
-            logger.debug(traceback.format_exc())
-            continue
-        return typ, util.CSR(file=csrfile, data=data, form=form), domains
-    raise errors.Error("Failed to parse CSR file: {0}".format(csrfile))
+            raise errors.Error("Failed to parse CSR file: {0}".format(csrfile))
+
+    domains = _get_names_from_loaded_cert_or_req(csr)
+    # Internally we always use PEM, so re-encode as PEM before returning.
+    data_pem = OpenSSL.crypto.dump_certificate_request(PEM, csr)
+    return PEM, util.CSR(file=csrfile, data=data_pem, form="pem"), domains
 
 
 def make_key(bits):
@@ -284,22 +253,12 @@ def get_sans_from_cert(cert, typ=OpenSSL.crypto.FILETYPE_PEM):
         cert, OpenSSL.crypto.load_certificate, typ)
 
 
-def get_sans_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
-    """Get a list of Subject Alternative Names from a CSR.
-
-    :param str csr: CSR (encoded).
-    :param typ: `OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`
-
-    :returns: A list of Subject Alternative Names.
-    :rtype: list
-
-    """
-    return _get_sans_from_cert_or_req(
-        csr, OpenSSL.crypto.load_certificate_request, typ)
-
-
 def _get_names_from_cert_or_req(cert_or_req, load_func, typ):
     loaded_cert_or_req = _load_cert_or_req(cert_or_req, load_func, typ)
+    return _get_names_from_loaded_cert_or_req(loaded_cert_or_req)
+
+
+def _get_names_from_loaded_cert_or_req(loaded_cert_or_req):
     common_name = loaded_cert_or_req.get_subject().CN
     # pylint: disable=protected-access
     sans = acme_crypto_util._pyopenssl_cert_or_req_san(loaded_cert_or_req)
@@ -322,20 +281,6 @@ def get_names_from_cert(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
     """
     return _get_names_from_cert_or_req(
         csr, OpenSSL.crypto.load_certificate, typ)
-
-
-def get_names_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
-    """Get a list of domains from a CSR, including the CN if it is set.
-
-    :param str csr: CSR (encoded).
-    :param typ: `OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`
-
-    :returns: A list of domain names.
-    :rtype: list
-
-    """
-    return _get_names_from_cert_or_req(
-        csr, OpenSSL.crypto.load_certificate_request, typ)
 
 
 def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):

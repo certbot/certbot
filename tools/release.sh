@@ -88,9 +88,9 @@ SetVersion() {
       sed -i "s/^version.*/version = '$ver'/" $pkg_dir/setup.py
     done
     sed -i "s/^__version.*/__version__ = '$ver'/" certbot/__init__.py
-    
+
     # interactive user input
-    git add -p certbot $SUBPKGS certbot-compatibility-test 
+    git add -p certbot $SUBPKGS certbot-compatibility-test
 
 }
 
@@ -109,7 +109,7 @@ do
   echo "Signing ($pkg_dir)"
   for x in dist/*.tar.gz dist/*.whl
   do
-      gpg -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign $x
+      gpg2 -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign --digest-algo sha256 $x
   done
 
   cd -
@@ -170,18 +170,13 @@ cd ~-
 for pkg in acme certbot certbot-apache certbot-nginx ; do
     echo $pkg==$version \\
     pip hash dist."$version/$pkg"/*.{whl,gz} | grep "^--hash" | python2 -c 'from sys import stdin; input = stdin.read(); print "   ", input.replace("\n--hash", " \\\n    --hash"),'
-done > /tmp/hashes.$$
+done > letsencrypt-auto-source/pieces/certbot-requirements.txt
 deactivate
 
-if ! wc -l /tmp/hashes.$$ | grep -qE "^\s*12 " ; then
+if ! wc -l letsencrypt-auto-source/pieces/certbot-requirements.txt | grep -qE "^\s*12 " ; then
     echo Unexpected pip hash output
     exit 1
 fi
-
-# perform hideous surgery on requirements.txt...
-head -n -12 letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt > /tmp/req.$$
-cat /tmp/hashes.$$ >> /tmp/req.$$
-cp /tmp/req.$$ letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt
 
 # ensure we have the latest built version of leauto
 letsencrypt-auto-source/build.py
@@ -194,7 +189,7 @@ while ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
 done
 
 # This signature is not quite as strong, but easier for people to verify out of band
-gpg -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign letsencrypt-auto-source/letsencrypt-auto
+gpg2 -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign --digest-algo sha256 letsencrypt-auto-source/letsencrypt-auto
 # We can't rename the openssl letsencrypt-auto.sig for compatibility reasons,
 # but we can use the right name for certbot-auto.asc from day one
 mv letsencrypt-auto-source/letsencrypt-auto.asc letsencrypt-auto-source/certbot-auto.asc
@@ -214,7 +209,7 @@ name=${root_without_le%.*}
 ext="${root_without_le##*.}"
 rev="$(git rev-parse --short HEAD)"
 echo tar cJvf $name.$rev.tar.xz $name.$rev
-echo gpg -U $RELEASE_GPG_KEY --detach-sign --armor $name.$rev.tar.xz
+echo gpg2 -U $RELEASE_GPG_KEY --detach-sign --armor $name.$rev.tar.xz
 cd ~-
 
 echo "New root: $root"

@@ -33,6 +33,10 @@ class SignalExit(Error):
     """A Unix signal was received while in the ErrorHandler context manager."""
 
 
+class LockError(Error):
+    """File locking error."""
+
+
 # Auth Handler Errors
 class AuthorizationError(Error):
     """Authorization error."""

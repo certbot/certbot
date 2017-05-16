@@ -25,6 +25,11 @@ class Addr(common.Addr):
     def __repr__(self):
         return "certbot_apache.obj.Addr(" + repr(self.tup) + ")"
 
+    def __hash__(self):
+        # Python 3 requires explicit overridden for __hash__ if __eq__ or
+        # __cmp__ is overridden. See https://bugs.python.org/issue2235
+        return super(Addr, self).__hash__()
+
     def _addr_less_specific(self, addr):
         """Returns if addr.get_addr() is more specific than self.get_addr()."""
         # pylint: disable=protected-access
@@ -107,6 +112,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     :ivar bool ssl: SSLEngine on in vhost
     :ivar bool enabled: Virtual host is enabled
     :ivar bool modmacro: VirtualHost is using mod_macro
+    :ivar VirtualHost ancestor: A non-SSL VirtualHost this is based on
 
     https://httpd.apache.org/docs/2.4/vhosts/details.html
 
@@ -118,7 +124,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     strip_name = re.compile(r"^(?:.+://)?([^ :$]*)")
 
     def __init__(self, filep, path, addrs, ssl, enabled, name=None,
-                 aliases=None, modmacro=False):
+                 aliases=None, modmacro=False, ancestor=None):
 
         # pylint: disable=too-many-arguments
         """Initialize a VH."""
@@ -130,6 +136,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         self.ssl = ssl
         self.enabled = enabled
         self.modmacro = modmacro
+        self.ancestor = ancestor
 
     def get_names(self):
         """Return a set of all names."""
@@ -173,6 +180,11 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash((self.filep, self.path,
+                     tuple(self.addrs), tuple(self.get_names()),
+                     self.ssl, self.enabled, self.modmacro))
 
     def conflicts(self, addrs):
         """See if vhost conflicts with any of the addrs.

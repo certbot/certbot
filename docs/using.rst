@@ -144,6 +144,10 @@ the ``--nginx`` flag on the commandline.
 Standalone
 ----------
 
+Use standalone mode to obtain a cert if you don't want to use (or don't currently have)
+existing server software. The standalone plugin does not rely on any other server
+software running on the machine where you obtain the cert.
+
 To obtain a cert using a "standalone" webserver, you can use the
 standalone plugin by including ``certonly`` and ``--standalone``
 on the command line. This plugin needs to bind to port 80 or 443 in
@@ -151,13 +155,14 @@ order to perform domain validation, so you may need to stop your
 existing webserver. To control which port the plugin uses, include
 one of the options shown below on the command line.
 
-    * ``--standalone-supported-challenges http-01`` to use port 80
-    * ``--standalone-supported-challenges tls-sni-01`` to use port 443
+    * ``--preferred-challenges http`` to use port 80
+    * ``--preferred-challenges tls-sni`` to use port 443
 
-The standalone plugin does not rely on any other server software running
-on the machine where you obtain the certificate. It must still be possible
-for that machine to accept inbound connections from the Internet on the
-specified port using each requested domain name.
+It must still be possible for your machine to accept inbound connections from
+the Internet on the specified port using each requested domain name.
+
+.. note:: The ``--standalone-supported-challenges`` option has been
+   deprecated since ``certbot`` version 0.9.0.
 
 Manual
 ------
@@ -169,6 +174,23 @@ the UI, you can use the plugin to obtain a cert by specifying
 ``certonly`` and ``--manual`` on the command line. This requires you
 to copy and paste commands into another terminal session, which may
 be on a different computer.
+
+The manual plugin can use either the ``http`` or the ``dns`` challenge. You
+can use the ``--preferred-challenges`` option to choose the challenge of your
+preference.
+The ``http`` challenge will ask you to place a file with a specific name and
+specific content in the ``/.well-known/acme-challenge/`` directory directly
+in the top-level directory (“web root”) containing the files served by your
+webserver. In essence it's the same as the webroot_ plugin, but not automated.
+When using the ``dns`` challenge, ``certbot`` will ask you to place a TXT DNS
+record with specific contents under the domain name consisting of the hostname
+for which you want a certificate issued, prepended by ``_acme-challenge``.
+
+For example, for the domain ``example.com``, a zone file entry would look like:
+
+::
+
+        _acme-challenge.example.com. 300 IN TXT "gfj9Xq...Rg85nM"
 
 Additionally you can specify scripts to prepare for validation and perform the
 authentication procedure  and/or clean up after it by using the
@@ -356,10 +378,59 @@ then restart it after the plugin is finished. Example::
 
   certbot renew --pre-hook "service nginx stop" --post-hook "service nginx start"
 
-The hooks will only be
-run if a certificate is due for renewal, so you can run this command
-frequently without unnecessarily stopping your webserver. More
-information about renewal hooks can be found by running
+If a hook exits with a non-zero exit code, the error will be printed
+to ``stderr`` but renewal will be attempted anyway. A failing hook
+doesn't directly cause Certbot to exit with a non-zero exit code, but
+since Certbot exits with a non-zero exit code when renewals fail, a
+failed hook causing renewal failures will indirectly result in a
+non-zero exit code. Hooks will only be run if a certificate is due for
+renewal, so you can run the above command frequently without
+unnecessarily stopping your webserver.
+
+``--pre-hook`` and ``--post-hook`` hooks run before and after every renewal
+attempt. If you want your hook to run only after a successful renewal, use
+``--renew-hook`` in a command like this.
+
+``certbot renew --renew-hook /path/to/renew-hook-script``
+
+For example, if you have a daemon that does not read its certificates as the
+root user, a renew hook like this can copy them to the correct location and
+apply appropriate file permissions.
+
+/path/to/renew-hook-script
+
+.. code-block:: none
+
+   #!/bin/sh
+
+   set -e
+
+   for domain in $RENEWED_DOMAINS; do
+           case $domain in
+           example.com)
+                   daemon_cert_root=/etc/some-daemon/certs
+
+                   # Make sure the certificate and private key files are
+                   # never world readable, even just for an instant while
+                   # we're copying them into daemon_cert_root.
+                   umask 077
+
+                   cp "$RENEWED_LINEAGE/fullchain.pem" "$daemon_cert_root/$domain.cert"
+                   cp "$RENEWED_LINEAGE/privkey.pem" "$daemon_cert_root/$domain.key"
+
+                   # Apply the proper file ownership and permissions for
+                   # the daemon to read its certificate and key.
+                   chown some-daemon "$daemon_cert_root/$domain.cert" \
+                           "$daemon_cert_root/$domain.key"
+                   chmod 400 "$daemon_cert_root/$domain.cert" \
+                           "$daemon_cert_root/$domain.key"
+
+                   service some-daemon restart >/dev/null
+                   ;;
+           esac
+   done
+
+More information about renewal hooks can be found by running
 ``certbot --help renew``.
 
 If you're sure that this command executes successfully without human
@@ -408,6 +479,13 @@ you provide if you do not renew certificates that are about to expire.
 Certbot is working hard to improve the renewal process, and we
 apologize for any inconvenience you encounter in integrating these
 commands into your individual environment.
+
+.. note:: ``certbot renew`` exit status will only be 1 if a renewal attempt failed.
+  This means ``certbot renew`` exit status will be 0 if no cert needs to be updated.
+  If you write a custom script and expect to run a command only after a cert was actually renewed
+  you will need to use the ``--post-hook`` since the exit status will be 0 both on successful renewal
+  and when renewal is not necessary.
+
 
 Modifying the Renewal Configuration File
 ----------------------------------------

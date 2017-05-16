@@ -184,7 +184,7 @@ class ApacheTlsSni01(common.TLSSNI01):
         # https://docs.python.org/2.7/reference/lexical_analysis.html
         return self.VHOST_TEMPLATE.format(
             vhost=ips,
-            server_name=achall.response(achall.account_key).z_domain,
+            server_name=achall.response(achall.account_key).z_domain.decode('ascii'),
             ssl_options_conf_path=self.configurator.mod_ssl_conf,
             cert_path=self.get_cert_path(achall),
             key_path=self.get_key_path(achall),

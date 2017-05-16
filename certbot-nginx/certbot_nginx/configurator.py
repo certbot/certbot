@@ -5,9 +5,11 @@ import re
 import shutil
 import socket
 import subprocess
+import tempfile
 import time
 
 import OpenSSL
+import six
 import zope.interface
 
 from acme import challenges
@@ -30,16 +32,16 @@ from certbot_nginx import parser
 logger = logging.getLogger(__name__)
 
 REDIRECT_BLOCK = [[
-    ['\n    ', 'if', ' ', '($scheme != "https") '],
-    [['\n        ', 'return', ' ', '301 https://$host$request_uri'],
+    ['\n    ', 'if', ' ', '($scheme', ' ', '!=', ' ', '"https") '],
+    [['\n        ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
      '\n    ']
 ], ['\n']]
 
 TEST_REDIRECT_BLOCK = [
     [
-        ['if', '($scheme != "https")'],
+        ['if', '($scheme', '!=', '"https")'],
         [
-            ['return', '301 https://$host$request_uri']
+            ['return', '301', 'https://$host$request_uri']
         ]
     ],
     ['#', ' managed by Certbot']
@@ -151,14 +153,22 @@ class NginxConfigurator(common.Plugin):
         # Make sure configuration is valid
         self.config_test()
 
-        # temp_install must be run before creating the NginxParser
-        temp_install(self.mod_ssl_conf)
-        self.parser = parser.NginxParser(
-            self.conf('server-root'), self.mod_ssl_conf)
+
+        self.parser = parser.NginxParser(self.conf('server-root'))
+
+        install_ssl_options_conf(self.mod_ssl_conf)
 
         # Set Version
         if self.version is None:
             self.version = self.get_version()
+
+        # Prevent two Nginx plugins from modifying a config at once
+        try:
+            util.lock_dir_until_exit(self.conf('server-root'))
+        except (OSError, errors.LockError):
+            logger.debug('Encountered error:', exc_info=True)
+            raise errors.PluginError(
+                'Unable to lock %s', self.conf('server-root'))
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path,
@@ -262,7 +272,7 @@ class NginxConfigurator(common.Plugin):
         """
         if not matches:
             return None
-        elif matches[0]['rank'] in xrange(2, 6):
+        elif matches[0]['rank'] in six.moves.range(2, 6):
             # Wildcard match - need to find the longest one
             rank = matches[0]['rank']
             wildcards = [x for x in matches if x['rank'] == rank]
@@ -442,14 +452,11 @@ class NginxConfigurator(common.Plugin):
 
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
 
-        # the options file doesn't have a newline at the beginning, but there
-        # needs to be one when it's dropped into the file
         ssl_block = (
             [['\n    ', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
              ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
              ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
-             ['\n']] +
-            self.parser.loc["ssl_options"])
+             ['\n    ', 'include', ' ', self.mod_ssl_conf]])
 
         self.parser.add_server_directives(
             vhost, ssl_block, replace=False)
@@ -627,10 +634,11 @@ class NginxConfigurator(common.Plugin):
             proc = subprocess.Popen(
                 [self.conf('ctl'), "-c", self.nginx_conf, "-V"],
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
+                stderr=subprocess.PIPE,
+                universal_newlines=True)
             text = proc.communicate()[1]  # nginx prints output to stderr
         except (OSError, ValueError) as error:
-            logging.debug(error, exc_info=True)
+            logger.debug(error, exc_info=True)
             raise errors.PluginError(
                 "Unable to run %s -V" % self.conf('ctl'))
 
@@ -666,7 +674,7 @@ class NginxConfigurator(common.Plugin):
             "Configures Nginx to authenticate and install HTTPS.{0}"
             "Server root: {root}{0}"
             "Version: {version}".format(
-                os.linesep, root=self.parser.loc["root"],
+                os.linesep, root=self.parser.config_root,
                 version=".".join(str(i) for i in self.version))
         )
 
@@ -818,7 +826,7 @@ class NginxConfigurator(common.Plugin):
             self.restart()
 
 
-def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx.conf"):
+def nginx_restart(nginx_ctl, nginx_conf):
     """Restarts the Nginx Server.
 
     .. todo:: Nginx restart is fatal if the configuration references
@@ -829,22 +837,22 @@ def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx.conf"):
 
     """
     try:
-        proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf, "-s", "reload"],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-        stdout, stderr = proc.communicate()
+        proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf, "-s", "reload"])
+        proc.communicate()
 
         if proc.returncode != 0:
             # Maybe Nginx isn't running
-            nginx_proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf],
-                                          stdout=subprocess.PIPE,
-                                          stderr=subprocess.PIPE)
-            stdout, stderr = nginx_proc.communicate()
-
-            if nginx_proc.returncode != 0:
-                # Enter recovery routine...
-                raise errors.MisconfigurationError(
-                    "nginx restart failed:\n%s\n%s" % (stdout, stderr))
+            # Write to temporary files instead of piping because of communication issues on Arch
+            # https://github.com/certbot/certbot/issues/4324
+            with tempfile.TemporaryFile() as out:
+                with tempfile.TemporaryFile() as err:
+                    nginx_proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf],
+                        stdout=out, stderr=err)
+                    nginx_proc.communicate()
+                    if nginx_proc.returncode != 0:
+                        # Enter recovery routine...
+                        raise errors.MisconfigurationError(
+                            "nginx restart failed:\n%s\n%s" % (out.read(), err.read()))
 
     except (OSError, ValueError):
         raise errors.MisconfigurationError("nginx restart failed")
@@ -854,8 +862,8 @@ def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx.conf"):
     time.sleep(1)
 
 
-def temp_install(options_ssl):
-    """Temporary install for convenience."""
+def install_ssl_options_conf(options_ssl):
+    """Copy Certbot's SSL options file into the system's config dir if required."""
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):
         shutil.copyfile(constants.MOD_SSL_CONF_SRC, options_ssl)
