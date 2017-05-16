@@ -606,7 +606,10 @@ Bootstrap() {
   elif [ -f /etc/debian_version ]; then
     BootstrapMessage "Debian-based OSes"
     BootstrapDebCommon
-  elif [ -f /etc/mageia-release ]; then
+  elif [ -f /etc/devuan_version ] ; then
+    BootstrapMessage "Devuan-based OSes"
+    BootstrapDebCommon
+  elif [ -f /etc/mageia-release ] ; then
     # Mageia has both /etc/mageia-release and /etc/redhat-release
     ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
   elif [ -f /etc/redhat-release ]; then
