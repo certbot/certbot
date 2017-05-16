@@ -12,6 +12,9 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 systems that had the plugin's SSL/TLS options file from 7+ months ago has been
 fixed.
 
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.14.1+is%3Aclosed
+
 ## 0.14.0 - 2017-05-04
 
 ### Added
