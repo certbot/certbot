@@ -1,6 +1,7 @@
 """Certbot client API."""
 import logging
 import os
+import platform
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -53,21 +54,49 @@ def determine_user_agent(config):
     """
 
     if config.user_agent is None:
-        ua = "CertbotACMEClient/{0} ({1}) Authenticator/{2} Installer/{3}"
-        ua = ua.format(certbot.__version__, util.get_os_info_ua(),
-                       config.authenticator, config.installer)
+        ua = ("CertbotACMEClient/{0} ({1}; {2}) Authenticator/{3} Installer/{4} "
+              "({5}; flags: {6}) Py/{7}")
+        ua = ua.format(certbot.__version__, cli.cli_command, util.get_os_info_ua(),
+                       config.authenticator, config.installer, config.verb,
+                       ua_flags(config), platform.python_version())
     else:
         ua = config.user_agent
     return ua
 
+def ua_flags(config):
+    "Turn some very important CLI flags into clues in the user agent."
+    if isinstance(config, DummyConfig):
+        return "FLAGS"
+    flags = []
+    if config.duplicate:
+        flags.append("dup")
+    if config.renew_by_default:
+        flags.append("frn")
+    if config.allow_subset_of_names:
+        flags.append("asn")
+    if config.noninteractive_mode:
+        flags.append("n")
+    hook_names = ("pre", "post", "renew", "manual_auth", "manual_cleanup")
+    hooks = [getattr(config, h + "_hook") for h in hook_names]
+    if any(hooks):
+        flags.append("hook")
+    return " ".join(flags)
+
+class DummyConfig(object):
+    "Shim for computing a sample user agent."
+    def __init__(self):
+        self.authenticator = "XXX"
+        self.installer = "YYY"
+        self.user_agent = None
+        self.verb = "SUBCOMMAND"
+
+    def __getattr__(self, name):
+        "Any config properties we might have are None."
+        return None
+
 def sample_user_agent():
     "Document what this Certbot's user agent string will be like."
-    class DummyConfig(object):
-        "Shim for computing a sample user agent."
-        def __init__(self):
-            self.authenticator = "XXX"
-            self.installer = "YYY"
-            self.user_agent = None
+
     return determine_user_agent(DummyConfig())
 
 

@@ -182,7 +182,7 @@ The ``http`` challenge will ask you to place a file with a specific name and
 specific content in the ``/.well-known/acme-challenge/`` directory directly
 in the top-level directory (“web root”) containing the files served by your
 webserver. In essence it's the same as the webroot_ plugin, but not automated.
-When using the ``dns`` plugin, ``certbot`` will ask you to place a TXT DNS
+When using the ``dns`` challenge, ``certbot`` will ask you to place a TXT DNS
 record with specific contents under the domain name consisting of the hostname
 for which you want a certificate issued, prepended by ``_acme-challenge``.
 
@@ -430,7 +430,7 @@ apply appropriate file permissions.
            esac
    done
 
- More information about renewal hooks can be found by running
+More information about renewal hooks can be found by running
 ``certbot --help renew``.
 
 If you're sure that this command executes successfully without human

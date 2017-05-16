@@ -1,14 +1,18 @@
-"""ACME JOSE JWS."""
+"""ACME-specific JWS.
+
+The JWS implementation in acme.jose only implements the base JOSE standard. In
+order to support the new header fields defined in ACME, this module defines some
+ACME-specific classes that layer on top of acme.jose.
+"""
 from acme import jose
 
 
 class Header(jose.Header):
-    """ACME JOSE Header.
-
-    .. todo:: Implement ``acmePath``.
-
+    """ACME-specific JOSE Header. Implements nonce, kid, and url.
     """
     nonce = jose.Field('nonce', omitempty=True, encoder=jose.encode_b64jose)
+    kid = jose.Field('kid', omitempty=True)
+    url = jose.Field('url', omitempty=True)
 
     @nonce.decoder
     def nonce(value):  # pylint: disable=missing-docstring,no-self-argument
@@ -20,7 +24,7 @@ class Header(jose.Header):
 
 
 class Signature(jose.Signature):
-    """ACME Signature."""
+    """ACME-specific Signature. Uses ACME-specific Header for customer fields."""
     __slots__ = jose.Signature._orig_slots  # pylint: disable=no-member
 
     # TODO: decoder/encoder should accept cls? Otherwise, subclassing
@@ -34,11 +38,17 @@ class Signature(jose.Signature):
 
 
 class JWS(jose.JWS):
-    """ACME JWS."""
+    """ACME-specific JWS. Includes none, url, and kid in protected header."""
     signature_cls = Signature
     __slots__ = jose.JWS._orig_slots  # pylint: disable=no-member
 
     @classmethod
-    def sign(cls, payload, key, alg, nonce):  # pylint: disable=arguments-differ
+    # pylint: disable=arguments-differ,too-many-arguments
+    def sign(cls, payload, key, alg, nonce, url=None, kid=None):
+        # Per ACME spec, jwk and kid are mutually exclusive, so only include a
+        # jwk field if kid is not provided.
+        include_jwk = kid is None
         return super(JWS, cls).sign(payload, key=key, alg=alg,
-                                    protect=frozenset(['nonce', 'jwk', 'alg']), nonce=nonce)
+                                    protect=frozenset(['nonce', 'url', 'kid', 'jwk', 'alg']),
+                                    nonce=nonce, url=url, kid=kid,
+                                    include_jwk=include_jwk)

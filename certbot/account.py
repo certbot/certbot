@@ -74,7 +74,8 @@ class Account(object):  # pylint: disable=too-few-public-methods
             self.meta.creation_dt), self.meta.creation_host, self.id[:4])
 
     def __repr__(self):
-        return "<{0}({1})>".format(self.__class__.__name__, self.id)
+        return "<{0}({1}, {2}, {3})>".format(
+            self.__class__.__name__, self.regr, self.id, self.meta)
 
     def __eq__(self, other):
         return (isinstance(other, self.__class__) and

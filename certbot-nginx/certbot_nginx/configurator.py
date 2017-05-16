@@ -153,14 +153,22 @@ class NginxConfigurator(common.Plugin):
         # Make sure configuration is valid
         self.config_test()
 
-        # temp_install must be run before creating the NginxParser
-        temp_install(self.mod_ssl_conf)
-        self.parser = parser.NginxParser(
-            self.conf('server-root'), self.mod_ssl_conf)
+
+        self.parser = parser.NginxParser(self.conf('server-root'))
+
+        install_ssl_options_conf(self.mod_ssl_conf)
 
         # Set Version
         if self.version is None:
             self.version = self.get_version()
+
+        # Prevent two Nginx plugins from modifying a config at once
+        try:
+            util.lock_dir_until_exit(self.conf('server-root'))
+        except (OSError, errors.LockError):
+            logger.debug('Encountered error:', exc_info=True)
+            raise errors.PluginError(
+                'Unable to lock %s', self.conf('server-root'))
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path,
@@ -444,14 +452,11 @@ class NginxConfigurator(common.Plugin):
 
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
 
-        # the options file doesn't have a newline at the beginning, but there
-        # needs to be one when it's dropped into the file
         ssl_block = (
             [['\n    ', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
              ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
              ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
-             ['\n']] +
-            self.parser.loc["ssl_options"])
+             ['\n    ', 'include', ' ', self.mod_ssl_conf]])
 
         self.parser.add_server_directives(
             vhost, ssl_block, replace=False)
@@ -669,7 +674,7 @@ class NginxConfigurator(common.Plugin):
             "Configures Nginx to authenticate and install HTTPS.{0}"
             "Server root: {root}{0}"
             "Version: {version}".format(
-                os.linesep, root=self.parser.loc["root"],
+                os.linesep, root=self.parser.config_root,
                 version=".".join(str(i) for i in self.version))
         )
 
@@ -857,8 +862,8 @@ def nginx_restart(nginx_ctl, nginx_conf):
     time.sleep(1)
 
 
-def temp_install(options_ssl):
-    """Temporary install for convenience."""
+def install_ssl_options_conf(options_ssl):
+    """Copy Certbot's SSL options file into the system's config dir if required."""
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):
         shutil.copyfile(constants.MOD_SSL_CONF_SRC, options_ssl)

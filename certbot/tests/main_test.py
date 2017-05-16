@@ -410,8 +410,6 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
                 finally:
                     output = toy_out.getvalue() or toy_err.getvalue()
                     self.assertTrue("certbot" in output, "Output is {0}".format(output))
-        toy_out.close()
-        toy_err.close()
 
     def _cli_missing_flag(self, args, message):
         "Ensure that a particular error raises a missing cli flag error containing message"
@@ -792,12 +790,12 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
                 print(lf.read())
 
     def test_renew_verb(self):
-        test_util.make_lineage(self, 'sample-renewal.conf')
+        test_util.make_lineage(self.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, should_renew=True)
 
     def test_quiet_renew(self):
-        test_util.make_lineage(self, 'sample-renewal.conf')
+        test_util.make_lineage(self.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run"]
         _, _, stdout = self._test_renewal_common(True, [], args=args, should_renew=True)
         out = stdout.getvalue()
@@ -809,13 +807,13 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         self.assertEqual("", out)
 
     def test_renew_hook_validation(self):
-        test_util.make_lineage(self, 'sample-renewal.conf')
+        test_util.make_lineage(self.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "--post-hook=no-such-command"]
         self._test_renewal_common(True, [], args=args, should_renew=False,
                                   error_expected=True)
 
     def test_renew_no_hook_validation(self):
-        test_util.make_lineage(self, 'sample-renewal.conf')
+        test_util.make_lineage(self.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "--post-hook=no-such-command",
                 "--disable-hook-validation"]
         with mock.patch("certbot.hooks.post_hook"):
@@ -825,7 +823,8 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
     @mock.patch("certbot.cli.set_by_cli")
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
-        rc_path = test_util.make_lineage(self, 'sample-renewal-ancient.conf')
+        rc_path = test_util.make_lineage(
+            self.config_dir, 'sample-renewal-ancient.conf')
         args = mock.MagicMock(account=None, config_dir=self.config_dir,
                               logs_dir=self.logs_dir, work_dir=self.work_dir,
                               email=None, webroot_path=None)
@@ -846,7 +845,7 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         self._test_renewal_common(False, [], args=args, should_renew=False, error_expected=True)
 
     def test_renew_with_certname(self):
-        test_util.make_lineage(self, 'sample-renewal.conf')
+        test_util.make_lineage(self.config_dir, 'sample-renewal.conf')
         self._test_renewal_common(True, [], should_renew=True,
             args=['renew', '--dry-run', '--cert-name', 'sample-renewal'])
 

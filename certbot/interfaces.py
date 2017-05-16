@@ -235,6 +235,22 @@ class IConfig(zope.interface.Interface):
         "This only affects the port Certbot listens on. "
         "A conforming ACME server will still attempt to connect on port 80.")
 
+    pref_challs = zope.interface.Attribute(
+        "Sorted user specified preferred challenges"
+        "type strings with the most preferred challenge listed first")
+
+    allow_subset_of_names = zope.interface.Attribute(
+        "When performing domain validation, do not consider it a failure "
+        "if authorizations can not be obtained for a strict subset of "
+        "the requested domains. This may be useful for allowing renewals for "
+        "multiple domains to succeed even if some domains no longer point "
+        "at this system. This is a boolean")
+
+    strict_permissions = zope.interface.Attribute(
+        "Require that all configuration files are owned by the current "
+        "user; only needed if your config is somewhere unsafe like /tmp/."
+        "This is a boolean")
+
 
 class IInstaller(IPlugin):
     """Generic Certbot Installer Interface.
