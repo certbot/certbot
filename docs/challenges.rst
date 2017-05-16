@@ -58,7 +58,7 @@ HTTP-01 challenge:
   files in order to have them served by your existing web server.
   If you said your webroot for example.com was /var/www/example.com,
   then a file placed in /var/www/example.com/.well-known/acme-challenge/testfile should appear on
-  your web site at http://example.com/.well-known/acme-challenge/testfile (which you can test using a web browser). (A redirection to HTTPS
+  your web site at ``http://example.com/.well-known/acme-challenge/testfile`` (which you can test using a web browser). (A redirection to HTTPS
   is OK here and should not stop the challenge from working.)
 
   Note that you should *not* specify the .well-known/acme-challenge directory itself.  Instead, you should specify the top level directory that web content is served from.
@@ -70,7 +70,7 @@ HTTP-01 challenge:
 * (With manual plugin) You updated the webroot directory incorrectly
 
   If you used `--manual`, you need to know where you can put files in order to have them served by your existing web server. If you think your webroot for example.com is /var/www/example.com, then a file placed in /var/www/example.com/.well-known/acme-challenge/testfile should appear on
-  your web site at http://example.com/.well-known/acme-challenge/testfile.  (A redirection to HTTPS
+  your web site at ``http://example.com/.well-known/acme-challenge/testfile``.  (A redirection to HTTPS
   is OK here and should not stop the challenge from working.) You should also make sure that you don't make a typo in the name of the file when creating it.
 
 * Your existing web server's configuration refuses to serve files
