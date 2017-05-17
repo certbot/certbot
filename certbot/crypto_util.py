@@ -257,7 +257,7 @@ def verify_renewable_cert_sig(renewable_cert):
         with open(renewable_cert.cert, 'rb') as cert:
             cert = x509.load_pem_x509_certificate(cert.read(), default_backend())
         hash_name = cert.signature_hash_algorithm.name
-        return OpenSSL.crypto.verify(chain, cert.signature, cert.tbs_certificate_bytes, hash_name)
+        OpenSSL.crypto.verify(chain, cert.signature, cert.tbs_certificate_bytes, hash_name)
     except (IOError, ValueError, OpenSSL.crypto.Error) as e:
         error_str = "verifying the signature of the cert located at {0} has failed. \
                 Details: {1}".format(renewable_cert.cert, e)
