@@ -249,7 +249,7 @@ def verify_renewable_cert_sig(renewable_cert):
 
     :param `.storage.RenewableCert` renewable_cert: cert to verify
 
-    :raises OpenSSL.crypto.Error: if signature verification fails
+    :raises errors.Error: if signature verification fails
     """
     try:
         with open(renewable_cert.chain, 'rb') as chain:
@@ -262,7 +262,7 @@ def verify_renewable_cert_sig(renewable_cert):
         error_str = "verifying the signature of the cert located at {0} has failed. \
                 Details: {1}".format(renewable_cert.cert, e)
         logger.exception(error_str)
-        raise e
+        raise errors.Error(error_str)
 
 def verify_cert_matches_priv_key(renewable_cert):
     """Do the private key and cert match?
