@@ -245,10 +245,11 @@ def valid_privkey(privkey):
 
 
 def verify_renewable_cert_sig(renewable_cert):
-    """ Verifies the signature of a `storage.RenewableCert` object.
-    :param typ: `storage.RenewableCert`
+    """ Verifies the signature of a `.storage.RenewableCert` object.
 
-    :raises OpenSSL.crypto.Error if signature verification fails
+    :param `.storage.RenewableCert` renewable_cert: cert to verify
+
+    :raises OpenSSL.crypto.Error: if signature verification fails
     """
     try:
         with open(renewable_cert.chain, 'rb') as chain:
@@ -267,9 +268,9 @@ def verify_renewable_cert_sig(renewable_cert):
 def verify_cert_matches_priv_key(renewable_cert):
     """Do the private key and cert match?
 
-    :param typ: `storage.RenewableCert`
+    :param `.storage.RenewableCert` renewable_cert: cert to verify
 
-    :raises OpenSSL.SSL.Error if they don't match
+    :raises OpenSSL.SSL.Error: if they don't match
     """
     try:
         with open(renewable_cert.cert) as cert:
@@ -294,7 +295,7 @@ def verify_cert_matches_priv_key(renewable_cert):
 def verify_fullchain(renewable_cert):
     """Check that fullchain is indeed cert concatenated with chain
 
-    :param typ: `storage.RenewableCert`
+    :param `.storage.RenewableCert` renewable_cert: cert to verify
 
     :raises errors.Error if they don't match
     """
@@ -321,9 +322,9 @@ def verify_renewable_cert(renewable_cert):
         2. that fullchain matches cert and pem when concatenated
         3. check that the private key matches the certificate
 
-    :param typ: `storage.RenewableCert`
+    :param `.storage.RenewableCert` renewable_cert: cert to verify
 
-    :raises errors.Error is verification fails
+    :raises errors.Error: if verification fails
     """
     verification_errors = []
     possible_exceptions = (IOError, ValueError, AssertionError,
