@@ -269,7 +269,7 @@ def verify_cert_matches_priv_key(renewable_cert):
 
     :param `.storage.RenewableCert` renewable_cert: cert to verify
 
-    :raises OpenSSL.SSL.Error: if they don't match
+    :raises errors.Error: if they don't match
     """
     try:
         with open(renewable_cert.cert) as cert:
@@ -280,13 +280,13 @@ def verify_cert_matches_priv_key(renewable_cert):
         context.use_privatekey(privkey)
         context.use_certificate(cert)
         context.check_privatekey()
-    except OpenSSL.SSL.Error as e:
+    except (IOError, OpenSSL.SSL.Error) as e:
         error_str = "verifying the cert located at {0} matches the \
                 private key located at {1} has failed. \
                 Details: {2}".format(renewable_cert.cert,
                         renewable_cert.privkey, e)
         logger.exception(error_str)
-        raise e
+        raise errors.Error(error_str)
 
 
 def verify_fullchain(renewable_cert):
@@ -294,21 +294,24 @@ def verify_fullchain(renewable_cert):
 
     :param `.storage.RenewableCert` renewable_cert: cert to verify
 
-    :raises errors.Error if they don't match
+    :raises errors.Error: if cert and chain do not combine to fullchain
     """
     try:
         with open(renewable_cert.chain) as chain:
-            with open(renewable_cert.cert) as cert:
-                with open(renewable_cert.fullchain) as fullchain:
-                    assert (cert.read() + chain.read()) == fullchain.read()
+            chain = chain.read()
+        with open(renewable_cert.cert) as cert:
+            cert = cert.read()
+        with open(renewable_cert.fullchain) as fullchain:
+            fullchain = fullchain.read()
+        if (cert + chain) != fullchain:
+            error_str = "fullchain does not match cert + chain for {0}!"
+            error_str = error_str.format(renewable_cert.lineagename)
+            raise errors.Error(error_str)
     except IOError as e:
         error_str = "reading one of cert, chain, or fullchain has failed: {0}".format(e)
         logger.exception(error_str)
-        raise e
-    except AssertionError as e:
-        error_str = "fullchain does not match cert + chain for {0}!"
-        error_str = error_str.format(renewable_cert.lineagename)
-        logger.exception(e)
+        raise errors.Error(error_str)
+    except errors.Error as e:
         raise e
 
 
