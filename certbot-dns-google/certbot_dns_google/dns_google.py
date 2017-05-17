@@ -69,7 +69,8 @@ class _GoogleClient(object):
         scopes = ['https://www.googleapis.com/auth/ndev.clouddns.readwrite']
         credentials = ServiceAccountCredentials.from_json_keyfile_name(account_json, scopes)
         self.dns = discovery.build('dns', 'v1', credentials=credentials, cache_discovery=False)
-        self.project_id = json.load(open(account_json))['project_id']
+        with open(account_json) as account:
+            self.project_id = json.load(account)['project_id']
 
     def add_txt_record(self, domain, record_name, record_content, record_ttl):
         """

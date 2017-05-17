@@ -10,9 +10,9 @@ version = '0.15.0.dev0'
 install_requires = [
     'acme=={0}'.format(version),
     'certbot=={0}'.format(version),
-    'fasteners',
     'google-api-python-client',
     'mock',
+    'oauth2client',
     # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
     # will tolerate; see #2599:
     'setuptools>=1.0',

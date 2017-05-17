@@ -26,7 +26,7 @@ cover () {
   elif [ "$1" = "certbot_dns_digitalocean" ]; then
     min=98
   elif [ "$1" = "certbot_dns_google" ]; then
-    min=98
+    min=99
   elif [ "$1" = "certbot_nginx" ]; then
     min=97
   elif [ "$1" = "letshelp_certbot" ]; then
