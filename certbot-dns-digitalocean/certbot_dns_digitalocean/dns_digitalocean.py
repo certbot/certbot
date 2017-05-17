@@ -26,7 +26,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         self.credentials = None
 
     @classmethod
-    def add_parser_arguments(cls, add):
+    def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
         super(Authenticator, cls).add_parser_arguments(add)
         add('credentials', help='DigitalOcean credentials INI file.')
 
