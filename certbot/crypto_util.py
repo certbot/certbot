@@ -273,15 +273,13 @@ def verify_cert_matches_priv_key(renewable_cert):
     """
     try:
         with open(renewable_cert.cert) as cert:
-            with open(renewable_cert.privkey) as privkey:
-                privkey = OpenSSL.crypto.load_privatekey(
-                        OpenSSL.crypto.FILETYPE_PEM, privkey.read())
-                cert = OpenSSL.crypto.load_certificate(
-                        OpenSSL.crypto.FILETYPE_PEM, cert.read())
-                context = OpenSSL.SSL.Context(OpenSSL.SSL.SSLv23_METHOD)
-                context.use_privatekey(privkey)
-                context.use_certificate(cert)
-                context.check_privatekey()
+            cert = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, cert.read())
+        with open(renewable_cert.privkey) as privkey:
+            privkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, privkey.read())
+        context = OpenSSL.SSL.Context(OpenSSL.SSL.SSLv23_METHOD)
+        context.use_privatekey(privkey)
+        context.use_certificate(cert)
+        context.check_privatekey()
     except OpenSSL.SSL.Error as e:
         error_str = "verifying the cert located at {0} matches the \
                 private key located at {1} has failed. \
