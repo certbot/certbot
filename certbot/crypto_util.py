@@ -12,6 +12,8 @@ import OpenSSL
 import pyrfc3339
 import six
 import zope.component
+from cryptography.hazmat.backends import default_backend
+from cryptography import x509
 
 from acme import crypto_util as acme_crypto_util
 from acme import jose
@@ -20,8 +22,6 @@ from certbot import errors
 from certbot import interfaces
 from certbot import util
 
-from cryptography import x509
-from cryptography.hazmat.backends import default_backend
 
 logger = logging.getLogger(__name__)
 
