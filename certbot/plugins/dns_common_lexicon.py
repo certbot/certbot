@@ -15,7 +15,8 @@ class LexiconClient(object):
     Encapsulates all communication with a DNS provider via Lexicon.
     """
 
-    provider = None
+    def __init__(self):
+        self.provider = None
 
     def add_txt_record(self, domain, record_name, record_content):
         """
