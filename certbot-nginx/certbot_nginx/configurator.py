@@ -65,6 +65,8 @@ TEST_REDIRECT_COMMENT_BLOCK = [
 
 PREVIOUS_SSL_OPTIONS_HASHES = [
     '0f81093a1465e3d4eaa8b0c14e77b2a2e93568b0fc1351c2b87893a95f0de87c',
+    '9a7b32c49001fed4cff8ad24353329472a50e86ade1ef9b2b9e43566a619612e',
+    'a6d9f1c7d6b36749b52ba061fff1421f9a0a3d2cfdafbd63c05d06f65b990937',
 ]
 
 @zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
