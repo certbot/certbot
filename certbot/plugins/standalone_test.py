@@ -65,24 +65,10 @@ class ServerManagerTest(unittest.TestCase):
 class SupportedChallengesValidatorTest(unittest.TestCase):
     """Tests for plugins.standalone.supported_challenges_validator."""
 
-    def setUp(self):
-        self.set_by_cli_patch = mock.patch(
-            "certbot.plugins.standalone.cli.set_by_cli")
-        self.stderr_patch = mock.patch("certbot.plugins.standalone.sys.stderr")
-
-        self.set_by_cli_patch.start().return_value = True
-        self.stderr = self.stderr_patch.start()
-
-    def tearDown(self):
-        self.set_by_cli_patch.stop()
-        self.stderr_patch.stop()
-
     def _call(self, data):
         from certbot.plugins.standalone import (
             supported_challenges_validator)
         return_value = supported_challenges_validator(data)
-        self.assertTrue(self.stderr.write.called)  # pylint: disable=no-member
-        self.stderr.write.reset_mock()  # pylint: disable=no-member
         return return_value
 
     def test_correct(self):
