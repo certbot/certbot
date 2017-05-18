@@ -11,6 +11,7 @@ from acme import challenges
 from acme import messages
 
 from certbot import achallenges
+from certbot import crypto_util
 from certbot import errors
 from certbot.tests import util as certbot_test_util
 
@@ -536,6 +537,56 @@ class NginxConfiguratorTest(util.NginxTest):
             generated_conf, ['ssl_stapling', 'on'], 2))
         self.assertTrue(util.contains_at_depth(
             generated_conf, ['ssl_stapling_verify', 'on'], 2))
+
+class InstallSslOptionsConfTest(util.NginxTest):
+    """Test that the options-ssl-nginx.conf file is installed and updated properly."""
+
+    def setUp(self):
+        super(InstallSslOptionsConfTest, self).setUp()
+
+        self.config = util.get_nginx_configurator(
+            self.config_path, self.config_dir, self.work_dir, self.logs_dir)
+
+    def _call(self):
+        from certbot_nginx.configurator import install_ssl_options_conf
+        install_ssl_options_conf(self.config.mod_ssl_conf)
+
+    def _assert_current_file(self):
+        self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
+        from certbot_nginx.configurator import CURRENT_SSL_OPTIONS_HASH
+        self.assertEqual(crypto_util.sha256sum(self.config.mod_ssl_conf), CURRENT_SSL_OPTIONS_HASH)
+
+    def test_no_file(self):
+        # prepare should have placed a file there
+        self._assert_current_file()
+        os.remove(self.config.mod_ssl_conf)
+        self.assertFalse(os.path.isfile(self.config.mod_ssl_conf))
+        self._call()
+        self._assert_current_file()
+
+    def test_current_file(self):
+        self._assert_current_file()
+        self._call()
+        self._assert_current_file()
+
+    def test_prev_file_updates_to_current(self):
+        from certbot_nginx.configurator import PREVIOUS_SSL_OPTIONS_HASHES
+        with mock.patch('certbot.crypto_util.sha256sum') as mock_sha256:
+            mock_sha256.return_value = PREVIOUS_SSL_OPTIONS_HASHES[0]
+            self._call()
+        self._assert_current_file()
+
+    def test_manually_modified_file_does_not_update(self):
+        with open(self.config.mod_ssl_conf, "a") as mod_ssl_conf:
+            mod_ssl_conf.write("a new line for the wrong hash\n")
+        self._call()
+        self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
+        new_filename = self.config.mod_ssl_conf+".new"
+        self.assertTrue(os.path.isfile(new_filename))
+        from certbot_nginx.configurator import CURRENT_SSL_OPTIONS_HASH
+        self.assertEqual(crypto_util.sha256sum(new_filename), CURRENT_SSL_OPTIONS_HASH)
+        self.assertNotEqual(crypto_util.sha256sum(self.config.mod_ssl_conf),
+            CURRENT_SSL_OPTIONS_HASH)
 
 
 if __name__ == "__main__":

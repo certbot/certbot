@@ -4,6 +4,7 @@
     is capable of handling the signatures.
 
 """
+import hashlib
 import logging
 import os
 
@@ -353,3 +354,10 @@ def _notAfterBefore(cert_path, method):
     if six.PY3:
         timestamp_str = timestamp_str.decode('ascii')
     return pyrfc3339.parse(timestamp_str)
+
+
+def sha256sum(filename):
+    sha256 = hashlib.sha256()
+    with open(filename, 'rb') as f:
+        sha256.update(f.read())
+    return sha256.hexdigest()

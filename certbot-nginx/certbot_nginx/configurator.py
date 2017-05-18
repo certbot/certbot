@@ -1,5 +1,4 @@
 """Nginx Configuration"""
-import hashlib
 import logging
 import os
 import re
@@ -68,6 +67,8 @@ PREVIOUS_SSL_OPTIONS_HASHES = [
     '9a7b32c49001fed4cff8ad24353329472a50e86ade1ef9b2b9e43566a619612e',
     'a6d9f1c7d6b36749b52ba061fff1421f9a0a3d2cfdafbd63c05d06f65b990937',
 ]
+
+CURRENT_SSL_OPTIONS_HASH = '394732f2bbe3e5e637c3fb5c6e980a1f1b90b01e2e8d6b7cff41dde16e2a756d'
 
 @zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -877,12 +878,11 @@ def install_ssl_options_conf(options_ssl):
         return
     # there's already a file there. if it exactly matches a previous file hash,
     # we can update it. otherwise, create a .new and print a warning.
-    sha256 = hashlib.sha256()
-    with open(options_ssl, 'rb') as f:
-        file_hash = sha256.update(f.read())
-    digest = sha256.hexdigest()
+    digest = crypto_util.sha256sum(options_ssl)
     if digest in PREVIOUS_SSL_OPTIONS_HASHES: # safe to update
         shutil.copyfile(constants.MOD_SSL_CONF_SRC, options_ssl)
+    elif digest == CURRENT_SSL_OPTIONS_HASH: # already up to date
+        return
     else: # not safe to update
         new_filename = options_ssl + ".new"
         shutil.copyfile(constants.MOD_SSL_CONF_SRC, new_filename)
