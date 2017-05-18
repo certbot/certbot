@@ -357,6 +357,7 @@ def _notAfterBefore(cert_path, method):
 
 
 def sha256sum(filename):
+    """Compute a sha256sum of a file"""
     sha256 = hashlib.sha256()
     with open(filename, 'rb') as f:
         sha256.update(f.read())
