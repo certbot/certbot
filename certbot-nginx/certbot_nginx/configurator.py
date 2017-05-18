@@ -1,4 +1,5 @@
 """Nginx Configuration"""
+import hashlib
 import logging
 import os
 import re
@@ -60,6 +61,10 @@ TEST_REDIRECT_COMMENT_BLOCK = [
     ['#', ' if ($scheme != "https") {'],
     ['#', "     return 301 https://$host$request_uri;"],
     ['#', " } # managed by Certbot"],
+]
+
+PREVIOUS_SSL_OPTIONS_HASHES = [
+    '0f81093a1465e3d4eaa8b0c14e77b2a2e93568b0fc1351c2b87893a95f0de87c',
 ]
 
 @zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
@@ -867,3 +872,19 @@ def install_ssl_options_conf(options_ssl):
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):
         shutil.copyfile(constants.MOD_SSL_CONF_SRC, options_ssl)
+        return
+    # there's already a file there. if it exactly matches a previous file hash,
+    # we can update it. otherwise, create a .new and print a warning.
+    sha256 = hashlib.sha256()
+    with open(options_ssl, 'rb') as f:
+        file_hash = sha256.update(f.read())
+    digest = sha256.hexdigest()
+    if digest in PREVIOUS_SSL_OPTIONS_HASHES: # safe to update
+        shutil.copyfile(constants.MOD_SSL_CONF_SRC, options_ssl)
+    else: # not safe to update
+        new_filename = options_ssl + ".new"
+        shutil.copyfile(constants.MOD_SSL_CONF_SRC, new_filename)
+        # print warning
+        logger.warning("%s has been manually modified; updated ssl configuration options "
+            "saved to %s. We recommend updating %s for security purposes.",
+            options_ssl, new_filename, options_ssl)
