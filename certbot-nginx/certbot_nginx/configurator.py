@@ -136,8 +136,20 @@ class NginxConfigurator(common.Plugin):
 
     @property
     def mod_ssl_conf(self):
-        """Full absolute path to SSL configuration file."""
-        return os.path.join(self.config.config_dir, constants.MOD_SSL_CONF_DEST)
+        """Full absolute path to SSL configuration file. Has the side effect of lazily copying
+           Certbot's SSL options file into the system's config dir if required."""
+        # If we have a file at the package install location, use that one
+        package_mod_ssl_conf = os.path.join(core_constants.CLI_DEFAULTS["config_dir"],
+            constants.MOD_SSL_CONF_DEST)
+        if os.path.isfile(package_mod_ssl_conf):
+            mod_ssl_conf = package_mod_ssl_conf
+        else:
+            # Check to make sure options-ssl.conf is installed
+            # Only try to install into config_dir
+            mod_ssl_conf = os.path.join(self.config.config_dir, constants.MOD_SSL_CONF_DEST)
+            if not os.path.isfile(mod_ssl_conf):
+                shutil.copyfile(constants.MOD_SSL_CONF_SRC, mod_ssl_conf)
+        return mod_ssl_conf
 
     # This is called in determine_authenticator and determine_installer
     def prepare(self):
@@ -155,8 +167,6 @@ class NginxConfigurator(common.Plugin):
 
 
         self.parser = parser.NginxParser(self.conf('server-root'))
-
-        install_ssl_options_conf(self.mod_ssl_conf)
 
         # Set Version
         if self.version is None:
@@ -860,10 +870,3 @@ def nginx_restart(nginx_ctl, nginx_conf):
     # for a second. TODO: Check for expected servername and loop until it
     # appears or return an error if looping too long.
     time.sleep(1)
-
-
-def install_ssl_options_conf(options_ssl):
-    """Copy Certbot's SSL options file into the system's config dir if required."""
-    # Check to make sure options-ssl.conf is installed
-    if not os.path.isfile(options_ssl):
-        shutil.copyfile(constants.MOD_SSL_CONF_SRC, options_ssl)
