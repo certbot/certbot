@@ -163,7 +163,7 @@ class ImportCSRFileTest(unittest.TestCase):
              util.CSR(file=csrfile,
                       data=data_pem,
                       form="pem"),
-             ["example.com"],),
+             ["Example.com"],),
             self._call(csrfile, data))
 
     def test_pem_csr(self):
@@ -175,7 +175,7 @@ class ImportCSRFileTest(unittest.TestCase):
              util.CSR(file=csrfile,
                       data=data,
                       form="pem"),
-             ["example.com"],),
+             ["Example.com"],),
             self._call(csrfile, data))
 
     def test_bad_csr(self):

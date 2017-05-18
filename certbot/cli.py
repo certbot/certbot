@@ -620,7 +620,9 @@ class HelpfulArgumentParser(object):
                 % parsed_args.csr[0])
 
         parsed_args.actual_csr = (csr, typ)
-        csr_domains, config_domains = set(domains), set(parsed_args.domains)
+
+        csr_domains = set([ d.lower() for d in domains ])
+        config_domains = set(parsed_args.domains)
         if csr_domains != config_domains:
             raise errors.ConfigurationError(
                 "Inconsistent domain requests:\nFrom the CSR: {0}\nFrom command line/config: {1}"
