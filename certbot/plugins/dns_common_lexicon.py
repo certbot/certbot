@@ -86,9 +86,11 @@ class LexiconClient(object):
         raise errors.PluginError('Unable to determine zone identifier for {0} using zone names: {1}'
                                  .format(domain, domain_name_guesses))
 
-    def _handle_http_error(self, e, unused_domain_name):
-        return errors.PluginError('Error determining zone identifier: {0}.'.format(e))
+    def _handle_http_error(self, e, domain_name):
+        return errors.PluginError('Error determining zone identifier for {0}: {1}.'
+                                  .format(domain_name, e))
 
-    def _handle_general_error(self, e, unused_domain_name):
+    def _handle_general_error(self, e, domain_name):
         if not str(e).startswith('No domain found'):
-            return errors.PluginError('Unexpected error determining zone identifier: {0}'.format(e))
+            return errors.PluginError('Unexpected error determining zone identifier for {0}: {1}'
+                                      .format(domain_name, e))
