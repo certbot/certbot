@@ -879,7 +879,7 @@ def nginx_restart(nginx_ctl, nginx_conf):
 def install_ssl_options_conf(options_ssl, options_ssl_digest):
     """Copy Certbot's SSL options file into the system's config dir if required."""
     def _write_current_hash():
-        with open(options_ssl_digest, "wb") as f:
+        with open(options_ssl_digest, "w") as f:
             f.write(CURRENT_SSL_OPTIONS_HASH)
 
     def _install_current_file():
@@ -900,7 +900,7 @@ def install_ssl_options_conf(options_ssl, options_ssl_digest):
     else: # has been manually modified, not safe to update
         # did they modify the current version or an old version?
         if os.path.isfile(options_ssl_digest):
-            with open(options_ssl_digest, "rb") as f:
+            with open(options_ssl_digest, "r") as f:
                 saved_digest = f.read()
             # they modified it after we either installed or told them about this version, so return
             if saved_digest == CURRENT_SSL_OPTIONS_HASH:
