@@ -17,7 +17,7 @@ ACCOUNT_URL = 'https://www.cloudxns.net/en/AccountManage/apimanage.html'
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(dns_common.DNSAuthenticator):
-    """DNS  Authenticator for CloudXNS DNS
+    """DNS Authenticator for CloudXNS DNS
 
     This Authenticator uses the CloudXNS DNS API to fulfill a dns-01 challenge.
     """
