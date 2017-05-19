@@ -147,6 +147,11 @@ class NginxConfigurator(common.Plugin):
         """Full absolute path to SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.MOD_SSL_CONF_DEST)
 
+    @property
+    def updated_mod_ssl_conf_digest(self):
+        """Full absolute path to digest of updated SSL configuration file."""
+        return os.path.join(self.config.config_dir, constants.UPDATED_MOD_SSL_CONF_DIGEST)
+
     # This is called in determine_authenticator and determine_installer
     def prepare(self):
         """Prepare the authenticator/installer.
@@ -164,7 +169,7 @@ class NginxConfigurator(common.Plugin):
 
         self.parser = parser.NginxParser(self.conf('server-root'))
 
-        install_ssl_options_conf(self.mod_ssl_conf)
+        install_ssl_options_conf(self.mod_ssl_conf, self.updated_mod_ssl_conf_digest)
 
         # Set Version
         if self.version is None:
@@ -870,10 +875,10 @@ def nginx_restart(nginx_ctl, nginx_conf):
     time.sleep(1)
 
 
-def install_ssl_options_conf(options_ssl):
+def install_ssl_options_conf(options_ssl, options_ssl_digest):
     """Copy Certbot's SSL options file into the system's config dir if required."""
     def _write_current_hash():
-        with open(constants.CURRENT_SSL_OPTIONS_WRITTEN_HASH, "wb") as f:
+        with open(options_ssl_digest, "wb") as f:
             f.write(CURRENT_SSL_OPTIONS_HASH)
 
     # Check to make sure options-ssl.conf is installed
@@ -890,7 +895,7 @@ def install_ssl_options_conf(options_ssl):
         return
     else: # has been manually modified, not safe to update
         # did they modify the current version or an old version?
-        with open(constants.CURRENT_SSL_OPTIONS_WRITTEN_HASH, "rb") as f:
+        with open(options_ssl_digest, "rb") as f:
             saved_digest = f.read()
         # they modified it after we either installed or told them about this version, so return
         if saved_digest == CURRENT_SSL_OPTIONS_HASH:

@@ -17,6 +17,9 @@ MOD_SSL_CONF_SRC = pkg_resources.resource_filename(
 """Path to the nginx mod_ssl config file found in the Certbot
 distribution."""
 
+UPDATED_MOD_SSL_CONF_DIGEST = ".updated-mod-ssl-conf-digest.txt"
+"""Name of the hash of the updated or informed mod_ssl_conf as saved in `IConfig.config_dir`."""
+
 def os_constant(key):
     # XXX TODO: In the future, this could return different constants
     #           based on what OS we are running under.  To see an
