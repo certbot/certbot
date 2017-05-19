@@ -16,7 +16,7 @@ ACCOUNT_URL = 'https://www.cloudflare.com/a/account/my-account'
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(dns_common.DNSAuthenticator):
-    """DNS  Authenticator for Cloudflare
+    """DNS Authenticator for Cloudflare
 
     This Authenticator uses the Cloudflare API to fulfill a dns-01 challenge.
     """

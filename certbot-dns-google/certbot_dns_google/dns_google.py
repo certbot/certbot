@@ -20,7 +20,7 @@ PERMISSIONS_URL = 'https://cloud.google.com/dns/access-control#permissions_and_r
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(dns_common.DNSAuthenticator):
-    """DNS  Authenticator for Google Cloud DNS
+    """DNS Authenticator for Google Cloud DNS
 
     This Authenticator uses the Google Cloud DNS API to fulfill a dns-01 challenge.
     """
