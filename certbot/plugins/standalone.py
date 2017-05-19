@@ -146,6 +146,10 @@ class SupportedChallengesAction(argparse.Action):
 
         unrecognized = [name for name in challs
                         if name not in challenges.Challenge.TYPES]
+
+        # argparse.ArgumentErrors raised out of argparse.Action objects
+        # are caught by argparse which prints usage information and the
+        # error that occurred before calling sys.exit.
         if unrecognized:
             raise argparse.ArgumentError(
                 self,
