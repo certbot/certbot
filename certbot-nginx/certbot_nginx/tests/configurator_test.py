@@ -585,7 +585,8 @@ class InstallSslOptionsConfTest(util.NginxTest):
             self.assertFalse(mock_logger.warning.called)
         self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
         from certbot_nginx.configurator import CURRENT_SSL_OPTIONS_HASH
-        self.assertEqual(crypto_util.sha256sum(constants.MOD_SSL_CONF_SRC), CURRENT_SSL_OPTIONS_HASH)
+        self.assertEqual(crypto_util.sha256sum(constants.MOD_SSL_CONF_SRC),
+            CURRENT_SSL_OPTIONS_HASH)
         self.assertNotEqual(crypto_util.sha256sum(self.config.mod_ssl_conf),
             CURRENT_SSL_OPTIONS_HASH)
 
@@ -600,7 +601,8 @@ class InstallSslOptionsConfTest(util.NginxTest):
                 "%s has been manually modified; updated ssl configuration options "
                 "saved to %s. We recommend updating %s for security purposes.")
         from certbot_nginx.configurator import CURRENT_SSL_OPTIONS_HASH
-        self.assertEqual(crypto_util.sha256sum(constants.MOD_SSL_CONF_SRC), CURRENT_SSL_OPTIONS_HASH)
+        self.assertEqual(crypto_util.sha256sum(constants.MOD_SSL_CONF_SRC),
+            CURRENT_SSL_OPTIONS_HASH)
         # only print warning once
         with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
             self._call()

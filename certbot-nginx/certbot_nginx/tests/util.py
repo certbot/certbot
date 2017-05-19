@@ -16,7 +16,6 @@ from certbot.tests import util as test_util
 
 from certbot.plugins import common
 
-from certbot_nginx import constants
 from certbot_nginx import configurator
 from certbot_nginx import nginxparser
 
