@@ -133,8 +133,8 @@ def choose_plugin(prepared, question):
         else:
             return None
 
-noninstaller_plugins = ["webroot", "manual", "standalone", "dns-cloudflare", "dns-digitalocean",
-                        "dns-google"]
+noninstaller_plugins = ["webroot", "manual", "standalone", "dns-cloudflare", "dns-cloudxns",
+                        "dns-digitalocean", "dns-google"]
 
 def record_chosen_plugins(config, plugins, auth, inst):
     "Update the config entries to reflect the plugins we actually selected."
@@ -240,6 +240,8 @@ def cli_plugin_requests(config):
         req_auth = set_configurator(req_auth, "manual")
     if config.dns_cloudflare:
         req_auth = set_configurator(req_auth, "dns-cloudflare")
+    if config.dns_cloudxns:
+        req_auth = set_configurator(req_auth, "dns-cloudxns")
     if config.dns_digitalocean:
         req_auth = set_configurator(req_auth, "dns-digitalocean")
     if config.dns_google:
