@@ -1,18 +1,14 @@
 """Certbot Route53 authenticator plugin."""
 import logging
 import time
-import datetime
-
-import zope.interface
 
 import boto3
-from botocore.exceptions import NoCredentialsError, ClientError
-
+import zope.interface
 from acme import challenges
+from botocore.exceptions import NoCredentialsError, ClientError
 
 from certbot import interfaces
 from certbot.plugins import common
-
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +16,7 @@ TTL = 10
 
 INSTRUCTIONS = (
     "To use certbot-route53, configure credentials as described at "
-    "https://boto3.readthedocs.io/en/latest/guide/configuration.html#best-practices-for-configuring-credentials "
+    "https://boto3.readthedocs.io/en/latest/guide/configuration.html#best-practices-for-configuring-credentials "  # pylint: disable=line-too-long
     "and add the necessary permissions for Route53 access.")
 
 @zope.interface.implementer(interfaces.IAuthenticator)
@@ -94,7 +90,7 @@ class Authenticator(common.Plugin):
 
         if not zones:
             raise ValueError(
-                "Unable to find a Route53 hosted zone for {}".format(domain)
+                "Unable to find a Route53 hosted zone for {0}".format(domain)
             )
 
         # Order the zones that are suffixes for our desired to domain by
@@ -124,7 +120,7 @@ class Authenticator(common.Plugin):
                             "ResourceRecords": [
                                 # For some reason TXT records need to be
                                 # manually quoted.
-                                {"Value": '"{}"'.format(value)}
+                                {"Value": '"{0}"'.format(value)}
                             ],
                         }
                     }
@@ -137,7 +133,7 @@ class Authenticator(common.Plugin):
         """Wait for a change to be propagated to all Route53 DNS servers.
            https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetChange.html
         """
-        for n in range(0, 120):
+        for unused_n in range(0, 120):
             response = self.r53.get_change(Id=change_id)
             if response["ChangeInfo"]["Status"] == "INSYNC":
                 return

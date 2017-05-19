@@ -20,5 +20,6 @@ fi
   -e certbot-dns-google \
   -e certbot-dns-nsone \
   -e certbot-nginx \
+  -e certbot-route53 \
   -e letshelp-certbot \
   -e certbot-compatibility-test
