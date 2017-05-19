@@ -293,5 +293,14 @@ class NotAfterTest(unittest.TestCase):
                          '2014-12-18T22:34:45+00:00')
 
 
+class Sha256sumTest(unittest.TestCase):
+    """Tests for certbot.crypto_util.notAfter"""
+
+    def test_sha256sum(self):
+        from certbot.crypto_util import sha256sum
+        self.assertEqual(sha256sum(CERT_PATH),
+            '914ffed8daf9e2c99d90ac95c77d54f32cbd556672facac380f0c063498df84e')
+
+
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
