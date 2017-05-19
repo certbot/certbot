@@ -621,7 +621,7 @@ class HelpfulArgumentParser(object):
 
         parsed_args.actual_csr = (csr, typ)
 
-        csr_domains = set([ d.lower() for d in domains ])
+        csr_domains = set([d.lower() for d in domains])
         config_domains = set(parsed_args.domains)
         if csr_domains != config_domains:
             raise errors.ConfigurationError(
