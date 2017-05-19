@@ -872,21 +872,32 @@ def nginx_restart(nginx_ctl, nginx_conf):
 
 def install_ssl_options_conf(options_ssl):
     """Copy Certbot's SSL options file into the system's config dir if required."""
+    def _write_current_hash():
+        with open(constants.CURRENT_SSL_OPTIONS_WRITTEN_HASH, "wb") as f:
+            f.write(CURRENT_SSL_OPTIONS_HASH)
+
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):
         shutil.copyfile(constants.MOD_SSL_CONF_SRC, options_ssl)
+        _write_current_hash()
         return
     # there's already a file there. if it exactly matches a previous file hash,
-    # we can update it. otherwise, create a .new and print a warning.
-    digest = crypto_util.sha256sum(options_ssl)
-    if digest in PREVIOUS_SSL_OPTIONS_HASHES: # safe to update
+    # we can update it. otherwise, print a warning once per new version.
+    active_file_digest = crypto_util.sha256sum(options_ssl)
+    if active_file_digest in PREVIOUS_SSL_OPTIONS_HASHES: # safe to update
         shutil.copyfile(constants.MOD_SSL_CONF_SRC, options_ssl)
-    elif digest == CURRENT_SSL_OPTIONS_HASH: # already up to date
+    elif active_file_digest == CURRENT_SSL_OPTIONS_HASH: # already up to date
         return
-    else: # not safe to update
-        new_filename = options_ssl + ".new"
-        shutil.copyfile(constants.MOD_SSL_CONF_SRC, new_filename)
-        # print warning
+    else: # has been manually modified, not safe to update
+        # did they modify the current version or an old version?
+        with open(constants.CURRENT_SSL_OPTIONS_WRITTEN_HASH, "rb") as f:
+            saved_digest = f.read()
+        # they modified it after we either installed or told them about this version, so return
+        if saved_digest == CURRENT_SSL_OPTIONS_HASH:
+            return
+        # there's a new version but we couldn't update the file
+        # save the current digest so we only print this once, and print a warning
+        _write_current_hash()
         logger.warning("%s has been manually modified; updated ssl configuration options "
             "saved to %s. We recommend updating %s for security purposes.",
-            options_ssl, new_filename, options_ssl)
+            options_ssl, constants.MOD_SSL_CONF_SRC, options_ssl)
