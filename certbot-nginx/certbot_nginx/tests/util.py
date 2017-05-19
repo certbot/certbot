@@ -30,10 +30,6 @@ class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
             "etc_nginx", "certbot_nginx.tests")
         self.logs_dir = tempfile.mkdtemp('logs')
 
-        self.ssl_options = common.setup_ssl_options(
-            self.config_dir, constants.MOD_SSL_CONF_SRC,
-            constants.MOD_SSL_CONF_DEST)
-
         self.config_path = os.path.join(self.temp_dir, "etc_nginx")
 
         self.rsa512jwk = jose.JWKRSA.load(test_util.load_vector(
