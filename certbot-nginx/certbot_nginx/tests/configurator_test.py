@@ -597,7 +597,7 @@ class InstallSslOptionsConfTest(util.NginxTest):
     def test_manually_modified_past_file_warns(self):
         with open(self.config.mod_ssl_conf, "a") as mod_ssl_conf:
             mod_ssl_conf.write("a new line for the wrong hash\n")
-        with open(self.config.updated_mod_ssl_conf_digest, "wb") as f:
+        with open(self.config.updated_mod_ssl_conf_digest, "w") as f:
             f.write("hashofanoldversion")
         with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
             self._call()
