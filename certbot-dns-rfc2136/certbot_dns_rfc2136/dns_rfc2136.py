@@ -44,7 +44,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                'RFC 2136 Dynamic Updates.'
 
     def _setup_credentials(self):
-        self.credetials = self._configure_credentials(
+        self.credentials = self._configure_credentials(
             'credentials',
             'RFC 2136 credentials INI file',
             {
@@ -67,6 +67,7 @@ class Authenticator(dns_common.DNSAuthenticator):
 
 class _RFC2136Client(object):
     """
+    Encapsulates all communication with the target DNS server.
     """
 
     ALGORITHMS = {
@@ -87,6 +88,13 @@ class _RFC2136Client(object):
 
     def add_txt_record(self, domain_name, record_name, record_content, record_ttl):
         """
+        Add a TXT record using the supplied information.
+
+        :param str domain: The domain to use to find the closest SOA.
+        :param str record_name: The record name (typically beginning with '_acme-challenge.').
+        :param str record_content: The record content (typically the challenge validation).
+        :param int record_ttl: The record TTL (number of seconds that the record may be cached).
+        :raises certbot.errors.PluginError: if an error occurs communicating with the DNS server
         """
 
         domain = self._find_domain(domain_name)
@@ -103,13 +111,23 @@ class _RFC2136Client(object):
 
         try:
             response = dns.query.tcp(update, self.server)
+            rcode = response.rcode()
 
-            logger.debug('Successfully added TXT record')
-        except dns.exception.DNSException as e:
-            raise errors.PluginError('')
+            if rcode == dns.rcode.NOERROR:
+                logger.debug('Successfully added TXT record')
+        except Exception as e:
+            raise errors.PluginError('Encountered error adding TXT record: {0}'
+                                     .format(e))
 
     def del_txt_record(self, domain_name, record_name, record_content):
         """
+        Delete a TXT record using the supplied information.
+
+        :param str domain: The domain to use to find the closest SOA.
+        :param str record_name: The record name (typically beginning with '_acme-challenge.').
+        :param str record_content: The record content (typically the challenge validation).
+        :param int record_ttl: The record TTL (number of seconds that the record may be cached).
+        :raises certbot.errors.PluginError: if an error occurs communicating with the DNS server
         """
 
         domain = self._find_domain(domain_name)
@@ -126,13 +144,22 @@ class _RFC2136Client(object):
 
         try:
             response = dns.query.tcp(update, self.server)
+            rcode = response.rcode()
 
-            logger.debug('Successfully removed TXT record')
-        except dns.exception.DNSException as e:
-            raise errors.PluginError('')
+            if rcode == dns.rcode.NOERROR:
+                logger.debug('Successfully deleted TXT record')
+        except Exception as e:
+            raise errors.PluginError('Encountered error deleting TXT record: {0}'
+                                     .format(e))
 
     def _find_domain(self, domain_name):
         """
+        Find the closest domain with an SOA record for a given domain name.
+
+        :param str domain_name: The domain name for which to find the closest SOA record.
+        :returns: The domain, if found.
+        :rtype: str
+        :raises certbot.errors.PluginError: if no SOA record can be found.
         """
 
         domain_name_guesses = dns_common.base_domain_name_guesses(domain_name)
@@ -148,10 +175,18 @@ class _RFC2136Client(object):
             request.flags ^= dns.flags.RD
 
             try:
-                response = dns.query.tcp(request, self.server)
+                response = dns.query.udp(request, self.server)
                 rcode = response.rcode()
+
                 # Authoritative Answer bit should be set
-                if rcode == dns.rcode.NOERROR and response.flags & dns.flags.AA:
+                if rcode == dns.rcode.NOERROR and len(response.answer) > 0 and response.flags & dns.flags.AA:
+                    logger.debug('Received authoritative SOA response for {0}'.format(guess))
                     return guess
-            except dns.exception.DNSException as e:
-                pass
+
+                logger.debug('No authoritative SOA record found for {0}'.format(guess))
+            except Exception as e:
+                raise errors.PluginError('Encountered error when making query: {0}'
+                                         .format(e))
+
+        raise errors.PluginError('Unable to determine base domain for {0} using names: {1}.'
+                                 .format(domain_name, domain_name_guesses))
