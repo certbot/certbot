@@ -21,6 +21,7 @@ fi
   -e certbot-dns-dnsmadeeasy \
   -e certbot-dns-google \
   -e certbot-dns-nsone \
+  -e certbot-dns-rfc2136 \
   -e certbot-dns-route53 \
   -e certbot-nginx \
   -e letshelp-certbot \
