@@ -493,15 +493,11 @@ class Client(object):
     def apply_enhancement(self, domains, enhancement, options=None):
         """Applies an enhancement on all domains.
 
-        :param domains: list of ssl_vhosts
-        :type list of str
+        :param list domains: list of ssl_vhosts (as strings)
+        :param str enhancement: name of enhancement, e.g. ensure-http-header
+        :param str options: options to enhancement, e.g. Strict-Transport-Security
 
-        :param enhancement: name of enhancement, e.g. ensure-http-header
-        :type str
-
-        .. note:: when more options are need make options a list.
-        :param options: options to enhancement, e.g. Strict-Transport-Security
-        :type str
+            .. note:: When more `options` are needed, make options a list.
 
         :raises .errors.PluginError: If Enhancement is not supported, or if
             there is any other problem with the enhancement.

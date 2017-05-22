@@ -1,3 +1,6 @@
+Challenges
+==========
+
 Digital certificates can only be issued to people who are entitled to them. For example, assuming you don't run google.com, you're not entitled to a certificate for it. Nor is someone else entitled to receive a certificate for your web site.
 
 In order to receive a certificate from Let's Encrypt certificate authority (CA), you have to prove your control over each of the domain names that will be listed in the certificate. You can do so by making certain publicly-visible changes, proving that the person who's requested a particular certificate is the same person who controls the site(s) that the certificate will refer to.
