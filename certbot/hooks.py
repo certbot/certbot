@@ -126,11 +126,13 @@ def execute(shell_cmd):
     cmd = Popen(shell_cmd, shell=True, stdout=PIPE,
                 stderr=PIPE, universal_newlines=True)
     out, err = cmd.communicate()
+    base_cmd = os.path.basename(shell_cmd.split(None, 1)[0])
+    if out:
+        logger.info('Output from %s:\n%s', base_cmd, out)
     if cmd.returncode != 0:
         logger.error('Hook command "%s" returned error code %d',
                      shell_cmd, cmd.returncode)
     if err:
-        base_cmd = os.path.basename(shell_cmd.split(None, 1)[0])
         logger.error('Error output from %s:\n%s', base_cmd, err)
     return (err, out)
 
