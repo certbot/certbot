@@ -21,6 +21,8 @@ anything goes wrong, it will exit with a non-zero status code.
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
 from __future__ import print_function
+
+import socket
 from hashlib import sha256
 from os.path import join
 from pipes import quote
@@ -123,7 +125,24 @@ def hashed_download(url, temp, digest):
     return path
 
 
+def pypi_available():
+    """
+    Check if pypi is being blocked via DNS
+    :return: bool
+    """
+    try:
+        return bool(socket.gethostbyname('pypi.python.org'))
+    except socket.error:
+        return False
+
+
 def main():
+    if not pypi_available():
+        print("Unable to resolve DNS name pypi.python.org. You may be experiencing internet connectivity problems, or "
+              "it may be blocked due to regional filtering. If you suspect that to be the case, you may need to set a "
+              "pip mirror in ~/.pip/pip.conf. See GitHub issue https://github.com/certbot/certbot/issues/2516")
+        return 1
+
     temp = mkdtemp(prefix='pipstrap-')
     try:
         downloads = [hashed_download(url, temp, digest)
