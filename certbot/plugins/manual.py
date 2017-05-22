@@ -42,8 +42,9 @@ Please deploy a DNS TXT record under the name
 
 {validation}
 
-Once this TXT record is deployed,
-Let's Encrypt will be able to check the validity of your domain."""
+Before continuing, verify the record is deployed.
+
+The certificate authority will then be able to check the validity of your domain."""
     _HTTP_INSTRUCTIONS = """\
 Make sure your web server displays the following content at
 {uri} before continuing:
