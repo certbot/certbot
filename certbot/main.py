@@ -255,8 +255,8 @@ def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
     if config.renew_with_new_domains:
         return
 
-    msg = ("You are updating certificate {0} to include domains: {1}"
-           "It previously included domains: {2}"
+    msg = ("You are updating certificate {0} to include domains: {1}{br}{br}"
+           "It previously included domains: {2}{br}{br}"
            "Did you intend to make this change?".format(
                certname,
                ", ".join(new_domains),
