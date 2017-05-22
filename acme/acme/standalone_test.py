@@ -137,7 +137,6 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
         )
         self.old_cwd = os.getcwd()
         os.chdir(self.test_cwd)
-        self.thread.start()
 
     def tearDown(self):
         os.chdir(self.old_cwd)
@@ -146,11 +145,11 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
 
     def test_it(self):
         max_attempts = 5
-        while max_attempts:
-            max_attempts -= 1
+        for attempt in range(max_attempts):
             try:
                 cert = crypto_util.probe_sni(
                     b'localhost', b'0.0.0.0', self.port)
+                break
             except errors.Error:
                 self.assertTrue(max_attempts > 0, "Timeout!")
                 time.sleep(1)  # wait until thread starts
@@ -159,6 +158,11 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
                                  test_util.load_comparable_cert(
                                      'rsa2048_cert.pem'))
                 break
+
+            if attempt == 0:
+                # the first attempt is always meant to fail, so we can test
+                # the socket failure code-path for probe_sni, as well
+                self.thread.start()
 
 
 if __name__ == "__main__":
