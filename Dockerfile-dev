@@ -23,7 +23,7 @@ WORKDIR /opt/certbot/src
 # TODO: Install Apache/Nginx for plugin development.
 COPY letsencrypt-auto-source/letsencrypt-auto /opt/certbot/src/letsencrypt-auto-source/letsencrypt-auto
 RUN /opt/certbot/src/letsencrypt-auto-source/letsencrypt-auto --os-packages-only && \
-    apt-get install python3-dev -y && \
+    apt-get install python3-dev git -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* \
            /tmp/* \
@@ -66,8 +66,5 @@ RUN virtualenv --no-site-packages -p python2 /opt/certbot/venv && \
 # "rm -rf /opt/certbot/src" (it's stays in the underlaying image);
 # this might also help in debugging: you can "docker run --entrypoint
 # bash" and investigate, apply patches, etc.
-
-# installs git into the Docker image, as required by tox
-RUN apt-get update && apt-get install git -y
 
 ENV PATH /opt/certbot/venv/bin:$PATH
