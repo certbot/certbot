@@ -32,8 +32,8 @@ class DNSAuthenticatorTest(util.TempDirTestCase, dns_test_common.BaseAuthenticat
     class _FakeConfig(object):
         fake_propagation_seconds = 0
         fake_config_key = 1
-        fake_other_key = None
-        fake_file_path = None
+        fake_other_key = None  # type: ignore
+        fake_file_path = None  # type: ignore
 
     def setUp(self):
         super(DNSAuthenticatorTest, self).setUp()
@@ -122,7 +122,7 @@ class DNSAuthenticatorTest(util.TempDirTestCase, dns_test_common.BaseAuthenticat
 
 class CredentialsConfigurationTest(util.TempDirTestCase):
     class _MockLoggingHandler(logging.Handler):
-        messages = None
+        messages = None  # type: ignore
 
         def __init__(self, *args, **kwargs):
             self.reset()
