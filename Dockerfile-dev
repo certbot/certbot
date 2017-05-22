@@ -67,4 +67,7 @@ RUN virtualenv --no-site-packages -p python2 /opt/certbot/venv && \
 # this might also help in debugging: you can "docker run --entrypoint
 # bash" and investigate, apply patches, etc.
 
+# installs git into the Docker image, as required by tox
+RUN apt-get update && apt-get install git -y
+
 ENV PATH /opt/certbot/venv/bin:$PATH
