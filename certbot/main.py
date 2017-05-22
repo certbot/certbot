@@ -254,12 +254,13 @@ def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
     """
     if config.renew_with_new_domains:
         return
-    msg = ("Confirm that you intend to update certificate {0} "
-           "to include domains {1}. Note that it previously "
-           "contained domains {2}.".format(
+
+    msg = ("You are updating certificate {0} to include domains: {1}"
+           "It previously included domains: {2}"
+           "Did you intend to make this change?".format(
                certname,
-               new_domains,
-               old_domains))
+               ", ".join(new_domains),
+               ", ".join(old_domains)))
     obj = zope.component.getUtility(interfaces.IDisplay)
     if not obj.yesno(msg, "Update cert", "Cancel", default=True):
         raise errors.ConfigurationError("Specified mismatched cert name and domains.")
