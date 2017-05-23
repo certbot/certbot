@@ -24,7 +24,7 @@
     trap 'rm -rf "$TEMP_DIR"' EXIT
     # ---------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/fetch.py"
-{{ fetch.py }}
+{{ phase-1/fetch.py }}
 UNLIKELY_EOF
     # ---------------------------------------------------------------------------
     DeterminePythonVersion

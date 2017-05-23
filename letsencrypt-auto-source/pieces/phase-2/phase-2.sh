@@ -29,13 +29,13 @@
     # There is no $ interpolation due to quotes on starting heredoc delimiter.
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/letsencrypt-auto-requirements.txt"
-{{ dependency-requirements.txt }}
-{{ letsencrypt-requirements.txt }}
-{{ certbot-requirements.txt }}
+{{ phase-2/dependency-requirements.txt }}
+{{ phase-2/letsencrypt-requirements.txt }}
+{{ phase-2/certbot-requirements.txt }}
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/pipstrap.py"
-{{ pipstrap.py }}
+{{ phase-2/pipstrap.py }}
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
     # Set PATH so pipstrap upgrades the right (v)env:

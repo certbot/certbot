@@ -154,7 +154,7 @@ fi
 {{ bootstrappers/mageia_common.sh }}
 
 if [ "$1" = "--le-auto-phase2" ]; then
-{{ phase-2.txt }}
+{{ phase-2/phase-2.sh }}
 else
-{{ phase-1.txt }}
+{{ phase-1/phase-1.sh }}
 fi

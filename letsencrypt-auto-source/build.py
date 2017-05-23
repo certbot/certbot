@@ -33,16 +33,19 @@ def build(version=None, requirements=None):
         special_replacements['letsencrypt-requirements.txt'] = ''
         special_replacements['certbot-requirements.txt'] = requirements
 
+    pattern = r'{{\s*([A-Za-z0-9_./-]+)\s*}}'
     def replacer(match):
         token = match.group(1)
         if token in special_replacements:
             return special_replacements[token]
         else:
-            return file_contents(join(DIR, 'pieces', token))
+            return re.sub(
+                pattern, replacer, file_contents(join(DIR, 'pieces', token))
+            )
 
-    return re.sub(r'{{\s*([A-Za-z0-9_./-]+)\s*}}',
-                  replacer,
-                  file_contents(join(DIR, 'letsencrypt-auto.template')))
+    return re.sub(
+        pattern, replacer, file_contents(join(DIR, 'letsencrypt-auto.template'))
+    )
 
 
 def main():
