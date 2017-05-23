@@ -29,9 +29,9 @@ def build(version=None, requirements=None):
         'LE_AUTO_VERSION': version or certbot_version(DIR)
     }
     if requirements:
-        special_replacements['dependency-requirements.txt'] = ''
-        special_replacements['letsencrypt-requirements.txt'] = ''
-        special_replacements['certbot-requirements.txt'] = requirements
+        special_replacements['phase-2/dependency-requirements.txt'] = ''
+        special_replacements['phase-2/letsencrypt-requirements.txt'] = ''
+        special_replacements['phase-2/certbot-requirements.txt'] = requirements
 
     pattern = r'{{\s*([A-Za-z0-9_./-]+)\s*}}'
     def replacer(match):
