@@ -178,48 +178,7 @@ else
   fi
 fi
 
-BootstrapMessage() {
-  # Arguments: Platform name
-  say "Bootstrapping dependencies for $1... (you can skip this with --no-bootstrap)"
-}
-
-ExperimentalBootstrap() {
-  # Arguments: Platform name, bootstrap function name
-  if [ "$DEBUG" = 1 ]; then
-    if [ "$2" != "" ]; then
-      BootstrapMessage $1
-      $2
-    fi
-  else
-    error "FATAL: $1 support is very experimental at present..."
-    error "if you would like to work on improving it, please ensure you have backups"
-    error "and then run this script again with the --debug flag!"
-    error "Alternatively, you can install OS dependencies yourself and run this script"
-    error "again with --no-bootstrap."
-    exit 1
-  fi
-}
-
-
-DeterminePythonVersion() {
-  for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
-    # Break (while keeping the LE_PYTHON value) if found.
-    $EXISTS "$LE_PYTHON" > /dev/null && break
-  done
-  if [ "$?" != "0" ]; then
-    error "Cannot find any Pythons; please install one!"
-    exit 1
-  fi
-  export LE_PYTHON
-
-  PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
-  if [ "$PYVER" -lt 26 ]; then
-    error "You have an ancient version of Python entombed in your operating system..."
-    error "This isn't going to work; you'll need at least version 2.6."
-    exit 1
-  fi
-}
-
+{{ utils.sh }}
 {{ bootstrap/main.sh }}
 
 TempDir() {

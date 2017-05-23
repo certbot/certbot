@@ -8,6 +8,28 @@
 {{ bootstrap/smartos.sh }}
 {{ bootstrap/mageia_common.sh }}
 
+BootstrapMessage() {
+  # Arguments: Platform name
+  say "Bootstrapping dependencies for $1... (you can skip this with --no-bootstrap)"
+}
+
+ExperimentalBootstrap() {
+  # Arguments: Platform name, bootstrap function name
+  if [ "$DEBUG" = 1 ]; then
+    if [ "$2" != "" ]; then
+      BootstrapMessage $1
+      $2
+    fi
+  else
+    error "FATAL: $1 support is very experimental at present..."
+    error "if you would like to work on improving it, please ensure you have backups"
+    error "and then run this script again with the --debug flag!"
+    error "Alternatively, you can install OS dependencies yourself and run this script"
+    error "again with --no-bootstrap."
+    exit 1
+  fi
+}
+
 # Install required OS packages:
 Bootstrap() {
   if [ "$NO_BOOTSTRAP" = 1 ]; then
