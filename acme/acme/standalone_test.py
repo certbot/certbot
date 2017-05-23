@@ -156,7 +156,6 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
             except errors.Error:
                 self.assertTrue(max_attempts > 0, "Timeout!")
                 time.sleep(1)  # wait until thread starts
-                break
 
             if attempt == 0:
                 # the first attempt is always meant to fail, so we can test
