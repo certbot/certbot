@@ -557,8 +557,6 @@ class InstallSslOptionsConfTest(util.NginxTest):
         return crypto_util.sha256sum(MOD_SSL_CONF_SRC)
 
     def _assert_current_file(self):
-        """If this is failing, remember that constants.PREVIOUS_SSL_OPTIONS_HASHES must be updated
-           when self.config.mod_ssl_conf is updated. Todo update this comment."""
         self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
         self.assertEqual(crypto_util.sha256sum(self.config.mod_ssl_conf),
             self._current_ssl_options_hash())
@@ -577,9 +575,9 @@ class InstallSslOptionsConfTest(util.NginxTest):
         self._assert_current_file()
 
     def test_prev_file_updates_to_current(self):
-        from certbot_nginx.constants import PREVIOUS_SSL_OPTIONS_HASHES
+        from certbot_nginx.constants import ALL_SSL_OPTIONS_HASHES
         with mock.patch('certbot.crypto_util.sha256sum') as mock_sha256:
-            mock_sha256.return_value = PREVIOUS_SSL_OPTIONS_HASHES[0]
+            mock_sha256.return_value = ALL_SSL_OPTIONS_HASHES[0]
             self._call()
         self._assert_current_file()
 
@@ -611,6 +609,12 @@ class InstallSslOptionsConfTest(util.NginxTest):
         with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
             self._call()
             self.assertFalse(mock_logger.warning.called)
+
+    def test_current_file_hash_in_all_hashes(self):
+        """If this is failing, remember that constants.ALL_SSL_OPTIONS_HASHES must be appended
+           with the sha256 hash of self.config.mod_ssl_conf when it is updated."""
+        from certbot_nginx.constants import ALL_SSL_OPTIONS_HASHES
+        self.assertTrue(self._current_ssl_options_hash() in ALL_SSL_OPTIONS_HASHES)
 
 
 if __name__ == "__main__":

@@ -869,4 +869,4 @@ def nginx_restart(nginx_ctl, nginx_conf):
 def install_ssl_options_conf(options_ssl, options_ssl_digest):
     """Copy Certbot's SSL options file into the system's config dir if required."""
     return common.install_ssl_options_conf(options_ssl, options_ssl_digest,
-        constants.MOD_SSL_CONF_SRC, constants.PREVIOUS_SSL_OPTIONS_HASHES, logger)
+        constants.MOD_SSL_CONF_SRC, constants.ALL_SSL_OPTIONS_HASHES, logger)

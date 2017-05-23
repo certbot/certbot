@@ -268,7 +268,7 @@ class TLSSNI01(object):
 # c.f. #383)
 
 def install_ssl_options_conf(options_ssl, options_ssl_digest, mod_ssl_conf_src,
-    previous_ssl_options_hashes, logger): # pragma: no cover
+    all_ssl_options_hashes, logger): # pragma: no cover
     """Copy Certbot's SSL options file into the system's config dir if required."""
     current_ssl_options_hash = crypto_util.sha256sum(mod_ssl_conf_src)
 
@@ -284,13 +284,14 @@ def install_ssl_options_conf(options_ssl, options_ssl_digest, mod_ssl_conf_src,
     if not os.path.isfile(options_ssl):
         _install_current_file()
         return
-    # there's already a file there. if it exactly matches a previous file hash,
-    # we can update it. otherwise, print a warning once per new version.
+    # there's already a file there. if it's up to date, do nothing. if it's not but
+    # it matches a known file hash, we can update it.
+    # otherwise, print a warning once per new version.
     active_file_digest = crypto_util.sha256sum(options_ssl)
-    if active_file_digest in previous_ssl_options_hashes: # safe to update
-        _install_current_file()
-    elif active_file_digest == current_ssl_options_hash: # already up to date
+    if active_file_digest == current_ssl_options_hash: # already up to date
         return
+    elif active_file_digest in all_ssl_options_hashes: # safe to update
+        _install_current_file()
     else: # has been manually modified, not safe to update
         # did they modify the current version or an old version?
         if os.path.isfile(options_ssl_digest):
