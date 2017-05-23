@@ -611,10 +611,10 @@ class InstallSslOptionsConfTest(util.NginxTest):
             self.assertFalse(mock_logger.warning.called)
 
     def test_current_file_hash_in_all_hashes(self):
-        """If this is failing, remember that constants.ALL_SSL_OPTIONS_HASHES must be appended
-           with the sha256 hash of self.config.mod_ssl_conf when it is updated."""
         from certbot_nginx.constants import ALL_SSL_OPTIONS_HASHES
-        self.assertTrue(self._current_ssl_options_hash() in ALL_SSL_OPTIONS_HASHES)
+        self.assertTrue(self._current_ssl_options_hash() in ALL_SSL_OPTIONS_HASHES,
+            "Constants.ALL_SSL_OPTIONS_HASHES must be appended"
+            " with the sha256 hash of self.config.mod_ssl_conf when it is updated.")
 
 
 if __name__ == "__main__":
