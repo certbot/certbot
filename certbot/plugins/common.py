@@ -11,6 +11,7 @@ import zope.interface
 from acme.jose import util as jose_util
 
 from certbot import constants
+from certbot import crypto_util
 from certbot import interfaces
 from certbot import util
 
@@ -262,15 +263,46 @@ class TLSSNI01(object):
         return response
 
 
-# test utils used by certbot_apache/certbot_nginx (hence
+# utils used by certbot_apache/certbot_nginx (hence
 # "pragma: no cover") TODO: this might quickly lead to dead code (also
 # c.f. #383)
 
-def setup_ssl_options(config_dir, src, dest):  # pragma: no cover
-    """Move the ssl_options into position and return the path."""
-    option_path = os.path.join(config_dir, dest)
-    shutil.copyfile(src, option_path)
-    return option_path
+def install_ssl_options_conf(options_ssl, options_ssl_digest, mod_ssl_conf_src,
+    current_ssl_options_hash, previous_ssl_options_hashes, logger):
+    """Copy Certbot's SSL options file into the system's config dir if required."""
+    def _write_current_hash():
+        with open(options_ssl_digest, "w") as f:
+            f.write(current_ssl_options_hash)
+
+    def _install_current_file():
+        shutil.copyfile(mod_ssl_conf_src, options_ssl)
+        _write_current_hash()
+
+    # Check to make sure options-ssl.conf is installed
+    if not os.path.isfile(options_ssl):
+        _install_current_file()
+        return
+    # there's already a file there. if it exactly matches a previous file hash,
+    # we can update it. otherwise, print a warning once per new version.
+    active_file_digest = crypto_util.sha256sum(options_ssl)
+    if active_file_digest in previous_ssl_options_hashes: # safe to update
+        _install_current_file()
+    elif active_file_digest == current_ssl_options_hash: # already up to date
+        return
+    else: # has been manually modified, not safe to update
+        # did they modify the current version or an old version?
+        if os.path.isfile(options_ssl_digest):
+            with open(options_ssl_digest, "r") as f:
+                saved_digest = f.read()
+            # they modified it after we either installed or told them about this version, so return
+            if saved_digest == current_ssl_options_hash:
+                return
+        # there's a new version but we couldn't update the file, or they deleted the digest.
+        # save the current digest so we only print this once, and print a warning
+        _write_current_hash()
+        logger.warning("%s has been manually modified; updated ssl configuration options "
+            "saved to %s. We recommend updating %s for security purposes.",
+            options_ssl, mod_ssl_conf_src, options_ssl)
 
 
 def dir_setup(test_dir, pkg):  # pragma: no cover

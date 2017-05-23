@@ -2,7 +2,6 @@
 import logging
 import os
 import re
-import shutil
 import socket
 import subprocess
 import tempfile
@@ -869,36 +868,6 @@ def nginx_restart(nginx_ctl, nginx_conf):
 
 def install_ssl_options_conf(options_ssl, options_ssl_digest):
     """Copy Certbot's SSL options file into the system's config dir if required."""
-    def _write_current_hash():
-        with open(options_ssl_digest, "w") as f:
-            f.write(constants.CURRENT_SSL_OPTIONS_HASH)
-
-    def _install_current_file():
-        shutil.copyfile(constants.MOD_SSL_CONF_SRC, options_ssl)
-        _write_current_hash()
-
-    # Check to make sure options-ssl.conf is installed
-    if not os.path.isfile(options_ssl):
-        _install_current_file()
-        return
-    # there's already a file there. if it exactly matches a previous file hash,
-    # we can update it. otherwise, print a warning once per new version.
-    active_file_digest = crypto_util.sha256sum(options_ssl)
-    if active_file_digest in constants.PREVIOUS_SSL_OPTIONS_HASHES: # safe to update
-        _install_current_file()
-    elif active_file_digest == constants.CURRENT_SSL_OPTIONS_HASH: # already up to date
-        return
-    else: # has been manually modified, not safe to update
-        # did they modify the current version or an old version?
-        if os.path.isfile(options_ssl_digest):
-            with open(options_ssl_digest, "r") as f:
-                saved_digest = f.read()
-            # they modified it after we either installed or told them about this version, so return
-            if saved_digest == constants.CURRENT_SSL_OPTIONS_HASH:
-                return
-        # there's a new version but we couldn't update the file, or they deleted the digest.
-        # save the current digest so we only print this once, and print a warning
-        _write_current_hash()
-        logger.warning("%s has been manually modified; updated ssl configuration options "
-            "saved to %s. We recommend updating %s for security purposes.",
-            options_ssl, constants.MOD_SSL_CONF_SRC, options_ssl)
+    return common.install_ssl_options_conf(options_ssl, options_ssl_digest,
+        constants.MOD_SSL_CONF_SRC, constants.CURRENT_SSL_OPTIONS_HASH,
+        constants.PREVIOUS_SSL_OPTIONS_HASHES, logger)
