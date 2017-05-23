@@ -62,15 +62,6 @@ TEST_REDIRECT_COMMENT_BLOCK = [
     ['#', " } # managed by Certbot"],
 ]
 
-PREVIOUS_SSL_OPTIONS_HASHES = [
-    '0f81093a1465e3d4eaa8b0c14e77b2a2e93568b0fc1351c2b87893a95f0de87c',
-    '9a7b32c49001fed4cff8ad24353329472a50e86ade1ef9b2b9e43566a619612e',
-    'a6d9f1c7d6b36749b52ba061fff1421f9a0a3d2cfdafbd63c05d06f65b990937',
-    '7f95624dd95cf5afc708b9f967ee83a24b8025dc7c8d9df2b556bbc64256b3ff',
-]
-
-CURRENT_SSL_OPTIONS_HASH = '394732f2bbe3e5e637c3fb5c6e980a1f1b90b01e2e8d6b7cff41dde16e2a756d'
-
 @zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
 class NginxConfigurator(common.Plugin):
@@ -880,7 +871,7 @@ def install_ssl_options_conf(options_ssl, options_ssl_digest):
     """Copy Certbot's SSL options file into the system's config dir if required."""
     def _write_current_hash():
         with open(options_ssl_digest, "w") as f:
-            f.write(CURRENT_SSL_OPTIONS_HASH)
+            f.write(constants.CURRENT_SSL_OPTIONS_HASH)
 
     def _install_current_file():
         shutil.copyfile(constants.MOD_SSL_CONF_SRC, options_ssl)
@@ -893,9 +884,9 @@ def install_ssl_options_conf(options_ssl, options_ssl_digest):
     # there's already a file there. if it exactly matches a previous file hash,
     # we can update it. otherwise, print a warning once per new version.
     active_file_digest = crypto_util.sha256sum(options_ssl)
-    if active_file_digest in PREVIOUS_SSL_OPTIONS_HASHES: # safe to update
+    if active_file_digest in constants.PREVIOUS_SSL_OPTIONS_HASHES: # safe to update
         _install_current_file()
-    elif active_file_digest == CURRENT_SSL_OPTIONS_HASH: # already up to date
+    elif active_file_digest == constants.CURRENT_SSL_OPTIONS_HASH: # already up to date
         return
     else: # has been manually modified, not safe to update
         # did they modify the current version or an old version?
@@ -903,7 +894,7 @@ def install_ssl_options_conf(options_ssl, options_ssl_digest):
             with open(options_ssl_digest, "r") as f:
                 saved_digest = f.read()
             # they modified it after we either installed or told them about this version, so return
-            if saved_digest == CURRENT_SSL_OPTIONS_HASH:
+            if saved_digest == constants.CURRENT_SSL_OPTIONS_HASH:
                 return
         # there's a new version but we couldn't update the file, or they deleted the digest.
         # save the current digest so we only print this once, and print a warning
