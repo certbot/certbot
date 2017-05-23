@@ -553,8 +553,8 @@ class InstallSslOptionsConfTest(util.NginxTest):
         install_ssl_options_conf(self.config.mod_ssl_conf, self.config.updated_mod_ssl_conf_digest)
 
     def _assert_current_file(self):
-        """If this is failing, remember that configurator.PREVIOUS_SSL_OPTIONS_HASHES and
-           configurator.CURRENT_SSL_OPTIONS_HASH must be updated when self.config.mod_ssl_conf
+        """If this is failing, remember that constants.PREVIOUS_SSL_OPTIONS_HASHES and
+           constants.CURRENT_SSL_OPTIONS_HASH must be updated when self.config.mod_ssl_conf
            is updated. Add CURRENT_SSL_OPTIONS_HASH to PREVIOUS_SSL_OPTIONS_HASHES and set
            CURRENT_SSL_OPTIONS_HASH to the hash of the updated self.config.mod_ssl_conf."""
         self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
