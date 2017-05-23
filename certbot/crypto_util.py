@@ -244,12 +244,29 @@ def valid_privkey(privkey):
         return False
 
 
+def verify_renewable_cert(renewable_cert):
+    """For checking that your certs were not corrupted on disk.
+
+    Several things are checked:
+        1. Signature verification for the cert.
+        2. That fullchain matches cert and chain when concatenated.
+        3. Check that the private key matches the certificate.
+
+    :param `.storage.RenewableCert` renewable_cert: cert to verify
+
+    :raises errors.Error: If verification fails.
+    """
+    verify_renewable_cert_sig(renewable_cert)
+    verify_fullchain(renewable_cert)
+    verify_cert_matches_priv_key(renewable_cert)
+
+
 def verify_renewable_cert_sig(renewable_cert):
     """ Verifies the signature of a `.storage.RenewableCert` object.
 
     :param `.storage.RenewableCert` renewable_cert: cert to verify
 
-    :raises errors.Error: if signature verification fails
+    :raises errors.Error: If signature verification fails.
     """
     try:
         with open(renewable_cert.chain, 'rb') as chain:
@@ -264,12 +281,13 @@ def verify_renewable_cert_sig(renewable_cert):
         logger.exception(error_str)
         raise errors.Error(error_str)
 
+
 def verify_cert_matches_priv_key(renewable_cert):
-    """Do the private key and cert match?
+    """ Verifies that the private key and cert match.
 
     :param `.storage.RenewableCert` renewable_cert: cert to verify
 
-    :raises errors.Error: if they don't match
+    :raises errors.Error: If they don't match.
     """
     try:
         with open(renewable_cert.cert) as cert:
@@ -290,11 +308,11 @@ def verify_cert_matches_priv_key(renewable_cert):
 
 
 def verify_fullchain(renewable_cert):
-    """Check that fullchain is indeed cert concatenated with chain
+    """ Verifies that fullchain is indeed cert concatenated with chain.
 
     :param `.storage.RenewableCert` renewable_cert: cert to verify
 
-    :raises errors.Error: if cert and chain do not combine to fullchain
+    :raises errors.Error: If cert and chain do not combine to fullchain.
     """
     try:
         with open(renewable_cert.chain) as chain:
@@ -314,30 +332,6 @@ def verify_fullchain(renewable_cert):
     except errors.Error as e:
         raise e
 
-
-def verify_renewable_cert(renewable_cert):
-    """For checking that your certs were not corrupted on disk.
-    Several things are checked:
-        1. signature verification for the cert
-        2. that fullchain matches cert and pem when concatenated
-        3. check that the private key matches the certificate
-
-    :param `.storage.RenewableCert` renewable_cert: cert to verify
-
-    :raises errors.Error: if verification fails
-    """
-    verification_errors = []
-    possible_exceptions = (IOError, ValueError, AssertionError,
-            OpenSSL.crypto.Error, OpenSSL.SSL.Error, errors.Error)
-    try:
-        verify_renewable_cert_sig(renewable_cert)
-        verify_fullchain(renewable_cert)
-        verify_cert_matches_priv_key(renewable_cert)
-        return
-    except possible_exceptions as error:
-        verification_errors.append(error)
-    raise errors.Error("it seems your cert is corrupted. Details: \
-            {0}".format(",".join(str(error) for error in verification_errors)))
 
 def pyopenssl_load_certificate(data):
     """Load PEM/DER certificate.

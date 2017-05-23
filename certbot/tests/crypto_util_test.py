@@ -239,80 +239,101 @@ class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
         OpenSSL.crypto.load_privatekey(
             OpenSSL.crypto.FILETYPE_PEM, make_key(1024))
 
-class VerifyRenewableCertTest(unittest.TestCase):
-    """Tests for certbot.crypto_util.verify_renewable_cert."""
+
+class VerifyCertSetup(unittest.TestCase):
+    """Refactoring for verification tests."""
 
     def setUp(self):
+        super(VerifyCertSetup, self).setUp()
+
         self.renewable_cert = mock.MagicMock()
-        self.renewable_cert.chain = SS_CERT_PATH
         self.renewable_cert.cert = SS_CERT_PATH
+        self.renewable_cert.chain = SS_CERT_PATH
         self.renewable_cert.privkey = RSA512_KEY_PATH
         self.renewable_cert.fullchain = test_util.vector_path('self_signed_fullchain.pem')
 
-    @classmethod
-    def _verify_fullchain(cls, renewable_cert):
-        from certbot.crypto_util import verify_fullchain
-        return verify_fullchain(renewable_cert)
+        self.bad_renewable_cert = mock.MagicMock()
+        self.bad_renewable_cert.chain = SS_CERT_PATH
+        self.bad_renewable_cert.cert = SS_CERT_PATH
+        self.bad_renewable_cert.fullchain = SS_CERT_PATH
 
-    @classmethod
-    def _verify_cert_matches_priv_key(cls, renewable_cert):
-        from certbot.crypto_util import verify_cert_matches_priv_key
-        return verify_cert_matches_priv_key(renewable_cert)
 
-    @classmethod
-    def _verify_renewable_cert_sig(cls, renewable_cert):
-        from certbot.crypto_util import verify_renewable_cert_sig
-        return verify_renewable_cert_sig(renewable_cert)
+class VerifyRenewableCertTest(VerifyCertSetup):
+    """Tests for certbot.crypto_util.verify_renewable_cert."""
 
-    @classmethod
-    def _verify_renewable_cert(cls, renewable_cert):
+    def setUp(self):
+        super(VerifyRenewableCertTest, self).setUp()
+
+    def _call(self, renewable_cert):
         from certbot.crypto_util import verify_renewable_cert
         return verify_renewable_cert(renewable_cert)
 
-    def test_fullchain_matches(self):
-        self.assertEqual(None, self._verify_fullchain(self.renewable_cert))
-
-    def test_fullchain_mismatch(self):
-        bad_renewable_cert = mock.MagicMock()
-        bad_renewable_cert.chain = SS_CERT_PATH
-        bad_renewable_cert.cert = SS_CERT_PATH
-        bad_renewable_cert.fullchain = SS_CERT_PATH
-
-        self.assertRaises(AssertionError, self._verify_fullchain, bad_renewable_cert)
-
-    def test_fullchain_ioerror(self):
-        bad_renewable_cert = mock.MagicMock()
-        bad_renewable_cert.chain = "dog"
-        self.assertRaises(IOError, self._verify_fullchain, bad_renewable_cert)
-
-    def test_cert_priv_key_match(self):
-        self.assertEqual(None, self._verify_cert_matches_priv_key(self.renewable_cert))
-
-    def test_cert_priv_key_mismatch(self):
-        bad_renewable_cert = mock.MagicMock()
-        bad_renewable_cert.privkey = RSA256_KEY_PATH
-        bad_renewable_cert.cert = SS_CERT_PATH
-
-        self.assertRaises(OpenSSL.SSL.Error, self._verify_cert_matches_priv_key, bad_renewable_cert)
-
-    def test_cert_sig_match(self):
-        self.assertEqual(None, self._verify_renewable_cert_sig(self.renewable_cert))
-
-    def test_cert_sig_mismatch(self):
-        bad_renewable_cert = mock.MagicMock()
-        bad_renewable_cert.chain = SS_CERT_PATH
-        bad_renewable_cert.cert = test_util.vector_path('self_signed_cert_bad.pem')
-
-        self.assertRaises(OpenSSL.crypto.Error, self._verify_renewable_cert_sig, bad_renewable_cert)
-
     def test_verify_renewable_cert(self):
-        self.assertEqual(None, self._verify_renewable_cert(self.renewable_cert))
+        self.assertEqual(None, self._call(self.renewable_cert))
 
     @mock.patch('certbot.crypto_util.verify_renewable_cert_sig', side_effect=errors.Error(""))
-    def test_verify_renewable_cert_failure(self, mock_verify_renewable_cert_sign):
-        #pylint: disable=unused-argument
-        bad_renewable_cert = mock.MagicMock()
-        self.assertRaises(errors.Error, self._verify_renewable_cert, bad_renewable_cert)
+    def test_verify_renewable_cert_failure(self, unused_verify_renewable_cert_sign):
+        self.assertRaises(errors.Error, self._call, self.bad_renewable_cert)
+
+
+class VerifyRenewableCertSigTest(VerifyCertSetup):
+    """Tests for certbot.crypto_util.verify_renewable_cert."""
+
+    def setUp(self):
+        super(VerifyRenewableCertSigTest, self).setUp()
+
+    def _call(self, renewable_cert):
+        from certbot.crypto_util import verify_renewable_cert_sig
+        return verify_renewable_cert_sig(renewable_cert)
+
+    def test_cert_sig_match(self):
+        self.assertEqual(None, self._call(self.renewable_cert))
+
+    def test_cert_sig_mismatch(self):
+        self.bad_renewable_cert.cert = test_util.vector_path('self_signed_cert_bad.pem')
+        self.assertRaises(errors.Error, self._call, self.bad_renewable_cert)
+
+
+class VerifyFullchainTest(VerifyCertSetup):
+    """Tests for certbot.crypto_util.verify_fullchain."""
+
+    def setUp(self):
+        super(VerifyFullchainTest, self).setUp()
+
+    def _call(self, renewable_cert):
+        from certbot.crypto_util import verify_fullchain
+        return verify_fullchain(renewable_cert)
+
+    def test_fullchain_matches(self):
+        self.assertEqual(None, self._call(self.renewable_cert))
+
+    def test_fullchain_mismatch(self):
+        self.assertRaises(errors.Error, self._call, self.bad_renewable_cert)
+
+    def test_fullchain_ioerror(self):
+        self.bad_renewable_cert.chain = "dog"
+        self.assertRaises(errors.Error, self._call, self.bad_renewable_cert)
+
+
+class VerifyCertMatchesPrivKeyTest(VerifyCertSetup):
+    """Tests for certbot.crypto_util.verify_cert_matches_priv_key."""
+
+    def setUp(self):
+        super(VerifyCertMatchesPrivKeyTest, self).setUp()
+
+    def _call(self, renewable_cert):
+        from certbot.crypto_util import verify_cert_matches_priv_key
+        return verify_cert_matches_priv_key(renewable_cert)
+
+    def test_cert_priv_key_match(self):
+        self.assertEqual(None, self._call(self.renewable_cert))
+
+    def test_cert_priv_key_mismatch(self):
+        self.bad_renewable_cert.privkey = RSA256_KEY_PATH
+        self.bad_renewable_cert.cert = SS_CERT_PATH
+
+        self.assertRaises(errors.Error, self._call, self.bad_renewable_cert)
+
 
 class ValidPrivkeyTest(unittest.TestCase):
     """Tests for certbot.crypto_util.valid_privkey."""
