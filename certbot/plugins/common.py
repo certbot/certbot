@@ -268,7 +268,7 @@ class TLSSNI01(object):
 # c.f. #383)
 
 def install_ssl_options_conf(options_ssl, options_ssl_digest, mod_ssl_conf_src,
-    current_ssl_options_hash, previous_ssl_options_hashes, logger):
+    current_ssl_options_hash, previous_ssl_options_hashes, logger): # pragma: no cover
     """Copy Certbot's SSL options file into the system's config dir if required."""
     def _write_current_hash():
         with open(options_ssl_digest, "w") as f:
