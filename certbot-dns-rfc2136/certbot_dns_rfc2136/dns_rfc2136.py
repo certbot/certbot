@@ -27,6 +27,15 @@ class Authenticator(dns_common.DNSAuthenticator):
     This Authenticator uses RFC 2136 Dynamic Updates to fulfull a dns-01 challenge.
     """
 
+    ALGORITHMS = {
+      'HMAC-MD5': dns.tsig.HMAC_MD5,
+      'HMAC-SHA1': dns.tsig.HMAC_SHA1,
+      'HMAC-SHA224': dns.tsig.HMAC_SHA224,
+      'HMAC-SHA256': dns.tsig.HMAC_SHA256,
+      'HMAC-SHA384': dns.tsig.HMAC_SHA384,
+      'HMAC-SHA512': dns.tsig.HMAC_SHA512
+    }
+
     description = 'Obtain certs using a DNS TXT record (if you are using BIND for DNS).'
     ttl = 120
 
@@ -43,6 +52,12 @@ class Authenticator(dns_common.DNSAuthenticator):
         return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
                'RFC 2136 Dynamic Updates.'
 
+    def _validate_algorithm(self, credentials):
+        algorithm = credentials.conf('algorithm')
+        if algorithm:
+            if not self.ALGORITHMS.get(algorithm):
+                raise errors.PluginError("Unknown algorithm: {0}.".format(algorithm))
+
     def _setup_credentials(self):
         self.credentials = self._configure_credentials(
             'credentials',
@@ -50,9 +65,9 @@ class Authenticator(dns_common.DNSAuthenticator):
             {
                 'name': 'TSIG key name',
                 'secret': 'TSIG key secret',
-                'algorithm': 'TSIG key algorithm',
                 'server': 'The target DNS server'
-            }
+            },
+            _validate_algorithm
         )
 
     def _perform(self, domain, validation_name, validation):
@@ -62,29 +77,22 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_rfc2136_client().del_txt_record(domain, validation_name, validation)
 
     def _get_rfc2136_client(self):
-        return _RFC2136Client(self.credentials.conf('server'), self.credentials.conf('name'), self.credentials.conf('secret'), self.credentials.conf('algorithm'))
+        return _RFC2136Client(self.credentials.conf('server'),
+                              self.credentials.conf('name'),
+                              self.credentials.conf('secret'),
+                              self.ALGORITHMS.get(self.credentials.conf('algorithm'), dns.tsig.HMAC_MD5))
 
 
 class _RFC2136Client(object):
     """
     Encapsulates all communication with the target DNS server.
     """
-
-    ALGORITHMS = {
-      'HMAC-MD5': dns.tsig.HMAC_MD5,
-      'HMAC-SHA1': dns.tsig.HMAC_SHA1,
-      'HMAC-SHA224': dns.tsig.HMAC_SHA224,
-      'HMAC-SHA256': dns.tsig.HMAC_SHA256,
-      'HMAC-SHA384': dns.tsig.HMAC_SHA384,
-      'HMAC-SHA512': dns.tsig.HMAC_SHA512
-    }
-
     def __init__(self, server, key_name, key_secret, key_algorithm='HMAC-MD5'):
         self.server = server
         self.keyring = dns.tsigkeyring.from_text({
             key_name: key_secret
         })
-        self.algorithm = self.ALGORITHMS.get(key_algorithm, dns.tsig.HMAC_MD5)
+        self.algorithm = key_algorithm
 
     def add_txt_record(self, domain_name, record_name, record_content, record_ttl):
         """
