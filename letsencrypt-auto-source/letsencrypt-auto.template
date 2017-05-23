@@ -98,7 +98,8 @@ if [ "$QUIET" = 1 ]; then
   ASSUME_YES=1
 fi
 
-{{ functions.txt }}
+{{ utils.sh }}
+{{ bootstrap/main.sh }}
 
 # Support for busybox and others where there is no "command",
 # but "which" instead
@@ -143,18 +144,8 @@ else
   fi
 fi
 
-{{ bootstrappers/deb_common.sh }}
-{{ bootstrappers/rpm_common.sh }}
-{{ bootstrappers/suse_common.sh }}
-{{ bootstrappers/arch_common.sh }}
-{{ bootstrappers/gentoo_common.sh }}
-{{ bootstrappers/free_bsd.sh }}
-{{ bootstrappers/mac.sh }}
-{{ bootstrappers/smartos.sh }}
-{{ bootstrappers/mageia_common.sh }}
-
 if [ "$1" = "--le-auto-phase2" ]; then
-{{ phase-2/phase-2.sh }}
+  {{ phase-2/main.sh }}
 else
-{{ phase-1/phase-1.sh }}
+  {{ phase-1/main.sh }}
 fi

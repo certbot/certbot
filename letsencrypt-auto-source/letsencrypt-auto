@@ -138,28 +138,6 @@ su_sudo() {
   su root -c "$args"
 }
 
-BootstrapMessage() {
-  # Arguments: Platform name
-  say "Bootstrapping dependencies for $1... (you can skip this with --no-bootstrap)"
-}
-
-ExperimentalBootstrap() {
-  # Arguments: Platform name, bootstrap function name
-  if [ "$DEBUG" = 1 ]; then
-    if [ "$2" != "" ]; then
-      BootstrapMessage $1
-      $2
-    fi
-  else
-    error "FATAL: $1 support is very experimental at present..."
-    error "if you would like to work on improving it, please ensure you have backups"
-    error "and then run this script again with the --debug flag!"
-    error "Alternatively, you can install OS dependencies yourself and run this script"
-    error "again with --no-bootstrap."
-    exit 1
-  fi
-}
-
 DeterminePythonVersion() {
   for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
     # Break (while keeping the LE_PYTHON value) if found.
@@ -179,103 +157,9 @@ DeterminePythonVersion() {
   fi
 }
 
-# Install required OS packages:
-Bootstrap() {
-  if [ "$NO_BOOTSTRAP" = 1 ]; then
-      return
-  elif [ -f /etc/debian_version ]; then
-    BootstrapMessage "Debian-based OSes"
-    BootstrapDebCommon
-  elif [ -f /etc/mageia-release ]; then
-    # Mageia has both /etc/mageia-release and /etc/redhat-release
-    ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
-  elif [ -f /etc/redhat-release ]; then
-    BootstrapMessage "RedHat-based OSes"
-    BootstrapRpmCommon
-  elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
-    BootstrapMessage "openSUSE-based OSes"
-    BootstrapSuseCommon
-  elif [ -f /etc/arch-release ]; then
-    if [ "$DEBUG" = 1 ]; then
-      BootstrapMessage "Archlinux"
-      BootstrapArchCommon
-    else
-      error "Please use pacman to install letsencrypt packages:"
-      error "# pacman -S certbot certbot-apache"
-      error
-      error "If you would like to use the virtualenv way, please run the script again with the"
-      error "--debug flag."
-      exit 1
-    fi
-  elif [ -f /etc/manjaro-release ]; then
-    ExperimentalBootstrap "Manjaro Linux" BootstrapArchCommon
-  elif [ -f /etc/gentoo-release ]; then
-    ExperimentalBootstrap "Gentoo" BootstrapGentooCommon
-  elif uname | grep -iq FreeBSD ; then
-    ExperimentalBootstrap "FreeBSD" BootstrapFreeBsd
-  elif uname | grep -iq Darwin ; then
-    ExperimentalBootstrap "macOS" BootstrapMac
-  elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
-    ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
-  elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
-    ExperimentalBootstrap "Joyent SmartOS Zone" BootstrapSmartOS
-  else
-    error "Sorry, I don't know how to bootstrap Certbot on your operating system!"
-    error
-    error "You will need to install OS dependencies, configure virtualenv, and run pip install manually."
-    error "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
-    error "for more info."
-    exit 1
-  fi
-}
-
 TempDir() {
   mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || macOS
 }
-
-# Support for busybox and others where there is no "command",
-# but "which" instead
-if command -v command > /dev/null 2>&1 ; then
-  export EXISTS="command -v"
-elif which which > /dev/null 2>&1 ; then
-  export EXISTS="which"
-else
-  error "Cannot find command nor which... please install one!"
-  exit 1
-fi
-
-
-SUDO_ENV=""
-export CERTBOT_AUTO="$0"
-if [ -n "${LE_AUTO_SUDO+x}" ]; then
-  case "$LE_AUTO_SUDO" in
-    su_sudo|su)
-      SUDO=su_sudo
-      ;;
-    sudo)
-      SUDO=sudo
-      SUDO_ENV="CERTBOT_AUTO=$0"
-      ;;
-    '') ;; # Nothing to do for plain root method.
-    *)
-      error "Error: unknown root authorization mechanism '$LE_AUTO_SUDO'."
-      exit 1
-  esac
-  say "Using preset root authorization mechanism '$LE_AUTO_SUDO'."
-else
-  if test "`id -u`" -ne "0" ; then
-    if $EXISTS sudo 1>/dev/null 2>&1; then
-      SUDO=sudo
-      SUDO_ENV="CERTBOT_AUTO=$0"
-    else
-      say \"sudo\" is not available, will use \"su\" for installation steps...
-      SUDO=su_sudo
-    fi
-  else
-    SUDO=
-  fi
-fi
-
 BootstrapDebCommon() {
   # Current version tested with:
   #
@@ -656,8 +540,123 @@ BootstrapMageiaCommon() {
 }
 
 
+BootstrapMessage() {
+  # Arguments: Platform name
+  say "Bootstrapping dependencies for $1... (you can skip this with --no-bootstrap)"
+}
+
+ExperimentalBootstrap() {
+  # Arguments: Platform name, bootstrap function name
+  if [ "$DEBUG" = 1 ]; then
+    if [ "$2" != "" ]; then
+      BootstrapMessage $1
+      $2
+    fi
+  else
+    error "FATAL: $1 support is very experimental at present..."
+    error "if you would like to work on improving it, please ensure you have backups"
+    error "and then run this script again with the --debug flag!"
+    error "Alternatively, you can install OS dependencies yourself and run this script"
+    error "again with --no-bootstrap."
+    exit 1
+  fi
+}
+
+# Install required OS packages:
+Bootstrap() {
+  if [ "$NO_BOOTSTRAP" = 1 ]; then
+      return
+  elif [ -f /etc/debian_version ]; then
+    BootstrapMessage "Debian-based OSes"
+    BootstrapDebCommon
+  elif [ -f /etc/mageia-release ]; then
+    # Mageia has both /etc/mageia-release and /etc/redhat-release
+    ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
+  elif [ -f /etc/redhat-release ]; then
+    BootstrapMessage "RedHat-based OSes"
+    BootstrapRpmCommon
+  elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
+    BootstrapMessage "openSUSE-based OSes"
+    BootstrapSuseCommon
+  elif [ -f /etc/arch-release ]; then
+    if [ "$DEBUG" = 1 ]; then
+      BootstrapMessage "Archlinux"
+      BootstrapArchCommon
+    else
+      error "Please use pacman to install letsencrypt packages:"
+      error "# pacman -S certbot certbot-apache"
+      error
+      error "If you would like to use the virtualenv way, please run the script again with the"
+      error "--debug flag."
+      exit 1
+    fi
+  elif [ -f /etc/manjaro-release ]; then
+    ExperimentalBootstrap "Manjaro Linux" BootstrapArchCommon
+  elif [ -f /etc/gentoo-release ]; then
+    ExperimentalBootstrap "Gentoo" BootstrapGentooCommon
+  elif uname | grep -iq FreeBSD ; then
+    ExperimentalBootstrap "FreeBSD" BootstrapFreeBsd
+  elif uname | grep -iq Darwin ; then
+    ExperimentalBootstrap "macOS" BootstrapMac
+  elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
+    ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
+  elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
+    ExperimentalBootstrap "Joyent SmartOS Zone" BootstrapSmartOS
+  else
+    error "Sorry, I don't know how to bootstrap Certbot on your operating system!"
+    error
+    error "You will need to install OS dependencies, configure virtualenv, and run pip install manually."
+    error "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
+    error "for more info."
+    exit 1
+  fi
+}
+
+# Support for busybox and others where there is no "command",
+# but "which" instead
+if command -v command > /dev/null 2>&1 ; then
+  export EXISTS="command -v"
+elif which which > /dev/null 2>&1 ; then
+  export EXISTS="which"
+else
+  error "Cannot find command nor which... please install one!"
+  exit 1
+fi
+
+
+SUDO_ENV=""
+export CERTBOT_AUTO="$0"
+if [ -n "${LE_AUTO_SUDO+x}" ]; then
+  case "$LE_AUTO_SUDO" in
+    su_sudo|su)
+      SUDO=su_sudo
+      ;;
+    sudo)
+      SUDO=sudo
+      SUDO_ENV="CERTBOT_AUTO=$0"
+      ;;
+    '') ;; # Nothing to do for plain root method.
+    *)
+      error "Error: unknown root authorization mechanism '$LE_AUTO_SUDO'."
+      exit 1
+  esac
+  say "Using preset root authorization mechanism '$LE_AUTO_SUDO'."
+else
+  if test "`id -u`" -ne "0" ; then
+    if $EXISTS sudo 1>/dev/null 2>&1; then
+      SUDO=sudo
+      SUDO_ENV="CERTBOT_AUTO=$0"
+    else
+      say \"sudo\" is not available, will use \"su\" for installation steps...
+      SUDO=su_sudo
+    fi
+  else
+    SUDO=
+  fi
+fi
+
 if [ "$1" = "--le-auto-phase2" ]; then
-  # Phase 2: Create venv, install LE, and run.
+    # Phase 2: Create venv, install LE, and run.
 
   shift 1  # the --le-auto-phase2 arg
   if [ -f "$VENV_BIN/letsencrypt" ]; then
@@ -1086,11 +1085,8 @@ UNLIKELY_EOF
     # sudo
     $SUDO "$SUDO_ENV" "$VENV_BIN/letsencrypt" "$@"
   fi
-
-
 else
-
-  # Phase 1: Upgrade certbot-auto if necessary, then self-invoke.
+    # Phase 1: Upgrade certbot-auto if necessary, then self-invoke.
   #
   # Each phase checks the version of only the thing it is responsible for
   # upgrading. Phase 1 checks the version of the latest release of
