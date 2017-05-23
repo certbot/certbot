@@ -29,9 +29,6 @@ PREVIOUS_SSL_OPTIONS_HASHES = [
 ]
 """SHA256 hashes of the contents of previous versions of MOD_SSL_CONF_SRC"""
 
-CURRENT_SSL_OPTIONS_HASH = '394732f2bbe3e5e637c3fb5c6e980a1f1b90b01e2e8d6b7cff41dde16e2a756d'
-"""SHA256 hash of the current contents of MOD_SSL_CONF_SRC"""
-
 def os_constant(key):
     # XXX TODO: In the future, this could return different constants
     #           based on what OS we are running under.  To see an
