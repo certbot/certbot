@@ -1,5 +1,6 @@
-
-
+TempDir() {
+  mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || macOS
+}
 
 DeterminePythonVersion() {
   for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do

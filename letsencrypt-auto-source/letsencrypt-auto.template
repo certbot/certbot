@@ -180,13 +180,11 @@ fi
 
 {{ utils.sh }}
 {{ bootstrap/main.sh }}
-
-TempDir() {
-  mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || macOS
-}
+{{ phase-1/main.sh }}
+{{ phase-2/main.sh }}
 
 if [ "$1" = "--le-auto-phase2" ]; then
-  {{ phase-2/main.sh }}
+  Phase2
 else
-  {{ phase-1/main.sh }}
+  Phase1
 fi

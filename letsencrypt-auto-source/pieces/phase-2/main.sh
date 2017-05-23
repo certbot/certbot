@@ -1,3 +1,4 @@
+Phase2() {
   # Phase 2: Create venv, install LE, and run.
 
   shift 1  # the --le-auto-phase2 arg
@@ -92,3 +93,4 @@ UNLIKELY_EOF
     # sudo
     $SUDO "$SUDO_ENV" "$VENV_BIN/letsencrypt" "$@"
   fi
+}
