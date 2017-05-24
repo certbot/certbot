@@ -172,12 +172,12 @@ cd ~-
 for pkg in $SUBPKGS ; do
     echo $pkg==$version \\
     pip hash dist."$version/$pkg"/*.{whl,gz} | grep "^--hash" | python2 -c 'from sys import stdin; input = stdin.read(); print "   ", input.replace("\n--hash", " \\\n    --hash"),'
-done > letsencrypt-auto-source/pieces/certbot-requirements.txt
+done > letsencrypt-auto-source/pieces/phase-2/certbot-requirements.txt
 deactivate
 
 # there should be one requirement specifier and two hashes for each subpackage
 expected_count=$(expr $(echo $SUBPKGS | wc -w) \* 3)
-if ! wc -l letsencrypt-auto-source/pieces/certbot-requirements.txt | grep -qE "^\s*$expected_count " ; then
+if ! wc -l letsencrypt-auto-source/pieces/phase-2/certbot-requirements.txt | grep -qE "^\s*$expected_count " ; then
     echo Unexpected pip hash output
     exit 1
 fi
