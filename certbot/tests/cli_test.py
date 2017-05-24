@@ -103,7 +103,7 @@ class ParseTest(unittest.TestCase):
         self._help_output(['--help'])  # assert SystemExit is raised here
         out = self._help_output(['--help', 'all'])
         self.assertTrue("--configurator" in out)
-        self.assertTrue("how a cert is deployed" in out)
+        self.assertTrue("how a certificate is deployed" in out)
         self.assertTrue("--webroot-path" in out)
         self.assertTrue("--text" not in out)
         self.assertTrue("--dialog" not in out)
@@ -161,7 +161,7 @@ class ParseTest(unittest.TestCase):
 
         out = self._help_output(['help', 'all'])
         self.assertTrue("--configurator" in out)
-        self.assertTrue("how a cert is deployed" in out)
+        self.assertTrue("how a certificate is deployed" in out)
         self.assertTrue("--webroot-path" in out)
         self.assertTrue("--text" not in out)
         self.assertTrue("--dialog" not in out)
