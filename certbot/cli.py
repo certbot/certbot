@@ -1224,15 +1224,20 @@ def _plugins_parsing(helpful, plugins):
     helpful.add(["plugins", "certonly"], "--webroot", action="store_true",
                 help='Obtain certificates by placing files in a webroot directory.')
     helpful.add(["plugins", "certonly"], "--dns-cloudflare", action="store_true",
-                help='Obtain certificates using a DNS TXT record (if you are using Cloudflare for DNS).')
+                help=('Obtain certificates using a DNS TXT record (if you are '
+                      'using Cloudflare for DNS).'))
     helpful.add(["plugins", "certonly"], "--dns-cloudxns", action="store_true",
-                help='Obtain certificates using a DNS TXT record (if you are using CloudXNS for DNS).')
+                help=('Obtain certificates using a DNS TXT record (if you are '
+                     'using CloudXNS for DNS).'))
     helpful.add(["plugins", "certonly"], "--dns-digitalocean", action="store_true",
-                help='Obtain certificates using a DNS TXT record (if you are using DigitalOcean for DNS).')
+                help=('Obtain certificates using a DNS TXT record (if you are '
+                      'using DigitalOcean for DNS).'))
     helpful.add(["plugins", "certonly"], "--dns-dnsimple", action="store_true",
-                help='Obtain certificates using a DNS TXT record (if you are using DNSimple for DNS).')
+                help=('Obtain certificates using a DNS TXT record (if you are '
+                      'using DNSimple for DNS).'))
     helpful.add(["plugins", "certonly"], "--dns-google", action="store_true",
-                help='Obtain certificates using a DNS TXT record (if you are using Google Cloud DNS).')
+                help=('Obtain certificates using a DNS TXT record (if you are '
+                      'using Google Cloud DNS).'))
 
     # things should not be reorder past/pre this comment:
     # plugins_group should be displayed in --help before plugin
