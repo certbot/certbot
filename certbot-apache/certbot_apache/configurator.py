@@ -621,7 +621,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     file_paths[realpath] = new_vhost.filep
                     internal_paths[realpath].add(internal_path)
                     vhs.append(new_vhost)
-                    vhost_paths[realpath] = new_vhost.filep
         return vhs
 
     def is_name_vhost(self, target_addr):
