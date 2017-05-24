@@ -3,7 +3,6 @@ import argparse
 import collections
 import logging
 import socket
-import sys
 import threading
 
 import OpenSSL
@@ -13,7 +12,6 @@ import zope.interface
 from acme import challenges
 from acme import standalone as acme_standalone
 
-from certbot import cli
 from certbot import errors
 from certbot import interfaces
 
@@ -114,39 +112,57 @@ class ServerManager(object):
 SUPPORTED_CHALLENGES = [challenges.TLSSNI01, challenges.HTTP01]
 
 
-def supported_challenges_validator(data):
-    """Supported challenges validator for the `argparse`.
+class SupportedChallengesAction(argparse.Action):
+    """Action class for parsing standalone_supported_challenges."""
 
-    It should be passed as `type` argument to `add_argument`.
+    def __call__(self, parser, namespace, values, option_string=None):
+        logger.warning(
+            "The standalone specific supported challenges flag is "
+            "deprecated. Please use the --preferred-challenges flag "
+            "instead.")
+        converted_values = self._convert_and_validate(values)
+        namespace.standalone_supported_challenges = converted_values
 
-    """
-    if cli.set_by_cli("standalone_supported_challenges"):
-        sys.stderr.write(
-            "WARNING: The standalone specific "
-            "supported challenges flag is deprecated.\n"
-            "Please use the --preferred-challenges flag instead.\n")
-    challs = data.split(",")
+    def _convert_and_validate(self, data):
+        """Validate the value of supported challenges provided by the user.
 
-    # tls-sni-01 was dvsni during private beta
-    if "dvsni" in challs:
-        logger.info("Updating legacy standalone_supported_challenges value")
-        challs = [challenges.TLSSNI01.typ if chall == "dvsni" else chall
-                  for chall in challs]
-        data = ",".join(challs)
+        References to "dvsni" are automatically converted to "tls-sni-01".
 
-    unrecognized = [name for name in challs
-                    if name not in challenges.Challenge.TYPES]
-    if unrecognized:
-        raise argparse.ArgumentTypeError(
-            "Unrecognized challenges: {0}".format(", ".join(unrecognized)))
+        :param str data: comma delimited list of challenge types
 
-    choices = set(chall.typ for chall in SUPPORTED_CHALLENGES)
-    if not set(challs).issubset(choices):
-        raise argparse.ArgumentTypeError(
-            "Plugin does not support the following (valid) "
-            "challenges: {0}".format(", ".join(set(challs) - choices)))
+        :returns: validated and converted list of challenge types
+        :rtype: str
 
-    return data
+        """
+        challs = data.split(",")
+
+        # tls-sni-01 was dvsni during private beta
+        if "dvsni" in challs:
+            logger.info(
+                "Updating legacy standalone_supported_challenges value")
+            challs = [challenges.TLSSNI01.typ if chall == "dvsni" else chall
+                      for chall in challs]
+            data = ",".join(challs)
+
+        unrecognized = [name for name in challs
+                        if name not in challenges.Challenge.TYPES]
+
+        # argparse.ArgumentErrors raised out of argparse.Action objects
+        # are caught by argparse which prints usage information and the
+        # error that occurred before calling sys.exit.
+        if unrecognized:
+            raise argparse.ArgumentError(
+                self,
+                "Unrecognized challenges: {0}".format(", ".join(unrecognized)))
+
+        choices = set(chall.typ for chall in SUPPORTED_CHALLENGES)
+        if not set(challs).issubset(choices):
+            raise argparse.ArgumentError(
+                self,
+                "Plugin does not support the following (valid) "
+                "challenges: {0}".format(", ".join(set(challs) - choices)))
+
+        return data
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)
@@ -184,7 +200,7 @@ class Authenticator(common.Plugin):
     def add_parser_arguments(cls, add):
         add("supported-challenges",
             help=argparse.SUPPRESS,
-            type=supported_challenges_validator,
+            action=SupportedChallengesAction,
             default=",".join(chall.typ for chall in SUPPORTED_CHALLENGES))
 
     @property

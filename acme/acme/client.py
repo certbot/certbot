@@ -564,6 +564,9 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         except ValueError:
             jobj = None
 
+        if response.status_code == 409:
+            raise errors.ConflictError(response.headers.get('Location'))
+
         if not response.ok:
             if jobj is not None:
                 if response_ct != cls.JSON_ERROR_CONTENT_TYPE:

@@ -620,7 +620,9 @@ class HelpfulArgumentParser(object):
                 % parsed_args.csr[0])
 
         parsed_args.actual_csr = (csr, typ)
-        csr_domains, config_domains = set(domains), set(parsed_args.domains)
+
+        csr_domains = set([d.lower() for d in domains])
+        config_domains = set(parsed_args.domains)
         if csr_domains != config_domains:
             raise errors.ConfigurationError(
                 "Inconsistent domain requests:\nFrom the CSR: {0}\nFrom command line/config: {1}"
@@ -1109,10 +1111,13 @@ def _create_subparsers(helpful):
     helpful.add(
         None, "--user-agent", default=None,
         help="Set a custom user agent string for the client. User agent strings allow "
-             "the CA to collect high level statistics about success rates by OS and "
-             "plugin. If you wish to hide your server OS version from the Let's "
+             "the CA to collect high level statistics about success rates by OS, "
+             "plugin and use case, and to know when to deprecate support for past Python "
+             "versions and flags. If you wish to hide this information from the Let's "
              'Encrypt server, set this to "". '
-             '(default: {0})'.format(sample_user_agent()))
+             '(default: {0}). The flags encoded in the user agent are: '
+             '--duplicate, --force-renew, --allow-subset-of-names, -n, and '
+             'whether any hooks are set.'.format(sample_user_agent()))
     helpful.add("certonly",
                 "--csr", type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER or PEM format."
@@ -1213,11 +1218,21 @@ def _plugins_parsing(helpful, plugins):
     helpful.add(["plugins", "certonly", "run", "install", "config_changes"],
                 "--nginx", action="store_true", help="Obtain and install certificates using Nginx")
     helpful.add(["plugins", "certonly"], "--standalone", action="store_true",
-                help='Obtain certs using a "standalone" webserver.')
+                help='Obtain certificates using a "standalone" webserver.')
     helpful.add(["plugins", "certonly"], "--manual", action="store_true",
                 help='Provide laborious manual instructions for obtaining a certificate')
     helpful.add(["plugins", "certonly"], "--webroot", action="store_true",
                 help='Obtain certificates by placing files in a webroot directory.')
+    helpful.add(["plugins", "certonly"], "--dns-cloudflare", action="store_true",
+                help='Obtain certificates using a DNS TXT record (if you are using Cloudflare for DNS).')
+    helpful.add(["plugins", "certonly"], "--dns-cloudxns", action="store_true",
+                help='Obtain certificates using a DNS TXT record (if you are using CloudXNS for DNS).')
+    helpful.add(["plugins", "certonly"], "--dns-digitalocean", action="store_true",
+                help='Obtain certificates using a DNS TXT record (if you are using DigitalOcean for DNS).')
+    helpful.add(["plugins", "certonly"], "--dns-dnsimple", action="store_true",
+                help='Obtain certificates using a DNS TXT record (if you are using DNSimple for DNS).')
+    helpful.add(["plugins", "certonly"], "--dns-google", action="store_true",
+                help='Obtain certificates using a DNS TXT record (if you are using Google Cloud DNS).')
 
     # things should not be reorder past/pre this comment:
     # plugins_group should be displayed in --help before plugin

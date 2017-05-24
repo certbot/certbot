@@ -430,7 +430,7 @@ apply appropriate file permissions.
            esac
    done
 
- More information about renewal hooks can be found by running
+More information about renewal hooks can be found by running
 ``certbot --help renew``.
 
 If you're sure that this command executes successfully without human

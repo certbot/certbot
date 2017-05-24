@@ -91,7 +91,7 @@ class NginxTlsSni01(common.TLSSNI01):
         # already in the main config
         included = False
         include_directive = ['\n', 'include', ' ', self.challenge_conf]
-        root = self.configurator.parser.loc["root"]
+        root = self.configurator.parser.config_root
 
         bucket_directive = ['\n', 'server_names_hash_bucket_size', ' ', '128']
 
@@ -157,6 +157,6 @@ class NginxTlsSni01(common.TLSSNI01):
                           self.configurator.config.work_dir, 'error.log')],
                       ['ssl_certificate', ' ', self.get_cert_path(achall)],
                       ['ssl_certificate_key', ' ', self.get_key_path(achall)],
-                      [['location', ' ', '/'], [['root', ' ', document_root]]]] +
-                     self.configurator.parser.loc["ssl_options"])
+                      ['include', ' ', self.configurator.mod_ssl_conf],
+                      [['location', ' ', '/'], [['root', ' ', document_root]]]])
         return [['server'], block]

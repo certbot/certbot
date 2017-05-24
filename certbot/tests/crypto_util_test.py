@@ -163,7 +163,7 @@ class ImportCSRFileTest(unittest.TestCase):
              util.CSR(file=csrfile,
                       data=data_pem,
                       form="pem"),
-             ["example.com"],),
+             ["Example.com"],),
             self._call(csrfile, data))
 
     def test_pem_csr(self):
@@ -175,7 +175,7 @@ class ImportCSRFileTest(unittest.TestCase):
              util.CSR(file=csrfile,
                       data=data,
                       form="pem"),
-             ["example.com"],),
+             ["Example.com"],),
             self._call(csrfile, data))
 
     def test_bad_csr(self):
@@ -291,6 +291,15 @@ class NotAfterTest(unittest.TestCase):
         from certbot.crypto_util import notAfter
         self.assertEqual(notAfter(CERT_PATH).isoformat(),
                          '2014-12-18T22:34:45+00:00')
+
+
+class Sha256sumTest(unittest.TestCase):
+    """Tests for certbot.crypto_util.notAfter"""
+
+    def test_sha256sum(self):
+        from certbot.crypto_util import sha256sum
+        self.assertEqual(sha256sum(CERT_PATH),
+            '914ffed8daf9e2c99d90ac95c77d54f32cbd556672facac380f0c063498df84e')
 
 
 if __name__ == '__main__':

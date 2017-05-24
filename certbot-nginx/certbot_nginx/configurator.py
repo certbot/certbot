@@ -139,6 +139,11 @@ class NginxConfigurator(common.Plugin):
         """Full absolute path to SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.MOD_SSL_CONF_DEST)
 
+    @property
+    def updated_mod_ssl_conf_digest(self):
+        """Full absolute path to digest of updated SSL configuration file."""
+        return os.path.join(self.config.config_dir, constants.UPDATED_MOD_SSL_CONF_DIGEST)
+
     # This is called in determine_authenticator and determine_installer
     def prepare(self):
         """Prepare the authenticator/installer.
@@ -153,14 +158,22 @@ class NginxConfigurator(common.Plugin):
         # Make sure configuration is valid
         self.config_test()
 
-        # temp_install must be run before creating the NginxParser
-        temp_install(self.mod_ssl_conf)
-        self.parser = parser.NginxParser(
-            self.conf('server-root'), self.mod_ssl_conf)
+
+        self.parser = parser.NginxParser(self.conf('server-root'))
+
+        install_ssl_options_conf(self.mod_ssl_conf, self.updated_mod_ssl_conf_digest)
 
         # Set Version
         if self.version is None:
             self.version = self.get_version()
+
+        # Prevent two Nginx plugins from modifying a config at once
+        try:
+            util.lock_dir_until_exit(self.conf('server-root'))
+        except (OSError, errors.LockError):
+            logger.debug('Encountered error:', exc_info=True)
+            raise errors.PluginError(
+                'Unable to lock %s', self.conf('server-root'))
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path,
@@ -444,14 +457,11 @@ class NginxConfigurator(common.Plugin):
 
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
 
-        # the options file doesn't have a newline at the beginning, but there
-        # needs to be one when it's dropped into the file
         ssl_block = (
             [['\n    ', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
              ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
              ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
-             ['\n']] +
-            self.parser.loc["ssl_options"])
+             ['\n    ', 'include', ' ', self.mod_ssl_conf]])
 
         self.parser.add_server_directives(
             vhost, ssl_block, replace=False)
@@ -669,7 +679,7 @@ class NginxConfigurator(common.Plugin):
             "Configures Nginx to authenticate and install HTTPS.{0}"
             "Server root: {root}{0}"
             "Version: {version}".format(
-                os.linesep, root=self.parser.loc["root"],
+                os.linesep, root=self.parser.config_root,
                 version=".".join(str(i) for i in self.version))
         )
 
@@ -857,8 +867,38 @@ def nginx_restart(nginx_ctl, nginx_conf):
     time.sleep(1)
 
 
-def temp_install(options_ssl):
-    """Temporary install for convenience."""
+def install_ssl_options_conf(options_ssl, options_ssl_digest):
+    """Copy Certbot's SSL options file into the system's config dir if required."""
+    def _write_current_hash():
+        with open(options_ssl_digest, "w") as f:
+            f.write(constants.CURRENT_SSL_OPTIONS_HASH)
+
+    def _install_current_file():
+        shutil.copyfile(constants.MOD_SSL_CONF_SRC, options_ssl)
+        _write_current_hash()
+
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):
-        shutil.copyfile(constants.MOD_SSL_CONF_SRC, options_ssl)
+        _install_current_file()
+        return
+    # there's already a file there. if it exactly matches a previous file hash,
+    # we can update it. otherwise, print a warning once per new version.
+    active_file_digest = crypto_util.sha256sum(options_ssl)
+    if active_file_digest in constants.PREVIOUS_SSL_OPTIONS_HASHES: # safe to update
+        _install_current_file()
+    elif active_file_digest == constants.CURRENT_SSL_OPTIONS_HASH: # already up to date
+        return
+    else: # has been manually modified, not safe to update
+        # did they modify the current version or an old version?
+        if os.path.isfile(options_ssl_digest):
+            with open(options_ssl_digest, "r") as f:
+                saved_digest = f.read()
+            # they modified it after we either installed or told them about this version, so return
+            if saved_digest == constants.CURRENT_SSL_OPTIONS_HASH:
+                return
+        # there's a new version but we couldn't update the file, or they deleted the digest.
+        # save the current digest so we only print this once, and print a warning
+        _write_current_hash()
+        logger.warning("%s has been manually modified; updated ssl configuration options "
+            "saved to %s. We recommend updating %s for security purposes.",
+            options_ssl, constants.MOD_SSL_CONF_SRC, options_ssl)

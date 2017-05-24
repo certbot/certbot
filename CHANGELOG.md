@@ -2,6 +2,52 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.14.1 - 2017-05-16
+
+### Fixed
+
+* Certbot now works with configargparse 0.12.0.
+* Issues with the Apache plugin and Augeas 1.7+ have been resolved.
+* A problem where the Nginx plugin would fail to install certificates on
+systems that had the plugin's SSL/TLS options file from 7+ months ago has been
+fixed.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.14.1+is%3Aclosed
+
+## 0.14.0 - 2017-05-04
+
+### Added
+
+* Python 3.3+ support for all Certbot packages. `certbot-auto` still currently
+only supports Python 2, but the `acme`, `certbot`, `certbot-apache`, and
+`certbot-nginx` packages on PyPI now fully support Python 2.6, 2.7, and 3.3+.
+* Certbot's Apache plugin now handles multiple virtual hosts per file.
+* Lockfiles to prevent multiple versions of Certbot running simultaneously.
+
+### Changed
+
+* When converting an HTTP virtual host to HTTPS in Apache, Certbot only copies
+the virtual host rather than the entire contents of the file it's contained
+in.
+* The Nginx plugin now includes SSL/TLS directives in a separate file located
+in Certbot's configuration directory rather than copying the contents of the
+file into every modified `server` block.
+
+### Fixed
+
+* Ensure logging is configured before parts of Certbot attempt to log any
+messages.
+* Support for the `--quiet` flag in `certbot-auto`.
+* Reverted a change made in a previous release to make the `acme` and `certbot`
+packages always depend on `argparse`. This dependency is conditional again on
+the user's Python version.
+* Small bugs in the Nginx plugin such as properly handling empty `server`
+blocks and setting `server_names_hash_bucket_size` during challenges.
+
+As always, a more complete list of changes can be found on GitHub:
+https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.14.0+is%3Aclosed
+
 ## 0.13.0 - 2017-04-06
 
 ### Added

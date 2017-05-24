@@ -13,7 +13,7 @@ from certbot_nginx import parser
 from certbot_nginx.tests import util
 
 
-class NginxParserTest(util.NginxTest):
+class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
     """Nginx Parser Test."""
 
     def setUp(self):
@@ -27,22 +27,22 @@ class NginxParserTest(util.NginxTest):
     def test_root_normalized(self):
         path = os.path.join(self.temp_dir, "etc_nginx/////"
                             "ubuntu_nginx/../../etc_nginx")
-        nparser = parser.NginxParser(path, None)
+        nparser = parser.NginxParser(path)
         self.assertEqual(nparser.root, self.config_path)
 
     def test_root_absolute(self):
-        nparser = parser.NginxParser(os.path.relpath(self.config_path), None)
+        nparser = parser.NginxParser(os.path.relpath(self.config_path))
         self.assertEqual(nparser.root, self.config_path)
 
     def test_root_no_trailing_slash(self):
-        nparser = parser.NginxParser(self.config_path + os.path.sep, None)
+        nparser = parser.NginxParser(self.config_path + os.path.sep)
         self.assertEqual(nparser.root, self.config_path)
 
     def test_load(self):
         """Test recursive conf file parsing.
 
         """
-        nparser = parser.NginxParser(self.config_path, self.ssl_options)
+        nparser = parser.NginxParser(self.config_path)
         nparser.load()
         self.assertEqual(set([nparser.abs_path(x) for x in
                               ['foo.conf', 'nginx.conf', 'server.conf',
@@ -62,13 +62,13 @@ class NginxParserTest(util.NginxTest):
                              'sites-enabled/example.com')])
 
     def test_abs_path(self):
-        nparser = parser.NginxParser(self.config_path, self.ssl_options)
+        nparser = parser.NginxParser(self.config_path)
         self.assertEqual('/etc/nginx/*', nparser.abs_path('/etc/nginx/*'))
         self.assertEqual(os.path.join(self.config_path, 'foo/bar/'),
                          nparser.abs_path('foo/bar/'))
 
     def test_filedump(self):
-        nparser = parser.NginxParser(self.config_path, self.ssl_options)
+        nparser = parser.NginxParser(self.config_path)
         nparser.filedump('test', lazy=False)
         # pylint: disable=protected-access
         parsed = nparser._parse_files(nparser.abs_path(
@@ -106,7 +106,7 @@ class NginxParserTest(util.NginxTest):
             self.assertEqual(paths, result)
 
     def test_get_vhosts_global_ssl(self):
-        nparser = parser.NginxParser(self.config_path, self.ssl_options)
+        nparser = parser.NginxParser(self.config_path)
         vhosts = nparser.get_vhosts()
 
         vhost = obj.VirtualHost(nparser.abs_path('sites-enabled/globalssl.com'),
@@ -117,7 +117,7 @@ class NginxParserTest(util.NginxTest):
         self.assertEqual(vhost, globalssl_com)
 
     def test_get_vhosts(self):
-        nparser = parser.NginxParser(self.config_path, self.ssl_options)
+        nparser = parser.NginxParser(self.config_path)
         vhosts = nparser.get_vhosts()
 
         vhost1 = obj.VirtualHost(nparser.abs_path('nginx.conf'),
@@ -161,7 +161,7 @@ class NginxParserTest(util.NginxTest):
         self.assertEqual(vhost2, somename)
 
     def test_has_ssl_on_directive(self):
-        nparser = parser.NginxParser(self.config_path, self.ssl_options)
+        nparser = parser.NginxParser(self.config_path)
         mock_vhost = obj.VirtualHost(None, None, None, None, None,
               [['listen', 'myhost default_server'],
                ['server_name', 'www.example.org'],
@@ -181,7 +181,7 @@ class NginxParserTest(util.NginxTest):
         self.assertTrue(nparser.has_ssl_on_directive(mock_vhost))
 
     def test_add_server_directives(self):
-        nparser = parser.NginxParser(self.config_path, self.ssl_options)
+        nparser = parser.NginxParser(self.config_path)
         mock_vhost = obj.VirtualHost(nparser.abs_path('nginx.conf'),
                                      None, None, None,
                                      set(['localhost',
@@ -230,8 +230,35 @@ class NginxParserTest(util.NginxTest):
                            ['ssl_certificate', '/etc/ssl/cert2.pem']],
                           replace=False)
 
+    def test_comment_is_repeatable(self):
+        nparser = parser.NginxParser(self.config_path)
+        example_com = nparser.abs_path('sites-enabled/example.com')
+        mock_vhost = obj.VirtualHost(example_com,
+                                     None, None, None,
+                                     set(['.example.com', 'example.*']),
+                                     None, [0])
+        nparser.add_server_directives(mock_vhost,
+                                      [['\n  ', '#', ' ', 'what a nice comment']],
+                                      replace=False)
+        nparser.add_server_directives(mock_vhost,
+                                      [['\n  ', 'include', ' ',
+                                      nparser.abs_path('comment_in_file.conf')]],
+                                      replace=False)
+        from certbot_nginx.parser import COMMENT
+        self.assertEqual(nparser.parsed[example_com],
+            [[['server'], [['listen', '69.50.225.155:9000'],
+                           ['listen', '127.0.0.1'],
+                           ['server_name', '.example.com'],
+                           ['server_name', 'example.*'],
+                           ['#', ' ', 'what a nice comment'],
+                           [],
+                           ['include', nparser.abs_path('comment_in_file.conf')],
+                           ['#', COMMENT],
+                           []]]]
+)
+
     def test_replace_server_directives(self):
-        nparser = parser.NginxParser(self.config_path, self.ssl_options)
+        nparser = parser.NginxParser(self.config_path)
         target = set(['.example.com', 'example.*'])
         filep = nparser.abs_path('sites-enabled/example.com')
         mock_vhost = obj.VirtualHost(filep, None, None, None, target, None, [0])
@@ -302,6 +329,33 @@ class NginxParserTest(util.NginxTest):
             COMMENT_BLOCK,
             ["\n", "e", " ", "f"]])
 
+    def test_comment_out_directive(self):
+        server_block = nginxparser.loads("""
+            server {
+                listen 80;
+                root /var/www/html;
+                index star.html;
+
+                server_name *.functorkitten.xyz;
+                ssl_session_timeout 1440m; ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+
+                ssl_prefer_server_ciphers on;
+            }""")
+        block = server_block[0][1]
+        from certbot_nginx.parser import _comment_out_directive
+        _comment_out_directive(block, 4, "blah1")
+        _comment_out_directive(block, 5, "blah2")
+        _comment_out_directive(block, 6, "blah3")
+        self.assertEqual(block.spaced, [
+            ['\n                ', 'listen', ' ', '80'],
+            ['\n                ', 'root', ' ', '/var/www/html'],
+            ['\n                ', 'index', ' ', 'star.html'],
+            ['\n\n                ', 'server_name', ' ', '*.functorkitten.xyz'],
+            ['\n                ', '#', ' ssl_session_timeout 1440m; # duplicated in blah1'],
+            [' ', '#', ' ssl_protocols TLSv1 TLSv1.1 TLSv1.2; # duplicated in blah2'],
+            ['\n\n                ', '#', ' ssl_prefer_server_ciphers on; # duplicated in blah3'],
+            '\n            '])
+
     def test_parse_server_raw_ssl(self):
         server = parser._parse_server_raw([ #pylint: disable=protected-access
             ['listen', '443']
@@ -330,33 +384,12 @@ class NginxParserTest(util.NginxTest):
         self.assertEqual(len(server['addrs']), 0)
 
     def test_parse_server_global_ssl_applied(self):
-        nparser = parser.NginxParser(self.config_path, self.ssl_options)
+        nparser = parser.NginxParser(self.config_path)
         server = nparser.parse_server([
             ['listen', '443']
         ])
         self.assertTrue(server['ssl'])
 
-    def test_ssl_options_should_be_parsed_ssl_directives(self):
-        nparser = parser.NginxParser(self.config_path, self.ssl_options)
-        self.assertEqual(nginxparser.UnspacedList(nparser.loc["ssl_options"]),
-                         [['ssl_session_cache', 'shared:le_nginx_SSL:1m'],
-                          ['ssl_session_timeout', '1440m'],
-                          ['ssl_protocols', 'TLSv1', 'TLSv1.1', 'TLSv1.2'],
-                          ['ssl_prefer_server_ciphers', 'on'],
-                          ['ssl_ciphers', '"ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-'+
-                          'RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:'+
-                          'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-'+
-                          'SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-'+
-                          'SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-'+
-                          'SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:'+
-                          'ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-'+
-                          'AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:'+
-                          'DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-'+
-                          'SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-'+
-                          'RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:'+
-                          'AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:'+
-                          'AES256-SHA:DES-CBC3-SHA:!DSS"']
-                         ])
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
