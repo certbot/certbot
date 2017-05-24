@@ -98,7 +98,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
             if part is not None)
 
 
-class _Constant(jose.JSONDeSerializable, collections.Hashable):  # type: ignore
+class _Constant(jose.JSONDeSerializable, collections.Hashable):
     """ACME constant."""
     __slots__ = ('name',)
     POSSIBLE_NAMES = NotImplemented

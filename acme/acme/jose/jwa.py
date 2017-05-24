@@ -28,7 +28,7 @@ class JWA(interfaces.JSONDeSerializable):  # pylint: disable=abstract-method
     """JSON Web Algorithm."""
 
 
-class JWASignature(JWA, collections.Hashable):  # type: ignore
+class JWASignature(JWA, collections.Hashable):
     """JSON Web Signature Algorithm."""
     SIGNATURES = {}  # type: dict
 

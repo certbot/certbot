@@ -1,5 +1,8 @@
 """JOSE errors."""
 
+MYPY = False
+if MYPY:
+    from typing import Any  # pylint: disable=import-error, unused-import
 
 class Error(Exception):
     """Generic JOSE Error."""
@@ -26,6 +29,7 @@ class UnrecognizedTypeError(DeserializationError):
     """
 
     def __init__(self, typ, jobj):
+        # type: (str, Any) -> None
         self.typ = typ
         self.jobj = jobj
         super(UnrecognizedTypeError, self).__init__(str(self))

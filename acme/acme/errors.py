@@ -1,6 +1,12 @@
 """ACME errors."""
 from acme.jose import errors as jose_errors
 
+MYPY = False
+if MYPY:
+    from typing import Any, Set, Mapping  # pylint: disable=import-error, unused-import
+    from requests import Response  # pylint: disable=unused-import
+    from acme.messages import AuthorizationResource as AR  # pylint: disable=unused-import
+
 
 class Error(Exception):
     """Generic ACME error."""
@@ -29,6 +35,7 @@ class NonceError(ClientError):
 class BadNonce(NonceError):
     """Bad nonce error."""
     def __init__(self, nonce, error, *args, **kwargs):
+        # type: (str, Any, Any, Any) -> None
         super(BadNonce, self).__init__(*args, **kwargs)
         self.nonce = nonce
         self.error = error
@@ -48,6 +55,7 @@ class MissingNonce(NonceError):
 
     """
     def __init__(self, response, *args, **kwargs):
+        # type: (Response, Any, Any) -> None
         super(MissingNonce, self).__init__(*args, **kwargs)
         self.response = response
 
@@ -70,6 +78,7 @@ class PollError(ClientError):
 
     """
     def __init__(self, exhausted, updated):
+        # type: (Set[AR], Mapping[AR, AR]) -> None
         self.exhausted = exhausted
         self.updated = updated
         super(PollError, self).__init__()
