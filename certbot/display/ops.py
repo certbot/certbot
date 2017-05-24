@@ -340,7 +340,8 @@ def validated_directory(validator, *args, **kwargs):
         supplied input. If the method raises a `errors.Error`, its
         text will be displayed and the user will be re-prompted.
     :param list `*args`: Arguments to be passed to `~certbot.interfaces.IDisplay.directory_select`.
-    :param dict `**kwargs`: Arguments to be passed to `~certbot.interfaces.IDisplay.directory_select`.
+    :param dict `**kwargs`: Arguments to be passed to
+        `~certbot.interfaces.IDisplay.directory_select`.
     :return: as `~certbot.interfaces.IDisplay.directory_select`
     :rtype: tuple
     """
