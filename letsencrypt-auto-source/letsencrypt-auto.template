@@ -180,11 +180,9 @@ fi
 
 {{ utils.sh }}
 {{ bootstrap/main.sh }}
-{{ phase-1/main.sh }}
-{{ phase-2/main.sh }}
 
 if [ "$1" = "--le-auto-phase2" ]; then
-  Phase2
+  {{ phase-2/main.sh }}
 else
-  Phase1
+  {{ phase-1/main.sh }}
 fi

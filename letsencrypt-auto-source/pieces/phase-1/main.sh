@@ -1,4 +1,3 @@
-Phase1() {
   # Phase 1: Upgrade certbot-auto if necessary, then self-invoke.
   #
   # Each phase checks the version of only the thing it is responsible for
@@ -54,4 +53,3 @@ UNLIKELY_EOF
   fi  # Self-upgrading is allowed.
 
   "$0" --le-auto-phase2 "$@"
-}
