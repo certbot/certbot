@@ -36,13 +36,13 @@ version = meta['version']
 # https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
     'acme=={0}'.format(version),
-    'argparse',
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
     # saying so here causes a runtime error against our temporary fork of 0.9.3
     # in which we added 2.6 support (see #2243), so we relax the requirement.
     'ConfigArgParse>=0.9.3',
     'configobj',
     'cryptography>=0.7',  # load_pem_x509_certificate
+    'mock',
     'parsedatetime>=1.3',  # Calendar.parseDT
     'PyOpenSSL',
     'pyrfc3339',
@@ -55,14 +55,12 @@ install_requires = [
     'zope.interface',
 ]
 
-# env markers in extras_require cause problems with older pip: #517
-# Keep in sync with conditional_requirements.py.
+# env markers cause problems with older pip and setuptools
 if sys.version_info < (2, 7):
     install_requires.extend([
-        'mock<1.1.0',
+        'argparse',
+        'ordereddict',
     ])
-else:
-    install_requires.append('mock')
 
 dev_extras = [
     # Pin astroid==1.3.5, pylint==1.4.2 as a workaround for #289
@@ -78,7 +76,8 @@ dev_extras = [
 
 docs_extras = [
     'repoze.sphinx.autointerface',
-    'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
+    # autodoc_member_order = 'bysource', autodoc_default_flags, and #4686
+    'Sphinx >=1.0,<=1.5.6',
     'sphinx_rtd_theme',
 ]
 
@@ -102,6 +101,11 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',

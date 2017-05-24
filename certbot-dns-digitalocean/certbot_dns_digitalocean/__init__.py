@@ -1,0 +1,1 @@
+"""DigitalOcean DNS Authenticator"""

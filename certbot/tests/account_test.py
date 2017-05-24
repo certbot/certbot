@@ -1,9 +1,9 @@
 """Tests for certbot.account."""
 import datetime
+import json
 import os
 import shutil
 import stat
-import tempfile
 import unittest
 
 import mock
@@ -15,6 +15,8 @@ from acme import messages
 from certbot import errors
 
 from certbot.tests import util
+
+from certbot.tests.util import TempDirTestCase
 
 
 KEY = jose.JWKRSA.load(util.load_vector("rsa512_key_2.pem"))
@@ -31,6 +33,7 @@ class AccountTest(unittest.TestCase):
             creation_dt=datetime.datetime(
                 2015, 7, 4, 14, 4, 10, tzinfo=pytz.UTC))
         self.acc = Account(self.regr, KEY, self.meta)
+        self.regr.__repr__ = mock.MagicMock(return_value="i_am_a_regr")
 
         with mock.patch("certbot.account.socket") as mock_socket:
             mock_socket.getfqdn.return_value = "test.certbot.org"
@@ -52,10 +55,8 @@ class AccountTest(unittest.TestCase):
             self.acc.slug, "test.certbot.org@2015-07-04T14:04:10Z (bca5)")
 
     def test_repr(self):
-        self.assertEqual(
-            repr(self.acc),
-            "<Account(bca5889f66457d5b62fbba7b25f9ab6f)>")
-
+        self.assertTrue(repr(self.acc).startswith(
+          "<Account(i_am_a_regr, bca5889f66457d5b62fbba7b25f9ab6f, Meta("))
 
 class ReportNewAccountTest(unittest.TestCase):
     """Tests for certbot.account.report_new_account."""
@@ -90,37 +91,39 @@ class AccountMemoryStorageTest(unittest.TestCase):
         account = mock.Mock(id="x")
         self.assertEqual([], self.storage.find_all())
         self.assertRaises(errors.AccountNotFound, self.storage.load, "x")
-        self.storage.save(account)
+        self.storage.save(account, None)
         self.assertEqual([account], self.storage.find_all())
         self.assertEqual(account, self.storage.load("x"))
-        self.storage.save(account)
+        self.storage.save(account, None)
         self.assertEqual([account], self.storage.find_all())
 
 
-class AccountFileStorageTest(unittest.TestCase):
+class AccountFileStorageTest(TempDirTestCase):
     """Tests for certbot.account.AccountFileStorage."""
 
     def setUp(self):
-        self.tmp = tempfile.mkdtemp()
+        super(AccountFileStorageTest, self).setUp()
+
         self.config = mock.MagicMock(
-            accounts_dir=os.path.join(self.tmp, "accounts"))
+            accounts_dir=os.path.join(self.tempdir, "accounts"))
         from certbot.account import AccountFileStorage
         self.storage = AccountFileStorage(self.config)
 
         from certbot.account import Account
+        new_authzr_uri = "hi"
         self.acc = Account(
             regr=messages.RegistrationResource(
-                uri=None, new_authzr_uri=None, body=messages.Registration()),
+                uri=None, body=messages.Registration(),
+                new_authzr_uri=new_authzr_uri),
             key=KEY)
-
-    def tearDown(self):
-        shutil.rmtree(self.tmp)
+        self.mock_client = mock.MagicMock()
+        self.mock_client.directory.new_authz = new_authzr_uri
 
     def test_init_creates_dir(self):
         self.assertTrue(os.path.isdir(self.config.accounts_dir))
 
     def test_save_and_restore(self):
-        self.storage.save(self.acc)
+        self.storage.save(self.acc, self.mock_client)
         account_path = os.path.join(self.config.accounts_dir, self.acc.id)
         self.assertTrue(os.path.exists(account_path))
         for file_name in "regr.json", "meta.json", "private_key.json":
@@ -130,10 +133,19 @@ class AccountFileStorageTest(unittest.TestCase):
             account_path, "private_key.json"))[stat.ST_MODE] & 0o777) in ("0400", "0o400"))
 
         # restore
-        self.assertEqual(self.acc, self.storage.load(self.acc.id))
+        loaded = self.storage.load(self.acc.id)
+        self.assertEqual(self.acc, loaded)
+
+    def test_save_and_restore_old_version(self):
+        """Saved regr should include a new_authzr_uri for older Certbots"""
+        self.storage.save(self.acc, self.mock_client)
+        path = os.path.join(self.config.accounts_dir, self.acc.id, "regr.json")
+        with open(path, "r") as f:
+            regr = json.load(f)
+        self.assertTrue("new_authzr_uri" in regr)
 
     def test_save_regr(self):
-        self.storage.save_regr(self.acc)
+        self.storage.save_regr(self.acc, self.mock_client)
         account_path = os.path.join(self.config.accounts_dir, self.acc.id)
         self.assertTrue(os.path.exists(account_path))
         self.assertTrue(os.path.exists(os.path.join(
@@ -143,7 +155,7 @@ class AccountFileStorageTest(unittest.TestCase):
                 os.path.join(account_path, file_name)))
 
     def test_find_all(self):
-        self.storage.save(self.acc)
+        self.storage.save(self.acc, self.mock_client)
         self.assertEqual([self.acc], self.storage.find_all())
 
     def test_find_all_none_empty_list(self):
@@ -164,14 +176,14 @@ class AccountFileStorageTest(unittest.TestCase):
         self.assertRaises(errors.AccountNotFound, self.storage.load, "missing")
 
     def test_load_id_mismatch_raises_error(self):
-        self.storage.save(self.acc)
+        self.storage.save(self.acc, self.mock_client)
         shutil.move(os.path.join(self.config.accounts_dir, self.acc.id),
                     os.path.join(self.config.accounts_dir, "x" + self.acc.id))
         self.assertRaises(errors.AccountStorageError, self.storage.load,
                           "x" + self.acc.id)
 
     def test_load_ioerror(self):
-        self.storage.save(self.acc)
+        self.storage.save(self.acc, self.mock_client)
         mock_open = mock.mock_open()
         mock_open.side_effect = IOError
         with mock.patch("six.moves.builtins.open", mock_open):
@@ -183,10 +195,11 @@ class AccountFileStorageTest(unittest.TestCase):
         mock_open.side_effect = IOError  # TODO: [None, None, IOError]
         with mock.patch("six.moves.builtins.open", mock_open):
             self.assertRaises(
-                errors.AccountStorageError, self.storage.save, self.acc)
+                errors.AccountStorageError, self.storage.save,
+                    self.acc, self.mock_client)
 
     def test_delete(self):
-        self.storage.save(self.acc)
+        self.storage.save(self.acc, self.mock_client)
         self.storage.delete(self.acc.id)
         self.assertRaises(errors.AccountNotFound, self.storage.load, self.acc.id)
 

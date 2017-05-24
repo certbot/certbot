@@ -15,6 +15,7 @@ import tarfile
 import tempfile
 import textwrap
 
+import six
 
 _DESCRIPTION = """
 Let's Help is a simple script you can run to help out the Certbot
@@ -69,7 +70,7 @@ def make_and_verify_selection(server_root, temp_dir):
 
     sys.stdout.write("\nIs it safe to submit these files? ")
     while True:
-        ans = raw_input("(Y)es/(N)o: ").lower()
+        ans = six.moves.input("(Y)es/(N)o: ").lower()
         if ans.startswith("y"):
             return
         elif ans.startswith("n"):
@@ -144,7 +145,8 @@ def safe_config_file(config_file):
         return False
 
     proc = subprocess.Popen(["file", config_file],
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            universal_newlines=True)
     file_output, _ = proc.communicate()
 
     if "ASCII" in file_output:
@@ -181,19 +183,22 @@ def setup_tempdir(args):
         config_fd.write(args.config_file + "\n")
 
     proc = subprocess.Popen([args.apache_ctl, "-v"],
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            universal_newlines=True)
     with open(os.path.join(tempdir, "version"), "w") as version_fd:
         version_fd.write(proc.communicate()[0])
 
     proc = subprocess.Popen([args.apache_ctl, "-d", args.server_root, "-f",
                              args.config_file, "-M"],
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            universal_newlines=True)
     with open(os.path.join(tempdir, "modules"), "w") as modules_fd:
         modules_fd.write(proc.communicate()[0])
 
     proc = subprocess.Popen([args.apache_ctl, "-d", args.server_root, "-f",
                              args.config_file, "-t", "-D", "DUMP_VHOSTS"],
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            universal_newlines=True)
     with open(os.path.join(tempdir, "vhosts"), "w") as vhosts_fd:
         vhosts_fd.write(proc.communicate()[0])
 
@@ -229,7 +234,8 @@ def locate_config(apache_ctl):
     """
     try:
         proc = subprocess.Popen([apache_ctl, "-V"],
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                universal_newlines=True)
         output, _ = proc.communicate()
     except OSError:
         sys.exit(_NO_APACHECTL)

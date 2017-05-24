@@ -11,8 +11,11 @@ from acme import challenges
 from acme import messages
 
 from certbot import achallenges
+from certbot import crypto_util
 from certbot import errors
+from certbot.tests import util as certbot_test_util
 
+from certbot_nginx import constants
 from certbot_nginx import obj
 from certbot_nginx import parser
 from certbot_nginx.tests import util
@@ -27,12 +30,13 @@ class NginxConfiguratorTest(util.NginxTest):
         super(NginxConfiguratorTest, self).setUp()
 
         self.config = util.get_nginx_configurator(
-            self.config_path, self.config_dir, self.work_dir)
+            self.config_path, self.config_dir, self.work_dir, self.logs_dir)
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
+        shutil.rmtree(self.logs_dir)
 
     @mock.patch("certbot_nginx.configurator.util.exe_exists")
     def test_prepare_no_install(self, mock_exe_exists):
@@ -43,8 +47,6 @@ class NginxConfiguratorTest(util.NginxTest):
     def test_prepare(self):
         self.assertEqual((1, 6, 2), self.config.version)
         self.assertEqual(8, len(self.config.parser.parsed))
-        # ensure we successfully parsed a file for ssl_options
-        self.assertTrue(self.config.parser.loc["ssl_options"])
 
     @mock.patch("certbot_nginx.configurator.util.exe_exists")
     @mock.patch("certbot_nginx.configurator.subprocess.Popen")
@@ -63,6 +65,23 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.config_test = mock.Mock()
         self.config.prepare()
         self.assertEqual((1, 6, 2), self.config.version)
+
+    def test_prepare_locked(self):
+        server_root = self.config.conf("server-root")
+        self.config.config_test = mock.Mock()
+        os.remove(os.path.join(server_root, ".certbot.lock"))
+        certbot_test_util.lock_and_call(self._test_prepare_locked, server_root)
+
+    @mock.patch("certbot_nginx.configurator.util.exe_exists")
+    def _test_prepare_locked(self, unused_exe_exists):
+        try:
+            self.config.prepare()
+        except errors.PluginError as err:
+            err_msg = str(err)
+            self.assertTrue("lock" in err_msg)
+            self.assertTrue(self.config.conf("server-root") in err_msg)
+        else:  # pragma: no cover
+            self.fail("Exception wasn't raised!")
 
     @mock.patch("certbot_nginx.configurator.socket.gethostbyaddr")
     def test_get_all_names(self, mock_gethostbyaddr):
@@ -93,7 +112,7 @@ class NginxConfiguratorTest(util.NginxTest):
                                      None, [0])
         self.config.parser.add_server_directives(
             mock_vhost,
-            [['listen', ' ', '5001 ssl']],
+            [['listen', ' ', '5001', ' ', 'ssl']],
             replace=False)
         self.config.save()
 
@@ -104,7 +123,7 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['listen', '127.0.0.1'],
                             ['server_name', '.example.com'],
                             ['server_name', 'example.*'],
-                            ['listen', '5001 ssl'],
+                            ['listen', '5001', 'ssl'],
                             ['#', parser.COMMENT]]]],
                          parsed[0])
 
@@ -204,13 +223,13 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['server_name', '.example.com'],
                             ['server_name', 'example.*'],
 
-                            ['listen', '5001 ssl'],
+                            ['listen', '5001', 'ssl'],
                             ['ssl_certificate', 'example/fullchain.pem'],
-                            ['ssl_certificate_key', 'example/key.pem']] +
-                            util.filter_comments(self.config.parser.loc["ssl_options"])
+                            ['ssl_certificate_key', 'example/key.pem'],
+                            ['include', self.config.mod_ssl_conf]]
                             ]],
                          parsed_example_conf)
-        self.assertEqual([['server_name', 'somename  alias  another.alias']],
+        self.assertEqual([['server_name', 'somename', 'alias', 'another.alias']],
                          parsed_server_conf)
         self.assertTrue(util.contains_at_depth(
             parsed_nginx_conf,
@@ -221,11 +240,11 @@ class NginxConfiguratorTest(util.NginxTest):
               ['include', 'server.conf'],
               [['location', '/'],
                [['root', 'html'],
-                ['index', 'index.html index.htm']]],
-              ['listen', '5001 ssl'],
+                ['index', 'index.html', 'index.htm']]],
+              ['listen', '5001', 'ssl'],
               ['ssl_certificate', '/etc/nginx/fullchain.pem'],
-              ['ssl_certificate_key', '/etc/nginx/key.pem']] +
-             util.filter_comments(self.config.parser.loc["ssl_options"])
+              ['ssl_certificate_key', '/etc/nginx/key.pem'],
+              ['include', self.config.mod_ssl_conf]]
             ],
             2))
 
@@ -246,10 +265,10 @@ class NginxConfiguratorTest(util.NginxTest):
                            ['server_name', 'summer.com'],
 
                            ['listen', '80'],
-                           ['listen', '5001 ssl'],
+                           ['listen', '5001', 'ssl'],
                            ['ssl_certificate', 'summer/fullchain.pem'],
-                           ['ssl_certificate_key', 'summer/key.pem']] +
-                           util.filter_comments(self.config.parser.loc["ssl_options"])
+                           ['ssl_certificate_key', 'summer/key.pem'],
+                           ['include', self.config.mod_ssl_conf]]
                            ],
                          parsed_migration_conf[0])
 
@@ -261,13 +280,13 @@ class NginxConfiguratorTest(util.NginxTest):
         # Note: As more challenges are offered this will have to be expanded
         achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=messages.ChallengeBody(
-                chall=challenges.TLSSNI01(token="kNdwjwOeX0I_A8DXt9Msmg"),
+                chall=challenges.TLSSNI01(token=b"kNdwjwOeX0I_A8DXt9Msmg"),
                 uri="https://ca.org/chall0_uri",
                 status=messages.Status("pending"),
             ), domain="localhost", account_key=self.rsa512jwk)
         achall2 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=messages.ChallengeBody(
-                chall=challenges.TLSSNI01(token="m8TdO1qik4JVFtgPPurJmg"),
+                chall=challenges.TLSSNI01(token=b"m8TdO1qik4JVFtgPPurJmg"),
                 uri="https://ca.org/chall1_uri",
                 status=messages.Status("pending"),
             ), domain="example.com", account_key=self.rsa512jwk)
@@ -407,8 +426,8 @@ class NginxConfiguratorTest(util.NginxTest):
         # Test that we successfully add a redirect when there is
         # a listen directive
         expected = [
-            ['if', '($scheme != "https") '],
-            [['return', '301 https://$host$request_uri']]
+            ['if', '($scheme', '!=', '"https") '],
+            [['return', '301', 'https://$host$request_uri']]
         ]
 
         example_conf = self.config.parser.abs_path('sites-enabled/example.com')
@@ -519,6 +538,79 @@ class NginxConfiguratorTest(util.NginxTest):
             generated_conf, ['ssl_stapling', 'on'], 2))
         self.assertTrue(util.contains_at_depth(
             generated_conf, ['ssl_stapling_verify', 'on'], 2))
+
+class InstallSslOptionsConfTest(util.NginxTest):
+    """Test that the options-ssl-nginx.conf file is installed and updated properly."""
+
+    def setUp(self):
+        super(InstallSslOptionsConfTest, self).setUp()
+
+        self.config = util.get_nginx_configurator(
+            self.config_path, self.config_dir, self.work_dir, self.logs_dir)
+
+    def _call(self):
+        from certbot_nginx.configurator import install_ssl_options_conf
+        install_ssl_options_conf(self.config.mod_ssl_conf, self.config.updated_mod_ssl_conf_digest)
+
+    def _assert_current_file(self):
+        """If this is failing, remember that constants.PREVIOUS_SSL_OPTIONS_HASHES and
+           constants.CURRENT_SSL_OPTIONS_HASH must be updated when self.config.mod_ssl_conf
+           is updated. Add CURRENT_SSL_OPTIONS_HASH to PREVIOUS_SSL_OPTIONS_HASHES and set
+           CURRENT_SSL_OPTIONS_HASH to the hash of the updated self.config.mod_ssl_conf."""
+        self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
+        from certbot_nginx.constants import CURRENT_SSL_OPTIONS_HASH
+        self.assertEqual(crypto_util.sha256sum(self.config.mod_ssl_conf), CURRENT_SSL_OPTIONS_HASH)
+
+    def test_no_file(self):
+        # prepare should have placed a file there
+        self._assert_current_file()
+        os.remove(self.config.mod_ssl_conf)
+        self.assertFalse(os.path.isfile(self.config.mod_ssl_conf))
+        self._call()
+        self._assert_current_file()
+
+    def test_current_file(self):
+        self._assert_current_file()
+        self._call()
+        self._assert_current_file()
+
+    def test_prev_file_updates_to_current(self):
+        from certbot_nginx.constants import PREVIOUS_SSL_OPTIONS_HASHES
+        with mock.patch('certbot.crypto_util.sha256sum') as mock_sha256:
+            mock_sha256.return_value = PREVIOUS_SSL_OPTIONS_HASHES[0]
+            self._call()
+        self._assert_current_file()
+
+    def test_manually_modified_current_file_does_not_update(self):
+        with open(self.config.mod_ssl_conf, "a") as mod_ssl_conf:
+            mod_ssl_conf.write("a new line for the wrong hash\n")
+        with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
+            self._call()
+            self.assertFalse(mock_logger.warning.called)
+        self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
+        from certbot_nginx.constants import CURRENT_SSL_OPTIONS_HASH
+        self.assertEqual(crypto_util.sha256sum(constants.MOD_SSL_CONF_SRC),
+            CURRENT_SSL_OPTIONS_HASH)
+        self.assertNotEqual(crypto_util.sha256sum(self.config.mod_ssl_conf),
+            CURRENT_SSL_OPTIONS_HASH)
+
+    def test_manually_modified_past_file_warns(self):
+        with open(self.config.mod_ssl_conf, "a") as mod_ssl_conf:
+            mod_ssl_conf.write("a new line for the wrong hash\n")
+        with open(self.config.updated_mod_ssl_conf_digest, "w") as f:
+            f.write("hashofanoldversion")
+        with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
+            self._call()
+            self.assertEqual(mock_logger.warning.call_args[0][0],
+                "%s has been manually modified; updated ssl configuration options "
+                "saved to %s. We recommend updating %s for security purposes.")
+        from certbot_nginx.constants import CURRENT_SSL_OPTIONS_HASH
+        self.assertEqual(crypto_util.sha256sum(constants.MOD_SSL_CONF_SRC),
+            CURRENT_SSL_OPTIONS_HASH)
+        # only print warning once
+        with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
+            self._call()
+            self.assertFalse(mock_logger.warning.called)
 
 
 if __name__ == "__main__":

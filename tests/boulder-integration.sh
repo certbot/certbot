@@ -1,4 +1,4 @@
-#!/bin/sh -xe
+#!/bin/bash
 # Simple integration test. Make sure to activate virtualenv beforehand
 # (source venv/bin/activate) and that you are running Boulder test
 # instance (see ./boulder-fetch.sh).
@@ -8,11 +8,10 @@
 #
 # Note: this script is called by Boulder integration test suite!
 
+set -eux
+
 . ./tests/integration/_common.sh
 export PATH="$PATH:/usr/sbin"  # /usr/sbin/nginx
-
-export GOPATH="${GOPATH:-/tmp/go}"
-export PATH="$GOPATH/bin:$PATH"
 
 if [ `uname` = "Darwin" ];then
   readlink="greadlink"
@@ -27,6 +26,14 @@ cleanup_and_exit() {
         echo Kill server subprocess, left running by abnormal exit
         kill $SERVER_STILL_RUNNING
     fi
+    # Dump boulder logs in case they contain useful debugging information.
+    : "------------------ ------------------ ------------------"
+    : "------------------ begin boulder logs ------------------"
+    : "------------------ ------------------ ------------------"
+    docker logs boulder_boulder_1
+    : "------------------ ------------------ ------------------"
+    : "------------------  end boulder logs  ------------------"
+    : "------------------ ------------------ ------------------"
     exit $EXIT_STATUS
 }
 
@@ -75,7 +82,7 @@ CheckHooks() {
 
 # We start a server listening on the port for the
 # unrequested challenge to prevent regressions in #3601.
-python -m SimpleHTTPServer $http_01_port &
+python ./tests/run_http_server.py $http_01_port &
 python_server_pid=$!
 
 common --domains le1.wtf --preferred-challenges tls-sni-01 auth \
@@ -83,7 +90,7 @@ common --domains le1.wtf --preferred-challenges tls-sni-01 auth \
        --post-hook 'echo wtf.post >> "$HOOK_TEST"'\
        --renew-hook 'echo renew >> "$HOOK_TEST"'
 kill $python_server_pid
-python -m SimpleHTTPServer $tls_sni_01_port &
+python ./tests/run_http_server.py $tls_sni_01_port &
 python_server_pid=$!
 common --domains le2.wtf --preferred-challenges http-01 run \
        --pre-hook 'echo wtf.pre >> "$HOOK_TEST"' \
@@ -196,7 +203,9 @@ common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
 
 common unregister
 
-if type nginx;
+# Most CI systems set this variable to true.
+# If the tests are running as part of CI, Nginx should be available.
+if ${CI:-false} || type nginx;
 then
     . ./certbot-nginx/tests/boulder-integration.sh
 fi

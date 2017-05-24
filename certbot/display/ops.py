@@ -192,12 +192,7 @@ def _choose_names_manually(prompt_prefix=""):
             try:
                 domain_list[i] = util.enforce_domain_sanity(domain)
             except errors.ConfigurationError as e:
-                try:  # Python 2
-                    # pylint: disable=no-member
-                    err_msg = e.message.encode('utf-8')
-                except AttributeError:
-                    err_msg = str(e)
-                invalid_domains[domain] = err_msg
+                invalid_domains[domain] = str(e)
 
         if len(invalid_domains):
             retry_message = (
@@ -294,3 +289,60 @@ def _gen_https_names(domains):
             domains[-1])
 
     return ""
+
+
+def _get_validated(method, validator, message, default=None, **kwargs):
+    if default is not None:
+        try:
+            validator(default)
+        except errors.Error as error:
+            logger.debug('Encountered invalid default value "%s" when prompting for "%s"',
+                         default,
+                         message,
+                         exc_info=True)
+            raise AssertionError('Invalid default "{0}"'.format(default))
+
+    while True:
+        code, raw = method(message, default=default, **kwargs)
+        if code == display_util.OK:
+            try:
+                validator(raw)
+                return code, raw
+            except errors.Error as error:
+                logger.debug('Validator rejected "%s" when prompting for "%s"',
+                             raw,
+                             message,
+                             exc_info=True)
+                zope.component.getUtility(interfaces.IDisplay).notification(str(error), pause=False)
+        else:
+            return code, raw
+
+
+def validated_input(validator, *args, **kwargs):
+    """Like `~certbot.interfaces.IDisplay.input`, but with validation.
+
+    :param callable validator: A method which will be called on the
+        supplied input. If the method raises a `errors.Error`, its
+        text will be displayed and the user will be re-prompted.
+    :param list *args: Arguments to be passed to `~certbot.interfaces.IDisplay.input`
+    :param dict **kwargs: Arguments to be passed to `~certbot.interfaces.IDisplay.input`
+    :return: as `~certbot.interfaces.IDisplay.input`
+    :rtype: tuple
+    """
+    return _get_validated(zope.component.getUtility(interfaces.IDisplay).input,
+                          validator, *args, **kwargs)
+
+
+def validated_directory(validator, *args, **kwargs):
+    """Like `~certbot.interfaces.IDisplay.directory_select`, but with validation.
+
+    :param callable validator: A method which will be called on the
+        supplied input. If the method raises a `errors.Error`, its
+        text will be displayed and the user will be re-prompted.
+    :param list *args: Arguments to be passed to `~certbot.interfaces.IDisplay.directory_select`
+    :param dict **kwargs: Arguments to be passed to `~certbot.interfaces.IDisplay.directory_select`
+    :return: as `~certbot.interfaces.IDisplay.directory_select`
+    :rtype: tuple
+    """
+    return _get_validated(zope.component.getUtility(interfaces.IDisplay).directory_select,
+                          validator, *args, **kwargs)

@@ -108,8 +108,8 @@ class VirtualHostTest(unittest.TestCase):
         from certbot_nginx.obj import Addr
         raw1 = [
             ['listen', '69.50.225.155:9000'],
-            [['if', '($scheme != "https") '],
-                [['return', '301 https://$host$request_uri']]
+            [['if', '($scheme', '!=', '"https") '],
+                [['return', '301', 'https://$host$request_uri']]
             ],
             ['#', ' managed by Certbot']
         ]
@@ -119,8 +119,8 @@ class VirtualHostTest(unittest.TestCase):
             set(['localhost']), raw1, [])
         raw2 = [
             ['listen', '69.50.225.155:9000'],
-            [['if', '($scheme != "https") '],
-                [['return', '301 https://$host$request_uri']]
+            [['if', '($scheme', '!=', '"https") '],
+                [['return', '301', 'https://$host$request_uri']]
             ]
         ]
         self.vhost2 = VirtualHost(
@@ -129,7 +129,7 @@ class VirtualHostTest(unittest.TestCase):
             set(['localhost']), raw2, [])
         raw3 = [
             ['listen', '69.50.225.155:9000'],
-            ['rewrite', '^(.*)$ $scheme://www.domain.com$1 permanent;']
+            ['rewrite', '^(.*)$', '$scheme://www.domain.com$1', 'permanent']
         ]
         self.vhost3 = VirtualHost(
             "filep",
@@ -158,7 +158,7 @@ class VirtualHostTest(unittest.TestCase):
 
     def test_str(self):
         stringified = '\n'.join(['file: filep', 'addrs: localhost',
-                                 "names: set(['localhost'])", 'ssl: False',
+                                 "names: ['localhost']", 'ssl: False',
                                  'enabled: False'])
         self.assertEqual(stringified, str(self.vhost1))
 
@@ -181,7 +181,9 @@ class VirtualHostTest(unittest.TestCase):
             ['#', ' managed by Certbot'],
             ['ssl_certificate_key', '/etc/letsencrypt/live/two.functorkitten.xyz/privkey.pem'],
             ['#', ' managed by Certbot'],
-            [['if', '($scheme != "https")'], [['return', '301 https://$host$request_uri']]],
+            [['if', '($scheme', '!=', '"https")'],
+             [['return', '301', 'https://$host$request_uri']]
+            ],
             ['#', ' managed by Certbot'], []]
         vhost_haystack = VirtualHost(
             "filp",
@@ -195,7 +197,9 @@ class VirtualHostTest(unittest.TestCase):
             ['#', ' managed by Certbot'],
             ['ssl_certificate_key', '/etc/letsencrypt/live/two.functorkitten.xyz/privkey.pem'],
             ['#', ' managed by Certbot'],
-            [['if', '($scheme != "https")'], [['return', '302 https://$host$request_uri']]],
+            [['if', '($scheme', '!=', '"https")'],
+             [['return', '302', 'https://$host$request_uri']]
+            ],
             ['#', ' managed by Certbot'], []]
         vhost_bad_haystack = VirtualHost(
             "filp",

@@ -1,5 +1,6 @@
 """Utilities for all Certbot."""
 import argparse
+import atexit
 import collections
 # distutils.version under virtualenv confuses pylint
 # For more info, see: https://github.com/PyCQA/pylint/issues/73
@@ -19,6 +20,13 @@ import configargparse
 
 from certbot import constants
 from certbot import errors
+from certbot import lock
+
+try:
+    from collections import OrderedDict
+except ImportError:  # pragma: no cover
+    # OrderedDict was added in Python 2.7
+    from ordereddict import OrderedDict  # pylint: disable=import-error
 
 
 logger = logging.getLogger(__name__)
@@ -36,6 +44,21 @@ ANSI_SGR_BOLD = '\033[1m'
 ANSI_SGR_RED = "\033[31m"
 # Resets output format
 ANSI_SGR_RESET = "\033[0m"
+
+
+PERM_ERR_FMT = os.linesep.join((
+    "The following error was encountered:", "{0}",
+    "If running as non-root, set --config-dir, "
+    "--work-dir, and --logs-dir to writeable paths."))
+
+
+# Stores importing process ID to be used by atexit_register()
+_INITIAL_PID = os.getpid()
+# Maps paths to locked directories to their lock object. All locks in
+# the dict are attempted to be cleaned up at program exit. If the
+# program exits before the lock is cleaned up, it is automatically
+# released, but the file isn't deleted.
+_LOCKS = OrderedDict()
 
 
 def run_script(params, log=logger.error):
@@ -90,6 +113,50 @@ def exe_exists(exe):
                 return True
 
     return False
+
+
+def lock_dir_until_exit(dir_path):
+    """Lock the directory at dir_path until program exit.
+
+    :param str dir_path: path to directory
+
+    :raises errors.LockError: if the lock is held by another process
+
+    """
+    if not _LOCKS:  # this is the first lock to be released at exit
+        atexit_register(_release_locks)
+
+    if dir_path not in _LOCKS:
+        _LOCKS[dir_path] = lock.lock_dir(dir_path)
+
+
+def _release_locks():
+    for dir_lock in six.itervalues(_LOCKS):
+        try:
+            dir_lock.release()
+        except:  # pylint: disable=bare-except
+            msg = 'Exception occurred releasing lock: {0!r}'.format(dir_lock)
+            logger.debug(msg, exc_info=True)
+
+
+def set_up_core_dir(directory, mode, uid, strict):
+    """Ensure directory exists with proper permissions and is locked.
+
+    :param str directory: Path to a directory.
+    :param int mode: Directory mode.
+    :param int uid: Directory owner.
+    :param bool strict: require directory to be owned by current user
+
+    :raises .errors.LockError: if the directory cannot be locked
+    :raises .errors.Error: if the directory cannot be made or verified
+
+    """
+    try:
+        make_or_verify_dir(directory, mode, uid, strict)
+        lock_dir_until_exit(directory)
+    except OSError as error:
+        logger.debug("Exception was:", exc_info=True)
+        raise errors.Error(PERM_ERR_FMT.format(error))
 
 
 def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
@@ -362,7 +429,8 @@ def get_python_os_info():
     elif os_type.startswith('darwin'):
         os_ver = subprocess.Popen(
             ["sw_vers", "-productVersion"],
-            stdout=subprocess.PIPE
+            stdout=subprocess.PIPE,
+            universal_newlines=True,
         ).communicate()[0].rstrip('\n')
     elif os_type.startswith('freebsd'):
         # eg "9.3-RC3-p1"
@@ -390,6 +458,13 @@ def safe_email(email):
         return False
 
 
+class _ShowWarning(argparse.Action):
+    """Action to log a warning when an argument is used."""
+    def __call__(self, unused1, unused2, unused3, option_string=None):
+        sys.stderr.write(
+            "Use of {0} is deprecated.\n".format(option_string))
+
+
 def add_deprecated_argument(add_argument, argument_name, nargs):
     """Adds a deprecated argument with the name argument_name.
 
@@ -403,14 +478,17 @@ def add_deprecated_argument(add_argument, argument_name, nargs):
     :param nargs: Value for nargs when adding the argument to argparse.
 
     """
-    class ShowWarning(argparse.Action):
-        """Action to log a warning when an argument is used."""
-        def __call__(self, unused1, unused2, unused3, option_string=None):
-            sys.stderr.write(
-                "Use of {0} is deprecated.\n".format(option_string))
-
-    configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE.add(ShowWarning)
-    add_argument(argument_name, action=ShowWarning,
+    if _ShowWarning not in configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE:
+        # In version 0.12.0 ACTION_TYPES_THAT_DONT_NEED_A_VALUE was
+        # changed from a set to a tuple.
+        if isinstance(configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE, set):
+            # pylint: disable=no-member
+            configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE.add(
+                _ShowWarning)
+        else:
+            configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE += (
+                _ShowWarning,)
+    add_argument(argument_name, action=_ShowWarning,
                  help=argparse.SUPPRESS, nargs=nargs)
 
 
@@ -533,3 +611,20 @@ def is_staging(srv):
     :rtype bool:
     """
     return srv == constants.STAGING_URI or "staging" in srv
+
+
+def atexit_register(func, *args, **kwargs):
+    """Sets func to be called before the program exits.
+
+    Special care is taken to ensure func is only called when the process
+    that first imports this module exits rather than any child processes.
+
+    :param function func: function to be called in case of an error
+
+    """
+    atexit.register(_atexit_call, func, *args, **kwargs)
+
+
+def _atexit_call(func, *args, **kwargs):
+    if _INITIAL_PID == os.getpid():
+        func(*args, **kwargs)
