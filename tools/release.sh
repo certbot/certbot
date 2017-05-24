@@ -45,7 +45,7 @@ export GPG_TTY=$(tty)
 PORT=${PORT:-1234}
 
 # subpackages to be released (the way developers think about them)
-SUBPKGS_IN_AUTO_NO_CERTBOT="acme certbot-apache certbot-nginx"
+SUBPKGS_IN_AUTO_NO_CERTBOT="acme certbot-apache certbot-nginx certbot-route53"
 SUBPKGS_NOT_IN_AUTO="certbot-dns-cloudxns certbot-dns-dnsimple certbot-dns-nsone"
 
 # subpackages to be released (the way the script thinks about them)
