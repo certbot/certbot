@@ -373,12 +373,12 @@ VERB_HELP = [
     ("unregister", {
         "short": "Irrevocably deactivate your account",
         "opts": "Options for account deactivation.",
-        "usage": "\n\n  certbot unregister --email user@example.com [options]"
+        "usage": "\n\n  certbot unregister [options]"
     }),
     ("install", {
         "short": "Install an arbitrary cert in a server",
         "opts": "Options for modifying how a cert is deployed",
-        "usage": "\n\n  certbot install --cert-path /path/to/fullchain.pem [options]"
+        "usage": "\n\n  certbot install --cert-path /path/to/fullchain.pem --key-path /path/to/private-key [options]"
     }),
     ("config_changes", {
         "short": "Show changes that Certbot has made to server configurations",
@@ -388,7 +388,7 @@ VERB_HELP = [
     ("rollback", {
         "short": "Roll back server conf changes made during cert installation",
         "opts": "Options for rolling back server configuration changes",
-        "usage": "\n\n  certbot rollback [options]"
+        "usage": "\n\n  certbot rollback --checkpoints 3 [options]"
     }),
     ("plugins", {
         "short": "List plugins that are installed and available on your system",
