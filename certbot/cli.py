@@ -378,7 +378,8 @@ VERB_HELP = [
     ("install", {
         "short": "Install an arbitrary cert in a server",
         "opts": "Options for modifying how a cert is deployed",
-        "usage": "\n\n  certbot install --cert-path /path/to/fullchain.pem --key-path /path/to/private-key [options]"
+        "usage": "\n\n  certbot install --cert-path /path/to/fullchain.pem "
+        " --key-path /path/to/private-key [options]"
     }),
     ("config_changes", {
         "short": "Show changes that Certbot has made to server configurations",
