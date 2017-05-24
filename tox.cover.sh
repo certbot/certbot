@@ -9,7 +9,7 @@
 # -e makes sure we fail fast and don't submit coveralls submit
 
 if [ "xxx$1" = "xxx" ]; then
-  pkgs="certbot acme certbot_apache certbot_dns_cloudflare certbot_dns_cloudxns certbot_dns_digitalocean certbot_dns_google certbot_nginx letshelp_certbot"
+  pkgs="certbot acme certbot_apache certbot_dns_cloudflare certbot_dns_cloudxns certbot_dns_digitalocean certbot_dns_dnsimple certbot_dns_google certbot_nginx letshelp_certbot"
 else
   pkgs="$@"
 fi
@@ -26,6 +26,8 @@ cover () {
   elif [ "$1" = "certbot_dns_cloudxns" ]; then
     min=99
   elif [ "$1" = "certbot_dns_digitalocean" ]; then
+    min=98
+  elif [ "$1" = "certbot_dns_dnsimple" ]; then
     min=98
   elif [ "$1" = "certbot_dns_google" ]; then
     min=99

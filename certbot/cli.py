@@ -1237,6 +1237,8 @@ def _plugins_parsing(helpful, plugins):
                 help='Obtain certs using a DNS TXT record (if you are using CloudXNS for DNS).')
     helpful.add(["plugins", "certonly"], "--dns-digitalocean", action="store_true",
                 help='Obtain certs using a DNS TXT record (if you are using DigitalOcean for DNS).')
+    helpful.add(["plugins", "certonly"], "--dns-dnsimple", action="store_true",
+                help='Obtain certs using a DNS TXT record (if you are using DNSimple for DNS).')
     helpful.add(["plugins", "certonly"], "--dns-google", action="store_true",
                 help='Obtain certs using a DNS TXT record (if you are using Google Cloud DNS).')
 

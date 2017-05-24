@@ -137,9 +137,8 @@ class Authenticator(common.Plugin):
         """Wait for a change to be propagated to all Route53 DNS servers.
            https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetChange.html
         """
-        client = boto3.client("route53")
         for n in range(0, 120):
-            response = client.get_change(Id=change_id)
+            response = self.r53.get_change(Id=change_id)
             if response["ChangeInfo"]["Status"] == "INSYNC":
                 return
             time.sleep(5)

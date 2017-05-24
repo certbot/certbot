@@ -17,6 +17,7 @@ fi
   -e certbot-dns-cloudflare \
   -e certbot-dns-cloudxns \
   -e certbot-dns-digitalocean \
+  -e certbot-dns-dnsimple \
   -e certbot-dns-google \
   -e certbot-nginx \
   -e letshelp-certbot \
