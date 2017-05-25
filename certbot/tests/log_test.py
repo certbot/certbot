@@ -234,21 +234,19 @@ class TempHandlerTest(unittest.TestCase):
         self.handler = TempHandler()
 
     def tearDown(self):
-        if not self.closed:
-            self.handler.delete_and_close()
+        self.handler.close()
 
     def test_permissions(self):
         self.assertTrue(
             util.check_permissions(self.handler.path, 0o600, os.getuid()))
 
     def test_delete(self):
-        self.handler.delete_and_close()
-        self.closed = True
+        self.handler.close()
         self.assertFalse(os.path.exists(self.handler.path))
 
     def test_no_delete(self):
+        self.handler.emit(mock.MagicMock())
         self.handler.close()
-        self.closed = True
         self.assertTrue(os.path.exists(self.handler.path))
         os.remove(self.handler.path)
 

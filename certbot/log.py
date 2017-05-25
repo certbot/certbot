@@ -104,7 +104,7 @@ def post_arg_parse_setup(config):
     temp_handler = memory_handler.target
     memory_handler.setTarget(file_handler)
     memory_handler.close()
-    temp_handler.delete_and_close()
+    temp_handler.close()
 
     if config.quiet:
         level = constants.QUIET_LOGGING_LEVEL
@@ -224,7 +224,9 @@ class MemoryHandler(logging.handlers.MemoryHandler):
 class TempHandler(logging.StreamHandler):
     """Safely logs messages to a temporary file.
 
-    The file is created with permissions 600.
+    The file is created with permissions 600. If no log records are sent
+    to this handler, the temporary file is deleted when the handler is
+    closed.
 
     :ivar str path: file system path to the temporary log file
 
@@ -238,19 +240,26 @@ class TempHandler(logging.StreamHandler):
         else:
             super(TempHandler, self).__init__(stream)
         self.path = stream.name
+        self._delete = True
 
-    def delete_and_close(self):
-        """Close the handler and delete the temporary log file."""
-        self._close(delete=True)
+    def emit(self, record):
+        """Log the specified logging record.
+
+        :param logging.LogRecord record: Record to be formatted
+
+        """
+        self._delete = False
+        # logging handlers use old style classes in Python 2.6 so
+        # super() cannot be used
+        if sys.version_info < (2, 7):  # pragma: no cover
+            logging.StreamHandler.emit(self, record)
+        else:
+            super(TempHandler, self).emit(record)
 
     def close(self):
-        """Close the handler and the temporary log file."""
-        self._close(delete=False)
-
-    def _close(self, delete):
         """Close the handler and the temporary log file.
 
-        :param bool delete: True if the log file should be deleted
+        The temporary log file is deleted if it wasn't used.
 
         """
         self.acquire()
@@ -258,8 +267,9 @@ class TempHandler(logging.StreamHandler):
             # StreamHandler.close() doesn't close the stream to allow a
             # stream like stderr to be used
             self.stream.close()
-            if delete:
+            if self._delete:
                 os.remove(self.path)
+            self._delete = False
             if sys.version_info < (2, 7):  # pragma: no cover
                 logging.StreamHandler.close(self)
             else:
