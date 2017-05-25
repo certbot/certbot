@@ -80,6 +80,17 @@ CheckHooks() {
     rm "$HOOK_TEST"
 }
 
+# test for regressions of #4719
+get_num_tmp_files() {
+    ls -1 /tmp | wc -l
+}
+num_tmp_files=$(get_num_tmp_files)
+common --version
+if [ $(get_num_tmp_files) -ne $num_tmp_files ]; then
+    echo "New files or directories created in /tmp!"
+    exit 1
+fi
+
 # We start a server listening on the port for the
 # unrequested challenge to prevent regressions in #3601.
 python ./tests/run_http_server.py $http_01_port &
