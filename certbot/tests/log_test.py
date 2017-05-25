@@ -203,12 +203,13 @@ class MemoryHandlerTest(unittest.TestCase):
 
     def test_flush(self):
         self._test_log_debug()
-        self.handler.flush()
+        self.handler.flush(force=True)
         self.assertEqual(self.stream.getvalue(), self.msg + '\n')
 
     def test_not_flushed(self):
         # By default, logging.ERROR messages and higher are flushed
         self.logger.critical(self.msg)
+        self.handler.flush()
         self.assertEqual(self.stream.getvalue(), '')
 
     def test_target_reset(self):
@@ -217,7 +218,7 @@ class MemoryHandlerTest(unittest.TestCase):
         new_stream = six.StringIO()
         new_stream_handler = logging.StreamHandler(new_stream)
         self.handler.setTarget(new_stream_handler)
-        self.handler.flush()
+        self.handler.flush(force=True)
         self.assertEqual(self.stream.getvalue(), '')
         self.assertEqual(new_stream.getvalue(), self.msg + '\n')
         new_stream_handler.close()

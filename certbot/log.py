@@ -103,6 +103,7 @@ def post_arg_parse_setup(config):
     root_logger.removeHandler(memory_handler)
     temp_handler = memory_handler.target
     memory_handler.setTarget(file_handler)
+    memory_handler.flush(force=True)
     memory_handler.close()
     temp_handler.close()
 
@@ -194,8 +195,7 @@ class MemoryHandler(logging.handlers.MemoryHandler):
     """Buffers logging messages in memory until the buffer is flushed.
 
     This differs from `logging.handlers.MemoryHandler` in that flushing
-    only happens when it is done explicitly by calling flush() or
-    close().
+    only happens when flush(force=True) is called.
 
     """
     def __init__(self, target=None):
@@ -208,6 +208,22 @@ class MemoryHandler(logging.handlers.MemoryHandler):
                 self, capacity, target=target)
         else:
             super(MemoryHandler, self).__init__(capacity, target=target)
+
+    def flush(self, force=False):  # pylint: disable=arguments-differ
+        """Flush the buffer if force=True.
+
+        If force=False, this call is a noop.
+
+        :param bool force: True if the buffer should be flushed.
+
+        """
+        # This method allows flush() calls in logging.shutdown to be a
+        # noop so we can control when this handler is flushed.
+        if force:
+            if sys.version_info < (2, 7):  # pragma: no cover
+                logging.handlers.MemoryHandler.flush(self)
+            else:
+                super(MemoryHandler, self).flush()
 
     def shouldFlush(self, record):
         """Should the buffer be automatically flushed?
