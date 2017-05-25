@@ -70,7 +70,8 @@ def pre_arg_parse_setup():
     # close() are explicitly called
     util.atexit_register(logging.shutdown)
     sys.excepthook = functools.partial(
-        except_hook, debug='--debug' in sys.argv, log_path=temp_handler.path)
+        pre_arg_parse_except_hook, memory_handler,
+        debug='--debug' in sys.argv, log_path=temp_handler.path)
 
 
 def post_arg_parse_setup(config):
@@ -103,8 +104,9 @@ def post_arg_parse_setup(config):
     root_logger.removeHandler(memory_handler)
     temp_handler = memory_handler.target
     memory_handler.setTarget(file_handler)
+    memory_handler.flush(force=True)
     memory_handler.close()
-    temp_handler.delete_and_close()
+    temp_handler.close()
 
     if config.quiet:
         level = constants.QUIET_LOGGING_LEVEL
@@ -115,7 +117,7 @@ def post_arg_parse_setup(config):
     logger.info('Saving debug log to %s', file_path)
 
     sys.excepthook = functools.partial(
-        except_hook, debug=config.debug, log_path=logs_dir)
+        post_arg_parse_except_hook, debug=config.debug, log_path=logs_dir)
 
 
 def setup_log_file_handler(config, logfile, fmt):
@@ -194,8 +196,7 @@ class MemoryHandler(logging.handlers.MemoryHandler):
     """Buffers logging messages in memory until the buffer is flushed.
 
     This differs from `logging.handlers.MemoryHandler` in that flushing
-    only happens when it is done explicitly by calling flush() or
-    close().
+    only happens when flush(force=True) is called.
 
     """
     def __init__(self, target=None):
@@ -208,6 +209,33 @@ class MemoryHandler(logging.handlers.MemoryHandler):
                 self, capacity, target=target)
         else:
             super(MemoryHandler, self).__init__(capacity, target=target)
+
+    def close(self):
+        """Close the memory handler, but don't set the target to None."""
+        # This allows the logging module which may only have a weak
+        # reference to the target handler to properly flush and close it.
+        target = self.target
+        if sys.version_info < (2, 7):  # pragma: no cover
+            logging.handlers.MemoryHandler.close(self)
+        else:
+            super(MemoryHandler, self).close()
+        self.target = target
+
+    def flush(self, force=False):  # pylint: disable=arguments-differ
+        """Flush the buffer if force=True.
+
+        If force=False, this call is a noop.
+
+        :param bool force: True if the buffer should be flushed.
+
+        """
+        # This method allows flush() calls in logging.shutdown to be a
+        # noop so we can control when this handler is flushed.
+        if force:
+            if sys.version_info < (2, 7):  # pragma: no cover
+                logging.handlers.MemoryHandler.flush(self)
+            else:
+                super(MemoryHandler, self).flush()
 
     def shouldFlush(self, record):
         """Should the buffer be automatically flushed?
@@ -224,7 +252,9 @@ class MemoryHandler(logging.handlers.MemoryHandler):
 class TempHandler(logging.StreamHandler):
     """Safely logs messages to a temporary file.
 
-    The file is created with permissions 600.
+    The file is created with permissions 600. If no log records are sent
+    to this handler, the temporary file is deleted when the handler is
+    closed.
 
     :ivar str path: file system path to the temporary log file
 
@@ -238,19 +268,26 @@ class TempHandler(logging.StreamHandler):
         else:
             super(TempHandler, self).__init__(stream)
         self.path = stream.name
+        self._delete = True
 
-    def delete_and_close(self):
-        """Close the handler and delete the temporary log file."""
-        self._close(delete=True)
+    def emit(self, record):
+        """Log the specified logging record.
+
+        :param logging.LogRecord record: Record to be formatted
+
+        """
+        self._delete = False
+        # logging handlers use old style classes in Python 2.6 so
+        # super() cannot be used
+        if sys.version_info < (2, 7):  # pragma: no cover
+            logging.StreamHandler.emit(self, record)
+        else:
+            super(TempHandler, self).emit(record)
 
     def close(self):
-        """Close the handler and the temporary log file."""
-        self._close(delete=False)
-
-    def _close(self, delete):
         """Close the handler and the temporary log file.
 
-        :param bool delete: True if the log file should be deleted
+        The temporary log file is deleted if it wasn't used.
 
         """
         self.acquire()
@@ -258,8 +295,9 @@ class TempHandler(logging.StreamHandler):
             # StreamHandler.close() doesn't close the stream to allow a
             # stream like stderr to be used
             self.stream.close()
-            if delete:
+            if self._delete:
                 os.remove(self.path)
+            self._delete = False
             if sys.version_info < (2, 7):  # pragma: no cover
                 logging.StreamHandler.close(self)
             else:
@@ -268,7 +306,34 @@ class TempHandler(logging.StreamHandler):
             self.release()
 
 
-def except_hook(exc_type, exc_value, trace, debug, log_path):
+def pre_arg_parse_except_hook(memory_handler, *args, **kwargs):
+    """A simple wrapper around post_arg_parse_except_hook.
+
+    The additional functionality provided by this wrapper is the memory
+    handler will be flushed before Certbot exits. This allows us to
+    write logging messages to a temporary file if we crashed before
+    logging was fully configured.
+
+    Since sys.excepthook isn't called on SystemExit exceptions, the
+    memory handler will not be flushed in this case which prevents us
+    from creating temporary log files when argparse exits because a
+    command line argument was invalid or -h, --help, or --version was
+    provided on the command line.
+
+    :param MemoryHandler memory_handler: memory handler to flush
+    :param tuple args: args for post_arg_parse_except_hook
+    :param dict kwargs: kwargs for post_arg_parse_except_hook
+
+    """
+    try:
+        post_arg_parse_except_hook(*args, **kwargs)
+    finally:
+        # flush() is called here so messages logged during
+        # post_arg_parse_except_hook are also flushed.
+        memory_handler.flush(force=True)
+
+
+def post_arg_parse_except_hook(exc_type, exc_value, trace, debug, log_path):
     """Logs fatal exceptions and reports them to the user.
 
     If debug is True, the full exception and traceback is shown to the
