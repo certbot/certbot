@@ -70,7 +70,8 @@ def pre_arg_parse_setup():
     # close() are explicitly called
     util.atexit_register(logging.shutdown)
     sys.excepthook = functools.partial(
-        except_hook, debug='--debug' in sys.argv, log_path=temp_handler.path)
+        pre_arg_parse_except_hook, memory_handler,
+        debug='--debug' in sys.argv, log_path=temp_handler.path)
 
 
 def post_arg_parse_setup(config):
@@ -116,7 +117,7 @@ def post_arg_parse_setup(config):
     logger.info('Saving debug log to %s', file_path)
 
     sys.excepthook = functools.partial(
-        except_hook, debug=config.debug, log_path=logs_dir)
+        post_arg_parse_except_hook, debug=config.debug, log_path=logs_dir)
 
 
 def setup_log_file_handler(config, logfile, fmt):
@@ -305,7 +306,30 @@ class TempHandler(logging.StreamHandler):
             self.release()
 
 
-def except_hook(exc_type, exc_value, trace, debug, log_path):
+def pre_arg_parse_except_hook(memory_handler, *args, **kwargs):
+    """A simple wrapper around post_arg_parse_except_hook.
+
+    The additional functionality provided by this wrapper is the memory
+    handler will be flushed before Certbot exits. This allows us to
+    write logging messages to a temporary file if we crashed before
+    logging was fully configured.
+
+    Since sys.excepthook isn't called on SystemExit exceptions, the
+    memory handler will not be flushed in this case which prevents us
+    from creating temporary log files when argparse exits because a
+    command line argument was invalid or -h, --help, or --version was
+    provided on the command line.
+
+    """
+    try:
+        post_arg_parse_except_hook(*args, **kwargs)
+    finally:
+        # flush() is called here so messages logged during
+        # post_arg_parse_except_hook are also flushed.
+        memory_handler.flush(force=True)
+
+
+def post_arg_parse_except_hook(exc_type, exc_value, trace, debug, log_path):
     """Logs fatal exceptions and reports them to the user.
 
     If debug is True, the full exception and traceback is shown to the

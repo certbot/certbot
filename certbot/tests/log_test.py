@@ -26,18 +26,13 @@ class PreArgParseSetupTest(unittest.TestCase):
         return pre_arg_parse_setup(*args, **kwargs)
 
     @mock.patch('certbot.log.sys')
-    @mock.patch('certbot.log.except_hook')
+    @mock.patch('certbot.log.pre_arg_parse_except_hook')
     @mock.patch('certbot.log.logging.getLogger')
     @mock.patch('certbot.log.util.atexit_register')
     def test_it(self, mock_register, mock_get, mock_except_hook, mock_sys):
         mock_sys.argv = ['--debug']
         mock_sys.version_info = sys.version_info
         self._call()
-
-        mock_register.assert_called_once_with(logging.shutdown)
-        mock_sys.excepthook(1, 2, 3)
-        mock_except_hook.assert_called_once_with(
-            1, 2, 3, debug=True, log_path=mock.ANY)
 
         mock_root_logger = mock_get()
         mock_root_logger.setLevel.assert_called_once_with(logging.DEBUG)
@@ -53,6 +48,11 @@ class PreArgParseSetupTest(unittest.TestCase):
                 self.assertTrue(isinstance(handler, logging.StreamHandler))
         self.assertTrue(
             isinstance(memory_handler.target, logging.StreamHandler))
+
+        mock_register.assert_called_once_with(logging.shutdown)
+        mock_sys.excepthook(1, 2, 3)
+        mock_except_hook.assert_called_once_with(
+            memory_handler, 1, 2, 3, debug=True, log_path=mock.ANY)
 
 
 class PostArgParseSetupTest(test_util.TempDirTestCase):
@@ -88,7 +88,8 @@ class PostArgParseSetupTest(test_util.TempDirTestCase):
     def test_common(self):
         with mock.patch('certbot.log.logging.getLogger') as mock_get_logger:
             mock_get_logger.return_value = self.root_logger
-            with mock.patch('certbot.log.except_hook') as mock_except_hook:
+            except_hook_path = 'certbot.log.post_arg_parse_except_hook'
+            with mock.patch(except_hook_path) as mock_except_hook:
                 with mock.patch('certbot.log.sys') as mock_sys:
                     mock_sys.version_info = sys.version_info
                     self._call(self.config)
@@ -252,12 +253,33 @@ class TempHandlerTest(unittest.TestCase):
         os.remove(self.handler.path)
 
 
-class ExceptHookTest(unittest.TestCase):
-    """Tests for certbot.log.except_hook."""
+class PreArgParseExceptHookTest(unittest.TestCase):
+    """Tests for certbot.log.pre_arg_parse_except_hook."""
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot.log import except_hook
-        return except_hook(*args, **kwargs)
+        from certbot.log import pre_arg_parse_except_hook
+        return pre_arg_parse_except_hook(*args, **kwargs)
+
+    @mock.patch('certbot.log.post_arg_parse_except_hook')
+    def test_it(self, mock_post_arg_parse_except_hook):
+        # pylint: disable=star-args
+        memory_handler = mock.MagicMock()
+        args = ('some', 'args',)
+        kwargs = {'some': 'kwargs'}
+
+        self._call(memory_handler, *args, **kwargs)
+
+        mock_post_arg_parse_except_hook.assert_called_once_with(
+            *args, **kwargs)
+        memory_handler.flush.assert_called_once_with(force=True)
+
+
+class PostArgParseExceptHookTest(unittest.TestCase):
+    """Tests for certbot.log.post_arg_parse_except_hook."""
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.log import post_arg_parse_except_hook
+        return post_arg_parse_except_hook(*args, **kwargs)
 
     def setUp(self):
         self.error_msg = 'test error message'
