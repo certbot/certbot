@@ -14,6 +14,7 @@ from certbot.tests import util as test_util
 SERVER = '192.0.2.1'
 NAME = 'a-tsig-key.'
 SECRET = 'SSB3b25kZXIgd2hvIHdpbGwgYm90aGVyIHRvIGRlY29kZSB0aGlzIHRleHQK'
+VALID_CONFIG = {"rfc2136_server": SERVER, "rfc2136_name": NAME, "rfc2136_secret": SECRET}
 
 
 class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthenticatorTest):
@@ -24,7 +25,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         super(AuthenticatorTest, self).setUp()
 
         path = os.path.join(self.tempdir, 'file.ini')
-        dns_test_common.write({"rfc2136_server": SERVER, "rfc2136_name": NAME, "rfc2136_secret": SECRET}, path)
+        dns_test_common.write(VALID_CONFIG, path)
 
         self.config = mock.MagicMock(rfc2136_credentials=path,
                                      rfc2136_propagation_seconds=0)  # don't wait during tests
@@ -48,6 +49,22 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
 
         expected = [mock.call.del_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY)]
         self.assertEqual(expected, self.mock_client.mock_calls)
+
+    def test_invalid_algorithm_raises(self):
+        config = VALID_CONFIG.copy()
+        config["rfc2136_algorithm"] = "INVALID"
+        dns_test_common.write(config, self.config.rfc2136_credentials)
+
+        self.assertRaises(errors.PluginError,
+                          self.auth.perform,
+                          [self.achall])
+
+    def test_valid_algorithm_passes(self):
+        config = VALID_CONFIG.copy()
+        config["rfc2136_algorithm"] = "HMAC-SHA512"
+        dns_test_common.write(config, self.config.rfc2136_credentials)
+
+        self.auth.perform([self.achall])
 
 
 class RFC2136ClientTest(unittest.TestCase):
