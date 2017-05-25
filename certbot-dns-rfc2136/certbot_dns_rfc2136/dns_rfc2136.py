@@ -44,11 +44,11 @@ class Authenticator(dns_common.DNSAuthenticator):
         self.credentials = None
 
     @classmethod
-    def add_parser_arguments(cls, add):
+    def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
         super(Authenticator, cls).add_parser_arguments(add, default_propagation_seconds=60)
         add('credentials', help='RFC 2136 credentials INI file.')
 
-    def more_info(self):
+    def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
                'RFC 2136 Dynamic Updates.'
 
@@ -80,7 +80,8 @@ class Authenticator(dns_common.DNSAuthenticator):
         return _RFC2136Client(self.credentials.conf('server'),
                               self.credentials.conf('name'),
                               self.credentials.conf('secret'),
-                              self.ALGORITHMS.get(self.credentials.conf('algorithm'), dns.tsig.HMAC_MD5))
+                              self.ALGORITHMS.get(self.credentials.conf('algorithm'),
+                                                  dns.tsig.HMAC_MD5))
 
 
 class _RFC2136Client(object):
@@ -187,11 +188,12 @@ class _RFC2136Client(object):
                 rcode = response.rcode()
 
                 # Authoritative Answer bit should be set
-                if rcode == dns.rcode.NOERROR and len(response.answer) > 0 and response.flags & dns.flags.AA:
-                    logger.debug('Received authoritative SOA response for {0}'.format(guess))
+                if (rcode == dns.rcode.NOERROR and len(response.answer) > 0 and
+                        response.flags & dns.flags.AA):
+                    logger.debug('Received authoritative SOA response for %s', guess)
                     return guess
 
-                logger.debug('No authoritative SOA record found for {0}'.format(guess))
+                logger.debug('No authoritative SOA record found for %s', guess)
             except Exception as e:
                 raise errors.PluginError('Encountered error when making query: {0}'
                                          .format(e))
