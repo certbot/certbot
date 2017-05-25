@@ -74,8 +74,25 @@ class RFC2136ClientTest(unittest.TestCase):
 
         self.rfc2136_client = _RFC2136Client(SERVER, NAME, SECRET, dns.tsig.HMAC_MD5)
 
-    def test_add_txt_record(self):
-        pass
+    @mock.patch("dns.query.tcp")
+    def test_add_txt_record(self, query_mock):
+        query_mock.return_value.rcode.return_value = 0
+        self.rfc2136_client._find_domain = mock.MagicMock(return_value="example.com")
+
+        self.rfc2136_client.add_txt_record(DOMAIN, "bar", "baz", 42)
+
+        query_mock.assert_called_with(mock.ANY, SERVER)
+        self.assertTrue("bar. 42 IN TXT \"baz\"" in str(query_mock.call_args[0][0]))
+
+    @mock.patch("dns.query.tcp")
+    def test_add_txt_record_wraps_errors(self, query_mock):
+        query_mock.side_effect = Exception
+        self.rfc2136_client._find_domain = mock.MagicMock(return_value="example.com")
+
+        self.assertRaises(
+            errors.PluginError,
+            self.rfc2136_client.add_txt_record,
+            DOMAIN, "bar", "baz", 42)
 
     def test_del_txt_record(self):
         pass
