@@ -44,7 +44,8 @@ def renewal_conf_files(config):
 def renewal_file_for_certname(config, certname):
     """Return /path/to/certname.conf in the renewal conf directory"""
     path = os.path.join(config.renewal_configs_dir, "{0}.conf".format(certname))
-    if not os.path.exists(path):
+    valid_path = util.os_path_exists(path)
+    if valid_path:
         raise errors.CertStorageError("No certificate found with name {0} (expected "
             "{1}).".format(certname, path))
     return path
