@@ -209,6 +209,17 @@ class MemoryHandler(logging.handlers.MemoryHandler):
         else:
             super(MemoryHandler, self).__init__(capacity, target=target)
 
+    def close(self):
+        """Close the memory handler, but don't set the target to None."""
+        # This allows the logging module which may only have a weak
+        # reference to the target handler to properly flush and close it.
+        target = self.target
+        if sys.version_info < (2, 7):  # pragma: no cover
+            logging.handlers.MemoryHandler.close(self)
+        else:
+            super(MemoryHandler, self).close()
+        self.target = target
+
     def flush(self, force=False):  # pylint: disable=arguments-differ
         """Flush the buffer if force=True.
 
