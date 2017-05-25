@@ -2,6 +2,21 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.14.2 - 2017-05-25
+
+### Fixed
+
+* Certbot 0.14.0 included a bug where Certbot would create a temporary log file
+(usually in /tmp) if the program exited during argument parsing. If a user
+provided -h/--help/help, --version, or an invalid command line argument,
+Certbot would create this temporary log file. This was especially bothersome to
+certbot-auto users as certbot-auto runs `certbot --version` internally to see
+if the script needs to upgrade causing it to create at least one of these files
+on every run. This problem has been resolved.
+
+More details about this change can be found on our GitHub repo:
+https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.14.2+is%3Aclosed
+
 ## 0.14.1 - 2017-05-16
 
 ### Fixed
