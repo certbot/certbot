@@ -320,6 +320,10 @@ def pre_arg_parse_except_hook(memory_handler, *args, **kwargs):
     command line argument was invalid or -h, --help, or --version was
     provided on the command line.
 
+    :param MemoryHandler memory_handler: memory handler to flush
+    :param tuple args: args for post_arg_parse_except_hook
+    :param dict kwargs: kwargs for post_arg_parse_except_hook
+
     """
     try:
         post_arg_parse_except_hook(*args, **kwargs)
