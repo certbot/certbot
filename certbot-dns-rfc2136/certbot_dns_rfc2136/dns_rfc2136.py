@@ -67,7 +67,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                 'secret': 'TSIG key secret',
                 'server': 'The target DNS server'
             },
-            _validate_algorithm
+            self._validate_algorithm
         )
 
     def _perform(self, domain, validation_name, validation):
