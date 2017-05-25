@@ -45,7 +45,7 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     @classmethod
     def add_parser_arguments(cls, add):
-        super(Authenticator, cls).add_parser_arguments(add)
+        super(Authenticator, cls).add_parser_arguments(add, default_propagation_seconds=60)
         add('credentials', help='RFC 2136 credentials INI file.')
 
     def more_info(self):
@@ -87,7 +87,7 @@ class _RFC2136Client(object):
     """
     Encapsulates all communication with the target DNS server.
     """
-    def __init__(self, server, key_name, key_secret, key_algorithm='HMAC-MD5'):
+    def __init__(self, server, key_name, key_secret, key_algorithm):
         self.server = server
         self.keyring = dns.tsigkeyring.from_text({
             key_name: key_secret
