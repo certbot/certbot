@@ -1,4 +1,5 @@
 """Plugin common functions."""
+import logging
 import os
 import re
 import shutil
@@ -14,6 +15,8 @@ from certbot import constants
 from certbot import crypto_util
 from certbot import interfaces
 from certbot import util
+
+logger = logging.getLogger(__name__)
 
 
 def option_namespace(name):
@@ -268,7 +271,7 @@ class TLSSNI01(object):
 # c.f. #383)
 
 def install_ssl_options_conf(options_ssl, options_ssl_digest, mod_ssl_conf_src,
-    all_ssl_options_hashes, logger): # pragma: no cover
+    all_ssl_options_hashes): # pragma: no cover
     """Copy Certbot's SSL options file into the system's config dir if required."""
     current_ssl_options_hash = crypto_util.sha256sum(mod_ssl_conf_src)
 
