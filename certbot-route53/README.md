@@ -24,7 +24,7 @@ for example).
 
 Make sure you have access to AWS's Route53 service, either through IAM roles or
 via `.aws/credentials`. Check out
-[sample-aws-policy.json](sample-aws-policy.json) for the necessary permissions.
+[sample-aws-policy.json](examples/sample-aws-policy.json) for the necessary permissions.
 
 To generate a certificate:
 ```
