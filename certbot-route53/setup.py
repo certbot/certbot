@@ -20,7 +20,6 @@ setup(
     name='certbot-route53',
     version=version,
     description="Route53 DNS Authenticator plugin for Certbot",
-    url='https://github.com/lifeonmarspt/certbot-route53',
     url='https://github.com/certbot/certbot',
     author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
