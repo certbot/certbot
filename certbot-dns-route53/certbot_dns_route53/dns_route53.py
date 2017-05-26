@@ -13,7 +13,7 @@ from certbot.plugins import dns_common
 logger = logging.getLogger(__name__)
 
 INSTRUCTIONS = (
-    "To use certbot-route53, configure credentials as described at "
+    "To use certbot-dns-route53, configure credentials as described at "
     "https://boto3.readthedocs.io/en/latest/guide/configuration.html#best-practices-for-configuring-credentials "  # pylint: disable=line-too-long
     "and add the necessary permissions for Route53 access.")
 
@@ -91,7 +91,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         response = self.r53.change_resource_record_sets(
             HostedZoneId=zone_id,
             ChangeBatch={
-                "Comment": "certbot-route53 certificate validation " + action,
+                "Comment": "certbot-dns-route53 certificate validation " + action,
                 "Changes": [
                     {
                         "Action": action,
