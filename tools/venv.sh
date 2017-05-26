@@ -19,6 +19,7 @@ fi
   -e certbot-dns-digitalocean \
   -e certbot-dns-dnsimple \
   -e certbot-dns-google \
+  -e certbot-dns-nsone \
   -e certbot-nginx \
   -e letshelp-certbot \
   -e certbot-compatibility-test

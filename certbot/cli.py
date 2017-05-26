@@ -1233,6 +1233,8 @@ def _plugins_parsing(helpful, plugins):
                 help='Obtain certs using a DNS TXT record (if you are using DNSimple for DNS).')
     helpful.add(["plugins", "certonly"], "--dns-google", action="store_true",
                 help='Obtain certs using a DNS TXT record (if you are using Google Cloud DNS).')
+    helpful.add(["plugins", "certonly"], "--dns-nsone", action="store_true",
+                help='Obtain certs using a DNS TXT record (if you are using NS1 for DNS).')
 
     # things should not be reorder past/pre this comment:
     # plugins_group should be displayed in --help before plugin
