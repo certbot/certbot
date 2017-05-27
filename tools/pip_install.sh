@@ -3,7 +3,7 @@
 
 # get the root of the Certbot repo
 repo_root=$(git rev-parse --show-toplevel)
-requirements="$repo_root/letsencrypt-auto-source/pieces/dependency-requirements.txt"
+requirements="$repo_root/letsencrypt-auto-source/pieces/phase-2/dependency-requirements.txt"
 constraints=$(mktemp)
 trap "rm -f $constraints" EXIT
 # extract pinned requirements without hashes

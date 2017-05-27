@@ -158,7 +158,7 @@ if [ -n "${LE_AUTO_SUDO+x}" ]; then
       SUDO=sudo
       SUDO_ENV="CERTBOT_AUTO=$0"
       ;;
-    '') ;; # Nothing to do for plain root method.
+    "") ;; # Nothing to do for plain root method.
     *)
       error "Error: unknown root authorization mechanism '$LE_AUTO_SUDO'."
       exit 1
@@ -178,26 +178,8 @@ else
   fi
 fi
 
-BootstrapMessage() {
-  # Arguments: Platform name
-  say "Bootstrapping dependencies for $1... (you can skip this with --no-bootstrap)"
-}
-
-ExperimentalBootstrap() {
-  # Arguments: Platform name, bootstrap function name
-  if [ "$DEBUG" = 1 ]; then
-    if [ "$2" != "" ]; then
-      BootstrapMessage $1
-      $2
-    fi
-  else
-    error "FATAL: $1 support is very experimental at present..."
-    error "if you would like to work on improving it, please ensure you have backups"
-    error "and then run this script again with the --debug flag!"
-    error "Alternatively, you can install OS dependencies yourself and run this script"
-    error "again with --no-bootstrap."
-    exit 1
-  fi
+TempDir() {
+  mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || macOS
 }
 
 DeterminePythonVersion() {
@@ -218,7 +200,6 @@ DeterminePythonVersion() {
     exit 1
   fi
 }
-
 BootstrapDebCommon() {
   # Current version tested with:
   #
@@ -599,6 +580,28 @@ BootstrapMageiaCommon() {
 }
 
 
+BootstrapMessage() {
+  # Arguments: Platform name
+  say "Bootstrapping dependencies for $1... (you can skip this with --no-bootstrap)"
+}
+
+ExperimentalBootstrap() {
+  # Arguments: Platform name, bootstrap function name
+  if [ "$DEBUG" = 1 ]; then
+    if [ "$2" != "" ]; then
+      BootstrapMessage $1
+      $2
+    fi
+  else
+    error "FATAL: $1 support is very experimental at present..."
+    error "if you would like to work on improving it, please ensure you have backups"
+    error "and then run this script again with the --debug flag!"
+    error "Alternatively, you can install OS dependencies yourself and run this script"
+    error "again with --no-bootstrap."
+    exit 1
+  fi
+}
+
 # Install required OS packages:
 Bootstrap() {
   if [ "$NO_BOOTSTRAP" = 1 ]; then
@@ -649,14 +652,8 @@ Bootstrap() {
   fi
 }
 
-TempDir() {
-  mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || macOS
-}
-
-
-
 if [ "$1" = "--le-auto-phase2" ]; then
-  # Phase 2: Create venv, install LE, and run.
+    # Phase 2: Create venv, install LE, and run.
 
   shift 1  # the --le-auto-phase2 arg
   if [ -f "$VENV_BIN/letsencrypt" ]; then
@@ -1085,9 +1082,8 @@ UNLIKELY_EOF
     # sudo
     $SUDO "$SUDO_ENV" "$VENV_BIN/letsencrypt" "$@"
   fi
-
 else
-  # Phase 1: Upgrade certbot-auto if necessary, then self-invoke.
+    # Phase 1: Upgrade certbot-auto if necessary, then self-invoke.
   #
   # Each phase checks the version of only the thing it is responsible for
   # upgrading. Phase 1 checks the version of the latest release of
