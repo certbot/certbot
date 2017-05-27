@@ -87,15 +87,12 @@ class _GodaddyClient(object):
                                      .format(e, ' ({0})'.format(hint) if hint else ''))
 
         try:
-            result = self.client.add_record(domain, {
+            self.client.add_record(domain, {
                 'data': record_content,
                 'name': self._compute_record_name(domain, record_name),
                 'type': 'TXT'
             })
-            if result:
-                logger.debug('Successfully added TXT record')
-            else:
-                raise errors.PluginError('Error adding TXT record using the Godaddy API')
+            logger.debug('Successfully added TXT record')
         except godaddypy.client.BadResponse as e:
             logger.debug('Error adding TXT record using the Godaddy API: %s', e)
             raise errors.PluginError('Error adding TXT record using the Godaddy API: {0}'

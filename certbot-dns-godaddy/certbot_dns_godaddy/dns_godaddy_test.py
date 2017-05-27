@@ -88,7 +88,8 @@ class GodaddyClientTest(unittest.TestCase):
                           DOMAIN, self.record_name, self.record_content)
 
     def test_add_txt_record_error_creating_record(self):
-        self.client.get_domains.side_effect = API_ERROR
+        self.client.get_domains.return_value = [DOMAIN]
+        self.client.add_record.side_effect = API_ERROR
 
         self.assertRaises(errors.PluginError,
                           self.godaddy_client.add_txt_record,
@@ -107,7 +108,12 @@ class GodaddyClientTest(unittest.TestCase):
         self.godaddy_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
 
         self.client.delete_records.assert_called_with(DOMAIN, name=self.record_prefix,
-                                                              record_type=self.record_content)
+                                                              record_type='TXT')
+
+    def test_del_txt_record_error_finding_domain(self):
+        self.client.get_domains.side_effect = API_ERROR
+
+        self.godaddy_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
 
 
 if __name__ == "__main__":
