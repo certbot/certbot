@@ -266,12 +266,8 @@ class TLSSNI01(object):
         return response
 
 
-# utils used by certbot_apache/certbot_nginx (hence
-# "pragma: no cover") TODO: this might quickly lead to dead code (also
-# c.f. #383)
-
 def install_ssl_options_conf(options_ssl, options_ssl_digest, mod_ssl_conf_src,
-    all_ssl_options_hashes): # pragma: no cover
+    all_ssl_options_hashes):
     """Copy Certbot's SSL options file into the system's config dir if required.
 
        :param str options_ssl: destination path for file containing ssl options
@@ -316,6 +312,10 @@ def install_ssl_options_conf(options_ssl, options_ssl_digest, mod_ssl_conf_src,
             "saved to %s. We recommend updating %s for security purposes.",
             options_ssl, mod_ssl_conf_src, options_ssl)
 
+
+# test utils used by certbot_apache/certbot_nginx (hence
+# "pragma: no cover") TODO: this might quickly lead to dead code (also
+# c.f. #383)
 
 def dir_setup(test_dir, pkg):  # pragma: no cover
     """Setup the directories necessary for the configurator."""
