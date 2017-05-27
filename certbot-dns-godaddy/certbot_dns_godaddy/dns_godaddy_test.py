@@ -11,7 +11,7 @@ from certbot.plugins import dns_test_common
 from certbot.plugins.dns_test_common import DOMAIN
 from certbot.tests import util as test_util
 
-API_ERROR = godaddypy.client.BadResponse('error')
+API_ERROR = godaddypy.client.BadResponse('UNABLE_TO_AUTHENTICATE')
 KEY = 'a-key'
 SECRET = 'a-secret'
 
@@ -114,7 +114,6 @@ class GodaddyClientTest(unittest.TestCase):
         self.client.get_domains.side_effect = API_ERROR
 
         self.godaddy_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
-
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

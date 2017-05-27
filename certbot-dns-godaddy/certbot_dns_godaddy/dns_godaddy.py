@@ -79,8 +79,8 @@ class _GodaddyClient(object):
         except godaddypy.client.BadResponse as e:
             hint = None
 
-            # if str(e).startswith("Unable to authenticate"):
-            #     hint = 'Did you provide a valid API token?'
+            if "UNABLE_TO_AUTHENTICATE" in str(e):
+                hint = 'Did you provide a valid API token?'
 
             logger.debug('Error finding domain using the Godaddy API: %s', e)
             raise errors.PluginError('Error finding domain using the Godaddy API: {0}{1}'
