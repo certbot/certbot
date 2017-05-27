@@ -375,6 +375,46 @@ class IInstaller(IPlugin):
         """
 
 
+class IChallengeProvider(zope.interface.Interface):
+    """Certbot domain challenge provider for domains.
+
+    Object implementing `IAuthenticator` can implement also this interface
+    in order to support domain validation across multiple Certbot invocations.
+
+    By default AuthHandler is asking ACME for domain challenges, in the
+    beginning of the authentication process. This interface enables to
+    develop plugins which provide the challenges by different means,
+    e.g., by deserializing them from previous Certbot invocations.
+
+    """
+
+    def request_domain_challenges(domain, acme=None, account=None):
+        """Returns challenges for particular domain.
+
+        Returns the same object as `acme.acme.client.request_domain_challenges()`
+
+        :param str domain: domain name to load challenges for
+        :param acme.client.Client acme: ACME client API.
+        :param `certbot.account.Account` account: Client's Account
+
+        :returns: Authorization Resource.
+        :rtype: `acme.messages.AuthorizationResource`
+
+        :raises errors.NoChallengeError: if challenge could not be resolved
+            and traditional load has to be used.
+
+        """
+
+    def on_domain_challenge_loaded(domain, challenge):
+        """Called when Certbot loads domain challenges from the ACME server.
+        Enables serialization of the challenges for the next Certbot invocation.
+
+        :param str domain: domain the challenge belongs to
+        :param `acme.AuthorizationResource` challenge: loaded challenge
+        :return: None
+        """
+
+
 class IDisplay(zope.interface.Interface):
     """Generic display."""
     # pylint: disable=too-many-arguments
