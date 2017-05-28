@@ -115,5 +115,24 @@ class GodaddyClientTest(unittest.TestCase):
 
         self.godaddy_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
 
+    def test_del_txt_record_error_getting_records(self):
+        self.client.get_domains.return_value = [DOMAIN]
+        self.client.get_records.side_effect = API_ERROR
+
+        self.godaddy_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
+
+    def test_del_txt_record_error_deleting_records(self):
+        records = [
+            {'type': 'TXT', 'name': 'DIFFERENT', 'data': self.record_content},
+            {'type': 'TXT', 'name': self.record_prefix, 'data': self.record_content},
+            {'type': 'TXT', 'name': self.record_prefix, 'data': 'DIFFERENT'},
+        ]
+
+        self.client.get_domains.return_value = [DOMAIN]
+        self.client.get_records.return_value = records
+        self.client.delete_records.side_effect = API_ERROR
+
+        self.godaddy_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
