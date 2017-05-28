@@ -87,7 +87,7 @@ class _DigitalOceanClient(object):
         try:
             result = domain.create_new_domain_record(
                 type='TXT',
-                name=self._compute_record_name(domain, record_name),
+                name=dns_common.compute_record_name(domain.name, record_name),
                 data=record_content)
 
             record_id = result['domain_record']['id']
@@ -123,7 +123,8 @@ class _DigitalOceanClient(object):
 
             matching_records = [record for record in domain_records
                                 if record.type == 'TXT'
-                                and record.name == self._compute_record_name(domain, record_name)
+                                and record.name == dns_common.compute_record_name(domain.name,
+                                                                                  record_name)
                                 and record.data == record_content]
         except digitalocean.Error as e:
             logger.debug('Error getting DNS records using the DigitalOcean API: %s', e)
@@ -161,8 +162,3 @@ class _DigitalOceanClient(object):
 
         raise errors.PluginError('Unable to determine base domain for {0} using names: {1}.'
                                  .format(domain_name, domain_name_guesses))
-
-    @staticmethod
-    def _compute_record_name(domain, full_record_name):
-        # The domain, from DigitalOcean's point of view, is automatically appended.
-        return full_record_name.rpartition("." + domain.name)[0]

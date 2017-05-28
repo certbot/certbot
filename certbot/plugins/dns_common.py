@@ -321,3 +321,19 @@ def base_domain_name_guesses(domain):
 
     fragments = domain.split('.')
     return ['.'.join(fragments[i:]) for i in range(0, len(fragments))]
+
+
+def compute_record_name(domain, full_record_name):
+    """Extract record name from a full record name by subtracting domain name.
+
+    :Example:
+
+    >>> compute_record_name('example.com', 'foo.bar.baz.example.com')
+    'foo.bar.baz'
+
+    :param str domain: The domain name to be subtracted.
+    :param str full_record_name: The full record name.
+    :returns: The record name.
+    :rtype: str
+    """
+    return full_record_name.rpartition("." + domain)[0]

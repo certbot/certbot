@@ -89,7 +89,7 @@ class _GodaddyClient(object):
         try:
             self.client.add_record(domain, {
                 'data': record_content,
-                'name': self._compute_record_name(domain, record_name),
+                'name': dns_common.compute_record_name(domain, record_name),
                 'type': 'TXT'
             })
             logger.debug('Successfully added TXT record')
@@ -123,7 +123,8 @@ class _GodaddyClient(object):
 
             matching_records = [record for record in domain_records
                                 if record['type'] == 'TXT'
-                                and record['name'] == self._compute_record_name(domain, record_name)
+                                and record['name'] == dns_common.compute_record_name(domain,
+                                                                                     record_name)
                                 and record['data'] == record_content]
         except godaddypy.client.BadResponse as e:
             logger.debug('Error getting DNS records using the Godaddy API: %s', e)
@@ -161,8 +162,3 @@ class _GodaddyClient(object):
 
         raise errors.PluginError('Unable to determine base domain for {0} using names: {1}.'
                                  .format(domain_name, domain_name_guesses))
-
-    @staticmethod
-    def _compute_record_name(domain, full_record_name):
-        # The domain, from Godaddy's point of view, is automatically appended.
-        return full_record_name.rpartition("." + domain)[0]
