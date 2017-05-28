@@ -30,6 +30,12 @@ class Authenticator(common.Plugin):
 
     description = "Place files in webroot directory"
 
+    MSG_AUTH_DELAYED = """\
+Authentication delayed. Deploy the {0}/.well-known directory to \
+your webroot now.
+
+Press ENTER to continue to the validation process."""
+
     MORE_INFO = """\
 Authenticator plugin that performs http-01 challenge by saving
 necessary validation resources to appropriate paths on the file
@@ -56,6 +62,12 @@ to serve all files under specified web root ({0})."""
                  "-d entries. At present, if you put webroot-map in a config "
                  "file, it needs to be on a single line, like: webroot-map = "
                  '{"example.com":"/var/www"}.')
+        add("delay-auth", "-D", action="store_true",
+            help="Wait until the user presses ENTER before the "
+                 "authentication process kicks in. This is useful when "
+                 "proposing the challenges from a foreign machine to be "
+                 "able to copy the files to the real webserver before "
+                 "the challenges are verified.")
 
     def get_chall_pref(self, domain):  # pragma: no cover
         # pylint: disable=missing-docstring,no-self-use,unused-argument
@@ -74,7 +86,14 @@ to serve all files under specified web root ({0})."""
 
         self._create_challenge_dirs()
 
-        return [self._perform_single(achall) for achall in achalls]
+        responses = [self._perform_single(achall) for achall in achalls]
+
+        if self.conf("delay-auth"):
+            path = self.conf("path")[0]
+            display = zope.component.getUtility(interfaces.IDisplay)
+            display.notification(self.MSG_AUTH_DELAYED.format(path))
+
+        return responses
 
     def _set_webroots(self, achalls):
         if self.conf("path"):
