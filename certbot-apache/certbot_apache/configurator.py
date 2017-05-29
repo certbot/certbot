@@ -952,6 +952,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 # The content does not include the closing tag, so add it
                 new_file.write("</VirtualHost>\n")
                 new_file.write("</IfModule>\n")
+            # Add new file to augeas paths if we're supposed to handle
+            # activation (it's not included as default)
+            if self.conf("handle-sites"):
+                self.parser.parse_file(ssl_fp)
         except IOError:
             logger.fatal("Error writing/reading to file in make_vhost_ssl")
             raise errors.PluginError("Unable to write/read in make_vhost_ssl")
@@ -1603,6 +1607,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Write out file
         with open(redirect_filepath, "w") as redirect_file:
             redirect_file.write(text)
+
+        # Add new file to augeas paths if we're supposed to handle
+        # activation (it's not included as default)
+        if self.conf("handle-sites"):
+            self.parser.parse_file(redirect_filepath)
+
         logger.info("Created redirect file: %s", redirect_filename)
 
         return redirect_filepath
