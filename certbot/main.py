@@ -167,8 +167,7 @@ def _handle_identical_cert_request(config, lineage):
         # TODO: Add notification related to command-line options for
         #       skipping the menu for this case.
         raise errors.Error(
-            "User chose to cancel the operation and may "
-            "reinvoke the client.")
+            "Operation canceled. You may re-run the client.")
     elif response[1] == 0:
         return "reinstall", lineage
     elif response[1] == 1:

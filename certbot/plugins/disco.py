@@ -33,6 +33,7 @@ class PluginEntryPoint(object):
         "certbot-dns-digitalocean",
         "certbot-dns-dnsimple",
         "certbot-dns-google",
+        "certbot-dns-nsone",
         "certbot-nginx",
     ]
     """Distributions for which prefix will be omitted."""

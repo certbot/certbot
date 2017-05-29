@@ -51,7 +51,7 @@ From our official releases:
 From ``master``: https://aur.archlinux.org/packages/certbot-git
 
 Debian (and its derivatives, including Ubuntu)
-------
+----------------------------------------------
 
 - https://packages.debian.org/sid/certbot
 - https://packages.debian.org/sid/python-certbot
