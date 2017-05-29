@@ -49,6 +49,9 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
             return
 
         for vhost_basename in os.listdir(sites_enabled):
+            # Keep the one non-symlink test vhost in place
+            if vhost_basename == "non-symlink.conf":
+                continue
             vhost = os.path.join(sites_enabled, vhost_basename)
             if not os.path.islink(vhost):  # pragma: no cover
                 os.remove(vhost)
@@ -165,6 +168,11 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(aug_pre, "ocsp-ssl.conf/IfModule/VirtualHost"),
                 set([obj.Addr.fromstring("10.2.3.4:443")]), True, True,
                 "ocspvhost.com"),
+            obj.VirtualHost(
+                os.path.join(prefix, "non-symlink.conf"),
+                os.path.join(aug_pre, "non-symlink.conf/VirtualHost"),
+                set([obj.Addr.fromstring("*:80")]), False, True,
+                "nonsym.link"),
             obj.VirtualHost(
                 os.path.join(prefix, "default-ssl-port-only.conf"),
                 os.path.join(aug_pre,

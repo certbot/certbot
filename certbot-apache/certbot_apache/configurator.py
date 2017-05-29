@@ -849,7 +849,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Create the Vhost object
         ssl_vhost = self._create_vhost(vh_p)
         ssl_vhost.ancestor = nonssl_vhost
-        if self.conf("handle-sites"):
+
+        if self.conf("handle-sites") and "/sites-enabled/" not in ssl_vhost.filep:
             ssl_vhost.enabled = False
         self.vhosts.append(ssl_vhost)
 
