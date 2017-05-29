@@ -51,7 +51,7 @@ class ServerManager(object):
         :param int port: Port to run the server on.
         :param challenge_type: Subclass of `acme.challenges.Challenge`,
             either `acme.challenge.HTTP01` or `acme.challenges.TLSSNI01`.
-        :param int listenaddr: (optional) The address to listen on. Defaults to all addrs.
+        :param str listenaddr: (optional) The address to listen on. Defaults to all addrs.
 
         :returns: Server instance.
         :rtype: ACMEServerMixin

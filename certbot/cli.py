@@ -991,7 +991,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         default=flag_default("tls_sni_01_port"),
         help=config_help("tls_sni_01_port"))
     helpful.add(
-        ["testing", "standalone", "apache", "nginx"], "--tls-sni-01-addr",
+        ["testing", "standalone"], "--tls-sni-01-address",
         default=flag_default("tls_sni_01_addr"),
         help=config_help("tls_sni_01_addr"))
     helpful.add(
@@ -999,7 +999,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         dest="http01_port",
         default=flag_default("http01_port"), help=config_help("http01_port"))
     helpful.add(
-        ["testing", "standalone", "manual"], "--http-01-addr",
+        ["testing", "standalone"], "--http-01-address",
         dest="http01_addr",
         default=flag_default("http01_addr"), help=config_help("http01_addr"))
     helpful.add(

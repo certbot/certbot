@@ -99,13 +99,6 @@ specific failures when they happen. Also note that the full test suite
 will attempt to modify your system's Apache config if your user has sudo
 permissions, so it should not be run on a production Apache server.
 
-Running the tests on Ubuntu requires some extra packages to be installed.
-You can install them like this:
-
-.. code-block:: shell
-
-   sudo apt install libaugeas-dev python2.7-dev python3-dev
-
 If you have trouble getting the full ``tox`` suite to run locally, it is
 generally sufficient to open a pull request and let Github and Travis run
 integration tests for you.
