@@ -30,7 +30,7 @@ class ApacheParser(object):
     arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
     fnmatch_chars = set(["*", "?", "\\", "[", "]"])
 
-    def __init__(self, aug, root, vhostroot, version=(2, 4), extra_path=False):
+    def __init__(self, aug, root, vhostroot=None, version=(2, 4)):
         # Note: Order is important here.
 
         # This uses the binary, so it can be done first.
@@ -48,8 +48,6 @@ class ApacheParser(object):
         self.loc = {"root": self._find_config_root()}
         self.parse_file(self.loc["root"])
 
-        self.vhostroot = os.path.abspath(vhostroot)
-
         # This problem has been fixed in Augeas 1.0
         self.standardize_excl()
 
@@ -62,9 +60,9 @@ class ApacheParser(object):
         # Set up rest of locations
         self.loc.update(self._set_locations())
 
-        # Must also attempt to parse virtual host root
-        if extra_path:
-            self.parse_file(self.vhostroot + "/" +
+        # Must also attempt to parse additional virtual host root
+        if vhostroot:
+            self.parse_file(vhostroot + "/" +
                             constants.os_constant("vhost_files"))
 
         # check to see if there were unparsed define statements
