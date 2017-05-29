@@ -16,7 +16,7 @@ import certbot.tests.util as test_util
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')
 RSA256_KEY_PATH = test_util.vector_path('rsa256_key.pem')
 RSA512_KEY = test_util.load_vector('rsa512_key.pem')
-RSA512_KEY_PATH = test_util.vector_path('rsa512_key.pem')
+RSA2048_KEY_PATH = test_util.vector_path('rsa2048_key.pem')
 CERT_PATH = test_util.vector_path('cert.pem')
 CERT = test_util.load_vector('cert.pem')
 SAN_CERT = test_util.load_vector('cert-san.pem')
@@ -249,7 +249,7 @@ class VerifyCertSetup(unittest.TestCase):
         self.renewable_cert = mock.MagicMock()
         self.renewable_cert.cert = SS_CERT_PATH
         self.renewable_cert.chain = SS_CERT_PATH
-        self.renewable_cert.privkey = RSA512_KEY_PATH
+        self.renewable_cert.privkey = RSA2048_KEY_PATH
         self.renewable_cert.fullchain = test_util.vector_path('self_signed_fullchain.pem')
 
         self.bad_renewable_cert = mock.MagicMock()
