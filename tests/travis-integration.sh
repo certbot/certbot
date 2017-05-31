@@ -6,7 +6,7 @@ set -o errexit
 
 source .tox/$TOXENV/bin/activate
 
-until curl http://boulder:4000/directory 2>/dev/null; do
+until curl http://localhost:4000/directory 2>/dev/null; do
   echo waiting for boulder
   sleep 1
 done

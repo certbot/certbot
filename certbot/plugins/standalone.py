@@ -228,7 +228,7 @@ class Authenticator(common.Plugin):
 
     def _perform_http_01(self, achall):
         port = self.config.http01_port
-        addr = self.config.http01_addr
+        addr = self.config.http01_address
         server = self.servers.run(port, challenges.HTTP01, listenaddr=addr)
         response, validation = achall.response_and_validation()
         resource = acme_standalone.HTTP01RequestHandler.HTTP01Resource(
@@ -238,7 +238,7 @@ class Authenticator(common.Plugin):
 
     def _perform_tls_sni_01(self, achall):
         port = self.config.tls_sni_01_port
-        addr = self.config.tls_sni_01_addr
+        addr = self.config.tls_sni_01_address
         server = self.servers.run(port, challenges.TLSSNI01, listenaddr=addr)
         response, (cert, _) = achall.response_and_validation(cert_key=self.key)
         self.certs[response.z_domain] = (self.key, cert)

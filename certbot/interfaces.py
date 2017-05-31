@@ -229,7 +229,7 @@ class IConfig(zope.interface.Interface):
         "Port used during tls-sni-01 challenge. "
         "This only affects the port Certbot listens on. "
         "A conforming ACME server will still attempt to connect on port 443.")
-    tls_sni_01_addr = zope.interface.Attribute(
+    tls_sni_01_address = zope.interface.Attribute(
         "The address the server listens to during tls-sni-01 challenge.")
 
     http01_port = zope.interface.Attribute(
@@ -237,7 +237,7 @@ class IConfig(zope.interface.Interface):
         "This only affects the port Certbot listens on. "
         "A conforming ACME server will still attempt to connect on port 80.")
 
-    http01_addr = zope.interface.Attribute(
+    http01_address = zope.interface.Attribute(
         "The address the server listens to during http-01 challenge.")
 
     pref_challs = zope.interface.Attribute(
