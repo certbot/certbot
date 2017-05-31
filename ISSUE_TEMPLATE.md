@@ -12,3 +12,5 @@
 
 ## Here is a Certbot log showing the issue (if available):
 ###### Logs are stored in `/var/log/letsencrypt` by default. Feel free to redact domains, e-mail and IP addresses as you see fit.
+
+## Here is the relevant nginx server block or Apache virtualhost for the domain I am configuring:
