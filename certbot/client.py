@@ -294,17 +294,18 @@ class Client(object):
 
         return certr, chain
 
-    def obtain_certificate(self, domains):
+    def obtain_certificate(self, domains, existing_key=None):
         """Obtains a certificate from the ACME server.
 
         `.register` must be called before `.obtain_certificate`
 
         :param list domains: domains to get a certificate
+        :param str existing_key: path to existing private key, or None to create one
 
         :returns: `.CertificateResource`, certificate chain (as
-            returned by `.fetch_chain`), and newly generated private key
-            (`.util.Key`) and DER-encoded Certificate Signing Request
-            (`.util.CSR`).
+            returned by `.fetch_chain`), and existing or newly generated
+            private key (`.util.Key`) and DER-encoded Certificate Signing
+            Request (`.util.CSR`).
         :rtype: tuple
 
         """
@@ -315,9 +316,25 @@ class Client(object):
         auth_domains = set(a.body.identifier.value for a in authzr)
         domains = [d for d in domains if d in auth_domains]
 
+        # Load existing key from a file, or create a new one
+        # if necessary
+        if existing_key is not None:
+            # This case does not explicitly make a new copy of the key
+            # anywhere. Other code using storage.py may do so,
+            # including for renewal purposes when saving a successor.
+            with open(existing_key) as f:
+                pem = f.read()
+                if crypto_util.valid_privkey(pem):
+                    key = util.Key(existing_key, pem)
+                else:
+                    raise ValueError, ("File {0} contents are not a valid "
+                                       "private key.".format(existing_key))
+        else:
+            # This case does save a copy of the key in key_dir.
+            key = crypto_util.init_save_key(
+                self.config.rsa_key_size, self.config.key_dir)
+
         # Create CSR from names
-        key = crypto_util.init_save_key(
-            self.config.rsa_key_size, self.config.key_dir)
         csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
         certr, chain = self.obtain_certificate_from_csr(
             domains, csr, authzr=authzr)
@@ -325,7 +342,7 @@ class Client(object):
         return certr, chain, key, csr
 
     # pylint: disable=no-member
-    def obtain_and_enroll_certificate(self, domains, certname):
+    def obtain_and_enroll_certificate(self, domains, certname, existing_key=None):
         """Obtain and enroll certificate.
 
         Get a new certificate for the specified domains using the specified
@@ -333,15 +350,15 @@ class Client(object):
         containing it.
 
         :param list domains: Domains to request.
-        :param plugins: A PluginsFactory object.
         :param str certname: Name of new cert
+        :param str existing_key: Path to existing key to use, or None for a new one
 
         :returns: A new :class:`certbot.storage.RenewableCert` instance
             referred to the enrolled cert lineage, False if the cert could not
             be obtained, or None if doing a successful dry run.
 
         """
-        certr, chain, key, _ = self.obtain_certificate(domains)
+        certr, chain, key, _ = self.obtain_certificate(domains, existing_key)
 
         if (self.config.config_dir != constants.CLI_DEFAULTS["config_dir"] or
                 self.config.work_dir != constants.CLI_DEFAULTS["work_dir"]):

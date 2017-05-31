@@ -79,7 +79,9 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
             # TREAT AS NEW REQUEST
             assert domains is not None
             logger.info("Obtaining a new certificate")
-            lineage = le_client.obtain_and_enroll_certificate(domains, certname)
+            # config.privkey_path determines whether or not a new private key
+            # will be generated.
+            lineage = le_client.obtain_and_enroll_certificate(domains, certname, config.privkey_path)
             if lineage is False:
                 raise errors.Error("Certificate could not be obtained")
     finally:

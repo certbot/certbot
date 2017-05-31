@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
                     "standalone_supported_challenges", "renew_hook",
-                    "pre_hook", "post_hook"]
+                    "pre_hook", "post_hook", "privkey_path"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
 BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names"]
 
@@ -76,6 +76,7 @@ def _reconstitute(config, full_path):
     try:
         restore_required_config_elements(config, renewalparams)
         _restore_plugin_configs(config, renewalparams)
+        # XXX: Special case for --new-key goes here?
     except (ValueError, errors.Error) as error:
         logger.warning(
             "An error occurred while parsing %s. The error was %s. "
@@ -293,7 +294,9 @@ def renew_cert(config, domains, le_client, lineage):
     _avoid_invalidating_lineage(config, lineage, original_server)
     if not domains:
         domains = lineage.names()
-    new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
+    # If config.privkey_path is None, this will generate a new key.  If it is
+    # set to a string, the file at that location will be used.
+    new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains, config.privkey_path)
     if config.dry_run:
         logger.debug("Dry run: skipping updating lineage at %s",
                     os.path.dirname(lineage.cert))
