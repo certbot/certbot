@@ -87,7 +87,7 @@ get_num_tmp_files() {
 num_tmp_files=$(get_num_tmp_files)
 common --help
 common --help all
-common --preferred-challenges invalid-arg
+common --preferred-challenges bad-arg && echo expected error && exit 1 || true
 common --version
 if [ $(get_num_tmp_files) -ne $num_tmp_files ]; then
     echo "New files or directories created in /tmp!"
