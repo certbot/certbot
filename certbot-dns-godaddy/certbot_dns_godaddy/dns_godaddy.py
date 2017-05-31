@@ -1,7 +1,7 @@
-"""DNS Authenticator for DigitalOcean."""
+"""DNS Authenticator for Godaddy."""
 import logging
 
-import digitalocean
+import godaddypy
 import zope.interface
 
 from certbot import errors
@@ -14,12 +14,12 @@ logger = logging.getLogger(__name__)
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(dns_common.DNSAuthenticator):
-    """DNS Authenticator for DigitalOcean
+    """DNS Authenticator for Godaddy
 
-    This Authenticator uses the DigitalOcean API to fulfill a dns-01 challenge.
+    This Authenticator uses the Godaddy API to fulfill a dns-01 challenge.
     """
 
-    description = 'Obtain certs using a DNS TXT record (if you are using DigitalOcean for DNS).'
+    description = 'Obtain certs using a DNS TXT record (if you are using Godaddy for DNS).'
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
@@ -28,38 +28,40 @@ class Authenticator(dns_common.DNSAuthenticator):
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
         super(Authenticator, cls).add_parser_arguments(add)
-        add('credentials', help='DigitalOcean credentials INI file.')
+        add('credentials', help='Godaddy credentials INI file.')
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
-               'the DigitalOcean API.'
+               'the Godaddy API.'
 
     def _setup_credentials(self):
         self.credentials = self._configure_credentials(
             'credentials',
-            'DigitalOcean credentials INI file',
+            'Godaddy credentials INI file',
             {
-                'token': 'API token for DigitalOcean account'
+                'key': 'API key for Godaddy account',
+                'secret': 'API secret for Godaddy account'
             }
         )
 
     def _perform(self, domain, validation_name, validation):
-        self._get_digitalocean_client().add_txt_record(domain, validation_name, validation)
+        self._get_godaddy_client().add_txt_record(domain, validation_name, validation)
 
     def _cleanup(self, domain, validation_name, validation):
-        self._get_digitalocean_client().del_txt_record(domain, validation_name, validation)
+        self._get_godaddy_client().del_txt_record(domain, validation_name, validation)
 
-    def _get_digitalocean_client(self):
-        return _DigitalOceanClient(self.credentials.conf('token'))
+    def _get_godaddy_client(self):
+        return _GodaddyClient(self.credentials.conf('key'), self.credentials.conf('secret'))
 
 
-class _DigitalOceanClient(object):
+class _GodaddyClient(object):
     """
-    Encapsulates all communication with the DigitalOcean API.
+    Encapsulates all communication with the Godaddy API.
     """
 
-    def __init__(self, token):
-        self.manager = digitalocean.Manager(token=token)
+    def __init__(self, key, secret):
+        account = godaddypy.Account(api_key=key, api_secret=secret)
+        self.client = godaddypy.Client(account)
 
     def add_txt_record(self, domain_name, record_name, record_content):
         """
@@ -68,34 +70,32 @@ class _DigitalOceanClient(object):
         :param str domain_name: The domain to use to associate the record with.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
         :param str record_content: The record content (typically the challenge validation).
-        :raises certbot.errors.PluginError: if an error occurs communicating with the DigitalOcean
+        :raises certbot.errors.PluginError: if an error occurs communicating with the Godaddy
                                             API
         """
 
         try:
             domain = self._find_domain(domain_name)
-        except digitalocean.Error as e:
+        except godaddypy.client.BadResponse as e:
             hint = None
 
-            if str(e).startswith("Unable to authenticate"):
+            if "UNABLE_TO_AUTHENTICATE" in str(e):
                 hint = 'Did you provide a valid API token?'
 
-            logger.debug('Error finding domain using the DigitalOcean API: %s', e)
-            raise errors.PluginError('Error finding domain using the DigitalOcean API: {0}{1}'
+            logger.debug('Error finding domain using the Godaddy API: %s', e)
+            raise errors.PluginError('Error finding domain using the Godaddy API: {0}{1}'
                                      .format(e, ' ({0})'.format(hint) if hint else ''))
 
         try:
-            result = domain.create_new_domain_record(
-                type='TXT',
-                name=dns_common.compute_record_name(domain.name, record_name),
-                data=record_content)
-
-            record_id = result['domain_record']['id']
-
-            logger.debug('Successfully added TXT record with id: %d', record_id)
-        except digitalocean.Error as e:
-            logger.debug('Error adding TXT record using the DigitalOcean API: %s', e)
-            raise errors.PluginError('Error adding TXT record using the DigitalOcean API: {0}'
+            self.client.add_record(domain, {
+                'data': record_content,
+                'name': dns_common.compute_record_name(domain, record_name),
+                'type': 'TXT'
+            })
+            logger.debug('Successfully added TXT record')
+        except godaddypy.client.BadResponse as e:
+            logger.debug('Error adding TXT record using the Godaddy API: %s', e)
+            raise errors.PluginError('Error adding TXT record using the Godaddy API: {0}'
                                      .format(e))
 
     def del_txt_record(self, domain_name, record_name, record_content):
@@ -114,29 +114,29 @@ class _DigitalOceanClient(object):
 
         try:
             domain = self._find_domain(domain_name)
-        except digitalocean.Error as e:
-            logger.debug('Error finding domain using the DigitalOcean API: %s', e)
+        except godaddypy.client.BadResponse as e:
+            logger.debug('Error finding domain using the Godaddy API: %s', e)
             return
 
         try:
-            domain_records = domain.get_records()
+            domain_records = self.client.get_records(domain, record_type='TXT')
 
             matching_records = [record for record in domain_records
-                                if record.type == 'TXT'
-                                and record.name == dns_common.compute_record_name(domain.name,
-                                                                                  record_name)
-                                and record.data == record_content]
-        except digitalocean.Error as e:
-            logger.debug('Error getting DNS records using the DigitalOcean API: %s', e)
+                                if record['type'] == 'TXT'
+                                and record['name'] == dns_common.compute_record_name(domain,
+                                                                                     record_name)
+                                and record['data'] == record_content]
+        except godaddypy.client.BadResponse as e:
+            logger.debug('Error getting DNS records using the Godaddy API: %s', e)
             return
 
         for record in matching_records:
             try:
-                logger.debug('Removing TXT record with id: %s', record.id)
-                record.destroy()
-            except digitalocean.Error as e:
-                logger.warn('Error deleting TXT record %s using the DigitalOcean API: %s',
-                            record.id, e)
+                logger.debug('Removing TXT record with name: %s', record['name'])
+                self.client.delete_records(domain, name=record['name'], record_type='TXT')
+            except godaddypy.client.BadResponse as e:
+                logger.warn('Error deleting TXT record %s using the Godaddy API: %s',
+                            record['name'], e)
 
     def _find_domain(self, domain_name):
         """
@@ -144,16 +144,16 @@ class _DigitalOceanClient(object):
 
         :param str domain_name: The domain name for which to find the corresponding Domain.
         :returns: The Domain, if found.
-        :rtype: `~digitalocean.Domain`
+        :rtype: str
         :raises certbot.errors.PluginError: if no matching Domain is found.
         """
 
         domain_name_guesses = dns_common.base_domain_name_guesses(domain_name)
 
-        domains = self.manager.get_all_domains()
+        domains = self.client.get_domains()
 
         for guess in domain_name_guesses:
-            matches = [domain for domain in domains if domain.name == guess]
+            matches = [domain for domain in domains if domain == guess]
 
             if len(matches) > 0:
                 domain = matches[0]

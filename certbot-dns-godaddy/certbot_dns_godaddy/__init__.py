@@ -1,0 +1,1 @@
+"""Godaddy DNS Authenticator"""
