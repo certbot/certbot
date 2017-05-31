@@ -7,6 +7,7 @@ import zope.interface
 from acme import challenges
 from botocore.exceptions import NoCredentialsError, ClientError
 
+from certbot import errors
 from certbot import interfaces
 from certbot.plugins import common
 
@@ -63,12 +64,15 @@ class Authenticator(common.Plugin):
             time.sleep(TTL)
             return [achall.response(achall.account_key) for achall in achalls]
         except (NoCredentialsError, ClientError) as e:
-            e.args = ("\n".join([str(e), INSTRUCTIONS]),)
-            raise
+            logger.debug('Encountered error during perform: %s', e, exc_info=True)
+            raise errors.PluginError("\n".join([str(e), INSTRUCTIONS]))
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         for achall in achalls:
-            self._change_txt_record("DELETE", achall)
+            try:
+                self._change_txt_record("DELETE", achall)
+            except (NoCredentialsError, ClientError) as e:
+                logger.debug('Encountered error during cleanup: %s', e, exc_info=True)
 
     def _find_zone_id_for_domain(self, domain):
         """Find the zone id responsible a given FQDN.
@@ -89,7 +93,7 @@ class Authenticator(common.Plugin):
                     zones.append((zone["Name"], zone["Id"]))
 
         if not zones:
-            raise ValueError(
+            raise errors.PluginError(
                 "Unable to find a Route53 hosted zone for {0}".format(domain)
             )
 
