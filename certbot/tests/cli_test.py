@@ -211,7 +211,10 @@ class ParseTest(unittest.TestCase):
         self.assertEqual(namespace.pref_challs, expected)
 
         short_args = ['--preferred-challenges', 'jumping-over-the-moon']
-        self.assertRaises(argparse.ArgumentTypeError, self.parse, short_args)
+        # argparse.ArgumentError makes argparse print more information
+        # to stderr and call sys.exit()
+        with mock.patch('sys.stderr'):
+            self.assertRaises(SystemExit, self.parse, short_args)
 
     def test_server_flag(self):
         namespace = self.parse('--server example.com'.split())
