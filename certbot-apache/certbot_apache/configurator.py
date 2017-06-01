@@ -1992,4 +1992,4 @@ def install_ssl_options_conf(options_ssl, options_ssl_digest):
     # certbot for unprivileged users via setuid), this function will need
     # to be modified.
     return common.install_ssl_options_conf(options_ssl, options_ssl_digest,
-        constants.os_constant("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES, logger)
+        constants.os_constant("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
