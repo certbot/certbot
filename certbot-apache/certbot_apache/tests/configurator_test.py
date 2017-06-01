@@ -12,6 +12,7 @@ import six  # pylint: disable=unused-import
 from acme import challenges
 
 from certbot import achallenges
+from certbot import crypto_util
 from certbot import errors
 
 from certbot.tests import acme_util
@@ -826,8 +827,10 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_install_ssl_options_conf(self):
         from certbot_apache.configurator import install_ssl_options_conf
         path = os.path.join(self.work_dir, "test_it")
-        install_ssl_options_conf(path)
+        other_path = os.path.join(self.work_dir, "other_test_it")
+        install_ssl_options_conf(path, other_path)
         self.assertTrue(os.path.isfile(path))
+        self.assertTrue(os.path.isfile(other_path))
 
     # TEST ENHANCEMENTS
     def test_supported_enhancements(self):
@@ -1430,6 +1433,84 @@ class MultiVhostsTest(util.ApacheTest):
         self.assertTrue(commented_rewrite_rule in conf_line_set)
         mock_get_utility().add_message.assert_called_once_with(mock.ANY,
                                                                mock.ANY)
+
+
+class InstallSslOptionsConfTest(util.ApacheTest):
+    """Test that the options-ssl-nginx.conf file is installed and updated properly."""
+
+    def setUp(self): # pylint: disable=arguments-differ
+        super(InstallSslOptionsConfTest, self).setUp()
+
+        self.config = util.get_apache_configurator(
+            self.config_path, self.vhost_path, self.config_dir, self.work_dir)
+
+    def _call(self):
+        from certbot_apache.configurator import install_ssl_options_conf
+        install_ssl_options_conf(self.config.mod_ssl_conf, self.config.updated_mod_ssl_conf_digest)
+
+    def _current_ssl_options_hash(self):
+        return crypto_util.sha256sum(constants.os_constant("MOD_SSL_CONF_SRC"))
+
+    def _assert_current_file(self):
+        self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
+        self.assertEqual(crypto_util.sha256sum(self.config.mod_ssl_conf),
+            self._current_ssl_options_hash())
+
+    def test_no_file(self):
+        # prepare should have placed a file there
+        self._assert_current_file()
+        os.remove(self.config.mod_ssl_conf)
+        self.assertFalse(os.path.isfile(self.config.mod_ssl_conf))
+        self._call()
+        self._assert_current_file()
+
+    def test_current_file(self):
+        self._assert_current_file()
+        self._call()
+        self._assert_current_file()
+
+    def test_prev_file_updates_to_current(self):
+        from certbot_apache.constants import ALL_SSL_OPTIONS_HASHES
+        ALL_SSL_OPTIONS_HASHES.insert(0, "test_hash_does_not_match")
+        with mock.patch('certbot.crypto_util.sha256sum') as mock_sha256:
+            mock_sha256.return_value = ALL_SSL_OPTIONS_HASHES[0]
+            self._call()
+        self._assert_current_file()
+
+    def test_manually_modified_current_file_does_not_update(self):
+        with open(self.config.mod_ssl_conf, "a") as mod_ssl_conf:
+            mod_ssl_conf.write("a new line for the wrong hash\n")
+        with mock.patch("certbot.plugins.common.logger") as mock_logger:
+            self._call()
+            self.assertFalse(mock_logger.warning.called)
+        self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
+        self.assertEqual(crypto_util.sha256sum(constants.os_constant("MOD_SSL_CONF_SRC")),
+            self._current_ssl_options_hash())
+        self.assertNotEqual(crypto_util.sha256sum(self.config.mod_ssl_conf),
+            self._current_ssl_options_hash())
+
+    def test_manually_modified_past_file_warns(self):
+        with open(self.config.mod_ssl_conf, "a") as mod_ssl_conf:
+            mod_ssl_conf.write("a new line for the wrong hash\n")
+        with open(self.config.updated_mod_ssl_conf_digest, "w") as f:
+            f.write("hashofanoldversion")
+        with mock.patch("certbot.plugins.common.logger") as mock_logger:
+            self._call()
+            self.assertEqual(mock_logger.warning.call_args[0][0],
+                "%s has been manually modified; updated ssl configuration options "
+                "saved to %s. We recommend updating %s for security purposes.")
+        self.assertEqual(crypto_util.sha256sum(constants.os_constant("MOD_SSL_CONF_SRC")),
+            self._current_ssl_options_hash())
+        # only print warning once
+        with mock.patch("certbot.plugins.common.logger") as mock_logger:
+            self._call()
+            self.assertFalse(mock_logger.warning.called)
+
+    def test_current_file_hash_in_all_hashes(self):
+        from certbot_apache.constants import ALL_SSL_OPTIONS_HASHES
+        self.assertTrue(self._current_ssl_options_hash() in ALL_SSL_OPTIONS_HASHES,
+            "Constants.ALL_SSL_OPTIONS_HASHES must be appended"
+            " with the sha256 hash of self.config.mod_ssl_conf when it is updated.")
 
 
 if __name__ == "__main__":
