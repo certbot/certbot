@@ -2,7 +2,7 @@
 # pip installs packages using Certbot's requirements file as constraints
 
 # get the root of the Certbot repo
-repo_root=$(git rev-parse --show-toplevel)
+repo_root=$(dirname $(dirname $(readlink -f $0)))
 requirements="$repo_root/letsencrypt-auto-source/pieces/dependency-requirements.txt"
 constraints=$(mktemp)
 trap "rm -f $constraints" EXIT
