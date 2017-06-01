@@ -275,9 +275,20 @@ def setup_ssl_options(config_dir, src, dest):  # pragma: no cover
 
 def dir_setup(test_dir, pkg):  # pragma: no cover
     """Setup the directories necessary for the configurator."""
-    temp_dir = tempfile.mkdtemp("temp")
-    config_dir = tempfile.mkdtemp("config")
-    work_dir = tempfile.mkdtemp("work")
+    def expanded_tempdir(prefix):
+        """Return the real path of a temp directory with the specified prefix
+
+        Some plugins rely on real paths of symlinks for working correctly. For
+        example, certbot-apache uses real paths of configuration files to tell
+        a virtual host from another. On systems where TMP itself is a symbolic
+        link, (ex: OS X) such plugins will be confused. This function prevents
+        such a case.
+        """
+        return os.path.realpath(tempfile.mkdtemp(prefix))
+
+    temp_dir = expanded_tempdir("temp")
+    config_dir = expanded_tempdir("config")
+    work_dir = expanded_tempdir("work")
 
     os.chmod(temp_dir, constants.CONFIG_DIRS_MODE)
     os.chmod(config_dir, constants.CONFIG_DIRS_MODE)
