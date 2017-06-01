@@ -26,6 +26,11 @@ class TLSServer(socketserver.TCPServer):
     """Generic TLS Server."""
 
     def __init__(self, *args, **kwargs):
+        self.ipv6 = kwargs.pop("ipv6", False)
+        if self.ipv6:
+            self.address_family = socket.AF_INET6
+        else:
+            self.address_family = socket.AF_INET
         self.certs = kwargs.pop("certs", {})
         self.method = kwargs.pop(
             # pylint: disable=protected-access
@@ -49,12 +54,62 @@ class ACMEServerMixin:  # pylint: disable=old-style-class
     allow_reuse_address = True
 
 
+class TLSSNI01DualNetworkedServers(object):
+    """TLSSNI01 Server Wrapper. Tries everything for both. Failures for one don't
+       affect the other."""
+
+    def __init__(self, *args, **kwargs):
+        self.threads = []
+        self.servers = []
+
+        for ip_version in [True, False]:
+            try:
+                server = TLSSNI01Server(args, kwargs, ipv6=ip_version)
+            except socket.error as e:
+                pass
+            else:
+                self.servers.append(server)
+        if len(self.servers) == 0:
+            raise socket.error("Could not bind to IPv4 or IPv6.")
+
+    def serve_forever(self):
+        successful_servers = []
+        # Extra checks are probably not necessary here, since we would already
+        # have failed at bind in init
+        for server in self.servers:
+            if server is not None:
+                try:
+                    thread = threading.Thread(
+                        # pylint: disable=no-member
+                        target=server.serve_forever)
+                    thread.start()
+                except socket.error:
+                    pass
+                else:
+                    successful_servers.append(server)
+                    self.threads.append(thread)
+        self.servers = successful_servers
+        if len(self.servers) == 0:
+            raise socket.error("Could not serve on IPv4 or IPv6.")
+
+    def getsocknames(self):
+        return [server.socket.getsockname() for server in self.servers]
+
+    def shutdown_and_server_close(self):
+        for server in self.servers:
+            server.shutdown()
+            server.server_close()
+        for thread in self.threads:
+            thread.join()
+        self.threads = []
+
+
 class TLSSNI01Server(TLSServer, ACMEServerMixin):
     """TLSSNI01 Server."""
 
-    def __init__(self, server_address, certs):
+    def __init__(self, server_address, certs, ipv6=False):
         TLSServer.__init__(
-            self, server_address, BaseRequestHandlerWithLogging, certs=certs)
+            self, server_address, BaseRequestHandlerWithLogging, certs=certs, ipv6=ipv6)
 
 
 class BaseRequestHandlerWithLogging(socketserver.BaseRequestHandler):
