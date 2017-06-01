@@ -227,14 +227,15 @@ class InstallSslOptionsConfTest(test_util.TempDirTestCase):
 
     def setUp(self):
         super(InstallSslOptionsConfTest, self).setUp()
-        self.source_path = os.path.join(self.tempdir, "options-ssl-source.conf")
+        self.hashes = ["someotherhash"]
         self.dest_path = os.path.join(self.tempdir, "options-ssl-dest.conf")
         self.hash_path = os.path.join(self.tempdir, ".options-ssl-conf.txt")
-        with open(self.source_path, "w") as f:
-            f.write("test directive\n")
-        self.hashes = ["someotherhash",
-                       "anotheroldhash",
-                       crypto_util.sha256sum(self.source_path)]
+        self.old_path = os.path.join(self.tempdir, "options-ssl-old.conf")
+        self.source_path = os.path.join(self.tempdir, "options-ssl-src.conf")
+        for path in (self.source_path, self.old_path,):
+            with open(path, "w") as f:
+                f.write(path)
+            self.hashes.append(crypto_util.sha256sum(path))
 
     def _call(self):
         from certbot.plugins.common import install_ssl_options_conf
@@ -257,13 +258,14 @@ class InstallSslOptionsConfTest(test_util.TempDirTestCase):
         self._assert_current_file()
 
     def test_current_file(self):
-        self._call()
-        self._assert_current_file()
+        # 1st iteration installs the file, the 2nd checks if it needs updating
+        for _ in range(2):
+            self._call()
+            self._assert_current_file()
 
     def test_prev_file_updates_to_current(self):
-        with mock.patch('certbot.crypto_util.sha256sum') as mock_sha256:
-            mock_sha256.return_value = self.hashes[0]
-            self._call()
+        shutil.copyfile(self.old_path, self.dest_path)
+        self._call()
         self._assert_current_file()
 
     def test_manually_modified_current_file_does_not_update(self):
