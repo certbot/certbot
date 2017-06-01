@@ -1480,7 +1480,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
     def test_manually_modified_current_file_does_not_update(self):
         with open(self.config.mod_ssl_conf, "a") as mod_ssl_conf:
             mod_ssl_conf.write("a new line for the wrong hash\n")
-        with mock.patch("certbot_apache.configurator.logger") as mock_logger:
+        with mock.patch("certbot.plugins.common.logger") as mock_logger:
             self._call()
             self.assertFalse(mock_logger.warning.called)
         self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
@@ -1494,7 +1494,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             mod_ssl_conf.write("a new line for the wrong hash\n")
         with open(self.config.updated_mod_ssl_conf_digest, "w") as f:
             f.write("hashofanoldversion")
-        with mock.patch("certbot_apache.configurator.logger") as mock_logger:
+        with mock.patch("certbot.plugins.common.logger") as mock_logger:
             self._call()
             self.assertEqual(mock_logger.warning.call_args[0][0],
                 "%s has been manually modified; updated ssl configuration options "
@@ -1502,7 +1502,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
         self.assertEqual(crypto_util.sha256sum(constants.os_constant("MOD_SSL_CONF_SRC")),
             self._current_ssl_options_hash())
         # only print warning once
-        with mock.patch("certbot_apache.configurator.logger") as mock_logger:
+        with mock.patch("certbot.plugins.common.logger") as mock_logger:
             self._call()
             self.assertFalse(mock_logger.warning.called)
 
