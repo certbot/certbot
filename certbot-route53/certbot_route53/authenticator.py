@@ -45,23 +45,24 @@ class Authenticator(common.Plugin):
         return [challenges.DNS01]
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
-        try:
-            change_ids = [
-                self._change_txt_record("UPSERT", achall)
-                for achall in achalls
-            ]
+        responses = []
+        for achall in achalls:
+            try:
+                change_id = self._change_txt_record("UPSERT", achall)
 
-            for change_id in change_ids:
                 self._wait_for_change(change_id)
-            # Sleep for at least the TTL, to ensure that any records cached by
-            # the ACME server after previous validation attempts are gone. In
-            # most cases we'll need to wait at least this long for the Route53
-            # records to propagate, so this doesn't delay us much.
-            time.sleep(TTL)
-            return [achall.response(achall.account_key) for achall in achalls]
-        except (NoCredentialsError, ClientError) as e:
-            logger.debug('Encountered error during perform: %s', e, exc_info=True)
-            raise errors.PluginError("\n".join([str(e), INSTRUCTIONS]))
+            except (NoCredentialsError, ClientError) as e:
+                logger.debug('Encountered error during perform: %s', e, exc_info=True)
+                raise errors.PluginError("\n".join([str(e), INSTRUCTIONS]))
+
+            responses.append(achall.response(achall.account_key))
+
+        # Sleep for at least the TTL, to ensure that any records cached by
+        # the ACME server after previous validation attempts are gone. In
+        # most cases we'll need to wait at least this long for the Route53
+        # records to propagate, so this doesn't delay us much.
+        time.sleep(TTL)
+        return responses
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         for achall in achalls:
