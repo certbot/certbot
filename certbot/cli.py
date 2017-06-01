@@ -1303,7 +1303,7 @@ class _PrefChallAction(argparse.Action):
         try:
             challs = parse_preferred_challenges(pref_challs.split(","))
         except errors.Error as error:
-            raise argparse.ArgumentTypeError(str(error))
+            raise argparse.ArgumentError(self, str(error))
         namespace.pref_challs.extend(challs)
 
 
