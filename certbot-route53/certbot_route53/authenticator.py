@@ -27,11 +27,7 @@ class Authenticator(common.Plugin):
     This authenticator solves a DNS01 challenge by uploading the answer to AWS
     Route53.
     """
-
-    description = ("Authenticate domain names using the DNS challenge type, "
-        "by automatically updating TXT records using AWS Route53. Works only "
-        "if you use AWS Route53 to host DNS for your domains. " +
-        INSTRUCTIONS)
+    description = "Obtain certs using a DNS TXT record (if you are using AWS Route53 for DNS)."
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
