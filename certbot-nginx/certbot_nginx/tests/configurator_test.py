@@ -552,14 +552,14 @@ class InstallSslOptionsConfTest(util.NginxTest):
         from certbot_nginx.configurator import install_ssl_options_conf
         install_ssl_options_conf(self.config.mod_ssl_conf, self.config.updated_mod_ssl_conf_digest)
 
+    def _current_ssl_options_hash(self):
+        from certbot_nginx.constants import MOD_SSL_CONF_SRC
+        return crypto_util.sha256sum(MOD_SSL_CONF_SRC)
+
     def _assert_current_file(self):
-        """If this is failing, remember that constants.PREVIOUS_SSL_OPTIONS_HASHES and
-           constants.CURRENT_SSL_OPTIONS_HASH must be updated when self.config.mod_ssl_conf
-           is updated. Add CURRENT_SSL_OPTIONS_HASH to PREVIOUS_SSL_OPTIONS_HASHES and set
-           CURRENT_SSL_OPTIONS_HASH to the hash of the updated self.config.mod_ssl_conf."""
         self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
-        from certbot_nginx.constants import CURRENT_SSL_OPTIONS_HASH
-        self.assertEqual(crypto_util.sha256sum(self.config.mod_ssl_conf), CURRENT_SSL_OPTIONS_HASH)
+        self.assertEqual(crypto_util.sha256sum(self.config.mod_ssl_conf),
+            self._current_ssl_options_hash())
 
     def test_no_file(self):
         # prepare should have placed a file there
@@ -575,42 +575,46 @@ class InstallSslOptionsConfTest(util.NginxTest):
         self._assert_current_file()
 
     def test_prev_file_updates_to_current(self):
-        from certbot_nginx.constants import PREVIOUS_SSL_OPTIONS_HASHES
+        from certbot_nginx.constants import ALL_SSL_OPTIONS_HASHES
         with mock.patch('certbot.crypto_util.sha256sum') as mock_sha256:
-            mock_sha256.return_value = PREVIOUS_SSL_OPTIONS_HASHES[0]
+            mock_sha256.return_value = ALL_SSL_OPTIONS_HASHES[0]
             self._call()
         self._assert_current_file()
 
     def test_manually_modified_current_file_does_not_update(self):
         with open(self.config.mod_ssl_conf, "a") as mod_ssl_conf:
             mod_ssl_conf.write("a new line for the wrong hash\n")
-        with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
+        with mock.patch("certbot.plugins.common.logger") as mock_logger:
             self._call()
             self.assertFalse(mock_logger.warning.called)
         self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
-        from certbot_nginx.constants import CURRENT_SSL_OPTIONS_HASH
         self.assertEqual(crypto_util.sha256sum(constants.MOD_SSL_CONF_SRC),
-            CURRENT_SSL_OPTIONS_HASH)
+            self._current_ssl_options_hash())
         self.assertNotEqual(crypto_util.sha256sum(self.config.mod_ssl_conf),
-            CURRENT_SSL_OPTIONS_HASH)
+            self._current_ssl_options_hash())
 
     def test_manually_modified_past_file_warns(self):
         with open(self.config.mod_ssl_conf, "a") as mod_ssl_conf:
             mod_ssl_conf.write("a new line for the wrong hash\n")
         with open(self.config.updated_mod_ssl_conf_digest, "w") as f:
             f.write("hashofanoldversion")
-        with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
+        with mock.patch("certbot.plugins.common.logger") as mock_logger:
             self._call()
             self.assertEqual(mock_logger.warning.call_args[0][0],
                 "%s has been manually modified; updated ssl configuration options "
                 "saved to %s. We recommend updating %s for security purposes.")
-        from certbot_nginx.constants import CURRENT_SSL_OPTIONS_HASH
         self.assertEqual(crypto_util.sha256sum(constants.MOD_SSL_CONF_SRC),
-            CURRENT_SSL_OPTIONS_HASH)
+            self._current_ssl_options_hash())
         # only print warning once
-        with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
+        with mock.patch("certbot.plugins.common.logger") as mock_logger:
             self._call()
             self.assertFalse(mock_logger.warning.called)
+
+    def test_current_file_hash_in_all_hashes(self):
+        from certbot_nginx.constants import ALL_SSL_OPTIONS_HASHES
+        self.assertTrue(self._current_ssl_options_hash() in ALL_SSL_OPTIONS_HASHES,
+            "Constants.ALL_SSL_OPTIONS_HASHES must be appended"
+            " with the sha256 hash of self.config.mod_ssl_conf when it is updated.")
 
 
 if __name__ == "__main__":
