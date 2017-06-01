@@ -40,7 +40,7 @@ class ServerManager(object):
         self.certs = certs
         self.http_01_resources = http_01_resources
 
-    def run(self, port, challenge_type):
+    def run(self, port, challenge_type, listenaddr=""):
         """Run ACME server on specified ``port``.
 
         This method is idempotent, i.e. all calls with the same pair of
@@ -49,6 +49,7 @@ class ServerManager(object):
         :param int port: Port to run the server on.
         :param challenge_type: Subclass of `acme.challenges.Challenge`,
             either `acme.challenge.HTTP01` or `acme.challenges.TLSSNI01`.
+        :param str listenaddr: (optional) The address to listen on. Defaults to all addrs.
 
         :returns: Server instance.
         :rtype: ACMEServerMixin
@@ -58,7 +59,7 @@ class ServerManager(object):
         if port in self._instances:
             return self._instances[port].server
 
-        address = ("", port)
+        address = (listenaddr, port)
         try:
             if challenge_type is challenges.TLSSNI01:
                 server = acme_standalone.TLSSNI01Server(address, self.certs)
@@ -242,7 +243,9 @@ class Authenticator(common.Plugin):
         return response
 
     def _perform_http_01(self, achall):
-        server = self.servers.run(self.config.http01_port, challenges.HTTP01)
+        port = self.config.http01_port
+        addr = self.config.http01_address
+        server = self.servers.run(port, challenges.HTTP01, listenaddr=addr)
         response, validation = achall.response_and_validation()
         resource = acme_standalone.HTTP01RequestHandler.HTTP01Resource(
             chall=achall.chall, response=response, validation=validation)
@@ -251,7 +254,8 @@ class Authenticator(common.Plugin):
 
     def _perform_tls_sni_01(self, achall):
         port = self.config.tls_sni_01_port
-        server = self.servers.run(port, challenges.TLSSNI01)
+        addr = self.config.tls_sni_01_address
+        server = self.servers.run(port, challenges.TLSSNI01, listenaddr=addr)
         response, (cert, _) = achall.response_and_validation(cert_key=self.key)
         self.certs[response.z_domain] = (self.key, cert)
         return server, response

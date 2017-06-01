@@ -991,9 +991,17 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         default=flag_default("tls_sni_01_port"),
         help=config_help("tls_sni_01_port"))
     helpful.add(
+        ["testing", "standalone"], "--tls-sni-01-address",
+        default=flag_default("tls_sni_01_address"),
+        help=config_help("tls_sni_01_address"))
+    helpful.add(
         ["testing", "standalone", "manual"], "--http-01-port", type=int,
         dest="http01_port",
         default=flag_default("http01_port"), help=config_help("http01_port"))
+    helpful.add(
+        ["testing", "standalone"], "--http-01-address",
+        dest="http01_address",
+        default=flag_default("http01_address"), help=config_help("http01_address"))
     helpful.add(
         "testing", "--break-my-certs", action="store_true",
         help="Be willing to replace or renew valid certificates with invalid "
