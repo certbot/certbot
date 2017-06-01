@@ -12,8 +12,6 @@ from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)
 
-TTL = 10
-
 INSTRUCTIONS = (
     "To use certbot-route53, configure credentials as described at "
     "https://boto3.readthedocs.io/en/latest/guide/configuration.html#best-practices-for-configuring-credentials "  # pylint: disable=line-too-long
@@ -27,7 +25,8 @@ class Authenticator(dns_common.DNSAuthenticator):
     This authenticator solves a DNS01 challenge by uploading the answer to AWS
     Route53.
     """
-    description = "Obtain certs using a DNS TXT record (if you are using AWS Route53 for DNS)."
+
+    description = "Obtain certificates using a DNS TXT record (if you are using AWS Route53 for DNS)."
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
@@ -97,7 +96,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                         "ResourceRecordSet": {
                             "Name": validation_domain_name,
                             "Type": "TXT",
-                            "TTL": TTL,
+                            "TTL": self.ttl,
                             "ResourceRecords": [
                                 # For some reason TXT records need to be
                                 # manually quoted.
