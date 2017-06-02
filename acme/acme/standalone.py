@@ -82,7 +82,7 @@ class BaseDualNetworkedServers(object):
                 kwargs["ipv6"] = ip_version
                 server = ServerClass((address[0],) + (port,) + address[2:],
                     unused_arg, **kwargs)
-            except socket.error as e:
+            except socket.error:
                 pass
             else:
                 self.servers.append(server)
@@ -92,6 +92,7 @@ class BaseDualNetworkedServers(object):
             raise socket.error("Could not bind to IPv4 or IPv6.")
 
     def serve_forever(self):
+        """Wraps socketserver.TCPServer.serve_forever"""
         successful_servers = []
         # Extra checks are probably not necessary here, since we would already
         # have failed at bind in init
@@ -112,9 +113,12 @@ class BaseDualNetworkedServers(object):
             raise socket.error("Could not serve on IPv4 or IPv6.")
 
     def getsocknames(self):
+        """Wraps socketserver.TCPServer.socket.getsockname"""
         return [server.socket.getsockname() for server in self.servers]
 
     def shutdown_and_server_close(self):
+        """Wraps socketserver.TCPServer.shutdown, socketserver.TCPServer.server_close, and
+           threading.Thread.join"""
         for server in self.servers:
             server.shutdown()
             server.server_close()

@@ -3,7 +3,6 @@ import argparse
 import collections
 import logging
 import socket
-import threading
 
 import OpenSSL
 import six
