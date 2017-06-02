@@ -29,6 +29,12 @@ class TLSServerTest(unittest.TestCase):
             ('', 0), socketserver.BaseRequestHandler, bind_and_activate=True)
         server.server_close()  # pylint: disable=no-member
 
+    def test_ipv6(self):
+        from acme.standalone import TLSServer
+        server = TLSServer(
+            ('', 0), socketserver.BaseRequestHandler, bind_and_activate=True, ipv6=True)
+        server.server_close()  # pylint: disable=no-member
+
 
 class TLSSNI01ServerTest(unittest.TestCase):
     """Test for acme.standalone.TLSSNI01Server."""
@@ -79,6 +85,96 @@ class HTTP01ServerTest(unittest.TestCase):
     def tearDown(self):
         self.server.shutdown()  # pylint: disable=no-member
         self.thread.join()
+
+    def test_index(self):
+        response = requests.get(
+            'http://localhost:{0}'.format(self.port), verify=False)
+        self.assertEqual(
+            response.text, 'ACME client standalone challenge solver')
+        self.assertTrue(response.ok)
+
+    def test_404(self):
+        response = requests.get(
+            'http://localhost:{0}/foo'.format(self.port), verify=False)
+        self.assertEqual(response.status_code, http_client.NOT_FOUND)
+
+    def _test_http01(self, add):
+        chall = challenges.HTTP01(token=(b'x' * 16))
+        response, validation = chall.response_and_validation(self.account_key)
+
+        from acme.standalone import HTTP01RequestHandler
+        resource = HTTP01RequestHandler.HTTP01Resource(
+            chall=chall, response=response, validation=validation)
+        if add:
+            self.resources.add(resource)
+        return resource.response.simple_verify(
+            resource.chall, 'localhost', self.account_key.public_key(),
+            port=self.port)
+
+    def test_http01_found(self):
+        self.assertTrue(self._test_http01(add=True))
+
+    def test_http01_not_found(self):
+        self.assertFalse(self._test_http01(add=False))
+
+
+class TLSSNI01DualNetworkedServersTest(unittest.TestCase):
+    """Test for acme.standalone.TLSSNI01DualNetworkedServers."""
+
+    _multiprocess_can_split_ = True
+
+    def setUp(self):
+        self.certs = {b'localhost': (
+            test_util.load_pyopenssl_private_key('rsa2048_key.pem'),
+            test_util.load_cert('rsa2048_cert.pem'),
+        )}
+        from acme.standalone import TLSSNI01DualNetworkedServers
+        self.servers = TLSSNI01DualNetworkedServers(("", 0), certs=self.certs)
+        self.servers.serve_forever()
+
+    def tearDown(self):
+        self.servers.shutdown_and_server_close()
+
+    def test_ports_equal(self):
+        socknames = self.servers.getsocknames()
+        prev_port = None
+        # assert ports are equal
+        for sockname in socknames:
+            port = sockname[1]
+            if prev_port:
+                self.assertEqual(prev_port, port)
+            prev_port = port
+
+    def test_connect(self):
+        socknames = self.servers.getsocknames()
+        # connect to all addresses
+        for sockname in socknames:
+            host, port = sockname[:2]
+            cert = crypto_util.probe_sni(
+                b'localhost', host=host, port=port, timeout=1)
+            self.assertEqual(jose.ComparableX509(cert),
+                             jose.ComparableX509(self.certs[b'localhost'][1]))
+
+
+class HTTP01DualNetworkedServersTest(unittest.TestCase):
+    """Tests for acme.standalone.HTTP01DualNetworkedServers."""
+
+    _multiprocess_can_split_ = True
+
+    def setUp(self):
+        self.account_key = jose.JWK.load(
+            test_util.load_vector('rsa1024_key.pem'))
+        self.resources = set()
+
+        from acme.standalone import HTTP01DualNetworkedServers
+        self.servers = HTTP01DualNetworkedServers(('', 0), resources=self.resources)
+
+        # pylint: disable=no-member
+        self.port = self.servers.getsocknames()[0][1]
+        self.servers.serve_forever()
+
+    def tearDown(self):
+        self.servers.shutdown_and_server_close()
 
     def test_index(self):
         response = requests.get(
