@@ -55,7 +55,7 @@ class ServerManager(object):
         """
         assert challenge_type in (challenges.TLSSNI01, challenges.HTTP01)
         if port in self._instances:
-            return self._instances[port].server
+            return self._instances[port]
 
         address = (listenaddr, port)
         try:
@@ -72,7 +72,7 @@ class ServerManager(object):
         # if port == 0, then random free port on OS is taken
         # pylint: disable=no-member
         # both servers, if they exist, have the same port
-        real_ports = servers.getsocknames()[0][1]
+        real_port = servers.getsocknames()[0][1]
         self._instances[real_port] = servers
         return servers
 

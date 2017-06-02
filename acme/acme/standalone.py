@@ -4,7 +4,9 @@ import collections
 import functools
 import logging
 import os
+import socket
 import sys
+import threading
 
 from six.moves import BaseHTTPServer  # type: ignore  # pylint: disable=import-error
 from six.moves import http_client  # pylint: disable=import-error
@@ -77,8 +79,9 @@ class BaseDualNetworkedServers(object):
         # create the IPv4 server.
         for ip_version in [True, False]:
             try:
+                kwargs["ipv6"] = ip_version
                 server = ServerClass((address[0],) + (port,) + address[2:],
-                    unused_arg, kwargs, ipv6=ip_version)
+                    unused_arg, **kwargs)
             except socket.error as e:
                 pass
             else:
@@ -133,7 +136,8 @@ class TLSSNI01DualNetworkedServers(BaseDualNetworkedServers):
        affect the other."""
 
     def __init__(self, *args, **kwargs):
-        BaseDualNetworkedServers.__init__(self, *args, **kwargs, server_class=TLSSNI01Server)
+        kwargs["server_class"] = TLSSNI01Server
+        BaseDualNetworkedServers.__init__(self, *args, **kwargs)
 
 
 class BaseRequestHandlerWithLogging(socketserver.BaseRequestHandler):
@@ -149,13 +153,25 @@ class BaseRequestHandlerWithLogging(socketserver.BaseRequestHandler):
         socketserver.BaseRequestHandler.handle(self)
 
 
-class HTTP01Server(BaseHTTPServer.HTTPServer, ACMEServerMixin):
+class HTTPServer(BaseHTTPServer.HTTPServer):
+    """Generic HTTP Server."""
+
+    def __init__(self, *args, **kwargs):
+        self.ipv6 = kwargs.pop("ipv6", False)
+        if self.ipv6:
+            self.address_family = socket.AF_INET6
+        else:
+            self.address_family = socket.AF_INET
+        BaseHTTPServer.HTTPServer.__init__(self, *args, **kwargs)
+
+
+class HTTP01Server(HTTPServer, ACMEServerMixin):
     """HTTP01 Server."""
 
-    def __init__(self, server_address, resources):
-        BaseHTTPServer.HTTPServer.__init__(
+    def __init__(self, server_address, resources, ipv6=False):
+        HTTPServer.__init__(
             self, server_address, HTTP01RequestHandler.partial_init(
-                simple_http_resources=resources))
+                simple_http_resources=resources), ipv6=ipv6)
 
 
 class HTTP01DualNetworkedServers(BaseDualNetworkedServers):
@@ -163,7 +179,8 @@ class HTTP01DualNetworkedServers(BaseDualNetworkedServers):
        affect the other."""
 
     def __init__(self, *args, **kwargs):
-        BaseDualNetworkedServers.__init__(self, *args, **kwargs, server_class=HTTP01Server)
+        kwargs["server_class"] = HTTP01Server
+        BaseDualNetworkedServers.__init__(self, *args, **kwargs)
 
 
 class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
