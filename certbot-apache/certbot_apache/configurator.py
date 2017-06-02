@@ -247,7 +247,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # This is done first so that ssl module is enabled and cert_path,
         # cert_key... can all be parsed appropriately
-        self.prepare_server_https("443")
+
+        if self.conf("handle-modules"):
+            self.prepare_server_https("443")
 
         path = {"cert_path": self.parser.find_dir("SSLCertificateFile",
                                                   None, vhost.path),
@@ -795,12 +797,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param boolean temp: If the change is temporary
         """
 
-        if self.conf("handle-modules"):
-            if self.version >= (2, 4) and ("socache_shmcb_module" not in
-                                           self.parser.modules):
-                self.enable_mod("socache_shmcb", temp=temp)
-            if "ssl_module" not in self.parser.modules:
-                self.enable_mod("ssl", temp=temp)
+        if self.version >= (2, 4) and ("socache_shmcb_module" not in
+                                        self.parser.modules):
+            self.enable_mod("socache_shmcb", temp=temp)
+        if "ssl_module" not in self.parser.modules:
+            self.enable_mod("ssl", temp=temp)
 
     def make_addrs_sni_ready(self, addrs):
         """Checks to see if the server is ready for SNI challenges.
