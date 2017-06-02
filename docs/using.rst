@@ -298,8 +298,20 @@ need to issue this command in normal circumstances.
 ``--expand`` tells Certbot to update an existing certificate with a new
 certificate that contains all of the old domains and one or more additional
 new domains. With the ``--expand`` option, use the ``-d`` option to specify
-the new domain, and also use ``-d`` and re-type each existing domain in the certificate.
-For example: 
+one or more domains.
+
+Example:
+
+.. code-block::
+
+  certbot --expand --cert-name existing.com -d example.com,newdomain.com
+
+If you prefer, you can specify the domains individually like this:
+
+.. code-block::
+
+  certbot --expand --cert-name existing.com -d example.com -d newdomain.com
+
 
 ``--allow-subset-of-names`` tells Certbot to continue with certificate generation if
 only some of the specified domain authorizations can be obtained. This may
