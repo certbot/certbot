@@ -13,7 +13,7 @@ from certbot_nginx import parser
 from certbot_nginx.tests import util
 
 
-class NginxParserTest(util.NginxTest):
+class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
     """Nginx Parser Test."""
 
     def setUp(self):
@@ -229,6 +229,33 @@ class NginxParserTest(util.NginxTest):
                           [['foo', 'bar'],
                            ['ssl_certificate', '/etc/ssl/cert2.pem']],
                           replace=False)
+
+    def test_comment_is_repeatable(self):
+        nparser = parser.NginxParser(self.config_path)
+        example_com = nparser.abs_path('sites-enabled/example.com')
+        mock_vhost = obj.VirtualHost(example_com,
+                                     None, None, None,
+                                     set(['.example.com', 'example.*']),
+                                     None, [0])
+        nparser.add_server_directives(mock_vhost,
+                                      [['\n  ', '#', ' ', 'what a nice comment']],
+                                      replace=False)
+        nparser.add_server_directives(mock_vhost,
+                                      [['\n  ', 'include', ' ',
+                                      nparser.abs_path('comment_in_file.conf')]],
+                                      replace=False)
+        from certbot_nginx.parser import COMMENT
+        self.assertEqual(nparser.parsed[example_com],
+            [[['server'], [['listen', '69.50.225.155:9000'],
+                           ['listen', '127.0.0.1'],
+                           ['server_name', '.example.com'],
+                           ['server_name', 'example.*'],
+                           ['#', ' ', 'what a nice comment'],
+                           [],
+                           ['include', nparser.abs_path('comment_in_file.conf')],
+                           ['#', COMMENT],
+                           []]]]
+)
 
     def test_replace_server_directives(self):
         nparser = parser.NginxParser(self.config_path)

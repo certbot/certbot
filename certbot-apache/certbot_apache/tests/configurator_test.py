@@ -597,6 +597,21 @@ class MultipleVhostsTest(util.ApacheTest):
         # already listens to the correct port
         self.assertEqual(mock_add_dir.call_count, 0)
 
+    def test_make_vhost_ssl_with_mock_span(self):
+        # span excludes the closing </VirtualHost> tag in older versions
+        # of Augeas
+        return_value = [self.vh_truth[0].filep, 1, 12, 0, 0, 0, 1142]
+        with mock.patch.object(self.config.aug, 'span') as mock_span:
+            mock_span.return_value = return_value
+            self.test_make_vhost_ssl()
+
+    def test_make_vhost_ssl_with_mock_span2(self):
+        # span includes the closing </VirtualHost> tag in newer versions
+        # of Augeas
+        return_value = [self.vh_truth[0].filep, 1, 12, 0, 0, 0, 1157]
+        with mock.patch.object(self.config.aug, 'span') as mock_span:
+            mock_span.return_value = return_value
+            self.test_make_vhost_ssl()
 
     def test_make_vhost_ssl(self):
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])

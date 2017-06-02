@@ -3,6 +3,7 @@
 import datetime
 import os
 import shutil
+import stat
 import unittest
 
 import configobj
@@ -758,13 +759,16 @@ class RenewableCertTests(BaseRenewableCertTest):
         with open(temp, "w") as f:
             f.write("[renewalparams]\nuseful = value # A useful value\n"
                     "useless = value # Not needed\n")
+        os.chmod(temp, 0o640)
         target = {}
         for x in ALL_FOUR:
             target[x] = "somewhere"
         archive_dir = "the_archive"
         relevant_data = {"useful": "new_value"}
+
         from certbot import storage
         storage.write_renewal_config(temp, temp2, archive_dir, target, relevant_data)
+
         with open(temp2, "r") as f:
             content = f.read()
         # useful value was updated
@@ -775,6 +779,9 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue("useless" not in content)
         # check version was stored
         self.assertTrue("version = {0}".format(certbot.__version__) in content)
+        # ensure permissions are copied
+        self.assertEqual(stat.S_IMODE(os.lstat(temp).st_mode),
+                         stat.S_IMODE(os.lstat(temp2).st_mode))
 
     def test_update_symlinks(self):
         from certbot import storage

@@ -42,7 +42,7 @@ Please deploy a DNS TXT record under the name
 
 {validation}
 
-Once this is deployed,"""
+Before continuing, verify the record is deployed."""
     _HTTP_INSTRUCTIONS = """\
 Make sure your web server displays the following content at
 {uri} before continuing:

@@ -80,6 +80,20 @@ CheckHooks() {
     rm "$HOOK_TEST"
 }
 
+# test for regressions of #4719
+get_num_tmp_files() {
+    ls -1 /tmp | wc -l
+}
+num_tmp_files=$(get_num_tmp_files)
+common --csr / && echo expected error && exit 1 || true
+common --help
+common --help all
+common --version
+if [ $(get_num_tmp_files) -ne $num_tmp_files ]; then
+    echo "New files or directories created in /tmp!"
+    exit 1
+fi
+
 # We start a server listening on the port for the
 # unrequested challenge to prevent regressions in #3601.
 python ./tests/run_http_server.py $http_01_port &
@@ -203,7 +217,9 @@ common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
 
 common unregister
 
-if type nginx;
+# Most CI systems set this variable to true.
+# If the tests are running as part of CI, Nginx should be available.
+if ${CI:-false} || type nginx;
 then
     . ./certbot-nginx/tests/boulder-integration.sh
 fi

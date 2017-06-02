@@ -427,11 +427,19 @@ def get_python_os_info():
         if info[1]:
             os_ver = info[1]
     elif os_type.startswith('darwin'):
-        os_ver = subprocess.Popen(
-            ["sw_vers", "-productVersion"],
-            stdout=subprocess.PIPE,
-            universal_newlines=True,
-        ).communicate()[0].rstrip('\n')
+        try:
+            proc = subprocess.Popen(
+                ["/usr/bin/sw_vers", "-productVersion"],
+                stdout=subprocess.PIPE,
+                universal_newlines=True,
+            )
+        except OSError:
+            proc = subprocess.Popen(
+                ["sw_vers", "-productVersion"],
+                stdout=subprocess.PIPE,
+                universal_newlines=True,
+            )
+        os_ver = proc.communicate()[0].rstrip('\n')
     elif os_type.startswith('freebsd'):
         # eg "9.3-RC3-p1"
         os_ver = os_ver.partition("-")[0]
@@ -458,6 +466,13 @@ def safe_email(email):
         return False
 
 
+class _ShowWarning(argparse.Action):
+    """Action to log a warning when an argument is used."""
+    def __call__(self, unused1, unused2, unused3, option_string=None):
+        sys.stderr.write(
+            "Use of {0} is deprecated.\n".format(option_string))
+
+
 def add_deprecated_argument(add_argument, argument_name, nargs):
     """Adds a deprecated argument with the name argument_name.
 
@@ -471,14 +486,17 @@ def add_deprecated_argument(add_argument, argument_name, nargs):
     :param nargs: Value for nargs when adding the argument to argparse.
 
     """
-    class ShowWarning(argparse.Action):
-        """Action to log a warning when an argument is used."""
-        def __call__(self, unused1, unused2, unused3, option_string=None):
-            sys.stderr.write(
-                "Use of {0} is deprecated.\n".format(option_string))
-
-    configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE.add(ShowWarning)
-    add_argument(argument_name, action=ShowWarning,
+    if _ShowWarning not in configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE:
+        # In version 0.12.0 ACTION_TYPES_THAT_DONT_NEED_A_VALUE was
+        # changed from a set to a tuple.
+        if isinstance(configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE, set):
+            # pylint: disable=no-member
+            configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE.add(
+                _ShowWarning)
+        else:
+            configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE += (
+                _ShowWarning,)
+    add_argument(argument_name, action=_ShowWarning,
                  help=argparse.SUPPRESS, nargs=nargs)
 
 

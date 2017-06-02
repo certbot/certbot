@@ -41,7 +41,7 @@ install_requires = [
     # in which we added 2.6 support (see #2243), so we relax the requirement.
     'ConfigArgParse>=0.9.3',
     'configobj',
-    'cryptography>=0.7',  # load_pem_x509_certificate
+    'cryptography>=1.2',  # load_pem_x509_certificate
     'mock',
     'parsedatetime>=1.3',  # Calendar.parseDT
     'PyOpenSSL',
@@ -76,7 +76,8 @@ dev_extras = [
 
 docs_extras = [
     'repoze.sphinx.autointerface',
-    'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
+    # autodoc_member_order = 'bysource', autodoc_default_flags, and #4686
+    'Sphinx >=1.0,<=1.5.6',
     'sphinx_rtd_theme',
 ]
 

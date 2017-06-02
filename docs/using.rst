@@ -24,16 +24,16 @@ Getting certificates (and choosing plugins)
 The Certbot client supports two types of plugins for
 obtaining and installing certificates: authenticators and installers.
 
-Authenticators are plugins used with the ``certonly`` command to obtain a cert.
+Authenticators are plugins used with the ``certonly`` command to obtain a certificate.
 The authenticator validates that you
-control the domain(s) you are requesting a cert for, obtains a cert for the specified
-domain(s), and places the cert in the ``/etc/letsencrypt`` directory on your
-machine. The authenticator does not install the cert (it does not edit any of your server's configuration files to serve the
+control the domain(s) you are requesting a certificate for, obtains a certificate for the specified
+domain(s), and places the certificate in the ``/etc/letsencrypt`` directory on your
+machine. The authenticator does not install the certificate (it does not edit any of your server's configuration files to serve the
 obtained certificate). If you specify multiple domains to authenticate, they will
 all be listed in a single certificate. To obtain multiple separate certificates
 you will need to run Certbot multiple times.
 
-Installers are Plugins used with the ``install`` command to install a cert.
+Installers are Plugins used with the ``install`` command to install a certificate.
 These plugins can modify your webserver's configuration to
 serve your website over HTTPS using certificates obtained by certbot.
 
@@ -44,19 +44,19 @@ a combination of distinct authenticator and installer plugins.
 =========== ==== ==== =============================================================== =============================
 Plugin      Auth Inst Notes                                                           Challenge types (and port)
 =========== ==== ==== =============================================================== =============================
-apache_     Y    Y    | Automates obtaining and installing a cert with Apache 2.4 on  tls-sni-01_ (443)
-                      | Debian-based distributions with ``libaugeas0`` 1.0+.
-webroot_    Y    N    | Obtains a cert by writing to the webroot directory of an      http-01_ (80)
-                      | already running webserver.
-nginx_      Y    Y    | Automates obtaining and installing a cert with Nginx. Alpha   tls-sni-01_ (443)
-                      | release shipped with Certbot 0.9.0.
-standalone_ Y    N    | Uses a "standalone" webserver to obtain a cert. Requires      http-01_ (80) or
-                      | port 80 or 443 to be available. This is useful on systems     tls-sni-01_ (443)
-                      | with no webserver, or when direct integration with the local
-                      | webserver is not supported or not desired.
-manual_     Y    N    | Helps you obtain a cert by giving you instructions to perform http-01_ (80) or
-                      | domain validation yourself. Additionally allows you to        dns-01_ (53)
-                      | specify scripts to automate the validation task in a
+apache_     Y    Y    | Automates obtaining and installing a certificate with Apache  tls-sni-01_ (443)
+                      | 2.4 on Debian-based distributions with ``libaugeas0`` 1.0+.
+webroot_    Y    N    | Obtains a certificate by writing to the webroot directory of  http-01_ (80)
+                      | an already running webserver.
+nginx_      Y    Y    | Automates obtaining and installing a certificate with Nginx.  tls-sni-01_ (443)
+                      | Alpha release shipped with Certbot 0.9.0.
+standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.        http-01_ (80) or
+                      | Requires port 80 or 443 to be available. This is useful on    tls-sni-01_ (443)
+                      | systems with no webserver, or when direct integration with
+                      | the local webserver is not supported or not desired.
+manual_     Y    N    | Helps you obtain a certificate by giving you instructions to  http-01_ (80) or
+                      | perform domain validation yourself. Additionally allows you   dns-01_ (53)
+                      | to specify scripts to automate the validation task in a
                       | customized way.
 =========== ==== ==== =============================================================== =============================
 
@@ -82,7 +82,7 @@ The Apache plugin currently requires an OS with augeas version 1.0; currently `i
 supports
 <https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/constants.py>`_
 modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
-This automates both obtaining *and* installing certs on an Apache
+This automates both obtaining *and* installing certificates on an Apache
 webserver. To specify this plugin on the command line, simply include
 ``--apache``.
 
@@ -92,7 +92,7 @@ Webroot
 If you're running a local webserver for which you have the ability
 to modify the content being served, and you'd prefer not to stop the
 webserver during the certificate issuance process, you can use the webroot
-plugin to obtain a cert by including ``certonly`` and ``--webroot`` on
+plugin to obtain a certificate by including ``certonly`` and ``--webroot`` on
 the command line. In addition, you'll need to specify ``--webroot-path``
 or ``-w`` with the top-level directory ("web root") containing the files
 served by your webserver. For example, ``--webroot-path /var/www/html``
@@ -144,11 +144,11 @@ the ``--nginx`` flag on the commandline.
 Standalone
 ----------
 
-Use standalone mode to obtain a cert if you don't want to use (or don't currently have)
+Use standalone mode to obtain a certificate if you don't want to use (or don't currently have)
 existing server software. The standalone plugin does not rely on any other server
-software running on the machine where you obtain the cert.
+software running on the machine where you obtain the certificate.
 
-To obtain a cert using a "standalone" webserver, you can use the
+To obtain a certificate using a "standalone" webserver, you can use the
 standalone plugin by including ``certonly`` and ``--standalone``
 on the command line. This plugin needs to bind to port 80 or 443 in
 order to perform domain validation, so you may need to stop your
@@ -167,10 +167,10 @@ the Internet on the specified port using each requested domain name.
 Manual
 ------
 
-If you'd like to obtain a cert running ``certbot`` on a machine
+If you'd like to obtain a certificate running ``certbot`` on a machine
 other than your target webserver or perform the steps for domain
 validation yourself, you can use the manual plugin. While hidden from
-the UI, you can use the plugin to obtain a cert by specifying
+the UI, you can use the plugin to obtain a certificate by specifying
 ``certonly`` and ``--manual`` on the command line. This requires you
 to copy and paste commands into another terminal session, which may
 be on a different computer.
@@ -213,11 +213,11 @@ plesk_      Y    Y    Integration with the Plesk web hosting tool
 haproxy_    Y    Y    Integration with the HAProxy load balancer
 s3front_    Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
 gandi_      Y    Y    Integration with Gandi's hosting products and API
-varnish_    Y    N    Obtain certs via a Varnish server
+varnish_    Y    N    Obtain certificates via a Varnish server
 external_   Y    N    A plugin for convenient scripting (See also ticket 2782_)
-icecast_    N    Y    Deploy certs to Icecast 2 streaming media servers
-pritunl_    N    Y    Install certs in pritunl distributed OpenVPN servers
-proxmox_    N    Y    Install certs in Proxmox Virtualization servers
+icecast_    N    Y    Deploy certificates to Icecast 2 streaming media servers
+pritunl_    N    Y    Install certificates in pritunl distributed OpenVPN servers
+proxmox_    N    Y    Install certificates in Proxmox Virtualization servers
 postfix_    N    Y    STARTTLS Everywhere is becoming a Certbot Postfix/Exim plugin
 heroku_     Y    Y    Integration with Heroku SSL
 =========== ==== ==== ===============================================================
@@ -339,9 +339,9 @@ use the ``revoke`` command to do so. Note that the ``revoke`` command takes the 
   certbot revoke --cert-path /etc/letsencrypt/live/CERTNAME/cert.pem
 
 Additionally, if a certificate
-is a test cert obtained via the ``--staging`` or ``--test-cert`` flag, that flag must be passed to the
+is a test certificate obtained via the ``--staging`` or ``--test-cert`` flag, that flag must be passed to the
 ``revoke`` subcommand.
-Once a certificate is revoked (or for other cert management tasks), all of a certificate's
+Once a certificate is revoked (or for other certificate management tasks), all of a certificate's
 relevant files can be removed from the system with the ``delete`` subcommand::
 
   certbot delete --cert-name example.com
@@ -374,7 +374,7 @@ Since ``renew`` only renews certificates that are near expiry it can be
 run as frequently as you want - since it will usually take no action.
 
 The ``renew`` command includes hooks for running commands or scripts before or after a certificate is
-renewed. For example, if you have a single cert obtained using
+renewed. For example, if you have a single certificate obtained using
 the standalone_ plugin, you might need to stop the webserver
 before renewing so standalone can bind to the necessary ports, and
 then restart it after the plugin is finished. Example::
@@ -500,7 +500,7 @@ renewal configuration file, located at ``/etc/letsencrypt/renewal/CERTNAME``.
 
 For most tasks, it is safest to limit yourself to pointing symlinks at the files there, or using
 ``--renew-hook`` to copy / make new files based upon those files, if your operational situation requires it
-(for instance, combining certs and keys in different way, or having copies of things with different
+(for instance, combining certificates and keys in different way, or having copies of things with different
 specific permissions that are demanded by other programs).
 
 If the contents of ``/etc/letsencrypt/archive/CERTNAME`` are moved to a new folder, first specify
