@@ -149,13 +149,14 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
             try:
                 cert = crypto_util.probe_sni(
                     b'localhost', b'0.0.0.0', self.port)
+            except errors.Error:
+                self.assertTrue(attempt + 1 < max_attempts, "Timeout!")
+                time.sleep(1)  # wait until thread starts
+            else:
                 self.assertEqual(jose.ComparableX509(cert),
                                  test_util.load_comparable_cert(
                                      'rsa2048_cert.pem'))
                 break
-            except errors.Error:
-                self.assertTrue(max_attempts > 0, "Timeout!")
-                time.sleep(1)  # wait until thread starts
 
             if attempt == 0:
                 # the first attempt is always meant to fail, so we can test
