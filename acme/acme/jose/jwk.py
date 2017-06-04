@@ -174,9 +174,10 @@ class JWKOct(JWK):
 class JWKRSA(JWK):
     """RSA JWK.
 
-    :ivar key: `cryptography.hazmat.primitives.rsa.RSAPrivateKey`
+    :ivar key: Optional `cryptography.hazmat.primitives.rsa.RSAPrivateKey`
         or `cryptography.hazmat.primitives.rsa.RSAPublicKey` wrapped
-        in `.ComparableRSAKey`
+        in `.ComparableRSAKey`. If not present, will generate an RSAPrivateKey
+        with suitable defaults.
 
     """
     typ = 'RSA'
@@ -185,8 +186,9 @@ class JWKRSA(JWK):
     required = ('e', JWK.type_field_name, 'n')
 
     def __init__(self, *args, **kwargs):
-        if 'key' in kwargs and not isinstance(
-                kwargs['key'], util.ComparableRSAKey):
+        if 'key' not in kwargs:
+            kwargs['key'] = rsa.generate_private_key(65537, 2048, default_backend())
+        if not isinstance(kwargs['key'], util.ComparableRSAKey):
             kwargs['key'] = util.ComparableRSAKey(kwargs['key'])
         super(JWKRSA, self).__init__(*args, **kwargs)
 

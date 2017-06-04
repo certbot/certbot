@@ -3,6 +3,7 @@ import binascii
 import unittest
 
 from acme import test_util
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 from acme.jose import errors
 from acme.jose import json_util
@@ -113,6 +114,12 @@ class JWKRSATest(unittest.TestCase, JWKTestBaseMixin):
         self.assertTrue(isinstance(
             self.jwk256_not_comparable.key, util.ComparableRSAKey))
         self.assertEqual(self.jwk256, self.jwk256_not_comparable)
+
+    def test_init_default_generate(self):
+        from acme.jose.jwk import JWKRSA
+        jwk = JWKRSA()
+        # pylint: disable=protected-access
+        self.assertTrue(isinstance(jwk.key._wrapped, rsa.RSAPrivateKey))
 
     def test_encode_param_zero(self):
         from acme.jose.jwk import JWKRSA
