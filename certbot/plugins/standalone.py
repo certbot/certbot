@@ -254,7 +254,7 @@ class Authenticator(common.Plugin):
         return servers, response
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
-        # reduce self.served and close servers if none challenges are served
+        # reduce self.served and close servers if no challenges are served
         for unused_servers, server_achalls in self.served.items():
             for achall in achalls:
                 if achall in server_achalls:

@@ -134,6 +134,9 @@ def probe_sni(name, host, port=443, timeout=300,
 
     try:
         # pylint: disable=star-args
+        logger.debug("Attempting to connect to %s:%d%s.", host, port,
+            " from {0}:{1}".format(source_address[0], source_address[1]) if \
+            socket_kwargs else "")
         sock = socket.create_connection((host, port), **socket_kwargs)
     except socket.error as error:
         raise errors.Error(error)
