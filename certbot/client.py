@@ -156,7 +156,6 @@ def register(config, account_storage, tos_cb=None):
             key_size=config.rsa_key_size,
             backend=default_backend())))
     acme = acme_from_config_key(config, key)
-    # TODO: add phone?
     regr = perform_registration(acme, config)
 
     if regr.terms_of_service is not None:
