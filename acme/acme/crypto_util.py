@@ -107,7 +107,7 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
 
 
 def probe_sni(name, host, port=443, timeout=300,
-              method=_DEFAULT_TLSSNI01_SSL_METHOD, source_address=('', 0)):
+              method=_DEFAULT_TLSSNI01_SSL_METHOD):
     """Probe SNI server for SSL certificate.
 
     :param bytes name: Byte string to send as the server name in the
@@ -116,9 +116,6 @@ def probe_sni(name, host, port=443, timeout=300,
     :param int port: Port to connect to.
     :param int timeout: Timeout in seconds.
     :param method: See `OpenSSL.SSL.Context` for allowed values.
-    :param tuple source_address: Enables multi-path probing (selection
-        of source interface). See `socket.creation_connection` for more
-        info. Available only in Python 2.7+.
 
     :raises acme.errors.Error: In case of any problems.
 
@@ -129,15 +126,10 @@ def probe_sni(name, host, port=443, timeout=300,
     context = OpenSSL.SSL.Context(method)
     context.set_timeout(timeout)
 
-    socket_kwargs = {} if sys.version_info < (2, 7) else {
-        'source_address': source_address}
-
     try:
         # pylint: disable=star-args
-        logger.debug("Attempting to connect to %s:%d%s.", host, port,
-            " from {0}:{1}".format(source_address[0], source_address[1]) if \
-            socket_kwargs else "")
-        sock = socket.create_connection((host, port), **socket_kwargs)
+        logger.debug("Attempting to connect to %s:%d.", host, port)
+        sock = socket.create_connection((host, port))
     except socket.error as error:
         raise errors.Error(error)
 
