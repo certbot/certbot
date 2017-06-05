@@ -509,7 +509,7 @@ class TLSSNI01(KeyAuthorizationChallenge):
 @Challenge.register  # pylint: disable=too-many-ancestors
 class DNS(_TokenChallenge):
     """ACME "dns" challenge."""
-    typ = "dns"
+    typ = "dns-01"
 
     LABEL = "_acme-challenge"
     """Label clients prepend to the domain name being validated."""
@@ -573,7 +573,7 @@ class DNSResponse(ChallengeResponse):
     :param JWS validation:
 
     """
-    typ = "dns"
+    typ = "dns-01"
 
     validation = jose.Field("validation", decoder=jose.JWS.from_json)
 
