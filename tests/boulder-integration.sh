@@ -13,12 +13,6 @@ set -eux
 . ./tests/integration/_common.sh
 export PATH="$PATH:/usr/sbin"  # /usr/sbin/nginx
 
-if [ `uname` = "Darwin" ];then
-  readlink="greadlink"
-else
-  readlink="readlink"
-fi
-
 cleanup_and_exit() {
     EXIT_STATUS=$?
     if SERVER_STILL_RUNNING=`ps -p $python_server_pid -o pid=`
