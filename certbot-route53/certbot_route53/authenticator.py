@@ -142,6 +142,6 @@ class Authenticator(common.Plugin):
             if response["ChangeInfo"]["Status"] == "INSYNC":
                 return
             time.sleep(5)
-        raise Exception(
+        raise errors.PluginError(
             "Timed out waiting for Route53 change. Current status: %s" %
             response["ChangeInfo"]["Status"])
