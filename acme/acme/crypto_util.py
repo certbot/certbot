@@ -132,11 +132,11 @@ def probe_sni(name, host, port=443, timeout=300,
     socket_kwargs = {} if sys.version_info < (2, 7) else {
         'source_address': source_address}
 
-    host_enable_ipv6 = '' if host == '::' or host == '0' else host
+    host_protocol_agnostic = '' if host == '::' or host == '0' else host
 
     try:
         # pylint: disable=star-args
-        logger.debug("Attempting to connect to %s:%d%s.", host_enable_ipv6, port,
+        logger.debug("Attempting to connect to %s:%d%s.", host_protocol_agnostic, port,
             " from {0}:{1}".format(source_address[0], source_address[1]) if \
             socket_kwargs else "")
         sock = socket.create_connection((host, port), **socket_kwargs)
