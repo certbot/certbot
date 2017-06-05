@@ -83,9 +83,10 @@ class BaseDualNetworkedServers(object):
                 kwargs["ipv6"] = ip_version
                 new_address = (address[0],) + (port,) + address[2:]
                 new_args = (new_address,) + args[1:]
-                server = ServerClass(*new_args, **kwargs)
+                server = ServerClass(*new_args, **kwargs) # pylint: disable=star-args
             except socket.error:
-                pass
+                logger.debug("Failed to bind to %s:%s using %s", new_address[0],
+                    new_address[1], "IPv6" if ip_version else "IPv4")
             else:
                 self.servers.append(server)
                 # Always bind to the same port
