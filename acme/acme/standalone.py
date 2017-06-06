@@ -64,9 +64,8 @@ class BaseDualNetworkedServers(object):
        If two servers are instantiated, they will serve on the same port.
        """
 
-    def __init__(self, server_address, *remaining_args, **kwargs):
+    def __init__(self, ServerClass, server_address, *remaining_args, **kwargs):
         port = server_address[1]
-        ServerClass = kwargs.pop("server_class", object)
         self.threads = []
         self.servers = []
 
@@ -131,8 +130,7 @@ class TLSSNI01DualNetworkedServers(BaseDualNetworkedServers):
        affect the other."""
 
     def __init__(self, *args, **kwargs):
-        kwargs["server_class"] = TLSSNI01Server
-        BaseDualNetworkedServers.__init__(self, *args, **kwargs)
+        BaseDualNetworkedServers.__init__(self, TLSSNI01Server, *args, **kwargs)
 
 
 class BaseRequestHandlerWithLogging(socketserver.BaseRequestHandler):
@@ -174,8 +172,7 @@ class HTTP01DualNetworkedServers(BaseDualNetworkedServers):
        affect the other."""
 
     def __init__(self, *args, **kwargs):
-        kwargs["server_class"] = HTTP01Server
-        BaseDualNetworkedServers.__init__(self, *args, **kwargs)
+        BaseDualNetworkedServers.__init__(self, HTTP01Server, *args, **kwargs)
 
 
 class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):

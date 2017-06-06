@@ -150,15 +150,17 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
     def test_fail_to_bind(self, mock_bind):
         mock_bind.side_effect = socket.error
         from acme.standalone import BaseDualNetworkedServers
-        self.assertRaises(socket.error, BaseDualNetworkedServers, ("", 0),
-            socketserver.BaseRequestHandler,
-            server_class=BaseDualNetworkedServersTest.SingleProtocolServer)
+        self.assertRaises(socket.error, BaseDualNetworkedServers,
+            BaseDualNetworkedServersTest.SingleProtocolServer,
+            ("", 0),
+            socketserver.BaseRequestHandler)
 
     def test_ports_equal(self):
         from acme.standalone import BaseDualNetworkedServers
-        servers = BaseDualNetworkedServers(("", 0),
-            socketserver.BaseRequestHandler,
-            server_class=BaseDualNetworkedServersTest.SingleProtocolServer)
+        servers = BaseDualNetworkedServers(
+            BaseDualNetworkedServersTest.SingleProtocolServer,
+            ("", 0),
+            socketserver.BaseRequestHandler)
         socknames = servers.getsocknames()
         prev_port = None
         # assert ports are equal
