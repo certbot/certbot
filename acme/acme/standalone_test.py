@@ -140,10 +140,10 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
                 # pylint: disable=no-member
                 self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
                 try:
-                    self.server_bind() # pylint: disable=no-member
-                    self.server_activate() # pylint: disable=no-member
+                    self.server_bind()
+                    self.server_activate()
                 except:
-                    self.server_close() # pylint: disable=no-member
+                    self.server_close()
                     raise
 
     @mock.patch("socket.socket.bind")
