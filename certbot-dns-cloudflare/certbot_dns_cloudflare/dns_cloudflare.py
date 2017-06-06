@@ -21,7 +21,8 @@ class Authenticator(dns_common.DNSAuthenticator):
     This Authenticator uses the Cloudflare API to fulfill a dns-01 challenge.
     """
 
-    description = 'Obtain certs using a DNS TXT record (if you are using Cloudflare for DNS).'
+    description = ('Obtain certificates using a DNS TXT record (if you are using Cloudflare for '
+                   'DNS).')
     ttl = 120
 
     def __init__(self, *args, **kwargs):
