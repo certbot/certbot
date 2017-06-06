@@ -20,6 +20,7 @@ RUN apk add --no-cache --virtual .build-deps \
         openssl-dev \
         musl-dev \
         libffi-dev \
+        curl \
     && pip install --no-cache-dir \
         --editable /opt/certbot/src/acme \
         --editable /opt/certbot/src \
