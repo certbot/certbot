@@ -26,7 +26,9 @@ class Authenticator(dns_common.DNSAuthenticator):
     Route53.
     """
 
-    description = "Obtain certificates using a DNS TXT record (if you are using AWS Route53 for DNS)."
+    description = ("Obtain certificates using a DNS TXT record (if you are using AWS Route53 for "
+                   "DNS).")
+    ttl = 10
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
