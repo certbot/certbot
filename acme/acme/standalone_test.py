@@ -1,5 +1,4 @@
 """Tests for acme.standalone."""
-import mock
 import os
 import shutil
 import socket
@@ -11,6 +10,7 @@ import unittest
 from six.moves import http_client  # pylint: disable=import-error
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
 
+import mock
 import requests
 
 from acme import challenges
