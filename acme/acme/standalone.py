@@ -5,6 +5,7 @@ import functools
 import logging
 import os
 import sys
+import socket
 
 from six.moves import BaseHTTPServer  # type: ignore  # pylint: disable=import-error
 from six.moves import http_client  # pylint: disable=import-error
@@ -51,6 +52,7 @@ class ACMEServerMixin:  # pylint: disable=old-style-class
 
 class TLSSNI01Server(TLSServer, ACMEServerMixin):
     """TLSSNI01 Server."""
+    address_family = socket.AF_INET6
 
     def __init__(self, server_address, certs):
         TLSServer.__init__(
@@ -72,6 +74,7 @@ class BaseRequestHandlerWithLogging(socketserver.BaseRequestHandler):
 
 class HTTP01Server(BaseHTTPServer.HTTPServer, ACMEServerMixin):
     """HTTP01 Server."""
+    address_family = socket.AF_INET6
 
     def __init__(self, server_address, resources):
         BaseHTTPServer.HTTPServer.__init__(
