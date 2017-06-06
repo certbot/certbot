@@ -64,9 +64,8 @@ class BaseDualNetworkedServers(object):
        If two servers are instantiated, they will serve on the same port.
        """
 
-    def __init__(self, *args, **kwargs):
-        address = args[0]
-        port = address[1]
+    def __init__(self, server_address, *remaining_args, **kwargs):
+        port = server_address[1]
         ServerClass = kwargs.pop("server_class", object)
         self.threads = []
         self.servers = []
@@ -81,8 +80,8 @@ class BaseDualNetworkedServers(object):
         for ip_version in [True, False]:
             try:
                 kwargs["ipv6"] = ip_version
-                new_address = (address[0],) + (port,) + address[2:]
-                new_args = (new_address,) + args[1:]
+                new_address = (server_address[0],) + (port,) + server_address[2:]
+                new_args = (new_address,) + remaining_args
                 server = ServerClass(*new_args, **kwargs) # pylint: disable=star-args
             except socket.error:
                 logger.debug("Failed to bind to %s:%s using %s", new_address[0],
