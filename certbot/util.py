@@ -568,6 +568,17 @@ def enforce_domain_sanity(domain):
     # Remove trailing dot
     domain = domain[:-1] if domain.endswith(u'.') else domain
 
+    # Separately check for odd "domains" like "http://example.com" to fail
+    # fast and provide a clear error message
+    for scheme in ["http", "https"]:  # Other schemes seem unlikely
+        if domain.startswith("{0}://".format(scheme)):
+            raise errors.ConfigurationError(
+                "Requested name {0} appears to be a URL, not a FQDN. "
+                "Try again without the leading \"{1}://\".".format(
+                    domain, scheme
+                )
+            )
+
     # Explain separately that IP addresses aren't allowed (apart from not
     # being FQDNs) because hope springs eternal concerning this point
     try:
