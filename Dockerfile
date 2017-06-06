@@ -2,7 +2,7 @@ FROM python:2-alpine
 
 ENTRYPOINT [ "certbot" ]
 EXPOSE 80 443
-VOLUME /etc/letsencrypt /var/lib/letsencrypt
+VOLUME /etc/letsencrypt /var/lib/letsencrypt /var/log/letsencrypt
 WORKDIR /opt/certbot
 
 COPY CHANGES.rst README.rst setup.py src/
