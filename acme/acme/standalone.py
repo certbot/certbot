@@ -96,24 +96,12 @@ class BaseDualNetworkedServers(object):
 
     def serve_forever(self):
         """Wraps socketserver.TCPServer.serve_forever"""
-        successful_servers = []
-        # Extra checks are probably not necessary here, since we would already
-        # have failed at bind in init
         for server in self.servers:
-            if server is not None:
-                try:
-                    thread = threading.Thread(
-                        # pylint: disable=no-member
-                        target=server.serve_forever)
-                    thread.start()
-                except socket.error:
-                    pass
-                else:
-                    successful_servers.append(server)
-                    self.threads.append(thread)
-        self.servers = successful_servers
-        if len(self.servers) == 0:
-            raise socket.error("Could not serve on IPv4 or IPv6.")
+            thread = threading.Thread(
+                # pylint: disable=no-member
+                target=server.serve_forever)
+            thread.start()
+            self.threads.append(thread)
 
     def getsocknames(self):
         """Wraps socketserver.TCPServer.socket.getsockname"""

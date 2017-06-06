@@ -1,6 +1,8 @@
 """Tests for acme.standalone."""
+import mock
 import os
 import shutil
+import socket
 import threading
 import tempfile
 import time
@@ -116,6 +118,26 @@ class HTTP01ServerTest(unittest.TestCase):
 
     def test_http01_not_found(self):
         self.assertFalse(self._test_http01(add=False))
+
+
+class BaseDualNetworkedServersTest(unittest.TestCase):
+    """Test for acme.standalone.BaseDualNetworkedServers."""
+
+    _multiprocess_can_split_ = True
+
+    class IPv6Server(socketserver.TCPServer):
+        """Server that expects IPv6 kwarg"""
+        def __init__(self, *args, **kwargs):
+            kwargs.pop("ipv6", False)
+            socketserver.TCPServer.__init__(self, *args, **kwargs)
+
+    @mock.patch("socket.socket.bind")
+    def test_fail_to_bind(self, mock_bind):
+        mock_bind.side_effect = socket.error
+        from acme.standalone import BaseDualNetworkedServers
+        self.assertRaises(socket.error, BaseDualNetworkedServers, ("", 0),
+            socketserver.BaseRequestHandler,
+            server_class=BaseDualNetworkedServersTest.IPv6Server)
 
 
 class TLSSNI01DualNetworkedServersTest(unittest.TestCase):
