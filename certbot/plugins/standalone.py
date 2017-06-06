@@ -100,7 +100,7 @@ class ServerManager(object):
         :rtype: tuple
 
         """
-        return self._instances
+        return self._instances.copy()
 
 
 SUPPORTED_CHALLENGES = [challenges.TLSSNI01, challenges.HTTP01]
