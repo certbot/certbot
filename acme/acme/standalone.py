@@ -89,7 +89,8 @@ class BaseDualNetworkedServers(object):
                     new_address[1], "IPv6" if ip_version else "IPv4")
             else:
                 self.servers.append(server)
-                # Always bind to the same port
+                # If two servers are set up and port 0 was passed in, ensure we always
+                # bind to the same port for both servers.
                 port = server.socket.getsockname()[1]
         if len(self.servers) == 0:
             raise socket.error("Could not bind to IPv4 or IPv6.")
