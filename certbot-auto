@@ -47,6 +47,8 @@ Help for certbot itself cannot be provided until it is installed.
   -v, --verbose                             provide more output
   -q, --quiet                               provide only update/error output;
                                             implies --non-interactive
+  -e, --export                              Export a copy of a key, cert, and
+                                            chain for use elsewhere
 
 All arguments are accepted and forwarded to the Certbot client when run."
 
@@ -70,9 +72,11 @@ for arg in "$@" ; do
       QUIET=1;;
     --verbose)
       VERBOSE=1;;
+    --export)
+      EXPORT=1;;
     -[!-]*)
       OPTIND=1
-      while getopts ":hnvq" short_arg $arg; do
+      while getopts ":hnvqe" short_arg $arg; do
         case "$short_arg" in
           h)
             HELP=1;;
@@ -82,10 +86,28 @@ for arg in "$@" ; do
             QUIET=1;;
           v)
             VERBOSE=1;;
+          e)
+            EXPORT=1;;
         esac
       done;;
   esac
 done
+
+if [ "$EXPORT" = 1 ]; then
+LIVELOC="/etc/letsencrypt/live"
+    shift
+    for var in ${@}
+    do
+        if [ -f $LIVELOC/$var/cert.pem ] && [ -f $liveloc/$var/chain.pem ] && [ -f $liveloc/$var/fullchain.pem ] && [ -f $liveloc/$var/privkey.pem ]; then
+            /bin/cat $LIVELOC/$var/*.pem
+        else
+            echo "$LIVELOC/$var does not exist"
+        fi
+        shift
+    done
+exit
+fi
+
 
 if [ $BASENAME = "letsencrypt-auto" ]; then
   # letsencrypt-auto does not respect --help or --yes for backwards compatibility
