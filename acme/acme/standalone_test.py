@@ -126,7 +126,7 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
     _multiprocess_can_split_ = True
 
     class SingleProtocolServer(socketserver.TCPServer):
-        """Server that expects IPv6 kwarg"""
+        """Server that only serves on a single protocol. FreeBSD has this behavior for AF_INET6."""
         def __init__(self, *args, **kwargs):
             ipv6 = kwargs.pop("ipv6", False)
             if ipv6:
