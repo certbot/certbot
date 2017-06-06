@@ -20,7 +20,7 @@ fi
   -e certbot-dns-dnsimple \
   -e certbot-dns-google \
   -e certbot-dns-nsone \
+  -e certbot-dns-route53 \
   -e certbot-nginx \
-  -e certbot-route53 \
   -e letshelp-certbot \
   -e certbot-compatibility-test

@@ -1,19 +1,20 @@
-"""Tests for certbot_route53.authenticator"""
+"""Tests for certbot_dns_route53.dns_route53.Authenticator"""
 
 import unittest
 
 import mock
-
 from botocore.exceptions import NoCredentialsError, ClientError
 
+from certbot import errors
 from certbot.plugins import dns_test_common
+from certbot.plugins.dns_test_common import DOMAIN
 
 
 class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest):
     # pylint: disable=protected-access
 
     def setUp(self):
-        from certbot_route53.authenticator import Authenticator
+        from certbot_dns_route53.dns_route53 import Authenticator
 
         super(AuthenticatorTest, self).setUp()
 
@@ -21,22 +22,21 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
 
         self.auth = Authenticator(self.config, "route53")
 
-    def test_parser_arguments(self):
-        pass  # TODO: follow convention of defining optional argument for DNS propagation delay
-
     def test_perform(self):
         self.auth._change_txt_record = mock.MagicMock()
         self.auth._wait_for_change = mock.MagicMock()
 
         self.auth.perform([self.achall])
 
-        self.auth._change_txt_record.assert_called_once_with("UPSERT", self.achall)
+        self.auth._change_txt_record.assert_called_once_with("UPSERT",
+                                                             '_acme-challenge.' + DOMAIN,
+                                                             mock.ANY)
         self.auth._wait_for_change.assert_called_once()
 
     def test_perform_no_credentials_error(self):
         self.auth._change_txt_record = mock.MagicMock(side_effect=NoCredentialsError)
 
-        self.assertRaises(NoCredentialsError,  # TODO: Should be `errors.PluginError`
+        self.assertRaises(errors.PluginError,
                           self.auth.perform,
                           [self.achall])
 
@@ -44,31 +44,35 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
         self.auth._change_txt_record = mock.MagicMock(
             side_effect=ClientError({"Error": {"Code": "foo"}}, "bar"))
 
-        self.assertRaises(ClientError,  # TODO: Should be `errors.PluginError`
+        self.assertRaises(errors.PluginError,
                           self.auth.perform,
                           [self.achall])
 
     def test_cleanup(self):
+        self.auth._attempt_cleanup = True
+
         self.auth._change_txt_record = mock.MagicMock()
 
         self.auth.cleanup([self.achall])
 
-        self.auth._change_txt_record.assert_called_once_with("DELETE", self.achall)
+        self.auth._change_txt_record.assert_called_once_with("DELETE",
+                                                             '_acme-challenge.'+DOMAIN,
+                                                             mock.ANY)
 
     def test_cleanup_no_credentials_error(self):
+        self.auth._attempt_cleanup = True
+
         self.auth._change_txt_record = mock.MagicMock(side_effect=NoCredentialsError)
 
-        self.assertRaises(NoCredentialsError,  # TODO: Should not raise
-                          self.auth.cleanup,
-                          [self.achall])
+        self.auth.cleanup([self.achall])
 
     def test_cleanup_client_error(self):
+        self.auth._attempt_cleanup = True
+
         self.auth._change_txt_record = mock.MagicMock(
             side_effect=ClientError({"Error": {"Code": "foo"}}, "bar"))
 
-        self.assertRaises(ClientError,  # TODO: Should not raise
-                          self.auth.cleanup,
-                          [self.achall])
+        self.auth.cleanup([self.achall])
 
 
 class ClientTest(unittest.TestCase):
@@ -107,7 +111,7 @@ class ClientTest(unittest.TestCase):
                             }
 
     def setUp(self):
-        from certbot_route53.authenticator import Authenticator
+        from certbot_dns_route53.dns_route53 import Authenticator
 
         super(ClientTest, self).setUp()
 
@@ -153,7 +157,7 @@ class ClientTest(unittest.TestCase):
         self.client.r53.get_paginator = mock.MagicMock()
         self.client.r53.get_paginator().paginate.return_value = []
 
-        self.assertRaises(ValueError,  # TODO: Should be `errors.PluginError`
+        self.assertRaises(errors.PluginError,
                           self.client._find_zone_id_for_domain,
                           "foo.example.com")
 
@@ -168,7 +172,7 @@ class ClientTest(unittest.TestCase):
             },
         ]
 
-        self.assertRaises(ValueError,  # TODO: Should be `errors.PluginError`
+        self.assertRaises(errors.PluginError,
                           self.client._find_zone_id_for_domain,
                           "foo.example.com")
 
@@ -177,7 +181,7 @@ class ClientTest(unittest.TestCase):
         self.client.r53.change_resource_record_sets = mock.MagicMock(
             return_value={"ChangeInfo": {"Id": 1}})
 
-        self.client._change_txt_record("FOO", dns_test_common.BaseAuthenticatorTest.achall)
+        self.client._change_txt_record("FOO", DOMAIN, "foo")
 
         self.client.r53.change_resource_record_sets.assert_called_once()
 
