@@ -30,6 +30,6 @@ To generate a certificate:
 ```
 certbot certonly \
   -n --agree-tos --email DEVOPS@COMPANY.COM \
-  -a certbot-route53:auth \
+  --dns-route53 \
   -d MY.DOMAIN.NAME
 ```

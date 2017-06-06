@@ -1,6 +1,6 @@
 {
     "Version": "2012-10-17",
-    "Id": "certbot-route53 sample policy",
+    "Id": "certbot-dns-route53 sample policy",
     "Statement": [
         {
             "Effect": "Allow",
