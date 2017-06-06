@@ -3,9 +3,9 @@
 import unittest
 
 import mock
-
 from botocore.exceptions import NoCredentialsError, ClientError
 
+from certbot import errors
 from certbot.plugins import dns_test_common
 
 
@@ -36,7 +36,7 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
     def test_perform_no_credentials_error(self):
         self.auth._change_txt_record = mock.MagicMock(side_effect=NoCredentialsError)
 
-        self.assertRaises(NoCredentialsError,  # TODO: Should be `errors.PluginError`
+        self.assertRaises(errors.PluginError,
                           self.auth.perform,
                           [self.achall])
 
@@ -44,7 +44,7 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
         self.auth._change_txt_record = mock.MagicMock(
             side_effect=ClientError({"Error": {"Code": "foo"}}, "bar"))
 
-        self.assertRaises(ClientError,  # TODO: Should be `errors.PluginError`
+        self.assertRaises(errors.PluginError,
                           self.auth.perform,
                           [self.achall])
 
@@ -58,17 +58,13 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
     def test_cleanup_no_credentials_error(self):
         self.auth._change_txt_record = mock.MagicMock(side_effect=NoCredentialsError)
 
-        self.assertRaises(NoCredentialsError,  # TODO: Should not raise
-                          self.auth.cleanup,
-                          [self.achall])
+        self.auth.cleanup([self.achall])
 
     def test_cleanup_client_error(self):
         self.auth._change_txt_record = mock.MagicMock(
             side_effect=ClientError({"Error": {"Code": "foo"}}, "bar"))
 
-        self.assertRaises(ClientError,  # TODO: Should not raise
-                          self.auth.cleanup,
-                          [self.achall])
+        self.auth.cleanup([self.achall])
 
 
 class ClientTest(unittest.TestCase):
@@ -153,7 +149,7 @@ class ClientTest(unittest.TestCase):
         self.client.r53.get_paginator = mock.MagicMock()
         self.client.r53.get_paginator().paginate.return_value = []
 
-        self.assertRaises(ValueError,  # TODO: Should be `errors.PluginError`
+        self.assertRaises(errors.PluginError,
                           self.client._find_zone_id_for_domain,
                           "foo.example.com")
 
@@ -168,7 +164,7 @@ class ClientTest(unittest.TestCase):
             },
         ]
 
-        self.assertRaises(ValueError,  # TODO: Should be `errors.PluginError`
+        self.assertRaises(errors.PluginError,
                           self.client._find_zone_id_for_domain,
                           "foo.example.com")
 
