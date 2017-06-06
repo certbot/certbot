@@ -7,6 +7,7 @@ from botocore.exceptions import NoCredentialsError, ClientError
 
 from certbot import errors
 from certbot.plugins import dns_test_common
+from certbot.plugins.dns_test_common import DOMAIN
 
 
 class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest):
@@ -21,16 +22,15 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
 
         self.auth = Authenticator(self.config, "route53")
 
-    def test_parser_arguments(self):
-        pass  # TODO: follow convention of defining optional argument for DNS propagation delay
-
     def test_perform(self):
         self.auth._change_txt_record = mock.MagicMock()
         self.auth._wait_for_change = mock.MagicMock()
 
         self.auth.perform([self.achall])
 
-        self.auth._change_txt_record.assert_called_once_with("UPSERT", self.achall)
+        self.auth._change_txt_record.assert_called_once_with("UPSERT",
+                                                             '_acme-challenge.' + DOMAIN,
+                                                             mock.ANY)
         self.auth._wait_for_change.assert_called_once()
 
     def test_perform_no_credentials_error(self):
@@ -49,18 +49,26 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
                           [self.achall])
 
     def test_cleanup(self):
+        self.auth._attempt_cleanup = True
+
         self.auth._change_txt_record = mock.MagicMock()
 
         self.auth.cleanup([self.achall])
 
-        self.auth._change_txt_record.assert_called_once_with("DELETE", self.achall)
+        self.auth._change_txt_record.assert_called_once_with("DELETE",
+                                                             '_acme-challenge.'+DOMAIN,
+                                                             mock.ANY)
 
     def test_cleanup_no_credentials_error(self):
+        self.auth._attempt_cleanup = True
+
         self.auth._change_txt_record = mock.MagicMock(side_effect=NoCredentialsError)
 
         self.auth.cleanup([self.achall])
 
     def test_cleanup_client_error(self):
+        self.auth._attempt_cleanup = True
+
         self.auth._change_txt_record = mock.MagicMock(
             side_effect=ClientError({"Error": {"Code": "foo"}}, "bar"))
 
@@ -173,7 +181,7 @@ class ClientTest(unittest.TestCase):
         self.client.r53.change_resource_record_sets = mock.MagicMock(
             return_value={"ChangeInfo": {"Id": 1}})
 
-        self.client._change_txt_record("FOO", dns_test_common.BaseAuthenticatorTest.achall)
+        self.client._change_txt_record("FOO", DOMAIN, "foo")
 
         self.client.r53.change_resource_record_sets.assert_called_once()
 
