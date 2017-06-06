@@ -53,9 +53,14 @@ class ServerManagerTest(unittest.TestCase):
         self.assertEqual(self.mgr.running(), {})
 
     def test_run_bind_error(self):
-        some_server = socket.socket()
+        some_server = socket.socket(socket.AF_INET6)
         some_server.bind(("", 0))
         port = some_server.getsockname()[1]
+        maybe_another_server = socket.socket()
+        try:
+            maybe_another_server.bind(("", port))
+        except socket.error:
+            pass
         self.assertRaises(
             errors.StandaloneBindError, self.mgr.run, port,
             challenge_type=challenges.HTTP01)
