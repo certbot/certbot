@@ -32,10 +32,11 @@ class TLSServerTest(unittest.TestCase):
         server.server_close()  # pylint: disable=no-member
 
     def test_ipv6(self):
-        from acme.standalone import TLSServer
-        server = TLSServer(
-            ('', 0), socketserver.BaseRequestHandler, bind_and_activate=True, ipv6=True)
-        server.server_close()  # pylint: disable=no-member
+        if socket.has_ipv6:
+            from acme.standalone import TLSServer
+            server = TLSServer(
+                ('', 0), socketserver.BaseRequestHandler, bind_and_activate=True, ipv6=True)
+            server.server_close()  # pylint: disable=no-member
 
 
 class TLSSNI01ServerTest(unittest.TestCase):
