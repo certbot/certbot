@@ -125,11 +125,25 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
 
     _multiprocess_can_split_ = True
 
-    class IPv6Server(socketserver.TCPServer):
+    class SingleProtocolServer(socketserver.TCPServer):
         """Server that expects IPv6 kwarg"""
         def __init__(self, *args, **kwargs):
-            kwargs.pop("ipv6", False)
+            ipv6 = kwargs.pop("ipv6", False)
+            if ipv6:
+                self.address_family = socket.AF_INET6
+                kwargs["bind_and_activate"] = False
+            else:
+                self.address_family = socket.AF_INET
             socketserver.TCPServer.__init__(self, *args, **kwargs)
+            if ipv6:
+                # pylint: disable=no-member
+                self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+                try:
+                    self.server_bind() # pylint: disable=no-member
+                    self.server_activate() # pylint: disable=no-member
+                except:
+                    self.server_close() # pylint: disable=no-member
+                    raise
 
     @mock.patch("socket.socket.bind")
     def test_fail_to_bind(self, mock_bind):
@@ -137,7 +151,21 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
         from acme.standalone import BaseDualNetworkedServers
         self.assertRaises(socket.error, BaseDualNetworkedServers, ("", 0),
             socketserver.BaseRequestHandler,
-            server_class=BaseDualNetworkedServersTest.IPv6Server)
+            server_class=BaseDualNetworkedServersTest.SingleProtocolServer)
+
+    def test_ports_equal(self):
+        from acme.standalone import BaseDualNetworkedServers
+        servers = BaseDualNetworkedServers(("", 0),
+            socketserver.BaseRequestHandler,
+            server_class=BaseDualNetworkedServersTest.SingleProtocolServer)
+        socknames = servers.getsocknames()
+        prev_port = None
+        # assert ports are equal
+        for sockname in socknames:
+            port = sockname[1]
+            if prev_port:
+                self.assertEqual(prev_port, port)
+            prev_port = port
 
 
 class TLSSNI01DualNetworkedServersTest(unittest.TestCase):
@@ -156,16 +184,6 @@ class TLSSNI01DualNetworkedServersTest(unittest.TestCase):
 
     def tearDown(self):
         self.servers.shutdown_and_server_close()
-
-    def test_ports_equal(self):
-        socknames = self.servers.getsocknames()
-        prev_port = None
-        # assert ports are equal
-        for sockname in socknames:
-            port = sockname[1]
-            if prev_port:
-                self.assertEqual(prev_port, port)
-            prev_port = port
 
     def test_connect(self):
         socknames = self.servers.getsocknames()
