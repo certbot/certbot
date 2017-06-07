@@ -1,8 +1,8 @@
 *.pyc
 *.egg-info/
 .eggs/
-build/
-dist*/
+/build/
+/dist*/
 /venv*/
 /kgs/
 /.tox/
