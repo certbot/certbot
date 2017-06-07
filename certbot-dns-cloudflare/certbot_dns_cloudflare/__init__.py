@@ -4,6 +4,20 @@ completing a `dns-01` challenge (`~acme.challenges.DNS01`) using the Cloudflare
 API.
 
 
+Named Arguments
+---------------
+
+======================================  =======  ==============================
+Argument                                Default  Description
+======================================  =======  ==============================
+`--dns-cloudflare-credentials`          None     Cloudflare credentials INI
+                                                 file. (See Credentials_.)
+`--dns-cloudflare-propagation-seconds`  10       The number of seconds to wait
+                                                 for DNS to propagate before
+                                                 asking the ACME server to
+                                                 verify the DNS record.
+======================================  =======  ==============================
+
 Credentials
 -----------
 
