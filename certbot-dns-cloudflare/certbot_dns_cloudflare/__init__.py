@@ -1,7 +1,7 @@
 """
 The `~certbot_dns_cloudflare.dns_cloudflare` plugin automates the process of
-completing a ``dns-01`` challenge (`~acme.challenges.DNS01`) using the
-Cloudflare API.
+completing a ``dns-01`` challenge (`~acme.challenges.DNS01`) by creating, and
+subsequently removing, TXT records using the Cloudflare API.
 
 
 Named Arguments
@@ -38,9 +38,10 @@ to this file for use during renewal, but does not store the file's contents.
 .. caution::
    You should protect these API credentials as you would the password to your
    Cloudflare account. Users who can read this file can use these credentials
-   to issue API calls on your behalf. Users who can cause Certbot to run using
-   these credentials can complete a ``dns-01`` challenge to acquire new
-   certificates or revoke existing certificates for associated domains.
+   to issue arbitrary API calls on your behalf. Users who can cause Certbot to
+   run using these credentials can complete a ``dns-01`` challenge to acquire
+   new certificates or revoke existing certificates for associated domains,
+   even if those domains aren't being managed by this server.
 
 Examples
 --------
