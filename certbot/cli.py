@@ -156,10 +156,10 @@ def possible_deprecation_warning(config):
         # need warnings
         return
     if "CERTBOT_AUTO" not in os.environ:
-        logger.warning("You are running with an old copy of letsencrypt-auto that does "
-            "not receive updates, and is less reliable than more recent versions. "
-            "We recommend upgrading to the latest certbot-auto script, or using native "
-            "OS packages.")
+        logger.warning("You are running with an old copy of certbot-auto (the letsencrypt "
+            "client, previously known as letsencrypt-auto) that does not receive updates, "
+            "and is less reliable than more recent versions. We recommend upgrading to the "
+            "latest certbot-auto script, or using native OS packages.")
         logger.debug("Deprecation warning circumstances: %s / %s", sys.argv[0], os.environ)
 
 
