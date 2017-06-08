@@ -23,11 +23,11 @@ from certbot import errors
 from certbot import lock
 
 try:
-    from collections import OrderedDict
+    from collections import OrderedDict  # type: ignore
 except ImportError:  # pragma: no cover
     # OrderedDict was added in Python 2.7
-    from ordereddict import OrderedDict  # pylint: disable=import-error
-
+    from ordereddict import OrderedDict  as _OrderedDict # pylint: disable=import-error
+    OrderedDict = _OrderedDict  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ _INITIAL_PID = os.getpid()
 # the dict are attempted to be cleaned up at program exit. If the
 # program exits before the lock is cleaned up, it is automatically
 # released, but the file isn't deleted.
-_LOCKS = OrderedDict()
+_LOCKS = OrderedDict()  # type: OrderedDict
 
 
 def run_script(params, log=logger.error):

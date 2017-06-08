@@ -50,7 +50,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
 
 
 class DigitalOceanClientTest(unittest.TestCase):
-    id = 1
+    id = 1  # type: ignore
     record_prefix = "_acme-challenge"
     record_name = record_prefix + "." + DOMAIN
     record_content = "bar"

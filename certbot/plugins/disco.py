@@ -13,11 +13,11 @@ from certbot import errors
 from certbot import interfaces
 
 try:
-    from collections import OrderedDict
+    from collections import OrderedDict  # type: ignore
 except ImportError:  # pragma: no cover
     # OrderedDict was added in Python 2.7
-    from ordereddict import OrderedDict  # pylint: disable=import-error
-
+    from ordereddict import OrderedDict as _OrderedDict  # pylint: disable=import-error
+    OrderedDict = _OrderedDict  # type: ignore
 
 logger = logging.getLogger(__name__)
 
