@@ -46,6 +46,8 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+* Permissions on renewal configuration files are now properly preserved when
+  they are updated.
 * A bug causing Certbot to display strange defaults in its help output when
   using Python <= 2.7.4 has been fixed.
 * Certbot now properly handles mixed case domain names found in custom CSRs.
