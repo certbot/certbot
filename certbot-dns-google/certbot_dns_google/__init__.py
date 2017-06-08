@@ -30,10 +30,10 @@ Platform API credentials for an account with the following permissions:
 * ``dns.resourceRecordSets.create``
 * ``dns.resourceRecordSets.delete``
 
-Google provides instructions for
-`creating a service account <https://developers.google.com/identity/protocols/OAuth2ServiceAccount#creatinganaccount>`_
-and
-`information about the required permissions <https://cloud.google.com/dns/access-control#permissions_and_roles>`_.
+Google provides instructions for `creating a service account <https://developers
+.google.com/identity/protocols/OAuth2ServiceAccount#creatinganaccount>`_ and
+`information about the required permissions <https://cloud.google.com/dns/access
+-control#permissions_and_roles>`_.
 
 .. code-block:: json
    :name: credentials.json
@@ -96,3 +96,4 @@ Examples
      -d example.com
 
 """
+# pylint: disable=line-too-long
