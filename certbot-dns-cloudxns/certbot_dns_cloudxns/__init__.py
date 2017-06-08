@@ -8,7 +8,7 @@ Named Arguments
 ---------------
 
 ========================================  =====================================
-``--dns-cloudxns-credentials`  `          CloudXNS credentials_ INI file.
+``--dns-cloudxns-credentials``            CloudXNS credentials_ INI file.
                                           (Required)
 ``--dns-cloudxns-propagation-seconds``    The number of seconds to wait for DNS
                                           to propagate before asking the ACME
