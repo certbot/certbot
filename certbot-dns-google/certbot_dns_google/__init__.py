@@ -17,6 +17,7 @@ Named Arguments
                                           (Default: 60)
 ========================================  =====================================
 
+
 Credentials
 -----------
 
@@ -54,6 +55,14 @@ to this file for use during renewal, but does not store the file's contents.
    can cause Certbot to run using these credentials can complete a ``dns-01``
    challenge to acquire new certificates or revoke existing certificates for
    domains these credentials are authorized to manage.
+
+Certbot will emit a warning if it detects that the credentials file can be
+accessed by other users on your system. The warning reads "Unsafe permissions
+on credentials configuration file", followed by the path to the credentials
+file. This warning will be emitted each time Certbot uses the credentials file,
+including for renewal, and cannot be silenced except by addressing the issue
+(e.g., by using a command like ``chmod 600`` to restrict access to the file).
+
 
 Examples
 --------
