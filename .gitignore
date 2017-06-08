@@ -1,6 +1,7 @@
 *.pyc
 *.egg-info/
 .eggs/
+.mypy_cache/
 build/
 dist*/
 /venv*/

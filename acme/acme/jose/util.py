@@ -134,7 +134,7 @@ class ComparableRSAKey(ComparableKey):  # pylint: disable=too-few-public-methods
             return hash((self.__class__, pub.n, pub.e))
 
 
-class ImmutableMap(collections.Mapping, collections.Hashable):  # type: ignore
+class ImmutableMap(collections.Mapping, collections.Hashable):
     # pylint: disable=too-few-public-methods
     """Immutable key to value mapping with attribute access."""
 
@@ -180,7 +180,7 @@ class ImmutableMap(collections.Mapping, collections.Hashable):  # type: ignore
             for key, value in six.iteritems(self)))
 
 
-class frozendict(collections.Mapping, collections.Hashable):  # type: ignore
+class frozendict(collections.Mapping, collections.Hashable):
     # pylint: disable=invalid-name,too-few-public-methods
     """Frozen dictionary."""
     __slots__ = ('_items', '_keys')
