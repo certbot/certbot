@@ -3,7 +3,6 @@ import argparse
 import collections
 import logging
 import socket
-import threading
 
 import OpenSSL
 import six
@@ -33,8 +32,6 @@ class ServerManager(object):
     will serve the same URLs!
 
     """
-    _Instance = collections.namedtuple("_Instance", "server thread")
-
     def __init__(self, certs, http_01_resources):
         self._instances = {}
         self.certs = certs
@@ -51,34 +48,32 @@ class ServerManager(object):
             either `acme.challenge.HTTP01` or `acme.challenges.TLSSNI01`.
         :param str listenaddr: (optional) The address to listen on. Defaults to all addrs.
 
-        :returns: Server instance.
+        :returns: DualNetworkedServers instance.
         :rtype: ACMEServerMixin
 
         """
         assert challenge_type in (challenges.TLSSNI01, challenges.HTTP01)
         if port in self._instances:
-            return self._instances[port].server
+            return self._instances[port]
 
         address = (listenaddr, port)
         try:
             if challenge_type is challenges.TLSSNI01:
-                server = acme_standalone.TLSSNI01Server(address, self.certs)
+                servers = acme_standalone.TLSSNI01DualNetworkedServers(address, self.certs)
             else:  # challenges.HTTP01
-                server = acme_standalone.HTTP01Server(
+                servers = acme_standalone.HTTP01DualNetworkedServers(
                     address, self.http_01_resources)
         except socket.error as error:
             raise errors.StandaloneBindError(error, port)
 
-        thread = threading.Thread(
-            # pylint: disable=no-member
-            target=server.serve_forever)
-        thread.start()
+        servers.serve_forever()
 
         # if port == 0, then random free port on OS is taken
         # pylint: disable=no-member
-        real_port = server.socket.getsockname()[1]
-        self._instances[real_port] = self._Instance(server, thread)
-        return server
+        # both servers, if they exist, have the same port
+        real_port = servers.getsocknames()[0][1]
+        self._instances[real_port] = servers
+        return servers
 
     def stop(self, port):
         """Stop ACME server running on the specified ``port``.
@@ -87,13 +82,12 @@ class ServerManager(object):
 
         """
         instance = self._instances[port]
-        logger.debug("Stopping server at %s:%d...",
-                     *instance.server.socket.getsockname()[:2])
-        instance.server.shutdown()
+        for sockname in instance.getsocknames():
+            logger.debug("Stopping server at %s:%d...",
+                         *sockname[:2])
         # Not calling server_close causes problems when renewing multiple
         # certs with `certbot renew` using TLSSNI01 and PyOpenSSL 0.13
-        instance.server.server_close()
-        instance.thread.join()
+        instance.shutdown_and_server_close()
         del self._instances[port]
 
     def running(self):
@@ -102,12 +96,11 @@ class ServerManager(object):
         Once the server is stopped using `stop`, it will not be
         returned.
 
-        :returns: Mapping from ``port`` to ``server``.
+        :returns: Mapping from ``port`` to ``servers``.
         :rtype: tuple
 
         """
-        return dict((port, instance.server) for port, instance
-                    in six.iteritems(self._instances))
+        return self._instances.copy()
 
 
 SUPPORTED_CHALLENGES = [challenges.TLSSNI01, challenges.HTTP01]
@@ -236,38 +229,38 @@ class Authenticator(common.Plugin):
 
     def _perform_single(self, achall):
         if isinstance(achall.chall, challenges.HTTP01):
-            server, response = self._perform_http_01(achall)
+            servers, response = self._perform_http_01(achall)
         else:  # tls-sni-01
-            server, response = self._perform_tls_sni_01(achall)
-        self.served[server].add(achall)
+            servers, response = self._perform_tls_sni_01(achall)
+        self.served[servers].add(achall)
         return response
 
     def _perform_http_01(self, achall):
         port = self.config.http01_port
         addr = self.config.http01_address
-        server = self.servers.run(port, challenges.HTTP01, listenaddr=addr)
+        servers = self.servers.run(port, challenges.HTTP01, listenaddr=addr)
         response, validation = achall.response_and_validation()
         resource = acme_standalone.HTTP01RequestHandler.HTTP01Resource(
             chall=achall.chall, response=response, validation=validation)
         self.http_01_resources.add(resource)
-        return server, response
+        return servers, response
 
     def _perform_tls_sni_01(self, achall):
         port = self.config.tls_sni_01_port
         addr = self.config.tls_sni_01_address
-        server = self.servers.run(port, challenges.TLSSNI01, listenaddr=addr)
+        servers = self.servers.run(port, challenges.TLSSNI01, listenaddr=addr)
         response, (cert, _) = achall.response_and_validation(cert_key=self.key)
         self.certs[response.z_domain] = (self.key, cert)
-        return server, response
+        return servers, response
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
-        # reduce self.served and close servers if none challenges are served
-        for server, server_achalls in self.served.items():
+        # reduce self.served and close servers if no challenges are served
+        for unused_servers, server_achalls in self.served.items():
             for achall in achalls:
                 if achall in server_achalls:
                     server_achalls.remove(achall)
-        for port, server in six.iteritems(self.servers.running()):
-            if not self.served[server]:
+        for port, servers in six.iteritems(self.servers.running()):
+            if not self.served[servers]:
                 self.servers.stop(port)
 
 

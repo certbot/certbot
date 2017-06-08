@@ -45,7 +45,7 @@ if [ $? -ne 0 ] ; then
     exit 1
 fi
 
-tools/venv.sh
+tools/_venv_common.sh -e acme[dev] -e .[dev,docs] -e certbot-apache
 sudo venv/bin/certbot -v --debug --text --agree-dev-preview --agree-tos \
                    --renew-by-default --redirect --register-unsafely-without-email \
                    --domain $PUBLIC_HOSTNAME --server $BOULDER_URL
