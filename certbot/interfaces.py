@@ -396,8 +396,8 @@ class IDisplay(zope.interface.Interface):
 
         """
 
-    def menu(message, choices, ok_label="OK",
-             cancel_label="Cancel", help_label="",
+    def menu(message, choices, ok_label=None,
+             cancel_label=None, help_label=None,
              default=None, cli_flag=None, force_interactive=False):
         """Displays a generic menu.
 
@@ -409,9 +409,9 @@ class IDisplay(zope.interface.Interface):
         :param choices: choices
         :type choices: :class:`list` of :func:`tuple` or :class:`str`
 
-        :param str ok_label: label for OK button
-        :param str cancel_label: label for Cancel button
-        :param str help_label: label for Help button
+        :param str ok_label: label for OK button (UNUSED)
+        :param str cancel_label: label for Cancel button (UNUSED)
+        :param str help_label: label for Help button (UNUSED)
         :param int default: default (non-interactive) choice from the menu
         :param str cli_flag: to automate choice from the menu, eg "--keep"
         :param bool force_interactive: True if it's safe to prompt the user
@@ -470,8 +470,7 @@ class IDisplay(zope.interface.Interface):
 
         """
 
-    def checklist(message, tags, default_state,
-                  default=None, cli_args=None, force_interactive=False):
+    def checklist(message, tags, default=None, cli_args=None, force_interactive=False):
         """Allow for multiple selections from a menu.
 
         When not setting force_interactive=True, you must provide a
@@ -479,7 +478,6 @@ class IDisplay(zope.interface.Interface):
 
         :param str message: message to display to the user
         :param list tags: where each is of type :class:`str` len(tags) > 0
-        :param bool default_status: If True, items are in a selected state by default.
         :param str default: default (non-interactive) state of the checklist
         :param str cli_flag: to automate choice from the menu, eg "--domains"
         :param bool force_interactive: True if it's safe to prompt the user

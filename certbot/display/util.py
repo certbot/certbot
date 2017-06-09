@@ -24,10 +24,10 @@ CANCEL = "cancel"
 """Display exit code for a user canceling the display."""
 
 HELP = "help"
-"""Display exit code when for when the user requests more help."""
+"""Display exit code when for when the user requests more help. (UNUSED)"""
 
 ESC = "esc"
-"""Display exit code when the user hits Escape"""
+"""Display exit code when the user hits Escape (UNUSED)"""
 
 
 def _wrap_lines(msg):
@@ -123,8 +123,8 @@ class FileDisplay(object):
             else:
                 logger.debug("Not pausing for user confirmation")
 
-    def menu(self, message, choices, ok_label="", cancel_label="",
-             help_label="", default=None,
+    def menu(self, message, choices, ok_label=None, cancel_label=None,
+             help_label=None, default=None,
              cli_flag=None, force_interactive=False, **unused_kwargs):
         # pylint: disable=unused-argument
         """Display a menu.
@@ -228,14 +228,13 @@ class FileDisplay(object):
                     ans.startswith(no_label[0].upper())):
                 return False
 
-    def checklist(self, message, tags, default_status=True, default=None,
+    def checklist(self, message, tags, default=None,
                   cli_flag=None, force_interactive=False, **unused_kwargs):
         # pylint: disable=unused-argument
         """Display a checklist.
 
         :param str message: Message to display to user
         :param list tags: `str` tags to select, len(tags) > 0
-        :param bool default_status: Not used for FileDisplay
         :param default: default value to return (if one exists)
         :param str cli_flag: option used to set this value with the CLI
         :param bool force_interactive: True if it's safe to prompt the user
