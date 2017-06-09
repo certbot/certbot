@@ -176,7 +176,8 @@ class FileDisplay(object):
         if self._return_default(message, default, cli_flag, force_interactive):
             return OK, default
 
-        message = _wrap_lines("%s (Enter 'c' to cancel): " % message)
+        # Trailing space must be added outside of _wrap_lines to be preserved
+        message = _wrap_lines("%s (Enter 'c' to cancel):" % message) + " "
         ans = input_with_timeout(message)
 
         if ans == "c" or ans == "C":
