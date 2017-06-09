@@ -96,4 +96,3 @@ Examples
      -d example.com
 
 """
-# pylint: disable=line-too-long
