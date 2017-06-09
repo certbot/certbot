@@ -49,7 +49,7 @@ apache_     Y    Y    | Automates obtaining and installing a certificate with Ap
 webroot_    Y    N    | Obtains a certificate by writing to the webroot directory of  http-01_ (80)
                       | an already running webserver.
 nginx_      Y    Y    | Automates obtaining and installing a certificate with Nginx.  tls-sni-01_ (443)
-                      | Alpha release shipped with Certbot 0.9.0.
+                      | Shipped with Certbot 0.9.0.
 standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.        http-01_ (80) or
                       | Requires port 80 or 443 to be available. This is useful on    tls-sni-01_ (443)
                       | systems with no webserver, or when direct integration with
@@ -132,7 +132,7 @@ Nginx
 -----
 
 The Nginx plugin has been distributed with Certbot since version 0.9.0 and should
-work for most configurations. Because it is alpha code, we recommend backing up Nginx
+work for most configurations. We recommend backing up Nginx
 configurations before using it (though you can also revert changes to
 configurations with ``certbot --nginx rollback``). You can use it by providing
 the ``--nginx`` flag on the commandline.

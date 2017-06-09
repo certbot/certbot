@@ -405,7 +405,7 @@ plugins:
                         using Route53 for DNS). (default: False)
 
 apache:
-  Apache Web Server plugin - Beta
+  Apache Web Server plugin
 
   --apache-enmod APACHE_ENMOD
                         Path to the Apache 'a2enmod' binary. (default:
@@ -544,7 +544,7 @@ manual:
                         Automatically allows public IP logging (default: Ask)
 
 nginx:
-  Nginx Web Server plugin - Alpha
+  Nginx Web Server plugin
 
   --nginx-server-root NGINX_SERVER_ROOT
                         Nginx server root directory. (default: /etc/nginx)
