@@ -176,12 +176,8 @@ class FileDisplay(object):
         if self._return_default(message, default, cli_flag, force_interactive):
             return OK, default
 
-        ans = input_with_timeout(
-            textwrap.fill(
-                "%s (Enter 'c' to cancel): " % message,
-                80,
-                break_long_words=False,
-                break_on_hyphens=False))
+        message = _wrap_lines("%s (Enter 'c' to cancel): " % message)
+        ans = input_with_timeout(message)
 
         if ans == "c" or ans == "C":
             return CANCEL, "-1"
@@ -392,12 +388,8 @@ class FileDisplay(object):
 
         # Write out the menu choices
         for i, desc in enumerate(choices, 1):
-            self.outfile.write(
-                textwrap.fill(
-                    "{num}: {desc}".format(num=i, desc=desc),
-                    80,
-                    break_long_words=False,
-                    break_on_hyphens=False))
+            msg = "{num}: {desc}".format(num=i, desc=desc)
+            self.outfile.write(_wrap_lines(msg))
 
             # Keep this outside of the textwrap
             self.outfile.write(os.linesep)
