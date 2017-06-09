@@ -43,7 +43,7 @@ Arch
 
 From our official releases:
 
-- https://www.archlinux.org/packages/community/any/python2-acme
+- https://www.archlinux.org/packages/community/any/python-acme
 - https://www.archlinux.org/packages/community/any/certbot
 - https://www.archlinux.org/packages/community/any/certbot-apache
 - https://www.archlinux.org/packages/community/any/certbot-nginx
