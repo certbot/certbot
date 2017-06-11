@@ -1,6 +1,5 @@
 """Tests for certbot.plugins.manual"""
 import os
-import shutil
 import unittest
 
 import six
@@ -10,41 +9,38 @@ from acme import challenges
 
 from certbot import errors
 
-from certbot.plugins import common
-
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
 
 
-class AuthenticatorTest(unittest.TestCase):
+class AuthenticatorTest(test_util.TempDirTestCase):
     """Tests for certbot.plugins.manual.Authenticator."""
 
     def setUp(self):
+        super(AuthenticatorTest, self).setUp()
         self.http_achall = acme_util.HTTP01_A
         self.dns_achall = acme_util.DNS01_A
         self.tls_sni_achall = acme_util.TLSSNI01_A
         self.achalls = [self.http_achall, self.dns_achall, self.tls_sni_achall]
-        self.temp_dir, self.config_dir, self.work_dir = common.dir_setup(
-            "etc_manual", pkg="certbot.plugins.tests")
+        for d in ["config_dir", "work_dir", "in_progress"]:
+            os.mkdir(os.path.join(self.tempdir, d))
+            # "backup_dir" and "temp_checkpoint_dir" get created in
+            # certbot.util.make_or_verify_dir() during the Reverter
+            # initialization.
         self.config = mock.MagicMock(
             http01_port=0, manual_auth_hook=None, manual_cleanup_hook=None,
             manual_public_ip_logging_ok=False, noninteractive_mode=False,
-            validate_hooks=False, temp_dir=self.temp_dir,
-            config_dir=self.config_dir, work_dir=self.work_dir,
-            backup_dir=os.path.join(self.work_dir, "backups"),
+            validate_hooks=False,
+            config_dir=os.path.join(self.tempdir, "config_dir"),
+            work_dir=os.path.join(self.tempdir, "work_dir"),
+            backup_dir=os.path.join(self.tempdir, "backup_dir"),
             temp_checkpoint_dir=os.path.join(
-                                self.work_dir, "temp_checkpoints"),
-            in_progress_dir=os.path.join(
-                                self.work_dir, "backups", "IN_PROGRESS"),
+                                        self.tempdir, "temp_checkpoint_dir"),
+            in_progress_dir=os.path.join(self.tempdir, "in_progess"),
             tls_sni_01_port=5001)
 
         from certbot.plugins.manual import Authenticator
         self.auth = Authenticator(self.config, name='manual')
-
-    def tearDown(self):
-        shutil.rmtree(self.temp_dir)
-        shutil.rmtree(self.config_dir)
-        shutil.rmtree(self.work_dir)
 
     def test_prepare_no_hook_noninteractive(self):
         self.config.noninteractive_mode = True
