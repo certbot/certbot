@@ -358,7 +358,7 @@ VERB_HELP = [
     ("delete", {
         "short": "Clean up all files related to a certificate",
         "opts": "Options for deleting a certificate",
-        "usage": "\n\n  certbot delete --cert-name CERTNAME"
+        "usage": "\n\n  certbot delete --cert-name CERTNAME\n\n"
     }),
     ("revoke", {
         "short": "Revoke a certificate specified with --cert-path",
@@ -368,40 +368,40 @@ VERB_HELP = [
     ("register", {
         "short": "Register for account with Let's Encrypt / other ACME server",
         "opts": "Options for account registration & modification",
-        "usage": "\n\n  certbot register --email user@example.com [options]"
+        "usage": "\n\n  certbot register --email user@example.com [options]\n\n"
     }),
     ("unregister", {
         "short": "Irrevocably deactivate your account",
         "opts": "Options for account deactivation.",
-        "usage": "\n\n  certbot unregister [options]"
+        "usage": "\n\n  certbot unregister [options]\n\n"
     }),
     ("install", {
         "short": "Install an arbitrary cert in a server",
         "opts": "Options for modifying how a cert is deployed",
         "usage": "\n\n  certbot install --cert-path /path/to/fullchain.pem "
-        " --key-path /path/to/private-key [options]"
+        " --key-path /path/to/private-key [options]\n\n"
     }),
     ("config_changes", {
         "short": "Show changes that Certbot has made to server configurations",
         "opts": "Options for controlling which changes are displayed",
-        "usage": "\n\n  certbot config_changes --num NUM [options]"
+        "usage": "\n\n  certbot config_changes --num NUM [options]\n\n"
     }),
     ("rollback", {
         "short": "Roll back server conf changes made during cert installation",
         "opts": "Options for rolling back server configuration changes",
-        "usage": "\n\n  certbot rollback --checkpoints 3 [options]"
+        "usage": "\n\n  certbot rollback --checkpoints 3 [options]\n\n"
     }),
     ("plugins", {
         "short": "List plugins that are installed and available on your system",
         "opts": 'Options for for the "plugins" subcommand',
-        "usage": "\n\n  certbot plugins [options]"
+        "usage": "\n\n  certbot plugins [options]\n\n"
     }),
     ("update_symlinks", {
         "short": "Recreate symlinks in your /etc/letsencrypt/live/ directory",
         "opts": ("Recreates cert and key symlinks in {0}, if you changed them by hand "
                  "or edited a renewal configuration file".format(
                   os.path.join(flag_default("config_dir"), "live"))),
-        "usage": "\n\n  certbot update_symlinks [options]"
+        "usage": "\n\n  certbot update_symlinks [options]\n\n"
     }),
 
 ]
