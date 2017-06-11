@@ -25,7 +25,8 @@ class Authenticator(dns_common.DNSAuthenticator):
     This Authenticator uses the Google Cloud DNS API to fulfill a dns-01 challenge.
     """
 
-    description = 'Obtain certs using a DNS TXT record (if you are using Google Cloud DNS for DNS).'
+    description = ('Obtain certificates using a DNS TXT record (if you are using Google Cloud DNS '
+                   'for DNS).')
     ttl = 60
 
     def __init__(self, *args, **kwargs):

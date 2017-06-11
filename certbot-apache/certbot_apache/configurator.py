@@ -5,7 +5,6 @@ import fnmatch
 import logging
 import os
 import re
-import shutil
 import socket
 import time
 
@@ -145,6 +144,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return os.path.join(self.config.config_dir,
                             constants.MOD_SSL_CONF_DEST)
 
+    @property
+    def updated_mod_ssl_conf_digest(self):
+        """Full absolute path to digest of updated SSL configuration file."""
+        return os.path.join(self.config.config_dir, constants.UPDATED_MOD_SSL_CONF_DIGEST)
+
 
     def prepare(self):
         """Prepare the authenticator/installer.
@@ -195,7 +199,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
 
-        install_ssl_options_conf(self.mod_ssl_conf)
+        install_ssl_options_conf(self.mod_ssl_conf, self.updated_mod_ssl_conf_digest)
 
         # Prevent two Apache plugins from modifying a config at once
         try:
@@ -1981,19 +1985,11 @@ def _split_aug_path(vhost_path):
     return file_path, "/".join(reversed(internal_path))
 
 
-def install_ssl_options_conf(options_ssl):
-    """
-    Copy Certbot's SSL options file into the system's config dir if
-    required.
-    """
+def install_ssl_options_conf(options_ssl, options_ssl_digest):
+    """Copy Certbot's SSL options file into the system's config dir if required."""
+
     # XXX if we ever try to enforce a local privilege boundary (eg, running
     # certbot for unprivileged users via setuid), this function will need
     # to be modified.
-
-    # XXX if the user is in security-autoupdate mode, we should be willing to
-    # overwrite the options_ssl file at least if it's unmodified:
-    # https://github.com/letsencrypt/letsencrypt/issues/1123
-
-    # Check to make sure options-ssl.conf is installed
-    if not os.path.isfile(options_ssl):
-        shutil.copyfile(constants.os_constant("MOD_SSL_CONF_SRC"), options_ssl)
+    return common.install_ssl_options_conf(options_ssl, options_ssl_digest,
+        constants.os_constant("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)

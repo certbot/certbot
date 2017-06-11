@@ -12,6 +12,8 @@ import OpenSSL
 import pyrfc3339
 import six
 import zope.component
+from cryptography.hazmat.backends import default_backend
+from cryptography import x509
 
 from acme import crypto_util as acme_crypto_util
 from acme import jose
@@ -206,6 +208,95 @@ def valid_privkey(privkey):
         return False
 
 
+def verify_renewable_cert(renewable_cert):
+    """For checking that your certs were not corrupted on disk.
+
+    Several things are checked:
+        1. Signature verification for the cert.
+        2. That fullchain matches cert and chain when concatenated.
+        3. Check that the private key matches the certificate.
+
+    :param `.storage.RenewableCert` renewable_cert: cert to verify
+
+    :raises errors.Error: If verification fails.
+    """
+    verify_renewable_cert_sig(renewable_cert)
+    verify_fullchain(renewable_cert)
+    verify_cert_matches_priv_key(renewable_cert)
+
+
+def verify_renewable_cert_sig(renewable_cert):
+    """ Verifies the signature of a `.storage.RenewableCert` object.
+
+    :param `.storage.RenewableCert` renewable_cert: cert to verify
+
+    :raises errors.Error: If signature verification fails.
+    """
+    try:
+        with open(renewable_cert.chain, 'rb') as chain:
+            chain, _ = pyopenssl_load_certificate(chain.read())
+        with open(renewable_cert.cert, 'rb') as cert:
+            cert = x509.load_pem_x509_certificate(cert.read(), default_backend())
+        hash_name = cert.signature_hash_algorithm.name
+        OpenSSL.crypto.verify(chain, cert.signature, cert.tbs_certificate_bytes, hash_name)
+    except (IOError, ValueError, OpenSSL.crypto.Error) as e:
+        error_str = "verifying the signature of the cert located at {0} has failed. \
+                Details: {1}".format(renewable_cert.cert, e)
+        logger.exception(error_str)
+        raise errors.Error(error_str)
+
+
+def verify_cert_matches_priv_key(renewable_cert):
+    """ Verifies that the private key and cert match.
+
+    :param `.storage.RenewableCert` renewable_cert: cert to verify
+
+    :raises errors.Error: If they don't match.
+    """
+    try:
+        with open(renewable_cert.cert) as cert:
+            cert = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, cert.read())
+        with open(renewable_cert.privkey) as privkey:
+            privkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, privkey.read())
+        context = OpenSSL.SSL.Context(OpenSSL.SSL.SSLv23_METHOD)
+        context.use_privatekey(privkey)
+        context.use_certificate(cert)
+        context.check_privatekey()
+    except (IOError, OpenSSL.SSL.Error) as e:
+        error_str = "verifying the cert located at {0} matches the \
+                private key located at {1} has failed. \
+                Details: {2}".format(renewable_cert.cert,
+                        renewable_cert.privkey, e)
+        logger.exception(error_str)
+        raise errors.Error(error_str)
+
+
+def verify_fullchain(renewable_cert):
+    """ Verifies that fullchain is indeed cert concatenated with chain.
+
+    :param `.storage.RenewableCert` renewable_cert: cert to verify
+
+    :raises errors.Error: If cert and chain do not combine to fullchain.
+    """
+    try:
+        with open(renewable_cert.chain) as chain:
+            chain = chain.read()
+        with open(renewable_cert.cert) as cert:
+            cert = cert.read()
+        with open(renewable_cert.fullchain) as fullchain:
+            fullchain = fullchain.read()
+        if (cert + chain) != fullchain:
+            error_str = "fullchain does not match cert + chain for {0}!"
+            error_str = error_str.format(renewable_cert.lineagename)
+            raise errors.Error(error_str)
+    except IOError as e:
+        error_str = "reading one of cert, chain, or fullchain has failed: {0}".format(e)
+        logger.exception(error_str)
+        raise errors.Error(error_str)
+    except errors.Error as e:
+        raise e
+
+
 def pyopenssl_load_certificate(data):
     """Load PEM/DER certificate.
 
@@ -340,6 +431,7 @@ def _notAfterBefore(cert_path, method):
     :rtype: :class:`datetime.datetime`
 
     """
+    # pylint: disable=redefined-outer-name
     with open(cert_path) as f:
         x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
                                                f.read())

@@ -324,8 +324,8 @@ def validated_input(validator, *args, **kwargs):
     :param callable validator: A method which will be called on the
         supplied input. If the method raises a `errors.Error`, its
         text will be displayed and the user will be re-prompted.
-    :param list *args: Arguments to be passed to `~certbot.interfaces.IDisplay.input`
-    :param dict **kwargs: Arguments to be passed to `~certbot.interfaces.IDisplay.input`
+    :param list `*args`: Arguments to be passed to `~certbot.interfaces.IDisplay.input`.
+    :param dict `**kwargs`: Arguments to be passed to `~certbot.interfaces.IDisplay.input`.
     :return: as `~certbot.interfaces.IDisplay.input`
     :rtype: tuple
     """
@@ -339,8 +339,9 @@ def validated_directory(validator, *args, **kwargs):
     :param callable validator: A method which will be called on the
         supplied input. If the method raises a `errors.Error`, its
         text will be displayed and the user will be re-prompted.
-    :param list *args: Arguments to be passed to `~certbot.interfaces.IDisplay.directory_select`
-    :param dict **kwargs: Arguments to be passed to `~certbot.interfaces.IDisplay.directory_select`
+    :param list `*args`: Arguments to be passed to `~certbot.interfaces.IDisplay.directory_select`.
+    :param dict `**kwargs`: Arguments to be passed to
+        `~certbot.interfaces.IDisplay.directory_select`.
     :return: as `~certbot.interfaces.IDisplay.directory_select`
     :rtype: tuple
     """

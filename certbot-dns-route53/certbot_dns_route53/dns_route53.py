@@ -1,78 +1,59 @@
 """Certbot Route53 authenticator plugin."""
 import logging
 import time
-import datetime
-
-import zope.interface
 
 import boto3
+import zope.interface
 from botocore.exceptions import NoCredentialsError, ClientError
 
-from acme import challenges
-
+from certbot import errors
 from certbot import interfaces
-from certbot.plugins import common
-
+from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)
 
-TTL = 10
-
 INSTRUCTIONS = (
-    "To use certbot-route53, configure credentials as described at "
-    "https://boto3.readthedocs.io/en/latest/guide/configuration.html#best-practices-for-configuring-credentials "
+    "To use certbot-dns-route53, configure credentials as described at "
+    "https://boto3.readthedocs.io/en/latest/guide/configuration.html#best-practices-for-configuring-credentials "  # pylint: disable=line-too-long
     "and add the necessary permissions for Route53 access.")
 
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
-class Authenticator(common.Plugin):
+class Authenticator(dns_common.DNSAuthenticator):
     """Route53 Authenticator
 
     This authenticator solves a DNS01 challenge by uploading the answer to AWS
     Route53.
     """
 
-    description = ("Authenticate domain names using the DNS challenge type, "
-        "by automatically updating TXT records using AWS Route53. Works only "
-        "if you use AWS Route53 to host DNS for your domains. " +
-        INSTRUCTIONS)
+    description = ("Obtain certificates using a DNS TXT record (if you are using AWS Route53 for "
+                   "DNS).")
+    ttl = 10
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
         self.r53 = boto3.client("route53")
 
-    def prepare(self):  # pylint: disable=missing-docstring,no-self-use
-        pass  # pragma: no cover
-
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return "Solve a DNS01 challenge using AWS Route53"
 
-    def get_chall_pref(self, domain):
-        # pylint: disable=missing-docstring,no-self-use,unused-argument
-        return [challenges.DNS01]
+    def _setup_credentials(self):
+        pass
 
-    def perform(self, achalls):  # pylint: disable=missing-docstring
+    def _perform(self, domain, validation_domain_name, validation):
         try:
-            change_ids = [
-                self._change_txt_record("UPSERT", achall)
-                for achall in achalls
-            ]
+            change_id = self._change_txt_record("UPSERT", validation_domain_name, validation)
 
-            for change_id in change_ids:
-                self._wait_for_change(change_id)
-            # Sleep for at least the TTL, to ensure that any records cached by
-            # the ACME server after previous validation attempts are gone. In
-            # most cases we'll need to wait at least this long for the Route53
-            # records to propagate, so this doesn't delay us much.
-            time.sleep(TTL)
-            return [achall.response(achall.account_key) for achall in achalls]
+            self._wait_for_change(change_id)
         except (NoCredentialsError, ClientError) as e:
-            e.args = ("\n".join([str(e), INSTRUCTIONS]),)
-            raise
+            logger.debug('Encountered error during perform: %s', e, exc_info=True)
+            raise errors.PluginError("\n".join([str(e), INSTRUCTIONS]))
 
-    def cleanup(self, achalls):  # pylint: disable=missing-docstring
-        for achall in achalls:
-            self._change_txt_record("DELETE", achall)
+    def _cleanup(self, domain, validation_domain_name, validation):
+        try:
+            self._change_txt_record("DELETE", validation_domain_name, validation)
+        except (NoCredentialsError, ClientError) as e:
+            logger.debug('Encountered error during cleanup: %s', e, exc_info=True)
 
     def _find_zone_id_for_domain(self, domain):
         """Find the zone id responsible a given FQDN.
@@ -93,8 +74,8 @@ class Authenticator(common.Plugin):
                     zones.append((zone["Name"], zone["Id"]))
 
         if not zones:
-            raise ValueError(
-                "Unable to find a Route53 hosted zone for {}".format(domain)
+            raise errors.PluginError(
+                "Unable to find a Route53 hosted zone for {0}".format(domain)
             )
 
         # Order the zones that are suffixes for our desired to domain by
@@ -104,27 +85,24 @@ class Authenticator(common.Plugin):
         zones.sort(key=lambda z: len(z[0]), reverse=True)
         return zones[0][1]
 
-    def _change_txt_record(self, action, achall):
-        domain = achall.validation_domain_name(achall.domain)
-        value = achall.validation(achall.account_key)
-
-        zone_id = self._find_zone_id_for_domain(domain)
+    def _change_txt_record(self, action, validation_domain_name, validation):
+        zone_id = self._find_zone_id_for_domain(validation_domain_name)
 
         response = self.r53.change_resource_record_sets(
             HostedZoneId=zone_id,
             ChangeBatch={
-                "Comment": "certbot-route53 certificate validation " + action,
+                "Comment": "certbot-dns-route53 certificate validation " + action,
                 "Changes": [
                     {
                         "Action": action,
                         "ResourceRecordSet": {
-                            "Name": domain,
+                            "Name": validation_domain_name,
                             "Type": "TXT",
-                            "TTL": TTL,
+                            "TTL": self.ttl,
                             "ResourceRecords": [
                                 # For some reason TXT records need to be
                                 # manually quoted.
-                                {"Value": '"{}"'.format(value)}
+                                {"Value": '"{0}"'.format(validation)}
                             ],
                         }
                     }
@@ -137,11 +115,11 @@ class Authenticator(common.Plugin):
         """Wait for a change to be propagated to all Route53 DNS servers.
            https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetChange.html
         """
-        for n in range(0, 120):
+        for unused_n in range(0, 120):
             response = self.r53.get_change(Id=change_id)
             if response["ChangeInfo"]["Status"] == "INSYNC":
                 return
             time.sleep(5)
-        raise Exception(
+        raise errors.PluginError(
             "Timed out waiting for Route53 change. Current status: %s" %
             response["ChangeInfo"]["Status"])

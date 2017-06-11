@@ -43,7 +43,7 @@ Arch
 
 From our official releases:
 
-- https://www.archlinux.org/packages/community/any/python2-acme
+- https://www.archlinux.org/packages/community/any/python-acme
 - https://www.archlinux.org/packages/community/any/certbot
 - https://www.archlinux.org/packages/community/any/certbot-apache
 - https://www.archlinux.org/packages/community/any/certbot-nginx
@@ -51,7 +51,7 @@ From our official releases:
 From ``master``: https://aur.archlinux.org/packages/certbot-git
 
 Debian (and its derivatives, including Ubuntu)
-------
+----------------------------------------------
 
 - https://packages.debian.org/sid/certbot
 - https://packages.debian.org/sid/python-certbot

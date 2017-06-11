@@ -420,6 +420,13 @@ class EnforceLeValidity(unittest.TestCase):
     def test_valid_domain(self):
         self.assertEqual(self._call(u"example.com"), u"example.com")
 
+    def test_input_with_scheme(self):
+        self.assertRaises(errors.ConfigurationError, self._call, u"http://example.com")
+        self.assertRaises(errors.ConfigurationError, self._call, u"https://example.com")
+
+    def test_valid_input_with_scheme_name(self):
+        self.assertEqual(self._call(u"http.example.com"), u"http.example.com")
+
 
 class EnforceDomainSanityTest(unittest.TestCase):
     """Test enforce_domain_sanity."""

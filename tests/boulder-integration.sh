@@ -13,12 +13,6 @@ set -eux
 . ./tests/integration/_common.sh
 export PATH="$PATH:/usr/sbin"  # /usr/sbin/nginx
 
-if [ `uname` = "Darwin" ];then
-  readlink="greadlink"
-else
-  readlink="readlink"
-fi
-
 cleanup_and_exit() {
     EXIT_STATUS=$?
     if SERVER_STILL_RUNNING=`ps -p $python_server_pid -o pid=`
@@ -79,6 +73,20 @@ CheckHooks() {
     fi
     rm "$HOOK_TEST"
 }
+
+# test for regressions of #4719
+get_num_tmp_files() {
+    ls -1 /tmp | wc -l
+}
+num_tmp_files=$(get_num_tmp_files)
+common --csr / && echo expected error && exit 1 || true
+common --help
+common --help all
+common --version
+if [ $(get_num_tmp_files) -ne $num_tmp_files ]; then
+    echo "New files or directories created in /tmp!"
+    exit 1
+fi
 
 # We start a server listening on the port for the
 # unrequested challenge to prevent regressions in #3601.
