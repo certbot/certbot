@@ -82,13 +82,15 @@ class AuthenticatorTest(unittest.TestCase):
             'echo ${CERTBOT_TOKEN:-notoken}; '
             'echo ${CERTBOT_CERT_PATH:-nocert}; '
             'echo ${CERTBOT_KEY_PATH:-nokey}; '
+            'echo ${CERTBOT_SNI_DOMAIN:-nosnidomain}; '
             'echo ${CERTBOT_VALIDATION:-novalidation};')
-        dns_expected = '{0}\n{1}\n{2}\n{3}\n{4}'.format(
-            self.dns_achall.domain, 'notoken', 'nocert', 'nokey',
+        dns_expected = '{0}\n{1}\n{2}\n{3}\n{4}\n{5}'.format(
+            self.dns_achall.domain, 'notoken',
+            'nocert', 'nokey', 'nosnidomain',
             self.dns_achall.validation(self.dns_achall.account_key))
-        http_expected = '{0}\n{1}\n{2}\n{3}\n{4}'.format(
+        http_expected = '{0}\n{1}\n{2}\n{3}\n{4}\n{5}'.format(
             self.http_achall.domain, self.http_achall.chall.encode('token'),
-            'nocert', 'nokey',
+            'nocert', 'nokey', 'nosnidomain',
             self.http_achall.validation(self.http_achall.account_key))
 
         self.assertEqual(
@@ -100,10 +102,13 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(
             self.auth.env[self.http_achall.domain]['CERTBOT_AUTH_OUTPUT'],
             http_expected)
-        tls_sni_expected = '{0}\n{1}\n{2}\n{3}\n{4}'.format(
+        # tls_sni_01 challenge must be perform()ed above before we can
+        # get the cert_path and key_path.
+        tls_sni_expected = '{0}\n{1}\n{2}\n{3}\n{4}\n{5}'.format(
             self.tls_sni_achall.domain, 'notoken',
             self.auth.tls_sni_01.get_cert_path(self.tls_sni_achall),
             self.auth.tls_sni_01.get_key_path(self.tls_sni_achall),
+            self.auth.tls_sni_01.get_z_domain(self.tls_sni_achall),
             'novalidation')
         self.assertEqual(
             self.auth.env[self.tls_sni_achall.domain]['CERTBOT_AUTH_OUTPUT'],

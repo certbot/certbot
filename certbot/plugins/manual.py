@@ -85,7 +85,7 @@ Make sure your web server displays the following content at
     _TLSSNI_INSTRUCTIONS = """\
 Configure the service listening on port {port} to present the certificate
 {cert}
-using with the secret key
+using the secret key
 {key}
 when it receives a TLS ClientHello with the SNI extension set to
 {sni_domain}
@@ -176,7 +176,7 @@ when it receives a TLS ClientHello with the SNI extension set to
         if isinstance(achall.chall, challenges.TLSSNI01):
             env['CERTBOT_CERT_PATH'] = self.tls_sni_01.get_cert_path(achall)
             env['CERTBOT_KEY_PATH'] = self.tls_sni_01.get_key_path(achall)
-            env['CERTBOT_SNI_DOMAIN'] = achall.response(achall.account_key).z_domain
+            env['CERTBOT_SNI_DOMAIN'] = self.tls_sni_01.get_z_domain(achall)
             os.environ.pop('CERTBOT_VALIDATION', None)
             env.pop('CERTBOT_VALIDATION')
         else:
@@ -205,7 +205,7 @@ when it receives a TLS ClientHello with the SNI extension set to
                 cert=self.tls_sni_01.get_cert_path(achall),
                 key=self.tls_sni_01.get_key_path(achall),
                 port=self.config.tls_sni_01_port,
-                sni_domain=achall.response(achall.account_key).z_domain)
+                sni_domain=self.tls_sni_01.get_z_domain(achall))
         display = zope.component.getUtility(interfaces.IDisplay)
         display.notification(msg, wrap=False, force_interactive=True)
 
