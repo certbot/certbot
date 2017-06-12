@@ -444,7 +444,7 @@ def _report_no_chall_path():
 
 _ERROR_HELP_COMMON = (
     "To fix these errors, please make sure that your domain name was entered "
-    "correctly and the DNS A record(s) for that domain contain(s) the "
+    "correctly and the DNS A/AAAA record(s) for that domain contain(s) the "
     "right IP address.")
 
 
