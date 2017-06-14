@@ -31,7 +31,6 @@ Some plugins offer an *authenticator*, meaning that they can satisfy challenges:
 * Manual plugin: (DNS-01 or HTTP-01) Either tells you what changes to make to your configuration or updates 
   your DNS records using an external script (for DNS-01) or your webroot (for HTTP-01). Use the Manual 
   plugin if you have the technical knowledge to make configuration changes yourself when asked to do so. 
-  Note that this will prevent automated renewal of your certificate using `certbot renew`.
 
 Tips for Challenges
 -------------------
@@ -60,7 +59,7 @@ HTTP-01 Challenge
   requires making a change to your web server configuration first.
 * Make sure your web server serves files properly from the directory where the challenge 
   file is placed (e. g. `/.well-known/acme-challenge`) to the expected location on the 
-  website with the proper MIME type and without adding a header or footer.
+  website without adding a header or footer.
 * When using the Standalone plugin, make sure another program is not already listening to port 80 on the server.
 * When using the Webroot plugin, make sure there is a web server listening on port 80.
 

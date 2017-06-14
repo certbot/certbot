@@ -302,13 +302,13 @@ one or more domains.
 
 Example:
 
-.. code-block::
+.. code-block:: none
 
   certbot --expand --cert-name existing.com -d example.com,newdomain.com
 
 If you prefer, you can specify the domains individually like this:
 
-.. code-block::
+.. code-block:: none
 
   certbot --expand --cert-name existing.com -d example.com -d newdomain.com
 
