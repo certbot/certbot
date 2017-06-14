@@ -175,28 +175,41 @@ class _RFC2136Client(object):
 
         # Loop through until we find an authoritative SOA record
         for guess in domain_name_guesses:
-            domain = dns.name.from_text(guess)
-            if not domain.is_absolute():
-                domain = domain.concatenate(dns.name.root)
-
-            request = dns.message.make_query(domain, dns.rdatatype.SOA, dns.rdataclass.IN)
-            # Turn off Recursion Desired bit in query
-            request.flags ^= dns.flags.RD
-
-            try:
-                response = dns.query.udp(request, self.server)
-                rcode = response.rcode()
-
-                # Authoritative Answer bit should be set
-                if (rcode == dns.rcode.NOERROR and len(response.answer) > 0 and
-                        response.flags & dns.flags.AA):
-                    logger.debug('Received authoritative SOA response for %s', guess)
-                    return guess
-
-                logger.debug('No authoritative SOA record found for %s', guess)
-            except Exception as e:
-                raise errors.PluginError('Encountered error when making query: {0}'
-                                         .format(e))
+            if self._query_soa(guess):
+                return guess
 
         raise errors.PluginError('Unable to determine base domain for {0} using names: {1}.'
                                  .format(domain_name, domain_name_guesses))
+
+    def _query_soa(self, domain_name):
+        """
+        Query a domain name for an authoritative SOA record.
+
+        :param str domain_name: The domain name to query for an SOA record.
+        :returns: True if found, False otherwise.
+        :rtype: bool
+        :raises certbot.errors.PluginError: if no response is received.
+        """
+
+        domain = dns.name.from_text(domain_name)
+
+        request = dns.message.make_query(domain, dns.rdatatype.SOA, dns.rdataclass.IN)
+        # Turn off Recursion Desired bit in query
+        request.flags ^= dns.flags.RD
+
+        try:
+            response = dns.query.udp(request, self.server)
+            rcode = response.rcode()
+
+            # Authoritative Answer bit should be set
+            if (rcode == dns.rcode.NOERROR and len(response.answer) > 0 and
+                    response.flags & dns.flags.AA):
+                logger.debug('Received authoritative SOA response for %s', domain_name)
+                return True
+
+            logger.debug('No authoritative SOA record found for %s', domain_name)
+            return False
+        except Exception as e:
+            raise errors.PluginError('Encountered error when making query: {0}'
+                                     .format(e))
+
