@@ -53,6 +53,9 @@ def determine_user_agent(config):
     :rtype: `str`
     """
 
+    # WARNING: To ensure changes are in line with Certbot's privacy
+    # policy, talk to a core Certbot team member before making any
+    # changes here.
     if config.user_agent is None:
         ua = ("CertbotACMEClient/{0} ({1}; {2}) Authenticator/{3} Installer/{4} "
               "({5}; flags: {6}) Py/{7}")
