@@ -134,8 +134,8 @@ def choose_plugin(prepared, question):
             return None
 
 noninstaller_plugins = ["webroot", "manual", "standalone", "dns-cloudflare", "dns-cloudxns",
-                        "dns-digitalocean", "dns-dnsimple", "dns-google", "dns-route53",
-                        "dns-nsone"]
+                        "dns-digitalocean", "dns-dnsimple", "dns-dnsmadeeasy", "dns-google",
+                        "dns-route53", "dns-nsone"]
 
 def record_chosen_plugins(config, plugins, auth, inst):
     "Update the config entries to reflect the plugins we actually selected."
@@ -217,7 +217,7 @@ def set_configurator(previously, now):
     return now
 
 
-def cli_plugin_requests(config):
+def cli_plugin_requests(config):  # pylint: disable=too-many-branches
     """
     Figure out which plugins the user requested with CLI and config options
 
@@ -247,6 +247,8 @@ def cli_plugin_requests(config):
         req_auth = set_configurator(req_auth, "dns-digitalocean")
     if config.dns_dnsimple:
         req_auth = set_configurator(req_auth, "dns-dnsimple")
+    if config.dns_dnsmadeeasy:
+        req_auth = set_configurator(req_auth, "dns-dnsmadeeasy")
     if config.dns_google:
         req_auth = set_configurator(req_auth, "dns-google")
     if config.dns_nsone:
