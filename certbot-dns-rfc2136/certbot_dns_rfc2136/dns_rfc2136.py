@@ -36,7 +36,7 @@ class Authenticator(dns_common.DNSAuthenticator):
       'HMAC-SHA512': dns.tsig.HMAC_SHA512
     }
 
-    description = 'Obtain certs using a DNS TXT record (if you are using BIND for DNS).'
+    description = 'Obtain certificates using a DNS TXT record (if you are using BIND for DNS).'
     ttl = 120
 
     def __init__(self, *args, **kwargs):
