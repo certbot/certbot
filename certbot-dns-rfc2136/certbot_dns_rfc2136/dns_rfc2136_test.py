@@ -78,7 +78,7 @@ class RFC2136ClientTest(unittest.TestCase):
 
     @mock.patch("dns.query.tcp")
     def test_add_txt_record(self, query_mock):
-        query_mock.return_value.rcode.return_value = 0
+        query_mock.return_value.rcode.return_value = dns.rcode.NOERROR
         # _find_domain | pylint: disable=protected-access
         self.rfc2136_client._find_domain = mock.MagicMock(return_value="example.com")
 
@@ -99,8 +99,19 @@ class RFC2136ClientTest(unittest.TestCase):
             DOMAIN, "bar", "baz", 42)
 
     @mock.patch("dns.query.tcp")
+    def test_add_txt_record_server_error(self, query_mock):
+        query_mock.return_value.rcode.return_value = dns.rcode.NXDOMAIN
+        # _find_domain | pylint: disable=protected-access
+        self.rfc2136_client._find_domain = mock.MagicMock(return_value="example.com")
+
+        self.assertRaises(
+            errors.PluginError,
+            self.rfc2136_client.add_txt_record,
+            DOMAIN, "bar", "baz", 42)
+
+    @mock.patch("dns.query.tcp")
     def test_del_txt_record(self, query_mock):
-        query_mock.return_value.rcode.return_value = 0
+        query_mock.return_value.rcode.return_value = dns.rcode.NOERROR
         # _find_domain | pylint: disable=protected-access
         self.rfc2136_client._find_domain = mock.MagicMock(return_value="example.com")
 
@@ -112,6 +123,17 @@ class RFC2136ClientTest(unittest.TestCase):
     @mock.patch("dns.query.tcp")
     def test_del_txt_record_wraps_errors(self, query_mock):
         query_mock.side_effect = Exception
+        # _find_domain | pylint: disable=protected-access
+        self.rfc2136_client._find_domain = mock.MagicMock(return_value="example.com")
+
+        self.assertRaises(
+            errors.PluginError,
+            self.rfc2136_client.del_txt_record,
+            DOMAIN, "bar", "baz")
+
+    @mock.patch("dns.query.tcp")
+    def test_del_txt_record_server_error(self, query_mock):
+        query_mock.return_value.rcode.return_value = dns.rcode.NXDOMAIN
         # _find_domain | pylint: disable=protected-access
         self.rfc2136_client._find_domain = mock.MagicMock(return_value="example.com")
 

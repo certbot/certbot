@@ -120,13 +120,16 @@ class _RFC2136Client(object):
 
         try:
             response = dns.query.tcp(update, self.server)
-            rcode = response.rcode()
-
-            if rcode == dns.rcode.NOERROR:
-                logger.debug('Successfully added TXT record')
         except Exception as e:
             raise errors.PluginError('Encountered error adding TXT record: {0}'
                                      .format(e))
+        rcode = response.rcode()
+
+        if rcode == dns.rcode.NOERROR:
+            logger.debug('Successfully added TXT record')
+        else:
+            raise errors.PluginError('Received response from server: {0}'
+                                     .format(dns.rcode.to_text(rcode)))
 
     def del_txt_record(self, domain_name, record_name, record_content):
         """
@@ -153,13 +156,16 @@ class _RFC2136Client(object):
 
         try:
             response = dns.query.tcp(update, self.server)
-            rcode = response.rcode()
-
-            if rcode == dns.rcode.NOERROR:
-                logger.debug('Successfully deleted TXT record')
         except Exception as e:
             raise errors.PluginError('Encountered error deleting TXT record: {0}'
                                      .format(e))
+        rcode = response.rcode()
+
+        if rcode == dns.rcode.NOERROR:
+            logger.debug('Successfully deleted TXT record')
+        else:
+            raise errors.PluginError('Received response from server: {0}'
+                                     .format(dns.rcode.to_text(rcode)))
 
     def _find_domain(self, domain_name):
         """
