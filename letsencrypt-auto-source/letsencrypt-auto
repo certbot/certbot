@@ -764,7 +764,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
   # If the venv doesn't exist, we just bootstrapped
   if [ -d "$VENV_PATH" -a "$BOOTSTRAP_VERSION" != "$(PrevBootstrapVersion)" ]; then
     # if non-interactive mode or stdin and stdout are connected to a terminal
-    if [ "$NONINTERACTIVE" = 1 -o -t 0 -a -t 1]; then
+    if [ \( "$NONINTERACTIVE" = 1 \) -o \( \( -t 0 \) -a \( -t 1 \) \) ]; then
       rm -rf "$VENV_PATH"
       "$0" "$@"
       exit 0
