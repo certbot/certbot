@@ -128,7 +128,7 @@ def choose_plugin(prepared, question):
 
 noninstaller_plugins = ["webroot", "manual", "standalone", "dns-cloudflare", "dns-cloudxns",
                         "dns-digitalocean", "dns-dnsimple", "dns-dnsmadeeasy", "dns-google",
-                        "dns-luadns", "dns-route53", "dns-nsone"]
+                        "dns-luadns", "dns-nsone", "dns-rfc2136", "dns-route53"]
 
 def record_chosen_plugins(config, plugins, auth, inst):
     "Update the config entries to reflect the plugins we actually selected."
@@ -249,6 +249,8 @@ def cli_plugin_requests(config):  # pylint: disable=too-many-branches
         req_auth = set_configurator(req_auth, "dns-luadns")
     if config.dns_nsone:
         req_auth = set_configurator(req_auth, "dns-nsone")
+    if config.dns_rfc2136:
+        req_auth = set_configurator(req_auth, "dns-rfc2136")
     if config.dns_route53:
         req_auth = set_configurator(req_auth, "dns-route53")
     logger.debug("Requested authenticator %s and installer %s", req_auth, req_inst)
