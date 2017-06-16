@@ -1,44 +1,44 @@
 """
-The `~certbot_dns_dnsmadeeasy.dns_dnsmadeeasy` plugin automates the process of
+The `~certbot_dns_luadns.dns_luadns` plugin automates the process of
 completing a ``dns-01`` challenge (`~acme.challenges.DNS01`) by creating, and
-subsequently removing, TXT records using the DNS Made Easy API.
+subsequently removing, TXT records using the LuaDNS API.
 
 
 Named Arguments
 ---------------
 
 =========================================  =====================================
-``--dns-dnsmadeeasy-credentials``          DNS Made Easy credentials_ INI file.
+``--dns-luadns-credentials``               LuaDNS credentials_ INI file.
                                            (Required)
-``--dns-dnsmadeeasy-propagation-seconds``  The number of seconds to wait for DNS
+``--dns-luadns-propagation-seconds``       The number of seconds to wait for DNS
                                            to propagate before asking the ACME
                                            server to verify the DNS record.
-                                           (Default: 60)
+                                           (Default: 30)
 =========================================  =====================================
 
 
 Credentials
 -----------
 
-Use of this plugin requires a configuration file containing DNS Made Easy API
-credentials, obtained from your DNS Made Easy
-`account page <https://cp.dnsmadeeasy.com/account/info>`_.
+Use of this plugin requires a configuration file containing LuaDNS API
+credentials, obtained from your LuaDNS
+`account settings page <https://api.luadns.com/settings>`_.
 
 .. code-block:: ini
    :name: credentials.ini
    :caption: Example credentials file:
 
-   # DNS Made Easy API credentials used by Certbot
-   dns_dnsmadeeasy_api_key = 1c1a3c91-4770-4ce7-96f4-54c0eb0e457a
-   dns_dnsmadeeasy_secret_key = c9b5625f-9834-4ff8-baba-4ed5f32cae55
+   # LuaDNS API credentials used by Certbot
+   dns_luadns_email = user@example.com
+   dns_luadns_token = 0123456789abcdef0123456789abcdef
 
 The path to this file can be provided interactively or using the
-``--dns-dnsmadeeasy-credentials`` command-line argument. Certbot records the path
+``--dns-luadns-credentials`` command-line argument. Certbot records the path
 to this file for use during renewal, but does not store the file's contents.
 
 .. caution::
    You should protect these API credentials as you would the password to your
-   DNS Made Easy account. Users who can read this file can use these credentials
+   LuaDNS account. Users who can read this file can use these credentials
    to issue arbitrary API calls on your behalf. Users who can cause Certbot to
    run using these credentials can complete a ``dns-01`` challenge to acquire
    new certificates or revoke existing certificates for associated domains,
@@ -59,8 +59,8 @@ Examples
    :caption: To acquire a certificate for ``example.com``
 
    certbot certonly \\
-     --dns-dnsmadeeasy \\
-     --dns-dnsmadeeasy-credentials ~/.secrets/certbot/dnsmadeeasy.ini \\
+     --dns-luadns \\
+     --dns-luadns-credentials ~/.secrets/certbot/luadns.ini \\
      -d example.com
 
 .. code-block:: bash
@@ -68,8 +68,8 @@ Examples
              ``www.example.com``
 
    certbot certonly \\
-     --dns-dnsmadeeasy \\
-     --dns-dnsmadeeasy-credentials ~/.secrets/certbot/dnsmadeeasy.ini \\
+     --dns-luadns \\
+     --dns-luadns-credentials ~/.secrets/certbot/luadns.ini \\
      -d example.com \\
      -d www.example.com
 
@@ -78,9 +78,9 @@ Examples
              for DNS propagation
 
    certbot certonly \\
-     --dns-dnsmadeeasy \\
-     --dns-dnsmadeeasy-credentials ~/.secrets/certbot/dnsmadeeasy.ini \\
-     --dns-dnsmadeeasy-propagation-seconds 120 \\
+     --dns-luadns \\
+     --dns-luadns-credentials ~/.secrets/certbot/luadns.ini \\
+     --dns-luadns-propagation-seconds 120 \\
      -d example.com
 
 """
