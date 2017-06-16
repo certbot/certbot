@@ -78,7 +78,7 @@ for arg in "$@" ; do
           h)
             HELP=1;;
           n)
-            ASSUME_YES=1;;
+            NONINTERACTIVE=1;;
           q)
             QUIET=1;;
           v)
@@ -94,8 +94,8 @@ if [ $BASENAME = "letsencrypt-auto" ]; then
   HELP=0
 fi
 
-# Set ASSUME_YES to 1 if QUIET (i.e. --quiet implies --non-interactive)
-if [ "$QUIET" = 1 ]; then
+# Set ASSUME_YES to 1 if QUIET or NONINTERACTIVE
+if [ "$QUIET" = 1 -o "$NONINTERACTIVE" = 1 ]; then
   ASSUME_YES=1
 fi
 
@@ -358,7 +358,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
   # If the venv doesn't exist, we just bootstrapped
   if [ -d $VENV_PATH -a $BOOTSTRAP_VERSION != $(PrevBootstrapVersion) ]; then
     # if non-interactive mode or stdin and stdout are connected to a terminal
-    if [ $ASSUME_YES = 1 -o -t 0 -a -t 1]; then
+    if [ $NONINTERACTIVE = 1 -o -t 0 -a -t 1]; then
       rm -rf $VENV_PATH
       "$0" "$@"
       exit 0
