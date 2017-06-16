@@ -1,4 +1,4 @@
-"""DNS Authenticator for NS1 DNS."""
+"""DNS Authenticator for LuaDNS DNS."""
 import logging
 
 import zope.interface

@@ -20,15 +20,15 @@ Named Arguments
 Credentials
 -----------
 
-Use of this plugin requires a configuration file containing DNS Made Easy API
-credentials, obtained from your DNS Made Easy
-`account page <https://cp.dnsmadeeasy.com/account/info>`_.
+Use of this plugin requires a configuration file containing LuaDNS API
+credentials, obtained from your LuaDNS
+`account settings page <https://api.luadns.com/settings>`_.
 
 .. code-block:: ini
    :name: credentials.ini
    :caption: Example credentials file:
 
-   # DNS Made Easy API credentials used by Certbot
+   # LuaDNS API credentials used by Certbot
    dns_luadns_email = user@example.com
    dns_luadns_token = 0123456789abcdef0123456789abcdef
 
