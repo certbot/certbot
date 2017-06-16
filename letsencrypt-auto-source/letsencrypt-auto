@@ -219,6 +219,10 @@ DeterminePythonVersion() {
   fi
 }
 
+# If new packages are installed by BootstrapDebCommon below, this version
+# number must be increased.
+BOOTSTRAP_DEB_COMMON_VERSION=1
+
 BootstrapDebCommon() {
   # Current version tested with:
   #
@@ -335,6 +339,10 @@ BootstrapDebCommon() {
   fi
 }
 
+# If new packages are installed by BootstrapRpmCommon below, this version
+# number must be increased.
+BOOTSTRAP_RPM_COMMON_VERSION=1
+
 BootstrapRpmCommon() {
   # Tested with:
   #   - Fedora 20, 21, 22, 23 (x64)
@@ -423,6 +431,10 @@ BootstrapRpmCommon() {
   fi
 }
 
+# If new packages are installed by BootstrapSuseCommon below, this version
+# number must be increased.
+BOOTSTRAP_SUSE_COMMON_VERSION=1
+
 BootstrapSuseCommon() {
   # SLE12 don't have python-virtualenv
 
@@ -445,6 +457,10 @@ BootstrapSuseCommon() {
     libffi-devel \
     ca-certificates
 }
+
+# If new packages are installed by BootstrapArchCommon below, this version
+# number must be increased.
+BOOTSTRAP_ARCH_COMMON_VERSION=1
 
 BootstrapArchCommon() {
   # Tested with:
@@ -481,6 +497,10 @@ BootstrapArchCommon() {
   fi
 }
 
+# If new packages are installed by BootstrapGentooCommon below, this version
+# number must be increased.
+BOOTSTRAP_GENTOO_COMMON_VERSION=1
+
 BootstrapGentooCommon() {
   PACKAGES="
     dev-lang/python:2.7
@@ -509,6 +529,10 @@ BootstrapGentooCommon() {
   esac
 }
 
+# If new packages are installed by BootstrapFreeBsd below, this version number
+# must be increased.
+BOOTSTRAP_FREEBSD_VERSION=1
+
 BootstrapFreeBsd() {
   if [ "$QUIET" = 1 ]; then
     QUIET_FLAG="--quiet"
@@ -520,6 +544,10 @@ BootstrapFreeBsd() {
     augeas \
     libffi
 }
+
+# If new packages are installed by BootstrapMac below, this version number must
+# be increased.
+BOOTSTRAP_MAC_VERSION=1
 
 BootstrapMac() {
   if hash brew 2>/dev/null; then
@@ -566,10 +594,18 @@ BootstrapMac() {
   fi
 }
 
+# If new packages are installed by BootstrapSmartOS below, this version number
+# must be increased.
+BOOTSTRAP_SMARTOS_VERSION=1
+
 BootstrapSmartOS() {
   pkgin update
   pkgin -y install 'gcc49' 'py27-augeas' 'py27-virtualenv'
 }
+
+# If new packages are installed by BootstrapMageiaCommon below, this version
+# number must be increased.
+BOOTSTRAP_MAGEIA_COMMON_VERSION=1
 
 BootstrapMageiaCommon() {
   if [ "$QUIET" = 1 ]; then

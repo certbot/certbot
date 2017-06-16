@@ -1,3 +1,7 @@
+# If new packages are installed by BootstrapGentooCommon below, this version
+# number must be increased.
+BOOTSTRAP_GENTOO_COMMON_VERSION=1
+
 BootstrapGentooCommon() {
   PACKAGES="
     dev-lang/python:2.7

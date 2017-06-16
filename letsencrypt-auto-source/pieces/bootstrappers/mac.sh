@@ -1,3 +1,7 @@
+# If new packages are installed by BootstrapMac below, this version number must
+# be increased.
+BOOTSTRAP_MAC_VERSION=1
+
 BootstrapMac() {
   if hash brew 2>/dev/null; then
     say "Using Homebrew to install dependencies..."

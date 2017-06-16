@@ -1,3 +1,7 @@
+# If new packages are installed by BootstrapArchCommon below, this version
+# number must be increased.
+BOOTSTRAP_ARCH_COMMON_VERSION=1
+
 BootstrapArchCommon() {
   # Tested with:
   #   - ArchLinux (x86_64)

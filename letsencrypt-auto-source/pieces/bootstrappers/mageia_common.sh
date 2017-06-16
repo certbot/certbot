@@ -1,3 +1,7 @@
+# If new packages are installed by BootstrapMageiaCommon below, this version
+# number must be increased.
+BOOTSTRAP_MAGEIA_COMMON_VERSION=1
+
 BootstrapMageiaCommon() {
   if [ "$QUIET" = 1 ]; then
     QUIET_FLAG='--quiet'
