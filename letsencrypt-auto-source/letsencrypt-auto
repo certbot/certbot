@@ -28,6 +28,7 @@ if [ -z "$VENV_PATH" ]; then
   VENV_PATH="$XDG_DATA_HOME/$VENV_NAME"
 fi
 VENV_BIN="$VENV_PATH/bin"
+VENV_BOOTSTRAP_VERSION="$VENV_PATH/certbot-auto-bootstrap-version.txt"
 LE_AUTO_VERSION="0.16.0.dev0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
@@ -755,6 +756,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
     else
       virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" > /dev/null
     fi
+    echo $BOOTSTRAP_VERSION > $VENV_BOOTSTRAP_VERSION
 
     say "Installing Python packages..."
     TEMP_DIR=$(TempDir)
