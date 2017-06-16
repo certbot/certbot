@@ -33,7 +33,8 @@ TSIG key secret itself and the algorithm used if it's different to HMAC-MD5.
    # TSIG key name
    dns_rfc2136_name = keyname.
    # TSIG key secret
-   dns_rfc2136_secret = 4q4wM/2I180UXoMyN4INVhJNi8V9BCV+jMw2mXgZw/CSuxUT8C7NKKFs AmKd7ak51vWKgSl12ib86oQRPkpDjg==
+   dns_rfc2136_secret = 4q4wM/2I180UXoMyN4INVhJNi8V9BCV+jMw2mXgZw/CSuxUT8C7NKKFs \
+AmKd7ak51vWKgSl12ib86oQRPkpDjg==
    # TSIG key algorithm
    dns_rfc2136_algorithm = HMAC-SHA512
 
@@ -79,7 +80,8 @@ permission to issue updates on the target DNS zone.
 
    key "keyname." {
      algorithm hmac-sha512;
-     secret "4q4wM/2I180UXoMyN4INVhJNi8V9BCV+jMw2mXgZw/CSuxUT8C7NKKFs AmKd7ak51vWKgSl12ib86oQRPkpDjg==";
+     secret "4q4wM/2I180UXoMyN4INVhJNi8V9BCV+jMw2mXgZw/CSuxUT8C7NKKFs \
+AmKd7ak51vWKgSl12ib86oQRPkpDjg==";
    };
 
    zone "example.com." IN {
