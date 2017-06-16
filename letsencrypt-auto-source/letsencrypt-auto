@@ -725,6 +725,32 @@ else
   BOOTSTRAP_VERSION="Unknown 1"
 fi
 
+PrevBootstrapVersion() {
+  if [ -f $VENV_BOOTSTRAP_VERSION ]; then
+    cat $VENV_BOOTSTRAP_VERSION
+  elif grep -Fqx "$BOOTSTRAP_VERSION" << "UNLIKELY_EOF"
+NO_BOOTSTRAP 1
+BootstrapDebCommon 1
+BootstrapMageiaCommon 1
+BootstrapRpmCommon 1
+BootstrapSuseCommon 1
+BootstrapArchCommon 1
+BootstrapGentooCommon 1
+BootstrapFreeBsd 1
+BootstrapMac 1
+BootstrapSmartOS 1
+UNLIKELY_EOF
+  then
+    # If there's no bootstrap version saved to disk, but the currently selected
+    # bootstrap script is from before we started saving the version number,
+    # return the currently selected version to prevent us from rebootstrapping
+    # unnecessarily.
+    echo $BOOTSTRAP_VERSION
+  else
+    echo "Unknown 0"
+  fi
+}
+
 TempDir() {
   mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || macOS
 }
