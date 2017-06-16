@@ -727,7 +727,7 @@ fi
 
 PrevBootstrapVersion() {
   if [ -f $VENV_BOOTSTRAP_VERSION ]; then
-    cat $VENV_BOOTSTRAP_VERSION
+    cat "$VENV_BOOTSTRAP_VERSION"
   elif grep -Fqx "$BOOTSTRAP_VERSION" << "UNLIKELY_EOF"
 NO_BOOTSTRAP 1
 BootstrapDebCommon 1
@@ -745,7 +745,7 @@ UNLIKELY_EOF
     # bootstrap script is from before we started saving the version number,
     # return the currently selected version to prevent us from rebootstrapping
     # unnecessarily.
-    echo $BOOTSTRAP_VERSION
+    echo "$BOOTSTRAP_VERSION"
   else
     echo "Unknown 0"
   fi
@@ -762,10 +762,10 @@ if [ "$1" = "--le-auto-phase2" ]; then
 
   shift 1  # the --le-auto-phase2 arg
   # If the venv doesn't exist, we just bootstrapped
-  if [ -d $VENV_PATH -a $BOOTSTRAP_VERSION != $(PrevBootstrapVersion) ]; then
+  if [ -d "$VENV_PATH" -a "$BOOTSTRAP_VERSION" != "$(PrevBootstrapVersion)" ]; then
     # if non-interactive mode or stdin and stdout are connected to a terminal
-    if [ $NONINTERACTIVE = 1 -o -t 0 -a -t 1]; then
-      rm -rf $VENV_PATH
+    if [ "$NONINTERACTIVE" = 1 -o -t 0 -a -t 1]; then
+      rm -rf "$VENV_PATH"
       "$0" "$@"
       exit 0
     else
@@ -775,7 +775,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
       error "approve changes or with --non-interactive on the command line to automatically"
       error "install any required packages."
       # Set INSTALLED_VERSION to be the same so we don't update the venv
-      INSTALLED_VERSION=$LE_AUTO_VERSION
+      INSTALLED_VERSION="$LE_AUTO_VERSION"
     fi
   elif [ -f "$VENV_BIN/letsencrypt" ]; then
     # --version output ran through grep due to python-cryptography DeprecationWarnings
@@ -798,7 +798,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
     else
       virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" > /dev/null
     fi
-    echo $BOOTSTRAP_VERSION > $VENV_BOOTSTRAP_VERSION
+    echo "$BOOTSTRAP_VERSION" > "$VENV_BOOTSTRAP_VERSION"
 
     say "Installing Python packages..."
     TEMP_DIR=$(TempDir)
