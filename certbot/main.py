@@ -161,7 +161,7 @@ def _handle_identical_cert_request(config, lineage):
                "Renew & replace the cert (limit ~5 per 7 days)"]
 
     display = zope.component.getUtility(interfaces.IDisplay)
-    response = display.menu(question, choices, "OK", "Cancel",
+    response = display.menu(question, choices,
                             default=0, force_interactive=True)
     if response[0] == display_util.CANCEL:
         # TODO: Add notification related to command-line options for

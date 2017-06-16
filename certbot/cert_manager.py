@@ -157,7 +157,7 @@ def _get_certname(config, verb):
         if not choices:
             raise errors.Error("No existing certificates found.")
         code, index = disp.menu("Which certificate would you like to {0}?".format(verb),
-                                choices, ok_label="Select", flag="--cert-name",
+                                choices, flag="--cert-name",
                                 force_interactive=True)
         if code != display_util.OK or not index in range(0, len(choices)):
             raise errors.Error("User ended interaction.")
