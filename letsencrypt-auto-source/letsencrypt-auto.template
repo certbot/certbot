@@ -229,23 +229,40 @@ DeterminePythonVersion() {
 {{ bootstrappers/smartos.sh }}
 {{ bootstrappers/mageia_common.sh }}
 
-# Install required OS packages:
-Bootstrap() {
-  if [ "$NO_BOOTSTRAP" = 1 ]; then
-      return
-  elif [ -f /etc/debian_version ]; then
+# Set Bootstrap to the function that installs OS dependencies on this system
+# and BOOTSTRAP_VERSION to the unique identifier for the current version of
+# that function.
+if [ "$NO_BOOTSTRAP" = 1 ]; then
+  Bootstrap() {
+    :
+  }
+  BOOTSTRAP_VERSION="NO_BOOTSTRAP 1"
+elif [ -f /etc/debian_version ]; then
+  Bootstrap() {
     BootstrapMessage "Debian-based OSes"
     BootstrapDebCommon
-  elif [ -f /etc/mageia-release ]; then
-    # Mageia has both /etc/mageia-release and /etc/redhat-release
+  }
+  BOOTSTRAP_VERSION="BootstrapDebCommon $BOOTSTRAP_DEB_COMMON_VERSION"
+elif [ -f /etc/mageia-release ]; then
+  # Mageia has both /etc/mageia-release and /etc/redhat-release
+  Bootstrap() {
     ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
-  elif [ -f /etc/redhat-release ]; then
+  }
+  BOOTSTRAP_VERSION="BootstrapMageiaCommon $BOOTSTRAP_MAGEIA_COMMON_VERSION"
+elif [ -f /etc/redhat-release ]; then
+  Bootstrap() {
     BootstrapMessage "RedHat-based OSes"
     BootstrapRpmCommon
-  elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
+  }
+  BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
+  Bootstrap() {
     BootstrapMessage "openSUSE-based OSes"
     BootstrapSuseCommon
-  elif [ -f /etc/arch-release ]; then
+  }
+  BOOTSTRAP_VERSION="BootstrapSuseCommon $BOOTSTRAP_SUSE_COMMON_VERSION"
+elif [ -f /etc/arch-release ]; then
+  Bootstrap() {
     if [ "$DEBUG" = 1 ]; then
       BootstrapMessage "Archlinux"
       BootstrapArchCommon
@@ -257,27 +274,49 @@ Bootstrap() {
       error "--debug flag."
       exit 1
     fi
-  elif [ -f /etc/manjaro-release ]; then
+  }
+  BOOTSTRAP_VERSION="BootstrapArchCommon $BOOTSTRAP_ARCH_COMMON_VERSION"
+elif [ -f /etc/manjaro-release ]; then
+  Bootstrap() {
     ExperimentalBootstrap "Manjaro Linux" BootstrapArchCommon
-  elif [ -f /etc/gentoo-release ]; then
+  }
+  BOOTSTRAP_VERSION="BootstrapArchCommon $BOOTSTRAP_ARCH_COMMON_VERSION"
+elif [ -f /etc/gentoo-release ]; then
+  Bootstrap() {
     ExperimentalBootstrap "Gentoo" BootstrapGentooCommon
-  elif uname | grep -iq FreeBSD ; then
+  }
+  BOOTSTRAP_VERSION="BootstrapGentooCommon $BOOTSTRAP_GENTOO_COMMON_VERSION"
+elif uname | grep -iq FreeBSD ; then
+  Bootstrap() {
     ExperimentalBootstrap "FreeBSD" BootstrapFreeBsd
-  elif uname | grep -iq Darwin ; then
+  }
+  BOOTSTRAP_VERSION="BootstrapFreeBsd $BOOTSTRAP_FREEBSD_VERSION"
+elif uname | grep -iq Darwin ; then
+  Bootstrap() {
     ExperimentalBootstrap "macOS" BootstrapMac
-  elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
+  }
+  BOOTSTRAP_VERSION="BootstrapMac $BOOTSTRAP_MAC_VERSION"
+elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
+  Bootstrap() {
     ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
-  elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
+  }
+  BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
+  Bootstrap() {
     ExperimentalBootstrap "Joyent SmartOS Zone" BootstrapSmartOS
-  else
+  }
+  BOOTSTRAP_VERSION="BootstrapSmartOS $BOOTSTRAP_SMARTOS_VERSION"
+else
+  Bootstrap() {
     error "Sorry, I don't know how to bootstrap Certbot on your operating system!"
     error
     error "You will need to install OS dependencies, configure virtualenv, and run pip install manually."
     error "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
     error "for more info."
     exit 1
-  fi
-}
+  }
+  BOOTSTRAP_VERSION="Unknown 1"
+fi
 
 TempDir() {
   mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || macOS
