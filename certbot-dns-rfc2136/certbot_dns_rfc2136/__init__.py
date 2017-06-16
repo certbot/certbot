@@ -57,6 +57,48 @@ file. This warning will be emitted each time Certbot uses the credentials file,
 including for renewal, and cannot be silenced except by addressing the issue
 (e.g., by using a command like ``chmod 600`` to restrict access to the file).
 
+Sample BIND configuration
+'''''''''''''''''''''''''
+
+Here's a sample BIND configuration for Certbot to use. You will need to
+generate a new TSIG key, include it in the BIND configuration and grant it
+permission to issue updates on the target DNS zone.
+
+.. code-block:: bash
+   :caption: Generate a new SHA512 TSIG key
+
+   dnssec-keygen -a HMAC-SHA512 -b 512 -n HOST keyname.
+
+.. note::
+   There are a few tools shipped with BIND that can all generate TSIG keys;
+   ``dnssec-keygen``, ``rndc-confgen``, and ``ddns-confgen``. Try and use the
+   most secure algorithm supported by your DNS server.
+
+.. code-block:: none
+   :caption: Sample BIND configuration
+
+   key "keyname." {
+     algorithm hmac-sha512;
+     secret "4q4wM/2I180UXoMyN4INVhJNi8V9BCV+jMw2mXgZw/CSuxUT8C7NKKFs AmKd7ak51vWKgSl12ib86oQRPkpDjg==";
+   };
+
+   zone "example.com." IN {
+     type master;
+     file "named.example.com";
+     update-policy {
+       grant keyname. name _acme-challenge.example.com. txt;
+     };
+   };
+
+.. note::
+   This configuration limits the scope of the TSIG key to just be able to
+   add and remove TXT records for one specific host for the purpose of
+   completing the ``dns-01`` challenge. If your version of BIND doesn't
+   support the
+   `update-policy <http://www.zytrax.com/books/dns/ch7/xfer.html#update-policy>`_
+   directive then you can use the less-secure
+   `allow-update <http://www.zytrax.com/books/dns/ch7/xfer.html#allow-update>`_
+   directive instead.
 
 Examples
 --------
