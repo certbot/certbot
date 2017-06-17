@@ -58,7 +58,7 @@ class Authenticator(common.Plugin):
         'Authenticate through manual configuration or custom shell scripts. '
         'When using shell scripts, an authenticator script must be provided. '
         'The environment variables available to this script depend on the '
-        'type of challenge. $CERTBOT_DOMAIN will always contains the domain '
+        'type of challenge. $CERTBOT_DOMAIN will always contain the domain '
         'being authenticated. For HTTP-01 and DNS-01, $CERTBOT_VALIDATION '
         'is the validation string, and $CERTBOT_TOKEN is the filename of the '
         'resource requested when performing an HTTP-01 challenge. When '
