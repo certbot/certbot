@@ -77,10 +77,13 @@ Please deploy a DNS TXT record under the name
 
 Before continuing, verify the record is deployed."""
     _HTTP_INSTRUCTIONS = """\
-Make sure your web server displays the following content at
-{uri} before continuing:
+Create a file containing just this data:
 
 {validation}
+
+And make it available on your web server at this URL:
+
+{uri}
 """
     _TLSSNI_INSTRUCTIONS = """\
 Configure the service listening on port {port} to present the certificate
