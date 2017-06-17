@@ -220,6 +220,9 @@ class TLSSNI01Test(unittest.TestCase):
             self.sni.get_key_path(achall), "wb", chmod=0o400)
         mock_safe_open.return_value.write.assert_called_once_with(
             OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key))
+
+    def test_get_z_domain(self):
+        achall = self.achalls[0]
         self.assertEqual(self.sni.get_z_domain(achall),
             achall.response(achall.account_key).z_domain.decode("utf-8"))
 
