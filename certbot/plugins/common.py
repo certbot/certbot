@@ -241,6 +241,10 @@ class TLSSNI01(object):
         return os.path.join(self.configurator.config.work_dir,
                             achall.chall.encode("token") + '.pem')
 
+    def get_z_domain(self, achall):
+        """Returns z_domain (SNI) name for the challenge."""
+        return achall.response(achall.account_key).z_domain.decode("utf-8")
+
     def _setup_challenge_cert(self, achall, cert_key=None):
 
         """Generate and write out challenge certificate."""

@@ -54,9 +54,9 @@ standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.  
                       | Requires port 80 or 443 to be available. This is useful on    tls-sni-01_ (443)
                       | systems with no webserver, or when direct integration with
                       | the local webserver is not supported or not desired.
-manual_     Y    N    | Helps you obtain a certificate by giving you instructions to  http-01_ (80) or
-                      | perform domain validation yourself. Additionally allows you   dns-01_ (53)
-                      | to specify scripts to automate the validation task in a
+manual_     Y    N    | Helps you obtain a certificate by giving you instructions to  http-01_ (80),
+                      | perform domain validation yourself. Additionally allows you   dns-01_ (53) or
+                      | to specify scripts to automate the validation task in a       tls-sni-01_ (443)
                       | customized way.
 =========== ==== ==== =============================================================== =============================
 
@@ -175,13 +175,15 @@ the UI, you can use the plugin to obtain a certificate by specifying
 to copy and paste commands into another terminal session, which may
 be on a different computer.
 
-The manual plugin can use either the ``http`` or the ``dns`` challenge. You
-can use the ``--preferred-challenges`` option to choose the challenge of your
-preference.
+The manual plugin can use either the ``http``, ``dns`` or the
+``tls-sni`` challenge. You can use the ``--preferred-challenges`` option
+to choose the challenge of your preference.
+
 The ``http`` challenge will ask you to place a file with a specific name and
 specific content in the ``/.well-known/acme-challenge/`` directory directly
 in the top-level directory (“web root”) containing the files served by your
 webserver. In essence it's the same as the webroot_ plugin, but not automated.
+
 When using the ``dns`` challenge, ``certbot`` will ask you to place a TXT DNS
 record with specific contents under the domain name consisting of the hostname
 for which you want a certificate issued, prepended by ``_acme-challenge``.
@@ -192,10 +194,16 @@ For example, for the domain ``example.com``, a zone file entry would look like:
 
         _acme-challenge.example.com. 300 IN TXT "gfj9Xq...Rg85nM"
 
-Additionally you can specify scripts to prepare for validation and perform the
-authentication procedure  and/or clean up after it by using the
-``--manual-auth-hook`` and ``--manual-cleanup-hook`` flags. This is described in
-more depth in the hooks_ section.
+When using the ``tls-sni`` challenge, ``certbot`` will prepare a self-signed
+SSL certificate for you with the challenge validation appropriately
+encoded into a subjectAlternatNames entry. You will need to configure
+your SSL server to present this challenge SSL certificate to the ACME
+server using SNI.
+
+Additionally you can specify scripts to prepare for validation and
+perform the authentication procedure and/or clean up after it by using
+the ``--manual-auth-hook`` and ``--manual-cleanup-hook`` flags. This is
+described in more depth in the hooks_ section.
 
 .. _third-party-plugins:
 
@@ -606,12 +614,15 @@ and ``--manual-cleanup-hook`` respectively and can be used as follows:
  certbot certonly --manual --manual-auth-hook /path/to/http/authenticator.sh --manual-cleanup-hook /path/to/http/cleanup.sh -d secure.example.com
 
 This will run the ``authenticator.sh`` script, attempt the validation, and then run
-the ``cleanup.sh`` script. Additionally certbot will pass three environment
+the ``cleanup.sh`` script. Additionally certbot will pass relevant environment
 variables to these scripts:
 
 - ``CERTBOT_DOMAIN``: The domain being authenticated
-- ``CERTBOT_VALIDATION``: The validation string
+- ``CERTBOT_VALIDATION``: The validation string (HTTP-01 and DNS-01 only)
 - ``CERTBOT_TOKEN``: Resource name part of the HTTP-01 challenge (HTTP-01 only)
+- ``CERTBOT_CERT_PATH``: The challenge SSL certificate (TLS-SNI-01 only)
+- ``CERTBOT_KEY_PATH``: The private key associated with the aforementioned SSL certificate (TLS-SNI-01 only)
+- ``CERTBOT_SNI_DOMAIN``: The SNI name for which the ACME server expects to be presented the self-signed certificate located at ``$CERTBOT_CERT_PATH`` (TLS-SNI-01 only)
 
 Additionally for cleanup:
 
