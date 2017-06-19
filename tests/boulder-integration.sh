@@ -74,6 +74,9 @@ CheckHooks() {
     rm "$HOOK_TEST"
 }
 
+# Cleanup coverage data
+coverage erase
+
 # test for regressions of #4719
 get_num_tmp_files() {
     ls -1 /tmp | wc -l
@@ -217,3 +220,5 @@ if ${CI:-false} || type nginx;
 then
     . ./certbot-nginx/tests/boulder-integration.sh
 fi
+
+coverage report --fail-under 52 -m
