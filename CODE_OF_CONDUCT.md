@@ -34,7 +34,7 @@ This Code of Conduct applies both within project spaces and in public spaces whe
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project team (@swartzcr, @pde, @bmw, @ohemorange) at their eff.org emails, which can be found at [https://www.eff.org/about/staff]
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project team (Noah Swartz, Peter Eckersley, Brad Warren, Erica Portnoy) at their eff.org emails, which can be found at [https://www.eff.org/about/staff]
 
 For IRC matters, unacceptable behaviour may be reported by sending a private direct message to the project team (Freenode usernames "swartzcr", "pdeee", "bmw", "ericaportnoy"). All complaints will be reviewed and investigated and will respond in a way that it deems appropriate to the circumstances. The project team will maintain confidentiality with regard to the reporter of an incident, so long as it does not conflict with the duty to investigate workplace harassment. Further details of specific enforcement policies may be posted separately.
 
