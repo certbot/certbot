@@ -16,7 +16,8 @@ nginx -c $nginx_root/nginx.conf
 
 certbot_test_nginx () {
     certbot_test \
-        --configurator nginx \
+        --authenticator nginx \
+        --installer nginx \
         --nginx-server-root $nginx_root \
         "$@"
 }
