@@ -722,7 +722,28 @@ Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not 
        fi
    fi
 
+.. _lock-files:
 
+Lock Files
+==========
+
+When processing a validation Certbot writes a number of lock files on your system
+to prevent multiple instances from overwritting each other's changes. This means
+that two instances of Certbot will not be able to run in parallel.
+
+Since there's no one single cross-platform place for these lock files, Certbot
+will write a lock file for all of the directories it uses. This include Certbot's
+``--work-dir``, ``--logs-dir``, and ``--config-dir``. By default these are
+``/var/lib/letsencrypt``, ``/var/logs/letsencrypt``, and ``/etc/letsencrypt``
+respectively. Additionally if you are using Certbot with Apache or nginx it will
+lock the configuration folder for that program, which are typically also in the
+``/etc`` directory.
+
+Note that these lock files will only prevent other instances of Certbot from
+using those directories, not other processes. If you'd like to run multiple
+instances of Certbot simultaniously you should specify different directories
+as the ``--work-dir``, ``--logs-dir``, and ``--config-dir`` for each instance
+of Certbot that you would like to run.
 
 .. _config-file:
 
