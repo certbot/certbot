@@ -1,7 +1,6 @@
 """Tests Certbot plugins against different server configurations."""
 import argparse
 import filecmp
-import functools
 import logging
 import os
 import shutil
@@ -64,12 +63,12 @@ def test_authenticator(plugin, config, temp_dir):
                 type(achalls[i]), achalls[i].domain, config)
             success = False
         elif isinstance(responses[i], challenges.TLSSNI01Response):
-            verify = functools.partial(responses[i].simple_verify, achalls[i].chall,
-                                       achalls[i].domain,
-                                       util.JWK.public_key(),
-                                       host="127.0.0.1",
-                                       port=plugin.https_port)
-            if _try_until_true(verify):
+            verified = responses[i].simple_verify(achalls[i].chall,
+                                                  achalls[i].domain,
+                                                  util.JWK.public_key(),
+                                                  host="127.0.0.1",
+                                                  port=plugin.https_port)
+            if verified:
                 logger.info(
                     "tls-sni-01 verification for %s succeeded", achalls[i].domain)
             else:
@@ -155,10 +154,11 @@ def test_deploy_cert(plugin, temp_dir, domains):
         return False
 
     success = True
+    time.sleep(3)
     for domain in domains:
-        verify = functools.partial(validator.Validator().certificate, cert,
-                                   domain, "127.0.0.1", plugin.https_port)
-        if not _try_until_true(verify):
+        verified = validator.Validator().certificate(
+            cert, domain, "127.0.0.1", plugin.https_port)
+        if not verified:
             logger.error("**** Could not verify certificate for domain %s", domain)
             success = False
 
@@ -181,10 +181,8 @@ def test_enhancements(plugin, domains):
 
     for domain, info in domains_and_info:
         try:
-            verify = functools.partial(validator.Validator().any_redirect,
-                                       "localhost", plugin.http_port,
-                                       headers={"Host": domain})
-            previous_redirect = _try_until_true(verify)
+            previous_redirect = validator.Validator().any_redirect(
+                "localhost", plugin.http_port, headers={"Host": domain})
             info.append(previous_redirect)
             plugin.enhance(domain, "redirect")
             plugin.save()  # Needed by the Apache plugin
@@ -204,9 +202,9 @@ def test_enhancements(plugin, domains):
     for domain, info in domains_and_info:
         previous_redirect = info[0]
         if not previous_redirect:
-            verify = functools.partial(validator.Validator().redirect, "localhost",
-                                       plugin.http_port, headers={"Host": domain})
-            if not _try_until_true(verify):
+            verified = validator.Validator().redirect(
+                "localhost", plugin.http_port, headers={"Host": domain})
+            if not verified:
                 logger.error("*** Improper redirect for domain %s", domain)
                 success = False
 
@@ -214,17 +212,6 @@ def test_enhancements(plugin, domains):
         logger.info("Enhancements test succeeded")
 
     return success
-
-
-def _try_until_true(func, max_tries=5, sleep_time=0.5):
-    """Calls func up to max_tries times until it returns True"""
-    for _ in xrange(0, max_tries):
-        if func():
-            return True
-        else:
-            time.sleep(sleep_time)
-
-    return False
 
 
 def _save_and_restart(plugin, title=None):
