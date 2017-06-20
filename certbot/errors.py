@@ -1,5 +1,6 @@
 """Certbot client errors."""
 
+from certbot.compatibility import python_2_unicode_compatible
 
 class Error(Exception):
     """Generic Certbot client error."""
@@ -42,6 +43,7 @@ class AuthorizationError(Error):
     """Authorization error."""
 
 
+@python_2_unicode_compatible
 class FailedChallenges(AuthorizationError):
     """Failed challenges error.
 
