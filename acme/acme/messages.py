@@ -36,7 +36,12 @@ ERROR_TYPE_DESCRIPTIONS.update(dict(  # add errors with old prefix, deprecate me
 
 def is_acme_error(err):
     """Check if argument is an ACME error."""
-    return (ERROR_PREFIX in str(err)) or (OLD_ERROR_PREFIX in str(err))
+
+    # first case is for certbot.auth_handler._generate_failed_chall_msg
+    if isinstance(err, jose.util.ImmutableMap):
+        return (ERROR_PREFIX in str(err.typ)) or (OLD_ERROR_PREFIX in str(err.typ))
+    else: # for certbot.log.post_arg_parse_except_hook
+        return (ERROR_PREFIX in str(err)) or (OLD_ERROR_PREFIX in str(err))
 
 
 class Error(jose.JSONObjectWithFields, errors.Error):
@@ -93,7 +98,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
 
     def __str__(self):
         return ' :: '.join(
-            part for part in
+            part.encode('ascii', 'backslashreplace') for part in
             (self.typ, self.description, self.detail, self.title)
             if part is not None)
 

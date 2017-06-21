@@ -63,6 +63,13 @@ class ErrorTest(unittest.TestCase):
         self.assertTrue(is_acme_error(str(self.error)))
         self.assertFalse(is_acme_error(self.error_custom))
 
+    def test_unicode_error(self):
+        from acme.messages import Error, ERROR_PREFIX, is_acme_error
+        arabic_error = Error(
+                detail=u'\u0639\u062f\u0627\u0644\u0629', typ=ERROR_PREFIX + 'malformed',
+            title='title')
+        self.assertTrue(is_acme_error(arabic_error))
+
     def test_with_code(self):
         from acme.messages import Error, is_acme_error
         self.assertTrue(is_acme_error(Error.with_code('badCSR')))
