@@ -728,10 +728,10 @@ Lock Files
 ==========
 
 When processing a validation Certbot writes a number of lock files on your system
-to prevent multiple instances from overwritting each other's changes. This means
-that two instances of Certbot will not be able to run in parallel.
+to prevent multiple instances from overwriting each other's changes. This means
+that be default two instances of Certbot will not be able to run in parallel.
 
-Since there's no one single cross-platform place for these lock files, Certbot
+Since the directories used by Certbot are configurable, Certbot
 will write a lock file for all of the directories it uses. This include Certbot's
 ``--work-dir``, ``--logs-dir``, and ``--config-dir``. By default these are
 ``/var/lib/letsencrypt``, ``/var/logs/letsencrypt``, and ``/etc/letsencrypt``
@@ -741,7 +741,7 @@ lock the configuration folder for that program, which are typically also in the
 
 Note that these lock files will only prevent other instances of Certbot from
 using those directories, not other processes. If you'd like to run multiple
-instances of Certbot simultaniously you should specify different directories
+instances of Certbot simultaneously you should specify different directories
 as the ``--work-dir``, ``--logs-dir``, and ``--config-dir`` for each instance
 of Certbot that you would like to run.
 
