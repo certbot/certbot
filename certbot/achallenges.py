@@ -22,14 +22,12 @@ import logging
 from acme import challenges
 from acme import jose
 
-from future.utils import python_2_unicode_compatible
 
 logger = logging.getLogger(__name__)
 
 
 # pylint: disable=too-few-public-methods
 
-@python_2_unicode_compatible
 class AnnotatedChallenge(jose.ImmutableMap):
     """Client annotated challenge.
 
@@ -45,8 +43,6 @@ class AnnotatedChallenge(jose.ImmutableMap):
     def __getattr__(self, name):
         return getattr(self.challb, name)
 
-    def __str__(self):
-        return self
 
 class KeyAuthorizationAnnotatedChallenge(AnnotatedChallenge):
     """Client annotated `KeyAuthorizationChallenge` challenge."""

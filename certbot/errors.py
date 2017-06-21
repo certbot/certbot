@@ -1,5 +1,4 @@
 """Certbot client errors."""
-from future.utils import python_2_unicode_compatible
 
 
 class Error(Exception):
@@ -43,7 +42,6 @@ class AuthorizationError(Error):
     """Authorization error."""
 
 
-@python_2_unicode_compatible
 class FailedChallenges(AuthorizationError):
     """Failed challenges error.
 
