@@ -18,12 +18,11 @@ Note, that all annotated challenges act as a proxy objects::
 
 """
 import logging
-import six
 
 from acme import challenges
 from acme import jose
 
-from certbot.compatibility import python_2_unicode_compatible
+from future.utils import python_2_unicode_compatible
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
 """Certbot client errors."""
+from future.utils import python_2_unicode_compatible
 
-from certbot.compatibility import python_2_unicode_compatible
 
 class Error(Exception):
     """Generic Certbot client error."""
@@ -58,8 +58,7 @@ class FailedChallenges(AuthorizationError):
     def __str__(self):
         return "Failed authorization procedure. {0}".format(
             ", ".join(
-                "{0} ({1}): {2}".format(achall.domain, achall.typ,
-                    unicode(achall.error).encode('ascii', 'backslashreplace'))
+                "{0} ({1}): {2}".format(achall.domain, achall.typ, achall.error)
                 for achall in self.failed_achalls if achall.error is not None))
 
 
