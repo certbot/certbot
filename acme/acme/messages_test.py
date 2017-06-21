@@ -45,12 +45,6 @@ class ErrorTest(unittest.TestCase):
             'The request message was malformed', self.error.description)
         self.assertTrue(self.error_custom.description is None)
 
-    def test_str(self):
-        self.assertEqual(
-            'urn:ietf:params:acme:error:malformed :: The request message was '
-            'malformed :: foo :: title', str(self.error))
-        self.assertEqual('custom :: bar', str(self.error_custom))
-
     def test_code(self):
         from acme.messages import Error
         self.assertEqual('malformed', self.error.code)
@@ -60,8 +54,14 @@ class ErrorTest(unittest.TestCase):
     def test_is_acme_error(self):
         from acme.messages import is_acme_error
         self.assertTrue(is_acme_error(self.error))
-        self.assertTrue(is_acme_error(str(self.error)))
         self.assertFalse(is_acme_error(self.error_custom))
+
+    def test_unicode_error(self):
+        from acme.messages import Error, ERROR_PREFIX, is_acme_error
+        arabic_error = Error(
+                detail=u'\u0639\u062f\u0627\u0644\u0629', typ=ERROR_PREFIX + 'malformed',
+            title='title')
+        self.assertTrue(is_acme_error(arabic_error))
 
     def test_with_code(self):
         from acme.messages import Error, is_acme_error
