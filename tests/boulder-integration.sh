@@ -88,6 +88,11 @@ if [ $(get_num_tmp_files) -ne $num_tmp_files ]; then
     exit 1
 fi
 
+common register
+common register --update-registration --email example@example.org
+
+common plugins --init --prepare | grep webroot
+
 # We start a server listening on the port for the
 # unrequested challenge to prevent regressions in #3601.
 python ./tests/run_http_server.py $http_01_port &
@@ -210,6 +215,28 @@ common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
     --reason keyCompromise
 
 common unregister
+
+out=$(common certificates)
+subdomains="le le2 dns.le newname.le must-staple.le"
+for subdomain in $subdomains; do
+    domain="$subdomain.wtf"
+    if ! echo $out | grep "$domain"; then
+        echo "$domain not in certificates output!"
+        exit 1;
+    fi
+done
+
+cert_name="must-staple.le.wtf"
+common delete --cert-name $cert_name
+archive="$root/conf/archive/$cert_name"
+conf="$root/conf/renewal/$cert_name.conf"
+live="$root/conf/live/$cert_name"
+for path in $archive $conf $live; do
+    if [ -e $path ]; then
+        echo "Lineage not properly deleted!"
+        exit 1
+    fi
+done
 
 # Most CI systems set this variable to true.
 # If the tests are running as part of CI, Nginx should be available.
