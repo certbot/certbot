@@ -19,4 +19,4 @@ Instances of harassing or otherwise unacceptable behavior may be reported by con
 
 **If you believe you are in an immediate danger please contact the police.**
 
-This code of conduct is partially based on [Opal code of conduct](https://github.com/opal/opal/blob/master/CONDUCT.md). Opal is released under the [MIT license](https://github.com/opal/opal/blob/master/LICENSE). Changes are released under the [Apache Version 2.0](https://github.com/certbot/certbot/blob/master/LICENSE.txt).
+This code of conduct is partially based on [Ruby code of conduct](https://www.ruby-lang.org/en/conduct/). Changes are released under the [Apache Version 2.0](https://github.com/certbot/certbot/blob/master/LICENSE.txt).
