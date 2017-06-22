@@ -37,11 +37,7 @@ ERROR_TYPE_DESCRIPTIONS.update(dict(  # add errors with old prefix, deprecate me
 def is_acme_error(err):
     """Check if argument is an ACME error."""
 
-    # first case is for certbot.auth_handler._generate_failed_chall_msg
-    if isinstance(err, jose.util.ImmutableMap):
-        return (ERROR_PREFIX in str(err.typ)) or (OLD_ERROR_PREFIX in str(err.typ))
-    else: # for certbot.log.post_arg_parse_except_hook
-        return (ERROR_PREFIX in str(err)) or (OLD_ERROR_PREFIX in str(err))
+    return (ERROR_PREFIX in str(err.typ)) or (OLD_ERROR_PREFIX in str(err.typ))
 
 
 class Error(jose.JSONObjectWithFields, errors.Error):
