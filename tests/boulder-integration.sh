@@ -248,4 +248,4 @@ then
     . ./certbot-nginx/tests/boulder-integration.sh
 fi
 
-coverage report --fail-under 52 -m
+coverage report --fail-under 64 -m
