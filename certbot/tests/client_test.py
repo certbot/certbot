@@ -46,26 +46,23 @@ class RegisterTest(unittest.TestCase):
         with mock.patch("certbot.client.acme_client.Client") as mock_client:
             mock_client.register().terms_of_service = "http://tos"
             with mock.patch("certbot.eff.handle_subscription") as mock_handle:
-                with mock.patch("certbot.account.report_new_account"):
-                    self.tos_cb.return_value = False
-                    self.assertRaises(errors.Error, self._call)
-                    self.assertFalse(mock_handle.called)
+                self.tos_cb.return_value = False
+                self.assertRaises(errors.Error, self._call)
+                self.assertFalse(mock_handle.called)
 
-                    self.tos_cb.return_value = True
-                    self._call()
-                    self.assertTrue(mock_handle.called)
+                self.tos_cb.return_value = True
+                self._call()
+                self.assertTrue(mock_handle.called)
 
-                    self.tos_cb = None
-                    self._call()
-                    self.assertEqual(mock_handle.call_count, 2)
+                self.tos_cb = None
+                self._call()
+                self.assertEqual(mock_handle.call_count, 2)
 
     def test_it(self):
         with mock.patch("certbot.client.acme_client.Client"):
-            with mock.patch("certbot.account.report_new_account"):
-                with mock.patch("certbot.eff.handle_subscription"):
-                    self._call()
+            with mock.patch("certbot.eff.handle_subscription"):
+                self._call()
 
-    @mock.patch("certbot.account.report_new_account")
     @mock.patch("certbot.client.display_ops.get_email")
     def test_email_retry(self, _rep, mock_get_email):
         from acme import messages
@@ -79,7 +76,6 @@ class RegisterTest(unittest.TestCase):
                 self.assertEqual(mock_get_email.call_count, 1)
                 self.assertTrue(mock_handle.called)
 
-    @mock.patch("certbot.account.report_new_account")
     def test_email_invalid_noninteractive(self, _rep):
         from acme import messages
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
@@ -97,13 +93,12 @@ class RegisterTest(unittest.TestCase):
     def test_without_email(self, mock_logger):
         with mock.patch("certbot.eff.handle_subscription") as mock_handle:
             with mock.patch("certbot.client.acme_client.Client"):
-                with mock.patch("certbot.account.report_new_account"):
-                    self.config.email = None
-                    self.config.register_unsafely_without_email = True
-                    self.config.dry_run = False
-                    self._call()
-                    mock_logger.info.assert_called_once_with(mock.ANY)
-                    self.assertTrue(mock_handle.called)
+                self.config.email = None
+                self.config.register_unsafely_without_email = True
+                self.config.dry_run = False
+                self._call()
+                mock_logger.info.assert_called_once_with(mock.ANY)
+                self.assertTrue(mock_handle.called)
 
     def test_unsupported_error(self):
         from acme import messages

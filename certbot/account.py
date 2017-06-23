@@ -82,22 +82,6 @@ class Account(object):  # pylint: disable=too-few-public-methods
                 self.key == other.key and self.regr == other.regr and
                 self.meta == other.meta)
 
-
-def report_new_account(config):
-    """Informs the user about their new ACME account."""
-    reporter = zope.component.queryUtility(interfaces.IReporter)
-    if reporter is None:
-        return
-    reporter.add_message(
-        "Your account credentials have been saved in your Certbot "
-        "configuration directory at {0}. You should make a secure backup "
-        "of this folder now. This configuration directory will also "
-        "contain certificates and private keys obtained by Certbot "
-        "so making regular backups of this folder is ideal.".format(
-            config.config_dir),
-        reporter.MEDIUM_PRIORITY)
-
-
 class AccountMemoryStorage(interfaces.AccountStorage):
     """In-memory account storage."""
 

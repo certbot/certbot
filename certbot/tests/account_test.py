@@ -58,28 +58,6 @@ class AccountTest(unittest.TestCase):
         self.assertTrue(repr(self.acc).startswith(
           "<Account(i_am_a_regr, bca5889f66457d5b62fbba7b25f9ab6f, Meta("))
 
-class ReportNewAccountTest(unittest.TestCase):
-    """Tests for certbot.account.report_new_account."""
-
-    def setUp(self):
-        self.config = mock.MagicMock(config_dir="/etc/letsencrypt")
-
-    def _call(self):
-        from certbot.account import report_new_account
-        report_new_account(self.config)
-
-    @mock.patch("certbot.account.zope.component.queryUtility")
-    def test_no_reporter(self, mock_zope):
-        mock_zope.return_value = None
-        self._call()
-
-    @mock.patch("certbot.account.zope.component.queryUtility")
-    def test_it(self, mock_zope):
-        self._call()
-        call_list = mock_zope().add_message.call_args_list
-        self.assertTrue(self.config.config_dir in call_list[0][0][0])
-
-
 class AccountMemoryStorageTest(unittest.TestCase):
     """Tests for certbot.account.AccountMemoryStorage."""
 
