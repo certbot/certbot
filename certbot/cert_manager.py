@@ -205,7 +205,7 @@ def _report_human_readable(config, parsed_certs):
                         "    Certificate Path: {3}\n"
                         "    Private Key Path: {4}".format(
                             cert.lineagename,
-                            " ".join(cert.names()),
+                            ",".join(cert.names()),
                             valid_string,
                             cert.fullchain,
                             cert.privkey))
