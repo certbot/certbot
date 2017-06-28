@@ -219,7 +219,7 @@ For instance, you may want to create a certificate using the webroot_ plugin
 for authentication and the apache_ plugin for installation, perhaps because you
 use a proxy or CDN for SSL and only want to secure the connection between them
 and your origin server, which cannot use the tls-sni-01_ challenge due to the
-intermediate proxy.)
+intermediate proxy.
 
 ::
 
