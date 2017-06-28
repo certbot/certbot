@@ -637,7 +637,12 @@ Example usage for HTTP-01:
    #!/bin/bash
    rm -f /var/www/htdocs/.well-known/acme-challenge/$CERTBOT_TOKEN
 
-Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not use as-is)
+Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not use as-is):
+
+.. note:: These scripts expect the command line utilities ``curl`` and ``dig``
+    to be installed. ``dig`` is available in the ``dnsutils`` package on Debian
+    based systems and in the ``bind-utils`` package on Red Hat based systems.
+    ``curl`` is included in the ``curl`` package on both systems.
 
 ::
 
