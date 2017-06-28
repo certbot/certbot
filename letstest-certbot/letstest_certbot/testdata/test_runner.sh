@@ -1,7 +1,7 @@
 #!/bin/sh -xe
 #
 # Sets up and runs an integration test.
-REPO_DEST="~/certbot"
-cp -r $LETSTEST_REPO $REPO_DEST
+REPO_DEST="~"
+cp -r $CERTBOT_REPO_PATH $REPO_DEST
 cd $REPO_DEST
-exec "$(pwd)/scripts/$LETSTEST_SCRIPT"
+exec "$LETSTEST_TESTDATA_PATH/scripts/$LETSTEST_SCRIPT"

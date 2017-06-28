@@ -1,0 +1,16 @@
+version: '2'
+services:
+    debian.test:
+        entrypoint: ${LETSTEST_TESTDATA_PATH}/test_runner.sh
+        environment:
+            - CERTBOT_REPO_PATH
+            - LETSTEST_DOMAIN=debian.test
+            - LETSTEST_PIP_EXTRA_INDEX_URL
+            - LETSTEST_SCRIPT
+            - LETSTEST_TESTDATA_PATH
+        image: debian
+        links:
+            - boulder
+        volumes:
+            - ${LETSTEST_HOST_TESTDATA_PATH}:${LETSTEST_TESTDATA_PATH}:ro
+            - ${CERTBOT_HOST_REPO_PATH}:${CERTBOT_REPO_PATH}:ro
