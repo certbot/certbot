@@ -1,0 +1,15 @@
+#!/bin/bash -xe
+#
+# Installs git if it's not already available
+if ! command -v git ; then
+  if command -v apt-get; then
+    apt-get update && apt-get install git -y
+  elif command -v dnf; then
+    dnf install git -y
+  elif command -v yum; then
+    yum install git -y
+  else
+    echo "Unable to install git!" >&2
+    exit 1
+  fi
+fi
