@@ -258,7 +258,7 @@ class ClientTest(ClientTestCommon):
     @mock.patch("certbot.client.acme_crypto_util")
     def test_obtain_certificate_dry_run(self, mock_acme_crypto, mock_crypto):
         csr = util.CSR(form="pem", file=None, data=CSR_SAN)
-        mock_acme_crypto.make_csr.return_value = csr
+        mock_acme_crypto.make_csr.return_value = CSR_SAN
         mock_crypto.make_key.return_value = mock.sentinel.key_pem
         key = util.Key(file=None, pem=mock.sentinel.key_pem)
 

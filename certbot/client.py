@@ -323,8 +323,9 @@ class Client(object):
         if self.config.dry_run:
             key = util.Key(file=None,
                            pem=crypto_util.make_key(self.config.rsa_key_size))
-            csr = acme_crypto_util.make_csr(key.pem,
-                                            domains, self.config.must_staple)
+            csr = util.CSR(file=None, form="pem",
+                           data=acme_crypto_util.make_csr(
+                               key.pem, domains, self.config.must_staple))
         else:
             key = crypto_util.init_save_key(
                 self.config.rsa_key_size, self.config.key_dir)
