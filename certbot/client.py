@@ -321,7 +321,8 @@ class Client(object):
 
         # Create CSR from names
         if self.config.dry_run:
-            key = crypto_util.make_key(self.config.rsa_key_size)
+            key = util.Key(file=None,
+                           pem=crypto_util.make_key(self.config.rsa_key_size))
             csr = acme_crypto_util.make_csr(key.pem,
                                             domains, self.config.must_staple)
         else:

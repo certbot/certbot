@@ -247,7 +247,7 @@ class ClientTest(ClientTestCommon):
         mock_crypto_util.init_save_csr.return_value = csr
         mock_crypto_util.init_save_key.return_value = mock.sentinel.key
 
-        self._test_obtain_certificate_common(csr)
+        self._test_obtain_certificate_common(mock.sentinel.key, csr)
 
         mock_crypto_util.init_save_key.assert_called_once_with(
             self.config.rsa_key_size, self.config.key_dir)
@@ -257,21 +257,21 @@ class ClientTest(ClientTestCommon):
     @mock.patch("certbot.client.crypto_util")
     @mock.patch("certbot.client.acme_crypto_util")
     def test_obtain_certificate_dry_run(self, mock_acme_crypto, mock_crypto):
-        mock.sentinel.key.pem = "pem"
         csr = util.CSR(form="pem", file=None, data=CSR_SAN)
         mock_acme_crypto.make_csr.return_value = csr
-        mock_crypto.make_key.return_value = mock.sentinel.key
+        mock_crypto.make_key.return_value = mock.sentinel.key_pem
+        key = util.Key(file=None, pem=mock.sentinel.key_pem)
 
         with mock.patch.object(self.client.config, 'dry_run', new=True):
-            self._test_obtain_certificate_common(csr)
+            self._test_obtain_certificate_common(key, csr)
 
         mock_crypto.make_key.assert_called_once_with(self.config.rsa_key_size)
         mock_acme_crypto.make_csr.assert_called_once_with(
-            mock.sentinel.key.pem, self.eg_domains, self.config.must_staple)
+            mock.sentinel.key_pem, self.eg_domains, self.config.must_staple)
         mock_crypto.init_save_key.assert_not_called()
         mock_crypto.init_save_csr.assert_not_called()
 
-    def _test_obtain_certificate_common(self, csr):
+    def _test_obtain_certificate_common(self, key, csr):
         self._mock_obtain_certificate()
 
         # return_value is essentially set to (None, None) in
@@ -295,7 +295,7 @@ class ClientTest(ClientTestCommon):
 
         self.assertEqual(
             result,
-            (mock.sentinel.certr, mock.sentinel.chain, mock.sentinel.key, csr))
+            (mock.sentinel.certr, mock.sentinel.chain, key, csr))
         self._check_obtain_certificate()
 
     @mock.patch('certbot.client.Client.obtain_certificate')
