@@ -242,15 +242,20 @@ class ClientTest(ClientTestCommon):
         self.assertEqual(1, mock_get_utility().notification.call_count)
 
     @mock.patch("certbot.client.crypto_util")
-    @test_util.patch_get_utility()
-    def test_obtain_certificate(self, unused_mock_get_utility,
-                                mock_crypto_util):
-        self._mock_obtain_certificate()
-
+    def test_obtain_certificate(self, mock_crypto_util):
         csr = util.CSR(form="pem", file=None, data=CSR_SAN)
         mock_crypto_util.init_save_csr.return_value = csr
         mock_crypto_util.init_save_key.return_value = mock.sentinel.key
-        domains = ["example.com", "www.example.com"]
+
+        self._test_obtain_certificate_common(csr)
+
+        mock_crypto_util.init_save_key.assert_called_once_with(
+            self.config.rsa_key_size, self.config.key_dir)
+        mock_crypto_util.init_save_csr.assert_called_once_with(
+            mock.sentinel.key, self.eg_domains, self.config.csr_dir)
+
+    def _test_obtain_certificate_common(self, csr):
+        self._mock_obtain_certificate()
 
         # return_value is essentially set to (None, None) in
         # _mock_obtain_certificate(), which breaks this test.
@@ -259,7 +264,7 @@ class ClientTest(ClientTestCommon):
         authzr = []
 
         # domain ordering should not be affected by authorization order
-        for domain in reversed(domains):
+        for domain in reversed(self.eg_domains):
             authzr.append(
                 mock.MagicMock(
                     body=mock.MagicMock(
@@ -268,14 +273,12 @@ class ClientTest(ClientTestCommon):
 
         self.client.auth_handler.get_authorizations.return_value = authzr
 
-        self.assertEqual(
-            self.client.obtain_certificate(domains),
-            (mock.sentinel.certr, mock.sentinel.chain, mock.sentinel.key, csr))
+        with test_util.patch_get_utility():
+            result = self.client.obtain_certificate(self.eg_domains)
 
-        mock_crypto_util.init_save_key.assert_called_once_with(
-            self.config.rsa_key_size, self.config.key_dir)
-        mock_crypto_util.init_save_csr.assert_called_once_with(
-            mock.sentinel.key, domains, self.config.csr_dir)
+        self.assertEqual(
+            result,
+            (mock.sentinel.certr, mock.sentinel.chain, mock.sentinel.key, csr))
         self._check_obtain_certificate()
 
     @mock.patch('certbot.client.Client.obtain_certificate')
