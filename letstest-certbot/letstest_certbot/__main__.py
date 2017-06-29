@@ -1,4 +1,6 @@
 """Runs integration tests on Certbot against Boulder using Docker."""
+from __future__ import print_function
+
 import argparse
 import atexit
 import functools
@@ -49,33 +51,75 @@ def run_tests(boulder_compose_path, env):
     :param env dict: environment variables for docker-compose
 
     """
-    start_tests(boulder_compose_path, env)
-    check_call(
-        ['docker-compose', '-f', boulder_compose_path, '-f', COMPOSE_PATH, 'ps', '-q', 'debian.test'], env=env)
-    raw_input('waiting 4 u')
+    test_services = start_tests(boulder_compose_path, env)
+    list_services(test_services)
+    print_result(test_services)
 
 
 def start_tests(boulder_compose_path, env):
     """Begins running tests.
 
+    atexit is used so Docker is properly cleaned up when the program
+    exits.
+
     :param str boulder_compose_path: path to boulder docker-compose.yml
     :param env dict: environment variables for docker-compose
 
+    :returns: Mapping from test service names to their containers
+    :rtype: dict
+
     """
-    atexit.register(stop_tests, boulder_compose_path, env)
     check_call(['docker-compose', '-f', boulder_compose_path,
                '-f', COMPOSE_PATH, 'up', '-d'], env=env)
 
+    try:
+        test_services = get_test_services_and_containers(boulder_compose_path,
+                                                         env)
+        for container in test_services.values():
+            atexit.register(check_call, ['docker', 'stop', container])
+        # By omitting COMPOSE_PATH, the test services aren't deleted
+        atexit.register(check_call, 
+                        ['docker-compose', '-f', boulder_compose_path, 'down'],
+                        env=env)
+    except: 
+        check_call(['docker-compose', '-f',
+                    boulder_compose_path, '-f', COMPOSE_PATH, 'down'], env=env)
+        raise
 
-def stop_tests(boulder_compose_path, env):
-    """Stops running tests.
-    
-    :param str boulder_compose_path: path to boulder docker-compose.yml
-    :param env dict: environment variables for docker-compose
+    return test_services
+
+
+def list_services(test_services):
+    """Prints output about the running test services.
+
+    :param dict test_services: map from service to container
 
     """
-    check_call(['docker-compose', '-f', boulder_compose_path,
-               '-f', COMPOSE_PATH, 'down'], env=env)
+    for service, container in test_services.items():
+        print('{0} running in {1}'.format(service, container))
+    print()
+    print('You can access logs by running `docker logs -f <container>`.\n')
+
+
+def print_result(test_services):
+    """Waits for tests to finish and prints the results.
+
+    :param dict test_services: map from service to container
+    
+    """
+    failure = False
+
+    for service, container in test_services.items():
+        try:
+            check_call(['docker', 'wait', container])
+        except subprocess.CalledProcessError:
+            failure = True
+            print('{0} failed'.format(service))
+        else:
+            print('{0} passed'.format(service))
+
+    if failure:
+        raise Error('One or more test instances failed!')
 
 
 def set_up_certbot(config):
@@ -333,27 +377,61 @@ def remove_network_mode(compose_path):
                      if not line.lstrip().startswith('network_mode'))
 
 
-def test_services(boulder_compose_path):
+def get_test_services_and_containers(boulder_compose_path, env):
+    """Provides a mapping from test service to Docker container.
+
+    :param str boulder_compose_path: path to Boulder's Compose file
+    :param env dict: environment variables for docker-compose
+
+    :returns: Mapping from test service names to their containers
+    :rtype: dict
+
+    """
+    return dict(
+        (name, get_container(boulder_compose_path, name, env))
+        for name in get_test_services(boulder_compose_path, env))
+
+
+def get_container(boulder_compose_path, service_name, env):
+    """Returns the container for the specified service.
+
+    :param str boulder_compose_path: path to Boulder's Compose file
+    :param str service_name: Compose service to find the container of
+    :param env dict: environment variables for docker-compose
+
+    :returns: Docker container running the specified service
+    :rtype: str
+
+    """
+    return check_output(
+        ['docker-compose', '-f', boulder_compose_path,
+        '-f', COMPOSE_PATH, 'ps', '-q', service_name], env=env).strip()
+
+
+def get_test_services(boulder_compose_path, env):
     """Returns the names of Docker Compose services for testing.
 
     :param str boulder_compose_path: path to Boulder's docker-compose.yml
+    :param env dict: environment variables for docker-compose
     
     :returns: Docker compose services used for testing
     :rtype: list of str
 
     """
-    all_services = docker_compose_services(boulder_compose_path, COMPOSE_PATH)
-    boulder_services = docker_compose_services(boulder_compose_path)
+    all_services = docker_compose_services(
+        env, boulder_compose_path, COMPOSE_PATH)
+    boulder_services = docker_compose_services(env, boulder_compose_path)
     return [service for service in all_services
             if service not in boulder_services]
 
 
-def docker_compose_services(*compose_files):
+def docker_compose_services(env, *compose_files):
     """Determines the list of services from a Docker Compose setup.
 
     Files are passed to docker-compose in the same order they are given
     compose_files.
 
+    :param env dict: environment variables for docker-compose
     :param list compose_files: paths to Docker compose files
 
     :returns: list of service names
@@ -368,7 +446,7 @@ def docker_compose_services(*compose_files):
         cmd.append(f)
     cmd.extend(('config', '--services',))
 
-    services = check_output(cmd).splitlines()
+    services = check_output(cmd, env=env).splitlines()
     logger.debug('Services found in %s are %s', compose_files, services)
     return services
 
@@ -438,8 +516,7 @@ def check_output(args, shell=False, env=None):
     if stderr:
         logger.debug('stderr was:\n%s', stderr)
     if process.returncode:
-        raise subprocess.CalledProcessError(
-            '{0} exited with {1}'.format(args, process.returncode))
+        raise subprocess.CalledProcessError(process.returncode, args)
     return stdout
 
 

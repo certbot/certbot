@@ -1,14 +1,154 @@
 version: '2'
 services:
-    debian.test:
+    centos6.test:
         entrypoint: ${LETSTEST_TESTDATA_PATH}/test_runner.sh
         environment:
             - CERTBOT_REPO_PATH
-            - LETSTEST_DOMAIN=debian.test
+            - LETSTEST_DOMAIN=centos6.test
             - LETSTEST_PIP_EXTRA_INDEX_URL
             - LETSTEST_SCRIPT
             - LETSTEST_TESTDATA_PATH
-        image: debian
+        image: centos:6
+        links:
+            - boulder
+        volumes:
+            - ${LETSTEST_HOST_TESTDATA_PATH}:${LETSTEST_TESTDATA_PATH}:ro
+            - ${CERTBOT_HOST_REPO_PATH}:${CERTBOT_REPO_PATH}:ro
+    centos7.test:
+        entrypoint: ${LETSTEST_TESTDATA_PATH}/test_runner.sh
+        environment:
+            - CERTBOT_REPO_PATH
+            - LETSTEST_DOMAIN=centos7.test
+            - LETSTEST_PIP_EXTRA_INDEX_URL
+            - LETSTEST_SCRIPT
+            - LETSTEST_TESTDATA_PATH
+        image: centos:7
+        links:
+            - boulder
+        volumes:
+            - ${LETSTEST_HOST_TESTDATA_PATH}:${LETSTEST_TESTDATA_PATH}:ro
+            - ${CERTBOT_HOST_REPO_PATH}:${CERTBOT_REPO_PATH}:ro
+    debian-stretch.test:
+        entrypoint: ${LETSTEST_TESTDATA_PATH}/test_runner.sh
+        environment:
+            - CERTBOT_REPO_PATH
+            - LETSTEST_DOMAIN=debian-stretch.test
+            - LETSTEST_PIP_EXTRA_INDEX_URL
+            - LETSTEST_SCRIPT
+            - LETSTEST_TESTDATA_PATH
+        image: debian:stretch
+        links:
+            - boulder
+        volumes:
+            - ${LETSTEST_HOST_TESTDATA_PATH}:${LETSTEST_TESTDATA_PATH}:ro
+            - ${CERTBOT_HOST_REPO_PATH}:${CERTBOT_REPO_PATH}:ro
+    debian-jessie.test:
+        entrypoint: ${LETSTEST_TESTDATA_PATH}/test_runner.sh
+        environment:
+            - CERTBOT_REPO_PATH
+            - LETSTEST_DOMAIN=debian-jessie.test
+            - LETSTEST_PIP_EXTRA_INDEX_URL
+            - LETSTEST_SCRIPT
+            - LETSTEST_TESTDATA_PATH
+        image: debian:jessie
+        links:
+            - boulder
+        volumes:
+            - ${LETSTEST_HOST_TESTDATA_PATH}:${LETSTEST_TESTDATA_PATH}:ro
+            - ${CERTBOT_HOST_REPO_PATH}:${CERTBOT_REPO_PATH}:ro
+    debian-wheezy.test:
+        entrypoint: ${LETSTEST_TESTDATA_PATH}/test_runner.sh
+        environment:
+            - CERTBOT_REPO_PATH
+            - LETSTEST_DOMAIN=debian-wheezy.test
+            - LETSTEST_PIP_EXTRA_INDEX_URL
+            - LETSTEST_SCRIPT
+            - LETSTEST_TESTDATA_PATH
+        image: debian:wheezy
+        links:
+            - boulder
+        volumes:
+            - ${LETSTEST_HOST_TESTDATA_PATH}:${LETSTEST_TESTDATA_PATH}:ro
+            - ${CERTBOT_HOST_REPO_PATH}:${CERTBOT_REPO_PATH}:ro
+    ubuntu-trusty.test:
+        entrypoint: ${LETSTEST_TESTDATA_PATH}/test_runner.sh
+        environment:
+            - CERTBOT_REPO_PATH
+            - LETSTEST_DOMAIN=ubuntu-trusty.test
+            - LETSTEST_PIP_EXTRA_INDEX_URL
+            - LETSTEST_SCRIPT
+            - LETSTEST_TESTDATA_PATH
+        image: ubuntu:trusty
+        links:
+            - boulder
+        volumes:
+            - ${LETSTEST_HOST_TESTDATA_PATH}:${LETSTEST_TESTDATA_PATH}:ro
+            - ${CERTBOT_HOST_REPO_PATH}:${CERTBOT_REPO_PATH}:ro
+    fedora24.test:
+        entrypoint: ${LETSTEST_TESTDATA_PATH}/test_runner.sh
+        environment:
+            - CERTBOT_REPO_PATH
+            - LETSTEST_DOMAIN=fedora24.test
+            - LETSTEST_PIP_EXTRA_INDEX_URL
+            - LETSTEST_SCRIPT
+            - LETSTEST_TESTDATA_PATH
+        image: fedora:24
+        links:
+            - boulder
+        volumes:
+            - ${LETSTEST_HOST_TESTDATA_PATH}:${LETSTEST_TESTDATA_PATH}:ro
+            - ${CERTBOT_HOST_REPO_PATH}:${CERTBOT_REPO_PATH}:ro
+    fedora25.test:
+        entrypoint: ${LETSTEST_TESTDATA_PATH}/test_runner.sh
+        environment:
+            - CERTBOT_REPO_PATH
+            - LETSTEST_DOMAIN=fedora25.test
+            - LETSTEST_PIP_EXTRA_INDEX_URL
+            - LETSTEST_SCRIPT
+            - LETSTEST_TESTDATA_PATH
+        image: fedora:25
+        links:
+            - boulder
+        volumes:
+            - ${LETSTEST_HOST_TESTDATA_PATH}:${LETSTEST_TESTDATA_PATH}:ro
+            - ${CERTBOT_HOST_REPO_PATH}:${CERTBOT_REPO_PATH}:ro
+    ubuntu-xenial.test:
+        entrypoint: ${LETSTEST_TESTDATA_PATH}/test_runner.sh
+        environment:
+            - CERTBOT_REPO_PATH
+            - LETSTEST_DOMAIN=ubuntu-xenial.test
+            - LETSTEST_PIP_EXTRA_INDEX_URL
+            - LETSTEST_SCRIPT
+            - LETSTEST_TESTDATA_PATH
+        image: ubuntu:xenial
+        links:
+            - boulder
+        volumes:
+            - ${LETSTEST_HOST_TESTDATA_PATH}:${LETSTEST_TESTDATA_PATH}:ro
+            - ${CERTBOT_HOST_REPO_PATH}:${CERTBOT_REPO_PATH}:ro
+    ubuntu-yakkety.test:
+        entrypoint: ${LETSTEST_TESTDATA_PATH}/test_runner.sh
+        environment:
+            - CERTBOT_REPO_PATH
+            - LETSTEST_DOMAIN=ubuntu-yakkety.test
+            - LETSTEST_PIP_EXTRA_INDEX_URL
+            - LETSTEST_SCRIPT
+            - LETSTEST_TESTDATA_PATH
+        image: ubuntu:yakkety
+        links:
+            - boulder
+        volumes:
+            - ${LETSTEST_HOST_TESTDATA_PATH}:${LETSTEST_TESTDATA_PATH}:ro
+            - ${CERTBOT_HOST_REPO_PATH}:${CERTBOT_REPO_PATH}:ro
+    ubuntu-zesty.test:
+        entrypoint: ${LETSTEST_TESTDATA_PATH}/test_runner.sh
+        environment:
+            - CERTBOT_REPO_PATH
+            - LETSTEST_DOMAIN=ubuntu-zesty.test
+            - LETSTEST_PIP_EXTRA_INDEX_URL
+            - LETSTEST_SCRIPT
+            - LETSTEST_TESTDATA_PATH
+        image: ubuntu:zesty
         links:
             - boulder
         volumes:
