@@ -254,6 +254,23 @@ class ClientTest(ClientTestCommon):
         mock_crypto_util.init_save_csr.assert_called_once_with(
             mock.sentinel.key, self.eg_domains, self.config.csr_dir)
 
+    @mock.patch("certbot.client.crypto_util")
+    @mock.patch("certbot.client.acme_crypto_util")
+    def test_obtain_certificate_dry_run(self, mock_acme_crypto, mock_crypto):
+        mock.sentinel.key.pem = "pem"
+        csr = util.CSR(form="pem", file=None, data=CSR_SAN)
+        mock_acme_crypto.make_csr.return_value = csr
+        mock_crypto.make_key.return_value = mock.sentinel.key
+
+        with mock.patch.object(self.client.config, 'dry_run', new=True):
+            self._test_obtain_certificate_common(csr)
+
+        mock_crypto.make_key.assert_called_once_with(self.config.rsa_key_size)
+        mock_acme_crypto.make_csr.assert_called_once_with(
+            mock.sentinel.key.pem, self.eg_domains, self.config.must_staple)
+        mock_crypto.init_save_key.assert_not_called()
+        mock_crypto.init_save_csr.assert_not_called()
+
     def _test_obtain_certificate_common(self, csr):
         self._mock_obtain_certificate()
 
