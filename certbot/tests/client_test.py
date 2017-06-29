@@ -144,6 +144,7 @@ class ClientTest(ClientTestCommon):
 
         self.config.allow_subset_of_names = False
         self.config.config_dir = "/etc/letsencrypt"
+        self.config.dry_run = False
         self.eg_domains = ["example.com", "www.example.com"]
 
     def test_init_acme_verify_ssl(self):

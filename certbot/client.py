@@ -9,6 +9,7 @@ import OpenSSL
 import zope.component
 
 from acme import client as acme_client
+from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
 from acme import jose
 from acme import messages
@@ -319,9 +320,15 @@ class Client(object):
         domains = [d for d in domains if d in auth_domains]
 
         # Create CSR from names
-        key = crypto_util.init_save_key(
-            self.config.rsa_key_size, self.config.key_dir)
-        csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
+        if self.config.dry_run:
+            key = crypto_util.make_key(self.config.rsa_key_size)
+            csr = acme_crypto_util.make_csr(key.pem,
+                                            domains, self.config.must_staple)
+        else:
+            key = crypto_util.init_save_key(
+                self.config.rsa_key_size, self.config.key_dir)
+            csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
+
         certr, chain = self.obtain_certificate_from_csr(
             domains, csr, authzr=authzr)
 
