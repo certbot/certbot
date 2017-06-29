@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import argparse
 import atexit
+import collectons
 import functools
 import grp
 import json
@@ -110,10 +111,8 @@ def print_result(test_services):
     failure = False
 
     for service, container in test_services.items():
-        try:
-            check_call(['docker', 'wait', container])
-        except subprocess.CalledProcessError:
-            failure = True
+        exit_code = int(check_output(['docker', 'wait', container]).strip())
+        if exit_code:
             print('{0} failed'.format(service))
         else:
             print('{0} passed'.format(service))
@@ -387,7 +386,7 @@ def get_test_services_and_containers(boulder_compose_path, env):
     :rtype: dict
 
     """
-    return dict(
+    return collections.OrderedDict(
         (name, get_container(boulder_compose_path, name, env))
         for name in get_test_services(boulder_compose_path, env))
 
@@ -411,6 +410,8 @@ def get_container(boulder_compose_path, service_name, env):
 def get_test_services(boulder_compose_path, env):
     """Returns the names of Docker Compose services for testing.
 
+    Service names are returned in sorted order.
+
     :param str boulder_compose_path: path to Boulder's docker-compose.yml
     :param env dict: environment variables for docker-compose
     
@@ -421,7 +422,7 @@ def get_test_services(boulder_compose_path, env):
     all_services = docker_compose_services(
         env, boulder_compose_path, COMPOSE_PATH)
     boulder_services = docker_compose_services(env, boulder_compose_path)
-    return [service for service in all_services
+    return [service for service in sorted(all_services)
             if service not in boulder_services]
 
 
