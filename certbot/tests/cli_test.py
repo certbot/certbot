@@ -329,6 +329,14 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self.assertRaises(SystemExit, self.parse,
                               "--renew-hook foo --deploy-hook bar".split())
 
+    def test_deploy_hook_matches_renew_hook(self):
+        value = "foo"
+        namespace = self.parse(["--renew-hook", value,
+                                "--deploy-hook", value,
+                                "--disable-hook-validation"])
+        self.assertEqual(namespace.deploy_hook, value)
+        self.assertEqual(namespace.renew_hook, value)
+
     def test_deploy_hook_sets_renew_hook(self):
         value = "foo"
         namespace = self.parse(
@@ -340,6 +348,14 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with mock.patch("certbot.cli.sys.stderr"):
             self.assertRaises(SystemExit, self.parse,
                               "--deploy-hook foo --renew-hook bar".split())
+
+    def test_renew_hook_matches_deploy_hook(self):
+        value = "foo"
+        namespace = self.parse(["--deploy-hook", value,
+                                "--renew-hook", value,
+                                "--disable-hook-validation"])
+        self.assertEqual(namespace.deploy_hook, value)
+        self.assertEqual(namespace.renew_hook, value)
 
     def test_renew_hook_does_not_set_renew_hook(self):
         value = "foo"
