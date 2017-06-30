@@ -50,9 +50,7 @@ optional arguments:
   -d DOMAIN, --domains DOMAIN, --domain DOMAIN
                         Domain names to apply. For multiple domains you can
                         use multiple -d flags or enter a comma separated list
-                        of domains as a parameter. The first domain in the list
-                        will be used to decide where to store the new certificate,
-                        unless otherwise specified. (default: [])
+                        of domains as a parameter. (default: Ask)
   --cert-name CERTNAME  Certificate name to apply. Only one certificate name
                         can be used per Certbot run. To see certificate names,
                         run 'certbot certificates'. When creating a new

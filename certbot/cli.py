@@ -867,9 +867,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         metavar="DOMAIN", action=_DomainsAction, default=[],
         help="Domain names to apply. For multiple domains you can use "
              "multiple -d flags or enter a comma separated list of domains "
-             "as a parameter. (default: Ask) Note: the first provided domain "
-             "will be most prominent in filenames and some software user "
-             "interfaces")
+             "as a parameter. The first provided domain will be used in "
+             "some software user interfaces and file paths for the "
+             "certificate and related material unless otherwise "
+             "specified or you already have a certificate for the same "
+             "domains. (default: Ask)")
     helpful.add(
         [None, "run", "certonly", "manage", "delete", "certificates"],
         "--cert-name", dest="certname",
@@ -878,8 +880,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "and in file paths; it doesn't affect the content of the certificate itself. "
              "To see certificate names, run 'certbot certificates'. "
              "When creating a new certificate, specifies the new certificate's name. "
-             " (default: use the first of the domain names provided with -d or entered "
-             "interactively)")
+             "(default: the first provided domain or the name of an existing "
+             "certificate on your system for the same domains)")
     helpful.add(
         [None, "testing", "renew", "certonly"],
         "--dry-run", action="store_true", dest="dry_run",
