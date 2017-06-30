@@ -36,6 +36,19 @@ class HookTest(unittest.TestCase):
         self.assertEqual(hooks._prog("funky"), None)
         self.assertEqual(mock_ps.call_count, 1)
 
+    @mock.patch('certbot.hooks.renew_hook')
+    def test_deploy_hook(self, mock_renew_hook):
+        args = (mock.Mock(deploy_hook='foo'), ['example.org'], 'path',)
+        # pylint: disable=star-args
+        hooks.deploy_hook(*args)
+        mock_renew_hook.assert_called_once_with(*args)
+
+    @mock.patch('certbot.hooks.renew_hook')
+    def test_no_deploy_hook(self, mock_renew_hook):
+        args = (mock.Mock(deploy_hook=None), ['example.org'], 'path',)
+        hooks.deploy_hook(*args)  # pylint: disable=star-args
+        mock_renew_hook.assert_not_called()
+
     def _test_a_hook(self, config, hook_function, calls_expected, **kwargs):
         with mock.patch('certbot.hooks.logger') as mock_logger:
             mock_logger.warning = mock.MagicMock()
