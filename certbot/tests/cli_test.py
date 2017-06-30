@@ -109,6 +109,7 @@ class ParseTest(unittest.TestCase):
         self.assertTrue("--dialog" not in out)
         self.assertTrue("%s" not in out)
         self.assertTrue("{0}" not in out)
+        self.assertTrue("--renew-hook" not in out)
 
         out = self._help_output(['-h', 'nginx'])
         if "nginx" in PLUGINS:
