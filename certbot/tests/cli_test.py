@@ -202,6 +202,13 @@ class ParseTest(unittest.TestCase):
         namespace = self.parse(long_args)
         self.assertEqual(namespace.domains, ['example.com', 'another.net'])
 
+    def test_certbot_dir(self):
+        d = '/tmp/thingimy'
+        args = ['--certbot-dir', d]
+        namespace = self.parse(args)
+        self.assertEqual(namespace.config_dir, d)
+        self.assertEqual(namespace.logs_dir, os.path.join(d, 'logs'))
+
     def test_preferred_challenges(self):
         short_args = ['--preferred-challenges', 'http, tls-sni-01, dns']
         namespace = self.parse(short_args)

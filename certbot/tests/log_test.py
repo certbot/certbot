@@ -138,7 +138,7 @@ class SetupLogFileHandlerTest(test_util.TempDirTestCase):
         try:
             self._call(self.config, 'test.log', '%(message)s')
         except errors.Error as err:
-            self.assertTrue('--logs-dir' in str(err))
+            self.assertTrue('--certbot-dir' in str(err))
         else:  # pragma: no cover
             self.fail('Error not raised.')
 

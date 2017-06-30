@@ -2,8 +2,7 @@
 # the kernel to use.
 root=${root:-$(mktemp -d -t leitXXXX)}
 echo "Root integration tests directory: $root"
-store_flags="--config-dir $root/conf --work-dir $root/work"
-store_flags="$store_flags --logs-dir $root/logs"
+store_flags="--certbot-dir $root/conf"
 tls_sni_01_port=5001
 http_01_port=5002
 sources="acme/,$(ls -dm certbot*/ | tr -d ' \n')"

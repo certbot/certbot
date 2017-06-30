@@ -566,6 +566,19 @@ class HelpfulArgumentParser(object):
                 "Flag for non-interactive mode and {0} conflict".format(
                     constants.FORCE_INTERACTIVE_FLAG))
 
+        if parsed_args.certbot_dir:
+            new_dirs = (
+                   ("config_dir", parsed_args.certbot_dir),
+                   ("logs_dir", os.path.join(parsed_args.certbot_dir, constants.LOGS_SUBDIR)),
+                   ("work_dir", os.path.join(parsed_args.certbot_dir, constants.WORK_SUBDIR)))
+            for var, val in new_dirs:
+                if set_by_cli(var) and parsed_args.__getattribute__(var) != val:
+                    raise errors.Error("Conflicting values for --{0}: --certbot-dir "
+                        "implies {1} but --{0} says {2}".format(
+                        var.replace("_", "-"), val, parsed_args.__getattribute__(var)))
+                else:
+                    parsed_args.__setattr__(var, val)
+
         if parsed_args.staging or parsed_args.dry_run:
             self.set_test_server(parsed_args)
 
@@ -1209,6 +1222,9 @@ def _paths_parser(helpful):
         help=config_help("work_dir"))
     add("paths", "--logs-dir", default=flag_default("logs_dir"),
         help="Logs directory.")
+    add("paths", "--certbot-dir", default=None,
+        help="Asks Certbot to keep all of its files below a given directory. --certbot-dir $DIR "
+             "is equivalent to --config-dir $DIR --work-dir $DIR/.internal/ --logs-dir $DIR/logs")
     add("paths", "--server", default=flag_default("server"),
         help=config_help("server"))
 
