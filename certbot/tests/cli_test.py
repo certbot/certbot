@@ -40,7 +40,7 @@ class TestReadFile(TempDirTestCase):
 
 
 
-class ParseTest(unittest.TestCase):
+class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     '''Test the cli args entrypoint'''
 
     _multiprocess_can_split_ = True
@@ -334,6 +334,18 @@ class ParseTest(unittest.TestCase):
         namespace = self.parse(
             ["--deploy-hook", value, "--disable-hook-validation"])
         self.assertEqual(namespace.deploy_hook, value)
+        self.assertEqual(namespace.renew_hook, value)
+
+    def test_renew_hook_conflict(self):
+        with mock.patch("certbot.cli.sys.stderr"):
+            self.assertRaises(SystemExit, self.parse,
+                              "--deploy-hook foo --renew-hook bar".split())
+
+    def test_renew_hook_does_not_set_renew_hook(self):
+        value = "foo"
+        namespace = self.parse(
+            ["--renew-hook", value, "--disable-hook-validation"])
+        self.assertEqual(namespace.deploy_hook, None)
         self.assertEqual(namespace.renew_hook, value)
 
 
