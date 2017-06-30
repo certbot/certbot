@@ -1095,7 +1095,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " space-delimited list of renewed certificate domains (for example,"
         " \"example.com www.example.com\"")
     helpful.add(
-        "renew", "--deploy-hook",
+        "renew", "--deploy-hook", action=_DeployHookAction,
         help="Command to be run in a shell once for each successfully"
         " issued certificate. For this command, the shell variable"
         " $RENEWED_LINEAGE will point to the config live subdirectory"
@@ -1359,3 +1359,14 @@ def parse_preferred_challenges(pref_challs):
         raise errors.Error(
             "Unrecognized challenges: {0}".format(unrecognized))
     return challs
+
+
+class _DeployHookAction(argparse.Action):
+    """Action class for parsing deploy hooks."""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        renew_hook_set = namespace.deploy_hook != namespace.renew_hook
+        if renew_hook_set and namespace.renew_hook != values:
+            raise argparse.ArgumentError(
+                self, "conflicts with --renew-hook value")
+        namespace.deploy_hook = namespace.renew_hook = values
