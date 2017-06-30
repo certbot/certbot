@@ -523,7 +523,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         # user if the call to close() fails. See #4840.
         try:
             self.session.close()
-        except:  # pylint: disable=bare-except
+        except Exception:  # pylint: disable=broad-except
             pass
 
     def _wrap_in_jws(self, obj, nonce):
