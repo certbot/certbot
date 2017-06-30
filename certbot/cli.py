@@ -1085,7 +1085,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " run if an attempt was made to obtain/renew a certificate. If"
         " multiple renewed certificates have identical post-hooks, only"
         " one will be run.")
-    helpful.add("renew", "--renew-hook", help=argparse.SUPPRESS)
+    helpful.add("renew", "--renew-hook",
+                action=_RenewHookAction, help=argparse.SUPPRESS)
     helpful.add(
         "renew", "--deploy-hook", action=_DeployHookAction,
         help="Command to be run in a shell once for each successfully"
@@ -1363,3 +1364,14 @@ class _DeployHookAction(argparse.Action):
             raise argparse.ArgumentError(
                 self, "conflicts with --renew-hook value")
         namespace.deploy_hook = namespace.renew_hook = values
+
+
+class _RenewHookAction(argparse.Action):
+    """Action class for parsing renew hooks."""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        deploy_hook_set = namespace.deploy_hook is not None
+        if deploy_hook_set and namespace.deploy_hook != values:
+            raise argparse.ArgumentError(
+                self, "conflicts with --deploy-hook value")
+        namespace.renew_hook = values
