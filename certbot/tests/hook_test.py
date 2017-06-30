@@ -26,6 +26,19 @@ class HookTest(unittest.TestCase):
         config = mock.MagicMock(pre_hook="explodinator", post_hook="", renew_hook="")
         self.assertRaises(errors.HookCommandNotFound, hooks.validate_hooks, config)
 
+    @mock.patch('certbot.hooks.validate_hook')
+    def test_validation_order(self, mock_validate_hook):
+        # This ensures error messages are about deploy hook when appropriate
+        config = mock.Mock(deploy_hook=None, pre_hook=None,
+                           post_hook=None, renew_hook=None)
+        hooks.validate_hooks(config)
+
+        order = [call[0][1] for call in mock_validate_hook.call_args_list]
+        self.assertTrue('pre' in order)
+        self.assertTrue('post' in order)
+        self.assertTrue('deploy' in order)
+        self.assertEqual(order[-1], 'renew')
+
     @mock.patch('certbot.hooks.util.exe_exists')
     @mock.patch('certbot.hooks.plug_util.path_surgery')
     def test_prog(self, mock_ps, mock_exe_exists):
