@@ -16,7 +16,8 @@ class HookTest(unittest.TestCase):
 
     @mock.patch('certbot.hooks._prog')
     def test_validate_hooks(self, mock_prog):
-        config = mock.MagicMock(pre_hook="", post_hook="ls -lR", renew_hook="uptime")
+        config = mock.MagicMock(deploy_hook=None, pre_hook="",
+                                post_hook="ls -lR", renew_hook="uptime")
         hooks.validate_hooks(config)
         self.assertEqual(mock_prog.call_count, 2)
         self.assertEqual(mock_prog.call_args_list[1][0][0], 'uptime')
