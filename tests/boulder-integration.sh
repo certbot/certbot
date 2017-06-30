@@ -78,25 +78,47 @@ CheckHooks() {
     rm "$HOOK_TEST"
 }
 
-# Checks if deploy was run and deletes the hook file
-CheckDeployHook() {
+# Checks if deploy is in the hook output and deletes the file
+DeployInHookOutput() {
     CONTENTS=$(cat "$HOOK_TEST")
     rm "$HOOK_TEST"
     grep deploy <(echo "$CONTENTS")
 }
 
-# Asserts the deploy hook was run and deletes the hook file
-AssertDeployHook() {
-    if ! CheckDeployHook; then
-        echo "The deploy hook wasn't run" >&2
+# Asserts that there is a saved renew_hook for a lineage.
+#
+# Arguments:
+#     Name of lineage to check
+CheckSavedRenewHook() {
+    if ! grep renew_hook "$config_dir/renewal/$1.conf"; then
+        echo "Hook wasn't saved as renew_hook" >&2
+        exit 1
     fi
 }
 
-# Asserts the deploy hook wasn't run and deletes the hook file
-AssertNoDeployHook() {
-    if CheckDeployHook; then
-        echo "The deploy hook was incorrectly run" >&2
+# Asserts the deploy hook was properly run and saved and deletes the hook file
+#
+# Arguments:
+#   Lineage name of the issued cert
+CheckDeployHook() {
+    if ! DeployInHookOutput; then
+        echo "The deploy hook wasn't run" >&2
+        exit 1
     fi
+    CheckSavedRenewHook $1
+}
+
+# Asserts the renew hook wasn't run but was saved and deletes the hook file
+#
+# Arguments:
+#   Lineage name of the issued cert
+# Asserts the deploy hook wasn't run and deletes the hook file
+CheckRenewHook() {
+    if DeployInHookOutput; then
+        echo "The renew hook was incorrectly run" >&2
+        exit 1
+    fi
+    CheckSavedRenewHook $1
 }
 
 # Cleanup coverage data
@@ -126,36 +148,43 @@ common plugins --init --prepare | grep webroot
 python ./tests/run_http_server.py $http_01_port &
 python_server_pid=$!
 
+certname="le1.wtf"
 common --domains le1.wtf --preferred-challenges tls-sni-01 auth \
+       --cert-name $certname \
        --pre-hook 'echo wtf.pre >> "$HOOK_TEST"' \
        --post-hook 'echo wtf.post >> "$HOOK_TEST"'\
        --deploy-hook 'echo deploy >> "$HOOK_TEST"'
 kill $python_server_pid
-AssertDeployHook
+CheckDeployHook $certname
 
 python ./tests/run_http_server.py $tls_sni_01_port &
 python_server_pid=$!
+certname="le2.wtf"
 common --domains le2.wtf --preferred-challenges http-01 run \
+       --cert-name $certname \
        --pre-hook 'echo wtf.pre >> "$HOOK_TEST"' \
        --post-hook 'echo wtf.post >> "$HOOK_TEST"'\
        --deploy-hook 'echo deploy >> "$HOOK_TEST"'
 kill $python_server_pid
-AssertDeployHook
+CheckDeployHook $certname
 
-common certonly -a manual -d le.wtf --rsa-key-size 4096 \
+certname="le.wtf"
+common certonly -a manual -d le.wtf --rsa-key-size 4096 --cert-name $certname \
     --manual-auth-hook ./tests/manual-http-auth.sh \
     --manual-cleanup-hook ./tests/manual-http-cleanup.sh \
     --pre-hook 'echo wtf2.pre >> "$HOOK_TEST"' \
     --post-hook 'echo wtf2.post >> "$HOOK_TEST"' \
     --renew-hook 'echo deploy >> "$HOOK_TEST"'
-AssertNoDeployHook
+CheckRenewHook $certname
 
+certname="dns.le.wtf"
 common -a manual -d dns.le.wtf --preferred-challenges dns,tls-sni run \
+    --cert-name $certname \
     --manual-auth-hook ./tests/manual-dns-auth.sh \
     --pre-hook 'echo wtf2.pre >> "$HOOK_TEST"' \
     --post-hook 'echo wtf2.post >> "$HOOK_TEST"' \
     --renew-hook 'echo deploy >> "$HOOK_TEST"'
-AssertNoDeployHook
+CheckRenewHook $certname
 
 common certonly --cert-name newname -d newname.le.wtf
 
