@@ -52,15 +52,19 @@ CheckHooks() {
     if [ $(head -n1 $HOOK_TEST) = "wtf.pre" ]; then
         echo "wtf.pre" > "$EXPECTED"
         echo "wtf2.pre" >> "$EXPECTED"
-        echo "renew" >> "$EXPECTED"
-        echo "renew" >> "$EXPECTED"
+        echo "deploy" >> "$EXPECTED"
+        echo "deploy" >> "$EXPECTED"
+        echo "deploy" >> "$EXPECTED"
+        echo "deploy" >> "$EXPECTED"
         echo "wtf.post" >> "$EXPECTED"
         echo "wtf2.post" >> "$EXPECTED"
     else
         echo "wtf2.pre" > "$EXPECTED"
         echo "wtf.pre" >> "$EXPECTED"
-        echo "renew" >> "$EXPECTED"
-        echo "renew" >> "$EXPECTED"
+        echo "deploy" >> "$EXPECTED"
+        echo "deploy" >> "$EXPECTED"
+        echo "deploy" >> "$EXPECTED"
+        echo "deploy" >> "$EXPECTED"
         echo "wtf2.post" >> "$EXPECTED"
         echo "wtf.post" >> "$EXPECTED"
     fi
@@ -72,6 +76,27 @@ CheckHooks() {
         cat "$EXPECTED"
     fi
     rm "$HOOK_TEST"
+}
+
+# Checks if deploy was run and deletes the hook file
+CheckDeployHook() {
+    CONTENTS=$(cat "$HOOK_TEST")
+    rm "$HOOK_TEST"
+    grep deploy <(echo "$CONTENTS")
+}
+
+# Asserts the deploy hook was run and deletes the hook file
+AssertDeployHook() {
+    if ! CheckDeployHook; then
+        echo "The deploy hook wasn't run" >&2
+    fi
+}
+
+# Asserts the deploy hook wasn't run and deletes the hook file
+AssertNoDeployHook() {
+    if CheckDeployHook; then
+        echo "The deploy hook was incorrectly run" >&2
+    fi
 }
 
 # Cleanup coverage data
@@ -104,24 +129,33 @@ python_server_pid=$!
 common --domains le1.wtf --preferred-challenges tls-sni-01 auth \
        --pre-hook 'echo wtf.pre >> "$HOOK_TEST"' \
        --post-hook 'echo wtf.post >> "$HOOK_TEST"'\
-       --renew-hook 'echo renew >> "$HOOK_TEST"'
+       --deploy-hook 'echo deploy >> "$HOOK_TEST"'
 kill $python_server_pid
+AssertDeployHook
+
 python ./tests/run_http_server.py $tls_sni_01_port &
 python_server_pid=$!
 common --domains le2.wtf --preferred-challenges http-01 run \
        --pre-hook 'echo wtf.pre >> "$HOOK_TEST"' \
        --post-hook 'echo wtf.post >> "$HOOK_TEST"'\
-       --renew-hook 'echo renew >> "$HOOK_TEST"'
+       --deploy-hook 'echo deploy >> "$HOOK_TEST"'
 kill $python_server_pid
+AssertDeployHook
 
 common certonly -a manual -d le.wtf --rsa-key-size 4096 \
     --manual-auth-hook ./tests/manual-http-auth.sh \
     --manual-cleanup-hook ./tests/manual-http-cleanup.sh \
     --pre-hook 'echo wtf2.pre >> "$HOOK_TEST"' \
-    --post-hook 'echo wtf2.post >> "$HOOK_TEST"'
+    --post-hook 'echo wtf2.post >> "$HOOK_TEST"' \
+    --renew-hook 'echo deploy >> "$HOOK_TEST"'
+AssertNoDeployHook
 
-common certonly -a manual -d dns.le.wtf --preferred-challenges dns,tls-sni \
-    --manual-auth-hook ./tests/manual-dns-auth.sh
+common -a manual -d dns.le.wtf --preferred-challenges dns,tls-sni run \
+    --manual-auth-hook ./tests/manual-dns-auth.sh \
+    --pre-hook 'echo wtf2.pre >> "$HOOK_TEST"' \
+    --post-hook 'echo wtf2.post >> "$HOOK_TEST"' \
+    --renew-hook 'echo deploy >> "$HOOK_TEST"'
+AssertNoDeployHook
 
 common certonly --cert-name newname -d newname.le.wtf
 
