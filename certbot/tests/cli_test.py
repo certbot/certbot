@@ -323,6 +323,18 @@ class ParseTest(unittest.TestCase):
         self.assertRaises(
             errors.Error, self.parse, "-n --force-interactive".split())
 
+    def test_deploy_hook_conflict(self):
+        with mock.patch("certbot.cli.sys.stderr"):
+            self.assertRaises(SystemExit, self.parse,
+                              "--renew-hook foo --deploy-hook bar".split())
+
+    def test_deploy_hook_sets_renew_hook(self):
+        value = "foo"
+        namespace = self.parse(
+            ["--deploy-hook", value, "--disable-hook-validation"])
+        self.assertEqual(namespace.deploy_hook, value)
+        self.assertEqual(namespace.renew_hook, value)
+
 
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""
