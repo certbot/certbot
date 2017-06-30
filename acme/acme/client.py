@@ -519,11 +519,11 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         self._default_timeout = timeout
 
     def __del__(self):
-        # Try to close the session, but don't show exceptions to the
-        # user if the call to close() fails. See #4840.
+        # Try to close the session, but don't show ReferenceErrors that
+        # may be raised out of close(). See #4840.
         try:
             self.session.close()
-        except:  # pylint: disable=bare-except
+        except ReferenceError:
             pass
 
     def _wrap_in_jws(self, obj, nonce):
