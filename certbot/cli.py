@@ -887,7 +887,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              " in order to obtain test certificates, and reloads webservers to deploy and then"
              " roll back those changes.  It also calls --pre-hook and --post-hook commands"
              " if they are defined because they may be necessary to accurately simulate"
-             " renewal. --renew-hook commands are not called.")
+             " renewal. --deploy-hook commands are not called.")
     helpful.add(
         ["register", "automation"], "--register-unsafely-without-email", action="store_true",
         help="Specifying this flag enables registering an account with no "
@@ -1100,11 +1100,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "renew", "--disable-hook-validation",
         action='store_false', dest='validate_hooks', default=True,
         help="Ordinarily the commands specified for"
-        " --pre-hook/--post-hook/--renew-hook will be checked for validity, to"
-        " see if the programs being run are in the $PATH, so that mistakes can"
-        " be caught early, even when the hooks aren't being run just yet. The"
-        " validation is rather simplistic and fails if you use more advanced"
-        " shell constructs, so you can use this switch to disable it."
+        " --pre-hook/--post-hook/--deploy-hook will be checked for"
+        " validity, to see if the programs being run are in the $PATH,"
+        " so that mistakes can be caught early, even when the hooks"
+        " aren't being run just yet. The validation is rather"
+        " simplistic and fails if you use more advanced shell"
+        " constructs, so you can use this switch to disable it."
         " (default: False)")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
