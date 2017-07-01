@@ -1,5 +1,5 @@
 :mod:`certbot.log`
 ----------------------
 
-.. automodule:: log.eff
+.. automodule:: certbot.log
    :members:
