@@ -600,11 +600,18 @@ class ClientNetworkTest(unittest.TestCase):
             mock.ANY, mock.ANY, verify=mock.ANY, headers=mock.ANY,
             timeout=45)
 
-    def test_del(self):
+    def test_del(self, close_exception=None):
         sess = mock.MagicMock()
+
+        if close_exception is not None:
+            sess.close.side_effect = close_exception
+
         self.net.session = sess
         del self.net
         sess.close.assert_called_once_with()
+
+    def test_del_error(self):
+        self.test_del(ReferenceError)
 
     @mock.patch('acme.client.requests')
     def test_requests_error_passthrough(self, mock_requests):
