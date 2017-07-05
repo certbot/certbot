@@ -18,7 +18,6 @@ CLI_DEFAULTS = dict(
         os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"),
                      "letsencrypt", "cli.ini"),
     ],
-    dry_run=False,
     verbose_count=-int(logging.INFO / 10),
     server="https://acme-v01.api.letsencrypt.org/directory",
     rsa_key_size=2048,
@@ -28,7 +27,9 @@ CLI_DEFAULTS = dict(
     logs_dir="/var/log/letsencrypt",
     no_verify_ssl=False,
     http01_port=challenges.HTTP01Response.PORT,
+    http01_address="",
     tls_sni_01_port=challenges.TLSSNI01Response.PORT,
+    tls_sni_01_address="",
 
     auth_cert_path="./cert.pem",
     auth_chain_path="./chain.pem",

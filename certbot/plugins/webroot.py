@@ -117,22 +117,11 @@ to serve all files under specified web root ({0})."""
             code, index = display.menu(
                 "Select the webroot for {0}:".format(domain),
                 ["Enter a new webroot"] + known_webroots,
-                help_label="Help", cli_flag=path_flag, force_interactive=True)
+                cli_flag=path_flag, force_interactive=True)
             if code == display_util.CANCEL:
                 raise errors.PluginError(
                     "Every requested domain must have a "
                     "webroot when using the webroot plugin.")
-            elif code == display_util.HELP:
-                display.notification(
-                    "To use the webroot plugin, you need to have an "
-                    "HTTP server running on this system serving files "
-                    "for the requested domain. Additionally, this "
-                    "server should be serving all files contained in a "
-                    "public_html or webroot directory. The webroot "
-                    "plugin works by temporarily saving necessary "
-                    "resources in the HTTP server's webroot directory "
-                    "to pass domain validation challenges.",
-                    force_interactive=True)
             else:  # code == display_util.OK
                 return None if index == 0 else known_webroots[index - 1]
 
@@ -141,10 +130,7 @@ to serve all files under specified web root ({0})."""
             _validate_webroot,
             "Input the webroot for {0}:".format(domain),
             force_interactive=True)
-        if code == display_util.HELP:
-            # Displaying help is not currently implemented
-            return None
-        elif code == display_util.CANCEL or code == display_util.ESC:
+        if code == display_util.CANCEL:
             return None
         else:  # code == display_util.OK
             return _validate_webroot(webroot)

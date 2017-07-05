@@ -84,10 +84,8 @@ class AuthenticatorTest(unittest.TestCase):
         self.config.webroot_map = {"otherthing.com": self.path}
 
         mock_display = mock_get_utility()
-        mock_display.menu.side_effect = ((display_util.HELP, -1),
-                                         (display_util.CANCEL, -1),)
+        mock_display.menu.side_effect = ((display_util.CANCEL, -1),)
         self.assertRaises(errors.PluginError, self.auth.perform, [self.achall])
-        self.assertTrue(mock_display.notification.called)
         self.assertTrue(mock_display.menu.called)
         for call in mock_display.menu.call_args_list:
             self.assertTrue(self.achall.domain in call[0][0])
@@ -103,8 +101,7 @@ class AuthenticatorTest(unittest.TestCase):
         mock_display = mock_get_utility()
         mock_display.menu.return_value = (display_util.OK, 0,)
         with mock.patch('certbot.display.ops.validated_directory') as m:
-            m.side_effect = ((display_util.HELP, -1),
-                             (display_util.CANCEL, -1),
+            m.side_effect = ((display_util.CANCEL, -1),
                              (display_util.OK, self.path,))
 
             self.auth.perform([self.achall])

@@ -3,7 +3,7 @@ import sys
 from distutils.core import setup
 from setuptools import find_packages
 
-version = '0.15.0.dev0'
+version = '0.16.0.dev0'
 
 install_requires = [
     'acme=={0}'.format(version),
@@ -17,7 +17,7 @@ install_requires = [
 ]
 
 setup(
-    name='certbot-route53',
+    name='certbot-dns-route53',
     version=version,
     description="Route53 DNS Authenticator plugin for Certbot",
     url='https://github.com/certbot/certbot',
@@ -52,8 +52,9 @@ setup(
     keywords=['certbot', 'route53', 'aws'],
     entry_points={
         'certbot.plugins': [
-            'auth = certbot_route53.authenticator:Authenticator'
+            'dns-route53 = certbot_dns_route53.dns_route53:Authenticator',
+            'certbot-route53:auth = certbot_dns_route53.authenticator:Authenticator'
         ],
     },
-    test_suite='certbot_route53',
+    test_suite='certbot_dns_route53',
 )

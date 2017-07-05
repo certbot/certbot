@@ -229,11 +229,16 @@ class IConfig(zope.interface.Interface):
         "Port used during tls-sni-01 challenge. "
         "This only affects the port Certbot listens on. "
         "A conforming ACME server will still attempt to connect on port 443.")
+    tls_sni_01_address = zope.interface.Attribute(
+        "The address the server listens to during tls-sni-01 challenge.")
 
     http01_port = zope.interface.Attribute(
         "Port used in the http-01 challenge. "
         "This only affects the port Certbot listens on. "
         "A conforming ACME server will still attempt to connect on port 80.")
+
+    http01_address = zope.interface.Attribute(
+        "The address the server listens to during http-01 challenge.")
 
     pref_challs = zope.interface.Attribute(
         "Sorted user specified preferred challenges"
@@ -250,7 +255,6 @@ class IConfig(zope.interface.Interface):
         "Require that all configuration files are owned by the current "
         "user; only needed if your config is somewhere unsafe like /tmp/."
         "This is a boolean")
-
 
 class IInstaller(IPlugin):
     """Generic Certbot Installer Interface.
@@ -392,8 +396,8 @@ class IDisplay(zope.interface.Interface):
 
         """
 
-    def menu(message, choices, ok_label="OK",
-             cancel_label="Cancel", help_label="",
+    def menu(message, choices, ok_label=None,
+             cancel_label=None, help_label=None,
              default=None, cli_flag=None, force_interactive=False):
         """Displays a generic menu.
 
@@ -405,9 +409,9 @@ class IDisplay(zope.interface.Interface):
         :param choices: choices
         :type choices: :class:`list` of :func:`tuple` or :class:`str`
 
-        :param str ok_label: label for OK button
-        :param str cancel_label: label for Cancel button
-        :param str help_label: label for Help button
+        :param str ok_label: label for OK button (UNUSED)
+        :param str cancel_label: label for Cancel button (UNUSED)
+        :param str help_label: label for Help button (UNUSED)
         :param int default: default (non-interactive) choice from the menu
         :param str cli_flag: to automate choice from the menu, eg "--keep"
         :param bool force_interactive: True if it's safe to prompt the user
@@ -466,8 +470,7 @@ class IDisplay(zope.interface.Interface):
 
         """
 
-    def checklist(message, tags, default_state,
-                  default=None, cli_args=None, force_interactive=False):
+    def checklist(message, tags, default=None, cli_args=None, force_interactive=False):
         """Allow for multiple selections from a menu.
 
         When not setting force_interactive=True, you must provide a
@@ -475,7 +478,6 @@ class IDisplay(zope.interface.Interface):
 
         :param str message: message to display to the user
         :param list tags: where each is of type :class:`str` len(tags) > 0
-        :param bool default_status: If True, items are in a selected state by default.
         :param str default: default (non-interactive) state of the checklist
         :param str cli_flag: to automate choice from the menu, eg "--domains"
         :param bool force_interactive: True if it's safe to prompt the user

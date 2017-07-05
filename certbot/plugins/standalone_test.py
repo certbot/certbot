@@ -32,7 +32,7 @@ class ServerManagerTest(unittest.TestCase):
 
     def _test_run_stop(self, challenge_type):
         server = self.mgr.run(port=0, challenge_type=challenge_type)
-        port = server.socket.getsockname()[1]  # pylint: disable=no-member
+        port = server.getsocknames()[0][1]  # pylint: disable=no-member
         self.assertEqual(self.mgr.running(), {port: server})
         self.mgr.stop(port=port)
         self.assertEqual(self.mgr.running(), {})
@@ -45,7 +45,7 @@ class ServerManagerTest(unittest.TestCase):
 
     def test_run_idempotent(self):
         server = self.mgr.run(port=0, challenge_type=challenges.HTTP01)
-        port = server.socket.getsockname()[1]  # pylint: disable=no-member
+        port = server.getsocknames()[0][1]  # pylint: disable=no-member
         server2 = self.mgr.run(port=port, challenge_type=challenges.HTTP01)
         self.assertEqual(self.mgr.running(), {port: server})
         self.assertTrue(server is server2)
@@ -53,9 +53,14 @@ class ServerManagerTest(unittest.TestCase):
         self.assertEqual(self.mgr.running(), {})
 
     def test_run_bind_error(self):
-        some_server = socket.socket()
+        some_server = socket.socket(socket.AF_INET6)
         some_server.bind(("", 0))
         port = some_server.getsockname()[1]
+        maybe_another_server = socket.socket()
+        try:
+            maybe_another_server.bind(("", port))
+        except socket.error:
+            pass
         self.assertRaises(
             errors.StandaloneBindError, self.mgr.run, port,
             challenge_type=challenges.HTTP01)
