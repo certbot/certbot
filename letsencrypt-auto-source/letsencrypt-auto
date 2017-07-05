@@ -228,6 +228,8 @@ BootstrapDebCommon() {
   # - Debian
   #     - 7.9 "wheezy" (x64)
   #     - sid (2015-10-21) (x64)
+  # - Devuan
+  #     - 1.0 "Jessie" (x64)
 
   # Past versions tested with:
   #
@@ -605,6 +607,9 @@ Bootstrap() {
       return
   elif [ -f /etc/debian_version ]; then
     BootstrapMessage "Debian-based OSes"
+    BootstrapDebCommon
+  elif [ -f /etc/devuan_version ]; then
+    BootstrapMessage "Devuan"
     BootstrapDebCommon
   elif [ -f /etc/mageia-release ]; then
     # Mageia has both /etc/mageia-release and /etc/redhat-release
