@@ -439,9 +439,9 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
         config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
 
     # don't delete if the archive_dir is used by some other lineage
-    archive_dir = cert_manager.full_archive_dir_from_renewal_conf(config)
+    archive_dir = storage.full_archive_path(None, config, config.certname)
     try:
-        cert_manager.match_and_check_overlaps(config, [lambda x: archive_dir],
+        storage.match_and_check_overlaps(config, [lambda x: archive_dir],
             lambda x: x.archive_dir, lambda x: x)
     except errors.OverlappingMatchFound:
         msg = ('Not deleting due to overlapping archive dirs. More than '
@@ -637,6 +637,7 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
 
     try:
         acme.revoke(jose.ComparableX509(cert), config.reason)
+
         _delete_if_appropriate(config)
     except acme_errors.ClientError as e:
         return e.message

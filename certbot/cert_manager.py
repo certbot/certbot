@@ -75,7 +75,7 @@ def certificates(config):
     parse_failures = []
     for renewal_file in storage.renewal_conf_files(config):
         try:
-            renewal_candidate = storage.RenewableCert(renewal_file, config)
+            renewal_candidate = storagstoragee.RenewableCert(renewal_file, config)
             parsed_certs.append(renewal_candidate)
         except Exception as e:  # pylint: disable=broad-except
             logger.warning("Renewal configuration file %s produced an "
@@ -97,14 +97,6 @@ def delete(config):
 ###################
 # Public Helpers
 ###################
-
-def full_archive_dir_from_renewal_conf(cli_config):
-    """Normally the sane thing to do is to use storage.full_archive_path,
-    but this function exists to help perform consistency checks preventing
-    users who set multiple different lineages to use the same archive dir."""
-    renewal_conf = storage.renewal_file_for_certname(cli_config, cli_config.certname)
-    full_archive_dir = configobj.ConfigObj(renewal_conf)["archive_dir"]
-    return full_archive_dir
 
 def lineage_for_certname(cli_config, certname):
     """Find a lineage object with name certname."""
@@ -150,41 +142,15 @@ def find_duplicative_certs(config, domains):
 
     return _search_lineages(config, update_certs_for_domain_matches, (None, None))
 
-def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func):
-    """ Searches through all lineages for a match, and checks for duplicates.
-    If a duplicate is found, an error is raised, as performing operations on lineages
-    that have their properties incorrectly duplicated elsewhere is probably a bad idea.
-
-    :param list acceptable_matches: a list of functions that specify acceptable matches
-    :param function match_func: specifies what to match
-    :param function rv_func: specifies what to return
-    """
-    def find_matches(candidate_lineage, return_value, acceptable_matches):
-        """Returns a list of matches using _search_lineages."""
-        acceptable_matches = [func(candidate_lineage) for func in acceptable_matches]
-        match = match_func(candidate_lineage)
-        if match in acceptable_matches:
-            return_value.append(rv_func(candidate_lineage))
-        return return_value
-
-    matched = _search_lineages(cli_config, find_matches, [], acceptable_matches)
-    if not matched:
-        raise errors.Error("No match found for cert-path {0}!".format(cli_config.cert_path))
-    elif len(matched) > 1:
-        raise errors.OverlappingMatchFound()
-    else:
-        return matched
-
 def cert_path_to_lineage(cli_config):
-    """ If config.cert_path is defined, find an appropriate value for config.certname
-    by searching through available files in config.renewal_configs_dir, and finding
-    one with an appropriate value for 'fullchain'."""
+    """ If config.cert_path is defined, try to find an appropriate value for config.certname.
 
+    :param .NamespaceConfig cli_config
+    """
     def archive_files(candidate_lineage, filetype):
         """ In order to match things like:
             /etc/letsencrypt/archive/example.com/chain1.pem"""
-        archive_dir = os.path.join(candidate_lineage.archive_dir,
-                os.path.basename(candidate_lineage.cert_path[0]))
+        archive_dir = os.path.join(candidate_lineage.archive_dir, candidate_lineage.cert_path[0])
         pattern = [os.path.join(archive_dir, f) for f in os.listdir(archive_dir)
                         if re.match("{0}[0-9]*.pem".format(filetype), f)]
         # Using [0] here, so make sure to also check for overlapping archive dirs
@@ -192,8 +158,8 @@ def cert_path_to_lineage(cli_config):
         return pattern[0]
 
     options = [lambda x: x.fullchain_path, lambda x: x.chain_path, lambda x: x.cert_path,
-            lambda x: archive_files(x, "chain"), lambda x: archive_files(x, "fullchain")]
-    match = match_and_check_overlaps(cli_config, options,
+            lambda x: archive_files(x, "cert"), lambda x: archive_files(x, "fullchain")]
+    match = storage.match_and_check_overlaps(cli_config, options,
             lambda x: cli_config.cert_path[0], lambda x: x.lineagename)
     return match[0]
 
