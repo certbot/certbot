@@ -137,13 +137,10 @@ class ChoosePluginTest(unittest.TestCase):
     @test_util.patch_get_utility("certbot.plugins.selection.z_util")
     def test_more_info(self, mock_util):
         mock_util().menu.side_effect = [
-            (display_util.HELP, 0),
-            (display_util.HELP, 1),
             (display_util.OK, 1),
         ]
 
         self.assertEqual(self.mock_stand, self._call())
-        self.assertEqual(mock_util().notification.call_count, 2)
 
     @test_util.patch_get_utility("certbot.plugins.selection.z_util")
     def test_no_choice(self, mock_util):

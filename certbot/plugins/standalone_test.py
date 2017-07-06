@@ -32,7 +32,7 @@ class ServerManagerTest(unittest.TestCase):
 
     def _test_run_stop(self, challenge_type):
         server = self.mgr.run(port=0, challenge_type=challenge_type)
-        port = server.socket.getsockname()[1]  # pylint: disable=no-member
+        port = server.getsocknames()[0][1]  # pylint: disable=no-member
         self.assertEqual(self.mgr.running(), {port: server})
         self.mgr.stop(port=port)
         self.assertEqual(self.mgr.running(), {})
@@ -45,7 +45,7 @@ class ServerManagerTest(unittest.TestCase):
 
     def test_run_idempotent(self):
         server = self.mgr.run(port=0, challenge_type=challenges.HTTP01)
-        port = server.socket.getsockname()[1]  # pylint: disable=no-member
+        port = server.getsocknames()[0][1]  # pylint: disable=no-member
         server2 = self.mgr.run(port=port, challenge_type=challenges.HTTP01)
         self.assertEqual(self.mgr.running(), {port: server})
         self.assertTrue(server is server2)
@@ -53,37 +53,40 @@ class ServerManagerTest(unittest.TestCase):
         self.assertEqual(self.mgr.running(), {})
 
     def test_run_bind_error(self):
-        some_server = socket.socket()
+        some_server = socket.socket(socket.AF_INET6)
         some_server.bind(("", 0))
         port = some_server.getsockname()[1]
+        maybe_another_server = socket.socket()
+        try:
+            maybe_another_server.bind(("", port))
+        except socket.error:
+            pass
         self.assertRaises(
             errors.StandaloneBindError, self.mgr.run, port,
             challenge_type=challenges.HTTP01)
         self.assertEqual(self.mgr.running(), {})
 
 
-class SupportedChallengesValidatorTest(unittest.TestCase):
-    """Tests for plugins.standalone.supported_challenges_validator."""
+class SupportedChallengesActionTest(unittest.TestCase):
+    """Tests for plugins.standalone.SupportedChallengesAction."""
+
+    def _call(self, value):
+        with mock.patch("certbot.plugins.standalone.logger") as mock_logger:
+            # stderr is mocked to prevent potential argparse error
+            # output from cluttering test output
+            with mock.patch("sys.stderr"):
+                config = self.parser.parse_args([self.flag, value])
+
+        self.assertTrue(mock_logger.warning.called)
+        return getattr(config, self.dest)
 
     def setUp(self):
-        self.set_by_cli_patch = mock.patch(
-            "certbot.plugins.standalone.cli.set_by_cli")
-        self.stderr_patch = mock.patch("certbot.plugins.standalone.sys.stderr")
+        self.flag = "--standalone-supported-challenges"
+        self.dest = self.flag[2:].replace("-", "_")
+        self.parser = argparse.ArgumentParser()
 
-        self.set_by_cli_patch.start().return_value = True
-        self.stderr = self.stderr_patch.start()
-
-    def tearDown(self):
-        self.set_by_cli_patch.stop()
-        self.stderr_patch.stop()
-
-    def _call(self, data):
-        from certbot.plugins.standalone import (
-            supported_challenges_validator)
-        return_value = supported_challenges_validator(data)
-        self.assertTrue(self.stderr.write.called)  # pylint: disable=no-member
-        self.stderr.write.reset_mock()  # pylint: disable=no-member
-        return return_value
+        from certbot.plugins.standalone import SupportedChallengesAction
+        self.parser.add_argument(self.flag, action=SupportedChallengesAction)
 
     def test_correct(self):
         self.assertEqual("tls-sni-01", self._call("tls-sni-01"))
@@ -93,10 +96,10 @@ class SupportedChallengesValidatorTest(unittest.TestCase):
 
     def test_unrecognized(self):
         assert "foo" not in challenges.Challenge.TYPES
-        self.assertRaises(argparse.ArgumentTypeError, self._call, "foo")
+        self.assertRaises(SystemExit, self._call, "foo")
 
     def test_not_subset(self):
-        self.assertRaises(argparse.ArgumentTypeError, self._call, "dns")
+        self.assertRaises(SystemExit, self._call, "dns")
 
     def test_dvsni(self):
         self.assertEqual("tls-sni-01", self._call("dvsni"))

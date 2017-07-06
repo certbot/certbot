@@ -13,12 +13,6 @@ set -eux
 . ./tests/integration/_common.sh
 export PATH="$PATH:/usr/sbin"  # /usr/sbin/nginx
 
-if [ `uname` = "Darwin" ];then
-  readlink="greadlink"
-else
-  readlink="readlink"
-fi
-
 cleanup_and_exit() {
     EXIT_STATUS=$?
     if SERVER_STILL_RUNNING=`ps -p $python_server_pid -o pid=`
@@ -80,9 +74,31 @@ CheckHooks() {
     rm "$HOOK_TEST"
 }
 
+# Cleanup coverage data
+coverage erase
+
+# test for regressions of #4719
+get_num_tmp_files() {
+    ls -1 /tmp | wc -l
+}
+num_tmp_files=$(get_num_tmp_files)
+common --csr / && echo expected error && exit 1 || true
+common --help
+common --help all
+common --version
+if [ $(get_num_tmp_files) -ne $num_tmp_files ]; then
+    echo "New files or directories created in /tmp!"
+    exit 1
+fi
+
+common register
+common register --update-registration --email example@example.org
+
+common plugins --init --prepare | grep webroot
+
 # We start a server listening on the port for the
 # unrequested challenge to prevent regressions in #3601.
-python -m SimpleHTTPServer $http_01_port &
+python ./tests/run_http_server.py $http_01_port &
 python_server_pid=$!
 
 common --domains le1.wtf --preferred-challenges tls-sni-01 auth \
@@ -90,7 +106,7 @@ common --domains le1.wtf --preferred-challenges tls-sni-01 auth \
        --post-hook 'echo wtf.post >> "$HOOK_TEST"'\
        --renew-hook 'echo renew >> "$HOOK_TEST"'
 kill $python_server_pid
-python -m SimpleHTTPServer $tls_sni_01_port &
+python ./tests/run_http_server.py $tls_sni_01_port &
 python_server_pid=$!
 common --domains le2.wtf --preferred-challenges http-01 run \
        --pre-hook 'echo wtf.pre >> "$HOOK_TEST"' \
@@ -203,7 +219,33 @@ common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
 
 common unregister
 
-if type nginx;
+out=$(common certificates)
+subdomains="le le2 dns.le newname.le must-staple.le"
+for subdomain in $subdomains; do
+    domain="$subdomain.wtf"
+    if ! echo $out | grep "$domain"; then
+        echo "$domain not in certificates output!"
+        exit 1;
+    fi
+done
+
+cert_name="must-staple.le.wtf"
+common delete --cert-name $cert_name
+archive="$root/conf/archive/$cert_name"
+conf="$root/conf/renewal/$cert_name.conf"
+live="$root/conf/live/$cert_name"
+for path in $archive $conf $live; do
+    if [ -e $path ]; then
+        echo "Lineage not properly deleted!"
+        exit 1
+    fi
+done
+
+# Most CI systems set this variable to true.
+# If the tests are running as part of CI, Nginx should be available.
+if ${CI:-false} || type nginx;
 then
     . ./certbot-nginx/tests/boulder-integration.sh
 fi
+
+coverage report --fail-under 64 -m

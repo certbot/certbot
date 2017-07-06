@@ -513,6 +513,12 @@ class ClientNetworkTest(unittest.TestCase):
             self.assertEqual(
                 self.response, self.net._check_response(self.response))
 
+    def test_check_response_conflict(self):
+        self.response.ok = False
+        self.response.status_code = 409
+        # pylint: disable=protected-access
+        self.assertRaises(errors.ConflictError, self.net._check_response, self.response)
+
     def test_check_response_jobj(self):
         self.response.json.return_value = {}
         for response_ct in [self.net.JSON_CONTENT_TYPE, 'foo']:
@@ -594,11 +600,18 @@ class ClientNetworkTest(unittest.TestCase):
             mock.ANY, mock.ANY, verify=mock.ANY, headers=mock.ANY,
             timeout=45)
 
-    def test_del(self):
+    def test_del(self, close_exception=None):
         sess = mock.MagicMock()
+
+        if close_exception is not None:
+            sess.close.side_effect = close_exception
+
         self.net.session = sess
         del self.net
         sess.close.assert_called_once_with()
+
+    def test_del_error(self):
+        self.test_del(ReferenceError)
 
     @mock.patch('acme.client.requests')
     def test_requests_error_passthrough(self, mock_requests):

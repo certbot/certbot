@@ -30,7 +30,8 @@ logger = logging.getLogger(__name__)
 STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
                     "standalone_supported_challenges", "renew_hook",
-                    "pre_hook", "post_hook"]
+                    "pre_hook", "post_hook", "tls_sni_01_address",
+                    "http01_address"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
 BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names"]
 
@@ -79,7 +80,7 @@ def _reconstitute(config, full_path):
     except (ValueError, errors.Error) as error:
         logger.warning(
             "An error occurred while parsing %s. The error was %s. "
-            "Skipping the file.", full_path, error.message)
+            "Skipping the file.", full_path, str(error))
         logger.debug("Traceback was:\n%s", traceback.format_exc())
         return None
 

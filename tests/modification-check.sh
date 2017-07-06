@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 temp_dir=`mktemp -d`
 trap "rm -rf $temp_dir" EXIT
@@ -43,9 +43,7 @@ cp ${temp_dir}/original-lea letsencrypt-auto-source/letsencrypt-auto
 
 cd $temp_dir
 
-cmp -s original-lea build-lea
-
-if [ $? != 0 ]; then
+if ! cmp -s original-lea build-lea; then
 	echo "letsencrypt-auto-source/letsencrypt-auto doesn't match output of \
 build.py."
 	FLAG=true

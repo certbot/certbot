@@ -24,16 +24,16 @@ Getting certificates (and choosing plugins)
 The Certbot client supports two types of plugins for
 obtaining and installing certificates: authenticators and installers.
 
-Authenticators are plugins used with the ``certonly`` command to obtain a cert.
+Authenticators are plugins used with the ``certonly`` command to obtain a certificate.
 The authenticator validates that you
-control the domain(s) you are requesting a cert for, obtains a cert for the specified
-domain(s), and places the cert in the ``/etc/letsencrypt`` directory on your
-machine. The authenticator does not install the cert (it does not edit any of your server's configuration files to serve the
+control the domain(s) you are requesting a certificate for, obtains a certificate for the specified
+domain(s), and places the certificate in the ``/etc/letsencrypt`` directory on your
+machine. The authenticator does not install the certificate (it does not edit any of your server's configuration files to serve the
 obtained certificate). If you specify multiple domains to authenticate, they will
 all be listed in a single certificate. To obtain multiple separate certificates
 you will need to run Certbot multiple times.
 
-Installers are Plugins used with the ``install`` command to install a cert.
+Installers are Plugins used with the ``install`` command to install a certificate.
 These plugins can modify your webserver's configuration to
 serve your website over HTTPS using certificates obtained by certbot.
 
@@ -44,19 +44,19 @@ a combination of distinct authenticator and installer plugins.
 =========== ==== ==== =============================================================== =============================
 Plugin      Auth Inst Notes                                                           Challenge types (and port)
 =========== ==== ==== =============================================================== =============================
-apache_     Y    Y    | Automates obtaining and installing a cert with Apache 2.4 on  tls-sni-01_ (443)
-                      | Debian-based distributions with ``libaugeas0`` 1.0+.
-webroot_    Y    N    | Obtains a cert by writing to the webroot directory of an      http-01_ (80)
-                      | already running webserver.
-nginx_      Y    Y    | Automates obtaining and installing a cert with Nginx. Alpha   tls-sni-01_ (443)
-                      | release shipped with Certbot 0.9.0.
-standalone_ Y    N    | Uses a "standalone" webserver to obtain a cert. Requires      http-01_ (80) or
-                      | port 80 or 443 to be available. This is useful on systems     tls-sni-01_ (443)
-                      | with no webserver, or when direct integration with the local
-                      | webserver is not supported or not desired.
-manual_     Y    N    | Helps you obtain a cert by giving you instructions to perform http-01_ (80) or
-                      | domain validation yourself. Additionally allows you to        dns-01_ (53)
-                      | specify scripts to automate the validation task in a
+apache_     Y    Y    | Automates obtaining and installing a certificate with Apache  tls-sni-01_ (443)
+                      | 2.4 on Debian-based distributions with ``libaugeas0`` 1.0+.
+webroot_    Y    N    | Obtains a certificate by writing to the webroot directory of  http-01_ (80)
+                      | an already running webserver.
+nginx_      Y    Y    | Automates obtaining and installing a certificate with Nginx.  tls-sni-01_ (443)
+                      | Shipped with Certbot 0.9.0.
+standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.        http-01_ (80) or
+                      | Requires port 80 or 443 to be available. This is useful on    tls-sni-01_ (443)
+                      | systems with no webserver, or when direct integration with
+                      | the local webserver is not supported or not desired.
+manual_     Y    N    | Helps you obtain a certificate by giving you instructions to  http-01_ (80),
+                      | perform domain validation yourself. Additionally allows you   dns-01_ (53) or
+                      | to specify scripts to automate the validation task in a       tls-sni-01_ (443)
                       | customized way.
 =========== ==== ==== =============================================================== =============================
 
@@ -82,7 +82,7 @@ The Apache plugin currently requires an OS with augeas version 1.0; currently `i
 supports
 <https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/constants.py>`_
 modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
-This automates both obtaining *and* installing certs on an Apache
+This automates both obtaining *and* installing certificates on an Apache
 webserver. To specify this plugin on the command line, simply include
 ``--apache``.
 
@@ -92,7 +92,7 @@ Webroot
 If you're running a local webserver for which you have the ability
 to modify the content being served, and you'd prefer not to stop the
 webserver during the certificate issuance process, you can use the webroot
-plugin to obtain a cert by including ``certonly`` and ``--webroot`` on
+plugin to obtain a certificate by including ``certonly`` and ``--webroot`` on
 the command line. In addition, you'll need to specify ``--webroot-path``
 or ``-w`` with the top-level directory ("web root") containing the files
 served by your webserver. For example, ``--webroot-path /var/www/html``
@@ -132,7 +132,7 @@ Nginx
 -----
 
 The Nginx plugin has been distributed with Certbot since version 0.9.0 and should
-work for most configurations. Because it is alpha code, we recommend backing up Nginx
+work for most configurations. We recommend backing up Nginx
 configurations before using it (though you can also revert changes to
 configurations with ``certbot --nginx rollback``). You can use it by providing
 the ``--nginx`` flag on the commandline.
@@ -144,11 +144,11 @@ the ``--nginx`` flag on the commandline.
 Standalone
 ----------
 
-Use standalone mode to obtain a cert if you don't want to use (or don't currently have)
+Use standalone mode to obtain a certificate if you don't want to use (or don't currently have)
 existing server software. The standalone plugin does not rely on any other server
-software running on the machine where you obtain the cert.
+software running on the machine where you obtain the certificate.
 
-To obtain a cert using a "standalone" webserver, you can use the
+To obtain a certificate using a "standalone" webserver, you can use the
 standalone plugin by including ``certonly`` and ``--standalone``
 on the command line. This plugin needs to bind to port 80 or 443 in
 order to perform domain validation, so you may need to stop your
@@ -167,22 +167,24 @@ the Internet on the specified port using each requested domain name.
 Manual
 ------
 
-If you'd like to obtain a cert running ``certbot`` on a machine
+If you'd like to obtain a certificate running ``certbot`` on a machine
 other than your target webserver or perform the steps for domain
 validation yourself, you can use the manual plugin. While hidden from
-the UI, you can use the plugin to obtain a cert by specifying
+the UI, you can use the plugin to obtain a certificate by specifying
 ``certonly`` and ``--manual`` on the command line. This requires you
 to copy and paste commands into another terminal session, which may
 be on a different computer.
 
-The manual plugin can use either the ``http`` or the ``dns`` challenge. You
-can use the ``--preferred-challenges`` option to choose the challenge of your
-preference.
+The manual plugin can use either the ``http``, ``dns`` or the
+``tls-sni`` challenge. You can use the ``--preferred-challenges`` option
+to choose the challenge of your preference.
+
 The ``http`` challenge will ask you to place a file with a specific name and
 specific content in the ``/.well-known/acme-challenge/`` directory directly
 in the top-level directory (“web root”) containing the files served by your
 webserver. In essence it's the same as the webroot_ plugin, but not automated.
-When using the ``dns`` plugin, ``certbot`` will ask you to place a TXT DNS
+
+When using the ``dns`` challenge, ``certbot`` will ask you to place a TXT DNS
 record with specific contents under the domain name consisting of the hostname
 for which you want a certificate issued, prepended by ``_acme-challenge``.
 
@@ -192,10 +194,16 @@ For example, for the domain ``example.com``, a zone file entry would look like:
 
         _acme-challenge.example.com. 300 IN TXT "gfj9Xq...Rg85nM"
 
-Additionally you can specify scripts to prepare for validation and perform the
-authentication procedure  and/or clean up after it by using the
-``--manual-auth-hook`` and ``--manual-cleanup-hook`` flags. This is described in
-more depth in the hooks_ section.
+When using the ``tls-sni`` challenge, ``certbot`` will prepare a self-signed
+SSL certificate for you with the challenge validation appropriately
+encoded into a subjectAlternatNames entry. You will need to configure
+your SSL server to present this challenge SSL certificate to the ACME
+server using SNI.
+
+Additionally you can specify scripts to prepare for validation and
+perform the authentication procedure and/or clean up after it by using
+the ``--manual-auth-hook`` and ``--manual-cleanup-hook`` flags. This is
+described in more depth in the hooks_ section.
 
 .. _third-party-plugins:
 
@@ -213,11 +221,11 @@ plesk_      Y    Y    Integration with the Plesk web hosting tool
 haproxy_    Y    Y    Integration with the HAProxy load balancer
 s3front_    Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
 gandi_      Y    Y    Integration with Gandi's hosting products and API
-varnish_    Y    N    Obtain certs via a Varnish server
+varnish_    Y    N    Obtain certificates via a Varnish server
 external_   Y    N    A plugin for convenient scripting (See also ticket 2782_)
-icecast_    N    Y    Deploy certs to Icecast 2 streaming media servers
-pritunl_    N    Y    Install certs in pritunl distributed OpenVPN servers
-proxmox_    N    Y    Install certs in Proxmox Virtualization servers
+icecast_    N    Y    Deploy certificates to Icecast 2 streaming media servers
+pritunl_    N    Y    Install certificates in pritunl distributed OpenVPN servers
+proxmox_    N    Y    Install certificates in Proxmox Virtualization servers
 postfix_    N    Y    STARTTLS Everywhere is becoming a Certbot Postfix/Exim plugin
 heroku_     Y    Y    Integration with Heroku SSL
 =========== ==== ==== ===============================================================
@@ -336,9 +344,9 @@ use the ``revoke`` command to do so. Note that the ``revoke`` command takes the 
   certbot revoke --cert-path /etc/letsencrypt/live/CERTNAME/cert.pem
 
 Additionally, if a certificate
-is a test cert obtained via the ``--staging`` or ``--test-cert`` flag, that flag must be passed to the
+is a test certificate obtained via the ``--staging`` or ``--test-cert`` flag, that flag must be passed to the
 ``revoke`` subcommand.
-Once a certificate is revoked (or for other cert management tasks), all of a certificate's
+Once a certificate is revoked (or for other certificate management tasks), all of a certificate's
 relevant files can be removed from the system with the ``delete`` subcommand::
 
   certbot delete --cert-name example.com
@@ -371,17 +379,66 @@ Since ``renew`` only renews certificates that are near expiry it can be
 run as frequently as you want - since it will usually take no action.
 
 The ``renew`` command includes hooks for running commands or scripts before or after a certificate is
-renewed. For example, if you have a single cert obtained using
+renewed. For example, if you have a single certificate obtained using
 the standalone_ plugin, you might need to stop the webserver
 before renewing so standalone can bind to the necessary ports, and
 then restart it after the plugin is finished. Example::
 
   certbot renew --pre-hook "service nginx stop" --post-hook "service nginx start"
 
-The hooks will only be
-run if a certificate is due for renewal, so you can run this command
-frequently without unnecessarily stopping your webserver. More
-information about renewal hooks can be found by running
+If a hook exits with a non-zero exit code, the error will be printed
+to ``stderr`` but renewal will be attempted anyway. A failing hook
+doesn't directly cause Certbot to exit with a non-zero exit code, but
+since Certbot exits with a non-zero exit code when renewals fail, a
+failed hook causing renewal failures will indirectly result in a
+non-zero exit code. Hooks will only be run if a certificate is due for
+renewal, so you can run the above command frequently without
+unnecessarily stopping your webserver.
+
+``--pre-hook`` and ``--post-hook`` hooks run before and after every renewal
+attempt. If you want your hook to run only after a successful renewal, use
+``--renew-hook`` in a command like this.
+
+``certbot renew --renew-hook /path/to/renew-hook-script``
+
+For example, if you have a daemon that does not read its certificates as the
+root user, a renew hook like this can copy them to the correct location and
+apply appropriate file permissions.
+
+/path/to/renew-hook-script
+
+.. code-block:: none
+
+   #!/bin/sh
+
+   set -e
+
+   for domain in $RENEWED_DOMAINS; do
+           case $domain in
+           example.com)
+                   daemon_cert_root=/etc/some-daemon/certs
+
+                   # Make sure the certificate and private key files are
+                   # never world readable, even just for an instant while
+                   # we're copying them into daemon_cert_root.
+                   umask 077
+
+                   cp "$RENEWED_LINEAGE/fullchain.pem" "$daemon_cert_root/$domain.cert"
+                   cp "$RENEWED_LINEAGE/privkey.pem" "$daemon_cert_root/$domain.key"
+
+                   # Apply the proper file ownership and permissions for
+                   # the daemon to read its certificate and key.
+                   chown some-daemon "$daemon_cert_root/$domain.cert" \
+                           "$daemon_cert_root/$domain.key"
+                   chmod 400 "$daemon_cert_root/$domain.cert" \
+                           "$daemon_cert_root/$domain.key"
+
+                   service some-daemon restart >/dev/null
+                   ;;
+           esac
+   done
+
+More information about renewal hooks can be found by running
 ``certbot --help renew``.
 
 If you're sure that this command executes successfully without human
@@ -448,7 +505,7 @@ renewal configuration file, located at ``/etc/letsencrypt/renewal/CERTNAME``.
 
 For most tasks, it is safest to limit yourself to pointing symlinks at the files there, or using
 ``--renew-hook`` to copy / make new files based upon those files, if your operational situation requires it
-(for instance, combining certs and keys in different way, or having copies of things with different
+(for instance, combining certificates and keys in different way, or having copies of things with different
 specific permissions that are demanded by other programs).
 
 If the contents of ``/etc/letsencrypt/archive/CERTNAME`` are moved to a new folder, first specify
@@ -557,12 +614,15 @@ and ``--manual-cleanup-hook`` respectively and can be used as follows:
  certbot certonly --manual --manual-auth-hook /path/to/http/authenticator.sh --manual-cleanup-hook /path/to/http/cleanup.sh -d secure.example.com
 
 This will run the ``authenticator.sh`` script, attempt the validation, and then run
-the ``cleanup.sh`` script. Additionally certbot will pass three environment
+the ``cleanup.sh`` script. Additionally certbot will pass relevant environment
 variables to these scripts:
 
 - ``CERTBOT_DOMAIN``: The domain being authenticated
-- ``CERTBOT_VALIDATION``: The validation string
+- ``CERTBOT_VALIDATION``: The validation string (HTTP-01 and DNS-01 only)
 - ``CERTBOT_TOKEN``: Resource name part of the HTTP-01 challenge (HTTP-01 only)
+- ``CERTBOT_CERT_PATH``: The challenge SSL certificate (TLS-SNI-01 only)
+- ``CERTBOT_KEY_PATH``: The private key associated with the aforementioned SSL certificate (TLS-SNI-01 only)
+- ``CERTBOT_SNI_DOMAIN``: The SNI name for which the ACME server expects to be presented the self-signed certificate located at ``$CERTBOT_CERT_PATH`` (TLS-SNI-01 only)
 
 Additionally for cleanup:
 
@@ -662,7 +722,28 @@ Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not 
        fi
    fi
 
+.. _lock-files:
 
+Lock Files
+==========
+
+When processing a validation Certbot writes a number of lock files on your system
+to prevent multiple instances from overwriting each other's changes. This means
+that be default two instances of Certbot will not be able to run in parallel.
+
+Since the directories used by Certbot are configurable, Certbot
+will write a lock file for all of the directories it uses. This include Certbot's
+``--work-dir``, ``--logs-dir``, and ``--config-dir``. By default these are
+``/var/lib/letsencrypt``, ``/var/logs/letsencrypt``, and ``/etc/letsencrypt``
+respectively. Additionally if you are using Certbot with Apache or nginx it will
+lock the configuration folder for that program, which are typically also in the
+``/etc`` directory.
+
+Note that these lock files will only prevent other instances of Certbot from
+using those directories, not other processes. If you'd like to run multiple
+instances of Certbot simultaneously you should specify different directories
+as the ``--work-dir``, ``--logs-dir``, and ``--config-dir`` for each instance
+of Certbot that you would like to run.
 
 .. _config-file:
 
@@ -701,9 +782,8 @@ Getting help
 If you're having problems, we recommend posting on the Let's Encrypt
 `Community Forum <https://community.letsencrypt.org>`_.
 
-You can also chat with us on IRC: `(#certbot @
-OFTC) <https://webchat.oftc.net?channels=%23certbot>`_ or
-`(#letsencrypt @ freenode) <https://webchat.freenode.net?channels=%23letsencrypt>`_.
+You can also chat with us on IRC: `(#letsencrypt @
+freenode) <https://webchat.freenode.net?channels=%23letsencrypt>`_
 
 If you find a bug in the software, please do report it in our `issue
 tracker <https://github.com/certbot/certbot/issues>`_. Remember to

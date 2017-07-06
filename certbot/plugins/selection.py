@@ -112,7 +112,7 @@ def choose_plugin(prepared, question):
     while True:
         disp = z_util(interfaces.IDisplay)
         code, index = disp.menu(
-            question, opts, help_label="More Info", force_interactive=True)
+            question, opts, force_interactive=True)
 
         if code == display_util.OK:
             plugin_ep = prepared[index]
@@ -123,17 +123,12 @@ def choose_plugin(prepared, question):
                     "was:\n\n{0}".format(plugin_ep.prepare()), pause=False)
             else:
                 return plugin_ep
-        elif code == display_util.HELP:
-            if prepared[index].misconfigured:
-                msg = "Reported Error: %s" % prepared[index].prepare()
-            else:
-                msg = prepared[index].init().more_info()
-            z_util(interfaces.IDisplay).notification(msg,
-                                                     force_interactive=True)
         else:
             return None
 
-noninstaller_plugins = ["webroot", "manual", "standalone"]
+noninstaller_plugins = ["webroot", "manual", "standalone", "dns-cloudflare", "dns-cloudxns",
+                        "dns-digitalocean", "dns-dnsimple", "dns-dnsmadeeasy", "dns-google",
+                        "dns-luadns", "dns-nsone", "dns-rfc2136", "dns-route53"]
 
 def record_chosen_plugins(config, plugins, auth, inst):
     "Update the config entries to reflect the plugins we actually selected."
@@ -215,7 +210,7 @@ def set_configurator(previously, now):
     return now
 
 
-def cli_plugin_requests(config):
+def cli_plugin_requests(config):  # pylint: disable=too-many-branches
     """
     Figure out which plugins the user requested with CLI and config options
 
@@ -225,6 +220,7 @@ def cli_plugin_requests(config):
     req_inst = req_auth = config.configurator
     req_inst = set_configurator(req_inst, config.installer)
     req_auth = set_configurator(req_auth, config.authenticator)
+
     if config.nginx:
         req_inst = set_configurator(req_inst, "nginx")
         req_auth = set_configurator(req_auth, "nginx")
@@ -237,6 +233,26 @@ def cli_plugin_requests(config):
         req_auth = set_configurator(req_auth, "webroot")
     if config.manual:
         req_auth = set_configurator(req_auth, "manual")
+    if config.dns_cloudflare:
+        req_auth = set_configurator(req_auth, "dns-cloudflare")
+    if config.dns_cloudxns:
+        req_auth = set_configurator(req_auth, "dns-cloudxns")
+    if config.dns_digitalocean:
+        req_auth = set_configurator(req_auth, "dns-digitalocean")
+    if config.dns_dnsimple:
+        req_auth = set_configurator(req_auth, "dns-dnsimple")
+    if config.dns_dnsmadeeasy:
+        req_auth = set_configurator(req_auth, "dns-dnsmadeeasy")
+    if config.dns_google:
+        req_auth = set_configurator(req_auth, "dns-google")
+    if config.dns_luadns:
+        req_auth = set_configurator(req_auth, "dns-luadns")
+    if config.dns_nsone:
+        req_auth = set_configurator(req_auth, "dns-nsone")
+    if config.dns_rfc2136:
+        req_auth = set_configurator(req_auth, "dns-rfc2136")
+    if config.dns_route53:
+        req_auth = set_configurator(req_auth, "dns-route53")
     logger.debug("Requested authenticator %s and installer %s", req_auth, req_inst)
     return req_auth, req_inst
 

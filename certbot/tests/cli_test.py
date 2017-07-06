@@ -39,6 +39,7 @@ class TestReadFile(TempDirTestCase):
         self.assertEqual(contents, test_contents)
 
 
+
 class ParseTest(unittest.TestCase):
     '''Test the cli args entrypoint'''
 
@@ -60,6 +61,22 @@ class ParseTest(unittest.TestCase):
             with mock.patch('certbot.main.sys.stderr'):
                 self.assertRaises(SystemExit, self.parse, args, output)
         return output.getvalue()
+
+    @mock.patch("certbot.cli.flag_default")
+    def test_cli_ini_domains(self, mock_flag_default):
+        tmp_config = tempfile.NamedTemporaryFile()
+        # use a shim to get ConfigArgParse to pick up tmp_config
+        shim = lambda v: constants.CLI_DEFAULTS[v] if v != "config_files" else [tmp_config.name]
+        mock_flag_default.side_effect = shim
+
+        namespace = self.parse(["certonly"])
+        self.assertEqual(namespace.domains, [])
+        tmp_config.write(b"domains = example.com")
+        tmp_config.flush()
+        namespace = self.parse(["certonly"])
+        self.assertEqual(namespace.domains, ["example.com"])
+        namespace = self.parse(["renew"])
+        self.assertEqual(namespace.domains, [])
 
     def test_no_args(self):
         namespace = self.parse([])
@@ -86,7 +103,7 @@ class ParseTest(unittest.TestCase):
         self._help_output(['--help'])  # assert SystemExit is raised here
         out = self._help_output(['--help', 'all'])
         self.assertTrue("--configurator" in out)
-        self.assertTrue("how a cert is deployed" in out)
+        self.assertTrue("how a certificate is deployed" in out)
         self.assertTrue("--webroot-path" in out)
         self.assertTrue("--text" not in out)
         self.assertTrue("--dialog" not in out)
@@ -144,7 +161,7 @@ class ParseTest(unittest.TestCase):
 
         out = self._help_output(['help', 'all'])
         self.assertTrue("--configurator" in out)
-        self.assertTrue("how a cert is deployed" in out)
+        self.assertTrue("how a certificate is deployed" in out)
         self.assertTrue("--webroot-path" in out)
         self.assertTrue("--text" not in out)
         self.assertTrue("--dialog" not in out)
@@ -194,7 +211,10 @@ class ParseTest(unittest.TestCase):
         self.assertEqual(namespace.pref_challs, expected)
 
         short_args = ['--preferred-challenges', 'jumping-over-the-moon']
-        self.assertRaises(argparse.ArgumentTypeError, self.parse, short_args)
+        # argparse.ArgumentError makes argparse print more information
+        # to stderr and call sys.exit()
+        with mock.patch('sys.stderr'):
+            self.assertRaises(SystemExit, self.parse, short_args)
 
     def test_server_flag(self):
         namespace = self.parse('--server example.com'.split())

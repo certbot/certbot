@@ -7,8 +7,9 @@ import re
 import traceback
 import zope.component
 
-import configobj
 
+import configobj
+from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import ocsp
@@ -75,7 +76,8 @@ def certificates(config):
     parse_failures = []
     for renewal_file in storage.renewal_conf_files(config):
         try:
-            renewal_candidate = storagstoragee.RenewableCert(renewal_file, config)
+            renewal_candidate = storage.RenewableCert(renewal_file, config)
+            crypto_util.verify_renewable_cert(renewal_candidate)
             parsed_certs.append(renewal_candidate)
         except Exception as e:  # pylint: disable=broad-except
             logger.warning("Renewal configuration file %s produced an "
@@ -221,7 +223,7 @@ def _get_certname(config, verb):
         if not choices:
             raise errors.Error("No existing certificates found.")
         code, index = disp.menu("Which certificate would you like to {0}?".format(verb),
-                                choices, ok_label="Select", flag="--cert-name",
+                                choices, flag="--cert-name",
                                 force_interactive=True)
         if code != display_util.OK or not index in range(0, len(choices)):
             raise errors.Error("User ended interaction.")

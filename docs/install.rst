@@ -22,8 +22,8 @@ your system.
 System Requirements
 ===================
 
-Certbot currently requires Python 2.6 or 2.7. By default, it requires root
-access in order to write to ``/etc/letsencrypt``,
+Certbot currently requires Python 2.6, 2.7, or 3.3+. By default, it requires
+root access in order to write to ``/etc/letsencrypt``,
 ``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to bind to ports 80 and 443
 (if you use the ``standalone`` plugin) and to read and modify webserver
 configurations (if you use the ``apache`` or ``nginx`` plugins).  If none of
@@ -89,7 +89,7 @@ You can workaround this restriction by creating a temporary swapfile::
   user@webserver:~$ sudo mkswap /tmp/swapfile
   user@webserver:~$ sudo swapon /tmp/swapfile
 
-Disable and remove the swapfile once the virtual enviroment is constructed::
+Disable and remove the swapfile once the virtual environment is constructed::
 
   user@webserver:~$ sudo swapoff /tmp/swapfile
   user@webserver:~$ sudo rm /tmp/swapfile
@@ -140,16 +140,6 @@ of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`.
 Operating System Packages
 -------------------------
 
-**FreeBSD**
-
-  * Port: ``cd /usr/ports/security/py-certbot && make install clean``
-  * Package: ``pkg install py27-certbot``
-
-**OpenBSD**
-
-  * Port: ``cd /usr/ports/security/letsencrypt/client && make install clean``
-  * Package: ``pkg_add letsencrypt``
-
 **Arch Linux**
 
 .. code-block:: shell
@@ -181,6 +171,11 @@ repo, if you have not already done so. Then run:
 .. code-block:: shell
 
     sudo dnf install certbot python2-certbot-apache
+
+**FreeBSD**
+
+  * Port: ``cd /usr/ports/security/py-certbot && make install clean``
+  * Package: ``pkg install py27-certbot``
 
 **Gentoo**
 
@@ -216,6 +211,16 @@ to
 For the time being, this is the only way for the Apache plugin to recognise
 the appropriate directives when installing the certificate.
 Note: this change is not required for the other plugins.
+
+**NetBSD**
+
+  * Build from source: ``cd /usr/pkgsrc/security/py-certbot && make install clean``
+  * Install pre-compiled package: ``pkg_add py27-certbot``
+
+**OpenBSD**
+
+  * Port: ``cd /usr/ports/security/letsencrypt/client && make install clean``
+  * Package: ``pkg_add letsencrypt``
 
 **Other Operating Systems**
 

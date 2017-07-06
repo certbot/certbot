@@ -162,14 +162,13 @@ def _handle_identical_cert_request(config, lineage):
                "Renew & replace the cert (limit ~5 per 7 days)"]
 
     display = zope.component.getUtility(interfaces.IDisplay)
-    response = display.menu(question, choices, "OK", "Cancel",
+    response = display.menu(question, choices,
                             default=0, force_interactive=True)
     if response[0] == display_util.CANCEL:
         # TODO: Add notification related to command-line options for
         #       skipping the menu for this case.
         raise errors.Error(
-            "User chose to cancel the operation and may "
-            "reinvoke the client.")
+            "Operation canceled. You may re-run the client.")
     elif response[1] == 0:
         return "reinstall", lineage
     elif response[1] == 1:
@@ -255,12 +254,14 @@ def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
     """
     if config.renew_with_new_domains:
         return
-    msg = ("Confirm that you intend to update certificate {0} "
-           "to include domains {1}. Note that it previously "
-           "contained domains {2}.".format(
+
+    msg = ("You are updating certificate {0} to include domains: {1}{br}{br}"
+           "It previously included domains: {2}{br}{br}"
+           "Did you intend to make this change?".format(
                certname,
-               new_domains,
-               old_domains))
+               ", ".join(new_domains),
+               ", ".join(old_domains),
+               br=os.linesep))
     obj = zope.component.getUtility(interfaces.IDisplay)
     if not obj.yesno(msg, "Update cert", "Cancel", default=True):
         raise errors.ConfigurationError("Specified mismatched cert name and domains.")
@@ -474,10 +475,10 @@ def unregister(config, unused_plugins):
         return "Deactivation aborted."
 
     acc, acme = _determine_account(config)
-    acme_client = client.Client(config, acc, None, None, acme=acme)
+    cb_client = client.Client(config, acc, None, None, acme=acme)
 
     # delete on boulder
-    acme_client.acme.deactivate_registration(acc.regr)
+    cb_client.acme.deactivate_registration(acc.regr)
     account_files = account.AccountFileStorage(config)
     # delete local account files
     account_files.delete(config.account)
@@ -519,11 +520,11 @@ def register(config, unused_plugins):
         config.email = display_ops.get_email(optional=False)
 
     acc, acme = _determine_account(config)
-    acme_client = client.Client(config, acc, None, None, acme=acme)
+    cb_client = client.Client(config, acc, None, None, acme=acme)
     # We rely on an exception to interrupt this process if it didn't work.
-    acc.regr = acme_client.acme.update_registration(acc.regr.update(
+    acc.regr = cb_client.acme.update_registration(acc.regr.update(
         body=acc.regr.body.update(contact=('mailto:' + config.email,))))
-    account_storage.save_regr(acc, acme_client.acme)
+    account_storage.save_regr(acc, cb_client.acme)
     eff.handle_subscription(config)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
 
@@ -640,7 +641,7 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
 
         _delete_if_appropriate(config)
     except acme_errors.ClientError as e:
-        return e.message
+        return str(e)
 
     display_ops.success_revocation(config.cert_path[0])
 
@@ -652,7 +653,7 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     try:
         installer, authenticator = plug_sel.choose_configurator_plugins(config, plugins, "run")
     except errors.PluginSelectionError as e:
-        return e.message
+        return str(e)
 
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(config, authenticator, installer)
@@ -686,8 +687,8 @@ def _csr_get_and_save_cert(config, le_client):
     have the privkey, and therefore can't construct the files for a lineage.
     So we just save the cert & chain to disk :/
     """
-    csr, typ = config.actual_csr
-    certr, chain = le_client.obtain_certificate_from_csr(config.domains, csr, typ)
+    csr, _ = config.actual_csr
+    certr, chain = le_client.obtain_certificate_from_csr(config.domains, csr)
     if config.dry_run:
         logger.debug(
             "Dry run: skipping saving certificate to %s", config.cert_path)
@@ -765,10 +766,10 @@ def renew(config, unused_plugins):
 
 def make_or_verify_needed_dirs(config):
     """Create or verify existence of config and work directories"""
-    util.make_or_verify_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
-                            os.geteuid(), config.strict_permissions)
-    util.make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
-                            os.geteuid(), config.strict_permissions)
+    util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
+                         os.geteuid(), config.strict_permissions)
+    util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
+                         os.geteuid(), config.strict_permissions)
 
 
 def set_displayer(config):
@@ -783,37 +784,24 @@ def set_displayer(config):
                                              config.force_interactive)
     zope.component.provideUtility(displayer)
 
-def _post_logging_setup(config, plugins, cli_args):
-    """Perform any setup or configuration tasks that require a logger."""
-
-    # This needs logging, but would otherwise be in HelpfulArgumentParser
-    if config.validate_hooks:
-        hooks.validate_hooks(config)
-
-    cli.possible_deprecation_warning(config)
-
-    logger.debug("certbot version: %s", certbot.__version__)
-    # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
-    logger.debug("Arguments: %r", cli_args)
-    logger.debug("Discovered plugins: %r", plugins)
-
 
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     log.pre_arg_parse_setup()
+
     plugins = plugins_disco.PluginsRegistry.find_all()
+    logger.debug("certbot version: %s", certbot.__version__)
+    # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
+    logger.debug("Arguments: %r", cli_args)
+    logger.debug("Discovered plugins: %r", plugins)
 
     # note: arg parser internally handles --help (and exits afterwards)
     args = cli.prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
 
-    make_or_verify_needed_dirs(config)
-
     log.post_arg_parse_setup(config)
-
-    _post_logging_setup(config, plugins, cli_args)
-
+    make_or_verify_needed_dirs(config)
     set_displayer(config)
 
     # Reporter

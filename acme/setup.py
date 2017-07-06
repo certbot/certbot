@@ -4,11 +4,10 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.13.0.dev0'
+version = '0.16.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
-    'argparse',
     # load_pem_private/public_key (>=0.6)
     # rsa_recover_prime_factors (>=0.8)
     'cryptography>=0.8',
@@ -17,16 +16,19 @@ install_requires = [
     'PyOpenSSL>=0.13',
     'pyrfc3339',
     'pytz',
-    # requests>=2.10 is required to fix
-    # https://github.com/shazow/urllib3/issues/556. This requirement can be
-    # relaxed to 'requests[security]>=2.4.1', however, less useful errors
-    # will be raised for some network/SSL errors.
-    'requests[security]>=2.10',
+    'requests[security]>=2.4.1',  # security extras added in 2.4.1
     # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
     # will tolerate; see #2599:
     'setuptools>=1.0',
     'six',
 ]
+
+# env markers cause problems with older pip and setuptools
+if sys.version_info < (2, 7):
+    install_requires.extend([
+        'argparse',
+        'ordereddict',
+    ])
 
 dev_extras = [
     'nose',
@@ -59,6 +61,7 @@ setup(
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
     ],

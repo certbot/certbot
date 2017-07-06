@@ -1,0 +1,12 @@
+certbot==0.15.0 \
+    --hash=sha256:f052a1ee9d0e71b73d893c26ee3aa343f6f3abe7de8471437779d541f8bf7824 \
+    --hash=sha256:b8c4043b2b8df39660d4ce4a2a6eca590f98ece0e1b97eba53ab95f3bbac3beb
+acme==0.15.0 \
+    --hash=sha256:d423a14a8fde089d6854ccbe1314f6a80553ef06799ac6f671b90d8399835e60 \
+    --hash=sha256:9fadd63322a1eb95f58e6cda8ca2095c750e828ae470bc6e3925ef618c7cfc87
+certbot-apache==0.15.0 \
+    --hash=sha256:07fa99b264e0ea489695cc2a5353f3fe9459422ad549de02c46da24ae546acd9 \
+    --hash=sha256:6da1433381bd2c2ea7c395be57ca1bcdb7c1c04ce3d12b67a3fa207a3bfa41ca
+certbot-nginx==0.15.0 \
+    --hash=sha256:7b0622f8a9031e24105f9b5c8d98d4ed83ae393517ed35cc2a4fa50098122922 \
+    --hash=sha256:0b98dedb22492d6f88dffdfbd721b4d4c98bfe361df35bc97bf5bd3047f01234

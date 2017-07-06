@@ -35,6 +35,10 @@ class SignalExit(Error):
 class OverlappingMatchFound(Error):
     """Multiple lineages matched what should have been a unique result."""
 
+class LockError(Error):
+    """File locking error."""
+
+
 # Auth Handler Errors
 class AuthorizationError(Error):
     """Authorization error."""

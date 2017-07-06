@@ -11,6 +11,13 @@ We release packages and upload them to PyPI (wheels and source tarballs).
 - https://pypi.python.org/pypi/certbot
 - https://pypi.python.org/pypi/certbot-apache
 - https://pypi.python.org/pypi/certbot-nginx
+- https://pypi.python.org/pypi/certbot-dns-cloudflare
+- https://pypi.python.org/pypi/certbot-dns-cloudxns
+- https://pypi.python.org/pypi/certbot-dns-digitalocean
+- https://pypi.python.org/pypi/certbot-dns-dnsimple
+- https://pypi.python.org/pypi/certbot-dns-google
+- https://pypi.python.org/pypi/certbot-dns-nsone
+- https://pypi.python.org/pypi/certbot-dns-route53
 
 The following scripts are used in the process:
 
@@ -43,15 +50,22 @@ Arch
 
 From our official releases:
 
-- https://www.archlinux.org/packages/community/any/python2-acme
+- https://www.archlinux.org/packages/community/any/python-acme
 - https://www.archlinux.org/packages/community/any/certbot
 - https://www.archlinux.org/packages/community/any/certbot-apache
 - https://www.archlinux.org/packages/community/any/certbot-nginx
+- https://www.archlinux.org/packages/community/any/certbot-dns-cloudflare
+- https://www.archlinux.org/packages/community/any/certbot-dns-cloudxns
+- https://www.archlinux.org/packages/community/any/certbot-dns-digitalocean
+- https://www.archlinux.org/packages/community/any/certbot-dns-dnsimple
+- https://www.archlinux.org/packages/community/any/certbot-dns-google
+- https://www.archlinux.org/packages/community/any/certbot-dns-nsone
+- https://www.archlinux.org/packages/community/any/certbot-dns-route53
 
 From ``master``: https://aur.archlinux.org/packages/certbot-git
 
 Debian (and its derivatives, including Ubuntu)
-------
+----------------------------------------------
 
 - https://packages.debian.org/sid/certbot
 - https://packages.debian.org/sid/python-certbot
@@ -68,7 +82,8 @@ In Fedora 23+.
 FreeBSD
 -------
 
-- https://svnweb.freebsd.org/ports/head/security/py-certbot/
+- https://www.freshports.org/security/py-acme/
+- https://www.freshports.org/security/py-certbot/
 
 Gentoo
 ------

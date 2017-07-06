@@ -149,12 +149,14 @@ class CertificatesTest(BaseCertManagerTest):
         self.assertFalse(mock_utility.notification.called)
         self.assertTrue(mock_logger.warning.called) #pylint: disable=no-member
 
+    @mock.patch('certbot.crypto_util.verify_renewable_cert')
     @mock.patch('certbot.cert_manager.logger')
     @test_util.patch_get_utility()
     @mock.patch("certbot.storage.RenewableCert")
     @mock.patch('certbot.cert_manager._report_human_readable')
     def test_certificates_parse_success(self, mock_report, mock_renewable_cert,
-        mock_utility, mock_logger):
+        mock_utility, mock_logger, mock_verifier):
+        mock_verifier.return_value = None
         mock_report.return_value = ""
         self._certificates(self.cli_config)
         self.assertFalse(mock_logger.warning.called) #pylint: disable=no-member

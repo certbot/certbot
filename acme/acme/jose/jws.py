@@ -222,7 +222,8 @@ class Signature(json_util.JSONObjectWithFields):
 
         protected_params = {}
         for header in protect:
-            protected_params[header] = header_params.pop(header)
+            if header in header_params:
+                protected_params[header] = header_params.pop(header)
         if protected_params:
             # pylint: disable=star-args
             protected = cls.header_cls(**protected_params).json_dumps()

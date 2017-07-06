@@ -3,6 +3,7 @@
 .. warning:: This module is not part of the public API.
 
 """
+import multiprocessing
 import os
 import pkg_resources
 import shutil
@@ -13,12 +14,14 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import mock
 import OpenSSL
+from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import jose
 
 from certbot import constants
 from certbot import interfaces
 from certbot import storage
+from certbot import util
 
 from certbot.display import util as display_util
 
@@ -106,12 +109,13 @@ def skip_unless(condition, reason):  # pragma: no cover
         return lambda cls: None
 
 
-def make_lineage(self, testfile):
+def make_lineage(config_dir, testfile):
     """Creates a lineage defined by testfile.
 
     This creates the archive, live, and renewal directories if
     necessary and creates a simple lineage.
 
+    :param str config_dir: path to the configuration directory
     :param str testfile: configuration file to base the lineage on
 
     :returns: path to the renewal conf file for the created lineage
@@ -121,11 +125,11 @@ def make_lineage(self, testfile):
     lineage_name = testfile[:-len('.conf')]
 
     conf_dir = os.path.join(
-        self.config_dir, constants.RENEWAL_CONFIGS_DIR)
+        config_dir, constants.RENEWAL_CONFIGS_DIR)
     archive_dir = os.path.join(
-        self.config_dir, constants.ARCHIVE_DIR, lineage_name)
+        config_dir, constants.ARCHIVE_DIR, lineage_name)
     live_dir = os.path.join(
-        self.config_dir, constants.LIVE_DIR, lineage_name)
+        config_dir, constants.LIVE_DIR, lineage_name)
 
     for directory in (archive_dir, conf_dir, live_dir,):
         if not os.path.exists(directory):
@@ -140,11 +144,11 @@ def make_lineage(self, testfile):
         os.symlink(os.path.join(archive_dir, '{0}1.pem'.format(kind)),
                    os.path.join(live_dir, '{0}.pem'.format(kind)))
 
-    conf_path = os.path.join(self.config_dir, conf_dir, testfile)
+    conf_path = os.path.join(config_dir, conf_dir, testfile)
     with open(vector_path(testfile)) as src:
         with open(conf_path, 'w') as dst:
             dst.writelines(
-                line.replace('MAGICDIR', self.config_dir) for line in src)
+                line.replace('MAGICDIR', config_dir) for line in src)
 
     return conf_path
 
@@ -241,3 +245,47 @@ class TempDirTestCase(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
+
+
+def lock_and_call(func, lock_path):
+    """Grab a lock for lock_path and call func.
+
+    :param callable func: object to call after acquiring the lock
+    :param str lock_path: path to file or directory to lock
+
+    """
+    # Reload module to reset internal _LOCKS dictionary
+    reload_module(util)
+
+    # start child and wait for it to grab the lock
+    cv = multiprocessing.Condition()
+    cv.acquire()
+    child_args = (cv, lock_path,)
+    child = multiprocessing.Process(target=hold_lock, args=child_args)
+    child.start()
+    cv.wait()
+
+    # call func and terminate the child
+    func()
+    cv.notify()
+    cv.release()
+    child.join()
+    assert child.exitcode == 0
+
+
+def hold_lock(cv, lock_path):  # pragma: no cover
+    """Acquire a file lock at lock_path and wait to release it.
+
+    :param multiprocessing.Condition cv: condition for synchronization
+    :param str lock_path: path to the file lock
+
+    """
+    from certbot import lock
+    if os.path.isdir(lock_path):
+        my_lock = lock.lock_dir(lock_path)
+    else:
+        my_lock = lock.LockFile(lock_path)
+    cv.acquire()
+    cv.notify()
+    cv.wait()
+    my_lock.release()

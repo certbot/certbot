@@ -42,12 +42,14 @@ def redirect_by_default():
 
     """
     choices = [
-        ("Easy", "Allow both HTTP and HTTPS access to these sites"),
-        ("Secure", "Make all requests redirect to secure HTTPS access"),
+        ("No redirect", "Make no further changes to the webserver configuration."),
+        ("Redirect", "Make all requests redirect to secure HTTPS access. "
+            "Choose this for new sites, or if you're confident your site works on HTTPS. "
+            "You can undo this change by editing your web server's configuration."),
     ]
 
     code, selection = util(interfaces.IDisplay).menu(
-        "Please choose whether HTTPS access is required or optional.",
+        "Please choose whether or not to redirect HTTP traffic to HTTPS, removing HTTP access.",
         choices, default=0,
         cli_flag="--redirect / --no-redirect", force_interactive=True)
 

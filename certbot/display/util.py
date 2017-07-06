@@ -1,10 +1,10 @@
 """Certbot display."""
 import logging
 import os
-import textwrap
+import select
 import sys
+import textwrap
 
-import six
 import zope.interface
 
 from certbot import constants
@@ -24,10 +24,10 @@ CANCEL = "cancel"
 """Display exit code for a user canceling the display."""
 
 HELP = "help"
-"""Display exit code when for when the user requests more help."""
+"""Display exit code when for when the user requests more help. (UNUSED)"""
 
 ESC = "esc"
-"""Display exit code when the user hits Escape"""
+"""Display exit code when the user hits Escape (UNUSED)"""
 
 
 def _wrap_lines(msg):
@@ -50,6 +50,42 @@ def _wrap_lines(msg):
             break_on_hyphens=False))
 
     return os.linesep.join(fixed_l)
+
+
+def input_with_timeout(prompt=None, timeout=36000.0):
+    """Get user input with a timeout.
+
+    Behaves the same as six.moves.input, however, an error is raised if
+    a user doesn't answer after timeout seconds. The default timeout
+    value was chosen to place it just under 12 hours for users following
+    our advice and running Certbot twice a day.
+
+    :param str prompt: prompt to provide for input
+    :param float timeout: maximum number of seconds to wait for input
+
+    :returns: user response
+    :rtype: str
+
+    :raises errors.Error if no answer is given before the timeout
+
+    """
+    # use of sys.stdin and sys.stdout to mimic six.moves.input based on
+    # https://github.com/python/cpython/blob/baf7bb30a02aabde260143136bdf5b3738a1d409/Lib/getpass.py#L129
+    if prompt:
+        sys.stdout.write(prompt)
+        sys.stdout.flush()
+
+    # select can only be used like this on UNIX
+    rlist, _, _ = select.select([sys.stdin], [], [], timeout)
+    if not rlist:
+        raise errors.Error(
+            "Timed out waiting for answer to prompt '{0}'".format(prompt))
+
+    line = rlist[0].readline()
+    if not line:
+        raise EOFError
+    return line.rstrip('\n')
+
 
 @zope.interface.implementer(interfaces.IDisplay)
 class FileDisplay(object):
@@ -83,12 +119,12 @@ class FileDisplay(object):
                 line=os.linesep, frame=side_frame, msg=message))
         if pause:
             if self._can_interact(force_interactive):
-                six.moves.input("Press Enter to Continue")
+                input_with_timeout("Press Enter to Continue")
             else:
                 logger.debug("Not pausing for user confirmation")
 
-    def menu(self, message, choices, ok_label="", cancel_label="",
-             help_label="", default=None,
+    def menu(self, message, choices, ok_label=None, cancel_label=None,
+             help_label=None, default=None,
              cli_flag=None, force_interactive=False, **unused_kwargs):
         # pylint: disable=unused-argument
         """Display a menu.
@@ -123,7 +159,6 @@ class FileDisplay(object):
 
     def input(self, message, default=None,
               cli_flag=None, force_interactive=False, **unused_kwargs):
-        # pylint: disable=no-self-use
         """Accept input from the user.
 
         :param str message: message to display to the user
@@ -141,12 +176,9 @@ class FileDisplay(object):
         if self._return_default(message, default, cli_flag, force_interactive):
             return OK, default
 
-        ans = six.moves.input(
-            textwrap.fill(
-                "%s (Enter 'c' to cancel): " % message,
-                80,
-                break_long_words=False,
-                break_on_hyphens=False))
+        # Trailing space must be added outside of _wrap_lines to be preserved
+        message = _wrap_lines("%s (Enter 'c' to cancel):" % message) + " "
+        ans = input_with_timeout(message)
 
         if ans == "c" or ans == "C":
             return CANCEL, "-1"
@@ -183,7 +215,7 @@ class FileDisplay(object):
             os.linesep, frame=side_frame, msg=message))
 
         while True:
-            ans = six.moves.input("{yes}/{no}: ".format(
+            ans = input_with_timeout("{yes}/{no}: ".format(
                 yes=_parens_around_char(yes_label),
                 no=_parens_around_char(no_label)))
 
@@ -196,14 +228,13 @@ class FileDisplay(object):
                     ans.startswith(no_label[0].upper())):
                 return False
 
-    def checklist(self, message, tags, default_status=True, default=None,
+    def checklist(self, message, tags, default=None,
                   cli_flag=None, force_interactive=False, **unused_kwargs):
         # pylint: disable=unused-argument
         """Display a checklist.
 
         :param str message: Message to display to user
         :param list tags: `str` tags to select, len(tags) > 0
-        :param bool default_status: Not used for FileDisplay
         :param default: default value to return (if one exists)
         :param str cli_flag: option used to set this value with the CLI
         :param bool force_interactive: True if it's safe to prompt the user
@@ -357,12 +388,8 @@ class FileDisplay(object):
 
         # Write out the menu choices
         for i, desc in enumerate(choices, 1):
-            self.outfile.write(
-                textwrap.fill(
-                    "{num}: {desc}".format(num=i, desc=desc),
-                    80,
-                    break_long_words=False,
-                    break_on_hyphens=False))
+            msg = "{num}: {desc}".format(num=i, desc=desc)
+            self.outfile.write(_wrap_lines(msg))
 
             # Keep this outside of the textwrap
             self.outfile.write(os.linesep)
@@ -389,7 +416,7 @@ class FileDisplay(object):
             input_msg = ("Press 1 [enter] to confirm the selection "
                          "(press 'c' to cancel): ")
         while selection < 1:
-            ans = six.moves.input(input_msg)
+            ans = input_with_timeout(input_msg)
             if ans.startswith("c") or ans.startswith("C"):
                 return CANCEL, -1
             try:
