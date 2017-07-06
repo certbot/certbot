@@ -402,7 +402,7 @@ attempt. If you want your hook to run only after a successful renewal, use
 ``certbot renew --deploy-hook /path/to/deploy-hook-script``
 
 For example, if you have a daemon that does not read its certificates as the
-root user, a renew hook like this can copy them to the correct location and
+root user, a deploy hook like this can copy them to the correct location and
 apply appropriate file permissions.
 
 /path/to/deploy-hook-script
@@ -438,7 +438,7 @@ apply appropriate file permissions.
            esac
    done
 
-More information about renewal hooks can be found by running
+More information about hooks can be found by running
 ``certbot --help renew``.
 
 If you're sure that this command executes successfully without human
