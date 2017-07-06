@@ -71,9 +71,9 @@ TLS-SNI-01 Challenge
 * Make sure port 443 is open, publicly reachable from the Internet, and not blocked by a router or firewall.
 * When using the Apache plugin, make sure you are running Apache and no other web server on port 443.
 * When using the NGINX plugin, make sure you are running NGINX and no other web server on port 443.
-* With either the Apache plugin or the NGINX plugin, check whether certbot is modifying your web 
-  server configuration correctly. If not, you'll have to use the ``certonly`` command to obtain 
-  the certificate, then install it manually. Once it's installed, certbot should be able to renew it as needed automatically.
+* With either the Apache or NGINX plugin, certbot modifies your web server configuration. If you get
+  an ``InstallationError`` then you have received a certificate but the plugin was unable to modify
+  your web server configuration, meaning that you'll have to install the certificate  manually.
 * When using the Standalone plugin, make sure another program is not already listening to port 443 on the server.
 
 DNS-01 Challenge
