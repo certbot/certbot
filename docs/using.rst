@@ -397,15 +397,15 @@ unnecessarily stopping your webserver.
 
 ``--pre-hook`` and ``--post-hook`` hooks run before and after every renewal
 attempt. If you want your hook to run only after a successful renewal, use
-``--renew-hook`` in a command like this.
+``--deploy-hook`` in a command like this.
 
-``certbot renew --renew-hook /path/to/renew-hook-script``
+``certbot renew --deploy-hook /path/to/deploy-hook-script``
 
 For example, if you have a daemon that does not read its certificates as the
 root user, a renew hook like this can copy them to the correct location and
 apply appropriate file permissions.
 
-/path/to/renew-hook-script
+/path/to/deploy-hook-script
 
 .. code-block:: none
 
@@ -504,7 +504,7 @@ renewal configuration file, located at ``/etc/letsencrypt/renewal/CERTNAME``.
 .. warning:: Modifying any files in ``/etc/letsencrypt`` can damage them so Certbot can no longer properly manage its certificates, and we do not recommend doing so.
 
 For most tasks, it is safest to limit yourself to pointing symlinks at the files there, or using
-``--renew-hook`` to copy / make new files based upon those files, if your operational situation requires it
+``--deploy-hook`` to copy / make new files based upon those files, if your operational situation requires it
 (for instance, combining certificates and keys in different way, or having copies of things with different
 specific permissions that are demanded by other programs).
 
@@ -598,7 +598,7 @@ The following files are available:
 .. note:: All files are PEM-encoded.
    If you need other format, such as DER or PFX, then you
    could convert using ``openssl``. You can automate that with
-   ``--renew-hook`` if you're using automatic renewal_.
+   ``--deploy-hook`` if you're using automatic renewal_.
 
 .. _hooks:
 
