@@ -138,7 +138,8 @@ def setup_log_file_handler(config, logfile, fmt):
     log_file_path = os.path.join(config.logs_dir, logfile)
     try:
         handler = logging.handlers.RotatingFileHandler(
-            log_file_path, maxBytes=2 ** 20, backupCount=1000)
+            log_file_path, maxBytes=2 ** 20,
+            backupCount=config.max_log_backups)
     except IOError as error:
         raise errors.Error(util.PERM_ERR_FMT.format(error))
     # rotate on each invocation, rollover only possible when maxBytes
