@@ -220,11 +220,21 @@ common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
 common unregister
 
 out=$(common certificates)
-subdomains="le le2 dns.le newname.le must-staple.le"
+subdomains="dns.le newname.le must-staple.le"
 for subdomain in $subdomains; do
     domain="$subdomain.wtf"
     if ! echo $out | grep "$domain"; then
         echo "$domain not in certificates output!"
+        exit 1;
+    fi
+done
+
+# testing that revocation also deletes by default
+subdomains="le le1 le2"
+for subdomain in $subdomains; do
+    domain="$subdomain.wtf"
+    if echo $out | grep "$domain"; then
+        echo "Revoked $domain in certificates output! Should not be!"
         exit 1;
     fi
 done
