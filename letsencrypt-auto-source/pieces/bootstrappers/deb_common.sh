@@ -7,6 +7,8 @@ BootstrapDebCommon() {
   # - Debian
   #     - 7.9 "wheezy" (x64)
   #     - sid (2015-10-21) (x64)
+  # - Devuan
+  #     - 1.0 "Jessie" (x64)
 
   # Past versions tested with:
   #
