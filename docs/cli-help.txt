@@ -89,7 +89,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/0.15.0 (certbot;
+                        "". (default: CertbotACMEClient/0.16.0 (certbot;
                         Ubuntu 16.04.2 LTS) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/2.7.12). The flags
                         encoded in the user agent are: --duplicate, --force-
@@ -397,15 +397,21 @@ plugins:
                         using DigitalOcean for DNS). (default: False)
   --dns-dnsimple        Obtain certificates using a DNS TXT record (if you are
                         using DNSimple for DNS). (default: False)
+  --dns-dnsmadeeasy     Obtain certificates using a DNS TXT record (if you
+                        areusing DNS Made Easy for DNS). (default: False)
   --dns-google          Obtain certificates using a DNS TXT record (if you are
                         using Google Cloud DNS). (default: False)
+  --dns-luadns          Obtain certificates using a DNS TXT record (if you are
+                        using LuaDNS for DNS). (default: False)
   --dns-nsone           Obtain certificates using a DNS TXT record (if you are
                         using NS1 for DNS). (default: False)
+  --dns-rfc2136         Obtain certificates using a DNS TXT record (if you are
+                        using BIND for DNS). (default: False)
   --dns-route53         Obtain certificates using a DNS TXT record (if you are
                         using Route53 for DNS). (default: False)
 
 apache:
-  Apache Web Server plugin
+  Apache Web Server plugin - Beta
 
   --apache-enmod APACHE_ENMOD
                         Path to the Apache 'a2enmod' binary. (default:
@@ -487,6 +493,17 @@ dns-dnsimple:
   --dns-dnsimple-credentials DNS_DNSIMPLE_CREDENTIALS
                         DNSimple credentials INI file. (default: None)
 
+dns-dnsmadeeasy:
+  Obtain certificates using a DNS TXT record (if you are using DNS Made Easy
+  for DNS).
+
+  --dns-dnsmadeeasy-propagation-seconds DNS_DNSMADEEASY_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 60)
+  --dns-dnsmadeeasy-credentials DNS_DNSMADEEASY_CREDENTIALS
+                        DNS Made Easy credentials INI file. (default: None)
+
 dns-google:
   Obtain certificates using a DNS TXT record (if you are using Google Cloud
   DNS for DNS).
@@ -504,6 +521,17 @@ dns-google:
                         control#permissions_and_roles for information about
                         therequired permissions.) (default: None)
 
+dns-luadns:
+  Obtain certificates using a DNS TXT record (if you are using LuaDNS for
+  DNS).
+
+  --dns-luadns-propagation-seconds DNS_LUADNS_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 30)
+  --dns-luadns-credentials DNS_LUADNS_CREDENTIALS
+                        LuaDNS credentials INI file. (default: None)
+
 dns-nsone:
   Obtain certificates using a DNS TXT record (if you are using NS1 for DNS).
 
@@ -513,6 +541,17 @@ dns-nsone:
                         record. (default: 30)
   --dns-nsone-credentials DNS_NSONE_CREDENTIALS
                         NS1 credentials file. (default: None)
+
+dns-rfc2136:
+  Obtain certificates using a DNS TXT record (if you are using BIND for
+  DNS).
+
+  --dns-rfc2136-propagation-seconds DNS_RFC2136_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 60)
+  --dns-rfc2136-credentials DNS_RFC2136_CREDENTIALS
+                        RFC 2136 credentials INI file. (default: None)
 
 dns-route53:
   Obtain certificates using a DNS TXT record (if you are using AWS Route53
@@ -526,11 +565,16 @@ dns-route53:
 manual:
   Authenticate through manual configuration or custom shell scripts. When
   using shell scripts, an authenticator script must be provided. The
-  environment variables available to this script are $CERTBOT_DOMAIN which
-  contains the domain being authenticated, $CERTBOT_VALIDATION which is the
-  validation string, and $CERTBOT_TOKEN which is the filename of the
-  resource requested when performing an HTTP-01 challenge. An additional
-  cleanup script can also be provided and can use the additional variable
+  environment variables available to this script depend on the type of
+  challenge. $CERTBOT_DOMAIN will always contain the domain being
+  authenticated. For HTTP-01 and DNS-01, $CERTBOT_VALIDATION is the
+  validation string, and $CERTBOT_TOKEN is the filename of the resource
+  requested when performing an HTTP-01 challenge. When performing a TLS-
+  SNI-01 challenge, $CERTBOT_SNI_DOMAIN will contain the SNI name for which
+  the ACME server expects to be presented with the self-signed certificate
+  located at $CERTBOT_CERT_PATH. The secret key needed to complete the TLS
+  handshake is located at $CERTBOT_KEY_PATH. An additional cleanup script
+  can also be provided and can use the additional variable
   $CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth
   script.
 
@@ -544,7 +588,7 @@ manual:
                         Automatically allows public IP logging (default: Ask)
 
 nginx:
-  Nginx Web Server plugin
+  Nginx Web Server plugin - Alpha
 
   --nginx-server-root NGINX_SERVER_ROOT
                         Nginx server root directory. (default: /etc/nginx)

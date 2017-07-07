@@ -16,7 +16,8 @@ class HookTest(unittest.TestCase):
 
     @mock.patch('certbot.hooks._prog')
     def test_validate_hooks(self, mock_prog):
-        config = mock.MagicMock(pre_hook="", post_hook="ls -lR", renew_hook="uptime")
+        config = mock.MagicMock(deploy_hook=None, pre_hook="",
+                                post_hook="ls -lR", renew_hook="uptime")
         hooks.validate_hooks(config)
         self.assertEqual(mock_prog.call_count, 2)
         self.assertEqual(mock_prog.call_args_list[1][0][0], 'uptime')
@@ -24,6 +25,19 @@ class HookTest(unittest.TestCase):
         mock_prog.return_value = None
         config = mock.MagicMock(pre_hook="explodinator", post_hook="", renew_hook="")
         self.assertRaises(errors.HookCommandNotFound, hooks.validate_hooks, config)
+
+    @mock.patch('certbot.hooks.validate_hook')
+    def test_validation_order(self, mock_validate_hook):
+        # This ensures error messages are about deploy hook when appropriate
+        config = mock.Mock(deploy_hook=None, pre_hook=None,
+                           post_hook=None, renew_hook=None)
+        hooks.validate_hooks(config)
+
+        order = [call[0][1] for call in mock_validate_hook.call_args_list]
+        self.assertTrue('pre' in order)
+        self.assertTrue('post' in order)
+        self.assertTrue('deploy' in order)
+        self.assertEqual(order[-1], 'renew')
 
     @mock.patch('certbot.hooks.util.exe_exists')
     @mock.patch('certbot.hooks.plug_util.path_surgery')
@@ -34,6 +48,19 @@ class HookTest(unittest.TestCase):
         mock_exe_exists.return_value = False
         self.assertEqual(hooks._prog("funky"), None)
         self.assertEqual(mock_ps.call_count, 1)
+
+    @mock.patch('certbot.hooks.renew_hook')
+    def test_deploy_hook(self, mock_renew_hook):
+        args = (mock.Mock(deploy_hook='foo'), ['example.org'], 'path',)
+        # pylint: disable=star-args
+        hooks.deploy_hook(*args)
+        mock_renew_hook.assert_called_once_with(*args)
+
+    @mock.patch('certbot.hooks.renew_hook')
+    def test_no_deploy_hook(self, mock_renew_hook):
+        args = (mock.Mock(deploy_hook=None), ['example.org'], 'path',)
+        hooks.deploy_hook(*args)  # pylint: disable=star-args
+        mock_renew_hook.assert_not_called()
 
     def _test_a_hook(self, config, hook_function, calls_expected, **kwargs):
         with mock.patch('certbot.hooks.logger') as mock_logger:

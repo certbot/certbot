@@ -2,6 +2,48 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.16.0 - 2017-07-05
+
+### Added
+
+* A plugin for performing DNS challenges using dynamic DNS updates as defined
+  in RFC 2316. This plugin is packaged separately from Certbot and is available
+  at https://pypi.python.org/pypi/certbot-dns-rfc2136. It supports Python 2.6,
+  2.7, and 3.3+. At this time, there isn't a good way to install this plugin
+  when using certbot-auto, but this should change in the near future.
+* Plugins for performing DNS challenges for the providers
+  [DNS Made Easy](https://pypi.python.org/pypi/certbot-dns-dnsmadeeasy) and
+  [LuaDNS](https://pypi.python.org/pypi/certbot-dns-luadns). These plugins are
+  packaged separately from Certbot and support Python 2.7 and 3.3+. Currently,
+  there isn't a good way to install these plugins when using certbot-auto,
+  but that should change soon.
+* Support for performing TLS-SNI-01 challenges when using the manual plugin.
+* Automatic detection of Arch Linux in the Apache plugin providing better
+  default settings for the plugin.
+
+### Changed
+
+* The text of the interactive question about whether a redirect from HTTP to
+  HTTPS should be added by Certbot has been rewritten to better explain the
+  choices to the user.
+* Simplified HTTP challenge instructions in the manual plugin.
+
+### Fixed
+
+* Problems performing a dry run when using the Nginx plugin have been fixed.
+* Resolved an issue where certbot-dns-digitalocean's test suite would sometimes
+  fail when ran using Python 3.
+* On some systems, previous versions of certbot-auto would error out with a
+  message about a missing hash for setuptools. This has been fixed.
+* A bug where Certbot would sometimes not print a space at the end of an
+  interactive prompt has been resolved.
+* Nonfatal tracebacks are no longer shown in rare cases where Certbot
+  encounters an exception trying to close its TCP connection with the ACME
+  server.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.16.0+is%3Aclosed
+
 ## 0.15.0 - 2017-06-08
 
 ### Added
