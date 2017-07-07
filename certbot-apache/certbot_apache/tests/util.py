@@ -173,7 +173,14 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(prefix, "default-ssl-port-only.conf"),
                 os.path.join(aug_pre,
                              "default-ssl-port-only.conf/VirtualHost"),
-                set([obj.Addr.fromstring("*:80")]), True, True, "")]
+                set([obj.Addr.fromstring("*:80")]), True, True, ""),
+            obj.VirtualHost(
+                os.path.join(temp_dir, config_name,
+                             "apache2/apache2.conf"),
+                "/files" + os.path.join(temp_dir, config_name,
+                                        "apache2/apache2.conf/VirtualHost"),
+                set([obj.Addr.fromstring("*:80")]), False, True,
+                "vhost.in.rootconf")]
         return vh_truth
     if config_name == "debian_apache_2_4/multi_vhosts":
         prefix = os.path.join(

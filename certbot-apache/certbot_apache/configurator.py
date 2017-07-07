@@ -294,10 +294,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.aug.set(path["cert_path"][-1], fullchain_path)
             self.aug.set(path["cert_key"][-1], key_path)
 
-        # Enable the new vhost if needed
-        if self.conf("handle-sites"):
-            if not vhost.enabled:
-                self.enable_site(vhost)
 
 
         # Save notes about the transaction that took place
@@ -595,6 +591,25 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._add_servernames(vhost)
         return vhost
 
+    def add_include(self, main_config, inc_path):
+        """Add Include for a new configuration file if one does not exist
+
+        :param str main_config: file path to main Apache config file
+        :param str inc_path: path of file to include
+
+        """
+        if len(self.parser.find_dir(
+                parser.case_i("Include"), inc_path)) == 0:
+            logger.debug("Adding Include %s to %s",
+                         inc_path, parser.get_aug_path(main_config))
+            self.parser.add_dir(
+                parser.get_aug_path(main_config),
+                "Include", inc_path)
+            # Add the new file to augeas DOM
+            # self.parser.parse_file(inc_path)
+            # Reload augeas
+            # self.aug.load()
+
     def get_virtual_hosts(self):
         """Returns list of virtual hosts found in the Apache configuration.
 
@@ -835,8 +850,20 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         vh_p = self._get_new_vh_path(orig_matches, new_matches)
 
         if not vh_p:
-            raise errors.PluginError(
-                "Could not reverse map the HTTPS VirtualHost to the original")
+            if not self.conf("handle-sites"):
+                # Not enabling the site, so add direct include to root conf
+                self.add_include(self.parser.loc["default"], ssl_fp)
+            # Make Augeas aware of the new vhost
+            self.parser.parse_file(ssl_fp)
+            # Try to search again
+            new_matches = self.aug.match(
+                "/files%s//* [label()=~regexp('%s')]" %
+                (self._escape(ssl_fp),
+                 parser.case_i("VirtualHost")))
+            vh_p = self._get_new_vh_path(orig_matches, new_matches)
+            if not vh_p:
+                raise errors.PluginError(
+                    "Could not reverse map the HTTPS VirtualHost to the original")
 
         # Update Addresses
         self._update_ssl_vhosts_addrs(vh_p)
@@ -855,7 +882,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         ssl_vhost.ancestor = nonssl_vhost
 
         if self.conf("handle-sites") and "/sites-enabled/" not in ssl_vhost.filep:
+            # Enable the new vhost
             ssl_vhost.enabled = False
+            self.enable_site(ssl_vhost)
         self.vhosts.append(ssl_vhost)
 
         # NOTE: Searches through Augeas seem to ruin changes to directives
@@ -885,14 +914,26 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return None
 
     def _get_ssl_vhost_path(self, non_ssl_vh_fp):
-        # Get filepath of new ssl_vhost
-        # Make sure we use the realpath (eg. sites-available instead of
-        # sites-enabled)
-        non_ssl_vh_fp = os.path.realpath(non_ssl_vh_fp)
-        if non_ssl_vh_fp.endswith(".conf"):
-            return non_ssl_vh_fp[:-(len(".conf"))] + self.conf("le_vhost_ext")
+        """ Get a file path for SSL vhost, defaults to directory defined in
+        OS based constant "vhost_path", but returns a path relative to the
+        original vhost if default path does not exist.
+
+        :param str non_ssl_vh_fp: File path of non-SSL vhost
+
+        :returns: File path for SSL vhost
+        :rtype: string
+        """
+
+        if os.path.exists(self.conf("vhost-root")):
+            fp = (self.conf("vhost-root") + "/" +
+                  os.path.basename(non_ssl_vh_fp))
         else:
-            return non_ssl_vh_fp + self.conf("le_vhost_ext")
+            fp = non_ssl_vh_fp
+
+        if fp.endswith(".conf"):
+            return fp[:-(len(".conf"))] + self.conf("le_vhost_ext")
+        else:
+            return fp + self.conf("le_vhost_ext")
 
     def _sift_rewrite_rule(self, line):
         """Decides whether a line should be copied to a SSL vhost.
@@ -1678,18 +1719,29 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if vhost.enabled:
             return
 
-        if "/sites-available/" in vhost.filep:
-            enabled_path = ("%s/sites-enabled/%s" %
-                            (self.parser.root, os.path.basename(vhost.filep)))
-            self.reverter.register_file_creation(False, enabled_path)
+        enabled_path = ("%s/sites-enabled/%s" %
+                        (self.parser.root, os.path.basename(vhost.filep)))
+        self.reverter.register_file_creation(False, enabled_path)
+        try:
             os.symlink(vhost.filep, enabled_path)
-            vhost.enabled = True
-            logger.info("Enabling available site: %s", vhost.filep)
-            self.save_notes += "Enabled site %s\n" % vhost.filep
-        else:
-            raise errors.NotSupportedError(
-                "Unsupported filesystem layout. "
-                "sites-available/enabled expected.")
+        except OSError as err:
+            if os.path.islink(enabled_path) and os.path.realpath(
+               enabled_path) == vhost.filep:
+                # Already in shape
+                vhost.enabled = True
+                return
+            else:
+                logger.warning(
+                    "Could not symlink %s to %s, got error: %s", enabled_path,
+                    vhost.filep, err.strerror)
+                errstring = ("Encountered error while trying to enable a " +
+                             "newly created VirtualHost located at {0} by " +
+                             "linking to it from {1}")
+                raise errors.NotSupportedError(errstring.format(vhost.filep,
+                                                                enabled_path))
+        vhost.enabled = True
+        logger.info("Enabling available site: %s", vhost.filep)
+        self.save_notes += "Enabled site %s\n" % vhost.filep
 
     def enable_mod(self, mod_name, temp=False):
         """Enables module in Apache.
