@@ -294,7 +294,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.aug.set(path["cert_path"][-1], fullchain_path)
             self.aug.set(path["cert_key"][-1], key_path)
 
-
+        # Enable the new vhost if needed
+        if self.conf("handle-sites"):
+            if not vhost.enabled:
+                self.enable_site(vhost)
 
         # Save notes about the transaction that took place
         self.save_notes += ("Changed vhost at %s with addresses of %s\n"
@@ -882,9 +885,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         ssl_vhost.ancestor = nonssl_vhost
 
         if self.conf("handle-sites") and "/sites-enabled/" not in ssl_vhost.filep:
-            # Enable the new vhost
+            # Set vhost as disabled for enabling later on
             ssl_vhost.enabled = False
-            self.enable_site(ssl_vhost)
         self.vhosts.append(ssl_vhost)
 
         # NOTE: Searches through Augeas seem to ruin changes to directives

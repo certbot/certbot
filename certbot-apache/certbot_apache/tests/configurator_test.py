@@ -360,7 +360,14 @@ class MultipleVhostsTest(util.ApacheTest):
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
+        self.assertFalse(ssl_vhost.enabled)
+        self.config.deploy_cert(
+            "encryption-example.demo", "example/cert.pem", "example/key.pem",
+            "example/cert_chain.pem", "example/fullchain.pem")
         self.assertTrue(ssl_vhost.enabled)
+        # Make sure that we don't error out if symlink already exists
+        ssl_vhost.enabled = False
+        self.assertFalse(ssl_vhost.enabled)
         self.config.deploy_cert(
             "encryption-example.demo", "example/cert.pem", "example/key.pem",
             "example/cert_chain.pem", "example/fullchain.pem")
@@ -628,7 +635,7 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_make_vhost_ssl_nonsymlink(self):
         ssl_vhost_slink = self.config.make_vhost_ssl(self.vh_truth[8])
         self.assertTrue(ssl_vhost_slink.ssl)
-        self.assertTrue(ssl_vhost_slink.enabled)
+        self.assertFalse(ssl_vhost_slink.enabled)
         self.assertEqual(ssl_vhost_slink.name, "nonsym.link")
 
     def test_make_vhost_ssl_nonexistent_vhost_path(self):
@@ -696,7 +703,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(set([obj.Addr.fromstring("*:443")]), ssl_vhost.addrs)
         self.assertEqual(ssl_vhost.name, "encryption-example.demo")
         self.assertTrue(ssl_vhost.ssl)
-        self.assertTrue(ssl_vhost.enabled)
+        self.assertFalse(ssl_vhost.enabled)
 
         self.assertTrue(self.config.parser.find_dir(
             "SSLCertificateFile", None, ssl_vhost.path, False))
@@ -1432,7 +1439,7 @@ class MultiVhostsTest(util.ApacheTest):
         self.assertEqual(set([obj.Addr.fromstring("*:443")]), ssl_vhost.addrs)
         self.assertEqual(ssl_vhost.name, "banana.vomit.com")
         self.assertTrue(ssl_vhost.ssl)
-        self.assertTrue(ssl_vhost.enabled)
+        self.assertFalse(ssl_vhost.enabled)
 
         self.assertTrue(self.config.parser.find_dir(
             "SSLCertificateFile", None, ssl_vhost.path, False))
