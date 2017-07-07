@@ -72,8 +72,9 @@ TLS-SNI-01 Challenge
 * When using the Apache plugin, make sure you are running Apache and no other web server on port 443.
 * When using the NGINX plugin, make sure you are running NGINX and no other web server on port 443.
 * With either the Apache or NGINX plugin, certbot modifies your web server configuration. If you get
-  an ``InstallationError`` then you have received a certificate but the plugin was unable to modify
+  an installation error then you have received a certificate but the plugin was unable to modify
   your web server configuration, meaning that you'll have to install the certificate  manually.
+  In that case, please file a bug to help us improve certbot!
 * When using the Standalone plugin, make sure another program is not already listening to port 443 on the server.
 
 DNS-01 Challenge

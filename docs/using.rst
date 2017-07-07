@@ -304,7 +304,7 @@ Example:
 
 .. code-block:: none
 
-  certbot --expand -d existing.com -d example.com,newdomain.com
+  certbot --expand -d existing.com example.com,newdomain.com
 
 If you prefer, you can specify the domains individually like this:
 
