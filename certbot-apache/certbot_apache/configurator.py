@@ -95,7 +95,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             help="SSL vhost configuration extension.")
         add("server-root", default=constants.os_constant("server_root"),
             help="Apache server root directory.")
-        add("vhost-root", default=constants.os_constant("vhost_root"),
+        add("vhost-root", default=None,
             help="Apache server VirtualHost configuration root")
         add("logs-root", default=constants.os_constant("logs_root"),
             help="Apache server logs directory")
@@ -133,6 +133,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.parser = None
         self.version = version
         self.vhosts = None
+        self.vhostroot = None
         self._enhance_func = {"redirect": self._enable_redirect,
                               "ensure-http-header": self._set_http_header,
                               "staple-ocsp": self._enable_ocsp_stapling}
@@ -189,14 +190,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "version 1.2.0 or higher, please make sure you have you have "
                 "those installed.")
 
-        # Determine if we should parse vhostroot (ignore debian/ubuntu default)
-        vhostroot = None
-        if self.conf("handle-sites"):
-            if self.conf("vhost-root") != constants.os_constant("vhost_root"):
-                vhostroot = self.conf("vhost-root")
+        # Parse vhost-root if defined on cli
+        if not self.conf("vhost-root"):
+            self.vhostroot = constants.os_constant("vhost_root")
+        else:
+            self.vhostroot = self.conf("vhost-root")
 
         self.parser = parser.ApacheParser(
-            self.aug, self.conf("server-root"), vhostroot, self.version)
+            self.aug, self.conf("server-root"), self.conf("vhost-root"), self.version)
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
 
@@ -853,6 +854,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         vh_p = self._get_new_vh_path(orig_matches, new_matches)
 
         if not vh_p:
+            # The vhost was not found on the currently parsed paths
             if not self.conf("handle-sites"):
                 # Not enabling the site, so add direct include to root conf
                 self.add_include(self.parser.loc["default"], ssl_fp)
@@ -926,8 +928,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: string
         """
 
-        if os.path.exists(self.conf("vhost-root")):
-            fp = (self.conf("vhost-root") + "/" +
+        if os.path.exists(self.vhostroot):
+            fp = (self.vhostroot + "/" +
                   os.path.basename(non_ssl_vh_fp))
         else:
             fp = non_ssl_vh_fp
@@ -1644,7 +1646,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if len(ssl_vhost.name) < (255 - (len(redirect_filename) + 1)):
                 redirect_filename = "le-redirect-%s.conf" % ssl_vhost.name
 
-        redirect_filepath = os.path.join(self.conf("vhost-root"),
+        redirect_filepath = os.path.join(self.vhostroot,
                                          redirect_filename)
 
         # Register the new file that will be created

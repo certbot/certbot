@@ -46,7 +46,7 @@ class MultipleVhostsTest(util.ApacheTest):
         with mock.patch("certbot_apache.constants.os_constant") as mock_c:
             mock_c.side_effect = mock_os_constant
             self.config = util.get_apache_configurator(
-                self.config_path, self.vhost_path, self.config_dir, self.work_dir)
+                self.config_path, None, self.config_dir, self.work_dir)
             self.config = self.mock_deploy_cert(self.config)
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
@@ -642,7 +642,6 @@ class MultipleVhostsTest(util.ApacheTest):
         def conf_side_effect(arg):
             """ Mock function for ApacheConfigurator.conf """
             confvars = {
-                "vhost-root": "/tmp/nonexistent",
                 "le_vhost_ext": "-le-ssl.conf",
                 "handle-sites": True}
             return confvars[arg]
@@ -650,6 +649,7 @@ class MultipleVhostsTest(util.ApacheTest):
         with mock.patch(
                 "certbot_apache.configurator.ApacheConfigurator.conf"
         ) as mock_conf:
+            self.config.vhostroot = "/tmp/nonexistent"
             mock_conf.side_effect = conf_side_effect
             ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[1])
             self.assertEqual(os.path.dirname(ssl_vhost.filep),
@@ -659,7 +659,6 @@ class MultipleVhostsTest(util.ApacheTest):
         def conf_side_effect(arg):
             """ Mock function for ApacheConfigurator.conf """
             confvars = {
-                "vhost-root": "/tmp/nonexistent",
                 "le_vhost_ext": "-le-ssl.conf",
                 "handle-sites": False}
             return confvars[arg]
@@ -667,6 +666,7 @@ class MultipleVhostsTest(util.ApacheTest):
         with mock.patch(
                 "certbot_apache.configurator.ApacheConfigurator.conf"
         ) as mock_conf:
+            self.config.vhostroot = "/tmp/nonexistent"
             mock_conf.side_effect = conf_side_effect
             ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[10])
             self.assertEqual(os.path.dirname(ssl_vhost.filep),
@@ -676,7 +676,6 @@ class MultipleVhostsTest(util.ApacheTest):
         def conf_side_effect(arg):
             """ Mock function for ApacheConfigurator.conf """
             confvars = {
-                "vhost-root": os.path.dirname(self.config.parser.loc["root"]),
                 "le_vhost_ext": "-le-ssl.conf",
                 "handle-sites": True}
             return confvars[arg]
@@ -684,6 +683,8 @@ class MultipleVhostsTest(util.ApacheTest):
         with mock.patch(
                 "certbot_apache.configurator.ApacheConfigurator.conf"
         ) as mock_conf:
+            self.config.vhostroot = os.path.dirname(
+                self.config.parser.loc["root"])
             mock_conf.side_effect = conf_side_effect
             ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[1])
             self.assertEqual(os.path.dirname(ssl_vhost.filep),
