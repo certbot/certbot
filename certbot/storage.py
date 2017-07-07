@@ -49,12 +49,19 @@ def renewal_file_for_certname(config, certname):
             "{1}).".format(certname, path))
     return path
 
+def cert_path_for_cert_name(config, cert_name):
+    """ If --cert-name was specified, but you need a value for --cert-path."""
+    cert_name_implied_conf = renewal_file_for_certname(config, cert_name)
+    fullchain_path = configobj.ConfigObj(cert_name_implied_conf)["fullchain"]
+    with open(fullchain_path) as f:
+        cert_path = (fullchain_path, f.read())
+    return cert_path
+
 def config_with_defaults(config=None):
     """Merge supplied config, if provided, on top of builtin defaults."""
     defaults_copy = configobj.ConfigObj(constants.RENEWER_DEFAULTS)
     defaults_copy.merge(config if config is not None else configobj.ConfigObj())
     return defaults_copy
-
 
 def add_time_interval(base_time, interval, textparser=parsedatetime.Calendar()):
     """Parse the time specified time interval, and add it to the base_time
@@ -192,6 +199,31 @@ def get_link_target(link):
         target = os.path.join(os.path.dirname(link), target)
     return os.path.abspath(target)
 
+def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func):
+    """ Searches through all lineages for a match, and checks for duplicates.
+    If a duplicate is found, an error is raised, as performing operations on lineages
+    that have their properties incorrectly duplicated elsewhere is probably a bad idea.
+
+    :param list acceptable_matches: a list of functions that specify acceptable matches
+    :param function match_func: specifies what to match
+    :param function rv_func: specifies what to return
+    """
+    def find_matches(candidate_lineage, return_value, acceptable_matches):
+        """Returns a list of matches using _search_lineages."""
+        acceptable_matches = [func(candidate_lineage) for func in acceptable_matches]
+        match = match_func(candidate_lineage)
+        if match in acceptable_matches:
+            return_value.append(rv_func(candidate_lineage))
+        return return_value
+
+    matched = _search_lineages(cli_config, find_matches, [], acceptable_matches)
+    if not matched:
+        raise errors.Error("No match found for cert-path {0}!".format(cli_config.cert_path))
+    elif len(matched) > 1:
+        raise errors.OverlappingMatchFound()
+    else:
+        return matched
+
 
 def _relevant(option):
     """
@@ -239,7 +271,7 @@ def _relpath_from_file(archive_dir, from_file):
     """Path to a directory from a file"""
     return os.path.relpath(archive_dir, os.path.dirname(from_file))
 
-def _full_archive_path(config_obj, cli_config, lineagename):
+def full_archive_path(config_obj, cli_config, lineagename):
     """Returns the full archive path for a lineagename
 
     Uses cli_config to determine archive path if not available from config_obj.
@@ -264,7 +296,7 @@ def delete_files(config, certname):
     """
     renewal_filename = renewal_file_for_certname(config, certname)
     # file exists
-    full_default_archive_dir = _full_archive_path(None, config, certname)
+    full_default_archive_dir = full_archive_path(None, config, certname)
     full_default_live_dir = _full_live_path(config, certname)
     try:
         renewal_config = configobj.ConfigObj(renewal_filename)
@@ -316,7 +348,7 @@ def delete_files(config, certname):
 
     # archive directory
     try:
-        archive_path = _full_archive_path(renewal_config, config, certname)
+        archive_path = full_archive_path(renewal_config, config, certname)
         shutil.rmtree(archive_path)
         logger.debug("Removed %s", archive_path)
     except OSError:
@@ -443,7 +475,7 @@ class RenewableCert(object):
     @property
     def archive_dir(self):
         """Returns the default or specified archive directory"""
-        return _full_archive_path(self.configuration,
+        return full_archive_path(self.configuration,
             self.cli_config, self.lineagename)
 
     def relative_archive_dir(self, from_file):
@@ -985,7 +1017,7 @@ class RenewableCert(object):
         # lineagename will now potentially be modified based on which
         # renewal configuration file could actually be created
         lineagename = lineagename_for_filename(config_filename)
-        archive = _full_archive_path(None, cli_config, lineagename)
+        archive = full_archive_path(None, cli_config, lineagename)
         live_dir = _full_live_path(cli_config, lineagename)
         if os.path.exists(archive):
             raise errors.CertStorageError(

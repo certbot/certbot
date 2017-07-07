@@ -265,8 +265,11 @@ class RevokeTest(test_util.TempDirTestCase):
         from certbot.main import revoke
         revoke(config, plugins)
 
+    @mock.patch('certbot.main._delete_if_appropriate')
     @mock.patch('certbot.main.client.acme_client')
-    def test_revoke_with_reason(self, mock_acme_client):
+    def test_revoke_with_reason(self, mock_acme_client,
+            mock_delete_if_appropriate):
+        mock_delete_if_appropriate.return_value = False
         mock_revoke = mock_acme_client.Client().revoke
         expected = []
         for reason, code in constants.REVOCATION_REASONS.items():
@@ -276,7 +279,9 @@ class RevokeTest(test_util.TempDirTestCase):
             expected.append(mock.call(mock.ANY, code))
         self.assertEqual(expected, mock_revoke.call_args_list)
 
-    def test_revocation_success(self):
+    @mock.patch('certbot.main._delete_if_appropriate')
+    def test_revocation_success(self, mock_delete_if_appropriate):
+        mock_delete_if_appropriate.return_value = False
         self._call()
         self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
 
@@ -285,6 +290,145 @@ class RevokeTest(test_util.TempDirTestCase):
         self.mock_acme_client.side_effect = acme_errors.ClientError()
         self.assertRaises(acme_errors.ClientError, self._call)
         self.mock_success_revoke.assert_not_called()
+
+    @mock.patch('certbot.main._delete_if_appropriate')
+    @mock.patch('certbot.cert_manager.delete')
+    @test_util.patch_get_utility()
+    def test_revocation_with_prompt(self, mock_get_utility,
+            mock_delete, mock_delete_if_appropriate):
+        mock_get_utility().yesno.return_value = False
+        mock_delete_if_appropriate.return_value = False
+        self._call()
+        self.assertFalse(mock_delete.called)
+
+class DeleteIfAppropriateTest(unittest.TestCase):
+    """Tests for certbot.main._delete_if_appropriate """
+
+    def setUp(self):
+        self.config = mock.Mock()
+        self.config.namespace = mock.Mock()
+        self.config.namespace.noninteractive_mode = False
+
+    def _call(self, mock_config):
+        from certbot.main import _delete_if_appropriate
+        _delete_if_appropriate(mock_config)
+
+    @mock.patch('certbot.cert_manager.delete')
+    @mock.patch('certbot.storage.match_and_check_overlaps')
+    @mock.patch('certbot.storage.full_archive_path')
+    @mock.patch('certbot.cert_manager.cert_path_to_lineage')
+    @test_util.patch_get_utility()
+    def test_overlapping_archive_dirs(self, mock_get_utility,
+            mock_cert_path_to_lineage, mock_archive,
+            mock_match_and_check_overlaps, mock_delete):
+        # pylint: disable = unused-argument
+        config = self.config
+        config.cert_path = "/some/reasonable/path"
+        config.certname = ""
+        mock_cert_path_to_lineage.return_value = "example.com"
+        mock_match_and_check_overlaps.side_effect = errors.OverlappingMatchFound()
+        self._call(config)
+        mock_delete.assert_not_called()
+
+    @mock.patch('certbot.storage.match_and_check_overlaps')
+    @mock.patch('certbot.storage.full_archive_path')
+    @mock.patch('certbot.cert_manager.delete')
+    @mock.patch('certbot.storage.cert_path_for_cert_name')
+    @test_util.patch_get_utility()
+    def test_cert_name_only(self, mock_get_utility,
+            mock_cert_path_for_cert_name, mock_delete, mock_archive,
+            mock_overlapping_archive_dirs):
+        # pylint: disable = unused-argument
+        config = self.config
+        config.certname = "example.com"
+        config.cert_path = ""
+        mock_cert_path_for_cert_name.return_value = "/some/reasonable/path"
+        mock_overlapping_archive_dirs.return_value = False
+        self._call(config)
+        mock_delete.assert_called_once()
+
+    @mock.patch('certbot.storage.match_and_check_overlaps')
+    @mock.patch('certbot.storage.full_archive_path')
+    @mock.patch('certbot.cert_manager.delete')
+    @mock.patch('certbot.cert_manager.cert_path_to_lineage')
+    @test_util.patch_get_utility()
+    def test_cert_path_only(self, mock_get_utility,
+            mock_cert_path_to_lineage, mock_delete, mock_archive,
+            mock_overlapping_archive_dirs):
+        # pylint: disable = unused-argument
+        config = self.config
+        config.cert_path = "/some/reasonable/path"
+        config.certname = ""
+        mock_cert_path_to_lineage.return_value = "example.com"
+        mock_overlapping_archive_dirs.return_value = False
+        self._call(config)
+        mock_delete.assert_called_once()
+
+    @mock.patch('certbot.storage.match_and_check_overlaps')
+    @mock.patch('certbot.storage.full_archive_path')
+    @mock.patch('certbot.cert_manager.cert_path_to_lineage')
+    @mock.patch('certbot.cert_manager.delete')
+    @test_util.patch_get_utility()
+    def test_noninteractive_deletion(self, mock_get_utility, mock_delete,
+            mock_cert_path_to_lineage, mock_full_archive_dir,
+            mock_match_and_check_overlaps):
+        # pylint: disable = unused-argument
+        config = self.config
+        config.namespace.noninteractive_mode = True
+        config.cert_path = "/some/reasonable/path"
+        config.certname = ""
+        mock_cert_path_to_lineage.return_value = "example.com"
+        mock_full_archive_dir.return_value = ""
+        mock_match_and_check_overlaps.return_value = ""
+        self._call(config)
+        mock_delete.assert_called_once()
+
+    @mock.patch('certbot.storage.match_and_check_overlaps')
+    @mock.patch('certbot.storage.full_archive_path')
+    @mock.patch('certbot.cert_manager.delete')
+    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @test_util.patch_get_utility()
+    def test_certname_and_cert_path_match(self, mock_get_utility,
+            mock_lineage_for_certname, mock_delete, mock_archive,
+            mock_overlapping_archive_dirs):
+        # pylint: disable = unused-argument
+        config = self.config
+        config.certname = "example.com"
+        config.cert_path = "/some/reasonable/path"
+        mock_lineage_for_certname.return_value = config.cert_path
+        mock_overlapping_archive_dirs.return_value = False
+        self._call(config)
+        mock_delete.assert_called_once()
+
+    # pylint: disable=too-many-arguments
+    @mock.patch('certbot.storage.match_and_check_overlaps')
+    @mock.patch('certbot.storage.full_archive_path')
+    @mock.patch('certbot.cert_manager.delete')
+    @mock.patch('certbot.cert_manager.human_readable_cert_info')
+    @mock.patch('certbot.storage.RenewableCert')
+    @mock.patch('certbot.storage.renewal_file_for_certname')
+    @mock.patch('certbot.cert_manager.cert_path_to_lineage')
+    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @test_util.patch_get_utility()
+    def test_certname_and_cert_path_mismatch(self, mock_get_utility,
+            mock_lineage_for_certname, cert_path_to_lineage,
+            mock_renewal_file_for_certname, mock_RenewableCert,
+            mock_human_readable_cert_info, mock_delete, mock_archive,
+            mock_overlapping_archive_dirs):
+        # pylint: disable=unused-argument
+        config = self.config
+        config.certname = "example.com"
+        config.cert_path = "/some/reasonable/path"
+        mock_lineage_for_certname.return_value = "some-reasonable-path.com"
+        mock_RenewableCert.return_value = mock.Mock()
+        mock_human_readable_cert_info.return_value = ""
+        mock_overlapping_archive_dirs.return_value = False
+        from certbot.display import util as display_util
+        util_mock = mock.Mock()
+        util_mock.menu.return_value = (display_util.OK, 0)
+        mock_get_utility.return_value = util_mock
+        self._call(config)
+        mock_delete.assert_called_once()
 
 
 class DetermineAccountTest(unittest.TestCase):
@@ -1009,8 +1153,11 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         self.assertTrue(
             'dry run' in mock_get_utility().add_message.call_args[0][0])
 
+    @mock.patch('certbot.main._delete_if_appropriate')
     @mock.patch('certbot.main.client.acme_client')
-    def test_revoke_with_key(self, mock_acme_client):
+    def test_revoke_with_key(self, mock_acme_client,
+            mock_delete_if_appropriate):
+        mock_delete_if_appropriate.return_value = False
         server = 'foo.bar'
         self._call_no_clientmock(['--cert-path', CERT, '--key-path', KEY,
                                  '--server', server, 'revoke'])
@@ -1024,8 +1171,11 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
                     jose.ComparableX509(cert),
                     mock.ANY)
 
+    @mock.patch('certbot.main._delete_if_appropriate')
     @mock.patch('certbot.main._determine_account')
-    def test_revoke_without_key(self, mock_determine_account):
+    def test_revoke_without_key(self, mock_determine_account,
+            mock_delete_if_appropriate):
+        mock_delete_if_appropriate.return_value = False
         mock_determine_account.return_value = (mock.MagicMock(), None)
         _, _, _, client = self._call(['--cert-path', CERT, 'revoke'])
         with open(CERT) as f:
