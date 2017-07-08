@@ -247,13 +247,9 @@ def verify_cert_matches_priv_key(cert_path, key_path):
     :raises errors.Error: If they don't match.
     """
     try:
-        with open(cert_path) as cert:
-            cert = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, cert.read())
-        with open(key_path) as privkey:
-            privkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, privkey.read())
         context = OpenSSL.SSL.Context(OpenSSL.SSL.SSLv23_METHOD)
-        context.use_privatekey(privkey)
-        context.use_certificate(cert)
+        context.use_certificate_file(cert_path)
+        context.use_privatekey_file(key_path)
         context.check_privatekey()
     except (IOError, OpenSSL.SSL.Error) as e:
         error_str = "verifying the cert located at {0} matches the \
