@@ -478,6 +478,9 @@ class RenewableCert(object):
         """Updates symlinks to use archive_dir"""
         for kind in ALL_FOUR:
             link = getattr(self, kind)
+            if not os.path.islink(link):
+                raise errors.CertStorageError(
+                    "expected {0} to be a symlink".format(link))
             previous_link = get_link_target(link)
             new_link = os.path.join(self.relative_archive_dir(link),
                 os.path.basename(previous_link))
