@@ -359,11 +359,10 @@ def post_arg_parse_except_hook(exc_type, exc_value, trace, debug, log_path):
         if issubclass(exc_type, errors.Error):
             sys.exit(exc_value)
         print('An unexpected error occurred:', file=sys.stderr)
-        if isinstance(exc_value, messages.Error):
-            if (exc_value.typ is not None) and messages.is_acme_error(exc_value):
-                # Remove the ACME error prefix from the exception
-                _, _, exc_str = str(exc_value).partition(':: ')
-                print(exc_str, file=sys.stderr)
+        if messages.is_acme_error(exc_value):
+            # Remove the ACME error prefix from the exception
+            _, _, exc_str = str(exc_value).partition(':: ')
+            print(exc_str, file=sys.stderr)
         else:
             traceback.print_exception(exc_type, exc_value, None)
     exit_with_log_path(log_path)

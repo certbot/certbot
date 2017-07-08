@@ -26,6 +26,7 @@ class ErrorTest(unittest.TestCase):
             'type': ERROR_PREFIX + 'malformed',
         }
         self.error_custom = Error(typ='custom', detail='bar')
+        self.empty_error = Error()
         self.jobj_custom = {'type': 'custom', 'detail': 'bar'}
 
     def test_default_typ(self):
@@ -55,6 +56,8 @@ class ErrorTest(unittest.TestCase):
         from acme.messages import is_acme_error
         self.assertTrue(is_acme_error(self.error))
         self.assertFalse(is_acme_error(self.error_custom))
+        self.assertFalse(is_acme_error(self.empty_error))
+        self.assertFalse(is_acme_error("must pet all the {dogs|rabbits}"))
 
     def test_unicode_error(self):
         from acme.messages import Error, ERROR_PREFIX, is_acme_error
