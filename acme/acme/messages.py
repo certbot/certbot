@@ -97,7 +97,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
             return code
 
     def __str__(self):
-        return ' :: '.join(
+        return b' :: '.join(
             part.encode('ascii', 'backslashreplace') for part in
             (self.typ, self.description, self.detail, self.title)
             if part is not None)
