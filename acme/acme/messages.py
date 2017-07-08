@@ -100,7 +100,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
         return b' :: '.join(
             part.encode('ascii', 'backslashreplace') for part in
             (self.typ, self.description, self.detail, self.title)
-            if part is not None)
+            if part is not None).decode()
 
 
 class _Constant(jose.JSONDeSerializable, collections.Hashable):  # type: ignore
