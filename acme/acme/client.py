@@ -11,6 +11,7 @@ import six
 from six.moves import http_client  # pylint: disable=import-error
 
 import OpenSSL
+import re
 import requests
 import sys
 
@@ -624,7 +625,25 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         kwargs.setdefault('headers', {})
         kwargs['headers'].setdefault('User-Agent', self.user_agent)
         kwargs.setdefault('timeout', self._default_timeout)
-        response = self.session.request(method, url, *args, **kwargs)
+        try:
+            response = self.session.request(method, url, *args, **kwargs)
+        except requests.exceptions.RequestException as e:
+            """
+            The requests library emits exceptions with a lot of extra text.
+            We parse them with a regexp to raise a more readable exceptions.
+
+            Example:
+            HTTPSConnectionPool(host='acme-v01.api.letsencrypt.org',
+            port=443): Max retries exceeded with url: /directory
+            (Caused by NewConnectionError('
+            <requests.packages.urllib3.connection.VerifiedHTTPSConnection
+            object at 0x108356c50>: Failed to establish a new connection:
+            [Errno 65] No route to host',))
+            """
+            error_regex = r".*host='(\S*)'.*url\: (\/\w*).*(\[Errno \d+\])([A-Za-z ]*)"
+            host, path, error_no, error_msg = re.match(error_regex, str(e.message)).groups()
+            raise Exception("Requesting {0}{1}: {2} {3}".format(host, path, error_no, error_msg))
+
         # If content is DER, log the base64 of it instead of raw bytes, to keep
         # binary data out of the logs.
         if response.headers.get("Content-Type") == DER_CONTENT_TYPE:

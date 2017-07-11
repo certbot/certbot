@@ -621,6 +621,11 @@ class ClientNetworkTest(unittest.TestCase):
         self.assertRaises(requests.exceptions.RequestException,
                           self.net._send_request, 'GET', 'uri')
 
+    def test_urllib_error(self):
+        try:
+            self.net._send_request('GET', 'http://localhost:19123/nonexistent.txt')
+        except Exception, e:
+            self.assertEqual(str(e), "Requesting localhost/nonexistent: [Errno 111]  Connection refused")
 
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork which mock out response."""
