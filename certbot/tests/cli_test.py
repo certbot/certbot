@@ -364,6 +364,18 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(namespace.deploy_hook, None)
         self.assertEqual(namespace.renew_hook, value)
 
+    def test_max_log_backups_error(self):
+        with mock.patch('certbot.cli.sys.stderr'):
+            self.assertRaises(
+                SystemExit, self.parse, "--max-log-backups foo".split())
+            self.assertRaises(
+                SystemExit, self.parse, "--max-log-backups -42".split())
+
+    def test_max_log_backups_success(self):
+        value = "42"
+        namespace = self.parse(["--max-log-backups", value])
+        self.assertEqual(namespace.max_log_backups, int(value))
+
 
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""

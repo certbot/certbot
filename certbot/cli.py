@@ -440,8 +440,8 @@ class HelpfulArgumentParser(object):
         }
 
         # List of topics for which additional help can be provided
-        HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
-        HELP_TOPICS += self.COMMANDS_TOPICS + ["manage"]
+        HELP_TOPICS = ["all", "security", "paths", "automation", "testing"]
+        HELP_TOPICS += list(self.VERBS) + self.COMMANDS_TOPICS + ["manage"]
 
         plugin_names = list(plugins)
         self.help_topics = HELP_TOPICS + plugin_names + [None]
@@ -849,6 +849,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         None, "-t", "--text", dest="text_mode", action="store_true",
         help=argparse.SUPPRESS)
+    helpful.add(
+        None, "--max-log-backups", type=nonnegative_int, default=1000,
+        help="Specifies the maximum number of backup logs that should "
+             "be kept by Certbot's built in log rotation. Setting this "
+             "flag to 0 disables log rotation entirely, causing "
+             "Certbot to always append to the same log file.")
     helpful.add(
         [None, "automation", "run", "certonly"], "-n", "--non-interactive", "--noninteractive",
         dest="noninteractive_mode", action="store_true",
@@ -1375,3 +1381,27 @@ class _RenewHookAction(argparse.Action):
             raise argparse.ArgumentError(
                 self, "conflicts with --deploy-hook value")
         namespace.renew_hook = values
+
+
+def nonnegative_int(value):
+    """Converts value to an int and checks that it is not negative.
+
+    This function should used as the type parameter for argparse
+    arguments.
+
+    :param str value: value provided on the command line
+
+    :returns: integer representation of value
+    :rtype: int
+
+    :raises argparse.ArgumentTypeError: if value isn't a non-negative integer
+
+    """
+    try:
+        int_value = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError("value must be an integer")
+
+    if int_value < 0:
+        raise argparse.ArgumentTypeError("value must be non-negative")
+    return int_value

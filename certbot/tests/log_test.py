@@ -66,8 +66,8 @@ class PostArgParseSetupTest(test_util.TempDirTestCase):
     def setUp(self):
         super(PostArgParseSetupTest, self).setUp()
         self.config = mock.MagicMock(
-            debug=False, logs_dir=self.tempdir, quiet=False,
-            verbose_count=constants.CLI_DEFAULTS['verbose_count'])
+            debug=False, logs_dir=self.tempdir, max_log_backups=1000,
+            quiet=False, verbose_count=constants.CLI_DEFAULTS['verbose_count'])
         self.devnull = open(os.devnull, 'w')
 
         from certbot.log import ColoredStreamHandler
@@ -129,7 +129,7 @@ class SetupLogFileHandlerTest(test_util.TempDirTestCase):
 
     def setUp(self):
         super(SetupLogFileHandlerTest, self).setUp()
-        self.config = mock.MagicMock(logs_dir=self.tempdir)
+        self.config = mock.MagicMock(logs_dir=self.tempdir, max_log_backups=42)
 
     @mock.patch('certbot.main.logging.handlers.RotatingFileHandler')
     def test_failure(self, mock_handler):
@@ -142,15 +142,32 @@ class SetupLogFileHandlerTest(test_util.TempDirTestCase):
         else:  # pragma: no cover
             self.fail('Error not raised.')
 
-    def test_success(self):
+    def test_success_with_rollover(self):
+        self._test_success_common(should_rollover=True)
+
+    def test_success_without_rollover(self):
+        self.config.max_log_backups = 0
+        self._test_success_common(should_rollover=False)
+
+    def _test_success_common(self, should_rollover):
         log_file = 'test.log'
         handler, log_path = self._call(self.config, log_file, '%(message)s')
+        handler.close()
+
         self.assertEqual(handler.level, logging.DEBUG)
         self.assertEqual(handler.formatter.converter, time.gmtime)
 
         expected_path = os.path.join(self.config.logs_dir, log_file)
         self.assertEqual(log_path, expected_path)
-        handler.close()
+
+        backup_path = os.path.join(self.config.logs_dir, log_file + '.1')
+        self.assertEqual(os.path.exists(backup_path), should_rollover)
+
+    @mock.patch('certbot.log.logging.handlers.RotatingFileHandler')
+    def test_max_log_backups_used(self, mock_handler):
+        self._call(self.config, 'test.log', '%(message)s')
+        backup_count = mock_handler.call_args[1]['backupCount']
+        self.assertEqual(self.config.max_log_backups, backup_count)
 
 
 class ColoredStreamHandlerTest(unittest.TestCase):
