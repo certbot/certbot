@@ -186,8 +186,15 @@ def get_link_target(link):
     :returns: Absolute path to the target of link
     :rtype: str
 
+    :raises .CertStorageError: If link does not exists.
+
     """
-    target = os.readlink(link)
+    try:
+        target = os.readlink(link)
+    except OSError:
+        raise errors.CertStorageError(
+            "Expected {0} to be a symlink".format(link))
+
     if not os.path.isabs(target):
         target = os.path.join(os.path.dirname(link), target)
     return os.path.abspath(target)
