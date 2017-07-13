@@ -628,7 +628,8 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         try:
             response = self.session.request(method, url, *args, **kwargs)
         except requests.exceptions.RequestException as e:
-            """
+            """Requests response parsing
+
             The requests library emits exceptions with a lot of extra text.
             We parse them with a regexp to raise a more readable exceptions.
 
@@ -638,8 +639,8 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             (Caused by NewConnectionError('
             <requests.packages.urllib3.connection.VerifiedHTTPSConnection
             object at 0x108356c50>: Failed to establish a new connection:
-            [Errno 65] No route to host',))
-            """
+            [Errno 65] No route to host',))"""
+
             error_regex = r".*host='(\S*)'.*url\: (\/\w*).*(\[Errno \d+\])([A-Za-z ]*)"
             host, path, error_no, error_msg = re.match(error_regex, str(e.message)).groups()
             raise Exception("Requesting {0}{1}: {2} {3}".format(host, path, error_no, error_msg))

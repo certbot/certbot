@@ -623,9 +623,11 @@ class ClientNetworkTest(unittest.TestCase):
 
     def test_urllib_error(self):
         try:
+            # pylint: disable=protected-access
             self.net._send_request('GET', 'http://localhost:19123/nonexistent.txt')
-        except Exception, e:
-            self.assertEqual(str(e), "Requesting localhost/nonexistent: [Errno 111]  Connection refused")
+        except requests.exceptions.RequestException, e:
+            self.assertEqual(str(e),
+                             "Requesting localhost/nonexistent: [Errno 111]  Connection refused")
 
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork which mock out response."""
