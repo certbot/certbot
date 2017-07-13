@@ -193,7 +193,7 @@ def get_link_target(link):
         target = os.readlink(link)
     except OSError:
         raise errors.CertStorageError(
-            "expected {0} to be a symlink".format(link))
+            "Expected {0} to be a symlink".format(link))
 
     if not os.path.isabs(target):
         target = os.path.join(os.path.dirname(link), target)
