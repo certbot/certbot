@@ -628,6 +628,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         try:
             response = self.session.request(method, url, *args, **kwargs)
         except requests.exceptions.RequestException as e:
+            #pylint: disable=pointless-string-statement
             """Requests response parsing
 
             The requests library emits exceptions with a lot of extra text.
