@@ -600,6 +600,8 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         return response
 
     def _send_request(self, method, url, *args, **kwargs):
+    #pylint: disable=too-many-locals
+
         """Send HTTP request.
 
         Makes sure that `verify_ssl` is respected. Logs request and
@@ -643,12 +645,13 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             [Errno 65] No route to host',))"""
 
             err_regex = r".*host='(\S*)'.*url\: (\/\w*).*(\[Errno \d+\])([A-Za-z ]*)"
-            err_str = str(e.message)
-            if err_str is not None:
-                res = lambda: None
-                res.host, res.path, res.err_no, res.err_msg = re.match(err_regex, err_str).groups()
+            m = re.match(err_regex, str(e.message))
+            if m is None:
+                raise
+            else:
+                host, path, err_no, err_msg = m.groups()
                 raise RuntimeError("Requesting {0}{1}: {2} {3}"
-                                 .format(res.host, res.path, res.err_no, res.err_msg))
+                                 .format(host, path, err_no, err_msg))
 
         # If content is DER, log the base64 of it instead of raw bytes, to keep
         # binary data out of the logs.
