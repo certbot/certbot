@@ -617,7 +617,7 @@ class ClientNetworkTest(unittest.TestCase):
         mock_requests.exceptions = requests.exceptions
         mock_requests.request.side_effect = requests.exceptions.RequestException
         # pylint: disable=protected-access
-        self.assertRaises(Exception,
+        self.assertRaises(requests.exceptions.RequestException,
                           self.net._send_request, 'GET', 'uri')
 
     def test_urllib_error(self):
