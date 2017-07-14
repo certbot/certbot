@@ -628,7 +628,7 @@ class ClientNetworkTest(unittest.TestCase):
         except RuntimeError as e:
             exc_str = str(e.message)
             if exc_str is not None:
-                self.assertIn("Requesting localhost/nonexistent: ", exc_str)
+                self.assertEqual("Requesting localhost/nonexistent: [Errno 111] Connection refused", exc_str)
 
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork which mock out response."""
