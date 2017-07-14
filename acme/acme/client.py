@@ -642,9 +642,13 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             object at 0x108356c50>: Failed to establish a new connection:
             [Errno 65] No route to host',))"""
 
-            error_regex = r".*host='(\S*)'.*url\: (\/\w*).*(\[Errno \d+\])([A-Za-z ]*)"
-            host, path, error_no, error_msg = re.match(error_regex, str(e.message)).groups()
-            raise Exception("Requesting {0}{1}: {2} {3}".format(host, path, error_no, error_msg))
+            err_regex = r".*host='(\S*)'.*url\: (\/\w*).*(\[Errno \d+\])([A-Za-z ]*)"
+            err_str = str(e.message)
+            if err_str is not None:
+                res = lambda: None
+                res.host, res.path, res.err_no, res.err_msg = re.match(err_regex, err_str).groups()
+                raise ValueError("Requesting {0}{1}: {2} {3}"
+                                 .format(res.host, res.path, res.err_no, res.err_msg))
 
         # If content is DER, log the base64 of it instead of raw bytes, to keep
         # binary data out of the logs.
