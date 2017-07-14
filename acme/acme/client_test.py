@@ -631,10 +631,6 @@ class ClientNetworkTest(unittest.TestCase):
                 self.assertEqual(exc_str,
                                  "Requesting localhost/nonexistent: "
                                  "[Errno 111]  Connection refused")
-            else:
-                self.assertRaises(RuntimeError,
-                          # pylint: disable=protected-access
-                          self.net._send_request, 'GET', url)
 
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork which mock out response."""
