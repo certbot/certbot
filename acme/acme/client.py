@@ -647,7 +647,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             if err_str is not None:
                 res = lambda: None
                 res.host, res.path, res.err_no, res.err_msg = re.match(err_regex, err_str).groups()
-                raise ValueError("Requesting {0}{1}: {2} {3}"
+                raise RuntimeError("Requesting {0}{1}: {2} {3}"
                                  .format(res.host, res.path, res.err_no, res.err_msg))
 
         # If content is DER, log the base64 of it instead of raw bytes, to keep

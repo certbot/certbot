@@ -624,7 +624,7 @@ class ClientNetworkTest(unittest.TestCase):
         try:
             # pylint: disable=protected-access
             self.net._send_request('GET', 'http://localhost:19123/nonexistent.txt')
-        except ValueError as e:
+        except RuntimeError as e:
             exc_str = str(e.message)
             if exc_str is not None:
                 self.assertEqual(exc_str,
