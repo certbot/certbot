@@ -650,7 +650,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
                 raise
             else:
                 host, path, err_no, err_msg = m.groups()
-                raise RuntimeError("Requesting {0}{1}: {2} {3}"
+                raise RuntimeError("Requesting {0}{1}: {2}{3}"
                                  .format(host, path, err_no, err_msg))
 
         # If content is DER, log the base64 of it instead of raw bytes, to keep
