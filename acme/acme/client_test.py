@@ -2,7 +2,6 @@
 import datetime
 import json
 import unittest
-
 from six.moves import http_client  # pylint: disable=import-error
 
 import mock
@@ -621,6 +620,18 @@ class ClientNetworkTest(unittest.TestCase):
         self.assertRaises(requests.exceptions.RequestException,
                           self.net._send_request, 'GET', 'uri')
 
+    def test_urllib_error(self):
+        try:
+            # pylint: disable=protected-access
+            self.net._send_request('GET', "http://localhost:19123/nonexistent.txt")
+
+        except ValueError as e:
+            self.assertEqual("Requesting localhost/nonexistent: "
+                             "[Errno 111] Connection refused", str(e))
+
+        except requests.exceptions.ConnectionError as x:
+            self.assertEqual("('Connection aborted.', "
+                             "error(111, 'Connection refused'))", str(x))
 
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork which mock out response."""
