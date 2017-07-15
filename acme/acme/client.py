@@ -629,7 +629,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         kwargs.setdefault('timeout', self._default_timeout)
         try:
             response = self.session.request(method, url, *args, **kwargs)
-        except requests.RequestException as e:
+        except requests.exceptions.RequestException as e:
             #pylint: disable=pointless-string-statement
             """Requests response parsing
 
