@@ -645,13 +645,12 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             [Errno 65] No route to host',))"""
 
             err_regex = r".*host='(\S*)'.*url\: (\/\w*).*(\[Errno \d+\])([A-Za-z ]*)"
-            m = re.match(err_regex, str(e.message))
+            m = re.match(err_regex, str(e))
             if m is None:
                 raise
             else:
-                host, path, err_no, err_msg = m.group(1), m.group(2), m.group(3), m.group(4)
-                raise RuntimeError("Requesting {0}{1}: {2}{3}"
-                                 .format(host, path, err_no, err_msg))
+                host, path, err_no, err_msg = m.groups()
+                raise ValueError("Requesting {0}{1}: {2}{3}".format(host, path, err_no, err_msg))
 
         # If content is DER, log the base64 of it instead of raw bytes, to keep
         # binary data out of the logs.
