@@ -625,13 +625,7 @@ class ClientNetworkTest(unittest.TestCase):
             # pylint: disable=protected-access
             self.net._send_request('GET', "http://localhost:19123/nonexistent.txt")
 
-        # Python 3.x
-        except requests.ConnectionError as x:
-            self.assertEqual("Requesting localhost/nonexistent: "
-                             "[Errno 111] Connection refused", str(x))
-
-        # Python 2.x
-        except ValueError as e:
+       except ValueError as e:
             self.assertEqual("Requesting localhost/nonexistent: "
                              "[Errno 111] Connection refused", str(e))
 
