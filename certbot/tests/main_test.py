@@ -1026,6 +1026,12 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
                     jose.ComparableX509(cert),
                     mock.ANY)
 
+    def test_revoke_with_key_mismatch(self):
+        server = 'foo.bar'
+        self.assertRaises(errors.Error, self._call_no_clientmock,
+            ['--cert-path', CERT, '--key-path', KEY,
+                                 '--server', server, 'revoke'])
+
     @mock.patch('certbot.main._determine_account')
     def test_revoke_without_key(self, mock_determine_account):
         mock_determine_account.return_value = (mock.MagicMock(), None)
