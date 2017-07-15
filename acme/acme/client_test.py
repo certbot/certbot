@@ -629,6 +629,10 @@ class ClientNetworkTest(unittest.TestCase):
             self.assertEqual("Requesting localhost/nonexistent: "
                              "[Errno 111] Connection refused", str(e))
 
+        except requests.exceptions.ConnectionError as x:
+            self.assertEqual("('Connection aborted.', "
+                             "error(111, 'Connection refused'))", str(x))
+
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork which mock out response."""
     # pylint: disable=too-many-instance-attributes
