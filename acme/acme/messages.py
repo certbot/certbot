@@ -251,15 +251,12 @@ class Registration(ResourceBody):
     agreement = jose.Field('agreement', omitempty=True)
     status = jose.Field('status', omitempty=True)
 
-    phone_prefix = 'tel:'
     email_prefix = 'mailto:'
 
     @classmethod
-    def from_data(cls, phone=None, email=None, **kwargs):
+    def from_data(cls, email=None, **kwargs):
         """Create registration resource from contact details."""
         details = list(kwargs.pop('contact', ()))
-        if phone is not None:
-            details.append(cls.phone_prefix + phone)
         if email is not None:
             details.append(cls.email_prefix + email)
         kwargs['contact'] = tuple(details)
@@ -269,11 +266,6 @@ class Registration(ResourceBody):
         return tuple(
             detail[len(prefix):] for detail in self.contact
             if detail.startswith(prefix))
-
-    @property
-    def phones(self):
-        """All phones found in the ``contact`` field."""
-        return self._filter_contact(self.phone_prefix)
 
     @property
     def emails(self):

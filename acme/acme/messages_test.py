@@ -185,14 +185,10 @@ class RegistrationTest(unittest.TestCase):
 
     def test_from_data(self):
         from acme.messages import Registration
-        reg = Registration.from_data(phone='1234', email='admin@foo.com')
+        reg = Registration.from_data(email='admin@foo.com')
         self.assertEqual(reg.contact, (
-            'tel:1234',
             'mailto:admin@foo.com',
         ))
-
-    def test_phones(self):
-        self.assertEqual(('1234',), self.reg.phones)
 
     def test_emails(self):
         self.assertEqual(('admin@foo.com',), self.reg.emails)
