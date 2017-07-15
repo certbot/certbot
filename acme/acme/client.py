@@ -649,7 +649,8 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             if m is None:
                 raise
             else:
-                host, path, err_no, err_msg = m.groups()
+                host, path, err_no, err_msg = m.group(1), m.group(2), m.group(3), m.group(4)
+                print host
                 raise RuntimeError("Requesting {0}{1}: {2}{3}"
                                  .format(host, path, err_no, err_msg))
 
