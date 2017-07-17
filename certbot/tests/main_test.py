@@ -678,11 +678,12 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
     @test_util.patch_get_utility()
     def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter):
         cert_path = '/etc/letsencrypt/live/foo.bar'
+        key_path = '/etc/letsencrypt/live/baz.qux'
         date = '1970-01-01'
         mock_notAfter().date.return_value = date
 
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=cert_path,
-                                      fullchain_path=cert_path)
+                                      fullchain_path=cert_path, key_path=key_path)
         mock_client = mock.MagicMock()
         mock_client.obtain_and_enroll_certificate.return_value = mock_lineage
         self._certonly_new_request_common(mock_client)
@@ -691,6 +692,7 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
         self.assertTrue(cert_path in cert_msg)
         self.assertTrue(date in cert_msg)
+        self.assertTrue(key_path in cert_msg)
         self.assertTrue(
             'donate' in mock_get_utility().add_message.call_args[0][0])
 
@@ -1000,6 +1002,7 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         mock_get_utility = self._test_certonly_csr_common()
         cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
         self.assertTrue('fullchain.pem' in cert_msg)
+        self.assertFalse('Your key file has been saved at' in cert_msg)
         self.assertTrue(
             'donate' in mock_get_utility().add_message.call_args[0][0])
 
