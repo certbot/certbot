@@ -786,6 +786,18 @@ By default, the following locations are searched:
 
 .. keep it up to date with constants.py
 
+.. _log-rotation:
+
+Log Rotation
+============
+
+By default certbot stores status logs in ``/var/log/letsencrypt``. By default
+certbot will begin rotating logs once there are 1000 logs in the log directory.
+Meaning that once 1000 files are in ``/var/log/letsencrypt`` Certbot will delete
+the oldest one to make room for new logs. The number of subsequent logs can be
+changed by passing the desired number to the command line flag
+``--max-log-backups``.
+
 .. _command-line:
 
 Certbot command-line options
