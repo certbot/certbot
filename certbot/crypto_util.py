@@ -214,7 +214,7 @@ def verify_renewable_cert(renewable_cert):
     """
     verify_renewable_cert_sig(renewable_cert)
     verify_fullchain(renewable_cert)
-    verify_cert_matches_priv_key(renewable_cert)
+    verify_cert_matches_priv_key(renewable_cert.cert, renewable_cert.privkey)
 
 
 def verify_renewable_cert_sig(renewable_cert):
@@ -238,27 +238,24 @@ def verify_renewable_cert_sig(renewable_cert):
         raise errors.Error(error_str)
 
 
-def verify_cert_matches_priv_key(renewable_cert):
+def verify_cert_matches_priv_key(cert_path, key_path):
     """ Verifies that the private key and cert match.
 
-    :param `.storage.RenewableCert` renewable_cert: cert to verify
+    :param str cert_path: path to a cert in PEM format
+    :param str key_path: path to a private key file
 
     :raises errors.Error: If they don't match.
     """
     try:
-        with open(renewable_cert.cert) as cert:
-            cert = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, cert.read())
-        with open(renewable_cert.privkey) as privkey:
-            privkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, privkey.read())
         context = OpenSSL.SSL.Context(OpenSSL.SSL.SSLv23_METHOD)
-        context.use_privatekey(privkey)
-        context.use_certificate(cert)
+        context.use_certificate_file(cert_path)
+        context.use_privatekey_file(key_path)
         context.check_privatekey()
     except (IOError, OpenSSL.SSL.Error) as e:
         error_str = "verifying the cert located at {0} matches the \
                 private key located at {1} has failed. \
-                Details: {2}".format(renewable_cert.cert,
-                        renewable_cert.privkey, e)
+                Details: {2}".format(cert_path,
+                        key_path, e)
         logger.exception(error_str)
         raise errors.Error(error_str)
 

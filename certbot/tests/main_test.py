@@ -37,6 +37,8 @@ CERT = test_util.vector_path('cert.pem')
 CSR = test_util.vector_path('csr.der')
 KEY = test_util.vector_path('rsa256_key.pem')
 JWK = jose.JWKRSA.load(test_util.load_vector("rsa512_key_2.pem"))
+RSA2048_KEY_PATH = test_util.vector_path('rsa2048_key.pem')
+SS_CERT_PATH = test_util.vector_path('self_signed_cert.pem')
 
 
 class TestHandleIdenticalCerts(unittest.TestCase):
@@ -1015,17 +1017,23 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
     @mock.patch('certbot.main.client.acme_client')
     def test_revoke_with_key(self, mock_acme_client):
         server = 'foo.bar'
-        self._call_no_clientmock(['--cert-path', CERT, '--key-path', KEY,
+        self._call_no_clientmock(['--cert-path', SS_CERT_PATH, '--key-path', RSA2048_KEY_PATH,
                                  '--server', server, 'revoke'])
-        with open(KEY, 'rb') as f:
+        with open(RSA2048_KEY_PATH, 'rb') as f:
             mock_acme_client.Client.assert_called_once_with(
                 server, key=jose.JWK.load(f.read()), net=mock.ANY)
-        with open(CERT, 'rb') as f:
+        with open(SS_CERT_PATH, 'rb') as f:
             cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
             mock_revoke = mock_acme_client.Client().revoke
             mock_revoke.assert_called_once_with(
                     jose.ComparableX509(cert),
                     mock.ANY)
+
+    def test_revoke_with_key_mismatch(self):
+        server = 'foo.bar'
+        self.assertRaises(errors.Error, self._call_no_clientmock,
+            ['--cert-path', CERT, '--key-path', KEY,
+                                 '--server', server, 'revoke'])
 
     @mock.patch('certbot.main._determine_account')
     def test_revoke_without_key(self, mock_determine_account):

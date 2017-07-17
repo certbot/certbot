@@ -252,9 +252,11 @@ class VerifyCertMatchesPrivKeyTest(VerifyCertSetup):
 
     def _call(self, renewable_cert):
         from certbot.crypto_util import verify_cert_matches_priv_key
-        return verify_cert_matches_priv_key(renewable_cert)
+        return verify_cert_matches_priv_key(renewable_cert.cert, renewable_cert.privkey)
 
     def test_cert_priv_key_match(self):
+        self.renewable_cert.cert = SS_CERT_PATH
+        self.renewable_cert.privkey = RSA2048_KEY_PATH
         self.assertEqual(None, self._call(self.renewable_cert))
 
     def test_cert_priv_key_mismatch(self):

@@ -567,6 +567,7 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
     if config.key_path is not None:  # revocation by cert key
         logger.debug("Revoking %s using cert key %s",
                      config.cert_path[0], config.key_path[0])
+        crypto_util.verify_cert_matches_priv_key(config.cert_path[0], config.key_path[0])
         key = jose.JWK.load(config.key_path[1])
     else:  # revocation by account key
         logger.debug("Revoking %s using Account Key", config.cert_path[0])
