@@ -290,6 +290,7 @@ using the ``--cert-name`` flag to specify a particular certificate for the ``run
 
   certbot certonly --cert-name example.com
 
+.. _updating_certs:
 
 Re-creating and Updating Existing Certificates
 ----------------------------------------------
@@ -324,7 +325,24 @@ need to issue this command in normal circumstances.
 
 ``--expand`` tells Certbot to update an existing certificate with a new
 certificate that contains all of the old domains and one or more additional
-new domains.
+new domains. With the ``--expand`` option, use the ``-d`` option to specify
+all existing domains and one or more new domains.
+
+Example:
+
+.. code-block:: none
+
+  certbot --expand -d existing.com example.com,newdomain.com
+
+If you prefer, you can specify the domains individually like this:
+
+.. code-block:: none
+
+  certbot --expand -d existing.com -d example.com -d newdomain.com
+
+Consider using ``--cert-name`` instead of ``--expand``, as it gives more control
+over which certificate is modified and it lets you remove domains as well as adding them.
+
 
 ``--allow-subset-of-names`` tells Certbot to continue with certificate generation if
 only some of the specified domain authorizations can be obtained. This may
@@ -338,8 +356,10 @@ certificate counts against several rate limits that are intended to prevent
 abuse of the ACME protocol, as described
 `here <https://community.letsencrypt.org/t/rate-limits-for-lets-encrypt/6769>`__.
 
+.. _changing:
+
 Changing a Certificate's Domains
---------------------------------
+================================
 
 The ``--cert-name`` flag can also be used to modify the domains a certificate contains,
 by specifying new domains using the ``-d`` or ``--domains`` flag. If certificate ``example.com``
