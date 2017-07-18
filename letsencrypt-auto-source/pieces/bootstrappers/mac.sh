@@ -39,6 +39,6 @@ BootstrapMac() {
   if ! hash virtualenv 2>/dev/null; then
     say "virtualenv not installed."
     say "Installing with pip..."
-    pip install virtualenv
+    pip install --disable-pip-version-check virtualenv
   fi
 }
