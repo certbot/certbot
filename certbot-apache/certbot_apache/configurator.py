@@ -918,9 +918,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return None
 
     def _get_ssl_vhost_path(self, non_ssl_vh_fp):
-        """ Get a file path for SSL vhost, defaults to directory defined in
-        OS based constant "vhost_path", but returns a path relative to the
-        original vhost if default path does not exist.
+        """ Get a file path for SSL vhost, uses user defined path as priority,
+        but if the value is invalid or not defined, will fall back to non-ssl
+        vhost filepath.
 
         :param str non_ssl_vh_fp: File path of non-SSL vhost
 
@@ -928,11 +928,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: string
         """
 
-        if os.path.exists(self.vhostroot):
-            fp = (self.vhostroot + "/" +
-                  os.path.basename(non_ssl_vh_fp))
+        if self.conf("vhost-root") and os.path.exists(self.conf("vhost-root")):
+            # Defined by user on CLI
+
+            fp = (os.path.realpath(self.conf("vhost-root")) +
+                  "/" + os.path.basename(non_ssl_vh_fp))
         else:
-            fp = non_ssl_vh_fp
+            # Use non-ssl filepath
+            fp = os.path.realpath(non_ssl_vh_fp)
 
         if fp.endswith(".conf"):
             return fp[:-(len(".conf"))] + self.conf("le_vhost_ext")
