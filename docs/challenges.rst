@@ -2,7 +2,7 @@ Challenges
 ==========
 
 To receive a certificate from Let's Encrypt certificate authority (CA), you must pass a *challenge* to 
-prove you control each of the domain names that will be listed in the certificate. A challenge is  one of 
+prove you control each of the domain names that will be listed in the certificate. A challenge is one of 
 three tasks that only someone who controls the domain should be able to accomplish:
 
 * Posting a specified file in a specified location on a web site (the HTTP-01 challenge)
@@ -72,8 +72,8 @@ TLS-SNI-01 Challenge
 * When using the Apache plugin, make sure you are running Apache and no other web server on port 443.
 * When using the NGINX plugin, make sure you are running NGINX and no other web server on port 443.
 * With either the Apache or NGINX plugin, certbot modifies your web server configuration. If you get
-  an installation error then you have received a certificate but the plugin was unable to modify
-  your web server configuration, meaning that you'll have to install the certificate  manually.
+  an error after successfully completing the challenge, then you have received a certificate but the
+  plugin was unable to modify your web server configuration, meaning that you'll have to install the certificate manually.
   In that case, please file a bug to help us improve certbot!
 * When using the Standalone plugin, make sure another program is not already listening to port 443 on the server.
 
