@@ -200,6 +200,25 @@ ExperimentalBootstrap() {
   fi
 }
 
+DeprecationBootstrap() {
+  # Arguments: Platform name, bootstrap function name
+  if [ "$DEBUG" = 1 ]; then
+    if [ "$2" != "" ]; then
+      BootstrapMessage $1
+      $2
+    fi
+  else
+    error "WARNING: certbot-auto support for this $1 is DEPRECATED!"
+    error "Please visit certbot.eff.org to learn how to download a version of"
+    error "Certbot that is packaged for your system. While an existing version"
+    error "of certbot-auto may work currently, we have stopped supporting updating"
+    error "system packages for your system. Please switch to a packaged version"
+    error "as soon as possible."
+    exit 1
+  fi
+}
+
+
 DeterminePythonVersion() {
   for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
     # Break (while keeping the LE_PYTHON value) if found.
@@ -630,11 +649,11 @@ Bootstrap() {
   elif [ -f /etc/manjaro-release ]; then
     ExperimentalBootstrap "Manjaro Linux" BootstrapArchCommon
   elif [ -f /etc/gentoo-release ]; then
-    ExperimentalBootstrap "Gentoo" BootstrapGentooCommon
+    DeprecationBootstrap "Gentoo" BootstrapGentooCommon
   elif uname | grep -iq FreeBSD ; then
-    ExperimentalBootstrap "FreeBSD" BootstrapFreeBsd
+    DeprecationBootstrap "FreeBSD" BootstrapFreeBsd
   elif uname | grep -iq Darwin ; then
-    ExperimentalBootstrap "macOS" BootstrapMac
+    DeprecationBootstrap "macOS" BootstrapMac
   elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
     ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
   elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
