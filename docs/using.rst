@@ -39,7 +39,7 @@ serve your website over HTTPS using certificates obtained by certbot.
 
 Plugins that do both can be used with the ``certbot run`` command, which is the default
 when no command is specified. The ``run`` subcommand can also be used to specify
-a combination of distinct authenticator and installer plugins.
+a combination_ of distinct authenticator and installer plugins.
 
 =========== ==== ==== =============================================================== =============================
 Plugin      Auth Inst Notes                                                           Challenge types (and port)
@@ -204,6 +204,26 @@ Additionally you can specify scripts to prepare for validation and
 perform the authentication procedure and/or clean up after it by using
 the ``--manual-auth-hook`` and ``--manual-cleanup-hook`` flags. This is
 described in more depth in the hooks_ section.
+
+.. _combination:
+
+Combining plugins
+-----------------
+
+Sometimes you may want to specify a combination of distinct authenticator and
+installer plugins. To do so, specify the authenticator plugin with
+``--authenticator`` or ``-a`` and the installer plugin with ``--installer`` or
+``-i``.
+
+For instance, you may want to create a certificate using the webroot_ plugin
+for authentication and the apache_ plugin for installation, perhaps because you
+use a proxy or CDN for SSL and only want to secure the connection between them
+and your origin server, which cannot use the tls-sni-01_ challenge due to the
+intermediate proxy.
+
+::
+
+    certbot run -a webroot -i apache -w /var/www/html -d example.com
 
 .. _third-party-plugins:
 
@@ -765,6 +785,18 @@ By default, the following locations are searched:
   set).
 
 .. keep it up to date with constants.py
+
+.. _log-rotation:
+
+Log Rotation
+============
+
+By default certbot stores status logs in ``/var/log/letsencrypt``. By default
+certbot will begin rotating logs once there are 1000 logs in the log directory.
+Meaning that once 1000 files are in ``/var/log/letsencrypt`` Certbot will delete
+the oldest one to make room for new logs. The number of subsequent logs can be
+changed by passing the desired number to the command line flag
+``--max-log-backups``.
 
 .. _command-line:
 

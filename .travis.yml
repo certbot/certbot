@@ -173,4 +173,3 @@ notifications:
     on_success: never
     on_failure: always
     use_notice: true
-    skip_join: true

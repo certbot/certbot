@@ -45,25 +45,28 @@ class Validator(object):
         else:
             response = requests.get(url, allow_redirects=False)
 
-        if response.status_code not in (301, 303):
-            return False
-
         redirect_location = response.headers.get("location", "")
         # We're checking that the redirect we added behaves correctly.
         # It's okay for some server configuration to redirect to an
         # http URL, as long as it's on some other domain.
         if not redirect_location.startswith("https://"):
-            if not redirect_location.startswith("http://"):
-                return False
-            else:
-                if redirect_location[len("http://"):] == name:
-                    return False
+            return False
 
         if response.status_code != 301:
             logger.error("Server did not redirect with permanent code")
             return False
 
         return True
+
+    def any_redirect(self, name, port=80, headers=None):
+        """Test whether webserver redirects."""
+        url = "http://{0}:{1}".format(name, port)
+        if headers:
+            response = requests.get(url, headers=headers, allow_redirects=False)
+        else:
+            response = requests.get(url, allow_redirects=False)
+
+        return response.status_code in xrange(300, 309)
 
     def hsts(self, name):
         """Test for HTTP Strict Transport Security header"""
