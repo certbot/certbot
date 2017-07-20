@@ -132,8 +132,8 @@ Current Features
 
 * Supports multiple web servers:
 
-  - apache/2.x (beta support for auto-configuration)
-  - nginx/0.8.48+ (alpha support for auto-configuration, beta support in 0.14.0)
+  - apache/2.x
+  - nginx/0.8.48+
   - webroot (adds files to webroot directories in order to prove control of
     domains and obtain certs)
   - standalone (runs its own simple webserver to prove you control a domain)

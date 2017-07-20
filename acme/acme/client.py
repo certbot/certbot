@@ -519,7 +519,12 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         self._default_timeout = timeout
 
     def __del__(self):
-        self.session.close()
+        # Try to close the session, but don't show exceptions to the
+        # user if the call to close() fails. See #4840.
+        try:
+            self.session.close()
+        except Exception:  # pylint: disable=broad-except
+            pass
 
     def _wrap_in_jws(self, obj, nonce):
         """Wrap `JSONDeSerializable` object in JWS.

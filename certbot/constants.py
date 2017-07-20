@@ -18,7 +18,6 @@ CLI_DEFAULTS = dict(
         os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"),
                      "letsencrypt", "cli.ini"),
     ],
-    dry_run=False,
     verbose_count=-int(logging.INFO / 10),
     server="https://acme-v01.api.letsencrypt.org/directory",
     rsa_key_size=2048,

@@ -17,12 +17,6 @@ Welcome to the Certbot documentation!
 
    api
 
-.. toctree::
-   :hidden:
-
-   challenges
-   ciphers
-
 
 Indices and tables
 ==================

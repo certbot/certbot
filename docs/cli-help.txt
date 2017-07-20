@@ -3,26 +3,26 @@ usage:
 
 Certbot can obtain and install HTTPS/TLS/SSL certificates.  By default,
 it will attempt to use a webserver both for obtaining and installing the
-cert. The most common SUBCOMMANDS and flags are:
+certificate. The most common SUBCOMMANDS and flags are:
 
 obtain, install, and renew certificates:
-    (default) run   Obtain & install a cert in your current webserver
-    certonly        Obtain or renew a cert, but do not install it
-    renew           Renew all previously obtained certs that are near expiry
-   -d DOMAINS       Comma-separated list of domains to obtain a cert for
+    (default) run   Obtain & install a certificate in your current webserver
+    certonly        Obtain or renew a certificate, but do not install it
+    renew           Renew all previously obtained certificates that are near expiry
+   -d DOMAINS       Comma-separated list of domains to obtain a certificate for
 
   --apache          Use the Apache plugin for authentication & installation
   --standalone      Run a standalone webserver for authentication
   --nginx           Use the Nginx plugin for authentication & installation
   --webroot         Place files in a server's webroot folder for authentication
-  --manual          Obtain certs interactively, or using shell script hooks
+  --manual          Obtain certificates interactively, or using shell script hooks
 
    -n               Run non-interactively
-  --test-cert       Obtain a test cert from a staging server
-  --dry-run         Test "renew" or "certonly" without saving any certs to disk
+  --test-cert       Obtain a test certificate from a staging server
+  --dry-run         Test "renew" or "certonly" without saving any certificates to disk
 
 manage certificates:
-    certificates    Display information about certs you have from Certbot
+    certificates    Display information about certificates you have from Certbot
     revoke          Revoke a certificate (supply --cert-path)
     delete          Delete a certificate
 
@@ -57,19 +57,19 @@ optional arguments:
                         certificate, specifies the new certificate's name.
                         (default: None)
   --dry-run             Perform a test run of the client, obtaining test
-                        (invalid) certs but not saving them to disk. This can
-                        currently only be used with the 'certonly' and 'renew'
-                        subcommands. Note: Although --dry-run tries to avoid
-                        making any persistent changes on a system, it is not
-                        completely side-effect free: if used with webserver
-                        authenticator plugins like apache and nginx, it makes
-                        and then reverts temporary config changes in order to
-                        obtain test certs, and reloads webservers to deploy
-                        and then roll back those changes. It also calls --pre-
-                        hook and --post-hook commands if they are defined
-                        because they may be necessary to accurately simulate
-                        renewal. --renew-hook commands are not called.
-                        (default: False)
+                        (invalid) certificates but not saving them to disk.
+                        This can currently only be used with the 'certonly'
+                        and 'renew' subcommands. Note: Although --dry-run
+                        tries to avoid making any persistent changes on a
+                        system, it is not completely side-effect free: if used
+                        with webserver authenticator plugins like apache and
+                        nginx, it makes and then reverts temporary config
+                        changes in order to obtain test certificates, and
+                        reloads webservers to deploy and then roll back those
+                        changes. It also calls --pre-hook and --post-hook
+                        commands if they are defined because they may be
+                        necessary to accurately simulate renewal. --renew-hook
+                        commands are not called. (default: False)
   --debug-challenges    After setting up challenges, wait for user input
                         before submitting to CA (default: False)
   --preferred-challenges PREF_CHALLS
@@ -89,7 +89,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/0.14.2 (certbot;
+                        "". (default: CertbotACMEClient/0.16.0 (certbot;
                         Ubuntu 16.04.2 LTS) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/2.7.12). The flags
                         encoded in the user agent are: --duplicate, --force-
@@ -100,11 +100,11 @@ automation:
   Arguments for automating execution & other tweaks
 
   --keep-until-expiring, --keep, --reinstall
-                        If the requested cert matches an existing cert, always
-                        keep the existing one until it is due for renewal (for
-                        the 'run' subcommand this means reinstall the existing
-                        cert). (default: Ask)
-  --expand              If an existing cert is a strict subset of the
+                        If the requested certificate matches an existing
+                        certificate, always keep the existing one until it is
+                        due for renewal (for the 'run' subcommand this means
+                        reinstall the existing certificate). (default: Ask)
+  --expand              If an existing certificate is a strict subset of the
                         requested names, always expand and replace it with the
                         additional names. (default: Ask)
   --version             show program's version number and exit
@@ -176,8 +176,9 @@ testing:
 
   --test-cert, --staging
                         Use the staging server to obtain or revoke test
-                        (invalid) certs; equivalent to --server https://acme-
-                        staging.api.letsencrypt.org/directory (default: False)
+                        (invalid) certificates; equivalent to --server https
+                        ://acme-staging.api.letsencrypt.org/directory
+                        (default: False)
   --debug               Show tracebacks in case of errors, and allow certbot-
                         auto execution on experimental platforms (default:
                         False)
@@ -188,25 +189,32 @@ testing:
                         affects the port Certbot listens on. A conforming ACME
                         server will still attempt to connect on port 443.
                         (default: 443)
+  --tls-sni-01-address TLS_SNI_01_ADDRESS
+                        The address the server listens to during tls-sni-01
+                        challenge. (default: )
   --http-01-port HTTP01_PORT
                         Port used in the http-01 challenge. This only affects
                         the port Certbot listens on. A conforming ACME server
                         will still attempt to connect on port 80. (default:
                         80)
-  --break-my-certs      Be willing to replace or renew valid certs with
-                        invalid (testing/staging) certs (default: False)
+  --http-01-address HTTP01_ADDRESS
+                        The address the server listens to during http-01
+                        challenge. (default: )
+  --break-my-certs      Be willing to replace or renew valid certificates with
+                        invalid (testing/staging) certificates (default:
+                        False)
 
 paths:
   Arguments changing execution paths & servers
 
   --cert-path CERT_PATH
-                        Path to where cert is saved (with auth --csr),
+                        Path to where certificate is saved (with auth --csr),
                         installed from, or revoked. (default: None)
-  --key-path KEY_PATH   Path to private key for cert installation or
+  --key-path KEY_PATH   Path to private key for certificate installation or
                         revocation (if account key is missing) (default: None)
   --fullchain-path FULLCHAIN_PATH
-                        Accompanying path to a full certificate chain (cert
-                        plus chain). (default: None)
+                        Accompanying path to a full certificate chain
+                        (certificate plus chain). (default: None)
   --chain-path CHAIN_PATH
                         Accompanying path to a certificate chain. (default:
                         None)
@@ -230,10 +238,10 @@ manage:
                         directory
 
 run:
-  Options for obtaining & installing certs
+  Options for obtaining & installing certificates
 
 certonly:
-  Options for modifying how a cert is obtained
+  Options for modifying how a certificate is obtained
 
   --csr CSR             Path to a Certificate Signing Request (CSR) in DER or
                         PEM format. Currently --csr only works with the
@@ -272,10 +280,10 @@ renew:
                         the shell variable $RENEWED_LINEAGE will point to the
                         config live subdirectory (for example,
                         "/etc/letsencrypt/live/example.com") containing the
-                        new certs and keys; the shell variable
+                        new certificates and keys; the shell variable
                         $RENEWED_DOMAINS will contain a space-delimited list
-                        of renewed cert domains (for example, "example.com
-                        www.example.com" (default: None)
+                        of renewed certificate domains (for example,
+                        "example.com www.example.com" (default: None)
   --disable-hook-validation
                         Ordinarily the commands specified for --pre-hook
                         /--post-hook/--renew-hook will be checked for
@@ -293,7 +301,7 @@ delete:
   Options for deleting a certificate
 
 revoke:
-  Options for revocation of certs
+  Options for revocation of certificates
 
   --reason {keycompromise,affiliationchanged,superseded,unspecified,cessationofoperation}
                         Specify reason for revoking certificate. (default: 0)
@@ -329,7 +337,7 @@ unregister:
   --account ACCOUNT_ID  Account ID to use (default: None)
 
 install:
-  Options for modifying how a cert is deployed
+  Options for modifying how a certificate is deployed
 
 config_changes:
   Options for controlling which changes are displayed
@@ -352,8 +360,8 @@ plugins:
   --installers          Limit to installer plugins only. (default: None)
 
 update_symlinks:
-  Recreates cert and key symlinks in /etc/letsencrypt/live, if you changed
-  them by hand or edited a renewal configuration file
+  Recreates certificate and key symlinks in /etc/letsencrypt/live, if you
+  changed them by hand or edited a renewal configuration file
 
 plugins:
   Plugin Selection: Certbot client supports an extensible plugins
@@ -371,14 +379,36 @@ plugins:
   -i INSTALLER, --installer INSTALLER
                         Installer plugin name (also used to find domains).
                         (default: None)
-  --apache              Obtain and install certs using Apache (default: False)
-  --nginx               Obtain and install certs using Nginx (default: False)
-  --standalone          Obtain certs using a "standalone" webserver. (default:
+  --apache              Obtain and install certificates using Apache (default:
                         False)
-  --manual              Provide laborious manual instructions for obtaining a
-                        cert (default: False)
-  --webroot             Obtain certs by placing files in a webroot directory.
+  --nginx               Obtain and install certificates using Nginx (default:
+                        False)
+  --standalone          Obtain certificates using a "standalone" webserver.
                         (default: False)
+  --manual              Provide laborious manual instructions for obtaining a
+                        certificate (default: False)
+  --webroot             Obtain certificates by placing files in a webroot
+                        directory. (default: False)
+  --dns-cloudflare      Obtain certificates using a DNS TXT record (if you are
+                        using Cloudflare for DNS). (default: False)
+  --dns-cloudxns        Obtain certificates using a DNS TXT record (if you are
+                        using CloudXNS for DNS). (default: False)
+  --dns-digitalocean    Obtain certificates using a DNS TXT record (if you are
+                        using DigitalOcean for DNS). (default: False)
+  --dns-dnsimple        Obtain certificates using a DNS TXT record (if you are
+                        using DNSimple for DNS). (default: False)
+  --dns-dnsmadeeasy     Obtain certificates using a DNS TXT record (if you
+                        areusing DNS Made Easy for DNS). (default: False)
+  --dns-google          Obtain certificates using a DNS TXT record (if you are
+                        using Google Cloud DNS). (default: False)
+  --dns-luadns          Obtain certificates using a DNS TXT record (if you are
+                        using LuaDNS for DNS). (default: False)
+  --dns-nsone           Obtain certificates using a DNS TXT record (if you are
+                        using NS1 for DNS). (default: False)
+  --dns-rfc2136         Obtain certificates using a DNS TXT record (if you are
+                        using BIND for DNS). (default: False)
+  --dns-route53         Obtain certificates using a DNS TXT record (if you are
+                        using Route53 for DNS). (default: False)
 
 apache:
   Apache Web Server plugin - Beta
@@ -410,14 +440,141 @@ apache:
                         Let installer handle enabling sites for you.(Only
                         Ubuntu/Debian currently) (default: True)
 
+certbot-route53:auth:
+  Obtain certificates using a DNS TXT record (if you are using AWS Route53
+  for DNS).
+
+  --certbot-route53:auth-propagation-seconds CERTBOT_ROUTE53:AUTH_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 10)
+
+dns-cloudflare:
+  Obtain certificates using a DNS TXT record (if you are using Cloudflare
+  for DNS).
+
+  --dns-cloudflare-propagation-seconds DNS_CLOUDFLARE_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 10)
+  --dns-cloudflare-credentials DNS_CLOUDFLARE_CREDENTIALS
+                        Cloudflare credentials INI file. (default: None)
+
+dns-cloudxns:
+  Obtain certificates using a DNS TXT record (if you are using CloudXNS for
+  DNS).
+
+  --dns-cloudxns-propagation-seconds DNS_CLOUDXNS_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 30)
+  --dns-cloudxns-credentials DNS_CLOUDXNS_CREDENTIALS
+                        CloudXNS credentials INI file. (default: None)
+
+dns-digitalocean:
+  Obtain certs using a DNS TXT record (if you are using DigitalOcean for
+  DNS).
+
+  --dns-digitalocean-propagation-seconds DNS_DIGITALOCEAN_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 10)
+  --dns-digitalocean-credentials DNS_DIGITALOCEAN_CREDENTIALS
+                        DigitalOcean credentials INI file. (default: None)
+
+dns-dnsimple:
+  Obtain certificates using a DNS TXT record (if you are using DNSimple for
+  DNS).
+
+  --dns-dnsimple-propagation-seconds DNS_DNSIMPLE_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 30)
+  --dns-dnsimple-credentials DNS_DNSIMPLE_CREDENTIALS
+                        DNSimple credentials INI file. (default: None)
+
+dns-dnsmadeeasy:
+  Obtain certificates using a DNS TXT record (if you are using DNS Made Easy
+  for DNS).
+
+  --dns-dnsmadeeasy-propagation-seconds DNS_DNSMADEEASY_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 60)
+  --dns-dnsmadeeasy-credentials DNS_DNSMADEEASY_CREDENTIALS
+                        DNS Made Easy credentials INI file. (default: None)
+
+dns-google:
+  Obtain certificates using a DNS TXT record (if you are using Google Cloud
+  DNS for DNS).
+
+  --dns-google-propagation-seconds DNS_GOOGLE_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 60)
+  --dns-google-credentials DNS_GOOGLE_CREDENTIALS
+                        Path to Google Cloud DNS service account JSON file.
+                        (See https://developers.google.com/identity/protocols/
+                        OAuth2ServiceAccount#creatinganaccount forinformation
+                        about creating a service account and
+                        https://cloud.google.com/dns/access-
+                        control#permissions_and_roles for information about
+                        therequired permissions.) (default: None)
+
+dns-luadns:
+  Obtain certificates using a DNS TXT record (if you are using LuaDNS for
+  DNS).
+
+  --dns-luadns-propagation-seconds DNS_LUADNS_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 30)
+  --dns-luadns-credentials DNS_LUADNS_CREDENTIALS
+                        LuaDNS credentials INI file. (default: None)
+
+dns-nsone:
+  Obtain certificates using a DNS TXT record (if you are using NS1 for DNS).
+
+  --dns-nsone-propagation-seconds DNS_NSONE_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 30)
+  --dns-nsone-credentials DNS_NSONE_CREDENTIALS
+                        NS1 credentials file. (default: None)
+
+dns-rfc2136:
+  Obtain certificates using a DNS TXT record (if you are using BIND for
+  DNS).
+
+  --dns-rfc2136-propagation-seconds DNS_RFC2136_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 60)
+  --dns-rfc2136-credentials DNS_RFC2136_CREDENTIALS
+                        RFC 2136 credentials INI file. (default: None)
+
+dns-route53:
+  Obtain certificates using a DNS TXT record (if you are using AWS Route53
+  for DNS).
+
+  --dns-route53-propagation-seconds DNS_ROUTE53_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 10)
+
 manual:
   Authenticate through manual configuration or custom shell scripts. When
   using shell scripts, an authenticator script must be provided. The
-  environment variables available to this script are $CERTBOT_DOMAIN which
-  contains the domain being authenticated, $CERTBOT_VALIDATION which is the
-  validation string, and $CERTBOT_TOKEN which is the filename of the
-  resource requested when performing an HTTP-01 challenge. An additional
-  cleanup script can also be provided and can use the additional variable
+  environment variables available to this script depend on the type of
+  challenge. $CERTBOT_DOMAIN will always contain the domain being
+  authenticated. For HTTP-01 and DNS-01, $CERTBOT_VALIDATION is the
+  validation string, and $CERTBOT_TOKEN is the filename of the resource
+  requested when performing an HTTP-01 challenge. When performing a TLS-
+  SNI-01 challenge, $CERTBOT_SNI_DOMAIN will contain the SNI name for which
+  the ACME server expects to be presented with the self-signed certificate
+  located at $CERTBOT_CERT_PATH. The secret key needed to complete the TLS
+  handshake is located at $CERTBOT_KEY_PATH. An additional cleanup script
+  can also be provided and can use the additional variable
   $CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth
   script.
 

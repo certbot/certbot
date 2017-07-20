@@ -4,7 +4,9 @@ import collections
 import functools
 import logging
 import os
+import socket
 import sys
+import threading
 
 from six.moves import BaseHTTPServer  # type: ignore  # pylint: disable=import-error
 from six.moves import http_client  # pylint: disable=import-error
@@ -26,6 +28,11 @@ class TLSServer(socketserver.TCPServer):
     """Generic TLS Server."""
 
     def __init__(self, *args, **kwargs):
+        self.ipv6 = kwargs.pop("ipv6", False)
+        if self.ipv6:
+            self.address_family = socket.AF_INET6
+        else:
+            self.address_family = socket.AF_INET
         self.certs = kwargs.pop("certs", {})
         self.method = kwargs.pop(
             # pylint: disable=protected-access
@@ -49,12 +56,81 @@ class ACMEServerMixin:  # pylint: disable=old-style-class
     allow_reuse_address = True
 
 
+class BaseDualNetworkedServers(object):
+    """Base class for a pair of IPv6 and IPv4 servers that tries to do everything
+       it's asked for both servers, but where failures in one server don't
+       affect the other.
+
+       If two servers are instantiated, they will serve on the same port.
+       """
+
+    def __init__(self, ServerClass, server_address, *remaining_args, **kwargs):
+        port = server_address[1]
+        self.threads = []
+        self.servers = []
+
+        # Must try True first.
+        # Ubuntu, for example, will fail to bind to IPv4 if we've already bound
+        # to IPv6. But that's ok, since it will accept IPv4 connections on the IPv6
+        # socket. On the other hand, FreeBSD will successfully bind to IPv4 on the
+        # same port, which means that server will accept the IPv4 connections.
+        # If Python is compiled without IPv6, we'll error out but (probably) successfully
+        # create the IPv4 server.
+        for ip_version in [True, False]:
+            try:
+                kwargs["ipv6"] = ip_version
+                new_address = (server_address[0],) + (port,) + server_address[2:]
+                new_args = (new_address,) + remaining_args
+                server = ServerClass(*new_args, **kwargs) # pylint: disable=star-args
+            except socket.error:
+                logger.debug("Failed to bind to %s:%s using %s", new_address[0],
+                    new_address[1], "IPv6" if ip_version else "IPv4")
+            else:
+                self.servers.append(server)
+                # If two servers are set up and port 0 was passed in, ensure we always
+                # bind to the same port for both servers.
+                port = server.socket.getsockname()[1]
+        if len(self.servers) == 0:
+            raise socket.error("Could not bind to IPv4 or IPv6.")
+
+    def serve_forever(self):
+        """Wraps socketserver.TCPServer.serve_forever"""
+        for server in self.servers:
+            thread = threading.Thread(
+                # pylint: disable=no-member
+                target=server.serve_forever)
+            thread.start()
+            self.threads.append(thread)
+
+    def getsocknames(self):
+        """Wraps socketserver.TCPServer.socket.getsockname"""
+        return [server.socket.getsockname() for server in self.servers]
+
+    def shutdown_and_server_close(self):
+        """Wraps socketserver.TCPServer.shutdown, socketserver.TCPServer.server_close, and
+           threading.Thread.join"""
+        for server in self.servers:
+            server.shutdown()
+            server.server_close()
+        for thread in self.threads:
+            thread.join()
+        self.threads = []
+
+
 class TLSSNI01Server(TLSServer, ACMEServerMixin):
     """TLSSNI01 Server."""
 
-    def __init__(self, server_address, certs):
+    def __init__(self, server_address, certs, ipv6=False):
         TLSServer.__init__(
-            self, server_address, BaseRequestHandlerWithLogging, certs=certs)
+            self, server_address, BaseRequestHandlerWithLogging, certs=certs, ipv6=ipv6)
+
+
+class TLSSNI01DualNetworkedServers(BaseDualNetworkedServers):
+    """TLSSNI01Server Wrapper. Tries everything for both. Failures for one don't
+       affect the other."""
+
+    def __init__(self, *args, **kwargs):
+        BaseDualNetworkedServers.__init__(self, TLSSNI01Server, *args, **kwargs)
 
 
 class BaseRequestHandlerWithLogging(socketserver.BaseRequestHandler):
@@ -70,13 +146,33 @@ class BaseRequestHandlerWithLogging(socketserver.BaseRequestHandler):
         socketserver.BaseRequestHandler.handle(self)
 
 
-class HTTP01Server(BaseHTTPServer.HTTPServer, ACMEServerMixin):
+class HTTPServer(BaseHTTPServer.HTTPServer):
+    """Generic HTTP Server."""
+
+    def __init__(self, *args, **kwargs):
+        self.ipv6 = kwargs.pop("ipv6", False)
+        if self.ipv6:
+            self.address_family = socket.AF_INET6
+        else:
+            self.address_family = socket.AF_INET
+        BaseHTTPServer.HTTPServer.__init__(self, *args, **kwargs)
+
+
+class HTTP01Server(HTTPServer, ACMEServerMixin):
     """HTTP01 Server."""
 
-    def __init__(self, server_address, resources):
-        BaseHTTPServer.HTTPServer.__init__(
+    def __init__(self, server_address, resources, ipv6=False):
+        HTTPServer.__init__(
             self, server_address, HTTP01RequestHandler.partial_init(
-                simple_http_resources=resources))
+                simple_http_resources=resources), ipv6=ipv6)
+
+
+class HTTP01DualNetworkedServers(BaseDualNetworkedServers):
+    """HTTP01Server Wrapper. Tries everything for both. Failures for one don't
+       affect the other."""
+
+    def __init__(self, *args, **kwargs):
+        BaseDualNetworkedServers.__init__(self, HTTP01Server, *args, **kwargs)
 
 
 class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):

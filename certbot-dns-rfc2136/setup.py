@@ -1,14 +1,16 @@
 import sys
 
-from distutils.core import setup
+from setuptools import setup
 from setuptools import find_packages
 
-version = '0.15.0.dev0'
 
+version = '0.17.0.dev0'
+
+# Please update tox.ini when modifying dependency version requirements
 install_requires = [
     'acme=={0}'.format(version),
     'certbot=={0}'.format(version),
-    'boto3',
+    'dnspython',
     'mock',
     # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
     # will tolerate; see #2599:
@@ -16,10 +18,15 @@ install_requires = [
     'zope.interface',
 ]
 
+docs_extras = [
+    'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
+    'sphinx_rtd_theme',
+]
+
 setup(
-    name='certbot-route53',
+    name='certbot-dns-rfc2136',
     version=version,
-    description="Route53 DNS Authenticator plugin for Certbot",
+    description="RFC 2136 DNS Authenticator plugin for Certbot",
     url='https://github.com/certbot/certbot',
     author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
@@ -46,14 +53,17 @@ setup(
         'Topic :: System :: Systems Administration',
         'Topic :: Utilities',
     ],
+
     packages=find_packages(),
     include_package_data=True,
     install_requires=install_requires,
-    keywords=['certbot', 'route53', 'aws'],
+    extras_require={
+        'docs': docs_extras,
+    },
     entry_points={
         'certbot.plugins': [
-            'auth = certbot_route53.authenticator:Authenticator'
+            'dns-rfc2136 = certbot_dns_rfc2136.dns_rfc2136:Authenticator',
         ],
     },
-    test_suite='certbot_route53',
+    test_suite='certbot_dns_rfc2136',
 )

@@ -357,7 +357,8 @@ VERB_HELP = [
     }),
     ("delete", {
         "short": "Clean up all files related to a certificate",
-        "opts": "Options for deleting a certificate"
+        "opts": "Options for deleting a certificate",
+        "usage": "\n\n  certbot delete --cert-name CERTNAME\n\n"
     }),
     ("revoke", {
         "short": "Revoke a certificate specified with --cert-path",
@@ -366,33 +367,41 @@ VERB_HELP = [
     }),
     ("register", {
         "short": "Register for account with Let's Encrypt / other ACME server",
-        "opts": "Options for account registration & modification"
+        "opts": "Options for account registration & modification",
+        "usage": "\n\n  certbot register --email user@example.com [options]\n\n"
     }),
     ("unregister", {
         "short": "Irrevocably deactivate your account",
-        "opts": "Options for account deactivation."
+        "opts": "Options for account deactivation.",
+        "usage": "\n\n  certbot unregister [options]\n\n"
     }),
     ("install", {
         "short": "Install an arbitrary certificate in a server",
-        "opts": "Options for modifying how a certificate is deployed"
+        "opts": "Options for modifying how a certificate is deployed",
+        "usage": "\n\n  certbot install --cert-path /path/to/fullchain.pem "
+        " --key-path /path/to/private-key [options]\n\n"
     }),
     ("config_changes", {
         "short": "Show changes that Certbot has made to server configurations",
-        "opts": "Options for controlling which changes are displayed"
+        "opts": "Options for controlling which changes are displayed",
+        "usage": "\n\n  certbot config_changes --num NUM [options]\n\n"
     }),
     ("rollback", {
         "short": "Roll back server conf changes made during certificate installation",
-        "opts": "Options for rolling back server configuration changes"
+        "opts": "Options for rolling back server configuration changes",
+        "usage": "\n\n  certbot rollback --checkpoints 3 [options]\n\n"
     }),
     ("plugins", {
         "short": "List plugins that are installed and available on your system",
-        "opts": 'Options for for the "plugins" subcommand'
+        "opts": 'Options for for the "plugins" subcommand',
+        "usage": "\n\n  certbot plugins [options]\n\n"
     }),
     ("update_symlinks", {
         "short": "Recreate symlinks in your /etc/letsencrypt/live/ directory",
         "opts": ("Recreates certificate and key symlinks in {0}, if you changed them by hand "
                  "or edited a renewal configuration file".format(
-                  os.path.join(flag_default("config_dir"), "live")))
+                  os.path.join(flag_default("config_dir"), "live"))),
+        "usage": "\n\n  certbot update_symlinks [options]\n\n"
     }),
 
 ]
@@ -431,8 +440,8 @@ class HelpfulArgumentParser(object):
         }
 
         # List of topics for which additional help can be provided
-        HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
-        HELP_TOPICS += self.COMMANDS_TOPICS + ["manage"]
+        HELP_TOPICS = ["all", "security", "paths", "automation", "testing"]
+        HELP_TOPICS += list(self.VERBS) + self.COMMANDS_TOPICS + ["manage"]
 
         plugin_names = list(plugins)
         self.help_topics = HELP_TOPICS + plugin_names + [None]
@@ -841,6 +850,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         None, "-t", "--text", dest="text_mode", action="store_true",
         help=argparse.SUPPRESS)
     helpful.add(
+        None, "--max-log-backups", type=nonnegative_int, default=1000,
+        help="Specifies the maximum number of backup logs that should "
+             "be kept by Certbot's built in log rotation. Setting this "
+             "flag to 0 disables log rotation entirely, causing "
+             "Certbot to always append to the same log file.")
+    helpful.add(
         [None, "automation", "run", "certonly"], "-n", "--non-interactive", "--noninteractive",
         dest="noninteractive_mode", action="store_true",
         help="Run without ever asking for user input. This may require "
@@ -878,7 +893,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              " in order to obtain test certificates, and reloads webservers to deploy and then"
              " roll back those changes.  It also calls --pre-hook and --post-hook commands"
              " if they are defined because they may be necessary to accurately simulate"
-             " renewal. --renew-hook commands are not called.")
+             " renewal. --deploy-hook commands are not called.")
     helpful.add(
         ["register", "automation"], "--register-unsafely-without-email", action="store_true",
         help="Specifying this flag enables registering an account with no "
@@ -1076,24 +1091,28 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " run if an attempt was made to obtain/renew a certificate. If"
         " multiple renewed certificates have identical post-hooks, only"
         " one will be run.")
+    helpful.add("renew", "--renew-hook",
+                action=_RenewHookAction, help=argparse.SUPPRESS)
     helpful.add(
-        "renew", "--renew-hook",
-        help="Command to be run in a shell once for each successfully renewed"
-        " certificate. For this command, the shell variable $RENEWED_LINEAGE"
-        " will point to the config live subdirectory (for example,"
-        " \"/etc/letsencrypt/live/example.com\") containing the new certificates"
-        " and keys; the shell variable $RENEWED_DOMAINS will contain a"
-        " space-delimited list of renewed certificate domains (for example,"
-        " \"example.com www.example.com\"")
+        "renew", "--deploy-hook", action=_DeployHookAction,
+        help="Command to be run in a shell once for each successfully"
+        " issued certificate. For this command, the shell variable"
+        " $RENEWED_LINEAGE will point to the config live subdirectory"
+        ' (for example, "/etc/letsencrypt/live/example.com") containing'
+        " the new certificates and keys; the shell variable"
+        " $RENEWED_DOMAINS will contain a space-delimited list of"
+        ' renewed certificate domains (for example, "example.com'
+        ' www.example.com"')
     helpful.add(
         "renew", "--disable-hook-validation",
         action='store_false', dest='validate_hooks', default=True,
         help="Ordinarily the commands specified for"
-        " --pre-hook/--post-hook/--renew-hook will be checked for validity, to"
-        " see if the programs being run are in the $PATH, so that mistakes can"
-        " be caught early, even when the hooks aren't being run just yet. The"
-        " validation is rather simplistic and fails if you use more advanced"
-        " shell constructs, so you can use this switch to disable it."
+        " --pre-hook/--post-hook/--deploy-hook will be checked for"
+        " validity, to see if the programs being run are in the $PATH,"
+        " so that mistakes can be caught early, even when the hooks"
+        " aren't being run just yet. The validation is rather"
+        " simplistic and fails if you use more advanced shell"
+        " constructs, so you can use this switch to disable it."
         " (default: False)")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
@@ -1243,11 +1262,23 @@ def _plugins_parsing(helpful, plugins):
     helpful.add(["plugins", "certonly"], "--dns-dnsimple", action="store_true",
                 help=('Obtain certificates using a DNS TXT record (if you are '
                       'using DNSimple for DNS).'))
+    helpful.add(["plugins", "certonly"], "--dns-dnsmadeeasy", action="store_true",
+                help=('Obtain certificates using a DNS TXT record (if you are'
+                      'using DNS Made Easy for DNS).'))
     helpful.add(["plugins", "certonly"], "--dns-google", action="store_true",
                 help=('Obtain certificates using a DNS TXT record (if you are '
                       'using Google Cloud DNS).'))
+    helpful.add(["plugins", "certonly"], "--dns-luadns", action="store_true",
+                help=('Obtain certificates using a DNS TXT record (if you are '
+                      'using LuaDNS for DNS).'))
     helpful.add(["plugins", "certonly"], "--dns-nsone", action="store_true",
-                help='Obtain certs using a DNS TXT record (if you are using NS1 for DNS).')
+                help=('Obtain certificates using a DNS TXT record (if you are '
+                      'using NS1 for DNS).'))
+    helpful.add(["plugins", "certonly"], "--dns-rfc2136", action="store_true",
+                help='Obtain certificates using a DNS TXT record (if you are using BIND for DNS).')
+    helpful.add(["plugins", "certonly"], "--dns-route53", action="store_true",
+                help=('Obtain certificates using a DNS TXT record (if you are using Route53 for '
+                      'DNS).'))
 
     # things should not be reorder past/pre this comment:
     # plugins_group should be displayed in --help before plugin
@@ -1328,3 +1359,49 @@ def parse_preferred_challenges(pref_challs):
         raise errors.Error(
             "Unrecognized challenges: {0}".format(unrecognized))
     return challs
+
+
+class _DeployHookAction(argparse.Action):
+    """Action class for parsing deploy hooks."""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        renew_hook_set = namespace.deploy_hook != namespace.renew_hook
+        if renew_hook_set and namespace.renew_hook != values:
+            raise argparse.ArgumentError(
+                self, "conflicts with --renew-hook value")
+        namespace.deploy_hook = namespace.renew_hook = values
+
+
+class _RenewHookAction(argparse.Action):
+    """Action class for parsing renew hooks."""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        deploy_hook_set = namespace.deploy_hook is not None
+        if deploy_hook_set and namespace.deploy_hook != values:
+            raise argparse.ArgumentError(
+                self, "conflicts with --deploy-hook value")
+        namespace.renew_hook = values
+
+
+def nonnegative_int(value):
+    """Converts value to an int and checks that it is not negative.
+
+    This function should used as the type parameter for argparse
+    arguments.
+
+    :param str value: value provided on the command line
+
+    :returns: integer representation of value
+    :rtype: int
+
+    :raises argparse.ArgumentTypeError: if value isn't a non-negative integer
+
+    """
+    try:
+        int_value = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError("value must be an integer")
+
+    if int_value < 0:
+        raise argparse.ArgumentTypeError("value must be non-negative")
+    return int_value

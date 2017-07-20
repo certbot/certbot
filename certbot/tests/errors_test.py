@@ -23,6 +23,17 @@ class FailedChallengesTest(unittest.TestCase):
         self.assertTrue(str(self.error).startswith(
             "Failed authorization procedure. example.com (dns-01): tls"))
 
+    def test_unicode(self):
+        from certbot.errors import FailedChallenges
+        arabic_detail = u'\u0639\u062f\u0627\u0644\u0629'
+        arabic_error = FailedChallenges(set([achallenges.DNS(
+            domain="example.com", challb=messages.ChallengeBody(
+                chall=acme_util.DNS01, uri=None,
+                error=messages.Error(typ="tls", detail=arabic_detail)))]))
+
+        self.assertTrue(str(arabic_error).startswith(
+            "Failed authorization procedure. example.com (dns-01): tls"))
+
 
 class StandaloneBindErrorTest(unittest.TestCase):
     """Tests for certbot.errors.StandaloneBindError."""

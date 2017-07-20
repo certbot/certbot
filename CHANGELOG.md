@@ -2,6 +2,107 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.16.0 - 2017-07-05
+
+### Added
+
+* A plugin for performing DNS challenges using dynamic DNS updates as defined
+  in RFC 2316. This plugin is packaged separately from Certbot and is available
+  at https://pypi.python.org/pypi/certbot-dns-rfc2136. It supports Python 2.6,
+  2.7, and 3.3+. At this time, there isn't a good way to install this plugin
+  when using certbot-auto, but this should change in the near future.
+* Plugins for performing DNS challenges for the providers
+  [DNS Made Easy](https://pypi.python.org/pypi/certbot-dns-dnsmadeeasy) and
+  [LuaDNS](https://pypi.python.org/pypi/certbot-dns-luadns). These plugins are
+  packaged separately from Certbot and support Python 2.7 and 3.3+. Currently,
+  there isn't a good way to install these plugins when using certbot-auto,
+  but that should change soon.
+* Support for performing TLS-SNI-01 challenges when using the manual plugin.
+* Automatic detection of Arch Linux in the Apache plugin providing better
+  default settings for the plugin.
+
+### Changed
+
+* The text of the interactive question about whether a redirect from HTTP to
+  HTTPS should be added by Certbot has been rewritten to better explain the
+  choices to the user.
+* Simplified HTTP challenge instructions in the manual plugin.
+
+### Fixed
+
+* Problems performing a dry run when using the Nginx plugin have been fixed.
+* Resolved an issue where certbot-dns-digitalocean's test suite would sometimes
+  fail when ran using Python 3.
+* On some systems, previous versions of certbot-auto would error out with a
+  message about a missing hash for setuptools. This has been fixed.
+* A bug where Certbot would sometimes not print a space at the end of an
+  interactive prompt has been resolved.
+* Nonfatal tracebacks are no longer shown in rare cases where Certbot
+  encounters an exception trying to close its TCP connection with the ACME
+  server.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.16.0+is%3Aclosed
+
+## 0.15.0 - 2017-06-08
+
+### Added
+
+* Plugins for performing DNS challenges for popular providers. Like the Apache
+  and Nginx plugins, these plugins are packaged separately and not included in
+  Certbot by default. So far, we have plugins for
+  [Amazon Route 53](https://pypi.python.org/pypi/certbot-dns-route53),
+  [Cloudflare](https://pypi.python.org/pypi/certbot-dns-cloudflare),
+  [DigitalOcean](https://pypi.python.org/pypi/certbot-dns-digitalocean), and
+  [Google Cloud](https://pypi.python.org/pypi/certbot-dns-google) which all
+  work on Python 2.6, 2.7, and 3.3+. Additionally, we have plugins for
+  [CloudXNS](https://pypi.python.org/pypi/certbot-dns-cloudxns),
+  [DNSimple](https://pypi.python.org/pypi/certbot-dns-dnsimple),
+  [NS1](https://pypi.python.org/pypi/certbot-dns-nsone) which work on Python
+  2.7 and 3.3+ (and not 2.6). Currently, there isn't a good way to install
+  these plugins when using `certbot-auto`, but that should change soon.
+* IPv6 support in the standalone plugin. When performing a challenge, the
+  standalone plugin automatically handles listening for IPv4/IPv6 traffic based
+  on the configuration of your system.
+* A mechanism for keeping your Apache and Nginx SSL/TLS configuration up to
+  date. When the Apache or Nginx plugins are used, they place SSL/TLS
+  configuration options in the root of Certbot's config directory
+  (`/etc/letsencrypt` by default). Now when a new version of these plugins run
+  on your system, they will automatically update the file to the newest
+  version if it is unmodified. If you manually modified the file, Certbot will
+  display a warning giving you a path to the updated file which you can use as
+  a reference to manually update your modified copy.
+* `--http-01-address` and `--tls-sni-01-address` flags for controlling the
+  address Certbot listens on when using the standalone plugin.
+* The command `certbot certificates` that lists certificates managed by Certbot
+  now performs additional validity checks to notify you if your files have
+  become corrupted.
+
+### Changed
+
+* Messages custom hooks print to `stdout` are now displayed by Certbot when not
+  running in `--quiet` mode.
+* `jwk` and `alg` fields in JWS objects have been moved into the protected
+  header causing Certbot to more closely follow the latest version of the ACME
+  spec.
+
+### Fixed
+
+* Permissions on renewal configuration files are now properly preserved when
+  they are updated.
+* A bug causing Certbot to display strange defaults in its help output when
+  using Python <= 2.7.4 has been fixed.
+* Certbot now properly handles mixed case domain names found in custom CSRs.
+* A number of poorly worded prompts and error messages.
+
+### Removed
+
+* Support for OpenSSL 1.0.0 in `certbot-auto` has been removed as we now pin a
+  newer version of `cryptography` which dropped support for this version.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.15.0+is%3Aclosed
+
 ## 0.14.2 - 2017-05-25
 
 ### Fixed

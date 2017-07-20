@@ -22,7 +22,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     This Authenticator uses the NS1 API to fulfill a dns-01 challenge.
     """
 
-    description = 'Obtain certs using a DNS TXT record (if you are using NS1 for DNS).'
+    description = 'Obtain certificates using a DNS TXT record (if you are using NS1 for DNS).'
     ttl = 60
 
     def __init__(self, *args, **kwargs):
