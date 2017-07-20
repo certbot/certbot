@@ -1,9 +1,11 @@
 """Certbot main entry point."""
 from __future__ import print_function
+
 import logging.handlers
 import os
 import sys
 
+import configobj
 import zope.component
 
 from acme import jose
@@ -430,7 +432,9 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
         config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
 
     # don't delete if the archive_dir is used by some other lineage
-    archive_dir = storage.full_archive_path(None, config, config.certname)
+    archive_dir = storage.full_archive_path(
+            configobj.ConfigObj(storage.renewal_file_for_certname(config, config.certname)),
+            config, config.certname)
     try:
         cert_manager.match_and_check_overlaps(config, [lambda x: archive_dir],
             lambda x: x.archive_dir, lambda x: x)

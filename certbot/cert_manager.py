@@ -157,7 +157,7 @@ def cert_path_to_lineage(cli_config):
         # if you use this function.
         return pattern[0]
 
-    options = [lambda x: x.fullchain_path, lambda x: x.chain_path, lambda x: x.cert_path,
+    options = [lambda x: x.fullchain_path, lambda x: x.cert_path,
             lambda x: archive_files(x, "cert"), lambda x: archive_files(x, "fullchain")]
     match = match_and_check_overlaps(cli_config, options,
             lambda x: cli_config.cert_path[0], lambda x: x.lineagename)
@@ -167,9 +167,12 @@ def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func
     """ Searches through all lineages for a match, and checks for duplicates.
     If a duplicate is found, an error is raised, as performing operations on lineages
     that have their properties incorrectly duplicated elsewhere is probably a bad idea.
+
+    :param .NamespaceConfig cli_config
     :param list acceptable_matches: a list of functions that specify acceptable matches
     :param function match_func: specifies what to match
     :param function rv_func: specifies what to return
+
     """
     def find_matches(candidate_lineage, return_value, acceptable_matches):
         """Returns a list of matches using _search_lineages."""
