@@ -362,8 +362,14 @@ during the next release.
 Updating the documentation
 ==========================
 
-In order to generate the Sphinx documentation, run the following
-commands:
+In order to generate the Sphinx documentation, you will need to install some tools:
+
+.. code-block:: shell
+
+   pip install repoze.sphinx.autointerface
+   pip install sphinx_rtd_theme
+
+Then run the following commands:
 
 .. code-block:: shell
 
