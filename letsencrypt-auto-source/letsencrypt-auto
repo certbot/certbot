@@ -268,7 +268,7 @@ BootstrapDebCommon() {
     QUIET_FLAG='-qq'
   fi
 
-  $SUDO apt-get $QUIET_FLAG update || error apt-get update hit problems but continuing anyway...
+  apt-get $QUIET_FLAG update || error apt-get update hit problems but continuing anyway...
 
   # virtualenv binary can be found in different packages depending on
   # distro version (#346)
@@ -318,13 +318,13 @@ BootstrapDebCommon() {
           esac
         fi
         if [ "$add_backports" = 1 ]; then
-          $SUDO sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
-          $SUDO apt-get $QUIET_FLAG update
+          sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
+          apt-get $QUIET_FLAG update
         fi
       fi
     fi
     if [ "$add_backports" != 0 ]; then
-      $SUDO apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
+      apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
       augeas_pkg=
     fi
   }
@@ -343,7 +343,7 @@ BootstrapDebCommon() {
     # XXX add a case for ubuntu PPAs
   fi
 
-  $SUDO apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends \
+  apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends \
     python \
     python-dev \
     $virtualenv \
@@ -387,9 +387,9 @@ BootstrapRpmCommon() {
     QUIET_FLAG='--quiet'
   fi
 
-  if ! $SUDO $tool list *virtualenv >/dev/null 2>&1; then
+  if ! $tool list *virtualenv >/dev/null 2>&1; then
     echo "To use Certbot, packages from the EPEL repository need to be installed."
-    if ! $SUDO $tool list epel-release >/dev/null 2>&1; then
+    if ! $tool list epel-release >/dev/null 2>&1; then
       error "Enable the EPEL repository and try running Certbot again."
       exit 1
     fi
@@ -401,7 +401,7 @@ BootstrapRpmCommon() {
       /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 seconds..."
       sleep 1s
     fi
-    if ! $SUDO $tool install $yes_flag $QUIET_FLAG epel-release; then
+    if ! $tool install $yes_flag $QUIET_FLAG epel-release; then
       error "Could not enable EPEL. Aborting bootstrap!"
       exit 1
     fi
@@ -419,7 +419,7 @@ BootstrapRpmCommon() {
 
   # Some distros and older versions of current distros use a "python27"
   # instead of "python" naming convention. Try both conventions.
-  if $SUDO $tool list python >/dev/null 2>&1; then
+  if $tool list python >/dev/null 2>&1; then
     pkgs="$pkgs
       python
       python-devel
@@ -437,13 +437,13 @@ BootstrapRpmCommon() {
     "
   fi
 
-  if $SUDO $tool list installed "httpd" >/dev/null 2>&1; then
+  if $tool list installed "httpd" >/dev/null 2>&1; then
     pkgs="$pkgs
       mod_ssl
     "
   fi
 
-  if ! $SUDO $tool install $yes_flag $QUIET_FLAG $pkgs; then
+  if ! $tool install $yes_flag $QUIET_FLAG $pkgs; then
     error "Could not install OS dependencies. Aborting bootstrap!"
     exit 1
   fi
@@ -461,7 +461,7 @@ BootstrapSuseCommon() {
     QUIET_FLAG='-qq'
   fi
 
-  $SUDO zypper $QUIET_FLAG $zypper_flags in $install_flags \
+  zypper $QUIET_FLAG $zypper_flags in $install_flags \
     python \
     python-devel \
     python-virtualenv \
@@ -492,7 +492,7 @@ BootstrapArchCommon() {
   "
 
   # pacman -T exits with 127 if there are missing dependencies
-  missing=$($SUDO pacman -T $deps) || true
+  missing=$(pacman -T $deps) || true
 
   if [ "$ASSUME_YES" = 1 ]; then
     noconfirm="--noconfirm"
@@ -500,9 +500,9 @@ BootstrapArchCommon() {
 
   if [ "$missing" ]; then
     if [ "$QUIET" = 1]; then
-      $SUDO pacman -S --needed $missing $noconfirm > /dev/null
+      pacman -S --needed $missing $noconfirm > /dev/null
     else
-      $SUDO pacman -S --needed $missing $noconfirm
+      pacman -S --needed $missing $noconfirm
     fi
   fi
 }
@@ -524,13 +524,13 @@ BootstrapGentooCommon() {
 
   case "$PACKAGE_MANAGER" in
     (paludis)
-      $SUDO cave resolve --preserve-world --keep-targets if-possible $PACKAGES -x
+      cave resolve --preserve-world --keep-targets if-possible $PACKAGES -x
       ;;
     (pkgcore)
-      $SUDO pmerge --noreplace --oneshot $ASK_OPTION $PACKAGES
+      pmerge --noreplace --oneshot $ASK_OPTION $PACKAGES
       ;;
     (portage|*)
-      $SUDO emerge --noreplace --oneshot $ASK_OPTION $PACKAGES
+      emerge --noreplace --oneshot $ASK_OPTION $PACKAGES
       ;;
   esac
 }
@@ -540,7 +540,7 @@ BootstrapFreeBsd() {
     QUIET_FLAG="--quiet"
   fi
 
-  $SUDO pkg install -Ay $QUIET_FLAG \
+  pkg install -Ay $QUIET_FLAG \
     python \
     py27-virtualenv \
     augeas \
@@ -555,7 +555,7 @@ BootstrapMac() {
   elif hash port 2>/dev/null; then
     say "Using MacPorts to install dependencies..."
     pkgman=port
-    pkgcmd="$SUDO port install"
+    pkgcmd="port install"
   else
     say "No Homebrew/MacPorts; installing Homebrew..."
     ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
@@ -575,8 +575,8 @@ BootstrapMac() {
   # Workaround for _dlopen not finding augeas on macOS
   if [ "$pkgman" = "port" ] && ! [ -e "/usr/local/lib/libaugeas.dylib" ] && [ -e "/opt/local/lib/libaugeas.dylib" ]; then
     say "Applying augeas workaround"
-    $SUDO mkdir -p /usr/local/lib/
-    $SUDO ln -s /opt/local/lib/libaugeas.dylib /usr/local/lib/
+    mkdir -p /usr/local/lib/
+    ln -s /opt/local/lib/libaugeas.dylib /usr/local/lib/
   fi
 
   if ! hash pip 2>/dev/null; then
@@ -602,7 +602,7 @@ BootstrapMageiaCommon() {
     QUIET_FLAG='--quiet'
   fi
 
-  if ! $SUDO urpmi --force $QUIET_FLAG \
+  if ! urpmi --force $QUIET_FLAG \
       python \
       libpython-devel \
       python-virtualenv
@@ -611,7 +611,7 @@ BootstrapMageiaCommon() {
       exit 1
   fi
 
-  if ! $SUDO urpmi --force $QUIET_FLAG \
+  if ! urpmi --force $QUIET_FLAG \
       git \
       gcc \
       python-augeas \

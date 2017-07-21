@@ -24,9 +24,9 @@ BootstrapRpmCommon() {
     QUIET_FLAG='--quiet'
   fi
 
-  if ! $SUDO $tool list *virtualenv >/dev/null 2>&1; then
+  if ! $tool list *virtualenv >/dev/null 2>&1; then
     echo "To use Certbot, packages from the EPEL repository need to be installed."
-    if ! $SUDO $tool list epel-release >/dev/null 2>&1; then
+    if ! $tool list epel-release >/dev/null 2>&1; then
       error "Enable the EPEL repository and try running Certbot again."
       exit 1
     fi
@@ -38,7 +38,7 @@ BootstrapRpmCommon() {
       /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 seconds..."
       sleep 1s
     fi
-    if ! $SUDO $tool install $yes_flag $QUIET_FLAG epel-release; then
+    if ! $tool install $yes_flag $QUIET_FLAG epel-release; then
       error "Could not enable EPEL. Aborting bootstrap!"
       exit 1
     fi
@@ -56,7 +56,7 @@ BootstrapRpmCommon() {
 
   # Some distros and older versions of current distros use a "python27"
   # instead of "python" naming convention. Try both conventions.
-  if $SUDO $tool list python >/dev/null 2>&1; then
+  if $tool list python >/dev/null 2>&1; then
     pkgs="$pkgs
       python
       python-devel
@@ -74,13 +74,13 @@ BootstrapRpmCommon() {
     "
   fi
 
-  if $SUDO $tool list installed "httpd" >/dev/null 2>&1; then
+  if $tool list installed "httpd" >/dev/null 2>&1; then
     pkgs="$pkgs
       mod_ssl
     "
   fi
 
-  if ! $SUDO $tool install $yes_flag $QUIET_FLAG $pkgs; then
+  if ! $tool install $yes_flag $QUIET_FLAG $pkgs; then
     error "Could not install OS dependencies. Aborting bootstrap!"
     exit 1
   fi
