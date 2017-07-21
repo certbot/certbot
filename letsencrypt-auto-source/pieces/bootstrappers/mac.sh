@@ -6,7 +6,7 @@ BootstrapMac() {
   elif hash port 2>/dev/null; then
     say "Using MacPorts to install dependencies..."
     pkgman=port
-    pkgcmd="$SUDO port install"
+    pkgcmd="port install"
   else
     say "No Homebrew/MacPorts; installing Homebrew..."
     ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
@@ -26,8 +26,8 @@ BootstrapMac() {
   # Workaround for _dlopen not finding augeas on macOS
   if [ "$pkgman" = "port" ] && ! [ -e "/usr/local/lib/libaugeas.dylib" ] && [ -e "/opt/local/lib/libaugeas.dylib" ]; then
     say "Applying augeas workaround"
-    $SUDO mkdir -p /usr/local/lib/
-    $SUDO ln -s /opt/local/lib/libaugeas.dylib /usr/local/lib/
+    mkdir -p /usr/local/lib/
+    ln -s /opt/local/lib/libaugeas.dylib /usr/local/lib/
   fi
 
   if ! hash pip 2>/dev/null; then

@@ -10,7 +10,7 @@ BootstrapSuseCommon() {
     QUIET_FLAG='-qq'
   fi
 
-  $SUDO zypper $QUIET_FLAG $zypper_flags in $install_flags \
+  zypper $QUIET_FLAG $zypper_flags in $install_flags \
     python \
     python-devel \
     python-virtualenv \
