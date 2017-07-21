@@ -1,8 +1,13 @@
 """Implements file locks for locking files and directories in UNIX."""
 import errno
-import fcntl
 import logging
 import os
+
+try:
+    import fcntl
+except ImportError:
+    print("No File Locking")
+#TO-DO add a windows file locking library currently thinking: http://portalocker.readthedocs.io/en/latest/
 
 from certbot import errors
 
@@ -14,6 +19,8 @@ def lock_dir(dir_path):
 
     The lock file is placed in the root of dir_path with the name
     .certbot.lock.
+    
+    Different locking libraries are used depending on the OS. 
 
     :param str dir_path: path to directory
 
@@ -23,8 +30,10 @@ def lock_dir(dir_path):
     :raises errors.LockError: if unable to acquire the lock
 
     """
-    return LockFile(os.path.join(dir_path, '.certbot.lock'))
-
+    if os.name == 'posix':
+        return LockFile(os.path.join(dir_path, '.certbot.lock'))
+    if os.name == 'nt':
+        return LockFileWindows(os.path.join(dir_path, '.certbot.lock'))
 
 class LockFile(object):
     """A UNIX lock file.
@@ -137,3 +146,24 @@ class LockFile(object):
                 os.close(self._fd)
             finally:
                 self._fd = None
+                
+class LockFileWindows(object):
+    print("Locking File Windows Library")
+    """A Windows lock file.
+
+    This lock file is released when the locked file is closed or the
+    process exits. 
+
+    """
+    def __init__(self, path):
+        print("Windows Lock Library -- __inti__ Called")     
+    def acquire(self):
+        print("Windows Lock Library -- acquire Called")
+    def _try_lock(self, fd):
+        print("Windows Lock Library -- _try_locks Called")
+    def _lock_success(self, fd):
+        print("Windows Lock Library -- _lock_success Called")
+    def __repr__(self):
+        print("Windows Lock Library -- __repr__ Called")
+    def release(self):
+        print("Windows Lock Library - release Called")
