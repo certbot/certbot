@@ -1109,18 +1109,7 @@ UNLIKELY_EOF
     fi
     say "Installation succeeded."
   fi
-  if [ -n "$SUDO" ]; then
-    # SUDO is su wrapper or sudo
-    say "Requesting root privileges to run certbot..."
-    say "  $VENV_BIN/letsencrypt" "$@"
-  fi
-  if [ -z "$SUDO_ENV" ] ; then
-    # SUDO is su wrapper / noop
-    $SUDO "$VENV_BIN/letsencrypt" "$@"
-  else
-    # sudo
-    $SUDO "$SUDO_ENV" "$VENV_BIN/letsencrypt" "$@"
-  fi
+  "$VENV_BIN/letsencrypt" "$@"
 
 else
   # Phase 1: Upgrade certbot-auto if necessary, then self-invoke.
@@ -1296,13 +1285,13 @@ UNLIKELY_EOF
       say "Replacing certbot-auto..."
       # Clone permissions with cp. chmod and chown don't have a --reference
       # option on macOS or BSD, and stat -c on Linux is stat -f on macOS and BSD:
-      $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
-      $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
       # Using mv rather than cp leaves the old file descriptor pointing to the
       # original copy so the shell can continue to read it unmolested. mv across
       # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
       # cp is unlikely to fail (esp. under sudo) if the rm doesn't.
-      $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
+      mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
     fi  # A newer version is available.
   fi  # Self-upgrading is allowed.
 
