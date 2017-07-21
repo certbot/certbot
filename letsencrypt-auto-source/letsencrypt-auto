@@ -23,9 +23,8 @@ fi
 if [ -z "$XDG_DATA_HOME" ]; then
   XDG_DATA_HOME=~/.local/share
 fi
-VENV_NAME="letsencrypt"
 if [ -z "$VENV_PATH" ]; then
-  VENV_PATH="$XDG_DATA_HOME/$VENV_NAME"
+  VENV_PATH="/opt/eff.org/certbot/venv"
 fi
 VENV_BIN="$VENV_PATH/bin"
 LE_AUTO_VERSION="0.17.0.dev0"
