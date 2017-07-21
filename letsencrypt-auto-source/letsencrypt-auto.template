@@ -24,6 +24,7 @@ if [ -z "$XDG_DATA_HOME" ]; then
   XDG_DATA_HOME=~/.local/share
 fi
 if [ -z "$VENV_PATH" ]; then
+  OLD_VENV_PATH="$XDG_DATA_HOME/letsencrypt"
   VENV_PATH="/opt/eff.org/certbot/venv"
 fi
 VENV_BIN="$VENV_PATH/bin"
@@ -391,6 +392,11 @@ UNLIKELY_EOF
       rm -rf "$VENV_PATH"
       exit 1
     fi
+
+    if [ -d $OLD_VENV_PATH -a ! -L $OLD_VENV_PATH ]; then
+      ln -s $VENV_PATH $OLD_VENV_PATH
+    fi
+
     say "Installation succeeded."
   fi
   "$VENV_BIN/letsencrypt" "$@"
