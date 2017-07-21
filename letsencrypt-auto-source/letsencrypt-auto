@@ -119,12 +119,14 @@ else
   exit 1
 fi
 
-# certbot-auto needs root access to bootstrap OS dependencies, and
-# certbot itself needs root access for almost all modes of operation
-# The "normal" case is that sudo is used for the steps that need root, but
-# this script *can* be run as root (not recommended), or fall back to using
-# `su`. Auto-detection can be overridden by explicitly setting the
-# environment variable LE_AUTO_SUDO to 'sudo', 'sudo_su' or '' as used below.
+# Certbot itself needs root access for almost all modes of operation.
+# certbot-auto needs root access to bootstrap OS dependencies and install
+# Certbot a protected path so it can be safely run as root. To accomplish this,
+# this script will attempt to run itself as root if it doesn't have the
+# necessary privileges by using `sudo` or falling back to `su` if it is not
+# available. The mechanism used to obtain root access can set explicitly by the
+# user by overriding the environment variable LE_AUTO_SUDO to 'sudo',
+# 'sudo_su', or '' as used below.
 
 # Because the parameters in `su -c` has to be a string,
 # we need to properly escape it.
