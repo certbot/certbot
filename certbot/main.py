@@ -708,9 +708,9 @@ def renew(config, unused_plugins):
 def make_or_verify_needed_dirs(config):
     """Create or verify existence of config and work directories"""
     util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
-                         os.geteuid(), config.strict_permissions)
+                         config.strict_permissions)
     util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
-                         os.geteuid(), config.strict_permissions)
+                         config.strict_permissions)
 
 
 def set_displayer(config):
