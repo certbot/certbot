@@ -393,8 +393,9 @@ UNLIKELY_EOF
       exit 1
     fi
 
-    if [ -d $OLD_VENV_PATH -a ! -L $OLD_VENV_PATH ]; then
-      ln -s $VENV_PATH $OLD_VENV_PATH
+    if [ -d "$OLD_VENV_PATH" -a ! -L "$OLD_VENV_PATH" ]; then
+      rm -rf "$OLD_VENV_PATH"
+      ln -s "$VENV_PATH" "$OLD_VENV_PATH"
     fi
 
     say "Installation succeeded."
