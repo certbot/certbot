@@ -234,11 +234,10 @@ Installing from source
 Installation from source is only supported for developers and the
 whole process is described in the :doc:`contributing`.
 
-.. warning:: Please do **not** use ``python setup.py install`` or
-   ``python pip install .``. Please do **not** attempt the
-   installation commands as superuser/root and/or without virtual
-   environment, e.g. ``sudo python setup.py install``, ``sudo pip
-   install``, ``sudo ./venv/bin/...``. These modes of operation might
-   corrupt your operating system and are **not supported** by the
-   Certbot team!
+.. warning:: Please do **not** use ``python setup.py install``, ``python pip
+   install .``, or ``easy_install .``. Please do **not** attempt the
+   installation commands as superuser/root and/or without virtual environment,
+   e.g. ``sudo python setup.py install``, ``sudo pip install``, ``sudo
+   ./venv/bin/...``. These modes of operation might corrupt your operating
+   system and are **not supported** by the Certbot team!
 
