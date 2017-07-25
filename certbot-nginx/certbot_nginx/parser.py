@@ -278,8 +278,8 @@ class NginxParser(object):
 
         This method modifies vhost to be fully consistent with the new directives.
 
-        ..note :: If replace is True, this raises a misconfiguration error
-        if the directive does not already exist.
+        ..note :: If replace is True and the directive already exists, the first
+        instance will be replaced. Otherwise, the directive is added.
         ..note :: If replace is False nothing gets added if an identical
         block exists already.
 
