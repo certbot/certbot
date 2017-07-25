@@ -131,6 +131,11 @@ class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
         self.assertEqual(self._call_csr('csr-idnsans.pem'),
                          self._get_idn_names())
 
+    def test_critical_san(self):
+        self.assertEqual(self._call_cert('critical-san.pem'),
+                         ['chicago-cubs.venafi.example', 'cubs.venafi.example'])
+
+
 
 class RandomSnTest(unittest.TestCase):
     """Test for random certificate serial numbers."""

@@ -89,7 +89,7 @@ You can workaround this restriction by creating a temporary swapfile::
   user@webserver:~$ sudo mkswap /tmp/swapfile
   user@webserver:~$ sudo swapon /tmp/swapfile
 
-Disable and remove the swapfile once the virtual enviroment is constructed::
+Disable and remove the swapfile once the virtual environment is constructed::
 
   user@webserver:~$ sudo swapoff /tmp/swapfile
   user@webserver:~$ sudo rm /tmp/swapfile

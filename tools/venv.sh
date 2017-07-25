@@ -18,8 +18,11 @@ fi
   -e certbot-dns-cloudxns \
   -e certbot-dns-digitalocean \
   -e certbot-dns-dnsimple \
+  -e certbot-dns-dnsmadeeasy \
   -e certbot-dns-google \
+  -e certbot-dns-luadns \
   -e certbot-dns-nsone \
+  -e certbot-dns-rfc2136 \
   -e certbot-dns-route53 \
   -e certbot-nginx \
   -e letshelp-certbot \

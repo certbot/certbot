@@ -79,6 +79,8 @@ def _get_names(config):
                 if line.strip().startswith("server_name"):
                     names = line.partition("server_name")[2].rpartition(";")[0]
                     for n in names.split():
-                        all_names.add(n)
+                        # Filter out wildcards in both all_names and test_names
+                        if not n.startswith("*."):
+                            all_names.add(n)
     non_ip_names = set(n for n in all_names if not util.IP_REGEX.match(n))
     return all_names, non_ip_names

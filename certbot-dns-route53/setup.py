@@ -3,7 +3,7 @@ import sys
 from distutils.core import setup
 from setuptools import find_packages
 
-version = '0.15.0.dev0'
+version = '0.17.0.dev0'
 
 install_requires = [
     'acme=={0}'.format(version),
@@ -53,7 +53,7 @@ setup(
     entry_points={
         'certbot.plugins': [
             'dns-route53 = certbot_dns_route53.dns_route53:Authenticator',
-            'certbot-route53:auth = certbot_dns_route53.dns_route53:Authenticator'
+            'certbot-route53:auth = certbot_dns_route53.authenticator:Authenticator'
         ],
     },
     test_suite='certbot_dns_route53',

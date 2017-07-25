@@ -5,6 +5,7 @@ Welcome to the Certbot documentation!
    :maxdepth: 2
 
    intro
+   what
    install
    using
    contributing
@@ -15,12 +16,6 @@ Welcome to the Certbot documentation!
    :maxdepth: 1
 
    api
-
-.. toctree::
-   :hidden:
-
-   challenges
-   ciphers
 
 
 Indices and tables

@@ -139,7 +139,7 @@ class DNSAuthenticator(common.Plugin):
 
             setattr(self.config, self.dest(key), os.path.abspath(os.path.expanduser(new_value)))
 
-    def _configure_credentials(self, key, label, required_variables=None):
+    def _configure_credentials(self, key, label, required_variables=None, validator=None):
         """
         As `_configure_file`, but for a credential configuration file.
 
@@ -150,17 +150,29 @@ class DNSAuthenticator(common.Plugin):
         :param str key: The configuration key.
         :param str label: The user-friendly label for this piece of information.
         :param dict required_variables: Map of variable which must be present to error to display.
+        :param callable validator: A method which will be called to validate the
+            `CredentialsConfiguration` resulting from the supplied input after it has been validated
+            to contain the `required_variables`. Should throw a `~certbot.errors.PluginError` to
+            indicate any issue.
         """
 
         def __validator(filename):
+            configuration = CredentialsConfiguration(filename, self.dest)
+
             if required_variables:
-                CredentialsConfiguration(filename, self.dest).require(required_variables)
+                configuration.require(required_variables)
+
+            if validator:
+                validator(configuration)
 
         self._configure_file(key, label, __validator)
 
         credentials_configuration = CredentialsConfiguration(self.conf(key), self.dest)
         if required_variables:
             credentials_configuration.require(required_variables)
+
+        if validator:
+            validator(credentials_configuration)
 
         return credentials_configuration
 

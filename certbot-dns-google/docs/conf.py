@@ -17,8 +17,8 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import sys
+sys.path.insert(0, os.path.abspath('_ext'))
 
 
 # -- General configuration ------------------------------------------------
@@ -34,7 +34,8 @@ extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
-    'sphinx.ext.viewcode']
+    'sphinx.ext.viewcode',
+    'jsonlexer']
 
 autodoc_member_order = 'bysource'
 autodoc_default_flags = ['show-inheritance', 'private-members']
