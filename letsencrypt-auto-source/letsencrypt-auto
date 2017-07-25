@@ -127,7 +127,7 @@ fi
 # necessary privileges by using `sudo` or falling back to `su` if it is not
 # available. The mechanism used to obtain root access can set explicitly by the
 # user by overriding the environment variable LE_AUTO_SUDO to 'sudo',
-# 'sudo_su', or '' as used below.
+# 'su_sudo', or '' as used below.
 
 # Because the parameters in `su -c` has to be a string,
 # we need to properly escape it.
