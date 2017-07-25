@@ -127,7 +127,7 @@ fi
 # necessary privileges by using `sudo` or falling back to `su` if it is not
 # available. The mechanism used to obtain root access can set explicitly by the
 # user by overriding the environment variable LE_AUTO_SUDO to 'sudo',
-# 'sudo_su', or '' as used below.
+# 'su_sudo', or '' as used below.
 
 # These variables must be preserved if this script tries to run itself as root.
 PRESERVE_VARS="LE_AUTO_DIR_TEMPLATE LE_AUTO_JSON_URL LE_AUTO_PUBLIC_KEY "
