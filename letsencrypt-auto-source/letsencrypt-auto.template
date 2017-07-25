@@ -129,6 +129,10 @@ fi
 # user by overriding the environment variable LE_AUTO_SUDO to 'sudo',
 # 'sudo_su', or '' as used below.
 
+# These variables must be preserved if this script tries to run itself as root.
+PRESERVE_VARS="LE_AUTO_DIR_TEMPLATE LE_AUTO_JSON_URL LE_AUTO_PUBLIC_KEY "
+PRESERVE_VARS="$PRESERVE_VARS LE_PYTHON OLD_VENV_PATH VENV_PATH"
+
 # Because the parameters in `su -c` has to be a string,
 # we need to properly escape it.
 su_sudo() {
