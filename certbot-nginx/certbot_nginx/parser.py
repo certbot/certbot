@@ -464,8 +464,9 @@ def _add_directives(block, directives, replace):
     When replace=False, it's an error to try and add a directive that already
     exists in the config block with a conflicting value.
 
-    When replace=True, a directive with the same name MUST already exist in the
-    config block, and the first instance will be replaced.
+    When replace=True and a directive with the same name already exists in the
+    config block, the first instance will be replaced. Otherwise, the directive
+    will be added to the config block.
 
     ..todo :: Find directives that are in included files.
 
