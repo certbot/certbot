@@ -133,8 +133,8 @@ fi
 PRESERVE_VARS="LE_AUTO_DIR_TEMPLATE LE_AUTO_JSON_URL LE_AUTO_PUBLIC_KEY "
 PRESERVE_VARS="$PRESERVE_VARS LE_PYTHON OLD_VENV_PATH VENV_PATH"
 
-# Because the parameters in `su -c` has to be a string,
-# we need to properly escape it.
+# We need to preserve certain environment variables and because the parameters
+# in `su -c` has to be a string, we need to properly escape it.
 su_sudo() {
   args=""
   # This `while` loop iterates over all parameters given to this function.
@@ -151,6 +151,11 @@ su_sudo() {
     args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
     shift
   done
+
+  for var in $PRESERVE_VARS; do
+    export $var
+  done
+
   su root -c "$args"
 }
 
