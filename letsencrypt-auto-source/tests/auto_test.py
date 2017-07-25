@@ -118,10 +118,11 @@ LE_AUTO_PATH = join(dirname(tests_dir()), 'letsencrypt-auto')
 
 
 @contextmanager
-def ephemeral_dir():
+def test_dirs():
+    """Creates and deletes paths for letsencrypt-auto and its venv."""
     dir = mkdtemp(prefix='le-test-')
     try:
-        yield dir
+        yield join(dir, 'letsencrypt-auto'), join(dir, 'venv')
     finally:
         rmtree(dir)
 
@@ -256,9 +257,7 @@ class AutoTests(TestCase):
                 requirements='letsencrypt==99.9.9 --hash=sha256:1cc14d61ab424cdee446f51e50f1123f8482ec740587fe78626c933bba2873a0')
         NEW_LE_AUTO_SIG = signed(NEW_LE_AUTO)
 
-        with ephemeral_dir() as temp_dir:
-            le_auto_path = join(temp_dir, 'letsencrypt-auto')
-            venv_dir = join(temp_dir, 'venv')
+        with test_dirs() as (le_auto_path, venv_dir):
             # This serves a PyPI page with a higher version, a GitHub-alike
             # with a corresponding le-auto script, and a matching signature.
             resources = {'certbot/json': dumps({'releases': {'99.9.9': None}}),
@@ -302,9 +301,7 @@ class AutoTests(TestCase):
 
     def test_openssl_failure(self):
         """Make sure we stop if the openssl signature check fails."""
-        with ephemeral_dir() as temp_dir:
-            le_auto_path = join(temp_dir, 'letsencrypt-auto')
-            venv_dir = join(temp_dir, 'venv')
+        with test_dirs() as (le_auto_path, venv_dir):
             # Serve an unrelated hash signed with the good key (easier than
             # making a bad key, and a mismatch is a mismatch):
             resources = {'': '<a href="certbot/">certbot/</a>',
@@ -324,9 +321,7 @@ class AutoTests(TestCase):
 
     def test_pip_failure(self):
         """Make sure pip stops us if there is a hash mismatch."""
-        with ephemeral_dir() as temp_dir:
-            le_auto_path = join(temp_dir, 'letsencrypt-auto')
-            venv_dir = join(temp_dir, 'venv')
+        with test_dirs() as (le_auto_path, venv_dir):
             resources = {'': '<a href="certbot/">certbot/</a>',
                          'certbot/json': dumps({'releases': {'99.9.9': None}})}
             with serving(resources) as base_url:
