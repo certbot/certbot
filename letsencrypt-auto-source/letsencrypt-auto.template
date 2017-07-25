@@ -129,9 +129,16 @@ fi
 # user by overriding the environment variable LE_AUTO_SUDO to 'sudo',
 # 'su_sudo', or '' as used below.
 
-# These variables must be preserved if this script tries to run itself as root.
-PRESERVE_VARS="LE_AUTO_DIR_TEMPLATE LE_AUTO_JSON_URL LE_AUTO_PUBLIC_KEY "
-PRESERVE_VARS="$PRESERVE_VARS LE_PYTHON OLD_VENV_PATH VENV_PATH"
+# Run the specified command preserving select environment variables. If the
+# command starts with `sudo`, the environment is still properly modified.
+run_with_env() {
+  prefix=""
+  if [ "$1" = "sudo" ]; then
+    prefix="sudo"
+    shift 1
+  fi
+  $prefix LE_AUTO_DIR_TEMPLATE="$LE_AUTO_DIR_TEMPLATE" LE_AUTO_JSON_URL="$LE_AUTO_JSON_URL" LE_AUTO_PUBLIC_KEY="$LE_AUTO_PUBLIC_KEY" LE_PYTHON="$LE_PYTHON" OLD_VENV_PATH="$OLD_VENV_PATH" VENV_PATH="$VENV_PATH" "$@"
+}
 
 # We need to preserve certain environment variables and because the parameters
 # in `su -c` has to be a string, we need to properly escape it.
@@ -152,17 +159,7 @@ su_sudo() {
     shift
   done
 
-  for var in $PRESERVE_VARS; do
-    export $var
-  done
-
-  su root -c "$args"
-}
-
-# Run the specified command with sudo but preserve select environment
-# variables.
-sudo_with_env() {
-  sudo LE_AUTO_DIR_TEMPLATE="$LE_AUTO_DIR_TEMPLATE" LE_AUTO_JSON_URL="$LE_AUTO_JSON_URL" LE_AUTO_PUBLIC_KEY="$LE_AUTO_PUBLIC_KEY" LE_PYTHON="$LE_PYTHON" OLD_VENV_PATH="$OLD_VENV_PATH" VENV_PATH="$VENV_PATH" "$@"
+  run_with_env su root -c "$args"
 }
 
 if [ "$1" = "--cb-auto-has-root" ]; then
@@ -176,7 +173,7 @@ elif [ "$1" != "--le-auto-phase2" ]; then
         SUDO=su_sudo
         ;;
       sudo)
-        SUDO=sudo_with_env
+        SUDO="run_with_env sudo"
         ;;
       '') ;; # Nothing to do for plain root method.
       *)
@@ -187,7 +184,7 @@ elif [ "$1" != "--le-auto-phase2" ]; then
   else
     if test "`id -u`" -ne "0" ; then
       if $EXISTS sudo 1>/dev/null 2>&1; then
-        SUDO=sudo_with_env
+        SUDO="run_with_env sudo"
       else
         say \"sudo\" is not available, will use \"su\" for installation steps...
         SUDO=su_sudo
