@@ -22,7 +22,14 @@ from subprocess import check_call, CalledProcessError
 from sys import argv, exit
 from urllib2 import build_opener, HTTPHandler, HTTPSHandler, HTTPError
 
-PUBLIC_KEY = environ.get('LE_AUTO_PUBLIC_KEY', """-----BEGIN PUBLIC KEY-----
+
+def get_environ(name, default=None):
+    """os.environ.get except the default is also used for empty strings."""
+    value = environ.get(name)
+    return value if value else default
+
+
+PUBLIC_KEY = get_environ('LE_AUTO_PUBLIC_KEY', """-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6MR8W/galdxnpGqBsYbq
 OzQb2eyW15YFjDDEMI0ZOzt8f504obNs920lDnpPD2/KqgsfjOgw2K7xWDJIj/18
 xUvWPk3LDkrnokNiRkA3KOx3W6fHycKL+zID7zy+xZYBuh2fLyQtWV1VGQ45iNRp
@@ -70,7 +77,7 @@ def write(contents, dir, filename):
 def latest_stable_version(get):
     """Return the latest stable release of letsencrypt."""
     metadata = loads(get(
-        environ.get('LE_AUTO_JSON_URL',
+        get_environ('LE_AUTO_JSON_URL',
                     'https://pypi.python.org/pypi/certbot/json')))
     # metadata['info']['version'] actually returns the latest of any kind of
     # release release, contrary to https://wiki.python.org/moin/PyPIJSON.
@@ -88,7 +95,7 @@ def verified_new_le_auto(get, tag, temp_dir):
     with the verification process, raise ExpectedError.
 
     """
-    le_auto_dir = environ.get(
+    le_auto_dir = get_environ(
         'LE_AUTO_DIR_TEMPLATE',
         'https://raw.githubusercontent.com/certbot/certbot/%s/'
         'letsencrypt-auto-source/') % tag
