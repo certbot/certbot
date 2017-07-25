@@ -208,6 +208,10 @@ class FreezableMock(object):
             return getattr(object.__getattribute__(self, '_mock'), name)
 
     def __setattr__(self, name, value):
+        if name == 'return_value': # Rationale: __setattr__ takes precedence over properties
+            msg = ("Changing the return_value of a FreezableMock is forbidden because "
+                    "that would nullify callbacks important to thorough tests.")
+            raise AttributeError(msg)
         if self._frozen:
             return setattr(self._mock, name, value)
         elif name != '_frozen_set':
