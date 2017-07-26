@@ -19,15 +19,21 @@ BRANCH=`git rev-parse --abbrev-ref HEAD`
 # it's the first version that both pins package versions and properly supports
 # --no-self-upgrade.
 git checkout -f v0.4.1
-if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | grep 0.4.1 ; then
+if ! letsencrypt-auto-source/letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | grep 0.4.1 ; then
     echo initial installation appeared to fail
     exit 1
 fi
 
 git checkout -f "$BRANCH"
-EXPECTED_VERSION=$(grep -m1 LE_AUTO_VERSION letsencrypt-auto | cut -d\" -f2)
-if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | grep $EXPECTED_VERSION ; then
+EXPECTED_VERSION=$(grep -m1 LE_AUTO_VERSION letsencrypt-auto-source/letsencrypt-auto | cut -d\" -f2)
+if ! letsencrypt-auto-source/letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | grep $EXPECTED_VERSION ; then
     echo upgrade appeared to fail
     exit 1
 fi
+
+if [ "$(tools/readlink.py ~/.local/share/letsencrypt)" != "/opt/eff.org/certbot/venv" ]; then
+    echo symlink from old venv path not properly created!
+    exit 1
+fi
+
 echo upgrade appeared to be successful
