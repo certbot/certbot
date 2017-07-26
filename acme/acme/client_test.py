@@ -19,7 +19,6 @@ from acme import test_util
 
 CERT_DER = test_util.load_vector('cert.der')
 KEY = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
-KEY2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
 
 
 class ClientTest(unittest.TestCase):

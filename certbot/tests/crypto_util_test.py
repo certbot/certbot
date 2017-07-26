@@ -19,7 +19,6 @@ RSA512_KEY = test_util.load_vector('rsa512_key.pem')
 RSA2048_KEY_PATH = test_util.vector_path('rsa2048_key.pem')
 CERT_PATH = test_util.vector_path('cert.pem')
 CERT = test_util.load_vector('cert.pem')
-SAN_CERT = test_util.load_vector('cert-san.pem')
 SS_CERT_PATH = test_util.vector_path('self_signed_cert.pem')
 SS_CERT = test_util.load_vector('self_signed_cert.pem')
 
@@ -275,7 +274,7 @@ class ValidPrivkeyTest(unittest.TestCase):
         return valid_privkey(privkey)
 
     def test_valid_true(self):
-        self.assertTrue(self._call(RSA256_KEY))
+        self.assertTrue(self._call(RSA512_KEY))
 
     def test_empty_false(self):
         self.assertFalse(self._call(''))

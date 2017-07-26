@@ -134,6 +134,39 @@ Run the integration tests using:
 
 .. _removing all containers and volumes: https://www.digitalocean.com/community/tutorials/how-to-remove-docker-images-containers-and-volumes
 
+.. _testdata:
+
+Test data overview
+~~~~~~~~~~~~~~~~~~
+
+Certbot comes with the `certbot/tests/testdata/`` folder which contains private 
+keys and certificates. Those keys and certificates are used in the unit tests 
+as described above. 
+
+The following command has been used to generate test keys:
+
+.. code-block:: shell
+
+  for x in 256 512 1024 2048; do openssl genrsa -out rsa${k}_key.pem $k; done
+
+and for the CSR:
+
+.. code-block:: shell
+
+  openssl req -key rsa2048_key.pem -new -subj '/CN=example.com' -outform DER > csr.der
+
+and for the certificate:
+
+.. code-block:: shell
+
+  openssl req -key rsa2047_key.pem -new -subj '/CN=example.com' -x509 -outform DER > cert.der
+
+The differences between ``fullchain``, ``cert``, and ``chain``files can be read here: `Where are my certificates?`_.
+
+
+.. _Where are my certificates?:
+  https://certbot.eff.org/docs/using.html#where-are-my-certificates
+
 Code components and layout
 ==========================
 
