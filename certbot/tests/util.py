@@ -178,7 +178,9 @@ class ImmutableReturnMixin(object):
     """
     def __setattr__(self, name, value):
         if name == "return_value":
-            raise AttributeError("Don't do that")
+            msg = ("Changing the return_value of a FreezableMock is forbidden because "
+                    "that would nullify callbacks important to thorough tests.")
+            raise AttributeError(msg)
         super(ImmutableReturnMixin, self).__setattr__(name, value)
 
 class ImmutableReturnMock(ImmutableReturnMixin, mock.MagicMock):
