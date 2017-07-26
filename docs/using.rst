@@ -688,7 +688,12 @@ Example usage for HTTP-01:
    #!/bin/bash
    rm -f /var/www/htdocs/.well-known/acme-challenge/$CERTBOT_TOKEN
 
-Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not use as-is)
+Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not use as-is):
+
+.. note:: These scripts expect the command line utilities ``curl`` and ``dig``
+    to be installed. ``dig`` is available in the ``dnsutils`` package on Debian
+    based systems and in the ``bind-utils`` package on Red Hat based systems.
+    ``curl`` is included in the ``curl`` package on both systems.
 
 ::
 
@@ -704,8 +709,8 @@ Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not 
    API_KEY="your-api-key"
    EMAIL="your.email@example.com"
 
-   # Strip only the top domain to get the zone id
-   DOMAIN=$(expr match "$CERTBOT_DOMAIN" '.*\.\(.*\..*\)')
+   # Fetch the SOA domain for the domain/subdomain
+   DOMAIN=$(dig soa "$CERTBOT_DOMAIN" | grep -v ^\; | grep SOA | awk '{print $1}';)
 
    # Get the Cloudflare zone id
    ZONE_EXTRA_PARAMS="status=active&page=1&per_page=20&order=status&direction=desc&match=all"
