@@ -153,7 +153,7 @@ def make_lineage(config_dir, testfile):
     return conf_path
 
 
-def patch_get_utility(target='zope.component.getUtility'):
+def patch_get_utility(target='zope.component.getUtility', immutable_return_value=False):
     """Patch zope.component.getUtility to use a special mock IDisplay.
 
     The mock IDisplay works like a regular mock object, except it also
@@ -165,10 +165,30 @@ def patch_get_utility(target='zope.component.getUtility'):
     :rtype: mock.MagicMock
 
     """
-    return mock.patch(target, new_callable=_create_get_utility_mock)
+    if immutable_return_value:
+        return mock.patch(target, new_callable=_create_immutable_get_utility_mock)
+    else:
+        return mock.patch(target, new_callable=_create_get_utility_mock)
 
 
-class FreezableMock(object):
+class ImmutableReturnMixin(object):
+    """Mixin class which provides a __setattr__ that refuses to set
+    the instance's return_value by raising an AttributeError
+
+    """
+    def __setattr__(self, name, value):
+        if name == "return_value":
+            raise AttributeError("Don't do that")
+        super(ImmutableReturnMixin, self).__setattr__(name, value)
+
+class ImmutableReturnMock(ImmutableReturnMixin, mock.MagicMock):
+    """An extension of mock.MagicMock which leverages ImmutableReturnMixin
+    to accept a return_value on initialization, but not after.
+
+    """
+    pass
+
+class FreezableMock(ImmutableReturnMixin, object):
     """Mock object with the ability to freeze attributes.
 
     This class works like a regular mock.MagicMock object, except
@@ -181,10 +201,13 @@ class FreezableMock(object):
     value of func is ignored.
 
     """
-    def __init__(self, frozen=False, func=None):
+    def __init__(self, frozen=False, func=None, immutable_return_value=False):
         self._frozen_set = set() if frozen else set(('freeze',))
         self._func = func
-        self._mock = mock.MagicMock()
+        if immutable_return_value:
+            self._mock = ImmutableReturnMock()
+        else:
+            self._mock = mock.MagicMock()
         self._frozen = frozen
 
     def freeze(self):
@@ -214,7 +237,6 @@ class FreezableMock(object):
             self._frozen_set.add(name)
         return object.__setattr__(self, name, value)
 
-
 def _create_get_utility_mock():
     display = FreezableMock()
     for name in interfaces.IDisplay.names():  # pylint: disable=no-member
@@ -223,6 +245,16 @@ def _create_get_utility_mock():
             setattr(display, name, frozen_mock)
     display.freeze()
     return mock.MagicMock(return_value=display)
+
+def _create_immutable_get_utility_mock():
+    display = FreezableMock(immutable_return_value=True)
+    for name in interfaces.IDisplay.names():  # pylint: disable=no-member
+        if name != 'notification':
+            frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call,
+                    immutable_return_value=True)
+            setattr(display, name, frozen_mock)
+    display.freeze()
+    return ImmutableReturnMock(return_value=display)
 
 
 def _assert_valid_call(*args, **kwargs):
