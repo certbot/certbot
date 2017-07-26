@@ -704,8 +704,8 @@ Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not 
    API_KEY="your-api-key"
    EMAIL="your.email@example.com"
 
-   # Strip only the top domain to get the zone id
-   DOMAIN=$(expr match "$CERTBOT_DOMAIN" '.*\.\(.*\..*\)')
+   # Fetch the SOA domain for the domain/subdomain
+   DOMAIN=$(dig soa "$CERTBOT_DOMAIN" | grep -v ^\; | grep SOA | awk '{print $1}';)
 
    # Get the Cloudflare zone id
    ZONE_EXTRA_PARAMS="status=active&page=1&per_page=20&order=status&direction=desc&match=all"
