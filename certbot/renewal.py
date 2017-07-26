@@ -398,7 +398,7 @@ def handle_renewal_request(config):
         except Exception as e:  # pylint: disable=broad-except
             logger.warning("Renewal configuration file %s (cert: %s) "
                            "produced an unexpected error: %s. Skipping.",
-                           lineagename, renewal_file, e)
+                           renewal_file, lineagename, e)
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             parse_failures.append(renewal_file)
             continue
