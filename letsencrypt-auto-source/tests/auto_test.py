@@ -4,7 +4,7 @@ from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from contextlib import contextmanager
 from functools import partial
 from json import dumps
-from os import chmod, environ
+from os import chmod, environ, makedirs
 from os.path import abspath, dirname, exists, join
 import re
 from shutil import copy, rmtree
@@ -213,10 +213,12 @@ def set_le_script_version(venv_dir, version):
     print its version.
 
     """
-    with open(join(venv_dir, 'bin', 'letsencrypt'), 'w') as script:
+    letsencrypt_path = join(venv_dir, 'bin', 'letsencrypt')
+    with open(letsencrypt_path, 'w') as script:
         script.write("#!/usr/bin/env python\n"
                      "from sys import stderr\n"
                      "stderr.write('letsencrypt %s\\n')" % version)
+    chmod(letsencrypt_path, S_IRUSR | S_IXUSR)
 
 
 class AutoTests(TestCase):
@@ -237,6 +239,11 @@ class AutoTests(TestCase):
     test suites.
 
     """
+    NEW_LE_AUTO = build_le_auto(
+            version='99.9.9',
+            requirements='letsencrypt==99.9.9 --hash=sha256:1cc14d61ab424cdee446f51e50f1123f8482ec740587fe78626c933bba2873a0')
+    NEW_LE_AUTO_SIG = signed(NEW_LE_AUTO)
+
     def test_successes(self):
         """Exercise most branches of letsencrypt-auto.
 
@@ -252,17 +259,12 @@ class AutoTests(TestCase):
            the next, saving code.
 
         """
-        NEW_LE_AUTO = build_le_auto(
-                version='99.9.9',
-                requirements='letsencrypt==99.9.9 --hash=sha256:1cc14d61ab424cdee446f51e50f1123f8482ec740587fe78626c933bba2873a0')
-        NEW_LE_AUTO_SIG = signed(NEW_LE_AUTO)
-
         with test_dirs() as (le_auto_path, venv_dir):
             # This serves a PyPI page with a higher version, a GitHub-alike
             # with a corresponding le-auto script, and a matching signature.
             resources = {'certbot/json': dumps({'releases': {'99.9.9': None}}),
-                         'v99.9.9/letsencrypt-auto': NEW_LE_AUTO,
-                         'v99.9.9/letsencrypt-auto.sig': NEW_LE_AUTO_SIG}
+                         'v99.9.9/letsencrypt-auto': self.NEW_LE_AUTO,
+                         'v99.9.9/letsencrypt-auto.sig': self.NEW_LE_AUTO_SIG}
             with serving(resources) as base_url:
                 run_letsencrypt_auto = partial(
                         run_le_auto,
@@ -292,10 +294,22 @@ class AutoTests(TestCase):
                 self.assertFalse('Upgrading certbot-auto ' in out)
                 self.assertFalse('Creating virtual environment...' in out)
 
-                # Test when a phase-1 upgrade is not needed but a phase-2
-                # upgrade is:
+    def test_phase2_upgrade(self):
+        """Test a phase-2 upgrade without a phase-1 upgrade."""
+        with test_dirs() as (le_auto_path, venv_dir):
+            resources = {'certbot/json': dumps({'releases': {'99.9.9': None}}),
+                         'v99.9.9/letsencrypt-auto': self.NEW_LE_AUTO,
+                         'v99.9.9/letsencrypt-auto.sig': self.NEW_LE_AUTO_SIG}
+            with serving(resources) as base_url:
+                venv_bin = join(venv_dir, 'bin')
+                makedirs(venv_bin)
                 set_le_script_version(venv_dir, '0.0.1')
-                out, err = run_letsencrypt_auto()
+
+                install_le_auto(self.NEW_LE_AUTO, le_auto_path)
+                pip_find_links=join(tests_dir(), 'fake-letsencrypt', 'dist')
+                out, err = run_le_auto(le_auto_path, venv_dir, base_url,
+                                       PIP_FIND_LINKS=pip_find_links)
+
                 self.assertFalse('Upgrading certbot-auto ' in out)
                 self.assertTrue('Creating virtual environment...' in out)
 
