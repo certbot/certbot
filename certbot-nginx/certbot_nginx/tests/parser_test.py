@@ -273,11 +273,16 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
                            ['server_name', 'example.*'], []
                            ]]])
         mock_vhost.names = set(['foobar.com', 'example.*'])
-        self.assertRaises(errors.MisconfigurationError,
-                          nparser.add_server_directives,
-                          mock_vhost,
-                          [['ssl_certificate', 'cert.pem']],
-                          replace=True)
+        nparser.add_server_directives(
+            mock_vhost, [['ssl_certificate', 'cert.pem']], replace=True)
+        self.assertEqual(
+            nparser.parsed[filep],
+            [[['server'], [['listen', '69.50.225.155:9000'],
+                           ['listen', '127.0.0.1'],
+                           ['server_name', 'foobar.com'], ['#', COMMENT],
+                           ['server_name', 'example.*'], [],
+                           ['ssl_certificate', 'cert.pem'], ['#', COMMENT], [],
+                           ]]])
 
     def test_get_best_match(self):
         target_name = 'www.eff.org'

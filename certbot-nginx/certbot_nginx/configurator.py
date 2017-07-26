@@ -198,16 +198,10 @@ class NginxConfigurator(common.Plugin):
         cert_directives = [['\n', 'ssl_certificate', ' ', fullchain_path],
                            ['\n', 'ssl_certificate_key', ' ', key_path]]
 
-        try:
-            self.parser.add_server_directives(vhost,
-                                              cert_directives, replace=True)
-            logger.info("Deployed Certificate to VirtualHost %s for %s",
-                        vhost.filep, vhost.names)
-        except errors.MisconfigurationError as error:
-            logger.debug(error)
-            # Presumably break here so that the virtualhost is not modified
-            raise errors.PluginError("Cannot find a cert or key directive in {0} for {1}. "
-                "VirtualHost was not modified.".format(vhost.filep, vhost.names))
+        self.parser.add_server_directives(vhost,
+                                          cert_directives, replace=True)
+        logger.info("Deployed Certificate to VirtualHost %s for %s",
+                    vhost.filep, vhost.names)
 
         self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
                             (vhost.filep,
