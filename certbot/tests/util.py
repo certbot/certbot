@@ -190,7 +190,7 @@ class ImmutableReturnMock(ImmutableReturnMixin, mock.MagicMock):
     """
     pass
 
-class FreezableMock(ImmutableReturnMixin, object):
+class FreezableMock(object):
     """Mock object with the ability to freeze attributes.
 
     This class works like a regular mock.MagicMock object, except
@@ -206,10 +206,8 @@ class FreezableMock(ImmutableReturnMixin, object):
     def __init__(self, frozen=False, func=None, immutable_return_value=False):
         self._frozen_set = set() if frozen else set(('freeze',))
         self._func = func
-        if immutable_return_value:
-            self._mock = ImmutableReturnMock()
-        else:
-            self._mock = mock.MagicMock()
+        self._immutable_return_value = immutable_return_value
+        self._mock = mock.MagicMock()
         self._frozen = frozen
 
     def freeze(self):
@@ -234,6 +232,10 @@ class FreezableMock(ImmutableReturnMixin, object):
 
     def __setattr__(self, name, value):
         if self._frozen:
+            if self._immutable_return_value and name == "return_value":
+                msg = ("Changing the return_value of a FreezableMock is forbidden because "
+                        "that would nullify callbacks important to thorough tests.")
+                raise AttributeError(msg)
             return setattr(self._mock, name, value)
         elif name != '_frozen_set':
             self._frozen_set.add(name)
