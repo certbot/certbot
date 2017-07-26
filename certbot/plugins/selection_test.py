@@ -1,4 +1,5 @@
 """Tests for letsencrypt.plugins.selection"""
+import os
 import sys
 import unittest
 
@@ -156,7 +157,16 @@ class ChoosePluginTest(unittest.TestCase):
         mock_nginx.name = "nginx"
         self.plugins[1] = mock_nginx
         mock_util().menu.return_value = (display_util.CANCEL, 0)
-        self._call()
+
+        unset_cb_auto = os.environ.get("CERTBOT_AUTO") is None
+        if unset_cb_auto:
+            os.environ["CERTBOT_AUTO"] = "foo"
+        try:
+            self._call()
+        finally:
+            if unset_cb_auto:
+                del os.environ["CERTBOT_AUTO"]
+
         self.assertTrue("default" in mock_util().menu.call_args[1])
 
 if __name__ == "__main__":

@@ -112,7 +112,7 @@ def choose_plugin(prepared, question):
 
     while True:
         disp = z_util(interfaces.IDisplay)
-        if names == set(("apache", "nginx")):
+        if "CERTBOT_AUTO" in os.environ and names == set(("apache", "nginx")):
             # The possibility of being offered exactly apache and nginx here
             # is new interactivity brought by https://github.com/certbot/certbot/issues/4079,
             # so set apache as a default for those kinds of non-interactive use
