@@ -124,7 +124,7 @@ def test_dirs():
     try:
         yield join(dir, 'letsencrypt-auto'), join(dir, 'venv')
     finally:
-        rmtree(dir)
+        rmtree(dir, ignore_errors=True)
 
 
 def out_and_err(command, input=None, shell=False, env=None):
