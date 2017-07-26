@@ -1125,7 +1125,7 @@ else
   # certbot-auto (which is always the same as that of the certbot
   # package). Phase 2 checks the version of the locally installed certbot.
 
-  if [ ! -f "$VENV_BIN/letsencrypt" -a ! -f "$OLD_VENV_PATH/letsencrypt" ]; then
+  if [ ! -f "$VENV_BIN/letsencrypt" -a ! -f "$OLD_VENV_PATH/bin/letsencrypt" ]; then
     if [ "$HELP" = 1 ]; then
       echo "$USAGE"
       exit 0
