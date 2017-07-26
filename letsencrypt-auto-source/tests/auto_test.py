@@ -118,7 +118,7 @@ LE_AUTO_PATH = join(dirname(tests_dir()), 'letsencrypt-auto')
 
 
 @contextmanager
-def test_dirs():
+def temp_paths():
     """Creates and deletes paths for letsencrypt-auto and its venv."""
     dir = mkdtemp(prefix='le-test-')
     try:
@@ -259,7 +259,7 @@ class AutoTests(TestCase):
            the next, saving code.
 
         """
-        with test_dirs() as (le_auto_path, venv_dir):
+        with temp_paths() as (le_auto_path, venv_dir):
             # This serves a PyPI page with a higher version, a GitHub-alike
             # with a corresponding le-auto script, and a matching signature.
             resources = {'certbot/json': dumps({'releases': {'99.9.9': None}}),
@@ -296,7 +296,7 @@ class AutoTests(TestCase):
 
     def test_phase2_upgrade(self):
         """Test a phase-2 upgrade without a phase-1 upgrade."""
-        with test_dirs() as (le_auto_path, venv_dir):
+        with temp_paths() as (le_auto_path, venv_dir):
             resources = {'certbot/json': dumps({'releases': {'99.9.9': None}}),
                          'v99.9.9/letsencrypt-auto': self.NEW_LE_AUTO,
                          'v99.9.9/letsencrypt-auto.sig': self.NEW_LE_AUTO_SIG}
@@ -315,7 +315,7 @@ class AutoTests(TestCase):
 
     def test_openssl_failure(self):
         """Make sure we stop if the openssl signature check fails."""
-        with test_dirs() as (le_auto_path, venv_dir):
+        with temp_paths() as (le_auto_path, venv_dir):
             # Serve an unrelated hash signed with the good key (easier than
             # making a bad key, and a mismatch is a mismatch):
             resources = {'': '<a href="certbot/">certbot/</a>',
@@ -335,7 +335,7 @@ class AutoTests(TestCase):
 
     def test_pip_failure(self):
         """Make sure pip stops us if there is a hash mismatch."""
-        with test_dirs() as (le_auto_path, venv_dir):
+        with temp_paths() as (le_auto_path, venv_dir):
             resources = {'': '<a href="certbot/">certbot/</a>',
                          'certbot/json': dumps({'releases': {'99.9.9': None}})}
             with serving(resources) as base_url:
