@@ -1296,7 +1296,7 @@ UNLIKELY_EOF
       # Using mv rather than cp leaves the old file descriptor pointing to the
       # original copy so the shell can continue to read it unmolested. mv across
       # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
-      # cp is unlikely to fail (esp. under sudo) if the rm doesn't.
+      # cp is unlikely to fail if the rm doesn't.
       mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
     fi  # A newer version is available.
   fi  # Self-upgrading is allowed.
