@@ -161,7 +161,7 @@ elif [ "$1" != "--le-auto-phase2" ]; then
         SUDO=su_sudo
         ;;
       sudo)
-        SUDO=sudo
+        SUDO="sudo -E"
         ;;
       '') ;; # Nothing to do for plain root method.
       *)
@@ -172,7 +172,7 @@ elif [ "$1" != "--le-auto-phase2" ]; then
   else
     if test "`id -u`" -ne "0" ; then
       if $EXISTS sudo 1>/dev/null 2>&1; then
-        SUDO=sudo
+        SUDO="sudo -E"
       else
         say \"sudo\" is not available, will use \"su\" for installation steps...
         SUDO=su_sudo
