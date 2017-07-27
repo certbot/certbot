@@ -29,7 +29,7 @@ if [ -z "$VENV_PATH" ]; then
 fi
 VENV_BIN="$VENV_PATH/bin"
 VENV_BOOTSTRAP_VERSION="$VENV_PATH/certbot-auto-bootstrap-version.txt"
-LE_AUTO_VERSION="0.16.0.dev0"
+LE_AUTO_VERSION="0.17.0.dev0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -200,6 +200,25 @@ ExperimentalBootstrap() {
     exit 1
   fi
 }
+
+DeprecationBootstrap() {
+  # Arguments: Platform name, bootstrap function name
+  if [ "$DEBUG" = 1 ]; then
+    if [ "$2" != "" ]; then
+      BootstrapMessage $1
+      $2
+    fi
+  else
+    error "WARNING: certbot-auto support for this $1 is DEPRECATED!"
+    error "Please visit certbot.eff.org to learn how to download a version of"
+    error "Certbot that is packaged for your system. While an existing version"
+    error "of certbot-auto may work currently, we have stopped supporting updating"
+    error "system packages for your system. Please switch to a packaged version"
+    error "as soon as possible."
+    exit 1
+  fi
+}
+
 
 DeterminePythonVersion() {
   for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
@@ -690,17 +709,17 @@ elif [ -f /etc/manjaro-release ]; then
   BOOTSTRAP_VERSION="BootstrapArchCommon $BOOTSTRAP_ARCH_COMMON_VERSION"
 elif [ -f /etc/gentoo-release ]; then
   Bootstrap() {
-    ExperimentalBootstrap "Gentoo" BootstrapGentooCommon
+    DeprecationBootstrap "Gentoo" BootstrapGentooCommon
   }
   BOOTSTRAP_VERSION="BootstrapGentooCommon $BOOTSTRAP_GENTOO_COMMON_VERSION"
 elif uname | grep -iq FreeBSD ; then
   Bootstrap() {
-    ExperimentalBootstrap "FreeBSD" BootstrapFreeBsd
+    DeprecationBootstrap "FreeBSD" BootstrapFreeBsd
   }
   BOOTSTRAP_VERSION="BootstrapFreeBsd $BOOTSTRAP_FREEBSD_VERSION"
 elif uname | grep -iq Darwin ; then
   Bootstrap() {
-    ExperimentalBootstrap "macOS" BootstrapMac
+    DeprecationBootstrap "macOS" BootstrapMac
   }
   BOOTSTRAP_VERSION="BootstrapMac $BOOTSTRAP_MAC_VERSION"
 elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
@@ -995,18 +1014,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==0.15.0 \
-    --hash=sha256:f052a1ee9d0e71b73d893c26ee3aa343f6f3abe7de8471437779d541f8bf7824 \
-    --hash=sha256:b8c4043b2b8df39660d4ce4a2a6eca590f98ece0e1b97eba53ab95f3bbac3beb
-acme==0.15.0 \
-    --hash=sha256:d423a14a8fde089d6854ccbe1314f6a80553ef06799ac6f671b90d8399835e60 \
-    --hash=sha256:9fadd63322a1eb95f58e6cda8ca2095c750e828ae470bc6e3925ef618c7cfc87
-certbot-apache==0.15.0 \
-    --hash=sha256:07fa99b264e0ea489695cc2a5353f3fe9459422ad549de02c46da24ae546acd9 \
-    --hash=sha256:6da1433381bd2c2ea7c395be57ca1bcdb7c1c04ce3d12b67a3fa207a3bfa41ca
-certbot-nginx==0.15.0 \
-    --hash=sha256:7b0622f8a9031e24105f9b5c8d98d4ed83ae393517ed35cc2a4fa50098122922 \
-    --hash=sha256:0b98dedb22492d6f88dffdfbd721b4d4c98bfe361df35bc97bf5bd3047f01234
+certbot==0.16.0 \
+    --hash=sha256:e1cc2479f4f149a7128b67192c3f5f6c111b6b9ddcac421ebee8ac5030d5b09b \
+    --hash=sha256:795801fd6b06b32060e364ac045312e6b26c6272d5ca32878277e5a2afdee186
+acme==0.16.0 \
+    --hash=sha256:31592a744f7a6e7cbb4c5daf2deebc9af6b03997d6f80e5becc203ab8694edcf \
+    --hash=sha256:538b69134cc50bdcdcc081b844c85158509022c61d7abc1f44216beeb95de9cd
+certbot-apache==0.16.0 \
+    --hash=sha256:337f84f391c7d7c31d84376e7a8c882ac119112a4aabceadd1a7de6a2f01ca06 \
+    --hash=sha256:f1f37b56e1ceb0a28ccf51d54ca34444e6a708448845ef25372e223b9a82c4d4
+certbot-nginx==0.16.0 \
+    --hash=sha256:1d57428202f8e7abdd99c3ddbcf374aad5f69c4262fe8dae53d2016e4ae04ded \
+    --hash=sha256:77711655514d707ddf728195f00b2f6cdd1ad9db52440276b4a67664479c6954
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1164,9 +1183,9 @@ UNLIKELY_EOF
     PATH="$VENV_BIN:$PATH" "$VENV_BIN/python" "$TEMP_DIR/pipstrap.py"
     set +e
     if [ "$VERBOSE" = 1 ]; then
-      "$VENV_BIN/pip" install --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt"
+      "$VENV_BIN/pip" install --disable-pip-version-check --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt"
     else
-      PIP_OUT=`"$VENV_BIN/pip" install --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt" 2>&1`
+      PIP_OUT=`"$VENV_BIN/pip" install --disable-pip-version-check --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt" 2>&1`
     fi
     PIP_STATUS=$?
     set -e

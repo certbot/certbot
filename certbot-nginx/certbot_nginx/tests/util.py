@@ -65,7 +65,6 @@ def get_nginx_configurator(
                     in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
                     server="https://acme-server.org:443/new",
                     tls_sni_01_port=5001,
-                    dry_run=False,
                 ),
                 name="nginx",
                 version=version)

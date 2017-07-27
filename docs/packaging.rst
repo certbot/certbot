@@ -15,8 +15,11 @@ We release packages and upload them to PyPI (wheels and source tarballs).
 - https://pypi.python.org/pypi/certbot-dns-cloudxns
 - https://pypi.python.org/pypi/certbot-dns-digitalocean
 - https://pypi.python.org/pypi/certbot-dns-dnsimple
+- https://pypi.python.org/pypi/certbot-dns-dnsmadeeasy
 - https://pypi.python.org/pypi/certbot-dns-google
+- https://pypi.python.org/pypi/certbot-dns-luadns
 - https://pypi.python.org/pypi/certbot-dns-nsone
+- https://pypi.python.org/pypi/certbot-dns-rfc2136
 - https://pypi.python.org/pypi/certbot-dns-route53
 
 The following scripts are used in the process:
@@ -58,8 +61,11 @@ From our official releases:
 - https://www.archlinux.org/packages/community/any/certbot-dns-cloudxns
 - https://www.archlinux.org/packages/community/any/certbot-dns-digitalocean
 - https://www.archlinux.org/packages/community/any/certbot-dns-dnsimple
+- https://www.archlinux.org/packages/community/any/certbot-dns-dnsmadeeasy
 - https://www.archlinux.org/packages/community/any/certbot-dns-google
+- https://www.archlinux.org/packages/community/any/certbot-dns-luadns
 - https://www.archlinux.org/packages/community/any/certbot-dns-nsone
+- https://www.archlinux.org/packages/community/any/certbot-dns-rfc2136
 - https://www.archlinux.org/packages/community/any/certbot-dns-route53
 
 From ``master``: https://aur.archlinux.org/packages/certbot-git
