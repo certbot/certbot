@@ -412,13 +412,15 @@ else
   # certbot-auto (which is always the same as that of the certbot
   # package). Phase 2 checks the version of the locally installed certbot.
 
-  if [ ! -f "$VENV_BIN/letsencrypt" -a ! -f "$OLD_VENV_PATH/bin/letsencrypt" ]; then
-    if [ "$HELP" = 1 ]; then
-      echo "$USAGE"
-      exit 0
+  if [ ! -f "$VENV_BIN/letsencrypt" ]; then
+    if [ -z "$OLD_VENV_PATH" -o ! -f "$OLD_VENV_PATH/bin/letsencrypt" ]; then
+      if [ "$HELP" = 1 ]; then
+        echo "$USAGE"
+        exit 0
+      fi
+      # If it looks like we've never bootstrapped before, bootstrap:
+      Bootstrap
     fi
-    # If it looks like we've never bootstrapped before, bootstrap:
-    Bootstrap
   fi
   if [ "$OS_PACKAGES_ONLY" = 1 ]; then
     say "OS packages installed."
