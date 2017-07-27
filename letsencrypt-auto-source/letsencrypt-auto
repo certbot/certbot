@@ -156,7 +156,6 @@ if [ "$1" = "--cb-auto-has-root" ]; then
   shift 1
 elif [ "$1" != "--le-auto-phase2" ]; then
   # if $1 is --le-auto-phase2, we've executed this branch before
-  SUDO_ENV=""
   if [ -n "${LE_AUTO_SUDO+x}" ]; then
     case "$LE_AUTO_SUDO" in
       su_sudo|su)
