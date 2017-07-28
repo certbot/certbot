@@ -262,9 +262,6 @@ class ConfigTestCase(TempDirTestCase):
             )
         )
 
-    def tearDown(self):
-        super(ConfigTestCase, self).tearDown()
-
 def lock_and_call(func, lock_path):
     """Grab a lock for lock_path and call func.
 

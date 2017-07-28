@@ -61,9 +61,6 @@ class AccountTest(unittest.TestCase):
 class ReportNewAccountTest(ConfigTestCase, unittest.TestCase):
     """Tests for certbot.account.report_new_account."""
 
-    def setUp(self):
-        super(ReportNewAccountTest, self).setUp()
-
     def _call(self):
         from certbot.account import report_new_account
         report_new_account(self.config)
