@@ -143,6 +143,16 @@ class NginxConfigurator(common.Plugin):
         """Full absolute path to digest of updated SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.UPDATED_MOD_SSL_CONF_DIGEST)
 
+    @property
+    def ssl_dhparams(self):
+        """Full absolute path to ssl_dhparams file."""
+        return os.path.join(self.config.config_dir, constants.SSL_DHPARAMS_DEST)
+
+    @property
+    def updated_ssl_dhparams_digest(self):
+        """Full absolute path to digest of updated ssl_dhparams file."""
+        return os.path.join(self.config.config_dir, constants.UPDATED_SSL_DHPARAMS_DIGEST)
+
     # This is called in determine_authenticator and determine_installer
     def prepare(self):
         """Prepare the authenticator/installer.
@@ -161,6 +171,9 @@ class NginxConfigurator(common.Plugin):
         self.parser = parser.NginxParser(self.conf('server-root'))
 
         install_ssl_options_conf(self.mod_ssl_conf, self.updated_mod_ssl_conf_digest)
+
+        common.install_version_controlled_file(self.ssl_dhparams, self.updated_ssl_dhparams_digest,
+            constants.SSL_DHPARAMS_SRC, constants.ALL_SSL_DHPARAMS_HASHES)
 
         # Set Version
         if self.version is None:
