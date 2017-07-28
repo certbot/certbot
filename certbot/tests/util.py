@@ -181,10 +181,10 @@ class FreezableMock(object):
     value of func is ignored.
 
     """
-    def __init__(self, frozen=False, func=None):
+    def __init__(self, frozen=False, func=None, return_value=mock.sentinel.DEFAULT):
         self._frozen_set = set() if frozen else set(('freeze',))
         self._func = func
-        self._mock = mock.MagicMock()
+        self._mock = mock.MagicMock(return_value=return_value)
         self._frozen = frozen
 
     def freeze(self):
@@ -209,6 +209,10 @@ class FreezableMock(object):
 
     def __setattr__(self, name, value):
         if self._frozen:
+            if name == 'return_value': # Rationale: __setattr__ takes precedence over properties
+                msg = ("Changing the return_value of a frozen FreezableMock is forbidden "
+                        "because that would nullify callbacks important to thorough tests.")
+                raise AttributeError(msg)
             return setattr(self._mock, name, value)
         elif name != '_frozen_set':
             self._frozen_set.add(name)
@@ -222,7 +226,7 @@ def _create_get_utility_mock():
             frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call)
             setattr(display, name, frozen_mock)
     display.freeze()
-    return mock.MagicMock(return_value=display)
+    return FreezableMock(frozen=True, return_value=display)
 
 
 def _assert_valid_call(*args, **kwargs):
