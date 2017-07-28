@@ -153,7 +153,7 @@ def make_lineage(config_dir, testfile):
     return conf_path
 
 
-def patch_get_utility(target='zope.component.getUtility', immutable_return_value=False):
+def patch_get_utility(target='zope.component.getUtility'):
     """Patch zope.component.getUtility to use a special mock IDisplay.
 
     The mock IDisplay works like a regular mock object, except it also
@@ -165,30 +165,8 @@ def patch_get_utility(target='zope.component.getUtility', immutable_return_value
     :rtype: mock.MagicMock
 
     """
-    if immutable_return_value:
-        return mock.patch(target, new_callable=_create_immutable_get_utility_mock)
-    else:
-        return mock.patch(target, new_callable=_create_get_utility_mock)
+    return mock.patch(target, new_callable=_create_get_utility_mock)
 
-
-class ImmutableReturnMixin(object):
-    """Mixin class which provides a __setattr__ that refuses to set
-    the instance's return_value by raising an AttributeError
-
-    """
-    def __setattr__(self, name, value):
-        if name == "return_value":
-            msg = ("Changing the return_value of a FreezableMock is forbidden because "
-                    "that would nullify callbacks important to thorough tests.")
-            raise AttributeError(msg)
-        super(ImmutableReturnMixin, self).__setattr__(name, value)
-
-class ImmutableReturnMock(ImmutableReturnMixin, mock.MagicMock):
-    """An extension of mock.MagicMock which leverages ImmutableReturnMixin
-    to accept a return_value on initialization, but not after.
-
-    """
-    pass
 
 class FreezableMock(object):
     """Mock object with the ability to freeze attributes.
@@ -203,11 +181,10 @@ class FreezableMock(object):
     value of func is ignored.
 
     """
-    def __init__(self, frozen=False, func=None, immutable_return_value=False):
+    def __init__(self, frozen=False, func=None, return_value=mock.sentinel.DEFAULT):
         self._frozen_set = set() if frozen else set(('freeze',))
         self._func = func
-        self._immutable_return_value = immutable_return_value
-        self._mock = mock.MagicMock()
+        self._mock = mock.MagicMock(return_value=return_value)
         self._frozen = frozen
 
     def freeze(self):
@@ -232,9 +209,9 @@ class FreezableMock(object):
 
     def __setattr__(self, name, value):
         if self._frozen:
-            if self._immutable_return_value and name == "return_value":
-                msg = ("Changing the return_value of a FreezableMock is forbidden because "
-                        "that would nullify callbacks important to thorough tests.")
+            if name == 'return_value': # Rationale: __setattr__ takes precedence over properties
+                msg = ("Changing the return_value of a frozen FreezableMock is forbidden "
+                        "because that would nullify callbacks important to thorough tests.")
                 raise AttributeError(msg)
             return setattr(self._mock, name, value)
         elif name != '_frozen_set':
@@ -248,17 +225,7 @@ def _create_get_utility_mock():
             frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call)
             setattr(display, name, frozen_mock)
     display.freeze()
-    return mock.MagicMock(return_value=display)
-
-def _create_immutable_get_utility_mock():
-    display = FreezableMock(immutable_return_value=True)
-    for name in interfaces.IDisplay.names():  # pylint: disable=no-member
-        if name != 'notification':
-            frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call,
-                    immutable_return_value=True)
-            setattr(display, name, frozen_mock)
-    display.freeze()
-    return ImmutableReturnMock(return_value=display)
+    return FreezableMock(frozen=True, return_value=display)
 
 
 def _assert_valid_call(*args, **kwargs):
