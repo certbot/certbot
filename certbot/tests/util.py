@@ -24,6 +24,7 @@ from certbot import storage
 from certbot import util
 
 from certbot.display import util as display_util
+from certbot.configuration import NamespaceConfig
 
 
 def vector_path(*names):
@@ -246,6 +247,23 @@ class TempDirTestCase(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
+class ConfigTestCase(TempDirTestCase):
+    """Test class which sets up a NamespaceConfig object.
+
+    """
+    def setUp(self):
+        super(ConfigTestCase, self).setUp()
+        self.config = NamespaceConfig(
+            mock.MagicMock(
+                config_dir=self.tempdir,
+                work_dir=self.tempdir,
+                logs_dir=self.tempdir,
+                server="example.com",
+            )
+        )
+
+    def tearDown(self):
+        super(ConfigTestCase, self).tearDown()
 
 def lock_and_call(func, lock_path):
     """Grab a lock for lock_path and call func.
