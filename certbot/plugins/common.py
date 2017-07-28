@@ -270,51 +270,50 @@ class TLSSNI01(object):
         return response
 
 
-def install_ssl_options_conf(options_ssl, options_ssl_digest, mod_ssl_conf_src,
-    all_ssl_options_hashes):
-    """Copy Certbot's SSL options file into the system's config dir if required.
+def install_version_controlled_file(dest_path, digest_path, src_path, all_hashes):
+    """Copy a file into an active location (likely the system's config dir) if required.
 
-       :param str options_ssl: destination path for file containing ssl options
-       :param str options_ssl_digest: path to save a digest of options_ssl in
-       :param str mod_ssl_conf_src: path to file containing ssl options found in distribution
-       :param list all_ssl_options_hashes: hashes of every released version of options_ssl
+       :param str dest_path: destination path for version controlled file
+       :param str digest_path: path to save a digest of the file in
+       :param str src_path: path to version controlled file found in distribution
+       :param list all_hashes: hashes of every released version of the file
     """
-    current_ssl_options_hash = crypto_util.sha256sum(mod_ssl_conf_src)
+    current_hash = crypto_util.sha256sum(src_path)
 
     def _write_current_hash():
-        with open(options_ssl_digest, "w") as f:
-            f.write(current_ssl_options_hash)
+        with open(digest_path, "w") as f:
+            f.write(current_hash)
 
     def _install_current_file():
-        shutil.copyfile(mod_ssl_conf_src, options_ssl)
+        shutil.copyfile(src_path, dest_path)
         _write_current_hash()
 
     # Check to make sure options-ssl.conf is installed
-    if not os.path.isfile(options_ssl):
+    if not os.path.isfile(dest_path):
         _install_current_file()
         return
     # there's already a file there. if it's up to date, do nothing. if it's not but
     # it matches a known file hash, we can update it.
     # otherwise, print a warning once per new version.
-    active_file_digest = crypto_util.sha256sum(options_ssl)
-    if active_file_digest == current_ssl_options_hash: # already up to date
+    active_file_digest = crypto_util.sha256sum(dest_path)
+    if active_file_digest == current_hash: # already up to date
         return
-    elif active_file_digest in all_ssl_options_hashes: # safe to update
+    elif active_file_digest in all_hashes: # safe to update
         _install_current_file()
     else: # has been manually modified, not safe to update
         # did they modify the current version or an old version?
-        if os.path.isfile(options_ssl_digest):
-            with open(options_ssl_digest, "r") as f:
+        if os.path.isfile(digest_path):
+            with open(digest_path, "r") as f:
                 saved_digest = f.read()
             # they modified it after we either installed or told them about this version, so return
-            if saved_digest == current_ssl_options_hash:
+            if saved_digest == current_hash:
                 return
         # there's a new version but we couldn't update the file, or they deleted the digest.
         # save the current digest so we only print this once, and print a warning
         _write_current_hash()
         logger.warning("%s has been manually modified; updated ssl configuration options "
             "saved to %s. We recommend updating %s for security purposes.",
-            options_ssl, mod_ssl_conf_src, options_ssl)
+            dest_path, src_path, dest_path)
 
 
 # test utils used by certbot_apache/certbot_nginx (hence
