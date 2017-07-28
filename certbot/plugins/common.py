@@ -311,7 +311,7 @@ def install_version_controlled_file(dest_path, digest_path, src_path, all_hashes
         # there's a new version but we couldn't update the file, or they deleted the digest.
         # save the current digest so we only print this once, and print a warning
         _write_current_hash()
-        logger.warning("%s has been manually modified; updated ssl configuration options "
+        logger.warning("%s has been manually modified; updated file "
             "saved to %s. We recommend updating %s for security purposes.",
             dest_path, src_path, dest_path)
 
