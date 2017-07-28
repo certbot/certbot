@@ -462,11 +462,13 @@ class NginxConfigurator(common.Plugin):
 
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
 
-        ssl_block = (
-            [['\n    ', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
-             ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
-             ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
-             ['\n    ', 'include', ' ', self.mod_ssl_conf]])
+        ssl_block = ([
+            ['\n    ', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
+            ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
+            ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
+            ['\n    ', 'include', ' ', self.mod_ssl_conf],
+            ['\n    ', 'ssl_dhparam', ' ', self.ssl_dhparams],
+        ])
 
         self.parser.add_server_directives(
             vhost, ssl_block, replace=False)

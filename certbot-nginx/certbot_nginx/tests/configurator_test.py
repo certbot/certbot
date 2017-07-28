@@ -226,8 +226,9 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['listen', '5001', 'ssl'],
                             ['ssl_certificate', 'example/fullchain.pem'],
                             ['ssl_certificate_key', 'example/key.pem'],
-                            ['include', self.config.mod_ssl_conf]]
-                            ]],
+                            ['include', self.config.mod_ssl_conf],
+                            ['ssl_dhparam', self.config.ssl_dhparams],
+                            ]]],
                          parsed_example_conf)
         self.assertEqual([['server_name', 'somename', 'alias', 'another.alias']],
                          parsed_server_conf)
@@ -244,8 +245,9 @@ class NginxConfiguratorTest(util.NginxTest):
               ['listen', '5001', 'ssl'],
               ['ssl_certificate', '/etc/nginx/fullchain.pem'],
               ['ssl_certificate_key', '/etc/nginx/key.pem'],
-              ['include', self.config.mod_ssl_conf]]
-            ],
+              ['include', self.config.mod_ssl_conf],
+              ['ssl_dhparam', self.config.ssl_dhparams],
+            ]],
             2))
 
     def test_deploy_cert_add_explicit_listen(self):
@@ -268,8 +270,9 @@ class NginxConfiguratorTest(util.NginxTest):
                            ['listen', '5001', 'ssl'],
                            ['ssl_certificate', 'summer/fullchain.pem'],
                            ['ssl_certificate_key', 'summer/key.pem'],
-                           ['include', self.config.mod_ssl_conf]]
-                           ],
+                           ['include', self.config.mod_ssl_conf],
+                           ['ssl_dhparam', self.config.ssl_dhparams],
+                           ]],
                          parsed_migration_conf[0])
 
     @mock.patch("certbot_nginx.configurator.tls_sni_01.NginxTlsSni01.perform")
