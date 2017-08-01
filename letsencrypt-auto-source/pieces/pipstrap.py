@@ -56,7 +56,7 @@ except ImportError:
     from urllib.parse import urlparse  # 3.4
 
 
-__version__ = 1, 2, 0
+__version__ = 1, 3, 0
 PIP_VERSION = '9.0.1'
 
 
