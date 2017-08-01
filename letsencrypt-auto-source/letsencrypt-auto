@@ -998,7 +998,7 @@ PACKAGES = maybe_argparse + [
     # Pip has no dependencies, as it vendors everything:
     ('https://pypi.python.org/packages/11/b6/'
      'abcb525026a4be042b486df43905d6893fb04f05aac21c32c638e939e447/'
-     'pip-{}.tar.gz'
+     'pip-{0}.tar.gz'
      .format(PIP_VERSION),
      '09f243e1a7b461f654c26a725fa373211bb7ff17a9300058b205c61658ca940d'),
     # This version of setuptools has only optional dependencies:
