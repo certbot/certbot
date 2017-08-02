@@ -32,13 +32,13 @@ from certbot.plugins import manual
 
 import certbot.tests.util as test_util
 
-CERT_PATH = test_util.vector_path('cert.pem')
-CERT = test_util.vector_path('cert.pem')
-CSR = test_util.vector_path('csr.der')
+CERT_PATH = test_util.vector_path('cert_512.pem')
+CERT = test_util.vector_path('cert_512.pem')
+CSR = test_util.vector_path('csr_512.der')
 KEY = test_util.vector_path('rsa256_key.pem')
-JWK = jose.JWKRSA.load(test_util.load_vector("rsa512_key_2.pem"))
+JWK = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
 RSA2048_KEY_PATH = test_util.vector_path('rsa2048_key.pem')
-SS_CERT_PATH = test_util.vector_path('self_signed_cert.pem')
+SS_CERT_PATH = test_util.vector_path('cert_2048.pem')
 
 
 class TestHandleIdenticalCerts(unittest.TestCase):
@@ -227,7 +227,7 @@ class RevokeTest(test_util.TempDirTestCase):
 
         shutil.copy(CERT_PATH, self.tempdir)
         self.tmp_cert_path = os.path.abspath(os.path.join(self.tempdir,
-            'cert.pem'))
+            'cert_512.pem'))
 
         self.patches = [
             mock.patch('acme.client.Client', autospec=True),
@@ -647,7 +647,7 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         self.assertRaises(
             errors.Error, self._call,
             'certonly --csr {0}'.format(
-                test_util.vector_path('csr-nonames.pem')).split())
+                test_util.vector_path('csr-nonames_512.pem')).split())
 
     def test_csr_with_inconsistent_domains(self):
         self.assertRaises(
@@ -707,7 +707,7 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
                              args=None, should_renew=True, error_expected=False):
         # pylint: disable=too-many-locals,too-many-arguments
-        cert_path = test_util.vector_path('cert.pem')
+        cert_path = test_util.vector_path('cert_512.pem')
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path,
                                       cert_path=cert_path, fullchain_path=chain_path)
@@ -977,7 +977,7 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         chain = 'chain'
         mock_client = mock.MagicMock()
         mock_client.obtain_certificate_from_csr.return_value = (certr, chain)
-        cert_path = '/etc/letsencrypt/live/example.com/cert.pem'
+        cert_path = '/etc/letsencrypt/live/example.com/cert_512.pem'
         full_path = '/etc/letsencrypt/live/example.com/fullchain.pem'
         mock_client.save_certificate.return_value = cert_path, None, full_path
         with mock.patch('certbot.main._init_le_client') as mock_init:
