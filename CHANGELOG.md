@@ -31,11 +31,11 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-* Encoding errors that could occur when parsing error messages from the acme
+* Encoding errors that could occur when parsing error messages from the ACME
   server containing Unicode have been resolved.
-* certbot-auto no longer prints misleading messages about their being a newer
+* certbot-auto no longer prints misleading messages about there being a newer
   pip version available when installation fails.
-* Certbot's acme library now properly extracts domains from critical SAN
+* Certbot's ACME library now properly extracts domains from critical SAN
   extensions.
 
 More details about these changes can be found on our GitHub repo:
