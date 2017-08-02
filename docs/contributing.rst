@@ -134,10 +134,6 @@ Run the integration tests using:
 
 .. _removing all containers and volumes: https://www.digitalocean.com/community/tutorials/how-to-remove-docker-images-containers-and-volumes
 
-
-.. _Where are my certificates?:
-  https://certbot.eff.org/docs/using.html#where-are-my-certificates
-
 Code components and layout
 ==========================
 
