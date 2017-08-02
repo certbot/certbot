@@ -255,9 +255,9 @@ class ConfigTestCase(TempDirTestCase):
         super(ConfigTestCase, self).setUp()
         self.config = NamespaceConfig(
             mock.MagicMock(
-                config_dir=self.tempdir,
-                work_dir=self.tempdir,
-                logs_dir=self.tempdir,
+                config_dir=os.path.join(self.tempdir, 'config'),
+                work_dir=os.path.join(self.tempdir, 'work'),
+                logs_dir=os.path.join(self.tempdir, 'logs'),
                 server="example.com",
             )
         )
