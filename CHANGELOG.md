@@ -2,6 +2,45 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.17.0 - 2017-08-02
+
+### Added
+
+* Support in our nginx plugin for modifying SSL server blocks that do
+  not contain certificate or key directives.
+* A `--max-log-backups` flag to allow users to configure or even completely
+  disable Certbot's built in log rotation.
+* A `--user-agent-comment` flag to allow people who build tools around Certbot
+  to differentiate their user agent string by adding a comment to its default
+  value.
+
+### Changed
+
+* Due to some awesome work by
+  [cryptography project](https://github.com/pyca/cryptography), compilation can
+  now be avoided on most systems when using certbot-auto. This eliminates many
+  problems people have had in the past such as running out of memory, having
+  invalid headers/libraries, and changes to the OS packages on their system
+  after compilation breaking Certbot.
+* The `--renew-hook` flag has been hidden in favor of `--deploy-hook`. This new
+  flag works exactly the same way except it is always run when a certificate is
+  issued rather than just when it is renewed.
+* We have started printing deprecation warnings in certbot-auto for
+  experimentally supported systems with OS packages available.
+* A certificate lineage's name is included in error messages during renewal.
+
+### Fixed
+
+* Encoding errors that could occur when parsing error messages from the acme
+  server containing Unicode have been resolved.
+* certbot-auto no longer prints misleading messages about their being a newer
+  pip version available when installation fails.
+* Certbot's acme library now properly extracts domains from critical SAN
+  extensions.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.17.0+is%3Aclosed
+
 ## 0.16.0 - 2017-07-05
 
 ### Added
