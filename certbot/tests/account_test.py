@@ -58,7 +58,7 @@ class AccountTest(unittest.TestCase):
         self.assertTrue(repr(self.acc).startswith(
           "<Account(i_am_a_regr, bca5889f66457d5b62fbba7b25f9ab6f, Meta("))
 
-class ReportNewAccountTest(ConfigTestCase, unittest.TestCase):
+class ReportNewAccountTest(ConfigTestCase):
     """Tests for certbot.account.report_new_account."""
 
     def _call(self):
@@ -95,7 +95,7 @@ class AccountMemoryStorageTest(unittest.TestCase):
         self.assertEqual([account], self.storage.find_all())
 
 
-class AccountFileStorageTest(ConfigTestCase, TempDirTestCase):
+class AccountFileStorageTest(ConfigTestCase):
     """Tests for certbot.account.AccountFileStorage."""
 
     def setUp(self):
