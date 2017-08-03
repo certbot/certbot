@@ -643,7 +643,9 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             object at 0x108356c50>: Failed to establish a new connection:
             [Errno 65] No route to host',))"""
 
-            err_regex = r".*host='(\S*)'.*url\: (\/\w*).*(\[Errno \d+\])([A-Za-z ]*)"
+            print e.message
+            # pylint: disable=line-too-long
+            err_regex = r".*host='(\S*)'.*Max retries exceeded with url\: (\/\w*).*(\[Errno \d+\])([A-Za-z ]*)"
             m = re.match(err_regex, str(e))
             if m is None:
                 raise # pragma: no cover
