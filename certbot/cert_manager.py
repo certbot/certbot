@@ -149,14 +149,22 @@ def cert_path_to_lineage(cli_config):
     """
     def archive_files(candidate_lineage, filetype):
         """ In order to match things like:
-            /etc/letsencrypt/archive/example.com/chain1.pem"""
+            /etc/letsencrypt/archive/example.com/chain1.pem.
+
+            Anonymous functions which call this function are eventually passed (in a list) to
+            `match_and_check_overlaps` to help specify the acceptable_matches.
+        """
         archive_dir = candidate_lineage.archive_dir
         pattern = [os.path.join(archive_dir, f) for f in os.listdir(archive_dir)
                         if re.match("{0}[0-9]*.pem".format(filetype), f)]
         # Using [0] here, so make sure to also check for overlapping archive dirs
         # if you use this function.
-        return pattern[0]
+        if len(pattern) > 0:
+            return pattern[0]
+        else:
+            return None
 
+    # options specifies the acceptable_matches
     options = [lambda x: x.fullchain_path, lambda x: x.cert_path,
             lambda x: archive_files(x, "cert"), lambda x: archive_files(x, "fullchain")]
     match = match_and_check_overlaps(cli_config, options,
