@@ -391,6 +391,10 @@ relevant files can be removed from the system with the ``delete`` subcommand::
 
   certbot delete --cert-name example.com
 
+You can also specify the reason for revocations using the ``reason`` flag::
+
+  certbot revoke --cert-path /etc/letsencrypt/live/CERTNAME/cert.pem --reason keycompromise
+
 .. note:: If you don't use ``delete`` to remove the certificate completely, it will be renewed automatically at the next renewal event.
 
 .. _renewal:
