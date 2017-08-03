@@ -383,6 +383,12 @@ use the ``revoke`` command to do so. Note that the ``revoke`` command takes the 
 
   certbot revoke --cert-path /etc/letsencrypt/live/CERTNAME/cert.pem
 
+You can also specify the reason for revoking your certificate by using the ``reason`` flag.
+Reasons include ``unspecified`` which is the default, as well as ``keycompromise``,
+``affiliationchanged``, ``superseded``, and ``cessationofoperation``::
+
+  certbot revoke --cert-path /etc/letsencrypt/live/CERTNAME/cert.pem --reason keycompromise
+
 Additionally, if a certificate
 is a test certificate obtained via the ``--staging`` or ``--test-cert`` flag, that flag must be passed to the
 ``revoke`` subcommand.
@@ -390,10 +396,6 @@ Once a certificate is revoked (or for other certificate management tasks), all o
 relevant files can be removed from the system with the ``delete`` subcommand::
 
   certbot delete --cert-name example.com
-
-You can also specify the reason for revocations using the ``reason`` flag::
-
-  certbot revoke --cert-path /etc/letsencrypt/live/CERTNAME/cert.pem --reason keycompromise
 
 .. note:: If you don't use ``delete`` to remove the certificate completely, it will be renewed automatically at the next renewal event.
 
