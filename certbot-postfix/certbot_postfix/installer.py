@@ -15,21 +15,6 @@ from certbot.plugins import common as plugins_common
 logger = logging.getLogger(__name__)
 
 
-def parse_line(line_data):
-    """
-    Return the (line number, left hand side, right hand side) of a stripped
-    postfix config line.
-
-    Lines are like:
-    smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
-    """
-    num,line = line_data
-    left, sep, right = line.partition("=")
-    if not sep:
-        return None
-    return (num, left.strip(), right.strip())
-
-
 @zope.interface.implementer(interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Installer(plugins_common.Plugin):
@@ -428,3 +413,18 @@ class Installer(plugins_common.Plugin):
 
     def update_CAfile(self):
         os.system("cat /usr/share/ca-certificates/mozilla/*.crt > " + self.ca_file)
+
+
+def parse_line(line_data):
+    """
+    Return the (line number, left hand side, right hand side) of a stripped
+    postfix config line.
+
+    Lines are like:
+    smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
+    """
+    num,line = line_data
+    left, sep, right = line.partition("=")
+    if not sep:
+        return None
+    return (num, left.strip(), right.strip())
