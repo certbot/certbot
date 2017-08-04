@@ -6,9 +6,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import io
 import logging
 import unittest
+
+import mock
+import six
 
 from certbot_postfix import installer
 
@@ -28,61 +30,44 @@ certs_only_config = (
 smtpd_tls_key_file = /etc/letsencrypt/live/www.fubard.org/privkey.pem""")
 
 
-def GetFakeOpen(fake_file_contents):
-    fake_file = io.StringIO()
-    # cast this to unicode for py2
-    fake_file.write(fake_file_contents)
-    fake_file.seek(0)
-
-    def FakeOpen(_):
-        return fake_file
-
-    return FakeOpen
-
-  
 class TestPostfixConfigGenerator(unittest.TestCase):
 
     def setUp(self):
-        self.fopen_names_only_config = GetFakeOpen(names_only_config)        
-        self.fopen_certs_only_config = GetFakeOpen(certs_only_config)
-        self.fopen_no_certs_only_config = self.fopen_names_only_config
-
-        #self.config = Config.Config()
         self.config = None
         self.postfix_dir = 'tests/'
 
-    def tearDown(self):
-        pass
-
     def testGetAllNames(self):
         sorted_names = ['fubard.org', 'mail.fubard.org']
-        postfix_config_gen = installer.Installer(
-            self.config,
-            self.postfix_dir,
-            fixup=True,
-            fopen=self.fopen_names_only_config
-        )
+        with mock.patch('certbot_postfix.installer.open') as mock_open:
+            mock_open.return_value = six.StringIO(names_only_config)
+            postfix_config_gen = installer.Installer(
+                self.config,
+                self.postfix_dir,
+                fixup=True,
+            )
         self.assertEqual(sorted_names, postfix_config_gen.get_all_names())
 
     def testGetAllCertAndKeys(self):
         return_vals = [('/etc/letsencrypt/live/www.fubard.org/fullchain.pem',
                         '/etc/letsencrypt/live/www.fubard.org/privkey.pem',
                         'tests/main.cf'),]
-        postfix_config_gen = installer.Installer(
-            self.config,
-            self.postfix_dir,
-            fixup=True,
-            fopen=self.fopen_certs_only_config
-        )
+        with mock.patch('certbot_postfix.installer.open') as mock_open:
+            mock_open.return_value = six.StringIO(certs_only_config)
+            postfix_config_gen = installer.Installer(
+                self.config,
+                self.postfix_dir,
+                fixup=True,
+            )
         self.assertEqual(return_vals, postfix_config_gen.get_all_certs_keys())
 
     def testGetAllCertsAndKeys_With_None(self):
-        postfix_config_gen = installer.Installer(
-            self.config,
-            self.postfix_dir,
-            fixup=True,
-            fopen=self.fopen_no_certs_only_config
-        )
+        with mock.patch('certbot_postfix.installer.open') as mock_open:
+            mock_open.return_value = six.StringIO(names_only_config)
+            postfix_config_gen = installer.Installer(
+                self.config,
+                self.postfix_dir,
+                fixup=True,
+            )
         self.assertEqual([], postfix_config_gen.get_all_certs_keys())
 
 

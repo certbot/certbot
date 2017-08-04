@@ -26,7 +26,6 @@ class Installer(plugins_common.Plugin):
                  policy_config,
                  postfix_dir,
                  fixup=False,
-                 fopen=open,
                  version=None):
         self.fixup          = fixup
         self.postfix_dir    = postfix_dir
@@ -38,7 +37,7 @@ class Installer(plugins_common.Plugin):
         self.additions = []
         self.deletions = []
         self.fn = self.find_postfix_cf()
-        self.raw_cf = fopen(self.fn).readlines()
+        self.raw_cf = open(self.fn).readlines()
         self.cf = map(string.strip, self.raw_cf)
         #self.cf = [line for line in cf if line and not line.startswith("#")]
         self.policy_lines = []
@@ -114,7 +113,7 @@ class Installer(plugins_common.Plugin):
 	self.ensure_cf_var("smtp_tls_protocols", "!SSLv2, !SSLv3", [])
 	self.ensure_cf_var("smtp_tls_mandatory_protocols", "!SSLv2, !SSLv3", [])
 
-    def maybe_add_config_lines(self, fopen=open):
+    def maybe_add_config_lines(self):
         if not self.additions:
             return
         if self.fixup:
@@ -135,10 +134,10 @@ class Installer(plugins_common.Plugin):
                 self.new_cf += line
         self.new_cf += sep + new_cf_lines
 
-        with fopen(self.fn, "w") as f:
+        with open(self.fn, "w") as f:
             f.write(self.new_cf)
 
-    def set_domainwise_tls_policies(self, fopen=open):
+    def set_domainwise_tls_policies(self):
         all_acceptable_mxs = self.policy_config.acceptable_mxs
         for address_domain, properties in all_acceptable_mxs.items():
             mx_list = properties.accept_mx_domains
@@ -164,7 +163,7 @@ class Installer(plugins_common.Plugin):
                 )
             self.policy_lines.append(entry)
 
-        with fopen(self.policy_file, "w") as f:
+        with open(self.policy_file, "w") as f:
             f.write("\n".join(self.policy_lines) + "\n")
 
     ### Let's Encrypt client IPlugin ###
