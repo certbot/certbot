@@ -150,9 +150,6 @@ class Installer(plugins_common.Plugin):
                 self.new_cf += line
         self.new_cf += sep + new_cf_lines
 
-        if not os.access(self.fn, os.W_OK):
-            raise Exception("Can't write to %s, please re-run as root."
-                % self.fn)
         with fopen(self.fn, "w") as f:
             f.write(self.new_cf)
 
