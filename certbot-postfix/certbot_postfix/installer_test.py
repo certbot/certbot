@@ -10,8 +10,7 @@ import io
 import logging
 import unittest
 
-import Config
-import PostfixConfigGenerator as pcg
+import certbot_postfix
 
 
 logger = logging.getLogger(__name__)
@@ -57,7 +56,7 @@ class TestPostfixConfigGenerator(unittest.TestCase):
 
     def testGetAllNames(self):
         sorted_names = ['fubard.org', 'mail.fubard.org']
-        postfix_config_gen = pcg.PostfixConfigGenerator(
+        postfix_config_gen = certbot_postfix.Installer(
             self.config,
             self.postfix_dir,
             fixup=True,
@@ -69,7 +68,7 @@ class TestPostfixConfigGenerator(unittest.TestCase):
         return_vals = [('/etc/letsencrypt/live/www.fubard.org/fullchain.pem',
                         '/etc/letsencrypt/live/www.fubard.org/privkey.pem',
                         'tests/main.cf'),]
-        postfix_config_gen = pcg.PostfixConfigGenerator(
+        postfix_config_gen = certbot_postfix.Installer(
             self.config,
             self.postfix_dir,
             fixup=True,
@@ -78,7 +77,7 @@ class TestPostfixConfigGenerator(unittest.TestCase):
         self.assertEqual(return_vals, postfix_config_gen.get_all_certs_keys())
 
     def testGetAllCertsAndKeys_With_None(self):
-        postfix_config_gen = pcg.PostfixConfigGenerator(
+        postfix_config_gen = certbot_postfix.Installer(
             self.config,
             self.postfix_dir,
             fixup=True,
