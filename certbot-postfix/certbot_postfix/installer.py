@@ -210,9 +210,7 @@ class Installer(plugins_common.Plugin):
             self.postfix_version = self.get_version()
 
         if self.postfix_version < (2, 11, 0):
-            raise Exception(
-                'NotSupportedError: Postfix version is too old -- test.'
-            )
+            raise errors.NotSupportedError('Postfix version is too old')
 
 	# Postfix has changed support for TLS features, supported protocol versions
 	# KEX methods, ciphers et cetera over the years. We sort out version dependend
@@ -274,7 +272,7 @@ class Installer(plugins_common.Plugin):
                                stdout=subprocess.PIPE)
         stdout, _ = cmd.communicate()
         if cmd.returncode != 0:
-            raise Exception('PluginError: Unable to determine Postfix version.')
+            raise errors.PluginError('Unable to determine Postfix version.')
 
         # grabs version component of string like "mail_version = 2.11.3"
         mail_version = stdout.split()[2]
@@ -417,7 +415,7 @@ class Installer(plugins_common.Plugin):
         else:
             rc = os.system('/usr/sbin/postfix check')
         if rc != 0:
-            raise Exception('MisconfigurationError: Postfix failed self-check.')
+            raise errors.MisconfigurationError('Postfix failed self-check.')
 
     def restart(self):
         """Restart or refresh the server content.
@@ -429,7 +427,7 @@ class Installer(plugins_common.Plugin):
         else:
             rc = os.system("service postfix reload")
         if rc != 0:
-            raise Exception('PluginError: cannot restart postfix')
+            raise errors.MisconfigurationError('cannot restart postfix')
 
     def update_CAfile(self):
         os.system("cat /usr/share/ca-certificates/mozilla/*.crt > " + self.ca_file)
