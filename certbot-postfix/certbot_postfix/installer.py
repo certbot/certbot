@@ -25,8 +25,7 @@ class Installer(plugins_common.Plugin):
     def __init__(self,
                  policy_config,
                  postfix_dir,
-                 fixup=False,
-                 version=None):
+                 fixup=False):
         self.fixup          = fixup
         self.postfix_dir    = postfix_dir
         self.policy_config  = policy_config
@@ -42,9 +41,6 @@ class Installer(plugins_common.Plugin):
         #self.cf = [line for line in cf if line and not line.startswith("#")]
         self.policy_lines = []
         self.new_cf = ""
-
-        # Set in .prepare() unless running in a test
-        self.postfix_version = version
 
     def find_postfix_cf(self):
         "Search far and wide for the correct postfix configuration file"
@@ -187,10 +183,7 @@ class Installer(plugins_common.Plugin):
 	"""
         # XXX ensure we raise the right kinds of exceptions
 
-        if not self.postfix_version:
-            self.postfix_version = self.get_version()
-
-        if self.postfix_version < (2, 11, 0):
+        if self.get_version() < (2, 11, 0):
             raise errors.NotSupportedError('Postfix version is too old')
 
 	# Postfix has changed support for TLS features, supported protocol versions
@@ -273,7 +266,7 @@ class Installer(plugins_common.Plugin):
             "Version: {version}".format(
                 os.linesep,
                 root=self.postfix_dir,
-                version='.'.join([str(i) for i in self.postfix_version]))
+                version='.'.join([str(i) for i in self.get_version()]))
         )
 
 
