@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import logging
 import sys
 import string
@@ -13,10 +11,6 @@ from certbot.plugins import common as plugins_common
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-log_handler = logging.StreamHandler()
-log_handler.setLevel(logging.DEBUG)
-logger.addHandler(log_handler)
 
 
 def parse_line(line_data):
@@ -435,31 +429,3 @@ class Installer(plugins_common.Plugin):
 
     def update_CAfile(self):
         os.system("cat /usr/share/ca-certificates/mozilla/*.crt > " + self.ca_file)
-
-
-def usage():
-    print ("Usage: %s starttls-everywhere.json /etc/postfix "
-           "/etc/letsencrypt/live/example.com/" % sys.argv[0])
-    sys.exit(1)
-
-
-if __name__ == "__main__":
-    import Config as config
-    if len(sys.argv) != 4:
-        usage()
-    c = config.Config()
-    c.load_from_json_file(sys.argv[1])
-    postfix_dir = sys.argv[2]
-    le_lineage = sys.argv[3]
-    pieces = [os.path.join(le_lineage, f) for f in (
-        "cert.pem", "privkey.pem", "chain.pem", "fullchain.pem")]
-    if not os.path.isdir(le_lineage) or not all(os.path.isfile(p) for p in pieces) :
-        print "Let's Encrypt directory", le_lineage, "does not appear to contain a valid lineage"
-        print
-        usage()
-    cert, key, chain, fullchain = pieces
-    pcgen = PostfixConfigGenerator(c, postfix_dir, fixup=True)
-    pcgen.prepare()
-    pcgen.deploy_cert("example.com", cert, key, chain, fullchain)
-    pcgen.save()
-    pcgen.restart()
