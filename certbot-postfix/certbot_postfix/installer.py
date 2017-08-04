@@ -39,7 +39,7 @@ class ExistingConfigError(ValueError): pass
 
 @zope.interface.implementer(interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
-class PostfixConfigGenerator(plugins_common.Plugin):
+class Installer(plugins_common.Plugin):
 
     description = "Configure TLS with the Postfix MTA"
 
