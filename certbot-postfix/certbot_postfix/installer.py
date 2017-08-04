@@ -6,6 +6,11 @@ import string
 import subprocess
 import os, os.path
 
+import zope.interface
+
+from certbot import interfaces
+from certbot.plugins import common as plugins_common
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -32,7 +37,12 @@ def parse_line(line_data):
 class ExistingConfigError(ValueError): pass
 
 
-class PostfixConfigGenerator:
+@zope.interface.implementer(interfaces.IInstaller)
+@zope.interface.provider(interfaces.IPluginFactory)
+class PostfixConfigGenerator(plugins_common.Plugin):
+
+    description = "Configure TLS with the Postfix MTA"
+
     def __init__(self,
                  policy_config,
                  postfix_dir,
