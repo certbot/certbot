@@ -1,3 +1,4 @@
+"""Certbot installer plugin for Postfix."""
 import logging
 import os
 import string
@@ -34,6 +35,7 @@ class ExistingConfigError(ValueError): pass
 @zope.interface.implementer(interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Installer(plugins_common.Plugin):
+    """Certbot installer plugin for Postfix."""
 
     description = "Configure TLS with the Postfix MTA"
 
