@@ -1,8 +1,8 @@
 import logging
-import sys
+import os
 import string
 import subprocess
-import os, os.path
+import sys
 
 import zope.interface
 
