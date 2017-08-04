@@ -15,10 +15,6 @@ import six
 from certbot_postfix import installer
 
 
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.StreamHandler())
-
-
 # Fake Postfix Configs
 names_only_config = """myhostname = mail.fubard.org
 mydomain = fubard.org
