@@ -7,6 +7,7 @@ import sys
 
 import zope.interface
 
+from certbot import errors
 from certbot import interfaces
 from certbot.plugins import common as plugins_common
 
@@ -27,9 +28,6 @@ def parse_line(line_data):
     if not sep:
         return None
     return (num, left.strip(), right.strip())
-
-
-class ExistingConfigError(ValueError): pass
 
 
 @zope.interface.implementer(interfaces.IInstaller)
@@ -72,6 +70,10 @@ class Installer(plugins_common.Plugin):
         """
         Ensure that existing postfix config @var is in the list of @acceptable
         values; if not, set it to the ideal value.
+
+        :raises .errors.MisconfigurationError: if conflicting existing values
+            are found for var
+
         """
         acceptable = [ideal] + also_acceptable
 
@@ -87,8 +89,8 @@ class Installer(plugins_common.Plugin):
                     self.deletions.extend(conflicting_lines)
                     self.additions.append(var + " = " + ideal)
                 else:
-                    raise ExistingConfigError(
-                        "Conflicting existing config values " + `l`
+                    raise errors.MisconfigurationError(
+                        "Conflicting existing config values {0}".format(l)
                     )
             val = values[0][2]
             if val not in acceptable:
@@ -96,7 +98,7 @@ class Installer(plugins_common.Plugin):
                     self.deletions.append(values[0][0])
                     self.additions.append(var + " = " + ideal)
                 else:
-                    raise ExistingConfigError(
+                    raise errors.MisconfigurationError(
                         "Existing config has %s=%s"%(var,val)
                     )
 
