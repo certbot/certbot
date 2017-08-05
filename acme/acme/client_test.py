@@ -632,19 +632,19 @@ class ClientNetworkTest(unittest.TestCase):
         except ValueError as y:
             if "linux" in sys.platform:
                 self.assertEqual("Requesting localhost/nonexistent: "
-                                 "[Errno 111] Connection refused", str(y))
+                                 "Connection refused", str(y))
             else: #pragma: no cover
                 self.assertEqual("Requesting localhost/nonexistent: "
-                                 "[Errno 61] Connection refused", str(y))
+                                 "Connection refused", str(y))
 
         # Python 3
         except requests.exceptions.ConnectionError as z: #pragma: no cover
             if "linux" in sys.platform:
                 self.assertEqual("('Connection aborted.', "
-                                 "error(111, 'Connection refused'))", str(z))
+                                 "error('Connection refused'))", str(z))
             else: #pragma: no cover
                 self.assertEqual("('Connection aborted.', "
-                                 "error(61, 'Connection refused'))", str(z))
+                                 "error('Connection refused'))", str(z))
 
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork which mock out response."""
