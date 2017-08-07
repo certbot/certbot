@@ -628,7 +628,7 @@ class ClientNetworkTest(unittest.TestCase):
             # pylint: disable=protected-access
             self.net._send_request('GET', "http://localhost:19123/nonexistent.txt")
 
-        # Python 2
+        # Python Exceptions
         except ValueError as y:
             if "linux" in sys.platform:
                 self.assertEqual("Requesting localhost/nonexistent: "
@@ -637,11 +637,11 @@ class ClientNetworkTest(unittest.TestCase):
                 self.assertEqual("Requesting localhost/nonexistent: "
                                  "Connection refused", str(y))
 
-        # Python 3
+        # Requests Exceptions
         except requests.exceptions.ConnectionError as z: #pragma: no cover
             if "linux" in sys.platform:
                 self.assertEqual("('Connection aborted.', "
-                                 "error('Connection refused'))", str(z))
+                                 "error(111, 'Connection refused'))", str(z))
             else: #pragma: no cover
                 self.assertEqual("('Connection aborted.', "
                                  "error('Connection refused'))", str(z))
