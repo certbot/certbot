@@ -1,6 +1,7 @@
 """Certbot main entry point."""
 from __future__ import print_function
 import logging.handlers
+import signal
 import os
 import sys
 
@@ -728,6 +729,7 @@ def set_displayer(config):
 
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
+    signal.signal(signal.SIGWINCH, signal.SIG_IGN)
     log.pre_arg_parse_setup()
 
     plugins = plugins_disco.PluginsRegistry.find_all()
